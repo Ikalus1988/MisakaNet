@@ -1,9 +1,16 @@
 #!/usr/bin/env python3
 """No workflow may push to `main`, and the two that still would are named here on purpose.
 
-`main` carries the ruleset **"main: the deterministic gates"** (id 23826057): three required status
-checks and an empty `bypass_actors`. A direct push therefore arrives without the checks GitHub
-demands and is refused — `remote: - 3 of 3 required status checks are expected.` That is how five
+`main` carries the ruleset **"main: the deterministic gates"** (id 23826057): a fixed set of required
+status checks and an empty `bypass_actors`. A direct push therefore arrives without the checks GitHub
+demands and is refused. That refusal is quoted below **verbatim, as GitHub worded it on 2026-09-22**.
+The count inside the quote is that day's count, not today's — the ruleset has gained a context since —
+so read the quote for its *shape*, which is the point: a refused push tells you the gate exists and
+nothing at all about what you were trying to land.
+
+    remote: - 3 of 3 required status checks are expected.
+
+That is how five
 automated writers silently stopped landing their output on 2026-09-22 (see
 `docs/maintainer/automation-lands-via-pr.md`), and *silently* is the operative word: each of those
 jobs only pushes when it has something to write, so the runs where nothing changed stayed green

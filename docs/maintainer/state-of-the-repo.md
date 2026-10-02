@@ -23,8 +23,8 @@
   the ruleset) with **no bypass actors** — and GitHub enforces that rule on *direct pushes* as well as
   merges, so every workflow that commits back to `main` is now refused (#2073). The `audit` gate became
   required on 2026-09-27, which closed the "green but nothing ran the full suite" hole — and lengthens every PR's path to mergeable
-  by however long that leg takes. Measured on the change that added it: two of four required checks were
-  still running minutes after the other two reported. It is only repaired every two hours by
+  by however long that leg takes. Measured on the change that added it: two of the required checks were
+  still running minutes after the others reported. It is only repaired every two hours by
   `pr-audit-watch.yml`, so a *missing* audit is still possible; what changed is that a missing one now
   blocks instead of passing silently.
 - Backlog (re-measured 2026-09-27): **~107 open issues / ~12 open PRs**, of which 54 carry `intake`, 39

@@ -30,7 +30,7 @@ The one property that makes it usable for a job that runs daily
 A pull request that waits for a human is *worse* than the direct push it replaced: the daily jobs
 would pile one unmerged PR per day in front of the maintainer, and the data would freeze exactly
 as it does now. So this script does not stop at `gh pr create` — it enables **GitHub's own
-auto-merge** on the PR it just opened. Once the four required checks report green, GitHub
+auto-merge** on the PR it just opened. Once the required checks report green, GitHub
 squashes the PR into `main` with no human in the loop. A human is needed only when something is
 genuinely wrong, which is what the loud failure at the end is for.
 

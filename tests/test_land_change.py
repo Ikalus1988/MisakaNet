@@ -4,7 +4,7 @@
 What is pinned here, and why each one is worth a test rather than a comment:
 
 * **A `[skip ci]` title is refused.** The marker suppresses the pull request's own runs, so the
-  three required checks would never report and the auto-merge this script enables could never
+  required status checks would never report and the auto-merge this script enables could never
   fire. That is a closed loop with no error message: the PR sits open forever and the data
   freezes, which is the exact failure the script was written to remove. Refusing loudly is the
   only safe direction, and a test is what keeps a future "harmless" title edit from
