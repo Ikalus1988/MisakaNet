@@ -9,11 +9,14 @@ the placement test below, which names where each one keeps it).
 
 What is deliberately **not** asserted here: the absence of the stale framing. `README.ja.md` still
 carries the retired "Swarm Knowledge Protocol" heading and its 「サーバー不要。データベース不要。」
-claim, and `README.zh-CN.md` repeats that claim in its own words. The sibling branch
-`fix/onboarding-modal-scope` stops the onboarding modal from saying it, but that branch is **not
-merged yet** — so a rule like "no README claims a local-only architecture" would redden `main` on the
-day it landed, which is the trap #2694 fell into by pinning `origin/main` as a positive control.
-Retiring that framing from the localized READMEs is its own change.
+claim, and `README.zh-CN.md` repeats that claim in its own words. The onboarding modal no longer makes
+that claim — PR #2706 landed the fix (squash `2aad28f14`, merged 2026-10-02T07:47:25Z, eighty-seven
+seconds before this file's parent commit) — but the READMEs still do, so a rule like "no README claims a
+local-only architecture" would redden `main` today, which is the trap #2694 fell into by pinning
+`origin/main` as a positive control. Retiring that framing from the localized READMEs is its own change.
+An earlier version of this docstring said that branch was *not* merged yet; an independent review checked
+the merge timestamp and corrected it, which is the second time a claim in this pull request's description
+was wrong while its artifact was right.
 
 An independent review of the first version of this file found three false claims in its *description*
 (not in the artifact) and four ways to walk around these assertions; the rules below are the answer to
@@ -91,10 +94,21 @@ def test_the_alt_text_is_translated_not_copied():
 
 @pytest.mark.parametrize("name", READMES)
 def test_the_section_is_written_in_the_language_it_claims(name):
-    """Rules out the shortcut of pasting the English prose into the zh and ja READMEs."""
+    """Rules out the shortcut of pasting the English prose into the zh and ja READMEs.
+
+    The check is on the **body after the image**, not on the section as a whole: an independent review
+    kept each localized heading, replaced everything below the image with the English prose, and the
+    whole-section rule stayed green because the heading alone satisfied it.
+    """
     if name == "README.md":
         pytest.skip("the English README is the original, not a translation")
     section = section_of(dictionary(name))
+    image = section.find("![")
+    image_end = section.find(")", image) if image != -1 else -1
+    body = section[image_end + 1:] if image_end != -1 else section
+    assert CJK.search(body), (
+        f"{name}'s scope section is not written in its own language — the heading is localized but the "
+        f"body after the comic is not: {body.strip()[:120]!r}")
     assert CJK.search(section), f"{name}'s scope section has no CJK characters: {section[:80]!r}"
 
 
@@ -115,8 +129,9 @@ def test_the_comic_sits_beside_the_scope_note_not_inside_a_retired_one(name):
     """Placement, per README: before the lesson/skill boundary, and never inside a retired section.
 
     The first version of this change claimed the comic followed "the is NOT table" in all three — it
-    does in `README.md` only (`README.zh-CN.md` has no such table; its roadmap still lists one as a
-    to-do), and in `README.ja.md` the insertion landed inside `## スワンKnowledgeプロトコー
+    does in `README.md` only (`README.zh-CN.md` has no such table at all — its v2.17.0 "new features"
+    list claims such a comparison shipped, which it never did, and that is its own piece of drift), and
+    in `README.ja.md` the insertion landed inside `## スワンKnowledgeプロトコー
     ルとは？` — the heading this repository has retired — because that is where the localized README
     keeps its `Lesson vs Skill` heading. The boundary rule catches an insertion that drifts too far
     down; the retired-section rule catches this specific burial, which the first draft walked into.
