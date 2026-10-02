@@ -976,7 +976,7 @@ function matchTokens(text) {
 }
 
 // Simple keyword-based lesson search (runs in Worker, no BM25)
-function searchLessons(lessons, query, domain, top = 5, floorQuery = null) {
+function searchLessons(lessons, query, domain, top = 5, floorQuery = null, statusFilter = null) {
   if (!Array.isArray(lessons) || !query) return [];
   const q = query.toLowerCase();
   const qWords = matchTokens(query);
@@ -1032,7 +1032,15 @@ function searchLessons(lessons, query, domain, top = 5, floorQuery = null) {
     floorMatched.some(w => floor.informative.has(w)));
 
   relevant.sort((a, b) => b.score - a.score);
-  return relevant.slice(0, top).map(({ lesson, score }) => ({
+  // `?status=` must narrow the candidate pool BEFORE the top-N slice, the way the old
+  // FTS5 `AND l.status = ?` did before `ORDER BY ... LIMIT`. Filtering after the slice
+  // silently answers "no match" for lessons that exist whenever `top` higher-ranked
+  // lessons of another status fill the window (#2121 review finding).
+  const admitted = statusFilter
+    ? relevant.filter(({ lesson }) =>
+        String((lesson && lesson.status) || "").toLowerCase() === statusFilter)
+    : relevant;
+  return admitted.slice(0, top).map(({ lesson, score }) => ({
     id: lesson.id || lesson.name || "",
     title: lesson.title || lesson.name || "",
     domain: lesson.domain || "",
@@ -1464,7 +1472,7 @@ function fuseRankings(english, cjk, k = RRF_K) {
     || ((b.score || 0) - (a.score || 0)));
 }
 
-function searchLessonsBM25(index, query, domain, top = 5, floorQuery = null) {
+function searchLessonsBM25(index, query, domain, top = 5, floorQuery = null, statusFilter = null) {
   if (!index || !index.terms || !index.docs || !query) return [];
 
   const queryTerms = bm25Tokenize(query);
@@ -1617,7 +1625,12 @@ function searchLessonsBM25(index, query, domain, top = 5, floorQuery = null) {
   // ── fuse the CJK channel (#2356) ─────────────────────────────────────────────
   // One list when the channel knows nothing (every Latin query), a real fusion when it does.
   const ordered = cjkRanked.length ? fuseRankings(results, cjkRanked) : results;
-  return ordered.slice(0, top).map(({ doc, score }) => ({
+  // See the note in searchLessons(): status narrows before the top-N slice, not after.
+  const admitted = statusFilter
+    ? ordered.filter(({ doc }) =>
+        String((doc && doc.status) || "").toLowerCase() === statusFilter)
+    : ordered;
+  return admitted.slice(0, top).map(({ doc, score }) => ({
     id: doc.id || "",
     title: doc.title || "",
     domain: doc.domain || "",
@@ -6697,10 +6710,11 @@ export default {
           // query for the same reason as on the MCP path — the alias expansion may add score, but
           // the relevance floor keeps judging what the user typed.
           const scoringQuery = scoringQueryFor(qSearch, env);
+          const statusNorm = qStatus ? qStatus.slice(0, 20).toLowerCase() : null;
           const index = await loadBM25Index(env);
           const hits = index
-            ? searchLessonsBM25(index, scoringQuery, qDomain, limit, qSearch)
-            : searchLessons(lessons, scoringQuery, qDomain, limit, qSearch);
+            ? searchLessonsBM25(index, scoringQuery, qDomain, limit, qSearch, statusNorm)
+            : searchLessons(lessons, scoringQuery, qDomain, limit, qSearch, statusNorm);
           const source = index ? "worker-bm25" : "worker-search";
           let data = enrichSearchHits(hits, lessons).map(r => ({
             id: r.id, title: r.title, domain: r.domain, status: r.status,
@@ -6718,8 +6732,9 @@ export default {
             score: r.score,
             rank: r.score,
           }));
-          // `?status=` narrowed the old SQL; it now narrows the ranked list.
-          if (qStatus) data = data.filter(r => String(r.status || "").toLowerCase() === qStatus.slice(0, 20).toLowerCase());
+          // `?status=` narrowed the old SQL before `LIMIT`; it now narrows inside the
+          // ranker before the top-N slice (see the note there). No post-hoc filter here —
+          // one after the slice is what answered "no match" for lessons that exist.
           // An empty result is an *answer*, not a failure (2026-09-29): a search box that shows "service
           // error" because a query matched nothing teaches its user the wrong thing. The MCP tools call
           // this `no_match` and point at intake; the HTTP surface says the same thing.
