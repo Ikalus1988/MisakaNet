@@ -67,9 +67,11 @@ jobs:
           fi
           # This job fires on *every* push to main, and the snapshot really does move that often (15 of
           # the last 100 pull requests were these snapshots — about one every 40 minutes). Each one is a
-          # full pull-request lifecycle, so bound the rate here: one landing an hour is plenty for a
-          # leaderboard, and the recompute above still happens on every push.
-          RATE_LIMIT_SECONDS=3600
+          # full pull-request lifecycle, and the landing is a standings page rather than a live feed, so
+          # **once a day** is the cadence the maintainer asked for. The recompute above still happens on
+          # every push; this only bounds how often the result is published. The value is a product
+          # decision: `tests/test_automated_prs_skip_llm_review.py` pins it, so change both together.
+          RATE_LIMIT_SECONDS=86400
           # `git log` on a path with no history prints nothing and still exits 0, and comparing an empty
           # string numerically aborts the step — which would turn a normal "nothing landed yet" into a
           # red job. Normalise instead of trusting the command's exit code.
