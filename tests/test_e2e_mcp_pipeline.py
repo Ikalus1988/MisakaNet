@@ -92,9 +92,20 @@ def test_submit_intake(monkeypatch, tmp_path):
 
     Hermetic: the queue is redirected into ``tmp_path`` so the test never writes
     repo state, and no network is involved.
+
+    The redirect patches the module's constant rather than setting
+    ``MISAKANET_CONTRIBUTION_QUEUE``: that variable is read **once, at import**
+    (``scripts/contribution_queue.py``), so setting it only takes effect while
+    nothing has imported the module yet. Run alone, this test was green; inside the
+    full suite ``tests/conftest.py`` had already imported it, the write landed in
+    the session queue, and the assertion below failed on all six CI legs while
+    passing locally (reproduced by running ``tests/test_intake_backfill.py`` first).
+    ``patch(...QUEUE_FILE...)`` is what the other queue tests already do, and it is
+    independent of collection order.
     """
-    monkeypatch.setenv("MISAKANET_CONTRIBUTION_QUEUE", str(tmp_path / "queue.jsonl"))
     monkeypatch.syspath_prepend(str(REPO_ROOT))
+    import scripts.contribution_queue as contribution_queue
+    monkeypatch.setattr(contribution_queue, "QUEUE_FILE", tmp_path / "queue.jsonl")
 
     from misakanet.server.handlers.submit import handle_submit_intake
 
