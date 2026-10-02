@@ -1,43 +1,51 @@
 {
-  "generated_at": "2026-10-02T13:00:12.120352+00:00",
+  "generated_at": "2026-10-02T16:51:56.391695+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "docs(field-reports): 2.40.0 browser-half six-seat test report (#2593)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2693",
-      "timestamp": "2026-10-02T12:58:59Z",
+      "title": "docs(lessons): voice pipelines and IM bots fail at someone else's layer (#2630)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2689",
+      "timestamp": "2026-10-02T16:51:16Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(site): network activity trend + read-only token scope (#2521)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2692",
-      "timestamp": "2026-10-02T12:58:53Z",
+      "title": "docs: external pilot report — upgraded-docs-framework (#1550)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2581",
+      "timestamp": "2026-10-02T16:51:10Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(worker): per-address limits become atomic counters (#2075)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2691",
-      "timestamp": "2026-10-02T12:58:47Z",
+      "title": "docs: add Copilot integration recipes for three surfaces (#1941)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2489",
+      "timestamp": "2026-10-02T16:51:02Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat: add error-signature normalizer for stable failure-class recall (#1654)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2567",
-      "timestamp": "2026-10-02T12:58:41Z",
+      "title": "feat(docs): add freshness gate for managed documentation (#2082)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2485",
+      "timestamp": "2026-10-02T16:50:54Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "Fix version drift in MCP evaluation documentation (2026-09-03)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2390",
-      "timestamp": "2026-10-02T12:58:27Z",
+      "title": "docs(mcp): improve Glama tool descriptions with non-obvious semantics",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2441",
+      "timestamp": "2026-10-02T16:50:47Z",
       "source": "github"
+    },
+    {
+      "type": "lesson",
+      "title": "An IM bot is a guest on someone else's stack: pin the client, the OS, and the install order",
+      "url": "lessons/contrib/im-bot-environment-contracts.md",
+      "timestamp": "2026-10-02",
+      "domain": "wechat",
+      "source": "lessons"
     },
     {
       "type": "lesson",
@@ -45,6 +53,14 @@
       "url": "lessons/contrib/onchain-payout-preflight-checklist.md",
       "timestamp": "2026-10-02",
       "domain": "crypto-ops",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "Voice pipelines fail without failing: the acceptance is the artifact, not the exit code",
+      "url": "lessons/contrib/voice-pipeline-silent-failures.md",
+      "timestamp": "2026-10-02",
+      "domain": "audio",
       "source": "lessons"
     },
     {
@@ -61,22 +77,6 @@
       "url": "lessons/contrib/git-stash-is-repository-wide.md",
       "timestamp": "2026-10-01",
       "domain": "git",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "Instrumentation that never reached the artifact: a silent probe is not evidence",
-      "url": "lessons/contrib/instrumentation-that-never-reached-the-artifact.md",
-      "timestamp": "2026-10-01",
-      "domain": "development",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "Sanitizing every interpolated value is not enough — exc_info=True appends the raw traceback",
-      "url": "lessons/contrib/log-sanitizer-must-live-in-the-formatter.md",
-      "timestamp": "2026-10-01",
-      "domain": "security",
       "source": "lessons"
     },
     {
