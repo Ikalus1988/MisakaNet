@@ -65,8 +65,8 @@ jobs:
             echo "no snapshot produced; nothing to land"
             exit 0
           fi
-          # This job fires on *every* push to main, and the snapshot really does move that often (15 of
-          # the last 100 pull requests were these snapshots — about one every 40 minutes). Each one is a
+          # This job fires on *every* push to main, and the snapshot really does move that often: 15 of
+          # the last 100 pull requests were these snapshots, a median of 84 minutes apart. Each one is a
           # full pull-request lifecycle, and the landing is a standings page rather than a live feed, so
           # **once a day** is the cadence the maintainer asked for. The recompute above still happens on
           # every push; this only bounds how often the result is published. The value is a product

@@ -36,7 +36,7 @@ Once you register (via the [join issue](https://github.com/Ikalus1988/MisakaNet/
 | **Immediately** | Your join issue is created | Save the issue URL — it contains your registration reference |
 | **Within 5 minutes** | CI workflow processes your registration | No action needed — the pipeline runs automatically |
 | **~5–15 minutes** | A Misaka ID is assigned (e.g. `Misaka10061`) | Check your join issue for a bot comment with your ID |
-| **After ID assignment** | You appear on the [leaderboard](https://misakanet.org/leaderboard) | Verify your entry appears (may take up to 1 hour for leaderboard refresh) |
+| **After ID assignment** | You appear on the [reputation leaderboard](https://misakanet.org/insights/reputation-leaderboard.html) | That page queries the live database, so your entry is there as soon as the ID is assigned |
 | **If no bot comment after 30 min** | Registration may have failed validation | Check the CI logs on your join issue (click "Actions" tab), verify your template was filled correctly, and re-submit if needed |
 
 > **No manual refresh needed.** Registration is fully automated via GitHub Actions. Your Misaka ID is generated and posted as a comment on your join issue.

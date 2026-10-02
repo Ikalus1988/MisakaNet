@@ -121,10 +121,13 @@ jobs:
           echo "PYTHONPATH=$(pwd):$PYTHONPATH" >> "$GITHUB_ENV"
 
       # ── Quality Score Gate (full scope only) ──
-      # The `audit` job is a required check, so it always runs; only the paid model call skips the
-      # automation's own branches. Measured 2026-10-02: 15 of the last 100 pull requests were
-      # `bot/leaderboard-watch` snapshots (~one every 40 minutes), and every one of them paid for this
-      # step, the PR-Agent review and PR Genius.
+      # The `audit` job is a required check, so it always runs; this step, which is deterministic work
+      # nobody needs on a branch that auto-merges itself, skips the automation's own branches. Measured
+      # 2026-10-02: 15 of the last 100 pull requests were `bot/leaderboard-watch` snapshots, a median of
+      # 84 minutes apart; `pr-agent-review.yml` is the paid model call in that set (this action is
+      # `gh api` + `bc` + `grep`, and `pr-genius` is handed no model credential). The ruleset requires
+      # four checks on `main` — DCO, `test (ubuntu-latest, 3.11)`, `gate`, `audit` — so this job must not
+      # be skipped wholesale.
       - name: Agent Quality Score
         if: steps.scope.outputs.scope == 'full' && !startsWith(github.head_ref, 'bot/')
         id: score
