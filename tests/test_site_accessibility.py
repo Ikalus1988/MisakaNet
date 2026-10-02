@@ -169,6 +169,9 @@ def _brace_block(text: str, start: int) -> str:
 
 
 _WRITE = re.compile(r"status\.textContent\s*=")
+#: The only guard a write may sit behind. `if (status)` is an element-existence check — the pattern the
+#: page uses to tolerate a missing node — not a condition on whether the announcement happens.
+_ALLOWED_GUARD = "if (status)"
 
 
 def _writes_at_depth(text: str, depth: int) -> list[str]:
@@ -188,6 +191,14 @@ def _writes_at_depth(text: str, depth: int) -> list[str]:
         match = _WRITE.match(text, index)
         if not match:
             continue
+        # Depth counts *braces*, so a brace-less `if (cond) status.textContent = …;` sits at the same
+        # depth as an unguarded statement while still being conditional — a review used exactly that on
+        # all three branches (a normal query then wrote nothing while results were on screen). Look back
+        # to the previous statement boundary and allow only the element-existence guard.
+        boundary = max(text.rfind(ch, 0, index) for ch in ";{}")
+        guard = text[boundary + 1:index].strip()
+        if guard not in ("", _ALLOWED_GUARD):
+            continue
         end = text.find(";", match.end())
         found.append(text[index:end if end != -1 else len(text)])
     return found
@@ -203,18 +214,20 @@ def test_the_summary_is_written_inside_each_branch_block():
     looks for). Braces do not move when copy does, strings are understood before comments are stripped,
     and depth keeps a nested conditional from standing in for the statement itself.
 
-    Known limits, stated rather than implied — every one of them measured by a review:
+    Known limits, stated rather than implied, each one measured by a review rather than assumed:
 
-    * `if (false) { status.textContent = … }` inside a branch satisfies it;
-    * the scanner does not model JS **regular-expression literals**, so a regex containing
-      `status.textContent = …` counts as code (`/status.textContent = "No lesson matches "/`);
-    * a depth-1 write whose text happens to name `rawQ` satisfies the no-match rule even if it announces
-      nothing useful — the rules check shape and one word, not meaning.
+    * the scanner does not model JS **regular-expression literals**, so `/status.textContent = rawQ/`
+      counts as code (a regex is not a string, and regex-versus-division is genuinely ambiguous without a
+      parser);
+    * the rules check **shape**, not meaning: a guarded write whose text happens to contain `rawQ` is
+      accepted even if it announces nothing a reader would understand.
 
-    All three are consequences of reading source text instead of running it, and they are why the
-    behavioural proof belongs in the browser suite (`tests/e2e/run_client_e2e.py` already drives a real
-    Chromium): "search a hit, a miss, and then clear — what did the live region say?" is a question this
-    file can only approximate.
+    Everything else that was tried is now caught: `if (false) { … }` (braces put it deeper), a brace-less
+    `if (false) status.textContent = …` (the guard is neither empty nor `if (status)`), comment
+    camouflage in either form, and moving the copy around. All of these are consequences of reading
+    source text instead of running it, which is why the behavioural proof belongs in the browser suite
+    (`tests/e2e/run_client_e2e.py` already drives a real Chromium): "search a hit, a miss, and then
+    clear — what did the live region say?" is a question this file can only approximate.
     """
     body = _strip_js_comments(_function_body("searchLessons"))
     miss_start = body.index("if (scored.length === 0)")
@@ -232,10 +245,10 @@ def test_the_summary_is_written_inside_each_branch_block():
         "the no-match branch can reach its outcome without a direct write to the summary region")
     assert any("rawQ" in statement for statement in misses), (
         "the no-match announcement must name the query that missed, not just write something")
-    # The success path starts where the miss block *ends* — `miss_start + len(miss_block)` was 25
-    # characters short, because the block begins at its `{` while `miss_start` points at the `if`, so the
-    # slice opened inside the miss block and its baseline depth was never comparable (measured by a
-    # review, which is why the results branch was only "exists somewhere" for two rounds).
+    # The success path starts where the miss block *ends*. It used to start 25 characters earlier —
+    # `miss_start + len(miss_block)` counts from the `if` while the block begins at its `{` — so the
+    # slice opened inside the miss block and the results branch was only "exists somewhere" for two
+    # rounds (measured by a review, which then walked through the gap).
     tail = body[opening + len(miss_block):]
     assert _writes_at_depth(tail, 0), (
         "the results branch can reach its outcome without a direct write to the summary region")
