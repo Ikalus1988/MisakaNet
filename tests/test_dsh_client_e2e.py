@@ -19,6 +19,7 @@ and a real browser, so the ways it can quietly become useless are worth pinning:
 from __future__ import annotations
 
 import re
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -165,14 +166,21 @@ def test_the_scope_step_runs_the_suite_when_it_cannot_decide(tmp_path):
 
     Removing either `|| fail_open` turns this red: the unguarded form exits non-zero (measured 1).
     """
+    bash = shutil.which("bash")
+    if bash is None:  # pragma: no cover - every CI runner here has one
+        pytest.skip("the step is a POSIX shell script and this host has no bash to run it with")
+
     script = _scope_step_run()
     script = script.replace("${{ github.event_name }}", "pull_request")
     script = script.replace("${{ github.base_ref }}", "no-such-base-ref-cannot-be-fetched")
     outputs = tmp_path / "github_output"
     outputs.write_text("", encoding="utf-8")
-    script = script.replace('"$GITHUB_OUTPUT"', str(outputs))
+    # `as_posix()` on purpose: on Windows `tmp_path` is `C:\Users\…`, and handing that to bash inside
+    # a double-quoted redirection leaves the backslashes to be read as escapes. Measured 2026-10-02:
+    # the test passed on ubuntu/macos and failed on all three windows legs for exactly this reason.
+    script = script.replace('"$GITHUB_OUTPUT"', f'"{outputs.as_posix()}"')
 
-    proc = subprocess.run(["bash", "-c", script], cwd=REPO, capture_output=True, text=True)
+    proc = subprocess.run([bash, "-c", script], cwd=REPO, capture_output=True, text=True)
     assert proc.returncode == 0, (
         "the scope step failed the job instead of falling back to running the suite\n"
         f"stdout: {proc.stdout}\nstderr: {proc.stderr}")
