@@ -136,17 +136,26 @@ def test_a_non_utf8_filename_does_not_crash_the_lookup(tmp_path: Path):
     try:
         with open(raw, "wb") as handle:
             handle.write(LESSON.encode("utf-8"))
-    except OSError as exc:
-        # APFS refuses the name outright: `OSError: [Errno 92] Illegal byte sequence`, which is EILSEQ on
-        # macOS and 84 on Linux — so the constants are compared, never the number. The behaviour under
-        # test cannot be reproduced on a filesystem that cannot hold the input, so this leg is skipped
-        # there rather than deleted (measured 2026-10-02: the first version of this test broke the macOS
-        # legs, which are not required checks and let the pull request merge with them red).
+    except (OSError, UnicodeError) as exc:
+        # Every way an operating system says "I cannot hold that name", measured on all three of CI's
+        # platforms:
         #
-        # Only a *name-encoding* failure counts as that capability limit. Catching bare `OSError` also
-        # swallowed EACCES and ENOSPC — an independent review proved it by shimming both — which would
-        # have turned a permissions problem or a full disk into a quiet skip.
-        if exc.errno not in (errno.EILSEQ, errno.EINVAL, errno.ENOTSUP):
+        #   * APFS refuses it with EILSEQ (92 there), Linux with EILSEQ (84) — the constants are compared,
+        #     never the number — plus EINVAL and ENOTSUP for filesystems that answer differently;
+        #   * Windows fails **before any syscall**: decoding the bytes path to pass it along raises
+        #     `UnicodeDecodeError: 'utf-8' codec can't decode byte 0xff` (measured 2026-10-02 on
+        #     windows-latest, 3.13), which is a `UnicodeError` and so never reached the old `except
+        #     OSError` — the first version of this fix broke that leg too;
+        #   * WinError 123 can arrive with `errno is None`, which is only tolerated on Windows.
+        #
+        # Anything else — EACCES, ENOSPC, a missing directory — is a real problem and is re-raised. The
+        # first version caught bare `OSError`, and an independent review shimmed both EACCES and ENOSPC to
+        # show that a permissions failure or a full disk would have been reported as "this filesystem
+        # refuses non-UTF-8 filenames" and skipped.
+        name_problem = isinstance(exc, UnicodeError) or (
+            exc.errno in (errno.EILSEQ, errno.EINVAL, errno.ENOTSUP)
+            or (exc.errno is None and os.name == "nt"))
+        if not name_problem:
             raise
         pytest.skip(f"this filesystem refuses non-UTF-8 filenames: {exc}")
     subprocess.run(["git", "init", "-q"], cwd=repo, check=True)
