@@ -3303,6 +3303,10 @@ async function loadContributors() {
         const id = clean.split(/[—\-–]/)[0].trim();
         if (id && id.length > 2 && id.length < 60) {
           const exists = existingLessons.has(id);
+          // A `- ` line that names nothing in the corpus is not a contribution to it. Counting those
+          // let a single PR body stuff the wall: the ranking is `count + lessons.length`, only the top
+          // 10 render, and we measured a body with ~30 filler lines taking the first row (2026-10-02).
+          if (!exists) return;
           const url = `https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/${encodeURIComponent(id)}.md`;
           contribMap[nodeName].lessons.push({ name: clean, id, url, exists });
         }

@@ -190,4 +190,18 @@ def test_the_lesson_id_is_url_encoded_where_the_href_is_built():
         "the lesson id is interpolated into a URL unencoded; a `\"` in it closes the href attribute"
     )
 
+def test_a_lesson_line_only_counts_when_it_names_a_lesson_in_the_corpus():
+    """The ranking is `count + lessons.length` and the wall shows the top 10.
 
+    Every `- ` line used to be pushed regardless of `exists`, so a body with ~30 filler lines took the
+    first row — which is also what put a stranger's payload above the fold. A line that names nothing in
+    `data/lessons.json` is not a contribution to the corpus and must not count.
+    """
+    html = HTML.read_text(encoding="utf-8")
+    block = re.search(r"lessonLines\.forEach\(line => \{(.*?)\n      \}\);", html, re.DOTALL)
+    assert block, "the lesson-line loop moved"
+    body = block.group(1)
+    assert re.search(r"if \(!exists\) return;", body), (
+        "a `- ` line now counts even when its id is not in the corpus, so a PR body can stuff the "
+        f"ranking: {body.strip()[:200]}"
+    )
