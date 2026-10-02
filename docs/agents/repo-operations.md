@@ -53,6 +53,14 @@ node --test workers/misakanet-setup.test.mjs
 npm pack --pack-destination /tmp --cache .npm-cache   # 在 packages/misakanet-setup 下
 npm install -g --prefix /tmp/mn-prefix /tmp/misaka-net-misakanet-setup-*.tgz
 node packages/misakanet-setup/scripts/e2e-packaged-install.mjs --prefix /tmp/mn-prefix --live
+
+# DSH 客户端半身：真宿主 + 真浏览器的行为回归（来源门禁只看"注册了什么"，
+# 这条才看"到底发生了什么"）。一次性 DSH_HOME，库请求被拦截，不依赖公网。
+# 2026-10-02 起随 PR 跑（客户端半身改动才跑，判定在 job 内部）；
+# 仍不在必需检查里（要装一份钉住的 DSH + Chromium）；`--keep` 会保留宿主供排查。
+LD_LIBRARY_PATH=/snap/chromium/current/usr/lib/x86_64-linux-gnu \
+  python3 tests/e2e/run_client_e2e.py --out /tmp/e2e-shots --keep
+
 # 每个断言都必须能变红：--inject 会故意破坏一条承诺并要求对应检查失败
 node packages/misakanet-setup/scripts/e2e-packaged-install.mjs --prefix /tmp/mn-prefix --inject leftover-temp
 

@@ -11,7 +11,7 @@
 > 许多 workflow 是机器人/数据管道，失败常在外部依赖（D1、registry、配额）。
 
 
-## 质量门禁（22）
+## 质量门禁（23）
 
 | workflow | 用途 | 触发 | 定时 |
 |---|---|---|---|
@@ -21,6 +21,7 @@
 | `ci-cross-platform.yml` | Cross-Platform Tests | PR, 手动 |  |
 | `codeql.yml` | CodeQL | PR, push, 定时 | `0 6 * * 0` |
 | `dco-check.yml` | DCO Check | PR, 手动 |  |
+| `dsh-client-e2e.yml` | DSH Client E2E（真宿主 + Chromium：`/misakanet` 浮层、全窗口 toast、设置行↔面板三条行为场景；库请求被拦截，不依赖公网。**2026-10-02 起跑 PR**：composer 起不来的根因是 seed 的 workspace 记录缺 `createdAt`/`updatedAt`，宿主会自己建首条会话）| PR, 手动, 定时 | `40 3 * * *` |
 | `field-report-schema.yml` | Field Report Schema | PR, push, 手动 |  |
 | `fix-dco.yml` | DCO Auto-Fix | 评论 |  |
 | `gate-mutation-audit.yml` | Gate Mutation Audit | 定时, 手动 | `43 6 * * 1` |
