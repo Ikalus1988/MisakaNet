@@ -24,6 +24,21 @@ queries:
 # self-asserted evidence this repo is trying to get away from. The token is never printed
 # (a separate check asserts that), the URL comes from the same file the installer wrote, and
 # the script is not shipped in the tarball (`files` in package.json).
+# lessons/contrib/onchain-payout-preflight-checklist.md: HARDCODED_SECRET (#321/#322, dismissed as false
+# positives 2026-10-02). The literal is 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913 -- **USDC's contract
+# address on Base (chain 8453)** -- and the lesson's argument is precisely that a token's symbol is not an
+# identifier while its address is, so the address is the evidence rather than a credential. It is not
+# incidental to that one file either: the same address ships as `# USDC Base` inside
+# `cast call ... balanceOf` commands in 12 committed benchmark snapshots, and
+# lessons/contrib/usdc-ethereum-instead-of-base-zero-eth-gas.md carries it too without tripping this rule,
+# so what the query sees is the `token="0x..."` assignment shape rather than addresses as such. GitHub
+# secret scanning reports 0 open alerts for this repository. The corpus is still covered for real
+# credentials by scripts/check_published_secrets.py, which scans docs/** and lessons/** and runs as a
+# blocking check on every PR -- so this excludes a false positive, not the net.
+#
+# Editing the address to satisfy the scanner is the one thing not to do here: the address is what makes
+# the lesson checkable, and a mangled one would be a lesson that cannot be run.
 paths-ignore:
   - scripts/check_worker_secrets.py
   - packages/misakanet-setup/scripts/e2e-packaged-install.mjs
+  - lessons/contrib/onchain-payout-preflight-checklist.md
