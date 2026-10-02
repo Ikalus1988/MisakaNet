@@ -3,7 +3,7 @@
 ## Quick Install
 
 ```bash
-dsh plugin add misakanet
+dsh plugin --profile web add misakanet
 ```
 
 ## Alternative Installation Methods
@@ -11,7 +11,7 @@ dsh plugin add misakanet
 ### Git Install
 
 ```bash
-dsh plugin add github:Ikalus1988/MisakaNet
+dsh plugin --profile web add github:Ikalus1988/MisakaNet
 ```
 
 ### Manual Install (Skill Discovery)
@@ -36,12 +36,12 @@ cp -r skills/misakanet ~/.dsh/skills/
 1. Open your terminal
 2. Run the installation command:
    ```bash
-   dsh plugin add misakanet
+   dsh plugin --profile web add misakanet
    ```
 3. Wait for the download to complete
 4. Verify the installation:
    ```bash
-   dsh plugin list
+   dsh plugin --profile web list
    ```
    You should see `misakanet` in the output.
 
@@ -58,10 +58,10 @@ to type is the same one the command above uses.
 1. Ensure Git is installed on your system
 2. Run the git installation command:
    ```bash
-   dsh plugin add github:Ikalus1988/MisakaNet
+   dsh plugin --profile web add github:Ikalus1988/MisakaNet
    ```
 3. The plugin will be automatically cloned and registered
-4. Verify with `dsh plugin list`
+4. Verify with `dsh plugin --profile web list`
 
 ### Method 3: Manual Installation
 
@@ -78,7 +78,7 @@ to type is the same one the command above uses.
    ```bash
    cp -r skills/misakanet ~/.dsh/skills/
    ```
-4. Verify with `dsh plugin list`
+4. Verify with `dsh plugin --profile web list`
 
 ## Verification
 
@@ -86,7 +86,7 @@ After installation, verify everything is working:
 
 ```bash
 # Check plugin is listed
-dsh plugin list
+dsh plugin --profile web list
 
 # Test MCP tools are accessible
 dsh tool list | grep misakanet
@@ -101,7 +101,7 @@ dsh tool list | grep misakanet
 chmod -R 755 ~/.dsh/skills
 
 # Or use sudo (not recommended for npm)
-sudo dsh plugin add misakanet
+sudo dsh plugin --profile web add misakanet
 ```
 
 ### Plugin Not Found After Installation
@@ -113,8 +113,8 @@ sudo dsh plugin add misakanet
    ```
 3. Reinstall if needed:
    ```bash
-   dsh plugin remove misakanet
-   dsh plugin add misakanet
+   dsh plugin --profile web remove misakanet
+   dsh plugin --profile web add misakanet
    ```
 
 ### Version Conflicts
@@ -127,8 +127,8 @@ npm update -g dsh
 npm cache clean --force
 
 # Reinstall plugin
-dsh plugin remove misakanet
-dsh plugin add misakanet
+dsh plugin --profile web remove misakanet
+dsh plugin --profile web add misakanet
 ```
 
 ### Network Issues
@@ -138,10 +138,10 @@ dsh plugin add misakanet
 ping github.com
 
 # Try with verbose output
-dsh plugin add misakanet --verbose
+dsh plugin --profile web add misakanet --verbose
 
 # Use git method as fallback
-dsh plugin add github:Ikalus1988/MisakaNet
+dsh plugin --profile web add github:Ikalus1988/MisakaNet
 ```
 
 ## Uninstallation
@@ -149,7 +149,7 @@ dsh plugin add github:Ikalus1988/MisakaNet
 ### Quick Uninstall
 
 ```bash
-dsh plugin remove misakanet
+dsh plugin --profile web remove misakanet
 ```
 
 ### Manual Uninstall
@@ -161,7 +161,7 @@ rm -rf ~/.dsh/skills/misakanet
 ### Verify Removal
 
 ```bash
-dsh plugin list
+dsh plugin --profile web list
 # misakanet should not appear
 ```
 
@@ -169,11 +169,11 @@ dsh plugin list
 
 ```bash
 # Update to latest version
-dsh plugin update misakanet
+dsh plugin --profile web update misakanet
 
 # Or reinstall
-dsh plugin remove misakanet
-dsh plugin add misakanet
+dsh plugin --profile web remove misakanet
+dsh plugin --profile web add misakanet
 ```
 
 ## Support
@@ -193,8 +193,8 @@ the **hosted** endpoint exposes, not a local server.
 
 | Form | What it installs | MCP tools you get | Needs |
 |---|---|---|---|
-| `dsh plugin add misakanet` (**npm**) | `SKILL.md`, `index.js` (wires the MCP row), `cordis.patch.yml` | the **hosted** endpoint's tools at `https://misakanet.org/mcp` — **7**, declared in `.codex-plugin/plugin.json` (`mcp.tools`); `misakanet_me_events` is one of them | network. **No Python, no local process** |
-| `dsh plugin add github:Ikalus1988/MisakaNet` (**git+**) | the above **plus the repository**, including `scripts/mcp_server.py` | the **local stdio** server (`python3 scripts/mcp_server.py`) — **10**: the same 7 hosted tools **plus** the 3 that only make sense on your machine, `misakanet_submit_usage`, `misakanet_usage_status`, `misakanet_memory_context` | **Python ≥ 3.10** and a checkout |
+| `dsh plugin --profile web add misakanet` (**npm**) | `SKILL.md`, `index.js` (wires the MCP row), `cordis.patch.yml` | the **hosted** endpoint's tools at `https://misakanet.org/mcp` — **7**, declared in `.codex-plugin/plugin.json` (`mcp.tools`); `misakanet_me_events` is one of them | network. **No Python, no local process** |
+| `dsh plugin --profile web add github:Ikalus1988/MisakaNet` (**git+**) | the above **plus the repository**, including `scripts/mcp_server.py` | the **local stdio** server (`python3 scripts/mcp_server.py`) — **10**: the same 7 hosted tools **plus** the 3 that only make sense on your machine, `misakanet_submit_usage`, `misakanet_usage_status`, `misakanet_memory_context` | **Python ≥ 3.10** and a checkout |
 | `cp -r skills/misakanet ~/.dsh/skills/` (**manual skill**) | the skill only | none until you wire an MCP row yourself | — |
 
 Why: the npm bundle deliberately has **no `bin`** and does not ship the local server — `scripts/mcp_server.py`
@@ -220,7 +220,7 @@ An install page can show green things and they are not the same claim:
 |---|---|---|
 | **Registry / market metadata** (static) | the listing knows about this version — **nothing more**; it says nothing about whether an install works | npm `dist-tags` / the plugin manifest's `version`, and the MCP registry read-back in `publish-mcp-registry.yml` (it fails unless the registry's `isLatest` matches what was published) |
 | **Real-machine install** (our daily smoke) ![install smoke](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/Ikalus1988/MisakaNet/data/badges/install.json) | both install forms were **actually installed and called** on a date, from a clean runner: the npm tarball's shape and hosted endpoint, and the git+ checkout's local stdio server — each answering a real `misakanet_search` | `.github/workflows/install-smoke.yml` → `data` branch `badges/install.json` (green = both forms passed, with the date; red names the failing form). Read the badge, do not read this sentence: no status is hand-written here |
-| **Real-machine install** (what you should run) | the thing actually works on *your* machine, with your network and your profile | `dsh plugin list` shows `misakanet`, then call a tool — `misakanet_search` with any error string should return ranked lessons |
+| **Real-machine install** (what you should run) | the thing actually works on *your* machine, with your network and your profile | `dsh plugin --profile web list` shows `misakanet`, then call a tool — `misakanet_search` with any error string should return ranked lessons |
 
 **The static layer proves only that the catalogue is current.** It is a claim about a listing, not about an
 install: npm `dist-tags` and the registry read-back will both be green for a package whose tarball is
