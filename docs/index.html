@@ -49,6 +49,12 @@
     --border-glow: rgba(0, 229, 255, 0.15);
     --text-primary: #e2e8f0;
     --text-dim: #94a3b8;
+    /* Used by the search panel inline styles below. Both were referenced for a long time without ever
+       being declared, so those declarations were invalid at computed-value time and silently fell back
+       to inheritance (which happened to look right). Declared here so the value has one source of truth:
+       `--text-main` is this page's primary text colour, and `--font-ui` is the stack `body` uses. */
+    --text-main: var(--text-primary);
+    --font-ui: 'Inter', 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', sans-serif;
     --green: #22c55e;
     --red: #ef4444;
     --gray: #6b7280;
@@ -57,7 +63,7 @@
   body {
     background: var(--bg-deep);
     color: var(--text-primary);
-    font-family: 'Inter', 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', sans-serif;
+    font-family: var(--font-ui);
     min-height: 100vh;
     line-height: 1.6;
     position: relative;
@@ -145,6 +151,10 @@
     max-width: 50vw;
     width: 480px;
     height: auto;
+    /* The file is 360x485. Without a ratio the box is 0px tall until the bytes arrive, so the first
+       paint is ~647px short and the page jumps (CLS). Pinning the ratio reserves the box up front;
+       480px wide still renders 646.67px tall, i.e. the size it already renders at. */
+    aspect-ratio: 360 / 485;
     display: block;
     opacity: 0.65;
     filter: drop-shadow(0 0 80px rgba(106, 239, 255, 0.50));
@@ -1687,7 +1697,7 @@
   <!-- Header -->
   <header class="header">
     <div class="header-inner">
-      <img class="header-avatar" src="/assets/misaka-avatar-crop.png" onerror="this.src='https://raw.githubusercontent.com/Ikalus1988/MisakaNet/main/promotional/misaka-avatar-crop.png'" alt="Misaka Network Avatar">
+      <img class="header-avatar" src="/assets/misaka-avatar-crop.png" width="360" height="485" onerror="this.src='https://raw.githubusercontent.com/Ikalus1988/MisakaNet/main/promotional/misaka-avatar-crop.png'" alt="Misaka Network Avatar">
       <div class="header-content">
       <div class="header-text-block">
         <div class="logo-title" data-i18n="siteTitle">MISAKA NETWORK</div>
@@ -2214,6 +2224,22 @@ function getDataBase() {
 // Debug: set localStorage.misaka_debug=true, then open console
 const DEBUG = (() => { try { return localStorage.getItem('misaka_debug') === 'true'; } catch { return false; } })();
 
+// Single channel for the degraded/fallback paths below. Nothing is printed unless DEBUG is on, but the
+// message is never thrown away: it is appended to `window.__misakanetDiag`, so a report of "the feed
+// would not load" can still be diagnosed without asking the visitor to reproduce with a flag set.
+const __misakanetDiag = [];
+window.__misakanetDiag = __misakanetDiag;
+function diag(level, ...args) {
+  try {
+    __misakanetDiag.push({
+      at: new Date().toISOString(),
+      level,
+      message: args.map(a => (a && a.message) || String(a)).join(' ')
+    });
+  } catch { /* never let diagnostics break the page */ }
+  if (DEBUG) (console[level] || console.log)(...args);
+}
+
 // ── Toast notification ──
 let toastTimer = null;
 let copyBtnTimer = null;
@@ -2357,7 +2383,7 @@ async function loadLocale(lang) {
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     _localeCache[lang] = await resp.json();
   } catch (e) {
-    console.warn(`[i18n] Failed to load locale "${lang}":`, e);
+    diag('warn', `[i18n] Failed to load locale "${lang}":`, e);
     _localeCache[lang] = {};
   }
   return _localeCache[lang];
@@ -2503,7 +2529,7 @@ async function safeFetchLessons() {
     // 过滤并确保基础字段完整性
     return data.filter(l => l && typeof l.title === 'string' && typeof l.domain === 'string');
   } catch (err) {
-    console.error("MisakaNet Frontend Shield: Lessons load blocked —", err.message);
+    diag('error', "MisakaNet Frontend Shield: Lessons load blocked —", err.message);
     renderErrorBoundaryUI(err.message);
     return [];
   }
@@ -2602,7 +2628,7 @@ async function loadVoices() {
     renderVoices();
   } catch (err) {
     container.innerHTML = `<div class="loading-item">${t('voicesLoadFailed')}</div>`;
-    console.warn('[MisakaNet] voices load failed:', err.message);
+    diag('warn', '[MisakaNet] voices load failed:', err.message);
   }
 }
 loadVoices();
@@ -2994,7 +3020,7 @@ async function fetchLessonsWithFallback() {
   try {
     return await fetchLessonsOnce(LESSONS_LITE_URL);
   } catch (err) {
-    console.warn(`MisakaNet: ${LESSONS_LITE_URL} unavailable — ${err.message}; falling back to the corpus`);
+    diag('warn', `MisakaNet: ${LESSONS_LITE_URL} unavailable — ${err.message}; falling back to the corpus`);
     return fetchLessonsOnce(LESSONS_FULL_URL);
   }
 }
@@ -3287,7 +3313,7 @@ async function loadContributors() {
         });
       }
     } catch(e) {
-      console.log("PR contributions not available:", e.message);
+      diag('log', "PR contributions not available:", e.message);
     }
 
     let existingLessons = new Set();
@@ -3439,7 +3465,7 @@ async function loadContributors() {
     }).join("");
 
   } catch (err) {
-    console.log("Contributors not available:", err.message);
+    diag('log', "Contributors not available:", err.message);
   }
 }
 

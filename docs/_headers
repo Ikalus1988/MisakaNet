@@ -5,3 +5,31 @@
   Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
   Link: <https://misakanet.org/llms.txt>; rel="alternate"; type="text/plain"; title="LLM-readable index"
   Link: <https://misakanet.org/.well-known/agent.json>; rel="http://www.w3.org/ns/json-ld#describedby"; type="application/json"
+
+# HTML documents get no ETag and no Last-Modified from Workers static assets, so with the default
+# `Cache-Control: public, max-age=0, must-revalidate` the browser cannot send a conditional request
+# and re-downloads the whole document (~44 KB for `/`) on every navigation. Measured 2026-10-02:
+#   /assets/misaka-avatar-crop.png -> etag: "ebf8d0eb..."   /locales/zh.json -> etag: "2aab467f..."
+#   /                             -> no etag, no last-modified    /search/ -> no etag, no last-modified
+# So the header is the only lever available here; there is nothing to revalidate against.
+#
+# 300s (5 min) is deliberately short, and NOT `immutable` or a day/week: every page here is rewritten
+# whenever `docs/` is pushed (lesson counters, the "latest merged" list, the activity panel), and `/`
+# is the first paint. A long max-age would serve stale content as a normal outcome instead of a rare
+# one — a correctness bug traded for a bandwidth win we do not need. Five minutes covers a browsing
+# session (leave the homepage, come back) and expires well before the daily corpus refresh, so the
+# worst case is one stale page view, not a stale site.
+#
+# The three patterns below are disjoint on purpose: `_headers` MERGES the headers of every matching
+# rule and comma-joins a name set twice, which would make the value unparseable
+# (`public, max-age=300, public, max-age=300`). `/` covers the homepage, `/*/` the 577 directory-index
+# pages (`/search/`, `/journey/`, `/lessons/<slug>/`, ...), `/*.html` the extension-addressed ones
+# (`/start.html`, `/insights/*.html`, ...).
+/
+  Cache-Control: public, max-age=300
+
+/*/
+  Cache-Control: public, max-age=300
+
+/*.html
+  Cache-Control: public, max-age=300
