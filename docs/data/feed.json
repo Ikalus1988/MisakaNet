@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-10-02T09:54:40.905078+00:00",
+  "generated_at": "2026-10-02T13:00:12.120352+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "fix(site): 首页在无鼠标、无动画下也能用（F6 第一片）",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2710",
-      "timestamp": "2026-10-02T08:48:44Z",
+      "title": "docs(field-reports): 2.40.0 browser-half six-seat test report (#2593)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2693",
+      "timestamp": "2026-10-02T12:58:59Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore: update leaderboard snapshot",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2712",
-      "timestamp": "2026-10-02T08:46:02Z",
+      "title": "feat(site): network activity trend + read-only token scope (#2521)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2692",
+      "timestamp": "2026-10-02T12:58:53Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(d1): sync 的 SQL 以注释收尾，且三个 push 同时同步（automation 变红的根因）",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2709",
-      "timestamp": "2026-10-02T08:32:49Z",
+      "title": "fix(worker): per-address limits become atomic counters (#2075)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2691",
+      "timestamp": "2026-10-02T12:58:47Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(site): 上手弹窗不再承诺网络做不到的事（并修掉英文读者看到中文）",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2706",
-      "timestamp": "2026-10-02T07:47:25Z",
+      "title": "feat: add error-signature normalizer for stable failure-class recall (#1654)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2567",
+      "timestamp": "2026-10-02T12:58:41Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore: update leaderboard snapshot",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2705",
-      "timestamp": "2026-10-02T07:19:01Z",
+      "title": "Fix version drift in MCP evaluation documentation (2026-09-03)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2390",
+      "timestamp": "2026-10-02T12:58:27Z",
       "source": "github"
     },
     {
