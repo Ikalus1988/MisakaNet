@@ -19,13 +19,18 @@ Run it directly, or let `.github/workflows/check-documented-gates.yml` run it we
 schedule follows `gate-mutation-audit.yml`: this is a question about the ruleset, and the
 ruleset changes on a timescale of months, not commits, so paying for it on every PR would
 re-answer yesterday's answer slowly.
+
+**Streams and exit codes are a contract, not an implementation detail.** stdout carries a verdict
+and its first line is always `OK:` or `FAIL:`; stderr carries every reason the comparison could not
+be made. Exit `1` is the *only* way to say "the document has drifted" — an expired token, a 404 and
+a crash of this script all exit non-1, because a ratchet that reports "your document is wrong" when
+it never got to read the ruleset is worse than one that stays silent.
 """
 from __future__ import annotations
 
 import argparse
 import json
 import os
-import re
 import sys
 import urllib.error
 import urllib.request
@@ -41,8 +46,24 @@ RULESET_API = f"https://api.github.com/repos/Ikalus1988/MisakaNet/rulesets/{RULE
 # invert the document's own point.
 SECTION = "## Hard Gates (must pass)"
 
-# A table body row in that section: `| **gate** | `lesson-gate.yml` | ... |`
-ROW = re.compile(r"^\|\s*(?P<context>[^|]+?)\s*\|")
+# The first line of stdout always states the verdict, and the workflow keys its whole branch
+# structure off it. Anything that is not one of these two prefixes means the comparison never
+# produced a verdict — a crash, a bad interpreter, a missing file — and must be treated as *unknown*
+# rather than as drift, or the ratchet opens an issue telling a maintainer to fix a correct document.
+OK_PREFIX = "OK:"
+FAIL_PREFIX = "FAIL:"
+
+# Exit codes, and the contract the workflow relies on:
+#   0 — the two sets agree
+#   1 — they differ; the diff is on stdout
+#   2 — the comparison could not be made (no token, no network, an unreadable ruleset)
+#   3 — this script itself broke
+# Only `report()` may return 1. Everything else means "no verdict", which is a different thing and is
+# the case that used to be reported as a confident, wrong issue.
+EXIT_AGREE = 0
+EXIT_DIVERGED = 1
+EXIT_CANNOT_CHECK = 2
+EXIT_BROKEN = 3
 
 
 def parse_documented(path: Path) -> list[str]:
@@ -76,7 +97,14 @@ def parse_documented(path: Path) -> list[str]:
 
 
 def contexts_from_ruleset(payload: dict) -> list[str]:
-    """The contexts the ruleset requires, from a decoded API response."""
+    """The contexts the ruleset requires, from a decoded API response.
+
+    Note this returns `[]` for a response that names no required checks — and that is **not** the
+    same as "the ruleset requires nothing". A 404 body, a token without the scope, or a ruleset whose
+    `required_status_checks` key is absent all decode successfully and all land here, so the caller
+    has to treat an empty result as *unreadable*, not as an answer. Getting that backwards is what
+    made a ratchet tell a maintainer to delete four correct rows because a token had expired.
+    """
     found: list[str] = []
     for rule in payload.get("rules", []):
         if rule.get("type") != "required_status_checks":
@@ -86,6 +114,16 @@ def contexts_from_ruleset(payload: dict) -> list[str]:
             if context:
                 found.append(context)
     return found
+
+
+def cannot_check(reason: str) -> int:
+    """Report that the comparison did not happen, on stderr, and return its exit code.
+
+    stderr, always — the workflow reads **stdout** to decide whether the document has drifted, and a
+    line that reached the wrong stream would be a verdict this run never made.
+    """
+    print(f"fail: {reason}", file=sys.stderr)
+    return EXIT_CANNOT_CHECK
 
 
 def fetch_live(token: str, timeout: int = 30) -> dict:
@@ -113,16 +151,16 @@ def token_from_environment() -> str:
 
 
 def report(documented: list[str], live: list[str], stream, quiet: bool = False) -> int:
-    """Print what diverged. Returns the process exit code."""
+    """Print what diverged. Returns `EXIT_AGREE` or `EXIT_DIVERGED` — the only two verdicts."""
     missing = [context for context in live if context not in documented]
     invented = [context for context in documented if context not in live]
 
     if not missing and not invented:
         if not quiet:
-            print(f"OK: the documented gates match ruleset {RULESET_ID} ({len(live)} contexts)")
-        return 0
+            print(f"{OK_PREFIX} the documented gates match ruleset {RULESET_ID} ({len(live)} contexts)")
+        return EXIT_AGREE
 
-    print(f"FAIL: the gate table in docs/ci-gates.md no longer matches ruleset {RULESET_ID}.",
+    print(f"{FAIL_PREFIX} the gate table in docs/ci-gates.md no longer matches ruleset {RULESET_ID}.",
           file=stream)
     if missing:
         print("\n  the ruleset requires these, the document does not list them:", file=stream)
@@ -137,7 +175,7 @@ def report(documented: list[str], live: list[str], stream, quiet: bool = False) 
         "  keep the count out of the prose — the table's length is the count.",
         file=stream,
     )
-    return 1
+    return EXIT_DIVERGED
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -151,30 +189,67 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--quiet", action="store_true", help="print only on divergence")
     args = parser.parse_args(argv)
 
-    documented = parse_documented(args.doc)
+    try:
+        documented = parse_documented(args.doc)
+    except OSError as error:
+        return cannot_check(f"could not read {args.doc}: {error}")
+
     if args.from_file:
-        payload = json.loads(args.from_file.read_text(encoding="utf-8"))
+        try:
+            payload = json.loads(args.from_file.read_text(encoding="utf-8"))
+        except (OSError, ValueError) as error:
+            return cannot_check(f"could not read the saved ruleset {args.from_file}: {error}")
     else:
         token = token_from_environment()
         if not token:
-            print(
-                "fail: no token. Set SHELDON_PAT, or pass --from-file with a saved ruleset response.",
-                file=sys.stderr,
+            return cannot_check(
+                "no token. Set SHELDON_PAT, or pass --from-file with a saved ruleset response."
             )
-            return 2
         try:
             payload = fetch_live(token)
+        except urllib.error.HTTPError as error:
+            # 404 and 401 both arrive here, and both mean the *read* failed rather than that the
+            # document is wrong: a token without the rulesets scope gets a 404, not a 403, so this
+            # used to look exactly like "the ruleset requires nothing" and read as a divergence.
+            detail = f"HTTP {error.code}"
+            if error.code in (401, 403):
+                detail += " — the token is not accepted, or lacks the rulesets scope"
+            elif error.code == 404:
+                detail += " — no such ruleset for this token, or the token cannot see it"
+            return cannot_check(f"could not read ruleset {RULESET_ID}: {detail}")
         except urllib.error.URLError as error:
-            print(f"fail: could not read ruleset {RULESET_ID}: {error}", file=sys.stderr)
-            return 2
+            return cannot_check(f"could not read ruleset {RULESET_ID}: {error.reason}")
 
     if not documented:
-        print("fail: the Hard Gates table in the document yielded no rows.", file=sys.stderr)
-        return 2
+        return cannot_check("the Hard Gates table in the document yielded no rows.")
 
-    stream = sys.stderr if args.quiet else sys.stdout
-    return report(documented, contexts_from_ruleset(payload), stream, quiet=args.quiet)
+    live = contexts_from_ruleset(payload)
+    if not live:
+        return cannot_check(
+            f"ruleset {RULESET_ID} returned no required status checks. That is not a statement "
+            "about the document — either the ruleset is gone, or this token cannot read it. "
+            "Check the ruleset by hand before changing docs/ci-gates.md."
+        )
+
+    return report(documented, live, sys.stdout, quiet=args.quiet)
+
+
+def run_cli(argv: list[str] | None = None) -> int:
+    """`main()` plus the guard that keeps a crash from being read as a verdict.
+
+    A traceback used to exit 1, which is this script's own "the document has drifted" — so a typo
+    in a line added six months from now would have opened an issue asking a maintainer to edit a
+    document that was correct. It gets its own code, and the workflow treats anything that is
+    neither 0 nor 1 as *no verdict at all*.
+    """
+    try:
+        return main(argv)
+    except SystemExit:
+        raise
+    except BaseException as error:  # noqa: BLE001 - the point is to catch *everything*
+        print(f"fail: the ratchet itself broke: {error!r}", file=sys.stderr)
+        return EXIT_BROKEN
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(run_cli())

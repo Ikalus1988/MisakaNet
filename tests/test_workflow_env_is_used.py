@@ -35,15 +35,16 @@ WF_DIR = REPO / ".github" / "workflows"
 
 # Read by the tool the step invokes, not by the script text.
 #
-# `SHELDON_PAT` joined this list for the documented-gates ratchet, and it is the same class as
-# the entries above rather than a new exemption invented to pass: a program the step invokes
-# reads it out of the environment. A shell script cannot mention it without putting the token on
-# a command line, where `ps` can read it — which is the thing the rule exists to prevent. The
-# ratchet script reads `SHELDON_PAT` from the environment and never echoes it.
+# `SHELDON_PAT` was briefly added here for the documented-gates ratchet, on the argument that a
+# shell script cannot mention it without putting the token on a command line. That argument was
+# wrong twice over: the rule is about *dead configuration* — a name declared on one side of a
+# rename and not the other — not about secrets reaching `ps`; and `${SHELDON_PAT:-}` mentions the
+# name, tests it, and never expands it into anything visible, which this repository already does in
+# `fix-dco.yml` and `auto-sync-prs.yml`. Exempting it would have bought nothing and cost the
+# coverage over every step that declares it.
 TOOL_CONSUMED = {
     "GH_TOKEN", "GITHUB_TOKEN", "CLOUDFLARE_API_TOKEN", "CLOUDFLARE_ACCOUNT_ID", "AI_GATEWAY_ID",
     "AI_GATEWAY_TOKEN", "NODE_AUTH_TOKEN", "NPM_TOKEN", "PYTHONPATH", "ACTIONS_STEP_DEBUG",
-    "SHELDON_PAT",
 }
 
 

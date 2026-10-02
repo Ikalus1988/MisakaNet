@@ -19,9 +19,17 @@ name: Documented Gates Ratchet
 # advisory check gets skipped. Same reasoning, and the same Monday-slot discipline, as
 # `gate-mutation-audit.yml` (#2045).
 #
-# A red run opens (or updates) one issue naming the difference, so the fix is the diff itself
-# rather than a hunt. It does not fail a pull request: nothing about a pull request can cause
-# the ruleset to have moved.
+# There are three outcomes, and they are not allowed to blur into one another:
+#
+# * **they agree** — the run is green and nothing is opened;
+# * **they differ** (exit 1) — one issue is opened or updated, and the diff in it is the fix;
+# * **the comparison could not be made** (exit 2, or a crash) — the run is **red** and *no issue is
+#   opened*. An expired `SHELDON_PAT` once opened "The documented gates no longer match ruleset
+#   23826057" with an empty diff, weekly, forever, pointing a maintainer at a document that was
+#   correct. A check that cannot answer must not answer "wrong".
+#
+# Note what this does *not* do: it never blocks a pull request. Nothing a pull request contains can
+# move a ruleset, so there is nothing for it to catch.
 on:
   schedule:
     # Weekly, Monday 07:11 UTC — offset from provenance-gate.yml (06:17), gate-mutation-audit.yml
@@ -47,22 +55,54 @@ jobs:
 
       - name: Compare the documented gates with the live ruleset
         id: compare
-        # continue-on-error so the diff survives into the reporting step; the run's verdict is
-        # the comparison's exit code, not this step's.
+        # continue-on-error so a non-zero exit reaches the branch below instead of ending the job.
+        # It does **not** make the run green: the last step re-raises anything that is not 0 or 1.
         continue-on-error: true
         env:
           # Not GITHUB_TOKEN: reading a ruleset needs a scope the built-in token does not carry,
           # and the request comes back 404 rather than 403, which reads as "no such ruleset".
           SHELDON_PAT: ${{ secrets.SHELDON_PAT }}
-        run: python3 scripts/check_documented_gates.py
+        run: |
+          # Named here on purpose rather than left to the script. An empty secret is the single
+          # most likely reason this workflow cannot answer, it costs nothing to detect, and
+          # `${SHELDON_PAT:-}` reads the name without ever putting the value in the output. (The
+          # same shape as fix-dco.yml and auto-sync-prs.yml.)
+          if [ -z "${SHELDON_PAT:-}" ]; then
+            echo "::error::SHELDON_PAT is empty, so the ruleset was never read and this run says"
+            echo "nothing about whether docs/ci-gates.md is still accurate. Set the secret, then"
+            echo "re-run this workflow."
+            echo "compare_exit=2" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # `cmd || code=$?` rather than capturing `$?` straight after: this shell runs with
+          # `set -e`, where a bare non-zero status ends the step before the next line runs.
+          python3 scripts/check_documented_gates.py > /tmp/diff.txt 2> /tmp/reason.txt || code=$?
+          {
+            echo "compare_exit=${code:-0}"
+            echo 'diff<<DIFF_EOF'
+            cat /tmp/diff.txt
+            echo DIFF_EOF
+            echo 'reason<<REASON_EOF'
+            cat /tmp/reason.txt
+            echo REASON_EOF
+          } >> "$GITHUB_OUTPUT"
+          cat /tmp/diff.txt /tmp/reason.txt
 
-      - name: Report a divergence
-        if: steps.compare.outcome == 'failure'
+      - name: Report the divergence
+        if: steps.compare.outputs.compare_exit == '1'
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9
+        # The diff arrives through the environment, never spliced into the script text. A
+        # `${{ }}` expansion inside a single-quoted JS string literal breaks the moment the value
+        # contains a newline — which this one always does, since the diff *is* the newline-separated
+        # list of differences — and the step then dies with `SyntaxError` on the one run that was
+        # supposed to report something. Same shape as auto-merge-docs.yml's `OFFENDERS`.
+        env:
+          DIFF: ${{ steps.compare.outputs.diff }}
         with:
           script: |
             const marker = '<!-- documented-gates-ratchet -->';
             const title = 'The documented gates no longer match ruleset 23826057';
+            const diff = (process.env.DIFF || '').trim();
 
             const body = [
               marker,
@@ -72,7 +112,7 @@ jobs:
               '`main: the deterministic gates` (id `23826057`) actually requires. The diff:',
               '',
               '```',
-              '${{ steps.compare.stdout }}',
+              diff || '(the script exited 1 but printed nothing — read the workflow log)',
               '```',
               '',
               'Read the ruleset back with the command in `docs/ci-gates.md`, update the table,',
@@ -109,3 +149,18 @@ jobs:
               labels: ['needs-ac', 'type:bug'],
             });
             core.info(`opened #${created.data.number}`);
+
+      # Fails closed, and says which of the ways it could not answer. `!= '0' && != '1'` rather than
+      # `== '2'`, so a step that never ran (an empty output), or a script that exits with something
+      # new, is red rather than silently green.
+      - name: Fail when the comparison could not be made
+        if: >-
+          steps.compare.outputs.compare_exit != '0'
+          && steps.compare.outputs.compare_exit != '1'
+        env:
+          REASON: ${{ steps.compare.outputs.reason }}
+        run: |
+          echo "::error::The documented-gates ratchet could not run, so it has no verdict on"
+          echo "::error::whether docs/ci-gates.md still matches the ruleset. No issue was opened."
+          echo "reason: ${REASON:-(the comparison step produced no reason — read the log above)}"
+          exit 1
