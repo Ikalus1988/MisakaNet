@@ -214,20 +214,21 @@ def test_the_summary_is_written_inside_each_branch_block():
     looks for). Braces do not move when copy does, strings are understood before comments are stripped,
     and depth keeps a nested conditional from standing in for the statement itself.
 
-    Known limits, stated rather than implied, each one measured by a review rather than assumed:
+    One limit remains, and it is not a parsing gap: **the rules check shape, not meaning.** A review
+    demonstrated the class with three variants that a text rule cannot reach — reassigning `status` to a
+    detached node (`const` → `let` plus `document.createElement`), writing and then clearing the same
+    field, and writing the literal `"rawQ"` instead of the query. Each leaves the page announcing
+    nothing while this file stays green, and each depends on **runtime values or ordering** rather than
+    syntax, so no amount of regex would close them.
 
-    * the scanner does not model JS **regular-expression literals**, so `/status.textContent = rawQ/`
-      counts as code (a regex is not a string, and regex-versus-division is genuinely ambiguous without a
-      parser);
-    * the rules check **shape**, not meaning: a guarded write whose text happens to contain `rawQ` is
-      accepted even if it announces nothing a reader would understand.
+    Everything syntactic that was tried is caught, including two probes from the final round: a condition
+    and its statement on separate lines, and a property chain (`foo.status.textContent = …`, which is not
+    the live region). The regex-literal concern from an earlier round turned out to be **already
+    closed**: the guard before a write inside `/…/` is `/`, which is neither empty nor `if (status)`.
 
-    Everything else that was tried is now caught: `if (false) { … }` (braces put it deeper), a brace-less
-    `if (false) status.textContent = …` (the guard is neither empty nor `if (status)`), comment
-    camouflage in either form, and moving the copy around. All of these are consequences of reading
-    source text instead of running it, which is why the behavioural proof belongs in the browser suite
-    (`tests/e2e/run_client_e2e.py` already drives a real Chromium): "search a hit, a miss, and then
-    clear — what did the live region say?" is a question this file can only approximate.
+    That is the honest stopping point for a text rule, and the reason the behavioural proof belongs in
+    the browser suite (`tests/e2e/run_client_e2e.py` already drives a real Chromium): "search a hit, a
+    miss, then clear — what did the live region say?" is a question this file can only approximate.
     """
     body = _strip_js_comments(_function_body("searchLessons"))
     miss_start = body.index("if (scored.length === 0)")
