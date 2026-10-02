@@ -52,7 +52,11 @@ GLOSSARY = "docs/glossary.md"
 
 # Surfaces that make the stdlib-only claim to a newcomer; each must state the prerequisite it is next to.
 CLAIM_SURFACES = ("README.md", "README.zh-CN.md", "docs/dsh-installation.md", "docs/LIMITATIONS.md",
-                  "docs/CONCEPTS.md")
+                  "docs/CONCEPTS.md",
+                  # The onboarding modal tells a first-time visitor the core is stdlib-only and needs
+                  # Python >= 3.10, which makes it a claim surface like the rest — and one that would
+                  # otherwise drift unnoticed, since it is reachable from every page load.
+                  "docs/index.html")
 CLAIM = re.compile(r"stdlib-only|纯标准库|standard library|标准库", re.IGNORECASE)
 PREREQUISITE = re.compile(r"3\.10")
 
