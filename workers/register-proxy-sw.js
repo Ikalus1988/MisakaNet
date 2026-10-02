@@ -1472,8 +1472,10 @@ function fuseRankings(english, cjk, k = RRF_K) {
     || ((b.score || 0) - (a.score || 0)));
 }
 
-function searchLessonsBM25(index, query, domain, top = 5, floorQuery = null, statusFilter = null) {
+function searchLessonsBM25(index, query, domain, top = 5, floorQuery = null, statusFilter = null, lessonStatuses = null) {
   if (!index || !index.terms || !index.docs || !query) return [];
+  // id -> status, resolved once by the caller when a statusFilter is in play.
+  const statusByLessonId = lessonStatuses instanceof Map ? lessonStatuses : new Map();
 
   const queryTerms = bm25Tokenize(query);
 
@@ -1626,9 +1628,14 @@ function searchLessonsBM25(index, query, domain, top = 5, floorQuery = null, sta
   // One list when the channel knows nothing (every Latin query), a real fusion when it does.
   const ordered = cjkRanked.length ? fuseRankings(results, cjkRanked) : results;
   // See the note in searchLessons(): status narrows before the top-N slice, not after.
+  // The BM25 index docs are {id,title,domain,path,len} — they carry no `status`, so the
+  // filter must resolve it from the lesson record. Filtering on doc.status would drop
+  // every row and answer "no match" for queries that do match.
   const admitted = statusFilter
-    ? ordered.filter(({ doc }) =>
-        String((doc && doc.status) || "").toLowerCase() === statusFilter)
+    ? ordered.filter(({ doc }) => {
+        const lesson = statusByLessonId.get(String((doc && doc.id) || ""));
+        return String(lesson || "").toLowerCase() === statusFilter;
+      })
     : ordered;
   return admitted.slice(0, top).map(({ doc, score }) => ({
     id: doc.id || "",
@@ -6713,7 +6720,8 @@ export default {
           const statusNorm = qStatus ? qStatus.slice(0, 20).toLowerCase() : null;
           const index = await loadBM25Index(env);
           const hits = index
-            ? searchLessonsBM25(index, scoringQuery, qDomain, limit, qSearch, statusNorm)
+            ? searchLessonsBM25(index, scoringQuery, qDomain, limit, qSearch, statusNorm,
+                statusNorm ? new Map(lessons.map(l => [String(l.id || l.name || ""), String(l.status || "")])) : null)
             : searchLessons(lessons, scoringQuery, qDomain, limit, qSearch, statusNorm);
           const source = index ? "worker-bm25" : "worker-search";
           let data = enrichSearchHits(hits, lessons).map(r => ({
