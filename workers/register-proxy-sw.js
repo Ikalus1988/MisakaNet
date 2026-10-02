@@ -1985,29 +1985,14 @@ async function fetchD1SyncStamp(env) {
 // been refusing writes since 2026-09-22 23:57Z (#2111); D1 allows 100,000 rows written per day. A job
 // whose only requirement is "somewhere to write" must not be gated on the storage that is out of
 // budget.
-/** Turn arbitrary user text into an FTS5 MATCH string that means "these words, literally".
+/* `buildFtsMatch` — deleted with the FTS5 search path (issue #2121).
  *
- * Measured on the live endpoint (2026-09-29): `/api/lessons?q=` answered **502 internal_error** for
- * `C++ compiler`, for `NEAR(` and even for an ordinary no-match query (`zzzz-no-such-thing-xyz`). The
- * "sanitized query" it used was `q.replace(/["']/g, " ")`, which leaves every byte of FTS5 *syntax* in
- * place — `+`, `-`, `(`, `)`, `*`, `:`, `^` and the bare keywords `AND`/`OR`/`NOT`/`NEAR` are operators, so
- * a search box's ordinary input became a query-syntax error and the endpoint reported a service failure.
- *
- * Quoting is what makes it literal: inside `"…"` FTS5 treats the content as a string, and an embedded quote
- * is escaped by doubling it. Terms are joined with `AND` so multi-word input keeps meaning "all of these"
- * (the previous space-joined form meant implicit AND too, but a bare `OR` silently turned it into a union).
- * A query that is only punctuation yields an empty string, which the caller answers as "no match".
+ * It existed only because FTS5 reads operator characters as query syntax: `C++ compiler`, `NEAR(` and
+ * even an ordinary no-match query answered 502 until every term was quoted (measured 2026-09-29). The
+ * single remaining implementation scores tokens, so user text is never query syntax and there is
+ * nothing left to guard. The endpoint's contract for those inputs is pinned in
+ * workers/lessons-q-search.test.mjs ("operator-looking input answers 200, not 502").
  */
-function buildFtsMatch(raw, maxTerms = 12, maxTermLength = 40, joiner = " AND ") {
-  const terms = String(raw || "")
-    .replace(/[\u0000-\u001f]/g, " ")
-    .split(/\s+/)
-    .map(term => term.replace(/"/g, '""').trim())
-    .filter(term => /[\p{L}\p{N}]/u.test(term))
-    .slice(0, maxTerms)
-    .map(term => term.slice(0, maxTermLength));
-  return terms.map(term => `"${term}"`).join(joiner);
-}
 
 /** One payload that answers "which number is which, what does each install give me, and what was verified".
  *
@@ -6632,7 +6617,7 @@ export default {
     // Structured filters (PRD ④ §3.3): ?domain=&status=&tag=&id=&limit=
     //
     // Cacheable in front of D1 (2026-10-02): the body is a function of the URL alone, so a colo pays
-    // the FTS5 read once per TTL instead of once per caller. `caches.default` — not the header alone —
+    // the search read once per TTL instead of once per caller. `caches.default` — not the header alone —
     // is what makes the TTL real on a Worker route (same reason `/api/activity` uses it).
     if (request.method === "GET" && (url.pathname === "/api/lessons" || url.pathname === "/api/lessons.json")) {
       try {
@@ -6668,80 +6653,82 @@ export default {
         if (qLimit) filters.limit = qLimit;
         const hasFilters = Object.keys(filters).length > 0;
 
-        // PRD ④ #1356: FTS5 full-text search via ?q=term (ranked).
+        // Ranked search via ?q=term — ONE implementation (issue #2121).
+        //
+        // This used to be `lessons_fts MATCH` (`source: "d1-fts5"`), the second of two parallel
+        // implementations of the same behaviour. Measured against production on 2026-10-02 over 31
+        // queries — 11 English (`data/regression_queries.json`) plus 20 Chinese
+        // (`scripts/eval_query_aliases.py`'s table) — with `scripts/compare_search_paths.py --top 3`:
+        //
+        //            recall@3   MRR    mean s    (EN recall@3 / ZH recall@3)
+        //   worker-bm25  0.710  0.591   1.67     0.818 / 0.650
+        //   d1-fts5      0.516  0.441   0.47     0.818 / 0.350
+        //
+        // FTS5's tokenizer cannot see Chinese words, so its ZH recall is 7/20 against the BM25
+        // path's CJK bigram channel (13/20) — keeping FTS5 would mean deleting the channel or
+        // running both, which is the drift this issue exists to end. The FTS5 rows also dropped
+        // `evidence_level`/`fix`/`root_cause` even though D1 stores them (verified live the same
+        // day: `GET /api/lessons?q=` row keys were exactly created/description/domain/id/path/
+        // rank/status/tags/title/updated), which is #2080's drift made user-visible on the site
+        // search page. FTS5 wins latency end-to-end (0.47s vs 1.67s), but in-process the whole
+        // MCP ranking path measured 2.8ms median over 436 lessons — the gap is transport and
+        // per-request work (JSON-RPC, quota, loadLessons), not the ranking algorithm.
+        //
+        // So the ranking that already serves the fields is the one that stays, this surface is
+        // served from it, and both names the old rows used (`description`, `rank`) are kept so
+        // docs/search/index.html's `toLocalShape` needs no change.
         if (qSearch) {
-          const d1 = d1Binding(env);
           const limit = Math.min(Math.max(parseInt(qLimit, 10) || 20, 1), 50);
-          if (!d1) {
-            // Client-side fallback when D1 is not bound
-            let allLessons;
-            try {
-              allLessons = await loadLessons(env, {});
-            } catch (e) {
-              // Neither D1, nor a warm lesson cache, nor the network: answer with an
-              // explicit hint instead of a 5xx. A bare 502 told the caller nothing.
-              // (workers/d1-fts-search.test.mjs asserts this hint and had been red on
-              // main because that file is not in the CI list — found 2026-09-12.)
-              return jsonResponse({
-                query: qSearch,
-                results: [],
-                source: "unavailable",
-                hint: "Full-text ?q= search requires the D1 service; no D1 binding, lesson cache or network is available in this environment.",
-              });
-            }
-            const terms = qSearch.toLowerCase().split(/\s+/).filter(Boolean);
-            const filtered = allLessons.filter(l => {
-              const haystack = [l.title || "", l.summary || "", l.domain || "", ...(l.tags || [])].join(" ").toLowerCase();
-              return terms.every(t => haystack.includes(t));
-            }).slice(0, limit);
-            return jsonResponse({ query: qSearch, results: filtered, source: "client-side" });
+          let lessons;
+          try {
+            lessons = await loadLessons(env, {});
+          } catch (e) {
+            // Neither D1, nor a warm lesson cache, nor the network: answer with an
+            // explicit hint instead of a 5xx. A bare 502 told the caller nothing.
+            return jsonResponse({
+              query: qSearch,
+              results: [],
+              source: "unavailable",
+              hint: "Full-text ?q= search requires the lesson index; no D1 binding, lesson cache or network is available in this environment.",
+            });
           }
-          // FTS5 MATCH built from *quoted literals* (`buildFtsMatch`), so a user's input cannot be read as
-          // query syntax — see the helper for the measured 502s this replaces.
-          const safeQ = buildFtsMatch(qSearch);
-          let sql =
-            `SELECT l.id, l.title, l.domain, l.status, l.tags, l.path, l.summary,
-                    l.problem, l.updated, l.created, f.rank
-             FROM lessons_fts f JOIN lessons l ON l.id = f.id
-             WHERE lessons_fts MATCH ?1`;
-          const bind = [safeQ];
-          if (qDomain) { sql += " AND l.domain = ?" + (bind.length + 1); bind.push(qDomain.slice(0, 50)); }
-          if (qStatus) { sql += " AND l.status = ?" + (bind.length + 1); bind.push(qStatus.slice(0, 20)); }
-          sql += ` ORDER BY f.rank LIMIT ${limit}`;
-          let stmt = d1.prepare(sql).bind(...bind);
-          let { results } = await stmt.all();
-          // A query of six words is a sentence, not a conjunction (2026-09-30). Measured live:
-          // `?q=docker compose port is already allocated` answered **zero** results, because FTS5 read it
-          // as "every one of these six tokens must appear" — and a visitor who types a sentence gets an
-          // empty page for a lesson that exists. So: strict first (precision), then the same terms as an
-          // OR (recall), and the answer says which one it was, because "these are partial matches" is a
-          // different claim from "these are matches".
-          let relaxed = false;
-          if (!results || results.length === 0) {
-            const loose = buildFtsMatch(qSearch, 12, 40, " OR ");
-            if (loose) {
-              const retry = await d1.prepare(sql).bind(loose, ...bind.slice(1)).all();
-              results = retry.results || [];
-              relaxed = results.length > 0;
-            }
-          }
-          const data = (results || []).map(r => ({
+          // Same two matchers the MCP tool uses, in the same order: the BM25 index when it is
+          // there, the naive matcher when it is not. `args.query`'s twin (`qSearch`) is the floor
+          // query for the same reason as on the MCP path — the alias expansion may add score, but
+          // the relevance floor keeps judging what the user typed.
+          const scoringQuery = scoringQueryFor(qSearch, env);
+          const index = await loadBM25Index(env);
+          const hits = index
+            ? searchLessonsBM25(index, scoringQuery, qDomain, limit, qSearch)
+            : searchLessons(lessons, scoringQuery, qDomain, limit, qSearch);
+          const source = index ? "worker-bm25" : "worker-search";
+          let data = enrichSearchHits(hits, lessons).map(r => ({
             id: r.id, title: r.title, domain: r.domain, status: r.status,
-            path: r.path, tags: safeParseTags(r.tags),
-            description: (r.summary || r.problem || "").slice(0, 400),
-            updated: r.updated, created: r.created, rank: r.rank,
+            path: r.path, tags: lessonTags(r.tags),
+            // Compat names from the deleted FTS5 rows (`description` 400ch, `rank`), plus the
+            // union of both old paths' fields (#2121): the enriched record is where
+            // `evidence_level`/`fix`/`root_cause` live, and serving them here is what makes
+            // "the fix is deployed" and "the user sees it" the same statement again (#2080).
+            description: String(r.summary || r.problem || "").slice(0, 400),
+            problem: String(r.problem || r.description || r.summary || "").slice(0, 400),
+            fix: String(r.fix || r.solution || "").slice(0, 400),
+            root_cause: String(r.root_cause || "").slice(0, 400),
+            evidence_level: r.evidence_level || "",
+            updated: r.updated, created: r.created,
+            score: r.score,
+            rank: r.score,
           }));
+          // `?status=` narrowed the old SQL; it now narrows the ranked list.
+          if (qStatus) data = data.filter(r => String(r.status || "").toLowerCase() === qStatus.slice(0, 20).toLowerCase());
           // An empty result is an *answer*, not a failure (2026-09-29): a search box that shows "service
           // error" because a query matched nothing teaches its user the wrong thing. The MCP tools call
-          // this `no_match` and point at intake; the HTTP surface now says the same thing.
+          // this `no_match` and point at intake; the HTTP surface says the same thing.
           if (data.length === 0) {
-            return answerWith(jsonResponse({ query: qSearch, results: [], source: "d1-fts5", no_match: true,
+            return answerWith(jsonResponse({ query: qSearch, results: [], source, no_match: true,
                                   hint: "No lesson matched. `misakanet_submit_intake` (MCP) accepts a gap report." },
                                   200, { "Cache-Control": LESSONS_CACHE_CONTROL }));
           }
-          return answerWith(jsonResponse({ query: qSearch, results: data, source: "d1-fts5",
-                                ...(relaxed ? { relaxed: true,
-                                  note: "No lesson matched every term; these match some of them." } : {}) },
+          return answerWith(jsonResponse({ query: qSearch, results: data, source },
                                 200, { "Cache-Control": LESSONS_CACHE_CONTROL }));
         }
 
@@ -7805,7 +7792,6 @@ function findCoveringLesson(problemText, errorText, lessons) {
 export {
   MCP_TOOLS,
   buildVersionsPayload,
-  buildFtsMatch,
   healthStatus,
   // Exported for the worker tests: the durable store is where the search index and the upstream
   // caches live since #2116, so a test that asks "was the index published?" has to ask the same

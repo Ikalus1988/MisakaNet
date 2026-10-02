@@ -283,25 +283,9 @@ def upsert_sql(lessons: list[dict]) -> str:
         )
     stmts.append(f"INSERT INTO lesson_sync_log (run_at, source_commit, total, upserted) "
                  f"VALUES ({now}, '{git_head()}', {len(lessons)}, {len(lessons)});")
-    # PRD ④ #1356: rebuild the FTS5 search index after sync (delete + reinsert).
-    stmts.append("DELETE FROM lessons_fts;")
-    for l in lessons:
-        stmts.append(
-            "INSERT INTO lessons_fts (id, title, problem, root_cause, solution, "
-            "verification, content_md) VALUES ('" + l["id"].replace("'", "''") + "', '"
-            + l["title"].replace("'", "''") + "', '"
-            + (l.get("problem") or "").replace("'", "''") + "', '"
-            + (l.get("root_cause") or "").replace("'", "''") + "', '"
-            + (l.get("solution") or "").replace("'", "''") + "', '"
-            + (l.get("verification") or "").replace("'", "''") + "', '"
-            + (l.get("content_md") or "").replace("'", "''") + "');"
-        )
-    # The note goes to stderr, never into the SQL: `wrangler d1 execute --file` calls whatever follows
-    # the last complete statement a "leftover buffer". An independent review established that this
-    # warning is **not** a failure sign — the successful run 36950634294 printed the identical
-    # leftover-buffer warning and exited 0 — so this is hygiene, not the fix. See the retry below for
-    # what actually failed.
-    print(f"FTS index rebuilt for {len(lessons)} lessons", file=sys.stderr)
+    # The FTS5 rebuild (`lessons_fts`, PRD ④ #1356) left with the second search
+    # implementation (issue #2121): ranked search is the worker's single BM25 index
+    # (`worker_search_index`), which the worker cron builds from these same rows.
     return "\n".join(stmts) + "\n"
 
 
