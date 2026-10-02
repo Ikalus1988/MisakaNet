@@ -33,9 +33,11 @@ import argparse
 import hashlib
 import json
 import os
+import random
 import re
 import subprocess
 import sys
+import time
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -71,6 +73,28 @@ SECTION_ALIASES = {
         "проверка", "सत्यापन", "verifikasi", "doğrulama", "dogrulama", "xác minh",
     ],
 }
+
+
+#: Import failures that are worth a second attempt — signs the import died **in transit** rather than
+#: being rejected. Deliberately an allowlist, because every attempt re-uploads the corpus and re-opens
+#: the window where D1 is unavailable to serve queries: retrying a deterministic failure (a bad
+#: credential, a SQL syntax error, an etag mismatch) triples the damage *and* delays the red light.
+#: Anything not matched here fails the job on the first attempt, with the tool's own output.
+#:
+#: The first entry is the string from the incident this list exists for: run 36950668957, 2026-10-02
+#: 01:26:42, where `automation` went red on an import whose data had already landed. Why the D1 side
+#: answered `success: false` is not observable from outside Cloudflare, so this treats it as the
+#: transient control-plane failure the rest of the evidence says it was.
+TRANSIENT_IMPORT_MARKERS = (
+    "Not currently importing anything.",
+    "D1 reset before execute completed!",
+    "fetch failed",
+    "ECONNRESET",
+    "ETIMEDOUT",
+    "502 Bad Gateway",
+    "503 Service Unavailable",
+    "504 Gateway Timeout",
+)
 
 
 def parse_frontmatter(text: str) -> dict:
@@ -211,7 +235,14 @@ def upsert_sql(lessons: list[dict]) -> str:
             "problem", "root_cause", "solution", "verification", "content_md",
             "frontmatter", "summary", "created", "updated", "checksum", "synced_at"]
     now = "datetime('now')"
-    stmts = [f"-- {len(lessons)} lessons parsed at {now}"]
+    # Both notes in this function go to stderr, never into the SQL. `wrangler d1 execute --file`
+    # reports whatever bytes follow the last complete statement as a "leftover buffer", and a trailing
+    # comment is exactly that shape — but the warning is *not* what failed run 36950668957 (a successful
+    # import 26 seconds earlier printed the same warning; the real error was a poll response, see the
+    # retry in the `--execute` branch). They moved out because a generated file with no comments is one
+    # less thing to argue about, not because the comment was the bug.
+    print(f"{len(lessons)} lessons parsed at {now}", file=sys.stderr)
+    stmts: list[str] = []
     for l in lessons:
         vals = []
         for c in cols:
@@ -244,13 +275,11 @@ def upsert_sql(lessons: list[dict]) -> str:
             + (l.get("verification") or "").replace("'", "''") + "', '"
             + (l.get("content_md") or "").replace("'", "''") + "');"
         )
-    # The note goes to stderr, **never** into the SQL. A trailing comment used to end this file, and
-    # `wrangler d1 execute --file` (which switches to the import API above ~5 MB) reported it as
-    # "leftover buffer from sql.ingest" and exited 1 — intermittently, because the import splits the
-    # file into chunks and the dangling comment only lands in the final buffer some of the time.
-    # Measured 2026-10-02 on run 36950668957: 5.2 MB payload, `Not currently importing anything.`
-    # followed by `Processed 623 queries` and the leftover-buffer warning, exit 1 — while the run 26
-    # seconds earlier imported the same corpus and succeeded.
+    # The note goes to stderr, never into the SQL: `wrangler d1 execute --file` calls whatever follows
+    # the last complete statement a "leftover buffer". An independent review established that this
+    # warning is **not** a failure sign — the successful run 36950634294 printed the identical
+    # leftover-buffer warning and exited 0 — so this is hygiene, not the fix. See the retry below for
+    # what actually failed.
     print(f"FTS index rebuilt for {len(lessons)} lessons", file=sys.stderr)
     return "\n".join(stmts) + "\n"
 
@@ -398,10 +427,46 @@ def main() -> int:
             tmp_path = f.name
         try:
             cmd = ["wrangler", "d1", "execute", args.db, "--remote", "--file", tmp_path]
-            print(f"Executing: {' '.join(cmd[:4])} --file=<tmp> ...", file=sys.stderr)
-            r = subprocess.run(cmd, capture_output=True, text=True, cwd=REPO, timeout=600)
-            sys.stdout.write(r.stdout)
-            sys.stderr.write(r.stderr)
+            # What actually failed run 36950668957 (2026-10-02 01:26:42, `automation` red):
+            # `✘ [ERROR] Not currently importing anything.` — a **server-side** `response.error` that
+            # wrangler's `pollUntilComplete` throws when an import-status poll answers `success: false`.
+            # The data had already landed: that run's own `INSERT INTO lesson_sync_log` is what
+            # `/api/search-index` still reports as `syncStamp 2026-10-02 01:26:37`, and the FTS rows
+            # sampled through the served endpoint were complete. So this is a transient status-poll
+            # failure, not a rejected import, and the thing to do about it is try again.
+            #
+            # Retrying is safe because this SQL converges: every lesson is an upsert, `--prune` deletes
+            # only ids the repository no longer has, and the FTS index is deleted and rebuilt whole.
+            # A second attempt therefore lands on the same table state as the first.
+            # 3 attempts at most, ~10s then ~30s with jitter. This is a *mitigation*, not a fix: the
+            # failure it covers is a control-plane hiccup, and an unattended push/cron job going red for
+            # one is the kind of noise that erodes the signal. The SQL converges (upsert by id, prune
+            # against the current id set, FTS rebuilt whole), so a repeat lands on the same state — and
+            # with `concurrency: cancel-in-progress: false` on the workflow, no other sync can overlap.
+            backoffs = (10.0, 30.0)
+            attempts = len(backoffs) + 1
+            for attempt in range(1, attempts + 1):
+                print(f"Executing (attempt {attempt}/{attempts}): {' '.join(cmd[:4])} --file=<tmp> ...",
+                      file=sys.stderr)
+                r = subprocess.run(cmd, capture_output=True, text=True, cwd=REPO, timeout=600)
+                # Every attempt's output is printed as it arrives, so a failure that is given up on
+                # still carries the evidence of all three.
+                sys.stdout.write(r.stdout)
+                sys.stderr.write(r.stderr)
+                if r.returncode == 0:
+                    return 0
+                output = (r.stdout or "") + (r.stderr or "")
+                transient = next((m for m in TRANSIENT_IMPORT_MARKERS if m in output), None)
+                if transient is None:
+                    print(f"attempt {attempt}/{attempts} failed with rc={r.returncode} and no transient "
+                          f"marker; not retrying (only in-transit failures are)", file=sys.stderr)
+                    return r.returncode
+                if attempt == attempts:
+                    break
+                delay = backoffs[attempt - 1] * (1 + random.uniform(-0.3, 0.3))
+                print(f"attempt {attempt}/{attempts} failed with rc={r.returncode} on {transient!r}; "
+                      f"retrying in {delay:.0f}s", file=sys.stderr)
+                time.sleep(delay)
             return r.returncode
         finally:
             Path(tmp_path).unlink(missing_ok=True)

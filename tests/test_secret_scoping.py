@@ -184,3 +184,29 @@ def test_one_credential_has_exactly_one_name():
         "One credential, one name — otherwise whichever name the environment does not carry is read "
         "from the repository, unprotected."
     )
+
+
+def test_the_unattended_d1_writers_serialize():
+    """Each writes the whole corpus, so two of them at once is two imports of the same table.
+
+    Measured 2026-10-02: three pushes to `lessons/**` inside 26 seconds started three `sync-d1` jobs.
+    Only two ever ran (the third sat in `waiting` and never started), and the import's own warning says
+    the database is unavailable to serve queries while it runs — so this is hardening rather than the
+    cause of that day's red `automation` deployment, which an independent review traced to an
+    import-status poll response. It is gated anyway, because an intended behaviour with no rule rots:
+    the first version of this change had no test that noticed deleting the block (0 failed, 31 passed).
+
+    `cancel-in-progress: false` is the point, not an oversight: these workflows push a corpus each, and
+    cancelling an older run mid-import is not the same as superseding it.
+    """
+    import yaml
+
+    for name in UNATTENDED_WORKFLOWS:
+        data = yaml.safe_load((WORKFLOWS / name).read_text(encoding="utf-8"))
+        concurrency = data.get("concurrency")
+        assert isinstance(concurrency, dict) and concurrency.get("group"), (
+            f"{name} writes D1 unattended with no concurrency group, so two of its runs can import at "
+            "the same time")
+        assert concurrency.get("cancel-in-progress") is False, (
+            f"{name}: cancel-in-progress must stay false — cancelling an interrupted import is not "
+            "superseding it")
