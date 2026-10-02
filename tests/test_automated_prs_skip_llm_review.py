@@ -79,6 +79,17 @@ INVALID_GUARDS = (
 SNAPSHOT_CADENCE_SECONDS = 86400
 
 
+# Known limits of the rule below, stated rather than implied (the review checked all three):
+#
+#   * a job with **two** steps that carry a marker and only the first guarded passes — `_guarded` returns on
+#     the first match;
+#   * a model call moved into a reusable `on: workflow_call` workflow is invisible to both sides: the caller
+#     has no marker, the callee has no pull-request trigger (no such file exists today);
+#   * a marker inside a YAML comment counts as a marker, which reddens rather than misses.
+#
+# All three fail closed in the direction that matters here (a miss would mean paying for a review).
+
+
 def _workflow_files() -> list[Path]:
     """`.yml` **and** `.yaml` — the first version of this rule globbed only `*.yml`."""
     return sorted(set(WORKFLOWS.glob("*.yml")) | set(WORKFLOWS.glob("*.yaml")))
