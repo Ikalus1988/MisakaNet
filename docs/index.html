@@ -2593,20 +2593,26 @@ async function safeFetchLessons() {
 // `loadLessons()`, `loadVoices()`). Measured 2026-10-02: while it blocked the parser, a 1 s cdnjs delay
 // moved FCP 464 -> 1468 ms.
 //
-// `whenPurifyReady` resolves once the script has had its chance: `DOMContentLoaded` is the normal moment
-// (a deferred script runs before it) and `load` is the backstop for a request that started late or never
-// finished — measured: `readyState` can be `interactive` with `DOMPurify` still undefined. `onMissing`
-// is what keeps a blocked CDN (cdnjs is a common blocker target) from becoming injected markup: a caller
-// that cannot sanitise renders plain text instead of HTML.
+// `whenPurifyReady` resolves once the script has had its chance. Only `complete` means it cannot arrive
+// any more; `DOMContentLoaded` is the normal moment (a deferred script runs before it) and `load` is the
+// backstop for a request that started late. An earlier version settled whenever `readyState` was not
+// `loading` — which includes `interactive`, exactly the state where the script may still be in flight —
+// and an independent review caught the consequence: on a slow CDN the gate resolved *false*, the voices
+// wall was dropped for good, and a search during the window reported "the sanitiser failed to load" while
+// the same query answered normally moments later. `onMissing` is what keeps a blocked CDN (cdnjs is a
+// common blocker target) from becoming injected markup: a caller that cannot sanitise renders plain text
+// instead of HTML.
 let __purifyReady = null;
 function whenPurifyReady(run, onMissing) {
   if (window.DOMPurify) return run();
   if (!__purifyReady) {
     __purifyReady = new Promise((resolve) => {
       const settle = () => resolve(!!window.DOMPurify);
-      if (document.readyState !== "loading") settle();
-      else document.addEventListener("DOMContentLoaded", settle, { once: true });
-      window.addEventListener("load", settle, { once: true });
+      if (document.readyState === "complete") settle();
+      else {
+        document.addEventListener("DOMContentLoaded", settle, { once: true });
+        window.addEventListener("load", settle, { once: true });
+      }
     });
   }
   return __purifyReady.then((ok) => (ok ? run() : (onMissing ? onMissing() : undefined)));

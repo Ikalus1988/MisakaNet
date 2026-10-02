@@ -26,7 +26,7 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent
 PAGE = (REPO / "docs" / "index.html").read_text(encoding="utf-8")
 #: Functions that call `DOMPurify.` — every one of them has to wait for the deferred script.
-SANITISERS = ("renderErrorBoundaryUI", "renderVoices", "searchLessons")
+SANITISERS = ("renderErrorBoundaryUI", "renderVoices", "onSearchFocus", "searchLessons")
 
 
 def _body_of(name: str) -> str:
@@ -51,17 +51,51 @@ def test_every_sanitising_path_waits_for_it():
             "`DOMPurify is not defined` (measured 3/3 runs)")
 
 
+def _on_missing_arm(name: str) -> str:
+    """The second argument of that function's `whenPurifyReady(...)` call — its degraded path.
+
+    Extracted rather than searched for in the whole file: an earlier version asserted
+    `re.search(r"el\.textContent = ", PAGE)`, which some *other* function satisfies permanently, so
+    changing a degraded arm to `innerHTML` stayed green (an independent review's M5).
+    """
+    body = _body_of(name)
+    start = body.index("whenPurifyReady(") + len("whenPurifyReady(")
+    depth = 1
+    index = start
+    while index < len(body) and depth:
+        if body[index] in "([{":
+            depth += 1
+        elif body[index] in ")]}":
+            depth -= 1
+        index += 1
+    call = body[start:index - 1]
+    # the arm is everything after the first top-level comma of the call
+    depth = 0
+    for position, char in enumerate(call):
+        if char in "([{":
+            depth += 1
+        elif char in ")]}":
+            depth -= 1
+        elif char == "," and depth == 0:
+            return call[position + 1:]
+    raise AssertionError(f"{name}'s whenPurifyReady call has no missing-arm at all: {call!r}")
+
+
 def test_a_missing_sanitiser_degrades_to_text_not_markup():
     """The quiet failure: cdnjs blocked, and every sanitised fragment would become an injection."""
     helper = PAGE.split("function whenPurifyReady(run, onMissing) {", 1)[1].split("\nfunction ", 1)[0]
-    assert "onMissing" in helper and "load" in helper, (
-        "the helper must offer a missing-arm and wait for `load` (DOMContentLoaded can fire first)")
+    assert "onMissing" in helper, "the helper must offer a missing-arm"
+    assert re.search(r'addEventListener\(\s*["\']load["\']', helper), (
+        "the helper must keep a `load` listener: `DOMContentLoaded` can fire while the script is still in "
+        "flight, and `complete` is the only state that means it cannot arrive")
+    assert "readyState === \"complete\"" in helper, (
+        "settling on anything but `complete` resolves false while the sanitiser is still loading — the "
+        "voices wall then never renders (measured under a 1 s CDN delay)")
+    for name in SANITISERS:
+        arm = _on_missing_arm(name)
+        assert "innerHTML" not in arm, (
+            f"{name}'s degraded path injects markup instead of writing text: {arm.strip()[:120]}")
     for name in ("renderErrorBoundaryUI", "searchLessons"):
-        body = _body_of(name)
-        assert "onMissing" in body or "whenPurifyReady(" in body, (
-            f"{name} has no degraded path; a blocked CDN would leave it throwing or injecting")
-    # The degraded render must set text, never innerHTML.
-    assert re.search(r"el\.textContent = ", PAGE), (
-        "the degraded error panel must write text, not markup")
-    assert "sanitiser failed to load" in PAGE, (
-        "search must tell the reader why it cannot show results, instead of failing silently")
+        arm = _on_missing_arm(name)
+        assert "textContent" in arm, (
+            f"{name}'s degraded path says nothing to the reader: {arm.strip()[:120]}")
