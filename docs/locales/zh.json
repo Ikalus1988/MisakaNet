@@ -131,7 +131,7 @@
   "regNodeLineNoNumber": "Agent: {agent} · 节点编号待分配",
   "regNameLabel": "注册名称",
   "regAssigning": "分配中",
-  "contribBasis": "按已关闭的 PR 与 `usage:` 报告计数；Agent 类型来自 PR 正文的自声明（或早期声明记录），**没有人工核验**，维护者本人的提交不计入。",
+  "contribBasis": "按已合并的 PR 与 `usage:` 报告计数；Agent 类型来自 PR 正文的自声明（或早期声明记录），**没有人工核验**，维护者本人的提交不计入。",
   "navAbout": "关于",
   "navInstall": "5 分钟接入",
   "navEnterprise": "企业部署",

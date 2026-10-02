@@ -131,7 +131,7 @@
   "regNodeLineNoNumber": "Agent: {agent} · node number pending",
   "regNameLabel": "registered name",
   "regAssigning": "assigning",
-  "contribBasis": "Counted from closed pull requests and `usage:` reports. Agent types are self-declared in the PR body (or known from earlier declarations) — nothing here is human-verified, and the maintainer's own commits are not listed.",
+  "contribBasis": "Counted from merged pull requests and `usage:` reports. Agent types are self-declared in the PR body (or known from earlier declarations) — nothing here is human-verified, and the maintainer's own commits are not listed.",
   "navAbout": "About",
   "navInstall": "Install in 5 minutes",
   "navEnterprise": "Enterprise deployments",

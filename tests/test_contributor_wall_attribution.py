@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 r"""The homepage's contributor wall read conventional-commit **scopes** as contributor names.
 
-`docs/index.html` builds its 贡献排行 client-side from closed PRs. A contributor's display name is taken
+`docs/index.html` builds its 贡献排行 client-side from merged PRs. A contributor's display name is taken
 from the PR title when it carries one — `feat: xxx (太阳/Misaka10004)` — and the fallback pattern was
 unanchored:
 
@@ -127,10 +127,47 @@ def test_the_skip_owner_set_still_names_the_owners():
         assert owner in entries, f"{owner} is no longer excluded from the wall: {sorted(entries)}"
 
 
+# ── who is on the wall at all: merged, not merely closed ────────────────────────────────────────────
+# The wall's headline claim is that these people **contributed**. The first cut of this filter took
+# every PR with a `closed_at`, and the comment beside it called that intentional ("merged via API or
+# force-push merged"). Measured against the live page on 2026-10-02 — the homepage's own proxy,
+# `/api/github/repos/Ikalus1988/MisakaNet/pulls?state=closed&sort=updated&direction=desc&per_page=100`
+# — 100 rows came back, **11 with `merged_at: null`**, and **6 of those from non-owner accounts**
+# (`alienvisitor8675-bit` ×4, `shruhicollections-beep`, `zsxh1990`; `s6pa1rta3n-lab` ×1 was a draft and
+# already filtered). So a stranger could open a PR and close it themselves and land on the wall — which
+# is how *any* GitHub user came to put script on the homepage through the row this filter feeds (the
+# sink is fixed; this is the admission rule behind it).
+#
+# `merged_at` is the API's own answer to "was this merged": it is set on exactly the merged PRs and
+# null otherwise. The owner chose the plain rule on 2026-10-02, with the cost stated: a PR landed by
+# force-pushing its commits onto main reports `merged_at: null` and its row drops off. There is no
+# maintainer exception.
+def _wall_filter_predicate() -> str:
+    html = HTML.read_text(encoding="utf-8")
+    match = re.search(r"^\s*const \w+ = prs\.filter\((.+)\);\s*$", html, re.MULTILINE)
+    assert match, "the wall's `.filter(…)` over the closed-PR list moved — this test reads it to check what ships"
+    return match.group(1)
+
+
+def test_the_wall_counts_only_merged_pull_requests():
+    """`closed_at` counts a PR someone closed themselves; only `merged_at` is a contribution."""
+    predicate = _wall_filter_predicate()
+    assert "merged_at" in predicate, (
+        f"the wall's admission rule no longer keys on `merged_at` ({predicate!r}) — a PR that was closed "
+        "without being merged is not a contribution, and measured 2026-10-02 six of the last hundred "
+        "closed PRs came from non-owner accounts with `merged_at: null`"
+    )
+    assert "closed_at" not in predicate, (
+        f"`closed_at` is back in the admission rule ({predicate!r}) — any GitHub user can open a PR and "
+        "close it, which puts them on a leaderboard that claims they contributed"
+    )
+
+
 # ── the render path is an innerHTML sink fed by *public, unauthenticated* PR metadata ──────────────
 # Measured 2026-10-02 in a real browser against a stubbed `/api/github/.../pulls` response: a PR that was
-# merely **closed** (the filter is `p.closed_at && !p.draft`, so `merged_at` may be null — any GitHub user
-# can open a PR and close it) put script on the homepage. Three fields reached `innerHTML` unescaped:
+# merely **closed** (the filter then was `p.closed_at && !p.draft`, so `merged_at` could be null — any
+# GitHub user could open a PR and close it) put script on the homepage. Three fields reached `innerHTML`
+# unescaped:
 #
 #   pr.title        -> the display name       "<div class=\"contrib-name\">${node}"
 #   Supported-by:   -> data.agentModel        "<span class=\"contrib-model-badge\">…${data.agentModel}"
@@ -139,6 +176,12 @@ def test_the_skip_owner_set_still_names_the_owners():
 # and the lesson id also landed inside the `href`, so the attribute could be broken out of as well.
 # The page already owns both primitives — `escapeHTML` (escapes & < > " ') and `safeHref` (http(s) only)
 # — and the search results and voice cards use them. This wall was the one path that did not.
+#
+# The *escaping* and the *admission rule* are separate defects: escaping decides whether a stranger's
+# title can run script, admission decides whether that stranger is on the wall at all. The filter moved
+# to `p.merged_at && !p.draft` on 2026-10-02 (owner's decision; the gate is
+# `test_the_wall_counts_only_merged_pull_requests` in this file); the escaping gates below stay exactly
+# as they were.
 
 def _contributor_row_template() -> str:
     """The template literal the wall's rows are built from, read out of the page."""
