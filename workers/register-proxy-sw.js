@@ -6147,6 +6147,60 @@ async function aggregateDailyTraffic(env) {
 }
 
 // ── Gap Lifecycle (Issue #1567) ──
+//
+// How many covered gaps one `d1.batch()` may delete. This path used to spend **one D1 round trip per
+// gap** — up to 500 of them per cron run, since that is the read's `LIMIT` — and at 2 rows read per
+// statement it also dominated the cleanup's slice of the 5M rows-read/day budget. `d1.batch()` sends
+// the whole list in *one* subrequest, so the chunk is sized against the limits that still apply:
+// each statement inside a batch is subject to the per-statement D1 limits (100 KB of SQL, 100 bound
+// parameters — this one binds a single value), the whole call to the 30s request cap, and the call
+// counts as one subrequest out of Workers Free's **50 per invocation** — which is the number that
+// matters here, because 10 chunks (the most 500 rows can produce) plus the SELECT, the BM25 index
+// read and the counter writes stay inside it. 50 keeps the old per-run worst case at 10 calls, and
+// the serial fallback in `deleteCoveredGaps` below is why an oversized chunk cannot silently delete
+// nothing.
+const GAP_DELETE_BATCH_SIZE = 50;
+
+/** One caller for the gap deletes: batched, chunked, and the *same* row each time — the generic shape
+ * `scope = 'gap' AND bucket = ?1` is what keeps a bucket of another scope out of reach.
+ *
+ * Returns `{ cleaned, failed }` where `cleaned` holds the gaps whose DELETE committed, so a caller
+ * can report exactly the rows that are gone rather than the rows it meant to delete. A batch is a
+ * transaction, so one bad statement rolls its whole chunk back; the chunk then falls back to per-row
+ * deletes, so that a single undeletable row cannot keep the rest of its chunk alive. The fallback
+ * writes nothing else — re-running the cleanup retries whatever failed, which is why the KV path's
+ * index rewrite has no counterpart here (D1 rows are their own index).
+ */
+async function deleteCoveredGaps(d1, covered) {
+  const cleaned = [];
+  const failed = [];
+  for (let i = 0; i < covered.length; i += GAP_DELETE_BATCH_SIZE) {
+    const chunk = covered.slice(i, i + GAP_DELETE_BATCH_SIZE);
+    try {
+      await d1.batch(chunk.map(({ query }) => d1.prepare(
+        `DELETE FROM counters WHERE scope = 'gap' AND bucket = ?1`,
+      ).bind(query)));
+      cleaned.push(...chunk);
+    } catch (error) {
+      logInternal("gap cleanup: batched delete failed, falling back to one delete per gap", error);
+      // Serial on the failure path only: a batch that cannot commit deletes none of its rows, and
+      // the old code's per-row catch kept the rest of the list going. Same 1-bind statement, same scope.
+      for (const entry of chunk) {
+        try {
+          await d1.prepare(
+            `DELETE FROM counters WHERE scope = 'gap' AND bucket = ?1`,
+          ).bind(entry.query).run();
+          cleaned.push(entry);
+        } catch (rowError) {
+          failed.push(entry);
+          logInternal("gap cleanup: delete failed", rowError);
+        }
+      }
+    }
+  }
+  return { cleaned, failed };
+}
+
 async function cleanupCoveredGaps(env) {
   // Gap rows live in D1 when it is bound (#1649); the KV list is the fallback. Both are
   // reduced to the same list of {query, delete} so the matching logic below is shared.
@@ -6175,29 +6229,37 @@ async function cleanupCoveredGaps(env) {
   const bm25Index = await loadBM25Index(env);
   if (!bm25Index) return { cleaned: 0, reason: "no BM25 index" };
 
+  // `cleaned` is only filled in after the deletes have run: a batch that rolls back and then fails a
+  // row in its serial fallback leaves that row in `counters`, and a return value that counted it as
+  // cleaned is how the old per-row catch could report a cleanup that never happened.
   const cleaned = [];
   const remaining = [];
+  // The one-line-per-gap `await …run()` that used to sit in this loop is the 500-round-trip cost this
+  // change removes: the covered gaps are collected here and deleted by the batched helper after the
+  // loop, so the same rows are gone for a constant number of round trips.
+  const covered = [];
 
   for (const gap of gaps) {
     const { query } = gap;
     // Search lessons for the gap query
     const results = searchLessonsBM25(bm25Index, query, null, 3);
     if (results.length > 0) {
-      // Lesson now covers this gap — drop the record
-      if (useD1) {
-        try {
-          await d1.prepare(
-            `DELETE FROM counters WHERE scope = 'gap' AND bucket = ?1`,
-          ).bind(query).run();
-        } catch (error) {
-          logInternal("gap cleanup: delete failed", error);
-        }
-      } else {
+      // Lesson now covers this gap — mark the record for deletion
+      if (useD1) covered.push({ query, matchedLesson: results[0]?.title });
+      else {
         await env.MISAKANET_KV.delete(gap.gapKey);
+        cleaned.push({ query, matchedLesson: results[0]?.title });
       }
-      cleaned.push({ query, matchedLesson: results[0]?.title });
     } else if (!useD1) {
       remaining.push(gap.gapKey);
+    }
+  }
+
+  if (covered.length > 0) {
+    const { cleaned: deleted, failed } = await deleteCoveredGaps(d1, covered);
+    cleaned.push(...deleted);
+    if (failed.length > 0) {
+      logInternal(`gap cleanup: ${failed.length} covered gap deletes failed and their rows remain`);
     }
   }
 
