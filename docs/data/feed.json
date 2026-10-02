@@ -1,43 +1,51 @@
 {
-  "generated_at": "2026-10-02T00:55:13.352974+00:00",
+  "generated_at": "2026-10-02T01:23:47.323400+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2661",
-      "timestamp": "2026-10-01T18:49:13Z",
+      "title": "docs(glama): tell a red build that is Glama's runner from one that is your Dockerfile",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2638",
+      "timestamp": "2026-10-02T01:22:59Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "docs(readme): Voice ships in 2.40.0, not 2.41.0",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2656",
-      "timestamp": "2026-10-01T18:34:41Z",
+      "title": "lesson: the pre-send checklist for an irreversible on-chain payout",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2633",
+      "timestamp": "2026-10-02T01:22:52Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore: update leaderboard snapshot",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2660",
-      "timestamp": "2026-10-01T18:09:56Z",
+      "title": "test(dsh): a behavioural e2e for the client half, in a real host and a real browser",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2610",
+      "timestamp": "2026-10-02T01:22:46Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "docs(dsh): 席位计数、root 计数与版本归因三处都不对",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2658",
-      "timestamp": "2026-10-01T18:01:57Z",
+      "title": "docs(agents): poll for the client-half host URL instead of grepping once",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2659",
+      "timestamp": "2026-10-02T01:22:39Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(intake-bot): 覆盖门认技术栈词 —— 修 #2646 复验发现的漏报 + §8.1 自检输出失效",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2657",
-      "timestamp": "2026-10-01T17:51:36Z",
+      "title": "lessons: the DSH plugin install commands in the corpus could not run either",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2664",
+      "timestamp": "2026-10-02T01:22:33Z",
       "source": "github"
+    },
+    {
+      "type": "lesson",
+      "title": "An on-chain payout has no retry: the checks an agent must pass before it signs",
+      "url": "lessons/contrib/onchain-payout-preflight-checklist.md",
+      "timestamp": "2026-10-02",
+      "domain": "crypto-ops",
+      "source": "lessons"
     },
     {
       "type": "lesson",
@@ -69,14 +77,6 @@
       "url": "lessons/contrib/log-sanitizer-must-live-in-the-formatter.md",
       "timestamp": "2026-10-01",
       "domain": "security",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "A disabled NSOpenPanel/NSSavePanel is usually the sandbox, not your code — and how to read entitlements",
-      "url": "lessons/contrib/macos-sandbox-panel-needs-the-entitlement-in-the-signature.md",
-      "timestamp": "2026-10-01",
-      "domain": "development",
       "source": "lessons"
     },
     {
