@@ -244,7 +244,14 @@ def upsert_sql(lessons: list[dict]) -> str:
             + (l.get("verification") or "").replace("'", "''") + "', '"
             + (l.get("content_md") or "").replace("'", "''") + "');"
         )
-    stmts.append(f"-- FTS index rebuilt for {len(lessons)} lessons")
+    # The note goes to stderr, **never** into the SQL. A trailing comment used to end this file, and
+    # `wrangler d1 execute --file` (which switches to the import API above ~5 MB) reported it as
+    # "leftover buffer from sql.ingest" and exited 1 — intermittently, because the import splits the
+    # file into chunks and the dangling comment only lands in the final buffer some of the time.
+    # Measured 2026-10-02 on run 36950668957: 5.2 MB payload, `Not currently importing anything.`
+    # followed by `Processed 623 queries` and the leftover-buffer warning, exit 1 — while the run 26
+    # seconds earlier imported the same corpus and succeeded.
+    print(f"FTS index rebuilt for {len(lessons)} lessons", file=sys.stderr)
     return "\n".join(stmts) + "\n"
 
 

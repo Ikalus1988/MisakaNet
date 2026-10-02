@@ -13,6 +13,18 @@ on:
 permissions:
   contents: read
 
+# Three pushes to `lessons/**` inside 26 seconds (2026-10-02 01:22-01:23 UTC) started three syncs at
+# once. The import path warns, in wrangler's own words, that "your D1 database will be unavailable to
+# serve queries" while it runs — so overlapping syncs are not a queueing inconvenience, they are
+# three imports of the same table interfering with whatever is serving reads.
+#
+# `cancel-in-progress: false` on purpose, like the sibling workflows `d1-backup` and
+# `sync-question-answers`: each push carries a different corpus, and the newest is not a superset of
+# the one before it, so cancelling an older run would drop lessons rather than supersede them.
+concurrency:
+  group: sync-d1
+  cancel-in-progress: false
+
 jobs:
   sync:
     # Credential: the `automation` environment holds `CF_API_TOKEN` — a Cloudflare token scoped to
