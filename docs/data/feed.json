@@ -1,9 +1,23 @@
 {
-  "generated_at": "2026-10-02T16:51:56.391695+00:00",
+  "generated_at": "2026-10-02T17:54:47.290278+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "docs: add OpenCode, Kiro, and Oh-my-Pi integration guides",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2576",
+      "timestamp": "2026-10-02T17:34:15Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2725",
+      "timestamp": "2026-10-02T17:06:21Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "docs(lessons): voice pipelines and IM bots fail at someone else's layer (#2630)",
@@ -23,20 +37,6 @@
       "title": "docs: add Copilot integration recipes for three surfaces (#1941)",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/2489",
       "timestamp": "2026-10-02T16:51:02Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat(docs): add freshness gate for managed documentation (#2082)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2485",
-      "timestamp": "2026-10-02T16:50:54Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "docs(mcp): improve Glama tool descriptions with non-obvious semantics",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2441",
-      "timestamp": "2026-10-02T16:50:47Z",
       "source": "github"
     },
     {
