@@ -154,6 +154,13 @@ how much a lesson has been proven.
 | ❌ A cloud service requiring signup | ✅ `git clone` → search locally |
 | ❌ A skill marketplace | ✅ Debugging knowledge from real sessions |
 
+### What it can and cannot answer
+
+![Four-panel comic: the mascot promises to prevent every AI error; the cats ask about pizza and an oil barrel and it deflates — then a cat shows npm ERESOLVE and it lights up. MisakaNet knows the failures that have been indexed, not general knowledge.](promotional/misakanet-scope-comic.png)
+
+It answers for **the failures it has indexed**, not general knowledge. A query that finds nothing returns
+`no_match` plus a ready-to-call intake — a miss is how a gap gets recorded, so a miss is an answer too.
+
 ### Lesson vs Skill
 
 A **skill** teaches an agent *how to do something*. A **lesson** records *what went wrong before, and how
