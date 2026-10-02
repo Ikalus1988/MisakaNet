@@ -19,6 +19,7 @@ and a real browser, so the ways it can quietly become useless are worth pinning:
 from __future__ import annotations
 
 import re
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -123,3 +124,59 @@ def test_the_ci_page_lists_the_workflow():
     """`tests/test_workflow_inventory.py` owns the rule; this says why it matters here."""
     assert "dsh-client-e2e.yml" in CI_DOC.read_text(encoding="utf-8"), (
         "every workflow must appear in docs/CI.md, and this one is a gate people will look for")
+
+
+def _scope_step_run() -> str:
+    """The `run:` body of the step that decides whether the suite is worth running."""
+    data = workflow()
+    for step in data["jobs"]["client-e2e"]["steps"]:
+        if step.get("name") == "Decide whether the client half moved":
+            return step["run"]
+    raise AssertionError("the scope step was renamed — this test reads it to check what ships")
+
+
+def test_the_scope_step_never_fetches_the_base_branch_shallowly():
+    """`--depth=1` on the ref being compared against removes the merge base the diff needs.
+
+    Measured 2026-10-02 on #2697, the first pull request to exercise the restored `pull_request`
+    trigger: the step fetched `origin/main` with `--depth=1` and the next command died with
+    `fatal: origin/main...HEAD: no merge base` (exit 128), so the check went red on every PR before
+    the suite had started. The checkout's `fetch-depth: 0` is undone by a shallow fetch of the very
+    ref the comparison names.
+    """
+    run = _scope_step_run()
+    # Only real fetch commands count: the step's own comment names `--depth=1` to explain the trap,
+    # and an assertion on the raw text would fail on that documentation.
+    shallow = [line.strip() for line in run.splitlines()
+               if line.strip().startswith("git fetch") and "--depth" in line]
+    assert not shallow, (
+        "the scope step fetches the base branch shallowly again, which breaks the three-dot diff "
+        f"below it: {shallow}")
+    assert "fetch-depth: 0" in WORKFLOW.read_text(encoding="utf-8"), "the checkout needs the full graph"
+
+
+def test_the_scope_step_runs_the_suite_when_it_cannot_decide(tmp_path):
+    """Behavioural, not a source check: execute the step with a base ref that cannot be fetched.
+
+    That is the same shape as the CI failure above (the comparison could not be made). The step must
+    decide to **run** the suite — with a warning — and exit 0, because a probe that cannot see the
+    change is not evidence that the client half is untouched, and a red check here hides the failures
+    the suite exists to find. Only the suite itself may fail this job.
+
+    Removing either `|| fail_open` turns this red: the unguarded form exits non-zero (measured 1).
+    """
+    script = _scope_step_run()
+    script = script.replace("${{ github.event_name }}", "pull_request")
+    script = script.replace("${{ github.base_ref }}", "no-such-base-ref-cannot-be-fetched")
+    outputs = tmp_path / "github_output"
+    outputs.write_text("", encoding="utf-8")
+    script = script.replace('"$GITHUB_OUTPUT"', str(outputs))
+
+    proc = subprocess.run(["bash", "-c", script], cwd=REPO, capture_output=True, text=True)
+    assert proc.returncode == 0, (
+        "the scope step failed the job instead of falling back to running the suite\n"
+        f"stdout: {proc.stdout}\nstderr: {proc.stderr}")
+    assert "run=yes" in outputs.read_text(encoding="utf-8"), (
+        f"the step did not decide to run the suite; outputs: {outputs.read_text(encoding='utf-8')!r}")
+    assert "::warning::" in (proc.stdout + proc.stderr), (
+        "the fallback must announce itself, or a silent skip looks like a considered decision")

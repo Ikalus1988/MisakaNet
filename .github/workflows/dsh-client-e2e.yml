@@ -63,10 +63,26 @@ jobs:
             echo "not a pull request: run the suite"
             exit 0
           fi
-          git fetch --no-tags --depth=1 origin "${{ github.base_ref }}"
+          # A scope probe that cannot see the change is NOT evidence that the client half is
+          # untouched, and a red check here hides the failures the suite exists to find — so every
+          # failure to *decide* runs the suite instead of failing the job. Only the suite itself may
+          # fail this job. Measured 2026-10-02 on the first PR to exercise the restored
+          # `pull_request` trigger (#2697): the base branch was fetched with `--depth=1`, which
+          # truncated the history the three-dot diff below needs, and the step died with
+          # `fatal: origin/main...HEAD: no merge base` (exit 128) before the suite had started.
+          # Hence: never fetch the base shallowly (`fetch-depth: 0` on the checkout is undone by a
+          # shallow fetch of the ref we compare against), and treat "cannot compare" as "run it".
+          fail_open() {
+            echo "run=yes" >> "$GITHUB_OUTPUT"
+            echo "::warning::$1; running the suite instead of skipping"
+            exit 0
+          }
+          git fetch --no-tags origin "${{ github.base_ref }}" \
+            || fail_open "could not fetch ${{ github.base_ref }}"
           changed=$(git diff --name-only "origin/${{ github.base_ref }}...HEAD" -- \
-            lib/ index.js index.d.ts cordis.patch.yml locale/ icon.svg tests/e2e/ \
-            .github/workflows/dsh-client-e2e.yml | head -3)
+              lib/ index.js index.d.ts cordis.patch.yml locale/ icon.svg tests/e2e/ \
+              .github/workflows/dsh-client-e2e.yml) \
+            || fail_open "could not compute the changed-file set"
           if [ -n "$changed" ]; then
             echo "run=yes" >> "$GITHUB_OUTPUT"
             echo "client-half files changed:"; echo "$changed"
