@@ -78,7 +78,14 @@ def test_the_modal_is_not_hardcoded_chinese():
 
 
 def test_the_modal_does_not_promise_local_only_search():
-    """The sentence that was false. It cannot come back in either language."""
+    """The sentence that was false, plus the facts a rewrite would have to keep.
+
+    The banned shapes are a word list, and an independent review showed a word list can be walked
+    around: "Everything happens on your own machine; there is no backend to depend on." passes it. So
+    the rule has two halves — the phrases cannot come back, **and** the section must still say where
+    search runs and where a miss is defined. A rewrite that drops those facts fails even when it
+    invents fresh wording for the claim.
+    """
     block = modal()
     # The banned shapes are the *claims*, not the words: the replacement legitimately says the same
     # BM25 "also runs locally after a git clone", so a bare "runs locally" check would fail on a true
@@ -89,6 +96,11 @@ def test_the_modal_does_not_promise_local_only_search():
             f"the modal claims {claim!r} again: production search runs on a Cloudflare Worker and "
             "the local BM25 is the fallback, not the architecture")
     assert "Cloudflare Worker" in block, "say where search actually runs, or say nothing"
+    # The positive half: the claim has to stay anchored to the path that actually makes it. The hosted
+    # endpoint returns `no_match`; the local handler deliberately keeps no relevance floor (recorded in
+    # tests/test_e2e_mcp_pipeline.py), so a sentence that promises `no_match` for both paths is wrong.
+    assert "hosted endpoint" in block, "name the path that returns no_match"
+    assert "no relevance floor" in block, "the local handler returns its best matches; do not imply it refuses"
 
 
 def test_the_modal_points_at_entry_points_that_exist():
@@ -112,7 +124,7 @@ def test_the_modal_says_a_miss_is_an_answer():
     block = modal()
     assert "no_match" in block, "name the miss shape the client actually receives"
     assert "intake" in block, "a miss is only useful if it says how the gap gets recorded"
-    assert "indexed" in block, "say that the knowledge is the indexed failures, not general knowledge"
+    assert "indexed" in block.lower(), "say that the knowledge is the indexed failures, not general knowledge"
 
 
 def test_the_modal_text_is_localized():

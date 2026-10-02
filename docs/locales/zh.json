@@ -143,7 +143,7 @@
   "modalWhatTitle": "什么是御坂网络？",
   "modalWhatBody": "给 AI agent 用的失败记忆库：它们踩过的坑被写成可检索的 lessons（Problem → Root Cause → Fix → Verify）。检索跑在 Cloudflare Worker 上（托管 MCP，D1 上的 BM25），git clone 之后本地跑同一套 BM25。核心是纯标准库（Python ≥ 3.10）。",
   "modalScopeTitle": "它能回答什么，不能回答什么",
-  "modalScopeBody": "它只认识已经收录的失败，不是通用知识库。查不到时返回 no_match 和一条可直接调用的报料入口 —— 未命中也是有用的答案：一条缺口就是这样被记下来的。",
+  "modalScopeBody": "**只回答已收录的失败，不是通用知识。** 托管端点会把这件事说清楚：没有命中时返回 no_match 和一条可直接调用的 intake 指引 —— 未命中正是一条缺口被记下来的方式。本地处理器**不设相关度下限**，所以它返回最接近的几条，而不是拒答。",
   "modalStartTitle": "从这里开始",
   "modalStartMcp": "30 秒接入远程 MCP",
   "modalStartQuickstart": "完整安装指南",
