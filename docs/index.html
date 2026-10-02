@@ -436,6 +436,67 @@
     margin-top: 12px;
   }
 
+  /* ── The activity trend (issue #2521) ──
+     Seven bars of *our own* daily call counters — not Cloudflare edge metrics, which need a
+     read-only credential that does not exist yet. The container stays empty when no series
+     answers: an empty chart is a claim ("no calls this week"), and no chart is just a page
+     without a chart. */
+  .activity-history { margin-top: 16px; }
+  .activity-history-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+  }
+  .activity-history-title { font-size: 13px; color: var(--text-primary); }
+  .activity-history-note {
+    font-size: 11px;
+    color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .activity-history-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 6px;
+    height: 88px;
+  }
+  .activity-history-slot {
+    flex: 1;
+    min-width: 12px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: 4px;
+    min-width: 0;
+  }
+  .activity-history-bar {
+    width: 100%;
+    border-radius: 4px 4px 0 0;
+    background: linear-gradient(180deg, var(--cyan), rgba(0, 229, 255, 0.28));
+  }
+  /* The newest bar is the day in progress, so its height is a floor and not a total. Hatched,
+     because a colour difference alone is not a claim a reader can act on. */
+  .activity-history-bar.is-partial {
+    background: repeating-linear-gradient(
+      135deg,
+      rgba(0, 229, 255, 0.5) 0 4px,
+      rgba(0, 229, 255, 0.14) 4px 8px
+    );
+    border: 1px dashed rgba(0, 229, 255, 0.5);
+    border-bottom: none;
+  }
+  .activity-history-day {
+    font-size: 10px;
+    color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+
   /* ── Latest feed (docs/data/feed.json, rebuilt by build-feed.yml) ── */
   .latest-list { display: flex; flex-direction: column; gap: 8px; }
   .latest-item {
@@ -1999,7 +2060,7 @@
   </div>
 
   <div id="activity" class="anchor-target"></div>
-  <div class="section-title">📈 <span data-i18n="activitySection">网络活动</span> <span class="panel-note" data-i18n="activityNote" style="font-size:11px;color:var(--text-dim);font-weight:400;font-family:'JetBrains Mono',monospace;">聚合计数 · 不含身份 · 阅读无需注册</span></div>
+  <div class="section-title">📈 <span data-i18n="activitySection">网络活动</span> <span class="panel-note" data-i18n="activityNote" style="font-size:11px;color:var(--text-dim);font-weight:400;font-family:'JetBrains Mono',monospace;">自建聚合调用计数 · 非 Cloudflare 边缘指标 · 不含身份 · 阅读无需注册</span></div>
   <div class="activity-panel" id="activity-body">
     <div class="loading-item" data-i18n="loading">加载中...</div>
   </div>
@@ -3091,6 +3152,16 @@ const ACTIVITY_URL = "data/activity.json";
 // per-client counts to the maintainer token, so its body varies by caller and must not be publicly
 // cached. This one cannot read the caller at all, which is what makes a shared TTL safe.
 const ACTIVITY_LIVE_URL = "/api/activity";
+// The trend under that headline (issue #2521): the same counters as a daily series, so the panel can
+// answer "busier than last week?" instead of only "how many today?". Two sources, one renderer, and
+// the same rule as the headline above: prefer the anonymous cacheable route, fall back to the file
+// `scripts/sync_activity_series.py` writes, and when neither answers draw **nothing** — an empty
+// chart reads as "no calls this week", which is a claim about the site rather than about the fetch.
+const ACTIVITY_HISTORY_URL = "/api/activity/history?days=7";
+const ACTIVITY_HISTORY_SNAPSHOT_URL = "data/activity-series.json";
+// The series the panel is willing to draw. Longer windows are the endpoint's business; a chart of 30
+// bars in this width is unreadable, and a payload claiming 365 days is not this panel's contract.
+const ACTIVITY_HISTORY_DAYS = 7;
 // A cold recompute is the one slow answer this route can give (1.2s measured 2026-09-29, 17.4s when
 // the snapshot was justified). Past this the snapshot answers instead of an empty slot, and the
 // footnote says which source rendered either way.
@@ -3135,7 +3206,8 @@ function activityMarkup(calls, footnote) {
           <span class="activity-class-label" data-i18n="${key}">${t(key)}</span>
         </div>`).join("")}
       </div>
-      <div class="activity-footnote">${footnote}</div>`;
+      <div class="activity-footnote">${footnote}</div>
+      <div class="activity-history" id="activity-history"></div>`;
 }
 
 async function loadActivity() {
@@ -3157,6 +3229,7 @@ async function loadActivity() {
       throw new Error('the live route answered without a breakdown');
     }
     body.innerHTML = activityMarkup(calls, footnote(live.date, live.generated_at, true));
+    void loadActivityHistory();
     return;
   } catch (e) {
     if (DEBUG) console.log('[MisakaNet] live activity unavailable, using the snapshot:', e.message);
@@ -3164,6 +3237,7 @@ async function loadActivity() {
   try {
     const snap = await fetchJSON(ACTIVITY_URL);
     body.innerHTML = activityMarkup(snap.calls || {}, footnote(snap.date, snap.generated_at, false));
+    void loadActivityHistory();
   } catch (e) {
     // Stated, not hidden. Both sources ship with the site, so if neither can be read the deployed
     // page is older than this code — which is exactly what a reader should conclude, not a zero.
@@ -3185,6 +3259,102 @@ async function loadLatestUpdates() {
       </a>`).join("");
   } catch (e) {
     list.innerHTML = `<div class="loading-item">${t('latestUnavailable')}</div>`;
+  }
+}
+
+// ── Network activity trend (issue #2521) ─────────────────────────────────────────────────────────
+// The headline above is a level ("1,039 calls today"); this is the week under it. The numbers are
+// **our own** call counters, one total per UTC day — the same four classes the panel labels above,
+// read back as a series. They are not Cloudflare edge metrics (no status codes, no cache-hit ratio,
+// no bytes): those need `CF_OBSERVABILITY_TOKEN`, a read-only credential that does not exist yet
+// (docs/maintainer/credentials-and-environments.md §2), and the note under the chart says so.
+//
+// Two sources and a refusal, exactly like the headline's pair above:
+//   * `/api/activity/history` — anonymous, edge-cached, and it reads no Authorization at all;
+//   * `data/activity-series.json` — what `scripts/sync_activity_series.py` writes for the case the
+//     route is unreachable (and the only source before the route is deployed);
+//   * neither answers → **no chart**, not an empty one. A blank chart says "the network was idle",
+//     which is a claim about traffic; what happened is that a fetch failed.
+function activityHistoryValid(payload) {
+  // The writer refuses these shapes too (scripts/sync_activity_series.py). This is the reader's own
+  // floor, because the bytes it gets are whatever the network delivered.
+  const series = payload && payload.series;
+  if (!Array.isArray(series)) return false;
+  if (series.length < 2 || series.length > 60) return false;
+  let any = false;
+  for (const day of series) {
+    const total = Number(day && day.total);
+    if (!Number.isFinite(total) || total < 0) return false;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(String(day && day.date))) return false;
+    if (total > 0) any = true;
+  }
+  // A flat zero week is what an unreadable counter store looks like from here (the route refuses it
+  // as `counters_unreadable`, and so does the writer).
+  return any;
+}
+
+function activityHistoryMarkup(series, generatedAt, live, source) {
+  const totals = series.map(day => Number(day.total) || 0);
+  const max = Math.max(...totals, 1);
+  const today = new Date().toISOString().slice(0, 10);
+  const slots = series.map((day, index) => {
+    const total = totals[index];
+    // The newest bar is the day in progress, so its height is a floor rather than a total. Marked
+    // as such, because a partial bar drawn like a finished one is the chart equivalent of calling a
+    // snapshot "today".
+    const partial = day.date === today;
+    const height = total > 0 ? `max(2px, ${Math.round((total / max) * 100)}%)` : '0';
+    const label = `${day.date} · ${formatCount(total)}` +
+                  (partial ? ` · ${t('activityTrendPartial')}` : '');
+    return `
+        <div class="activity-history-slot">
+          <div class="activity-history-bar${partial ? ' is-partial' : ''}" style="height:${height}"
+               title="${escapeHTML(label)}"></div>
+          <div class="activity-history-day">${escapeHTML(day.date.slice(5))}</div>
+        </div>`;
+  }).join("");
+  const age = formatActivityAge(generatedAt);
+  const how = age ? (live ? formatText(t('activityLive'), { age })
+                          : formatText(t('activityAge'), { age })) : '';
+  // Which note the chart wears is a question about the *numbers*, not the fetch: a series rebuilt
+  // from this repository's committed snapshots is a set of daily **lower bounds** (the last snapshot
+  // of each day, taken before the day ended), and a chart that does not say so overstates the trend's
+  // precision. The route's own series is a full day total per day and says what it is not.
+  const bounds = String(source || '').startsWith('git-history:');
+  const note = t(bounds ? 'activityTrendBounds' : 'activityTrendNote');
+  return `
+      <div class="activity-history-head">
+        <span class="activity-history-title">${formatText(t('activityTrendTitle'), { days: series.length })}</span>
+        <span class="activity-history-note" data-i18n="${bounds ? 'activityTrendBounds' : 'activityTrendNote'}">${note}</span>
+      </div>
+      <div class="activity-history-bars">${slots}</div>
+      <div class="activity-footnote">${escapeHTML(series[0].date)} – ${escapeHTML(series[series.length - 1].date)}${how ? ' · ' + how : ''}</div>`;
+}
+
+async function loadActivityHistory() {
+  // Filled by `loadActivity` after the numbers render, so a slow or absent trend cannot hold the
+  // headline up — and its container lives inside the same card only because it is generated there.
+  const slot = document.getElementById("activity-history");
+  if (!slot) return;
+  const draw = (payload, live) => {
+    if (!activityHistoryValid(payload)) throw new Error('the series is not drawable');
+    slot.innerHTML = activityHistoryMarkup(payload.series, payload.generated_at, live, payload.source);
+  };
+  try {
+    const live = await fetchWithTimeout(ACTIVITY_HISTORY_URL, ACTIVITY_LIVE_TIMEOUT_MS);
+    draw(live, true);
+    return;
+  } catch (e) {
+    if (DEBUG) console.log('[MisakaNet] live activity history unavailable:', e.message);
+  }
+  try {
+    const snap = await fetchJSON(ACTIVITY_HISTORY_SNAPSHOT_URL);
+    draw(snap, false);
+  } catch (e) {
+    // Nothing, on purpose: an empty chart is a sentence about the site ("no calls this week"), and
+    // what actually happened is that neither source could be read.
+    if (DEBUG) console.log('[MisakaNet] activity history unavailable — no chart:', e.message);
+    slot.innerHTML = '';
   }
 }
 

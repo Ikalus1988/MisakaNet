@@ -1,8 +1,9 @@
 name: Build Live Feed
 
 on:
-  # The cadence is also the snapshot's freshness: `scripts/sync_site_activity.py` reads a live endpoint,
-  # so nothing in the tree can trigger it — this cron is what keeps the homepage's activity panel
+  # The cadence is also the snapshots' freshness: `scripts/sync_site_activity.py` and
+  # `scripts/sync_activity_series.py` read live endpoints, so nothing in the tree can trigger them —
+  # this cron is what keeps the homepage's activity panel (today's counts, and the trend under them)
   # current. `scripts/ci/land_change.py` gives each run a stable `bot/build-feed` branch, so a second
   # run updates the open pull request instead of starting a queue.
   schedule:
@@ -13,6 +14,7 @@ on:
       - "data/lessons.json"
       - "scripts/build_feed.py"
       - "scripts/sync_site_activity.py"
+      - "scripts/sync_activity_series.py"
   workflow_dispatch:
 
 permissions:
@@ -104,6 +106,27 @@ jobs:
             exit 0
           }
 
+      - name: Snapshot the site's activity trend
+        # `docs/data/activity-series.json` is the homepage chart's **fallback** (issue #2521): the
+        # panel prefers `/api/activity/history` — the anonymous, edge-cached series of these same
+        # per-day counters — and reads this file when that route is unreachable. Until the route is
+        # deployed the file is the *only* source, and until the first successful run of this step
+        # there is no file at all, which the panel renders as "no chart" rather than an empty one.
+        #
+        # Same job and same cadence as the single-day snapshot above, for the same reason: this job
+        # already lands its files through one self-merging pull request, so the trend costs no
+        # additional commits, pull requests or CI runs.
+        #
+        # `|| true` and then a warning, as above: the feed landing is not allowed to fail because a
+        # counter endpoint was slow, and the script itself refuses to write anything it cannot vouch
+        # for (a failed fetch, a hole in the series, a flat zero week).
+        run: |
+          set -euo pipefail
+          python3 scripts/sync_activity_series.py || {
+            echo "::warning::the activity series could not be refreshed; the previous file is unchanged"
+            exit 0
+          }
+
       - name: Land the feed through a pull request that merges itself
         # Was `git push` — refused since 2026-09-22 by the ruleset on `main` (run 35820175013, on
         # 2026-09-22 17:03 UTC, died here after the sync and the feed build had both succeeded).
@@ -118,8 +141,9 @@ jobs:
           # forever.
           GH_TOKEN: ${{ secrets.SHELDON_PAT }}
         run: |
+          set -euo pipefail
           python3 scripts/ci/land_change.py \
             --branch bot/build-feed \
             --title "chore(data): sync lessons.json + refresh feed" \
-            --paths docs/data/lessons.json docs/data/feed.json docs/data/activity.json \
-            --note "Any of these may be unchanged on its own; this pull request exists because at least one of them moved. docs/data/activity.json is the homepage activity panel's fallback: the panel prefers /api/activity (anonymous, edge-cached for minutes) and reads this file when that route is unreachable, so the file is kept fresh on this three-hourly cadence."
+            --paths docs/data/lessons.json docs/data/feed.json docs/data/activity.json docs/data/activity-series.json \
+            --note "Any of these may be unchanged on its own; this pull request exists because at least one of them moved. docs/data/activity.json is the homepage activity panel's fallback: the panel prefers /api/activity (anonymous, edge-cached for minutes) and reads this file when that route is unreachable, so the file is kept fresh on this three-hourly cadence. docs/data/activity-series.json is the same idea for the trend chart underneath it: the panel prefers /api/activity/history and reads this file when that route is unreachable — and until that route is deployed, this file is the chart's only source, rebuilt from the committed snapshots."

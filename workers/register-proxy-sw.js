@@ -5999,6 +5999,61 @@ async function readTrafficBreakdown(env, day) {
   };
 }
 
+// ── The activity trend: our own counters, read back as a series (issue #2521, option A) ───────────
+//
+// The homepage's "Network activity" panel has always shown *one* day — the counters of whatever
+// `date` the route answered with. That is a level, not a trend: "1,039 calls" cannot say whether the
+// network is busier than it was last week, which is the question the panel invites.
+//
+// Option A in #2521 is "build the series ourselves, out of our own counters, with no new
+// credential". It is cheaper than that description sounds, because the series already exists: traffic
+// is counted **per day per class** (`counters` rows with `period = YYYY-MM-DD`, and the KV keys of the
+// same shape), and `readTrafficBreakdown` already reads one day of it. A week is that reader called
+// seven times — no new counter family, no ring buffer to write, no Cloudflare token, nothing that
+// touches an edge metric.
+//
+// That last part is also what the chart must not claim. These are **our own call counts** (the same
+// four classes the panel already labels), not Cloudflare's edge/HTTP analytics: no status codes, no
+// cache hit ratio, no bytes, no colo. Option B/C in #2521 is where those live, and it needs a
+// read-only Cloudflare credential that does not exist yet. The route's `source` field says
+// `/api/analytics/traffic` for that reason — the computation the numbers come from.
+//
+// What it refuses to do:
+//   * **not invent a day.** Every entry is `readTrafficBreakdown` for that date, which is the same
+//     reader `/api/activity` uses — one reader for both, so the trend and today's headline cannot
+//     disagree about what "today" is;
+//   * **not read the caller.** Like `/api/activity`, no `Authorization` is consulted anywhere here,
+//     which is what makes a shared cache entry safe (`/api/analytics/traffic` is the one that serves
+//     per-client counts to the maintainer, and it is deliberately not cached);
+//   * **not grow without bound.** The window is clamped to 2–30 days, and the cache key carries the
+//     window so a `?days=30` probe cannot poison the 7-day entry.
+const ACTIVITY_HISTORY_DEFAULT_DAYS = 7;
+const ACTIVITY_HISTORY_MIN_DAYS = 2;
+const ACTIVITY_HISTORY_MAX_DAYS = 30;
+
+/** `YYYY-MM-DD` for `offset` days before now, in UTC — the same day key the counters use. */
+function utcDayKey(offsetDays = 0) {
+  return new Date(Date.now() - offsetDays * 86400000).toISOString().slice(0, 10);
+}
+
+/**
+ * The last `days` days of traffic, oldest first, through the one reader the single-day routes use.
+ *
+ * Days with no counter row come back as zeros and are *kept*: a real quiet Tuesday is indistinguishable
+ * from an absent row at this layer, and dropping the day would redraw the axis rather than report it.
+ * The route above this refuses a series that is *all* zeros instead — that shape is a store outage
+ * wearing a quiet week's clothes.
+ */
+async function readActivitySeries(env, days) {
+  const series = [];
+  for (let i = days - 1; i >= 0; i--) {
+    const date = utcDayKey(i);
+    const day = await readTrafficBreakdown(env, date);
+    series.push({ date, total: day.total, calls: day.breakdown });
+  }
+  return series;
+}
+
 // ── The homepage activity feed (2026-09-29) ──
 //
 // Five minutes, on purpose. Measured 2026-09-29 the homepage panel rendered `total 5974` from a
@@ -6736,6 +6791,60 @@ export default {
         if (cache) {
           const putting = cache.put(cacheKey, response.clone()).catch(e =>
             console.error("[activity] cache put failed", e && e.message));
+          if (ctx && typeof ctx.waitUntil === "function") ctx.waitUntil(putting); else await putting;
+        }
+        return response;
+      } catch (e) { return errorResponse("api handler failed", "internal_error", 502, e); }
+    }
+
+    // GET /api/activity/history?days=N — the same counters as a daily series (issue #2521, option A).
+    //
+    // The panel above shows a level; this is the trend underneath it. Same rules as `/api/activity`:
+    // anonymous, cacheable, and reading nothing but our own counters. `days` is clamped rather than
+    // honoured blindly (2–30) so a `?days=365` probe cannot turn one request into a year of reads.
+    //
+    // The shape is its own contract, written by `scripts/sync_activity_series.py` into
+    // `docs/data/activity-series.json` for the same reason `activity.json` exists: the static file is
+    // what answers when the route is unreachable. `source` names the computation, and `window` says
+    // which days these are — the two fields a chart needs to avoid drawing a trend out of context.
+    if (request.method === "GET" && url.pathname === "/api/activity/history") {
+      if (!d1Binding(env) && !env.MISAKANET_KV) {
+        return jsonResponse({ error: "no counter store configured" }, 503);
+      }
+      const requested = parseInt(url.searchParams.get("days"), 10);
+      const days = Number.isFinite(requested) ? Math.min(
+        ACTIVITY_HISTORY_MAX_DAYS,
+        Math.max(ACTIVITY_HISTORY_MIN_DAYS, requested),
+      ) : ACTIVITY_HISTORY_DEFAULT_DAYS;
+      try {
+        const cache = (typeof caches !== "undefined" && caches.default) ? caches.default : null;
+        // The window is part of the key: `/api/activity` has exactly one answer per TTL, this has one
+        // per *window*, and two windows sharing an entry is how a 7-day chart would render a 30-day
+        // one's data (or the reverse).
+        const cacheKey = new Request(`${url.origin}/api/activity/history?days=${days}`);
+        if (cache) {
+          const hit = await cache.match(cacheKey);
+          if (hit) return hit;
+        }
+        const series = await readActivitySeries(env, days);
+        // A series of zeros is not "a quiet week": this store is hit every time someone searches, so
+        // seven zero days is a reader that cannot see the counters. Refusing is the same rule
+        // `scripts/sync_site_activity.py` applies to `total: 0` — a failure must not render as data.
+        if (!series.some(day => day.total > 0)) {
+          return jsonResponse({
+            error: "the counters read as zero for every day in the window",
+            code: "counters_unreadable",
+          }, 503);
+        }
+        const response = jsonResponse({
+          generated_at: new Date().toISOString().replace(/\.\d{3}Z$/, "Z"),
+          source: ACTIVITY_SOURCE,
+          window: { from: series[0].date, to: series[series.length - 1].date, days },
+          series,
+        }, 200, { "Cache-Control": ACTIVITY_CACHE_CONTROL, "X-Robots-Tag": "noindex" });
+        if (cache) {
+          const putting = cache.put(cacheKey, response.clone()).catch(e =>
+            console.error("[activity-history] cache put failed", e && e.message));
           if (ctx && typeof ctx.waitUntil === "function") ctx.waitUntil(putting); else await putting;
         }
         return response;
@@ -7685,9 +7794,16 @@ export {
   // TTL" from quietly becoming a day, and asserting the two routes against the *same* reader is what
   // stops them from disagreeing about today's traffic (2026-09-29).
   readTrafficBreakdown,
+  readActivitySeries,
+  utcDayKey,
   ACTIVITY_TTL_SECONDS,
   ACTIVITY_CACHE_CONTROL,
   ACTIVITY_SOURCE,
+  // Exported for workers/activity-history.test.mjs: the trend route's window clamp and the series
+  // reader it shares with the single-day routes (issue #2521).
+  ACTIVITY_HISTORY_DEFAULT_DAYS,
+  ACTIVITY_HISTORY_MIN_DAYS,
+  ACTIVITY_HISTORY_MAX_DAYS,
   // Exported for workers/lessons-cache.test.mjs: the TTL is asserted against the constant so a
   // "short TTL" that drifts to a day fails a test instead of quietly pinning search results.
   LESSONS_TTL_SECONDS,
