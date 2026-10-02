@@ -1,9 +1,23 @@
 {
-  "generated_at": "2026-10-01T18:32:25.801739+00:00",
+  "generated_at": "2026-10-02T00:55:13.352974+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2661",
+      "timestamp": "2026-10-01T18:49:13Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "docs(readme): Voice ships in 2.40.0, not 2.41.0",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2656",
+      "timestamp": "2026-10-01T18:34:41Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "chore: update leaderboard snapshot",
@@ -23,20 +37,6 @@
       "title": "fix(intake-bot): 覆盖门认技术栈词 —— 修 #2646 复验发现的漏报 + §8.1 自检输出失效",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/2657",
       "timestamp": "2026-10-01T17:51:36Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "docs(agents): how to test the DSH client half from a checkout",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2647",
-      "timestamp": "2026-10-01T17:49:27Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "docs(roadmap): 2026-10-02 节的三条断言与代码对齐（检索行不投票 / rate: 已迁 D1 / 验收口径回到 #2115）",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2655",
-      "timestamp": "2026-10-01T17:43:06Z",
       "source": "github"
     },
     {
