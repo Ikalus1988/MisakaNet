@@ -7,8 +7,10 @@ Two of them did not, and nothing noticed for as long as they had been wrong:
   739cae4d9** ("drop web/ shell") and the script was left behind. The site worker is configured by
   the **root** `wrangler.jsonc` (`name: misakanet-web`, `assets.directory: docs`). (`web/` did exist:
   it is in `v2.23.0` as `web/{package.json,package-lock.json,vitest.config.js,wrangler.jsonc}`. It is
-  invisible to `git log origin/main -- web/` only because main was flattened on 2026-10-01 — check
-  history with `git log --all -- web/` or a tag.)
+  invisible to `git log origin/main -- web/` here only because this checkout is shallow
+  (`.git/shallow`), not because `main` was rewritten — a full clone shows the deletion, and GitHub's
+  compare API puts `739cae4d9` as the merge base of `main`. Check history with `git log --all --
+  web/` or a tag.)
 * `deploy:api` ran `cd workers && npx wrangler deploy --config wrangler.api.jsonc` and
   `workers/wrangler.api.jsonc` is not in this repository. The file CI deploys is `workers/wrangler.toml`.
 

@@ -127,8 +127,11 @@ npx wrangler deploy
 > `package.json`, `package-lock.json`, `vitest.config.js` and `wrangler.jsonc`, and was **deleted on
 > 2026-08-31 by 739cae4d9** ("slim repo — … drop web/ shell"). It is present in `v2.23.0`
 > (`git ls-tree -r --name-only v2.23.0 web/`). An empty result from
-> `git log origin/main -- web/` is not evidence it never existed: main was flattened on 2026-10-01,
-> so use `git log --all -- web/` or a tag.
+> `git log origin/main -- web/` returning nothing is not evidence it never existed: the shared
+> checkout is **shallow** (`.git/shallow`; `git rev-parse --is-shallow-repository` says `true`), so
+> that ref carries a truncated history here. A full clone shows the deletion commit, and GitHub's
+> compare API puts `739cae4d9` as the merge base of `main`. (`main` has 4,638 commits, root
+> 2026-05-20 — it was never rewritten.) When in doubt use `git log --all -- web/` or a tag.
 
 ### KV Namespace Setup
 

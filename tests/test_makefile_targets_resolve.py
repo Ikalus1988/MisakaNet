@@ -15,10 +15,16 @@ same reason nothing noticed: no test read the Makefile at all.
 
 **`make -n deploy` was never a gate for this.** It exits 0 on the broken Makefile too: `-n` prints the
 recipe without running it, so `cd web` is never executed and its failure is never observed. The check
-has to resolve the paths itself. That is what this file does, and the module-level test below proves it
-is not vacuous by running the same checker over the Makefile `origin/main` actually has — the broken
-one — and requiring it to report both references. A companion test reproduces that Makefile from git,
-so the pin fails loudly rather than decaying if `origin/main` is ever rewritten again.
+has to resolve the paths itself. That is what this file does, and the test below proves it is not
+vacuous by running the same checker over the pre-fix Makefile, which is checked in as
+`tests/fixtures/makefile-before-deploy-paths.txt`, and requiring it to report both references.
+
+That control used to shell out to `git show origin/main:Makefile`, which was wrong twice over, and both
+were measured on 2026-10-02 after an independent review of this change: once this fix merges, the
+Makefile on `origin/main` **is** the fixed one, so the control would fail on `main` itself
+(`2 failed` when simulating post-merge main); and on a checkout without an `origin/main` ref it
+**skipped**, so the control that proves the checker is not vacuous never ran in the CI that needs it
+(`7 passed, 2 skipped` when the ref was removed). A frozen fixture is enforced in both places.
 
 The rules are pure functions over parsed input so the fixtures below can prove each one fires, and the
 `cd` / `--config` extractors are imported from `tests/test_npm_scripts_resolve.py` — the npm-side gate
@@ -142,19 +148,21 @@ def test_the_deploy_targets_point_at_what_ci_deploys():
 
 # ── positive control: the checker fails on the Makefile that shipped the bug ─────────────────────
 
-def _origin_main_makefile() -> str:
-    """The Makefile on `origin/main` — the one with the bug, since the fix is only on this branch."""
-    try:
-        return subprocess.run(
-            ["git", "show", "origin/main:Makefile"],
-            cwd=REPO, capture_output=True, text=True, check=True,
-        ).stdout
-    except (OSError, subprocess.CalledProcessError) as exc:  # pragma: no cover - environment
-        pytest.skip(f"origin/main is not available to compare against: {exc}")
+FIXTURE = REPO / "tests" / "fixtures" / "makefile-before-deploy-paths.txt"
+
+
+def _shipped_makefile() -> str:
+    """The pre-fix Makefile, frozen in the repository.
+
+    Deliberately **not** `git show origin/main:Makefile`: after this fix merges, that ref holds the
+    corrected file and the control below would fail on `main`; and where the ref is missing the
+    control skipped instead of running. Both failure modes were measured — see the module docstring.
+    """
+    return FIXTURE.read_text(encoding="utf-8")
 
 
 def test_the_checker_reports_both_broken_references():
-    """This is the positive control: it must FAIL on the Makefile `origin/main` actually has.
+    """This is the positive control: it must FAIL on the Makefile that shipped the bug.
 
     Measured on 2026-10-02 — the checker reports exactly two problems, the two the Makefile carried
     and the two `make -n deploy` never surfaced (because `-n` prints `cd web` without running it, it
@@ -163,11 +171,10 @@ def test_the_checker_reports_both_broken_references():
         Makefile:13: `cd web` — no such directory in the repository
         Makefile:10: `--config wrangler.api.jsonc` — no such file (looked in workers/)
 
-    It is written against real history, not a hand-made fixture, so it cannot drift away from the
-    bug it claims to catch. `test_origin_main_still_carries_both_broken_references` fails loudly if
-    `origin/main` is ever rewritten again instead of letting this decay into a vacuous pass.
+    The input is the verbatim pre-fix file, so the control cannot drift away from the bug it claims to
+    catch — and unlike a `git show` against a moving ref, it is enforced on every checkout.
     """
-    lines = recipe_lines(_origin_main_makefile())
+    lines = recipe_lines(_shipped_makefile())
     problems = recipe_problems(lines, REPO)
     assert len(problems) == 2, f"expected the two broken references, got: {problems}"
     assert any("`cd web`" in p and "no such directory" in p for p in problems), problems
@@ -177,10 +184,10 @@ def test_the_checker_reports_both_broken_references():
 
 
 def test_the_reported_lines_are_the_ones_we_fixed():
-    """`origin/main` puts `cd web` on line 13 and the bad `--config` on line 10 — if that moved, the
-    two references were edited for another reason and this control's message is stale, not wrong."""
+    """The fixture puts `cd web` on line 13 and the bad `--config` on line 10 — if that moves, the
+    fixture was edited and this control's message is stale, not wrong."""
     refs = {}
-    for number, command in recipe_lines(_origin_main_makefile()):
+    for number, command in recipe_lines(_shipped_makefile()):
         for directory in cd_targets(command):
             refs[("cd", directory)] = number
         for config in config_targets(command):
