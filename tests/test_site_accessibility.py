@@ -70,34 +70,81 @@ def _function_body(name: str) -> str:
     return tail.split("\nfunction ", 1)[0]
 
 
-def test_the_summary_is_written_on_every_branch_of_the_search():
-    """This is the rule that protects the feature, and the first version got it wrong.
+def _strip_js_comments(text: str) -> str:
+    """Whole-line `//` comments and `/* … */` blocks, leaving string literals alone.
 
-    It asserted only that the string `search-status` appears inside `searchLessons` — which the
-    `const status = document.getElementById("search-status")` line satisfies on its own. An independent
-    review deleted the three writes and the whole suite stayed green (367 passed) while the browser
-    showed eight results and announced nothing. A behavioural rule has to read the assignment — and
-    then the same review beat the fixed version too: deleting the *no-match* write and adding two empty
-    assignments kept the count at three, so the suite was green while the browser showed "No exact
-    match" and the summary region stayed empty. Counting says "three writes exist somewhere"; the rule
-    below locates each outcome and requires a write in the stretch that leads to it.
+    Only whole-line `//` comments are dropped: `//` also occurs inside URLs in the same function, and a
+    naive strip would cut a lesson link in half. A review showed why this matters — a comment mentioning
+    the no-match panel's copy moved the anchor a text search keys on and failed the rule on correct code.
     """
-    body = _function_body("searchLessons")
-    # Each branch's *outcome* — the thing a reader sees — must have a write beside it. A window rather
-    # than a block, because the three branches share one function body and their outcomes are not in the
-    # same order as their writes (`display = "none"` precedes the clear; the results write precedes the
-    # innerHTML it describes). Locality is the point: the bypass this replaced added two dummy writes
-    # elsewhere in the function, which a function-wide count happily accepted.
-    outcomes = {
-        "cleared query": 'container.style.display = "none";',
-        "no match": "No exact match.",
-        "results": "container.innerHTML = scored.map",
+    kept, in_block = [], False
+    for line in text.splitlines():
+        stripped = line.strip()
+        if in_block:
+            in_block = "*/" not in stripped
+            continue
+        if stripped.startswith("/*"):
+            in_block = "*/" not in stripped
+            continue
+        if stripped.startswith("//"):
+            continue
+        kept.append(line)
+    return "\n".join(kept)
+
+
+def _brace_block(text: str, start: int) -> str:
+    """The `{…}` block beginning at or after `start`, quote-aware.
+
+    Brace matching, not a character window: the three branches share one function body, so a window
+    around a phrase can be moved by ordinary copy edits — reordering the no-match panel's three
+    `innerHTML` lines was enough to slide the *results* branch's write into the miss branch's window,
+    and the rule then passed while the browser showed the miss panel with a stale summary.
+    """
+    opening = text.index("{", start)
+    depth, quote, index = 0, None, opening
+    while index < len(text):
+        char = text[index]
+        if quote:
+            if char == "\\":
+                index += 2
+                continue
+            if char == quote:
+                quote = None
+        elif char in "\"'`":
+            quote = char
+        elif char == "{":
+            depth += 1
+        elif char == "}":
+            depth -= 1
+            if depth == 0:
+                return text[opening:index + 1]
+        index += 1
+    raise AssertionError("unbalanced braces in searchLessons — this helper needs updating")
+
+
+def test_the_summary_is_written_inside_each_branch_block():
+    """Per branch **block**, located by braces — not per phrase, and not a count.
+
+    Two earlier versions of this rule were beaten and both are worth keeping in mind: counting
+    assignments passed when the miss write was deleted and two dummies added elsewhere; a ±window around
+    each outcome's copy passed when that copy was merely reordered (the results write slid into the miss
+    window). Braces do not move when copy does.
+
+    Known limit, stated rather than implied: this reads the source, so `if (false) { status.textContent
+    = … }` inside a block still satisfies it. That is true of every rule in this file and is not
+    fixable without executing the page.
+    """
+    body = _strip_js_comments(_function_body("searchLessons"))
+    miss_start = body.index("if (scored.length === 0)")
+    miss_block = _brace_block(body, miss_start)
+    branches = {
+        "cleared query": _brace_block(body, body.index("if (!q || !_allLessons)")),
+        "no match": miss_block,
+        "results": body[miss_start + len(miss_block):],
     }
-    for branch, anchor in outcomes.items():
-        position = body.index(anchor)
-        window = body[max(0, position - 400):position + 200]
-        assert re.search(r"status\.textContent\s*=", window), (
-            f"the {branch} branch reaches its outcome without writing the summary region beside it")
+    for branch, block in branches.items():
+        assert re.search(r"status\.textContent\s*=", block), (
+            f"the {branch} branch can reach its outcome without writing the summary region")
 
 
 def test_a_blocked_data_load_is_announced_not_just_painted():
