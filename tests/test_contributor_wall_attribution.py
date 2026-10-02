@@ -23,7 +23,10 @@ this test tracks what ships.
 """
 from __future__ import annotations
 
+import json
 import re
+import shutil
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -139,27 +142,60 @@ def test_the_skip_owner_set_still_names_the_owners():
 # sink is fixed; this is the admission rule behind it).
 #
 # `merged_at` is the API's own answer to "was this merged": it is set on exactly the merged PRs and
-# null otherwise. The owner chose the plain rule on 2026-10-02, with the cost stated: a PR landed by
-# force-pushing its commits onto main reports `merged_at: null` and its row drops off. There is no
-# maintainer exception.
+# null otherwise. The owner chose the plain rule on 2026-10-02, with no maintainer exception.
+#
+# The cost first claimed for that rule — force-push landings leaving the wall — did not survive reading
+# the rejection comments. Each of the 6 non-owner rows was refused ("cannot merge") or superseded by the
+# author's own follow-up; the two accounts whose rows actually go (`alienvisitor8675-bit`,
+# `shruhicollections-beep`) answer 0 to `commits?author=`, and `zsxh1990` keeps a row because #2438 was
+# merged inside the same window. The visible change is 2 accounts / 5 PRs of rows that should never have
+# been counted.
 def _wall_filter_predicate() -> str:
+    """The wall's admission predicate, read out of the page so the gate tracks what ships."""
     html = HTML.read_text(encoding="utf-8")
     match = re.search(r"^\s*const \w+ = prs\.filter\((.+)\);\s*$", html, re.MULTILINE)
-    assert match, "the wall's `.filter(…)` over the closed-PR list moved — this test reads it to check what ships"
-    return match.group(1)
+    assert match, "the wall's `.filter(…)` over the pulled PR list moved — this test reads it to check what ships"
+    return match.group(1).strip()
 
 
-def test_the_wall_counts_only_merged_pull_requests():
-    """`closed_at` counts a PR someone closed themselves; only `merged_at` is a contribution."""
-    predicate = _wall_filter_predicate()
-    assert "merged_at" in predicate, (
-        f"the wall's admission rule no longer keys on `merged_at` ({predicate!r}) — a PR that was closed "
-        "without being merged is not a contribution, and measured 2026-10-02 six of the last hundred "
-        "closed PRs came from non-owner accounts with `merged_at: null`"
+#: The three API shapes the admission rule has to tell apart. `merged_at` is GitHub's own answer to
+#: "was this merged"; `closed_at` is set on a PR that was abandoned unmerged; `draft` is what the
+#: `!p.draft` half exists for. Only `merged` may be admitted.
+WALL_ROWS = [
+    {"id": "merged", "merged_at": "2026-09-30T11:55:23Z", "closed_at": "2026-09-30T11:55:23Z", "draft": False},
+    {"id": "unmerged", "merged_at": None, "closed_at": "2026-09-30T14:25:39Z", "draft": False},
+    {"id": "merged-draft", "merged_at": "2026-09-30T11:55:23Z", "closed_at": "2026-09-30T11:55:23Z", "draft": True},
+]
+
+
+def _admitted_ids(predicate: str) -> list[str]:
+    """Run the page's own predicate over the fixtures in node — JavaScript is the language it ships in."""
+    node = shutil.which("node")
+    assert node, "node is required: the wall's admission rule is JavaScript and must be evaluated, not grepped"
+    script = (
+        f"const admits = ({predicate});"
+        f"const rows = {json.dumps(WALL_ROWS)};"
+        "process.stdout.write(JSON.stringify(rows.filter(admits).map(r => r.id)));"
     )
-    assert "closed_at" not in predicate, (
-        f"`closed_at` is back in the admission rule ({predicate!r}) — any GitHub user can open a PR and "
-        "close it, which puts them on a leaderboard that claims they contributed"
+    done = subprocess.run([node, "-e", script], capture_output=True, text=True)
+    assert done.returncode == 0, (
+        f"the page's predicate does not evaluate: {done.stderr.strip()}\npredicate: {predicate!r}"
+    )
+    return json.loads(done.stdout)
+
+
+def test_the_wall_admits_merged_pull_requests_only():
+    """A text check passes on any predicate that mentions `merged_at`; this runs the predicate itself.
+
+    Mutation-checked 2026-10-02 by editing the page's filter to each wrong rule in turn — all three go
+    red: `p => p.merged_at` admits `merged-draft`, `p => p.merged_at || !p.draft` admits `unmerged`, and
+    the previous `p => p.closed_at && !p.draft` admits `unmerged` as well.
+    """
+    predicate = _wall_filter_predicate()
+    assert _admitted_ids(predicate) == ["merged"], (
+        f"the wall's admission rule ({predicate!r}) does not admit exactly the merged, non-draft PRs — a "
+        "PR that was never merged is not a contribution, and measured 2026-10-02 six of the last hundred "
+        "rows from non-owner accounts had `merged_at: null`"
     )
 
 

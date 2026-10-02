@@ -2033,9 +2033,10 @@
   <!-- Contributors (moved up) -->
   <div id="contributors" class="anchor-target"></div>
   <div class="section-title" id="contrib-title" style="display:none;">🏆 <span data-i18n="contribSection">贡献排行</span> <span id="contrib-count"></span></div>
-  <!-- The basis of the list, stated where the list is: measured 2026-09-25, the rows come from closed
-       pull requests plus `usage:` issues, and the agent type is whatever the PR body declared. A ranking
-       of self-declared contributions that does not say so reads as a verified human leaderboard. -->
+  <!-- The basis of the list, stated where the list is: the rows come from merged pull requests plus
+       `usage:` issues — the PR half keys on `merged_at`, so a row with no merge is not a contribution
+       (changed 2026-10-02) — and the agent type is whatever the PR body declared. A ranking of
+       self-declared contributions that does not say so reads as a verified human leaderboard. -->
   <div class="contrib-basis" data-i18n="contribBasis" style="display:none;font-size:12px;color:var(--text-dim);margin:-4px 0 10px;"></div>
   <div class="contrib-list" id="contrib-list" style="display:none;">
     <div class="loading-item" data-i18n="loading">加载中...</div>
@@ -3199,19 +3200,23 @@ async function loadContributors() {
     // Also fetch merged PRs to count lesson contributions from external users
     try {
       const prs = await fetchJSON(`${GITHUB_PROXY}/pulls?state=closed&sort=updated&direction=desc&per_page=100`);
-      // Only PRs that were actually **merged** count as contributions — `closed_at` is not enough.
-      // The API carries `merged_at` on every merged PR and `null` on one that was closed without being
-      // merged, so keying on `merged_at` is what separates "a stranger opened a PR and closed it
-      // themselves" from a contribution. Keying on `closed_at` (the previous behaviour) put any GitHub
-      // user on the wall for opening and closing a PR of their own — measured 2026-10-02 against
-      // `pulls?state=closed&per_page=100`: 11 of the 100 had `merged_at: null`, 6 of those from
-      // non-owner accounts. That is the "who counts as a contributor" half of the stored-XSS incident
-      // (#2672) whose sink this loop feeds.
-      // Known cost, accepted by the owner (2026-10-02): a PR landed by force-pushing its commits onto
-      // main reports `merged_at: null`, so those rows drop off the wall. The API offers no way to tell
-      // that case from a plain close, so the choice is between over- and under-counting here.
-      // tests/test_contributor_wall_attribution.py reads this line and fails if it goes back to
-      // `closed_at`.
+      // Only PRs that were actually **merged** count as contributions.
+      // The API sets `merged_at` on every merged PR and leaves it `null` on one that was never merged,
+      // so keying on `merged_at` is what separates "a stranger opened a PR and abandoned it" from a
+      // contribution. The previous rule keyed on the close timestamp, which put any GitHub user on the
+      // wall for opening and abandoning a PR of their own — measured 2026-10-02 against
+      // `pulls?state=closed&per_page=100`: 11 of the 100 had `merged_at: null` — 4 the maintainer's own,
+      // 6 non-owner rows, and 1 draft already dropped by `!p.draft`. Re-read the same day, each of the 6
+      // was rejected ("cannot merge") or superseded by the author's own follow-up; the two accounts
+      // whose rows actually leave (`alienvisitor8675-bit` ×4, `shruhicollections-beep` ×1) have zero
+      // commits on main, and `zsxh1990` keeps a row because #2438 was merged inside the same window.
+      // So no merged contribution leaves the wall — the visible change is 2 accounts / 5 PRs, all of
+      // them rows that should never have been counted. The force-push cost this comment first claimed
+      // is not what the closing comments show.
+      // That is the "who counts as a contributor" half of the stored-XSS incident (#2672) whose sink
+      // this loop feeds.
+      // tests/test_contributor_wall_attribution.py extracts this predicate and runs it over fixtures,
+      // so keying on the close timestamp — or dropping `!p.draft` — turns that gate red.
       const mergedPRs = prs.filter(p => p.merged_at && !p.draft);
       // Build a lookup to avoid adding duplicate contributors
       const usageNames = new Set(usageIssues.map(i =>
