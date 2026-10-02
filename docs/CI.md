@@ -16,7 +16,7 @@
 | workflow | 用途 | 触发 | 定时 |
 |---|---|---|---|
 | `auto-merge-docs.yml` | Auto-Merge Docs PRs | PR |  |
-| `auto-merge-lessons.yml` | Auto-Merge Lessons（`auto-merge-lesson` opt-in 标签）| PR, check_suite |  |
+| `auto-merge-lessons.yml` | Auto-Merge Lessons（`auto-merge-lesson` opt-in 标签）| PR |  |
 | `bounty-claim-guard.yml` | Bounty Claim Guard | PR（opened/edited）|  |
 | `ci-cross-platform.yml` | Cross-Platform Tests | PR, 手动 |  |
 | `codeql.yml` | CodeQL | PR, push, 定时 | `0 6 * * 0` |
@@ -111,7 +111,7 @@
 | `intake-bot-demo.yml` | Intake Bot Demo（失败 CI 上跑 intake-bot 的 dogfood 入口）| workflow_run, 手动 |  |
 | `intake-benchmark.yml` | Intake Bot Benchmark | push, 手动 |  |
 | `arch-review.yml` | Monthly Architecture Review | 定时（月度）, 手动 |  |
-| `workers-builds-watch.yml` | Site build watch（站点部署流水线 `Workers Builds: misakanet-web` 变红时开 issue；**只报状态变化**、不刷屏，也不把该 check 加进规则集必查项——理由见 #2136）| check_suite（仅 Cloudflare app、仅 main）, 定时, 手动 | `*/30 * * * *` |
+| `workers-builds-watch.yml` | Site build watch（站点部署流水线 `Workers Builds: misakanet-web` 变红时开 issue；**只报状态变化**、不刷屏，也不把该 check 加进规则集必查项——理由见 #2136）| check_suite（**触发对所有套件生效**，仅 job `if:` 放行 Cloudflare app + main）, 定时, 手动 | `*/30 * * * *` |
 | `site-health.yml` | Site Health（`scripts/site_health_check.py` 的 CI 调用点：每天探线上首页与 `/api/*` 等 6 个入口 + 首页关键标记；**连续 3 次都不过才算失败**——实测从真实机器发出约 1/4 请求会在 TLS 握手超时，单次失败是天气不是故障。报告进 step summary，并作为 artifact 留存）| 定时, 手动 | `37 5 * * *` |
 | `install-smoke.yml` | Install Smoke（**真装机**探测，对应 intake #2486 的「自动检查通过 ≠ 它能用」：`npm-form` 把仓库打成本地 tarball，断言含 `SKILL.md`/`index.js`/`cordis.patch.yml` 且**不含 `scripts/`**、MCP 行指向 `https://misakanet.org/mcp`，再真的 `initialize` + `tools/call misakanet_search`；`git-stdio` 断言 `python3 --version ≥ 3.10`、用 stdin/stdout 完成 `initialize`/`tools/list`（工具集与 `docs/mcp.md` 的 local stdio 行逐名相等）/`tools/call misakanet_search`。两个 job 互相独立（托管端点可能被限流），结果写 `data` 分支 `badges/install.json`：干净=带日期绿，失败=点名那个形态并发红，**没有任何测量就不发**）| 定时, 手动 | `43 6 * * *` |
 

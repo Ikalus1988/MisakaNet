@@ -25,14 +25,15 @@ name: Auto-Merge Lessons
 # repository's own workflows create — the same wildcard mistake that `intake-bot-demo.yml` (21,126
 # runs) and `ci-lesson-search.yml` (33,317 runs) already had to fix one level up, in `workflow_run`.
 #
-# Commit `dedc383b` carries 147 check suites; exactly one is not from `github-actions`
-# (`cloudflare-workers-and-pages`, completed 04:08:19Z, after which the commit never changed). This
-# workflow still started 20 runs between 04:54Z and 05:07Z, each 1–25 s after a `github-actions` suite
-# on that same commit completed — and because every run of this workflow completes an
-# `auto-merge-lessons` check suite, the trigger re-entered itself. At 05:04Z it produced 8 runs in 100
-# seconds on a commit nobody had pushed to, and each one checked out the default branch to resolve a
-# pull request from `main` that does not exist. That was 43 of this ring's 62 real job executions in 20
-# minutes, all of them deciding nothing.
+# Commit `dedc383b` (main's tip 04:07:48Z–05:22:42Z; measured 2026-10-02T05:48Z) carries 280 check
+# suites, 276 of them from `github-actions`; the only non-Actions suite that ever *completed* is
+# `cloudflare-workers-and-pages` at 04:08:19Z. This workflow started 39 `check_suite` runs on that
+# commit, and **37 of them began within 60 s** of a completed `github-actions` suite on the same commit
+# — while every run of this workflow completes an `auto-merge-lessons` check suite, so the trigger
+# re-entered itself. In the 20 minutes 04:54–05:14Z it produced 30 runs on a commit nobody had pushed to
+# (densest 100 s burst: 7 runs from 05:13:21Z), each one checking out the default branch to resolve a
+# pull request from `main` that does not exist, and every one of the 30 allocating a runner. Across the
+# three workflows of this ring that window was 60 executed jobs, 30 of them this one.
 #
 # The accepted consequence is the one the doc already describes as the safe side: an opted-in PR whose
 # checks go green with no further event (`synchronize` / `ready_for_review` / `labeled`) waits for a
@@ -62,8 +63,8 @@ jobs:
     # The opt-in label is the *only* entry condition of this channel — the run step re-checks it
     # against the API and the merge is guarded by it a third time — so a PR that does not carry it can
     # produce neither a comment nor a merge, and does not need a runner to say so. Measured
-    # 2026-10-02: 26 `pull_request` runs in 20 minutes across 8 open PRs, nearly all of them for PRs
-    # without the label, and with `cancel-in-progress: false` they could not even cancel each other.
+    # 2026-10-02: 32 `pull_request` runs in the 20 minutes 04:54–05:14Z across 7 branches, and with
+    # `cancel-in-progress: false` they could not even cancel each other.
     if: contains(github.event.pull_request.labels.*.name, 'auto-merge-lesson')
     steps:
       - name: Checkout the trusted decision script

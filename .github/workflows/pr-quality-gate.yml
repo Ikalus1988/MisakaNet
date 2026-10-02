@@ -2,19 +2,23 @@ name: PR Quality Gate
 
 # Runs after CI checks complete to apply quality labels.
 #
-# ── the two guards on the job `if:` (measured 2026-10-02T04:50–05:10Z) ───────────────────────────
+# ── the two guards on the job `if:` (measured 2026-10-02, 03:41–05:41Z) ──────────────────────────
 #
 # `check_run: [completed]` fires for *every* check run in the repository, and that includes the
-# `quality-labels` check run this job itself creates. On the tip of `main` (`dedc383b`) — a commit
-# nobody pushed to during the whole window — that made the workflow its own trigger:
+# `quality-labels` check run this job itself creates. On the tip of `main` (`dedc383b`, main's tip
+# 04:07:48Z–05:22:42Z) — a commit nobody pushed to during the window — that made the workflow its own
+# trigger:
 #
 #     run → `quality-labels` check run completes → check_run event → run → …
 #
-# Nineteen of the twenty-one runs in one hour were `check_run` events with `head_branch: main` and
-# `pull_requests: []`, i.e. every one of them paid for a runner in order to compute a pull-request
-# number the event did not carry, and returned (the github-script body already starts with
+# Of the 83 runs of this workflow in that window, 71 were `check_run` events and **all 71** carried
+# `head_branch: main` with an empty `pull_requests` (0 of the 276 check runs on that commit carries
+# one), i.e. every one of them paid for a runner in order to compute a pull-request number the event
+# did not carry, and returned (the github-script body already starts with
 # `if (!prs || prs.length === 0) return;`). The loop is the reason this file was the ring's
-# second-largest runner consumer: 19–21 real jobs per 20 minutes, none of which could do any work.
+# second-largest runner consumer: 30 executed jobs in the 20 minutes 04:54–05:14Z alone, none of which
+# could do any work. `quality-labels` is the job *id*, so it is also the name of the check run the job
+# produces — the guard below and this job id have to move together.
 #
 # So the `if:` carries the two edges that made the loop: a check run named `quality-labels` no longer
 # starts this workflow (the edge that closes the cycle), and a check run with no attached pull request
