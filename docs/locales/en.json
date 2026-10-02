@@ -148,5 +148,6 @@
   "modalStartMcp": "Remote MCP in 30 seconds",
   "modalStartQuickstart": "Full install guide",
   "modalStartCli": "CLI reference",
-  "modalStartNote": "Reading needs no registration and is not capped; registering only unlocks the write-side tools."
+  "modalStartNote": "Reading needs no registration and is not capped; registering only unlocks the write-side tools.",
+  "searchPanelLabel": "Search lessons"
 }

@@ -148,5 +148,6 @@
   "modalStartMcp": "30 秒接入远程 MCP",
   "modalStartQuickstart": "完整安装指南",
   "modalStartCli": "CLI 参考",
-  "modalStartNote": "检索不需要注册、不限次数；注册只解锁写入类工具。"
+  "modalStartNote": "检索不需要注册、不限次数；注册只解锁写入类工具。",
+  "searchPanelLabel": "检索课程"
 }

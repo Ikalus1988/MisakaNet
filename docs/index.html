@@ -1622,18 +1622,36 @@
     .nav-toggle { top: 12px; left: 12px; padding: 6px 10px; font-size: 12px; }
     .drawer { width: 260px; left: -280px; }
   }
+
+  /* Visually hidden, still announced: the search field's label and the result summary use this. */
+  .sr-only {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+  }
+
+  /* Nothing moves for a reader who asked for that. Measured 2026-10-02: the page carried 24
+     keyframes/transition declarations and zero `prefers-reduced-motion` rules, so the drawer slide,
+     the card hovers and every fade ran regardless of the OS setting. */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
 </style>
 </head>
 <body>
 
 <!-- Nav Drawer Toggle -->
-<button class="nav-toggle" onclick="toggleDrawer()" aria-label="Menu">
+<button class="nav-toggle" onclick="toggleDrawer()" aria-label="Menu" aria-controls="drawer" aria-expanded="false">
   <span class="hamburger">☰</span> <span data-i18n="navNetwork">Network</span>
 </button>
 
 <!-- Nav Drawer -->
 <div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
-<nav class="drawer" id="drawer">
+<nav class="drawer" id="drawer" inert aria-hidden="true">
   <div class="drawer-header">
     <div class="drawer-brand">MISAKA NET</div>
     <div class="drawer-tagline">Safe. Useful. Runs anywhere Python does.</div>
@@ -1700,7 +1718,7 @@
       <img class="header-avatar" src="/assets/misaka-avatar-crop.png" width="360" height="485" onerror="this.src='https://raw.githubusercontent.com/Ikalus1988/MisakaNet/main/promotional/misaka-avatar-crop.png'" alt="Misaka Network Avatar">
       <div class="header-content">
       <div class="header-text-block">
-        <div class="logo-title" data-i18n="siteTitle">MISAKA NETWORK</div>
+        <h1 class="logo-title" data-i18n="siteTitle">MISAKA NETWORK</h1>
         <div class="logo-cn" data-i18n="titleCn">御坂网络</div>
         <div class="logo-tagline">Safe. Useful. Runs anywhere Python does.</div>
         <div class="lang-btn-row" style="margin-top:8px;display:flex;gap:6px;justify-content:flex-end;">
@@ -1721,6 +1739,7 @@
     </div>
   </header>
 
+  <main id="main-content">
   <div class="content-glass">
 
   <!-- Search Section -->
@@ -1732,10 +1751,12 @@
     </div>
     <div style="position:relative;max-width:680px;margin:0 auto;">
       <div class="home-search-box" style="position:relative;background:rgba(4,10,24,0.86);border:1px solid rgba(0,229,255,0.30);border-radius:14px;transition:border-color 0.25s ease,box-shadow 0.25s ease;">
+        <label class="sr-only" for="search-input" data-i18n="searchPanelLabel">Search lessons</label>
         <input id="search-input" type="text" data-i18n-placeholder="searchPanelPlaceholder" placeholder="Search DCO, token leak, pip timeout..." style="width:100%;padding:15px 142px 15px 16px;background:transparent;border:0;color:var(--text-main);font-size:15px;font-family:var(--font-ui);outline:none;" oninput="debounceSearch()" onkeydown="handleSearchKeydown(event)" onfocus="this.parentElement.style.borderColor='rgba(0,229,255,0.72)';this.parentElement.style.boxShadow='0 0 0 3px rgba(0,229,255,0.08),0 0 24px rgba(0,229,255,0.13)'" onblur="this.parentElement.style.borderColor='rgba(0,229,255,0.30)';this.parentElement.style.boxShadow='none';setTimeout(()=>document.getElementById('search-results').style.display='none',200)"/>
         <span class="search-hint" style="position:absolute;right:88px;top:50%;transform:translateY(-50%);color:rgba(226,232,240,0.78);background:rgba(255,255,255,0.075);border:1px solid rgba(255,255,255,0.14);border-radius:7px;padding:3px 7px;font-size:11px;">⌘K</span>
         <button type="button" onclick="goSearchPage()" data-i18n="searchPanelButton" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:var(--cyan);color:#07101f;border:0;border-radius:10px;padding:8px 13px;font-size:12px;font-weight:700;font-family:var(--font-ui);cursor:pointer;box-shadow:0 0 14px rgba(0,229,255,0.16);">Search</button>
       </div>
+      <div id="search-status" class="sr-only" role="status" aria-live="polite"></div>
       <div id="search-results" style="display:none;margin-top:6px;max-height:400px;overflow-y:auto;background:var(--bg-card);border:1px solid rgba(0,229,255,0.1);border-radius:10px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);"></div>
     </div>
     <div style="margin:10px auto 0;text-align:center;">
@@ -2175,6 +2196,8 @@
   <!-- Toast -->
   <div class="toast" id="toast"></div>
 
+  </main>
+
   <!-- Footer -->
   <footer class="footer">
     <div class="footer-links">
@@ -2266,14 +2289,37 @@ function toggleModal() {
 }
 
 // ── Nav Drawer ──
+// `left: -300px` moves the drawer off-canvas but leaves its links in the tab order, so a keyboard
+// reader used to tab through 17 invisible links before reaching the page (measured 2026-10-02).
+// `inert` removes them; `aria-expanded` tells the reader what the toggle did; opening moves focus
+// into the drawer, and Escape closes it and hands focus back to the toggle.
+function setDrawer(open, restoreFocus) {
+  const drawer = document.getElementById('drawer');
+  const overlay = document.getElementById('drawer-overlay');
+  const toggle = document.querySelector('.nav-toggle');
+  drawer.classList.toggle('open', open);
+  overlay.classList.toggle('open', open);
+  drawer.inert = !open;
+  drawer.setAttribute('aria-hidden', open ? 'false' : 'true');
+  if (toggle) toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+  if (open) {
+    const first = drawer.querySelector('a[href], button');
+    if (first) first.focus();
+  } else if (restoreFocus && toggle) {
+    toggle.focus();
+  }
+}
 function toggleDrawer() {
-  document.getElementById('drawer').classList.toggle('open');
-  document.getElementById('drawer-overlay').classList.toggle('open');
+  setDrawer(!document.getElementById('drawer').classList.contains('open'));
 }
 function closeDrawer() {
-  document.getElementById('drawer').classList.remove('open');
-  document.getElementById('drawer-overlay').classList.remove('open');
+  setDrawer(false);
 }
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && document.getElementById('drawer').classList.contains('open')) {
+    setDrawer(false, true);
+  }
+});
 
 // ── Cmd+K / Ctrl+K to focus search ──
 document.addEventListener('keydown', (e) => {
@@ -2691,8 +2737,12 @@ function searchLessons() {
   const rawQ = document.getElementById("search-input").value.trim();
   const q = rawQ.toLowerCase();
   const container = document.getElementById("search-results");
+  const status = document.getElementById("search-status");
+  // A live region that is `display:none` when the page loads is not reliably announced, so the
+  // summary lives in its own always-rendered node instead of on the results container.
   if (!q || !_allLessons) {
     container.style.display = "none";
+    if (status) status.textContent = "";
     return;
   }
   const tokens = q.split(/\s+/).filter(Boolean);
@@ -2712,6 +2762,7 @@ function searchLessons() {
     return { ...l, score };
   }).filter(l => l.score > 0).sort((a, b) => b.score - a.score).slice(0, 10);
   if (scored.length === 0) {
+    if (status) status.textContent = "No lesson matches " + rawQ + ".";
     container.style.display = "block";
     const suggestions = _allLessons.filter(isSearchableLesson).slice(0, 3).map(l => l.title).join(', ');
     container.innerHTML = '<div style="padding:12px;color:#8b949e;font-size:13px;">' +
@@ -2721,6 +2772,8 @@ function searchLessons() {
       '</div>';
     return;
   }
+  if (status) status.textContent = scored.length + " lesson" + (scored.length === 1 ? "" : "s") +
+    " match " + rawQ + ". Results are listed below the search box.";
   container.style.display = "block";
   container.innerHTML = scored.map(l => {
     const safeTitle = DOMPurify.sanitize(l.title);
