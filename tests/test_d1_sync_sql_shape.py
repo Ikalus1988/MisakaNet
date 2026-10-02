@@ -25,6 +25,7 @@ a claim about behaviour, not a comment.
 """
 from __future__ import annotations
 
+import pathlib
 import re
 import subprocess
 import sys
@@ -187,8 +188,15 @@ def test_the_predicate_matches_wrangler_real_renderings(monkeypatch, output, att
         f"{output.strip()!r} was attempted {len(calls)} times, expected {attempts_expected}")
 
 
-def test_a_hung_import_is_retried_not_raised(monkeypatch):
-    """`subprocess.TimeoutExpired` used to escape `main()` as a traceback with no retry."""
+def test_a_hung_import_fails_cleanly_without_retrying(monkeypatch):
+    """A timeout is fatal and reported, not retried.
+
+    `subprocess.run(timeout=…)` kills the wrangler *client*, but a D1 import runs server-side and
+    asynchronously — the client is polling it — so killing it does not cancel the import it started. A
+    second attempt could begin while the first is still writing, which is the concurrent-import hazard
+    the workflow's `concurrency` group prevents between runs but not inside one. The first version let
+    `TimeoutExpired` escape `main()` as a traceback; this fails with a message a human can act on.
+    """
     calls = []
 
     class Done:
@@ -200,12 +208,56 @@ def test_a_hung_import_is_retried_not_raised(monkeypatch):
     def fake_run(cmd, **kwargs):
         if cmd and cmd[0] == "wrangler":
             calls.append(list(cmd))
-            if len(calls) == 1:
-                raise subprocess.TimeoutExpired(cmd, 240, output="", stderr="")
-            return Done(0)
+            raise subprocess.TimeoutExpired(cmd, 240, output="", stderr="")
         return real_run(cmd, **kwargs)
 
     monkeypatch.setattr(sync.subprocess, "run", fake_run)
     monkeypatch.setattr(sync.time, "sleep", lambda seconds: None)
-    assert _run_execute(monkeypatch) == 0, "a hang must be retried, not raised"
-    assert len(calls) == 2
+    assert _run_execute(monkeypatch) != 0, "a hung import must fail the job"
+    assert len(calls) == 1, f"a timed-out import was retried {len(calls)} times"
+
+
+@pytest.mark.parametrize("extra", [["--execute"], ["--execute", "--prune"]])
+def test_the_file_handed_to_wrangler_is_the_clean_sql(monkeypatch, extra):
+    """Assert the artifact CI actually uses, not the one `--sql` prints.
+
+    `--sql` returns before `--execute` is reached, so a rule that reads stdout shares nothing with the
+    temp file wrangler is handed. An independent review exploited exactly that: appending
+    `'-- execute-only suffix\\n'` to the written file left the suite green (36 passed) while the file that
+    reaches wrangler ended in a comment. Same family as the two earlier rounds — the assertion has to
+    cover the real artifact.
+    """
+    captured = {}
+
+    class Done:
+        returncode, stdout, stderr = 0, "", ""
+
+    real_run = subprocess.run
+
+    def fake_run(cmd, **kwargs):
+        if cmd and cmd[0] == "wrangler":
+            captured["sql"] = pathlib.Path(cmd[cmd.index("--file") + 1]).read_text(encoding="utf-8")
+            return Done()
+        return real_run(cmd, **kwargs)
+
+    monkeypatch.setattr(sync.subprocess, "run", fake_run)
+    monkeypatch.setattr(sys, "argv", ["sync_lessons_to_d1.py", "--db", "db", *extra])
+    assert sync.main() == 0
+    sql = captured["sql"]
+    lines = [line for line in sql.splitlines() if line.strip()]
+    assert lines[-1].rstrip().endswith(";"), f"the executed file ends with {lines[-1][:80]!r}"
+    assert not re.search(r"^-- \\d+ lessons parsed at ", sql, re.M), "a note is in the executed file"
+    assert not re.search(r"^-- FTS index rebuilt for \\d+ lessons$", sql, re.M), (
+        "the trailing note is in the executed file")
+    if "--prune" in extra:
+        assert lines[0].startswith("DELETE FROM lessons")
+
+
+def test_the_output_argument_also_writes_the_clean_sql(monkeypatch, tmp_path):
+    """`--output` writes the same `sql`; it had no content assertion either."""
+    target = tmp_path / "out.sql"
+    monkeypatch.setattr(sys, "argv", ["sync_lessons_to_d1.py", "--output", str(target)])
+    assert sync.main() == 0
+    lines = [line for line in target.read_text(encoding="utf-8").splitlines() if line.strip()]
+    assert lines[-1].rstrip().endswith(";")
+    assert lines[0].startswith("INSERT INTO lessons")

@@ -102,8 +102,14 @@ TRANSIENT_IMPORT_MARKERS = (
     " - 502: ",
     " - 503: ",
     " - 504: ",
-    # 5xx carried inside the Cloudflare error *envelope* is deliberately absent: `throwFetchError` does
-    # not print the status, and wrangler's own `isRetryable()` already retries 5xx/429 internally.
+    # A 5xx carried inside the Cloudflare error *envelope* is a **documented residual gap**: wrangler
+    # renders it as `A request to the Cloudflare API (<resource>) failed.` plus the envelope text, and
+    # that sentence is identical for deterministic 4xx (403/400/404), so matching it would retry
+    # credentials and validation failures too — the opposite of what this allowlist is for. (The first
+    # version of this comment claimed wrangler retries 5xx/429 itself on this path; an independent review
+    # read the whole D1 chain and showed it does not: `retryOnAPIFailure`, the only consumer of
+    # `isRetryable()`, is never called from the D1 execute module.) The cost of the gap is an occasional
+    # red run on an envelope 5xx, not a wrong write.
 )
 
 
@@ -464,18 +470,27 @@ def main() -> int:
                       file=sys.stderr)
                 # 240s, not 600s: the successful import in the incident log took 1.26s, so this is ~190x
                 # headroom, and three attempts of it fit inside the job's timeout instead of filling it.
-                timed_out = False
                 try:
                     r = subprocess.run(cmd, capture_output=True, text=True, cwd=REPO,
                                        timeout=IMPORT_TIMEOUT_SECONDS)
                     out, err, rc = r.stdout or "", r.stderr or "", r.returncode
                 except subprocess.TimeoutExpired as exc:
-                    # A hung import leg is in-transit by definition, so it is retryable — the first
-                    # version let the exception escape `main()` as a traceback instead (an independent
-                    # review found that by making the fake runner raise).
-                    timed_out = True
-                    out, err, rc = (exc.stdout or ""), (exc.stderr or ""), 1
-                    err += f"\nthe wrangler process did not finish within {IMPORT_TIMEOUT_SECONDS}s\n"
+                    # Deliberately **not** retried, unlike every other entry below. The timeout kills the
+                    # wrangler *client*, but a D1 import runs **server-side** and asynchronously (the
+                    # init/ingest/poll phases are what the client is polling) — so killing it does not
+                    # cancel the import it started. A second attempt could therefore begin while the
+                    # first is still writing, which is the concurrent-import hazard the workflow's
+                    # `concurrency` group exists to prevent; that group serializes *runs*, not attempts
+                    # inside one run. The first version let the exception escape as a traceback; this
+                    # reports it and fails, which a human can act on.
+                    def _text(value):
+                        return value.decode("utf-8", "replace") if isinstance(value, bytes) else (value or "")
+                    out, err, rc = _text(exc.stdout), _text(exc.stderr), 1
+                    err += (f"\nthe wrangler process did not finish within "
+                            f"{IMPORT_TIMEOUT_SECONDS}s; not retrying, because the server-side import it "
+                            f"started may still be running\n")
+                    print(err, file=sys.stderr)
+                    return rc
                 # Every attempt's output is printed as it arrives, so a failure that is given up on
                 # still carries the evidence of all three.
                 sys.stdout.write(out)
@@ -483,8 +498,7 @@ def main() -> int:
                 if rc == 0:
                     return 0
                 output = out + err
-                transient = (f"timeout after {IMPORT_TIMEOUT_SECONDS}s" if timed_out
-                             else next((m for m in TRANSIENT_IMPORT_MARKERS if m in output), None))
+                transient = next((m for m in TRANSIENT_IMPORT_MARKERS if m in output), None)
                 if transient is None:
                     print(f"attempt {attempt}/{attempts} failed with rc={rc} and no transient marker; "
                           f"not retrying (only in-transit failures are)", file=sys.stderr)
