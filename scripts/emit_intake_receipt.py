@@ -30,6 +30,13 @@ REPO = Path(__file__).resolve().parent.parent
 LESSONS_DIR = REPO / "lessons"
 RECEIPT_LOG = REPO / "data" / "intake_receipts.jsonl"
 
+# gh accepts an issue by number (with --repo) or by full URL — NOT by the
+# "owner/repo#number" shorthand, which fails with `invalid issue format`
+# (measured against gh 2.102.0, 2026-10-04).  We pass a full URL so the
+# command works without also threading --repo through.
+GITHUB_REPO_SLUG = "Ikalus1988/MisakaNet"
+ISSUES_URL_BASE = f"https://github.com/{GITHUB_REPO_SLUG}/issues"
+
 # Frontmatter parser (inline to avoid heavy imports)
 _FM_RE = re.compile(r"^---\s*\n(.*?)\n---\s*\n", re.DOTALL)
 
@@ -176,6 +183,7 @@ def main(argv: list[str] | None = None) -> int:
 
     # Emit receipts
     emitted = 0
+    failed: list[str] = []
     for lesson in pending:
         contrib_id = lesson["contrib_id"]
         # Find the intake issue — contrib_id format is typically the GitHub issue number
@@ -194,16 +202,38 @@ def main(argv: list[str] | None = None) -> int:
             body = _format_receipt_message(lesson)
             success = _post_issue_comment(issue_url, body)
 
-        # Record receipt regardless (to avoid infinite retries on failure)
-        _append_receipt(contrib_id, lesson["lesson_path"], issue_url or "", lesson["evidence_level"])
-        emitted += 1
+        if success or not issue_url:
+            _append_receipt(contrib_id, lesson["lesson_path"], issue_url or "", lesson["evidence_level"])
+            emitted += 1
+        else:
+            # Deliberately NOT recorded.  The contributor was never told, so the
+            # obligation is still outstanding; recording it here marks the receipt
+            # delivered and it is then skipped forever (measured 2026-10-04: every
+            # post failed on a bad issue reference while still being logged).
+            failed.append(contrib_id)
 
         if success:
             print(f"  ✅ Receipt posted for {contrib_id} -> {lesson['lesson_path']}")
         elif issue_url:
-            print(f"  ⚠️  Receipt recorded but comment failed for {contrib_id}")
+            print(f"  ⚠️  Comment FAILED for {contrib_id} — not recorded, retried next run")
         else:
             print(f"  ℹ️  Receipt recorded (no issue URL) for {contrib_id}")
+
+    if failed:
+        # Loud, but NOT a non-zero exit: this step sits ahead of the regeneration
+        # steps in the single `update` job, so failing here would freeze the daily
+        # pipeline over one owed comment.  A warning annotation keeps it visible in
+        # the run summary while the next scheduled run retries.
+        print(
+            f"::warning title=Intake receipts undelivered::"
+            f"{len(failed)} receipt(s) could not be posted and were NOT recorded: "
+            f"{', '.join(failed[:10])}. They will be retried on the next run.",
+            file=sys.stderr,
+        )
+        print(
+            f"⚠️  {len(failed)} intake receipt(s) undelivered — see the run warning",
+            file=sys.stderr,
+        )
 
     if not args.quiet and not args.dry_run:
         print(f"\n✅ Emitted {emitted} intake receipt(s)")
@@ -221,7 +251,7 @@ def _resolve_issue_url(contrib_id: str) -> str | None:
     """
     # Direct issue number
     if contrib_id.isdigit():
-        return f"Ikalus1988/MisakaNet#{contrib_id}"
+        return f"{ISSUES_URL_BASE}/{contrib_id}"
 
     # Check if there's an issue in the contribution queue entry
     queue_path = REPO / "data" / "contribution_queue.jsonl"
@@ -232,7 +262,7 @@ def _resolve_issue_url(contrib_id: str) -> str | None:
                 if entry.get("id") == contrib_id or entry.get("source_id") == contrib_id:
                     issue_num = entry.get("issue_number") or entry.get("github_issue")
                     if issue_num:
-                        return f"Ikalus1988/MisakaNet#{issue_num}"
+                        return f"{ISSUES_URL_BASE}/{issue_num}"
             except json.JSONDecodeError:
                 continue
 
