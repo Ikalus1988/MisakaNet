@@ -1,9 +1,23 @@
 {
-  "generated_at": "2026-10-03T15:32:16.384379+00:00",
+  "generated_at": "2026-10-03T15:47:55.000382+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "lessons: reland #2554's swift-format / NSOpenPanel lesson on current main (generator re-run)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2771",
+      "timestamp": "2026-10-03T15:47:44Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2776",
+      "timestamp": "2026-10-03T15:39:39Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "lessons: reland #2542's AgentCap inspect / codesign lesson on current main (generator re-run)",
@@ -23,20 +37,6 @@
       "title": "chore(data): sync lessons.json + refresh feed",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/2767",
       "timestamp": "2026-10-03T14:52:24Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "docs(lessons): promote 19 triaged intakes into the corpus",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2762",
-      "timestamp": "2026-10-03T14:47:32Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat(intake): stop filing an open issue for every submission that arrives",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2761",
-      "timestamp": "2026-10-03T13:49:13Z",
       "source": "github"
     },
     {
