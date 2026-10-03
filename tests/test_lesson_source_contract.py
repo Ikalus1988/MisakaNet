@@ -172,9 +172,23 @@ def sandbox(tmp_path_factory) -> Path:
     for name in ("scripts/lesson_gate.py", "scripts/update_lessons_json.py",
                  ".github/workflows/lesson-gate.yml"):
         shutil.copy(REPO / name, clone / name)
+    # `--allow-empty` is not optional here, it is the fix for a bug that only shows up in CI. The
+    # clone is of HEAD, and the three files copied above are the working tree of a branch that is
+    # *already committed* — so in a clean checkout they are byte-identical to what was cloned,
+    # `git add -A` stages nothing, and a bare `git commit` exits 1. Every test that used this
+    # sandbox therefore errored in CI on all nine platform legs while passing locally, because a
+    # dirty worktree happened to leave something to commit. The commit exists to give the sandbox a
+    # clean baseline, not to record a change, so an empty one is the intended outcome.
     subprocess.run(["git", "add", "-A"], cwd=clone, check=True, capture_output=True)
-    subprocess.run(["git", "-c", "user.email=t@example.invalid", "-c", "user.name=t",
-                    "commit", "--quiet", "-m", "sandbox"], cwd=clone, check=True, capture_output=True)
+    subprocess.run(
+        ["git",
+         "-c", "user.email=t@example.invalid",
+         "-c", "user.name=t",
+         # A signing configuration from the host would turn this into a prompt in CI.
+         "-c", "commit.gpgsign=false",
+         "commit", "--quiet", "--allow-empty", "-m", "sandbox"],
+        cwd=clone, check=True, capture_output=True,
+    )
     return clone
 
 
