@@ -432,47 +432,6 @@ def topic_plan(lessons: list) -> dict[str, tuple[str, int]]:
     return pages
 
 
-def build_id_alias_page(lesson_id: str, slug: str) -> str:
-    """A tiny redirect page at `/lessons/<id>/` for a lesson whose page slug differs from its id.
-
-    Why this exists (2026-09-29): `misakanet_search` returns the frontmatter `id`, `docs/llms.txt` tells
-    readers that static pages live at `https://misakanet.org/lessons/<slug>/`, and the page slug is
-    **title-derived** (`slugify(title)`, sticky across renames only through the manifest). Measured on the
-    live site: **73 of 426 lessons** have an id that is not their slug, so `curl /lessons/<id>/` answered
-    **404** for 17% of the corpus while the page existed under another name — the documented mapping
-    between a search hit and its page simply did not hold.
-
-    Two ways to close that: publish a canonical URL in the API (needs the slug in D1, i.e. a second
-    implementation of `slugify` in JavaScript — the drift this repository keeps paying for), or make the id
-    resolve. This is the second one: static, generated from the *same* slug map the pages use, no runtime
-    cost, no API contract change, and it makes the documented pattern true under either reading of
-    "slug". `rel="canonical"` keeps search engines pointed at the real page, which is also why the alias is
-    deliberately absent from the sitemap.
-    """
-    target = f"/lessons/{slug}/"
-    # The canonical is **site-relative** on purpose (2026-09-29). `rel="canonical"` resolves a relative URL
-    # against the page, so the origin is not needed here, and a generated file whose only content is a
-    # redirect should not carry one.
-    #
-    # **Correction (2026-09-30).** The original comment claimed the absolute URL was what tripped GitHub's
-    # secret-scanning heuristic on two alias pages (`HARDCODED_SECRET`, plugin-scanner 2.2.0). That was
-    # wrong: after this file switched to a relative canonical the same two pages were flagged again at the
-    # same line, so the match is the **slug text** — "Idempotent task claim **keys** for snipers", "Disk full
-    # from agent tmp dirs — **GC pattern**" — which is a public URL built from a lesson title, not a
-    # credential. `scripts/check_published_secrets.py` is green over all 739 published prose files and
-    # neither lesson source contains credential-shaped material, so those alerts are false positives and are
-    # disposed of as such. Removing the HTML entirely (one `docs/_redirects` table instead of 73 redirect
-    # pages) is the structural alternative — see `build_redirects_file`, which now emits that table.
-    return (
-        '<!doctype html>\n<html lang="en">\n<head>\n'
-        '<meta charset="utf-8">\n'
-        f'<title>Moved — {lesson_id}</title>\n'
-        f'<link rel="canonical" href="{target}">\n'
-        f'<meta http-equiv="refresh" content="0; url={target}">\n'
-        '</head>\n<body>\n'
-        f'<p>{GENERATOR_MARK} — this lesson lives at <a href="{target}">{target}</a>.</p>\n'
-        '</body>\n</html>\n'
-    )
 
 
 def build_redirects_file(rules: list[tuple[str, str]]) -> str:
@@ -518,6 +477,33 @@ def build_redirects_file(rules: list[tuple[str, str]]) -> str:
     ]
     lines += [f"/lessons/{lesson_id}/ /lessons/{slug}/ 301" for lesson_id, slug in sorted(rules)]
     return "\n".join(lines) + "\n"
+
+
+def read_redirect_sources(root: Path = REPO) -> dict[str, str]:
+    """`{source path: target path}` from the committed `docs/_redirects`, comments and blanks dropped.
+
+    Tolerant by design: an unreadable or absent file is an empty table, not an exception, because every
+    caller treats "no rule" as "not resolved" and reports it against the lesson it belongs to. A crash
+    here would instead abort a `--check` run with a traceback and say nothing about which lesson is
+    unreachable, which is the outcome this function exists to prevent.
+
+    Deliberately unanchored on the right of the target and untyped on the code: this is a reader, not a
+    validator. `tests/test_lesson_id_redirects.py` is where the table's shape is pinned, and duplicating
+    those rules here would be a second place for them to be wrong.
+    """
+    try:
+        text = (root / REDIRECTS).read_text(encoding="utf-8")
+    except OSError:
+        return {}
+    table: dict[str, str] = {}
+    for line in text.splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        parts = stripped.split()
+        if len(parts) >= 2:
+            table[parts[0]] = parts[1]
+    return table
 
 
 def plan_with_slugs(lessons: list, known_slugs: dict[str, str] | None = None
@@ -575,12 +561,11 @@ def plan_with_slugs(lessons: list, known_slugs: dict[str, str] | None = None
     # 73 lessons whose slug is title-derived. A real page always wins: if an id happens to equal another
     # lesson's slug, the alias is dropped rather than overwriting it.
     #
-    # 2026-10-04: the alias is now published twice on purpose — as a `docs/_redirects` rule *and* as the
-    # stub page — because a redirect is "always followed, regardless of whether or not an asset matches",
-    # so the rule shadows the file it duplicates. That makes this step safe to land on its own: if the
-    # platform honours the table the stub is simply never reached, and if it does not, the stub is still
-    # on disk and still answers. Neither branch can 404. Retiring the stubs is a second, separately
-    # revertible change made only after the 301s are observed on the live site.
+    # 2026-10-04: this used to also write a stub HTML page per alias, and shipped alongside the
+    # `_redirects` table for one release while the 301s were being observed. The table is now the only
+    # publisher, so the stubs are pruned. Verified live before retiring them (misakanet.org, 2026-10-04):
+    # `/lessons/<id>/` answers `301` with a `Location` to the slug page, and the three rules with a
+    # Chinese target percent-encode correctly rather than double-encoding.
     aliases = 0
     alias_rules: list[tuple[str, str]] = []
     for lesson in lessons:
@@ -588,10 +573,8 @@ def plan_with_slugs(lessons: list, known_slugs: dict[str, str] | None = None
         slug = assigned.get(lesson_id)
         if not lesson_id or not slug or lesson_id == slug:
             continue
-        path = f"docs/lessons/{lesson_id}/index.html"
-        if path in files:
+        if f"docs/lessons/{lesson_id}/index.html" in files:
             continue
-        files[path] = build_id_alias_page(lesson_id, slug)
         alias_rules.append((lesson_id, slug))
         aliases += 1
     # Unconditional on purpose. The prune guard only deletes a file that carries GENERATOR_MARK, and a
@@ -761,6 +744,11 @@ def corpus_page_problems(lessons: list, *, root: Path = REPO) -> list[str]:
         return [f"{MANIFEST.as_posix()} carries no lesson-id -> slug map, so no lesson's page URL "
                 f"is knowable — run `python3 scripts/build_lesson_pages.py` to record it"]
 
+    # Which id the table redirects, read from the committed `docs/_redirects` rather than recomputed.
+    # Recomputing it here would be a second implementation of the alias rule, and the two drifting is
+    # how a lesson ends up "resolved" by this check and 404ing in production.
+    redirect_sources = read_redirect_sources(root)
+
     problems: list[str] = []
     for lesson in lessons:
         lesson_id = lesson.get("id") or ""
@@ -774,14 +762,30 @@ def corpus_page_problems(lessons: list, *, root: Path = REPO) -> list[str]:
         slug = slugs.get(lesson_id) or None
         alias_page = LESSONS_DIR / lesson_id / "index.html"
         if slug is not None:
-            candidates = [LESSONS_DIR / slug / "index.html", alias_page]
+            candidates = [LESSONS_DIR / slug / "index.html"]
+            if lesson_id != slug:
+                candidates.append(alias_page)
             # Deliberately NOT the title-derived URL: when a slug is on record, a page at another
             # URL does not make the live one reachable.
             if any((root / candidate).is_file() for candidate in candidates):
                 continue
+            # 2026-10-04: the alias page is retired, so `/lessons/<id>/` resolves through the
+            # `_redirects` table instead. Accepted only when the table actually carries this id *and*
+            # points it at the recorded slug — a rule pointing somewhere else does not resolve this
+            # lesson, it sends a reader to a different one.
+            target = redirect_sources.get(f"/lessons/{lesson_id}/")
+            if target == f"/lessons/{slug}/":
+                continue
+            if target is not None:
+                problems.append(
+                    f"lesson {lesson_id!r}: {REDIRECTS.as_posix()} sends /lessons/{lesson_id}/ to "
+                    f"{target}, but its recorded slug is /lessons/{slug}/ — the id resolves to the "
+                    f"wrong lesson")
+                continue
             problems.append(
                 f"lesson {lesson_id!r}: no page on disk — looked for "
-                + " and ".join(candidate.as_posix() for candidate in candidates))
+                + " and ".join(candidate.as_posix() for candidate in candidates)
+                + f", and {REDIRECTS.as_posix()} carries no rule for /lessons/{lesson_id}/")
             continue
         # No recorded slug: the manifest is behind the corpus (a lesson new to the index, or a
         # hand-trimmed manifest). Say which of the two it is; both are failures, for the reason

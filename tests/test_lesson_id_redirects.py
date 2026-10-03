@@ -86,32 +86,34 @@ def _committed_stubs() -> dict[str, str]:
     return stubs
 
 
-def test_the_table_is_not_empty_and_agrees_with_the_committed_stubs():
-    """The overlap window: while both exist they must say the same thing, rule for rule.
+def test_the_stub_pages_are_gone_and_the_table_is_the_only_publisher():
+    """The retirement, pinned so it sticks across regenerations.
 
-    They are not interchangeable if they disagree. A redirect is "always followed, regardless of whether
-    or not an asset matches", so the table shadows the stub page at the same URL — whichever is wrong is
-    the one a reader gets, and the other is invisible. This is the check that makes retiring the stubs a
-    mechanical, evidence-backed step rather than a leap of faith.
+    The table shipped for one release alongside the stub pages it shadows, so that landing it could not
+    404 anything: a redirect is "always followed, regardless of whether or not an asset matches", so if
+    the platform honoured the table the stub was never reached, and if it did not, the stub was still
+    on disk and still answered. Those 301s were then observed on the live site (2026-10-04, misakanet.org:
+    `/lessons/<id>/` answers `301` with a `Location` to the slug page, and the three rules with a Chinese
+    target percent-encode rather than double-encode), which is what discharged the precondition the
+    generator's own comment set for deleting the stubs.
+
+    A stub left behind would not be harmless even with a working table: it is a second, stale copy of
+    the alias mapping that nothing reads, and it is the exact file shape whose slug text tripped
+    GitHub's secret-scanning heuristic ("Idempotent task claim **keys** for snipers").
     """
-    rules = _rules()
     stubs = _committed_stubs()
-    assert rules, ("the table parsed to zero rules — the parser drifted from the generator, or the corpus "
-                   "lost every alias")
-    assert stubs, ("no stub pages on disk: either they were retired (drop this half of the check and the "
-                   "target check below becomes the only overlap evidence) or the generator changed")
-    disagree = {
-        source: f"table={target} stub={stubs.get(source, '<no stub>')}"
-        for source, (target, _code) in rules.items()
-        if stubs.get(source) != target
-    }
-    assert not disagree, (
-        "the redirect table and the stub pages it shadows disagree; the table wins at runtime, so a "
-        "disagreement here is a live wrong redirect: " + "; ".join(f"{k} ({v})" for k, v in list(disagree.items())[:5]))
-    only_stub = sorted(set(stubs) - set(rules))
-    assert not only_stub, (
-        f"{len(only_stub)} stub page(s) have no rule, so a supported platform would 404 them once the "
-        f"stubs are retired: {only_stub[:5]}")
+    assert not stubs, (
+        f"{len(stubs)} stub page(s) still on disk, e.g. {sorted(stubs)[:3]}. The generator no longer "
+        f"writes them and the table has been live since 2026-10-04; run build_lesson_pages.py to prune "
+        f"them. If the table is NOT live, revert this change instead — the stubs are the fallback")
+
+
+def test_the_table_is_not_empty_and_is_the_only_publisher():
+    assert _rules(), ("the table parsed to zero rules — the parser drifted from the generator, or the "
+                      "corpus lost every alias")
+    assert not _committed_stubs(), (
+        "a stub page and a rule both describe the same alias. The rule wins at runtime, so the stub is "
+        "an unread second copy of a mapping that can silently disagree")
 
 
 def test_every_redirect_is_permanent():
@@ -132,23 +134,20 @@ def test_every_redirect_is_permanent():
 def test_every_target_is_a_page_that_exists_and_every_source_is_not_a_real_page():
     """A rule to a 404 is worse than no rule, and a rule over a real page hides that page.
 
-    "Not a real page" rather than "no file": during the overlap window every source *does* have a file —
-    the stub it shadows. The distinction that matters is whether that file is a real lesson page (another
-    lesson's slug, which the generator must never shadow) or the stub. The generator enforces this with
-    `if path in files: continue` ("a real page always wins"); this pins it from disk state, where a hand
-    edit or a stale run would reintroduce it.
+    The second half is the id-equals-another-lesson's-slug collision: the generator drops such an alias
+    with `if path in files: continue` ("a real page always wins"). This pins it from disk state, where a
+    hand edit or a stale run would reintroduce it — and it is the one shape that looks fine in review,
+    because the page is right there on disk and the rule is right there in the table.
     """
     for source, (target, _code) in _rules().items():
         assert (REPO / "docs" / target.lstrip("/") / "index.html").exists(), (
             f"{source} redirects to {target}, which has no page on disk — that rule turns a working URL "
-            f"into a 404 the moment the stubs are retired")
+            f"into a 404")
         source_page = REPO / "docs" / source.lstrip("/") / "index.html"
-        if source_page.exists():
-            head = source_page.read_text(encoding="utf-8", errors="replace")[:400]
-            assert "<title>Moved — " in head, (
-                f"{source} has both a redirect rule and a real lesson page; the rule wins at runtime, so "
-                f"that lesson becomes unreachable. This is the id-equals-another-lesson's-slug collision "
-                f"the generator is supposed to drop")
+        assert not source_page.exists(), (
+            f"{source} has both a redirect rule and a real lesson page; the rule wins at runtime, so that "
+            f"lesson becomes unreachable. This is the id-equals-another-lesson's-slug collision the "
+            f"generator is supposed to drop")
 
 
 def test_the_table_is_what_the_generator_produces_from_the_corpus():
@@ -233,8 +232,8 @@ def test_the_parser_reads_the_shapes_the_generator_emits(path):
     """Slugify output has to survive the round trip.
 
     A parser that rejected real slugs would reduce the table to 108 rules rather than fail loudly, which
-    is why `test_the_table_is_not_empty...` asserts the rule count against the stubs rather than just
-    being non-zero. This pins the character set so a future slugify change cannot quietly fall out.
+    is why `test_every_corpus_alias_is_represented_including_the_non_ascii_ones` asserts the exact count.
+    This pins the character set so a future slugify change cannot quietly fall out of the parser.
     """
     parsed = _parse(f"{path} /lessons/target/ 301\n")
     assert parsed == {path: ("/lessons/target/", "301")}, parsed
@@ -247,8 +246,9 @@ def test_every_corpus_alias_is_represented_including_the_non_ascii_ones():
     Asserting only "non-empty" would let a regression that drops all non-ASCII targets through.
     """
     rules = _rules()
-    assert len(rules) == len(_committed_stubs()), (
-        f"{len(rules)} rules vs {len(_committed_stubs())} stub pages")
+    assert len(rules) == 111, (
+        f"{len(rules)} rules; 111 is the number of lessons whose id is not their slug. A count that "
+        f"drifts means a lesson either lost its alias or gained one that does not resolve")
     non_ascii = sorted(s for s, (t, _c) in rules.items() if any(ord(ch) > 127 for ch in s + t))
     assert len(non_ascii) == 3, (
         f"expected the 3 known Chinese-slug aliases, found {len(non_ascii)}: {non_ascii}")
