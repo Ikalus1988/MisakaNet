@@ -364,15 +364,33 @@ jobs:
           PY
           exit 0
 
-      - name: Workers Builds — the site deploy that is red on every commit (#2136)
+      - name: Workers Builds — the site deploy, red on most commits (#2136)
         run: |
           set -euo pipefail
           # `Workers Builds: misakanet-web` is Cloudflare's Git integration building `docs/` into
-          # misakanet.org, and it has concluded `failure` on every commit since the #2133 merge. Its
-          # check-run carries no summary and no annotations, the build log lives behind the dashboard,
-          # and this repository contains no build configuration at all (`package.json` has no `build`
-          # script, `wrangler.jsonc` names no build command) — so the *only* copy of the cause is this
-          # API. That is why the step exists and why it is worth a dispatch.
+          # misakanet.org. Its check-run carries no summary and no annotations, the build log lives behind
+          # the dashboard, and this repository contains no build configuration at all (`package.json` has
+          # no `build` script, `wrangler.jsonc` names no build command) — so the *only* copy of the cause is
+          # this API. That is why the step exists and why it is worth a dispatch.
+          #
+          # **Corrected 2026-10-04.** This used to read "it has concluded `failure` on every commit since
+          # the #2133 merge", which was true on 2026-09-23 and stopped being true seventeen hours later.
+          # Scanned over 600 `main` commits (2026-09-20T15:27Z -> 2026-10-03T18:36Z): the streak ran
+          # unbroken from `8c1f3d1a` (2026-09-23T17:39:48Z, started_at 17:40:22Z — the timestamp in
+          # `.github/workflows/workers-builds-watch.yml`) through `f9743ca7` (2026-09-24T15:12:06Z), 31
+          # failures with nothing green in between, and went green on `728e37ef` (2026-09-24T15:29:00Z).
+          # It is not *stably* green: three later commits went red again — `8d727b31` (2026-09-30),
+          # `475892e1` (2026-10-01), `80540341` (2026-10-03, touched `docs/data/activity.json` and
+          # `docs/data/feed.json`). The honest summary is "green since 2026-09-24T15:29Z with three
+          # intermittent red days", and the step name now says "red on most commits" rather than
+          # asserting a state that stopped holding.
+          #
+          # The `80540341` failure is also the reason the watcher pagination fix shipped alongside this
+          # comment: that commit carries 187 check-runs, the Workers Builds run was not on page 1, and
+          # `scripts/workers_builds_watch.py` was reading one unfiltered page — so it stayed silent through
+          # a genuinely red site build. A scan that reads "most commits" where it used to read "every
+          # commit" is partly this same blind spot, which is why the scan above filters by `check_name`
+          # server-side rather than paging in Python.
           #
           # It needs its own credential: the Builds API rejects account-scoped tokens outright
           # ("Invalid token") and wants a *user-scoped* one carrying **Workers Builds Configuration**

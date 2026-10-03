@@ -25,6 +25,7 @@ import json
 import subprocess
 import sys
 import threading
+import urllib.parse
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 
@@ -84,6 +85,7 @@ class StubGitHub(BaseHTTPRequestHandler):
     issues: list = []          # open issues carrying the label
     comments: list = []        # comments on the tracker issue
     label_status = 201
+    ignore_page = False   # model a proxy that strips `page`; see _check_runs_page
     writes: list = []
     seen: list = []
 
@@ -102,7 +104,7 @@ class StubGitHub(BaseHTTPRequestHandler):
         path = self.path.split("?")[0]
         type(self).seen.append("GET " + self.path)
         if path.endswith("/check-runs"):
-            return self._json({"check_runs": self.runs})
+            return self._json({"check_runs": self._check_runs_page()})
         if path == f"/repos/{OWNER_REPO}/issues":
             return self._json(self.issues)
         if path.endswith("/comments"):
@@ -110,6 +112,26 @@ class StubGitHub(BaseHTTPRequestHandler):
         if path.startswith(f"/repos/{OWNER_REPO}/branches/"):
             return self._json({"commit": {"sha": SHA}})
         return self._json({})
+
+    def _check_runs_page(self) -> list:
+        """One page of check-runs, honouring `per_page` and `page` the way the REST API does.
+
+        Added 2026-10-04. This handler used to answer every `/check-runs` request with the whole list,
+        which is the convenient thing and is also why the pagination bug below was invisible: the watcher
+        asked for `per_page=100`, the stub ignored it, and every test saw a single complete page. Real
+        commits here carry 118-187 check-runs (measured on `main`), and the Workers Builds run is not
+        always on the first page of them.
+
+        `ignore_page` models a proxy that strips the parameter and answers page 1 forever. It is not a
+        real API, but it is the one shape that turns a bounded loop into an unbounded one.
+        """
+        query = urllib.parse.parse_qs(self.path.partition("?")[2])
+        per_page = int((query.get("per_page") or ["30"])[0])
+        if type(self).ignore_page:
+            return self.runs[:per_page]
+        page = int((query.get("page") or ["1"])[0])
+        start = (page - 1) * per_page
+        return self.runs[start:start + per_page]
 
     def do_POST(self):  # noqa: N802
         path = self.path.split("?")[0]
@@ -133,6 +155,7 @@ def _reset():
     StubGitHub.issues = []
     StubGitHub.comments = []
     StubGitHub.label_status = 201
+    StubGitHub.ignore_page = False
     StubGitHub.writes = []
     StubGitHub.seen = []
     yield
@@ -204,6 +227,84 @@ def test_no_workers_builds_check_run_at_all_is_not_a_failure(stub):
     assert proc.returncode == 0, proc.stdout + proc.stderr
     assert "no Workers Builds check-run" in proc.stdout, proc.stdout
     assert StubGitHub.writes == [], StubGitHub.writes
+
+
+def _other_run(index: int) -> dict:
+    """A check-run from some other app, ordered newest-first like the REST API returns them."""
+    return {"name": f"some-bot/check-{index}", "status": "completed", "conclusion": "success"}
+
+
+def test_a_red_build_past_the_first_page_is_still_reported(stub):
+    """The build is on page 2, and the first version of this watcher never asked for page 2.
+
+    `site_build_state` used to read one page of `/commits/<sha>/check-runs?per_page=100` and filter it
+    in Python. A commit with more than 100 check-runs therefore looked like a commit with *none*, which
+    `site_build_state` reports as `unknown` and `plan()` acts on by doing nothing — the watcher staying
+    silent through a red site build, which is the entire failure it was written for.
+
+    Measured on `main` 2026-10-04, with the server-side `check_name` filter as the reference:
+
+        commit      check-runs   truth      before the fix
+        f93c4078    118          success    unknown -> silence
+        b82e352e4   126          success    unknown -> silence
+        421001213   127          success    unknown -> silence
+        80540341    187          failure    unknown -> silence
+
+    187 is modelled here, with the red build last so it lands on page 2, and the count is the real one
+    rather than a round number so the test cannot accidentally sit exactly on the page boundary.
+    """
+    StubGitHub.runs = [_other_run(i) for i in range(187)] + [check_run("failure")]
+    proc = run_watch(stub, "--sha", SHA)
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+    assert "site build: red" in proc.stdout, (
+        "188 check-runs with a red Workers Builds run last: the build is on page 2 and the watcher "
+        "reported " + proc.stdout.splitlines()[1] if len(proc.stdout.splitlines()) > 1 else proc.stdout)
+    assert ("POST", f"/repos/{OWNER_REPO}/issues") in posts(), posts()
+
+
+def test_a_green_build_past_the_first_page_is_read_as_green(stub):
+    """The same fold, the benign half: a green build on page 2 used to read as "no build at all".
+
+    Worth pinning separately because the two fail in opposite directions. The red case above would
+    produce a false alarm if it were fixed naively; this one would produce a false all-clear, which is
+    the quieter of the two and the one that would have gone unnoticed for longer.
+    """
+    StubGitHub.runs = [_other_run(i) for i in range(150)] + [check_run("success")]
+    proc = run_watch(stub, "--sha", SHA)
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+    assert "site build: green" in proc.stdout, proc.stdout
+
+
+def test_pagination_stops_on_the_first_short_page(stub):
+    """It must not keep asking. A commit with three check-runs is one request, not ten.
+
+    The bound exists so a server that ignores `page` cannot spin forever, but the normal case has to stop
+    early or every 30-minute cron run pays ten round trips for nothing.
+    """
+    StubGitHub.runs = [check_run("success")]
+    proc = run_watch(stub, "--sha", SHA)
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+    check_run_calls = [s for s in StubGitHub.seen if "/check-runs" in s]
+    assert len(check_run_calls) == 1, check_run_calls
+
+
+def test_pagination_is_bounded_when_a_server_never_returns_a_short_page(stub):
+    """The pathological shape: every page comes back full, forever.
+
+    Not a real API, but a real failure mode to be defensive about — a proxy that strips `page` answers
+    page 1 indefinitely, and a watcher that then loops is worse than the bug it replaced. The stub
+    reproduces exactly that with `ignore_page`. Asserting the bound is what stops someone later
+    "simplifying" the loop into an unbounded one.
+    """
+    StubGitHub.runs = [check_run("success")] * 100
+    StubGitHub.ignore_page = True
+    try:
+        proc = run_watch(stub, "--sha", SHA)
+    finally:
+        StubGitHub.ignore_page = False
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+    pages = [s for s in StubGitHub.seen if "/check-runs" in s]
+    assert len(pages) == 10, pages  # CHECK_RUN_PAGES, no more
 
 
 # ── the requests actually sent ──────────────────────────────────────────────────────────────────────
