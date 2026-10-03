@@ -1,9 +1,37 @@
 {
-  "generated_at": "2026-10-03T11:49:30.527754+00:00",
+  "generated_at": "2026-10-03T14:47:43.212039+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "docs(lessons): promote 19 triaged intakes into the corpus",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2762",
+      "timestamp": "2026-10-03T14:47:32Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "feat(intake): stop filing an open issue for every submission that arrives",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2761",
+      "timestamp": "2026-10-03T13:49:13Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "test(setup): two installer tests were reading the developer's proxy, not the installer",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2756",
+      "timestamp": "2026-10-03T13:47:30Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2755",
+      "timestamp": "2026-10-03T11:57:24Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "chore: update leaderboard snapshot",
@@ -12,71 +40,43 @@
       "source": "github"
     },
     {
-      "type": "merged_pr",
-      "title": "fix(intake): a question body clipped at 2,000 chars still looked answerable, and #2743 arrived that way",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2749",
-      "timestamp": "2026-10-03T11:40:25Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "docs(ci): 质量门禁表加了一行，声明的行数没跟上（main 现在红着而 check-runs 全绿）",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2745",
-      "timestamp": "2026-10-03T09:40:58Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "ci(lesson): a correct lesson that would have joined nothing",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2729",
-      "timestamp": "2026-10-03T09:18:44Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "security(site): the homepage only sanitizer was pinned to 3.0.9, which has 20 known CVEs",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2730",
-      "timestamp": "2026-10-03T09:18:41Z",
-      "source": "github"
-    },
-    {
       "type": "lesson",
-      "title": "An IM bot is a guest on someone else's stack: pin the client, the OS, and the install order",
-      "url": "lessons/contrib/im-bot-environment-contracts.md",
-      "timestamp": "2026-10-02",
-      "domain": "wechat",
+      "title": "A child stat failure must not fail the whole parent directory listing",
+      "url": "lessons/contrib/a-child-probe-failure-must-not-poison-the-parent-listing.md",
+      "timestamp": "2026-10-03",
+      "domain": "nodejs",
       "source": "lessons"
     },
     {
       "type": "lesson",
-      "title": "An on-chain payout has no retry: the checks an agent must pass before it signs",
-      "url": "lessons/contrib/onchain-payout-preflight-checklist.md",
-      "timestamp": "2026-10-02",
-      "domain": "crypto-ops",
+      "title": "A pystray menu crash on macOS is an AppKit main-thread violation in a background thread, not a host-app bug",
+      "url": "lessons/contrib/a-pystray-menu-thread-crash-is-an-appkit-main-thread-violation.md",
+      "timestamp": "2026-10-03",
+      "domain": "python",
       "source": "lessons"
     },
     {
       "type": "lesson",
-      "title": "Voice pipelines fail without failing: the acceptance is the artifact, not the exit code",
-      "url": "lessons/contrib/voice-pipeline-silent-failures.md",
-      "timestamp": "2026-10-02",
-      "domain": "audio",
+      "title": "An archive container name is not an entity name: parse the entries before grouping",
+      "url": "lessons/contrib/an-archive-container-name-is-not-an-entity-name.md",
+      "timestamp": "2026-10-03",
+      "domain": "data",
       "source": "lessons"
     },
     {
       "type": "lesson",
-      "title": "A hit is not evidence of relevance — the boundary queries that must come back empty",
-      "url": "lessons/contrib/a-hit-is-not-evidence-of-relevance.md",
-      "timestamp": "2026-10-01",
-      "domain": "search",
+      "title": "Codex CLI: MCP handshake succeeds but the model never receives the tools",
+      "url": "lessons/contrib/codex-mcp-tools-not-injected-despite-handshake.md",
+      "timestamp": "2026-10-03",
+      "domain": "mcp",
       "source": "lessons"
     },
     {
       "type": "lesson",
-      "title": "git stash is repository-wide, not worktree-local — a bare stash pop can apply another session's work",
-      "url": "lessons/contrib/git-stash-is-repository-wide.md",
-      "timestamp": "2026-10-01",
-      "domain": "git",
+      "title": "curl exit 23 is a write failure, not a network failure: change the writer",
+      "url": "lessons/contrib/curl-exit-23-is-a-write-failure-not-a-network-failure.md",
+      "timestamp": "2026-10-03",
+      "domain": "devops",
       "source": "lessons"
     },
     {
