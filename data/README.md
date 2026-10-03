@@ -35,6 +35,7 @@
 | `bench_leaderboard.json` | `scripts/gen_leaderboard.py`、`scripts/leaderboard_watch.py` | **无**（同上）| push 到 main |
 | `leaderboard_meta.json` | `scripts/gen_leaderboard.py`、`scripts/leaderboard_watch.py` | **无**（它是"上次看到的值"的落盘，供 `leaderboard-watch.yml` 自己比对）| push 到 main |
 | `okf/lessons.jsonl` | `scripts/export_okf.py` | 外部 OKF 消费者 | 手动 |
+| `external_assets.json` | **手写维护**（清单；SRI 哈希随依赖版本一起手改）| `tests/test_external_asset_integrity.py`（离线：版本/URL/哈希/`integrity` 属性四者是否同一条事实）、`scripts/check_external_asset_integrity.py`（在线：CDN 实际返回的字节是否还是钉住的那份）| 清单手动；`external-asset-integrity.yml` 每周三 07:23 UTC |
 | `okf-test/lessons.json` | `scripts/export_okf.py`（测试拓扑）| `tests/`（OKF 导出测试）| 随测试 |
 | `dco_benchmark_result.json` | **孤儿**：写入者是 `archive/dead/scripts/dco_benchmark.py` | 无 | 已停 |
 | `.gitkeep` | — （占位，保证目录存在）| — | — |
