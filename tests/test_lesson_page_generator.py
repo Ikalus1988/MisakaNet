@@ -196,21 +196,27 @@ def _plan(lessons):
     return files, slugs
 
 
-def test_an_id_that_differs_from_its_slug_gets_a_redirect_page():
+def test_an_id_that_differs_from_its_slug_gets_a_redirect_rule():
+    """The id `misakanet_search` returns must resolve, or the documented page URL 404s.
+
+    2026-10-04: this used to assert a stub HTML page. The stub is retired and the alias is published as
+    a `docs/_redirects` rule, so the assertion moved with it. The property is unchanged — `/lessons/<id>/`
+    is not a 404 — but it is now a real HTTP redirect rather than a `<meta http-equiv="refresh">` that
+    only a browser acts on. `tests/test_lesson_id_redirects.py` carries the fuller contract for the table.
+    """
     lessons = [{"id": "short-id", "title": "A Much Longer Title That Becomes The Page Slug", "domain": "x"}]
     files, _ = _plan(lessons)
     slug = blp.slugify("A Much Longer Title That Becomes The Page Slug")
     assert f"docs/lessons/{slug}/index.html" in files, sorted(files)
-    assert f"docs/lessons/short-id/index.html" in files, (
-        "the id `misakanet_search` returns must resolve, or the documented page URL 404s")
+    assert f"docs/lessons/short-id/index.html" not in files, (
+        "the stub page is retired; a leftover one means the prune did not run, and it is the shape that "
+        "kept tripping GitHub's secret-scanning heuristic on ordinary lesson titles")
 
-    alias = files["docs/lessons/short-id/index.html"]
-    # Site-relative since 2026-09-29 (see the absolute-origin rule below): `rel="canonical"` resolves a
-    # relative URL against the page, and the origin was the shape a secret-scanning heuristic matched.
-    assert f'<link rel="canonical" href="/lessons/{slug}/">' in alias, alias
-    assert f'meta http-equiv="refresh" content="0; url=/lessons/{slug}/"' in alias, alias
-    assert blp.GENERATOR_MARK in alias, (
-        "without the marker the generator does not own the file and can never prune it")
+    assert blp.REDIRECTS.as_posix() in files, sorted(files)
+    assert f"/lessons/short-id/ /lessons/{slug}/ 301" in files[blp.REDIRECTS.as_posix()], (
+        files[blp.REDIRECTS.as_posix()])
+    # 301, not Cloudflare's 302 default: a slug is sticky, so the old address is permanently moved.
+    assert " 302" not in files[blp.REDIRECTS.as_posix()], files[blp.REDIRECTS.as_posix()]
 
 
 def test_no_alias_is_planned_when_the_id_is_already_the_slug():
@@ -219,6 +225,10 @@ def test_no_alias_is_planned_when_the_id_is_already_the_slug():
     files, _ = _plan(lessons)
     lesson_paths = {p for p in files if p.startswith("docs/lessons/")}
     assert lesson_paths == {f"docs/lessons/{blp.slugify(title)}/index.html"}, lesson_paths
+    # The table is still emitted, and it is empty of rules: it is written unconditionally so the path
+    # stays in the manifest and a stale one can never outlive the generator (see plan_with_slugs).
+    body = files[blp.REDIRECTS.as_posix()]
+    assert not [l for l in body.splitlines() if l.strip() and not l.strip().startswith("#")], body
 
 
 def test_a_real_page_wins_over_an_alias_at_the_same_path():
@@ -231,6 +241,11 @@ def test_a_real_page_wins_over_an_alias_at_the_same_path():
     real = files["docs/lessons/collides-with-a-slug/index.html"]
     assert "canonical" in real and "http-equiv" not in real, (
         "the real page for lesson 2 was replaced by lesson 1's redirect: " + real[:200])
+    # And no rule may shadow it: a redirect is followed whether or not an asset matches, so a rule over
+    # a real page makes that page unreachable while still looking like a working page on disk.
+    rules = [l for l in files[blp.REDIRECTS.as_posix()].splitlines()
+             if l.strip() and not l.strip().startswith("#")]
+    assert not [r for r in rules if r.startswith("/lessons/collides-with-a-slug/")], rules
 
 
 def test_the_alias_is_absent_from_the_sitemap():
@@ -247,13 +262,39 @@ def test_every_lesson_id_has_a_generated_page_on_disk():
 
     This is the repository-side version of "`/lessons/<id>/` is not a 404" — the docs/ tree is what gets
     deployed, so a missing file here is a 404 there.
+
+    2026-10-04: "resolves" is now two shapes, not one. A page on disk serves the URL directly; a
+    `docs/_redirects` rule serves it as a 301. The stub page that used to be the second shape is gone.
+    Both are checked against the *committed* table, not a freshly generated one, so a table that drifted
+    from what is on disk is caught here rather than in production.
     """
     rows = json.loads((REPO / "data" / "lessons.json").read_text(encoding="utf-8"))
-    missing = [row["id"] for row in rows
-               if not (REPO / "docs" / "lessons" / row["id"] / "index.html").exists()]
+    rules = blp.read_redirect_sources(REPO)
+    missing = []
+    for row in rows:
+        lesson_id = row["id"]
+        if (REPO / "docs" / "lessons" / lesson_id / "index.html").exists():
+            continue
+        if f"/lessons/{lesson_id}/" in rules:
+            continue
+        missing.append(lesson_id)
     assert not missing, (
-        f"{len(missing)} lesson ids have no page at `/lessons/<id>/` (run build_lesson_pages.py): "
-        f"{missing[:5]}")
+        f"{len(missing)} lesson ids resolve to neither a page nor a redirect rule (run "
+        f"build_lesson_pages.py): {missing[:5]}")
+
+
+def test_every_redirect_rule_points_at_a_page_that_exists():
+    """The other direction, and the one that bites in production: a rule to a 404 is worse than no rule.
+
+    A reader following `/lessons/<id>/` used to land on a stub that carried the target in its canonical
+    link, so a wrong target was visible in the HTML. It is now a `Location` header, which nothing in
+    this repository renders — so a stale slug would ship as a working-looking 301 to a dead URL.
+    """
+    rules = blp.read_redirect_sources(REPO)
+    assert len(rules) == 111, f"expected the 111 committed aliases, found {len(rules)}"
+    dead = {source: target for source, target in rules.items()
+            if not (REPO / "docs" / target.lstrip("/") / "index.html").is_file()}
+    assert not dead, f"these rules point at a URL with no page: {list(dead.items())[:5]}"
 
 
 # ── the two properties the plan cannot express (2026-09-30) ───────────────────────────────────────
@@ -341,25 +382,37 @@ def test_the_corpus_page_gate_reports_a_missing_page(tmp_path):
     blp.sync(files, root=tmp_path, slugs=slugs)
     assert blp.corpus_page_problems(LESSONS, root=tmp_path) == []
 
-    # 1. The page at the recorded (live) slug is gone, and so is the id alias: the lesson is a 404
-    #    under both of its names.
+    # 1. The page at the recorded (live) slug is gone, and so is the redirect rule: the lesson is a 404
+    #    under both of its names. (2026-10-04: the second shape is a `docs/_redirects` rule, not a stub
+    #    page — the stub is retired.)
     slug_page = tmp_path / "docs" / "lessons" / "bravo-lesson" / "index.html"
-    alias = tmp_path / "docs" / "lessons" / "bravo" / "index.html"
-    assert alias.is_file(), "no alias page for an id that differs from its slug — the alias writer moved"
+    table = tmp_path / blp.REDIRECTS
+    assert "/lessons/bravo/ " in table.read_text(encoding="utf-8"), (
+        "no redirect rule for an id that differs from its slug — the alias writer moved")
     slug_page.unlink()
-    alias.unlink()
+    table.unlink()
     problems = blp.corpus_page_problems(LESSONS, root=tmp_path)
     assert len(problems) == 1, problems
     assert "bravo" in problems[0] and "bravo-lesson/index.html" in problems[0], problems[0]
 
-    # 2. The id alias alone satisfies this gate (2026-09-29 alias pages; the task's "either the slug
-    #    page or the id alias"). It must not be allowed to hide the missing live page, and it cannot:
-    #    the alias is a redirect to `/lessons/<slug>/`, so the plan-versus-disk gate in the same
-    #    `--check` run still holds the slug page and reports it.
-    alias.write_text(files["docs/lessons/bravo/index.html"], encoding="utf-8")
+    # 2. The redirect rule alone satisfies this gate (the task's "either the slug page or the id
+    #    resolves"). It must not be allowed to hide the missing live page, and it cannot: the rule
+    #    resolves `/lessons/bravo/` and the plan-versus-disk gate in the same `--check` run still holds
+    #    the slug page and reports it.
+    table.write_text(files[blp.REDIRECTS.as_posix()], encoding="utf-8")
     assert blp.corpus_page_problems(LESSONS, root=tmp_path) == []
     assert blp.check(files, root=tmp_path) == [f"{slug_page.relative_to(tmp_path).as_posix()}: "
                                               "missing (would be created)"], blp.check(files, root=tmp_path)
+
+    # 2b. A rule that resolves the id to the *wrong* lesson is a different failure from a missing page,
+    #     and the more dangerous one: the URL answers, a reader arrives, and it is somebody else's page.
+    #     `corpus_page_problems` compares the rule's target against the recorded slug for exactly this.
+    table.write_text(files[blp.REDIRECTS.as_posix()].replace(
+        "/lessons/bravo/ /lessons/bravo-lesson/", "/lessons/bravo/ /lessons/fire-probe-lesson/"),
+        encoding="utf-8")
+    problems = blp.corpus_page_problems(LESSONS, root=tmp_path)
+    assert [p for p in problems if "recorded slug" in p], problems
+    table.write_text(files[blp.REDIRECTS.as_posix()], encoding="utf-8")
 
     # 3. A lesson the slug map does not know is a failure even when a page is on disk: the recorded
     #    slug is what keeps a live URL sticky, and re-deriving it is how 88 pages were orphaned once.
@@ -419,33 +472,47 @@ def test_a_lesson_merge_regenerates_the_pages():
 
 
 
-# ── generated redirect pages carry no absolute URL ──────────────────────────────────────────────────
+# ── generated redirects carry no absolute URL ────────────────────────────────────────────────────────
 # GitHub's secret-scanning heuristic (`HARDCODED_SECRET`, tool `plugin-scanner 2.2.0`) flagged two alias
 # pages on 2026-09-29 — `docs/lessons/idempotent-task-claim/index.html:6` and
 # `docs/lessons/disk-full-agent-tmp-gc/index.html:6`. Both lines were the *canonical* link, and both slugs
 # are ordinary lesson titles that happen to contain secret-flavoured words ("Idempotent task claim **keys**
 # for snipers", "Disk full from agent tmp dirs — **GC pattern**"). Nothing was leaked: the lesson sources
 # carry no credential-shaped string and `scripts/check_published_secrets.py` is green over every published
-# prose file. The canonical is now site-relative (valid for `rel="canonical"`), so a generated file whose
-# only content is a redirect no longer contains an absolute URL — and this rule keeps that shape from coming
-# back, because the next title with "token" or "secret" in it would trip the same heuristic.
+# prose file.
+#
+# The first fix made the canonical site-relative. The second (2026-10-04) removed the HTML: the alias is
+# now a line in `docs/_redirects`, so there is no page and no canonical link to flag — the false positive
+# is gone structurally rather than by spelling. The rule below keeps it gone: the table's targets are
+# site-relative paths, and a rule written as an absolute URL would put a full endpoint back into a
+# generated file for any future title containing "token" or "secret".
 
-def test_generated_redirect_pages_do_not_embed_an_absolute_origin():
-    aliases = [p for p in (REPO / "docs" / "lessons").glob("*/index.html")
-               if "Moved —" in p.read_text(encoding="utf-8")[:200]]
-    assert aliases, "no alias pages found — this rule has lost its subject (did the generator change?)"
-    offenders = []
-    for page in aliases:
-        text = page.read_text(encoding="utf-8")
-        for origin in blp.SITE_URL, "http://", "https://raw.githubusercontent.com":
-            if origin in text:
-                offenders.append(f"{page.relative_to(REPO).as_posix()}: {origin}")
+def test_no_generated_redirect_target_is_an_absolute_url():
+    table = (REPO / blp.REDIRECTS).read_text(encoding="utf-8")
+    assert table, "the redirect table is empty — this rule has lost its subject"
+    offenders = [line for line in table.splitlines()
+                 if any(origin in line for origin in
+                        (blp.SITE_URL, "http://", "https://raw.githubusercontent.com"))]
     assert not offenders, (
-        "these generated redirect pages embed an absolute URL; an ordinary lesson title that slugifies to a "
-        "secret-flavoured string then reads as a hardcoded endpoint to a scanner: " + "; ".join(offenders[:5]))
+        "these generated redirect rules embed an absolute URL; an ordinary lesson title that slugifies "
+        "to a secret-flavoured string then reads as a hardcoded endpoint to a scanner: " + str(offenders[:5]))
 
 
-def test_the_relative_canonical_rule_notices_an_absolute_origin():
+def test_no_stub_redirect_page_survives():
+    """The stub pages are retired, and the prune that removed them has to keep removing them.
+
+    A stub left on disk is not harmless even with a working table: it is a second, stale copy of the
+    alias mapping that nothing reads, and it is exactly the file shape that produced the false-positive
+    alerts above. This is the property that makes the retirement stick across regenerations.
+    """
+    survivors = [p.relative_to(REPO).as_posix() for p in (REPO / "docs" / "lessons").glob("*/index.html")
+                 if "Moved —" in p.read_text(encoding="utf-8", errors="replace")[:200]]
+    assert not survivors, (
+        f"{len(survivors)} stub redirect page(s) are still on disk; the generator no longer writes them, "
+        f"so these are orphans: {survivors[:5]}")
+
+
+def test_the_relative_target_rule_notices_an_absolute_origin():
     """Guard: the rule reads the repository, so its failure mode needs a fixture."""
     def has_absolute(text: str) -> bool:
         return any(origin in text for origin in (blp.SITE_URL, "http://", "https://raw.githubusercontent.com"))
