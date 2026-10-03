@@ -154,6 +154,28 @@ test('the CJK floor does not drop', () => {
   assert.ok(ZH.hit3 >= ZH_FLOOR.hit3, floorMessage('CJK', 'top-3', ZH.hit3, ZH_FLOOR.hit3, ZH.missed));
 });
 
+test('every expected answer names a real lesson, and none is listed twice', () => {
+  // A guard on this data file, not on the ranking. `expected` is the set of answers the bench
+  // will accept, which makes it the one place where "make the number go up" is available to
+  // anyone editing a query. Two of the mechanical ways to do that are checkable: citing a slug
+  // that does not exist, and citing the same lesson twice so one answer looks like two.
+  //
+  // What this deliberately does NOT check is whether a real lesson actually answers the question.
+  // That part is judgement, and no assertion can supply it. Read `note` on the row before
+  // adding to `expected` — the one widening done here (zh-05, 2026-10-03) argues in its note why
+  // the second lesson is a better answer to a generic query than the one it displaced.
+  const ids = new Set(JSON.parse(
+    readFileSync(new URL('../data/lessons.json', import.meta.url), 'utf8')).map((l) => l.id));
+  for (const row of QUERIES) {
+    assert.ok(row.expected.length > 0, `${row.id} lists no expected answer at all`);
+    assert.equal(new Set(row.expected).size, row.expected.length,
+      `${row.id} lists the same lesson more than once: ${row.expected.join(', ')}`);
+    for (const id of row.expected) {
+      assert.ok(ids.has(id), `${row.id} expects "${id}", which is not in the corpus`);
+    }
+  }
+});
+
 test('both sets were actually run — a floor over an empty set cannot fail', () => {
   assert.ok(EN.total >= 20, `the English set has ${EN.total} rows, expected 20`);
   assert.ok(ZH.total >= 20, `the CJK set has ${ZH.total} rows, expected 20`);
