@@ -104,23 +104,24 @@ class StubGitHub(BaseHTTPRequestHandler):
         path = self.path.split("?")[0]
         type(self).seen.append("GET " + self.path)
         if path.endswith("/check-runs"):
-            return self._json({"check_runs": self._check_runs_page()})
+            return self._json({"check_runs": self._page(self.runs)})
         if path == f"/repos/{OWNER_REPO}/issues":
             return self._json(self.issues)
         if path.endswith("/comments"):
-            return self._json(self.comments)
+            return self._json(self._page(self.comments))
         if path.startswith(f"/repos/{OWNER_REPO}/branches/"):
             return self._json({"commit": {"sha": SHA}})
         return self._json({})
 
-    def _check_runs_page(self) -> list:
-        """One page of check-runs, honouring `per_page` and `page` the way the REST API does.
+    def _page(self, items: list) -> list:
+        """One page of a list, honouring `per_page` and `page` the way the REST API does.
 
-        Added 2026-10-04. This handler used to answer every `/check-runs` request with the whole list,
-        which is the convenient thing and is also why the pagination bug below was invisible: the watcher
-        asked for `per_page=100`, the stub ignored it, and every test saw a single complete page. Real
-        commits here carry 118-187 check-runs (measured on `main`), and the Workers Builds run is not
-        always on the first page of them.
+        Added 2026-10-04. This handler used to answer every list request with the whole collection,
+        which is the convenient thing and is also why two separate pagination bugs stayed invisible: the
+        watcher asked for `per_page=100`, the stub ignored it, and every test saw one complete page.
+        Real commits here carry 118-187 check-runs (measured on `main`) and the Workers Builds run is
+        not always on the first page of them; the tracker issue grows by one comment per state
+        transition and is read newest-first, so a one-page read of it returns the *oldest* 100.
 
         `ignore_page` models a proxy that strips the parameter and answers page 1 forever. It is not a
         real API, but it is the one shape that turns a bounded loop into an unbounded one.
@@ -128,10 +129,10 @@ class StubGitHub(BaseHTTPRequestHandler):
         query = urllib.parse.parse_qs(self.path.partition("?")[2])
         per_page = int((query.get("per_page") or ["30"])[0])
         if type(self).ignore_page:
-            return self.runs[:per_page]
+            return items[:per_page]
         page = int((query.get("page") or ["1"])[0])
         start = (page - 1) * per_page
-        return self.runs[start:start + per_page]
+        return items[start:start + per_page]
 
     def do_POST(self):  # noqa: N802
         path = self.path.split("?")[0]
@@ -304,7 +305,86 @@ def test_pagination_is_bounded_when_a_server_never_returns_a_short_page(stub):
         StubGitHub.ignore_page = False
     assert proc.returncode == 0, proc.stdout + proc.stderr
     pages = [s for s in StubGitHub.seen if "/check-runs" in s]
-    assert len(pages) == 10, pages  # CHECK_RUN_PAGES, no more
+    assert len(pages) == 10, pages  # MAX_LIST_PAGES, no more
+
+
+def _filler_state_comment(state: str, sha: str) -> dict:
+    """A tracker comment carrying a state marker, with a caller-chosen sha.
+
+    The file's own `marker_comment` hardcodes `sha=SHA`, which is fine for a test that only cares about
+    state but not here: the point of these tests is that 100 *older* comments must not be mistaken for
+    the newest one, and identical shas would let a fix that keys on the sha rather than on position
+    pass for the wrong reason.
+    """
+    return {"body": f"report\n\n<!-- workers-builds-watch: state={state} sha={sha} -->"}
+
+
+def test_a_tracker_past_100_comments_still_reports_its_newest_state(stub):
+    """The same one-page trap as the check-runs read, on the list that matters more.
+
+    `last_state` is the watcher's memory. The tracker issue is built to grow — one comment per state
+    transition — and GitHub returns comments oldest-first, so a single page yields the **oldest** 100
+    and the newest state is the one that goes missing. The failure is not cosmetic: on a red-to-green
+    transition the watcher would read a stale `red`, and the resolved outage it had already commented
+    about would be re-reported as current, forever.
+
+    100 filler comments is not a hypothetical shape. The largest tracker this repository has produced
+    is #2637 with 6 comments, so nothing is broken today — but the threshold is already crossed in the
+    same repository elsewhere (#2020 carries 249 comments, #761/762/763 carry 237/230/200), and a
+    tracker is precisely the kind of issue that keeps receiving comments.
+
+    The assertion is on `last=`, not on `site build:`. The stub's check-run is red and the tracker's
+    newest recorded state is green, so `site build: red` is the *correct* current reading and
+    `last=green` is the thing that proves the 101st comment was read. Asserting on the wrong one would
+    let a fix that still returned the oldest page pass, which is the bug.
+    """
+    StubGitHub.comments = [_filler_state_comment("red", f"old{i:03d}") for i in range(100)]
+    StubGitHub.issues = [{"number": 2136, "title": "tracker"}]
+    proc = run_watch(stub, "--sha", SHA)
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+
+    # Comment 101 — the newest — says green, and it is one past the first page.
+    StubGitHub.comments.append(_filler_state_comment("green", "newest"))
+    proc = run_watch(stub, "--sha", SHA)
+    assert "last=green" in proc.stdout, (
+        "the tracker has 101 comments and the newest state says green, but the watcher reported a "
+        f"different last state — it read page 1 only. Output: {proc.stdout}")
+
+    assert any("/comments" in s and "page=2" in s for s in StubGitHub.seen), (
+        f"the watcher never asked for page 2: {StubGitHub.seen}")
+
+    # And the converse: a `red` at 101 must win over the 100 `red`s before it, by position alone.
+    StubGitHub.comments[100] = _filler_state_comment("red", "newest")
+    proc = run_watch(stub, "--sha", SHA)
+    assert "last=red" in proc.stdout, proc.stdout
+
+
+def test_a_tracker_within_one_page_costs_one_request(stub):
+    """Paginating must not make the common case pay for the rare one.
+
+    The healthy path is one short page, so one request — a cron that asked for ten every 30 minutes
+    would be a regression in exchange for a fix.
+    """
+    StubGitHub.comments = [_filler_state_comment("green", SHA)]
+    StubGitHub.issues = [{"number": 2136, "title": "tracker"}]
+    proc = run_watch(stub, "--sha", SHA)
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+    comment_reads = [s for s in StubGitHub.seen if "/comments" in s and s.startswith("GET")]
+    assert len(comment_reads) == 1, comment_reads
+
+
+def test_comment_pagination_is_bounded_too(stub):
+    """The `ignore_page` pathological shape must not hang the comment read either."""
+    StubGitHub.comments = [_filler_state_comment("red", "filler")] * 100
+    StubGitHub.issues = [{"number": 2136, "title": "tracker"}]
+    StubGitHub.ignore_page = True
+    try:
+        proc = run_watch(stub, "--sha", SHA)
+    finally:
+        StubGitHub.ignore_page = False
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+    reads = [s for s in StubGitHub.seen if "/comments" in s and s.startswith("GET")]
+    assert len(reads) <= 10, reads
 
 
 # ── the requests actually sent ──────────────────────────────────────────────────────────────────────

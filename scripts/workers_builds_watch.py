@@ -106,11 +106,14 @@ class GitHub:
 
 # ── the two facts the decision needs ────────────────────────────────────────────────────────────────
 
-# A commit on a busy repository carries well over 100 check-runs, and the Workers Builds one is not
-# always on page 1. GitHub orders check-runs newest-first, and on 2026-10-04 the four most recent main
-# commits with the most runs put it past the fold on all four. This bound is 10 pages (1,000 runs), which
-# is far past anything measured here and exists so a server that ignores `page` cannot spin forever.
-CHECK_RUN_PAGES = 10
+# Page bound for every list this watcher reads. A commit on a busy repository carries well over 100
+# check-runs, and the Workers Builds one is not always on page 1; the tracker issue grows by one comment
+# per state transition and is read newest-first. Both are bounded at 10 pages (1,000 items), which is far
+# past anything measured here and exists so a server that ignores `page` cannot spin forever.
+#
+# Named for what it is rather than for its first caller: it was `CHECK_RUN_PAGES` while `all_check_runs`
+# was the only thing using it, which is exactly how a bound stops describing the thing it governs.
+MAX_LIST_PAGES = 10
 
 
 def all_check_runs(gh: GitHub, sha: str) -> list:
@@ -138,7 +141,7 @@ def all_check_runs(gh: GitHub, sha: str) -> list:
     own statement that there is nothing more, and it costs no extra request.
     """
     collected: list = []
-    for page in range(1, CHECK_RUN_PAGES + 1):
+    for page in range(1, MAX_LIST_PAGES + 1):
         payload = gh("GET", f"/commits/{sha}/check-runs?per_page=100&page={page}") or {}
         batch = list(payload.get("check_runs") or [])
         collected.extend(batch)
@@ -182,10 +185,36 @@ def open_tracker(gh: GitHub) -> dict | None:
     return issues[0] if issues else None
 
 
+def all_issue_comments(gh: GitHub, issue_number: int) -> list:
+    """Every comment on an issue, following pagination.
+
+    The same trap `all_check_runs` walks into, on the list that matters more here. The tracker issue is
+    built to accumulate: `record_state` appends a comment on every state transition, so the newest
+    state is always the *last* comment. One page returns the **oldest** 100, and `last_state` scans
+    `reversed(...)` for the newest marker it can see — so past 100 comments it would read a stale
+    state and, on a red-to-green transition, keep reporting the resolved outage as current. The
+    memory is truncated exactly when the watcher has been working long enough to be worth trusting.
+
+    Measured 2026-10-04 on the trackers this repository has actually produced: the largest is #2637
+    with 6 comments, so nothing is broken today. The threshold is also already crossed elsewhere in
+    the same repository — #2020 carries 249 comments, #761/762/763 carry 237/230/200 — so "no list
+    here has reached 100" is a property of the current issue set, not of the code.
+
+    Bounded by the same `MAX_LIST_PAGES` as `all_check_runs` for the same reason: a proxy that strips
+    `page` would otherwise loop forever.
+    """
+    collected: list = []
+    for page in range(1, MAX_LIST_PAGES + 1):
+        batch = gh("GET", f"/issues/{issue_number}/comments?per_page=100&page={page}") or []
+        collected.extend(batch)
+        if len(batch) < 100:
+            break
+    return collected
+
+
 def last_state(gh: GitHub, issue_number: int) -> str:
     """The state recorded by the newest watcher comment on the tracker (UNKNOWN if there is none)."""
-    comments = gh("GET", f"/issues/{issue_number}/comments?per_page=100") or []
-    for comment in reversed(comments):
+    for comment in reversed(all_issue_comments(gh, issue_number)):
         body = str(comment.get("body") or "")
         if f"<!-- {MARKER}:" not in body:
             continue
