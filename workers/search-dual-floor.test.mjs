@@ -7,7 +7,7 @@
 // live here together and are asserted against one corpus in one run, which makes "the English floor
 // did not move" a property of this file rather than a promise in a PR description.
 //
-// The measured floors below are what `data/lessons.json` at **418 rows** answers today (2026-09-28),
+// The floors below are what `data/lessons.json` at **418 rows** answers today (2026-09-28),
 // through the real MCP handler, with alias expansion on (the production default):
 //
 //   language   rows   top-1   top-3
@@ -19,6 +19,12 @@
 // from 6/22 and 11/22 on 2026-09-28, when the bigram channel (#2355) and its fusion (#2356) landed and
 // the English pair did not move at all. That is the property this file exists for. Lowering one
 // means accepting less than the code did on 2026-09-28, so it needs a reason in the commit message.
+//
+// Re-measured 2026-10-03 at 457 rows (#2762 merged 19 lessons since): English 16/20 · 19/20, CJK
+// 11/22 · 16/22. The CJK top-3 is one above its floor, and the floor was deliberately NOT raised to
+// meet it: that extra hit came from 19 unrelated lessons shifting the ranking, not from search getting
+// better, and pinning a floor to a corpus size would hand the gate to unrelated churn. The top-1 sits
+// exactly on its floor, so there is no headroom to record either way.
 //
 // The CJK set is `scripts/eval_query_aliases.py`'s twenty questions (the corpus's own measure of the
 // Chinese gap, and the set `workers/search-cjk-recall.test.mjs` already pins) plus two bare
@@ -37,6 +43,20 @@
 // the live numbers legitimately differ: measured 2026-09-28 they were 13/20 · 18/20 and 11/22 · 14/22.
 // `scripts/bench_production_recall.py` prints both sides at once. Never move these floors to match it —
 // that deletes the measurement instead of the gap.
+//
+// The corpus here is the WHOLE file, drafts included, and that is deliberate (#2766). The search path
+// does not filter on `status`: a draft lesson is served like any other, carrying a `status` marker
+// because whether a draft should be retrievable at all is still open (#2270, see `lessonStatusMarker` in
+// `register-proxy-sw.js`). Filtering this bench down to `published` would therefore measure a system
+// that does not exist — measured 2026-10-03 it reads CJK 10/22 · 15/22 instead of 11/22 · 16/22, which
+// is a number about a hypothetical, not about production. One row (zh-18) does depend on a draft
+// lesson, and the guard below makes that dependency a recorded decision instead of an accident.
+//
+// One trap for anyone adding a second corpus-based bench to this file: the worker memoises the BM25
+// index at MODULE scope (`_bm25Index` / `_bm25IndexExpiry` in `register-proxy-sw.js`). Two `env`s with
+// two different corpora in one process do NOT get two measurements — the second silently reuses the
+// first index, so a comparison like "full corpus vs published-only" reports the full corpus twice and
+// the delta looks like zero. Measure one corpus per process.
 //
 // Run: node --test workers/search-dual-floor.test.mjs
 import assert from 'node:assert/strict';
@@ -157,21 +177,42 @@ test('the CJK floor does not drop', () => {
 test('every expected answer names a real lesson, and none is listed twice', () => {
   // A guard on this data file, not on the ranking. `expected` is the set of answers the bench
   // will accept, which makes it the one place where "make the number go up" is available to
-  // anyone editing a query. Two of the mechanical ways to do that are checkable: citing a slug
-  // that does not exist, and citing the same lesson twice so one answer looks like two.
+  // anyone editing a query. Three of the mechanical ways to do that are checkable: citing a slug
+  // that does not exist, citing the same lesson twice so one answer looks like two, and parking
+  // the only acceptable answer on a lesson the repository has not published.
   //
   // What this deliberately does NOT check is whether a real lesson actually answers the question.
   // That part is judgement, and no assertion can supply it. Read `note` on the row before
   // adding to `expected` — the one widening done here (zh-05, 2026-10-03) argues in its note why
   // the second lesson is a better answer to a generic query than the one it displaced.
-  const ids = new Set(JSON.parse(
-    readFileSync(new URL('../data/lessons.json', import.meta.url), 'utf8')).map((l) => l.id));
+  const rows = JSON.parse(
+    readFileSync(new URL('../data/lessons.json', import.meta.url), 'utf8'));
+  const ids = new Set(rows.map((l) => l.id));
+  const statusById = new Map(rows.map((l) => [l.id, l.status]));
   for (const row of QUERIES) {
     assert.ok(row.expected.length > 0, `${row.id} lists no expected answer at all`);
     assert.equal(new Set(row.expected).size, row.expected.length,
       `${row.id} lists the same lesson more than once: ${row.expected.join(', ')}`);
     for (const id of row.expected) {
       assert.ok(ids.has(id), `${row.id} expects "${id}", which is not in the corpus`);
+      // The third mechanical way to move the number (#2766). A draft lesson IS served by the
+      // search path — it comes back with a `status` marker, because whether a draft should be
+      // retrievable at all is still an open product question (#2270) and the worker makes the
+      // fact visible rather than deciding it. So a non-published `expected` is legitimate, and
+      // the danger is not the row but its *unrecorded* state: a draft can be published, renamed
+      // or dropped by an editorial decision, and the quiet failure is somebody deleting the
+      // query row to get the suite green. `ZH.total >= 20` below does not catch 22 becoming 21,
+      // so the coverage would shrink with every test still passing. Requiring the note to name
+      // the status turns that accident into a recorded decision: if you delete the lesson, this
+      // failure now says which row lost its answer instead of leaving a smaller bench behind.
+      const status = statusById.get(id);
+      if (status && status !== 'published') {
+        assert.ok(new RegExp(status, 'i').test(row.note || ''),
+          `${row.id} expects "${id}", whose status is "${status}", but the row's note never says so. `
+          + 'A non-published expected answer is allowed and is deliberate — the search path serves it, '
+          + 'marked — but it must be written down: name the status in `note` and say what to do if the '
+          + 'lesson is later published or removed.');
+      }
     }
   }
 });
