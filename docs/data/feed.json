@@ -1,9 +1,16 @@
 {
-  "generated_at": "2026-10-03T15:58:51.183006+00:00",
+  "generated_at": "2026-10-03T16:31:18.344478+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2778",
+      "timestamp": "2026-10-03T16:03:34Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "lessons: reland #2570's five contrib lessons on current main (generators re-run)",
@@ -30,13 +37,6 @@
       "title": "chore(data): sync lessons.json + refresh feed",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/2776",
       "timestamp": "2026-10-03T15:39:39Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "lessons: reland #2542's AgentCap inspect / codesign lesson on current main (generator re-run)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2773",
-      "timestamp": "2026-10-03T15:32:06Z",
       "source": "github"
     },
     {
