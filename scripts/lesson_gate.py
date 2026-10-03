@@ -645,18 +645,24 @@ def validate_location(path: Path, repo: Path = REPO) -> list[str]:
         return []
     parts = relative.parts
     if not parts or parts[0] != "lessons" or len(parts) < 3:
+        # `as_posix()` rather than `str(relative)`: this string is a command a contributor copies,
+        # and on Windows `str(Path)` renders it with backslashes, so the message came out with one
+        # separator in "not at lessons\foo.md" and another in "git mv lessons\foo.md
+        # lessons/contrib/foo.md". A path that reads two ways is a path nobody trusts. Every path in
+        # this message is now forward-slash on every platform.
+        as_written = relative.as_posix()
         return [
             f"a lesson must live in lessons/<{'/'.join(sorted(ACTIVE_LESSON_SUBDIRS))}/>, "
-            f"not at {relative}. Nothing reads a markdown file outside those directories, so this "
+            f"not at {as_written}. Nothing reads a markdown file outside those directories, so this "
             f"lesson would never enter the corpus: move it with\n"
-            f"    git mv {relative} lessons/contrib/{parts[-1]}"
+            f"    git mv {as_written} lessons/contrib/{parts[-1]}"
         ]
     if parts[1] in ACTIVE_LESSON_SUBDIRS:
         return []
     return [
         f"lessons/{parts[1]}/ is not a lesson directory — nothing reads it. The corpus is read from "
         f"{', '.join('lessons/' + s + '/' for s in sorted(ACTIVE_LESSON_SUBDIRS))}; move this file with\n"
-        f"    git mv {relative} lessons/contrib/{'-'.join(parts[1:])}"
+        f"    git mv {relative.as_posix()} lessons/contrib/{'-'.join(parts[1:])}"
     ]
 
 

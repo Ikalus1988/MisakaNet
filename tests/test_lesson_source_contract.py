@@ -32,7 +32,7 @@ import os
 import shutil
 import subprocess
 import sys
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 
 import pytest
 
@@ -97,6 +97,44 @@ def test_a_lesson_outside_the_corpus_directories_is_rejected_with_the_command() 
     )
     # ...and nothing else is wrong with it, which is what makes this a placement finding
     assert not [e for e in errors if "too short" in e or "missing required section" in e], errors
+
+
+def test_the_suggested_command_uses_forward_slashes_on_every_platform() -> None:
+    """`validate_location` renders a path a contributor is meant to *copy into a shell*.
+
+    It used `str(relative)`, which on Windows comes out as `lessons\\zz-probe.md`. So the message
+    read "not at lessons\\zz-probe.md ... move it with `git mv lessons\\zz-probe.md
+    lessons/contrib/zz-probe.md`" — one separator in the description and another in the command it
+    hands you. It passed on Linux and on macOS and failed only on `windows-latest`, which is the
+    most expensive place to find it.
+
+    **What this test can and cannot do, stated plainly.** On Linux `str(relative)` and
+    `relative.as_posix()` produce the same string, so reverting the fix is an *equivalent mutant*
+    here and this test stays green either way. It did exactly that when checked. The assertions
+    below are therefore a guard, not the enforcement; the `windows-latest` leg is. That is recorded
+    here so the next person does not spend an afternoon trying to strengthen it — the way to make
+    it bind locally would be to inject a `PureWindowsPath` into `validate_location`, which is a
+    refactor of the function for the sake of a test rather than a fix.
+    """
+    wrong = REPO / "lessons" / "zz-probe-separators.md"
+    assert not wrong.exists(), "a previous run left a probe behind"
+    try:
+        wrong.write_text(VALID_LESSON, encoding="utf-8")
+        errors = gate.validate_location(wrong)
+    finally:
+        wrong.unlink()
+
+    assert errors, "the probe was accepted, so there is no message to check"
+    for message in errors:
+        assert "\\" not in message, f"a Windows separator leaked into the message: {message!r}"
+
+    # The rendering rule itself, on a path shaped the way Windows produces it.
+    windows_shaped = PureWindowsPath("lessons", "zz-probe-separators.md")
+    assert str(windows_shaped).count("\\") == 1, "the fixture no longer models Windows"
+    assert windows_shaped.as_posix() == "lessons/zz-probe-separators.md"
+    assert str(windows_shaped.as_posix()) in errors[0], (
+        f"the message does not carry the as_posix() rendering: {errors[0]!r}"
+    )
 
 
 def test_an_unknown_subdirectory_is_rejected_too() -> None:
