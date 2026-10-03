@@ -327,14 +327,14 @@ const MCP_TOOLS = [
   },
   {
     name: "misakanet_search",
-    description: "[RETRIEVAL / READ] Search MisakaNet's public failure-lesson index by error text, keyword, or topic. This is the primary read path — run it first when you hit an error, before deciding to submit anything. For a known lesson ID or path, prefer misakanet_get_lesson — it skips ranking and returns the full content. detail controls progressive disclosure: compact (default, ~80 tok/lesson) for broad scans, summary (~200 tok) adds domain/tags/fix, full returns complete lesson data.\nFAQ: results may also include answered questions (type=\"faq\", issue_url + answer) — if a maintainer already answered the same question, the answer surfaces here.\nReturns: object {results: [compact: {id, title, problem, freshness, evidence_level} | summary: + {domain, tags, fix} | full: the record, each with score], source, detail, query}; on no match: {no_match: true, suggestion, intake}.\nExample: misakanet_search(query='pip install timeout', domain='python', top=3)",
+    description: "[RETRIEVAL / READ] Search MisakaNet's public failure-lesson index by error text, keyword, or topic. This is the primary read path — run it first when you hit an error, before deciding to submit anything. For a known lesson ID or path, prefer misakanet_get_lesson — it skips ranking and returns the full content. detail controls progressive disclosure: compact (default, ~80 tok/lesson) for broad scans, summary (~200 tok) adds domain/tags/fix, full returns complete lesson data.\nFAQ: results may also include answered questions (type=\"faq\", issue_url + answer) — if a maintainer already answered the same question, the answer surfaces here.\nReturns: object {results: [compact: {id, title, problem, freshness, evidence_level, score} | summary: + {domain, tags, fix} | full: the record], source, detail, query}; `score` is the ranker's relevance for that result and is omitted on the unranked fallback path. On no match: {no_match: true, suggestion, intake}.\nExample: misakanet_search(query='pip install timeout', domain='python', top=3)",
     inputSchema: {
       type: "object",
       properties: {
         query: { type: "string", description: "Required redacted error message, keyword, or topic (e.g. 'pip install timeout' or 'DCO sign-off failed')." },
         domain: { type: "string", description: "Optional domain filter such as devops, python, network, feishu, rag, fanuc, or mcp." },
         top: { type: "integer", description: "Maximum ranked results to return. Defaults to 5; keep small for MCP context and latency." },
-        detail: { type: "string", enum: ["compact", "summary", "full"], description: "Progressive disclosure: compact (default, ~80 tok) includes id/title/problem/freshness; summary (~200 tok) adds domain/tags/fix; full returns complete lesson data with path." },
+        detail: { type: "string", enum: ["compact", "summary", "full"], description: "Progressive disclosure: compact (default, ~80 tok) includes id/title/problem/freshness/score; summary (~200 tok) adds domain/tags/fix; full returns complete lesson data with path." },
         kind: { type: "string", enum: ["all", "lessons", "evidence", "related"], description: "Filter by kind: 'lessons' (lesson files only), 'evidence' (results with evidence_refs or verification), 'related' (cross-referenced/tag-overlap), 'all' (default). Auto-detected from query intent when omitted." },
         bm25_weight: { type: "number", description: "Override BM25 keyword weight (0-1). Higher favors exact keyword match. Default: 0.65. All weights must sum to 1.0." },
         metadata_weight: { type: "number", description: "Override metadata bonus weight (0-1). Higher favors matching domain/tags. Default: 0.20." },
@@ -741,6 +741,31 @@ function compactResult(lesson) {
   // model is told to repeat to the user verbatim, and compact is the default detail.
   const summaryPlain = plainField(lesson.summary_plain);
   const statusMarker = lessonStatusMarker(lesson);
+  // #2790: `score` belongs here, and always did. `MCP_TOOLS` describes the return as
+  // "[compact: {id, title, problem, freshness, evidence_level} | summary: + {domain, tags, fix} |
+  // full: the record, **each with score**]" — the schema promises a score on every detail level,
+  // including the default one, and `applyDetailLevel` was dropping it for exactly the two levels an
+  // agent is most likely to use. Measured on production 2026-10-04 for `query="following error"`:
+  //
+  //     detail=compact  voice=lesson-found  5 results  first=gfw-tls-sni-block-pattern  score=<absent>
+  //     detail=full     voice=lesson-found  5 results  first=gfw-tls-sni-block-pattern  score=3.16
+  //
+  // The same query at full detail separates real hits (18.43, 11.22) from junk (2.99–3.16), and the
+  // field that says so is exactly the one the default detail level threw away. An agent on the default
+  // could not have told those two cases apart — and the tool answers with `voice: "lesson-found"` for
+  // any non-empty result set, so a confident "found it" is what an irrelevant hit looks like from the
+  // caller's side. Surfacing the number does not fix that (a floor is the actual fix, and it is a
+  // product decision about the threshold); it stops the worker from withholding the evidence.
+  //
+  // Conditional rather than always present: the naive `searchLessons` fallback does not rank, so its
+  // rows have no score, and emitting `score: null` would invite a caller to compare against nothing.
+  //
+  // The `typeof` guard before the coercion is load-bearing, not defensive noise: `Number(null)`,
+  // `Number("")` and `Number([])` are all `0`, so a plain `Number.isFinite(Number(x))` test turns an
+  // absent score into `score: 0` — which reads as "ranked, and the ranking is zero" and is the worst
+  // possible answer, because it looks like data. `0` itself is a legitimate low score and is kept;
+  // only a genuinely non-numeric value is dropped.
+  const score = typeof lesson.score === "number" && Number.isFinite(lesson.score) ? lesson.score : null;
   return {
     id: lesson.id || "",
     title: lesson.title || "",
@@ -755,6 +780,7 @@ function compactResult(lesson) {
     // reads) this was always `""` — while the same field came back filled on the GitHub snapshot
     // path, which is why nobody noticed. Fall back to the raw frontmatter the row already carries.
     evidence_level: lesson.evidence_level || frontmatterField(lesson.frontmatter, "evidence_level"),
+    ...(score !== null ? { score } : {}),
     ...(summaryPlain ? { summary_plain: summaryPlain } : {}),
     ...(statusMarker ? { status: statusMarker } : {}),
   };
@@ -7992,6 +8018,12 @@ export {
   buildFtsMatch,
   healthStatus,
   deployedCommit,
+  // Exported for workers/search-detail-score.test.mjs: the `MCP_TOOLS` description promises a `score`
+  // on every detail level, and `applyDetailLevel` is the only place that promise is either kept or
+  // broken. A test that asserts against a hand-written compact object would keep passing if the
+  // formatter changed, which is how the omission survived from the tool's introduction until #2790.
+  compactResult,
+  applyDetailLevel,
   // Exported for the worker tests: the durable store is where the search index and the upstream
   // caches live since #2116, so a test that asks "was the index published?" has to ask the same
   // helper the worker asks — asserting against the KV stub directly now describes the fallback
