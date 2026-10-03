@@ -34,7 +34,24 @@
   }
 }
 </script>
-<script defer src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.9/purify.min.js" integrity="sha384-3HPB1XT51W3gGRxAmZ+qbZwRpRlFQL632y8x+adAqCr4Wp3TaWwCLSTAJJKbyWEK" crossorigin="anonymous"></script>
+<!-- The homepage's only external text sanitizer, and therefore the only thing between "a
+     contributor can edit docs/community/voices.json" and script execution — #2672 proved that path
+     exists. Upgraded 3.0.9 → 3.4.16 on 2026-10-03: 3.0.9 carries 20 open advisories on OSV (four of
+     them mXSS and prototype-pollution bypasses); 3.4.16 carries none, and cdnjs reports 3.4.16 as
+     current.
+
+     The `integrity` hash is not decoration and it does not maintain itself. Both halves are now
+     checked: `tests/test_external_asset_integrity.py` (offline — this tag's URL, version and
+     declared hash agree with data/external_assets.json) and
+     `scripts/check_external_asset_integrity.py` (online — the CDN still serves bytes hashing to what
+     we declared, run weekly by external-asset-integrity.yml). Before this, nothing in the repository
+     would have noticed a wrong hash, a version bump without a hash, or a `integrity` attribute
+     quietly deleted.
+
+     Vendoring the file would remove the third-party load surface entirely, which the comment at
+     `safeHref` records as the preferred direction. Not done here: it means checking a 29 KB minified
+     artefact into the tree, a decision worth taking on its own rather than as a side effect. -->
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.4.16/purify.min.js" integrity="sha384-a7SzOxErzJ3ZpQz0zJ32d67dSitNzPcbfybc/ykU9KJhMgZkwqfSxlhhdJRS+XGL" crossorigin="anonymous"></script>
 <!-- The font stylesheet is ~463 KB decoded and was blocking first paint: with a 1 s CDN delay FCP
      moved 512 -> 1540 ms (measured 2026-10-02). `media="print"` keeps it off the critical path and
      `onload` switches it to `all` once it arrives; the `preload` starts the fetch early anyway (a
@@ -2750,7 +2767,12 @@ function renderVoices() {
     const safeQuote = DOMPurify.sanitize(getVoiceField(v, 'quote'));
     const safePain = DOMPurify.sanitize(getVoiceField(v, 'pain'));
     const safeHelped = DOMPurify.sanitize(getVoiceField(v, 'helped_by'));
-    const safeSource = DOMPurify.sanitize(v.source_url || '#');
+    // `safeHref`, not `DOMPurify.sanitize`. A sanitizer is not a URL validator: what we need here is
+    // "is this an http(s) URL", and `safeHref` is the function in this file that answers that —
+    // it is what the latest-items list uses. DOMPurify's `ALLOWED_URI_REGEXP` happens to reject
+    // `javascript:` too, so both were safe *today*; using the right tool means the line keeps being
+    // right if the sanitizer is ever swapped, configured, or removed. #2683.
+    const safeSource = safeHref(v.source_url);
     const sourceLabel = DOMPurify.sanitize(getVoiceSourceLabel(v.source_type));
     return `
       <div style="background:rgba(15,23,42,0.82);border:1px solid rgba(0,229,255,0.22);border-radius:14px;padding:20px 22px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);transition:border-color 0.2s,box-shadow 0.2s;"
