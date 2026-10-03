@@ -2548,6 +2548,19 @@ function healthStatus({ hasKV, attempts = 0, failures = 0, global = null, now = 
 
 const kvWriteStats = { attempts: 0, failures: 0, last_error: "", last_failure_at: "", last_ok_at: "" };
 
+// The commit the running bundle was published from (#2779). `deploy-worker.yml` passes it as
+// `--var COMMIT_SHA:${GITHUB_SHA}`; `make deploy-api` does not, and a local preview or a hand-run
+// deploy has no commit to claim.
+//
+// "unknown" is a value rather than an omission on purpose. `/api/health` is anonymous and several
+// monitors read it, so dropping the field when it is absent would make "we cannot tell you" look
+// identical to an older build that predates the field — and `doctor.py --deploy-freshness` needs to
+// tell those two apart: one says *deploy through CI*, the other says *read the version too*.
+function deployedCommit(env = {}) {
+  const sha = typeof env.COMMIT_SHA === "string" ? env.COMMIT_SHA.trim() : "";
+  return /^[0-9a-f]{40}$/i.test(sha) ? sha.toLowerCase() : "unknown";
+}
+
 // ── The same outcome, made global (2026-09-20, #1890 / #1822) ────────────────────────────────────────
 //
 // The counters above live in one isolate's memory, so they answer "did *this* isolate fail recently",
@@ -6685,10 +6698,9 @@ export default {
         // "is production current?": release-please only bumps it on a release, so `fix:`/`feat:`
         // commits leave production and main reporting the same version while production is days
         // behind — which is exactly how a deploy sat stuck for three days with every file-based
-        // check green. This is the value `deploy-worker.yml` passes as `--var COMMIT_SHA:${GITHUB_SHA}`;
-        // `make deploy-api` does not, so it stays "unknown" and the freshness check says it cannot
-        // verify rather than claiming it is fresh.
-        commit_sha: env.COMMIT_SHA || "unknown",
+        // check green. Resolved by `deployedCommit()` so the fallback is unit-tested rather than
+        // being a literal that only the production endpoint can exercise.
+        commit_sha: deployedCommit(env),
         hasToken: !!env.REGISTER_TOKEN,
         hasMcpToken: !!env.MCP_TOKEN,
         hasKV: !!env.MISAKANET_KV,
@@ -7979,6 +7991,7 @@ export {
   buildVersionsPayload,
   buildFtsMatch,
   healthStatus,
+  deployedCommit,
   // Exported for the worker tests: the durable store is where the search index and the upstream
   // caches live since #2116, so a test that asks "was the index published?" has to ask the same
   // helper the worker asks — asserting against the KV stub directly now describes the fallback
