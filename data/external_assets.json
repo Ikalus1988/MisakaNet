@@ -1,0 +1,35 @@
+{
+  "_comment": [
+    "Every third-party asset this site loads at runtime, with the Subresource Integrity hash we",
+    "expect the CDN to serve. Two checks read this file and they catch different failures:",
+    "",
+    "  tests/test_external_asset_integrity.py   offline. Catches a version bump without a hash, a",
+    "                                            hash that does not match the URL, an `integrity`",
+    "                                            attribute deleted, an asset added to the HTML",
+    "                                            without being registered here, or this file",
+    "                                            drifting from the markup.",
+    "  scripts/check_external_asset_integrity.py  online, weekly. Catches the CDN serving different",
+    "                                            bytes than we pinned — the supply-chain case that no",
+    "                                            offline check can see.",
+    "",
+    "To update an asset: download the exact URL, compute `openssl dgst -sha384 -binary FILE |",
+    "openssl base64 -A`, prefix with `sha384-`, and change all three of `url`, `version` and",
+    "`integrity` together. The offline test fails if you change only some of them, which is the",
+    "point: they are one fact.",
+    "",
+    "The Google Fonts stylesheet in `docs/index.html` is deliberately absent. Google Fonts does not",
+    "publish stable, SRI-hashable files, and it is already `media=\"print\"`/`onload`-swapped off the",
+    "critical path, so it is a different risk from a script that can execute. Recording it here",
+    "would look like coverage it is not."
+  ],
+  "assets": [
+    {
+      "id": "dompurify",
+      "version": "3.4.16",
+      "url": "https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.4.16/purify.min.js",
+      "integrity": "sha384-a7SzOxErzJ3ZpQz0zJ32d67dSitNzPcbfybc/ykU9KJhMgZkwqfSxlhhdJRS+XGL",
+      "used_by": "docs/index.html",
+      "why": "The only sanitizer between externally-writable text (docs/community/voices.json) and innerHTML. #2672, #2683."
+    }
+  ]
+}

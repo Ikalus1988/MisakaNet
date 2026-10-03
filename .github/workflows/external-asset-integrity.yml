@@ -1,0 +1,36 @@
+name: External Asset Integrity
+
+# Does the CDN still serve the bytes we pinned?
+#
+# `tests/test_external_asset_integrity.py` is the offline half and runs on every pull request: the
+# markup and `data/external_assets.json` must agree, and no external script may sit outside the
+# manifest. What it cannot see is the supply-chain case — an asset republished in place, a mirror
+# serving something else, a compromised CDN — because that is only visible from outside.
+#
+# Subresource Integrity turns that into a *blocked* script, so the user-visible failure is a page
+# that has quietly stopped sanitising rather than a hole that opens. The right direction, and still
+# an outage worth discovering on Monday morning rather than on Monday afternoon. #2683.
+on:
+  schedule:
+    # Weekly, Wednesday 07:23 UTC — off the hour, and away from the Monday 06:00–07:11 cluster so
+    # this does not queue behind provenance-gate / codeql / gate-mutation-audit.
+    - cron: '23 7 * * 3'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7
+        with:
+          python-version: '3.12'
+
+      - name: Compare the CDN's bytes with the pinned hashes
+        run: python3 scripts/check_external_asset_integrity.py
