@@ -12,6 +12,14 @@ main = "register-proxy-sw.js"
 # this file could be edited on main and nothing would deploy it.
 compatibility_date = "2026-09-01"
 
+# The commit the deployed bundle was built from, so `/api/health` can answer "is production
+# current?" — a question the version number cannot (#2779). `deploy-worker.yml` overrides this
+# with `--var COMMIT_SHA:${GITHUB_SHA}`; the value here is the fallback for a local
+# `make deploy-api`, and `doctor.py --deploy-freshness` reports `unknown` as *cannot verify*
+# rather than as fresh.
+[vars]
+COMMIT_SHA = "unknown"
+
 # Workers Logs, on because this is the worker that carries the traffic and it was the only one
 # without them (2026-10-02). `wrangler.jsonc` (misakanet-web) has had observability enabled since it
 # was written; this one has served every dynamic request — `/api/*`, `/mcp`, `/register` — with no

@@ -1,0 +1,68 @@
+name: Deploy Freshness
+
+# Is production running the commit that `main` says it should? Once a day, without a deploy.
+#
+# #2779. On 2026-10-03 the API worker turned out to be three days and five merged PRs behind,
+# and nothing was red for any of it: `deploy-worker.yml` needs manual approval on the `release`
+# environment, and `concurrency.cancel-in-progress: true` cancels the run that was waiting for
+# it every time a newer push arrives. Every check that would have caught it ran *after* a
+# successful deploy — post-deploy verification can only tell you a deploy landed wrong, never
+# that one never happened. That gap is why a human noticed, via a symptom (the home page's
+# 7-day activity chart had stopped updating) rather than a signal.
+#
+# The check itself is `scripts/doctor.py --deploy-freshness`, which compares the commit SHA the
+# worker reports in `/api/health` against this checkout's HEAD. A version number cannot do this:
+# release-please only bumps it on a release, so `fix:`/`feat:` commits leave production and main
+# reporting the same version indefinitely — the state that made the freeze invisible.
+on:
+  schedule:
+    # Daily at 04:53 UTC — off the hour, and clear of the corpus sync (~03:00), the weekly D1
+    # backup (Mon 04:10) and the Monday gate audits (06:17 / 06:43), so a slow probe never
+    # queues behind them.
+    - cron: '53 4 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-freshness
+  cancel-in-progress: false
+
+jobs:
+  freshness:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+        with:
+          # Full history on purpose. The check reports "N commits behind", and `git rev-list
+          # <live>..<head>` cannot count commits the clone does not have — the default depth-1
+          # checkout would turn every answer into "behind by an unknown number".
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7
+        with:
+          # Stdlib only, matching the suite's floor rather than the script's.
+          python-version: "3.11"
+
+      # Three attempts, then a verdict. One request is a measurement; three in a row is a claim
+      # about the service. `docs/maintainer/handoff-2026-09-24.md` records ~1 request in 4 to
+      # misakanet.org timing out from a real machine while the service was fine — a probe that
+      # reddens on one dropped TLS handshake is weather, and weather is what people mute.
+      - name: Is production running main's commit?
+        run: |
+          set -euo pipefail
+
+          ATTEMPTS=3
+          for attempt in $(seq 1 "$ATTEMPTS"); do
+            if python3 scripts/doctor.py --deploy-freshness; then
+              exit 0
+            fi
+            echo "::warning::the freshness probe failed (attempt $attempt/$ATTEMPTS)"
+            [ "$attempt" = "$ATTEMPTS" ] || sleep 10
+          done
+
+          echo "::error title=Production is stale::https://misakanet.org is not running main's commit. Every deploy-time check passed because they all run after a successful deploy — a deploy that never happens is invisible to all of them. Check deploy-worker.yml: the run is most likely sitting in the release environment awaiting approval, with earlier runs cancelled by concurrency.cancel-in-progress. See #2779."
+          exit 1
