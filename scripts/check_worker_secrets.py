@@ -2,8 +2,12 @@
 """
 Worker env/secret missing-scenario audit script.
 
-Scans workers/ for hardcoded secrets and verifies that
-env.MISSING_VAR produces clear failure responses (not silent crashes).
+Phase 1 scans the source scopes in `SCAN_TARGETS` (`workers/`, `.github/`, `scripts/`) for hardcoded
+secrets. It was `workers/` only until 2026-10-03, and inside that it read `*.js` while 94% of the
+tree is `.mjs` — see the comment on `SCAN_TARGETS` for both.
+
+Phases 2 and 3 verify that env.MISSING_VAR produces clear failure responses (not silent crashes).
+Those are worker-specific and have not moved.
 
 Covers P1 item: Worker env/secret 缺失场景测试
 """
@@ -15,10 +19,42 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
 
-# The file extensions this gate reads. `.mjs` was missing until 2026-10-03 (#2684) and its absence
-# was not a narrow miss: `workers/` holds 69 `.mjs` files against 5 `.js` ones, so the scan covered
-# six percent of the worker tree while being a *blocking* required check — it read as covered.
-SCAN_SUFFIXES = (".js", ".mjs")
+# What the gate reads, and why each directory is in or out.
+#
+# Measured 2026-10-03 with one consistent basis — the union of every suffix named in this table
+# (.js .mjs .py .sh .ps1 .bat .json .yml .yaml) — so the in and out rows are comparable:
+#
+#   scope        files   findings
+#   workers/        82          0   in scope (this is where the gate has always looked)
+#   .github/        95          0   in scope, added here
+#   scripts/       158          0   in scope, added here
+#   packages/       21          3   out: deliberate redaction fixtures, needs an allowlist
+#   tests/         292         12   out: deliberate redaction fixtures, needs an allowlist
+#
+# The gate collects 332 files in total: workers/ 79, .github/ 95, scripts/ 158.
+#
+# The worry that kept `.github/` out was that workflows legitimately contain `${{ secrets.X }}` and
+# would trip the gate on every PR. They do not: the patterns are shaped like credentials, and a
+# GitHub Actions expression is not one. That objection is measurably wrong, which is why the
+# directory is in. A test pins the reason, so a future pattern change cannot undo it unnoticed.
+#
+# `packages/` and `tests/` are the 15 findings, and all 15 are inputs to the redaction logic itself
+# (fixtures asserting that `redact_text` catches a token). Widening into them needs a way to say
+# "this token-shaped string is a test asserting redaction works". A required check that is red on
+# `main` gets muted within a week, and a muted gate is the same as no gate — so those two
+# directories wait for that mechanism rather than going in half-done. No real credential is among
+# the 15; nothing needs rotating.
+#
+# Two files in `scripts/` are deliberately not read, so the gap is visible instead of silent:
+# `scripts/demo.tape` (a VHS demo recording script) and `scripts/misaka-guard` (a bash entry point
+# with no file extension). Compiled `__pycache__/*.pyc` is excluded by suffix rather than by a skip
+# rule: there are 145 of them and bytecode embeds string constants, so scanning them would be slow
+# and noisy.
+SCAN_TARGETS = (
+    ("workers", (".js", ".mjs")),
+    (".github", (".yml", ".yaml", ".py")),
+    ("scripts", (".py", ".sh", ".ps1", ".bat", ".mjs", ".json")),
+)
 
 # Known secret-like patterns that should NOT appear in source
 HARDCODED_SECRET_PATTERNS = [
@@ -144,27 +180,26 @@ def check_env_var_handling(filepath: Path, checks: list[dict]) -> list[dict]:
     return results
 
 
-def worker_source_files(workers_dir):
-    """Every worker source file the Phase 1 scan has to read.
+def secret_scan_files(base=None):
+    """Every file the Phase 1 scan has to read, per `SCAN_TARGETS`.
 
-    `.mjs` as well as `.js`, and the reason is a measurement rather than a hunch: `workers/` holds
-    **69** `.mjs` files against **5** `.js` ones, so scanning `*.js` covered six percent of the worker
-    tree while being a *blocking* required check — it read as covered. A credential in a `.mjs` file,
-    which is what the deployed modules actually are, passed this gate silently: the same token in a
-    `.js` probe was caught and the same token in a `.mjs` probe was not (2026-10-03, #2684).
+    Split out of `main()` so this is testable against a temporary tree. A coverage bug in a *glob*
+    is invisible to a test that only scans the real tree, because the real tree is clean under both
+    the old scope and the new one — which is exactly how `.mjs` stayed missing (2026-10-03, #2731)
+    and how `workers/` stayed at six percent of itself for the life of the gate.
 
-    Split out of `main()` so this is testable against a temporary tree. A coverage bug in a *glob* is
-    invisible to a test that only scans the real tree, because the real tree is clean under both
-    globs — which is exactly why the defect survived this long.
-
-    `SCAN_SUFFIXES` rather than one `rglob` per language, so adding a language is one line and cannot
-    come with only half the glob.
+    `base` defaults to the repository root and exists so a test can point the same code at a
+    directory it controls.
     """
-    return [
-        js_file
-        for suffix in SCAN_SUFFIXES
-        for js_file in workers_dir.rglob(f"*{suffix}")
-    ]
+    root = Path(base) if base is not None else REPO
+    found = []
+    for rel, suffixes in SCAN_TARGETS:
+        directory = root / rel
+        if not directory.is_dir():
+            continue
+        for suffix in suffixes:
+            found.extend(directory.rglob(f"*{suffix}"))
+    return found
 
 
 def main():
@@ -175,17 +210,12 @@ def main():
     errors = 0
     warnings = 0
 
-    # Phase 1: Scan for hardcoded secrets across all workers
+    # Phase 1: Scan for hardcoded secrets across the configured scopes
     print("\n📋 Phase 1: Hardcoded secret scan")
     print("-" * 40)
-    workers_dir = REPO / "workers"
-    if not workers_dir.exists():
-        print("  ⚠️  workers/ directory not found")
-        return
-
     all_hits = []
-    for js_file in worker_source_files(workers_dir):
-        hits = scan_credential_patterns(js_file)
+    for source_file in secret_scan_files():
+        hits = scan_credential_patterns(source_file)
         all_hits.extend(hits)
 
     if all_hits:
@@ -224,7 +254,7 @@ def main():
     # Phase 3: Verify wrangler config references
     print("\n📋 Phase 3: Wrangler config checks")
     print("-" * 40)
-    wrangler_config = workers_dir / "wrangler.api.jsonc"
+    wrangler_config = REPO / "workers" / "wrangler.api.jsonc"
     if wrangler_config.exists():
         content = wrangler_config.read_text(encoding="utf-8", errors="replace")
         if "TURNSTILE_SECRET" in content:
