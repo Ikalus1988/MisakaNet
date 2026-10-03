@@ -146,6 +146,41 @@ class TestQuestionRouting(unittest.TestCase):
         self.assertNotIn("## Solution", body)
         self.assertNotIn("pending review — no fix recorded", body)
 
+    def test_long_question_body_is_not_silently_truncated(self):
+        """#2743: a 2,000-char cap sheared the code-weight column off a ranked
+        surface ledger, and the issue still looked answerable — numbered
+        1,3,5,7,9,11,13 and cut mid-word. Whatever the submitter wrote past the
+        cap has to reach the issue."""
+        tail = "ROW-9-CODE-WEIGHT-612-LINES"
+        problem = "surface ledger\n" + ("filler row to push past the old cap\n" * 60) + tail
+        self.assertGreater(len(problem), 2000, "fixture must exceed the old cap")
+
+        _title, _labels, body = ip._question_issue_payload(
+            ip.parse_intake({"kind": "question", "problem": problem, "source": "mcp"})
+        )
+        self.assertIn(tail, body, "content past the old cap must survive into the issue")
+        self.assertNotIn("Truncated at", body, "a sub-cap body must not claim truncation")
+
+    def test_over_cap_question_body_is_truncated_visibly(self):
+        """Past the cap we still have to cut, but loudly: a body that fits
+        GitHub's 65,536 limit and says what went missing."""
+        problem = "x" * (ip.QUESTION_BODY_CAP + 500)
+        _title, _labels, body = ip._question_issue_payload(
+            ip.parse_intake({"kind": "question", "problem": problem, "source": "mcp"})
+        )
+        self.assertIn("Truncated at", body)
+        self.assertIn(f"{ip.QUESTION_BODY_CAP:,} characters", body)
+        self.assertIn(f"{len(problem):,} were submitted", body)
+        self.assertLess(len(body), 65_536, "payload must still fit GitHub's body limit")
+
+    def test_short_question_body_passes_through_verbatim(self):
+        problem = "How do I configure MCP auth?"
+        _title, _labels, body = ip._question_issue_payload(
+            ip.parse_intake({"kind": "question", "problem": problem, "source": "mcp"})
+        )
+        self.assertIn(problem, body)
+        self.assertNotIn("Truncated", body)
+
 
 if __name__ == "__main__":
     unittest.main()
