@@ -1,7 +1,7 @@
 ```json
 {
   "kind": "missing_lesson",
-  "problem": "The DSH sidebar's functionality and UI design are being evaluated for their worth and user experience. Key issues include UI weight, UX friction, text truncation, and visual state changes in the sidebar.",
+  "problem": "The DSH sidebar's design and functionality are under review for UI weight, UX friction, text truncation, and visual state changes.",
   "error": "The sidebar's design and functionality may be contributing to UI weight concerns, with real user journeys revealing UX friction. Additionally, the 2,000-character truncation in the script and the lack of visual state change for the voice cue toggle are impacting the user experience.",
   "what_tried": "",
   "source": "github-action",
