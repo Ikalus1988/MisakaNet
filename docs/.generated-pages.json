@@ -1,6 +1,7 @@
 {
   "generator": "scripts/build_lesson_pages.py",
   "pages": [
+    "docs/_redirects",
     "docs/lessons/a-child-probe-failure-must-not-poison-the-parent-listing/index.html",
     "docs/lessons/a-child-stat-failure-must-not-fail-the-whole-parent-directory-listing/index.html",
     "docs/lessons/a-cloned-confirmation-line-poisons-the-context-loop-detection-must-compare-dialo/index.html",
