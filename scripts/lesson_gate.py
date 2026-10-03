@@ -269,10 +269,17 @@ BASE_BRANCH_REFS = ("origin/main", "origin/master", "main", "master", "origin/HE
 
 
 def missing_structured_fields(fm: dict) -> list[str]:
-    """Names of the structured fields the frontmatter does not carry."""
+    """Names of the structured fields the frontmatter does not carry.
+
+    Only genuinely absent fields. A field that is present but holds a mapping is *not* missing,
+    and saying so sent a contributor looking for a field they had already written: PR #2662 has
+    `verify:` with `command:`/`expected:` under it, and the gate reported "missing structured
+    field: verify" while `malformed_structured_fields` — which could have named the real problem —
+    skipped it. Wrong-typed fields are now reported there, where the message can be specific.
+    """
     return [
         field for field in STRUCTURED_FIELDS
-        if not (isinstance(fm.get(field), str) and fm[field].strip())
+        if field not in fm or (isinstance(fm[field], str) and not fm[field].strip())
     ]
 
 
@@ -280,9 +287,21 @@ def malformed_structured_fields(fm: dict) -> list[str]:
     """Findings for fields that *are* set but unusable (wrong type, too long, multi-line)."""
     findings = []
     for field in STRUCTURED_FIELDS:
-        value = fm.get(field)
-        if not isinstance(value, str) or not value.strip():
+        if field not in fm:
             continue  # absent — reported by missing_structured_fields instead
+        value = fm[field]
+        if isinstance(value, str) and not value.strip():
+            continue  # present but blank — still missing, in the reader's terms
+        if not isinstance(value, str):
+            limit = STRUCTURED_FIELD_LIMITS[field]
+            keys = ", ".join(map(str, value)) if isinstance(value, dict) else ""
+            findings.append(
+                f"structured field {field} is a {type(value).__name__}, not a string — "
+                f"{STRUCTURED_HINT}. Each structured field is a single line of at most {limit} "
+                f"chars"
+                + (f"; fold {keys} into that line rather than nesting them under the field."
+                   if keys else "; write it as a quoted single line."))
+            continue
         value = value.strip()
         limit = STRUCTURED_FIELD_LIMITS[field]
         if len(value) > limit:

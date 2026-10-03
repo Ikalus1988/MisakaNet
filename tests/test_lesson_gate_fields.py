@@ -176,10 +176,64 @@ def test_trigger_must_be_short_and_single_line(tmp_path):
 
 
 def test_non_string_structured_field_fails(tmp_path):
-    """A nested object is not a sentence, a trigger or a criterion."""
+    """A nested object is not a sentence, a trigger or a criterion.
+
+    The message used to be "missing structured field", which is true only of the *key* and false
+    of the value: the field is right there, holding the wrong thing. PR #2662 sat on that message
+    for days — its author wrote `verify:` with `command:`/`expected:` under it and was told the
+    field was absent. It now names the type and the shape the template wants instead.
+    """
     path = write_lesson(tmp_path, lesson_frontmatter(trigger=["pip", "timeout"]))
     hard = [e for e in findings(path, tmp_path) if not e.startswith("[warn]")]
-    assert any("missing structured field: trigger" in e for e in hard), hard
+    assert any("structured field trigger is a list, not a string" in e for e in hard), hard
+    assert not any("missing structured field" in e for e in hard), (
+        f"a field that is present must not be reported as missing: {hard}")
+
+
+def test_a_mapping_valued_field_is_reported_as_the_wrong_type_it_is(tmp_path):
+    """The #2662 shape verbatim: `verify:` with `command:`/`expected:` nested under it.
+
+    The message has to name the type and the two offending keys, because "missing" sends the
+    reader to look for a line they already wrote and "invalid" sends them nowhere in particular.
+    """
+    fm = lesson_frontmatter()
+    fm["verify"] = {"command": "curl -s https://mainnet.base.org", "expected": "0.00000000 ETH"}
+    path = write_lesson(tmp_path, fm)
+
+    joined = " ".join(findings(path, tmp_path))
+    assert "structured field verify is a dict, not a string" in joined, joined
+    assert "command" in joined and "expected" in joined, joined
+    assert "200" in joined, joined
+    assert "missing structured field" not in joined, joined
+
+
+def test_a_blank_field_is_still_reported_as_missing(tmp_path):
+    """Narrowing "missing" to the key must not reclassify a blank value as merely malformed."""
+    path = write_lesson(tmp_path, lesson_frontmatter(verify="   "))
+    hard = [e for e in findings(path, tmp_path) if not e.startswith("[warn]")]
+    assert any("missing structured field: verify" in e for e in hard), hard
+
+
+def test_an_absent_key_is_still_reported_as_missing(tmp_path):
+    fm = lesson_frontmatter()
+    del fm["verify"]
+    path = write_lesson(tmp_path, fm)
+    hard = [e for e in findings(path, tmp_path) if not e.startswith("[warn]")]
+    assert any("missing structured field: verify" in e for e in hard), hard
+
+
+def test_a_non_string_field_carries_no_length_or_newline_finding(tmp_path):
+    """`len()` on a dict is its key count, so the old skip was load-bearing, not laziness.
+
+    Moving the wrong-type case into this function without that guard would have produced a second,
+    nonsense finding on the same field — "verify too long (2 > 200 chars)".
+    """
+    fm = lesson_frontmatter()
+    fm["verify"] = {"command": "x", "expected": "y"}
+    path = write_lesson(tmp_path, fm)
+    joined = " ".join(findings(path, tmp_path))
+    assert "verify too long" not in joined, joined
+    assert "verify must be a single line" not in joined, joined
 
 
 def test_validate_structured_fields_reports_clean_frontmatter_as_empty():
