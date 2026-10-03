@@ -494,19 +494,28 @@ test('a lesson without the structured fields keeps the exact legacy shape (#1783
   // never reordered.
   const compact = await resultText(await mcpTool('misakanet_search', { query: 'pip install timeout', detail: 'compact' }, env));
   assert.deepEqual(Object.keys(compact.results[0]),
-    ['id', 'title', 'problem', 'freshness', 'evidence_level', 'kind']);
+    ['id', 'title', 'problem', 'freshness', 'evidence_level', 'score', 'kind']);
 
   const summary = await resultText(await mcpTool('misakanet_search', { query: 'pip install timeout', detail: 'summary' }, env));
   assert.deepEqual(Object.keys(summary.results[0]),
-    ['id', 'title', 'problem', 'freshness', 'evidence_level', 'domain', 'tags', 'fix', 'kind']);
+    ['id', 'title', 'problem', 'freshness', 'evidence_level', 'score', 'domain', 'tags', 'fix', 'kind']);
 
   // Byte level, not just key level: the compact hit serializes to exactly the string
   // it produced before #1783 touched the projection.
+  //
+  // Changed 2026-10-04 (#2790): `score` is now part of the compact shape, so the byte string carries
+  // `"score":12` between `evidence_level` and `kind`. That is a deliberate, additive change to a
+  // published JSON shape — `MCP_TOOLS` already described every result as carrying a score, and the
+  // default detail level was the one place that did not deliver it. What this test still guarantees is
+  // unchanged and is the part that matters: the *structured* fields (#1783's actual subject) do not
+  // grow on a legacy row, and the key order is still append-only. If a future change silently adds
+  // another field here, this assertion is what should catch it — which is exactly why it is a byte
+  // string and not a subset check.
   assert.equal(
     JSON.stringify(compact.results[0]),
     '{"id":"legacy-shape","title":"pip install timeout behind corporate proxy",'
     + '"problem":"pip install times out behind the proxy.","freshness":"recent",'
-    + '"evidence_level":"","kind":"lessons"}',
+    + '"evidence_level":"","score":12,"kind":"lessons"}',
   );
 
   // And the same for get_lesson: no key, no empty value.
@@ -532,14 +541,14 @@ test('a lesson with the structured fields carries them through search and get_le
   assert.equal(compact.results[0].summary_plain, PLAIN_FIELDS.summary_plain);
   assert.ok(!('trigger' in compact.results[0]), 'compact is the ~80-token tier: summary_plain only');
   assert.deepEqual(Object.keys(compact.results[0]),
-    ['id', 'title', 'problem', 'freshness', 'evidence_level', 'summary_plain', 'kind']);
+    ['id', 'title', 'problem', 'freshness', 'evidence_level', 'score', 'summary_plain', 'kind']);
 
   const summary = await resultText(await mcpTool('misakanet_search', { query: 'pip install timeout', detail: 'summary' }, env));
   assert.equal(summary.results[0].summary_plain, PLAIN_FIELDS.summary_plain);
   assert.equal(summary.results[0].trigger, PLAIN_FIELDS.trigger);
   assert.equal(summary.results[0].verify, PLAIN_FIELDS.verify);
   assert.deepEqual(Object.keys(summary.results[0]),
-    ['id', 'title', 'problem', 'freshness', 'evidence_level', 'summary_plain', 'domain', 'tags', 'fix', 'trigger', 'verify', 'kind']);
+    ['id', 'title', 'problem', 'freshness', 'evidence_level', 'score', 'summary_plain', 'domain', 'tags', 'fix', 'trigger', 'verify', 'kind']);
 
   const full = await resultText(await mcpTool('misakanet_search', { query: 'pip install timeout', detail: 'full' }, env));
   for (const [field, value] of Object.entries(PLAIN_FIELDS)) {
@@ -719,7 +728,7 @@ test('a draft lesson is marked in the default detail levels and in get_lesson (#
   // old ones in the old places.
   const compact = await resultText(await mcpTool('misakanet_search', { query: 'pip install timeout', detail: 'compact' }, env));
   assert.deepEqual(Object.keys(compact.results[0]),
-    ['id', 'title', 'problem', 'freshness', 'evidence_level', 'status', 'kind']);
+    ['id', 'title', 'problem', 'freshness', 'evidence_level', 'score', 'status', 'kind']);
 
   const lesson = await resultText(await mcpTool('misakanet_get_lesson', { id: 'draft-shape' }, env));
   assert.equal(lesson.status, 'draft', JSON.stringify(lesson));

@@ -568,7 +568,13 @@ def compact_payload_keys(worker_source: str) -> set[str]:
 def test_the_search_row_reads_only_fields_the_default_payload_carries():
     worker = (REPO / "workers" / "register-proxy-sw.js").read_text(encoding="utf-8")
     allowed = compact_payload_keys(worker)
-    assert allowed == {"id", "title", "problem", "freshness", "evidence_level"}, (
+    # Changed 2026-10-04 (#2790): `score` joined the compact key set, so it is listed here. This test
+    # exists to make a compact-shape change a deliberate act — "the row and the docs follow it" — so
+    # the follow-through was done rather than skipped: `lib/client.js` renders
+    # `top.id`/`top.title`/`top.evidence_level`/`top.freshness` and the verdict line adds `top.domain`.
+    # It reads no `top.score`, so nothing in the panel renders empty and no change was needed there.
+    # The plugin showing relevance would be a feature decision, not a consequence of this fix.
+    assert allowed == {"id", "title", "problem", "freshness", "evidence_level", "score"}, (
         f"the compact key set changed in the worker: {sorted(allowed)} — the row and the docs follow it")
     search, _ = surface_bodies(client_source())
     read = set(re.findall(r"\btop\.([A-Za-z_][A-Za-z0-9_]*)", search))
@@ -582,9 +588,10 @@ def test_the_search_row_reads_only_fields_the_default_payload_carries():
 def test_the_payload_rule_can_go_red():
     source = "function MisakanetSearchRow() { return top.domain + top.title; } function MisakanetVerdictAction() {}"
     search, _ = surface_bodies(source)
-    assert sorted(set(re.findall(r"\btop\.([A-Za-z_][A-Za-z0-9_]*)", search)) - {"id", "title", "problem", "freshness", "evidence_level"}) == ["domain"]
-    assert compact_payload_keys('compact: {id, title, problem, freshness, evidence_level}') == {
-        "id", "title", "problem", "freshness", "evidence_level"}
+    assert sorted(set(re.findall(r"\btop\.([A-Za-z_][A-Za-z0-9_]*)", search))
+                  - {"id", "title", "problem", "freshness", "evidence_level", "score"}) == ["domain"]
+    assert compact_payload_keys('compact: {id, title, problem, freshness, evidence_level, score}') == {
+        "id", "title", "problem", "freshness", "evidence_level", "score"}
 
 
 # ── the panel (the review surface) ───────────────────────────────────────────

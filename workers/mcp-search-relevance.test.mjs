@@ -321,18 +321,25 @@ test('a lesson without the structured fields keeps the exact legacy search shape
   // Key order first: "additive" means appended when present, never reordered.
   const compact = await searchIn(createEnv(), 'pip install timeout', { detail: 'compact' });
   assert.deepEqual(Object.keys(compact.results[0]),
-    ['id', 'title', 'problem', 'freshness', 'evidence_level', 'kind']);
+    ['id', 'title', 'problem', 'freshness', 'evidence_level', 'score', 'kind']);
   const summary = await searchIn(createEnv(), 'pip install timeout', { detail: 'summary' });
   assert.deepEqual(Object.keys(summary.results[0]),
-    ['id', 'title', 'problem', 'freshness', 'evidence_level', 'domain', 'tags', 'fix', 'kind']);
+    ['id', 'title', 'problem', 'freshness', 'evidence_level', 'score', 'domain', 'tags', 'fix', 'kind']);
 
   // Then bytes: this record's `updated` is "now", so `freshness` is stable and the
   // whole compact hit can be compared as the exact string it produced pre-#1783.
+  //
+  // Changed 2026-10-04 (#2790): the compact shape now carries `score`, so the byte string includes
+  // `"score":4.52` between `evidence_level` and `kind`. Deliberate and additive — `MCP_TOOLS` already
+  // described every result as carrying a score, and compact, the default tier, was the one that did
+  // not. The property this test exists to protect is #1783's: the *structured* fields do not grow on
+  // a record that lacks them, and the key order is still append-only. Both still hold; a future silent
+  // field addition is what the byte string is there to catch.
   assert.equal(
     JSON.stringify(compact.results[0]),
     '{"id":"pip-timeout-mirror","title":"pip install timeout",'
     + '"problem":"pip install times out behind a corporate proxy before the package is fetched",'
-    + '"freshness":"recent","evidence_level":"","kind":"lessons"}',
+    + '"freshness":"recent","evidence_level":"","score":4.52,"kind":"lessons"}',
   );
 
   // Same property on the D1 path (the shaping production actually serves), and for
@@ -355,7 +362,7 @@ test('a lesson with the structured fields carries them through the projection (#
   assert.equal(compact.results[0].summary_plain, PLAIN_FIELDS.summary_plain);
   assert.equal(compact.results[0].trigger, undefined, 'compact must stay the small tier');
   assert.deepEqual(Object.keys(compact.results[0]),
-    ['id', 'title', 'problem', 'freshness', 'evidence_level', 'summary_plain', 'kind']);
+    ['id', 'title', 'problem', 'freshness', 'evidence_level', 'score', 'summary_plain', 'kind']);
 
   const summary = await searchIn(createEnv(PLAIN_FIELDS), 'pip install timeout', { detail: 'summary' });
   const summaryHit = summary.results[0];
@@ -363,7 +370,7 @@ test('a lesson with the structured fields carries them through the projection (#
   assert.equal(summaryHit.trigger, PLAIN_FIELDS.trigger);
   assert.equal(summaryHit.verify, PLAIN_FIELDS.verify);
   assert.deepEqual(Object.keys(summaryHit),
-    ['id', 'title', 'problem', 'freshness', 'evidence_level', 'summary_plain',
+    ['id', 'title', 'problem', 'freshness', 'evidence_level', 'score', 'summary_plain',
       'domain', 'tags', 'fix', 'trigger', 'verify', 'kind']);
 
   const full = await searchIn(createEnv(PLAIN_FIELDS), 'pip install timeout', { detail: 'full' });
