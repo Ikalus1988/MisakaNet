@@ -1,0 +1,92 @@
+name: Dependency Vulnerability Audit
+
+# The other half of #2684.
+#
+# `pr-checks.yml` runs `pip-audit` and `npm audit` **only when the pull request touches a
+# dependency file**. That answers "did this pull request introduce a bad dependency?". It does not
+# answer "has a dependency that was already in the tree become bad?" — and that question arrives on
+# its own schedule, when an advisory is published against a version the repository is already using.
+# At that moment nothing in a pull request changes, so nothing goes red, and the finding waits for
+# whoever next happens to touch `requirements.txt`.
+#
+# Dependabot's weekly bump pull requests do not cover it either, and the distinction matters: that is
+# "there is an update", not "there is a vulnerability".
+#
+# **Why this opens an issue instead of failing the build.** A scheduled job that can only turn a tab
+# red is worth nothing — it is looked at never, and a permanently red check is a check that stops
+# being read. So this mirrors `intake-kind-audit.yml`: run on a schedule, and surface a finding by
+# find-or-updating one digest issue. It never edits a manifest and never opens a pull request, because
+# what to do about a vulnerable dependency is a maintainer decision.
+#
+# Script: scripts/audit_dependencies.py
+on:
+  schedule:
+    # Weekly Tuesday 05:41 UTC. Deliberately off the hour, and away from the Monday 06:00–07:11
+    # cluster (provenance-gate 06:17, gate-mutation-audit 06:43, intake-kind-audit 06:30,
+    # guarded-repository 07:00, sync-question-answers 07:20) — the same reasoning as
+    # external-asset-integrity.yml. Nothing else is scheduled on a Tuesday morning.
+    - cron: '41 5 * * 2'
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7
+        with:
+          python-version: "3.12"
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4
+        with:
+          node-version: "22"
+
+      # pip-audit is not preinstalled, and the PR gate installs it on demand. Same reason, same
+      # tool: this is the second question that job cannot answer, not a second implementation.
+      - name: Install pip-audit
+        run: python3 -m pip install --quiet pip-audit
+
+      - name: Run the dependency audit
+        id: audit
+        run: |
+          set -o pipefail
+          python3 scripts/audit_dependencies.py --digest | tee /tmp/audit_digest.md
+
+          # The exact sentence scripts/audit_dependencies.py defines as CLEAN_LINE, emoji included,
+          # so there is one string rather than two that can drift. Asserted in
+          # tests/test_dependency_audit_digest.py::test_the_digest_is_what_the_workflow_greps_for —
+          # which caught exactly that drift the first time this file was written.
+          if grep -qF "No known-vulnerable dependencies found. ✅" /tmp/audit_digest.md; then
+            echo "Audit clean — no known-vulnerable dependencies."
+            echo "clean=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "clean=false" >> "$GITHUB_OUTPUT"
+
+      - name: Post digest issue
+        if: steps.audit.outputs.clean == 'false'
+        run: |
+          # Find-or-update the open audit digest issue (label dependency-vuln-audit), so a real
+          # finding is one issue with a history rather than a new issue every Tuesday.
+          DIGEST_ISSUE=$(gh issue list --repo ${{ github.repository }} \
+            --label "dependency-vuln-audit" \
+            --state open \
+            --json number \
+            --limit 1 2>/dev/null | python3 -c "import sys,json; d=json.load(sys.stdin); print(d[0]['number'] if d else '')")
+
+          if [ -n "$DIGEST_ISSUE" ]; then
+            gh issue comment $DIGEST_ISSUE --repo ${{ github.repository }} \
+              --body-file /tmp/audit_digest.md
+          else
+            gh issue create --repo ${{ github.repository }} \
+              --title "🔐 Dependency Vulnerability Audit - $(date -u +%Y-%m-%d)" \
+              --body-file /tmp/audit_digest.md \
+              --label "dependency-vuln-audit,needs-human-review"
+          fi
