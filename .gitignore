@@ -98,7 +98,6 @@ data/search_gaps.jsonl
 # Benchmark results (local only)
 bench_results/
 .aider*
-.aider*
 coverage.xml
 data/lessons.db
 

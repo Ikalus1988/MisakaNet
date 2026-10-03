@@ -328,11 +328,17 @@ def generate_sitemap(lesson_slugs: list, domains: list) -> str:
     lines = ['<?xml version="1.0" encoding="UTF-8"?>',
              '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
 
-    # Static pages
+    # Static pages.
+    # The path shape has to match how each one is actually served, and the two differ in this repo:
+    # `/search/` is a directory (`docs/search/index.html`), while `docs/troubleshooting.md` is a
+    # markdown file served verbatim at `/troubleshooting.md` — the same as `docs/agents/repo-operations.md`.
+    # Advertising the directory form of the `.md` page gave a 404 that no check caught: measured
+    # 2026-10-04, `https://misakanet.org/troubleshooting/` → 404 while `/troubleshooting.md` → 200.
+    # `tests/test_sitemap_urls_resolve.py` now asserts each entry maps to a real file.
     static = [
         ("https://misakanet.org/", "weekly", "1.0"),
         ("https://misakanet.org/search/", "weekly", "0.9"),
-        ("https://misakanet.org/troubleshooting/", "weekly", "0.8"),
+        ("https://misakanet.org/troubleshooting.md", "weekly", "0.8"),
     ]
     for url, freq, prio in static:
         lines.append(f"  <url><loc>{url}</loc><changefreq>{freq}</changefreq><priority>{prio}</priority></url>")
