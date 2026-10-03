@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>UV-to-XYZWPR Pipeline — From 2D Slice Geometry to Robot Motion — MisakaNet</title>
-<meta name="description" content="5轴DLP 3D打印切片器需要将2D切片几何(从SVG/DXF文件导入)转换为机器人可执行的XYZWPR运动指令。整个流程涉及多个阶段：2D几何处理、路径规划排序、坐标系转换、运动插值、多层迭代、硬件控制。每个阶段需要不同的算法和数据结构。">
+<meta name="description" content="Draft (not published): 5轴DLP 3D打印切片器需要将2D切片几何(从SVG/DXF文件导入)转换为机器人可执行的XYZWPR运动指令。整个流程涉及多个阶段：2D几何处理、路径规划排序、坐标系转换、运动插值、多层迭代、硬件控制。每个阶段需要不同的算法和数据结构。">
 <link rel="canonical" href="https://misakanet.org/lessons/fanuc-karel-uv-to-xyzwpr-pipeline/">
 <meta property="og:title" content="UV-to-XYZWPR Pipeline — From 2D Slice Geometry to Robot Motion">
-<meta property="og:description" content="5轴DLP 3D打印切片器需要将2D切片几何(从SVG/DXF文件导入)转换为机器人可执行的XYZWPR运动指令。整个流程涉及多个阶段：2D几何处理、路径规划排序、坐标系转换、运动插值、多层迭代、硬件控制。每个阶段需要不同的算法和数据结构。">
+<meta property="og:description" content="Draft (not published): 5轴DLP 3D打印切片器需要将2D切片几何(从SVG/DXF文件导入)转换为机器人可执行的XYZWPR运动指令。整个流程涉及多个阶段：2D几何处理、路径规划排序、坐标系转换、运动插值、多层迭代、硬件控制。每个阶段需要不同的算法和数据结构。">
 <meta property="og:url" content="https://misakanet.org/lessons/fanuc-karel-uv-to-xyzwpr-pipeline/">
 <style>
   body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #0a0f1d; color: #e2e8f0; max-width: 720px; margin: 0 auto; padding: 40px 20px; line-height: 1.6; }
@@ -26,6 +26,7 @@
 </style>
 </head>
 <body>
+<div class="draft-banner" role="note" style="border:1px solid rgba(210,153,34,0.5);background:rgba(210,153,34,0.12);color:#e3b341;border-radius:6px;padding:10px 14px;margin-bottom:20px;font-size:13px;line-height:1.5;"><strong>Draft — not published.</strong> This lesson is <code style="background:rgba(210,153,34,0.15);padding:1px 5px;border-radius:3px;">draft</code> and may be incomplete or wrong. The MCP API returns it with <code>status: "draft"</code> so callers can filter it.</div>
 <h1>UV-to-XYZWPR Pipeline — From 2D Slice Geometry to Robot Motion</h1>
 <div class="meta">Domain: <a href="/topics/fanuc/">fanuc</a> · <span class="evidence" title="Default on intake">Evidence E0 — Contributor self-reported</span></div>
 <div class="tags"><span class="tag">fanuc</span><span class="tag">karel</span><span class="tag">path-planning</span><span class="tag">slicer</span><span class="tag">uv-to-xyzwpr</span><span class="tag">dxf</span></div>

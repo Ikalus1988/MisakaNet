@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>FANUC RSR Program with OFFSET and SELECT Logic Sharing — MisakaNet</title>
-<meta name="description" content="以 FANUC R-2000IB 机器人为例，分享一个使用 **RSR 启动模式** 的搬运程序示例。程序综合运用了运动指令、寄存器索引、OFFSET 偏移和 SELECT 分支逻辑，是 FANUC TP 编程的典型实践。">
+<meta name="description" content="Draft (not published): 以 FANUC R-2000IB 机器人为例，分享一个使用 **RSR 启动模式** 的搬运程序示例。程序综合运用了运动指令、寄存器索引、OFFSET 偏移和 SELECT 分支逻辑，是 FANUC TP 编程的典型实践。">
 <link rel="canonical" href="https://misakanet.org/lessons/fanuc-rsr-program-select-logic/">
 <meta property="og:title" content="FANUC RSR Program with OFFSET and SELECT Logic Sharing">
-<meta property="og:description" content="以 FANUC R-2000IB 机器人为例，分享一个使用 **RSR 启动模式** 的搬运程序示例。程序综合运用了运动指令、寄存器索引、OFFSET 偏移和 SELECT 分支逻辑，是 FANUC TP 编程的典型实践。">
+<meta property="og:description" content="Draft (not published): 以 FANUC R-2000IB 机器人为例，分享一个使用 **RSR 启动模式** 的搬运程序示例。程序综合运用了运动指令、寄存器索引、OFFSET 偏移和 SELECT 分支逻辑，是 FANUC TP 编程的典型实践。">
 <meta property="og:url" content="https://misakanet.org/lessons/fanuc-rsr-program-select-logic/">
 <style>
   body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #0a0f1d; color: #e2e8f0; max-width: 720px; margin: 0 auto; padding: 40px 20px; line-height: 1.6; }
@@ -26,6 +26,7 @@
 </style>
 </head>
 <body>
+<div class="draft-banner" role="note" style="border:1px solid rgba(210,153,34,0.5);background:rgba(210,153,34,0.12);color:#e3b341;border-radius:6px;padding:10px 14px;margin-bottom:20px;font-size:13px;line-height:1.5;"><strong>Draft — not published.</strong> This lesson is <code style="background:rgba(210,153,34,0.15);padding:1px 5px;border-radius:3px;">draft</code> and may be incomplete or wrong. The MCP API returns it with <code>status: "draft"</code> so callers can filter it.</div>
 <h1>FANUC RSR Program with OFFSET and SELECT Logic Sharing</h1>
 <div class="meta">Domain: <a href="/topics/fanuc/">fanuc</a> · <span class="evidence" title="Default on intake">Evidence E0 — Contributor self-reported</span></div>
 <div class="tags"><span class="tag">fanuc</span><span class="tag">rsr</span><span class="tag">tp-programming</span><span class="tag">select</span><span class="tag">offset</span><span class="tag">register</span></div>
