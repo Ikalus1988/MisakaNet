@@ -106,6 +106,47 @@ class GitHub:
 
 # ── the two facts the decision needs ────────────────────────────────────────────────────────────────
 
+# A commit on a busy repository carries well over 100 check-runs, and the Workers Builds one is not
+# always on page 1. GitHub orders check-runs newest-first, and on 2026-10-04 the four most recent main
+# commits with the most runs put it past the fold on all four. This bound is 10 pages (1,000 runs), which
+# is far past anything measured here and exists so a server that ignores `page` cannot spin forever.
+CHECK_RUN_PAGES = 10
+
+
+def all_check_runs(gh: GitHub, sha: str) -> list:
+    """Every check-run for a commit, following pagination.
+
+    `per_page=100` on its own is **not** "all of them", and the difference is not cosmetic here: a filter
+    applied to page 1 alone reports a commit as having no Workers Builds run at all, which `site_build_state`
+    turns into `unknown`, which `plan()` turns into silence. That is the original #2136 bug with a query
+    parameter in front of it.
+
+    Measured 2026-10-04 on `main`, with the server-side `check_name` filter as the reference:
+
+        commit      total check-runs   truth      this query, before the fix
+        f93c4078    118                success    unknown -> silence
+        b82e352e4   126                success    unknown -> silence
+        421001213   127                success    unknown -> silence
+        80540341    187                failure    unknown -> silence
+
+    The last row is the cost: that build really was red, on a commit that touched
+    `docs/data/activity.json` and `docs/data/feed.json`, so the site was not deploying and the watcher
+    said nothing. The trend runs the wrong way — the check count grows with every optional bot and
+    contributor workflow, so each of those commits moves further past the fold.
+
+    Stops on the first short page rather than reading `total_count`, because a short page is the server's
+    own statement that there is nothing more, and it costs no extra request.
+    """
+    collected: list = []
+    for page in range(1, CHECK_RUN_PAGES + 1):
+        payload = gh("GET", f"/commits/{sha}/check-runs?per_page=100&page={page}") or {}
+        batch = list(payload.get("check_runs") or [])
+        collected.extend(batch)
+        if len(batch) < 100:
+            break
+    return collected
+
+
 def site_build_state(gh: GitHub, sha: str) -> tuple[str, str]:
     """(state, evidence) for one commit's Workers Builds checks.
 
@@ -114,8 +155,7 @@ def site_build_state(gh: GitHub, sha: str) -> tuple[str, str]:
     the exact mistake this watcher exists to prevent. Anything unfinished is `unknown`, which is not
     a state to act on — a queued build is not a failure.
     """
-    runs = gh("GET", f"/commits/{sha}/check-runs?per_page=100") or {}
-    builds = [r for r in (runs.get("check_runs") or [])
+    builds = [r for r in all_check_runs(gh, sha)
               if str(r.get("name") or "").startswith(CHECK_PREFIX)]
     if not builds:
         return UNKNOWN, "no Workers Builds check-run on this commit"
