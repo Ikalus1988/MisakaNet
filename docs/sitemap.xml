@@ -33,6 +33,7 @@
   <url><loc>https://misakanet.org/topics/github/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/go/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/roleplay-engine/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://misakanet.org/topics/wechat/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/kubernetes/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/scraping/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/meta/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
@@ -45,7 +46,6 @@
   <url><loc>https://misakanet.org/topics/web3/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/mobile/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/typescript/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
-  <url><loc>https://misakanet.org/topics/wechat/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/cloudflare-worker/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/java/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/dco/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
@@ -262,6 +262,7 @@
   <url><loc>https://misakanet.org/lessons/hub-credential-gateway-vs-hub/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/hub-feishu-wsclient-start-never-called/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/iap-tcp-forwarding-numpy-bandwidth/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/an-im-bot-is-a-guest-on-someone-elses-stack-pin-the-client-the-os-and-the-instal/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/verify-import-paths-after-refactoring-python-modules/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/instrumentation-that-never-reached-the-artifact-a-silent-probe-is-not-evidence/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/issue-comment-newbie-welcome/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -435,6 +436,7 @@
   <url><loc>https://misakanet.org/lessons/vertex-ai-vs-gemini-model-id-naming-conventions-differ/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/vertical-kb-question-bank-strategy/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/vitest-v8-ast-coverage-threshold-shift/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/voice-pipelines-fail-without-failing-the-acceptance-is-the-artifact-not-the-exit/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/wcferry-wechat-version-lock/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/webcrypto-fallback-consistency-node-worker/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/webhook-duplicate-delivery-dedupe-scope/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>

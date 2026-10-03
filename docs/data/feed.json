@@ -1,43 +1,51 @@
 {
-  "generated_at": "2026-10-02T13:00:12.120352+00:00",
+  "generated_at": "2026-10-03T05:27:55.206156+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "docs(field-reports): 2.40.0 browser-half six-seat test report (#2593)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2693",
-      "timestamp": "2026-10-02T12:58:59Z",
+      "title": "ci(security): the secret gate reads workers/ only — a credential in a workflow was read by no scanner",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2733",
+      "timestamp": "2026-10-03T04:18:58Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(site): network activity trend + read-only token scope (#2521)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2692",
-      "timestamp": "2026-10-02T12:58:53Z",
+      "title": "fix(ci): the worker secret gate was reading 6% of the worker code, and two MCP controls had no test",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2731",
+      "timestamp": "2026-10-03T03:56:02Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(worker): per-address limits become atomic counters (#2075)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2691",
-      "timestamp": "2026-10-02T12:58:47Z",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2728",
+      "timestamp": "2026-10-02T22:28:31Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat: add error-signature normalizer for stable failure-class recall (#1654)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2567",
-      "timestamp": "2026-10-02T12:58:41Z",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2726",
+      "timestamp": "2026-10-02T18:00:46Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "Fix version drift in MCP evaluation documentation (2026-09-03)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2390",
-      "timestamp": "2026-10-02T12:58:27Z",
+      "title": "docs: add OpenCode, Kiro, and Oh-my-Pi integration guides",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2576",
+      "timestamp": "2026-10-02T17:34:15Z",
       "source": "github"
+    },
+    {
+      "type": "lesson",
+      "title": "An IM bot is a guest on someone else's stack: pin the client, the OS, and the install order",
+      "url": "lessons/contrib/im-bot-environment-contracts.md",
+      "timestamp": "2026-10-02",
+      "domain": "wechat",
+      "source": "lessons"
     },
     {
       "type": "lesson",
@@ -45,6 +53,14 @@
       "url": "lessons/contrib/onchain-payout-preflight-checklist.md",
       "timestamp": "2026-10-02",
       "domain": "crypto-ops",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "Voice pipelines fail without failing: the acceptance is the artifact, not the exit code",
+      "url": "lessons/contrib/voice-pipeline-silent-failures.md",
+      "timestamp": "2026-10-02",
+      "domain": "audio",
       "source": "lessons"
     },
     {
@@ -61,22 +77,6 @@
       "url": "lessons/contrib/git-stash-is-repository-wide.md",
       "timestamp": "2026-10-01",
       "domain": "git",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "Instrumentation that never reached the artifact: a silent probe is not evidence",
-      "url": "lessons/contrib/instrumentation-that-never-reached-the-artifact.md",
-      "timestamp": "2026-10-01",
-      "domain": "development",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "Sanitizing every interpolated value is not enough — exc_info=True appends the raw traceback",
-      "url": "lessons/contrib/log-sanitizer-must-live-in-the-formatter.md",
-      "timestamp": "2026-10-01",
-      "domain": "security",
       "source": "lessons"
     },
     {
