@@ -158,8 +158,18 @@ jobs:
           for entry in $(cat "$RUNNER_TEMP/synced.txt" 2>/dev/null || true); do
             NUM="${entry%%:*}"; SHA="${entry##*:}"
             for attempt in 1 2 3 4 5 6; do
-              ACTIONS=$(gh api "repos/$REPO/commits/$SHA/check-runs?per_page=100" \
-                --jq '[.check_runs[] | select(.app.slug == "github-actions")] | length' 2>/dev/null || echo 0)
+              # `--paginate` (2026-10-04): one page of 100 check-runs is not all of them, and on a
+              # commit like `80540341` (187 of them) 87 names are past page 1 — an undercount here
+              # reads as "CI is not running" and the sync proceeds onto a PR whose checks have not
+              # finished. The same command with `--paginate` is already used in
+              # `auto-merge-lessons.yml`, so this follows an existing convention.
+              #
+              # `--jq` runs *per page* under `--paginate`, so the old `[...] | length` would print one
+              # count per page and concatenate them ("10050") instead of totalling them. Emitting the
+              # matching names one per line and counting the lines sums correctly.
+              ACTIONS=$( { gh api "repos/$REPO/commits/$SHA/check-runs?per_page=100" --paginate \
+                --jq '.check_runs[] | select(.app.slug == "github-actions") | .name' 2>/dev/null || true; } \
+                | wc -l | tr -d ' ')
               HELD=$(gh api "repos/$REPO/actions/runs?head_sha=$SHA&status=action_required" \
                 --jq '.total_count' 2>/dev/null || echo 0)
               if [ "$ACTIONS" -gt 0 ]; then

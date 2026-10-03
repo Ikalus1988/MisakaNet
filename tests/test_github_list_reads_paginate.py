@@ -55,6 +55,7 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
 SCRIPTS = REPO / "scripts"
+WORKFLOWS = REPO / ".github" / "workflows"
 
 # The endpoints where completeness is required. Anchored on the path, not on the query, so a
 # `per_page` on some other endpoint is not swept in.
@@ -185,6 +186,113 @@ def _key(path: str, source: str) -> str | None:
     if re.search(r"/(?:issues|commits)/", head):
         return f"/issues/N/{match.group(1)}"
     return f"/{match.group(1)}"
+
+
+def test_no_workflow_reads_a_list_without_paginating():
+    r"""The same rule, for the list reads that live in workflow shell rather than `scripts/`.
+
+    This is not a hypothetical extension. When the rule was first written it scanned `scripts/**/*.py`
+    only, and the *next* instance of the defect was found immediately afterwards in
+    `pr-audit-watch.yml` — a shell workflow, outside the scope the scanner had been given. A guard
+    whose boundary is drawn a directory too narrow will pass while the bug it describes sits next
+    door, so the boundary is part of what has to be right.
+
+    Widening it from `check-runs` to every paginated GitHub list endpoint was forced by the same
+    argument one level down. The first version of *this* test matched only `check-runs`; the next
+    sweep found the same one-page read in `pr-checks.yml` and `claim-enforcer.yml`, where it is not
+    hypothetical at all — PR #2020 has 249 comments and 113 audit-report markers, **none on page
+    1**, so the audit upsert could not find the report it was meant to replace.
+
+    Matching is done per *statement* rather than per line, because the real shape is
+    `gh api "url?per_page=100" \` followed by `--jq ...`, and a line-oriented scan would miss the
+    flag sitting on the continuation. Writes are excluded by method, and a server-side `check_name=`
+    filter is excluded because it asks a bounded question.
+
+    `gh api --paginate` is the idiom, and this repository already uses it in `auto-merge-lessons.yml`
+    for this exact endpoint, so the rule asks for a convention that is already in the codebase rather
+    than one invented here.
+    """
+    # Endpoints that answer "give me all of them" and are therefore silently lossy past page 1.
+    list_reads = ("check-runs", "/comments", "/timeline", "/reviews", "/commits?", "/files?")
+    writes = ("-X POST", "--method POST", "-X PATCH", "--method PATCH",
+              "-X DELETE", "--method DELETE", "-X PUT", "--method PUT")
+
+    offenders: list[str] = []
+    for path in sorted(WORKFLOWS.glob("*.yml")):
+        lines = path.read_text(encoding="utf-8").splitlines()
+        statement, start = "", 0
+        for i, line in enumerate(lines, 1):
+            if not statement:
+                start = i
+                statement = line
+            else:
+                statement += "\n" + line
+            if line.rstrip().endswith("\\"):
+                continue
+            joined = statement
+            statement = ""
+            if "gh api" not in joined or not any(e in joined for e in list_reads):
+                continue
+            if "--paginate" in joined or "check_name=" in joined:
+                continue
+            if any(w in joined for w in writes):
+                continue          # POSTing a comment is not a read of them
+            head = next(x for x in joined.splitlines() if "gh api" in x)
+            offenders.append(
+                f"  {path.relative_to(REPO).as_posix()}:{start}  {head.strip()[:88]}")
+    assert not offenders, (
+        f"{len(offenders)} workflow read(s) of a GitHub list take one page. Both ends of that are "
+        f"measured, not theoretical: commit `80540341` carries 187 check-runs with 87 names past "
+        f"page 1, and PR #2020 carries 249 comments with all 113 of its audit-report markers past "
+        f"page 1 — so a one-page `*audit*` test dispatches a second audit, and the one-page upsert "
+        f"finds no report to replace and posts another. Add `--paginate`, or a server-side "
+        f"`check_name=`:\n" + "\n".join(offenders))
+
+
+def test_a_paginated_counting_jq_does_not_concatenate_per_page_counts():
+    """`--paginate` runs `--jq` once per page, so a per-page aggregate is not a total.
+
+    The shape this catches is subtle enough to survive review: `[...] | length` is correct on one
+    page and, under `--paginate`, prints one number per page that then concatenates. A commit with
+    187 check-runs, 100 of them GitHub Actions, yields the string "10087" rather than 187, and
+    `[ "$ACTIONS" -gt 0 ]` is then true for reasons that have nothing to do with the intent. Counting
+    emitted lines is the shape that sums.
+
+    The pagination simulator below models `gh api --paginate --jq` as *concatenating each page's
+    jq output with no separator*, which is what the live endpoint does — measured on PR #2020,
+    whose three pages of 100/100/49 filtered to `"07043"` rather than `113`. A simulator that invented
+    a newline between pages would hide exactly the defect it is here to demonstrate, so the join is
+    `""` on purpose.
+    """
+    def pages_of(items: list[dict], per_page: int) -> list[list[dict]]:
+        return [items[i:i + per_page] for i in range(0, len(items), per_page)] or [[]]
+
+    def counted(items: list[dict], per_page: int, keep) -> str:
+        return "".join("".join(f"{r['id']}\n" for r in page if keep(r)) for page in pages_of(items, per_page))
+
+    def naive(items: list[dict], per_page: int, keep) -> str:
+        return "".join(str(len([r for r in page if keep(r)])) for page in pages_of(items, per_page))
+
+    # 187 check-runs, all GitHub Actions: page 1 holds 100 and page 2 holds 87.
+    runs = [{"id": f"c{i}"} for i in range(187)]
+    is_run = lambda r: True                                    # noqa: E731
+    assert counted(runs, 100, is_run).count("\n") == 187, "line-counting sums every page"
+    assert naive(runs, 100, is_run) == "10087", (
+        f"expected the naive per-page aggregate to concatenate to '10087', got "
+        f"{naive(runs, 100, is_run)!r} — if this changes, the shape being guarded against is no "
+        f"longer the one in the code")
+    assert int(naive(runs, 100, is_run)) != 187, "the bug must be a wrong number, not a crash"
+
+    # The live measurement this models, PR #2020 as read on 2026-10-04: 249 comments, 113 of them
+    # carrying the audit-report marker, split across pages as 0 / 70 / 43 — so *every one* of the
+    # 113 is past page 1, and the per-page aggregate concatenates to "07043".
+    comments = [{"id": str(i), "marker": 130 <= i <= 242} for i in range(249)]
+    has_marker = lambda r: r["marker"]                          # noqa: E731
+    assert naive(comments, 100, has_marker) == "07043", (
+        f"expected the per-page aggregate over 249 comments to concatenate to '07043', got "
+        f"{naive(comments, 100, has_marker)!r} — '07043' is the measured live output")
+    assert counted(comments, 100, has_marker).count("\n") == 113, (
+        "the fixed shape sees all 113 markers")
 
 
 def test_every_exhaustive_read_is_a_written_down_decision():

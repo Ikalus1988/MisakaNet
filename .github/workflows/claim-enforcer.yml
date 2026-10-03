@@ -37,8 +37,14 @@ jobs:
           [ -z "$ISSUES" ] && { echo "No competition issues. Done."; exit 0; }
 
           echo "$ISSUES" | while read NUM; do
-            CLAIM_TS=$(gh api "repos/Ikalus1988/MisakaNet/issues/$NUM/comments" \
-              --jq '[.[] | select(.body | test("^/claim\\b"))] | .[-1].created_at // empty')
+            # `--paginate` (2026-10-04). With no `per_page` this read returned GitHub's default 30
+            # comments — the *oldest* thirty — and `.[-1]` then named the newest claim it happened
+            # to see rather than the newest claim. A competition issue with more than thirty
+            # comments could have its live claim window measured from a stale timestamp, which
+            # decides who is still entitled to work on it. One timestamp per line per page, and
+            # `tail -n1` takes the genuinely newest.
+            CLAIM_TS=$(gh api "repos/Ikalus1988/MisakaNet/issues/$NUM/comments?per_page=100" --paginate \
+              --jq '.[] | select(.body | test("^/claim\\b")) | .created_at' 2>/dev/null | tail -n1)
 
             [ -z "$CLAIM_TS" ] && continue
 
@@ -49,8 +55,13 @@ jobs:
               --search "\"#$NUM\"" --json number --jq 'length')
             [ "$PR_COUNT" -gt 0 ] && continue
 
-            NOTIFIED=$(gh api "repos/Ikalus1988/MisakaNet/issues/$NUM/comments" \
-              --jq '[.[] | select(.body | test("Claim Window Expired"))] | length')
+            # `--paginate` for the same reason as above, and ids-not-`length` on purpose: under
+            # `--paginate` a `[...] | length` jq prints one count per page that then concatenates.
+            # Measured on PR #2020, whose three pages filter to 0 / 70 / 43 and therefore to the
+            # string "07043" rather than 113. Counting emitted lines sums correctly and asks a
+            # question that cannot be silently wrong.
+            NOTIFIED=$(gh api "repos/Ikalus1988/MisakaNet/issues/$NUM/comments?per_page=100" --paginate \
+              --jq '.[] | select(.body | test("Claim Window Expired")) | .id' 2>/dev/null | wc -l | tr -d ' ')
             [ "$NOTIFIED" -gt 0 ] && continue
 
             COMMENT="## Claim Window Expired - Issue Reopened for Competition

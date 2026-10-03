@@ -187,7 +187,10 @@ jobs:
         run: |
           PR_NUM="${{ github.event.pull_request.number || '' }}"
           [ -z "$PR_NUM" ] && exit 0
-          for cid in $(gh api "repos/Ikalus1988/MisakaNet/issues/$PR_NUM/comments?per_page=100" \
+          # `--paginate` (2026-10-04): a one-page read of a 249-comment PR (measured: #2020) only
+          # ever sees the oldest hundred comments, so stale DCO blocks past that point survived a
+          # cleanup that reported success. One id per line per page is what the delete loop wants.
+          for cid in $(gh api "repos/Ikalus1988/MisakaNet/issues/$PR_NUM/comments?per_page=100" --paginate \
             --jq '.[] | select((.body | contains("misakanet-dco-block")) or (.body | contains("AUTOMATED AUDIT SYSTEM: REGULATORY BLOCK"))) | .id' 2>/dev/null); do
             gh api -X DELETE "repos/Ikalus1988/MisakaNet/issues/comments/$cid" >/dev/null 2>&1 || true
           done
@@ -795,7 +798,16 @@ jobs:
             MARKER='<!-- misakanet-audit-report -->'
             REPORT_FILE=$(mktemp)
             printf '%s\n%s\n' "$MARKER" "$REPORT" > "$REPORT_FILE"
-            EXISTING_ID=$(gh api "repos/Ikalus1988/MisakaNet/issues/$PR_NUM/comments?per_page=100" \
+            # `--paginate` (2026-10-04) is what makes the upsert an upsert. GitHub returns issue
+            # comments oldest-first, so page 1 of `per_page=100` is the *oldest* hundred, and
+            # `tail -n1` over one page picks the hundredth comment rather than the newest.
+            # Measured on PR #2020: 249 comments, 113 of them carrying this marker, and **0 of the
+            # 113 on page 1** — so `EXISTING_ID` came back empty on every run and each run POSTed
+            # another report instead of patching. That is the duplicate-report pileup described in
+            # the note below, still growing (53 on 2026-09-25, 113 by 2026-10-04).
+            # Under `--paginate` the jq emits one id per line per page and `tail -n1` takes the
+            # newest of them, which is the intent the un-paginated call only approximated.
+            EXISTING_ID=$(gh api "repos/Ikalus1988/MisakaNet/issues/$PR_NUM/comments?per_page=100" --paginate \
               --jq ".[] | select(.body | contains(\"$MARKER\")) | .id" 2>/dev/null | tail -n1)
             if [ -n "$EXISTING_ID" ]; then
               # `-f body="$(cat …)"`, not `-f body=@$REPORT_FILE`: `--raw-field` does **not** read
