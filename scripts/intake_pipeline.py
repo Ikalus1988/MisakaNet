@@ -190,6 +190,34 @@ def persist_draft(intake: dict, cls: dict, draft: dict, pre: dict) -> bool:
 
 
 # ── Step 7: notify (GitHub issue) ──
+# GitHub caps an issue body at 65,536 chars; leave headroom for the wrapper.
+QUESTION_BODY_CAP = 60_000
+
+
+def _clip_question(text: str) -> str:
+    """Shorten an over-long question body *visibly*.
+
+    A question is the one intake kind whose submitted text IS the deliverable —
+    the lesson path summarizes, the question path has to preserve. Clipping it
+    silently produces a well-formed issue that quietly lost its evidence, and a
+    well-formed issue is the one thing nobody suspects (#2743: a ranked ledger
+    arrived as items 1,3,5,7,9,11,13, cut mid-word, because the code-weight
+    column was sheared off at 2,000 chars upstream).
+
+    So when the cap does bite, say so and say what to do about it. Under the cap
+    the text passes through untouched.
+    """
+    if len(text) <= QUESTION_BODY_CAP:
+        return text
+    return (
+        text[:QUESTION_BODY_CAP]
+        + f"\n\n---\n⚠️ **Truncated at {QUESTION_BODY_CAP:,} characters by "
+        f"intake-pipeline** ({len(text):,} were submitted). The text above is the "
+        f"head only. If the omitted part carries the evidence, comment with it or "
+        f"attach it to this issue.\n"
+    )
+
+
 def _question_issue_payload(intake: dict) -> tuple[str, list[str], str]:
     """Build ([Question] issue) title/labels/body.
 
@@ -197,7 +225,7 @@ def _question_issue_payload(intake: dict) -> tuple[str, list[str], str]:
     Kind marker the intake workflows route on, and the copy asks the submitter
     to add failure shape if a lesson is what they actually need.
     """
-    problem = (intake["problem"] or "").strip()[:2000]
+    problem = _clip_question((intake["problem"] or "").strip())
     first_line = (problem.splitlines() or ["help request"])[0][:80]
     title = f"[Question] {first_line}"
     labels = ["intake", "mcp-intake", "pending-review", "needs-human-review", "question"]
