@@ -77,10 +77,22 @@ def test_a_checkout_with_no_readable_head_does_not_guess(monkeypatch):
 
 
 def test_the_worker_actually_reports_its_commit():
-    """Without this the check can only ever say `unknown` and stay red forever."""
+    """Without this the check can only ever say `unknown` and stay red forever.
+
+    Asserts the endpoint goes through `deployedCommit()` rather than carrying the fallback inline, so
+    the "unknown" behaviour is covered by `workers/health-commit-sha.test.mjs` — which drives the
+    real helper — instead of only being visible on the deployed endpoint. A literal in the handler
+    would be the one branch nothing can exercise until it is live.
+    """
     source = (REPO / "workers" / "register-proxy-sw.js").read_text(encoding="utf-8")
-    assert "commit_sha: env.COMMIT_SHA" in source, (
-        "/api/health must expose commit_sha, or the freshness check has nothing to read"
+    assert "commit_sha: deployedCommit(env)" in source, (
+        "/api/health must expose commit_sha via deployedCommit(env); an inline `env.COMMIT_SHA || "
+        '"unknown" leaves the fallback untestable until the worker is deployed'
+    )
+    assert "function deployedCommit(env = {})" in source, "the helper must exist to be called"
+    assert "export function deployedCommit" not in source, (
+        "deployedCommit is exported from the block at the bottom of the file, not inline; declaring "
+        "it twice is a SyntaxError that breaks every worker test"
     )
 
 
