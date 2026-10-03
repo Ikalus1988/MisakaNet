@@ -43,10 +43,40 @@ function makeHome({ codex = true, claude = true } = {}) {
   return home;
 }
 
+/**
+ * A child environment whose network posture is decided here, not inherited.
+ *
+ * The CLI reads HTTPS_PROXY / HTTP_PROXY / NO_PROXY and, when it finds any, deliberately stops
+ * claiming "端点不可达" and says the probe is untrustworthy instead (`proxyEnvironment()`,
+ * packages/misakanet-setup/bin/misakanet-setup.mjs:639) — correct for a real user behind a
+ * corporate proxy, and the reason that path exists.
+ *
+ * But every runner here used to spread `process.env` wholesale, so that decision leaked in from
+ * whichever machine ran the suite. On a developer box or CI runner with a proxy exported, the CLI
+ * took the untrustworthy branch and two tests failed — deterministically, on every machine so
+ * configured, and never on a machine without one. That is the #2687 shape: a checker whose
+ * configured intent and its executed behaviour disagree, this time about the environment rather
+ * than the code. The tests were asserting on the developer's shell, not on the installer.
+ *
+ * So the proxy posture is pinned here, where the test's own intent lives. Everything else in the
+ * environment is inherited.
+ */
+const PROXY_VARS = [
+  'HTTPS_PROXY', 'https_proxy', 'HTTP_PROXY', 'http_proxy',
+  'ALL_PROXY', 'all_proxy', 'NO_PROXY', 'no_proxy',
+  'NODE_USE_ENV_PROXY',
+];
+
+function childEnv(overrides = {}) {
+  const env = { ...process.env, ...overrides };
+  for (const name of PROXY_VARS) delete env[name];
+  return env;
+}
+
 function run(home, ...flags) {
   const result = spawnSync(process.execPath, [CLI, '--home', home, ...flags], {
     encoding: 'utf8',
-    env: { ...process.env, MISAKANET_ENDPOINT: OFFLINE },
+    env: childEnv({ MISAKANET_ENDPOINT: OFFLINE }),
   });
   return result;
 }
@@ -57,7 +87,7 @@ function run(home, ...flags) {
  * `run()` above is for the paths that need a dead endpoint on purpose.
  */
 function runOffline(home, ...flags) {
-  const env = { ...process.env };
+  const env = childEnv();
   delete env.MISAKANET_ENDPOINT;
   return spawnSync(process.execPath, [CLI, '--home', home, '--no-register', ...flags], {
     encoding: 'utf8',
@@ -94,6 +124,39 @@ function runAsync(home, env, ...flags) {
     child.on('close', (status) => done({ status, stdout, stderr }));
   });
 }
+
+test('childEnv pins the network posture instead of inheriting the developer\'s', () => {
+  // The invariant behind #2732. Every runner used to spread `process.env` wholesale, so a
+  // developer box or CI runner with a proxy exported decided two tests' outcome: the CLI sees
+  // proxy variables, takes its "probe is untrustworthy" branch, and stops saying 端点不可达.
+  // Same suite, 107/109 on a proxied machine and 109/109 on a clean one — the tests were
+  // asserting on the shell they happened to be launched from.
+  //
+  // Provenance matters here. A failure that only reproduces on some machines is exactly the
+  // shape that gets filed as "flaky" and retried, so this pins the mechanism, not the symptom.
+  const saved = Object.fromEntries(PROXY_VARS.map((n) => [n, process.env[n]]));
+  try {
+    for (const name of PROXY_VARS) process.env[name] = 'http://proxy.invalid:8080';
+    process.env.MISAKANET_UNRELATED_SENTINEL = 'keep-me';
+
+    const env = childEnv({ MISAKANET_ENDPOINT: OFFLINE });
+    for (const name of PROXY_VARS) {
+      assert.equal(env[name], undefined, `${name} must not reach the child`);
+    }
+    assert.equal(env.MISAKANET_ENDPOINT, OFFLINE, 'an explicit override must survive');
+    assert.equal(env.MISAKANET_UNRELATED_SENTINEL, 'keep-me', 'the rest of the env is inherited');
+    assert.equal(
+      childEnv().MISAKANET_ENDPOINT, undefined,
+      'with no override the child gets no endpoint, so the CLI writes the real production URL',
+    );
+  } finally {
+    for (const [name, value] of Object.entries(saved)) {
+      if (value === undefined) delete process.env[name];
+      else process.env[name] = value;
+    }
+    delete process.env.MISAKANET_UNRELATED_SENTINEL;
+  }
+});
 
 test('installs all three pieces for Claude Code and Codex', () => {
   const home = makeHome();
@@ -358,7 +421,7 @@ test('verify passes once installed, against a reachable endpoint', async () => {
 
   try {
     const home = makeHome();
-    const install = await runAsync(home, { ...process.env, MISAKANET_ENDPOINT: url });
+    const install = await runAsync(home, childEnv({ MISAKANET_ENDPOINT: url }));
     assert.equal(install.status, 0, install.stdout + install.stderr);
 
     // the token must reach the config; a token is what unlocks the write path (reads are not
@@ -384,7 +447,7 @@ test('verify passes once installed, against a reachable endpoint', async () => {
     // unconditionally once the header list became one table (found 2026-09-19).
     assert.doesNotMatch(toml, /没有 token/, 'this run has a token, so that note is false:\n' + toml);
 
-    const verify = await runAsync(home, { ...process.env, MISAKANET_ENDPOINT: url }, '--verify');
+    const verify = await runAsync(home, childEnv({ MISAKANET_ENDPOINT: url }), '--verify');
     assert.equal(verify.status, 0, verify.stdout + verify.stderr);
     assert.match(verify.stdout, /READY/);
   } finally {
@@ -454,7 +517,7 @@ test('the verification probe never forwards the stored token', async () => {
     const home = makeHome();
     mkdirSync(join(home, '.misakanet-agent'), { recursive: true });
     writeFileSync(join(home, '.misakanet-agent', 'token'), FILE_TOKEN);
-    const result = await runAsync(home, { ...process.env, MISAKANET_ENDPOINT: url }, '--verify');
+    const result = await runAsync(home, childEnv({ MISAKANET_ENDPOINT: url }), '--verify');
     assert.equal(seen.length > 0, true, 'the verify probe must have been made');
     for (const header of seen) {
       assert.equal(header, null, `file token leaked to a custom endpoint: ${header}`);
@@ -464,7 +527,7 @@ test('the verification probe never forwards the stored token', async () => {
     // ...and an exported token is not forwarded by the probe either (it is the agent's
     // MCP config that carries it, not this process).
     seen.length = 0;
-    await runAsync(home, { ...process.env, MISAKANET_ENDPOINT: url, MISAKANET_TOKEN: EXPORTED_TOKEN }, '--verify');
+    await runAsync(home, childEnv({ MISAKANET_ENDPOINT: url, MISAKANET_TOKEN: EXPORTED_TOKEN }), '--verify');
     assert.equal(seen[0], null, `probe must stay anonymous, saw ${seen[0]}`);
   } finally {
     server.close();
@@ -646,7 +709,7 @@ test('openclaw: the token reaches the config and never an argv', () => {
     writeFileSync(join(home, '.misakanet-agent', 'token'), TOKEN_SHAPE_OK);
     // Must NOT pass --no-register, or there is no bearer to check; and a stored token means
     // ensureIdentity returns it without any network call.
-    const env = { ...process.env };
+    const env = childEnv();
     delete env.MISAKANET_ENDPOINT;
     const result = spawnSync(process.execPath,
       [CLI, '--home', home, '--only', 'openclaw'], { encoding: 'utf8', env });
@@ -806,7 +869,7 @@ test('hermes: the token goes to .env, and only a template goes in the config', (
   try {
     mkdirSync(join(home, '.misakanet-agent'), { recursive: true });
     writeFileSync(join(home, '.misakanet-agent', 'token'), TOKEN_SHAPE_OK);
-    const env = { ...process.env };
+    const env = childEnv();
     delete env.MISAKANET_ENDPOINT;
     const result = spawnSync(process.execPath,
       [CLI, '--home', home, '--only', 'hermes'], { encoding: 'utf8', env });
@@ -859,7 +922,7 @@ test('hermes: verify reports the registration, and uninstall restores the file e
     // claims "written, but whether Hermes loaded it cannot be confirmed from here".
     mkdirSync(join(home, '.misakanet-agent'), { recursive: true });
     writeFileSync(join(home, '.misakanet-agent', 'token'), TOKEN_SHAPE_OK);
-    const env = { ...process.env };
+    const env = childEnv();
     delete env.MISAKANET_ENDPOINT;
     spawnSync(process.execPath, [CLI, '--home', home, '--only', 'hermes'],
       { encoding: 'utf8', env });
@@ -952,11 +1015,10 @@ test('verify reports the version, and stays quiet when the registry is unreachab
   const home = makeHome();
   try {
     runOffline(home);
-    const env = {
-      ...process.env,
+    const env = childEnv({
       MISAKANET_ENDPOINT: OFFLINE,
       MISAKANET_REGISTRY_URL: 'http://127.0.0.1:9/latest',
-    };
+    });
     const verify = spawnSync(process.execPath, [CLI, '--home', home, '--verify'],
       { encoding: 'utf8', env });
     assert.match(verify.stdout, /版本：装机版本 \d+\.\d+\.\d+/,
@@ -1000,12 +1062,10 @@ test('verify compares versions properly, including an install ahead of the regis
   try {
     const home = makeHome();
     try {
-      await runAsync(home, { ...process.env, MISAKANET_ENDPOINT: OFFLINE });
+      await runAsync(home, childEnv({ MISAKANET_ENDPOINT: OFFLINE }));
       const installed = JSON.parse(
         readFileSync(join(CLI, '..', '..', 'package.json'), 'utf8')).version;
-      const env = {
-        ...process.env, MISAKANET_ENDPOINT: OFFLINE, MISAKANET_REGISTRY_URL: registry,
-      };
+      const env = childEnv({ MISAKANET_ENDPOINT: OFFLINE, MISAKANET_REGISTRY_URL: registry });
       const check = async () => (await runAsync(home, env, '--verify')).stdout;
 
       published = '0.0.1';                       // older than what is installed
@@ -1054,11 +1114,11 @@ test('a rate-limited search answer is not reported as an unreachable endpoint', 
   try {
     const home = makeHome();
     try {
-      await runAsync(home, { ...process.env, MISAKANET_ENDPOINT: url });
+      await runAsync(home, childEnv({ MISAKANET_ENDPOINT: url }));
       // Only the verify phase is under test: installing legitimately makes one tools/call
       // (misakanet_register), which is not a read and does not spend the read quota.
       seen.length = 0;
-      const verify = await runAsync(home, { ...process.env, MISAKANET_ENDPOINT: url }, '--verify');
+      const verify = await runAsync(home, childEnv({ MISAKANET_ENDPOINT: url }), '--verify');
       assert.ok(seen.includes('tools/list'),
         `the probe must be a handshake, not a search: saw ${JSON.stringify(seen)}`);
       assert.ok(!seen.includes('tools/call'),
@@ -1433,7 +1493,7 @@ test('--report --strict exits 0 on a READY machine, and the human fields never g
   await new Promise((done) => server.listen(0, '127.0.0.1', done));
   const url = `http://127.0.0.1:${server.address().port}/mcp`;
   // The registry lookup stays inside the stub too, so the test never needs the real network.
-  const env = { ...process.env, MISAKANET_ENDPOINT: url, MISAKANET_REGISTRY_URL: url };
+  const env = childEnv({ MISAKANET_ENDPOINT: url, MISAKANET_REGISTRY_URL: url });
 
   try {
     const home = makeHome();
@@ -1623,7 +1683,7 @@ test('--silent --report-json --strict returns 0 on a READY machine, silently', a
   });
   await new Promise((done) => server.listen(0, '127.0.0.1', done));
   const url = `http://127.0.0.1:${server.address().port}/mcp`;
-  const env = { ...process.env, MISAKANET_ENDPOINT: url, MISAKANET_REGISTRY_URL: url };
+  const env = childEnv({ MISAKANET_ENDPOINT: url, MISAKANET_REGISTRY_URL: url });
 
   try {
     const home = makeHome();
@@ -1802,7 +1862,7 @@ test('the Hermes token file is not world-readable', { skip: process.platform ===
     const home = makeHome();
     mkdirSync(join(home, '.hermes'), { recursive: true });
     writeFileSync(join(home, '.hermes', 'config.yaml'), 'model:\n  default: MiniMax-M3\n');
-    const install = await runAsync(home, { ...process.env, MISAKANET_ENDPOINT: url });
+    const install = await runAsync(home, childEnv({ MISAKANET_ENDPOINT: url }));
     assert.equal(install.status, 0, install.stdout + install.stderr);
 
     const envPath = join(home, '.hermes', '.env');
@@ -2099,9 +2159,9 @@ test('an id the user supplies is the identity their config declares', async () =
 
   try {
     const home = makeHome();
-    const result = await runAsync(home, {
-      ...process.env, MISAKANET_ENDPOINT: `http://127.0.0.1:${server.address().port}/mcp`,
-    }, '--client-id', 'stable-identity-0123');
+    const result = await runAsync(home, childEnv({
+      MISAKANET_ENDPOINT: `http://127.0.0.1:${server.address().port}/mcp`,
+    }), '--client-id', 'stable-identity-0123');
     assert.equal(result.status, 0, result.stdout + result.stderr);
     const claude = JSON.parse(readFileSync(join(home, '.claude.json'), 'utf8'));
     assert.equal(claude.mcpServers.misakanet.headers['X-MisakaNet-Client'], 'stable-identity-0123');
@@ -2143,7 +2203,7 @@ test('registration works without the global crypto object (Node 18 has none)', a
     const result = await new Promise((done) => {
       const child = spawn(process.execPath,
         ['--import', pathToFileURL(preload).href, CLI, '--home', home],
-        { env: { ...process.env, MISAKANET_ENDPOINT: `http://127.0.0.1:${server.address().port}/mcp` } });
+        { env: childEnv({ MISAKANET_ENDPOINT: `http://127.0.0.1:${server.address().port}/mcp` }) });
       let stdout = '';
       let stderr = '';
       child.stdout.on('data', (c) => { stdout += c; });
