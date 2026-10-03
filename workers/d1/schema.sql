@@ -84,18 +84,10 @@ CREATE TABLE IF NOT EXISTS lesson_usage (
 CREATE INDEX IF NOT EXISTS idx_usage_event ON lesson_usage(event);
 CREATE INDEX IF NOT EXISTS idx_usage_created ON lesson_usage(created_at);
 
--- PRD ④ #1356: FTS5 full-text search index. Standalone virtual table
--- (content duplicated from lessons for simplicity — 314 rows is tiny).
--- Rebuilt after each sync by scripts/sync_lessons_to_d1.py.
-CREATE VIRTUAL TABLE IF NOT EXISTS lessons_fts USING fts5(
-  id UNINDEXED,
-  title,
-  problem,
-  root_cause,
-  solution,
-  verification,
-  content_md
-);
+-- `lessons_fts` (PRD ④ #1356, FTS5) — DELETED with the second search implementation (issue #2121).
+-- Ranked search is served from the worker's single BM25 index (`worker_search_index`); see
+-- workers/register-proxy-sw.js, GET /api/lessons?q=. Existing databases may still carry the table;
+-- `DROP TABLE IF EXISTS lessons_fts;` is an ops cleanup, not a deploy prerequisite.
 
 -- PRD ⑤ #1396: async question intakes — durable state + answer delivery.
 -- One row per question-kind intake issue. The worker records 'pending' on
