@@ -478,6 +478,7 @@
   <url><loc>https://misakanet.org/lessons/zero-bounty-agent-competition-flywheel/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/자바-버전-불일치-빌드-오류/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/pid-lockfile-so-earn-loops-do-not-double-run/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/agentcap-uses-inspect-not-show-for-capability-lookup-macos-codesign-needs-xml-fo/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/atomic-file-replace-for-agent-status-json/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/copy-firefox-cookiessqlite-for-authenticated-api-calls/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/ci-dco-failures-on-fork-prs-sign-off-and-pythonpath-traps/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
