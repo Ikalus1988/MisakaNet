@@ -23,6 +23,7 @@ Exit code: 0 = every selected check passed, 1 = at least one failed.
 """
 from __future__ import annotations
 
+import json
 import re
 import shutil
 import subprocess
@@ -132,6 +133,92 @@ def mcp_handshake(url: str = REMOTE_MCP_ENDPOINT) -> tuple[bool, str, str]:
 VERSION_RE = re.compile(r'"serverInfo"\s*:\s*\{[^}]*?"version"\s*:\s*"([^"]+)"', re.DOTALL)
 WORKER_VERSION_KEY = "workers/register-proxy-sw.js (serverInfo)"
 
+HEALTH_ENDPOINT = "https://misakanet.org/api/health"
+
+
+def health_body(url: str = HEALTH_ENDPOINT) -> tuple[bool, str, dict]:
+    """(ok, message, parsed json) for `/api/health`."""
+    try:
+        result = subprocess.run(
+            ["curl", "-sS", "--max-time", "8", url],
+            capture_output=True, text=True, timeout=15,
+        )
+    except (subprocess.TimeoutExpired, OSError) as e:
+        return False, f"{url} unreachable ({e})", {}
+    if result.returncode != 0:
+        return False, f"{url} unreachable ({result.stderr.strip()[:120]})", {}
+    try:
+        return True, f"{url} reachable", json.loads(result.stdout)
+    except json.JSONDecodeError:
+        return False, f"{url} answered with a non-JSON body: {result.stdout[:120]}", {}
+
+
+def local_head_sha() -> str:
+    """This checkout's HEAD, or "" when it cannot be read."""
+    try:
+        out = subprocess.run(["git", "rev-parse", "HEAD"], cwd=REPO,
+                             capture_output=True, text=True, timeout=10)
+    except (subprocess.TimeoutExpired, OSError):
+        return ""
+    return out.stdout.strip() if out.returncode == 0 else ""
+
+
+def commits_behind(live: str, head: str) -> int | None:
+    """How many commits `head` is ahead of `live`, or None when git cannot say.
+
+    None is a real case, not an edge: `git rev-list` cannot count commits the clone does not
+    have, so this returns None on a shallow checkout and on any run where `live` is not present
+    locally. The daily caller sets `fetch-depth: 0` precisely so the number is usually real; the
+    caller still has to handle None, because "unknown how far behind" is the honest answer.
+    """
+    try:
+        out = subprocess.run(
+            ["git", "rev-list", "--count", f"{live}..{head}"], cwd=REPO,
+            capture_output=True, text=True, timeout=10,
+        )
+    except (subprocess.TimeoutExpired, OSError):
+        return None
+    return int(out.stdout.strip()) if out.returncode == 0 else None
+
+
+def check_deploy_freshness(url: str = HEALTH_ENDPOINT) -> tuple[bool, str]:
+    """Is the deployed worker built from the same commit as this checkout? (#2779)
+
+    The version read-back above cannot answer this. release-please bumps the version on a
+    release, so every `fix:`/`feat:` commit leaves production and main reporting the same
+    number — measured 2026-10-03, when production sat three days and five merged PRs behind
+    while `serverInfo.version` matched the manifest and every check stayed green. A version
+    that only moves on release is a version that cannot see a stale deploy.
+
+    So this compares commit SHAs, which change on every push. Three outcomes, all explicit:
+
+    - equal — production is this commit
+    - different — production is behind, and the message says by how many commits
+    - `unknown` — production was deployed by something that does not pass a SHA (a local
+      `make deploy-api`), so freshness **cannot be verified**. That is reported as a
+      failure rather than a pass: claiming to be fresh when nothing was measured is the
+      defect this check exists to remove.
+    """
+    ok, message, payload = health_body(url)
+    if not ok:
+        return False, message
+    live = str(payload.get("commit_sha") or "unknown")
+    head = local_head_sha()
+    if not head:
+        return False, "this checkout has no readable HEAD — cannot compare freshness"
+
+    if live == "unknown":
+        return False, (f"{url} reports commit_sha=unknown — deploy freshness cannot be "
+                       "verified. The worker was deployed without COMMIT_SHA (a local "
+                       "`make deploy-api`?); redeploy through deploy-worker.yml.")
+    if live == head:
+        return True, f"production runs {head[:12]}, the same commit as this checkout"
+
+    behind = commits_behind(live, head)
+    how_far = f"{behind} commit(s) behind" if behind is not None else "behind by an unknown number of commits"
+    return False, (f"production runs {live[:12]}, but this checkout is {head[:12]} "
+                   f"— {how_far}. The worker is stale; the deploy did not land. (#2779)")
+
 
 def declared_version() -> tuple[str, str]:
     """(version this checkout will serve, where it came from).
@@ -181,6 +268,7 @@ CHECKS: tuple[tuple[str, object], ...] = (
     ("core", check_misakanet_core),
     ("remote", check_remote_endpoint),
     ("deployed-version", check_deployed_version),
+    ("deploy-freshness", check_deploy_freshness),
 )
 
 # Flags that name a subset. Keyed by flag so `selection()` can be called with a command line
@@ -192,6 +280,11 @@ FLAG_CHECKS: dict[str, tuple[str, ...]] = {
     "--kv-only": ("config",),
     "--remote-only": ("remote",),
     "--post-deploy": ("remote", "deployed-version"),
+    # Separate from --post-deploy on purpose: post-deploy can only catch a deploy that landed
+    # wrong, never one that never ran. #2779's deploy sat waiting for approval for three days,
+    # and nothing was red for any of them, because every check about production ran *after*
+    # production was already updated. The daily caller of this flag is what closes that gap.
+    "--deploy-freshness": ("deploy-freshness",),
 }
 
 # Checks that are deliberately local-only, with the reason. Listed rather than left to happen,
@@ -210,7 +303,7 @@ LOCAL_ONLY = {
 # checkout, which is routinely ahead of production, so comparing versions by default would go red for
 # a reason that is not a defect. They are reachable through an explicit flag, and
 # `tests/test_doctor_reach.py` requires each to have a CI call site like any other check.
-POST_DEPLOY_ONLY = {"deployed-version"}
+POST_DEPLOY_ONLY = {"deployed-version", "deploy-freshness"}
 
 
 def selection(args: list[str]) -> list[str]:

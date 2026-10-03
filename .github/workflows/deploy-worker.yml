@@ -64,7 +64,10 @@ jobs:
           set -euo pipefail
 
           cd workers
-          npx wrangler deploy --config wrangler.toml
+          # COMMIT_SHA is what makes staleness measurable: it lands in `/api/health` as
+          # `commit_sha`, and `doctor.py --deploy-freshness` compares it to the checkout.
+          # The version number cannot do this job (#2779).
+          npx wrangler deploy --config wrangler.toml --var COMMIT_SHA:"${GITHUB_SHA}"
 
       - name: Post-deploy — the deployed endpoint answers the handshake, at the version we shipped
         run: |
@@ -87,12 +90,19 @@ jobs:
           # file-based check over it passed (#1820). This is the only place a live read-back can run —
           # `make doctor` deliberately skips it, because a developer's checkout is often ahead of
           # production and going red there would be the expensive kind of red.
+          #
+          # `--deploy-freshness` rides along because here the two questions are the same question:
+          # this checkout is the commit that was just deployed, so "does production report my SHA"
+          # is a direct read-back of whether the `--var COMMIT_SHA` above actually reached the
+          # bundle. It is also the only place that half is answerable — the daily
+          # `deploy-freshness.yml` can tell you production is behind, but not that a deploy landed
+          # the wrong bytes (#2779).
           ATTEMPTS=5
           for attempt in $(seq 1 "$ATTEMPTS"); do
-            if python3 scripts/doctor.py --post-deploy; then
+            if python3 scripts/doctor.py --post-deploy --deploy-freshness; then
               exit 0
             fi
-            echo "::warning::the MCP handshake probe failed (attempt $attempt/$ATTEMPTS)"
+            echo "::warning::the post-deploy probe failed (attempt $attempt/$ATTEMPTS)"
             [ "$attempt" = "$ATTEMPTS" ] || sleep 10
           done
 

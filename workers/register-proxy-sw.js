@@ -6681,6 +6681,14 @@ export default {
         ...(kvHealth.reason ? { degraded_reason: kvHealth.reason } : {}),
         worker: "misakanet-register-proxy",
         scheduled_keepalive: true,
+        // The commit this worker was built from (#2779). The version number above cannot answer
+        // "is production current?": release-please only bumps it on a release, so `fix:`/`feat:`
+        // commits leave production and main reporting the same version while production is days
+        // behind — which is exactly how a deploy sat stuck for three days with every file-based
+        // check green. This is the value `deploy-worker.yml` passes as `--var COMMIT_SHA:${GITHUB_SHA}`;
+        // `make deploy-api` does not, so it stays "unknown" and the freshness check says it cannot
+        // verify rather than claiming it is fresh.
+        commit_sha: env.COMMIT_SHA || "unknown",
         hasToken: !!env.REGISTER_TOKEN,
         hasMcpToken: !!env.MCP_TOKEN,
         hasKV: !!env.MISAKANET_KV,
