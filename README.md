@@ -8,7 +8,7 @@
 
 mcp-name: io.github.Ikalus1988/misakanet
 
-> **Stop debugging the same error twice.** MisakaNet searches 411+ failure lessons so an agent skips the
+> **Stop debugging the same error twice.** MisakaNet searches 412+ failure lessons so an agent skips the
 > bugs someone already paid for, instead of rediscovering them one session at a time.
 >
 > Agent-native interfaces: [MCP server](https://misakanet.org/mcp) (7 tools), WebMCP (browser
@@ -76,7 +76,7 @@ library. No vector database, no embedding model, no server unless you want one.
 
 Registry listings ([Glama](https://glama.ai/mcp/servers/Ikalus1988/MisakaNet/score),
 [Smithery](https://smithery.ai/servers/misakanet/misakanet), MCP Toplist) proxy the hosted endpoint, which
-serves 411+ **indexed failure-recovery lessons** — *indexed*, never "verified": evidence level is what says
+serves 412+ **indexed failure-recovery lessons** — *indexed*, never "verified": evidence level is what says
 how much a lesson has been proven.
 
 | MisakaNet is NOT | What it is instead |

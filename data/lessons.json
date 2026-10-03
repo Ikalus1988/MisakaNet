@@ -1875,6 +1875,38 @@
     "contributor": ""
   },
   {
+    "id": "codex-cli-mcp-reload-keyring-credential-store",
+    "title": "Fresh Codex CLI is not a reload of the running desktop app",
+    "domain": "mcp",
+    "tags": [
+      "codex",
+      "mcp",
+      "desktop",
+      "keyring",
+      "macos"
+    ],
+    "summary": "Two questions got grouped because they both mention Codex, but they are not the same failure.",
+    "preview": "# Fresh Codex CLI is not a reload of the running desktop app\n\n## Problem\n\nTwo questions got grouped because they both mention Codex, but they are not the same failure.\n\n#2264 asks how to reload MCP configuration in an **already-running** Codex desktop app-server. `codex mcp remove` updates the saved TOML, and a fresh CLI lookup then reports the server gone. The desktop app-server is a different process: it speaks stdio, it has no control socket, and it keeps launching servers from the list it read at startup.\n\n#2266 asks which **read-only** checks separate two keyring failures that print the same line after `persist_failed`:\n\n```text\nfailed to write OAuth tokens to keyring: Platform secure storage failure: User interaction is not allowed.\n```\n\nA fresh `codex login status` can still read an existing session, and the login keychain can look unlocked in the GUI. The diagnosis must not write a credential or change an ACL.\n\n## Root Cause\n\nA new `codex` process reads `~/.codex/config.toml` (`[mcp_servers]`) when it starts. The desktop app-server does that once, then keeps the list for the life of the process. `codex mcp remove` writes the file and does not signal the process that is already running. There is no supported in-process reload on that stdio transport. Restarting the app-server is what loads the new file. Those restart steps are already written in `lessons/contrib/codex-desktop-mcp-config-reload.md`. A fresh CLI lookup is not a substitute for them, and a green CLI lookup is not evidence the old process has reloaded.\n\nOn macOS, `cli_auth_credentials_store = \"keyring\"` stores the login in the login keychain so a **new** CLI process can reuse it. That setting does not push a new MCP list into a process that is already running, and it is not the cause of the desktop reload gap.\n\nThe keyring error string is shared by two states:\n\n1. **Item access-control denial.** The `Codex Auth` item exists, this process can still read it, and the keychain is unlocked, but the item ACL does not allow this `codex` binary to write.\n2. **Unavailable user-interaction context.** The keychain is locked for this process, or the process has no session that can raise a prompt (locked screen, SSH, a job outside the GUI session). A write that needs interaction fails even when the GUI says the keychain is unlocked.\n\nRead access surviving a failed write is expected in the first state, \n\n[clipped]",
+    "summary_plain": "Fresh Codex CLI sees MCP edits; the open desktop app does not. A keyring write error needs two read-only checks.",
+    "trigger": "codex mcp remove running app-server stdio persist_failed User interaction is not allowed",
+    "verify": "New codex mcp get exits non-zero after remove. That is not a desktop reload. Keychain info versus the item ACL picks one read-only failure, with no secret printed.",
+    "url": "lessons/contrib/codex-cli-mcp-reload-keyring-credential-store.md",
+    "created": "",
+    "updated": "",
+    "triggers": null,
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "published",
+    "evidence_refs": [],
+    "supersedes": "",
+    "verified": true,
+    "evidence_level": "E1",
+    "evidence_source": "frontmatter",
+    "trust_score": 0.387,
+    "contributor": ""
+  },
+  {
     "id": "corporate-proxy-curl-timeout",
     "title": "curl Timeout Behind Corporate Proxy: SSL Inspection Breaks Certificate Validation",
     "domain": "devops",

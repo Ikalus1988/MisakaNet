@@ -102,7 +102,7 @@ Rules:
 
 2. **Quickstart:** [docs/quickstart.md](../../docs/quickstart.md) · [MCP setup](../../docs/mcp-quickstart.md)
 
-3. **What is MisakaNet?** A failure-memory layer for AI coding agents. When you hit an error, search 411 indexed failure-recovery lessons before debugging from scratch. [Learn more →](../../README.md)
+3. **What is MisakaNet?** A failure-memory layer for AI coding agents. When you hit an error, search 412 indexed failure-recovery lessons before debugging from scratch. [Learn more →](../../README.md)
 
 ### 📌 How to Claim
 

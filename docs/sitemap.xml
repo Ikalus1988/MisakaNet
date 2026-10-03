@@ -118,6 +118,7 @@
   <url><loc>https://misakanet.org/lessons/cloudflare-observability-mcp-oauth-separate-domain/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/cloudflare-worker-deploy-three-pitfalls/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/codeql-alert-dismissal-false-positive/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/fresh-codex-cli-is-not-a-reload-of-the-running-desktop-app/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/corporate-proxy-curl-timeout/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/cron-job-not-running/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/cross-repo-contribution-strategy/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
