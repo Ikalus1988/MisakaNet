@@ -49,6 +49,7 @@ from __future__ import annotations
 
 import io
 import re
+import sys
 import tokenize
 from pathlib import Path
 
@@ -84,16 +85,23 @@ def _prose_lines(source: str) -> set[int]:
     two real reads — `register_issue.py:350` and `question_autopilot.py:617` — which is the failure
     this function exists to prevent, committed by the function itself.
 
+    Token *names* rather than the `tokenize.FSTRING_*` constants, because those were added in Python
+    3.12 and this repository runs a 3.11 / 3.12 / 3.13 matrix. Referencing the constant directly passed
+    on the interpreter it was written on and raised `AttributeError` on `test (ubuntu-latest, 3.11)` —
+    which is precisely what that leg is for. `tok_name` maps whatever types the running interpreter has,
+    so the 3.12-only names simply never appear on 3.11, and there a multi-line f-string is one `STRING`.
+
     Returns what it classified if the file does not tokenise. A syntax error elsewhere in `scripts/`
     should fail whichever test compiles that file, not silently widen this one.
     """
+    multi_line_string_names = {"STRING", "FSTRING_START", "FSTRING_MIDDLE"}
     marked: set[int] = set()
     try:
         for tok in tokenize.generate_tokens(io.StringIO(source).readline):
             if tok.type == tokenize.COMMENT:
                 marked.add(tok.start[0])
-            elif tok.type in (tokenize.STRING, tokenize.FSTRING_START, tokenize.FSTRING_MIDDLE) \
-                    and tok.start[0] != tok.end[0]:
+            elif (tokenize.tok_name.get(tok.type) in multi_line_string_names
+                  and tok.start[0] != tok.end[0]):
                 marked.update(range(tok.start[0], tok.end[0] + 1))
     except (tokenize.TokenError, IndentationError, SyntaxError):
         pass
@@ -242,6 +250,52 @@ def test_every_allowed_entry_states_what_makes_it_acceptable():
         assert any(word in reason.lower() for word in ("measured", "bounded", "advisory", "cadence")), (
             f"{path} {shape}: the reason does not say what makes it acceptable now — say what was "
             f"measured or what bounds the list")
+
+
+def test_the_prose_detector_does_not_depend_on_a_python_version_specific_token():
+    """Pins the defect `test (ubuntu-latest, 3.11)` caught on this file's first version.
+
+    `tokenize.FSTRING_START` / `FSTRING_MIDDLE` arrived in Python 3.12 (PEP 701). Referencing them
+    directly passed on the 3.12 interpreter it was written on and raised
+    `AttributeError: module 'tokenize' has no attribute 'FSTRING_START'` on the 3.11 leg — every test
+    in this file failed at once, in a file whose whole purpose is to be a guard. The repository runs a
+    3.11 / 3.12 / 3.13 matrix precisely to catch this, and the local interpreter it was developed on was
+    the one version where the bug could not appear.
+
+    Two assertions, because either alone is satisfiable without being right: no *code* line may name a
+    3.12-only constant, and the scan must produce the same answer whichever string-token types the
+    running interpreter has.
+
+    The scan filters prose with `_prose_lines` for the same reason the main scanner does. Without it
+    this test fails on itself — the assertion message and this docstring both contain the literal
+    `tokenize.FSTRING_*`, so a naive regex over the file matches the sentence explaining the rule. That
+    is the failure this file was written to prevent, committed by the file.
+    """
+    own_path = REPO / "tests" / "test_github_list_reads_paginate.py"
+    own = own_path.read_text(encoding="utf-8")
+    prose = _prose_lines(own)
+    direct = [
+        (n, m.group(0))
+        for n, line in enumerate(own.splitlines(), 1)
+        if n not in prose
+        for m in re.finditer(r"tokenize\.(FSTRING_\w+)", line)
+    ]
+    assert not direct, (
+        f"these code lines reference {direct} directly. Those token types exist only on Python 3.12+, so "
+        f"the 3.11 leg of the test matrix raises AttributeError. Look the name up through "
+        f"`tokenize.tok_name.get(...)` instead — it maps whatever types the running interpreter has.")
+
+    # Same answer regardless of which string tokens this interpreter knows about. A 3.11 run has no
+    # FSTRING_* at all and must still find the same four reads.
+    reads = exhaustive_reads()
+    assert len(reads) == 4, f"expected 4 exhaustive reads on any supported interpreter, got {len(reads)}"
+
+    # And a multi-line f-string is prose here whichever way the interpreter tokenises it.
+    sample = 'x = 1\ny = f"""\nper_page=100\n"""\nz = 2\n'
+    prose = _prose_lines(sample)
+    assert 3 in prose, (
+        f"line 3 is inside a multi-line f-string and must count as prose; got {sorted(prose)} on "
+        f"{sys.version_info.major}.{sys.version_info.minor}")
 
 
 def test_the_detector_distinguishes_paginated_from_not():
