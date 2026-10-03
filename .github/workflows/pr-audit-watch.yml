@@ -62,8 +62,21 @@ jobs:
             age=$(( (now - $(date -u -d "$created" +%s)) / 60 ))
             [ "$age" -ge "$MIN_AGE_MINUTES" ] || continue
 
-            names=$(gh api "repos/$GITHUB_REPOSITORY/commits/$sha/check-runs?per_page=100" \
-                      --jq '[.check_runs[].name] | join(",")' 2>/dev/null || echo "")
+            # `--paginate` is load-bearing, not a habit (2026-10-04). Without it this reads one page of
+            # 100 check-runs and the `*audit*` test below runs against a truncated list: on commit
+            # `80540341`, which carries 187 check-runs, **87 names live past page 1** and the set
+            # difference includes `automation-output-audit`. A head commit like that would read as
+            # "no audit has run", and this step would dispatch a second one for a PR that already has
+            # its verdict. Measured: PR heads in this repository currently carry 4-38 check-runs, so
+            # nothing is duplicated today — but `main` commits already carry 118-187, and the count
+            # grows with every optional bot, so the head follows.
+            #
+            # `--jq '.check_runs[].name'` emits one name per line and `--paginate` concatenates the
+            # per-page output, so the result is newline-separated rather than comma-separated. The
+            # `case` glob below does not care: `*audit*` matches anywhere in the string either way,
+            # and dropping `join(",")` removes a step that existed only to re-join the list.
+            names=$(gh api "repos/$GITHUB_REPOSITORY/commits/$sha/check-runs?per_page=100" --paginate \
+                      --jq '.check_runs[].name' 2>/dev/null || echo "")
             case "$names" in
               *audit*) continue ;;
             esac

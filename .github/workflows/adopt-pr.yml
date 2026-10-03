@@ -74,7 +74,14 @@ jobs:
           echo "mode=$MODE" >> "$GITHUB_OUTPUT"
 
           gh api "repos/$REPO/pulls/$PR" > "$RUNNER_TEMP/adopt-pr.json"
-          gh api "repos/$REPO/pulls/$PR/commits?per_page=100" > "$RUNNER_TEMP/adopt-commits.json"
+          # `--paginate` (2026-10-04): this file is handed to the adoption script as
+          # `--commits-file` and every commit in it is replayed onto `main`, so a PR with more than
+          # 100 commits would have its tail silently dropped — the branch would land with a history
+          # nobody asked for. Checked first that `gh api --paginate` on an array endpoint writes a
+          # *single merged* JSON array rather than one document per page (measured on
+          # `issues/2020/comments`: 249 items in one array, still valid JSON), so the `.[0]` read
+          # below and the script's parser both keep working unchanged.
+          gh api "repos/$REPO/pulls/$PR/commits?per_page=100" --paginate > "$RUNNER_TEMP/adopt-commits.json"
 
           HEAD_REPO="$(jq -r '.head.repo.clone_url // ""' "$RUNNER_TEMP/adopt-pr.json")"
           HEAD_FULL="$(jq -r '(.head.repo.full_name) // ((.head.label | split(":")[0]) + "/" + .base.repo.name)' "$RUNNER_TEMP/adopt-pr.json")"
