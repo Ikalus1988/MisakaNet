@@ -1,8 +1,8 @@
 ```json
 {
   "kind": "missing_lesson",
-  "problem": "2026-10-03T15:45:42.5585192Z \u001b[36;1m  echo \"❌ ${{OS}} / Python ${{PY}}: FAIL (pytest exit ${{EXIT_CODE:-none}})\"\u001b[0m",
-  "error": "2026-10-03T15:45:42.5635866Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {{0}}\n2026-10-03T15:45:42.5707331Z ❌ ubuntu-latest / Python 3.11: FAIL (pytest exit 1)\n",
+  "problem": "echo \"❌ ${{{{OS}}}} / Python ${{{{PY}}}}: FAIL (pytest exit ${{{{EXIT_CODE:-none}}}})\"",
+  "error": "2026-10-03T15:45:42.5635866Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {{{{0}}}}\n2026-10-03T15:45:42.5707331Z ❌ ubuntu-latest / Python 3.11: FAIL (pytest exit 1)",
   "what_tried": "",
   "source": "github-action",
   "matched_lesson_id": "",
