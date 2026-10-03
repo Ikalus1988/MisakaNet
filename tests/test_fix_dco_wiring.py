@@ -9,7 +9,7 @@ Measured 2026-09-25 on PR #2201/#2202, in order:
    without anyone asking.
 3. The auto-fix force-pushed with the built-in `GITHUB_TOKEN`, and GitHub created the new head's
    `pull_request: synchronize` runs as **held** (`action_required`, `actor=github-actions[bot]`).
-   `DCO / Signed-off-by` is one of the three required checks on `main`, so the PR then sat at
+   `DCO / Signed-off-by` is one of the required status checks on `main`, so the PR then sat at
    "Expected — waiting for status to be reported" for ever: the fix for a missing sign-off is what made
    the PR unmergeable. The repository already knew this shape —
    `lessons/contrib/ci-github-token-push-does-not-trigger-workflows.md` — and `auto-sync-prs.yml`

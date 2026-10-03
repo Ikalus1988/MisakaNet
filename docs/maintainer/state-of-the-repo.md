@@ -18,13 +18,13 @@
   required reviewer is the owner**, and 6 run on the owner's PAT (repo-level secret `SHELDON_PAT`).
   The concrete failure mode: a publish run can wait for a human for a day with **nothing notifying
   anyone** (measured: one run waiting since 2026-09-21T12:13:42Z).
-- `main` requires **four** status checks (`DCO / Signed-off-by`, `test (ubuntu-latest, 3.11)`, `gate`,
+- `main` requires the status checks below (`DCO / Signed-off-by`, `test (ubuntu-latest, 3.11)`, `gate`,
   `audit` — `docs/ci-gates.md` is the single statement of the set, with the command that re-reads it from
   the ruleset) with **no bypass actors** — and GitHub enforces that rule on *direct pushes* as well as
   merges, so every workflow that commits back to `main` is now refused (#2073). The `audit` gate became
   required on 2026-09-27, which closed the "green but nothing ran the full suite" hole — and lengthens every PR's path to mergeable
-  by however long that leg takes. Measured on the change that added it: two of four required checks were
-  still running minutes after the other two reported. It is only repaired every two hours by
+  by however long that leg takes. Measured on the change that added it: the `audit` leg and one other were
+  still running minutes after the rest had reported. It is only repaired every two hours by
   `pr-audit-watch.yml`, so a *missing* audit is still possible; what changed is that a missing one now
   blocks instead of passing silently.
 - Backlog (re-measured 2026-09-27): **~107 open issues / ~12 open PRs**, of which 54 carry `intake`, 39
@@ -138,7 +138,7 @@ PR / issue 事件上自己动的：`auto-merge-docs.yml`（`pull_request_target`
 
 ## 2. 门禁在哪里，哪些值得信任
 
-### 2.1 `main` 上现在有**四条**必需检查（2026-09-27 读取；`gate` 于 09-22 加入，`audit` 于 09-27 加入）
+### 2.1 `main` 的必需检查（2026-09-27 读取；`gate` 于 09-22 加入，`audit` 于 09-27 加入）
 
 ```
 $ curl -sS -H "Authorization: Bearer $GITHUB_TOKEN" \

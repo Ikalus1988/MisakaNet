@@ -5,7 +5,7 @@ that script, while its own pull request was still open.
 
 ## Why the direct pushes stopped working
 
-`main` carries the ruleset **"main: the deterministic gates"** (id `23826057`). It requires four
+`main` carries the ruleset **"main: the deterministic gates"** (id `23826057`). It requires the
 status checks on whatever lands there — `DCO / Signed-off-by`, `test (ubuntu-latest, 3.11)`,
 `gate`, `audit` (the list lives in `docs/ci-gates.md`, with the command that reads it back from the
 ruleset, so it is stated once) — and its `bypass_actors` list is **empty**, so it applies to a direct
@@ -48,7 +48,7 @@ on some days and green on others for the same code.
 
 The script commits what the run produced (`git add -A` unless `--paths` names the files), signs it
 off, force-pushes it to `bot/<job>`, opens or updates the pull request for that branch, and
-**enables squash auto-merge** — GitHub merges it as soon as the three required checks are green.
+**enables squash auto-merge** — GitHub merges it as soon as the required status checks are green.
 No human is in the loop for a healthy regeneration; a person is needed only when something is
 actually wrong, which is what the job's red state is for.
 

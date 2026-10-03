@@ -34,6 +34,14 @@ REPO = Path(__file__).resolve().parent.parent
 WF_DIR = REPO / ".github" / "workflows"
 
 # Read by the tool the step invokes, not by the script text.
+#
+# `SHELDON_PAT` was briefly added here for the documented-gates ratchet, on the argument that a
+# shell script cannot mention it without putting the token on a command line. That argument was
+# wrong twice over: the rule is about *dead configuration* — a name declared on one side of a
+# rename and not the other — not about secrets reaching `ps`; and `${SHELDON_PAT:-}` mentions the
+# name, tests it, and never expands it into anything visible, which this repository already does in
+# `fix-dco.yml` and `auto-sync-prs.yml`. Exempting it would have bought nothing and cost the
+# coverage over every step that declares it.
 TOOL_CONSUMED = {
     "GH_TOKEN", "GITHUB_TOKEN", "CLOUDFLARE_API_TOKEN", "CLOUDFLARE_ACCOUNT_ID", "AI_GATEWAY_ID",
     "AI_GATEWAY_TOKEN", "NODE_AUTH_TOKEN", "NPM_TOKEN", "PYTHONPATH", "ACTIONS_STEP_DEBUG",

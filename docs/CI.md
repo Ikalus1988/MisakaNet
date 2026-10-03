@@ -11,13 +11,14 @@
 > 许多 workflow 是机器人/数据管道，失败常在外部依赖（D1、registry、配额）。
 
 
-## 质量门禁（23）
+## 质量门禁（24）
 
 | workflow | 用途 | 触发 | 定时 |
 |---|---|---|---|
 | `auto-merge-docs.yml` | Auto-Merge Docs PRs | PR |  |
 | `auto-merge-lessons.yml` | Auto-Merge Lessons（`auto-merge-lesson` opt-in 标签）| PR |  |
 | `bounty-claim-guard.yml` | Bounty Claim Guard | PR（opened/edited）|  |
+| `check-documented-gates.yml` | Documented Gates Ratchet（比对 `docs/ci-gates.md` 的门禁表与规则集 23826057 的真实集合，不一致则开 issue）| 定时, 手动 | `11 7 * * 1` |
 | `ci-cross-platform.yml` | Cross-Platform Tests | PR, 手动 |  |
 | `codeql.yml` | CodeQL | PR, push, 定时 | `0 6 * * 0` |
 | `dco-check.yml` | DCO Check | PR, 手动 |  |

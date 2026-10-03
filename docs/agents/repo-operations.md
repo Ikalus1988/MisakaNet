@@ -135,9 +135,9 @@ python3 scripts/bench_production_recall.py --json     # 机器可读
 > 所以人类和自动化的固定动作都是**开 PR**：
 >
 > ```bash
-> git commit --signoff -m "…"          # DCO 是三个必需检查之一
+> git commit --signoff -m "…"          # DCO 是必需检查之一
 > git push origin HEAD:refs/heads/<branch>
-> gh pr create --base main --fill       # 然后等三个必需检查变绿再合并
+> gh pr create --base main --fill       # 然后等必需检查变绿再合并
 > ```
 >
 > 自动化写入**不用**手写这段：调 `scripts/ci/land_change.py`（分支 → PR → 开启 squash

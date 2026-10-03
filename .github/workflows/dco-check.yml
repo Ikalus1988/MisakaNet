@@ -1,6 +1,6 @@
 name: DCO Check
 
-# `DCO / Signed-off-by` is one of the three **required** status checks on `main` (ruleset 23826057), and
+# `DCO / Signed-off-by` is one of the **required** status checks on `main` (ruleset 23826057), and
 # it is not a job name: this workflow creates it through the Checks API. Two things follow, and both
 # cost the repository real time before they were written down here.
 #
@@ -147,7 +147,7 @@ jobs:
 
       # The same verdict, as a **commit status** as well as a check run.
       #
-      # `DCO / Signed-off-by` is one of the three required contexts on `main`, and a check run has always
+      # `DCO / Signed-off-by` is one of the required contexts on `main`, and a check run has always
       # been enough for it — except when it is not, and the failure is invisible: measured 2026-09-25 on
       # #2209, the head carried a green `DCO / Signed-off-by` check run (two of them, after a
       # `workflow_dispatch` re-report) and the ruleset still answered

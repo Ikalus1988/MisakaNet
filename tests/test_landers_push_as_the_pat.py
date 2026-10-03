@@ -9,7 +9,7 @@
 `actions/checkout` stores its own token in `http.https://github.com/.extraheader` **and** in a credentials
 file reached through `includeIf`, and those take precedence over the URL. So the push went out as
 `github-actions[bot]`, GitHub created the pull request's runs as `action_required` — held, never executed —
-and nothing could ever report the three required checks, which means the self-merging pull request could not
+and nothing could ever report the required status checks, which means the self-merging pull request could not
 merge. The automation's own PRs were the ones being stranded.
 
 Measured 2026-09-25:

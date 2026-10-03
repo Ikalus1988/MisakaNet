@@ -14,12 +14,12 @@ curl -sS -H "Authorization: Bearer $TOKEN" \
       if r['type']=='required_status_checks' for c in r['parameters']['required_status_checks']]"
 ```
 
-Measured that way on 2026-09-29, **four** checks block a merge:
+Read that way on 2026-09-29, the gates that block a merge are the rows below —
 
 | Check (context as GitHub reports it) | Workflow | What it validates |
 |---|---|---|
 | **DCO / Signed-off-by** | `dco-check.yml` | Every commit carries `Signed-off-by:` |
-| **test (ubuntu-latest, 3.11)** | `ci-cross-platform.yml` | The pytest suite on one leg of a 9-leg matrix — the other eight legs are *not* required |
+| **test (ubuntu-latest, 3.11)** | `ci-cross-platform.yml` | The pytest suite on the `ubuntu-latest` + 3.11 leg of that workflow's matrix — every other leg is *not* required, so none of them can hold a merge |
 | **gate** | `lesson-gate.yml` | The lesson gate (structure, quality, injection). It deliberately has **no `paths:` filter**, because a required check that sometimes does not run blocks every PR that does not trigger it (#1920) |
 | **audit** | `pr-checks.yml` | The audit verdict: DCO audit, secret scan (`scripts/check_worker_secrets.py`), dependency audit, the worker `node --test` suite, and a `pytest --cov-fail-under=20` run. This is the job that turns a test failure into a blocked merge |
 
@@ -40,8 +40,8 @@ gates naming scope they did not have):
 
 Three notes that have each cost someone an afternoon:
 
-* **"Required" is about the *context name*.** Only `test (ubuntu-latest, 3.11)` is required out of the nine
-  `test (…)` legs, so a red `windows-latest` or `macos-latest` leg **does not block a merge** — it merges
+* **"Required" is about the *context name*.** Only `test (ubuntu-latest, 3.11)` is required out of the
+  `test (…)` matrix legs, so a red `windows-latest` or `macos-latest` leg **does not block a merge** — it merges
   green-looking and shows up afterwards as "that PR broke something". Read the leg you changed.
 * **`audit` runs pytest too** (with a coverage floor), so the suite *is* gated even though the
   `Run Test Suite` step inside `pr-checks.yml` is `continue-on-error`.
@@ -64,7 +64,7 @@ worth knowing before treating a green page as coverage.
 
 | Check | Workflow | Why it is advisory |
 |---|---|---|
-| **the other eight `test (…)` legs** | `ci-cross-platform.yml` | Only `ubuntu-latest, 3.11` is in the ruleset — the windows/macos legs exist to catch platform drift and merge red (measured twice on 2026-09-28 alone) |
+| **the other `test (…)` legs** | `ci-cross-platform.yml` | Only `ubuntu-latest, 3.11` is in the ruleset — the windows/macos legs exist to catch platform drift and merge red (measured twice on 2026-09-28 alone) |
 | **MCP Endpoint Stress Tests** | `mcp-stress.yml` | The worker suite, not in the required set — see the note above |
 | **CodeQL (python / javascript-typescript)** | GitHub default | Security queries; findings do not block |
 | **Agent Quality Score / Validate Lesson Schema** | `pr-checks.yml` | `continue-on-error: true` |

@@ -4,7 +4,7 @@ name: 御坂网络注册
 # commit, no push. It used to assign the next node number by incrementing `data/counter.json` and
 # pushing to `main`, which failed twice over (issue #2106):
 #
-#   1. The ruleset on `main` (23826057, `bypass_actors: []`) requires three status checks on any
+#   1. The ruleset on `main` (23826057, `bypass_actors: []`) requires the status checks on any
 #      commit that lands there, and GitHub enforces them on a direct push too. Three registration
 #      runs died on 2026-09-22 (35749203103 / 35761772072 / 35764549504), and the welcome comment
 #      and the close were skipped with them.

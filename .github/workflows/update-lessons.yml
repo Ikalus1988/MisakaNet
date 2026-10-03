@@ -129,7 +129,7 @@ jobs:
         # work here, while every quiet run reported success: the failure only ever appeared on the
         # days the job had something to land. See docs/maintainer/automation-lands-via-pr.md.
         #
-        # `land_change.py` signs the commit off (DCO is one of the three required checks), pushes
+        # `land_change.py` signs the commit off (DCO is one of the required status checks), pushes
         # it to the stable branch `bot/update-lessons` and enables squash auto-merge: the pull
         # request is made once and updated by later runs instead of accumulating one PR per day in
         # front of a human. It stages everything (`git add -A`) on purpose — the page generator

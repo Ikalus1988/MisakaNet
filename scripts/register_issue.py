@@ -7,7 +7,7 @@ Why this exists (2026-09-23, issue #2106)
 commit, push to `main`. Two things are wrong with that, and only the first is new.
 
 1. **The push no longer works.** The ruleset on `main` (23826057, `bypass_actors: []`) requires
-   three status checks on any commit that lands there, and GitHub evaluates them on a direct push
+   the status checks on any commit that lands there, and GitHub evaluates them on a direct push
    too. Three registration runs died there on 2026-09-22 (35749203103 / 35761772072 / 35764549504),
    each retrying five times, each logging
 
