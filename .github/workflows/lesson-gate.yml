@@ -86,6 +86,37 @@ jobs:
           echo "modified-files findings reported above (advisory)."
           cat gate_report_existing.txt >> gate_report.txt 2>/dev/null || true
 
+      # The generators, run rather than trusted.
+      #
+      # A pull request that adds a lesson without re-running `update_lessons_json.py` and
+      # `build_lesson_pages.py` is not *wrong* — the lesson is fine and the gate above says so. It is
+      # **incomplete**, and incompleteness is the one thing nothing else here reports:
+      # `data/lessons.json`, `docs/data/lessons.json`, `docs/data/lessons-lite.json` and every lesson
+      # page are generated from `lessons/`, and the index only ever lists what the last committed run
+      # produced. The symptom arrived days later as a conflict with the next lesson pull request —
+      # three were stuck on exactly this in one day, each a complete, well-written lesson by a
+      # contributor who was told nothing.
+      #
+      # Run them and look at the diff, rather than asking either generator for a `--check` mode. A
+      # dry run has to either re-implement the write path — a second answer to "what would this
+      # produce", free to drift from the one that ships — or write and restore, which
+      # `tests/conftest.py` refuses by name because a restored file still has a new mtime and the
+      # damage lands in whichever test reads it next. The checkout here is disposable, so the
+      # honest question — *would running this change anything?* — is answerable by running it.
+      - name: Generated files must match the corpus
+        if: steps.changed.outputs.any_changed == 'true'
+        run: |
+          python3 scripts/update_lessons_json.py
+          python3 scripts/build_lesson_pages.py
+          if ! git diff --quiet; then
+            echo "::error title=Generated lesson files are stale::A lesson was added or changed without re-running the generators. Nothing is wrong with the lesson itself — the files derived from it are a revision behind."
+            echo "These files are generated from lessons/ and the pull request did not carry them:"
+            git --no-pager diff --stat
+            echo "Fix: run the two commands above, then commit what they wrote."
+            exit 1
+          fi
+          echo "Generated files are in sync with lessons/."
+
       # Always run: now that the job fires on every PR, this is the only step that proves the gate
       # itself can still fail. It used to rely on the path filter to guarantee a lesson-related
       # change; the job no longer has that guarantee, and a gate whose own tests never run is how
