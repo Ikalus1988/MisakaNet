@@ -243,13 +243,45 @@ def build_lesson_page(lesson: dict) -> str:
     slug = lesson.get("_slug", slugify(title))
     canonical = f"{SITE_URL}/lessons/{slug}/"
 
+    # Non-published lessons are served and indexed (the MCP side already decided that in #2423,
+    # which makes `status` visible on every hit so a caller can filter). The page template was the
+    # half that never got the same treatment: a draft lesson renders with an identical <title> and
+    # <h1> to a published one, so a reader — or a crawler building a snippet — cannot tell it is
+    # unfinished. Measured 2026-10-04 against production: `/lessons/fanuc-alarm-code-reference/`
+    # (a draft) contained zero occurrences of "draft" or "unpublished", while the MCP response for
+    # the same lesson carried `status: "draft"`.
+    #
+    # This does not change whether drafts are published or indexed — that is a product decision and
+    # out of scope here. It makes the state visible to whoever lands on the page, which is the same
+    # rule the API already follows.
+    status = (lesson.get("status") or "published").strip().lower()
+    is_published = status == "published"
+
     description = f"{summary[:150]}..." if len(summary) > 150 else summary
     if not description:
         # "indexed", not "verified": docs/trust-semantics.md reserves "verified"
         # for lessons fact-checked against source material.
         description = f"Indexed failure lesson: {title}. From MisakaNet — Git-backed failure lesson network."
+    if not is_published:
+        # A search snippet built from the description is exactly where an unfinished lesson is most
+        # likely to be mistaken for a settled one, so the state has to survive into the meta tag too.
+        description = f"Draft (not published): {description}"
 
     tags_html = "".join(f'<span class="tag">{t}</span>' for t in tags[:6])
+
+    banner_html = "" if is_published else (
+        # Styled inline rather than via the shared <style> block on purpose. A rule in the template
+        # would regenerate all 464 lesson pages for a change that only concerns 30 of them, and a
+        # 464-file diff makes a one-line feature unreviewable. Inline keeps the diff to exactly the
+        # pages that changed meaning.
+        '<div class="draft-banner" role="note" style="border:1px solid rgba(210,153,34,0.5);'
+        "background:rgba(210,153,34,0.12);color:#e3b341;border-radius:6px;padding:10px 14px;"
+        'margin-bottom:20px;font-size:13px;line-height:1.5;">'
+        f"<strong>Draft — not published.</strong> "
+        f"This lesson is <code style=\"background:rgba(210,153,34,0.15);padding:1px 5px;"
+        f'border-radius:3px;">{status}</code> and may be incomplete or wrong. '
+        f'The MCP API returns it with <code>status: "{status}"</code> so callers can filter it.</div>'
+    )
 
     # Evidence level (#786) — how well this lesson is backed, not how well written.
     evidence = describe(lesson.get("evidence_level"))
@@ -265,6 +297,11 @@ def build_lesson_page(lesson: dict) -> str:
   <h2>Summary</h2>
   <p>{summary or 'See source for full details.'}</p>
 </div>"""
+
+    if banner_html:
+        # Prepended rather than interpolated into the f-string below: an empty `{banner_html}` still
+        # emits its newline, which put a blank line after <body> on all 434 published pages.
+        body = banner_html + "\n" + body
 
     if source_url:
         body += f'\n<div class="section"><h2>Source</h2><p><a href="{source_url}">View on GitHub →</a></p></div>'
