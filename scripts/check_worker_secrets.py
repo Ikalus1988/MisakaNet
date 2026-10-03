@@ -15,6 +15,11 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
 
+# The file extensions this gate reads. `.mjs` was missing until 2026-10-03 (#2684) and its absence
+# was not a narrow miss: `workers/` holds 69 `.mjs` files against 5 `.js` ones, so the scan covered
+# six percent of the worker tree while being a *blocking* required check — it read as covered.
+SCAN_SUFFIXES = (".js", ".mjs")
+
 # Known secret-like patterns that should NOT appear in source
 HARDCODED_SECRET_PATTERNS = [
     # Cloudflare-style Turnstile secrets
@@ -139,6 +144,29 @@ def check_env_var_handling(filepath: Path, checks: list[dict]) -> list[dict]:
     return results
 
 
+def worker_source_files(workers_dir):
+    """Every worker source file the Phase 1 scan has to read.
+
+    `.mjs` as well as `.js`, and the reason is a measurement rather than a hunch: `workers/` holds
+    **69** `.mjs` files against **5** `.js` ones, so scanning `*.js` covered six percent of the worker
+    tree while being a *blocking* required check — it read as covered. A credential in a `.mjs` file,
+    which is what the deployed modules actually are, passed this gate silently: the same token in a
+    `.js` probe was caught and the same token in a `.mjs` probe was not (2026-10-03, #2684).
+
+    Split out of `main()` so this is testable against a temporary tree. A coverage bug in a *glob* is
+    invisible to a test that only scans the real tree, because the real tree is clean under both
+    globs — which is exactly why the defect survived this long.
+
+    `SCAN_SUFFIXES` rather than one `rglob` per language, so adding a language is one line and cannot
+    come with only half the glob.
+    """
+    return [
+        js_file
+        for suffix in SCAN_SUFFIXES
+        for js_file in workers_dir.rglob(f"*{suffix}")
+    ]
+
+
 def main():
     print("=" * 60)
     print("🔍 Worker Secret & Env Handling Audit")
@@ -156,7 +184,7 @@ def main():
         return
 
     all_hits = []
-    for js_file in workers_dir.rglob("*.js"):
+    for js_file in worker_source_files(workers_dir):
         hits = scan_credential_patterns(js_file)
         all_hits.extend(hits)
 
