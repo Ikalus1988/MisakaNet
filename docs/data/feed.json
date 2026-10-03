@@ -1,9 +1,30 @@
 {
-  "generated_at": "2026-10-03T14:47:43.212039+00:00",
+  "generated_at": "2026-10-03T15:32:16.384379+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "lessons: reland #2542's AgentCap inspect / codesign lesson on current main (generator re-run)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2773",
+      "timestamp": "2026-10-03T15:32:06Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "test(search): one CJK floor row's only answer is a draft lesson, and nothing recorded that on purpose",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2770",
+      "timestamp": "2026-10-03T15:10:55Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2767",
+      "timestamp": "2026-10-03T14:52:24Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "docs(lessons): promote 19 triaged intakes into the corpus",
@@ -16,27 +37,6 @@
       "title": "feat(intake): stop filing an open issue for every submission that arrives",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/2761",
       "timestamp": "2026-10-03T13:49:13Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "test(setup): two installer tests were reading the developer's proxy, not the installer",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2756",
-      "timestamp": "2026-10-03T13:47:30Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2755",
-      "timestamp": "2026-10-03T11:57:24Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore: update leaderboard snapshot",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2753",
-      "timestamp": "2026-10-03T11:48:40Z",
       "source": "github"
     },
     {
