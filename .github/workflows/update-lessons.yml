@@ -120,6 +120,29 @@ jobs:
       # If a future task needs ordering against another, say so in the step's own comment — the
       # list is no longer order-independent once that happens.
 
+      # Freshness gate (#2082): verify managed docs don't carry stale numbers
+      # that contradict the SSOT. Runs after regeneration so counts are current.
+      - name: Check doc freshness
+        run: python3 scripts/check_doc_freshness.py --check
+
+      # Rebuild lessons/index.md from corpus frontmatter (#1661).  The index
+      # was hand-maintained and drifted: 25 dangling paths, 136 title mismatches.
+      # This replaces the ad-hoc append in queue_lesson.py with a deterministic
+      # full rebuild; --check is a no-op here (we just wrote it) but confirms
+      # the rebuild itself produced a consistent file.
+      - name: Rebuild lessons index
+        run: |
+          python3 scripts/rebuild_lessons_index.py
+          python3 scripts/rebuild_lessons_index.py --check
+
+      # Emit intake conversion receipts (#1528).  When a contributed lesson
+      # (with contrib_id in frontmatter) is published, notify the original
+      # source by commenting on their intake issue.
+      - name: Emit intake receipts
+        env:
+          GH_TOKEN: ${{ secrets.SHELDON_PAT }}
+        run: python3 scripts/emit_intake_receipt.py --quiet
+
       - name: Check for changes
         id: check
         run: |
