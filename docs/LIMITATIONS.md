@@ -26,7 +26,7 @@ MisakaNet is designed for a specific niche: **decentralized, git-backed failure-
 
 ## Ecosystem
 
-- **No plugin system in the core repo.** MisakaNet is not a host runtime; integration happens at the node level. It is, however, itself **installable as a DSH plugin** (`dsh plugin add misakanet`, npm `misakanet@2.23.0`) and discoverable via MCP registries (Glama, Smithery, dsh-plugin.org).
+- **No plugin system in the core repo.** MisakaNet is not a host runtime; integration happens at the node level. It is, however, itself **installable as a DSH plugin** (`dsh plugin add misakanet`, npm `misakanet@2.39.0`) and discoverable via MCP registries (Glama, Smithery, dsh-plugin.org).
 - **No general-purpose SaaS.** There is no multi-tenant MisakaNet service; the public `misakanet.org/mcp` endpoint is the project's own deployment of the same open-source worker.
 - **Small community.** As of 2026, MisakaNet is an early-stage project. Response times for issues and PRs may vary.
 

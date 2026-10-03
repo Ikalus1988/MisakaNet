@@ -100,8 +100,8 @@ Add to `.cursor/mcp.json` in your project:
 No local Python setup needed — pull the container and run:
 
 ```bash
-docker pull ghcr.io/ikalus1988/misakanet:2.15.0
-docker run -i ghcr.io/ikalus1988/misakanet:2.15.0
+docker pull ghcr.io/ikalus1988/misakanet:2.39.0
+docker run -i ghcr.io/ikalus1988/misakanet:2.39.0
 ```
 
 Or use in MCP config:
@@ -111,7 +111,7 @@ Or use in MCP config:
   "mcpServers": {
     "misakanet": {
       "command": "docker",
-      "args": ["run", "-i", "ghcr.io/ikalus1988/misakanet:2.15.0"]
+      "args": ["run", "-i", "ghcr.io/ikalus1988/misakanet:2.39.0"]
     }
   }
 }

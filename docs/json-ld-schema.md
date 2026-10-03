@@ -56,7 +56,7 @@ Add this to your main HTML template (e.g., `templates/base.html` or `layout.html
       "description": "MCP server providing failure-recovery lessons to AI coding agents",
       "url": "https://github.com/Ikalus1988/MisakaNet",
       "downloadUrl": "https://pypi.org/project/misakanet/",
-      "softwareVersion": "2.21.0",
+      "softwareVersion": "2.39.0",
       "offers": {
         "@type": "Offer",
         "price": "0",
