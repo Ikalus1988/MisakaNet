@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-10-03T05:27:55.206156+00:00",
+  "generated_at": "2026-10-03T11:49:30.527754+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "ci(security): the secret gate reads workers/ only — a credential in a workflow was read by no scanner",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2733",
-      "timestamp": "2026-10-03T04:18:58Z",
+      "title": "chore: update leaderboard snapshot",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2753",
+      "timestamp": "2026-10-03T11:48:40Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(ci): the worker secret gate was reading 6% of the worker code, and two MCP controls had no test",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2731",
-      "timestamp": "2026-10-03T03:56:02Z",
+      "title": "fix(intake): a question body clipped at 2,000 chars still looked answerable, and #2743 arrived that way",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2749",
+      "timestamp": "2026-10-03T11:40:25Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2728",
-      "timestamp": "2026-10-02T22:28:31Z",
+      "title": "docs(ci): 质量门禁表加了一行，声明的行数没跟上（main 现在红着而 check-runs 全绿）",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2745",
+      "timestamp": "2026-10-03T09:40:58Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2726",
-      "timestamp": "2026-10-02T18:00:46Z",
+      "title": "ci(lesson): a correct lesson that would have joined nothing",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2729",
+      "timestamp": "2026-10-03T09:18:44Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "docs: add OpenCode, Kiro, and Oh-my-Pi integration guides",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2576",
-      "timestamp": "2026-10-02T17:34:15Z",
+      "title": "security(site): the homepage only sanitizer was pinned to 3.0.9, which has 20 known CVEs",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2730",
+      "timestamp": "2026-10-03T09:18:41Z",
       "source": "github"
     },
     {
