@@ -619,6 +619,53 @@ def _has_superseding_lesson(lesson_id: str, repo: Path = REPO, exclude_file: Pat
     return False
 
 
+def validate_location(path: Path, repo: Path = REPO) -> list[str]:
+    """Is this lesson in a directory the corpus actually reads?
+
+    `ACTIVE_LESSON_SUBDIRS` has been in this file since the corpus was split, and every discovery
+    path filters on it — so a lesson outside those directories is **invisible**: it passes every
+    content rule, and then `update_lessons_json.py` never reads it. Three pull requests in one
+    afternoon put a lesson in `lessons/` root; all three looked finished, and the symptom would
+    have shown up days later as "my lesson is not in the search results" with nothing in CI red.
+
+    The corpus is 389 lessons in `contrib/`, 14 in `core/`, and 3 files directly in `lessons/`
+    (`TEMPLATE.md`, `LESSON_QUALITY_SCORING.md`, `README.md`) — none of them lessons. So the rule
+    costs a contributor one `git mv`, and the error text carries the command.
+
+    Legacy files are not this PR's debt: a file already on the base branch keeps whatever
+    directory it has, and only a *newly added* file is held to the convention.
+    """
+    try:
+        relative = Path(path).resolve().relative_to(Path(repo).resolve())
+    except ValueError:
+        # Outside this repository, so there is no layout here to be wrong about. The gate only ever
+        # runs on `lessons/**/*.md` inside the checkout; a synthetic path — which is how most of
+        # this file's own tests build their fixtures — is not a misplaced lesson, and refusing it
+        # would make a rule about *this* repository's directories into a rule about any file.
+        return []
+    parts = relative.parts
+    if not parts or parts[0] != "lessons" or len(parts) < 3:
+        # `as_posix()` rather than `str(relative)`: this string is a command a contributor copies,
+        # and on Windows `str(Path)` renders it with backslashes, so the message came out with one
+        # separator in "not at lessons\foo.md" and another in "git mv lessons\foo.md
+        # lessons/contrib/foo.md". A path that reads two ways is a path nobody trusts. Every path in
+        # this message is now forward-slash on every platform.
+        as_written = relative.as_posix()
+        return [
+            f"a lesson must live in lessons/<{'/'.join(sorted(ACTIVE_LESSON_SUBDIRS))}/>, "
+            f"not at {as_written}. Nothing reads a markdown file outside those directories, so this "
+            f"lesson would never enter the corpus: move it with\n"
+            f"    git mv {as_written} lessons/contrib/{parts[-1]}"
+        ]
+    if parts[1] in ACTIVE_LESSON_SUBDIRS:
+        return []
+    return [
+        f"lessons/{parts[1]}/ is not a lesson directory — nothing reads it. The corpus is read from "
+        f"{', '.join('lessons/' + s + '/' for s in sorted(ACTIVE_LESSON_SUBDIRS))}; move this file with\n"
+        f"    git mv {relative.as_posix()} lessons/contrib/{'-'.join(parts[1:])}"
+    ]
+
+
 def validate_file(path: Path, repo: Path = REPO, dirs: tuple[str, ...] | None = None,
                   existing: bool = False) -> list[str]:
     """Return error strings. Warnings are prefixed with '[warn]' and do not
@@ -634,6 +681,11 @@ def validate_file(path: Path, repo: Path = REPO, dirs: tuple[str, ...] | None = 
     NEW files (existing=False) keep the strict hard gate (#1506).
     """
     errors = []
+    if not existing:
+        # Before content, before structure: a lesson in a directory nothing reads passes every
+        # other rule and then never reaches the index. The order is the message — a contributor
+        # should be told where the file is before they are told what is in it.
+        errors += validate_location(path, repo)
     try:
         text = Path(path).read_text(encoding="utf-8", errors="ignore")
     except OSError as e:

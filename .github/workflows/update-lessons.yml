@@ -97,10 +97,28 @@ jobs:
       - name: Regenerate the OKF export
         run: python3 scripts/export_okf.py
 
-      # Freshness gate (#2082): verify managed docs don't carry stale numbers
-      # that contradict the SSOT. Runs after regeneration so counts are current.
-      - name: Check doc freshness
-        run: python3 scripts/check_doc_freshness.py --check
+      # ── adding a post-regeneration task? Put it here. ────────────────────────────────────────────
+      #
+      # This block is the shared append point: any task that must run *after* the corpus is
+      # regenerated and *before* `Check for changes` goes between the two steps above and below.
+      # Three pull requests added one each on 2026-10-02 (#2485 doc freshness, #2488 the
+      # `lessons/index.md` rebuild, #2491 intake receipts) and all three collided with each other,
+      # because two pull requests that each append a step at the same anchor cannot merge.
+      #
+      # **That conflict is cheap, and this comment is here so nobody spends an afternoon on it.**
+      # It is one file, and the resolution is "keep both steps" — the tasks are independent, so
+      # there is no ordering question to reason about. Contrast the conflict this repository cannot
+      # resolve by hand: two pull requests that both add a lesson *without re-running the
+      # generators* collide on `data/lessons.json` and the lesson pages, and there the answer is
+      # "neither side, re-run the generator" — which is why `lesson-gate.yml` now refuses to let an
+      # incomplete lesson reach this file at all.
+      #
+      # The comment is long on purpose. This repository's workflow comments carry the reasoning
+      # that a future edit would otherwise delete without knowing it was load-bearing, and three
+      # separate people have now been surprised by this file.
+      #
+      # If a future task needs ordering against another, say so in the step's own comment — the
+      # list is no longer order-independent once that happens.
 
       - name: Check for changes
         id: check
