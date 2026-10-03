@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-10-03T16:31:18.344478+00:00",
+  "generated_at": "2026-10-03T21:28:36.851732+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2778",
-      "timestamp": "2026-10-03T16:03:34Z",
+      "title": "fix(ci): six one-page GitHub list reads; one of them is why PR #2020 has 113 audit reports",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2801",
+      "timestamp": "2026-10-03T21:14:07Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "lessons: reland #2570's five contrib lessons on current main (generators re-run)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2775",
-      "timestamp": "2026-10-03T15:58:41Z",
+      "title": "fix(infra): the site-build watcher's state memory was one page deep (#2797 follow-up)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2800",
+      "timestamp": "2026-10-03T20:45:57Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2777",
-      "timestamp": "2026-10-03T15:55:47Z",
+      "title": "fix(mcp): compact search results must carry the score the schema promises (#2790)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2799",
+      "timestamp": "2026-10-03T20:06:50Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "lessons: reland #2554's swift-format / NSOpenPanel lesson on current main (generator re-run)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2771",
-      "timestamp": "2026-10-03T15:47:44Z",
+      "title": "refactor(site): retire the 111 id-alias stub pages; docs/_redirects is now the only publisher",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2798",
+      "timestamp": "2026-10-03T19:28:59Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2776",
-      "timestamp": "2026-10-03T15:39:39Z",
+      "title": "fix(infra): the site-build watcher stopped seeing builds past 100 check-runs",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2797",
+      "timestamp": "2026-10-03T19:25:09Z",
       "source": "github"
     },
     {
