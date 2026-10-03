@@ -1,15 +1,19 @@
 #!/usr/bin/env python3
-"""The worker credential gate has to *reach* the worker code, not merely run (#2684).
+"""The credential gate has to *reach* the source, not merely run.
 
-`scripts/check_worker_secrets.py` is a blocking required check, and for its whole life it globbed
-`workers/**/*.js` — while `workers/` holds 69 `.mjs` files against 5 `.js` ones. It was scanning six
-percent of the tree and reporting a clean bill of health, which is worse than not running: the check
-run said "covered".
+Two defects, the same shape, found by #2684:
 
-The existing tests in `test_published_secrets_scan.py` cover the *prose* gate's patterns and its CI
-wiring. Neither could have caught this, and neither is where it belongs: the defect is in which files
-this scanner collects, so the test has to assert on collection. The real tree cannot answer that
-question — it is clean under both globs — so these tests use a temp directory.
+* It globbed `workers/**/*.js` while `workers/` holds 69 `.mjs` files against 5 `.js` ones, so a
+  blocking required check was reading six percent of the worker tree and reporting a clean bill of
+  health. It was already merged as #2731; these tests are what keep that fixed.
+* The scope was `workers/` alone, so a credential in a workflow or a maintenance script was never
+  read at all. Measured before widening (`.github/` 94 files, `scripts/` 161 files, **0 findings**),
+  and `packages/`/`tests/` measured at 15 — all deliberate redaction fixtures, which need an
+  allowlist that does not exist yet, so they are still out.
+
+The existing tests in `test_published_secrets_scan.py` cover the *prose* gate's patterns and the CI
+wiring. Neither belongs here: this is about which files get collected. The real tree cannot answer
+that on its own — it is clean under every scope — so collection is asserted against temporary trees.
 """
 from __future__ import annotations
 
@@ -21,15 +25,14 @@ REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))
 
 from scripts.check_worker_secrets import (  # noqa: E402
-    SCAN_SUFFIXES,
+    SCAN_TARGETS,
     scan_credential_patterns,
-    worker_source_files,
+    secret_scan_files,
 )
 
 # A GitHub PAT shape, spelled out rather than copied from a real leak. `check_worker_secrets.py`
 # reports file/line/kind and never the matched text, so a literal here would be inert either way —
-# but keeping it obviously synthetic means it can never be mistaken for a credential that needs
-# rotating.
+# but keeping it obviously synthetic means it can never be mistaken for a credential to rotate.
 FAKE_PAT = "ghp_" + "A1b2C3d4E5f6G7h8I9j0K1l2M3n4O5p6Q7r8"
 
 
@@ -43,26 +46,26 @@ def _in_repo_tree():
     """A scratch directory inside the repository.
 
     `scan_credential_patterns` labels its findings with `filepath.relative_to(REPO)` and raises
-    outside it, so a probe under `tmp_path` cannot be scanned. The directory is not under `workers/`,
-    which keeps the real-tree test below from seeing it, and the context manager removes it even if
-    an assertion fails.
+    outside it, so a probe under `tmp_path` cannot be scanned. The context manager removes it even
+    if an assertion fails.
     """
     return tempfile.TemporaryDirectory(dir=REPO, prefix=".secret-scan-probe-")
 
 
+# ── the original regression: `.mjs` was invisible ────────────────────────────────────────────────
+
 def test_the_scan_reaches_dot_mjs():
-    """The regression itself: a credential in a `.mjs` file is found end to end."""
     with _in_repo_tree() as scratch:
         workers = Path(scratch) / "workers"
         workers.mkdir()
         probe = _probe(workers, "handler.mjs")
 
-        found = {p.name for p in worker_source_files(workers)}
+        found = {p.name for p in secret_scan_files(Path(scratch))}
         assert "handler.mjs" in found, f"`.mjs` is not collected at all: {found}"
 
         hits = [
             hit
-            for path in worker_source_files(workers)
+            for path in secret_scan_files(Path(scratch))
             for hit in scan_credential_patterns(path)
         ]
         assert hits, f"a credential in {probe.name} was collected but not flagged"
@@ -71,46 +74,136 @@ def test_the_scan_reaches_dot_mjs():
 
 def test_dot_js_is_still_reached(tmp_path):
     """Both extensions, so a future edit cannot trade one for the other."""
-    workers = tmp_path / "workers"
-    workers.mkdir()
-    _probe(workers, "legacy.js")
+    (tmp_path / "workers").mkdir()
+    _probe(tmp_path / "workers", "legacy.js")
 
-    found = {path.name for path in worker_source_files(workers)}
+    found = {p.name for p in secret_scan_files(tmp_path)}
     assert found == {"legacy.js"}, found
 
 
-def test_the_suffixes_match_the_worker_tree(tmp_path):
-    """`workers/` is overwhelmingly `.mjs`; if a new language lands, the tuple is the one place to
-    add it, and this is what makes the tuple mean something."""
-    workers = tmp_path / "workers"
-    (workers / "nested" / "deeper").mkdir(parents=True)
-    names = ["a.js", "b.mjs", "nested/c.mjs", "nested/deeper/d.mjs", "notes.md", "data.json"]
-    for name in names:
-        (workers / name).write_text("// nothing here\n", encoding="utf-8")
+# ── the widened scope ───────────────────────────────────────────────────────────────────────────
 
-    found = {p.relative_to(workers).as_posix() for p in worker_source_files(workers)}
+def test_a_credential_in_a_workflow_is_found():
+    """The workflow that runs the gate, scanned by the gate."""
+    with _in_repo_tree() as scratch:
+        workflows = Path(scratch) / ".github" / "workflows"
+        workflows.mkdir(parents=True)
+        probe = _probe(workflows, "release.yml")
 
-    assert found == {
-        "a.js", "b.mjs", "nested/c.mjs", "nested/deeper/d.mjs",
-    }, f"unexpected discovery set: {sorted(found)}"
-    assert ".mjs" in SCAN_SUFFIXES and ".js" in SCAN_SUFFIXES, SCAN_SUFFIXES
+        hits = [
+            hit
+            for path in secret_scan_files(Path(scratch))
+            for hit in scan_credential_patterns(path)
+        ]
+        assert hits, "a credential in a workflow file was not detected"
+        assert any(probe.name in str(hit.get("file", "")) for hit in hits), hits
 
 
-def test_the_real_worker_tree_is_clean(tmp_path):
-    """The widened glob must not turn the gate permanently red, or it gets muted and the original
-    defect returns with company. 70 `.mjs` files is a lot of newly-read text; this is the check
-    that they are all clean."""
-    workers = REPO / "workers"
-    if not workers.exists():  # pragma: no cover - only in a stripped checkout
-        return
+def test_a_credential_in_a_maintenance_script_is_found():
+    with _in_repo_tree() as scratch:
+        scripts = Path(scratch) / "scripts"
+        scripts.mkdir(parents=True)
+        probe = _probe(scripts, "publish.py")
 
+        hits = [
+            hit
+            for path in secret_scan_files(Path(scratch))
+            for hit in scan_credential_patterns(path)
+        ]
+        assert hits, "a credential in a maintenance script was not detected"
+        assert any(probe.name in str(hit.get("file", "")) for hit in hits), hits
+
+
+def test_the_secrets_expression_is_not_a_credential():
+    """Why `.github/` is in scope at all.
+
+    The objection that kept this directory out was that workflows legitimately contain
+    `${{ secrets.X }}` and a naive scanner would go red on every PR. This pins the reason that
+    worry was wrong, so a future pattern change cannot reintroduce it unnoticed.
+    """
+    with _in_repo_tree() as scratch:
+        workflows = Path(scratch) / ".github" / "workflows"
+        workflows.mkdir(parents=True)
+        (workflows / "ok.yml").write_text(
+            "jobs:\n"
+            "  build:\n"
+            "    steps:\n"
+            "      - run: gh auth login\n"
+            "        env:\n"
+            "          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}\n"
+            "          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}\n",
+            encoding="utf-8",
+        )
+        (workflows / "env-block.yml").write_text(
+            "        env:\n          TOKEN: ${{ secrets.DEPLOY_TOKEN }}\n",
+            encoding="utf-8",
+        )
+
+        hits = [
+            hit
+            for path in secret_scan_files(Path(scratch))
+            for hit in scan_credential_patterns(path)
+        ]
+        assert hits == [], f"a secrets expression was read as a credential: {hits}"
+
+
+def test_packages_and_tests_are_still_out_of_scope():
+    """They hold 15 findings, all deliberate redaction fixtures. They come back with the allowlist
+    that says so, and until then a test pins that they are still out — otherwise a well-meaning
+    'just add one more directory' turns the gate red on `main`."""
+    for excluded in ("packages", "tests"):
+        assert excluded not in {rel for rel, _ in SCAN_TARGETS}, SCAN_TARGETS
+
+
+# ── the scan must not be able to read nothing and still pass ────────────────────────────────────
+
+def test_the_scan_reads_a_plausible_number_of_files():
+    """The failure mode of both defects was a scan that read almost nothing and reported success.
+
+    A table typo, a renamed directory or a checkout that omits a scope would all produce zero files
+    and a green gate. This is the backstop for that. The tree yields 332 today — workers 79,
+    `.github` 95, `scripts` 158 — so 280 sits below any single-scope loss: dropping `.github` gives
+    237, dropping `scripts` gives 174, dropping `.mjs` gives 262. It does **not** catch losing the
+    five `.js` files, and it is not meant to: `test_dot_js_is_still_reached` covers that case
+    precisely. A floor that tried to catch everything would only be a number that breaks whenever
+    the tree grows.
+    """
+    files = secret_scan_files()
+    assert len(files) > 280, (
+        f"the scan is reading only {len(files)} files, against 332 when measured: "
+        f"{[str(f) for f in files[:10]]}"
+    )
+
+
+def test_compiled_bytecode_is_not_collected():
+    """`scripts/` holds 144 `.pyc` files once anything has been run; bytecode embeds string
+    constants, so reading it is slow and noisy without adding coverage.
+
+    Asserted against a tree that *has* one. This was originally written against the real tree, where
+    the check passed for the wrong reason: a clean checkout has no `.pyc` at all, because they are
+    gitignored, so it asserted nothing. That is the same defect as the gate itself — a test that
+    reports coverage it was not measuring.
+    """
+    with _in_repo_tree() as scratch:
+        scripts = Path(scratch) / "scripts" / "__pycache__"
+        scripts.mkdir(parents=True)
+        (scripts / "thing.cpython-312.pyc").write_bytes(b"\x00\x0f\r\n not really bytecode")
+        (Path(scratch) / "scripts" / "real.py").write_text("# source\n", encoding="utf-8")
+
+        found = {p.name for p in secret_scan_files(Path(scratch))}
+        assert found == {"real.py"}, f"compiled bytecode is being collected: {sorted(found)}"
+
+
+def test_the_real_tree_is_clean():
+    """The widened scope adds 253 newly-read files. This is the check that they are all clean, so
+    the widening cannot leave the gate permanently red — a permanently red gate gets muted, and the
+    original defect returns with company."""
     hits = [
         hit
-        for path in worker_source_files(workers)
+        for path in secret_scan_files()
         for hit in scan_credential_patterns(path)
     ]
-
     assert hits == [], (
-        "the widened scan reads files it did not read before, and something in there is flagged: "
+        "the widened scan reads files it did not read before, and something there is flagged: "
         + "; ".join(f"{h.get('file')}:{h.get('line')} {h.get('type')}" for h in hits)
     )
