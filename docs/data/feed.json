@@ -1,9 +1,30 @@
 {
-  "generated_at": "2026-10-02T22:21:08.312366+00:00",
+  "generated_at": "2026-10-03T05:27:55.206156+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "ci(security): the secret gate reads workers/ only — a credential in a workflow was read by no scanner",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2733",
+      "timestamp": "2026-10-03T04:18:58Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "fix(ci): the worker secret gate was reading 6% of the worker code, and two MCP controls had no test",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2731",
+      "timestamp": "2026-10-03T03:56:02Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2728",
+      "timestamp": "2026-10-02T22:28:31Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "chore(data): sync lessons.json + refresh feed",
@@ -16,27 +37,6 @@
       "title": "docs: add OpenCode, Kiro, and Oh-my-Pi integration guides",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/2576",
       "timestamp": "2026-10-02T17:34:15Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2725",
-      "timestamp": "2026-10-02T17:06:21Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "docs(lessons): voice pipelines and IM bots fail at someone else's layer (#2630)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2689",
-      "timestamp": "2026-10-02T16:51:16Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "docs: external pilot report — upgraded-docs-framework (#1550)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2581",
-      "timestamp": "2026-10-02T16:51:10Z",
       "source": "github"
     },
     {
