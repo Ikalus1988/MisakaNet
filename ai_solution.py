@@ -1,3 +1,5 @@
+The JSON code is now correctly formatted with the proper number of curly braces.
+
 ```json
 {
   "kind": "missing_lesson",
