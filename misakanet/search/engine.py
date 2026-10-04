@@ -245,7 +245,14 @@ def _load_docs_cached(directory: Path, is_lesson: bool = True) -> list[CachedDoc
         changed += 1
     conn.commit()
     if changed:
-        print(f"  📦 L2缓存: {changed} 篇变动")
+        # stderr, not stdout: this fires on the first search against a cold cache, and
+        # `misakanet/server/protocol.py` writes its JSON-RPC responses to stdout. A bare
+        # `print` here puts a non-JSON line into the stdio transport. Measured 2026-10-04 with
+        # a cold L2 cache: the first `misakanet_search` emitted `  📦 L2缓存: 464 篇变动`
+        # between the `initialize` response and the search response, so a client parsing stdout
+        # line-by-line had one unparseable line in the middle of a valid exchange. The two
+        # cross-encoder warnings below already use stderr; this was the odd one out.
+        print(f"  📦 L2缓存: {changed} 篇变动", file=sys.stderr)
     return docs
 
 
