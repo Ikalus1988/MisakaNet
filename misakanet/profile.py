@@ -122,8 +122,16 @@ def increment_search():
     p["last_active"] = datetime.now(timezone.utc).isoformat()
     if p["stage"] == "newcomer" and p["search_count"] >= STAGE_SEARCH_THRESHOLD:
         p["stage"] = "active"
-        print("  🎉 升级: newcomer → active")
-        print("  提示: 试试 python3 scripts/new_lesson.py 贡献第一条 lesson")
+        # stderr, not stdout. `search_knowledge.py --json` writes its result to stdout and an
+        # agent parses that; these notices are human-facing chrome and belong beside the
+        # diagnostics, not inside the payload. Measured 2026-10-04: the upgrade fired in the
+        # middle of a `--json` run and the output stopped being JSON
+        # (`json.decoder.JSONDecodeError: Expecting value: line 1 column 3`), because
+        # `tests/test_search_quota.py` treats this as a real contract. That test only ever saw
+        # it by accident — the notice is one-shot, so it fires for whichever caller crosses the
+        # threshold, and a fresh profile reaches it partway through a suite run.
+        print("  🎉 升级: newcomer → active", file=sys.stderr)
+        print("  提示: 试试 python3 scripts/new_lesson.py 贡献第一条 lesson", file=sys.stderr)
     _save(p)
 
 
@@ -135,15 +143,15 @@ def increment_lesson():
     n = p["lesson_count"]
     if p["stage"] == "active" and n >= STAGE_LESSON_THRESHOLD:
         p["stage"] = "contributor"
-        print("  升级: active -> contributor")
-        print("  提示: 你的 lesson 已进入共享池，影响范围扩大")
+        print("  升级: active -> contributor", file=sys.stderr)
+        print("  提示: 你的 lesson 已进入共享池，影响范围扩大", file=sys.stderr)
     elif n > 0 and n % 5 == 0:
-        print(f"  累计 {n} 条 lesson，节点权重提升")
+        print(f"  累计 {n} 条 lesson，节点权重提升", file=sys.stderr)
     _save(p)
     # 这里曾经调用 reset_quota() 并打印"搜索额度已重置（感谢贡献！）"。读路径在 2026-09-18 起
     # 不限次数，本地检索更是纯本地计算，没有配额可重置 —— 那句话是假的（#1986）。感谢留下，
     # 假话不留。
-    print("  🙏 感谢贡献！")
+    print("  🙏 感谢贡献！", file=sys.stderr)
 
 
 def apply_referral(code: str) -> bool:
