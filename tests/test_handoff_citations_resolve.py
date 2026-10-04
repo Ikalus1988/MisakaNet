@@ -91,7 +91,9 @@ def handoff_citations() -> list[tuple[str, str]]:
         for path in sorted(base.rglob("*")):
             if path.suffix not in SUFFIXES or not path.is_file():
                 continue
-            rel = str(path.relative_to(REPO))
+            # as_posix(): on Windows str() yields backslashes, so the SELF comparison below
+            # never matches and the gate flags itself — caught by the Windows legs on #2827.
+            rel = path.relative_to(REPO).as_posix()
             if rel == SELF:
                 continue
             try:
