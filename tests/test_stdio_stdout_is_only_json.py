@@ -32,7 +32,7 @@ Usage:
 from __future__ import annotations
 
 import json
-import shutil
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -40,7 +40,7 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO))
 
-CACHE_DB = REPO / ".cache" / "search_cache.db"
+CACHE_DB = REPO / ".cache" / "search_cache.db"  # noqa: F841 - documented default, see _cold_cache_env
 PROFILE = REPO / "misakanet" / "profile.json"
 CLI = REPO / "search_knowledge.py"
 MCP = REPO / "scripts" / "mcp_server.py"
@@ -64,56 +64,53 @@ def _non_json_lines(text: str) -> list[tuple[int, str]]:
     return bad
 
 
-def _cold_cache() -> Path:
-    """Move the L2 cache aside so the next search repopulates it, and return where it went.
+def _cold_cache_env(cache_dir: Path) -> dict[str, str]:
+    """Environment that points the server's L2 cache at an empty directory of its own.
 
-    Without this the notice never fires and the test asserts nothing. `_load_docs_cached` prints
-    only `if changed:`, so a warm cache is the one state in which the bug is invisible — which is
-    also why it survived.
+    `_load_docs_cached` prints only `if changed:`, so a warm cache is the one state in which
+    the bug is invisible — which is also why it survived. An empty directory is cold by
+    construction, with nothing to move and nothing to put back.
+
+    This used to `shutil.move` the real `.cache/search_cache.db` aside and move it back in a
+    `finally`. That worked on Linux and failed on every Windows runner with
+    `PermissionError: [WinError 32] ... .cache\\search_cache.db`, because the server the test
+    had just spawned recreates and re-locks that file while SQLite/WAL still holds a handle.
+    A derived, gitignored cache has no business being shuffled around by a test at all.
     """
-    aside = REPO / ".cache" / "search_cache_db_aside_for_test"
-    if aside.exists():
-        shutil.rmtree(aside)
-    aside.parent.mkdir(parents=True, exist_ok=True)
-    for suffix in ("", "-wal", "-shm"):
-        src = Path(str(CACHE_DB) + suffix)
-        if src.exists():
-            shutil.move(str(src), str(Path(str(aside) + suffix)))
-    return aside
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    return {**os.environ, "MISAKANET_CACHE_DIR": str(cache_dir)}
 
 
-def _restore_cache(aside: Path) -> None:
-    for suffix in ("", "-wal", "-shm"):
-        src = Path(str(aside) + suffix)
-        if src.exists():
-            dst = Path(str(CACHE_DB) + suffix)
-            dst.parent.mkdir(parents=True, exist_ok=True)
-            shutil.move(str(src), str(dst))
-    shutil.rmtree(aside, ignore_errors=True)
-
-
-def test_the_mcp_stdio_stream_stays_pure_json_on_a_cold_cache():
+def test_the_mcp_stdio_stream_stays_pure_json_on_a_cold_cache(tmp_path):
     """The one that corrupts a protocol, not just a payload: JSON-RPC, one line per message."""
-    aside = _cold_cache()
-    try:
-        requests = [
-            {"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {}},
-            {"jsonrpc": "2.0", "method": "notifications/initialized"},
-            {"jsonrpc": "2.0", "id": 2, "method": "tools/call",
-             "params": {"name": "misakanet_search",
-                        "arguments": {"query": "context window exceeded", "limit": 3}}},
-        ]
-        result = subprocess.run(
-            [sys.executable, str(MCP)],
-            input="\n".join(json.dumps(r) for r in requests) + "\n",
-            capture_output=True, text=True, timeout=240, cwd=str(REPO),
-        )
-    finally:
-        _restore_cache(aside)
+    env = _cold_cache_env(tmp_path / "l2")
+    requests = [
+        {"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {}},
+        {"jsonrpc": "2.0", "method": "notifications/initialized"},
+        {"jsonrpc": "2.0", "id": 2, "method": "tools/call",
+         "params": {"name": "misakanet_search",
+                    "arguments": {"query": "context window exceeded", "limit": 3}}},
+    ]
+    result = subprocess.run(
+        [sys.executable, str(MCP)],
+        input="\n".join(json.dumps(r) for r in requests) + "\n",
+        capture_output=True, text=True, timeout=240, cwd=str(REPO), env=env,
+    )
 
     assert result.returncode == 0, f"the server exited {result.returncode}:\n{result.stderr[-2000:]}"
     lines = [l for l in result.stdout.splitlines() if l.strip()]
     assert lines, f"the server wrote nothing to stdout:\n{result.stderr[-2000:]}"
+
+    # The cache must actually have been cold, or everything below asserts nothing.
+    # `_load_docs_cached` prints only `if changed:`, so a warm cache means no notice —
+    # and a test that looks for stray notices then passes for the wrong reason. This is
+    # the same guard the profile test uses, and it is what makes a warm-cache run fail
+    # loudly instead of turning green on a payload it never had a chance to corrupt.
+    assert "L2缓存" in result.stderr, (
+        "the L2 repopulation notice never appeared, so this run did not exercise the bug — "
+        f"check that MISAKANET_CACHE_DIR still redirects the cache. stdout was:\n"
+        f"{result.stdout[:400]!r}\nstderr was:\n{result.stderr[:400]!r}"
+    )
 
     bad = _non_json_lines(result.stdout)
     assert not bad, (

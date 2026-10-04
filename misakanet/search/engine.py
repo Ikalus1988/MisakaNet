@@ -4,6 +4,7 @@ BM25 核心算法委托给 misakanet-core 包。
 
 import json
 import math
+import os
 import re
 import sqlite3
 import sys
@@ -48,7 +49,12 @@ BOOST_RECENT_DAYS = 30
 # ── 分层缓存 ──
 import threading
 
-_CACHE_DIR = REPO / ".cache"
+# The L2 cache is a derived artifact (it is rebuilt from `lessons/` on demand) and `.cache/`
+# is gitignored, so pointing it somewhere else is always safe. `MISAKANET_CACHE_DIR` exists so
+# that a caller — a test, a second checkout, a sandbox — can get its own cache instead of
+# contending for this one: two processes sharing one SQLite file hold locks on each other, and
+# on Windows the loser cannot even move the file. Default is unchanged.
+_CACHE_DIR = Path(os.environ.get("MISAKANET_CACHE_DIR") or (REPO / ".cache"))
 _CACHE_DB = _CACHE_DIR / "search_cache.db"
 _L1_CACHE = {}
 _L1_MAX = 50
