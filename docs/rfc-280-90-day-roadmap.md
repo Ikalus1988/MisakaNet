@@ -12,7 +12,8 @@
 > （远端 MCP 现有 7 个工具）；Vision 3（agent 能力测试平台）未作为独立产品线启动；
 > Vision 4 里的 Federated / Enterprise 至今**没有 PRD、没有实现**（见
 > `docs/maintainer/blueprint-and-strategy-review-2026-09-16.md` §2.4）。
-> 文中的 363 篇课程是当时口径，现为 393（`python3 scripts/sync_lesson_count.py --check`）。
+> 文中的 363 篇课程是当时口径；当前值以 `python3 scripts/sync_lesson_count.py --check` 的输出为准
+> （本行为 2026-10-04 补的更正，之后请只更新命令，不复述数字）。
 
 **Author:** [zsxh1990](https://github.com/zsxh1990)
 **Date:** 2026-07-29

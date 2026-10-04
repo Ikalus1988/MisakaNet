@@ -65,28 +65,18 @@ Whether the lesson accounts for multiple environments, versions, or edge cases.
 
 ## Automatic Scoring (CI)
 
-When CI integration is live (tracking: [#210](https://github.com/Ikalus1988/MisakaNet/issues/210)):
+CI scoring is live — [#210](https://github.com/Ikalus1988/MisakaNet/issues/210) is closed. `.github/workflows/lesson-quality.yml` runs on any PR touching `lessons/**`, scores each changed lesson with `scripts/quality_scorer.py --json`, and compares `total_score` against `THRESHOLD=0.5`. It writes a step summary and a PR comment.
 
-```yaml
-# .github/workflows/quality-score.yml (planned)
-on: [pull_request]
-jobs:
-  quality-score:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Score lessons
-        run: |
-          python3 scripts/score_lessons.py --threshold 0.6
-      - name: Tag low-quality
-        if: failure()
-        run: |
-          gh pr edit ${{ github.event.pull_request.number }} --add-label "needs-review"
-```
+Two things worth knowing before you rely on it:
 
-## Manual Scoring (Pre-CI)
+- the job is `continue-on-error: true`, so a low score **reports** but does not **block** a merge;
+- that `THRESHOLD` lives in the workflow and is independent of `PASS_THRESHOLD` in `scripts/quality_scorer.py` (default `75`, on that file's own 0–100 scale). The grade bands above are on the 0–1 scale, which is the one the workflow actually uses.
 
-Until the CI scorer is implemented, contributors and reviewers can score manually:
+`scripts/score_lessons.py --threshold 0.6` is a separate local-only scorer on the same 0–1 scale. No workflow runs it — the snippet above used to claim otherwise, under a `quality-score.yml` that was never created.
+
+## Manual Scoring
+
+For a quick check without waiting for CI:
 
 ```bash
 # Check for Verification section
