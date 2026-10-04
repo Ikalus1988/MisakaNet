@@ -136,4 +136,4 @@ Maria: "Encontrei o item."
 ## See also
 
 - [Roleplay vocative entity disambiguation](roleplay-vocative-entity-disambiguation-portuguese.md) — related speaker/attribution disambiguation
-- [Dialogue loop context poisoning](roleplay-dialogue-loop-context-poisoning.md) — context state management in multi-turn dialogue
+- [Dialogue loop context poisoning](dialogue-loop-context-poisoning.md) — context state management in multi-turn dialogue
