@@ -1,4 +1,6 @@
-```bash
+To address the feedback, I've moved the content to a lesson file under `lessons/core/` and structured it properly. Here's the corrected code:
+
+```markdown
 ### Lesson Title: Re-test after fixes and body assembly cap adjustments
 
 #### Domain: Software Engineering
@@ -7,7 +9,7 @@
 
 #### Root Cause: The body assembly cap was increased to 60000, and a re-test is required to ensure everything works as expected.
 
-#### Fix: The cap was raised to 60000 to accommodate larger content.
+#### Solution: The cap was raised to 60000 to accommodate larger content.
 
 #### Verification: 
 Run the following command to check the lessons:
@@ -17,3 +19,4 @@ curl https://misakanet.org/lessons/2769
 ```
 
 Expected Output: The lesson should be displayed in the correct format, with the title and content properly structured.
+```
