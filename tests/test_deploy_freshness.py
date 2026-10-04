@@ -59,9 +59,9 @@ def test_an_unknown_sha_fails_rather_than_claiming_freshness(monkeypatch):
 
 
 def test_an_unreachable_service_is_not_reported_as_stale(monkeypatch):
-    """A dropped TLS handshake is weather. It must not read as "production is behind" — the
-    handoff-2026-09-24 measurement (~1 request in 4 timing out from a real machine) is why the
-    workflow retries rather than trusting a single answer."""
+    """A dropped TLS handshake is weather. It must not read as "production is behind" — this
+    workflow retries rather than trusting a single answer, precisely because a TLS handshake to
+    misakanet.org drops often enough on a real connection to be unremarkable."""
     monkeypatch.setattr(doctor, "health_body", lambda url=doctor.HEALTH_ENDPOINT: (False, f"{url} unreachable", {}))
     ok, message = doctor.check_deploy_freshness()
     assert not ok
