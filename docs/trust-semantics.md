@@ -52,7 +52,8 @@ MisakaNet uses three trust levels for lessons. These terms are used consistently
   - ✅ "249 indexed failure-recovery lessons"
   - ❌ "249 verified failure lessons" (unless all 249 have been fact-checked)
 
-- **Lesson frontmatter**: `status` field uses `draft`, `published`, or `deprecated`.
+- **Lesson frontmatter**: `status` uses one of `active`, `archived`, `draft`, `published`, `stale`, `superseded`. That set is not a convention — it is the one `scripts/lesson_gate.py` enforces (`VALID_STATUS`), the one `scripts/queue_lesson.py --status` offers, and the one `lessons/TEMPLATE.md` documents. Adding a status means changing `VALID_STATUS`, not just a doc.
+  - Only `published` is indexed: `is_published_status()` is a strict comparison, so the other five are excluded from the sitemap and from search weighting. They still get a page, rendered with a "not published" banner — never silently treated as published.
   - `published` means it passed the quality gate, not that it was manually verified.
 
 - **Contrib lessons**: Start as `draft`, become `published` after quality_scorer ≥ 75.

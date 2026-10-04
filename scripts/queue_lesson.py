@@ -49,6 +49,15 @@ if str(_SCRIPTS_DIR_INFER) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_DIR_INFER))
 from infer_evidence_level import infer_evidence_level  # noqa: E402
 
+# The writer must never offer a status the gate rejects. This flag used to hardcode
+# `["published", "draft", "deprecated"]`; `deprecated` has never been in
+# `lesson_gate.VALID_STATUS`, so `--status deprecated` wrote a file that
+# `lesson_gate.py` then failed with
+#   "status must be one of ['active', 'archived', 'draft', 'published', 'stale', 'superseded']"
+# — the CLI was advertising a value the repo's own quality gate refuses. Deriving the
+# choices from the gate makes that impossible to reintroduce by editing one list.
+from lesson_gate import VALID_STATUS  # noqa: E402
+
 LESSONS_DIR = Path(os.environ.get("LESSONS_DIR", str(REPO_ROOT / "lessons")))
 
 
@@ -355,8 +364,8 @@ def main():
     parser.add_argument("-d", "--domain", default="general", help="Domain 分类")
     parser.add_argument("--tags", default="", help="逗号分隔的标签")
     parser.add_argument("--status", default="published",
-                        choices=["published", "draft", "deprecated"],
-                        help="lesson 状态，默认 published")
+                        choices=sorted(VALID_STATUS),
+                        help="lesson 状态，默认 published（可选值即 lesson_gate.VALID_STATUS）")
     parser.add_argument("--file", help="已编辑好的 md 文件路径 (跳过 --title/正文参数)")
     parser.add_argument("--dry-run", action="store_true",
                         help="Preview markdown; do not write files or run git")

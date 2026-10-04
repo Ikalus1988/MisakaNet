@@ -7,7 +7,10 @@ Validates lesson Markdown files against the quality gate checklist:
   - No duplicate titles (against all existing lessons)
   - Domain must be in the allowed list (docs/domains/ + lessons/core|contrib|en)
   - Tags validated for format (1-10 unique strings, min 2 chars)
-  - status ∈ {published, draft, archived}; evidence_level ∈ {E0..E4}
+  - status ∈ {active, archived, draft, published, stale, superseded} — this list is
+    restated from VALID_STATUS below; tests/test_lesson_status_vocabulary.py fails if
+    the two disagree. Do not add a status here without adding it there.
+  - evidence_level ∈ {E0..E4}
   - Structured fields for NEW lessons (issue #1783): summary_plain, trigger, verify
 
 Usage:
