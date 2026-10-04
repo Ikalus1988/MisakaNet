@@ -7,6 +7,112 @@ All notable changes to the Misaka Network project are documented here.
 
 ---
 
+## [2.41.0](https://github.com/Ikalus1988/MisakaNet/compare/v2.40.0...v2.41.0) (2026-10-04)
+
+
+### Features
+
+* add error-signature normalizer for stable failure-class recall ([#1654](https://github.com/Ikalus1988/MisakaNet/issues/1654)) ([#2567](https://github.com/Ikalus1988/MisakaNet/issues/2567)) ([4ea2f85](https://github.com/Ikalus1988/MisakaNet/commit/4ea2f85b085667e5a47f0660f63ecd0399986f67))
+* **deploy:** make a stale production detectable by commit SHA, not by version ([#2787](https://github.com/Ikalus1988/MisakaNet/issues/2787)) ([e040847](https://github.com/Ikalus1988/MisakaNet/commit/e04084785b731ee9fa7543161f2b67eef4b6b2e5)), closes [#2779](https://github.com/Ikalus1988/MisakaNet/issues/2779)
+* **docs:** add freshness gate for managed documentation ([#2082](https://github.com/Ikalus1988/MisakaNet/issues/2082)) ([#2485](https://github.com/Ikalus1988/MisakaNet/issues/2485)) ([7f84ef0](https://github.com/Ikalus1988/MisakaNet/commit/7f84ef0b0c18e00db0c5aed6541c977ae6a594ae))
+* **dsh:** a MisakaNet preference row in Settings → General ([#2600](https://github.com/Ikalus1988/MisakaNet/issues/2600)) ([a43c50d](https://github.com/Ikalus1988/MisakaNet/commit/a43c50dd34b02bcd69755b5a1934784685ef57b3))
+* **dsh:** name the session the footer copies, and hand over a patch snippet ([#2618](https://github.com/Ikalus1988/MisakaNet/issues/2618)) ([47cf5fc](https://github.com/Ikalus1988/MisakaNet/commit/47cf5fc8f979f751448d471bd37dd6a73c845ea5))
+* **dsh:** the /misakanet command, answered in the composer ([#2598](https://github.com/Ikalus1988/MisakaNet/issues/2598)) ([d2367e3](https://github.com/Ikalus1988/MisakaNet/commit/d2367e3458c70ced9c9cf17c0a829646cac5b300))
+* **dsh:** the MisakaNet surfaces follow the host language ([#2602](https://github.com/Ikalus1988/MisakaNet/issues/2602)) ([b545e87](https://github.com/Ikalus1988/MisakaNet/commit/b545e87b1c82aefd9421d584596789258f747d99))
+* **intake:** stop filing an open issue for every submission that arrives ([#2761](https://github.com/Ikalus1988/MisakaNet/issues/2761)) ([4210012](https://github.com/Ikalus1988/MisakaNet/commit/42100121377b2f8efffa76eec3ad7b52bf7f54e2))
+* **site:** network activity trend + read-only token scope ([#2521](https://github.com/Ikalus1988/MisakaNet/issues/2521)) ([#2692](https://github.com/Ikalus1988/MisakaNet/issues/2692)) ([88b3600](https://github.com/Ikalus1988/MisakaNet/commit/88b360004e7c878e205e2adcbb0fc4a6d589430c))
+* **site:** publish the lesson-id aliases as a 301 table, not 111 stub pages ([#2795](https://github.com/Ikalus1988/MisakaNet/issues/2795)) ([6870e20](https://github.com/Ikalus1988/MisakaNet/commit/6870e20a352f6cf16ddc4d05ed3328d30783565d))
+
+
+### Bug Fixes
+
+* **ci:** client-e2e 的 scope 步骤让每个 PR 都变红 —— 浅取把要比较的 merge base 删掉了 ([#2701](https://github.com/Ikalus1988/MisakaNet/issues/2701)) ([d0e5b64](https://github.com/Ikalus1988/MisakaNet/commit/d0e5b64c8dffa8c0c8b15628ab04e644c54c27bb))
+* **ci:** six one-page GitHub list reads; one of them is why PR [#2020](https://github.com/Ikalus1988/MisakaNet/issues/2020) has 113 audit reports ([#2801](https://github.com/Ikalus1988/MisakaNet/issues/2801)) ([8dcb67d](https://github.com/Ikalus1988/MisakaNet/commit/8dcb67d29f9123d33d44463d8050bfe76a075a57))
+* **ci:** sync PR branches six-hourly, and never push to a PR that can already merge ([#2588](https://github.com/Ikalus1988/MisakaNet/issues/2588)) ([1bab70f](https://github.com/Ikalus1988/MisakaNet/commit/1bab70fba92c651e8c3efae7aeb8e407ff4d7728))
+* **ci:** the worker secret gate was reading 6% of the worker code, and two MCP controls had no test ([#2731](https://github.com/Ikalus1988/MisakaNet/issues/2731)) ([3dc5c12](https://github.com/Ikalus1988/MisakaNet/commit/3dc5c126f8f36ed9d1b78ec785e80c0f7f3e14a2))
+* **ci:** 门禁现在真的跑它声称跑的东西 —— 两个死测试文件、一个死套件、一个错的 TOTAL ([#2682](https://github.com/Ikalus1988/MisakaNet/issues/2682)) ([2ef4669](https://github.com/Ikalus1988/MisakaNet/commit/2ef46691a9170802660db124da9f9fbc963efd59))
+* **d1:** sync 的 SQL 以注释收尾，且三个 push 同时同步（automation 变红的根因） ([#2709](https://github.com/Ikalus1988/MisakaNet/issues/2709)) ([63d7817](https://github.com/Ikalus1988/MisakaNet/commit/63d7817fa3d2345b7f1145197d8bd9ee3b1d9e54))
+* **docs:** update stale version numbers and mark dated eval ([#2345](https://github.com/Ikalus1988/MisakaNet/issues/2345)) ([#2793](https://github.com/Ikalus1988/MisakaNet/issues/2793)) ([2a0be3b](https://github.com/Ikalus1988/MisakaNet/commit/2a0be3b27dec2c0b8a60ccf63285727fb1eb718e))
+* **dsh:** the Config gate and the resolver must import through a file URL, not a path ([#2609](https://github.com/Ikalus1988/MisakaNet/issues/2609)) ([63bbc23](https://github.com/Ikalus1988/MisakaNet/commit/63bbc23178b2fd83a6e1a89170b991b614b4b89f))
+* **index:** 本地索引是仓库的课程，不是这块盘上的课程（P7） ([#2708](https://github.com/Ikalus1988/MisakaNet/issues/2708)) ([9d1f6d6](https://github.com/Ikalus1988/MisakaNet/commit/9d1f6d6c2c0013c6d104e34adfec091ca6a020b9))
+* **infra:** the site-build watcher stopped seeing builds past 100 check-runs ([#2797](https://github.com/Ikalus1988/MisakaNet/issues/2797)) ([70ccb4b](https://github.com/Ikalus1988/MisakaNet/commit/70ccb4bf202fe84487e82c302f8d435040c2d4e8))
+* **infra:** the site-build watcher's state memory was one page deep ([#2797](https://github.com/Ikalus1988/MisakaNet/issues/2797) follow-up) ([#2800](https://github.com/Ikalus1988/MisakaNet/issues/2800)) ([e4cd52c](https://github.com/Ikalus1988/MisakaNet/commit/e4cd52ca134f0ab9dacc88f31e391e146990a29f))
+* **intake-bot:** subject-word coverage gate + pin the sim scale ([#2643](https://github.com/Ikalus1988/MisakaNet/issues/2643)) ([#2646](https://github.com/Ikalus1988/MisakaNet/issues/2646)) ([101f1df](https://github.com/Ikalus1988/MisakaNet/commit/101f1dfca85e781e80046b9ff69938c69fe9ebf1))
+* **intake-bot:** 覆盖门认技术栈词 —— 修 [#2646](https://github.com/Ikalus1988/MisakaNet/issues/2646) 复验发现的漏报 + §8.1 自检输出失效 ([#2657](https://github.com/Ikalus1988/MisakaNet/issues/2657)) ([eff1485](https://github.com/Ikalus1988/MisakaNet/commit/eff14857aa73fc63f3374c1a50e6f570bc169499))
+* **intake:** a question body clipped at 2,000 chars still looked answerable ([#2749](https://github.com/Ikalus1988/MisakaNet/issues/2749)) ([a9f2e09](https://github.com/Ikalus1988/MisakaNet/commit/a9f2e09e41f86512a98e7c69f7a800c3f8f12e6c)), closes [#2743](https://github.com/Ikalus1988/MisakaNet/issues/2743)
+* **intake:** a receipt that never posted must not be recorded as delivered ([#2783](https://github.com/Ikalus1988/MisakaNet/issues/2783)) ([f739928](https://github.com/Ikalus1988/MisakaNet/commit/f73992830da93ecb56a45bb37d5a6486e2639352))
+* **makefile:** make deploy stop pointing at paths that do not exist ([#2694](https://github.com/Ikalus1988/MisakaNet/issues/2694)) ([59f906f](https://github.com/Ikalus1988/MisakaNet/commit/59f906f54abf11cf3af74818497b72aa5a91b6a9))
+* **mcp:** a cache notice was being printed into the JSON-RPC stream ([#2806](https://github.com/Ikalus1988/MisakaNet/issues/2806)) ([c4a4451](https://github.com/Ikalus1988/MisakaNet/commit/c4a44511e350a94a8d285bba77f8b594bfcfbb75))
+* **mcp:** compact search results must carry the score the schema promises ([#2790](https://github.com/Ikalus1988/MisakaNet/issues/2790)) ([#2799](https://github.com/Ikalus1988/MisakaNet/issues/2799)) ([f749f33](https://github.com/Ikalus1988/MisakaNet/commit/f749f33e14d7269253d1b2316621e45466147b00))
+* **search:** BM25 failure must not look like "no match"; drop two dead blocks ([#2696](https://github.com/Ikalus1988/MisakaNet/issues/2696)) ([4151268](https://github.com/Ikalus1988/MisakaNet/commit/4151268387c685ac8228a0fed608e41b7d0f3b3c))
+* **site:** a non-published lesson page must say so, like the API already does ([#2794](https://github.com/Ikalus1988/MisakaNet/issues/2794)) ([0d85759](https://github.com/Ikalus1988/MisakaNet/commit/0d85759db7a06b6eda1fcfdbce98ff44b47831ea))
+* **site:** declare the two dead CSS tokens, gate the six console calls, reserve the avatar box, cache HTML for 5 min ([#2697](https://github.com/Ikalus1988/MisakaNet/issues/2697)) ([9059655](https://github.com/Ikalus1988/MisakaNet/commit/9059655b3fa095e1783b4839e3380e9d76b37be0))
+* **sitemap:** advertise /troubleshooting.md, the path that actually serves it ([#2791](https://github.com/Ikalus1988/MisakaNet/issues/2791)) ([accf961](https://github.com/Ikalus1988/MisakaNet/commit/accf9614d7c978a6273df073135174ab5d5a047e))
+* **site:** the sitemap advertised 30 lessons that say they are not published ([#2805](https://github.com/Ikalus1988/MisakaNet/issues/2805)) ([eae0b82](https://github.com/Ikalus1988/MisakaNet/commit/eae0b8262d684397541aad0c935ef3db35025a2f))
+* **site:** 上手弹窗不再承诺网络做不到的事（并修掉英文读者看到中文） ([#2706](https://github.com/Ikalus1988/MisakaNet/issues/2706)) ([2aad28f](https://github.com/Ikalus1988/MisakaNet/commit/2aad28f14daf445f1348ceb14c402eacb462f12e))
+* **site:** 公开首页存储型 XSS —— 任何已关闭 PR 的 title/body 都能执行脚本 ([#2672](https://github.com/Ikalus1988/MisakaNet/issues/2672)) ([a51026c](https://github.com/Ikalus1988/MisakaNet/commit/a51026cc9d54076c1a5abbcf657008955c4af61a))
+* **site:** 首页在无鼠标、无动画下也能用（F6 第一片） ([#2710](https://github.com/Ikalus1988/MisakaNet/issues/2710)) ([9d25bd2](https://github.com/Ikalus1988/MisakaNet/commit/9d25bd2e72c7ae46eefd8770fae609f253015349))
+* **tests:** the inline-script pattern must match a closing tag that carries whitespace ([#2619](https://github.com/Ikalus1988/MisakaNet/issues/2619)) ([ffc608e](https://github.com/Ikalus1988/MisakaNet/commit/ffc608efb4c30db5b6003ad19b4ab29b99e5443e))
+* **worker:** gap cleanup's 500 serial DELETEs become d1.batch() ([#2695](https://github.com/Ikalus1988/MisakaNet/issues/2695)) ([6afa749](https://github.com/Ikalus1988/MisakaNet/commit/6afa749cd83064fc77307f6abe8a6f36a97bb250))
+* **worker:** the lessons cache is one D1 row at 91% of the cap — shard it, and stop failing quietly ([#2681](https://github.com/Ikalus1988/MisakaNet/issues/2681)) ([da2258e](https://github.com/Ikalus1988/MisakaNet/commit/da2258e339693bf206de8ec461d30b7697091d50))
+* **worker:** the per-address limits become atomic counters, and the source ledger's key space is finite ([#2691](https://github.com/Ikalus1988/MisakaNet/issues/2691)) ([963f9b3](https://github.com/Ikalus1988/MisakaNet/commit/963f9b3c0f3723da16abf95c93107ad2281c2286))
+
+
+### Documentation
+
+* add Copilot integration recipes for three surfaces ([#1941](https://github.com/Ikalus1988/MisakaNet/issues/1941)) ([#2489](https://github.com/Ikalus1988/MisakaNet/issues/2489)) ([829d6dc](https://github.com/Ikalus1988/MisakaNet/commit/829d6dc471474f92a99d29f118549d6a246ec51d))
+* add external pilot feedback report for upgraded-docs-framework ([#1550](https://github.com/Ikalus1988/MisakaNet/issues/1550)) ([#2581](https://github.com/Ikalus1988/MisakaNet/issues/2581)) ([ebf1597](https://github.com/Ikalus1988/MisakaNet/commit/ebf15974107e24c4fc05efc61788930786f57170))
+* add OpenCode, Kiro, and Oh-my-Pi integration guides ([#2576](https://github.com/Ikalus1988/MisakaNet/issues/2576)) ([56059f6](https://github.com/Ikalus1988/MisakaNet/commit/56059f67da7342eb57752ac206bd6c95929e86c6))
+* **agents:** how to test the DSH client half from a checkout ([#2647](https://github.com/Ikalus1988/MisakaNet/issues/2647)) ([8021b47](https://github.com/Ikalus1988/MisakaNet/commit/8021b474695be76a2f06f3ad8ab4622a1c1617b8))
+* **agents:** poll for the client-half host URL instead of grepping once ([#2659](https://github.com/Ikalus1988/MisakaNet/issues/2659)) ([acdc5ad](https://github.com/Ikalus1988/MisakaNet/commit/acdc5ad3b3eee3a32a3d5a19a62d66318d19e968))
+* **ci:** 质量门禁表加了一行，声明的行数没跟上 ([#2745](https://github.com/Ikalus1988/MisakaNet/issues/2745)) ([012663e](https://github.com/Ikalus1988/MisakaNet/commit/012663e94d24041632981e12dd5fcb5089d06edb))
+* **deploy:** approving the Worker deploy can cancel the run you just approved ([#2668](https://github.com/Ikalus1988/MisakaNet/issues/2668)) ([39a5785](https://github.com/Ikalus1988/MisakaNet/commit/39a5785a92576ffe3dd12aef5ee9c26147110f1e))
+* **dsh:** the seat table is seven rows, three of them root ([#2658](https://github.com/Ikalus1988/MisakaNet/issues/2658)) ([fd03c81](https://github.com/Ikalus1988/MisakaNet/commit/fd03c81a8ad097e170c629e29ff56998e1a2101e))
+* **external-usage:** how to tell "bot broke" from "nothing to report" ([#2645](https://github.com/Ikalus1988/MisakaNet/issues/2645)) ([#2649](https://github.com/Ikalus1988/MisakaNet/issues/2649)) ([2116718](https://github.com/Ikalus1988/MisakaNet/commit/21167186efa42be22e797581a47d81ec11e366f6))
+* **field-reports:** 2.40.0 browser-half six-seat test report on macOS (Refs [#2593](https://github.com/Ikalus1988/MisakaNet/issues/2593)) ([#2693](https://github.com/Ikalus1988/MisakaNet/issues/2693)) ([f548540](https://github.com/Ikalus1988/MisakaNet/commit/f54854057002e0c918e2015ea52e83ce4bc0918d))
+* **frontend:** update frontend-status.md to v2.38.0 ([#2440](https://github.com/Ikalus1988/MisakaNet/issues/2440)) ([45ff74e](https://github.com/Ikalus1988/MisakaNet/commit/45ff74ec766d9d823ec5681ad37ebeca5a0afd82))
+* **glama:** tell a red build that is Glama's runner from one that is your Dockerfile ([#2638](https://github.com/Ikalus1988/MisakaNet/issues/2638)) ([1fe3886](https://github.com/Ikalus1988/MisakaNet/commit/1fe3886a0518460bda7c96f6c8fc250e4b73bcad))
+* **install:** `dsh plugin` requires `--profile`, and the gate pinned the form that cannot run ([#2663](https://github.com/Ikalus1988/MisakaNet/issues/2663)) ([eeaa6a9](https://github.com/Ikalus1988/MisakaNet/commit/eeaa6a958cf9be0dd33736cb645fdc508706c4e9))
+* **lessons:** promote 19 triaged intakes into the corpus ([#2762](https://github.com/Ikalus1988/MisakaNet/issues/2762)) ([5b757cb](https://github.com/Ikalus1988/MisakaNet/commit/5b757cb3807d39932add359c64ed9db3afcf2d85))
+* **lessons:** voice pipelines and IM bots fail at someone else's layer ([#2630](https://github.com/Ikalus1988/MisakaNet/issues/2630)) ([#2689](https://github.com/Ikalus1988/MisakaNet/issues/2689)) ([34ffda9](https://github.com/Ikalus1988/MisakaNet/commit/34ffda935cf852512b1d25671badfa5e05cbabcd))
+* **mcp:** improve Glama tool descriptions with non-obvious semantics ([#2441](https://github.com/Ikalus1988/MisakaNet/issues/2441)) ([e5f685d](https://github.com/Ikalus1988/MisakaNet/commit/e5f685da1380c1f05950ef8f1384bfa91c274f65)), closes [#1929](https://github.com/Ikalus1988/MisakaNet/issues/1929)
+* **readme:** list the plugin surfaces by the version that ships them ([#2644](https://github.com/Ikalus1988/MisakaNet/issues/2644)) ([708782c](https://github.com/Ikalus1988/MisakaNet/commit/708782c3877595fe9dea08876fb5de6d19d21991)), closes [#2640](https://github.com/Ikalus1988/MisakaNet/issues/2640)
+* **readme:** show what the 2.40.0 browser half actually looks like ([#2592](https://github.com/Ikalus1988/MisakaNet/issues/2592)) ([03618ba](https://github.com/Ikalus1988/MisakaNet/commit/03618ba7145b08736a79fe9eb5aaec88fce4b1eb))
+* **readme:** Voice ships in 2.40.0, not 2.41.0 ([#2652](https://github.com/Ikalus1988/MisakaNet/issues/2652)) ([#2656](https://github.com/Ikalus1988/MisakaNet/issues/2656)) ([3501afa](https://github.com/Ikalus1988/MisakaNet/commit/3501afa9d3ecee1ec78c62f4f17136ec0ef17b32))
+* **readme:** 用一张漫画说清「它能回答什么」——三语 README 同步 ([#2707](https://github.com/Ikalus1988/MisakaNet/issues/2707)) ([dafb8a9](https://github.com/Ikalus1988/MisakaNet/commit/dafb8a99845d705134f11135290ee6e949761220))
+* **roadmap:** 2026-10-02 节的三条断言与代码对齐 ([#2655](https://github.com/Ikalus1988/MisakaNet/issues/2655)) ([19b4e23](https://github.com/Ikalus1988/MisakaNet/commit/19b4e23f57fa5eb64f89c17466708677819603c6)), closes [#2654](https://github.com/Ikalus1988/MisakaNet/issues/2654)
+* **roadmap:** a dated 2026-10-02 section, and KV→D1 in the priority list ([#2642](https://github.com/Ikalus1988/MisakaNet/issues/2642)) ([#2648](https://github.com/Ikalus1988/MisakaNet/issues/2648)) ([ab1c990](https://github.com/Ikalus1988/MisakaNet/commit/ab1c9903abfa36414237526475b4a4856a8fe482))
+* **site:** drop the retired protocol name and the spend figure, lift Network activity, un-break the quickstart ([#2669](https://github.com/Ikalus1988/MisakaNet/issues/2669)) ([7d32f65](https://github.com/Ikalus1988/MisakaNet/commit/7d32f6519fe0f8cca38a759025c8ebe3e5d87062))
+* **site:** the retired protocol name was still visible — in the Product Matrix card ([#2670](https://github.com/Ikalus1988/MisakaNet/issues/2670)) ([1f47637](https://github.com/Ikalus1988/MisakaNet/commit/1f476379b71dfa4a341b448d3c6e09482836907f))
+* update benchmark section with aggregated data and trend ([#1914](https://github.com/Ikalus1988/MisakaNet/issues/1914)) ([#2442](https://github.com/Ikalus1988/MisakaNet/issues/2442)) ([b95f65b](https://github.com/Ikalus1988/MisakaNet/commit/b95f65be0fbe083b963cc5050545fbee8b4fb171))
+* update deprecated version references in evaluation docs ([#2390](https://github.com/Ikalus1988/MisakaNet/issues/2390)) ([ff584e9](https://github.com/Ikalus1988/MisakaNet/commit/ff584e953593ec0fd19ae39d989ecd8480178dba))
+
+
+### Refactoring
+
+* **site:** retire the 111 id-alias stub pages; docs/_redirects is now the only publisher ([#2798](https://github.com/Ikalus1988/MisakaNet/issues/2798)) ([11576bd](https://github.com/Ikalus1988/MisakaNet/commit/11576bd9f95cfee4e5ba43cdebddda82358b600c))
+
+
+### Tests
+
+* **deploy:** drive commit_sha through a real helper instead of a source grep ([#2788](https://github.com/Ikalus1988/MisakaNet/issues/2788)) ([2ea3eaa](https://github.com/Ikalus1988/MisakaNet/commit/2ea3eaa274f11bb1b3b4dcc25bbe36ff0078ccbe)), closes [#2779](https://github.com/Ikalus1988/MisakaNet/issues/2779)
+* **dsh:** a behavioural e2e for the client half, in a real host and a real browser ([#2610](https://github.com/Ikalus1988/MisakaNet/issues/2610)) ([9b94c6a](https://github.com/Ikalus1988/MisakaNet/commit/9b94c6aef20429c27248636892ff699aeb55f171))
+* **index:** 非 UTF-8 用例在装不下该名字的文件系统上跳过（修 [#2708](https://github.com/Ikalus1988/MisakaNet/issues/2708) 打红的 macOS leg） ([#2719](https://github.com/Ikalus1988/MisakaNet/issues/2719)) ([4fd063b](https://github.com/Ikalus1988/MisakaNet/commit/4fd063b48a4efad48d9719093b8daba170cd4dce))
+* **search:** one CJK floor row's only answer is a draft lesson, and nothing recorded that on purpose ([#2770](https://github.com/Ikalus1988/MisakaNet/issues/2770)) ([b82e352](https://github.com/Ikalus1988/MisakaNet/commit/b82e352e4e2e8362b5058b34bf5c4c2374920aed))
+* **search:** pin the Python retrieval ranking as a golden snapshot ([#2679](https://github.com/Ikalus1988/MisakaNet/issues/2679)) ([0a71f9e](https://github.com/Ikalus1988/MisakaNet/commit/0a71f9e6117047c33196268afbed185e2ece853d)), closes [#2678](https://github.com/Ikalus1988/MisakaNet/issues/2678)
+* **setup:** two installer tests were reading the developer proxy, not the installer ([#2756](https://github.com/Ikalus1988/MisakaNet/issues/2756)) ([0eb6d5d](https://github.com/Ikalus1988/MisakaNet/commit/0eb6d5de97a3787c70519f196ebf786dbc7b7ade))
+* **smoke:** the probe asserts every seat, including the left column ([#2590](https://github.com/Ikalus1988/MisakaNet/issues/2590)) ([da651ef](https://github.com/Ikalus1988/MisakaNet/commit/da651ef70e37a2e0754fa92958f5832972ab8ab2))
+
+
+### CI/CD
+
+* a scheduled ratchet on the documented gate set ([#2723](https://github.com/Ikalus1988/MisakaNet/issues/2723)) ([1cc8873](https://github.com/Ikalus1988/MisakaNet/commit/1cc88735ac7311c2bb8176531579d54afff6f47e))
+* **lesson:** a correct lesson that would have joined nothing ([#2729](https://github.com/Ikalus1988/MisakaNet/issues/2729)) ([d74262d](https://github.com/Ikalus1988/MisakaNet/commit/d74262ddd82fdb07b9140ad4d33ecb4d12413e8d))
+* **security:** a dependency audit that only runs when a manifest changes never reports a new CVE ([#2742](https://github.com/Ikalus1988/MisakaNet/issues/2742)) ([4e204cf](https://github.com/Ikalus1988/MisakaNet/commit/4e204cf927cb893245a672a27eb27506418e582d))
+* **security:** read .github/ and scripts/ in the worker secret gate ([#2733](https://github.com/Ikalus1988/MisakaNet/issues/2733)) ([fdf396c](https://github.com/Ikalus1988/MisakaNet/commit/fdf396c718f47fbf25472a6dca8237a2b9e3d3bc)), closes [#2684](https://github.com/Ikalus1988/MisakaNet/issues/2684)
+* **update-lessons:** land the three collided post-regeneration steps together ([#2781](https://github.com/Ikalus1988/MisakaNet/issues/2781)) ([3d9b8af](https://github.com/Ikalus1988/MisakaNet/commit/3d9b8afca64f77f0c9e1ca9c75c9441794bca20f))
+* **workflows:** break the check_suite/check_run self-trigger loop that starves the runner queue ([#2698](https://github.com/Ikalus1988/MisakaNet/issues/2698)) ([0272dae](https://github.com/Ikalus1988/MisakaNet/commit/0272dae7b900f63204451723703e0e3d29e944e0))
+
 ## [2.40.0](https://github.com/Ikalus1988/MisakaNet/compare/v2.39.0...v2.40.0) (2026-10-01)
 
 
