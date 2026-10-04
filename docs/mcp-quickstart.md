@@ -97,12 +97,17 @@ Add to `.cursor/mcp.json` in your project:
 
 ### Docker / GHCR
 
-No local Python setup needed — pull the container and run:
+No local Python setup needed — pull the container and run. `latest` tracks the current
+release, so this does not go stale:
 
 ```bash
-docker pull ghcr.io/ikalus1988/misakanet:2.39.0
-docker run -i ghcr.io/ikalus1988/misakanet:2.39.0
+docker pull ghcr.io/ikalus1988/misakanet:latest
+docker run -i ghcr.io/ikalus1988/misakanet:latest
 ```
+
+Pin a version tag if you need reproducibility — `ghcr.io/ikalus1988/misakanet:<tag>`, with
+the tags listed on the [releases page](https://github.com/Ikalus1988/MisakaNet/releases). A
+literal tag copied into this file is what let it sit two releases behind unnoticed.
 
 Or use in MCP config:
 
@@ -111,7 +116,7 @@ Or use in MCP config:
   "mcpServers": {
     "misakanet": {
       "command": "docker",
-      "args": ["run", "-i", "ghcr.io/ikalus1988/misakanet:2.39.0"]
+      "args": ["run", "-i", "ghcr.io/ikalus1988/misakanet:latest"]
     }
   }
 }

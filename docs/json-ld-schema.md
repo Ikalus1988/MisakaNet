@@ -56,7 +56,7 @@ Add this to your main HTML template (e.g., `templates/base.html` or `layout.html
       "description": "MCP server providing failure-recovery lessons to AI coding agents",
       "url": "https://github.com/Ikalus1988/MisakaNet",
       "downloadUrl": "https://pypi.org/project/misakanet/",
-      "softwareVersion": "2.39.0",
+      "softwareVersion": "<current version>",
       "offers": {
         "@type": "Offer",
         "price": "0",
@@ -85,6 +85,12 @@ Add this to your main HTML template (e.g., `templates/base.html` or `layout.html
 <meta name="content-signals-policy" content="allow" />
 <meta name="misaka-status" content="verified" />
 ```
+
+`softwareVersion` above is a placeholder, not a literal. A literal there is what let this
+example carry `2.39.0` while the release manifest moved on, with no rule able to see it — the
+same failure `API.md` records for its own example. Read the current version from
+`.release-please-manifest.json`, and substitute it when you emit real JSON-LD.
+`tests/test_no_live_doc_pins_a_package_version.py` keeps current docs from re-acquiring one.
 
 ## Validation
 
