@@ -17,7 +17,7 @@
 | `synonyms.json` | 手写维护（`scripts/sync_lesson_count.py` 读）| 检索扩展 | 手动 |
 | `search-floor-queries.jsonl` | 手写维护（40+ 行查询，每条带它必须命中的课程 id）| `workers/search-dual-floor.test.mjs`（英中两个地板）、`workers/search-cjk-recall.test.mjs`（同一份查询集）、`tests/test_search_floor_queries_schema.py`（模式与"body-only"声明的真伪）| 手动（加分/改地板时）|
 | `query-aliases.json` | `misakanet/search/engine.py`、`scripts/expand_query.py` | 检索扩展、`tests/test_query_alias_wiring.py` | 手动 |
-| `quality_scores.json` | **无现存生成者**（`scripts/check_lesson_quality.py` 已不再写它；引用它的只有 `archive/dead/` 与测试）| **无** | 快照停在 141 篇（语料已 402 篇）——待判决：删掉或重建 |
+| `quality_scores.json` | **无现存生成者**（`scripts/check_lesson_quality.py` 已不再写它；引用它的只有 `archive/dead/` 与测试）| **无** | 快照停在 141 篇，远落后于当前语料（`scripts/sync_lesson_count.py --check`）——待判决：删掉或重建 |
 | `contributor-points.json` | `scripts/update_contributor_points.py` | `workers/register-proxy-sw.js`、`docs/contributor-points.md` | 手动 |
 | `intake-kind-hints.json` | `scripts/sync_intake_hints.py` | `scripts/intake_kind.py` | 手动 |
 | `provenance-baseline.json` | `scripts/check_provenance.py` | `provenance-gate.yml`（溯源门禁）| PR + 定时（周）|
