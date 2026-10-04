@@ -21,7 +21,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { clipSubmittedText, redactIntake, redactSecrets, SUBMITTED_TEXT_CAP } from './register-proxy-sw.js';
+import { clipSubmittedText, redactIntake, redactSecrets, assembleSubmittedBody, SUBMITTED_TEXT_CAP } from './register-proxy-sw.js';
 
 test('a long intake survives the cap that used to destroy it', () => {
   // The exact shape from #2774. At the old 2,000 cap this arrived as 2,000 characters and
@@ -120,4 +120,75 @@ test('no 2,000-character slice is left on any submitted-text path', () => {
     .filter(([, line]) => /slice\(0,\s*2000\)/.test(line));
   assert.deepEqual(offenders, [],
     `a 2,000-character slice is back at: ${offenders.map(([n, l]) => `${n}: ${l.trim()}`).join('; ')}`);
+});
+
+test('an assembled value is never clipped by a bare number', () => {
+  // The guard above hunts the *number* 2000. The next one in this family was 8,000, and it walked
+  // straight past — `bodyParts.join("\n").slice(0, 8000)` on the GitHub issue body. It was silent,
+  // it survived the #2816 fix that made every per-field cap loud, and it is why #2821 could
+  // report the family as measured three separate times (#2768, #2769, #2818) and still have a
+  // 19,468-character submission arrive as ~7,850.
+  //
+  // So this one hunts the *shape* instead: assembling parts and then capping the result. That is
+  // what a silent clip looks like — the cap is applied to the whole submission rather than to a
+  // field, so the per-field tests cannot see it and nothing says it happened.
+  //
+  // Scoped this narrowly on purpose. The file has 73 bare `slice(0, N)` literals and all but one
+  // are legitimate — ISO-date formatting, token redaction, log lines, D1 column widths, display
+  // caps — so a blanket "no bare slice" rule would be 73 false positives and would be switched off
+  // within a week. Measured before the rule was adopted, not after: `join(...).slice(0, N)`
+  // occurs exactly once in this file, and that one occurrence was the bug.
+  //
+  // The cap that *should* be there goes through `assembleSubmittedBody`, which is loud.
+  //
+  // Comments are stripped before matching. Otherwise the guard fires on the comment above
+  // `assembleSubmittedBody` that quotes the old expression in order to explain what it replaced —
+  // and a gate that has to be fought by the person documenting its own fix gets worked around.
+  const stripComments = (line) => {
+    // Crude, and deliberately so: a full parse would need a JS parser, and the risk of stripping
+    // too much is a missed detection, not a false alarm. Regex literals on this line shape are not
+    // a thing, and a line whose *code* contains the pattern still gets caught whether or not it
+    // also carries a trailing comment.
+    let out = line.replace(/\/\*[\s\S]*?\*\//g, ' ');
+    const ci = out.indexOf('//');
+    // Only treat `//` as a comment when it is not inside a string or a URL. A submitted-text path
+    // carries full URLs, so the naive "first //" rule would eat the code.
+    if (ci !== -1) {
+      const before = out.slice(0, ci);
+      const quotes = (before.match(/["'`]/g) || []).length;
+      if (quotes % 2 === 0) out = before;
+    }
+    return out;
+  };
+  const src = readFileSync(new URL('./register-proxy-sw.js', import.meta.url), 'utf8');
+  const offenders = src.split('\n')
+    .map((line, i) => [i + 1, stripComments(line)])
+    .filter(([, line]) => /\.join\((?:[^()]|\([^()]*\))*\)\.slice\(0,\s*\d+\)/.test(line));
+  assert.deepEqual(offenders, [],
+    `an assembled value is being clipped by a bare number at: `
+    + `${offenders.map(([n, l]) => `${n}: ${l.trim()}`).join('; ')}. `
+    + `Route it through assembleSubmittedBody() so the cap is SUBMITTED_TEXT_CAP and says so.`);
+});
+
+test('a long submission survives assembly, and says so when it cannot', () => {
+  // The regression this whole family is about, asserted against the real assembly rather than
+  // against a hand-written stand-in. Before this, a 19,468-character intake reached GitHub as
+  // ~7,850 characters with nothing in the body saying it had been cut.
+  const fits = ['# Problem', 'x'.repeat(4000), '## Fix', 'y'.repeat(3000)];
+  const out = assembleSubmittedBody(fits);
+  assert.equal(out.length, fits.join('\n').length, 'a submission under the cap must arrive whole');
+  assert.ok(out.includes('x'.repeat(4000)), 'and none of its content may be dropped');
+  assert.ok(!out.includes('Truncated at'), 'a submission that fitted must not claim it was clipped');
+
+  // Over the cap: not silently short, and the note has to name both numbers.
+  const huge = ['# Problem', 'z'.repeat(SUBMITTED_TEXT_CAP + 5000)];
+  const clipped = assembleSubmittedBody(huge);
+  assert.ok(clipped.length < huge.join('\n').length, 'an over-cap submission is clipped');
+  assert.ok(clipped.includes('Truncated at'), 'and it must say that it was clipped');
+  assert.ok(clipped.includes(String(SUBMITTED_TEXT_CAP + 5000 + 10)),
+    'and it must name how much was actually submitted');
+  assert.ok(clipped.includes(String(SUBMITTED_TEXT_CAP)), 'and the cap it applied');
+  // The 8,000 that replaced this silently would have dropped ~11,500 characters of the above with
+  // no marker; assert the old cap is not what is in force.
+  assert.ok(clipped.length > 8000, 'the old silent 8,000 cap must not be in force');
 });
