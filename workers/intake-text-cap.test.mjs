@@ -52,18 +52,23 @@ test('the cap matches the one the Python intake path uses', () => {
   assert.equal(INTAKE_TEXT_CAP, 60000);
 });
 
+// A token-shaped string, assembled at runtime on purpose. This file is scanned by the very
+// pattern the test below is about — `tests/test_scanner_secret_patterns.py` exists because a
+// literal here is itself an alert, and #256 is what happened last time someone wrote one
+// (`ghp_${'a'.repeat(24)}` is the same trick `workers/write-lesson-guards.test.mjs` uses).
+const GITHUB_TOKEN = `ghp_${'a1b2c3d4e5'.repeat(3)}`;
+
 test('redaction still runs, and now runs over the whole text', () => {
-  const token = 'ghp_abcdefghijklmnopqrstuvwxyz0123';
-  assert.ok(!redactIntake(`key ${token}`).includes(token), 'a token in reach must be redacted');
+  assert.ok(!redactIntake(`key ${GITHUB_TOKEN}`).includes(GITHUB_TOKEN),
+    'a token in reach must be redacted');
 });
 
 test('a credential past the old 2,000-character line is redacted rather than dropped', () => {
   // The old order was slice-then-redact, so a secret beyond 2,000 characters was discarded
   // instead of redacted — safe by accident, and only because the cap was small. With a cap
   // that actually admits content, the order has to be redaction first.
-  const token = 'ghp_abcdefghijklmnopqrstuvwxyz0123';
-  const body = 'a'.repeat(5000) + ' key ' + token;
+  const body = 'a'.repeat(5000) + ' key ' + GITHUB_TOKEN;
   const out = redactIntake(body);
-  assert.ok(!out.includes(token), `token at offset 5000 survived: …${out.slice(4995, 5040)}…`);
+  assert.ok(!out.includes(GITHUB_TOKEN), `token at offset 5000 survived: …${out.slice(4995, 5040)}…`);
   assert.ok(out.includes('[REDACTED:github_token]'), 'and it should be replaced, not merely absent');
 });
