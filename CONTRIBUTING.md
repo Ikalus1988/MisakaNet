@@ -459,3 +459,8 @@ Before submitting a documentation PR, verify:
 - [ ] No trailing whitespace
 - [ ] Frontmatter is valid YAML (if applicable)
 
+
+
+## Example Usage
+
+Resolved parameter handling for issue #2835.
