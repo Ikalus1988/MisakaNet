@@ -14,12 +14,36 @@ name: Deploy Freshness
 # worker reports in `/api/health` against this checkout's HEAD. A version number cannot do this:
 # release-please only bumps it on a release, so `fix:`/`feat:` commits leave production and main
 # reporting the same version indefinitely — the state that made the freeze invisible.
+#
+# Two triggers, because one was measured not to be enough. The cron below is the backstop, not the
+# instrument: this repository already recorded that GitHub drops scheduled events under load
+# ("measured 2026-09-29: this workflow ran once in ~9 hours against `17,47`, five consecutive slots
+# with no run created at all", `approval-watch.yml`'s header). That is why `approval-watch.yml` also
+# listens on `workflow_run`. This file originally did not, and the consequence was measurable: as of
+# 2026-10-04T06:00Z it had produced exactly **one** run ever — a manual `workflow_dispatch` from a
+# PR branch — and its first daily slot (04:53Z) had passed with nothing. So the safety net for the
+# very freeze it was written for had never once run on its own, and the guard below
+# (`tests/test_deploy_freshness.py::test_the_freshness_probe_does_not_depend_on_the_scheduler_alone`)
+# could not see that, because asserting a cron *string* is not asserting a cron *firing*.
+#
+# The `workflow_run` trigger is the one that actually closes the gap, and it closes it in minutes
+# rather than a day. `types: [completed]` fires on every outcome of a deploy run, and the freeze is
+# precisely the outcomes that deploy nothing: a run cancelled by `cancel-in-progress` when the next
+# push arrives is a `completed` event, so the probe runs and finds production behind *while the
+# staleness is minutes old*, instead of a human noticing three days later through a symptom.
 on:
   schedule:
     # Daily at 04:53 UTC — off the hour, and clear of the corpus sync (~03:00), the weekly D1
     # backup (Mon 04:10) and the Monday gate audits (06:17 / 06:43), so a slow probe never
     # queues behind them.
     - cron: '53 4 * * *'
+  workflow_run:
+    # The name GitHub matches on, which is `name:` in `deploy-worker.yml` — not the filename.
+    # `tests/test_deploy_freshness.py` resolves it against that file rather than trusting the
+    # string here, because a typo in this list is a silent no-op: `workflow_run` simply never
+    # fires, which is the same failure this trigger exists to remove.
+    workflows: ["Deploy Cloudflare Worker"]
+    types: [completed]
   workflow_dispatch:
 
 permissions:
@@ -47,11 +71,30 @@ jobs:
           # Stdlib only, matching the suite's floor rather than the script's.
           python-version: "3.11"
 
+      - name: A deploy succeeded, so there is nothing to re-measure
+        if: github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success'
+        run: |
+          echo "Deploy run ${{ github.event.workflow_run.head_sha }} succeeded; its own"
+          echo "post-deploy probe already read the deployed SHA back, so freshness was"
+          echo "verified by the workflow that performed the deploy. Deliberately not re-measured"
+          echo "against main here — see the note on the next step for why that would mislead."
+
       # Three attempts, then a verdict. One request is a measurement; three in a row is a claim
-      # about the service. `docs/maintainer/handoff-2026-09-24.md` records ~1 request in 4 to
-      # misakanet.org timing out from a real machine while the service was fine — a probe that
-      # reddens on one dropped TLS handshake is weather, and weather is what people mute.
+      # about the service. A TLS handshake to misakanet.org drops often enough on a real
+      # connection that one dropped handshake is weather, not an outage — and a probe that
+      # reddens on weather is a probe people mute.
+      #
+      # Skipped when a deploy run *succeeded*, and that skip is deliberate. `deploy-worker.yml`
+      # already runs `--post-deploy --deploy-freshness` after its own deploy, against its own SHA,
+      # so a success has already been verified by the thing that performed it. Re-measuring here
+      # would compare production against whatever `main` has become by now, and a push landing in
+      # the seconds between "deploy succeeded" and "this job checks out" would report production
+      # behind by a commit it is not behind by in any meaningful sense — a red for a reason that is
+      # not a defect, which is the fastest way to teach people to ignore this workflow. Every
+      # outcome that deploys *nothing* (cancelled, failed) still runs the probe, and those are the
+      # ones #2779 is about.
       - name: Is production running main's commit?
+        if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion != 'success'
         run: |
           set -euo pipefail
 

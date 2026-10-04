@@ -15,9 +15,9 @@ What that buys, in the four things that would otherwise rot silently:
 * attempts are *bounded* — a real outage must fail the run, not loop;
 * a `workflow_dispatch` input reaches the probe as one argument, not as shell code.
 
-The retry budget matters more than it looks. `docs/maintainer/handoff-2026-09-24.md` records ~1 request
-in 4 to misakanet.org timing out from a real machine while the service was fine — so "unhealthy once"
-is weather, and a probe that reddens the day on weather is a probe people mute.
+The retry budget matters more than it looks. A TLS handshake to misakanet.org drops often enough
+on a real connection that "unhealthy once" is weather, and a probe that reddens on weather is a probe
+people mute.
 """
 from __future__ import annotations
 

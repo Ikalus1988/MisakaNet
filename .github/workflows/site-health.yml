@@ -45,11 +45,10 @@ jobs:
           # floor rather than the script's so the pin does not need revisiting on its own.
           python-version: "3.11"
 
-      # Three attempts, then a verdict. One attempt is a measurement; three in a row is a claim about the
-      # service. The repository has the receipt for why this matters: `docs/maintainer/handoff-2026-09-24.md`
-      # records that ~1 request in 4 to misakanet.org timed out from a real machine while the service was
-      # fine. A probe that reddens the day on one dropped TLS handshake is weather, not a gate — and
-      # weather is what people mute.
+      # Three attempts, then a verdict. One request is a measurement; three in a row is a claim
+      # about the service. A TLS handshake to misakanet.org drops often enough on a real
+      # connection that one dropped handshake is weather, not an outage — and a probe that
+      # reddens on weather is a probe people mute.
       - name: Probe the public surface
         env:
           # Through the environment, not interpolated into the script: a `workflow_dispatch` input is free
