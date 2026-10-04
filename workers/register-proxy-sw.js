@@ -3384,6 +3384,49 @@ async function nextNodeCounter(env) {
   return current + 1;
 }
 
+// The question path's submitted text IS the deliverable — the lesson path summarizes, the
+// question path has to preserve. Clipping it silently produces a well-formed issue that
+// quietly lost its evidence, and a well-formed issue is the one thing nobody suspects
+// (#2743: a ranked ledger arrived as items 1,3,5,7,9,11,13, cut mid-word, because a column
+// was sheared off upstream).
+//
+// GitHub caps an issue body at 65,536 characters. `scripts/intake_pipeline.py` leaves headroom
+// at QUESTION_BODY_CAP = 60_000 for exactly that reason. The worker sat at 2,000 — thirty
+// times under, and with no marker, so a 22,690-character report became a tidy 2,000-character
+// report that read as complete (#2774, measured: 22,690 submitted → 2,915 received).
+//
+// So: same cap as the Python path, and when it does bite, say so and say what to do about it.
+const INTAKE_TEXT_CAP = 60000;
+
+function clipIntakeText(text) {
+  const s = String(text === undefined || text === null ? "" : text);
+  if (s.length <= INTAKE_TEXT_CAP) return s;
+  return (
+    s.slice(0, INTAKE_TEXT_CAP) +
+    `\n\n---\n⚠️ **Truncated at ${INTAKE_TEXT_CAP} characters by the MCP worker** ` +
+    `(${s.length} were submitted). The text above is the head only. If the omitted part ` +
+    `carries the evidence, comment with it or attach it to this issue.\n`
+  );
+}
+
+function redactIntake(text) {
+    if (!text) return "";
+    // Redact the whole text first, then clip. Clipping first meant a credential past
+    // 2,000 characters was dropped rather than redacted — safe by accident, and it is no
+    // longer the reason anything is dropped now that the cap is high enough to matter.
+    let r = String(text);
+    r = r.replace(/-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----[\s\S]*?-----END(?: RSA | EC | OPENSSH )?PRIVATE KEY-----/gi, "[REDACTED:private_key]");
+    r = r.replace(/(?:ghp|gho|ghu|ghs|ghr|github_pat)_[a-zA-Z0-9]{10,}/g, "[REDACTED:github_token]");
+    r = r.replace(/xox[bpras]-[a-zA-Z0-9\-]{10,}/g, "[REDACTED:slack_token]");
+    r = r.replace(/(?:AKIA|ABIA|ACCA|ASIA)[A-Z0-9]{16}/g, "[REDACTED:aws_key]");
+    r = r.replace(/(?:sk|pk|rk|ak)[_-][a-zA-Z0-9]{10,}/g, "[REDACTED:api_key]");
+    r = r.replace(/(?:Bearer|Authorization)\s+[a-zA-Z0-9\-._~+/]+=*/gi, "[REDACTED:bearer_token]");
+    r = r.replace(/(?:password|passwd|secret|token|api[_-]?key|apikey|database[_-]?url)\s*[:=]\s*\S+/gi, "[REDACTED:credential]");
+    r = r.replace(/:\/\/[^:]+:[^@]+@[^\s]+/g, "://[REDACTED:url_credential]@host");
+    r = r.replace(/\b(?:\d[ -]*?){13,19}\b/g, "[REDACTED:card_number]");
+    return clipIntakeText(r);
+}
+
 async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) {
   if (toolName === "misakanet_register") {
     const agentType = args.agent_type || "unknown";
@@ -4022,20 +4065,6 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
 
     // Redaction patterns — synced from workers/lib/redact-patterns.json
     // (single source of truth shared with scripts/intake_redact.py)
-    function redactIntake(text) {
-      if (!text) return "";
-      let r = String(text).slice(0, 2000);
-      r = r.replace(/-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----[\s\S]*?-----END(?: RSA | EC | OPENSSH )?PRIVATE KEY-----/gi, "[REDACTED:private_key]");
-      r = r.replace(/(?:ghp|gho|ghu|ghs|ghr|github_pat)_[a-zA-Z0-9]{10,}/g, "[REDACTED:github_token]");
-      r = r.replace(/xox[bpras]-[a-zA-Z0-9\-]{10,}/g, "[REDACTED:slack_token]");
-      r = r.replace(/(?:AKIA|ABIA|ACCA|ASIA)[A-Z0-9]{16}/g, "[REDACTED:aws_key]");
-      r = r.replace(/(?:sk|pk|rk|ak)[_-][a-zA-Z0-9]{10,}/g, "[REDACTED:api_key]");
-      r = r.replace(/(?:Bearer|Authorization)\s+[a-zA-Z0-9\-._~+/]+=*/gi, "[REDACTED:bearer_token]");
-      r = r.replace(/(?:password|passwd|secret|token|api[_-]?key|apikey|database[_-]?url)\s*[:=]\s*\S+/gi, "[REDACTED:credential]");
-      r = r.replace(/:\/\/[^:]+:[^@]+@[^\s]+/g, "://[REDACTED:url_credential]@host");
-      r = r.replace(/\b(?:\d[ -]*?){13,19}\b/g, "[REDACTED:card_number]");
-      return r;
-    }
 
     const safeProblem = redactIntake(args.problem);
     const safeError = redactIntake(args.error);
@@ -5100,7 +5129,7 @@ async function recordQuestion(env, { issueNumber, dedupHash, problem, source, is
       `INSERT INTO questions (issue_number, dedup_hash, problem, source, status, issue_url, created, updated)
        VALUES (?1, ?2, ?3, ?4, 'pending', ?5, datetime('now'), datetime('now'))
        ON CONFLICT(issue_number) DO UPDATE SET problem=?3, dedup_hash=?2, updated=datetime('now')`
-    ).bind(issueNumber, dedupHash, String(problem || "").slice(0, 2000), source || "mcp", issueUrl || "").run();
+    ).bind(issueNumber, dedupHash, clipIntakeText(problem), source || "mcp", issueUrl || "").run();
     return true;
   } catch (e) {
     debugLog(env, 1, "recordQuestion failed", String(e && e.message || e));
@@ -8056,6 +8085,13 @@ export {
   // Exported for workers/traffic-aggregation.test.mjs: the monthly roll-up moved from a KV key to a
   // `counters` row (#2120), and "where does the month's total live" is the property worth asserting
   // without a database.
+  // Exported for workers/intake-text-cap.test.mjs: a question's submitted text is the
+  // deliverable, and this pair is where the cap and its marker live. The issue body and the
+  // D1 `questions.problem` row are two *different* writes with the same limit, so a test that
+  // only drove one of them would have passed while the other still sheared the evidence.
+  clipIntakeText,
+  redactIntake,
+  INTAKE_TEXT_CAP,
   readMonthlyTraffic,
   // Exported for workers/kv-write-family.test.mjs: with the migration finished, no endpoint's happy
   // path writes KV in a D1-bound deployment — the ranking now describes the *fallback*, which is what
