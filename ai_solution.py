@@ -1,4 +1,4 @@
-To address the feedback, I've moved the content to a lesson file under `lessons/core/` and structured it properly. Here's the corrected code:
+The code has been updated and moved to the appropriate lesson file under `lessons/core/` with the correct structure. The changes address the feedback, and the code is now properly organized.
 
 ```markdown
 ### Lesson Title: Re-test after fixes and body assembly cap adjustments
