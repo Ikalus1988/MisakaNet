@@ -3417,6 +3417,23 @@ function clipSubmittedText(text, what) {
   );
 }
 
+// Assemble the GitHub issue body from its parts. Exported for workers/intake-text-cap.test.mjs.
+//
+// This used to be `bodyParts.join("\n").slice(0, 8000)` — a bare literal on the assembled result.
+// It was invisible three separate times: #2768, #2769 and #2818 all reported a submission arriving
+// cut with no sign anything had happened, and each report had to be measured by a human comparing
+// submitted length against stored length. The per-field caps in `clipSubmittedText` above were
+// fixed in #2816 and are loud; this last one on the assembly was missed, so the whole report could
+// be said to be fixed while a 19,468-character submission still arrived as ~7,850 (#2821).
+//
+// Two properties, both of which the bare slice lacked: the cap is the same `SUBMITTED_TEXT_CAP`
+// everything else submitted-text uses, and when it does bite it appends the visible marker naming
+// the cap and what was submitted. GitHub's own issue-body limit is 65,536, so 60,000 leaves
+// headroom for the wrapper the intake path adds.
+function assembleSubmittedBody(bodyParts) {
+  return clipSubmittedText(bodyParts.join("\n"), "a submission");
+}
+
 function redactIntake(text) {
     if (!text) return "";
     // Redact the whole text first, then clip. Clipping first meant a credential past
@@ -4221,7 +4238,7 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
     const title = kind === "question"
       ? `[Question] ${rawTitle || "help request"}`
       : `[Intake] ${rawTitle || "failure case"}`;
-    const body = bodyParts.join("\n").slice(0, 8000);
+    const body = assembleSubmittedBody(bodyParts);
 
     const token = env.REGISTER_TOKEN;
     if (!token) return { error: "REGISTER_TOKEN not configured" };
@@ -8100,6 +8117,10 @@ export {
   // `redactSecrets` is exported for the same file because it is the *lesson* path's copy of the
   // same defect: its own 2,000-character slice, silent, on the fields a lesson is made of.
   clipSubmittedText,
+  // Exported for workers/intake-text-cap.test.mjs: the GitHub issue body is assembled from parts and
+  // then capped, and that cap was a bare `slice(0, 8000)` — silent, and missed by a guard that
+  // looked for the number 2000 rather than for the shape.
+  assembleSubmittedBody,
   redactIntake,
   redactSecrets,
   SUBMITTED_TEXT_CAP,
