@@ -66,6 +66,80 @@ def test_every_static_sitemap_entry_is_backed_by_a_file():
     )
 
 
+def _planned_sitemap_and_slugs() -> tuple[str, dict[str, str], list[dict]]:
+    """Run the real planner and hand back its sitemap text, its slug map, and the lessons.
+
+    The slug a lesson will be served at is decided by `plan_with_slugs` — sticky from the previous
+    run, or derived from the title for a new one. A test that re-derived it would be testing its
+    own guess, so this asks the generator instead.
+    """
+    import json
+
+    from build_lesson_pages import (  # noqa: PLC0415  (after sys.path)
+        LESSONS_JSON, SITEMAP, load_slug_map, plan_with_slugs,
+    )
+
+    lessons = json.loads((REPO / LESSONS_JSON).read_text(encoding="utf-8"))
+    files, slug_map = plan_with_slugs(lessons, load_slug_map(REPO))
+    return files[SITEMAP.as_posix()], slug_map, lessons
+
+
+def _non_published(lessons: list[dict]) -> list[dict]:
+    return [l for l in lessons
+            if (l.get("status") or "published").strip().lower() != "published"]
+
+
+def test_the_sitemap_advertises_no_non_published_lesson():
+    """A sitemap entry is a machine-readable claim, and it has no field for "not published".
+
+    Measured 2026-10-04: all 30 non-published lessons were listed at priority 0.6 / changefreq
+    monthly, identical in shape to a published lesson. A sitemap entry cannot carry the
+    "Draft (not published)" notice that the page and its meta description carry, so including one
+    puts the state in a place where it cannot be expressed — the last surface where a draft and a
+    published lesson are indistinguishable. The API already filters drafts
+    (`misakanet/graphql/schema.py`), and `lessons/contrib/lesson-quality-requirements.md` says
+    outright that drafts "are not indexed".
+    """
+    sitemap, slug_map, lessons = _planned_sitemap_and_slugs()
+    listed = set(re.findall(r"<loc>([^<]+)</loc>", sitemap))
+
+    offenders = []
+    for lesson in _non_published(lessons):
+        slug = slug_map.get(lesson.get("id", ""))
+        if slug and f"{SITE_URL}/lessons/{slug}/" in listed:
+            offenders.append(f"{SITE_URL}/lessons/{slug}/  (status: {lesson.get('status')})")
+
+    assert not offenders, (
+        f"{len(offenders)} non-published lesson(s) are advertised in the sitemap. A consumer of this "
+        f"file cannot tell them from a published lesson — the state has nowhere to go:\n"
+        + "\n".join(f"  {o}" for o in offenders[:20]))
+
+
+def test_a_non_published_lesson_still_gets_a_page():
+    """The counterweight, so the sitemap fix cannot quietly become "stop serving drafts".
+
+    Drafts are labelled, not hidden: the page carries a visible "Draft (not published)" notice
+    (#2794, "like the API already does"). This test fails if anyone later "fixes" the sitemap by
+    dropping draft pages instead, which would remove the review surface rather than the claim.
+    """
+    import json
+
+    from build_lesson_pages import LESSONS_JSON, load_slug_map, plan_with_slugs  # noqa: PLC0415
+
+    lessons = json.loads((REPO / LESSONS_JSON).read_text(encoding="utf-8"))
+    files, slug_map = plan_with_slugs(lessons, load_slug_map(REPO))
+    drafts = _non_published(lessons)
+    assert drafts, (
+        "no non-published lesson exists in data/lessons.json, so this test can no longer tell "
+        "'drafts are labelled' from 'drafts are gone'. That distinction is the whole point.")
+
+    missing = [slug_map.get(l.get("id", "")) for l in drafts]
+    without_page = [s for s in missing if not s or f"docs/lessons/{s}/index.html" not in files]
+    assert not without_page, (
+        f"{len(without_page)} non-published lesson(s) lost their page. They should be labelled, "
+        f"not removed:\n  " + "\n  ".join(str(s) for s in without_page[:20]))
+
+
 def test_the_committed_sitemap_matches_its_generator():
     """`--check` exists to catch exactly this: the tree, the generator and the published file
     drifting apart. Regenerating and diffing is the cheap half of the guard."""
