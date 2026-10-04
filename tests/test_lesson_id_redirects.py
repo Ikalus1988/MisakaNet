@@ -246,8 +246,8 @@ def test_every_corpus_alias_is_represented_including_the_non_ascii_ones():
     Asserting only "non-empty" would let a regression that drops all non-ASCII targets through.
     """
     rules = _rules()
-    assert len(rules) == 111, (
-        f"{len(rules)} rules; 111 is the number of lessons whose id is not their slug. A count that "
+    assert len(rules) == 112, (
+        f"{len(rules)} rules; 112 is the number of lessons whose id is not their slug. A count that "
         f"drifts means a lesson either lost its alias or gained one that does not resolve")
     non_ascii = sorted(s for s, (t, _c) in rules.items() if any(ord(ch) > 127 for ch in s + t))
     assert len(non_ascii) == 3, (
