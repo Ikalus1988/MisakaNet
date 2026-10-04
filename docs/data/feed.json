@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-10-03T21:28:36.851732+00:00",
+  "generated_at": "2026-10-04T06:02:55.603588+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "fix(ci): six one-page GitHub list reads; one of them is why PR #2020 has 113 audit reports",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2801",
-      "timestamp": "2026-10-03T21:14:07Z",
+      "title": "chore(main): release 2.41.1",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2810",
+      "timestamp": "2026-10-04T05:50:30Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(infra): the site-build watcher's state memory was one page deep (#2797 follow-up)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2800",
-      "timestamp": "2026-10-03T20:45:57Z",
+      "title": "fix(worker): a lesson section was sheared at 2,000 characters too — silently",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2817",
+      "timestamp": "2026-10-04T05:44:58Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(mcp): compact search results must carry the score the schema promises (#2790)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2799",
-      "timestamp": "2026-10-03T20:06:50Z",
+      "title": "fix(worker): the MCP intake path sheared submissions at 2,000 characters, silently",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2816",
+      "timestamp": "2026-10-04T05:20:51Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "refactor(site): retire the 111 id-alias stub pages; docs/_redirects is now the only publisher",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2798",
-      "timestamp": "2026-10-03T19:28:59Z",
+      "title": "fix(tests): the DSH-home guard verified nothing when the checkout lived in /tmp",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2815",
+      "timestamp": "2026-10-04T05:13:01Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(infra): the site-build watcher stopped seeing builds past 100 check-runs",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2797",
-      "timestamp": "2026-10-03T19:25:09Z",
+      "title": "fix(docs): three current documents told readers to install a version two releases old",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2814",
+      "timestamp": "2026-10-04T05:06:19Z",
       "source": "github"
     },
     {
