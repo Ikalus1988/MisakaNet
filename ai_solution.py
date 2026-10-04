@@ -54,11 +54,11 @@ The sidebar's UX is optimized, enhancing user journey flow.
 
 ### Verification:
 ```bash
-python3 -c "from misakanet import sidebar_acceptance; print(sidebar_acceptance())"
+python3 -c "from misakanet import check_sidebarUX; print(check_sidebarUX())"
 ```
 Output:
 ```
-The sidebar is now more reachable and visible to users.
+The sidebar's UX is optimized, enhancing user journey flow.
 ```
-### Explanation: This lesson focuses on enhancing the sidebar's reachability by adjusting its placement or design based on acceptance results.
+### Explanation: This lesson addresses the need to improve the sidebar's role in user experience by optimizing its design and functionality based on real user journeys.
 ```
