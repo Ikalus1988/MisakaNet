@@ -126,9 +126,12 @@ const REDACT_PATTERNS = [
   [/\b(?:\d[ -]*?){13,19}\b/g, "[REDACTED:card_number]"],
 ];
 function redactSecrets(text) {
-  let result = String(text).slice(0, 2000);
+  // Redact first, clip second. The old order sliced at 2,000 before redacting, so a credential
+  // past that point was *discarded* rather than redacted — safe by accident, and only because
+  // the cap was small enough that little got through.
+  let result = String(text);
   for (const [pat, repl] of REDACT_PATTERNS) result = result.replace(pat, repl);
-  return result;
+  return clipSubmittedText(result, "a lesson");
 }
 
 // 输入校验
@@ -3384,28 +3387,33 @@ async function nextNodeCounter(env) {
   return current + 1;
 }
 
-// The question path's submitted text IS the deliverable — the lesson path summarizes, the
-// question path has to preserve. Clipping it silently produces a well-formed issue that
-// quietly lost its evidence, and a well-formed issue is the one thing nobody suspects
-// (#2743: a ranked ledger arrived as items 1,3,5,7,9,11,13, cut mid-word, because a column
-// was sheared off upstream).
+// A submission's text IS the deliverable on every path that reaches this: a question has to
+// preserve what was reported, and a lesson section is the lesson. Clipping it silently produces
+// a well-formed submission that quietly lost its content, and a well-formed one is exactly what
+// nobody suspects (#2743: a ranked ledger arrived as items 1,3,5,7,9,11,13, cut mid-word, because
+// a column was sheared off upstream).
 //
 // GitHub caps an issue body at 65,536 characters. `scripts/intake_pipeline.py` leaves headroom
-// at QUESTION_BODY_CAP = 60_000 for exactly that reason. The worker sat at 2,000 — thirty
-// times under, and with no marker, so a 22,690-character report became a tidy 2,000-character
-// report that read as complete (#2774, measured: 22,690 submitted → 2,915 received).
+// at QUESTION_BODY_CAP = 60_000 for exactly that reason, and the worker sat at 2,000 — thirty
+// times under, with no marker, on both paths.
 //
-// So: same cap as the Python path, and when it does bite, say so and say what to do about it.
-const INTAKE_TEXT_CAP = 60000;
+// Measured for the question path (#2774): 22,690 characters submitted, 2,915 received.
+// Measured for the lesson path, against the corpus on 2026-10-04: 33 sections across 506 lessons
+// run past 2,000, the longest a `solution` at 8,233 — and `scripts/lesson_gate.py` sets no upper
+// bound on a section at all (`STRUCTURED_FIELD_LIMITS` caps the 120/160/200-char frontmatter
+// one-liners, not the body), so the gate was accepting content the submission path destroyed.
+//
+// So: the same cap the Python path uses, and when it does bite, say so and say what to do.
+const SUBMITTED_TEXT_CAP = 60000;
 
-function clipIntakeText(text) {
+function clipSubmittedText(text, what) {
   const s = String(text === undefined || text === null ? "" : text);
-  if (s.length <= INTAKE_TEXT_CAP) return s;
+  if (s.length <= SUBMITTED_TEXT_CAP) return s;
   return (
-    s.slice(0, INTAKE_TEXT_CAP) +
-    `\n\n---\n⚠️ **Truncated at ${INTAKE_TEXT_CAP} characters by the MCP worker** ` +
-    `(${s.length} were submitted). The text above is the head only. If the omitted part ` +
-    `carries the evidence, comment with it or attach it to this issue.\n`
+    s.slice(0, SUBMITTED_TEXT_CAP) +
+    `\n\n---\n⚠️ **Truncated at ${SUBMITTED_TEXT_CAP} characters by the MCP worker** ` +
+    `(${s.length} were submitted${what ? ` to ${what}` : ""}). The text above is the head only. ` +
+    `If the omitted part carries the content, comment with it or attach it to this submission.\n`
   );
 }
 
@@ -3424,7 +3432,7 @@ function redactIntake(text) {
     r = r.replace(/(?:password|passwd|secret|token|api[_-]?key|apikey|database[_-]?url)\s*[:=]\s*\S+/gi, "[REDACTED:credential]");
     r = r.replace(/:\/\/[^:]+:[^@]+@[^\s]+/g, "://[REDACTED:url_credential]@host");
     r = r.replace(/\b(?:\d[ -]*?){13,19}\b/g, "[REDACTED:card_number]");
-    return clipIntakeText(r);
+    return clipSubmittedText(r, "an intake");
 }
 
 async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) {
@@ -5129,7 +5137,7 @@ async function recordQuestion(env, { issueNumber, dedupHash, problem, source, is
       `INSERT INTO questions (issue_number, dedup_hash, problem, source, status, issue_url, created, updated)
        VALUES (?1, ?2, ?3, ?4, 'pending', ?5, datetime('now'), datetime('now'))
        ON CONFLICT(issue_number) DO UPDATE SET problem=?3, dedup_hash=?2, updated=datetime('now')`
-    ).bind(issueNumber, dedupHash, clipIntakeText(problem), source || "mcp", issueUrl || "").run();
+    ).bind(issueNumber, dedupHash, clipSubmittedText(problem, "the question"), source || "mcp", issueUrl || "").run();
     return true;
   } catch (e) {
     debugLog(env, 1, "recordQuestion failed", String(e && e.message || e));
@@ -8089,9 +8097,12 @@ export {
   // deliverable, and this pair is where the cap and its marker live. The issue body and the
   // D1 `questions.problem` row are two *different* writes with the same limit, so a test that
   // only drove one of them would have passed while the other still sheared the evidence.
-  clipIntakeText,
+  // `redactSecrets` is exported for the same file because it is the *lesson* path's copy of the
+  // same defect: its own 2,000-character slice, silent, on the fields a lesson is made of.
+  clipSubmittedText,
   redactIntake,
-  INTAKE_TEXT_CAP,
+  redactSecrets,
+  SUBMITTED_TEXT_CAP,
   readMonthlyTraffic,
   // Exported for workers/kv-write-family.test.mjs: with the migration finished, no endpoint's happy
   // path writes KV in a D1-bound deployment — the ranking now describes the *fallback*, which is what
