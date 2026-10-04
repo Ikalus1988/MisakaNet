@@ -49,20 +49,6 @@ def test_the_sql_ends_with_a_terminated_statement():
     assert not last.lstrip().startswith("--"), "the last line is a comment, not a statement"
 
 
-def test_the_note_about_the_fts_rebuild_reaches_a_human():
-    """Moved out of the SQL, not deleted: stderr carries it, stdout stays executable."""
-    proc = subprocess.run([sys.executable, "scripts/sync_lessons_to_d1.py", "--sql"],
-                          cwd=REPO, capture_output=True, text=True, timeout=300)
-    assert proc.returncode == 0, proc.stderr[-400:]
-    assert "FTS index rebuilt" in proc.stderr, (
-        "the FTS note vanished instead of moving to stderr; nobody reading the log learns it happened")
-    # Matching the *comment line*, not the phrase: the corpus itself discusses the FTS rebuild, so a
-    # substring check on stdout found four legitimate hits and failed on correct output.
-    stray = [line for line in proc.stdout.splitlines()
-             if re.fullmatch(r"-- FTS index rebuilt for \d+ lessons", line)]
-    assert not stray, (
-        f"the note is back inside the SQL as a comment {stray!r} — that is the bug this file exists for")
-
 
 def test_neither_note_reaches_the_sql():
     """Assert the two shapes this script produces — **not** "no line starts with `--`".

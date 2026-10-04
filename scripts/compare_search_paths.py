@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Compare the worker's two search implementations over the same queries (issue #2121).
 
-The worker answers a search question two ways, and the decision in #2121 is which one to keep:
+The worker answered a search question two ways:
 
 * **KV BM25** — `buildBM25Index()` into `worker_search_index`, served by `misakanet_search` as
   `source: "worker-bm25"` (the path the #2091 ranking fix landed on);
@@ -12,13 +12,26 @@ Two implementations of one behaviour drift, and #2080 is what that costs: the D1
 derived `evidence_level` while the KV index did not, so "the fix is deployed" and "the user sees it"
 became different statements.
 
+The decision, measured with this script on 2026-10-02 (31 queries, both sets below, `--top 3`):
+keep KV BM25 (recall@3 0.710 / MRR 0.591 against FTS5's 0.516 / 0.441 — FTS5's Chinese recall was
+7/20) and delete the FTS5 path; `/api/lessons?q=` is served by the same BM25 ranking now. After that
+deploy the two columns below measure **one** ranking over two transports (JSON-RPC vs HTTP GET), not
+two implementations — which is still what this script is for.
+
 This script produces the evidence the decision needs — recall@k and rank of the first expected lesson,
 per path, over `data/regression_queries.json`, plus each path's latency. It reads only public
 endpoints; nothing here writes, and it is not part of CI (it needs the live service).
 
+Query sets:
+    default      `data/regression_queries.json` — 11 English queries (the set this script shipped with)
+    --from-eval  `scripts/eval_query_aliases.py`'s QUERIES — 20 Chinese queries, same acceptable-lesson
+                 convention (`primary` + `accept`). The corpus is bilingual and the two sets do not
+                 overlap, so the decision in #2121 is made on both, never on one language alone.
+
 Usage:
     python3 scripts/compare_search_paths.py                 # all queries
     python3 scripts/compare_search_paths.py --top 5 --json  # machine-readable
+    python3 scripts/compare_search_paths.py --from-eval --top 3
 """
 from __future__ import annotations
 
@@ -100,15 +113,30 @@ def rank_of_expected(ids: list[str], expected: list[str]) -> int | None:
     return None
 
 
+def load_queries(from_eval: bool) -> tuple[list[dict], str]:
+    """The query set to measure over: the regression file, or the alias-eval table's Chinese set."""
+    if from_eval:
+        sys.path.insert(0, str(REPO / "scripts"))
+        import eval_query_aliases as eva
+        rows = [{"id": f"eval-{i:02d}", "query": q,
+                 "expected_lessons": [primary] + list(accept or [])}
+                for i, (q, primary, accept, _why) in enumerate(eva.QUERIES, 1)]
+        return rows, "scripts/eval_query_aliases.py::QUERIES"
+    spec = json.loads(QUERIES.read_text(encoding="utf-8"))
+    return spec["queries"], str(QUERIES.relative_to(REPO))
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--top", type=int, default=5)
     ap.add_argument("--json", action="store_true")
+    ap.add_argument("--from-eval", action="store_true",
+                    help="use scripts/eval_query_aliases.py's 20 Chinese queries")
     args = ap.parse_args(argv)
 
-    spec = json.loads(QUERIES.read_text(encoding="utf-8"))
+    queries, queries_file = load_queries(args.from_eval)
     rows = []
-    for entry in spec["queries"]:
+    for entry in queries:
         query = entry["query"]
         expected = entry.get("expected_lessons") or []
         row = {"id": entry.get("id"), "query": query, "expected": len(expected)}
@@ -132,18 +160,23 @@ def main(argv: list[str] | None = None) -> int:
         lat = [r[f"{name}_seconds"] for r in rows if r.get(f"{name}_seconds") is not None]
         found = sum(1 for r in rows if r.get(f"{name}_rank"))
         errors = sum(1 for r in rows if r.get(f"{name}_error"))
+        # MRR in the standard definition: a query that found nothing contributes 0, not "absent".
+        # The first version of this script averaged 1/rank over the found queries only, which
+        # reported 0.778 for a path that missed 2 of 11 — a number that flatters both paths and
+        # hides the difference between them.
+        mrr = sum((1 / r[f"{name}_rank"]) if r.get(f"{name}_rank") else 0.0 for r in rows) / len(rows)
         return {
             "queries": len(rows),
             "found_any_expected": found,
             "recall_at_k": round(found / len(rows), 3),
-            "mrr": round(statistics.fmean(1 / r for r in ranks), 3) if ranks else 0.0,
+            "mrr": round(mrr, 3),
             "mean_rank": round(statistics.fmean(ranks), 2) if ranks else None,
             "mean_seconds": round(statistics.fmean(lat), 3) if lat else None,
             "errors": errors,
         }
 
     summary = {"bm25": summarise("bm25"), "fts5": summarise("fts5"), "top": args.top,
-               "queries_file": str(QUERIES.relative_to(REPO))}
+               "queries_file": queries_file}
     print("\n== summary ==")
     print(json.dumps(summary, indent=2))
     if args.json:
