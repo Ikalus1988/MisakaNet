@@ -1,4 +1,14 @@
 ```markdown
+---
+kind: lesson
+title: Re-test after fixes and body assembly cap adjustments
+domain: Software Engineering
+problem: After the latest pull, the user needs to verify the body assembly cap adjustment.
+root_cause: The body assembly cap was increased to 60000, and a re-test is required to ensure everything works as expected.
+solution: The cap was raised to 60000 to accommodate larger content.
+source: misakanet
+---
+
 ### **Lesson Title: Re-test after fixes and body assembly cap adjustments**
 
 #### Domain: **Software Engineering**
@@ -12,7 +22,7 @@
 #### Verification:
 Run the following command to check the lessons:
 
-```
+```bash
 curl https://misakanet.org/lessons/2769
 ```
 
