@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import json
 import sys
+import tempfile
 from pathlib import Path
 
 import pytest
@@ -343,7 +344,14 @@ def test_the_probe_refuses_a_home_that_is_not_disposable(tmp_path):
     with pytest.raises(RuntimeError):
         assert_disposable_home(Path.home() / ".dsh")      # the real one, refused
     with pytest.raises(RuntimeError):
-        assert_disposable_home(REPO)                      # anywhere outside the temp tree, refused
+        # A sibling of the temp directory, not `REPO`. The guard refuses a home that is
+        # neither inside the temp tree nor a real DSH home, and `REPO` only demonstrates
+        # that when the checkout is *not* under the temp directory — which is true on CI
+        # (`/home/runner/work/…`) and false for anyone working in a `/tmp` worktree, which
+        # is how every agent-assisted checkout looks. There the assertion passed for the
+        # wrong reason: nothing was verified. `tmp.parent` is outside `tmp` by construction
+        # on every platform, so the intent holds wherever the repository happens to live.
+        assert_disposable_home(Path(tempfile.gettempdir()).parent / "not-a-disposable-home")
 
 
 def test_the_client_markers_are_really_in_the_shipped_bundle():
