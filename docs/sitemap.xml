@@ -103,7 +103,6 @@
   <url><loc>https://misakanet.org/lessons/asyncio-cancellederror-swallows-resources/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/audit-sampling-stratified-sampling-for-kb-inspection/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/auth-header-bug/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
-  <url><loc>https://misakanet.org/lessons/benchmark-honesty-simulated-vs-real/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/bge-embedding-fallback-crash/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/bm25-chinese-sliding-window-tuning/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/bm25-vector-hybrid-search-weights/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -135,10 +134,8 @@
   <url><loc>https://misakanet.org/lessons/codesign-entitlements-prints-a-usage-banner-unless-you-give-it-a-destination/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/codex-desktop-reload-mcp-config-without-restarting-the-app/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/codex-cli-keyring-user-interaction-is-not-allowed-diagnosis/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
-  <url><loc>https://misakanet.org/lessons/codex-cli-mcp-handshake-succeeds-but-the-model-never-receives-the-tools/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/corporate-proxy-curl-timeout/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/cron-job-not-running/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
-  <url><loc>https://misakanet.org/lessons/cross-repo-contribution-strategy/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/cross-sheet-name-merge-data-chaos/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/css-z-index-stacking-context-modal/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/cubic-ai-vs-pr-genius/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -156,34 +153,20 @@
   <url><loc>https://misakanet.org/lessons/docker-compose-basics/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/migrating-dsh-home-with-robocopy-materializes-the-profile-node-modules-junctions/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/dsh-plugin-install-github-codeload-timeout/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
-  <url><loc>https://misakanet.org/lessons/dsh-plugin-installation-troubleshooting/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/dsh-plugin-l5-web-smoke-cordis-duplicate-entry/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/erreur-permission-docker-linux/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/erro-push-git-rejeitado-divergente/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/error-dco-signoff-windows/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/proxy-corporativo-curl-timeout/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/escrow-fee-rounding-per-provider/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
-  <url><loc>https://misakanet.org/lessons/fanuc-alarm-code-reference/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/fanuc-alarm-severity-guide/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/fanuc-auto-abort-on-fault-restart/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/fanuc-backup-payload-extraction/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/fanuc-backup-restore-guide/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
-  <url><loc>https://misakanet.org/lessons/fanuc-communication-protocol-socket/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/fanuc-dcs-safety-configuration/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/fanuc-do-not-found-in-program-reference-position/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
-  <url><loc>https://misakanet.org/lessons/fanuc-eip-omron-plc-connection/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
-  <url><loc>https://misakanet.org/lessons/fanuc-handling-robot-auto-drop-diagnosis/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/fanuc-intp-102-detect-joint-olp-whitespace/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/fanuc-io-marker-m-instruction/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
-  <url><loc>https://misakanet.org/lessons/fanuc-karel-core-utility-modules/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
-  <url><loc>https://misakanet.org/lessons/fanuc-karel-geometry-kinematics-layer/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
-  <url><loc>https://misakanet.org/lessons/fanuc-karel-http-api-webcontrol/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
-  <url><loc>https://misakanet.org/lessons/fanuc-karel-ik-fk-quaternion-guide/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
-  <url><loc>https://misakanet.org/lessons/fanuc-karel-intp-316-call-error-motion-lock/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
-  <url><loc>https://misakanet.org/lessons/fanuc-karel-ka-boost-architecture/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
-  <url><loc>https://misakanet.org/lessons/fanuc-karel-kl-pose-api-reference/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
-  <url><loc>https://misakanet.org/lessons/fanuc-karel-unit-testing-kunit/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
-  <url><loc>https://misakanet.org/lessons/fanuc-karel-uv-to-xyzwpr-pipeline/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/fanuc-kl-1086-is-line-number-not-error-code/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/fanuc-kl-bytes-ahead-is-builtin-procedure/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/fanuc-kl-err-abort-vs-err-pause/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -192,13 +175,9 @@
   <url><loc>https://misakanet.org/lessons/fanuc-mi-standard-software-instructions/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/fanuc-payload-estimation/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/fanuc-profinet-32bit-real-value-transfer/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
-  <url><loc>https://misakanet.org/lessons/fanuc-profinet-io-software-config/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
-  <url><loc>https://misakanet.org/lessons/fanuc-profinet-s7-1200-external-startup/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/fanuc-program-inspection-methodology/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
-  <url><loc>https://misakanet.org/lessons/fanuc-python-interface-fanucpy/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/fanuc-r-2000ic-retrieval-fix/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/fanuc-客户端假活排查装有-dlpedr-的工控站上分层定位注入与内核过滤/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
-  <url><loc>https://misakanet.org/lessons/fanuc-rsr-program-select-logic/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/fanuc-spot-wear-max-lookup/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/fanuc-tcp-tool-configuration-standards/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/fatal-guard-cli-hardening/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -222,7 +201,6 @@
   <url><loc>https://misakanet.org/lessons/finding-and-fixing-ghostty-s-largest-memory-leak/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/firewall-port-open-not-public/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/fiverr-perimeterx-blocks-seller-automation/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
-  <url><loc>https://misakanet.org/lessons/frontmatter-parsing-edge-cases/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/game-mcp-end-turn-conflict-409/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/game-mcp-game-over-restart-flow/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/game-mcp-rare-relic-freeze/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -230,7 +208,6 @@
   <url><loc>https://misakanet.org/lessons/gemini-safety-settings-multi-hop-passthrough/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/gfw-tls-sni-block-pattern/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/gfw-tls-sni-blocking-tool-layer-ineffective/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
-  <url><loc>https://misakanet.org/lessons/gh-pr-edit-body-with-an-empty-variable-silently-wipes-the-pr-description/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/ghidra-mcp-server-reverse-engineering/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/git-checkout-discards-uncommitted-work/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/git-clean-branch-after-merged-pr-ru/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -320,7 +297,6 @@
   <url><loc>https://misakanet.org/lessons/macos-homebrew-python-pip-install-blocked-by-pep-668-externa/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-disabled-nsopenpanelnssavepanel-is-usually-the-sandbox-not-your-code-and-how-t/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/macos-oslistxattr-missing-and-ocr-returns-empty-for-transparent-png/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
-  <url><loc>https://misakanet.org/lessons/maintainer-feedback-iteration/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/mcp-context-mode-98-reduction/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/mcp-endpoint-404-zone-route-misconfig/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/mcp-intake-no-account-submission/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -414,8 +390,6 @@
   <url><loc>https://misakanet.org/lessons/schema-coupled-cross-repo-ci/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/scrapling-installation-and-usage/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/search-evaluation-rank-tracking-bias/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
-  <url><loc>https://misakanet.org/lessons/search-quota-exhaustion-false-zero/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
-  <url><loc>https://misakanet.org/lessons/search-smart-fallback-implementation/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/search-ssot-data-source-pollution-fix/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/session-lesson-1-content-quality-scoring/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/session-lesson-2-forum-accessibility-testing/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -459,7 +433,6 @@
   <url><loc>https://misakanet.org/lessons/vertical-kb-question-bank-strategy/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/vitest-v8-ast-coverage-threshold-shift/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/voice-pipelines-fail-without-failing-the-acceptance-is-the-artifact-not-the-exit/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
-  <url><loc>https://misakanet.org/lessons/an-empty-wayback-availability-answer-is-not-no-captures-separate-it-from-a-faile/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/wcferry-wechat-version-lock/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/webcrypto-fallback-consistency-node-worker/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/webhook-duplicate-delivery-dedupe-scope/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -467,7 +440,6 @@
   <url><loc>https://misakanet.org/lessons/wechat-pubacct-fetch-separate-search-from-retrieval/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/wecom-robot-long-connect-no-ngrok/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/welcome-bot-mcp-intake-path/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
-  <url><loc>https://misakanet.org/lessons/a-windows-acl-write-sandbox-lost-command-execution-setnamedsecurityinfow-failed/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/windows-ci-splitcommand-backslash-unicode-detached/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/windows-node-sandbox-a-hardcoded-root-silently-confined-the-agent-to-the-wrong-d/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/worktree-git-path-deepseek-tui/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -516,6 +488,4 @@
   <url><loc>https://misakanet.org/lessons/split-stdoutstderr-in-cron-earn-jobs/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/swift-format-diagnostics-that-need-source-edits-vs-auto-fixable-nsopenpanelnssav/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/set-a-clear-user-agent-on-earn-http-clients/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
-  <url><loc>https://misakanet.org/lessons/archive-open-failure/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
-  <url><loc>https://misakanet.org/lessons/fanuc-backup-extract-guide/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
 </urlset>

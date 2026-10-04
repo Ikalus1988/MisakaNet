@@ -233,6 +233,32 @@ def unique_slug(title: str, seen_slugs: dict) -> str:
     return f"{base}-{short_hash}"
 
 
+#: The one status that means "published". Everything else is non-published, **including values
+#: that look like synonyms** — `scripts/normalize_metadata.py` maps `active → published`
+#: (`STATUS_MAP = {"active": "published"}  # deprecated → canonical`) and `lessons/TEMPLATE.md`
+#: still offers `active` as a choice, so treating it as published looks defensible. It is not.
+#:
+#: `tests/test_draft_lesson_pages_marked.py` puts `active` in a list with `review` and `deprecated`
+#: and asserts they all render the notice, under the comment "an unknown non-published status must
+#: still be labelled, not silently treated as published". That is a deliberate fail-safe: an
+#: unrecognised status gets the notice rather than being passed off as reviewed. Two lessons in
+#: `data/lessons.json` still carry `active` and are labelled on that basis.
+#:
+#: So this is one predicate, not two, on purpose: the banner and the sitemap ask the same question
+#: and must not be able to disagree.
+PUBLISHED_STATUS = "published"
+
+
+def is_published_status(status: str | None) -> bool:
+    """Whether a lesson's `status` means published.
+
+    An absent status means published: most of the corpus predates the field, and defaulting the
+    other way would label every legacy lesson a draft (pinned in
+    `test_an_absent_status_defaults_to_published_rather_than_draft`).
+    """
+    return (status or PUBLISHED_STATUS).strip().lower() == PUBLISHED_STATUS
+
+
 def build_lesson_page(lesson: dict) -> str:
     """Generate HTML for a single lesson."""
     title = lesson.get("title", "Untitled")
@@ -256,7 +282,7 @@ def build_lesson_page(lesson: dict) -> str:
     # out of scope here. It makes the state visible to whoever lands on the page, which is the same
     # rule the API already follows.
     status = (lesson.get("status") or "published").strip().lower()
-    is_published = status == "published"
+    is_published = is_published_status(status)
 
     description = f"{summary[:150]}..." if len(summary) > 150 else summary
     if not description:
@@ -545,7 +571,22 @@ def plan_with_slugs(lessons: list, known_slugs: dict[str, str] | None = None
         if not slug or not lesson.get("title"):
             continue
         lesson["_slug"] = slug
-        lesson_slugs.append(slug)
+        # The sitemap lists published lessons only. A draft still gets a page and still gets its
+        # visible "Draft (not published)" notice (see `build_lesson_page`), but a sitemap entry is
+        # a machine-readable claim: it says to a crawler "this is a page of this site", and it
+        # carries no field in which "not published" could be written. Measured 2026-10-04: all 30
+        # non-published lessons were listed with priority 0.6 and changefreq monthly — identical in
+        # shape to a published lesson, so the one surface that cannot carry the notice was also the
+        # one surface that could not be told apart. That was the last gap in a graded treatment the
+        # repository already applies everywhere else:
+        #   * the API filters drafts out — `misakanet/graphql/schema.py`, "Filter out drafts"
+        #   * search ranks them lower rather than dropping them (docs/blog, 2026-06-30)
+        #   * the site page labels them (#2794, "a non-published lesson page must say so,
+        #     like the API already does")
+        # `lessons/contrib/lesson-quality-requirements.md` states the rule outright: "Draft
+        # lessons (score < 0.5) are not indexed." Maintainer decision, 2026-10-04.
+        if is_published_status(lesson.get("status")):
+            lesson_slugs.append(slug)
         lesson_pages[slug] = build_lesson_page(lesson)
 
     topics = topic_plan(lessons)
