@@ -7,6 +7,25 @@ All notable changes to the Misaka Network project are documented here.
 
 ---
 
+## [2.41.1](https://github.com/Ikalus1988/MisakaNet/compare/v2.41.0...v2.41.1) (2026-10-04)
+
+
+### Bug Fixes
+
+* **docs:** three current documents told readers to install a version two releases old ([#2814](https://github.com/Ikalus1988/MisakaNet/issues/2814)) ([22f51f5](https://github.com/Ikalus1988/MisakaNet/commit/22f51f5ebc0baec17f189e8c4e1c18ff0849bcfd))
+* **lessons:** a sibling link pointed at a lesson that had been renamed ([#2812](https://github.com/Ikalus1988/MisakaNet/issues/2812)) ([206d721](https://github.com/Ikalus1988/MisakaNet/commit/206d7214d5d2c680bb44d9f1a5614b20655bc556))
+* **lessons:** the lesson writer offered a status the quality gate rejects ([#2809](https://github.com/Ikalus1988/MisakaNet/issues/2809)) ([f6660d2](https://github.com/Ikalus1988/MisakaNet/commit/f6660d2e1aeca10a805e7a00735060bdd930451d))
+* **tests:** the DSH-home guard verified nothing when the checkout lived in /tmp ([#2815](https://github.com/Ikalus1988/MisakaNet/issues/2815)) ([0fff7ee](https://github.com/Ikalus1988/MisakaNet/commit/0fff7ee6e189472b8060740ebd61d26619521d54))
+* **tests:** the status guard failed on CI's 3.12 runners — follow-up to f6660d2e1a ([#2811](https://github.com/Ikalus1988/MisakaNet/issues/2811)) ([0a41326](https://github.com/Ikalus1988/MisakaNet/commit/0a41326a0a205d507f1ebdbf5becb4386c9ae362))
+* **tests:** the stdout-purity guard failed on every Windows runner ([#2813](https://github.com/Ikalus1988/MisakaNet/issues/2813)) ([fe2c755](https://github.com/Ikalus1988/MisakaNet/commit/fe2c755d1a26596b46e8cad58cd8378d7ba99459))
+* **worker:** a lesson section was sheared at 2,000 characters too — silently ([#2817](https://github.com/Ikalus1988/MisakaNet/issues/2817)) ([f0317d3](https://github.com/Ikalus1988/MisakaNet/commit/f0317d366de1f333665e2d890498f4c0512b429e))
+* **worker:** the MCP intake path sheared submissions at 2,000 characters, silently ([#2816](https://github.com/Ikalus1988/MisakaNet/issues/2816)) ([f3453ae](https://github.com/Ikalus1988/MisakaNet/commit/f3453ae54a5ee004405f6bbc106bdaab43376d90))
+
+
+### Refactoring
+
+* **search:** one search implementation — keep KV BM25 ([#2690](https://github.com/Ikalus1988/MisakaNet/issues/2690)) ([158b436](https://github.com/Ikalus1988/MisakaNet/commit/158b43604ccf93bb213df7577e5413aa77c400ce))
+
 ## [2.41.0](https://github.com/Ikalus1988/MisakaNet/compare/v2.40.0...v2.41.0) (2026-10-04)
 
 
