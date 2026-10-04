@@ -1,21 +1,21 @@
 ```markdown
 ---
 kind: lesson
-title: Re-test after fixes and body assembly cap adjustments
+title: Re-test after fixes and body assembly cap adjustment
 domain: Software Engineering
-problem: After the latest pull, the user needs to verify the body assembly cap adjustment.
-root_cause: The body assembly cap was increased to 60000, and a re-test is required to ensure everything works as expected.
+problem: After the latest update, the user needs to verify the body assembly cap adjustment.
+root_cause: The body assembly cap was increased to 60000, requiring a re-test.
 solution: The cap was raised to 60000 to accommodate larger content.
 source: misakanet
 ---
 
-### **Lesson Title: Re-test after fixes and body assembly cap adjustments**
+### **Lesson Title: Re-test after fixes and body assembly cap adjustment**
 
 #### Domain: **Software Engineering**
 
-#### **Problem**: After the latest pull, the user needs to verify the body assembly cap adjustment.
+#### **Problem**: After the latest update, the user needs to verify the body assembly cap adjustment.
 
-#### **Root Cause**: The body assembly cap was increased to 60000, and a re-test is required to ensure everything works as expected.
+#### **Root Cause**: The body assembly cap was increased to 60000, requiring a re-test.
 
 #### **Solution**: The cap was raised to 60000 to accommodate larger content.
 
