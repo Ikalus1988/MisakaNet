@@ -1,0 +1,253 @@
+name: Registry Drift Watch
+
+# Does the MCP registry still advertise the tool surface we actually serve?
+#
+# Measured 2026-10-04: `https://misakanet.org/mcp` answers `tools/list` with 7 tools, the Glama
+# listing advertised 12, and five of the extras cannot work — `misakanet_cli` was never an MCP
+# tool at all (it is a Python module, `scripts/misakanet_cli.py`), `misakanet_get_my_events` was
+# renamed to `misakanet_me_events` in c31640c67 ("disambiguate tool descriptions per Glama TDQS
+# review") and the registry kept the old name, and `misakanet_memory_context` /
+# `misakanet_submit_usage` / `misakanet_usage_status` exist only in the Python stdio server
+# (`misakanet/server/tools.py`, 10 tools), never in the worker. Anyone who installed MisakaNet
+# through Glama got five tools that do not work, and the endpoint itself was fine the whole time.
+#
+# `scripts/verify-glama-listing.py` detects exactly this — it exits 1 and prints the stale list —
+# and until this workflow nothing in `.github/` or `tests/` called it. A correct detector that
+# nothing runs is a belief, not a check, which is the shape this repository keeps rediscovering.
+#
+# Why this is scheduled and not a required check: it calls a third-party API, and a gate that
+# depends on somebody else's uptime blocks merges for a reason that has nothing to do with the
+# pull request. The deterministic half needs no network at all —
+# `tests/test_mcp_tool_surface_matches_docs.py` pins the worker's tool count against the count our
+# own documentation asserts, and that one blocks. This workflow is the half that can notice the
+# registry itself drifting, and it is deliberately **not** in the ruleset's required checks.
+#
+# Three outcomes, and they are not allowed to blur into one another (the same discipline as
+# check-documented-gates.yml):
+#
+# * **they agree** (exit 0) — nothing is opened;
+# * **they differ** (exit 1) — an annotation, and one tracking issue opened or refreshed;
+# * **the comparison could not be made** (exit 2, or a crash) — the run is **red** and *no issue is
+#   opened*. Glama being unreachable is not evidence that the listing is wrong, and a tracking
+#   issue titled "the registry is stale" that was really "we could not ask" sends a maintainer to
+#   re-publish a correct listing. A check that cannot answer must not answer "wrong".
+#
+# Drift reports through the issue and leaves the run green, which is check-documented-gates.yml's
+# choice as well: a watch that is red every day for a known, already-tracked defect is noise, and
+# noise is what people mute. The run that goes red is the one that could not answer.
+on:
+  schedule:
+    # Daily at 11:26 UTC. Off the hour, and both coordinates are unused anywhere in
+    # .github/workflows/, so this is not merely a different slot — nothing else can land on it:
+    # minute 26 and hour 11 are absent from every cron in the directory, and 11 is neither even
+    # (the */2 crons) nor a multiple of 3 (build-feed.yml) or 6 (auto-sync-prs.yml). Clear of
+    # approval-watch.yml (:17 and :47 every hour), build-feed.yml (23 */3), the corpus sync
+    # (~03:00), d1-backup.yml (Mon 04:10), deploy-freshness.yml (04:53), site-health.yml (05:37),
+    # pr-audit-watch.yml (06:17), intake-kind-audit.yml (06:30), install-smoke.yml and
+    # gate-mutation-audit.yml (06:43) and the Monday audits (07:00 / 07:11).
+    - cron: '26 11 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write          # keep one tracking issue up to date
+
+concurrency:
+  group: registry-drift-watch
+  cancel-in-progress: false
+
+jobs:
+  glama:
+    runs-on: ubuntu-latest
+    # A job without a bound holds its runner until the platform default (six hours).
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7
+        with:
+          # Stdlib only, matching the suite's floor rather than the script's:
+          # `verify-glama-listing.py` imports `json`, `re`, `sys`, `urllib.request` and `pathlib`
+          # and nothing else, so the pin does not need revisiting on its own.
+          python-version: "3.11"
+
+      - name: Compare the live Glama listing with what the worker serves
+        id: compare
+        # continue-on-error so a non-zero exit reaches the branch below instead of ending the job.
+        # It does **not** make the run green: the last step re-raises anything that is neither 0
+        # nor 1.
+        continue-on-error: true
+        run: |
+          set -uo pipefail
+
+          # Three attempts, then a verdict. One request is a measurement; three in a row is a claim
+          # about the service. `docs/maintainer/handoff-2026-09-24.md` records ~1 request in 4 to
+          # misakanet.org timing out from a real machine while the service was fine — a probe that
+          # reddens on one dropped TLS handshake is weather, and weather is what people mute.
+          # site-health.yml and deploy-freshness.yml retry for the same measured reason.
+          ATTEMPTS=3
+          status=1
+          attempt=0
+          for attempt in $(seq 1 "$ATTEMPTS"); do
+            python3 scripts/verify-glama-listing.py > "glama-attempt-$attempt.txt" 2>&1
+            status=$?
+
+            echo "### Attempt $attempt/$ATTEMPTS — exit $status" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            cat "glama-attempt-$attempt.txt" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+
+            if [ "$status" -eq 0 ]; then
+              break
+            fi
+            echo "::warning::attempt $attempt of $ATTEMPTS was not OK (exit $status) — retrying, because one bad probe is a measurement and three are a verdict"
+            if [ "$attempt" -lt "$ATTEMPTS" ]; then sleep 30; fi
+          done
+
+          cp "glama-attempt-$attempt.txt" glama-drift-report.txt
+
+          # The terminator is randomised. The report is a third party's page scraped into text, so
+          # it is exactly the kind of content that can carry a newline; a context containing the
+          # literal `REPORT_EOF` would close the heredoc early, the runner would then reject the
+          # whole output file as malformed, and **every** output would be discarded —
+          # `compare_exit` included — so real drift would go unreported with no reason. The
+          # `REPORT_` prefix rules out an ordinary line; a newline can still match, and the cost of
+          # not defending is a silent week.
+          REPORT_EOF="REPORT_$(head -c 8 /dev/urandom | od -An -tx1 | tr -d ' \n')"
+          {
+            echo "compare_exit=${status}"
+            echo "attempts=${attempt}"
+            echo "report<<$REPORT_EOF"
+            cat glama-drift-report.txt
+            echo "$REPORT_EOF"
+          } >> "$GITHUB_OUTPUT"
+          cat glama-drift-report.txt
+
+      - name: Annotate the divergence
+        if: steps.compare.outputs.compare_exit == '1'
+        env:
+          REPORT: ${{ steps.compare.outputs.report }}
+        run: |
+          # One line, because that is all an annotation annotation holds; the detail belongs in the
+          # log and the job summary, where the whole table is legible.
+          echo "::error title=The Glama listing does not match the tools we serve::The registry advertises a tool set the hosted worker does not answer to. Every entry in the diff below is a tool a user who installed through Glama will call and not get. See the tracking issue this run opens."
+          printf '%s\n' "${REPORT}" | sed 's/^/  /'
+
+      - name: Open or update the drift issue
+        if: steps.compare.outputs.compare_exit == '1'
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9
+        # The report arrives through the environment, never spliced into the script text. A
+        # `${{ }}` expansion inside a single-quoted JS string literal breaks the moment the value
+        # contains a newline — which this one always does, since the report is the newline-separated
+        # tool list — and the step then dies with `SyntaxError` on the one run that was supposed to
+        # report something. Same shape as check-documented-gates.yml's `DIFF`.
+        env:
+          REPORT: ${{ steps.compare.outputs.report }}
+          ATTEMPTS: ${{ steps.compare.outputs.attempts }}
+        with:
+          script: |
+            const marker = '<!-- registry-drift-watch -->';
+            const title = 'The Glama MCP listing no longer matches the tools we serve';
+            const report = (process.env.REPORT || '').trim();
+            const attempts = process.env.ATTEMPTS || '?';
+
+            const body = [
+              marker,
+              '## The registry advertises tools that do not exist',
+              '',
+              '`scripts/verify-glama-listing.py` compared the live Glama listing for this server',
+              'against the tools the hosted worker defines, and they disagree.',
+              '',
+              `Reported after ${attempts} attempt(s) of 3. The raw comparison:`,
+              '',
+              '```',
+              report || '(the script exited 1 but printed nothing — read the workflow log)',
+              '```',
+              '',
+              'The diff reads two ways, and both are user-facing:',
+              '',
+              '- **Stale on Glama** — advertised, never served. A user installs MisakaNet through',
+              '  Glama, sees the tool, calls it, and gets an error.',
+              '- **Missing from Glama** — served, not advertised. A user has a tool the registry',
+              '  never told them about.',
+              '',
+              'How to fix, in the order the drift usually comes from:',
+              '',
+              '1. If the advertised tool is real, add it to the hosted worker',
+              '   (`workers/register-proxy-sw.js`) and re-register the endpoint. If it is a',
+              '   Python-only capability, it does not belong on the hosted endpoint at all — remove',
+              '   it from the listing instead.',
+              '2. If a tool was renamed or removed in the worker, update the listing to match. The',
+              '   rename in c31640c67 (`misakanet_get_my_events` → `misakanet_me_events`) is the',
+              '   known instance: the worker was fixed and the listing was not.',
+              '3. Keep the count in `docs/integrations/status.md` in step with the worker.',
+              '   `tests/test_mcp_tool_surface_matches_docs.py` fails the build when it is not, so the',
+              '   doc cannot be the thing left behind.',
+              '',
+              'Note for whoever picks this up: the advertised set is **not** declared anywhere in',
+              'this repository. `glama.json` and `server.json` carry no tool list, and',
+              '`publish-mcp-registry.yml` publishes the **stdio** entry in `server.json`',
+              '(`python3 -m misakanet.server`), not the hosted worker — so re-running that job will',
+              'not correct this listing. Confirm the endpoint with',
+              '`python3 scripts/verify-glama-listing.py` once the registry side is updated.',
+              '',
+              '_Opened by `registry-drift-watch.yml`. Re-running the workflow refreshes this issue;',
+              'closing it while the drift persists will just reopen it on the next run._',
+            ].join('\n');
+
+            // Paginated, and it has to be. The repository carries ~160 open issues and intake adds
+            // more every day, so an unpaginated `per_page: 100` sees roughly the last week —
+            // against a daily schedule the marker issue falls off the end on the second or third
+            // run and this opens a duplicate instead of updating it. The issue body promises
+            // "re-running the workflow refreshes this issue", so a silent duplicate would be a
+            // broken promise, not a cosmetic one.
+            //
+            // `listForRepo` also returns pull requests, and `PATCH /issues/<n>` addresses them: a
+            // pull request whose description happened to contain this marker — plausible for any
+            // PR touching this very workflow, or the Glama metadata files — would have its body
+            // replaced. The filter is the same test the GitHub API uses to tell the two apart.
+            const open = await github.paginate(github.rest.issues.listForRepo, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              per_page: 100,
+            });
+            const existing = open.find(
+              issue => !issue.pull_request && (issue.body || '').includes(marker));
+
+            if (existing) {
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existing.number,
+                body,
+              });
+              core.info(`updated #${existing.number}`);
+              return;
+            }
+            const created = await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title,
+              body,
+              labels: ['needs-ac', 'type:bug'],
+            });
+            core.info(`opened #${created.data.number}`);
+
+      # Fails closed, and says which of the ways it could not answer. `!= '0' && != '1'` rather than
+      # `== '2'`, so a step that never ran (an empty output), or a script that exits with something
+      # new, is red rather than silently green. No issue was opened on this path on purpose: see the
+      # header.
+      - name: Fail when the comparison could not be made
+        if: >-
+          steps.compare.outputs.compare_exit != '0'
+          && steps.compare.outputs.compare_exit != '1'
+        env:
+          REPORT: ${{ steps.compare.outputs.report }}
+        run: |
+          echo "::error::The registry comparison could not be run, so this run has no verdict on"
+          echo "::error::whether the Glama listing still matches the tools we serve. No issue was"
+          echo "::error::opened: Glama being unreachable is not evidence that the listing is wrong."
+          echo "reason: ${REPORT:-(the comparison step produced no report — read the log above)}"
+          exit 1
