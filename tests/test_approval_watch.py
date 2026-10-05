@@ -163,3 +163,57 @@ def test_the_permissions_are_read_only_where_they_can_be():
     assert perms["contents"] == "read", perms
     assert perms["actions"] == "read", perms
     assert perms["issues"] == "write", perms
+
+
+def test_the_watcher_pushes_instead_of_only_rewriting_the_body():
+    """A body edit notifies nobody, so an edit-only tracker has to be visited on purpose.
+
+    Measured 2026-10-05: the watcher was working exactly as designed and it still did not
+    prevent a single one of the three freezes. It fired `workflow_run: requested` at
+    2026-10-04T09:57Z — the same second run 37193801523 started waiting — and the body of
+    #2416 said "**1** run(s) waiting for approval" within the same minute. All three freezes
+    were found by a human noticing a symptom (a stale activity chart, a stale `/api/versions`),
+    never by the watcher, because nothing told anyone it had spoken.
+
+    GitHub notifies issue subscribers when a comment is created and **not** when the body is
+    edited. So the body is the record and the comment is the push; a tracker that only edits is
+    a tracker nobody is subscribed to.
+    """
+    body = text()
+    assert "issues.createComment" in body, (
+        "the watcher rewrites the body but never comments. GitHub does not notify subscribers "
+        "on an edit, so every signal this workflow produces is silent unless somebody opens the "
+        "issue on purpose — which is what happened through all three freezes recorded in "
+        "handoff-2026-10-05 §5.1 and §5.2b."
+    )
+    # The push has to be conditional, or a twice-hourly cron turns the issue into noise and
+    # subscribers learn to ignore it — the same fate the retry-budget comments warn about.
+    assert "shouldComment" in body, (
+        "the comment must be gated on the waiting set having changed (or on a staleness "
+        "threshold), not emitted every run"
+    )
+    assert "oldestOverThreshold" in body or "THRESHOLD_H" in body, (
+        "a wait that nobody acts on must still escalate, or it sits there being quietly "
+        "rewritten forever — the first version of this rule had no threshold at all"
+    )
+    # And the state it compares against has to be recorded somewhere durable, or it cannot
+    # tell "changed" from "always true".
+    assert "approval-watch:seen" in body, (
+        "the watcher compares against a fingerprint but does not persist it in the body, so it "
+        "cannot tell a new run from the one it already reported"
+    )
+
+
+def test_the_comment_names_where_the_approval_is_actually_given():
+    """A notification that does not say what to do is a notification that gets muted."""
+    body = text()
+    idx = body.index("issues.createComment")
+    after = body[idx:idx + 1400]
+    assert "deployments/activity_log" in after, (
+        "the comment must link the environment page where the approval button is; the run URL "
+        "alone is one more click and, past a few hours, nobody clicks"
+    )
+    assert "html_url" in after, (
+        "the comment should carry the run's own URL, so the reader does not have to go looking "
+        "for which of several waiting runs this is about"
+    )
