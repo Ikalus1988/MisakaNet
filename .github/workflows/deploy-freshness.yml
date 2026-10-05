@@ -60,6 +60,20 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
         with:
+          # Pinned to the default branch, spelled out rather than left to the event.
+          #
+          # This job's whole question is "is production running **main's** commit", so `main` is the
+          # only correct checkout on all three triggers. Two of the three already got that right by
+          # accident — `schedule` and `workflow_run` both default to the default branch — and the
+          # third does not: `workflow_dispatch` can be fired from any ref, so a manual dispatch from
+          # a PR branch compared production against that PR's commit and reported a staleness that
+          # was not a staleness. Naming the ref is also what lets code scanning see that the code
+          # running here is not the code of the run that triggered it (alerts #325 / #326).
+          #
+          # `|| 'main'` because a `schedule` event's payload does not always carry
+          # `repository.default_branch`, and a freshness probe that no-ops on its own backstop
+          # trigger is the exact failure this workflow exists to prevent.
+          ref: ${{ github.event.repository.default_branch || 'main' }}
           # Full history on purpose. The check reports "N commits behind", and `git rev-list
           # <live>..<head>` cannot count commits the clone does not have — the default depth-1
           # checkout would turn every answer into "behind by an unknown number".

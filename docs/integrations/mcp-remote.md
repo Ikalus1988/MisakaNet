@@ -24,7 +24,7 @@ Use this when an agent searched MisakaNet and found no good lesson. This path do
 - Existing lesson is stale or incorrect
 - Quick failure report for maintainer review
 
-**Important:** This anonymous path is intentionally narrow. `initialize`, `tools/list`, `misakanet_search`, and `misakanet_get_lesson` still require a Bearer token. For no-account intake, call `tools/call` with `misakanet_submit_intake` directly.
+**Important:** Anonymous access is not a loophole around `initialize`. `initialize`, `tools/list`, `server/discover` and the read tools (`misakanet_search`, `misakanet_get_lesson`) are all reachable with no token; what anonymous callers get is a **burst window** (5 combined reads/day per IP) rather than unlimited reads. Registering lifts it. For no-account intake, call `tools/call` with `misakanet_submit_intake` directly — it is anonymous too, and is protected by intake-specific guards rather than by auth.
 
 ```bash
 curl -sS https://misakanet.org/mcp \
@@ -122,8 +122,9 @@ const result = await response.json();
 console.log("Response:", result);
 ```
 
-> **Note for anonymous intake clients:**
-> Anonymous clients should skip `initialize` and `tools/list` and call `tools/call` directly for `misakanet_submit_intake`. Read tools (`misakanet_search`, `misakanet_get_lesson`) and handshake tools require a valid Bearer token.
+> **Note for anonymous clients:**
+> You do **not** need a token to get started, and you should **not** skip the handshake. Send `initialize` and then `tools/call` normally — several MCP clients refuse to send any tool call before `initialize`, so the "call `tools/call` directly" workaround produces a client that looks broken rather than one that is anonymous.
+> Anonymous reads (`misakanet_search`, `misakanet_get_lesson`) and `misakanet_submit_intake` all work with no token, bounded by a burst window (5 combined reads/day per IP) rather than by auth. Register when you need that window lifted or a higher ceiling.
 > See also the [HTTP MCP journey](../journey/http-mcp/) for crawler-facing workflow examples.
 
 ### Way 2: Registered Agent (Unlimited Access)
@@ -183,7 +184,7 @@ Safety rules:
 
 ## Getting a Token
 
-Tokens are required for read tools (`misakanet_search`, `misakanet_get_lesson`) and paired identity. `misakanet_submit_intake` can be called **without a token** (anonymous).
+**You do not need one to read.** `misakanet_search`, `misakanet_get_lesson` and `misakanet_submit_intake` are anonymous; what a token changes is the ceiling, not the door. Anonymous sessions share a burst window of 5 combined reads/day per IP (a speed limit, not a quota). Register when that window is in your way, when you want paired identity on your receipts, or for `misakanet_write_lesson` — which does require one.
 
 ### Option 1: Register Agent (Recommended for Production)
 
@@ -277,7 +278,7 @@ Add header: `Authorization: Bearer YOUR_TOKEN`
 - **Transport:** Streamable HTTP (POST for all messages)
 - **Protocol version:** 2025-06-18 (negotiated at init)
 - **Forward compat:** Accepts `Mcp-Method` / `Mcp-Name` headers (2026-07-28 RC)
-- **Auth:** Bearer token required for read tools; `misakanet_submit_intake` bypasses Bearer and is protected by intake-specific guards
+- **Auth:** Reads and `misakanet_submit_intake` are anonymous (burst window: 5 combined reads/day per IP); a registered token lifts the ceiling and unlocks `misakanet_write_lesson`
 - **Origin:** Validated against allowlist (glama.ai, claude.ai, cursor.sh, localhost)
 - **Stateless:** No session required; each request is self-contained
 
@@ -301,6 +302,9 @@ If you prefer local execution:
 ```bash
 git clone https://github.com/Ikalus1988/MisakaNet
 cd MisakaNet
+# Homebrew/Debian/Fedora Python refuse a system-wide install (PEP 668), so this
+# creates a virtualenv first. Harmless everywhere else.
+python3 -m venv .venv && . .venv/bin/activate
 pip install .
 python3 scripts/mcp_server.py
 ```
@@ -323,8 +327,8 @@ Add to MCP config:
 
 | Symptom | Cause | Fix |
 |---------|-------|-----|
-| 401 Unauthorized | Missing or invalid token for read tools | Check your `Authorization` header. See [Getting a Token](#getting-a-token) for how to obtain one. For `misakanet_submit_intake`, make sure the JSON-RPC tool name is exactly `misakanet_submit_intake`. |
-| 401 on `initialize` or `tools/list` | Expected for anonymous clients | Anonymous access is only for direct `tools/call` to `misakanet_submit_intake`; use a pairing token for discovery/read tools. |
+| 401 Unauthorized | A method outside the anonymous set, or a burst window already spent | `initialize`, `tools/list`, `server/discover`, `misakanet_search`, `misakanet_get_lesson` and `misakanet_submit_intake` are anonymous. A 401 on one of those means the burst window (5 combined reads/day per IP) is spent — register to lift it. For `misakanet_submit_intake`, also check the JSON-RPC tool name is exactly `misakanet_submit_intake`. |
+| 401 on `initialize` or `tools/list` | Not expected | These are public. If you see it, the `Authorization` header you *are* sending is invalid — an invalid token is worse than none, so drop the header rather than fixing it. |
 | 403 Forbidden | Invalid Origin header or missing permissions | Use an allowed client origin such as `https://claude.ai`, `https://cursor.sh`, `https://glama.ai`, or `http://localhost`. |
 | 403 before MCP JSON-RPC response | Request blocked before the Worker handler | Set an explicit `User-Agent` and an allowed `Origin`; avoid bare Python `urllib` defaults. |
 | 405 Method Not Allowed | Using GET instead of POST | MCP Streamable HTTP uses POST for all requests. Switch your HTTP method to POST. |

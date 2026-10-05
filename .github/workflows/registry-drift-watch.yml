@@ -82,10 +82,11 @@ jobs:
           set -uo pipefail
 
           # Three attempts, then a verdict. One request is a measurement; three in a row is a claim
-          # about the service. `docs/maintainer/handoff-2026-09-24.md` records ~1 request in 4 to
-          # misakanet.org timing out from a real machine while the service was fine — a probe that
-          # reddens on one dropped TLS handshake is weather, and weather is what people mute.
-          # site-health.yml and deploy-freshness.yml retry for the same measured reason.
+          # about the service. A TLS handshake to misakanet.org drops often enough on a real
+          # connection that one dropped handshake is weather, not an outage — and a probe that
+          # reddens on weather is a probe people mute. The retry budget is the engineering call; it
+          # does not need a receipt, so nothing here cites a measurement.
+          # site-health.yml and deploy-freshness.yml retry for the same reason.
           ATTEMPTS=3
           status=1
           attempt=0
