@@ -7,6 +7,22 @@ All notable changes to the Misaka Network project are documented here.
 
 ---
 
+## [2.41.3](https://github.com/Ikalus1988/MisakaNet/compare/v2.41.2...v2.41.3) (2026-10-05)
+
+
+### Bug Fixes
+
+* **ci:** name the branch the freshness probe measures against ([#2877](https://github.com/Ikalus1988/MisakaNet/issues/2877)) ([a57494d](https://github.com/Ikalus1988/MisakaNet/commit/a57494d37cbce1fbcb22588a70e597486f2777f9))
+* **ci:** stop a Windows checkout from turning shell scripts into a red suite ([#2881](https://github.com/Ikalus1988/MisakaNet/issues/2881)) ([81b239e](https://github.com/Ikalus1988/MisakaNet/commit/81b239e2d16b3986987004438558f026ec17596f))
+* **ci:** the approval watcher rewrote its report and told nobody ([#2885](https://github.com/Ikalus1988/MisakaNet/issues/2885)) ([4fce44f](https://github.com/Ikalus1988/MisakaNet/commit/4fce44f95faf50308d2cb60fb7964baa23d20909))
+* **docs:** the first-run path must not demand a token or a bare pip ([#2003](https://github.com/Ikalus1988/MisakaNet/issues/2003), items 1 and 2) ([#2884](https://github.com/Ikalus1988/MisakaNet/issues/2884)) ([56d2265](https://github.com/Ikalus1988/MisakaNet/commit/56d22656ce420a3193f880e1a502516999593b7a))
+* **worker:** server/discover has a handler, so let an anonymous session reach it ([#2845](https://github.com/Ikalus1988/MisakaNet/issues/2845)) ([#2882](https://github.com/Ikalus1988/MisakaNet/issues/2882)) ([87fffdd](https://github.com/Ikalus1988/MisakaNet/commit/87fffdd29f9b8de88324597543fccd1f362a0679))
+
+
+### Tests
+
+* **gate:** assert the L2 loader's stdout purity where it lives, not where a backend happens to lead ([#2880](https://github.com/Ikalus1988/MisakaNet/issues/2880)) ([a952358](https://github.com/Ikalus1988/MisakaNet/commit/a952358e70912453c637b4c63ce975a9a1ab8d89))
+
 ## [2.41.2](https://github.com/Ikalus1988/MisakaNet/compare/v2.41.1...v2.41.2) (2026-10-05)
 
 
