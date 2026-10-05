@@ -34,3 +34,27 @@ docs/_lessons_count.txt linguist-generated=true
 # ── the mirror of the above on the `data` branch is not in this tree ─────────────────────────────
 # `badges/*.json` and the compact `lessons.json` live on `data`, written by `update-badges.yml`; a
 # `.gitattributes` entry here would describe a file this checkout does not have.
+
+# ── line endings ──────────────────────────────────────────────────────────────────────────────────
+# Shell scripts only, and that is a measured boundary rather than a tidy one.
+#
+# The repository stores LF. A checkout on a Windows drive — where git defaults to
+# `core.autocrlf=true` — rewrites it to CRLF in the working tree, and bash then fails on the
+# carriage return as part of the command name:
+#
+#     scripts/misakanet_voice_hook.sh: line 14: $'\r': command not found
+#     integrations/agent-autostart/bootstrap.sh: line 15: set: pipefail
+#
+# Measured 2026-10-05: on such a checkout, 9 of the suite's tests failed for this reason alone,
+# while the same commit on an LF checkout passed 12/12. CI is green because it checks out on
+# Linux. The cost lands on Windows contributors, who cannot get a local full-green and so
+# cannot tell a real regression from their filesystem.
+#
+# Why only `*.sh`, and not a blanket `* text=auto eol=lf`: CRLF is fatal to `bash`, and harmless
+# to everything else this repository executes. Python 3's tokenizer accepts CRLF, Node does, and
+# `git diff` normalises on `text` files anyway. A repo-wide rule would renormalise thousands of
+# paths — including a 1.26 MB generated JSON — to fix a problem only shell has.
+#
+# `tests/test_shell_scripts_are_lf.py` enforces both halves: every committed `.sh` blob is
+# LF-only, and this rule stays here.
+*.sh text eol=lf
