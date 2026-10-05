@@ -91,14 +91,63 @@ jobs:
               owner: context.repo.owner, repo: context.repo.repo, state: 'open', labels: LABEL, per_page: 100,
             });
             const existing = open.find(i => i.title === TITLE && !i.pull_request);
+
+            // A body edit notifies nobody. This is the half that was missing, and it is why the
+            // three freezes recorded in handoff-2026-10-05 §5.1/§5.2b were each found by a human
+            // noticing a symptom instead of by this watcher: the body of #2416 was accurate and
+            // timely every single time — it fired `workflow_run: requested` at 2026-10-04T09:57Z,
+            // the exact second that run started waiting — and nobody was told. GitHub notifies
+            // issue *subscribers* on a new comment, not on an edit, so a tracker that only edits
+            // is a tracker that has to be visited on purpose.
+            //
+            // So: comment when the set of waiting runs *changes*, and on a staleness threshold, so
+            // a wait that nobody acts on still escalates instead of sitting there being edited.
+            // The body stays the full current state (one issue, no comment spam) — this is the
+            // push, not the record.
+            const fingerprint = waiting.map(r => `${r.id}`).sort().join(',');
+            const newestId = waiting.length ? Math.max(...waiting.map(r => r.id)) : 0;
+            const previous = existing ? (existing.body.match(/<!-- approval-watch:seen=(\S*) -->/) || [])[1] : undefined;
+            const THRESHOLD_H = 6;
+            const oldestOverThreshold = waiting.length && Number(oldest) >= THRESHOLD_H;
+            const shouldComment = Boolean(existing) && (
+              previous !== fingerprint
+              || (oldestOverThreshold && previous !== `stale:${fingerprint}`)
+            );
+
             if (existing) {
               await github.rest.issues.update({
-                owner: context.repo.owner, repo: context.repo.repo, issue_number: existing.number, body,
+                owner: context.repo.owner, repo: context.repo.repo, issue_number: existing.number,
+                body: body.replace('<!-- approval-watch -->',
+                  `<!-- approval-watch -->\n<!-- approval-watch:seen=${waiting.length && oldestOverThreshold ? `stale:${fingerprint}` : fingerprint} -->`),
               });
               core.info(`updated #${existing.number}`);
+              if (shouldComment) {
+                const headline = previous === undefined || previous === ''
+                  ? 'First observation of a waiting run.'
+                  : previous === fingerprint
+                    ? `Still waiting — now **${oldest} h** old, past the ${THRESHOLD_H} h line.`
+                    : 'The set of waiting runs changed.';
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner, repo: context.repo.repo, issue_number: existing.number,
+                  body: [
+                    `🔔 **approval-watch** — ${headline}`,
+                    '',
+                    `**${waiting.length}** run(s) waiting; oldest **${oldest} h**.`,
+                    '',
+                    ...waiting.map(r => `- **${r.name}** — waiting since ${r.created_at} — ${r.html_url}`),
+                    '',
+                    'Approve here: https://github.com/'
+                      + `${context.repo.owner}/${context.repo.repo}/deployments/activity_log?environments_filter=release`,
+                  ].join('\n'),
+                });
+                core.info(`commented on #${existing.number} (newest run ${newestId || 'none'})`);
+              }
             } else {
               const created = await github.rest.issues.create({
-                owner: context.repo.owner, repo: context.repo.repo, title: TITLE, body, labels: [LABEL],
+                owner: context.repo.owner, repo: context.repo.repo, title: TITLE,
+                body: body.replace('<!-- approval-watch -->',
+                  `<!-- approval-watch -->\n<!-- approval-watch:seen=${fingerprint} -->`),
+                labels: [LABEL],
               });
               core.info(`created #${created.data.number}`);
             }
