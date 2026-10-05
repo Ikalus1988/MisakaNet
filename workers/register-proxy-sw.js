@@ -4560,7 +4560,23 @@ async function handleMcpRequest(request, env, useSse = false, ctx) {
     // send notifications/initialized after initialize, so anonymous sessions must
     // be able to. Without this, streamable-http health checks (e.g. Glama's
     // gateway) fail with 401 on the mandatory initialized notification.
+    //
+    // `server/discover` is public for the same reason, and it is the third method of
+    // that shape: no business data, just "here is what this server is". The handler
+    // below at the `server/discover` branch has existed since the 2026-07-28 RC and
+    // answers with `capabilities` + `serverInfo` — but a client that *negotiates*
+    // sends it first, so it never reached that handler at all. #2845: DeepSeek
+    // Harness 0.1.7-rc.2 (`@modelcontextprotocol/client` 2.0.0,
+    // `versionNegotiation: { mode: 'auto' }`, hardcoded) gets 401 on all ten
+    // reconnect attempts and never falls back to `initialize`, because the SDK
+    // classifies 401 as a *transport* failure rather than a protocol-negotiation
+    // miss. The same client against the same URL with negotiation off gets 200.
+    //
+    // So this is a gate and its implementation disagreeing: the response was written
+    // and the door in front of it was closed. A method that is answered but
+    // unreachable is indistinguishable from one that is not implemented.
     isPublicMethod = peekBody?.method === "initialize" || peekBody?.method === "tools/list"
+      || peekBody?.method === "server/discover"
       || (typeof peekBody?.method === "string" && peekBody.method.startsWith("notifications/"));
   } catch (peekErr) {
     // Non-JSON body — treat as non-intake; log for diagnostics
