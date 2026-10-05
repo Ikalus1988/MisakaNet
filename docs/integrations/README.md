@@ -34,7 +34,10 @@ misaka() {
   if [ ! -d "$repo" ]; then
     git clone https://github.com/Ikalus1988/MisakaNet.git "$repo"
   fi
-  cd "$repo" && pip install -q misakanet-core
+  # A venv, not bare pip: Homebrew/Debian/Fedora Pythons reject a system-wide install
+  # with `error: externally-managed-environment` (PEP 668). Created once, reused after.
+  cd "$repo" && [ -d .venv ] || python3 -m venv .venv
+  cd "$repo" && . .venv/bin/activate && pip install -q misakanet-core
   python3 search_knowledge.py "$*" --top 5
 }
 ```
@@ -106,6 +109,9 @@ change the local server had no `misakanet_me_events` and neither list contained 
 Remote: none. Local stdio:
 
 ```bash
+# Homebrew/Debian/Fedora Python refuse a system-wide install (PEP 668), so this
+# creates a virtualenv first. Harmless everywhere else.
+python3 -m venv .venv && . .venv/bin/activate
 pip install -r requirements.txt
 ```
 
