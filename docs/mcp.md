@@ -8,6 +8,9 @@ MisakaNet exposes its lesson knowledge base via the [Model Context Protocol](htt
 
 ```bash
 cd MisakaNet
+# Homebrew/Debian/Fedora Python refuse a system-wide install (PEP 668), so this
+# creates a virtualenv first. Harmless everywhere else.
+python3 -m venv .venv && . .venv/bin/activate
 pip install -r requirements.txt
 ```
 

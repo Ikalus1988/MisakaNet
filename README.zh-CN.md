@@ -86,6 +86,9 @@ MisakaNet 是面向 AI 编码 Agent 的失败经验层。当你的 Agent 遇到�
 **方式 B：CLI**
 
 ```bash
+# Homebrew/Debian/Fedora Python refuse a system-wide install (PEP 668), so this
+# creates a virtualenv first. Harmless everywhere else.
+python3 -m venv .venv && . .venv/bin/activate
 pip install misakanet-core
 python3 search_knowledge.py "GitHub token 401"
 ```
