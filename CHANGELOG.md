@@ -7,6 +7,26 @@ All notable changes to the Misaka Network project are documented here.
 
 ---
 
+## [2.41.2](https://github.com/Ikalus1988/MisakaNet/compare/v2.41.1...v2.41.2) (2026-10-05)
+
+
+### Bug Fixes
+
+* **ci:** the freshness probe depends on a cron that has never fired ([#2827](https://github.com/Ikalus1988/MisakaNet/issues/2827)) ([4a8e574](https://github.com/Ikalus1988/MisakaNet/commit/4a8e5749a452c10ec803e140bbf0c550cf7e6ddf))
+* **gate:** the last handoff citation that resolves to nothing ([#2848](https://github.com/Ikalus1988/MisakaNet/issues/2848)) ([08be28a](https://github.com/Ikalus1988/MisakaNet/commit/08be28a18ba59250cfb333244b46a7620d2f9b87))
+* **worker:** the last silent clip in the intake path was on the assembled body ([#2829](https://github.com/Ikalus1988/MisakaNet/issues/2829)) ([82cee67](https://github.com/Ikalus1988/MisakaNet/commit/82cee67f299cbdb40f410af28c5ff419a66cd861))
+
+
+### Documentation
+
+* **agents:** a way to verify the five MCP-only clients, and an honest gap ([#2822](https://github.com/Ikalus1988/MisakaNet/issues/2822)) ([baf4436](https://github.com/Ikalus1988/MisakaNet/commit/baf443675daba84d8784caecd3958a27706353ee))
+* **readme:** re-sync the Japanese README to the English source of truth ([#2824](https://github.com/Ikalus1988/MisakaNet/issues/2824)) ([8b3b781](https://github.com/Ikalus1988/MisakaNet/commit/8b3b7811e2c2cef1f398ca910b6a8a32848ba2f1))
+
+
+### CI/CD
+
+* **registry:** pin the advertised tool surface to the one we actually serve ([#2823](https://github.com/Ikalus1988/MisakaNet/issues/2823)) ([e84b24b](https://github.com/Ikalus1988/MisakaNet/commit/e84b24ba502cc25864464643ac44e61ce71d8911))
+
 ## [2.41.1](https://github.com/Ikalus1988/MisakaNet/compare/v2.41.0...v2.41.1) (2026-10-04)
 
 
