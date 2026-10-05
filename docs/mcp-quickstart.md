@@ -126,6 +126,9 @@ Or use in MCP config:
 
 ```bash
 cd /path/to/MisakaNet
+# Homebrew/Debian/Fedora Python refuse a system-wide install (PEP 668), so this
+# creates a virtualenv first. Harmless everywhere else.
+python3 -m venv .venv && . .venv/bin/activate
 pip install -r requirements.txt
 ```
 

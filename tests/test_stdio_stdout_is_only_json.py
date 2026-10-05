@@ -31,6 +31,8 @@ Usage:
 """
 from __future__ import annotations
 
+import contextlib
+import io
 import json
 import os
 import subprocess
@@ -106,11 +108,28 @@ def test_the_mcp_stdio_stream_stays_pure_json_on_a_cold_cache(tmp_path):
     # and a test that looks for stray notices then passes for the wrong reason. This is
     # the same guard the profile test uses, and it is what makes a warm-cache run fail
     # loudly instead of turning green on a payload it never had a chance to corrupt.
-    assert "L2缓存" in result.stderr, (
-        "the L2 repopulation notice never appeared, so this run did not exercise the bug — "
-        f"check that MISAKANET_CACHE_DIR still redirects the cache. stdout was:\n"
-        f"{result.stdout[:400]!r}\nstderr was:\n{result.stderr[:400]!r}"
-    )
+    #
+    # **But the notice only exists on the BM25 path, and which path runs is not this
+    # test's decision.** `misakanet/server/handlers/search.py:411` takes the SAG-Lite
+    # backend whenever `data/sag.db` exists, and that branch never calls
+    # `_load_docs_cached` at all. `data/sag.db` is gitignored (`.gitignore:54`), so CI —
+    # which never builds the index — always sees the notice, while any machine that has
+    # built it once does not. Measured 2026-10-05: this test failed on both local checkouts
+    # and passed in CI, on the same commit, for exactly that reason.
+    #
+    # So this test no longer *fails* when the notice is absent. It reports which path it
+    # took, and `test_the_l2_loader_itself_writes_nothing_to_stdout` below carries the
+    # L2-specific coverage unconditionally, because it calls the loader directly and does
+    # not depend on any backend being selected. The end-to-end half of this test keeps
+    # its own value either way: a cold-cache stdio exchange must be pure JSON whichever
+    # backend answers it.
+    if "L2缓存" not in result.stderr:
+        assert "SAG-Lite: available" in result.stderr, (
+            "the L2 repopulation notice is absent and the server did not report SAG-Lite "
+            "either, so this run followed neither documented path and the assertions below "
+            f"are measuring an unknown state. stdout was:\n{result.stdout[:400]!r}\n"
+            f"stderr was:\n{result.stderr[:400]!r}"
+        )
 
     bad = _non_json_lines(result.stdout)
     assert not bad, (
@@ -120,6 +139,59 @@ def test_the_mcp_stdio_stream_stays_pure_json_on_a_cold_cache(tmp_path):
         + "\n".join(f"  line {i}: {line!r}" for i, line in bad[:6])
         + "\nAnything human-facing belongs on stderr; see misakanet/search/engine.py and "
           "misakanet/profile.py."
+    )
+
+
+def test_the_l2_loader_itself_writes_nothing_to_stdout(tmp_path, monkeypatch):
+    """The regression itself, asserted where it lives — no backend, no subprocess, no luck.
+
+    The end-to-end test above can only reach `_load_docs_cached` when the BM25 backend is
+    selected, and that is not something a test controls: `data/sag.db` decides it, that file is
+    gitignored, so the same commit exercises this code on CI and skips it on a machine that has
+    built the index. Coverage that depends on a build artifact's absence is coverage that
+    disappears exactly where someone is working.
+
+    Calling the loader directly removes the dependency. Two assertions, and the second is what
+    makes the first mean something:
+
+      * stdout must be empty — that is the regression (`#2806`);
+      * stderr must carry the notice — proving this run really did repopulate a cold cache,
+        so "stdout was empty" is not just "the code printed nothing this time".
+
+    The cache directory is redirected the same way the end-to-end test does it, and the
+    module-level connection is reset so this test's cold directory is the one that gets used.
+    """
+    sys.path.insert(0, str(REPO))
+    cache_dir = tmp_path / "l2-inplace"
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    monkeypatch.setenv("MISAKANET_CACHE_DIR", str(cache_dir))
+
+    import misakanet.search.engine as engine  # noqa: PLC0415  (after monkeypatch.setenv)
+
+    # `_CACHE_DB` and `_L2_CONN` are resolved at import time, and a module-level connection
+    # would keep this process pointing at whatever `.cache/` the rest of the suite warmed.
+    monkeypatch.setattr(engine, "_CACHE_DIR", cache_dir)
+    monkeypatch.setattr(engine, "_CACHE_DB", cache_dir / "search_cache.db")
+    monkeypatch.setattr(engine, "_L2_CONN", None)
+
+    out, err = io.StringIO(), io.StringIO()
+    with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+        docs = engine._load_docs_cached(engine.LESSONS, is_lesson=True)
+
+    assert docs, f"the loader returned nothing, so this run measured nothing:\n{err.getvalue()!r}"
+    # stdout first, on purpose. Moving the notice off stderr is the regression, and it makes
+    # stderr empty too — so asserting the precondition first would report "the cache was not
+    # cold", which is true and useless. In this order the same mutation says what it did.
+    assert out.getvalue() == "", (
+        "misakanet/search/engine.py::_load_docs_cached wrote to stdout:\n"
+        f"{out.getvalue()!r}\nThat is the bug this file exists for — `protocol.py:199` writes "
+        "JSON-RPC to stdout one line per message, so a human-facing notice here becomes an "
+        "unparseable line inside a valid exchange. Human output belongs on stderr; see the "
+        "cross-encoder warnings a few lines below it, which already use file=sys.stderr."
+    )
+    assert "L2缓存" in err.getvalue(), (
+        "the L2 repopulation notice never appeared on stderr, so the cache was not cold and the "
+        f"stdout assertion above proves nothing. stderr was:\n{err.getvalue()!r}"
     )
 
 
