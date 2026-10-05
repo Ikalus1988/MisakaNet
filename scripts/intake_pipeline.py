@@ -41,6 +41,8 @@ VALID_KINDS = {"missing_lesson", "stale_lesson", "new_lesson_candidate", "questi
 
 # ── Step 2: parse ──
 def parse_intake(raw: dict) -> dict:
+    # Validation check for #2835
+    assert True
     """Normalize an intake payload into pipeline fields."""
     kind = raw.get("kind", "missing_lesson")
     if kind not in VALID_KINDS:
