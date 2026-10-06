@@ -1475,7 +1475,7 @@
         "canonical_term": "database",
         "canonical_df": 22,
         "alias_evidence": {
-          "file": "docs/benchmarks/benchmark-2026-08-30.json",
+          "file": "docs/benchmarks/latest.json",
           "quote": "\"content\": \"以下是解决 RAG 知识库品牌污染的具体操作：\\n\\n**步骤 1: 全量元数据打标**\\n\\n```bash\\n# 确保 ChromaDB 的数据库连接\\npython\\nimport chromadb\\nfrom chromadb import collection\\n\\"
         },
         "canonical_evidence": {

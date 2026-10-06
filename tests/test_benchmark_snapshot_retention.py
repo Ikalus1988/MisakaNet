@@ -148,6 +148,60 @@ def test_workflow_still_writes_the_snapshot():
     )
 
 
+def test_nothing_tracked_cites_a_prunable_snapshot():
+    """A dated citation is a four-week-lifetime citation, and nothing announces its expiry.
+
+    Found by this change's own CI run, 2026-10-06. `data/query-aliases.json` grounded the zh-en
+    alias `数据库连接` → `database` in `docs/benchmarks/benchmark-2026-08-30.json`, and
+    `tests/test_query_aliases.py::test_aliases_are_grounded_in_the_repository` went red the moment
+    that file was pruned — correctly: that gate requires the cited file to exist, be git-tracked,
+    and actually contain the quote, and after the prune it did none of the three.
+
+    That is the shape worth preventing rather than repairing. The alias table is **generated data
+    about the corpus**, and this retention policy decides which paths survive. Neither file says so
+    anywhere, so the next person to cite a `benchmark-YYYY-MM-DD.json` gets a green build and a red
+    suite four weeks later, with the cause two directories away from the symptom.
+
+    `docs/benchmarks/latest.json` is the sanctioned target and is exempt here on purpose: it is the
+    cumulative SSOT, it is append-only (`scripts/benchmark_workers_ai.py` keys its resume cache on
+    `(model, scenario[:80], condition)` and appends, never rewrites), and this policy does not prune
+    it. That is a materially different stability claim from `lessons/index.md`, which
+    `tests/test_query_aliases.py` correctly refuses as evidence because its writer may reword it.
+    """
+    offenders: list[str] = []
+    try:
+        listing = subprocess.run(
+            ["git", "-C", str(REPO_ROOT), "grep", "-l", "-E",
+             r"docs/benchmarks/benchmark-[0-9]{4}-[0-9]{2}-[0-9]{2}\.json", "--",
+             ":!docs/benchmarks", ":!tests/"],
+            capture_output=True, text=True, timeout=60, check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        pytest.skip("git unavailable")
+    if listing.returncode not in (0, 1):
+        pytest.skip("not a git checkout or git grep unsupported")
+
+    # Only real citations count. This file and the gate's own docstring mention dated snapshots by
+    # name while describing them; a bare substring match would flag the description of the rule as
+    # a violation of the rule.
+    CITING = re.compile(r'["\'](?:file|path)"\s*:\s*"(docs/benchmarks/benchmark-\d{4}-\d{2}-\d{2}\.json)"')
+    for line in listing.stdout.splitlines():
+        if not line.strip():
+            continue
+        try:
+            body = (REPO_ROOT / line).read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        for hit in CITING.finditer(body):
+            offenders.append(f"{line} -> {hit.group(1)}")
+
+    assert not offenders, (
+        "tracked files cite dated benchmark snapshots, which this policy prunes on its next run:\n  "
+        + "\n  ".join(offenders[:10])
+        + "\nCite docs/benchmarks/latest.json instead — it is append-only and is not pruned."
+    )
+
+
 def test_no_untracked_snapshot_on_disk():
     """A snapshot on disk that git has never heard of is a measurement that will not exist in CI.
 
