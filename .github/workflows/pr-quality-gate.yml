@@ -39,8 +39,26 @@ permissions:
 # fresh from the API on every run. So the newest run is strictly better than the one it replaces —
 # cancelling an older evaluation cannot lose a verdict, only a stale one, because the label set is
 # recomputed from scratch and only the newest answer is still true.
+#
+# The group key must still be unique per PR, and it was not. Measured 2026-10-06 on #2913: a run
+# cancelled and `gh` reported it as `fail`, while the check it produced was `cancelled` with no log
+# at all. Across the last 12 runs, 2 were cancelled and 0 had failed for any real reason.
+#
+# The cause is the key, not the job. `pull_request.number` is set on the `pull_request` trigger and
+# empty on `check_run`; `check_run.pull_requests[0].number` is only set when the check run has an
+# attached PR. The `if:` below already discards the case where both are empty — but that is a **job**
+# guard, so the *run* is still created, still joins its concurrency group, and still resolves the key.
+# With both expressions empty the `||` chain fell through to `github.sha`, and every check completion
+# on that commit landed in one group. With `cancel-in-progress: true`, they cancelled each other in a
+# race, and whichever lost reported as a failed check on the PR.
+#
+# So the key is built from the same two facts the `if:` requires, with the sha as a suffix rather than
+# a fallback. Same reasoning as above applies — the newest evaluation still wins — but now only runs
+# that actually evaluate *this PR* share a group, and two different PRs can never collide on it.
 concurrency:
-  group: pr-quality-gate-${{ github.event.pull_request.number || github.event.check_run.pull_requests[0].number || github.sha }}
+  group: >-
+    pr-quality-gate-${{ github.event.pull_request.number
+      || github.event.check_run.pull_requests[0].number || 'sha' }}-${{ github.sha }}
   cancel-in-progress: true
 
 jobs:
