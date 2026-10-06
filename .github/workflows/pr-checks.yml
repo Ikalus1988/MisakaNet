@@ -78,6 +78,13 @@ jobs:
         with:
           node-version: "22"
 
+      # uv, for `tests/test_uv_lock_is_current.py`. Declared here, outside the
+      # `scope == 'full'` condition on the install step below, on purpose: behind that condition a
+      # lessons-only pull request would have no `uv`, every test in that file would skip, and the
+      # uv.lock drift they exist to catch would go unseen — the "gate that skips" failure this
+      # repository has already paid for once (see the comment above the `ruff` install).
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7  # v10.2.0
+
       - name: Install Dependencies
         if: steps.scope.outputs.scope == 'full'
         run: |
