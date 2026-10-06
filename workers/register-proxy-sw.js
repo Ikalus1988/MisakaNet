@@ -7829,11 +7829,15 @@ export default {
 </div>
 <script>
 const MISAKA_VOICE_KEY = "misakanet_voice_enabled";
+// #2918: these were `.v2.mp3`, and no `.v2` file has ever been committed under
+// docs/assets/voice/ -- every one of the four returned 404, so "Enable voice"
+// showed a confirmed state and played silence. docs/connect.html already used the
+// unversioned names; these two blocks are the only places that drifted.
 const MISAKA_VOICE = {
-  connect: "/assets/voice/connect-success.v2.mp3",
-  pair: "/assets/voice/pair-success.v2.mp3",
-  found: "/assets/voice/lesson-found.v2.mp3",
-  warning: "/assets/voice/failure-warning.v2.mp3",
+  connect: "/assets/voice/connect-success.mp3",
+  pair: "/assets/voice/pair-success.mp3",
+  found: "/assets/voice/lesson-found.mp3",
+  warning: "/assets/voice/failure-warning.mp3",
 };
 
 function isMisakaVoiceEnabled() {
