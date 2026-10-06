@@ -1,43 +1,51 @@
 {
-  "generated_at": "2026-10-05T22:04:30.393676+00:00",
+  "generated_at": "2026-10-06T04:04:32.663211+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "chore(deps-dev): bump wrangler from 4.144.0 to 4.146.0 in the npm group",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2854",
-      "timestamp": "2026-10-05T18:31:35Z",
+      "title": "docs(lesson): the silent-truncation family in the MCP intake worker (fixes #2768, #2774, #2818, #2819, #2821)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2849",
+      "timestamp": "2026-10-06T04:04:21Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(benchmark): weekly Workers AI lesson benchmark report [2026-10-05]",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2860",
-      "timestamp": "2026-10-05T18:28:31Z",
+      "title": "chore(deps): bump multidict from 6.7.1 to 6.9.1",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2890",
+      "timestamp": "2026-10-06T03:48:32Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "docs(handoff): record the 87fffdd2 deploy, the two merges, and the approval-API shape",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2886",
-      "timestamp": "2026-10-05T18:18:22Z",
+      "title": "fix(worker): server/discover was missing four of DiscoverResult's five required fields",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2896",
+      "timestamp": "2026-10-06T03:39:36Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(main): release 2.41.3",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2879",
-      "timestamp": "2026-10-05T18:13:04Z",
+      "title": "chore(benchmarks): keep four weekly snapshots, and record why 'delete three dirs' was not the fix",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2893",
+      "timestamp": "2026-10-06T03:14:30Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(ci): the approval watcher rewrote its report and told nobody",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2885",
-      "timestamp": "2026-10-05T18:02:29Z",
+      "title": "chore(deps): bump the github-actions group with 3 updates",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2855",
+      "timestamp": "2026-10-06T02:31:46Z",
       "source": "github"
+    },
+    {
+      "type": "lesson",
+      "title": "A silent truncation in the MCP intake worker, fixed four times, each time at the next cap",
+      "url": "lessons/contrib/mcp-intake-silent-truncation-family.md",
+      "timestamp": "2026-10-04",
+      "domain": "mcp",
+      "source": "lessons"
     },
     {
       "type": "lesson",
@@ -69,14 +77,6 @@
       "url": "lessons/contrib/codex-mcp-tools-not-injected-despite-handshake.md",
       "timestamp": "2026-10-03",
       "domain": "mcp",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "curl exit 23 is a write failure, not a network failure: change the writer",
-      "url": "lessons/contrib/curl-exit-23-is-a-write-failure-not-a-network-failure.md",
-      "timestamp": "2026-10-03",
-      "domain": "devops",
       "source": "lessons"
     },
     {
