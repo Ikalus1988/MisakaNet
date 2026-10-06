@@ -71,6 +71,16 @@
         },
         {
           "type": "json",
+          "path": "package-lock.json",
+          "jsonpath": "$.version"
+        },
+        {
+          "type": "json",
+          "path": "package-lock.json",
+          "jsonpath": "$.packages[\"\"].version"
+        },
+        {
+          "type": "json",
           "path": ".codex-plugin/plugin.json",
           "jsonpath": "$.version"
         },
