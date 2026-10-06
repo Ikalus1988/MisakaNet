@@ -235,6 +235,159 @@ jobs:
                   print(f"  {host}: {count}")
           PY
 
+      - name: Workers CPU time per script — the "billing bottleneck" claim, measured (#2897)
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import datetime as _dt
+          import json, os, urllib.error, urllib.request
+
+          account = os.environ["CLOUDFLARE_ACCOUNT_ID"]
+          token = os.environ["CLOUDFLARE_API_TOKEN"]
+          hours = int(os.environ.get("HOURS") or 24)
+          endpoint = os.environ.get("CF_GRAPHQL_URL",
+                                   "https://api.cloudflare.com/client/v4/graphql")
+
+          # The billed unit is milliseconds of *CPU*, and it is charged against a hard per-request
+          # ceiling: 10 ms on free, 30 ms on paid. Everything this repository has published about
+          # worker cost until now was a local Node proxy number, which is a different runtime
+          # (workerd vs Node) and a different unit — it was never a measurement of Cloudflare's CPU.
+          # #2897 records what was and was not measurable; this step makes the missing half
+          # measurable on a schedule instead of in a maintainer's terminal.
+
+
+          def gql(query, variables=None):
+              body = json.dumps({"query": query, "variables": variables or {}}).encode()
+              req = urllib.request.Request(endpoint, data=body, headers={
+                  "Authorization": f"Bearer {token}", "Content-Type": "application/json"})
+              try:
+                  return json.load(urllib.request.urlopen(req, timeout=60)), None
+              except urllib.error.HTTPError as exc:
+                  return None, f"HTTP {exc.code}: {exc.read().decode(errors='replace')[:400]}"
+              except Exception as exc:
+                  return None, str(exc)
+
+
+          def graphql_failed(payload):
+              """None if fine, else a message. A GraphQL `errors` list is a bug here and must stop the
+              step — the failure mode this workflow already learned the hard way is a step that
+              prints an empty table and exits 0, so the run reports success while proving nothing."""
+              if err:
+                  return f"transport error: {err}"
+              errs = (payload or {}).get("errors")
+              if errs:
+                  return "GraphQL error: " + "; ".join((e.get("message") or str(e)) for e in errs)
+              return None
+
+
+          # ── the dataset and its fields are discovered, not asserted ────────────────────────────
+          # Three human approvals went into guessing a field name in the step above (#2135, #2136).
+          # A wrong-but-existing field is worse than a missing one: it validates, the step prints a
+          # heading, and the number under it is meaningless. So ask the schema what it calls things.
+          type_name = None
+          payload, err = gql("{ __schema { types { name } } }")
+          if err:
+              print(f"::warning::schema introspection unavailable ({err})")
+          else:
+              names = [t.get("name") or "" for t in
+                       ((((payload or {}).get("data") or {}).get("__schema") or {}).get("types")) or []]
+              candidates = [n for n in names if "Workers" in n and "AdaptiveGroups" in n]
+              print(f"workers dataset candidates: {candidates}")
+              if candidates:
+                  type_name = candidates[0]
+                  payload, err = gql("query($t: String!) { __type(name: $t) { fields { name } } }",
+                                     {"t": type_name})
+                  fields = [f.get("name") or "" for f in
+                            ((((payload or {}).get("data") or {}).get("__type") or {}).get("fields")) or []]
+                  print(f"{type_name} fields: {sorted(fields)}")
+              else:
+                  print("::warning::no Workers adaptive-groups dataset in this account's schema — "
+                        "the token may be missing Account Analytics: Read")
+
+          cpu_field = script_field = None
+          if type_name:
+              # `cpuTime` is the billed metric. A duration-like field would answer a *different*
+              # question (wall-clock, including the `waitUntil` a client can inflate without cost),
+              # so it is only accepted if nothing cpu-shaped exists — and that is said out loud.
+              cpu_like = [f for f in fields if "cpu" in f.lower()]
+              script_like = [f for f in fields if "script" in f.lower()]
+              cpu_field = cpu_like[0] if cpu_like else None
+              script_field = script_like[0] if script_like else None
+              if cpu_field is None:
+                  dur = [f for f in fields if "dur" in f.lower() or "time" in f.lower()]
+                  print(f"::warning::no CPU field in {type_name}; duration-like {dur} measures "
+                        f"wall-clock, not the billed unit")
+          if not (type_name and cpu_field):
+              print("::warning::cannot measure Workers CPU with this token/schema — see #2897")
+              raise SystemExit(0)
+
+          now = _dt.datetime.now(_dt.timezone.utc).replace(microsecond=0)
+          since = now - _dt.timedelta(hours=hours)
+
+          dims = f"{{ {script_field} }}"
+          query = f"""query($account: String!, $gte: Time!, $lte: Time!) {{
+            viewer {{ accounts(filter: {{accountTag: $account}}) {{
+              {type_name}(limit: 20, filter: {{datetime_geq: $gte, datetime_leq: $lte}}) {{
+                sum {{ {cpu_field} }}
+                max {{ {cpu_field} }}
+                quantiles {{ p50: {cpu_field} p95: {cpu_field} p99: {cpu_field} }}
+                dimensions {dims}
+              }}
+            }} }}
+          }}"""
+
+          payload, err = gql(query, {"account": account,
+                                      "gte": since.isoformat().replace("+00:00", "Z"),
+                                      "lte": now.isoformat().replace("+00:00", "Z")})
+          accounts = (((payload or {}).get("data") or {}).get("viewer") or {}).get("accounts") or []
+          problem = graphql_failed(payload)
+          if problem:
+              if "403" in problem or "Unauthorized" in problem:
+                  print(f"::warning::{problem} — the token lacks Account Analytics: Read")
+                  raise SystemExit(0)
+              print(f"::error::{problem}")
+              raise SystemExit(1)
+          groups = (accounts[0] if accounts else {}).get(type_name) or []
+
+          if not groups:
+              print(f"no Workers CPU rows in the last {hours}h. Either the worker served no request, "
+                    f"or the dataset is empty for this window — the two are not the same answer.")
+              raise SystemExit(0)
+
+          print()
+          print(f"| script | requests | cpu total (ms) | cpu p95 (ms) | cpu p99 (ms) |")
+          print("|---|---|---|---|---|")
+          LIMIT = 30.0   # paid-plan per-request CPU ceiling; free is 10 ms
+
+          def metric(group, where, field_name):
+              """A missing key reads as 0.0 rather than raising. A diagnostics step that crashes on a
+              shape it did not expect reports *no finding at all*, which is worse than a soft zero:
+              the run goes green and the question stays open."""
+              v = (group.get(where) or {}).get(field_name)
+              return float(v) if isinstance(v, (int, float)) else 0.0
+
+          worst = 0.0
+          for g in sorted(groups, key=lambda r: metric(r, "sum", cpu_field), reverse=True):
+              name = (g.get("dimensions") or {}).get(script_field) or "(unnamed)"
+              total = metric(g, "sum", cpu_field)
+              p95 = metric(g, "quantiles", "p95")
+              p99 = metric(g, "quantiles", "p99")
+              worst = max(worst, p99)
+              print(f"| `{name}` | — | {total:.2f} | {p95:.3f} | {p99:.3f} |")
+          print()
+          print(f"worst p99 CPU per request: {worst:.3f} ms "
+                f"({worst / LIMIT * 100:.4f}% of the {LIMIT:.0f} ms paid ceiling)")
+          if worst > LIMIT:
+              print(f"::error::a script's p99 CPU ({worst:.3f} ms) exceeds the {LIMIT:.0f} ms "
+                    f"ceiling — requests at that percentile are billed over budget")
+              raise SystemExit(1)
+          print("no script's p99 CPU approaches the billed ceiling.")
+          print()
+          print("Note: `quantiles` here are over the *dataset*, not per request. A p99 in the "
+                "0.1–1 ms range is the answer to #2897; anything near the ceiling is a billing "
+                "problem and belongs in an issue of its own.")
+          PY
+
       - name: Zone inventory — which worker owns which route, and which KV namespaces are unbound
         run: |
           set -euo pipefail
