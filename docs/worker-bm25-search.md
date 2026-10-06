@@ -66,7 +66,7 @@ Or via CI:
     python scripts/sync_index_to_kv.py --index data/worker-index.json
   env:
     SYNC_TOKEN: ${{ secrets.SYNC_TOKEN }}
-    WORKER_URL: https://misakanet.dev
+    WORKER_URL: https://misakanet.org
 ```
 
 ### 3. Worker Search
@@ -150,7 +150,7 @@ Where:
 Sync index to KV (requires SYNC_TOKEN).
 
 ```bash
-curl -X POST https://misakanet.dev/api/search-index \
+curl -X POST https://misakanet.org/api/search-index \
   -H "Content-Type: application/json" \
   -H "X-Sync-Token: $SYNC_TOKEN" \
   -d @data/worker-index.json
@@ -170,7 +170,7 @@ Response:
 Get current index statistics.
 
 ```bash
-curl https://misakanet.dev/api/search-index
+curl https://misakanet.org/api/search-index
 ```
 
 Response:

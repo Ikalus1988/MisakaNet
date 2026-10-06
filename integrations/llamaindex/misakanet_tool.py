@@ -13,9 +13,13 @@ import json
 import os
 from typing import Optional
 
-# Default MisakaNet search endpoint
-DEFAULT_ENDPOINT = "https://misakanet.dev/api/search"
-DEFAULT_MCP_URL = "https://misakanet.dev/mcp"
+# Default MisakaNet search endpoint.
+#
+# Was `misakanet.dev` until 2026-10-06; that domain does not resolve, and `/api/search`
+# 404s on the real host. See `integrations/langchain/misakanet_tool.py` for the full
+# measurement and for why the suite did not catch it.
+DEFAULT_ENDPOINT = "https://misakanet.org/api/lessons"
+DEFAULT_MCP_URL = "https://misakanet.org/mcp"
 
 
 def misakanet_search(
@@ -36,7 +40,7 @@ def misakanet_search(
             "CUDA out of memory", "Docker build fails with permission denied"
         max_results: Maximum number of results to return (1-10). Default: 3.
         endpoint: Custom search endpoint URL. Defaults to MISAKANET_SEARCH_URL
-            env var or https://misakanet.dev/api/search.
+            env var or https://misakanet.org/api/lessons.
         api_key: Optional API key for authenticated requests. Defaults to
             MISAKANET_API_KEY env var.
 

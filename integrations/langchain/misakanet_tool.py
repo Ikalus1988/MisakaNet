@@ -20,9 +20,20 @@ from langchain.callbacks.manager import (
 from langchain.pydantic_v1 import BaseModel, Field
 from langchain.tools import BaseTool
 
-# Default MisakaNet search endpoint
-DEFAULT_ENDPOINT = "https://misakanet.dev/api/search"
-DEFAULT_MCP_URL = "https://misakanet.dev/mcp"
+# Default MisakaNet search endpoint.
+#
+# Both of these were `misakanet.dev` until 2026-10-06, and the domain does not resolve
+# (`getent hosts misakanet.dev` returns nothing), so every query this tool made without
+# an override failed at DNS. The path was wrong too: `/api/search` answers 404 on the
+# real host, while `/api/lessons` is the public search endpoint `lib/client.js` dials
+# (measured 2026-10-06: `GET /api/search?q=test&limit=1` -> 404,
+# `GET /api/lessons?limit=1` -> 200 application/json).
+#
+# The suite stayed green through both faults because `tests/test_integrations.py`
+# patches `urllib.request.urlopen`, so this constant was never resolved or dialled.
+# `tests/test_default_endpoints_reachable.py` now holds the address itself.
+DEFAULT_ENDPOINT = "https://misakanet.org/api/lessons"
+DEFAULT_MCP_URL = "https://misakanet.org/mcp"
 
 
 class MisakaNetSearchInput(BaseModel):
