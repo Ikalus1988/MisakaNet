@@ -76,9 +76,17 @@ limit, not a quota.
 
 ```bash
 git clone https://github.com/Ikalus1988/MisakaNet.git && cd MisakaNet
+python3 -m venv .venv && . .venv/bin/activate   # see the note below before using bare pip
 pip install misakanet-core
 python3 search_knowledge.py "database is locked"
 ```
+
+> **Use a venv, not bare `pip`.** A bare `pip install` is rejected outright by every
+> Homebrew, Debian and Fedora Python — `error: externally-managed-environment`, per
+> [PEP 668](https://peps.python.org/pep-0668/) — because those Pythons own their
+> site-packages and let a system-wide install break the tools they ship. The line above
+> creates a virtualenv first, which is also what keeps the dependency out of your system
+> Python's hands. If you hit the error anyway, you are not in the venv.
 
 **Option B — Docker (no local Python needed):**
 
@@ -118,7 +126,7 @@ Useful flags:
 
 Common failure: `ModuleNotFoundError: No module named 'misakanet_core'`.
 
-Fix: `pip install misakanet-core` (not `misakanet`). The core engine is a separate PyPI package.
+Fix: the package is `misakanet-core` (not `misakanet`) — it is a separate PyPI package. If `pip install misakanet-core` itself fails with `error: externally-managed-environment`, that is PEP 668 refusing a system-wide install, not a problem with this package: create a virtualenv first (`python3 -m venv .venv && . .venv/bin/activate`) and install inside it. See the note under the quickstart above.
 
 ---
 

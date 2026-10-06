@@ -22134,6 +22134,2163 @@
         "lesson_hit_rate": 0.0
       },
       "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "A child stat failure must not fail the whole parent directory listing (a-child-probe-failure-must-not-poison-the-parent-listing)",
+      "condition": "plain",
+      "status": 200,
+      "content": "The error message you're encountering is related to Apache configuration and permissions. The issue arises when a child directory (e.g., a subdirectory within a parent directory) fails to serve files, causing the parent directory's directory listing to fail as well.\n\nTo resolve this issue, you'll need to adjust the configuration of your Apache server to prevent this kind of failure from propagating. Here's a step-by-step guide with exact commands to help you fix the problem:\n\n**Step 1: Check the Apache configuration**\n\n1. Open your Apache configuration file in a text editor. The location of this file varies depending on your operating system and Apache version. For most systems, it's located at `/etc/apache2/apache2.conf` or `/etc/httpd.conf`.\n2. Look for the `Directory` directive that corresponds to your parent directory. For example, if you're using Apache 2.x, it might look something like this:\n   ```apache\n<Directory /var/www/html>\n    Options Indexes FollowSymLinks MultiViews\n    AllowOverride None\n    Require all granted\n</Directory>\n```\n\n**Step 2: Set the `ErrorDocument` directive**\n\n1. Add the following directive to the `Directory` block to specify an error document that will",
+      "metrics": {
+        "length": 1202,
+        "commands": 0,
+        "command_list": [],
+        "has_command_block": false,
+        "actionable": true,
+        "inline_code_count": 6,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "A hit is not evidence of relevance — the boundary queries that must come back empty (a-hit-is-not-evidence-of-relevance)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "The error you're experiencing is due to the asymmetry in the search results, where a query returning no results is considered \"legible\" but a query returning multiple results is not. This is because the search algorithm is treating the absence of results as evidence of irrelevance, whereas the presence of multiple results is not being handled as evidence of irrelevance.\n\nTo fix this issue, you can try the following steps:\n\n1. **Modify the relevance scoring function**: Instead of using a simple lexical scoring function, you can use a more sophisticated scoring function that takes into account the relevance of the query and the content of the search results. One approach is to use a weighted sum of the relevance scores, where the weights are adjusted based on the number of results returned.\n\n2. **Add a \"no-match\" penalty**: Introduce a penalty term that is added to the relevance score when the query returns no results. This will encourage the search algorithm to return more results when the query is not relevant.\n\n3. **Use a different scoring function**: Instead of using a floor-based scoring function, you can use a ceiling-based scoring function that takes into account the number of results returned. This will encourage the search algorithm to return more results when the query is relevant.\n\nHere is a concrete example",
+      "metrics": {
+        "length": 1338,
+        "commands": 0,
+        "command_list": [],
+        "has_command_block": false,
+        "actionable": true,
+        "inline_code_count": 0,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "A child stat failure must not fail the whole parent directory listing (a-child-probe-failure-must-not-poison-the-parent-listing)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "The error you're experiencing is due to the way `dsh-fs-local` handles child directory failures. The issue arises when a child directory fails to be listed, and the error is propagated up the directory hierarchy as a parent directory failure.\n\nTo fix this issue, you can try the following steps:\n\n**Step 1: Update `dsh-fs-local`**\n\nYou can update `dsh-fs-local` by running the following command:\n```bash\nnpm install --save dsh-fs-local@latest\n```\n**Step 2: Create a custom `resolveListedChildTarget` function**\n\nYou can create a custom `resolveListedChildTarget` function that catches the `listingIoError` and returns a more informative error message. Here's an example implementation:\n```javascript\nconst { resolveListedChildTarget } = require('dsh-fs-local');\n\nfunction customResolveListedChildTarget(target, entry) {\n  try {\n    return resolveListedChildTarget(target, entry);\n  } catch (error) {\n    if (error.code === 'EACCES') {\n      return {\n        name: entry.name,\n        displayPath: target.displayPath,\n        error: 'permission denied',\n      };\n    }\n    throw error",
+      "metrics": {
+        "length": 1083,
+        "commands": 1,
+        "command_list": [
+          "npm install --save dsh-fs-local@latest"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 8,
+        "lesson_hits": 2,
+        "lesson_hit_rate": 0.5
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.1-8b-instruct-fp8-fast",
+      "scenario": "A child stat failure must not fail the whole parent directory listing (a-child-probe-failure-must-not-poison-the-parent-listing)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "**Fixing the \"A child stat failure must not fail the whole parent directory listing\" Error**\n\nTo fix this issue, you need to modify the `listDirectory` function in `dsh-fs-local` to handle child stat failures separately from the parent directory listing. Here's the concrete, actionable fix:\n\n**Step 1: Identify the affected file**\n\nThe affected file is `lib/index.js` in the `dsh-fs-local` module. Open this file in your favorite code editor.\n\n**Step 2: Modify the `listDirectory` function**\n\nFind the `listDirectory` function (around line 304) and modify it as follows:\n```javascript\nlistDirectory = async function (target, options) {\n  const listing = await readdir(target.displayPath);\n  const enrichedListing = listing.map((entry) => {\n    const childTarget = resolveListedChildTarget(target, entry);\n    return {\n      ...entry,\n      target: childTarget,\n    };\n  });\n  try {\n    // Add a separate stat probe for each child entry\n    const stats = await Promise.all(enrichedListing.map(async (entry) => {\n      try {\n        return await stat(entry.target.displayPath);\n      } catch (error) {\n        // Handle",
+      "metrics": {
+        "length": 1118,
+        "commands": 0,
+        "command_list": [],
+        "has_command_block": false,
+        "actionable": true,
+        "inline_code_count": 6,
+        "lesson_hits": 2,
+        "lesson_hit_rate": 0.5
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "A hit is not evidence of relevance — the boundary queries that must come back empty (a-hit-is-not-evidence-of-relevance)",
+      "condition": "plain",
+      "status": 200,
+      "content": "The error message you're encountering suggests that you're trying to use a hit as evidence of relevance, but the boundary queries are returning empty, indicating that the hit is not within the relevant range.\n\nHere's a concrete, actionable fix with exact commands. Let's assume you're using Elasticsearch and Python.\n\n**Step 1: Verify the boundary queries are returning empty**\n\nYou can use the `explain` parameter in your Elasticsearch query to see the query plan and the relevance score. You can do this by adding `explain=true` to your query.\n\n```python\nimport requests\n\n# Your Elasticsearch URL and index name\nurl = 'http://localhost:9200/myindex'\nindex_name = 'myindex'\n\n# Your search query\nquery = {\n    \"query\": {\n        \"match\": {\n            \"name\": \"John\"\n        }\n    }\n}\n\n# Add explain parameter\nquery['explain'] = True\n\n# Send the request\nresponse = requests.post(url, json=query)\n\n# Check if the response was successful\nif response.status_code == 200:\n    # Get the response JSON\n    data = response.json()\n    print(data)\nelse:\n    print(f\"Failed to retrieve data. Status code: {response.status_code}\")\n```\n\n**Step 2",
+      "metrics": {
+        "length": 1133,
+        "commands": 0,
+        "command_list": [],
+        "has_command_block": false,
+        "actionable": true,
+        "inline_code_count": 3,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.1-8b-instruct-fp8-fast",
+      "scenario": "A hit is not evidence of relevance — the boundary queries that must come back empty (a-hit-is-not-evidence-of-relevance)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "The error you're experiencing is due to the ambiguity between relevance and existence in your search query. This is a classic problem in information retrieval, and there are several ways to address it. Here's a concrete, actionable fix:\n\n**Step 1: Introduce a relevance score**\n\nTo distinguish between existence and relevance, you can introduce a separate relevance score. This score can be based on a combination of factors such as term frequency-inverse document frequency (TF-IDF), word embeddings, or other relevance metrics.\n\n**Step 2: Use a relevance threshold**\n\nSet a relevance threshold to filter out results that are not relevant to the query. This threshold can be a fixed value or a dynamic value that is learned from the data.\n\n**Step 3: Use a coverage score**\n\nCalculate a coverage score to measure the proportion of query terms that are present in the document. This score can be used to filter out results that do not cover the query.\n\n**Step 4: Combine scores**\n\nCombine the relevance score, coverage score, and other relevant metrics to produce a final score that reflects both existence and relevance.\n\n**Step 5: Use a ranking algorithm**\n\nUse a ranking algorithm such as ranking by relevance score, coverage score, or a combination of both to rank the results.\n\nHere",
+      "metrics": {
+        "length": 1286,
+        "commands": 0,
+        "command_list": [],
+        "has_command_block": false,
+        "actionable": true,
+        "inline_code_count": 0,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.1-8b-instruct-fp8-fast",
+      "scenario": "A child stat failure must not fail the whole parent directory listing (a-child-probe-failure-must-not-poison-the-parent-listing)",
+      "condition": "plain",
+      "status": 200,
+      "content": "The error \"A child stat failure must not fail the whole parent directory listing\" typically occurs when a child process fails to retrieve the contents of a directory, causing the parent process to fail as well. This can be due to a variety of reasons such as permission issues, file system errors, or a network connection issue.\n\nTo fix this issue, you can use the following steps:\n\n**Step 1: Identify the child process that is failing**\n\nYou can use the `ps` command to identify the child process that is failing. Run the following command to list all processes:\n```bash\nps -ef\n```\nLook for the process ID (PID) of the child process that is failing.\n\n**Step 2: Check the file system and permissions**\n\nUse the `ls` command to check if the directory exists and is accessible:\n```bash\nls -ld /path/to/directory\n```\nCheck the permissions of the directory and its contents:\n```bash\nls -l /path/to/directory\n```\nIf the directory or its contents are not accessible, you may need to change the permissions or ownership of the directory.\n\n**Step 3: Check the network connection**\n\nIf the issue is related to a network connection, you can try to ping the remote",
+      "metrics": {
+        "length": 1153,
+        "commands": 3,
+        "command_list": [
+          "ps -ef",
+          "ls -ld /path/to/directory",
+          "ls -l /path/to/directory"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 7,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.1-8b-instruct-fp8-fast",
+      "scenario": "A hit is not evidence of relevance — the boundary queries that must come back empty (a-hit-is-not-evidence-of-relevance)",
+      "condition": "plain",
+      "status": 200,
+      "content": "The error you're encountering is related to Elasticsearch, a search and analytics engine. The specific error message you provided, \"A hit is not evidence of relevance,\" is related to a boundary query, which is a type of query used in Elasticsearch to find the boundary of a query.\n\nHere's a concrete, actionable fix to resolve the issue:\n\n**Step 1: Identify the problematic query**\n\nCheck your Elasticsearch query to see if you're using a `match_all` query or a query that could potentially return a hit, even if the document is not relevant. If you're using a `match_all` query, you can try to replace it with a more specific query that targets the relevant fields.\n\n**Step 2: Use a `match_none` query**\n\nIf you're trying to test the relevance of a query, you can use a `match_none` query to ensure that no documents match the query. Here's an example of how to use a `match_none` query:\n```bash\nGET /my_index/_search\n{\n  \"query\": {\n    \"match_none\": {}\n  }\n}\n```\nThis query will return an empty response, indicating that no documents match the query.\n\n**Step 3: Use a `bool` query with a `must",
+      "metrics": {
+        "length": 1095,
+        "commands": 6,
+        "command_list": [
+          "GET /my_index/_search",
+          "{",
+          "\"query\": {",
+          "\"match_none\": {}",
+          "}"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 8,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "pip install agentcap gets a different project — huggingface/agentcap is a Rust binary (agentcap-is-not-on-pypi)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "To fix the issue, you need to install the Rust binary from the Hugging Face GitHub project instead of the Python package from PyPI. Here are the exact commands to do so:\n\n1. Open a terminal.\n2. Run the following command to download and install the Rust binary:\n\n```bash\ncurl -fsSL https://raw.githubusercontent.com/huggingface/agentcap/main/scripts/install.sh | sh\n```\n\nIf you want to specify a custom installation directory, you can use the following command:\n\n```bash\ncurl -fsSL .../install.sh | sh -s -- -b /usr/local/bin\n```\n\nReplace `.../` with the actual path to the `install.sh` script.\n\n3. To pin a specific version of the Rust binary, you can use the following command:\n\n```bash\ncurl -fsSL https://raw.githubusercontent.com/huggingface/agentcap/main/scripts/install.sh | sh -s -- -b /usr/local/bin --version 1.0.0\n```\n\nReplace `1.0.0` with the desired version number.\n\nBy following these steps, you should be able to install the Hugging Face `agentcap` Rust binary and use its CLI commands.",
+      "metrics": {
+        "length": 999,
+        "commands": 3,
+        "command_list": [
+          "curl -fsSL https://raw.githubusercontent.com/huggingface/agentcap/main/scripts/install.sh | sh",
+          "curl -fsSL .../install.sh | sh -s -- -b /usr/local/bin",
+          "curl -fsSL https://raw.githubusercontent.com/huggingface/agentcap/main/scripts/install.sh | sh -s -- -b /usr/local/bin --version 1.0.0"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 9,
+        "lesson_hits": 4,
+        "lesson_hit_rate": 0.667
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.1-8b-instruct-fp8-fast",
+      "scenario": "pip install agentcap gets a different project — huggingface/agentcap is a Rust binary (agentcap-is-not-on-pypi)",
+      "condition": "plain",
+      "status": 200,
+      "content": "The error you're experiencing is due to the fact that `agentcap` is not a Python package and therefore cannot be installed via pip. However, it's likely that you're trying to use `agentcap` for its Python API, which is actually a part of the `huggingface/diffusers` package.\n\nHere's a concrete, actionable fix:\n\n1. **Uninstall the existing `agentcap` package (if it's installed)**:\n   ```bash\npip uninstall agentcap\n```\n\n2. **Install the `transformers` package (which includes the `agentcap` API)**:\n   ```bash\npip install transformers\n```\n\n3. **Verify that you have the correct `agentcap` API**:\n   You should now be able to import the `agentcap` API from the `transformers` package:\n   ```python\nfrom transformers import AgentCap\n```\n\n4. **Install the required dependencies (if any)**:\n   Depending on your specific use case, you may need to install additional dependencies. For example, if you're working with a specific model or library, you may need to install its dependencies.\n\n5. **Test your code**:\n   Once you've installed the required dependencies, test your code to ensure",
+      "metrics": {
+        "length": 1084,
+        "commands": 2,
+        "command_list": [
+          "pip uninstall agentcap",
+          "pip install transformers"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 14,
+        "lesson_hits": 1,
+        "lesson_hit_rate": 0.167
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.1-8b-instruct-fp8-fast",
+      "scenario": "pip install agentcap gets a different project — huggingface/agentcap is a Rust binary (agentcap-is-not-on-pypi)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "To fix the issue, you need to install the Rust binary from the GitHub project instead of the Python package from PyPI. Here are the exact steps:\n\n**Step 1: Install the Rust binary using the GitHub script**\n\n```bash\ncurl -fsSL https://raw.githubusercontent.com/huggingface/agentcap/main/scripts/install.sh | sh\n```\n\nThis script will detect your platform and install the matching binary to `~/.local/bin`.\n\n**Step 2: Verify the installation**\n\nYou can verify that the binary has been installed by running:\n\n```bash\nagentcap --help\n```\n\nIf the installation was successful, you should see the help message for the `agentcap` binary.\n\n**Optional flags for the installation script**\n\nIf you want to customize the installation, you can use the following flags:\n\n* `-b /usr/local/bin` to install the binary to a custom directory (e.g., `/usr/local/bin`):\n```bash\ncurl -fsSL https://raw.githubusercontent.com/huggingface/agentcap/main/scripts/install.sh | sh -s -- -b /usr/local/bin\n```\n* `--version` to pin a specific version of the binary:\n```bash\ncurl -fsSL https://raw.githubusercontent.com/huggingface/",
+      "metrics": {
+        "length": 1098,
+        "commands": 3,
+        "command_list": [
+          "curl -fsSL https://raw.githubusercontent.com/huggingface/agentcap/main/scripts/install.sh | sh",
+          "agentcap --help",
+          "curl -fsSL https://raw.githubusercontent.com/huggingface/agentcap/main/scripts/install.sh | sh -s -- -b /usr/local/bin"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 11,
+        "lesson_hits": 4,
+        "lesson_hit_rate": 0.667
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "pip install agentcap gets a different project — huggingface/agentcap is a Rust binary (agentcap-is-not-on-pypi)",
+      "condition": "plain",
+      "status": 200,
+      "content": "The issue you're encountering is due to the `agentcap` package being a Rust binary, not a Python package. This means that you can't install it using pip.\n\nHere's a concrete, actionable fix:\n\n**Option 1: Install using pip with a different package**\n\nInstead of using `agentcap`, you can try installing the `transformers` package, which is a Python library that provides a wide range of pre-trained models and a simple interface for fine-tuning them.\n\n```bash\npip install transformers\n```\n\n**Option 2: Install using pip and download the Rust binary**\n\nIf you still want to use `agentcap`, you can try installing it using pip, but you'll need to download the Rust binary manually.\n\n```bash\npip install agentcap\n```\n\nThis will download the Python wrapper for the Rust binary. Then, you can download the Rust binary itself from the [Hugging Face repository](https://github.com/huggingface/agentcap) and install it using Rust.\n\n```bash\n# Clone the repository\ngit clone https://github.com/huggingface/agentcap.git\n\n# Navigate to the repository\ncd agentcap\n\n# Build the Rust binary\nrustup target add nightly\ncargo build --release\n\n# Install",
+      "metrics": {
+        "length": 1132,
+        "commands": 2,
+        "command_list": [
+          "pip install transformers",
+          "pip install agentcap"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 8,
+        "lesson_hits": 1,
+        "lesson_hit_rate": 0.167
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "AgentCap secret-safe verification rejects sensitive metadata — how to diagnose without leaking (agentcap-secret-safe-verification-failure)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "To diagnose and fix the \"agentcap-secret-safe-verification-failure\" error without leaking sensitive metadata, follow these steps:\n\n### Step 1: Identify the Affected Field\n\n1. Run the verification with verbose output and grep for \"secret-safe\" to identify the affected field:\n\n   ```bash\nagentcap verify --verbose 2>&1 | grep \"secret-safe\"\n```\n\n   This command will output the JSON paths of the fields that triggered the \"secret-safe\" check.\n\n### Step 2: Inspect the Field (Read-Only)\n\n1. Export the capability metadata to a temporary JSON file:\n\n   ```bash\nagentcap export --format json /tmp/caps.json\n```\n\n2. Find the specific field by inspecting the exported JSON file:\n\n   ```bash\ncat /tmp/caps.json | jq '.capabilities[] | select(.description | type == \"string\")'\n```\n\n   This command will output the descriptions of the capability objects. You can use this information to identify the field that triggered the \"secret-safe\" check.\n\n### Step 3: Fix the Offending Field\n\nOnce you have identified the field, you can fix it by modifying its value to avoid triggering the \"secret-safe\" check.\n\nFor example, if the affected",
+      "metrics": {
+        "length": 1122,
+        "commands": 3,
+        "command_list": [
+          "agentcap verify --verbose 2>&1 | grep \"secret-safe\"",
+          "agentcap export --format json /tmp/caps.json",
+          "cat /tmp/caps.json | jq '.capabilities[] | select(.description | type == \"string\")'"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 5,
+        "lesson_hits": 3,
+        "lesson_hit_rate": 0.375
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "AgentCap secret-safe verification rejects sensitive metadata — how to diagnose without leaking (agentcap-secret-safe-verification-failure)",
+      "condition": "plain",
+      "status": 200,
+      "content": "The error message \"AgentCap secret-safe verification rejects sensitive metadata\" indicates that the Secret Manager agent is rejecting the sensitive metadata due to its format or content. Here's a step-by-step guide to diagnose and fix the issue without leaking sensitive information:\n\n**Step 1: Check the Secret Manager agent logs**\n\n Run the following command to check the Secret Manager agent logs:\n```bash\ngcloud secrets agent logs --zone <ZONE> --project <PROJECT_ID>\n```\nReplace `<ZONE>` with the zone where the Secret Manager agent is running, and `<PROJECT_ID>` with your project ID.\n\nThis command will display the latest log entries from the Secret Manager agent. Look for any errors or warnings related to secret-safe verification.\n\n**Step 2: Check the secret format**\n\n Run the following command to check the format of the secret:\n```bash\ngcloud secrets versions access --secret <SECRET_NAME> --format='get payload'\n```\nReplace `<SECRET_NAME>` with the name of the secret that's causing the error.\n\nThis command will display the payload of the secret in JSON format. Check if the payload contains sensitive metadata that might be causing the error.\n\n**Step 3: Update the secret format**\n\nIf the secret payload contains sensitive metadata, you can update the secret",
+      "metrics": {
+        "length": 1274,
+        "commands": 2,
+        "command_list": [
+          "gcloud secrets agent logs --zone <ZONE> --project <PROJECT_ID>",
+          "gcloud secrets versions access --secret <SECRET_NAME> --format='get payload'"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 6,
+        "lesson_hits": 3,
+        "lesson_hit_rate": 0.375
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "Always Add Tests with Code Changes to Pass CI Coverage Gates (ci-test-coverage-gate)",
+      "condition": "plain",
+      "status": 200,
+      "content": "This error typically occurs when you make changes to your codebase and fail to add corresponding tests to cover those changes. Here's a step-by-step guide to fix this issue:\n\n**Step 1: Run your tests**\n\nFirst, run your tests to identify which parts of your code are not covered by tests.\n\n```bash\n./run-tests.sh  # or your test command\n```\n\n**Step 2: Identify uncovered code**\n\nLook for lines of code that are not covered by tests. You can use tools like `lcov` or `gcov` to generate coverage reports.\n\n```bash\nlcov -c -d . --out-file coverage.info\ngcov -c -d . --out-file coverage.info\n```\n\n**Step 3: Write new tests**\n\nCreate new tests to cover the uncovered code. Use a testing framework like Jest, Mocha, or Pytest to write your tests.\n\nFor example, let's say you have an uncovered function called `addNumbers()` in a file called `math.js`:\n\n```javascript\n// math.js\nfunction addNumbers(a, b) {\n  return a + b;\n}\n```\n\nYou can write a test for this function using Jest:\n\n```javascript\n// math.test.js\nconst addNumbers",
+      "metrics": {
+        "length": 1020,
+        "commands": 4,
+        "command_list": [
+          "./run-tests.sh  # or your test command",
+          "lcov -c -d . --out-file coverage.info",
+          "gcov -c -d . --out-file coverage.info",
+          "You can write a test for this function using Jest:"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 10,
+        "lesson_hits": 1,
+        "lesson_hit_rate": 0.25
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.1-8b-instruct-fp8-fast",
+      "scenario": "AgentCap secret-safe verification rejects sensitive metadata — how to diagnose without leaking (agentcap-secret-safe-verification-failure)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "Here's a concrete, actionable fix to diagnose and resolve the issue without leaking sensitive data:\n\n**Step 1: Identify the affected field**\n\nRun verification with verbose output:\n\n```bash\nagentcap verify --verbose 2>&1 | grep \"secret-safe\"\n```\n\nThis command will output JSON paths like `capabilities[2].description` or `skills[name=deploy].config.endpoint`.\n\n**Step 2: Inspect the field (read-only)**\n\nExport the capability metadata to a temporary file:\n\n```bash\nagentcap export --format json /tmp/caps.json\n```\n\nThis will save the capability metadata to a JSON file at `/tmp/caps.json`.\n\n**Step 3: Find the specific field**\n\nOpen the JSON file in a text editor or use a JSON parser like `jq` to find the specific field:\n\n```bash\njq '.capabilities[2].description' /tmp/caps.json\n```\n\nReplace `[2]` with the actual index of the field that triggered the `secret-safe` error.\n\nIf the field is nested, use a more specific path, like:\n\n```bash\njq '.skills[name=\"deploy\"].config.endpoint' /tmp/caps.json\n```\n\n**Step 4: Fix the field**\n\nOnce you've identified",
+      "metrics": {
+        "length": 1053,
+        "commands": 4,
+        "command_list": [
+          "agentcap verify --verbose 2>&1 | grep \"secret-safe\"",
+          "agentcap export --format json /tmp/caps.json",
+          "jq '.capabilities[2].description' /tmp/caps.json",
+          "jq '.skills[name=\"deploy\"].config.endpoint' /tmp/caps.json"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 13,
+        "lesson_hits": 3,
+        "lesson_hit_rate": 0.375
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.1-8b-instruct-fp8-fast",
+      "scenario": "AgentCap secret-safe verification rejects sensitive metadata — how to diagnose without leaking (agentcap-secret-safe-verification-failure)",
+      "condition": "plain",
+      "status": 200,
+      "content": "The error \"AgentCap secret-safe verification rejects sensitive metadata\" is typically encountered when using the `agentcap` plugin in a Kubernetes cluster. This plugin is used for secret-safe verification, which checks the metadata of a secret against a set of predefined rules to ensure it's safe to use.\n\nTo diagnose and fix this issue without leaking sensitive information, follow these steps:\n\n### Step 1: Gather Information\n\nRun the following command to gather information about the secret:\n```bash\nkubectl get secret <secret-name> -o yaml\n```\nReplace `<secret-name>` with the actual name of your secret.\n\nThis will display the secret's metadata in YAML format. Look for any sensitive information that might be causing the verification failure.\n\n### Step 2: Identify the Problematic Field\n\nIn the secret's metadata, identify the field that's causing the verification failure. This field is usually marked as `sensitive` or has a specific label.\n\nFor example, let's say the problematic field is `username`:\n```yaml\nmetadata:\n  annotations:\n    secret-name: my-secret\n  labels:\n    app: my-app\n  sensitive:\n    username: my-username\n```\n### Step 3: Update the Secret\n\nUpdate the secret to remove or mask the sensitive",
+      "metrics": {
+        "length": 1220,
+        "commands": 1,
+        "command_list": [
+          "kubectl get secret <secret-name> -o yaml"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 6,
+        "lesson_hits": 3,
+        "lesson_hit_rate": 0.375
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.1-8b-instruct-fp8-fast",
+      "scenario": "Always Add Tests with Code Changes to Pass CI Coverage Gates (ci-test-coverage-gate)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "**Fixing the \"Always Add Tests with Code Changes to Pass CI Coverage Gates\" Error**\n\nTo fix the error, follow these steps:\n\n### Step 1: Identify the CI gate behavior\n\nCheck if the repository has a \"Changed tests fail without the change\" CI job:\n```bash\ngh pr checks <PR_NUMBER> --json name,bucket | jq '.[] | select(.name | contains(\"test\"))'\n```\nReplace `<PR_NUMBER>` with the actual PR number.\n\n### Step 2: Add a test file matching the changed source\n\nFor bug fixes, add a test that reproduces the bug and verifies the fix:\n```python\n# tests/unit/test_fixed_module.py\nimport unittest\nfrom src.module import fixed_function\n\nclass TestBugFix(unittest.TestCase):\n    def test_bug_fix_verifies_correct_behavior(self):\n        \"\"\"Verify the bug is fixed — this test would fail without the code change.\"\"\"\n        buggy_input = ...  # input that triggers the bug\n        expected_output = ...  # expected output after fixing the bug\n        result = fixed_function(buggy_input)\n        self.assertEqual(result, expected_output)\n```\nFor refactors or new code, add a test that covers the new functionality:\n```python\n# tests/unit/test_new_function",
+      "metrics": {
+        "length": 1141,
+        "commands": 2,
+        "command_list": [
+          "gh pr checks <PR_NUMBER> --json name,bucket | jq '.[] | select(.name | contains(\"test\"))'",
+          "For refactors or new code, add a test that covers the new functionality:"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 5,
+        "lesson_hits": 2,
+        "lesson_hit_rate": 0.5
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "Always Add Tests with Code Changes to Pass CI Coverage Gates (ci-test-coverage-gate)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "Here's a step-by-step solution with concrete, actionable commands to fix the issue:\n\n**Step 1: Identify the CI gate behavior**\n\nOpen a terminal and navigate to your repository's root directory. Run the following command to check if the repository has a \"Changed tests fail without the change\" CI job:\n```bash\ngh pr checks <PR_NUMBER --json name,bucket | jq '.[] | select(.name | contains(\"test\"))'\n```\nReplace `<PR_NUMBER>` with the actual number of the pull request you're working on.\n\nIf the CI job is present, you should see a JSON object containing the name of the job. If not, proceed to the next step.\n\n**Step 2: Add a test file matching the changed source**\n\nNavigate to the `tests` directory and create a new file with the same name as the changed source file. For example, if the source file is `src/module.py`, create a new file `tests/test_module.py`.\n\nIn this file, add a test that reproduces the bug and verifies the fix:\n```python\n# tests/test_module.py\nimport unittest\nfrom src.module import fixed_function, buggy_input, expected_output\n\nclass TestBugFix(unittest.TestCase):\n    def test_bug_fix_verifies_correct_behavior",
+      "metrics": {
+        "length": 1136,
+        "commands": 1,
+        "command_list": [
+          "gh pr checks <PR_NUMBER --json name,bucket | jq '.[] | select(.name | contains(\"test\"))'"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 6,
+        "lesson_hits": 2,
+        "lesson_hit_rate": 0.5
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "Set fail-fast: false for Matrix Builds to See All Failures (ci-workflow-fail-fast-matrix)",
+      "condition": "plain",
+      "status": 200,
+      "content": "The error \"Set fail-fast: false for Matrix Builds to See All Failures\" typically occurs when you're trying to run a matrix build in a CI/CD pipeline, but the `fail-fast` option is set to `false` by default.\n\nTo fix this error, you can try the following steps:\n\n**Step 1: Update your matrix configuration**\n\nCheck your matrix configuration file (usually `matrix.yml` or `matrix.json`) and make sure that the `fail-fast` option is set to `true` for the specific build matrix you're trying to run.\n\n```yml\nmatrix:\n  - job: 'my-job'\n    matrix:\n      env: ['dev', 'prod']\n      fail-fast: true\n```\n\n**Step 2: Update your pipeline configuration**\n\nCheck your pipeline configuration file (usually `pipeline.yml` or `pipeline.json`) and make sure that the `fail-fast` option is set to `true` for the specific job.\n\n```yml\nsteps:\n  - name: 'my-step'\n    run: |\n      # your step commands here\n    fail-fast: true\n```\n\n**Step 3: Run your pipeline with the `--matrix` option**\n\nTry running your pipeline with the `--matrix`",
+      "metrics": {
+        "length": 1013,
+        "commands": 2,
+        "command_list": [
+          "**Step 2: Update your pipeline configuration**",
+          "Check your pipeline configuration file (usually `pipeline.yml` or `pipeline.json`) and make sure that the `fail-fast` option is set to `true` for the specific job."
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 15,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "Set fail-fast: false for Matrix Builds to See All Failures (ci-workflow-fail-fast-matrix)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "To fix the error \"Set fail-fast: false for Matrix Builds to See All Failures (ci-workflow-fail-fast-matrix)\", you can follow these steps:\n\n**Step 1: Update the `strategy` block in your GitHub Actions workflow file**\n\nOpen your workflow file in a text editor, and update the `strategy` block to include `fail-fast: false`:\n\n```yaml\nstrategy:\n  matrix:\n    python-version: [\"3.10\", \"3.11\", \"3.12\"]\n    test-group: [\"unit\", \"integration\", \"e2e\", \"smoke\", \"regression\"]\n  fail-fast: false\n```\n\n**Step 2: Verify all matrix jobs run**\n\nAfter updating your workflow file, push your changes to your repository. Then, use the following command to verify that all matrix jobs ran:\n\n```bash\ngh run view <RUN_ID --json jobs --jq '.jobs[] | {name: .name, conclusion: .conclusion}'\n```\n\nReplace `<RUN_ID>` with the actual ID of the run you want to view. This command will display all 15 jobs, including their individual conclusions.\n\n**Example**\n\nLet's say you have a workflow file named `matrix-builds.yml` with the",
+      "metrics": {
+        "length": 1002,
+        "commands": 2,
+        "command_list": [
+          "**Step 2: Verify all matrix jobs run**",
+          "After updating your workflow file, push your changes to your repository. Then, use the following command to verify that all matrix jobs ran:"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 8,
+        "lesson_hits": 1,
+        "lesson_hit_rate": 1.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.1-8b-instruct-fp8-fast",
+      "scenario": "Set fail-fast: false for Matrix Builds to See All Failures (ci-workflow-fail-fast-matrix)",
+      "condition": "plain",
+      "status": 200,
+      "content": "To fix the issue, you need to set `fail-fast` to `false` in your GitHub Actions workflow file. Here are the exact steps:\n\n1. Open your GitHub Actions workflow file (`*.yml` file) in a text editor.\n2. Find the section related to matrix builds. It should look something like this:\n```yml\nmatrix:\n  strategy:\n    fail-fast: true\n```\n3. Change the `fail-fast` value to `false`:\n```yml\nmatrix:\n  strategy:\n    fail-fast: false\n```\n4. Save the changes to your workflow file.\n\nAlternatively, you can also use the GitHub UI to update the workflow file:\n\n1. Go to your repository settings > Actions > Workflows.\n2. Click on the three dots next to your workflow and select \"Edit\".\n3. In the workflow editor, find the section related to matrix builds.\n4. Click on the three dots next to the `fail-fast` field and select \"Edit\".\n5. Change the value to `false` and save the changes.\n\nAfter making these changes, your workflow should run with `fail-fast` set to `false`, allowing you to see all failures in your matrix builds.",
+      "metrics": {
+        "length": 1012,
+        "commands": 1,
+        "command_list": [
+          "3. Change the `fail-fast` value to `false`:"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 11,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.1-8b-instruct-fp8-fast",
+      "scenario": "Set fail-fast: false for Matrix Builds to See All Failures (ci-workflow-fail-fast-matrix)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "Here's a concrete, actionable fix with exact commands to resolve the issue:\n\n**Step 1: Add explicit fail-fast: false**\n\n1. Open your GitHub Actions workflow file (e.g., `.github/workflows/ci.yml`) in a text editor.\n2. Locate the `strategy` block and add the following line:\n```yaml\nstrategy:\n  matrix:\n    python-version: [\"3.10\", \"3.11\", \"3.12\"]\n    test-group: [\"unit\", \"integration\", \"e2e\", \"smoke\", \"regression\"]\n  fail-fast: false\n```\nThis sets `fail-fast` to `false` explicitly.\n\n**Step 2: Verify all matrix jobs run**\n\n1. Run the following command in your terminal to view the workflow run:\n```bash\ngh run view <RUN_ID> --json jobs --jq '.jobs[] | {name: .name, conclusion: .conclusion}'\n```\nReplace `<RUN_ID>` with the actual ID of the workflow run.\n\n**Expected output**\n\nThe expected output should show all 15 jobs with their individual conclusions, not 1 failure + 14 cancelled. The output should look something like this:\n```json\n[\n  {\n    \"name\": \"python",
+      "metrics": {
+        "length": 966,
+        "commands": 6,
+        "command_list": [
+          "This sets `fail-fast` to `false` explicitly.",
+          "**Step 2: Verify all matrix jobs run**",
+          "1. Run the following command in your terminal to view the workflow run:",
+          "Replace `<RUN_ID>` with the actual ID of the workflow run.",
+          "**Expected output**"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 9,
+        "lesson_hits": 1,
+        "lesson_hit_rate": 1.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "codesign --entitlements prints a Usage banner unless you give it a destination (codesign-entitlements-needs-a-destination)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "To fix this issue, you need to provide a destination argument to the `--entitlements` flag. Here are some concrete and actionable fixes with exact commands:\n\n**Fix 1: Write to stdout**\n\n```bash\ncodesign --entitlements - /System/Applications/Calculator.app\n```\n\nThis will print the entitlements to the console.\n\n**Fix 2: Write to a file**\n\n```bash\ncodesign --entitlements /out.plist /System/Applications/Calculator.app\n```\n\nThis will write the entitlements to a file named `out.plist` in the current directory.\n\n**Fix 3: Write to a human-readable format**\n\n```bash\ncodesign --entitlements - --human-readable /System/Applications/Calculator.app\n```\n\nThis will print the entitlements in a human-readable format.\n\n**Fix 4: Write to a plist XML format**\n\n```bash\ncodesign --entitlements - --xml /System/Applications/Calculator.app\n```\n\nThis will write the entitlements to a plist XML file that can be parsed by `plutil/xmllint`.\n\nBy providing a destination argument, you can specify how the entitlements should be written, which should resolve the issue and prevent the Usage banner from",
+      "metrics": {
+        "length": 1082,
+        "commands": 4,
+        "command_list": [
+          "codesign --entitlements - /System/Applications/Calculator.app",
+          "codesign --entitlements /out.plist /System/Applications/Calculator.app",
+          "codesign --entitlements - --human-readable /System/Applications/Calculator.app",
+          "codesign --entitlements - --xml /System/Applications/Calculator.app"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 10,
+        "lesson_hits": 5,
+        "lesson_hit_rate": 0.625
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.1-8b-instruct-fp8-fast",
+      "scenario": "Always Add Tests with Code Changes to Pass CI Coverage Gates (ci-test-coverage-gate)",
+      "condition": "plain",
+      "status": 200,
+      "content": "The error \"Always Add Tests with Code Changes to Pass CI Coverage Gates (ci-test-coverage-gate)\" typically occurs when you've made code changes but haven't updated the test coverage to pass the Continuous Integration (CI) coverage gates. Here's a concrete, actionable fix with exact commands:\n\n**Assumptions:**\n\n* You're using a CI/CD tool like Jenkins, Travis CI, or CircleCI.\n* You have a test coverage metric set up in your CI/CD pipeline.\n* You've made code changes that require new tests.\n\n**Step 1: Run your tests to identify the new code coverage**\n\nRun your tests to identify the new code coverage:\n```bash\npython -m unittest discover -s path/to/your/tests\n```\nThis command will run all your tests and provide a coverage report.\n\n**Step 2: Update your test suite to cover the new code**\n\nUpdate your test suite to cover the new code. You can do this by:\n\n* Writing new tests for the new code\n* Updating existing tests to cover the new code\n* Refactoring your code to make it testable\n\n**Step 3: Run your tests again to verify the new code coverage**\n\nRun your tests again to verify the new code coverage:\n```",
+      "metrics": {
+        "length": 1116,
+        "commands": 1,
+        "command_list": [
+          "python -m unittest discover -s path/to/your/tests"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 2,
+        "lesson_hits": 1,
+        "lesson_hit_rate": 0.25
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "codesign --entitlements prints a Usage banner unless you give it a destination (codesign-entitlements-needs-a-destination)",
+      "condition": "plain",
+      "status": 200,
+      "content": "The error message you're seeing is because the `--entitlements` option in `codesign` requires a destination to write the entitlements to. Here's a concrete and actionable fix:\n\n**Solution:**\n\n1. Create a file named `entitlements.plist` with the following content:\n\n```xml\n<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\"\n         \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\">\n    <dict>\n        <key>com.example.entitlements</key>\n        <dict>\n            <key>com.example.key</key>\n            <string>value</string>\n        </dict>\n    </dict>\n</plist>\n```\n\nReplace `com.example` with your actual bundle ID and `com.example.key` with the actual key you want to add entitlements for.\n\n2. Run the following command to generate the entitlements:\n\n```bash\ncodesign --entitlements -e /path/to/entitlements.plist -f\n```\n\nReplace `/path/to/entitlements.plist` with the path to the `entitlements.plist`",
+      "metrics": {
+        "length": 967,
+        "commands": 2,
+        "command_list": [
+          "Replace `com.example` with your actual bundle ID and `com.example.key` with the actual key you want to add entitlements for.",
+          "2. Run the following command to generate the entitlements:"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 10,
+        "lesson_hits": 5,
+        "lesson_hit_rate": 0.625
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "Codex desktop: reload MCP config without restarting the app (codex-desktop-mcp-config-reload)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "Here's a concrete, actionable fix to reload MCP config without restarting the Codex desktop app:\n\n**Solution for macOS Desktop App:**\n\n1. Open the Terminal app on your macOS machine.\n2. Find the process ID (PID) of the running Codex desktop app-server using the following command:\n\n```bash\nlsof | grep codex.app-server\n```\n\nThis will display a line with the PID of the running process.\n\n3. Kill the process using the following command:\n\n```bash\npkill -f \"codex.app-server\" -9\n```\n\nThe `-9` option sends a SIGKILL signal to the process, which forces it to exit immediately.\n\n4. Open the Terminal app again and verify that the MCP config has been reloaded:\n\n```bash\ncodex mcp get <server-name>\n```\n\nReplace `<server-name>` with the name of the MCP server you removed.\n\n5. Verify that the removed server is no longer listed:\n\n```bash\ncodex mcp list 2/dev/null | head -5\n```\n\nThis command redirects the output to `/dev/null` and displays the first 5 lines of the output, which should not include the removed server.\n\n**Solution for Windows Desktop App:**\n\n1. Open",
+      "metrics": {
+        "length": 1059,
+        "commands": 4,
+        "command_list": [
+          "lsof | grep codex.app-server",
+          "pkill -f \"codex.app-server\" -9",
+          "codex mcp get <server-name>",
+          "codex mcp list 2/dev/null | head -5"
+        ],
+        "has_command_block": true,
+        "actionable": false,
+        "inline_code_count": 10,
+        "lesson_hits": 4,
+        "lesson_hit_rate": 1.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "Codex desktop: reload MCP config without restarting the app (codex-desktop-mcp-config-reload)",
+      "condition": "plain",
+      "status": 200,
+      "content": "The error `codex-desktop-mcp-config-reload` typically occurs when the MCP (Mod Configuration Platform) configuration file is not properly loaded. Here's a concrete, actionable fix to reload the MCP config without restarting the Codex desktop app:\n\n**Method 1: Using the Command Line**\n\n1. Open a terminal or command prompt.\n2. Navigate to the Codex desktop app directory. You can find the directory by running `cd ~` (on Linux/macOS) or `cd %USERPROFILE%` (on Windows).\n3. Run the following command to reload the MCP config:\n```\n./codex-desktop --reload-mcp-config\n```\nThis command will reload the MCP config without restarting the app.\n\n**Method 2: Using the GUI**\n\n1. Open the Codex desktop app.\n2. Click on the three dots (⋯) in the top-right corner of the app window.\n3. Select \"Options\" from the dropdown menu.\n4. In the Options window, click on the \"General\" tab.\n5. Scroll down to the \"Reload MCP Config\" section and click on the \"Reload\" button.\n\nThis will reload the MCP config without restarting the app.\n\n**Method 3: Using the MCP Config Reload Tool**\n\n",
+      "metrics": {
+        "length": 1064,
+        "commands": 1,
+        "command_list": [
+          "./codex-desktop --reload-mcp-config"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 4,
+        "lesson_hits": 3,
+        "lesson_hit_rate": 0.75
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "Codex CLI: keyring 'User interaction is not allowed' diagnosis (codex-keyring-user-interaction-not-allowed)",
+      "condition": "plain",
+      "status": 200,
+      "content": "The error \"User interaction is not allowed\" typically occurs when the `keyring` library is unable to retrieve or store sensitive information due to the lack of user interaction. Here's a concrete, actionable fix with exact commands:\n\n**Fix 1: Install `keyring` with `sudo` (for system-wide installation)**\n\nIf you're using a Linux or macOS system, you can try installing `keyring` with `sudo` to ensure it has the necessary permissions to interact with the system's keyring:\n\n```bash\nsudo apt-get update (for Ubuntu-based systems)\nsudo yum install keyring (for RHEL-based systems)\nsudo brew install keyring (for macOS with Homebrew)\n```\n\n**Fix 2: Use `keyring` with `keyring.backend=store` (for local keyring)**\n\nAlternatively, you can configure `keyring` to use a local keyring instead of the system's keyring. This can help avoid the \"User interaction is not allowed\" error:\n\n```bash\npip install --upgrade keyring\n```\n\nThen, add the following configuration to your `~/.config/keyring/keys.conf` file (create the directory if it doesn't exist):\n\n```ini\n[General]\nbackend = store\n",
+      "metrics": {
+        "length": 1080,
+        "commands": 4,
+        "command_list": [
+          "sudo apt-get update (for Ubuntu-based systems)",
+          "sudo yum install keyring (for RHEL-based systems)",
+          "sudo brew install keyring (for macOS with Homebrew)",
+          "pip install --upgrade keyring"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 13,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "Codex CLI: MCP handshake succeeds but the model never receives the tools (codex-mcp-tools-not-injected-despite-handshake)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "To fix the issue \"Codex CLI: MCP handshake succeeds but the model never receives the tools (codex-mcp-tools-not-injected-despite-handshake)\", you can try the following steps:\n\n1. **Update Codex CLI**: Ensure you are running the latest version of Codex CLI. You can update it using the following command:\n   ```bash\npip install --upgrade codex-cli\n```\n\n2. **Re-register MCP server**: Try re-registering the MCP server using the following command:\n   ```bash\ncodex mcp add --h\n```\n\n3. **Re-import MCP server**: If re-registering doesn't work, try re-importing the MCP server using the following command:\n   ```bash\ncodex mcp import --h\n```\n\n4. **Check MCP server configuration**: Verify that the MCP server configuration is correct and matches the expected format. You can check the configuration using the following command:\n   ```bash\ncodex mcp config --h\n```\n\n5. **Try a different transport**: Although the issue is not specific to the transport layer, you can try switching to a different transport (e.g., from streamable-http to stdio) to see if it resolves the issue. Use the following commands",
+      "metrics": {
+        "length": 1098,
+        "commands": 4,
+        "command_list": [
+          "pip install --upgrade codex-cli",
+          "codex mcp add --h",
+          "codex mcp import --h",
+          "codex mcp config --h"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 7,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "Codex CLI: MCP handshake succeeds but the model never receives the tools (codex-mcp-tools-not-injected-despite-handshake)",
+      "condition": "plain",
+      "status": 200,
+      "content": "The error \"codex-mcp-tools-not-injected-despite-handshake\" typically occurs when the MCP handshake is successful, but the model doesn't receive the tools. This can be caused by several factors, including incorrect configuration or dependencies. Here's a step-by-step guide to help you resolve the issue:\n\n**Step 1: Update Codex CLI and MCP tools**\n\nFirst, make sure you're running the latest versions of Codex CLI and MCP tools. You can update them using the following commands:\n\n```bash\n# Update Codex CLI\ngit pull origin main\n\n# Install the latest MCP tools\ngit pull origin main\npip install --upgrade codex-mcp-tools\n```\n\n**Step 2: Check MCP configuration**\n\nVerify that your MCP configuration is correct. You can do this by checking the `codex.yaml` file or the `mcp.yaml` file, depending on your configuration. Make sure that the `mcp` section is correctly configured, including the `tools` and `model` settings.\n\n```yml\n# codex.yaml example\nmcp:\n  tools:\n    - tool1\n    - tool2\n  model:\n    - model1\n    - model2\n```\n\n**Step 3: Check dependencies",
+      "metrics": {
+        "length": 1052,
+        "commands": 3,
+        "command_list": [
+          "git pull origin main",
+          "git pull origin main",
+          "pip install --upgrade codex-mcp-tools"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 8,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "Codex CLI: keyring 'User interaction is not allowed' diagnosis (codex-keyring-user-interaction-not-allowed)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "To fix the Codex CLI error 'User interaction is not allowed', follow these steps:\n\n**Step 1: Diagnose the ACL**\n\n1. Check the Keychain item's ACL:\n```bash\nsecurity find-generic-password -s \"Codex Auth\" -a \"<your-email>\" 2>&1\n```\nReplace `<your-email>` with your actual email address used for Codex authentication.\n\n2. Look for \"accc\" (access control) entries, which indicate the app paths allowed to access the Keychain item.\n\n3. Check if Keychain is actually locked from the CLI perspective:\n```bash\nsecurity show-keychain-info ~/Library/Keychains/login.keychain-db 2>&1\n```\n\n**Step 2: Fix the ACL**\n\n**Option A: Delete and recreate the item**\n\nThis will delete the existing Keychain item and recreate it, which will allow the Codex CLI to write OAuth tokens.\n\n1. Delete the existing Keychain item:\n```bash\nsecurity delete-generic-password -s \"Codex Auth\" -a \"<your-email>\" 2>&1\n```\nReplace `<your-email>` with your actual email address used for Codex authentication.\n\n2. Log out of Codex and wait for the login status to",
+      "metrics": {
+        "length": 1022,
+        "commands": 3,
+        "command_list": [
+          "security find-generic-password -s \"Codex Auth\" -a \"<your-email>\" 2>&1",
+          "security show-keychain-info ~/Library/Keychains/login.keychain-db 2>&1",
+          "security delete-generic-password -s \"Codex Auth\" -a \"<your-email>\" 2>&1"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 7,
+        "lesson_hits": 6,
+        "lesson_hit_rate": 1.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "FANUC 客户端假活排查：装有 DLP/EDR 的工控站上分层定位注入与内核过滤 (fanuc-rgcore-hang-endpoint-security-injection)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "根据提供的错误信息和解决方案，以下是解决 FANUC 客户端假活排查的具体步骤：\n\n**步骤 1: 停用 User Mode Detours 注入**\n\n1. 打开 Command Prompt 或 PowerShell。\n2. 运行以下命令：`dlt` -u -r -s frsock.dll -x -v`\n\n   这个命令会停用 User Mode Detours 注入，防止它干扰 FANUC 进程。\n\n**步骤 2: 停用 Windows Filtering Platform (WFP) 内核过滤**\n\n1. 打开 Command Prompt 或 PowerShell。\n2. 运行以下命令：`netsh wfp delete filtername=\"FANUC\"`\n\n   这个命令会删除 WFP 内核过滤，防止它干扰 FANUC 进程。\n\n**步骤 3: 停用 EDR 内核驱动**\n\n1. 打开 Command Prompt 或 PowerShell。\n2. 运行以下命令：`msiexec /x {EDR_drivers_installation_key}`\n\n   这个命令会卸载 EDR 内核驱动，防止它",
+      "metrics": {
+        "length": 514,
+        "commands": 0,
+        "command_list": [],
+        "has_command_block": false,
+        "actionable": false,
+        "inline_code_count": 3,
+        "lesson_hits": 2,
+        "lesson_hit_rate": 0.25
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "FANUC 客户端假活排查：装有 DLP/EDR 的工控站上分层定位注入与内核过滤 (fanuc-rgcore-hang-endpoint-security-injection)",
+      "condition": "plain",
+      "status": 200,
+      "content": "The error message you're encountering is related to a security issue in FANUC's CNC system. The specific error code \"fanuc-rgcore-hang-endpoint-security-injection\" indicates that there's an issue with the endpoint security injection feature. Here's a step-by-step guide to resolve this issue:\n\n**Prerequisites:**\n\n* You have administrative access to the FANUC system.\n* You have the necessary permissions to modify system settings.\n\n**Step 1: Check the System Settings**\n\n1. Open the FANUC system settings by navigating to `Settings` > `System Settings` or `System Setup` > `System Settings`.\n2. Check if the `Endpoint Security` feature is enabled. If it's enabled, proceed to the next step.\n\n**Step 2: Disable Endpoint Security**\n\n1. Go to `Settings` > `System Settings` or `System Setup` > `System Settings`.\n2. Click on `Endpoint Security` and toggle the switch to the \"Off\" position.\n3. Click \"Apply\" to save the changes.\n\n**Step 3: Verify the System**\n\n1. Restart the FANUC system by running the command: `sudo restart fanuc-rgcore`\n2. Verify that the system is running without",
+      "metrics": {
+        "length": 1082,
+        "commands": 0,
+        "command_list": [],
+        "has_command_block": false,
+        "actionable": false,
+        "inline_code_count": 11,
+        "lesson_hits": 1,
+        "lesson_hit_rate": 0.125
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "gh pr edit --body with an empty variable silently wipes the PR description (gh-cli-empty-body-silently-wipes-pr-description)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "The issue you're facing is due to the way `gh pr edit` handles empty variables. To fix this, you can use the `--body` flag with a default value, or you can check if the variable is empty before passing it to the `gh pr edit` command.\n\nHere's an example of how you can fix this using a default value:\n\n```bash\nNEW=$(echo \"This is the new PR body\" || echo \"\")\ngh pr edit --repo R --body \"$NEW\"\n```\n\nIn this command, if the `echo` command fails (i.e., the variable is empty), it will print an empty string to the `NEW` variable, and `gh pr edit` will set the PR body to an empty string.\n\nAlternatively, you can use a more robust way to handle empty variables by checking if the variable is empty before passing it to `gh pr edit`:\n\n```bash\nif [ -z \"$NEW\" ]; then\n  gh pr edit --repo R --body \"No PR body provided\"\nelse\n  gh pr edit --repo R --body \"$NEW\"\nfi\n```\n\nIn this command, if the `NEW` variable is empty, it will print a default message to the user, and `gh pr edit",
+      "metrics": {
+        "length": 969,
+        "commands": 7,
+        "command_list": [
+          "NEW=$(echo \"This is the new PR body\" || echo \"\")",
+          "gh pr edit --repo R --body \"$NEW\"",
+          "if [ -z \"$NEW\" ]; then",
+          "gh pr edit --repo R --body \"No PR body provided\"",
+          "else"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 12,
+        "lesson_hits": 4,
+        "lesson_hit_rate": 0.8
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "gh pr edit --body with an empty variable silently wipes the PR description (gh-cli-empty-body-silently-wipes-pr-description)",
+      "condition": "plain",
+      "status": 200,
+      "content": "The error you're encountering is due to an empty variable in the `gh pr edit` command, which silently wipes the PR description. Here's a concrete, actionable fix:\n\n**Step 1: Identify the empty variable**\n\nRun the following command to identify the empty variable:\n```bash\ngh pr edit --body\n```\nThis will display the current PR description. Look for any empty variables in the format `{{variable_name}}`.\n\n**Step 2: Replace the empty variable with a valid value**\n\nReplace the empty variable with a valid value. For example, if the empty variable is `{{description}}`, you can replace it with a valid description, like this:\n```bash\ngh pr edit --body \"This is a sample PR description\"\n```\n**Step 3: Update the PR**\n\nRun the following command to update the PR:\n```bash\ngh pr edit --body \"This is a sample PR description\"\n```\n**Alternative solution: Use a template**\n\nIf you frequently find yourself using the same PR description, you can create a template to avoid manual typing. Create a file named `pr-description-template` with the following content:\n```yaml\n---\ntitle: \"Sample PR Description\"\ndescription: \"This is a sample PR description\"\n```\n",
+      "metrics": {
+        "length": 1145,
+        "commands": 3,
+        "command_list": [
+          "gh pr edit --body",
+          "gh pr edit --body \"This is a sample PR description\"",
+          "gh pr edit --body \"This is a sample PR description\""
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 11,
+        "lesson_hits": 2,
+        "lesson_hit_rate": 0.4
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "git stash is repository-wide, not worktree-local — a bare stash pop can apply another session's work (git-stash-is-repository-wide)",
+      "condition": "plain",
+      "status": 200,
+      "content": "The error you're encountering is due to the fact that you're trying to stash and pop changes in a bare repository, which is a repository that's not associated with any worktree. Stashing and popping changes in a bare repository can lead to unexpected behavior, as the stash is repository-wide and can be applied to any branch in the repository.\n\nTo fix this issue, you need to stash and pop changes in a worktree. Here's how you can do it:\n\n1. Create a new worktree:\n\n```bash\ngit worktree add <branch-name> <path-to-worktree>\n```\n\nReplace `<branch-name>` with the name of the branch you want to work on, and `<path-to-worktree>` with the desired path for the worktree.\n\n2. Stash changes in the worktree:\n\n```bash\ngit stash\n```\n\nThis will stash all changes in the current branch of the worktree.\n\n3. Switch to the worktree:\n\n```bash\ngit worktree use <branch-name>\n```\n\nThis will switch you to the worktree you created earlier.\n\n4. Pop the stash:\n\n```bash\ngit stash pop\n```\n\nThis will apply the stash to the current branch in the worktree.\n\nAlternatively, you can use `git stash",
+      "metrics": {
+        "length": 1076,
+        "commands": 4,
+        "command_list": [
+          "git worktree add <branch-name> <path-to-worktree>",
+          "git stash",
+          "git worktree use <branch-name>",
+          "git stash pop"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 10,
+        "lesson_hits": 1,
+        "lesson_hit_rate": 0.5
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "git stash is repository-wide, not worktree-local — a bare stash pop can apply another session's work (git-stash-is-repository-wide)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "The error you're encountering is due to the fact that `git stash` is a repository-wide feature, not worktree-local. This means that all worktrees in the same clone share the same stash storage.\n\nTo avoid this issue, you can use `git stash` with the `--work-tree` option, which tells Git to stash the changes in a specific worktree. Here's how you can do it:\n\n1. First, make sure you're in the correct worktree by running `git worktree add <worktree-name> <repository-url>`.\n2. Then, stash the changes in the current worktree using the following command:\n   ```bash\ngit stash --work-tree=<worktree-name> -p\n```\n   Replace `<worktree-name>` with the name of the worktree where you want to stash the changes.\n\n3. To apply the stash, use the following command:\n   ```bash\ngit stash apply --work-tree=<worktree-name>\n```\n\nBy using `--work-tree`, you ensure that the stash is created and applied in a specific worktree, avoiding the repository-wide stash issue.\n\nNote: Make sure to replace `<worktree-name>` with the actual name of the worktree where you want to stash and apply",
+      "metrics": {
+        "length": 1072,
+        "commands": 2,
+        "command_list": [
+          "git stash --work-tree=<worktree-name> -p",
+          "git stash apply --work-tree=<worktree-name>"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 10,
+        "lesson_hits": 1,
+        "lesson_hit_rate": 0.5
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "Green unit tests hid a build-only type error, because the test runner strips types and never checks them (green-tests-hid-a-build-only-type-error)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "The issue you're facing is due to the test runner (vitest or jest) stripping types and not performing type checks. This means that even if a type error exists in your code, the test runner won't catch it.\n\nTo fix this, you can use a tool like `tslint` or `ts-morph` to lint your code before running the tests. This will help catch type errors and ensure that your code is type-safe.\n\nHere's a concrete, actionable fix:\n\n1. Install the `tslint` package:\n   ```bash\nnpm install tslint --save-dev\n```\n   or\n   ```bash\nyarn add tslint --dev\n```\n\n2. Create a `tslint.json` configuration file in the root of your project:\n   ```json\n{\n  \"rules\": {\n    \"no-empty-interface\": true,\n    \"no-implicit-any\": true,\n    \"no-any\": true\n  }\n}\n```\n\n3. Create a script in your `package.json` to run the tests with type checking:\n   ```json\n\"scripts\": {\n  \"test\": \"tslint ./src/**/*.ts && vitest ./src/**/*.test.ts\"\n}\n```\n\n4. Run the tests with type checking:\n   ```",
+      "metrics": {
+        "length": 948,
+        "commands": 4,
+        "command_list": [
+          "npm install tslint --save-dev",
+          "yarn add tslint --dev",
+          "3. Create a script in your `package.json` to run the tests with type checking:",
+          "4. Run the tests with type checking:"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 13,
+        "lesson_hits": 2,
+        "lesson_hit_rate": 0.667
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "Green unit tests hid a build-only type error, because the test runner strips types and never checks them (green-tests-hid-a-build-only-type-error)",
+      "condition": "plain",
+      "status": 200,
+      "content": "To fix the \"green-tests-hid-a-build-only-type-error\" error, you need to ensure that the test runner is not stripping types from your tests. Here's a concrete, actionable fix:\n\n**Solution:**\n\n1. **Install `ts-jest`**: If you're using Jest, you can install `ts-jest` which is a TypeScript version of Jest. This will allow you to use TypeScript types in your tests.\n\n   ```bash\nnpm install --save-dev ts-jest\n```\n\n2. **Configure `ts-jest`**: Create a `ts-jest.config.js` file in the root of your project with the following configuration:\n\n   ```javascript\nmodule.exports = {\n  // ... other configurations ...\n  moduleFileExtensions: ['js', 'json', 'ts', 'tsx', 'jsx'],\n  testEnvironment: 'jsdom',\n  testPathIgnorePatterns: ['node_modules'],\n  transform: {\n    '^.+\\\\.(ts|tsx)$': 'ts-jest',\n  },\n};\n```\n\n3. **Update your `jest.config.js` file**: If you're using Jest, you can remove the `moduleFileExtensions` configuration from your `jest.config.js` file, as `ts-jest` will handle",
+      "metrics": {
+        "length": 977,
+        "commands": 1,
+        "command_list": [
+          "npm install --save-dev ts-jest"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 11,
+        "lesson_hits": 2,
+        "lesson_hit_rate": 0.667
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "An IM bot is a guest on someone else's stack: pin the client, the OS, and the install order (im-bot-environment-contracts)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "The error message indicates that an IM bot (WeChat, Feishu, WeCom) is running on someone else's stack, which is causing issues with the client, OS, and install order. To fix this issue, we need to pin the client, OS, and install order. Here's a concrete, actionable fix with exact commands:\n\n**Step 1: Pin the client**\n\nWeChat uses the Tencent desktop process, so we need to pin this process to ensure it runs on the same client version. We can do this by using the `wcferry` command:\n\n```bash\nwcferry pin --client-version <version_number>\n```\n\nReplace `<version_number>` with the exact version number of the WeChat desktop process that you want to pin.\n\n**Step 2: Pin the OS**\n\nSince the automation library needs a specific OS, we need to pin the OS to ensure it runs on the same version. We can do this by using the `wcferry` command:\n\n```bash\nwcferry pin --os-version <os_version>\n```\n\nReplace `<os_version>` with the exact version number of the OS that you want to pin.\n\n**Step 3: Pin the install order**\n\nTo pin the install order, we need",
+      "metrics": {
+        "length": 1043,
+        "commands": 2,
+        "command_list": [
+          "wcferry pin --client-version <version_number>",
+          "wcferry pin --os-version <os_version>"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 7,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "Verify Import Paths After Refactoring Python Modules (import-path-verification-after-refactor)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "Here's a concrete, actionable fix with exact commands to resolve the \"Verify Import Paths After Refactoring Python Modules\" error:\n\n### Step 1: Find all references to the old import path\n\nRun the following commands to search for old import paths across the entire repository:\n\n```bash\n# Search for old import path across the entire repo\ngrep -r \"from old.module import\" --include=\".py\" .\ngrep -r \"from old.module import\" --include=\".py\" tests/\n\n# Search for direct module references\ngrep -r \"old\\.module\\.\" --include=\".py\"\n```\n\n### Step 2: Update all import statements\n\nUpdate all import statements to use the new paths:\n\n```bash\n# Replace old imports with new paths\nfind . -type f -name \"*.py\" -exec sed -i 's/from old.module import /from new.module import /g' {} \\;\nfind . -type f -name \"*.py\" -exec sed -i 's/old\\.module\\.//g' {} \\;\nfind . -type f -name \"*.py\" -exec sed -i 's/old\\.module\\.//g' {} \\;\n```\n\nHere's what each command does:\n\n- `find . -type",
+      "metrics": {
+        "length": 956,
+        "commands": 6,
+        "command_list": [
+          "grep -r \"from old.module import\" --include=\".py\" .",
+          "grep -r \"from old.module import\" --include=\".py\" tests/",
+          "grep -r \"old\\.module\\.\" --include=\".py\"",
+          "find . -type f -name \"*.py\" -exec sed -i 's/from old.module import /from new.module import /g' {} \\;",
+          "find . -type f -name \"*.py\" -exec sed -i 's/old\\.module\\.//g' {} \\;"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 4,
+        "lesson_hits": 6,
+        "lesson_hit_rate": 1.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "An IM bot is a guest on someone else's stack: pin the client, the OS, and the install order (im-bot-environment-contracts)",
+      "condition": "plain",
+      "status": 200,
+      "content": "The error message \"An IM bot is a guest on someone else's stack: pin the client, the OS, and the install order (im-bot-environment-contracts)\" typically occurs in the context of a Hyperledger Fabric network. Here's a step-by-step fix to resolve this issue:\n\n**Prerequisites:**\n\n* You have a Hyperledger Fabric network set up with multiple organizations (Org1 and Org2).\n* You have installed the Fabric SDK and CLI tools.\n* You have created a channel (e.g., mychannel) and have the necessary permissions.\n\n**Step 1: Identify the conflicting environment**\n\nTo identify the conflicting environment, you can run the following command:\n\n```bash\nfabric-shim list-environment\n```\n\nThis will list all the environments in your Fabric network. Look for the environment that is causing the conflict.\n\n**Step 2: Remove the conflicting environment**\n\nTo remove the conflicting environment, you can use the following command:\n\n```bash\nfabric-shim rm-environment <environment-name>\n```\n\nReplace `<environment-name>` with the name of the conflicting environment. For example:\n\n```bash\nfabric-shim rm-environment im-bot-environment\n```\n\n**Step 3: Pin the client, OS, and install order**\n\nTo",
+      "metrics": {
+        "length": 1173,
+        "commands": 3,
+        "command_list": [
+          "fabric-shim list-environment",
+          "fabric-shim rm-environment <environment-name>",
+          "fabric-shim rm-environment im-bot-environment"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 6,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "Verify Import Paths After Refactoring Python Modules (import-path-verification-after-refactor)",
+      "condition": "plain",
+      "status": 200,
+      "content": "The error \"Verify Import Paths After Refactoring Python Modules\" is raised when the import paths in your code have changed, but the Python interpreter hasn't been updated to reflect these changes.\n\nTo fix this issue, you can try the following steps:\n\n1. **Update your `sys.path`**: You can manually update your `sys.path` to include the new import paths. However, this is not recommended as it can lead to version conflicts.\n\n   Instead, you can use the `sys.path.insert` method to insert the new paths at the beginning of the list.\n\n   ```bash\npython -m sys.path.insert(0, '/path/to/new/import')\n```\n\n2. **Use `python -m pip freeze`**: This command will list all the packages that are currently installed in your Python environment.\n\n   Then, you can use the `pip install` command with the `--upgrade` option to upgrade all packages to the latest versions.\n\n   ```bash\npython -m pip freeze\npip install --upgrade -r requirements.txt\n```\n\n3. **Use `python -m pip install --upgrade -r requirements.txt`**: This command will upgrade all packages to the latest versions.\n\n4. **Check for virtual environments**: If you're using virtual environments,",
+      "metrics": {
+        "length": 1144,
+        "commands": 3,
+        "command_list": [
+          "python -m sys.path.insert(0, '/path/to/new/import')",
+          "python -m pip freeze",
+          "pip install --upgrade -r requirements.txt"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 10,
+        "lesson_hits": 2,
+        "lesson_hit_rate": 0.333
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "Sanitizing every interpolated value is not enough — exc_info=True appends the raw traceback (log-sanitizer-must-live-in-the-formatter)",
+      "condition": "plain",
+      "status": 200,
+      "content": "The error message you're encountering is due to the `exc_info=True` parameter in the `traceback` module. This parameter is used to include the raw traceback in the exception information. However, this can lead to issues when trying to debug the issue, as the traceback can be large and may not be easily readable.\n\nOne way to fix this issue is to use the `traceback.format_exc()` function instead of `traceback.format_exc(exc_info=True)`. Here's how you can do it:\n\n```python\nimport traceback\n\ndef my_function():\n    try:\n        # Code that may raise an exception\n        pass\n    except Exception as e:\n        formatted_exc = traceback.format_exc()\n        # Do something with the formatted exception\n        print(formatted_exc)\n\nmy_function()\n```\n\nIn this example, `traceback.format_exc()` will format the exception without including the raw traceback. This will prevent the error message you're seeing.\n\nAlternatively, if you're using Python 3.9 or later, you can use the `traceback.format_exception()` function instead. This function allows you to specify the exception type and the exception instance, which can be more useful than just formatting the exception.\n\n```python\nimport traceback\n\ndef my_function():\n    try:\n",
+      "metrics": {
+        "length": 1228,
+        "commands": 2,
+        "command_list": [
+          "In this example, `traceback.format_exc()` will format the exception without including the raw traceback. This will prevent the error message you're seeing.",
+          "Alternatively, if you're using Python 3.9 or later, you can use the `traceback.format_exception()` function instead. This function allows you to specify the exception type and the exception instance, which can be more useful than just formatting the exception."
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 8,
+        "lesson_hits": 1,
+        "lesson_hit_rate": 0.5
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "A disabled NSOpenPanel/NSSavePanel is usually the sandbox, not your code — and how to read entitlements (macos-sandbox-panel-needs-the-entitlement-in-the-signature)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "To resolve the issue, you need to add the required entitlements to your `entitlements.plist` file and update your `CODE_SIGN_ENTITLEMENTS` build setting to point to it. Here's a step-by-step guide:\n\n**Step 1: Create an `entitlements.plist` file**\n\n1. In the Finder, navigate to your project's directory.\n2. Create a new file named `entitlements.plist` by right-clicking (or control-clicking) on the project directory and selecting \"New\" > \"File\".\n3. Open the `entitlements.plist` file in a text editor (e.g., TextEdit or Xcode's built-in editor).\n4. Add the following lines to the file:\n\n```xml\n<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\">\n  <dict>\n    <key>com.apple.security.files.user-selected.read-only</key>\n    <true/>\n    <key>com.apple.security.files.user-selected.read-write</key>\n    <true/>\n  </dict>\n</",
+      "metrics": {
+        "length": 933,
+        "commands": 0,
+        "command_list": [],
+        "has_command_block": false,
+        "actionable": false,
+        "inline_code_count": 5,
+        "lesson_hits": 1,
+        "lesson_hit_rate": 1.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "A disabled NSOpenPanel/NSSavePanel is usually the sandbox, not your code — and how to read entitlements (macos-sandbox-panel-needs-the-entitlement-in-the-signature)",
+      "condition": "plain",
+      "status": 200,
+      "content": "The error you're encountering is related to a sandbox issue with NSOpenPanel/NSSavePanel. This is not typically a coding issue, but rather a configuration problem. Here's a step-by-step solution to resolve the issue:\n\n**Step 1: Check the entitlements in your Info.plist file**\n\nOpen your Xcode project and navigate to the `Info.plist` file. You can do this by selecting the project in the Project Navigator, then clicking on the `Info` tab.\n\nIn the `Info.plist` file, you need to add the `NSOpenPanel` and `NSSavePanel` entitlements to your app. To do this, add the following lines of code:\n\n```xml\n<key>NSAppTransportSecurity</key>\n<dict>\n    <key>NSAllowsArbitraryLoads</key>\n    <true/>\n</dict>\n\n<key>NSOpenPanel</key>\n<dict>\n    <key>NSAllowsArbitraryLoads</key>\n    <true/>\n</dict>\n\n<key>NSSavePanel</key>\n<dict>\n    <key>NSAllowsArbitraryLoads</key>\n    <true/>\n</dict>\n```\n\n**Step 2: Verify the entitlements in your Info.plist file**\n\nAfter adding the",
+      "metrics": {
+        "length": 958,
+        "commands": 0,
+        "command_list": [],
+        "has_command_block": false,
+        "actionable": false,
+        "inline_code_count": 6,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "Sanitizing every interpolated value is not enough — exc_info=True appends the raw traceback (log-sanitizer-must-live-in-the-formatter)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "The problem arises from the fact that the sanitizer is applied to the values at the call site, but the logging module appends the formatted traceback, which contains the exception's own text. To fix this issue, you can manually sanitize the traceback before passing it to the logger. Here's how you can do it:\n\n```python\nimport logging\nimport traceback\n\n# Create a logger\nlogger = logging.getLogger(__name__)\n\ndef sanitize_traceback(tb):\n    # Sanitize the traceback\n    sanitized_tb = []\n    for line in tb.splitlines():\n        # Remove any newline characters\n        line = line.strip()\n        # Remove any control characters\n        line = ''.join(c for c in line if ord(c) >= 32)\n        sanitized_tb.append(line)\n    return '\\n'.join(sanitized_tb)\n\ntry:\n    handle(request)\nexcept Exception as error:\n    # Manually sanitize the traceback\n    tb = traceback.format_exception(type(error), error, error.__traceback__)\n    tb = sanitize_traceback(tb)\n    logger.error(\"request failed\", exc_info=False, tb=tb)\n```\n\nIn the code above, we've added a new function called `sanitize_traceback` that takes a traceback as input and returns a sanitized version of it.",
+      "metrics": {
+        "length": 1162,
+        "commands": 0,
+        "command_list": [],
+        "has_command_block": false,
+        "actionable": true,
+        "inline_code_count": 2,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "macOS: os.listxattr missing and OCR returns empty for transparent PNG (macos-xattr-ocr-transparent-png)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "Here's a concrete, actionable fix with exact commands to resolve the error:\n\n**Step 1: Install the xattr Python package**\n\nOpen your terminal and run the following command to install the xattr package:\n\n```bash\npip install xattr\n```\n\n**Step 2: Use the xattr command-line tool to access xattrs**\n\nTo access xattrs using the command-line tool, run the following command:\n\n```bash\nxattr -l transparent.png\n```\n\nThis will list all xattrs for the file `transparent.png`.\n\n**Step 3: Pre-process the image to flatten transparency before OCR**\n\nTo flatten transparency before OCR, use the following Python code:\n\n```python\nfrom PIL import Image\n\n# Open the image\nimg = Image.open(\"transparent.png\")\n\n# Convert the image to RGBA mode\nimg = img.convert(\"RGBA\")\n\n# Create a white background image\nbackground = Image.new(\"RGB\", img.size)\n\n# Paste the image onto the white background\nimg.paste(background, mask=img)\n\n# Save the pre-processed image\nimg.save(\"pre-processed.png\")\n```\n\nThis code will create a new image with a white background and paste the original image onto it, effectively flattening the transparency.\n\n**Step 4: Use T",
+      "metrics": {
+        "length": 1123,
+        "commands": 2,
+        "command_list": [
+          "pip install xattr",
+          "xattr -l transparent.png"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 6,
+        "lesson_hits": 1,
+        "lesson_hit_rate": 0.5
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "macOS: os.listxattr missing and OCR returns empty for transparent PNG (macos-xattr-ocr-transparent-png)",
+      "condition": "plain",
+      "status": 200,
+      "content": "The error you're experiencing is due to a missing `os.listxattr` function on macOS. This function is required for OCR (Optical Character Recognition) to work properly with transparent PNG images.\n\nTo fix this issue, you can use the following command to install the `osx-xattr-ocr` package:\n\n```bash\nbrew install osx-xattr-ocr\n```\n\nIf you're using Homebrew, this command should install the package.\n\nAlternatively, you can use the following command to install the `xattr` package, which is required for `osx-xattr-ocr` to work:\n\n```bash\nbrew install xattr\n```\n\nAfter installing the package, you should be able to use OCR with transparent PNG images.\n\nTo verify that the package has been installed correctly, you can run the following command:\n\n```bash\nbrew list | grep osx-xattr-ocr\n```\n\nThis should display the package name if it's installed correctly.\n\nNote: If you're using a different package manager, you may need to use a different command to install the package.\n\nAfter installing the package, you should be able to use OCR with transparent PNG images.",
+      "metrics": {
+        "length": 1058,
+        "commands": 3,
+        "command_list": [
+          "brew install osx-xattr-ocr",
+          "brew install xattr",
+          "brew list | grep osx-xattr-ocr"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 9,
+        "lesson_hits": 1,
+        "lesson_hit_rate": 0.5
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "A source that does not exist must not resolve to a default — the bug that reports 'pending' forever (missing-source-must-not-resolve-to-a-default)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "To fix the issue of a source not existing but reporting a default instead of failing, we need to change the code to either fail with an error when the source is absent or to explicitly indicate that the source is missing. Here's an example of how to modify your code to raise an error when the source is absent:\n\n```python\nimport logging\n\ndef read_source():\n    # Simulate reading a source that does not exist\n    try:\n        return {}\n    except Exception as e:\n        logging.error(f\"Error reading source: {e}\")\n        raise ValueError(\"Source does not exist\")\n\ndef get_state(source):\n    try:\n        return source.get(\"state\", \"pending\")\n    except ValueError as e:\n        logging.error(f\"Error getting state: {e}\")\n        raise e\n```\n\nIn the above code, `read_source` raises a `ValueError` when the source is absent, which is then propagated to `get_state` where it is caught and logged. \n\nAlternatively, you could modify the code to explicitly indicate that the source is missing:\n\n```python\nimport logging\n\ndef read_source():\n    # Simulate reading a source that does not exist\n    try:\n        return {}\n    except Exception as e:\n        logging.error(f\"Error reading",
+      "metrics": {
+        "length": 1181,
+        "commands": 2,
+        "command_list": [
+          "In the above code, `read_source` raises a `ValueError` when the source is absent, which is then propagated to `get_state` where it is caught and logged.",
+          "Alternatively, you could modify the code to explicitly indicate that the source is missing:"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 5,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "Node strip-only mode rejects TypeScript syntax that needs lowering, not just type annotations (node-strip-types-rejects-syntax-that-needs-lowering)",
+      "condition": "plain",
+      "status": 200,
+      "content": "The error you're encountering is due to the fact that the `--strip-types` flag in the TypeScript compiler doesn't only reject type annotations, but also any other TypeScript syntax that needs to be lowered to JavaScript. \n\nHere's a concrete and actionable fix with exact commands:\n\n1. Open your terminal and navigate to the directory where your TypeScript project is located.\n\n2. Run the following command to compile your TypeScript code with the `--strip-types` flag:\n\n```bash\ntsc --strip-types your_file.ts\n```\n\nReplace `your_file.ts` with the name of your TypeScript file.\n\nHowever, if you want to compile all TypeScript files in your project with the `--strip-types` flag, you can use the following command:\n\n```bash\ntsc --strip-types --outDir outputDir\n```\n\nReplace `outputDir` with the name of the directory where you want to output the compiled JavaScript files.\n\nNote: If you're using a `tsconfig.json` file to configure your TypeScript project, you can add the `--stripTypes` flag to the compilerOptions section in the file:\n\n```json\n{\n  \"compilerOptions\": {\n    // Other options...\n    \"stripTypes\": true\n  }\n}\n```\n\nThen, you can compile",
+      "metrics": {
+        "length": 1147,
+        "commands": 2,
+        "command_list": [
+          "tsc --strip-types your_file.ts",
+          "tsc --strip-types --outDir outputDir"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 12,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "Node strip-only mode rejects TypeScript syntax that needs lowering, not just type annotations (node-strip-types-rejects-syntax-that-needs-lowering)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "The issue arises because `node-strip-types` does not support lowering constructor parameters to separate field declarations and assignments. To fix this, you can use the `--experimental-strip-types` flag with `tsc` and `--noEmit` to compile the TypeScript file to JavaScript without emitting any files, and then use `node-strip-types` with the `--no-lower` flag to remove type annotations without lowering constructor parameters.\n\nHere's a step-by-step solution:\n\n1. Compile the TypeScript file to JavaScript without emitting any files using the following command:\n   ```bash\ntsc --noEmit your_file.ts\n```\n   Replace `your_file.ts` with the name of your TypeScript file.\n\n2. Remove type annotations from the JavaScript file using `node-strip-types` with the `--no-lower` flag:\n   ```bash\nnode-strip-types --no-lower your_file.js\n```\n   Replace `your_file.js` with the name of the JavaScript file generated by `tsc`.\n\nAlternatively, you can use `tsc` with the `--noEmit` flag and `node-strip-types` with the `--lower` flag to achieve the same result:\n   ```bash\ntsc --noEmit your_file.ts\n",
+      "metrics": {
+        "length": 1087,
+        "commands": 2,
+        "command_list": [
+          "tsc --noEmit your_file.ts",
+          "node-strip-types --no-lower your_file.js"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 19,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "A source that does not exist must not resolve to a default — the bug that reports 'pending' forever (missing-source-must-not-resolve-to-a-default)",
+      "condition": "plain",
+      "status": 200,
+      "content": "The error you're experiencing is due to a missing source file in your project. Here's a step-by-step guide to fix it:\n\n**Step 1: Check the Error Message**\n\nThe error message indicates that the source you're trying to resolve is missing, and it's causing the build process to hang indefinitely. This is a common issue when you're trying to resolve a missing source file.\n\n**Step 2: Locate the Missing Source File**\n\nTo locate the missing source file, you can try the following:\n\n* Check the project structure and ensure that the missing file is present in the correct directory.\n* Check the `pom.xml` or `build.gradle` file to see if the missing file is referenced anywhere.\n\n**Step 3: Fix the Missing Source File**\n\nOnce you've located the missing source file, you can fix it by:\n\n* If the file is missing from the project structure, add it to the project.\n* If the file is referenced in the `pom.xml` or `build.gradle` file, update the reference to point to the correct location.\n\n**Step 4: Clean and Rebuild the Project**\n\nAfter fixing the missing source file, you need to clean and rebuild the project to ensure that the changes take effect.\n\nFor Maven projects, run",
+      "metrics": {
+        "length": 1169,
+        "commands": 0,
+        "command_list": [],
+        "has_command_block": false,
+        "actionable": true,
+        "inline_code_count": 4,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "npm E403 Forbidden is three failures: registry auth, scope routing, or a proxy that never reached npm (npm-e403-forbidden-three-layers)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "The error you're encountering is due to a combination of issues with your registry authentication, scope routing, and/or proxy configuration. To resolve this issue, you'll need to address each of these layers. Here's a step-by-step guide with concrete, actionable fixes:\n\n**Layer 1: Registry Refusal (403 Forbidden)**\n\nThis error is usually caused by an expired or invalid token, or a mismatch between the token's read scope and the package you're trying to install.\n\n1. **Check your token expiration**: If you're using a private registry like GitHub Packages, ensure that your token has not expired. You can check the expiration date on the GitHub Packages dashboard.\n2. **Update your token**: If your token has expired, regenerate a new one and update your `package.json` file with the new token.\n3. **Verify token scope**: Ensure that your token's read scope covers the private package you're trying to install.\n\n**Command:** `npm config set registry https://registry.npmjs.org/`\n\n**Layer 2: Proxy Refusal (403 Forbidden)**\n\nThis error occurs when your proxy refuses the request before npm's registry ever sees it.\n\n1. **Check your proxy configuration**: Ensure that your proxy is correctly configured in your `package.json",
+      "metrics": {
+        "length": 1226,
+        "commands": 0,
+        "command_list": [],
+        "has_command_block": false,
+        "actionable": true,
+        "inline_code_count": 2,
+        "lesson_hits": 3,
+        "lesson_hit_rate": 1.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "npm E403 Forbidden is three failures: registry auth, scope routing, or a proxy that never reached npm (npm-e403-forbidden-three-layers)",
+      "condition": "plain",
+      "status": 200,
+      "content": "The E403 Forbidden error in npm can be caused by several factors, including:\n\n1. Registry authentication issues\n2. Scope routing issues\n3. Proxy configuration issues\n\nHere's a step-by-step guide to fixing the error:\n\n**Step 1: Update npm and Node.js**\n\nMake sure you're running the latest versions of npm and Node.js. Run the following commands:\n\n```bash\nnpm install -g npm@latest\nnpm install -g node@latest\n```\n\n**Step 2: Check and update your npm configuration**\n\nRun the following command to check your npm configuration:\n\n```bash\nnpm config ls\n```\n\nThis will display your current npm configuration. Look for the following settings:\n\n* `registry`: This should point to the npm registry URL. If it's set to `http://registry.npmjs.org/`, try updating it to `https://registry.npmjs.org/`.\n* `cache`: Make sure this is set to a valid directory.\n* `proxy`: If you're using a proxy, make sure it's set correctly.\n\nUpdate these settings as needed:\n\n```bash\nnpm config set registry https://registry.npmjs.org/\nnpm config set cache /tmp/node-cache\nnpm config set proxy http://your-proxy-url:",
+      "metrics": {
+        "length": 1085,
+        "commands": 3,
+        "command_list": [
+          "npm install -g npm@latest",
+          "npm install -g node@latest",
+          "npm config ls"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 9,
+        "lesson_hits": 3,
+        "lesson_hit_rate": 1.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "An on-chain payout has no retry: the checks an agent must pass before it signs (onchain-payout-preflight-checklist)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "Based on the provided information, it seems that the issue is related to the fact that on-chain payouts do not allow retries. To fix this issue, you'll need to modify your code to handle the case where the payout fails and cannot be retried.\n\nHere's an example of how you can modify your code to handle this issue:\n\nLet's assume you're using a programming language like Python, and you have a function called `process_payout` that attempts to process a payout:\n\n```python\nimport requests\n\ndef process_payout(payout_data):\n    # Attempt to process the payout\n    response = requests.post('https://example.com/payout', json=payout_data)\n    if response.status_code == 200:\n        # Payout was successful, return True\n        return True\n    else:\n        # Payout failed, return False\n        return False\n```\n\nTo handle the case where the payout fails and cannot be retried, you can modify the `process_payout` function to catch any exceptions that occur during the payout process:\n\n```python\nimport requests\n\ndef process_payout(payout_data):\n    try:\n        # Attempt to process the payout\n        response = requests.post('https://example.com/payout', json=payout_data)\n",
+      "metrics": {
+        "length": 1173,
+        "commands": 1,
+        "command_list": [
+          "To handle the case where the payout fails and cannot be retried, you can modify the `process_payout` function to catch any exceptions that occur during the payout process:"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 4,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "NSOpenPanel/NSSavePanel buttons stay disabled in sandboxed SwiftUI macOS app (nsopenpanel-nssavepanel-button-disabled-sandbox)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "The issue you're facing is due to the way `NSOpenPanel` and `NSSavePanel` are being used in your SwiftUI app. Here's a concrete, actionable fix with exact commands:\n\n1.  Create a new SwiftUI view to handle the file picker:\n    ```swift\nimport SwiftUI\nimport AppKit\n\nstruct FilePicker: View {\n    @State private var isShowingOpenPanel = false\n    @State private var isShowingSavePanel = false\n    @State private var selectedFile: URL?\n\n    var body: some View {\n        VStack {\n            Button(\"Open\") {\n                isShowingOpenPanel = true\n            }\n            .sheet(isPresented: $isShowingOpenPanel) {\n                self.openPanel()\n            }\n            Button(\"Save\") {\n                isShowingSavePanel = true\n            }\n            .sheet(isPresented: $isShowingSavePanel) {\n                self.savePanel()\n            }\n        }\n    }\n\n    private func openPanel() {\n        let openPanel = NSOpenPanel()\n        openPanel.allowedContentTypes = [\"public.text\", \"public.data\"]\n        openPanel.canChooseFiles = true\n        openPanel.canChooseDirectories = false\n        openPanel.beginSheetModal(for: nil, completionHandler: { (",
+      "metrics": {
+        "length": 1162,
+        "commands": 0,
+        "command_list": [],
+        "has_command_block": false,
+        "actionable": false,
+        "inline_code_count": 2,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "An on-chain payout has no retry: the checks an agent must pass before it signs (onchain-payout-preflight-checklist)",
+      "condition": "plain",
+      "status": 200,
+      "content": "The error message \"An on-chain payout has no retry\" suggests that the agent is unable to complete the preflight checks required before signing an on-chain payout. This could be due to a variety of reasons, such as:\n\n1. Incorrect agent configuration\n2. Missing or invalid agent dependencies\n3. Insufficient funds or balance issues\n\nTo fix this issue, you can try the following steps:\n\n**Step 1: Check agent configuration**\n\nVerify that your agent is correctly configured by checking the following:\n\n* `agent config` command to ensure that the agent is properly set up\n* `agent status` command to check the agent's current status\n\nExample commands:\n```bash\n# Check agent configuration\nagent config\n\n# Check agent status\nagent status\n```\n\n**Step 2: Update agent dependencies**\n\nEnsure that your agent has the necessary dependencies installed. You can do this by running the following command:\n```bash\n# Update agent dependencies\nagent update\n```\n\n**Step 3: Check for balance issues**\n\nVerify that your agent has sufficient funds to complete the payout. You can do this by running the following command:\n```bash\n# Check agent balance\nagent balance\n```\n\nIf your agent balance is insufficient, you may need to deposit more funds",
+      "metrics": {
+        "length": 1222,
+        "commands": 4,
+        "command_list": [
+          "agent config",
+          "agent status",
+          "agent update",
+          "agent balance"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 7,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "NSOpenPanel/NSSavePanel buttons stay disabled in sandboxed SwiftUI macOS app (nsopenpanel-nssavepanel-button-disabled-sandbox)",
+      "condition": "plain",
+      "status": 200,
+      "content": "The issue you're encountering is due to the way `NSOpenPanel` and `NSSavePanel` work in a sandboxed macOS app. These panels are not fully sandboxed, which means they can still interact with the system and potentially bypass your app's security restrictions.\n\nTo fix this issue, you can use the `NSAppKitCompatibilityKey` key to disable the panels' ability to bypass your app's security restrictions.\n\nHere's an example of how you can do this in your SwiftUI app:\n\n```swift\n@main\nstruct MyApp: App {\n    @AppStorage(\"allowOpenPanel\") var allowOpenPanel = true\n    @AppStorage(\"allowSavePanel\") var allowSavePanel = true\n\n    var body: some Scene {\n        WindowGroup {\n            ContentView()\n                .frame(maxWidth: .infinity, maxHeight: .infinity)\n                .windowTitle(\"My App\")\n                .toolbar {\n                    ToolbarItem(placement: .navigationBarTrailing) {\n                        Button(action: {\n                            allowOpenPanel.toggle()\n                        }) {\n                            Label(\"Open Panel\", systemImage: \"openfile\")\n                        }\n                        Button(action: {\n                            allowSavePanel.toggle()\n                        }) {\n                            Label(\"Save Panel\", systemImage: \"savesymbol\")\n                        }\n                   ",
+      "metrics": {
+        "length": 1359,
+        "commands": 0,
+        "command_list": [],
+        "has_command_block": false,
+        "actionable": true,
+        "inline_code_count": 3,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "pdf-oxide drops compound-word hyphen when PDF wraps at that hyphen (pdf-text-extraction-drops-hyphen)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "To fix the issue where pdf-oxide drops compound-word hyphens when PDF wraps at that hyphen, you can follow these steps:\n\n**Option A: Use Poppler for extraction**\n\nFirst, install Poppler on your system:\n\n*   macOS (using Homebrew):\n    ```bash\nbrew install poppler\n```\n*   Ubuntu (using apt):\n    ```bash\nsudo apt install poppler-utils\n```\n\nThen, use `pdftotext` to extract text from the PDF file:\n\n```bash\npdftotext input.pdf - output.txt\n```\n\nThis will extract the text from the PDF file and save it to a file named `output.txt`.\n\n**Option B: Post-process pdf-oxide output**\n\nIf you must use pdf-oxide, you can post-process the output to restore likely compound-word hyphens using the following Python script:\n\n```python\nimport re\n\ndef restore_hyphens(text: str) -> str:\n    \"\"\"\n    Restore hyphens at line boundaries where the word exists with a hyphen.\n    \"\"\"\n    pattern = r'([a-z])\\n([a-z])'\n    return re.sub(pattern, r'\\1-\\2', text)\n\n# Example usage:\npdf_oxide_output =",
+      "metrics": {
+        "length": 977,
+        "commands": 3,
+        "command_list": [
+          "brew install poppler",
+          "sudo apt install poppler-utils",
+          "pdftotext input.pdf - output.txt"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 8,
+        "lesson_hits": 2,
+        "lesson_hit_rate": 1.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "pdf-oxide drops compound-word hyphen when PDF wraps at that hyphen (pdf-text-extraction-drops-hyphen)",
+      "condition": "plain",
+      "status": 200,
+      "content": "The issue you're experiencing is due to a limitation in pdf-oxide, which is a command-line tool for extracting text from PDF files. To fix this issue, you can use the `--hyphenate` option along with `--strip-trailing-spaces` when extracting text.\n\nHere's an example of how you can use the `pdf-oxide` command to extract text from a PDF file while avoiding the issue of dropped hyphens:\n\n```bash\npdf-oxide --hyphenate --strip-trailing-spaces -o output.txt input.pdf\n```\n\nIn this command:\n\n- `pdf-oxide` is the command to extract text from PDF files.\n- `--hyphenate` tells `pdf-oxide` to hyphenate the text, ensuring that compound words are separated by hyphens.\n- `--strip-trailing-spaces` removes any trailing spaces from the extracted text.\n- `-o output.txt` specifies the output file name.\n- `input.pdf` is the input PDF file.\n\nBy using the `--hyphenate` option, `pdf-oxide` will ensure that compound words are separated by hyphens, preventing the issue of dropped hyphens when the PDF wraps at that hyphen.",
+      "metrics": {
+        "length": 1009,
+        "commands": 1,
+        "command_list": [
+          "pdf-oxide --hyphenate --strip-trailing-spaces -o output.txt input.pdf"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 12,
+        "lesson_hits": 2,
+        "lesson_hit_rate": 1.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "PowerShell Add-Type blocked by policy: call the Win32 API with Python ctypes instead (powershell-add-type-blocked-use-python-ctypes-instead)",
+      "condition": "plain",
+      "status": 200,
+      "content": "The error you're experiencing is due to PowerShell's security restrictions on calling native code with Python's ctypes library. Here's a concrete, actionable fix:\n\n**Method 1: Use PowerShell's built-in cmdlets with Python**\n\nYou can use PowerShell's built-in cmdlets with Python to avoid the security restrictions. First, install the `python` module using pip:\n\n```bash\npip install python\n```\n\nThen, run the following PowerShell command:\n\n```powershell\npython -c \"import clr; clr.AddReference('System.Windows.Forms'); Add-Type -MemberDefinition '[DllImport(\\\"user32.dll\\\")] public static extern int MessageBox(int hWnd, String text, String caption, int type);' -Name MyType -Namespace My -Language CSharp\"\n```\n\nThis command will add a new .NET type that allows you to call the `MessageBox` function from the `user32.dll` library.\n\n**Method 2: Use a third-party library**\n\nAnother option is to use a third-party library that allows you to call native code with Python. One such library is `pywin32`.\n\nFirst, install `pywin32` using pip:\n\n```bash\npip install pywin32\n```\n\nThen, run the following PowerShell command:\n\n```powershell\npython",
+      "metrics": {
+        "length": 1135,
+        "commands": 6,
+        "command_list": [
+          "pip install python",
+          "This command will add a new .NET type that allows you to call the `MessageBox` function from the `user32.dll` library.",
+          "**Method 2: Use a third-party library**",
+          "Another option is to use a third-party library that allows you to call native code with Python. One such library is `pywin32`.",
+          "First, install `pywin32` using pip:"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 11,
+        "lesson_hits": 2,
+        "lesson_hit_rate": 0.25
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "PowerShell Add-Type blocked by policy: call the Win32 API with Python ctypes instead (powershell-add-type-blocked-use-python-ctypes-instead)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "The error you're encountering is due to the PowerShell Add-Type cmdlet being blocked by the machine's security policy. This can be caused by a number of factors, including the language mode of the PowerShell session, AppLocker policies, and Windows Defender Application Control (Intelligent Security Graph).\n\nTo resolve this issue, we'll need to modify the language mode of the PowerShell session and remove any AppLocker policies that may be blocking the Add-Type cmdlet.\n\nHere are the steps to take:\n\n**Step 1: Modify the PowerShell language mode**\n\nOpen PowerShell and run the following command to change the language mode to FullLanguage:\n\n```powershell\n$ExecutionContext.SessionState.LanguageMode = 'FullLanguage'\n```\n\nYou can also add this to your PowerShell profile (e.g., `~\\Documents\\WindowsPowerShell\\profile.ps1`) so it runs automatically when you start PowerShell.\n\n**Step 2: Remove AppLocker policies (if necessary)**\n\nIf you're running Windows 10 or later, AppLocker policies may be blocking the Add-Type cmdlet. To remove these policies, follow these steps:\n\n1. Open the AppLocker settings by running the following command:\n\n```powershell\nGet-AppLockerPolicy -Effective -Xml | Select-Object -ExpandProperty RuleCollections",
+      "metrics": {
+        "length": 1237,
+        "commands": 4,
+        "command_list": [
+          "You can also add this to your PowerShell profile (e.g., `~\\Documents\\WindowsPowerShell\\profile.ps1`) so it runs automatically when you start PowerShell.",
+          "**Step 2: Remove AppLocker policies (if necessary)**",
+          "If you're running Windows 10 or later, AppLocker policies may be blocking the Add-Type cmdlet. To remove these policies, follow these steps:",
+          "1. Open the AppLocker settings by running the following command:"
+        ],
+        "has_command_block": true,
+        "actionable": false,
+        "inline_code_count": 3,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "Relative-path command retry loop — No such file or directory means the shell is in the wrong directory (relative-path-command-retry-loop-is-a-cwd-bug)",
+      "condition": "plain",
+      "status": 200,
+      "content": "The error \"Relative-path command retry loop — No such file or directory means the shell is in the wrong directory\" occurs when the shell is not in the correct directory to execute a command with a relative path. Here's a concrete, actionable fix:\n\n**Fix: Change the Current Working Directory (CWD)**\n\nTo fix this issue, you need to change the current working directory (CWD) to the directory where the file you're trying to access is located. Here's how you can do it using the `cd` command:\n\n```bash\n# Navigate to the directory where the file is located\ncd /path/to/directory\n```\n\nReplace `/path/to/directory` with the actual path to the directory where the file is located.\n\n**Example:**\n\nLet's say you have a file named `example.txt` in the `/home/user/documents` directory. To access it, you need to change the CWD to that directory:\n\n```bash\n# Navigate to the documents directory\ncd /home/user/documents\n```\n\nOnce you're in the correct directory, you can execute the relative-path command again.\n\n**Alternatively:**\n\nIf you don't know the exact path to the directory, you can use the `pwd` command to print the current working directory",
+      "metrics": {
+        "length": 1141,
+        "commands": 2,
+        "command_list": [
+          "cd /path/to/directory",
+          "cd /home/user/documents"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 8,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "Relative-path command retry loop — No such file or directory means the shell is in the wrong directory (relative-path-command-retry-loop-is-a-cwd-bug)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "The issue you're facing is due to the shell's working directory not being set to the repository root. To fix this, you need to ensure that the shell's working directory is set to the repository root before running the command. Here's a concrete, actionable fix:\n\n**Step 1: Set the repository root as the working directory**\n\nFirst, you need to find the path to your repository root. You can do this by running the following command in your terminal:\n```bash\npwd\n```\nThis will print the absolute path to your current working directory.\n\nNext, you need to set the repository root as the working directory. You can do this by running the following command:\n```bash\ncd /path/to/your/repository/root\n```\nReplace `/path/to/your/repository/root` with the actual path to your repository root.\n\n**Step 2: Run the command with absolute path**\n\nOnce you've set the repository root as the working directory, you can run the command with an absolute path. You can do this by running the following command:\n```bash\npython3 /path/to/your/repository/root/scripts/lesson_gate.py\n```\nReplace `/path/to/your/repository/root/scripts/lesson_gate.py` with the actual path to your script.\n\n**",
+      "metrics": {
+        "length": 1169,
+        "commands": 3,
+        "command_list": [
+          "pwd",
+          "cd /path/to/your/repository/root",
+          "python3 /path/to/your/repository/root/scripts/lesson_gate.py"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 7,
+        "lesson_hits": 2,
+        "lesson_hit_rate": 1.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "A retry must not widen the axis the guardrail measures, and must have a discard terminal state (retry-must-not-also-loosen-the-axis-the-detector-checks)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "The issue you're facing is related to the retry mechanism not properly discarding the contaminated sample and not widening the axis the guardrail measures. Here's a concrete, actionable fix:\n\n**Step 1: Update the retry mechanism to discard contaminated samples**\n\nIn your retry loop, you need to discard the contaminated sample and not store it in the chat history. You can do this by adding a condition to discard the sample before re-requesting the turn.\n\n```python\ndef retry_turn(self):\n    # Check if the reply is contaminated\n    if self.is_contaminated():\n        # Discard the contaminated sample\n        self.discard_sample()\n        # Re-request the turn with a new sampling temperature\n        self.request_turn()\n    else:\n        # Re-request the turn with the current sampling temperature\n        self.request_turn()\n```\n\n**Step 2: Update the guardrail to measure the correct axis**\n\nThe guardrail is currently measuring the wrong axis. You need to update the guardrail to measure the axis that is not being widened by the retry mechanism.\n\n```python\ndef check_guardrail(self):\n    # Check if the reply is contaminated\n    if self.is_contaminated():\n        # Calculate the new sampling temperature\n        new_temperature = self.get_new_temperature",
+      "metrics": {
+        "length": 1262,
+        "commands": 2,
+        "command_list": [
+          "**Step 2: Update the guardrail to measure the correct axis**",
+          "The guardrail is currently measuring the wrong axis. You need to update the guardrail to measure the axis that is not being widened by the retry mechanism."
+        ],
+        "has_command_block": true,
+        "actionable": false,
+        "inline_code_count": 2,
+        "lesson_hits": 1,
+        "lesson_hit_rate": 0.5
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "A retry must not widen the axis the guardrail measures, and must have a discard terminal state (retry-must-not-also-loosen-the-axis-the-detector-checks)",
+      "condition": "plain",
+      "status": 200,
+      "content": "The error message you're encountering is related to a specific constraint in the LTL (Linear Temporal Logic) model checking community. This constraint ensures that a retry mechanism does not widen the axis guarded by a detector check.\n\nTo fix this issue, you can use the `ax` and `ux` operators in your LTL formula to specify the axis and the opposite axis, respectively. Here's an example of how you can modify your LTL formula to satisfy the constraint:\n\n```ltl\nG (ax (G (P ∧ (ux (Q ∨ R))))\n    U (ax (G (P ∧ (ux (Q ∨ R)))))\n    U (ax G P))\n```\n\nIn this formula, `ax` is the \"always-x\" operator, which ensures that the axis remains the same throughout the entire LTL formula. `ux` is the \"until-x\" operator, which allows the axis to change only when the condition inside the parentheses is true.\n\nHowever, without more context about your specific LTL formula and the model checking tool you're using, it's difficult to provide a more concrete solution.\n\nHere's an example of how you can modify your LTL formula using the `ltl2rata` tool:\n\n```bash\nltl2",
+      "metrics": {
+        "length": 1053,
+        "commands": 3,
+        "command_list": [
+          "In this formula, `ax` is the \"always-x\" operator, which ensures that the axis remains the same throughout the entire LTL formula. `ux` is the \"until-x\" operator, which allows the axis to change only when the condition inside the parentheses is true.",
+          "However, without more context about your specific LTL formula and the model checking tool you're using, it's difficult to provide a more concrete solution.",
+          "Here's an example of how you can modify your LTL formula using the `ltl2rata` tool:"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 7,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "Navigating a shared browser tab is a destructive action — treat it like deleting a file (shared-tab-navigation-is-destructive)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "To fix the issue of destructive navigation in a shared browser tab, you can implement the following steps:\n\n1.  **Prevent the agent from navigating away from the current page**:\n\n    *   Instead of using `history.back()`, use `history.go(-1)`. This will take the user back to the previous page in the history stack, rather than going to the previous page in the URL.\n    *   To prevent the agent from navigating away from the current page, you can use a flag to track whether the agent is currently interacting with the page. If the flag is set, the agent should not be able to navigate away.\n\n    ```javascript\n    let isAgentInteracting = false;\n\n    // Set the flag to true when the agent starts interacting with the page\n    function startInteraction() {\n        isAgentInteracting = true;\n    }\n\n    // Set the flag to false when the agent stops interacting with the page\n    function stopInteraction() {\n        isAgentInteracting = false;\n    }\n```\n\n2.  **Use a shared state to track the agent's interaction**:\n\n    *   Create a shared state object that tracks whether the agent is currently interacting with the page.\n    *   Update the shared state when the agent starts",
+      "metrics": {
+        "length": 1179,
+        "commands": 0,
+        "command_list": [],
+        "has_command_block": false,
+        "actionable": true,
+        "inline_code_count": 3,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "Injected scene state is a cache, not the roster: filter it before the model reads it (stale-injected-state-must-be-filtered-before-the-model-sees-it)",
+      "condition": "plain",
+      "status": 200,
+      "content": "The error you're encountering is due to the fact that the injected scene state is being treated as a cache, not a roster, which can lead to stale data being used by the model.\n\nHere's a concrete, actionable fix:\n\n**Step 1: Update the Scene State**\n\nFirst, you need to update the scene state to ensure it's a roster, not a cache. You can do this by calling the `setSceneState` method on the scene.\n\n```lua\nlocal scene = require(\"scene\")\n\n-- Update the scene state to a roster\nscene:setSceneState(\"roster\")\n```\n\n**Step 2: Filter the Scene State**\n\nNext, you need to filter the scene state to remove any stale data. You can do this by creating a new table that only includes the data you need.\n\n```lua\nlocal sceneState = scene:getSceneState()\nlocal filteredState = {}\n\nfor _, entity in pairs(sceneState) do\n    -- Filter out any entities you don't need\n    if entity.type == \"player\" or entity.type == \"enemy\" then\n        table.insert(filteredState, entity)\n    end\nend\n\n-- Update the scene state with the filtered data\nscene:setSceneState(filteredState)\n```\n\n**Step 3:",
+      "metrics": {
+        "length": 1067,
+        "commands": 2,
+        "command_list": [
+          "**Step 2: Filter the Scene State**",
+          "Next, you need to filter the scene state to remove any stale data. You can do this by creating a new table that only includes the data you need."
+        ],
+        "has_command_block": true,
+        "actionable": false,
+        "inline_code_count": 4,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "Navigating a shared browser tab is a destructive action — treat it like deleting a file (shared-tab-navigation-is-destructive)",
+      "condition": "plain",
+      "status": 200,
+      "content": "The error message is indicating that you're trying to navigate between tabs in a shared browser tab, which can cause unintended behavior. Here's a concrete, actionable fix:\n\n**Solution:**\n\n1. Close the shared browser tab.\n2. Open the shared browser tab again.\n3. Right-click on the tab and select \"New Incognito Window\" (or \"New Private Window\" depending on your browser).\n\nAlternatively, you can also try:\n\n1. Close the shared browser tab.\n2. Open the shared browser tab again.\n3. Press `Ctrl + T` (Windows/Linux) or `Cmd + T` (Mac) to open a new tab.\n\nBy doing this, you'll create a new, isolated tab that won't interfere with the original tab.\n\n**Note:** If you're using a browser extension that allows sharing tabs, you may need to disable the extension or remove it from your browser before attempting to navigate between tabs.\n\n**Example commands:**\n\n* Google Chrome:\n\t+ Close shared tab: `Ctrl + W` (Windows/Linux) or `Cmd + W` (Mac)\n\t+ Open new incognito window: `Ctrl + Shift + N` (Windows/Linux) or `Cmd + Shift + N` (Mac)\n* Mozilla Firefox:\n\t",
+      "metrics": {
+        "length": 1053,
+        "commands": 0,
+        "command_list": [],
+        "has_command_block": false,
+        "actionable": true,
+        "inline_code_count": 6,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "Injected scene state is a cache, not the roster: filter it before the model reads it (stale-injected-state-must-be-filtered-before-the-model-sees-it)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "To fix the issue, you need to filter the injected scene state before passing it to the model. Here's a concrete, actionable fix with exact commands:\n\n```python\n# Before the model reads the scene state\ndef get_filtered_scene_state(scene):\n    # Filter out entities that are no longer in the scene\n    filtered_scene = {\n        entity_id: entity\n        for entity_id, entity in scene.items()\n        if entity_id in get_current_roster()\n    }\n\n    # Return the filtered scene state\n    return filtered_scene\n\n# Pass the filtered scene state to the model\ndef get_model_output(scene):\n    filtered_scene = get_filtered_scene_state(scene)\n    # Now the model will only see entities that are currently in the scene\n    return model.get_output(filtered_scene)\n```\n\nHere's what's changed:\n\n1. We've added a new function `get_filtered_scene_state` that takes the scene state as input and returns a filtered version of it.\n2. In the `get_filtered_scene_state` function, we use a dictionary comprehension to filter out entities that are no longer in the current roster.\n3. We pass the filtered scene state to the `get_model_output` function, which now only sees entities that are currently in the scene.\n\nBy",
+      "metrics": {
+        "length": 1198,
+        "commands": 0,
+        "command_list": [],
+        "has_command_block": false,
+        "actionable": true,
+        "inline_code_count": 4,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "svglib leaves glyph state set between text nodes: one italic <text> slants every node drawn after it (svglib-mutates-shared-state-while-walking-the-document)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "To fix the issue, you need to ensure that the shared glyph/paragraph state is properly reset after each text element. Here's how you can do it:\n\nFirst, you need to install the required packages:\n\n```bash\npip install svglib reportlab\n```\n\nNext, you can modify your Python script to reset the glyph state after each text element. Here's an example:\n\n```python\nfrom svglib.svglib import svg2rlg\nfrom reportlab.graphics import renderPDF\n\ndef convert_svg_to_pdf(svg_file, pdf_file):\n    drawing = svg2rlg(svg_file)\n    for page in drawing.pages:\n        page.showPage()\n        page.saveState()\n        for elem in page.getElements():\n            if elem.tag == 'text':\n                elem.setGlyphState(0)  # Reset glyph state\n        renderPDF.drawToFile(page, pdf_file, resolution=100)\n\n# Example usage\nconvert_svg_to_pdf('input.svg', 'output.pdf')\n```\n\nIn the modified code, we're saving the current state of the page before drawing each text element, and then resetting the glyph state to its initial state (0) after drawing each text element. This ensures that the shared glyph/paragraph state is properly reset after each text element.\n\nNote",
+      "metrics": {
+        "length": 1144,
+        "commands": 1,
+        "command_list": [
+          "pip install svglib reportlab"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 3,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "SwiftUI ScrollView scrollTo no effect unless .id() on each row and scrollTo called in onChange (swiftui-scrollview-scrollto-doesnt-scroll)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "To fix the issue, you need to add `.id()` to each row in your `ForEach` loop and call `scrollTo` outside the `body` of the `ScrollView`. Here's the corrected code:\n\n```swift\nstruct RecordDetailForm: View {\n    let sections: [RecordSection]\n\n    @State private var selectedSection: RecordSection?\n\n    var body: some View {\n        ScrollView {\n            ScrollViewReader { scrollProxy in\n                ForEach(sections, id: \\.id) { section in\n                    VStack(alignment: .leading) {\n                        Text(section.name)\n                            .font(.headline)\n                        Text(section.description)\n                            .font(.subheadline)\n                        // Add other fields here\n                    }\n                    .frame(height: 100) // Replace with actual height\n                }\n            }\n            .onChange(of: selectedSection) { newSection in\n                if let newSection = newSection {\n                    scrollProxy.scrollTo(newSection.id, anchor: .center)\n                }\n            }\n        }\n        .navigationBarTitle(\"Record Detail Form\")\n    }\n}\n```\n\nIn this corrected code:\n\n1. We add `.id()` to the `ForEach` loop to provide a unique identifier for each row.\n2. We wrap the `ForEach` loop",
+      "metrics": {
+        "length": 1281,
+        "commands": 0,
+        "command_list": [],
+        "has_command_block": false,
+        "actionable": false,
+        "inline_code_count": 9,
+        "lesson_hits": 1,
+        "lesson_hit_rate": 1.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "svglib leaves glyph state set between text nodes: one italic <text> slants every node drawn after it (svglib-mutates-shared-state-while-walking-the-document)",
+      "condition": "plain",
+      "status": 200,
+      "content": "The error you're encountering is due to the way `svglib` handles glyph state between text nodes. Here's a concrete, actionable fix with exact commands to resolve the issue:\n\n1. **Update `svglib` to the latest version**: Make sure you're running the latest version of `svglib`. You can update it by running the following command:\n\n   ```bash\nnpm install --save-dev svglib@latest\n```\n\n2. **Update `svglib` to the latest `@svglib/ svglib` version**: Ensure you're using the latest `@svglib/ svglib` version by running the following command:\n\n   ```bash\nnpm install --save-dev @svglib/ svglib@latest\n```\n\n3. **Use the `resetGlyphState` function**: After the text node, use the `resetGlyphState` function to reset the glyph state:\n\n   ```javascript\nimport { resetGlyphState } from '@svglib/svglib';\n\n// ...\n\nconst textNode = document.createElementNS('http://www.w3.org/2000/svg', 'text');\ntextNode.textContent = 'Italic text';\ntextNode.style.fontStyle = 'italic';\n\n// ...\n\nconst svg = document.createElementNS('http://www.w3.org/200",
+      "metrics": {
+        "length": 1027,
+        "commands": 2,
+        "command_list": [
+          "npm install --save-dev svglib@latest",
+          "npm install --save-dev @svglib/ svglib@latest"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 12,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "swift-format rejects directories without --recursive; only some rules are auto-fixed (swift-format-lint-recursive-format-inplace)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "To resolve the issue with `swift-format` rejecting directories without the `--recursive` option, you can follow these steps:\n\n1. Run `swift-format format --in-place` to auto-fix formatting rules in the directory. This will modify the files in the directory to conform to the formatting rules.\n\n2. Then, run `swift-format lint` to check for any remaining linter-only rules. This will report the issues that require manual edits.\n\nHere are the exact commands to resolve the issue:\n\n```bash\n# Auto-fix formatting rules in the directory\nswift-format format --in-place Sources/\n\n# Check for remaining linter-only rules\nswift-format lint\n```\n\nNote that you can also use the `--recursive` option with both `format` and `lint` commands to handle directories automatically.\n\n```bash\n# Auto-fix formatting rules in the directory with recursive option\nswift-format format --in-place --recursive Sources/\n\n# Check for remaining linter-only rules in the directory with recursive option\nswift-format lint --recursive Sources/\n```\n\nBy following these steps, you can ensure that `swift-format` correctly handles directories and reports any remaining issues that require manual edits.",
+      "metrics": {
+        "length": 1167,
+        "commands": 4,
+        "command_list": [
+          "swift-format format --in-place Sources/",
+          "swift-format lint",
+          "swift-format format --in-place --recursive Sources/",
+          "swift-format lint --recursive Sources/"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 11,
+        "lesson_hits": 6,
+        "lesson_hit_rate": 1.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "swift-format rejects directories without --recursive; only some rules are auto-fixed (swift-format-lint-recursive-format-inplace)",
+      "condition": "plain",
+      "status": 200,
+      "content": "The error you're encountering is due to the `swift-format` tool's behavior when it encounters directories without the `--recursive` flag. Here's a concrete, actionable fix with exact commands:\n\n**Step 1: Update your `swift-format` tool**\n\nBefore fixing the issue, make sure you're using the latest version of `swift-format`. You can update it using the following command:\n\n```bash\nbrew upgrade swift-format\n```\n\nor\n\n```bash\npip install --upgrade swift-format\n```\n\n**Step 2: Use the `--recursive` flag with `swift-format`**\n\nTo fix the issue, you can use the `--recursive` flag with `swift-format`. Here's how:\n\n```bash\nswift-format --recursive --fix\n```\n\nThis command will recursively format all files and subdirectories in your project.\n\n**Step 3: Use `swift-format-lint-recursive-format-inplace` (optional)**\n\nIf you want to use a more advanced version of `swift-format` that can fix some rules automatically, you can use `swift-format-lint-recursive-format-inplace`. Here's how:\n\n```bash\nswift-format-lint-recursive-format-inplace --fix\n```\n\nThis command will recursively format all files and sub",
+      "metrics": {
+        "length": 1099,
+        "commands": 4,
+        "command_list": [
+          "brew upgrade swift-format",
+          "pip install --upgrade swift-format",
+          "swift-format --recursive --fix",
+          "swift-format-lint-recursive-format-inplace --fix"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 18,
+        "lesson_hits": 6,
+        "lesson_hit_rate": 1.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "SwiftUI ScrollView scrollTo no effect unless .id() on each row and scrollTo called in onChange (swiftui-scrollview-scrollto-doesnt-scroll)",
+      "condition": "plain",
+      "status": 200,
+      "content": "The issue you're experiencing is due to the fact that the `ScrollView` in SwiftUI doesn't automatically scroll to a specific row when you add a new item. You need to use the `.id()` modifier and `onChange` to achieve this.\n\nHere's an example of how you can fix this:\n\n```swift\nimport SwiftUI\n\nstruct MyView: View {\n    @State var items: [String] = []\n    @State private var index = 0\n\n    var body: some View {\n        ScrollView {\n            ForEach(items.indices, id: \\.self) { index in\n                Text(\"Row \\(index)\")\n            }\n            .onChange(of: items, perform: { [weak self] _ in\n                if let self = self, let lastItem = items.last, index < lastItem {\n                    self.index = index\n                }\n            })\n        }\n        .onAppear {\n            // Add some items to the list\n            items.append(\"Item 1\")\n            items.append(\"Item 2\")\n            items.append(\"Item 3\")\n        }\n    }\n}\n```\n\nIn this example, we're using the `.onChange` modifier to check if the `items` array has changed. If it has, we're checking if the index is less",
+      "metrics": {
+        "length": 1099,
+        "commands": 0,
+        "command_list": [],
+        "has_command_block": false,
+        "actionable": true,
+        "inline_code_count": 6,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "Voice pipelines fail without failing: the acceptance is the artifact, not the exit code (voice-pipeline-silent-failures)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "The issue you're experiencing is due to each stage of the voice pipeline verifying itself instead of verifying the artifact. Here are some concrete, actionable fixes to address each stage:\n\n### FFmpeg Encoding\n\nThe FFmpeg command used a nonexistent `-format ogg` flag and resulted in a 0-byte output. To fix this:\n\n1. Check the FFmpeg version: `ffmpeg -version` (on macOS) or `ffmpeg -v` (on Linux)\n2. Update FFmpeg to the latest version if necessary.\n3. Verify the FFmpeg command is correct and the output is being generated correctly.\n4. Add a check for the output size in the FFmpeg command using the `-f` option, for example: `ffmpeg -i input.mp3 -f ogg -ar 16000 output.ogg`\n\n```bash\nffmpeg -i input.mp3 -f ogg -ar 16000 -v 10 output.ogg\n```\n\n### GPT-SoVITS\n\nThe GPT-SoVITS stage has issues with HuBERT feature extraction, phoneme dictionary, and reference-audio bugs.\n\n1. Check the GPT-SoVITS configuration and parameters to ensure they match the requirements.\n2. Update the GPT-SoVITS model",
+      "metrics": {
+        "length": 997,
+        "commands": 1,
+        "command_list": [
+          "ffmpeg -i input.mp3 -f ogg -ar 16000 -v 10 output.ogg"
+        ],
+        "has_command_block": true,
+        "actionable": false,
+        "inline_code_count": 5,
+        "lesson_hits": 1,
+        "lesson_hit_rate": 0.333
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "Voice pipelines fail without failing: the acceptance is the artifact, not the exit code (voice-pipeline-silent-failures)",
+      "condition": "plain",
+      "status": 200,
+      "content": "The error message \"Voice pipelines fail without failing: the acceptance is the artifact, not the exit code (voice-pipeline-silent-failures)\" is typically caused by a Voice Pipeline that is not failing when it should. This is because the pipeline's acceptance is being set to the artifact, rather than the exit code.\n\nTo fix this issue, you'll need to update the pipeline to use the exit code instead of the artifact as the acceptance. Here's a step-by-step guide to help you do this:\n\n**Step 1: Identify the pipeline configuration**\n\nYou'll need to identify the pipeline configuration that's causing the issue. You can do this by searching for the pipeline in the AWS Management Console or by using the AWS CLI.\n\n**Step 2: Update the pipeline configuration**\n\nUpdate the pipeline configuration to use the exit code as the acceptance. You can do this by editing the pipeline configuration file (e.g. `pipeline.yaml` or `pipeline.json`) and changing the `Acceptance` property to use the `ExitCode` property instead of the `Artifact` property.\n\nHere's an example of what the updated pipeline configuration might look like:\n```yaml\npipeline:\n  name: MyVoicePipeline\n  role: MyVoicePipelineRole\n  version: ",
+      "metrics": {
+        "length": 1201,
+        "commands": 0,
+        "command_list": [],
+        "has_command_block": false,
+        "actionable": true,
+        "inline_code_count": 5,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "TS2305 under NodeNext is usually a real missing export, not a types-condition problem (ts2305-under-nodenext-is-usually-a-real-missing-export)",
+      "condition": "plain",
+      "status": 200,
+      "content": "The error TS2305 \"under NodeNext is usually a real missing export, not a types-condition problem\" typically occurs when a module is being imported but the module itself is not exporting the expected function or variable.\n\nTo fix this issue, you need to check if the module you're trying to import is actually exporting what you're trying to import. Here's a step-by-step solution:\n\n1. **Check the module documentation**: Look up the documentation for the module you're trying to import to see what it's supposed to export.\n\n2. **Check the module's code**: Open the module's code in your preferred IDE or text editor. Look for any export statements.\n\n3. **Identify the missing export**: If you can't find the export, try searching for it in the code.\n\n4. **Create the missing export**: If the module is missing the export, create it by adding an export statement in the code.\n\n5. **Install the module with npm or yarn**: If the module is not installed, install it using npm or yarn.\n\n6. **Check your import statement**: Make sure you're importing the correct export from the module.\n\nHere's an example using TypeScript and the `ts-node` command:\n\nLet's say you're trying to import a function",
+      "metrics": {
+        "length": 1190,
+        "commands": 0,
+        "command_list": [],
+        "has_command_block": false,
+        "actionable": true,
+        "inline_code_count": 1,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "TS2305 under NodeNext is usually a real missing export, not a types-condition problem (ts2305-under-nodenext-is-usually-a-real-missing-export)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "The issue you're facing is due to a limitation in NodeNext's module resolution. When using a \"type\": \"module\" package, NodeNext only resolves imports from the `default` export and types listed in the `types` field of the `moduleResolution` configuration.\n\nTo fix the issue, you can try the following solutions:\n\n**Solution 1: Use `moduleResolution: 'node'` instead of `moduleResolution: 'bundler'`**\n\nTry changing the `moduleResolution` field in your `tsconfig.json` file from `'bundler'` to `'node'`. This should allow NodeNext to resolve imports from the `types` field.\n\nHere's an example `tsconfig.json` file:\n```json\n{\n  \"compilerOptions\": {\n    // ... other options ...\n    \"moduleResolution\": \"node\",\n    // ... other options ...\n  }\n}\n```\n\n**Solution 2: Add an `import` statement with a `require` branch**\n\nAs mentioned in the intake report, adding an `import` statement with a `require` branch can fix the issue. You can try adding the following line to your code:\n```typescript\nimport { Context } from 'example-lib';\nrequire('example-lib');\n```\nThis will",
+      "metrics": {
+        "length": 1063,
+        "commands": 2,
+        "command_list": [
+          "**Solution 2: Add an `import` statement with a `require` branch**",
+          "As mentioned in the intake report, adding an `import` statement with a `require` branch can fix the issue. You can try adding the following line to your code:"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 18,
+        "lesson_hits": 3,
+        "lesson_hit_rate": 0.75
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "AgentCap uses 'inspect' not 'show' for capability lookup; macOS codesign needs -xml for plistlib (agentcap-inspect-subcommand-and-codesign-xml-output)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "To fix the error, you need to replace `show` with `inspect` in the `agentcap` command. Here's a concrete, actionable fix with exact commands:\n\n```bash\n# Run the command with the correct subcommand\nagentcap inspect my-capability-id\n```\n\nThis command uses the `inspect` subcommand to look up the capability by exact ID, which is the correct way to do it.",
+      "metrics": {
+        "length": 352,
+        "commands": 1,
+        "command_list": [
+          "agentcap inspect my-capability-id"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 5,
+        "lesson_hits": 4,
+        "lesson_hit_rate": 0.8
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "An empty Wayback availability answer is not 'no captures' — separate it from a failed index request (wayback-empty-availability-is-not-no-captures)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "The error message indicates that the `wayback-empty-availability-is-not-no-captures` error occurs when the Wayback availability lookup returns an empty object and the CDX index request fails with a 503 status code. This is because the two endpoints are answering different questions and are not properly filtered.\n\nTo fix this issue, you can try the following commands:\n\n1. Filter the CDX index request to only include HTTP 200 responses:\n\n```bash\n# Filter CDX index request to only include HTTP 200 responses\ncurl -X GET 'https://web.archive.org/cdx/verify' -H 'Accept: application/json' -H 'Accept-Encoding: gzip' | jq '.[] | select(.status == 200)'\n```\n\nThis command uses `jq` to select only the JSON objects with a status code of 200 from the CDX index response.\n\n2. Filter the Wayback availability lookup to only include HTTP 200 responses:\n\n```bash\n# Filter Wayback availability lookup to only include HTTP 200 responses\ncurl -X GET 'https://web.archive.org/wayback/available' -H 'Accept: application/json' -H 'Accept-Encoding: gzip' | jq '.[] | select(.status == 200)'\n```\n\nThis command uses",
+      "metrics": {
+        "length": 1098,
+        "commands": 2,
+        "command_list": [
+          "curl -X GET 'https://web.archive.org/cdx/verify' -H 'Accept: application/json' -H 'Accept-Encoding: gzip' | jq '.[] | select(.status == 200)'",
+          "curl -X GET 'https://web.archive.org/wayback/available' -H 'Accept: application/json' -H 'Accept-Encoding: gzip' | jq '.[] | select(.status == 200)'"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 5,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "An empty Wayback availability answer is not 'no captures' — separate it from a failed index request (wayback-empty-availability-is-not-no-captures)",
+      "condition": "plain",
+      "status": 200,
+      "content": "The error message you're seeing indicates that the Wayback API is unable to retrieve any captures for a given URL, but it's not returning the expected \"no captures\" response. Instead, it's returning an empty response, which is causing the error.\n\nTo fix this issue, you can use the `--empty` flag with the Wayback API. Here's an example of how you can use it:\n\n```bash\nwget --save-all --mirror --convert-links --adjust-date --no-parent --no-check-certificate --http-user=<username> --http-passwd=<password> --http-proxy=<proxy> --http-proxy-user=<proxy-username> --http-proxy-passwd=<proxy-password> --no-check-certificate --no-check-hosts --no-check-content --no-check-date --no-check-certificate --no-check-ssl --no-check-peer --no-check-hosts --no-check-ssl --no-check-peer --no-check-content --no-check-date --no-check-certificate --no-check-ssl --no-check-peer --no-check-hosts --no-check-content --no-check-date --no-check-certificate --no-check-ssl --no-check-peer --no-check-hosts --no-check-content --no-check-date --no-check-certificate --no-check",
+      "metrics": {
+        "length": 1057,
+        "commands": 0,
+        "command_list": [],
+        "has_command_block": false,
+        "actionable": true,
+        "inline_code_count": 1,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "A Windows ACL write sandbox lost command execution: SetNamedSecurityInfoW failed (Win32 5) grantWrite (windows-acl-write-sandbox-grantwrite-win32-5)",
+      "condition": "plain",
+      "status": 200,
+      "content": "The error you're encountering is due to the Windows Sandbox not being able to write to the file system because of the lack of a grantWrite permission. Here's a step-by-step fix to resolve the issue:\n\n**Step 1: Run the following command in the Command Prompt with administrator privileges:**\n\n```bash\nicacls C:\\Windows\\Sandbox\\ /grant:r IUSR:GRANT_WRITE\n```\n\nReplace `C:\\Windows\\Sandbox` with the actual path where your Windows Sandbox is located.\n\n**What this command does:**\n\n- `icacls` is a command-line utility used to manage access control lists (ACLs) on files and directories.\n- `C:\\Windows\\Sandbox` is the path to the Windows Sandbox.\n- `/grant:r` specifies that you want to grant permissions recursively.\n- `IUSR` is the built-in user account that runs the Windows Sandbox.\n- `GRANT_WRITE` grants the write permission to the sandbox.\n\n**Step 2: Run the following command in the Command Prompt with administrator privileges:**\n\n```bash\nicacls C:\\Windows\\Sandbox\\ /grant:r IUSRMEMBER:GRANT_WRITE\n```\n\nAgain, replace `C:\\Windows\\Sandbox` with the actual path to your Windows Sandbox",
+      "metrics": {
+        "length": 1087,
+        "commands": 2,
+        "command_list": [
+          "icacls C:\\Windows\\Sandbox\\ /grant:r IUSR:GRANT_WRITE",
+          "icacls C:\\Windows\\Sandbox\\ /grant:r IUSRMEMBER:GRANT_WRITE"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 10,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "A Windows ACL write sandbox lost command execution: SetNamedSecurityInfoW failed (Win32 5) grantWrite (windows-acl-write-sandbox-grantwrite-win32-5)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "To resolve the issue, you'll need to modify the sandbox's security descriptor to include the necessary permissions. Here are the steps:\n\n1. **Open the Sandbox's Properties**:\n   - Right-click on the sandbox and select \"Properties\".\n   - In the Properties window, click on the \"Security\" tab.\n\n2. **Modify the Sandbox's DACL and SACL**:\n   - Click on the \"Edit\" button to open the \"Edit Security\" window.\n   - In the \"Edit Security\" window, click on the \"Add\" button.\n   - Select \"Permissions\" and then \"Allow\" for the following permissions:\n     - \"Read\" for the \"Everyone\" group.\n     - \"Write\" for the \"Everyone\" group.\n     - \"Read and Execute\" for the \"Everyone\" group.\n   - Click \"OK\" to save the changes.\n\n   Alternatively, you can use the following commands to modify the sandbox's DACL and SACL:\n\n   ```bash\nicacls /grant:r \"Everyone\":R,W,X \"C:\\Path\\To\\Sandbox\"\nicacls /s /t /g \"Everyone\":R,W,X \"C:\\Path\\To\\Sandbox\"\n```\n\n   Replace `C:\\Path\\To\\S",
+      "metrics": {
+        "length": 953,
+        "commands": 2,
+        "command_list": [
+          "icacls /grant:r \"Everyone\":R,W,X \"C:\\Path\\To\\Sandbox\"",
+          "icacls /s /t /g \"Everyone\":R,W,X \"C:\\Path\\To\\Sandbox\""
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 2,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "AgentCap uses 'inspect' not 'show' for capability lookup; macOS codesign needs -xml for plistlib (agentcap-inspect-subcommand-and-codesign-xml-output)",
+      "condition": "plain",
+      "status": 200,
+      "content": "The error message indicates that you're trying to use the `inspect` subcommand with the `agentcap` tool, which is not the correct subcommand for this purpose. Additionally, the `codesign` tool requires the `-xml` option to generate XML output, which is needed for `agentcap` to work correctly.\n\nHere's a concrete, actionable fix:\n\n**Step 1: Update `agentcap` to the latest version**\n\nRun the following command to update `agentcap` to the latest version:\n```bash\nbrew upgrade agentcap\n```\nOr, if you're using a different package manager, update `agentcap` accordingly.\n\n**Step 2: Use the correct subcommand and options**\n\nRun the following command to inspect the capability lookup and generate XML output:\n```bash\nagentcap inspect -xml /path/to/your/capability-file.plist\n```\nReplace `/path/to/your/capability-file.plist` with the actual path to your capability file.\n\n**Step 3: Run `codesign` with the `-xml` option**\n\nRun the following command to codesign your application with the `-xml` option:\n```bash\ncodesign -s - -xml /path/to/your/applications/capability-file.plist",
+      "metrics": {
+        "length": 1073,
+        "commands": 2,
+        "command_list": [
+          "brew upgrade agentcap",
+          "agentcap inspect -xml /path/to/your/capability-file.plist"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 16,
+        "lesson_hits": 4,
+        "lesson_hit_rate": 0.8
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "swift-format diagnostics that need source edits vs auto-fixable; NSOpenPanel/NSSavePanel disabled in sandbox (swift-format-diagnostics-and-nsopenpanel-disabled)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "Here's a step-by-step guide to fixing the errors:\n\n**Step 1: Use swift-format correctly**\n\nTo fix the first issue, you need to pass a single file path to `swift-format` instead of a directory path. You can do this by navigating to the directory containing the file you want to format and running the following command:\n\n```bash\nswift-format -f path/to/your/file.swift\n```\n\nReplace `path/to/your/file.swift` with the actual path to the file you want to format.\n\n**Step 2: Add the necessary entitlement to your app's Info.plist**\n\nTo fix the second issue, you need to add the `com.apple.security.files.user-selected.read-write` entitlement to your app's Info.plist file. Here's how you can do it:\n\n1. Open your project in Xcode.\n2. Select the target that contains your app.\n3. Go to the `Signing & Capabilities` tab.\n4. Click on the `+` button next to `Capabilities`.\n5. Search for `File System Access` and select it.\n6. Make sure the `Read/Write` capability is selected.\n7. Click on the `+` button next to `Entitlements`.\n8. Search for `com.apple",
+      "metrics": {
+        "length": 1045,
+        "commands": 1,
+        "command_list": [
+          "swift-format -f path/to/your/file.swift"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 12,
+        "lesson_hits": 3,
+        "lesson_hit_rate": 1.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "A pystray menu crash on macOS is an AppKit main-thread violation in a background thread, not a host-app bug (a-pystray-menu-thread-crash-is-an-appkit-main-thread-violation)",
+      "condition": "plain",
+      "status": 200,
+      "content": "To fix the error \"pystray menu crash on macOS is an AppKit main-thread violation in a background thread\", you can use the following steps:\n\n1. Open your terminal and run the following command to install the `pystray` package with the `osx` backend, which is designed to work correctly on macOS:\n\n```bash\npip install pystray[osx]\n```\n\n2. If you're using a virtual environment, make sure it's activated before running the above command.\n\n3. After installing the `osx` backend, try running your script again to see if the error persists.\n\nIf the issue still occurs, you can try to use a different backend by running:\n\n```bash\npip install pystray[win]  # for Windows\npip install pystray[linux]  # for Linux\n```\n\nHowever, if you're experiencing the issue on macOS, the `osx` backend is the recommended solution.\n\nHere's a simple example of how to use `pystray` with the `osx` backend:\n\n```python\nimport pystray\nfrom pystray import Icon, Menu, MenuItem\nimport time\n\ndef main():\n    icon = Icon('pystray', 'PyStray')\n",
+      "metrics": {
+        "length": 1010,
+        "commands": 3,
+        "command_list": [
+          "pip install pystray[osx]",
+          "pip install pystray[win]  # for Windows",
+          "pip install pystray[linux]  # for Linux"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 10,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "swift-format diagnostics that need source edits vs auto-fixable; NSOpenPanel/NSSavePanel disabled in sandbox (swift-format-diagnostics-and-nsopenpanel-disabled)",
+      "condition": "plain",
+      "status": 200,
+      "content": "The error message is indicating that you're trying to use `NSOpenPanel` and `NSSavePanel` in a sandboxed environment, but these panels are disabled in sandboxed environments.\n\nThe `swift-format` command is trying to use these panels to prompt the user for input, but since they're disabled, it's throwing an error.\n\nTo fix this, you can use the `--no-panels` flag with `swift-format` to disable the panels. Here's an example:\n\n```bash\nswift-format --no-panels --fix\n```\n\nThis will run `swift-format` in non-interactive mode, without prompting the user for input. The `--fix` flag tells `swift-format` to automatically fix any formatting issues it finds.\n\nIf you want to keep the interactive mode, but still avoid using the panels, you can use the `--no-panels` flag and specify the input files manually:\n\n```bash\nswift-format --no-panels --fix --input-file=\"path/to/input/file.swift\"\n```\n\nReplace `\"path/to/input/file.swift\"` with the actual path to the file you want to format.\n\nAlternatively, if you're using `swift-format` in a script, you can use the `--no-panels` flag and",
+      "metrics": {
+        "length": 1077,
+        "commands": 2,
+        "command_list": [
+          "swift-format --no-panels --fix",
+          "swift-format --no-panels --fix --input-file=\"path/to/input/file.swift\""
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 15,
+        "lesson_hits": 3,
+        "lesson_hit_rate": 1.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "A pystray menu crash on macOS is an AppKit main-thread violation in a background thread, not a host-app bug (a-pystray-menu-thread-crash-is-an-appkit-main-thread-violation)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "The issue you're experiencing is due to the `pystray` library not properly handling the main-thread requirement for `NSStatusItem` operations. Here's a concrete, actionable fix:\n\n**Update `pystray` to the latest version**\n\nBefore making any changes to your code, ensure you're running the latest version of `pystray`. You can update it using pip:\n\n```bash\npip install --upgrade pystray\n```\n\n**Modify your code to use `pystray` with the main thread**\n\nCreate a new file, e.g., `pystray_thread_safe.py`, and add the following code:\n\n```python\nimport pystray\nimport threading\n\ndef update_menu_thread_safe(menu, status_item):\n    def update_menu_wrapper():\n        pystray.update_menu(menu, status_item)\n\n    threading.Thread(target=update_menu_wrapper).start()\n\n# Usage\nmenu = pystray.Menu(\n    \"My Menu\",\n    [\n        pystray.MenuItem(\"Item 1\"),\n        pystray.MenuItem(\"Item 2\"),\n    ],\n)\n\nstatus_item = pystray.StatusItem(\n    \"My Status Item\",\n    menu=menu,\n)\n\npystray.StatusItem.update_menu(menu, status_item)\n```\n\nIn this modified",
+      "metrics": {
+        "length": 1036,
+        "commands": 1,
+        "command_list": [
+          "pip install --upgrade pystray"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 9,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "An archive container name is not an entity name: parse the entries before grouping (an-archive-container-name-is-not-an-entity-name)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "The issue arises because the `fileName` variable is being used as both the container name and the entity name. To fix this, you need to extract the entity name from the `fileName` and use that as the entity name for grouping.\n\nHere's a concrete, actionable fix with exact commands:\n\n```javascript\n// Assuming you're using Node.js and the fs and path modules\nconst fs = require('fs');\nconst path = require('path');\n\n// Define the function to extract the entity name\nfunction extractEntityName(fileName) {\n  // Remove the extension from the file name\n  const nameWithoutExtension = fileName.replace(/\\.rar|\\.7z|\\.zip|\\.tar$/, '');\n  \n  // Split the name into parts (assuming the entity name is the first part)\n  const entityNameParts = nameWithoutExtension.split('_');\n  \n  // Return the first part as the entity name\n  return entityNameParts[0];\n}\n\n// Define the function to group the files\nfunction groupFiles(fileNames) {\n  // Initialize an empty object to store the grouped files\n  const groupedFiles = {};\n  \n  // Iterate over the file names\n  fileNames.forEach((fileName) => {\n    // Extract the entity name from the file name\n    const",
+      "metrics": {
+        "length": 1140,
+        "commands": 0,
+        "command_list": [],
+        "has_command_block": false,
+        "actionable": true,
+        "inline_code_count": 2,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "curl exit 23 is a write failure, not a network failure: change the writer (curl-exit-23-is-a-write-failure-not-a-network-failure)",
+      "condition": "plain",
+      "status": 200,
+      "content": "The error you're encountering is due to the fact that `curl` is exiting with a non-zero status code (23 in your case) without providing any error message. This is often caused by a write failure, such as when a file cannot be written or a network connection is lost.\n\nTo fix this issue, you can use the `-v` option with `curl` to enable verbose mode, which will provide more detailed information about the request and any errors that occur.\n\nHere's how you can use it:\n\n```bash\ncurl -v -X GET https://example.com\n```\n\nIn this command:\n\n- `-v` stands for verbose mode, which will display detailed information about the request and any errors that occur.\n- `-X GET` specifies the request method (in this case, a GET request).\n\nBy running this command, you should be able to see the exact error message that's causing the issue. This will help you diagnose and fix the problem.\n\nAdditionally, you can also try to use the `--trace` option instead of `-v`, which will provide an even more detailed output:\n\n```bash\ncurl --trace /tmp/curl.trace /X GET https://example.com\n```\n\nThis will save the output to a file named `curl.trace",
+      "metrics": {
+        "length": 1124,
+        "commands": 2,
+        "command_list": [
+          "curl -v -X GET https://example.com",
+          "curl --trace /tmp/curl.trace /X GET https://example.com"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 11,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "An archive container name is not an entity name: parse the entries before grouping (an-archive-container-name-is-not-an-entity-name)",
+      "condition": "plain",
+      "status": 200,
+      "content": "The error message \"An archive container name is not an entity name: parse the entries before grouping\" is typically encountered when using the `groupby` method with a DataFrame that contains a column with non-string values. The `groupby` method requires all columns to be of a compatible data type.\n\nTo fix this issue, you can convert the problematic column to string type before grouping. Here's an example using Python and the pandas library:\n\n```bash\nimport pandas as pd\n\n# Create a sample DataFrame\ndata = {\n    'Entity Name': ['Entity1', 'Entity2', 'Entity3', 'Entity4'],\n    'Archive Container Name': ['Archive1', 'Archive2', 'Archive3', 'Archive4']\n}\ndf = pd.DataFrame(data)\n\n# Group by 'Entity Name' and 'Archive Container Name'\ngrouped_df = df.groupby(['Entity Name', 'Archive Container Name']).size().reset_index(name='Count')\n\n# Print the resulting DataFrame\nprint(grouped_df)\n```\n\nHowever, if you're using the `groupby` method with a specific column (not 'Entity Name'), you need to specify the column to group by and convert the other columns to string type.\n\n```bash\nimport pandas as pd\n\n# Create a sample",
+      "metrics": {
+        "length": 1119,
+        "commands": 8,
+        "command_list": [
+          "import pandas as pd",
+          "data = {",
+          "'Entity Name': ['Entity1', 'Entity2', 'Entity3', 'Entity4'],",
+          "'Archive Container Name': ['Archive1', 'Archive2', 'Archive3', 'Archive4']",
+          "}"
+        ],
+        "has_command_block": true,
+        "actionable": false,
+        "inline_code_count": 5,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "curl exit 23 is a write failure, not a network failure: change the writer (curl-exit-23-is-a-write-failure-not-a-network-failure)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "The issue you're experiencing is due to a known problem with `curl` on Windows, where it fails to write the response body to disk even when the TLS handshake and connection are successful. This is a known issue in `curl` version 7.64.0 and later.\n\nHere's a concrete, actionable fix with exact commands:\n\n1. Update `curl` to the latest version:\n\n```bash\nbrew upgrade curl  # on macOS (using Homebrew)\napt-get update && apt-get install libcurl4-openssl-dev && apt-get install libcurl4-openssl-dev -y  # on Ubuntu\napt-get update && apt-get install libcurl4-openssl-dev && apt-get install libcurl4-openssl-dev -y  # on Debian\npip install --upgrade curl  # on Python\n```\n\n2. If updating `curl` doesn't solve the issue, try using the `--output` option with the `-w` option to specify a verbose output format that includes the write error code:\n\n```bash\ncurl -w \"%{http_code}\" -o output.json https://example.com/api/data\n```\n\n3. If the above doesn't work, try using the `--output` option with the `-v` option to specify a",
+      "metrics": {
+        "length": 1014,
+        "commands": 5,
+        "command_list": [
+          "brew upgrade curl  # on macOS (using Homebrew)",
+          "apt-get update && apt-get install libcurl4-openssl-dev && apt-get install libcurl4-openssl-dev -y  # on Ubuntu",
+          "apt-get update && apt-get install libcurl4-openssl-dev && apt-get install libcurl4-openssl-dev -y  # on Debian",
+          "pip install --upgrade curl  # on Python",
+          "curl -w \"%{http_code}\" -o output.json https://example.com/api/data"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 11,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "FANUC LS 程序解析：段标记必须行首锚定，否则注释会截断程序体 (fanuc-ls-parser-comment-and-segment-boundary)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "以下是解决FANUC LS 程序解析错误的具体步骤：\n\n1.  使用正则表达式匹配段标记在行首：\n\n    ```bash\n# 在使用的python版本中，使用如下命令进行匹配\nm = re.search(r'/MN\\n([\\s\\S]?)(?=^/POS\\b|^/END\\b)', text, re.M)\nif m is None:\n    # 在python3.10中，使用如下命令进行匹配\n    m = re.search(r'/MN\\n([\\s\\S]?)(?=/POS|/END|$)', text)\n```\n\n2. 统一换行符：\n\n    ```bash\n# 使用如下命令进行换行符的替换\ntext = text.replace('\\r\\n', '\\n')\n```\n\n3.  先剥离注释，再判定指令存在性：\n\n    ```python\ndef isRemarkLine(line: str) -> bool:\n    s = line.strip()\n    return s.startswith('!') or s.startswith('//')\n\ndef stripRemarks(text: str) -> str:\n    return '\\n'.join(l for l in text.split('\\n') if not isRemarkLine(l))\n\n# 使用如下命令进行段提",
+      "metrics": {
+        "length": 606,
+        "commands": 4,
+        "command_list": [
+          "m = re.search(r'/MN\\n([\\s\\S]?)(?=^/POS\\b|^/END\\b)', text, re.M)",
+          "if m is None:",
+          "m = re.search(r'/MN\\n([\\s\\S]?)(?=/POS|/END|$)', text)",
+          "text = text.replace('\\r\\n', '\\n')"
+        ],
+        "has_command_block": true,
+        "actionable": false,
+        "inline_code_count": 4,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "Instrumentation that never reached the artifact: a silent probe is not evidence (instrumentation-that-never-reached-the-artifact)",
+      "condition": "plain",
+      "status": 200,
+      "content": "The error \"Instrumentation that never reached the artifact: a silent probe is not evidence (instrumentation-that-never-reached-the-artifact)\" typically occurs when your test instrumentation is not properly configured to reach the artifact (e.g., a Java class or method) you're trying to test.\n\nHere's a concrete, actionable fix with exact commands:\n\n**Step 1: Verify the instrumentation configuration**\n\nCheck your instrumentation configuration file (usually `instrumentation.xml` or `instrumentation.json`) to ensure that the probe is correctly configured to reach the artifact.\n\nFor example, if your instrumentation configuration file looks like this:\n\n```xml\n<probes>\n    <probe>\n        <target>com.example.MyClass</target>\n        <method>myMethod</method>\n    </probe>\n</probes>\n```\n\n**Step 2: Use the `--instrument` flag with the correct classpath**\n\nRun your test with the `--instrument` flag and specify the correct classpath that includes the artifact you're trying to test. For example:\n\n```bash\nmvn test --instrument -Dinstrumentation.target=com.example.MyClass\n```\n\nReplace `com.example.MyClass` with the actual package name of the class you're trying to test.\n\n**Step 3",
+      "metrics": {
+        "length": 1183,
+        "commands": 2,
+        "command_list": [
+          "**Step 2: Use the `--instrument` flag with the correct classpath**",
+          "Run your test with the `--instrument` flag and specify the correct classpath that includes the artifact you're trying to test. For example:"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 8,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "FANUC LS 程序解析：段标记必须行首锚定，否则注释会截断程序体 (fanuc-ls-parser-comment-and-segment-boundary)",
+      "condition": "plain",
+      "status": 200,
+      "content": "The error message \"段标记必须行首锚定，否则注释会截断程序体\" in FANUC LS programming language roughly translates to \"Segment marker must be anchored at the beginning of a line, otherwise comments will be cut off\".\n\nTo fix this issue, you need to ensure that each comment is anchored to the beginning of a line. Here are the steps:\n\n1. Open your FANUC LS program in a text editor.\n2. Find the comments in your program that are not anchored to the beginning of a line.\n3. Move the cursor to the beginning of the line containing the comment.\n4. Press `Ctrl+G` (or `Ctrl+Shift+G` on some systems) to anchor the comment to the beginning of the line.\n\nAlternatively, you can use the `G` command in the FANUC LS editor to anchor a comment to the beginning of the line. Here's how:\n\n1. Open your FANUC LS program in the FANUC LS editor.\n2. Select the comment that needs to be anchored to the beginning of the line.\n3. Press `G` while holding down the left mouse button (or press `G` on the keyboard).\n\nThis will anchor the comment to the",
+      "metrics": {
+        "length": 1009,
+        "commands": 0,
+        "command_list": [],
+        "has_command_block": false,
+        "actionable": true,
+        "inline_code_count": 4,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "Instrumentation that never reached the artifact: a silent probe is not evidence (instrumentation-that-never-reached-the-artifact)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "The error you're encountering is due to the fact that the instrumentation probes you added are not being executed because they are not part of the compiled artifact. The host serves the browser-side plugins as a prebuilt merged combo, which doesn't allow for individual plugin edits to be reflected in the browser.\n\nTo fix this issue, you'll need to rebuild the artifact after making changes to the plugin's source code. Here's a step-by-step guide to help you do so:\n\n**Step 1: Rebuild the artifact**\n\nYou can use the following command to rebuild the artifact:\n\n```bash\nnpm run build\n```\n\nThis command will rebuild the merged combo, which will include the updated instrumentation probes.\n\n**Step 2: Restart the host or toggle the plugin**\n\nAfter rebuilding the artifact, you'll need to restart the host or toggle the plugin to make the changes take effect. You can do this using the following commands:\n\n```bash\nnpm run start\n```\n\nor\n\n```bash\nnpm run toggle-plugin\n```\n\nThis will restart the host or toggle the plugin, allowing the updated instrumentation probes to be executed.\n\n**Step 3: Verify the changes**\n\nOnce the artifact has been rebuilt and the host has been restarted or the plugin has been toggled, you can",
+      "metrics": {
+        "length": 1219,
+        "commands": 3,
+        "command_list": [
+          "npm run build",
+          "npm run start",
+          "npm run toggle-plugin"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 5,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "npm ERESOLVE is a dependency-graph report, not an install failure — read the chain before reaching for --force (npm-eresolve-peer-conflict)",
+      "condition": "plain",
+      "status": 200,
+      "content": "The error you're encountering is due to a peer dependency conflict. This occurs when two packages have different versions of the same peer dependency. Here's a step-by-step guide to resolve the issue:\n\n1. **Check the error message**: The error message indicates that `npm-eresolve-peer-conflict` is being triggered. This package is used to resolve peer dependency conflicts.\n\n2. **Run `npm ls`**: This command will display the dependency tree of your project, including peer dependencies. This will help you identify the conflicting peer dependency.\n\n   ```bash\nnpm ls\n```\n\n3. **Identify the conflicting peer dependency**: Look for the conflicting peer dependency in the output of `npm ls`. It should be listed as a peer dependency of one of your packages.\n\n4. **Resolve the conflict**: There are two ways to resolve the conflict:\n    - **Downgrade the conflicting package**: You can try downgrading the conflicting package to a version that is compatible with the peer dependency of the other package.\n\n    ```bash\nnpm install <package-name>@<version>\n```\n\n    Replace `<package-name>` with the name of the package and `<version>` with the version you want to install.\n\n    - **Upgrade the peer dependency**: You can also try upgrading",
+      "metrics": {
+        "length": 1236,
+        "commands": 2,
+        "command_list": [
+          "npm ls",
+          "npm install <package-name>@<version>"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 8,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "npm ERESOLVE is a dependency-graph report, not an install failure — read the chain before reaching for --force (npm-eresolve-peer-conflict)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "The error message indicates that there's a peer dependency conflict between `react@18.2.0` and `some-ui-lib@2.4.1`, which is requiring `react@^17.0.0`. This is a common issue in npm 7+ due to its automatic peer dependency installation feature.\n\nHere's a step-by-step solution:\n\n**Step 1: Check the library's changelog and issues**\n\nFirst, you need to check if the library's peer dependency range is outdated. You can do this by checking the library's changelog and issues.\n\n1. Open the library's GitHub page or npm page.\n2. Check the changelog to see if there are any updates related to peer dependencies.\n3. Check the issues to see if there are any known issues related to peer dependencies.\n\n**Step 2: Update the library to a compatible version**\n\nIf the library's peer dependency range is outdated, you need to update the library to a compatible version.\n\n1. Open the library's npm page.\n2. Check the `dependencies` section to see if there's an updated version available.\n3. Run the following command to update the library:\n```bash\nnpm install some-ui-lib@latest\n```\n**Step 3: Fix",
+      "metrics": {
+        "length": 1083,
+        "commands": 1,
+        "command_list": [
+          "npm install some-ui-lib@latest"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 5,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "OWA thread view exposes only the newest message's attachments; older ones need a manual relay (owa-thread-view-historical-attachments-not-accessible)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "To bypass this limitation and access historical attachments in a mail thread, you can use the following approach:\n\n1. **Use the `EWS` (Exchange Web Services) endpoint**: Instead of relying on the OWA thread view, you can use the EWS endpoint to access the mailbox. This endpoint provides more flexibility and allows you to bypass the OWA thread view limitation.\n\nHere's an example PowerShell script that uses EWS to access historical attachments:\n\n```powershell\n# Import the Exchange Web Services (EWS) module\nImport-Module ExchangeOnlineManagement\n\n# Set the mailbox credentials and the mailbox ID\n$cred = Get-Credential\n$mailboxId = \"user1@example.com\"\n\n# Create a new EWS session\n$ewsSession = New-Object Microsoft.Exchange.WebServices.Data.ExchangeService\n$ewsSession.Url = \"https://outlook.office365.com/EWS/Exchange.asmx\"\n$ewsSession.Credentials = $cred\n$ewsSession.ImpersonatedUserId = New-Object Microsoft.Exchange.WebServices.Data.ImpersonatedUserId(\"http://schemas.microsoft.com/exchange/2006/types/ImpersonatedUserId\")\n$ewsSession.ImpersonatedUserId.UserOrRoleType = [Microsoft.Exchange.WebServices.Data.ImpersonatedUserIdType]::My",
+      "metrics": {
+        "length": 1142,
+        "commands": 0,
+        "command_list": [],
+        "has_command_block": false,
+        "actionable": true,
+        "inline_code_count": 1,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "OWA thread view exposes only the newest message's attachments; older ones need a manual relay (owa-thread-view-historical-attachments-not-accessible)",
+      "condition": "plain",
+      "status": 200,
+      "content": "To fix the error \"OWA thread view exposes only the newest message's attachments; older ones need a manual relay (owa-thread-view-historical-attachments-not-accessible)\", you can try the following steps:\n\n**Step 1: Enable the \"owasthreadviewhistoricalattachments\" feature**\n\nYou need to enable the \"owasthreadviewhistoricalattachments\" feature on your Exchange server. Here are the steps:\n\n1. Open the Exchange Management Shell on your Exchange server.\n2. Run the following command to enable the feature:\n```\nSet-OrganizationConfig -OWAThreadViewHistoricalAttachmentsEnabled $true\n```\n3. Press Enter to execute the command.\n\n**Step 2: Update the Exchange Web Services (EWS) configuration**\n\nYou need to update the EWS configuration to include the \"owasthreadviewhistoricalattachments\" feature. Here are the steps:\n\n1. Open the Exchange Management Shell on your Exchange server.\n2. Run the following command to update the EWS configuration:\n```\nSet-WebServicesConfig -OWAThreadViewHistoricalAttachmentsEnabled $true\n```\n3. Press Enter to execute the command.\n\n**Step 3: Restart the Exchange Web Services (EWS) service**\n\nAfter updating the EWS",
+      "metrics": {
+        "length": 1141,
+        "commands": 2,
+        "command_list": [
+          "Set-OrganizationConfig -OWAThreadViewHistoricalAttachmentsEnabled $true",
+          "Set-WebServicesConfig -OWAThreadViewHistoricalAttachmentsEnabled $true"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 3,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": null
     }
   ],
   "metric_definition": "lesson_hit_rate = the share of the injected lesson's commands reproduced in the answer. The scenario is that same lesson's title, no retrieval call is made, and correctness is not checked — it measures recitation of the document that was handed to the model.",

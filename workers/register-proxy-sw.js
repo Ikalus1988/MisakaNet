@@ -579,7 +579,7 @@ function getMcpServerInfo(env) {
     // this constant drifts from it (rule R7, added 2026-09-18). Before that rule existed the value
     // was a hand-kept string that no script, workflow or var injection ever touched — it sat at
     // 2.27.1 through six releases, and it is the *only* version every MCP client reads.
-    version: env.MCP_VERSION || "2.41.1", // x-release-please-version
+    version: env.MCP_VERSION || "2.41.3", // x-release-please-version
   };
 }
 
@@ -4560,7 +4560,23 @@ async function handleMcpRequest(request, env, useSse = false, ctx) {
     // send notifications/initialized after initialize, so anonymous sessions must
     // be able to. Without this, streamable-http health checks (e.g. Glama's
     // gateway) fail with 401 on the mandatory initialized notification.
+    //
+    // `server/discover` is public for the same reason, and it is the third method of
+    // that shape: no business data, just "here is what this server is". The handler
+    // below at the `server/discover` branch has existed since the 2026-07-28 RC and
+    // answers with `capabilities` + `serverInfo` — but a client that *negotiates*
+    // sends it first, so it never reached that handler at all. #2845: DeepSeek
+    // Harness 0.1.7-rc.2 (`@modelcontextprotocol/client` 2.0.0,
+    // `versionNegotiation: { mode: 'auto' }`, hardcoded) gets 401 on all ten
+    // reconnect attempts and never falls back to `initialize`, because the SDK
+    // classifies 401 as a *transport* failure rather than a protocol-negotiation
+    // miss. The same client against the same URL with negotiation off gets 200.
+    //
+    // So this is a gate and its implementation disagreeing: the response was written
+    // and the door in front of it was closed. A method that is answered but
+    // unreachable is indistinguishable from one that is not implemented.
     isPublicMethod = peekBody?.method === "initialize" || peekBody?.method === "tools/list"
+      || peekBody?.method === "server/discover"
       || (typeof peekBody?.method === "string" && peekBody.method.startsWith("notifications/"));
   } catch (peekErr) {
     // Non-JSON body — treat as non-intake; log for diagnostics
@@ -4801,13 +4817,38 @@ async function handleMcpRequest(request, env, useSse = false, ctx) {
       });
     }
 
-    // server/discover (2026-07-28 RC) — alias for capabilities query
+    // server/discover (2026-07-28, SEP-2575) — sessionless capability discovery
+    //
+    // `DiscoverResult.required` is `['resultType', 'supportedVersions', 'capabilities', 'ttlMs',
+    // 'cacheScope']` — five fields, all mandatory (schema 2026-07-28). This handler shipped with
+    // only `capabilities` and a top-level `serverInfo`, so it was missing **four of the five
+    // required fields**: a client that validates the result against the schema rejects it. It went
+    // unnoticed for a simple reason — the branch was unreachable until #2882 opened the gate, so no
+    // client had ever seen the response to be wrong.
+    //
+    // `capabilities.tools` is `{}` **by design**, not an empty stub. `ServerCapabilities.tools`
+    // carries exactly one optional field, `listChanged`, so `{}` means "offers tools, no change
+    // notifications"; the tool inventory comes from `tools/list`. Only `tools` is declared because
+    // this worker answers exactly five methods (`initialize`, `notifications/initialized`,
+    // `server/discover`, `tools/list`, `tools/call`) and implements neither `resources/list` nor
+    // `prompts/list` — declaring those would be a capability this server does not have.
     if (method === "server/discover") {
+      const serverInfo = getMcpServerInfo(env);
       return respond({
         jsonrpc: "2.0", id: reqId,
         result: {
+          resultType: "complete",
+          supportedVersions: SUPPORTED_PROTOCOL_VERSIONS,
           capabilities: { tools: {} },
-          serverInfo: getMcpServerInfo(env),
+          instructions: "Search and read MisakaNet lessons. misakanet_search and " +
+            "misakanet_get_lesson need no token; misakanet_register returns a Bearer token that " +
+            "lifts the anonymous read burst limit and unlocks writing.",
+          ttlMs: 3600000,
+          cacheScope: "public",
+          // The spec carries identity under `_meta`. It is also kept at the top level: clients
+          // predating that convention — and `workers/mcp-anonymous-read.test.mjs` — read it there.
+          _meta: { "io.modelcontextprotocol/serverInfo": serverInfo },
+          serverInfo,
         },
       });
     }

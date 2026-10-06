@@ -142,6 +142,40 @@ def test_post_deploy_also_reads_the_sha_back():
     )
 
 
+def test_the_freshness_job_names_the_branch_it_measures_against():
+    """`ref:` is not decoration — it is the difference between measuring and guessing.
+
+    This job answers "is production running **main's** commit", so `main` is the only correct
+    checkout on all three of its triggers. `schedule` and `workflow_run` default to the default
+    branch, so those two were right by accident; `workflow_dispatch` accepts any ref, so a manual
+    dispatch from a PR branch compared production against that PR's commit and reported a staleness
+    that was not one. Naming the ref is also what settles code-scanning alerts #325 / #326
+    (`GITHUB_ACTIONS_UNTRUSTED_CHECKOUT`), which fire on the `workflow_run` trigger and cannot see
+    which ref such a checkout actually resolves to.
+
+    The `|| 'main'` fallback is load-bearing rather than defensive: a `schedule` event's payload
+    does not always carry `repository.default_branch`, and a freshness probe that resolves to
+    nothing on its own backstop trigger is the precise failure this workflow was written to prevent.
+    """
+    text = (REPO / ".github" / "workflows" / "deploy-freshness.yml").read_text(encoding="utf-8")
+    start = text.index("uses: actions/checkout")
+    end = text.index("- name:", start)
+    checkout = text[start:end]
+    assert "ref:" in checkout, (
+        "the checkout does not name a ref, so this job's answer depends on which trigger fired: a "
+        "workflow_dispatch from a PR branch would compare production against that branch and report "
+        "a staleness that does not exist"
+    )
+    assert "default_branch" in checkout, (
+        "the ref must come from the repository rather than a literal — a hardcoded branch name is "
+        "wrong the day the default branch is renamed"
+    )
+    assert "|| 'main'" in checkout, (
+        "the schedule trigger's payload may not carry repository.default_branch, and a probe that "
+        "resolves to nothing on its own backstop trigger is worse than no probe"
+    )
+
+
 if __name__ == "__main__":
     for name, fn in list(globals().items()):
         if name.startswith("test_") and callable(fn):
