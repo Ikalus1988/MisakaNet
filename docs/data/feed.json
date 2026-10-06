@@ -1,9 +1,30 @@
 {
-  "generated_at": "2026-10-06T16:01:58.139897+00:00",
+  "generated_at": "2026-10-06T17:51:04.342527+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "lesson: three checks that were green and covered nothing",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2932",
+      "timestamp": "2026-10-06T17:50:49Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(main): release 2.42.2",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2928",
+      "timestamp": "2026-10-06T16:23:05Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2933",
+      "timestamp": "2026-10-06T16:10:10Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "fix(integrations): every result line rendered [unknown]",
@@ -19,25 +40,12 @@
       "source": "github"
     },
     {
-      "type": "merged_pr",
-      "title": "fix(deps): bump sharp override to 0.35.5 — librsvg CVE-2026-96889",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2927",
-      "timestamp": "2026-10-06T15:22:10Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "Two defaults that could not work, and a table row that named only one cause",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2926",
-      "timestamp": "2026-10-06T15:09:47Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2925",
-      "timestamp": "2026-10-06T14:54:19Z",
-      "source": "github"
+      "type": "lesson",
+      "title": "Three checks that were green and covered nothing: the subject was outside the scope",
+      "url": "lessons/contrib/green-check-subject-outside-scope.md",
+      "timestamp": "2026-10-06",
+      "domain": "testing",
+      "source": "lessons"
     },
     {
       "type": "lesson",
@@ -69,14 +77,6 @@
       "url": "lessons/contrib/an-archive-container-name-is-not-an-entity-name.md",
       "timestamp": "2026-10-03",
       "domain": "data",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "Codex CLI: MCP handshake succeeds but the model never receives the tools",
-      "url": "lessons/contrib/codex-mcp-tools-not-injected-despite-handshake.md",
-      "timestamp": "2026-10-03",
-      "domain": "mcp",
       "source": "lessons"
     },
     {
