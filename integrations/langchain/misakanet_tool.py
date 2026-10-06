@@ -115,8 +115,15 @@ class MisakaNetSearchTool(BaseTool):
         for i, result in enumerate(data["results"], 1):
             score = result.get("score", 0)
             title = result.get("title", "Untitled")
-            lesson_type = result.get("type", "unknown")
-            lines.append(f"{i}. [{lesson_type}] {title} (relevance: {score:.2f})")
+            # The corpus has no `type` field — not one of the 467 lessons in data/lessons.json
+            # carries one, and neither does anything the endpoint returns (measured 2026-10-06:
+            # 9 results across 3 queries, `type` absent from all). So reading it here always
+            # produced the "unknown" fallback and every line rendered as `[unknown]`. The field
+            # that does exist on every lesson, and the one the endpoint echoes, is `domain`
+            # (devops, wsl, nodejs, frontend, api, …). This is not the MCP `type` of a content
+            # block, which is a different thing entirely and still read as such below.
+            domain = result.get("domain", "unknown")
+            lines.append(f"{i}. [{domain}] {title} (relevance: {score:.2f})")
 
             # Include summary or problem if available
             if result.get("summary"):

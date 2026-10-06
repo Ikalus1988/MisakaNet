@@ -86,8 +86,10 @@ def misakanet_search(
     for i, result in enumerate(data["results"], 1):
         score = result.get("score", 0)
         title = result.get("title", "Untitled")
-        lesson_type = result.get("type", "unknown")
-        lines.append(f"{i}. [{lesson_type}] {title} (relevance: {score:.2f})")
+        # `type` does not exist on a lesson — see the note in the langchain integration for the
+        # measurement. `domain` is the field every lesson carries.
+        domain = result.get("domain", "unknown")
+        lines.append(f"{i}. [{domain}] {title} (relevance: {score:.2f})")
 
         # Include summary or problem if available
         if result.get("summary"):
