@@ -291,7 +291,7 @@ def test_every_redirect_rule_points_at_a_page_that_exists():
     this repository renders — so a stale slug would ship as a working-looking 301 to a dead URL.
     """
     rules = blp.read_redirect_sources(REPO)
-    assert len(rules) == 111, f"expected the 111 committed aliases, found {len(rules)}"
+    assert len(rules) == 112, f"expected the 112 committed aliases, found {len(rules)}"
     dead = {source: target for source, target in rules.items()
             if not (REPO / "docs" / target.lstrip("/") / "index.html").is_file()}
     assert not dead, f"these rules point at a URL with no page: {list(dead.items())[:5]}"
