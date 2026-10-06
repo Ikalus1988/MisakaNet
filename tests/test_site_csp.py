@@ -113,7 +113,16 @@ def _matches(pattern: str, path: str) -> bool:
     A directory page is reachable both as `/lessons/x/` and `/lessons/x/index.html`;
     testing against both is what stops a page from escaping a rule by being served
     under its file name.
+
+    The backslash normalisation is deliberate belt-and-braces. `_pages()` already
+    hands back POSIX paths via `as_posix()`, but that is one call site away from
+    regressing, and the failure is silent rather than loud: every page simply stops
+    matching every rule, so coverage reads 0 and the direction checks have nothing
+    to complain about. Normalising here means a Windows-shaped path is *handled*
+    instead of quietly matching nothing. `test_windows_style_paths_still_match_a_rule`
+    is what keeps that honest, and it runs on Linux.
     """
+    path = path.replace("\\", "/")
     for candidate in {path, path.rstrip("/") + "/", path.rstrip("/") + "/index.html"}:
         if pattern.endswith("/*"):
             if candidate.startswith(pattern[:-1]):
@@ -126,15 +135,37 @@ def _matches(pattern: str, path: str) -> bool:
     return False
 
 
+def test_windows_style_paths_still_match_a_rule() -> None:
+    """Regression: this gate reported 0/532 coverage on Windows and 521/532 on Linux.
+
+    Reproducible on any platform by handing the matcher what `Path.relative_to()`
+    produces on Windows, which is the exact input that used to slip through.
+    """
+    assert _matches("/lessons/*", "/lessons/benchmark-honesty-simulated-vs-real/index.html")
+    assert _matches("/lessons/*", "\\lessons\\benchmark-honesty-simulated-vs-real\\index.html")
+    assert _matches("/lessons/*", "/lessons/foo/")
+    assert _matches("/privacy/*", "\\privacy\\index.html")
+    assert _matches("/journey/http-mcp/*", "\\journey\\http-mcp\\index.html")
+    assert not _matches("/lessons/*", "/index.html")
+    assert not _matches("/journey/http-mcp/*", "/journey/index.html")
+    assert not _matches("/lessons/*", "/privacy/index.html")
+
+
 @lru_cache(maxsize=1)
 def _pages() -> list[tuple[str, str]]:
-    """[(repo-relative path, source)] for every HTML page under `docs/`.
+    """[(repo-relative path in POSIX form, source)] for every HTML page under `docs/`.
 
     Cached because reading 532 files once per assertion turned this file into the
     slowest thing in the suite; the working tree does not change mid-run.
+
+    `as_posix()` is load-bearing, not cosmetic. `Path.relative_to()` renders `\\` on
+    Windows, so `"/" + path` produced `/lessons\\foo\\index.html`, which matches no
+    `_headers` rule: coverage read 0/532 and the whole gate went quiet on Windows
+    while passing on Linux. The Windows jobs in this PR's own CI run are what caught
+    it — a green local suite on ext4 did not.
     """
     return [
-        (str(p.relative_to(DOCS)), p.read_text(encoding="utf-8"))
+        (p.relative_to(DOCS).as_posix(), p.read_text(encoding="utf-8"))
         for p in sorted(DOCS.rglob("*.html"))
     ]
 
