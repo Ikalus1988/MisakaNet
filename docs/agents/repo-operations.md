@@ -127,10 +127,22 @@ python3 scripts/bench_production_recall.py --json     # 机器可读
 ## 3. 部署与数据生成
 
 > **`main` 不能直接 push——对任何人都不行（2026-09-23 起）**。ruleset
-> `23826057 main: the deterministic gates` 要求三个状态检查（`DCO / Signed-off-by`、
-> `test (ubuntu-latest, 3.11)`、`gate`），且 `bypass_actors` 是**空的**：GitHub 对 push 也评估这些
-> 检查，新提交没有它们就被拒。实测（用维护者自己的 PAT，同一个 token）：
+> `23826057 main: the deterministic gates` 要求**四个**状态检查（`DCO / Signed-off-by`、
+> `test (ubuntu-latest, 3.11)`、`gate`、**`audit`**），且 `bypass_actors` 是**空的**：GitHub 对 push
+> 也评估这些检查，新提交没有它们就被拒。实测（用维护者自己的 PAT，同一个 token，**2026-09-23，
+> 当时 ruleset 只有三项**）：
 > `remote: - 3 of 3 required status checks are expected.` / `! [remote rejected] main -> main`。
+>
+> 上面那句 `3 of 3` 是当时量到的，不是现在。核对方式（`ci-gates.md` 是权威表，本段不是）：
+>
+> ```bash
+> gh api repos/Ikalus1988/MisakaNet/rulesets/23826057 \
+>   --jq '.rules[]|select(.type=="required_status_checks")
+>          |.parameters.required_status_checks[].context'
+> ```
+>
+> 实测 2026-10-07 返回四项。本段曾长期写「三个」，而同一 ruleset 的 `ci-gates.md` 一直写四个——
+> 同一件事在仓内有两个版本，而错的这个在维护者操作手册里。
 >
 > 所以人类和自动化的固定动作都是**开 PR**：
 >

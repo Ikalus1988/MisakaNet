@@ -290,23 +290,32 @@ By signing off, you certify that:
 
 A `dco-check.yml` workflow runs on every PR and re-checks on **every push, including force-pushes**. If any commit lacks `Signed-off-by:`, the check fails and the `needs-dco` label is applied. Once you amend the offending commit with `--signoff` and force-push, the next scan clears the label **automatically — do NOT push an empty/new commit** to "re-trigger"; just wait a few minutes for CI to finish. Merge commits are exempt from sign-off.
 
-## Node.js Test Conventions (dsh integration suite)
+## Node.js Test Conventions (worker suite)
 
-The `tests/dsh/` suite uses **mocha + chai** (`execSync`-style integration tests). When adding a test file:
+The worker suite is `workers/**/*.test.mjs` and runs on **node's built-in runner** — `node:test`
+plus `node:assert/strict`. No mocha, no chai, no build step: a file is a test file because it
+imports `node:test` and calls `test(...)`.
 
-- **Fixtures** go in `tests/dsh/fixtures/` (see its `README.md`). Reference them with:
-  ```javascript
-  const path = require('path');
-  const fixturesDir = path.join(__dirname, 'fixtures');
+- **Add a file** anywhere under `workers/`; the runner picks up `*.test.mjs` recursively.
+- **Run the whole suite** the way CI does:
+
+  ```bash
+  node --test 'workers/**/*.test.mjs'
   ```
-- **Optional CLI dependencies**: if a test needs a CLI that may not be installed on the runner (e.g. `dsh`), skip gracefully instead of failing:
-  ```javascript
-  it('performance smoke', function () {
-    if (!process.env.DSH_CLI) this.skip(); // or detect via `which dsh`
-    ...
-  });
-  ```
-  This keeps the suite green on machines without the optional tool while still exercising it in CI.
+
+  Keep the quotes. Without them your shell expands the glob first, and bash's default
+  `globstar` is **off**, so `workers/**/*.test.mjs` collapses to `workers/*.test.mjs` — the
+  top-level files only, and the nested ones are skipped without a word. Measured 2026-10-07:
+  quoted → 75 files (74 top-level + 1 under `workers/email-register/`), unquoted → 1 file.
+- **Run one file**: `node --test workers/activity-trend.test.mjs`.
+- **Optional dependency missing?** Guard the test with `t.skip()` rather than letting an import
+  fail, so the suite stays green on a machine that does not have the tool and still exercises it
+  in CI.
+
+> This section used to describe `tests/dsh/` — a mocha + chai suite with fixtures under
+> `tests/dsh/fixtures/`. That directory was deleted (#2920) and the text kept pointing at it, so
+> anyone following it would have added files to a path no runner collects, and would have used a
+> `describe`/`it` shape that node's runner does not provide.
 
 ### Local DCO Check (Optional)
 

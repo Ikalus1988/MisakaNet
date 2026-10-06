@@ -41,6 +41,14 @@ jobs:
       - name: Triage the open questions
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # `${{ }}` inside a `run:` block is substituted *before* bash parses, so a value
+          # spelling `$(…)` arrives already expanded into shell code. `inputs.post` is
+          # declared `type: boolean`, but the dispatch API takes `inputs` as
+          # `map[string]string` and does not check it against the declared type — the type is
+          # documentation, not a guarantee. The environment does not expand: bash performs no
+          # second pass over the result of a variable substitution, so a value of `$(id)`
+          # lands in the comparison as the literal five characters and nothing is executed.
+          POST: ${{ inputs.post }}
         run: |
           # Posting is the default, because report-only is the thing this job exists to replace: a report
           # nobody reads *is* the backlog. Established by the maintainer on 2026-09-26 after reviewing a
@@ -49,8 +57,23 @@ jobs:
           #
           # Safe to run daily: every write is idempotent — receipts are keyed by the hash of their own
           # content, bounty tasks by an anchor marker, and the digest is updated in place.
-          if [ "${{ inputs.post }}" = "false" ]; then
+          if [ "$POST" = "false" ]; then
+            set +e
             python3 scripts/question_autopilot.py | tee -a "$GITHUB_STEP_SUMMARY"
+            RC=${PIPESTATUS[0]}
+            set -e
           else
+            set +e
             python3 scripts/question_autopilot.py --post --bounties | tee -a "$GITHUB_STEP_SUMMARY"
+            RC=${PIPESTATUS[0]}
+            set -e
+          fi
+          # Without this the step reported `tee`'s status and a run that posted nothing
+          # looked identical to a run that posted everything. That is the failure this
+          # repository already paid for once: automated writers that only act when there
+          # is something to write, so the runs where nothing changed stayed green while
+          # the runs that mattered went red in a step nobody was reading.
+          if [ "$RC" -ne 0 ]; then
+            echo "::error::question_autopilot.py exited $RC — receipts, bounty tasks or the digest may not have been written."
+            exit 1
           fi
