@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-10-06T14:44:48.061085+00:00",
+  "generated_at": "2026-10-06T16:01:58.139897+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "lessons: two pending contributor lessons, and three gates that were asserting snapshots",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2924",
-      "timestamp": "2026-10-06T14:44:36Z",
+      "title": "fix(integrations): every result line rendered [unknown]",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2931",
+      "timestamp": "2026-10-06T15:39:37Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(main): release 2.42.1",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2913",
-      "timestamp": "2026-10-06T13:49:43Z",
+      "title": "fix(release): package-lock.json had drifted off the release line",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2929",
+      "timestamp": "2026-10-06T15:34:01Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "ci(npm): retire NPM_TOKEN for the main package, with the run that proves it",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2923",
-      "timestamp": "2026-10-06T13:49:13Z",
+      "title": "fix(deps): bump sharp override to 0.35.5 — librsvg CVE-2026-96889",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2927",
+      "timestamp": "2026-10-06T15:22:10Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "ci: pr-quality-gate cancelled its own check, and gh reported that as fail",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2922",
-      "timestamp": "2026-10-06T13:34:34Z",
+      "title": "Two defaults that could not work, and a table row that named only one cause",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2926",
+      "timestamp": "2026-10-06T15:09:47Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(site,ci): three verified intake defects from #2915-#2918 (#2915 is not ours)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2920",
-      "timestamp": "2026-10-06T13:06:25Z",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2925",
+      "timestamp": "2026-10-06T14:54:19Z",
       "source": "github"
     },
     {
