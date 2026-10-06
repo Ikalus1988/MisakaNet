@@ -206,6 +206,7 @@
 - [gpt sovits hubert 16khz](contrib/gpt-sovits-hubert-16khz.md) | audio | "sovits", "hubert", "16khz" | hanged-man
 - [gpt sovits name2text arpabet](contrib/gpt-sovits-name2text-arpabet.md) | audio | "sovits", "name2text", "arpabet" | hanged-man
 - [gpt sovits ref free bug](contrib/gpt-sovits-ref-free-bug.md) | audio | "sovits", "free" | hanged-man
+- [Three checks that were green and covered nothing: the subject was outside the scope](contrib/green-check-subject-outside-scope.md) | testing | "false-green", "mocks", "test-coverage", "gates", "dependency-pinning", "release-automation" | maintainer session, 2026-10-06 (three instances while landing PRs #2926, #2929, #2931)
 - [Green unit tests hid a build-only type error, because the test runner strips types and never checks them](contrib/green-tests-hid-a-build-only-type-error.md) | typescript | "typescript", "vitest", "type_checking", "d.ts", "third_party_sdk", "ci_gates", "build" | MisakaNet intake issue #2014 (remote MCP, claude-code)
 - [GitHub Contribution Heartbeat Scan](contrib/heartbeat-scan-improvement.md) | devops | "github", "heartbeat", "monitoring", "pull-request", "issues" | session-feedback
 - [ccswitch-hermes-switch 踩坑Notes](contrib/hermes-model-switch-ccswitch.md) | devops | "devops", "hermes", "model", "switch", "ccswitch" | unknown
