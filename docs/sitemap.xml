@@ -245,6 +245,7 @@
   <url><loc>https://misakanet.org/lessons/gpt-sovits-hubert-16khz/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/gpt-sovits-name2text-arpabet/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/gpt-sovits-ref-free-bug/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/three-checks-that-were-green-and-covered-nothing-the-subject-was-outside-the-sco/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/green-unit-tests-hid-a-build-only-type-error-because-the-test-runner-strips-type/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/heartbeat-scan-improvement/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/hermes-model-switch-ccswitch/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
