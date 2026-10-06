@@ -45,8 +45,8 @@ result = executor.invoke({"input": "Fix this Docker build error: permission deni
 
 | Environment Variable | Description | Default |
 |---------------------|-------------|---------|
-| `MISAKANET_SEARCH_URL` | Search API endpoint | `https://misakanet.dev/api/search` |
-| `MISAKANET_MCP_URL` | MCP protocol endpoint | `https://misakanet.dev/mcp` |
+| `MISAKANET_SEARCH_URL` | Search API endpoint | `https://misakanet.org/api/lessons` |
+| `MISAKANET_MCP_URL` | MCP protocol endpoint | `https://misakanet.org/mcp` |
 | `MISAKANET_API_KEY` | API key for authenticated requests | None |
 
 ### Programmatic Configuration

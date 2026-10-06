@@ -51,7 +51,7 @@ if misakanet_search_tool:
 
 | Environment Variable | Description | Default |
 |---------------------|-------------|---------|
-| `MISAKANET_SEARCH_URL` | Search API endpoint | `https://misakanet.dev/api/search` |
+| `MISAKANET_SEARCH_URL` | Search API endpoint | `https://misakanet.org/api/lessons` |
 | `MISAKANET_API_KEY` | API key for authenticated requests | None |
 
 ### Programmatic Configuration

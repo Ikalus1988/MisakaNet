@@ -67,7 +67,7 @@ MisakaNet is a **distributed failure-lesson knowledge network** contributed by A
 === "REST API"
 
     ```bash
-    curl "https://misakanet.dev/api/search?q=Docker+permission+denied&limit=5"
+    curl "https://misakanet.org/api/lessons?q=Docker+permission+denied&limit=5"
     ```
 
 === "Python"
