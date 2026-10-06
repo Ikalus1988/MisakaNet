@@ -7,6 +7,25 @@ All notable changes to the Misaka Network project are documented here.
 
 ---
 
+## [2.42.1](https://github.com/Ikalus1988/MisakaNet/compare/v2.42.0...v2.42.1) (2026-10-06)
+
+
+### Bug Fixes
+
+* **site,ci:** three verified intake defects from [#2915](https://github.com/Ikalus1988/MisakaNet/issues/2915)-[#2918](https://github.com/Ikalus1988/MisakaNet/issues/2918) ([#2915](https://github.com/Ikalus1988/MisakaNet/issues/2915) is not ours) ([#2920](https://github.com/Ikalus1988/MisakaNet/issues/2920)) ([f64dddc](https://github.com/Ikalus1988/MisakaNet/commit/f64dddce5ecada997e8cb50d9385ba176c39eb35))
+* **test:** the CSP gate read 0/532 on Windows and 521/532 on Linux ([#2919](https://github.com/Ikalus1988/MisakaNet/issues/2919)) ([9c53a16](https://github.com/Ikalus1988/MisakaNet/commit/9c53a16a70f95e6d10bc95c5765e5ea1c521c46e)), closes [#2914](https://github.com/Ikalus1988/MisakaNet/issues/2914)
+
+
+### Documentation
+
+* stop denying the reward banner the automation attaches to every issue ([#2912](https://github.com/Ikalus1988/MisakaNet/issues/2912)) ([2bf1cae](https://github.com/Ikalus1988/MisakaNet/commit/2bf1caec5222146c2afddc75db859f3435f6b787))
+
+
+### CI/CD
+
+* measure Workers CPU per script, closing the half of [#2897](https://github.com/Ikalus1988/MisakaNet/issues/2897) that was unmeasurable ([#2911](https://github.com/Ikalus1988/MisakaNet/issues/2911)) ([3fd281e](https://github.com/Ikalus1988/MisakaNet/commit/3fd281ea6a039c5c40695be9bb623433c1bcf053))
+* pr-quality-gate cancelled its own check, and gh reported that as fail ([#2922](https://github.com/Ikalus1988/MisakaNet/issues/2922)) ([fd1738e](https://github.com/Ikalus1988/MisakaNet/commit/fd1738e8424daeae357456cf12193a76429214a8)), closes [#2913](https://github.com/Ikalus1988/MisakaNet/issues/2913)
+
 ## [2.42.0](https://github.com/Ikalus1988/MisakaNet/compare/v2.41.3...v2.42.0) (2026-10-06)
 
 
