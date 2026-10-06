@@ -239,12 +239,22 @@ def test_release_tool_is_wired_to_write_every_version_it_must_bump():
     """
     config = _read_json("release-please-config.json")
     extra = config["packages"]["."]["extra-files"]
-    declared = {}
+    # path -> every jsonpath declared for it, in config order.
+    #
+    # This was a dict keyed by path holding one jsonpath, which silently dropped all
+    # but the last entry whenever a file declared more than one. `package-lock.json`
+    # is exactly that case: npm v7+ writes the version twice, at `$.version` and at
+    # `$.packages[""].version`, and release-please only writes the paths it is given
+    # (see the two-extra-files pattern in release-please-config.json). With one slot,
+    # declaring only the second and forgetting the first still passed here — the gate
+    # reported on a field the release was never going to touch, which is the same
+    # "looks wired and writes nothing" failure the test is written to prevent.
+    declared: dict[str, list[str | None]] = {}
     for entry in extra:
         if isinstance(entry, str):
-            declared[entry] = None
+            declared.setdefault(entry, []).append(None)
         else:
-            declared[entry["path"]] = entry.get("jsonpath")
+            declared.setdefault(entry["path"], []).append(entry.get("jsonpath"))
 
     required = ["server.json", "glama.json", "docs/.well-known/agent.json",
                 "docs/.well-known/agent-card.json", "docs/.well-known/mcp.json",
@@ -261,28 +271,59 @@ def test_release_tool_is_wired_to_write_every_version_it_must_bump():
     # pretend to evaluate — for those, require that the file really carries a
     # version field, and leave the exact target to the lockstep tests above.
     broken = []
-    for path, jsonpath in declared.items():
-        if not jsonpath or not jsonpath.endswith("version"):
-            continue
-        if "[?(" in jsonpath:
-            if '"version"' not in (REPO / path).read_text(encoding="utf-8"):
-                broken.append((path, f"{jsonpath}: file declares no version field"))
-            continue
-        if jsonpath.startswith("$.."):
-            # Recursive descent (server.json uses `$..version`: the registry listing
-            # version *and* the package entry version — R3 requires they agree).
-            key = jsonpath[3:]
-            found = [v for v in _walk_key(_read_json(path), key) if isinstance(v, str)]
-            if not found or not all(_is_semver(v) for v in found):
-                broken.append((path, f"{jsonpath} -> {found!r}"))
-            continue
-        node = _read_json(path)
-        for part in jsonpath.lstrip("$.").split("."):
-            node = node.get(part) if isinstance(node, dict) else None
-        if not isinstance(node, str) or not _is_semver(node):
-            broken.append((path, f"{jsonpath} -> {node!r}"))
+    for path, jsonpaths in declared.items():
+        for jsonpath in jsonpaths:
+            if not jsonpath or not jsonpath.endswith("version"):
+                continue
+            if "[?(" in jsonpath:
+                if '"version"' not in (REPO / path).read_text(encoding="utf-8"):
+                    broken.append((path, f"{jsonpath}: file declares no version field"))
+                continue
+            if jsonpath.startswith("$.."):
+                # Recursive descent (server.json uses `$..version`: the registry listing
+                # version *and* the package entry version — R3 requires they agree).
+                key = jsonpath[3:]
+                found = [v for v in _walk_key(_read_json(path), key) if isinstance(v, str)]
+                if not found or not all(_is_semver(v) for v in found):
+                    broken.append((path, f"{jsonpath} -> {found!r}"))
+                continue
+            node = _resolve_jsonpath(_read_json(path), jsonpath)
+            if not isinstance(node, str) or not _is_semver(node):
+                broken.append((path, f"{jsonpath} -> {node!r}"))
     if broken:
         _test_fail("declared version jsonpaths do not resolve to a semantic version", broken)
+
+
+def _resolve_jsonpath(doc, jsonpath: str):
+    """Resolve the subset of JSONPath that release-please's `json` updater needs.
+
+    Handles `$.a.b` and `$.a["b"]` / `$.a['b']`. The bracket form is not optional
+    decoration: npm v7+ writes the lockfile version to a key that is the empty
+    string, `packages[""]`, and there is no dot-separated spelling of that key.
+    release-please accepts it (two real projects configure exactly this pair —
+    nearform/initium-cli and joshuafulmer/qrtak), so a resolver that only splits on
+    "." reports `None` for a field the release will happily write.
+    """
+    node = doc
+    for part in _split_jsonpath(jsonpath):
+        if not isinstance(node, dict) or part not in node:
+            return None
+        node = node[part]
+    return node
+
+
+def _split_jsonpath(jsonpath: str) -> list[str]:
+    """`$.packages[""].version` -> ['packages', '', 'version']; dots split too."""
+    body = jsonpath[1:] if jsonpath.startswith("$") else jsonpath
+    if body.startswith("."):
+        body = body[1:]
+    parts: list[str] = []
+    for match in re.finditer(r'\["([^"]*)"\]|\[\'([^\']*)\'\]|([^.\[\]]+)', body):
+        quoted_double, quoted_single, bare = match.groups()
+        parts.append(quoted_double if quoted_double is not None
+                     else quoted_single if quoted_single is not None
+                     else bare)
+    return parts
 
 
 def _walk_key(node, key: str):
@@ -609,34 +650,44 @@ def test_the_value_check_notices_a_stale_line(tmp_path):
 # mutation case: the annotation rule would report a clean file as "0 annotated lines" and a JSON file as
 # unwritable, which is a rule failing for the wrong reason.
 JSON_PINNED_VERSION_FILES = {
-    "package.json": "$.version",
-    ".codex-plugin/plugin.json": "$.version",
+    "package.json": ("$.version",),
+    ".codex-plugin/plugin.json": ("$.version",),
     # The Claude Code plugin manifest joined 2026-09-30 with the same shape: release-please's json updater
     # reaches `$.version`, so the number has one writer instead of two.
-    ".claude-plugin/plugin.json": "$.version",
+    ".claude-plugin/plugin.json": ("$.version",),
+    # The lockfile carries the version twice — `$.version` and `$.packages[""].version` — and npm
+    # rewrites both on the next install that has a reason to touch the file. Until release-please was
+    # told about both, they were left behind on every release: the lock said 2.41.1 while the manifest
+    # and package.json said 2.42.1. Nothing failed, because nothing checked the lock. That is a tuple
+    # rather than a string because a file may legitimately need more than one path, and a single-slot
+    # mapping silently ignores all but the last — the "looks wired, writes nothing" shape.
+    "package-lock.json": ("$.version", '$.packages[""].version'),
 }
 
 
 def _json_pinned_problems(root: Path) -> list[str]:
     """Declared-and-equal problems for the jsonpath-owned version files. Takes a root so it can be driven."""
     config = json.loads((root / "release-please-config.json").read_text(encoding="utf-8"))
-    declared = {entry["path"]: entry.get("jsonpath")
-                for entry in config["packages"]["."]["extra-files"]
-                if isinstance(entry, dict)}
+    declared: dict[str, list[str | None]] = {}
+    for entry in config["packages"]["."]["extra-files"]:
+        if isinstance(entry, dict):
+            declared.setdefault(entry["path"], []).append(entry.get("jsonpath"))
     manifest = json.loads((root / ".release-please-manifest.json").read_text(encoding="utf-8"))["."]
     problems = []
-    for rel, jsonpath in JSON_PINNED_VERSION_FILES.items():
-        if declared.get(rel) != jsonpath:
-            problems.append(
-                f"{rel} is declared as {declared.get(rel)!r} in release-please-config.json, expected "
-                f"{jsonpath!r} — release-please cannot bump a field it does not point at")
-            continue
-        found = json.loads((root / rel).read_text(encoding="utf-8")).get("version")
-        if found != manifest:
-            problems.append(
-                f"{rel} says {found!r}, the manifest says {manifest!r} — release-please owns both, so "
-                "they disagree only when a release step missed one or a stale file was written over a "
-                "newer one")
+    for rel, jsonpaths in JSON_PINNED_VERSION_FILES.items():
+        got = declared.get(rel, [])
+        for jsonpath in jsonpaths:
+            if jsonpath not in got:
+                problems.append(
+                    f"{rel} is declared as {got!r} in release-please-config.json, expected "
+                    f"{jsonpath!r} among them — release-please cannot bump a field it does not point at")
+                continue
+            found = _resolve_jsonpath(json.loads((root / rel).read_text(encoding="utf-8")), jsonpath)
+            if found != manifest:
+                problems.append(
+                    f"{rel} {jsonpath} says {found!r}, the manifest says {manifest!r} — release-please "
+                    "owns both, so they disagree only when a release step missed one or a stale file was "
+                    "written over a newer one")
     return problems
 
 
