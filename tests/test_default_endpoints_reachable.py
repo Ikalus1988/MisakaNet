@@ -42,6 +42,7 @@ silently invalidating it.
 """
 from __future__ import annotations
 
+import json
 import re
 from pathlib import Path
 
@@ -174,3 +175,101 @@ def test_the_gate_actually_sees_the_integration_defaults() -> None:
             f"{sorted(seen)}; if the public search path moved, update "
             "PUBLIC_SEARCH_PATH from lib/client.js rather than loosening the check."
         )
+
+
+# ── The same defect, one layer in: reading fields the response does not carry ────────
+#
+# Both wrappers rendered `result.get("type", "unknown")` per result. `type` is not a
+# lesson field — not one of the 467 entries in `data/lessons.json` has one, and the
+# live endpoint does not send one either (measured 2026-10-06, three queries, nine
+# results: `type` absent from all). So the fallback fired on every result and every
+# line the tool ever printed read `[unknown]`. The field that does exist on every
+# lesson is `domain`.
+#
+# `tests/test_integrations.py` could not see this. Its payload invented a `type` field,
+# so the invented field satisfied the invented read, and its assertions only checked
+# that the title appeared somewhere in the output. The langchain half of that file
+# additionally skips outright — no CI job installs langchain — so it has never run in
+# CI at all. The check below reads the source instead of the runtime, so it covers both
+# wrappers with no optional dependency and nothing to mock.
+#
+# **What is deliberately not asserted here.** An earlier version of this check treated
+# `data/lessons.json` as the authority on which fields exist, and flagged `score` and
+# `problem` as unreadable. Both are wrong conclusions, and `workers/register-proxy-sw.js`
+# says why in the source:
+#
+#   * `problem` is filled from the D1 column first (`lesson.problem || lesson.description
+#     || lesson.summary || lesson.preview`), precisely because the GitHub snapshot only
+#     carries the latter two. The index file and the API response are different shapes.
+#   * `score` is emitted only when it is a finite number, and on purpose: the
+#     `searchLessons` fallback does not rank, so its rows have no score, and a
+#     `score: 0` would read as "ranked, and the ranking is zero" — worse than absent.
+#
+# So a field being absent from the index says nothing about the endpoint. The one claim
+# this gate can make honestly is narrower: `type` is in neither shape.
+
+# Fields that exist in neither the index nor the API response, measured 2026-10-06.
+# Kept explicit rather than derived, because deriving it from the index is what produced
+# the false positives described above.
+_FIELDS_NEITHER_SHAPE_HAS = {"type"}
+
+
+def _corpus_fields() -> set[str]:
+    """Keys present on lesson entries in data/lessons.json."""
+    doc = json.loads((REPO / "data/lessons.json").read_text(encoding="utf-8"))
+    items = doc if isinstance(doc, list) else doc.get("lessons", doc.get("items", []))
+    assert items, "data/lessons.json parsed to no lessons; this test cannot judge the corpus"
+    return set(items[0])
+
+
+def test_type_is_in_neither_the_index_nor_the_response() -> None:
+    """Keep the premise of the check above true, or the check is guarding a fiction.
+
+    If the corpus ever grows a `type`, or the endpoint starts sending one, the field
+    stops being the silent-fallback bug and this test should be rewritten — not deleted
+    quietly, because the renderer would then legitimately be reading it.
+    """
+    corpus = _corpus_fields()
+    assert "type" not in corpus, (
+        "data/lessons.json now carries a `type` field on every lesson. Re-measure the "
+        "endpoint and the renderers: `type` may have become real, in which case reading "
+        "it is correct and this whole gate is stale."
+    )
+    # The endpoint half cannot be re-probed from a test (no network), so assert the
+    # shape the integration tests were fixed to: they used to invent `type`, and a
+    # payload that invents it again would let the old bug back in.
+    test_src = (REPO / "tests/test_integrations.py").read_text(encoding="utf-8")
+    assert '"type": "error"' not in test_src, (
+        "tests/test_integrations.py puts a `type` field back into its mock payload. That "
+        "field does not exist on a lesson or in an API response; a mock that invents it "
+        "lets a renderer read a field production never sends."
+    )
+
+
+def test_wrappers_do_not_read_a_field_neither_shape_carries() -> None:
+    """`result.get("type", ...)` on a lesson is the shape of the bug; catch it directly.
+
+    Scoped to `result.get(...)` calls, because the same files legitimately read `type`
+    elsewhere: an MCP content block is `{"type": "text", "text": ...}`, which is a
+    protocol field and nothing to do with lessons.
+    """
+    checked = 0
+    for path in CANDIDATES:
+        if not path.exists() or path.name == "langchain_tool.py":
+            continue  # the package tool searches locally and never touches the API
+        rel = path.relative_to(REPO)
+        text = path.read_text(encoding="utf-8")
+        for n, line in enumerate(text.splitlines(), 1):
+            for field in re.findall(r'result\.get\(\s*"([^"]+)"', line):
+                checked += 1
+                assert field not in _FIELDS_NEITHER_SHAPE_HAS, (
+                    f"{rel}:{n} reads `result.get({field!r})` on a lesson, and no lesson "
+                    "in data/lessons.json nor any /api/lessons response carries that field "
+                    "(measured 2026-10-06). The fallback always fires, so the output "
+                    "silently loses information instead of failing — every result line "
+                    "rendered `[unknown]`. `domain` is the field that exists on every lesson."
+                )
+    assert checked, (
+        "no `result.get(...)` call was inspected in either wrapper; if they were "
+        "refactored, re-point this check at wherever the response is read."
+    )
