@@ -555,18 +555,43 @@ def test_the_identity_step_accepts_oidc_when_no_token_is_present(tmp_path):
     assert "trusted publishing" in proc.stdout
 
 
-def test_the_identity_step_still_fails_loudly_with_neither_mechanism(tmp_path):
-    """Positive control: removing the fallback must not turn a missing credential into a silent pass."""
+def test_the_identity_step_still_fails_loudly_without_oidc(tmp_path):
+    """Positive control: retiring the token must not turn a missing credential into a silent pass.
+
+    Retargeted 2026-10-06 (#2113). This used to assert the message named *both* mechanisms and
+    pointed at the `npm-release` environment, which was the right thing to say while the token
+    still existed. It no longer does: with `NPM_TOKEN` gone, "configure a token" is advice that
+    sends the reader to re-create the thing this change removed. What still has to hold is the
+    part that was never about tokens — a missing credential fails, and the message says what to
+    fix.
+    """
     proc = _run_identity_step(tmp_path / "nothing", ACTIONS_ID_TOKEN_REQUEST_URL="", NODE_AUTH_TOKEN="")
-    assert proc.returncode != 0, proc.stdout
-    assert "Neither trusted publishing" in proc.stdout and "npm-release" in proc.stdout, proc.stdout
+    assert proc.returncode != 0, (
+        "the identity step passed with no OIDC environment and no token. A missing credential has "
+        "to fail here, not surface later as a bare 401 from the registry."
+    )
+    assert "OIDC" in proc.stdout and "id-token" in proc.stdout, proc.stdout
 
 
-def test_the_identity_step_keeps_the_token_diagnostics(tmp_path):
-    """The transitional path is still the one most releases will use until the npm side is configured."""
+def test_the_identity_step_refuses_a_token_instead_of_using_it(tmp_path):
+    """The point of retiring the fallback: a token in the environment no longer buys a publish.
+
+    npm *prefers* `NODE_AUTH_TOKEN` whenever one is present, so leaving the environment wired
+    while deleting only the secret would have changed nothing while still reading as "we have a
+    fallback". These two assertions are the reason that is now impossible: the step names OIDC as
+    the mechanism and points at the permissions block, so a re-introduced token fails the gate
+    rather than quietly taking over.
+    """
     proc = _run_identity_step(tmp_path / "token", ACTIONS_ID_TOKEN_REQUEST_URL="", NODE_AUTH_TOKEN="npm_x")
-    assert proc.returncode == 0, proc.stdout
-    assert "token fallback" in proc.stdout, proc.stdout
+    assert proc.returncode != 0, (
+        "the identity step accepted a token-only run; the token path was supposed to be retired.\n"
+        f"{proc.stdout[-400:]}"
+    )
+    assert "npm-release" not in proc.stdout, (
+        "the step still points the reader at the npm-release environment, which no longer holds a "
+        "credential. That is the advice this change removed:\\n" + proc.stdout
+    )
+    assert "Fix the workflow, not a secret" in proc.stdout, proc.stdout
 # ── every workflow that publishes to npm must be able to do it without a long-lived secret ───────────
 # There are three publishing workflows (`misakanet`, `@misaka-net/misakanet-setup`, `@misaka-net/fatal-guard`)
 # and they shared one `NPM_TOKEN`. Migrating only the first would have left the other two unable to publish
