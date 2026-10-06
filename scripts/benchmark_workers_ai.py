@@ -60,6 +60,7 @@ import sys
 import time
 import urllib.error
 import urllib.request
+from datetime import datetime, timezone
 from pathlib import Path
 
 ACCOUNT = "6b92325b505f2b76aec49e9fe4195d31"
@@ -358,7 +359,15 @@ def run_one(args, model, scene, condition, prompt, ref_cmds, out_path):
     metrics = score_response(content, ref_cmds)
     run = {"model": model, "scenario": scene, "condition": condition,
            "status": resp.get("status"), "content": content, "metrics": metrics,
-           "error": resp.get("errors") or resp.get("error")}
+           "error": resp.get("errors") or resp.get("error"),
+           # When this happened, on the run itself. `latest.json` is cumulative and its
+           # resume cache is keyed on `(model, scenario[:80], condition)` — so until this
+           # field existed, *the only* record of which week a run belonged to was the
+           # filename of the weekly snapshot it happened to be copied into, and #2893
+           # prunes those to four. Any weekly aggregate therefore had to be reverse-engineered
+           # from file boundaries rather than read off the data. Stamped at write time, so a
+           # run's week survives every retention policy applied afterwards.
+           "run_at": datetime.now(timezone.utc).isoformat(timespec="seconds")}
     err_text = json.dumps(run.get("error") or "").lower()
     if resp.get("status") == 429 or "daily free allocation" in err_text or "neurons" in err_text:
         _QUOTA_HIT["flag"] = True
