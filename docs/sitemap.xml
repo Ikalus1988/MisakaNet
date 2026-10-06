@@ -228,6 +228,7 @@
   <url><loc>https://misakanet.org/lessons/github-api-pr-issue-management/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/github-api-pr-submission-pitfalls/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/github-automation-without-gh-cli-pt/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/github-connectivity-4-fallbacks-从最常踩的坑到最激进方案/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/github-contents-api-pr-pitfalls/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/github-contents-api-sha-required/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/github-dns-443-block-hosts-workaround/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
