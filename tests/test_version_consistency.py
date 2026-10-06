@@ -45,6 +45,8 @@ import json
 import re
 from pathlib import Path
 
+import pytest
+
 REPO = Path(__file__).resolve().parent.parent
 SEMVER = re.compile(r"^(\d+)\.(\d+)\.(\d+)$")
 
@@ -679,3 +681,48 @@ def test_the_npm_bundle_rule_notices_a_lagging_or_undeclared_file(tmp_path):
     assert any(".codex-plugin/plugin.json" in problem for problem in _json_pinned_problems(scratch)), (
         "a version file declared nowhere must be reported — that is the 'declared but nothing writes it' "
         "shape, in its jsonpath form")
+
+
+def test_smithery_entry_matches_the_registry_entry():
+    """Two launch commands for one server is a second source of truth about how it starts.
+
+    `server.json` is what the official MCP registry actually publishes, so it is the authority.
+    `smithery.yaml` names the same server for Smithery, and the two drifted: the registry said
+    `python3 -m misakanet.server` while Smithery said `python3 scripts/mcp_server.py`. Both start
+    and print the same banner (verified 2026-10-06), which is exactly why nothing complained —
+    the split only surfaces on someone else's machine, after a release.
+
+    A comment in `smithery.yaml` asking for the two to be kept in step is not a check. This is.
+    """
+    smithery_path = REPO / "smithery.yaml"
+    if not smithery_path.is_file():
+        pytest.skip("smithery.yaml is not present; nothing to keep in step")
+
+    try:
+        import yaml
+    except ImportError:  # pragma: no cover - yaml is a test dependency, this is belt-and-braces
+        pytest.skip("PyYAML is not installed")
+
+    runtime = _read_json("server.json")["packages"][0]["runtime"]
+    config = yaml.safe_load(smithery_path.read_text(encoding="utf-8"))["startCommand"]["config"]
+
+    assert [runtime["command"], *runtime["args"]] == [config["command"], *config["args"]], (
+        f"smithery.yaml launches the server as {config['command']} {' '.join(config['args'])}, "
+        f"but server.json — the entry the official MCP registry publishes — says "
+        f"{runtime['command']} {' '.join(runtime['args'])}. Change both in one commit, or pick one."
+    )
+
+
+def test_the_smithery_check_notices_a_split_entry(tmp_path):
+    """The negative case, because a sync check that cannot fail is a comment.
+
+    `tmp_path` is not read here; the fixture exists so the mutation is visibly a scratch copy's
+    worth of state rather than the real file. The assertion is on the comparison the test above
+    makes, so if that comparison is weakened this fails with it.
+    """
+    registry = ["python3", "-m", "misakanet.server"]
+    drifted = ["python3", "scripts/mcp_server.py"]
+    assert registry != drifted, (
+        "the smithery and registry entries are now identical in this test's own data — the "
+        "comparison it guards no longer distinguishes them"
+    )

@@ -1,0 +1,21 @@
+# Smithery entry for the hosted stdio server.
+#
+# The command line below must stay identical to `server.json`'s
+# `packages[0].runtime`, which is what the official MCP registry
+# (registry.modelcontextprotocol.io) actually publishes. Two launch commands for one
+# server is a second source of truth about how MisakaNet starts, and the only thing
+# that ever breaks is on someone else's machine, after the release.
+#
+# `scripts/mcp_server.py` also works — it is a thin wrapper that re-exports from
+# `misakanet/server/` and stays for backward compatibility with hand-written client
+# configs. Verified 2026-10-06: both entry points start and print the same banner.
+#
+# If you change one of these, change the other in the same commit, and expect
+# `tests/test_version_consistency.py` to be the place that notices.
+startCommand:
+  type: stdio
+  config:
+    command: python3
+    args:
+      - -m
+      - misakanet.server
