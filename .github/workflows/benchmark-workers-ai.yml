@@ -61,6 +61,15 @@ jobs:
           python3 scripts/benchmark_workers_ai.py $ARGS \
             --output docs/benchmarks/latest.json
 
+      - name: Regenerate the README benchmark table
+        # The report lands as `latest.json` in this same PR, and every run it appends now carries
+        # `run_at` — so the README's generated block is stale the moment this job writes the corpus.
+        # `tests/test_readme_benchmark_is_generated.py` runs in `test (ubuntu-latest, 3.11)` and fails
+        # on a stale block, which would put this workflow's own PR in the position of failing a gate
+        # for a reason that has nothing to do with the benchmark. The generator is the *producer* of
+        # that table, so it belongs in the job that produces its input, not in a human's hands.
+        run: python3 scripts/update_readme_benchmark.py
+
       - name: Land the report through a pull request that merges itself
         # Was `git push || { … git push || echo "push skipped"; }` — a push that the ruleset on
         # `main` refuses, wrapped in a fallback that turned the refusal into a log line and a green
@@ -106,5 +115,5 @@ jobs:
           python3 scripts/ci/land_change.py \
             --branch bot/benchmark-workers-ai \
             --title "chore(benchmark): weekly Workers AI lesson benchmark report [$TS]" \
-            --paths docs/benchmarks \
+            --paths docs/benchmarks README.md \
             --note "Free-tier models only; the neuron budget is enforced by scripts/benchmark_workers_ai.py."

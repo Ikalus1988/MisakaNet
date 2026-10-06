@@ -189,11 +189,12 @@ independent runs of ≈500 scenarios each):
 into the prompt; `plain` uses no lesson. `actionable` is a boolean per scenario indicating whether the
 model produced a usable answer. Actionable rates are stable across runs (76–77% with lesson, 82–83% plain).
 
-**Trend.** The table and the chart below are a **hand-copied snapshot covering
-2026-08-30 → 2026-09-21**. They are not regenerated, so they will drift from the
-corpus — treat [`docs/benchmarks/latest.json`](docs/benchmarks/latest.json) as the
-live source and these rows as history. (The weekly files it was copied from are
-themselves now pruned to the four most recent; see #2893.)
+**Trend.** Rows below are **generated** by [`scripts/update_readme_benchmark.py`](scripts/update_readme_benchmark.py)
+from [`docs/benchmarks/latest.json`](docs/benchmarks/latest.json) — regenerate them with
+`python3 scripts/update_readme_benchmark.py`. Do not hand-edit: a second source of truth is what made the
+previous copy go stale while the paragraph directly above it explained what the metric does and does not mean.
+
+<!-- BEGIN generated: benchmark-trend -->
 
 | Date | with_lesson hit rate | plain hit rate | n |
 |---|---|---|---|
@@ -203,17 +204,21 @@ themselves now pruned to the four most recent; see #2893.)
 | 2026-09-14 | 46.6% | 23.4% | 494 |
 | 2026-09-21 | 46.1% | 23.3% | 512 |
 
+_1155 run(s) in `latest.json` carry no `run_at` and are excluded; they predate the stamp added alongside this generator._
+
 ```
-with_lesson hit rate (weekly)
-49.1% │    ▄
-48.3% │    █  ▄
-46.6% │    █  █  ▄
-46.4% │ ▄  █  █  █  ▄
-46.1% │ █  █  █  █  █
+with_lesson hit rate (per run date)
+46.1% │ ▁
+46.6% │ ▂
+48.3% │ ▆
+49.1% │ █
+46.4% │ ▁
       └──────────────────
        08  08  09  09  09
        30  31  06  14  21
 ```
+
+<!-- END generated: benchmark-trend -->
 
 A model repeats more of a document it was handed, and the weaker the model the bigger the relative
 difference. That is *necessary* for the product to help and it is not sufficient — the claim "search finds the
