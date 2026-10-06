@@ -33,3 +33,50 @@
 
 /*.html
   Cache-Control: public, max-age=300
+
+# Content-Security-Policy for the pages that cannot execute script. #2683 found the
+# homepage had none and correctly declined to force one there: `index.html` carries
+# 47 inline `on*` handlers and an 82.9 KB inline `<script>`, and a strict policy over
+# that markup breaks the site rather than hardening it.
+#
+# The rest of the site does not need any of that. Measured on the branch that added
+# this (2026-10-06), **521 of the 532 HTML pages under docs/ have no inline `on*`
+# handler, no executable inline `<script>`, and no `url(...)` anywhere in their inline
+# CSS** — every external reference on them points back at misakanet.org or is a plain
+# github.com hyperlink. So `default-src 'none'` costs them nothing, and `script-src`
+# falls through to it: those pages cannot run script at all.
+#
+# Why these seven patterns and not one `/*` rule: `_headers` MERGES every matching rule
+# and comma-joins a repeated name, exactly as the Cache-Control note above says. A CSP
+# under `/*` could not be relaxed for the eleven script pages without shipping
+# `Content-Security-Policy: a, b`, which browsers ignore. So the policy goes only on the
+# paths that can take it, and tests/test_site_csp.py fails in both directions — a page
+# that grows script under one of these rules, and a script page that quietly grows
+# outside them.
+#
+# `style-src 'unsafe-inline'` is required and is the one concession: all 521 carry an
+# inline <style> block. Inline CSS cannot execute script, so this does not reopen the
+# hole the policy closes. `frame-ancestors` restates X-Frame-Options because CSP
+# supersedes it where both are present and a header nobody reads is not a control.
+/lessons/*
+  Content-Security-Policy: default-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'self'; img-src 'self' data:; style-src 'unsafe-inline'
+
+/topics/*
+  Content-Security-Policy: default-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'self'; img-src 'self' data:; style-src 'unsafe-inline'
+
+/privacy/*
+  Content-Security-Policy: default-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'self'; img-src 'self' data:; style-src 'unsafe-inline'
+
+/terms/*
+  Content-Security-Policy: default-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'self'; img-src 'self' data:; style-src 'unsafe-inline'
+
+/enterprise/*
+  Content-Security-Policy: default-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'self'; img-src 'self' data:; style-src 'unsafe-inline'
+
+/install/*
+  Content-Security-Policy: default-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'self'; img-src 'self' data:; style-src 'unsafe-inline'
+
+# `/journey/*` would be wrong here: `/journey/index.html` runs script. Only the one
+# static child qualifies. Widening this to `/journey/*` turns the gate red.
+/journey/http-mcp/*
+  Content-Security-Policy: default-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'self'; img-src 'self' data:; style-src 'unsafe-inline'
