@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-10-06T06:32:46.405839+00:00",
+  "generated_at": "2026-10-06T14:44:48.061085+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "fix: stop a handoff document from opening a release PR",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2905",
-      "timestamp": "2026-10-06T06:09:22Z",
+      "title": "lessons: two pending contributor lessons, and three gates that were asserting snapshots",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2924",
+      "timestamp": "2026-10-06T14:44:36Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "docs: four self-referential staleness bugs, and a gate so the fifth one is caught",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2902",
-      "timestamp": "2026-10-06T04:58:19Z",
+      "title": "chore(main): release 2.42.1",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2913",
+      "timestamp": "2026-10-06T13:49:43Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore: auto-update lessons.json, public counts and generated pages",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2900",
-      "timestamp": "2026-10-06T04:15:08Z",
+      "title": "ci(npm): retire NPM_TOKEN for the main package, with the run that proves it",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2923",
+      "timestamp": "2026-10-06T13:49:13Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2899",
-      "timestamp": "2026-10-06T04:12:38Z",
+      "title": "ci: pr-quality-gate cancelled its own check, and gh reported that as fail",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2922",
+      "timestamp": "2026-10-06T13:34:34Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "docs(lesson): the silent-truncation family in the MCP intake worker (fixes #2768, #2774, #2818, #2819, #2821)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2849",
-      "timestamp": "2026-10-06T04:04:21Z",
+      "title": "fix(site,ci): three verified intake defects from #2915-#2918 (#2915 is not ours)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2920",
+      "timestamp": "2026-10-06T13:06:25Z",
       "source": "github"
     },
     {
