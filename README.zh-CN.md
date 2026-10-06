@@ -343,12 +343,9 @@ python3 search_knowledge.py "database locked"
 
 ## 路线图
 
-| 版本 | 重点 | 状态 |
-|------|------|------|
-| **v2.9.x** | 可发现性、内容深度、质量飞轮 | 进行中 |
-| **v3.0** | Lesson 详情页、主题页、Agent 框架 | 规划中 |
-
-详见 [ROADMAP.md](ROADMAP.md)。
+路线图只维护在 [ROADMAP.md](ROADMAP.md) 一处，README 不再复制版本表 ——
+`README.md` 与 `README.ja.md` 自 2026-09-20 起就只保留链接，这里曾经还留着一张
+停在 `v2.9.x / v3.0` 的表（落后约 20 个 minor），已删除。
 
 ---
 

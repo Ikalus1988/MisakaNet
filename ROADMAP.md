@@ -292,10 +292,17 @@ grep -n "await kvPut(env," workers/register-proxy-sw.js   # 7 处：6 处直写 
 
 - **两个章节都叫 v2.17.0**：`August 2026 - v2.17.0` 与 `September 2026 - v2.17.0`。
 - **October 写"v2.18/v3.0 readiness"，November 又写"v2.18"**，而 v2.18.0 在 2026-08-21 就已发布（见基线节）。
-- **README 的路线图表与本文其余部分不一致**：`README.md:617` 仍写 "Q1 2027 | Hub Federation, i18n |
-   📋 Planned"，而 `docs/roadmap/long-term.md` 明确记着 "2026-08-31: … Hub was retired the same day"；
-  `README.zh-CN.md:293` 还停在 "v2.9.x / v3.0"。也就是说 README 里承诺了一个**已被退役的方向**，
-  以及一个落后二十多个 minor 的版本号。修 README 属于独立的 docs PR。
+- **~~README 的路线图表与本文其余部分不一致~~ —— ✅ 已于 2026-10-06 修复。**
+  这条自查笔记说 README 里还列着 "Q1 2027 | Hub Federation, i18n | 📋 Planned"，
+  而 `docs/roadmap/long-term.md` 记着 "2026-08-31: … Hub was retired the same day"。
+  **两个前提现在都不成立**：那一行 2026-09-20 就删掉了（`26fc0eeb`），
+  同一批里 `README.zh-CN.md` 那张停在 "v2.9.x / v3.0" 的版本表也已删除，
+  三个 README 现在一律只链到本文。
+
+  这条笔记本身当时还引了一个**已经不存在的 README 行号** —— 记录这个问题的文档，
+  比它记录的问题更陈旧。这才是值得记住的教训：**自查笔记也会腐烂，所以它同样需要门禁**。
+  `tests/test_doc_line_citations.py` 现在会检查全仓库任意 markdown 里的 `文件:行号`
+  引用是否落在该文件的真实行数内。
 
 ### 新优先级（按"解锁面 ÷ 成本"排序）
 
@@ -342,8 +349,11 @@ grep -n "await kvPut(env," workers/register-proxy-sw.js   # 7 处：6 处直写 
 
 - 现状：语料按错误文本 / 关键词索引；中文整句问句（如"如何切换识图模型"）命中≈0
   （蓝图审视 §2.1 实测，"已知≈0，未修"）。这让"傻瓜式安装"只对会用英文错误串的人成立。
-- **并行进行中**：别名表原型写在 `docs/maintainer/query-alias-design-2026-09-16.md`
-  （**in progress**，截至本轮尚未落库）——接手前先读它，避免另起一套同义词源。
+- **✅ 已落库并接线**（本条曾长期写着 "in progress, 尚未落库"，那是错的）：别名表在
+  `data/query-aliases.json`（约 90 条 zh→en，如 `识图模型`→`vision model`、`乱码`→`encoding`），
+  接在 `misakanet/search/engine.py` 的查询改写里，并内嵌进 worker 默认开启。
+  设计记录仍在 `docs/maintainer/query-alias-design-2026-09-16.md`；
+  实测 top-1 40%→70%、top-3 50%→80%、线上零查询词 11/20→0/20（同文件 `:8-9`）。
 - 可接手内容：别名表 → 查询改写；FAQ 前置（`misakanet_search` 已有 FAQ 命中路径，返回
   `type="faq"` + `issue_url` + `answer`）；注意 `data/synonyms.json` 与
   `tests/test_synonym_expansion.py` 已存在，**不要再造第二份同义词数据**。

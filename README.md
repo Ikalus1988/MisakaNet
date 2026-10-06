@@ -189,7 +189,11 @@ independent runs of ≈500 scenarios each):
 into the prompt; `plain` uses no lesson. `actionable` is a boolean per scenario indicating whether the
 model produced a usable answer. Actionable rates are stable across runs (76–77% with lesson, 82–83% plain).
 
-**Trend** (weekly snapshots):
+**Trend.** The table and the chart below are a **hand-copied snapshot covering
+2026-08-30 → 2026-09-21**. They are not regenerated, so they will drift from the
+corpus — treat [`docs/benchmarks/latest.json`](docs/benchmarks/latest.json) as the
+live source and these rows as history. (The weekly files it was copied from are
+themselves now pruned to the four most recent; see #2893.)
 
 | Date | with_lesson hit rate | plain hit rate | n |
 |---|---|---|---|
