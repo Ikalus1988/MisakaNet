@@ -291,7 +291,17 @@ def test_every_redirect_rule_points_at_a_page_that_exists():
     this repository renders — so a stale slug would ship as a working-looking 301 to a dead URL.
     """
     rules = blp.read_redirect_sources(REPO)
-    assert len(rules) == 112, f"expected the 112 committed aliases, found {len(rules)}"
+
+    # The point of this test is the *targets*: a 301 to a dead URL ships as a working-looking
+    # redirect, because a `Location` header renders nowhere. The count was a secondary assertion
+    # that had gone stale — it was 112, and two lessons landed on 2026-10-06 (one with a Chinese
+    # slug), so it became 114 on a perfectly correct tree. What it was really watching for was an
+    # empty table, so that is what it says: no rules at all means the generator stopped emitting
+    # them, which is the failure that would make every `/lessons/<id>/` URL a 404.
+    assert rules, (
+        "no redirect rules were read; `scripts/build_lesson_pages.py` emits this table "
+        "unconditionally, so an empty one means the generator's output changed shape"
+    )
     dead = {source: target for source, target in rules.items()
             if not (REPO / "docs" / target.lstrip("/") / "index.html").is_file()}
     assert not dead, f"these rules point at a URL with no page: {list(dead.items())[:5]}"

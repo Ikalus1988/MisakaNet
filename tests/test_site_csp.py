@@ -369,17 +369,36 @@ def test_coverage_is_a_ratchet_not_a_snapshot() -> None:
 
 
 def test_the_measured_shape_of_the_site_matches_what_the_policy_assumes() -> None:
-    """Pin the measurement the policy was designed from.
+    """The strict policy is justified by "the static pages need nothing", so check that shape.
 
-    The strict policy is justified by "the static pages need nothing". If a
-    generated page ever starts shipping a script or a remote asset, the
-    justification is stale and this fails before the per-page checks do.
+    This used to assert a hardcoded page count (521). Two lessons landed on 2026-10-06 and the
+    count became 523, and the test went red — on a correct repository. That is the failure mode
+    this repository has paid for repeatedly: an assertion that fires on a legitimate change
+    teaches people to ignore the assertion. A count is a snapshot; the *shape* is the invariant,
+    so that is what gets asserted:
+
+    - the pages that run script are exactly the eleven named above, so nothing grew a script;
+    - the other pages are the large majority, so the policy still covers the site rather than
+      three pages out of a hundred;
+    - none of them fetches anything from its inline CSS, which is the fact `default-src 'none'`
+      relies on.
+
+    The absolute count now lives in the ratchet test's coverage ratio, which is derived from the
+    same data and drifts by design when the corpus changes.
     """
     script_pages = {path for path, source in _pages() if _runs_script(source)}
     static = [path for path, _ in _pages() if path not in script_pages]
-    assert len(static) == 521, (
-        f"expected 521 pages with no script, found {len(static)}; "
-        f"new script pages: {sorted(script_pages - KNOWN_SCRIPT_PAGES)}"
+    all_pages = len(static) + len(script_pages)
+
+    assert script_pages == KNOWN_SCRIPT_PAGES, (
+        "the set of pages that can execute script changed: "
+        f"added {sorted(script_pages - KNOWN_SCRIPT_PAGES)}, "
+        f"gone {sorted(KNOWN_SCRIPT_PAGES - script_pages)}"
+    )
+    assert len(static) > all_pages * 0.9, (
+        f"only {len(static)}/{all_pages} pages are script-free, so `default-src 'none'` covers "
+        "too little of the site to be the default. Check whether new page families arrived that "
+        "the _headers rules do not reach."
     )
     for path in static:
         source = (DOCS / path).read_text(encoding="utf-8")

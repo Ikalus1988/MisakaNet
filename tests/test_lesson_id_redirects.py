@@ -240,19 +240,50 @@ def test_the_parser_reads_the_shapes_the_generator_emits(path):
 
 
 def test_every_corpus_alias_is_represented_including_the_non_ascii_ones():
-    """The count that matters, so a parser that quietly drops a character class cannot pass.
+    """The rule table must be exactly what the generator would produce, non-ASCII included.
 
-    111 is the number of lessons whose id is not their slug, and 3 of those redirect to a Chinese slug.
-    Asserting only "non-empty" would let a regression that drops all non-ASCII targets through.
+    This used to assert the literal counts 112 and 3. Two lessons landed on 2026-10-06, one of them
+    with a Chinese slug, and the counts became 114 and 4 — the test went red on a correct
+    repository, because the count was a snapshot standing in for an invariant. Lessons arriving is
+    normal here.
+
+    So the expectation is derived from the same condition the generator uses
+    (`scripts/build_lesson_pages.py::plan_with_slugs`): a lesson gets an `id -> slug` rule exactly
+    when its id differs from its slug **and** no stub page already exists at
+    `docs/lessons/<id>/index.html`. That second half matters — a lesson with a live stub page needs
+    no redirect, so "every id != slug has a rule" would be wrong, and asserting it that way is
+    what the first draft of this fix did before the stub check was read out of the generator.
+
+    The non-ASCII assertion is unchanged in strength: the set of rules involving non-ASCII
+    characters must equal the set the corpus implies, so a parser that drops that character class
+    fails rather than passing on a non-empty remainder.
     """
     rules = _rules()
-    assert len(rules) == 112, (
-        f"{len(rules)} rules; 112 is the number of lessons whose id is not their slug. A count that "
-        f"drifts means a lesson either lost its alias or gained one that does not resolve")
-    non_ascii = sorted(s for s, (t, _c) in rules.items() if any(ord(ch) > 127 for ch in s + t))
-    assert len(non_ascii) == 3, (
-        f"expected the 3 known Chinese-slug aliases, found {len(non_ascii)}: {non_ascii}")
 
+    corpus = json.loads((REPO / "data" / "lessons.json").read_text(encoding="utf-8"))
+    lessons = corpus["lessons"] if isinstance(corpus, dict) else corpus
+    expected = {
+        f"/lessons/{lesson['id']}/"
+        for lesson in lessons
+        if str(lesson.get("id")) != str(lesson.get("slug"))
+        and not (REPO / "docs" / "lessons" / str(lesson.get("id")) / "index.html").exists()
+    }
+    assert set(rules) == expected, (
+        f"{len(rules)} rules but the generator would emit {len(expected)}. "
+        f"Missing: {sorted(expected - set(rules))[:5]}. Extra: {sorted(set(rules) - expected)[:5]}. "
+        "Regenerate with scripts/build_lesson_pages.py rather than editing the table."
+    )
+
+    non_ascii = sorted(s for s, (t, _c) in rules.items() if any(ord(ch) > 127 for ch in s + t))
+    assert non_ascii, (
+        "no rule involves a non-ASCII character; the corpus has Chinese-slug lessons, so this "
+        "means the whole character class was dropped somewhere"
+    )
+    chinese_targets = sorted(s for s in non_ascii if any(ord(ch) > 127 for ch in rules[s][0]))
+    assert chinese_targets, (
+        "every non-ASCII rule resolves to an ASCII target; the corpus has Chinese slugs, so the "
+        "redirect targets lost their encoding"
+    )
 
 
 def test_the_parser_rejects_a_malformed_rule_instead_of_guessing():
