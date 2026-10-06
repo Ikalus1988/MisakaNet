@@ -43,7 +43,11 @@
   ],
   "corpus": {
     "lesson_count": 468,
+<<<<<<< HEAD
     "fingerprint": "sha256:262259fc2c04a80794b9c8950521e11e113b09acca60de3a3b7943f29fa94da9"
+=======
+    "fingerprint": "sha256:2bfffbe5da006078e20f15445a4b92bc5246b7dc4b79737bad48f6ad0ff437e2"
+>>>>>>> 41a0b21d (fix: rebase the crypto/Web3 lesson onto current main and refresh the artifacts)
   },
   "queries": [
     {
@@ -56,6 +60,7 @@
         },
         {
           "path": "lessons/contrib/hermes-model-switch-ccswitch.md",
+<<<<<<< HEAD
           "score": 0.740265
         },
         {
@@ -89,6 +94,41 @@
         {
           "path": "lessons/contrib/vertex-gemini-model-id-naming.md",
           "score": 0.369769
+=======
+          "score": 0.74026
+        },
+        {
+          "path": "lessons/contrib/rag-three-channel-llm-disaster-recovery.md",
+          "score": 0.562204
+        },
+        {
+          "path": "lessons/contrib/rag-cross-encoder-cpu-bottleneck.md",
+          "score": 0.499415
+        },
+        {
+          "path": "lessons/contrib/git-clean-branch-after-merged-pr-ru.md",
+          "score": 0.492024
+        },
+        {
+          "path": "lessons/contrib/fanuc-dcs-safety-configuration.md",
+          "score": 0.47026
+        },
+        {
+          "path": "lessons/core/search-first-roadmap-loop.md",
+          "score": 0.413849
+        },
+        {
+          "path": "lessons/contrib/git-checkout-discards-uncommitted-work.md",
+          "score": 0.37684
+        },
+        {
+          "path": "lessons/contrib/llm-cost-telemetry-undercount.md",
+          "score": 0.372122
+        },
+        {
+          "path": "lessons/contrib/vertex-gemini-model-id-naming.md",
+          "score": 0.36846
+>>>>>>> 41a0b21d (fix: rebase the crypto/Web3 lesson onto current main and refresh the artifacts)
         }
       ]
     },
@@ -102,6 +142,7 @@
         },
         {
           "path": "lessons/contrib/wxauto-windows-python-not-wsl.md",
+<<<<<<< HEAD
           "score": 0.740848
         },
         {
@@ -135,6 +176,41 @@
         {
           "path": "lessons/contrib/lesson-10-agent-reach-doctor-baseline.md",
           "score": 0.490724
+=======
+          "score": 0.741172
+        },
+        {
+          "path": "lessons/contrib/python-venv-tiktoken-module-not-found.md",
+          "score": 0.654621
+        },
+        {
+          "path": "lessons/contrib/agent-manual-update-timeout.md",
+          "score": 0.556766
+        },
+        {
+          "path": "lessons/contrib/pip-install-proxy-timeout.md",
+          "score": 0.544288
+        },
+        {
+          "path": "lessons/contrib/wcferry-wechat-version-lock.md",
+          "score": 0.518742
+        },
+        {
+          "path": "lessons/contrib/lesson-08-pip-https-proxy-clash.md",
+          "score": 0.517363
+        },
+        {
+          "path": "lessons/core/auto-merge-ci-pipeline.md",
+          "score": 0.495995
+        },
+        {
+          "path": "lessons/contrib/browser-harness-cdp-browser-automation.md",
+          "score": 0.491539
+        },
+        {
+          "path": "lessons/contrib/lesson-10-agent-reach-doctor-baseline.md",
+          "score": 0.490004
+>>>>>>> 41a0b21d (fix: rebase the crypto/Web3 lesson onto current main and refresh the artifacts)
         }
       ]
     },
@@ -148,6 +224,7 @@
         },
         {
           "path": "lessons/contrib/pip-install-proxy-timeout.md",
+<<<<<<< HEAD
           "score": 0.764502
         },
         {
@@ -181,6 +258,41 @@
         {
           "path": "lessons/contrib/lesson-07-uv-venv-seed-fix-no-pip.md",
           "score": 0.588606
+=======
+          "score": 0.765301
+        },
+        {
+          "path": "lessons/contrib/lesson-08-pip-https-proxy-clash.md",
+          "score": 0.72763
+        },
+        {
+          "path": "lessons/contrib/pt-br/instalacao-pip-timeout-proxy.md",
+          "score": 0.666047
+        },
+        {
+          "path": "lessons/core/auto-merge-ci-pipeline.md",
+          "score": 0.657241
+        },
+        {
+          "path": "lessons/contrib/agent-web-access-toolchain-selection.md",
+          "score": 0.638134
+        },
+        {
+          "path": "lessons/contrib/wxauto-windows-python-not-wsl.md",
+          "score": 0.629441
+        },
+        {
+          "path": "lessons/contrib/ci-dco-decouple-pythonpath-fork-pr.md",
+          "score": 0.604117
+        },
+        {
+          "path": "lessons/contrib/fehler-python-modul-nicht-gefunden.md",
+          "score": 0.592706
+        },
+        {
+          "path": "lessons/contrib/lesson-07-uv-venv-seed-fix-no-pip.md",
+          "score": 0.590234
+>>>>>>> 41a0b21d (fix: rebase the crypto/Web3 lesson onto current main and refresh the artifacts)
         }
       ]
     },
@@ -194,6 +306,7 @@
         },
         {
           "path": "lessons/contrib/lesson-template-network.md",
+<<<<<<< HEAD
           "score": 0.73341
         },
         {
@@ -227,6 +340,41 @@
         {
           "path": "lessons/contrib/wechat-pubacct-fetch-separate-search-from-retrieval.md",
           "score": 0.545204
+=======
+          "score": 0.7332
+        },
+        {
+          "path": "lessons/contrib/pip-install-timeout-ssl.md",
+          "score": 0.724176
+        },
+        {
+          "path": "lessons/contrib/es/proxy-corporativo-curl-timeout.md",
+          "score": 0.714227
+        },
+        {
+          "path": "lessons/contrib/python-smtplib-ssl-certificate-verify-failed-fix.md",
+          "score": 0.680355
+        },
+        {
+          "path": "lessons/contrib/pip-install-proxy-timeout.md",
+          "score": 0.673475
+        },
+        {
+          "path": "lessons/contrib/git-tls-handshake-failure.md",
+          "score": 0.663505
+        },
+        {
+          "path": "lessons/contrib/npm-e403-forbidden-three-layers.md",
+          "score": 0.595012
+        },
+        {
+          "path": "lessons/contrib/github-release-large-asset-download-cn.md",
+          "score": 0.592244
+        },
+        {
+          "path": "lessons/contrib/wechat-pubacct-fetch-separate-search-from-retrieval.md",
+          "score": 0.541459
+>>>>>>> 41a0b21d (fix: rebase the crypto/Web3 lesson onto current main and refresh the artifacts)
         }
       ]
     },
@@ -240,6 +388,7 @@
         },
         {
           "path": "lessons/en/disk-full-agent-tmp-gc.md",
+<<<<<<< HEAD
           "score": 0.616354
         },
         {
@@ -273,6 +422,41 @@
         {
           "path": "lessons/contrib/feishu-markdown-table-not-rendered.md",
           "score": 0.406571
+=======
+          "score": 0.616418
+        },
+        {
+          "path": "lessons/core/pr-cleanup-sop.md",
+          "score": 0.502199
+        },
+        {
+          "path": "lessons/contrib/openclaw-reinstall-lesson.md",
+          "score": 0.501353
+        },
+        {
+          "path": "lessons/contrib/github-connectivity-4-fallbacks.md",
+          "score": 0.464522
+        },
+        {
+          "path": "lessons/contrib/agent-manual-update-timeout.md",
+          "score": 0.441684
+        },
+        {
+          "path": "lessons/core/whole-file-content-push-reverts-managed-lines.md",
+          "score": 0.440211
+        },
+        {
+          "path": "lessons/contrib/git-tls-handshake-failure.md",
+          "score": 0.4201
+        },
+        {
+          "path": "lessons/contrib/oss-refactor-lessons.md",
+          "score": 0.414896
+        },
+        {
+          "path": "lessons/contrib/feishu-markdown-table-not-rendered.md",
+          "score": 0.406425
+>>>>>>> 41a0b21d (fix: rebase the crypto/Web3 lesson onto current main and refresh the artifacts)
         }
       ]
     },
@@ -286,6 +470,7 @@
         },
         {
           "path": "lessons/contrib/lesson-06-git-push-credential-helper-403.md",
+<<<<<<< HEAD
           "score": 0.550047
         },
         {
@@ -319,6 +504,41 @@
         {
           "path": "lessons/contrib/shell-script-debugging.md",
           "score": 0.388303
+=======
+          "score": 0.54999
+        },
+        {
+          "path": "lessons/contrib/erreur-permission-docker-linux.md",
+          "score": 0.541472
+        },
+        {
+          "path": "lessons/contrib/npm-eacces-permission-error-linux.md",
+          "score": 0.502172
+        },
+        {
+          "path": "lessons/contrib/a-child-probe-failure-must-not-poison-the-parent-listing.md",
+          "score": 0.479721
+        },
+        {
+          "path": "lessons/core/dco-auto-fix-workflow.md",
+          "score": 0.465224
+        },
+        {
+          "path": "lessons/core/auto-merge-ci-pipeline.md",
+          "score": 0.399501
+        },
+        {
+          "path": "lessons/core/pr-cleanup-sop.md",
+          "score": 0.397168
+        },
+        {
+          "path": "lessons/contrib/js-dead-code-chain-break.md",
+          "score": 0.392835
+        },
+        {
+          "path": "lessons/contrib/shell-script-debugging.md",
+          "score": 0.388348
+>>>>>>> 41a0b21d (fix: rebase the crypto/Web3 lesson onto current main and refresh the artifacts)
         }
       ]
     },
@@ -332,6 +552,7 @@
         },
         {
           "path": "lessons/core/dco-auto-fix-workflow.md",
+<<<<<<< HEAD
           "score": 0.54596
         },
         {
@@ -365,6 +586,41 @@
         {
           "path": "lessons/contrib/fanuc-rgcore-hang-endpoint-security-injection.md",
           "score": 0.451882
+=======
+          "score": 0.545716
+        },
+        {
+          "path": "lessons/contrib/js-dead-code-chain-break.md",
+          "score": 0.538292
+        },
+        {
+          "path": "lessons/contrib/shell-script-debugging.md",
+          "score": 0.533779
+        },
+        {
+          "path": "lessons/core/pr-cleanup-sop.md",
+          "score": 0.486938
+        },
+        {
+          "path": "lessons/core/cronjob-one-shot-race-condition-duplicate-execution.md",
+          "score": 0.486714
+        },
+        {
+          "path": "lessons/contrib/ci-lambda-module-level-side-effects.md",
+          "score": 0.486409
+        },
+        {
+          "path": "lessons/contrib/lesson-15-cloudflare-workflows-durable.md",
+          "score": 0.477084
+        },
+        {
+          "path": "lessons/contrib/lesson-13-aws-lambda-microvms.md",
+          "score": 0.476029
+        },
+        {
+          "path": "lessons/contrib/fanuc-rgcore-hang-endpoint-security-injection.md",
+          "score": 0.451668
+>>>>>>> 41a0b21d (fix: rebase the crypto/Web3 lesson onto current main and refresh the artifacts)
         }
       ]
     },
@@ -378,6 +634,7 @@
         },
         {
           "path": "lessons/core/pr-cleanup-sop.md",
+<<<<<<< HEAD
           "score": 0.661812
         },
         {
@@ -411,6 +668,41 @@
         {
           "path": "lessons/contrib/json-parse-failure-handling.md",
           "score": 0.479132
+=======
+          "score": 0.661377
+        },
+        {
+          "path": "lessons/core/contributor-engagement-retention.md",
+          "score": 0.602781
+        },
+        {
+          "path": "lessons/contrib/import-path-verification-after-refactor.md",
+          "score": 0.550497
+        },
+        {
+          "path": "lessons/contrib/github-api-pr-submission-pitfalls.md",
+          "score": 0.535521
+        },
+        {
+          "path": "lessons/contrib/fanuc-ls-parser-comment-and-segment-boundary.md",
+          "score": 0.518314
+        },
+        {
+          "path": "lessons/contrib/python-venv-troubleshoot.md",
+          "score": 0.500024
+        },
+        {
+          "path": "lessons/contrib/ci-lambda-module-level-side-effects.md",
+          "score": 0.497422
+        },
+        {
+          "path": "lessons/contrib/ci-dco-decouple-pythonpath-fork-pr.md",
+          "score": 0.483043
+        },
+        {
+          "path": "lessons/contrib/json-parse-failure-handling.md",
+          "score": 0.479252
+>>>>>>> 41a0b21d (fix: rebase the crypto/Web3 lesson onto current main and refresh the artifacts)
         }
       ]
     },
@@ -424,6 +716,7 @@
         },
         {
           "path": "lessons/contrib/tts-chinese-encoding-powershell.md",
+<<<<<<< HEAD
           "score": 0.757827
         },
         {
@@ -457,6 +750,41 @@
         {
           "path": "lessons/en/jsonl-activity-ledger.md",
           "score": 0.562147
+=======
+          "score": 0.757793
+        },
+        {
+          "path": "lessons/contrib/python-gbk-encoding-error.md",
+          "score": 0.753977
+        },
+        {
+          "path": "lessons/core/allowlist-must-be-tested-against-the-corpus.md",
+          "score": 0.751494
+        },
+        {
+          "path": "lessons/contrib/aider-windows-unicode-error.md",
+          "score": 0.748537
+        },
+        {
+          "path": "lessons/contrib/wsl-pip-gbk-hub-poller-crash.md",
+          "score": 0.734367
+        },
+        {
+          "path": "lessons/contrib/windows-ci-splitcommand-backslash-unicode-detached.md",
+          "score": 0.689816
+        },
+        {
+          "path": "lessons/contrib/voice-pipeline-silent-failures.md",
+          "score": 0.618371
+        },
+        {
+          "path": "lessons/core/whole-file-content-push-reverts-managed-lines.md",
+          "score": 0.575424
+        },
+        {
+          "path": "lessons/en/jsonl-activity-ledger.md",
+          "score": 0.561946
+>>>>>>> 41a0b21d (fix: rebase the crypto/Web3 lesson onto current main and refresh the artifacts)
         }
       ]
     },
@@ -470,6 +798,7 @@
         },
         {
           "path": "lessons/contrib/pip-install-timeout-ssl.md",
+<<<<<<< HEAD
           "score": 0.62286
         },
         {
@@ -503,6 +832,41 @@
         {
           "path": "lessons/contrib/git-credential-helper-gh-path-mismatch.md",
           "score": 0.451976
+=======
+          "score": 0.622714
+        },
+        {
+          "path": "lessons/contrib/playwright-snap-chromium-libnss3-sandbox-launch.md",
+          "score": 0.550466
+        },
+        {
+          "path": "lessons/contrib/ci-dco-decouple-pythonpath-fork-pr.md",
+          "score": 0.548324
+        },
+        {
+          "path": "lessons/contrib/browser-harness-cdp-browser-automation.md",
+          "score": 0.526854
+        },
+        {
+          "path": "lessons/contrib/git-tls-handshake-failure.md",
+          "score": 0.496923
+        },
+        {
+          "path": "lessons/contrib/openclaw-reinstall-lesson.md",
+          "score": 0.494841
+        },
+        {
+          "path": "lessons/contrib/agent-manual-update-timeout.md",
+          "score": 0.466436
+        },
+        {
+          "path": "lessons/contrib/testimonio-misakanet.md",
+          "score": 0.456421
+        },
+        {
+          "path": "lessons/contrib/git-credential-helper-gh-path-mismatch.md",
+          "score": 0.451905
+>>>>>>> 41a0b21d (fix: rebase the crypto/Web3 lesson onto current main and refresh the artifacts)
         }
       ]
     },
@@ -516,6 +880,7 @@
         },
         {
           "path": "lessons/contrib/feishu-websocket-404-error-http-webhook-required.md",
+<<<<<<< HEAD
           "score": 0.763949
         },
         {
@@ -549,6 +914,41 @@
         {
           "path": "lessons/contrib/feishu-markdown-table-not-rendered.md",
           "score": 0.515557
+=======
+          "score": 0.764088
+        },
+        {
+          "path": "lessons/contrib/feishu-setup-complete-cc-connect.md",
+          "score": 0.711215
+        },
+        {
+          "path": "lessons/contrib/registration-chain-worker-fallback.md",
+          "score": 0.679997
+        },
+        {
+          "path": "lessons/contrib/wxauto-im-feedback-collection-jsonl-queue.md",
+          "score": 0.679878
+        },
+        {
+          "path": "lessons/contrib/hub-feishu-wsclient-start-never-called.md",
+          "score": 0.634475
+        },
+        {
+          "path": "lessons/contrib/process-card-sequence-extraction-rules.md",
+          "score": 0.585991
+        },
+        {
+          "path": "lessons/contrib/feishu-display-optimization-cc-connect.md",
+          "score": 0.580555
+        },
+        {
+          "path": "lessons/contrib/openclaw-gateway-dynamic-module-missing.md",
+          "score": 0.548324
+        },
+        {
+          "path": "lessons/contrib/feishu-markdown-table-not-rendered.md",
+          "score": 0.515769
+>>>>>>> 41a0b21d (fix: rebase the crypto/Web3 lesson onto current main and refresh the artifacts)
         }
       ]
     },
@@ -562,6 +962,7 @@
         },
         {
           "path": "lessons/contrib/finding-and-fixing-ghostty-s-largest-memory-leak.md",
+<<<<<<< HEAD
           "score": 0.733575
         },
         {
@@ -595,6 +996,41 @@
         {
           "path": "lessons/contrib/wsl-proxy-huggingface-external.md",
           "score": 0.487834
+=======
+          "score": 0.733768
+        },
+        {
+          "path": "lessons/contrib/rag-build-strategy-batch.md",
+          "score": 0.569159
+        },
+        {
+          "path": "lessons/contrib/debugging-memory-leaks-in-ruby.md",
+          "score": 0.536153
+        },
+        {
+          "path": "lessons/contrib/lesson-08-pip-https-proxy-clash.md",
+          "score": 0.535539
+        },
+        {
+          "path": "lessons/contrib/permission-denied-fix.md",
+          "score": 0.507435
+        },
+        {
+          "path": "lessons/contrib/wsl-pip-gbk-hub-poller-crash.md",
+          "score": 0.496979
+        },
+        {
+          "path": "lessons/contrib/wsl-terminal-underscore-corruption.md",
+          "score": 0.495555
+        },
+        {
+          "path": "lessons/contrib/wsl-proxy-setup.md",
+          "score": 0.495182
+        },
+        {
+          "path": "lessons/contrib/wsl-proxy-huggingface-external.md",
+          "score": 0.487914
+>>>>>>> 41a0b21d (fix: rebase the crypto/Web3 lesson onto current main and refresh the artifacts)
         }
       ]
     },
@@ -608,6 +1044,7 @@
         },
         {
           "path": "lessons/contrib/fanuc-rgcore-hang-endpoint-security-injection.md",
+<<<<<<< HEAD
           "score": 0.620093
         },
         {
@@ -641,6 +1078,41 @@
         {
           "path": "lessons/contrib/docker-compose-basics.md",
           "score": 0.389811
+=======
+          "score": 0.619726
+        },
+        {
+          "path": "lessons/contrib/gateway-hang-watchdog-recovery.md",
+          "score": 0.59419
+        },
+        {
+          "path": "lessons/contrib/tmux-session-management.md",
+          "score": 0.519146
+        },
+        {
+          "path": "lessons/core/contributor-engagement-retention.md",
+          "score": 0.489659
+        },
+        {
+          "path": "lessons/contrib/an-archive-container-name-is-not-an-entity-name.md",
+          "score": 0.450632
+        },
+        {
+          "path": "lessons/contrib/kubernetes-crashloopbackoff-debugging.md",
+          "score": 0.442558
+        },
+        {
+          "path": "lessons/contrib/github-connectivity-4-fallbacks.md",
+          "score": 0.399441
+        },
+        {
+          "path": "lessons/contrib/registration-chain-worker-fallback.md",
+          "score": 0.394892
+        },
+        {
+          "path": "lessons/contrib/docker-compose-basics.md",
+          "score": 0.389841
+>>>>>>> 41a0b21d (fix: rebase the crypto/Web3 lesson onto current main and refresh the artifacts)
         }
       ]
     },
@@ -650,7 +1122,11 @@
       "results": [
         {
           "path": "lessons/core/dco-auto-fix-workflow.md",
+<<<<<<< HEAD
           "score": 0.95184
+=======
+          "score": 0.951679
+>>>>>>> 41a0b21d (fix: rebase the crypto/Web3 lesson onto current main and refresh the artifacts)
         },
         {
           "path": "lessons/contrib/dco-signoff-force-push-pitfall.md",
@@ -658,6 +1134,7 @@
         },
         {
           "path": "lessons/contrib/error-dco-signoff-windows.md",
+<<<<<<< HEAD
           "score": 0.759182
         },
         {
@@ -687,6 +1164,37 @@
         {
           "path": "lessons/contrib/json-schema-boolean-subschema-means-any-value.md",
           "score": 0.385852
+=======
+          "score": 0.758997
+        },
+        {
+          "path": "lessons/core/auto-merge-ci-pipeline.md",
+          "score": 0.612472
+        },
+        {
+          "path": "lessons/contrib/ci-dco-decouple-pythonpath-fork-pr.md",
+          "score": 0.587658
+        },
+        {
+          "path": "lessons/contrib/ci-github-token-push-does-not-trigger-workflows.md",
+          "score": 0.538249
+        },
+        {
+          "path": "lessons/en/ci-dco-fork-pr-signoff.md",
+          "score": 0.480569
+        },
+        {
+          "path": "lessons/core/pr-cleanup-sop.md",
+          "score": 0.433392
+        },
+        {
+          "path": "lessons/core/pull-request-welcome-trigger-trap.md",
+          "score": 0.403218
+        },
+        {
+          "path": "lessons/contrib/json-schema-boolean-subschema-means-any-value.md",
+          "score": 0.385631
+>>>>>>> 41a0b21d (fix: rebase the crypto/Web3 lesson onto current main and refresh the artifacts)
         }
       ]
     },
@@ -700,6 +1208,7 @@
         },
         {
           "path": "lessons/contrib/postgresql-connection-pool-exhaustion-ar.md",
+<<<<<<< HEAD
           "score": 0.66328
         },
         {
@@ -733,6 +1242,41 @@
         {
           "path": "lessons/contrib/node-strip-types-rejects-syntax-that-needs-lowering.md",
           "score": 0.386696
+=======
+          "score": 0.663315
+        },
+        {
+          "path": "lessons/contrib/nodejs-missing-require-inside-try-catch.md",
+          "score": 0.615867
+        },
+        {
+          "path": "lessons/contrib/webcrypto-fallback-consistency-node-worker.md",
+          "score": 0.54825
+        },
+        {
+          "path": "lessons/contrib/npm-eacces-permission-error-linux.md",
+          "score": 0.511761
+        },
+        {
+          "path": "lessons/contrib/windows-ci-splitcommand-backslash-unicode-detached.md",
+          "score": 0.414818
+        },
+        {
+          "path": "lessons/contrib/windows-node-sandbox-hardcoded-root.md",
+          "score": 0.411561
+        },
+        {
+          "path": "lessons/contrib/cloudflare-email-worker-registration-trap.md",
+          "score": 0.399076
+        },
+        {
+          "path": "lessons/core/contributor-engagement-retention.md",
+          "score": 0.38817
+        },
+        {
+          "path": "lessons/contrib/node-strip-types-rejects-syntax-that-needs-lowering.md",
+          "score": 0.386212
+>>>>>>> 41a0b21d (fix: rebase the crypto/Web3 lesson onto current main and refresh the artifacts)
         }
       ]
     },
@@ -746,6 +1290,7 @@
         },
         {
           "path": "lessons/contrib/corporate-proxy-curl-timeout.md",
+<<<<<<< HEAD
           "score": 0.738218
         },
         {
@@ -779,6 +1324,41 @@
         {
           "path": "lessons/contrib/github-connectivity-4-fallbacks.md",
           "score": 0.546375
+=======
+          "score": 0.738041
+        },
+        {
+          "path": "lessons/contrib/git-push-without-shell-agent.md",
+          "score": 0.637127
+        },
+        {
+          "path": "lessons/contrib/python-smtplib-ssl-certificate-verify-failed-fix.md",
+          "score": 0.637066
+        },
+        {
+          "path": "lessons/contrib/es/proxy-corporativo-curl-timeout.md",
+          "score": 0.630278
+        },
+        {
+          "path": "lessons/contrib/gfw-tls-sni-block-pattern.md",
+          "score": 0.609327
+        },
+        {
+          "path": "lessons/contrib/gfw-tls-sni-blocking-tool-layer-ineffective.md",
+          "score": 0.592074
+        },
+        {
+          "path": "lessons/contrib/curl-exit-23-is-a-write-failure-not-a-network-failure.md",
+          "score": 0.576648
+        },
+        {
+          "path": "lessons/contrib/lesson-template-network.md",
+          "score": 0.549106
+        },
+        {
+          "path": "lessons/contrib/github-connectivity-4-fallbacks.md",
+          "score": 0.545923
+>>>>>>> 41a0b21d (fix: rebase the crypto/Web3 lesson onto current main and refresh the artifacts)
         }
       ]
     },
@@ -792,6 +1372,7 @@
         },
         {
           "path": "lessons/contrib/rag-chunk-params-800-100.md",
+<<<<<<< HEAD
           "score": 0.738904
         },
         {
@@ -825,6 +1406,41 @@
         {
           "path": "lessons/contrib/rag-cross-encoder-cpu-bottleneck.md",
           "score": 0.526136
+=======
+          "score": 0.737993
+        },
+        {
+          "path": "lessons/contrib/search-evaluation-rank-tracking-bias.md",
+          "score": 0.650838
+        },
+        {
+          "path": "lessons/contrib/rag-alarm-code-mandatory-recall.md",
+          "score": 0.648121
+        },
+        {
+          "path": "lessons/contrib/retrieval-projection-truncation-caps-recall.md",
+          "score": 0.5904
+        },
+        {
+          "path": "lessons/contrib/rag-retrieval-six-layer-silent-degradation.md",
+          "score": 0.58453
+        },
+        {
+          "path": "lessons/contrib/bm25-chinese-sliding-window-tuning.md",
+          "score": 0.581469
+        },
+        {
+          "path": "lessons/contrib/rag-chinese-encoding-pymupdf.md",
+          "score": 0.569468
+        },
+        {
+          "path": "lessons/contrib/rag-retrieval-sink-multilayer-cutoff.md",
+          "score": 0.546565
+        },
+        {
+          "path": "lessons/contrib/rag-cross-encoder-cpu-bottleneck.md",
+          "score": 0.525405
+>>>>>>> 41a0b21d (fix: rebase the crypto/Web3 lesson onto current main and refresh the artifacts)
         }
       ]
     },
@@ -838,6 +1454,7 @@
         },
         {
           "path": "lessons/contrib/process-card-sequence-extraction-rules.md",
+<<<<<<< HEAD
           "score": 0.773928
         },
         {
@@ -871,6 +1488,41 @@
         {
           "path": "lessons/contrib/chrome-relay-browser-automation.md",
           "score": 0.567867
+=======
+          "score": 0.773887
+        },
+        {
+          "path": "lessons/contrib/wxauto-im-feedback-collection-jsonl-queue.md",
+          "score": 0.743734
+        },
+        {
+          "path": "lessons/contrib/feishu-setup-complete-cc-connect.md",
+          "score": 0.733484
+        },
+        {
+          "path": "lessons/contrib/wecom-robot-long-connect-no-ngrok.md",
+          "score": 0.71969
+        },
+        {
+          "path": "lessons/contrib/firewall-port-open-not-public.md",
+          "score": 0.700005
+        },
+        {
+          "path": "lessons/contrib/fanuc-r-2000ic-retrieval-fix.md",
+          "score": 0.642249
+        },
+        {
+          "path": "lessons/contrib/fanuc-rgcore-hang-endpoint-security-injection.md",
+          "score": 0.61197
+        },
+        {
+          "path": "lessons/contrib/vertical-kb-question-bank-strategy.md",
+          "score": 0.579084
+        },
+        {
+          "path": "lessons/contrib/chrome-relay-browser-automation.md",
+          "score": 0.567578
+>>>>>>> 41a0b21d (fix: rebase the crypto/Web3 lesson onto current main and refresh the artifacts)
         }
       ]
     },
@@ -884,6 +1536,7 @@
         },
         {
           "path": "lessons/core/github-actions-code-injection.md",
+<<<<<<< HEAD
           "score": 0.541595
         },
         {
@@ -917,6 +1570,41 @@
         {
           "path": "lessons/contrib/github-actions-composite-pitfalls.md",
           "score": 0.346494
+=======
+          "score": 0.54136
+        },
+        {
+          "path": "lessons/contrib/openclaw-prefer-cli-and-policy-over-direct-edit.md",
+          "score": 0.464018
+        },
+        {
+          "path": "lessons/core/dco-auto-fix-workflow.md",
+          "score": 0.437319
+        },
+        {
+          "path": "lessons/core/pull-request-welcome-trigger-trap.md",
+          "score": 0.398368
+        },
+        {
+          "path": "lessons/core/pr-cleanup-sop.md",
+          "score": 0.38561
+        },
+        {
+          "path": "lessons/contrib/feishu-wiki-batch-download.md",
+          "score": 0.364413
+        },
+        {
+          "path": "lessons/contrib/registration-chain-worker-fallback.md",
+          "score": 0.359672
+        },
+        {
+          "path": "lessons/contrib/fanuc-ls-parser-comment-and-segment-boundary.md",
+          "score": 0.356292
+        },
+        {
+          "path": "lessons/contrib/github-actions-composite-pitfalls.md",
+          "score": 0.346457
+>>>>>>> 41a0b21d (fix: rebase the crypto/Web3 lesson onto current main and refresh the artifacts)
         }
       ]
     },
@@ -930,6 +1618,7 @@
         },
         {
           "path": "lessons/contrib/multi-forum-scraping-architecture.md",
+<<<<<<< HEAD
           "score": 0.728602
         },
         {
@@ -963,6 +1652,41 @@
         {
           "path": "lessons/contrib/feishu-block-type-values-limits.md",
           "score": 0.529191
+=======
+          "score": 0.728102
+        },
+        {
+          "path": "lessons/contrib/browser-harness-cdp-browser-automation.md",
+          "score": 0.699696
+        },
+        {
+          "path": "lessons/contrib/agent-web-access-toolchain-selection.md",
+          "score": 0.641918
+        },
+        {
+          "path": "lessons/contrib/chrome-relay-browser-automation.md",
+          "score": 0.63644
+        },
+        {
+          "path": "lessons/contrib/session-lesson-2-forum-accessibility-testing.md",
+          "score": 0.580217
+        },
+        {
+          "path": "lessons/en/user-agent-identify-bots.md",
+          "score": 0.577032
+        },
+        {
+          "path": "lessons/contrib/lessons-md-fix-heading-block-type.md",
+          "score": 0.560133
+        },
+        {
+          "path": "lessons/contrib/openclaw-playwright-wsl-libnss3-libnspr4-snap-chromium.md",
+          "score": 0.539099
+        },
+        {
+          "path": "lessons/contrib/feishu-block-type-values-limits.md",
+          "score": 0.527433
+>>>>>>> 41a0b21d (fix: rebase the crypto/Web3 lesson onto current main and refresh the artifacts)
         }
       ]
     },
@@ -972,7 +1696,11 @@
       "results": [
         {
           "path": "lessons/core/dco-auto-fix-workflow.md",
+<<<<<<< HEAD
           "score": 0.95184
+=======
+          "score": 0.951679
+>>>>>>> 41a0b21d (fix: rebase the crypto/Web3 lesson onto current main and refresh the artifacts)
         },
         {
           "path": "lessons/contrib/dco-signoff-force-push-pitfall.md",
@@ -980,6 +1708,7 @@
         },
         {
           "path": "lessons/contrib/error-dco-signoff-windows.md",
+<<<<<<< HEAD
           "score": 0.759182
         },
         {
@@ -1009,6 +1738,37 @@
         {
           "path": "lessons/contrib/json-schema-boolean-subschema-means-any-value.md",
           "score": 0.385852
+=======
+          "score": 0.758997
+        },
+        {
+          "path": "lessons/core/auto-merge-ci-pipeline.md",
+          "score": 0.612472
+        },
+        {
+          "path": "lessons/contrib/ci-dco-decouple-pythonpath-fork-pr.md",
+          "score": 0.587658
+        },
+        {
+          "path": "lessons/contrib/ci-github-token-push-does-not-trigger-workflows.md",
+          "score": 0.538249
+        },
+        {
+          "path": "lessons/en/ci-dco-fork-pr-signoff.md",
+          "score": 0.480569
+        },
+        {
+          "path": "lessons/core/pr-cleanup-sop.md",
+          "score": 0.433392
+        },
+        {
+          "path": "lessons/core/pull-request-welcome-trigger-trap.md",
+          "score": 0.403218
+        },
+        {
+          "path": "lessons/contrib/json-schema-boolean-subschema-means-any-value.md",
+          "score": 0.385631
+>>>>>>> 41a0b21d (fix: rebase the crypto/Web3 lesson onto current main and refresh the artifacts)
         }
       ]
     },
@@ -1018,7 +1778,11 @@
       "results": [
         {
           "path": "lessons/core/dco-auto-fix-workflow.md",
+<<<<<<< HEAD
           "score": 0.955589
+=======
+          "score": 0.955473
+>>>>>>> 41a0b21d (fix: rebase the crypto/Web3 lesson onto current main and refresh the artifacts)
         },
         {
           "path": "lessons/contrib/dco-signoff-force-push-pitfall.md",
@@ -1026,6 +1790,7 @@
         },
         {
           "path": "lessons/contrib/error-dco-signoff-windows.md",
+<<<<<<< HEAD
           "score": 0.743364
         },
         {
@@ -1055,6 +1820,37 @@
         {
           "path": "lessons/contrib/git-stash-is-repository-wide.md",
           "score": 0.45826
+=======
+          "score": 0.742996
+        },
+        {
+          "path": "lessons/contrib/ci-github-token-push-does-not-trigger-workflows.md",
+          "score": 0.613487
+        },
+        {
+          "path": "lessons/contrib/ci-dco-decouple-pythonpath-fork-pr.md",
+          "score": 0.613017
+        },
+        {
+          "path": "lessons/en/ci-dco-fork-pr-signoff.md",
+          "score": 0.612086
+        },
+        {
+          "path": "lessons/core/auto-merge-ci-pipeline.md",
+          "score": 0.588181
+        },
+        {
+          "path": "lessons/contrib/git-checkout-discards-uncommitted-work.md",
+          "score": 0.530858
+        },
+        {
+          "path": "lessons/en/gh-pr-ready-checklist.md",
+          "score": 0.48907
+        },
+        {
+          "path": "lessons/contrib/git-stash-is-repository-wide.md",
+          "score": 0.458299
+>>>>>>> 41a0b21d (fix: rebase the crypto/Web3 lesson onto current main and refresh the artifacts)
         }
       ]
     },
@@ -1068,6 +1864,7 @@
         },
         {
           "path": "lessons/contrib/pip-install-timeout-ssl.md",
+<<<<<<< HEAD
           "score": 0.75246
         },
         {
@@ -1101,6 +1898,41 @@
         {
           "path": "lessons/contrib/lesson-template-network.md",
           "score": 0.511734
+=======
+          "score": 0.752558
+        },
+        {
+          "path": "lessons/contrib/pt-br/instalacao-pip-timeout-proxy.md",
+          "score": 0.75246
+        },
+        {
+          "path": "lessons/contrib/python-smtplib-ssl-certificate-verify-failed-fix.md",
+          "score": 0.71271
+        },
+        {
+          "path": "lessons/contrib/agent-web-access-toolchain-selection.md",
+          "score": 0.619491
+        },
+        {
+          "path": "lessons/contrib/corporate-proxy-curl-timeout.md",
+          "score": 0.605677
+        },
+        {
+          "path": "lessons/contrib/lesson-08-pip-https-proxy-clash.md",
+          "score": 0.553601
+        },
+        {
+          "path": "lessons/core/auto-merge-ci-pipeline.md",
+          "score": 0.541971
+        },
+        {
+          "path": "lessons/contrib/git-tls-handshake-failure.md",
+          "score": 0.534787
+        },
+        {
+          "path": "lessons/contrib/lesson-template-network.md",
+          "score": 0.510394
+>>>>>>> 41a0b21d (fix: rebase the crypto/Web3 lesson onto current main and refresh the artifacts)
         }
       ]
     },
@@ -1114,6 +1946,7 @@
         },
         {
           "path": "lessons/contrib/git-credentials-and-node-id-setup.md",
+<<<<<<< HEAD
           "score": 0.776594
         },
         {
@@ -1147,6 +1980,41 @@
         {
           "path": "lessons/contrib/auth-header-bug.md",
           "score": 0.423237
+=======
+          "score": 0.776442
+        },
+        {
+          "path": "lessons/contrib/git-credential-helper-gh-path-mismatch.md",
+          "score": 0.757668
+        },
+        {
+          "path": "lessons/contrib/github-sudo-email-otp-wrong-input-field.md",
+          "score": 0.611116
+        },
+        {
+          "path": "lessons/core/an-error-code-that-says-retry-cannot-carry-a-not-found.md",
+          "score": 0.553994
+        },
+        {
+          "path": "lessons/contrib/git-credentials-automation.md",
+          "score": 0.514026
+        },
+        {
+          "path": "lessons/en/github-pat-scopes-minimum.md",
+          "score": 0.49894
+        },
+        {
+          "path": "lessons/contrib/lesson-06-git-push-credential-helper-403.md",
+          "score": 0.451786
+        },
+        {
+          "path": "lessons/contrib/mcp-intake-no-account-submission.md",
+          "score": 0.425603
+        },
+        {
+          "path": "lessons/contrib/auth-header-bug.md",
+          "score": 0.423245
+>>>>>>> 41a0b21d (fix: rebase the crypto/Web3 lesson onto current main and refresh the artifacts)
         }
       ]
     },
@@ -1156,7 +2024,11 @@
       "results": [
         {
           "path": "lessons/core/hermes-state-database-lock-issues-cleanup-protocol.md",
+<<<<<<< HEAD
           "score": 0.906229
+=======
+          "score": 0.906415
+>>>>>>> 41a0b21d (fix: rebase the crypto/Web3 lesson onto current main and refresh the artifacts)
         },
         {
           "path": "lessons/contrib/agent-state-database-lock-cleanup.md",
@@ -1164,6 +2036,7 @@
         },
         {
           "path": "lessons/contrib/wsl-ntfs-sqlite-update-100x-slower.md",
+<<<<<<< HEAD
           "score": 0.67526
         },
         {
@@ -1193,6 +2066,37 @@
         {
           "path": "lessons/contrib/codex-keyring-user-interaction-not-allowed.md",
           "score": 0.436085
+=======
+          "score": 0.678648
+        },
+        {
+          "path": "lessons/contrib/an-unlikely-database-migration.md",
+          "score": 0.575929
+        },
+        {
+          "path": "lessons/contrib/lesson-9-redis-postgresql-replacement.md",
+          "score": 0.571888
+        },
+        {
+          "path": "lessons/contrib/alembic-upgrade-failure.md",
+          "score": 0.471169
+        },
+        {
+          "path": "lessons/core/search-first-roadmap-loop.md",
+          "score": 0.461098
+        },
+        {
+          "path": "lessons/contrib/openclaw-session-row-entry-updatedat-mismatch.md",
+          "score": 0.44067
+        },
+        {
+          "path": "lessons/contrib/mcp-server-testing-patterns-ru.md",
+          "score": 0.436211
+        },
+        {
+          "path": "lessons/contrib/codex-keyring-user-interaction-not-allowed.md",
+          "score": 0.432696
+>>>>>>> 41a0b21d (fix: rebase the crypto/Web3 lesson onto current main and refresh the artifacts)
         }
       ]
     },
@@ -1206,6 +2110,7 @@
         },
         {
           "path": "lessons/contrib/python-gbk-encoding-error.md",
+<<<<<<< HEAD
           "score": 0.725071
         },
         {
@@ -1239,6 +2144,41 @@
         {
           "path": "lessons/contrib/a-pystray-menu-thread-crash-is-an-appkit-main-thread-violation.md",
           "score": 0.384517
+=======
+          "score": 0.725387
+        },
+        {
+          "path": "lessons/contrib/wsl-pip-gbk-hub-poller-crash.md",
+          "score": 0.598041
+        },
+        {
+          "path": "lessons/contrib/tts-chinese-encoding-powershell.md",
+          "score": 0.542411
+        },
+        {
+          "path": "lessons/core/allowlist-must-be-tested-against-the-corpus.md",
+          "score": 0.51701
+        },
+        {
+          "path": "lessons/contrib/voice-pipeline-silent-failures.md",
+          "score": 0.46415
+        },
+        {
+          "path": "lessons/contrib/windows-ci-splitcommand-backslash-unicode-detached.md",
+          "score": 0.419169
+        },
+        {
+          "path": "lessons/contrib/rag-chinese-encoding-pymupdf.md",
+          "score": 0.412494
+        },
+        {
+          "path": "lessons/contrib/fanuc-intp-102-detect-joint-olp-whitespace.md",
+          "score": 0.395221
+        },
+        {
+          "path": "lessons/contrib/a-pystray-menu-thread-crash-is-an-appkit-main-thread-violation.md",
+          "score": 0.385429
+>>>>>>> 41a0b21d (fix: rebase the crypto/Web3 lesson onto current main and refresh the artifacts)
         }
       ]
     },
@@ -1252,7 +2192,11 @@
         },
         {
           "path": "lessons/contrib/feishu-setup-complete-cc-connect.md",
+<<<<<<< HEAD
           "score": 0.616623
+=======
+          "score": 0.616715
+>>>>>>> 41a0b21d (fix: rebase the crypto/Web3 lesson onto current main and refresh the artifacts)
         },
         {
           "path": "lessons/contrib/feishu-block-batch-limit.md",
@@ -1260,6 +2204,7 @@
         },
         {
           "path": "lessons/contrib/feishu-mcp-server-deepseek-tui-setup.md",
+<<<<<<< HEAD
           "score": 0.556461
         },
         {
@@ -1285,6 +2230,33 @@
         {
           "path": "lessons/contrib/feishu-doc-url-use-api-return.md",
           "score": 0.466697
+=======
+          "score": 0.556443
+        },
+        {
+          "path": "lessons/contrib/feishu-block-type-values-limits.md",
+          "score": 0.550828
+        },
+        {
+          "path": "lessons/contrib/lessons-md-fix-heading-block-type.md",
+          "score": 0.491948
+        },
+        {
+          "path": "lessons/contrib/feishu-display-optimization-cc-connect.md",
+          "score": 0.481838
+        },
+        {
+          "path": "lessons/contrib/browser-automation-csp-bypass.md",
+          "score": 0.481323
+        },
+        {
+          "path": "lessons/contrib/feishu-markdown-table-not-rendered.md",
+          "score": 0.469246
+        },
+        {
+          "path": "lessons/contrib/feishu-doc-url-use-api-return.md",
+          "score": 0.466839
+>>>>>>> 41a0b21d (fix: rebase the crypto/Web3 lesson onto current main and refresh the artifacts)
         }
       ]
     },
@@ -1298,6 +2270,7 @@
         },
         {
           "path": "lessons/contrib/fanuc-program-inspection-methodology.md",
+<<<<<<< HEAD
           "score": 0.653217
         },
         {
@@ -1311,6 +2284,21 @@
         {
           "path": "lessons/contrib/fanuc-payload-estimation.md",
           "score": 0.548724
+=======
+          "score": 0.653129
+        },
+        {
+          "path": "lessons/contrib/fanuc-intp-102-detect-joint-olp-whitespace.md",
+          "score": 0.580195
+        },
+        {
+          "path": "lessons/contrib/fanuc-mi-standard-software-instructions.md",
+          "score": 0.561731
+        },
+        {
+          "path": "lessons/contrib/fanuc-payload-estimation.md",
+          "score": 0.548632
+>>>>>>> 41a0b21d (fix: rebase the crypto/Web3 lesson onto current main and refresh the artifacts)
         },
         {
           "path": "lessons/contrib/fanuc-backup-restore-guide.md",
@@ -1318,6 +2306,7 @@
         },
         {
           "path": "lessons/contrib/agent-readfile-silent-truncation.md",
+<<<<<<< HEAD
           "score": 0.489975
         },
         {
@@ -1331,6 +2320,21 @@
         {
           "path": "lessons/contrib/fanuc-dcs-safety-configuration.md",
           "score": 0.46085
+=======
+          "score": 0.489785
+        },
+        {
+          "path": "lessons/contrib/fanuc-spot-wear-max-lookup.md",
+          "score": 0.475239
+        },
+        {
+          "path": "lessons/contrib/vertical-kb-question-bank-strategy.md",
+          "score": 0.462055
+        },
+        {
+          "path": "lessons/contrib/fanuc-dcs-safety-configuration.md",
+          "score": 0.460768
+>>>>>>> 41a0b21d (fix: rebase the crypto/Web3 lesson onto current main and refresh the artifacts)
         }
       ]
     },
@@ -1344,6 +2348,7 @@
         },
         {
           "path": "lessons/contrib/ghidra-mcp-server-reverse-engineering.md",
+<<<<<<< HEAD
           "score": 0.776585
         },
         {
@@ -1377,6 +2382,41 @@
         {
           "path": "lessons/contrib/mcporter-cloudflare-oauth-endpoint-scope-wsl-callback.md",
           "score": 0.59313
+=======
+          "score": 0.776362
+        },
+        {
+          "path": "lessons/contrib/mcp-registry-readiness-requires-qa-before-promotion.md",
+          "score": 0.729615
+        },
+        {
+          "path": "lessons/contrib/feishu-mcp-server-deepseek-tui-setup.md",
+          "score": 0.690963
+        },
+        {
+          "path": "lessons/contrib/lesson-17-segmentfault-mcp-standardization.md",
+          "score": 0.670979
+        },
+        {
+          "path": "lessons/contrib/mcp-server-direct-handler-testing.md",
+          "score": 0.665978
+        },
+        {
+          "path": "lessons/contrib/cloudflare-observability-mcp-oauth-separate-domain.md",
+          "score": 0.646432
+        },
+        {
+          "path": "lessons/contrib/mcp-context-mode-98-reduction.md",
+          "score": 0.646389
+        },
+        {
+          "path": "lessons/contrib/lesson-review-4-mcp-bedrock-integration.md",
+          "score": 0.607134
+        },
+        {
+          "path": "lessons/contrib/mcporter-cloudflare-oauth-endpoint-scope-wsl-callback.md",
+          "score": 0.592228
+>>>>>>> 41a0b21d (fix: rebase the crypto/Web3 lesson onto current main and refresh the artifacts)
         }
       ]
     },
@@ -1390,6 +2430,7 @@
         },
         {
           "path": "lessons/core/github-actions-code-injection.md",
+<<<<<<< HEAD
           "score": 0.666425
         },
         {
@@ -1423,6 +2464,41 @@
         {
           "path": "lessons/contrib/agentcap-is-not-on-pypi.md",
           "score": 0.323727
+=======
+          "score": 0.666255
+        },
+        {
+          "path": "lessons/contrib/agentcap-secret-safe-verification-failure.md",
+          "score": 0.493648
+        },
+        {
+          "path": "lessons/contrib/gitguardian-placeholder-url-credential-safe-form.md",
+          "score": 0.424372
+        },
+        {
+          "path": "lessons/en/log-redaction-secrets.md",
+          "score": 0.365838
+        },
+        {
+          "path": "lessons/core/auto-merge-ci-pipeline.md",
+          "score": 0.362154
+        },
+        {
+          "path": "lessons/contrib/mcp-registry-readiness-requires-qa-before-promotion.md",
+          "score": 0.347273
+        },
+        {
+          "path": "lessons/contrib/github-actions-secrets-one-shot-workflow-pattern.md",
+          "score": 0.34177
+        },
+        {
+          "path": "lessons/contrib/heartbeat-scan-improvement.md",
+          "score": 0.33109
+        },
+        {
+          "path": "lessons/contrib/agentcap-is-not-on-pypi.md",
+          "score": 0.323483
+>>>>>>> 41a0b21d (fix: rebase the crypto/Web3 lesson onto current main and refresh the artifacts)
         }
       ]
     },
@@ -1436,6 +2512,7 @@
         },
         {
           "path": "lessons/contrib/permission-denied-fix.md",
+<<<<<<< HEAD
           "score": 0.714426
         },
         {
@@ -1469,6 +2546,41 @@
         {
           "path": "lessons/core/search-first-roadmap-loop.md",
           "score": 0.46096
+=======
+          "score": 0.714439
+        },
+        {
+          "path": "lessons/contrib/wsl-proxy-setup.md",
+          "score": 0.607855
+        },
+        {
+          "path": "lessons/contrib/wsl-proxy-huggingface-external.md",
+          "score": 0.596537
+        },
+        {
+          "path": "lessons/contrib/lesson-08-pip-https-proxy-clash.md",
+          "score": 0.500957
+        },
+        {
+          "path": "lessons/contrib/wsl-pip-gbk-hub-poller-crash.md",
+          "score": 0.498248
+        },
+        {
+          "path": "lessons/contrib/wsl-terminal-underscore-corruption.md",
+          "score": 0.487734
+        },
+        {
+          "path": "lessons/contrib/wsl2-memory-leak-fix.md",
+          "score": 0.48752
+        },
+        {
+          "path": "lessons/contrib/openclaw-playwright-wsl-libnss3-libnspr4-snap-chromium.md",
+          "score": 0.48471
+        },
+        {
+          "path": "lessons/core/search-first-roadmap-loop.md",
+          "score": 0.461503
+>>>>>>> 41a0b21d (fix: rebase the crypto/Web3 lesson onto current main and refresh the artifacts)
         }
       ]
     }
