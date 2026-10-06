@@ -182,21 +182,57 @@ def dismiss_modals(page) -> bool:
 
     Both swallow every click until acknowledged, and neither needs anything from us to go away — one says
     `Continue`, the other `Configure later`.
+
+    #2916 adds a third state that has to count as success. On a host with no LLM
+    credentials, the notice's `Continue` renders **disabled** and then detaches itself
+    inside the retry window — the page advances the notice by itself. `Locator.count()`
+    only reports that the element exists, so the old code called `.click()` on a
+    disabled button and burned the full timeout:
+
+        TimeoutError: Locator.click: Timeout 8000ms exceeded
+          locator resolved to <button disabled ...>Continue</button>
+          element is not enabled / element was detached from the DOM
+
+    That made this gate red on every machine unable to supply credentials, for a reason
+    unrelated to the plugin it exists to check. Hand-verified counter-evidence: with the
+    `Configure later` step added by hand, all three scenarios pass on that same host.
+
+    The rule now is: click only what is actually clickable, and treat a control that
+    disables or removes itself as dismissed. A dialog that resolves on its own is the
+    outcome this function wanted anyway.
     """
+    from playwright.sync_api import TimeoutError as PlaywrightTimeout
+
     for _ in range(5):
         modal = open_modal(page)
         if modal is None:
             return True
         log(f"modal: {modal['heading']!r} offers {modal['buttons']}")
         clicked = False
+        vanished = False
         for want in DISMISSALS:
             button = page.get_by_role("button", name=re.compile(rf"^{want}$", re.I))
-            if button.count():
-                button.first.click(timeout=8000)
+            if not button.count():
+                continue
+            candidate = button.first
+            try:
+                candidate.click(timeout=4000)
                 clicked = True
                 log(f"  dismissed it with {want!r}")
-                break
-        if not clicked:
+            except PlaywrightTimeout:
+                # #2916: the control is disabled, or the page detached it mid-click. Wait for
+                # the modal to resolve itself rather than reporting the fixture as broken.
+                log(f"  {want!r} is not clickable (disabled or detached); letting it resolve")
+                try:
+                    page.wait_for_function(
+                        "() => !document.querySelector('[role=dialog]')", timeout=8000
+                    )
+                    vanished = True
+                    log("  the modal went away on its own — treating that as dismissed")
+                except PlaywrightTimeout:
+                    log(f"  {want!r} still present and still not clickable")
+            break
+        if not clicked and not vanished:
             log("  no control this suite knows; leaving it alone")
             return False
         page.wait_for_timeout(1500)

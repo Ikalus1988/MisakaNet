@@ -244,7 +244,15 @@ click lands on the dialog:
    credentials.
 
 Both headings and both button labels are the host's own strings (`dsh-client-ui-settings-models`), and both
-were observed on a fresh throwaway home on 2026-10-01. Then check the composer is the real one:
+were observed on a fresh throwaway home on 2026-10-01.
+
+**Continue is not always clickable** (#2916, measured 2026-10-06 on dsh 0.2.0-rc.2). On a host with no LLM
+credentials it renders `disabled`, and it then detaches itself while you retry — the page advances the
+notice on its own. A script that does `if button.count(): button.click(timeout=8000)` therefore burns the
+full timeout and raises `TimeoutError: element is not enabled / element was detached from the DOM`. That is
+a fact about the host's first-run flow, not about the plugin. If your script hits it, either click only when
+the control is enabled or treat "the dialog went away by itself" as dismissed. Then check the composer is
+the real one:
 
 ```bash
 # in the page: the composer is live when [role=textbox] is labelled
