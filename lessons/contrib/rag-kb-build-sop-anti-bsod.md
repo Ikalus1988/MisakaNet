@@ -11,6 +11,15 @@ domain_expert: ""
 tags: ["rag", "kb-build", "chromadb", "memory", "bsod", "checkpoint", "batch", "sop"]
 source: >-
   2026-08-16 FANUC Manual 13.0 CM rebuild incident (BSOD) + 2026-04 lessons (rag-build-strategy-batch, chroma-rebuild-no-checkpoint-cn)
+evidence_level: "E3"
+summary_plain: >-
+  重建 RAG 知识库前先查 lesson、分批+留 checkpoint、后台跑；否则可能 BSOD 且已算 embedding 全丢。
+trigger: >-
+  starting a KB rebuild / re-ingest / full Phase-1 rerun over a large PDF set
+verify: >-
+  peak RSS in the build log stays under the WSL limit, the collection count matches the batch plan,
+  and no rebuild has to re-embed more than one batch after a crash.
+
 ---
 
 # FANUC RAG Knowledge-Base Build SOP: Anti-BSOD / Anti-Full-Loss

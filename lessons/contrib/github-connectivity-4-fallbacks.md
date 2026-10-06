@@ -3,7 +3,18 @@
   "domain": "devops",
   "title": "GitHub Connectivity — 4 Fallbacks (从最常踩的坑到最激进方案)",
   "verification": "metadata-normalized",
-  "tags": ["git", "github", "network", "WSL", "GFW", "fallback", "connectivity", "DNS", "proxy", "hosts"],
+  "tags": [
+    "git",
+    "github",
+    "network",
+    "WSL",
+    "GFW",
+    "fallback",
+    "connectivity",
+    "DNS",
+    "proxy",
+    "hosts"
+  ],
   "status": "published",
   "confidence": "0.92",
   "created": "2026-08-01",
@@ -13,7 +24,11 @@
     "lessons/contrib/github-dns-443-block-hosts-workaround.md",
     "lessons/contrib/git-push-without-shell-agent.md",
     "lessons/contrib/lesson-08-pip-https-proxy-clash.md"
-  ]
+  ],
+  "evidence_level": "E3",
+  "summary_plain": "git 操作卡住但裸 curl 能通，多半是仓库本地 .git/config 里的死代理；按代理→alias→hosts→直连四级排查。",
+  "trigger": "git push/clone/ls-remote 卡 124 timeout，但 curl https://github.com 返回 200",
+  "verify": "git config --local --list | grep -i proxy 打出 proxy 行即命中 Fallback 1；unset 后 git ls-remote 拿到 commit SHA 且 exit 0 即修复。"
 }
 ---
 
@@ -227,3 +242,21 @@ done
 - `lessons/contrib/github-dns-443-block-hosts-workaround.md` — Fallback 3 完整内容
 - `lessons/contrib/git-push-without-shell-agent.md` — Fallback 4 完整内容
 - `lessons/contrib/lesson-08-pip-https-proxy-clash.md` — pip install 的 HTTPS_PROXY 方案(撞墙相关但不是 git)
+## Problem
+
+在 WSL2 上 `git push` / `git clone` / `git ls-remote` 卡到 124 超时，但**裸 `curl https://github.com` 反而 HTTP 200**。第一次遇到时很容易判成"网络被墙"，于是去改 hosts、加代理、装 CA——而真正的原因在仓库自己的 `.git/config` 里。
+
+2026-08-01 的实际案例：`Agent-Medici` 仓（已废弃）配了 `http.proxy=socks5://172.19.128.1:7890`，那是一条已经死掉的 Windows Clash 链路。WSL 不继承 Windows 的 git 配置，所以**只有这一个仓**的 git 操作撞墙，其他仓正常——这个"只有部分仓坏"的特征正是本条的第一判据。
+
+## Verification
+
+2026-08-01 22:48 实测：
+
+- `git config --local --list | grep -i proxy` 打出 `[http] proxy = socks5://172.19.128.1:7890` —— 确认 Fallback 1 命中
+- `git config --local --unset http.proxy` 后，`git ls-remote` **exit 0 并返回 commit SHA**
+- 全栈 smoke：`github.com:443` HTTP 200、`api.github.com:443` ✅、`codeload.github.com` ✅、`objects.githubusercontent.com` ✅
+- `~/bin/ping_github.sh`：9 个官方 IP 段中 8 个 443 可达，`185.199.108.153` 不可达
+
+判据：**`curl github.com` 通而 `git ls-remote` 不通，且 local config 里有 proxy 行** —— 三条同时成立即为本条描述的情形；unset proxy 后 `git ls-remote` 必须 exit 0，否则说明不是这一层，继续往 Fallback 2/3/4 走。
+
+未验证：Fallback 2–4 在本条落地的当天没有全部实跑（Fallback 1 修完即通），它们各自的完整验证记录在 `lessons/contrib/github-dns-443-block-hosts-workaround.md` 和 `lessons/contrib/git-push-without-shell-agent.md` 里。
