@@ -80,6 +80,9 @@
           "path": ".claude-plugin/plugin.json",
           "jsonpath": "$.version"
         }
+      ],
+      "exclude-paths": [
+        "docs/maintainer"
       ]
     }
   }
