@@ -7,6 +7,15 @@ All notable changes to the Misaka Network project are documented here.
 
 ---
 
+## [2.42.2](https://github.com/Ikalus1988/MisakaNet/compare/v2.42.1...v2.42.2) (2026-10-06)
+
+
+### Bug Fixes
+
+* **deps:** bump sharp override to 0.35.5 — librsvg CVE-2026-96889 ([#2927](https://github.com/Ikalus1988/MisakaNet/issues/2927)) ([9862421](https://github.com/Ikalus1988/MisakaNet/commit/9862421946ccb535d0ca58a57469a2283e8f5974))
+* **integrations:** render the lesson's domain, not a field that does not exist ([#2931](https://github.com/Ikalus1988/MisakaNet/issues/2931)) ([4ad283b](https://github.com/Ikalus1988/MisakaNet/commit/4ad283b732ada65cdeeb55382024c8dd4800cb31))
+* **release:** keep package-lock.json on the release line ([#2929](https://github.com/Ikalus1988/MisakaNet/issues/2929)) ([e807096](https://github.com/Ikalus1988/MisakaNet/commit/e807096ca9b3e9d587337c3a25c9a9229b842a94))
+
 ## [2.42.1](https://github.com/Ikalus1988/MisakaNet/compare/v2.42.0...v2.42.1) (2026-10-06)
 
 
