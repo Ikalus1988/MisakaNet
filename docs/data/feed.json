@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-10-06T04:04:32.663211+00:00",
+  "generated_at": "2026-10-06T06:32:46.405839+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
+      "title": "fix: stop a handoff document from opening a release PR",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2905",
+      "timestamp": "2026-10-06T06:09:22Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "docs: four self-referential staleness bugs, and a gate so the fifth one is caught",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2902",
+      "timestamp": "2026-10-06T04:58:19Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore: auto-update lessons.json, public counts and generated pages",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2900",
+      "timestamp": "2026-10-06T04:15:08Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2899",
+      "timestamp": "2026-10-06T04:12:38Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
       "title": "docs(lesson): the silent-truncation family in the MCP intake worker (fixes #2768, #2774, #2818, #2819, #2821)",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/2849",
       "timestamp": "2026-10-06T04:04:21Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(deps): bump multidict from 6.7.1 to 6.9.1",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2890",
-      "timestamp": "2026-10-06T03:48:32Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "fix(worker): server/discover was missing four of DiscoverResult's five required fields",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2896",
-      "timestamp": "2026-10-06T03:39:36Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(benchmarks): keep four weekly snapshots, and record why 'delete three dirs' was not the fix",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2893",
-      "timestamp": "2026-10-06T03:14:30Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(deps): bump the github-actions group with 3 updates",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2855",
-      "timestamp": "2026-10-06T02:31:46Z",
       "source": "github"
     },
     {
