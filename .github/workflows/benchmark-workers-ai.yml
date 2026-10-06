@@ -77,6 +77,32 @@ jobs:
           mkdir -p docs/benchmarks
           TS=$(date -u +%Y-%m-%d)
           cp docs/benchmarks/latest.json "docs/benchmarks/benchmark-$TS.json" 2>/dev/null || true
+          # Keep the last four weekly snapshots, delete the rest.
+          #
+          # Every `benchmark-$TS.json` is a byte-for-byte copy of `latest.json` as it stood that day
+          # — measured 2026-10-06: `benchmark-2026-09-28.json` and `latest.json` were both exactly
+          # 1,891,265 bytes. So the snapshots are not extra evidence, they are extra *copies* of a file
+          # that already carries every run to date. At ~2 MB a week and growing (1.5 MB on 08-30, 2.06 MB
+          # on 10-05, because `scripts/benchmark_workers_ai.py` appends its resume cache forever), the
+          # directory doubled every month and nothing read the old ones: no doc links them, the three
+          # READMEs and `tests/test_benchmark_claims.py` all read `latest.json` alone.
+          #
+          # Four weeks is enough to read a trend off the directory; the full history stays reachable in
+          # `latest.json` and in git history. This only stops future growth — pruning a file that is
+          # already committed cannot make an existing clone smaller, because the blob is in the pack.
+          #
+          # Sorted by name, not mtime: a fresh CI checkout gives every file roughly the same mtime, so
+          # an mtime sort would prune the wrong files unpredictably. `YYYY-MM-DD` sorts chronologically.
+          # `-compare` files are excluded — they are small (28 KB), and
+          # `lessons/contrib/rag-injection-benchmark-small-models-gain-large-distracted.md` cites that
+          # output path.
+          KEEP=4
+          ls -1 docs/benchmarks/benchmark-2*.json 2>/dev/null \
+            | grep -v -- '-compare\.json$' \
+            | sort -r \
+            | tail -n "+$((KEEP + 1))" \
+            | xargs -r git rm --quiet --
+          echo "docs/benchmarks/ now holds $(ls -1 docs/benchmarks/benchmark-2*.json 2>/dev/null | grep -vc -- '-compare\.json$' || true) weekly snapshot(s)."
           python3 scripts/ci/land_change.py \
             --branch bot/benchmark-workers-ai \
             --title "chore(benchmark): weekly Workers AI lesson benchmark report [$TS]" \
