@@ -230,3 +230,69 @@ test('anonymous server/discover returns capabilities instead of 401', async () =
     `server/discover must report capabilities, got: ${body.slice(0, 200)}`);
   assert.ok(data.result.serverInfo?.name, `server/discover must report serverInfo, got: ${body.slice(0, 200)}`);
 });
+
+// The shape above was guessed, and the guess was wrong in a way no assertion could see: the handler
+// was unreachable until #2882 opened the gate, so the response had never once been read by a client.
+// The schema settles it — `DiscoverResult.required` names five fields and all five are mandatory.
+//
+//   https://github.com/modelcontextprotocol/modelcontextprotocol/blob/main/schema/2026-07-28/schema.json
+//
+// Only the required set is asserted. Pinning the *values* (a specific ttlMs, an exact instructions
+// string) would make this a snapshot of today's wording and would fail for no reason a user could
+// act on.
+test('server/discover satisfies DiscoverResult.required', async () => {
+  const env = createEnv();
+  const res = await worker.fetch(new Request('https://misakanet.org/mcp', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      accept: 'application/json, text/event-stream',
+      'MCP-Protocol-Version': '2026-07-28',
+      Origin: 'https://misakanet.org',
+      'CF-Connecting-IP': '203.0.113.92',
+    },
+    body: JSON.stringify({ jsonrpc: '2.0', id: 'sd-2', method: 'server/discover', params: {} }),
+  }), env);
+
+  assert.equal(res.status, 200);
+  const data = JSON.parse((await res.text()).split('data: ')[1]);
+  const result = data.result;
+
+  for (const field of ['resultType', 'supportedVersions', 'capabilities', 'ttlMs', 'cacheScope']) {
+    assert.ok(field in result,
+      `DiscoverResult.${field} is required by the 2026-07-28 schema and is missing. ` +
+      `A client that validates the result rejects the whole response. Got keys: ` +
+      `${JSON.stringify(Object.keys(result))}`);
+  }
+
+  assert.equal(result.cacheScope, 'public', 'cacheScope must be one of "private" | "public"');
+  assert.ok(Array.isArray(result.supportedVersions) && result.supportedVersions.length > 0,
+    'supportedVersions must be a non-empty array — the client picks its version from it');
+  assert.ok(result.supportedVersions.includes('2026-07-28'),
+    `a server implementing server/discover must advertise the version that defines it; got ` +
+    `${JSON.stringify(result.supportedVersions)}`);
+});
+
+test('server/discover declares no capability the worker does not implement', async () => {
+  // `capabilities` is a claim about this server, not a wish list. This worker answers exactly five
+  // methods and implements neither resources nor prompts, so advertising either would tell a client
+  // to probe an endpoint that answers -32601.
+  const env = createEnv();
+  const res = await worker.fetch(new Request('https://misakanet.org/mcp', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      accept: 'application/json, text/event-stream',
+      'MCP-Protocol-Version': '2026-07-28',
+      Origin: 'https://misakanet.org',
+      'CF-Connecting-IP': '203.0.113.93',
+    },
+    body: JSON.stringify({ jsonrpc: '2.0', id: 'sd-3', method: 'server/discover', params: {} }),
+  }), env);
+
+  const data = JSON.parse((await res.text()).split('data: ')[1]);
+  const declared = Object.keys(data.result.capabilities);
+  assert.deepEqual(declared, ['tools'],
+    `capabilities declares ${JSON.stringify(declared)}; this worker only implements tools. ` +
+    `If you added resources/list or prompts/list, add them here and the gate will hold you to it.`);
+});

@@ -4817,13 +4817,38 @@ async function handleMcpRequest(request, env, useSse = false, ctx) {
       });
     }
 
-    // server/discover (2026-07-28 RC) — alias for capabilities query
+    // server/discover (2026-07-28, SEP-2575) — sessionless capability discovery
+    //
+    // `DiscoverResult.required` is `['resultType', 'supportedVersions', 'capabilities', 'ttlMs',
+    // 'cacheScope']` — five fields, all mandatory (schema 2026-07-28). This handler shipped with
+    // only `capabilities` and a top-level `serverInfo`, so it was missing **four of the five
+    // required fields**: a client that validates the result against the schema rejects it. It went
+    // unnoticed for a simple reason — the branch was unreachable until #2882 opened the gate, so no
+    // client had ever seen the response to be wrong.
+    //
+    // `capabilities.tools` is `{}` **by design**, not an empty stub. `ServerCapabilities.tools`
+    // carries exactly one optional field, `listChanged`, so `{}` means "offers tools, no change
+    // notifications"; the tool inventory comes from `tools/list`. Only `tools` is declared because
+    // this worker answers exactly five methods (`initialize`, `notifications/initialized`,
+    // `server/discover`, `tools/list`, `tools/call`) and implements neither `resources/list` nor
+    // `prompts/list` — declaring those would be a capability this server does not have.
     if (method === "server/discover") {
+      const serverInfo = getMcpServerInfo(env);
       return respond({
         jsonrpc: "2.0", id: reqId,
         result: {
+          resultType: "complete",
+          supportedVersions: SUPPORTED_PROTOCOL_VERSIONS,
           capabilities: { tools: {} },
-          serverInfo: getMcpServerInfo(env),
+          instructions: "Search and read MisakaNet lessons. misakanet_search and " +
+            "misakanet_get_lesson need no token; misakanet_register returns a Bearer token that " +
+            "lifts the anonymous read burst limit and unlocks writing.",
+          ttlMs: 3600000,
+          cacheScope: "public",
+          // The spec carries identity under `_meta`. It is also kept at the top level: clients
+          // predating that convention — and `workers/mcp-anonymous-read.test.mjs` — read it there.
+          _meta: { "io.modelcontextprotocol/serverInfo": serverInfo },
+          serverInfo,
         },
       });
     }
