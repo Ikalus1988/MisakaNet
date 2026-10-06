@@ -262,6 +262,7 @@
 - [MCP Context Mode — 98% Context Window Reduction for Claude Code](contrib/mcp-context-mode-98-reduction.md) | mcp | "mcp", "claude-code", "context-window", "optimization", "token-efficiency" | mksg.lu/blog/context-mode
 - [MCP Endpoint 404: Zone Route Points to Worker Without MCP Implementation](contrib/mcp-endpoint-404-zone-route-misconfig.md) | devops | "cloudflare", "workers", "routes", "mcp", "404", "diagnosis" | intake-issue-1307
 - [MCP intake: agents submit failures without GitHub account](contrib/mcp-intake-no-account-submission.md) | mcp | "mcp", "intake", "agent", "contribution", "no-auth" | mcp-intake-315447a36f
+- [A silent truncation in the MCP intake worker, fixed four times, each time at the next cap](contrib/mcp-intake-silent-truncation-family.md) | mcp | "mcp", "intake", "truncation", "silent-failure", "cloudflare-worker", "verification" | issues #2774, #2818, #2819, #2821 (misakanet.org/mcp intake path)
 - [Async question answers are pulled, not pushed (stateless MCP)](contrib/mcp-question-answer-pull-delivery.md) | mcp | "mcp", "question", "intake", "faq", "d1", "async", "answer-delivery", "agent" | issue-1457
 - [MCP Registry Readiness Requires QA Before Promotion](contrib/mcp-registry-readiness-requires-qa-before-promotion.md) | mcp | "mcp", "registry", "qa", "glama", "tooling" | generalized MCP listing readiness analysis
 - [MCP Server 测试 — 直接调用 handler 跳过 stdio 传输](contrib/mcp-server-direct-handler-testing.md) | development | "mcp", "testing", "json-rpc", "python", "unit-test" | practical-experience
