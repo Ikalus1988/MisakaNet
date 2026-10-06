@@ -7,6 +7,30 @@ All notable changes to the Misaka Network project are documented here.
 
 ---
 
+## [2.42.0](https://github.com/Ikalus1988/MisakaNet/compare/v2.41.3...v2.42.0) (2026-10-06)
+
+
+### Features
+
+* generate the README benchmark table from latest.json ([#2904](https://github.com/Ikalus1988/MisakaNet/issues/2904)) ([3d8abd9](https://github.com/Ikalus1988/MisakaNet/commit/3d8abd9ffb4ca694da8775c16b48d5e79afa84bb))
+
+
+### Bug Fixes
+
+* stop a handoff document from opening a release PR ([#2905](https://github.com/Ikalus1988/MisakaNet/issues/2905)) ([9ceee5a](https://github.com/Ikalus1988/MisakaNet/commit/9ceee5aaa6795438e9294972d8da285b31005f13))
+* **worker:** server/discover was missing four of DiscoverResult's five required fields ([#2896](https://github.com/Ikalus1988/MisakaNet/issues/2896)) ([68a7f2f](https://github.com/Ikalus1988/MisakaNet/commit/68a7f2f281922a7bd28835662500b0b3152c854e))
+
+
+### Documentation
+
+* four self-referential staleness bugs, and a gate so the fifth one is caught ([#2902](https://github.com/Ikalus1988/MisakaNet/issues/2902)) ([372e048](https://github.com/Ikalus1988/MisakaNet/commit/372e048b7b370ea3bb5da0322a8288af12d2561c))
+* **lesson:** the silent-truncation family in the MCP intake worker ([#2849](https://github.com/Ikalus1988/MisakaNet/issues/2849)) ([bbecb11](https://github.com/Ikalus1988/MisakaNet/commit/bbecb11892b83b2a2e4fc12b58b4321f5336ba42))
+
+
+### CI/CD
+
+* gate uv.lock drift, exempting the version release-please owns ([#2906](https://github.com/Ikalus1988/MisakaNet/issues/2906)) ([3f2d566](https://github.com/Ikalus1988/MisakaNet/commit/3f2d566ed493fe8972aa3793d9e2677b77232639))
+
 ## [2.41.3](https://github.com/Ikalus1988/MisakaNet/compare/v2.41.2...v2.41.3) (2026-10-05)
 
 
