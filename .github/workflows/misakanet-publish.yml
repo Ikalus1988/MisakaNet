@@ -33,9 +33,9 @@ name: Publish misakanet
 # event), so a run that finds the version already on npm stands down instead of failing.
 #
 # ── What this job needs from the repository (settings, not code) ────────────────────────────────────
-#  * environment **`npm-release`** (created 2026-09-30), holding `NPM_TOKEN`: a granular npm token with
-#    read+write on `misakanet` (expiry and rotation: docs/maintainer/credentials-and-environments.md §4.1).
-#    It is the only secret this job reads — the GitHub side is `contents: read` and nothing else.
+#  * environment **`npm-release`** (created 2026-09-30). It holds **no secret**: authentication is npm
+#    trusted publishing end to end, retired 2026-10-06 (#2113). The GitHub side is `contents: read`
+#    plus `id-token: write` and nothing else, so there is nothing here to leak or rotate.
 #
 #    **Why its own environment** (owner decision D1 = A, intake #2486): the point of that decision is that
 #    the npm line stops drifting from the release line, which needs the publish to run unattended. The
@@ -45,16 +45,19 @@ name: Publish misakanet
 #  * `npm-release`'s deployment branch policy allows `main` **and `v*`**: a `release: published` run is on
 #    `refs/tags/vX.Y.Z`, and a policy that allows only `main` refuses the job at deploy time, before a
 #    single step runs. Both policies are set.
-#  * **authentication, best first** (2026-09-30):
-#    1. **npm trusted publishing (OIDC)** — the job now asks for `id-token: write`, and npm CLI (>= 11.5.1
-#       on Node >= 22.14) exchanges that token for a short-lived credential. Nothing long-lived to rotate or
-#       leak, and provenance attestations are generated automatically. It needs a one-time configuration on
-#       npmjs.com (package → Settings → Trusted publisher): organisation/user, repository, **workflow file
-#       name** `misakanet-publish.yml`, **environment** `npm-release`, and the allowed actions.
-#    2. **`NPM_TOKEN`** (transitional) — kept as the fallback so the migration cannot break a release: npm
-#       prefers OIDC when it is available. Once a publish has succeeded through OIDC, delete the secret;
-#       that is what retires the expiry date in docs/maintainer/credentials-and-environments.md §4.1.
-#    With neither mechanism the job fails loudly and names both (see "Check npm identity" below).
+#  * **authentication: npm trusted publishing, and nothing else** (OIDC since 2026-09-30, token retired
+#    2026-10-06). The job asks for `id-token: write` and npm CLI (>= 11.5.1 on Node >= 22.14) exchanges
+#    that token for a short-lived credential. Nothing long-lived to rotate or leak, and provenance
+#    attestations are generated automatically. It needs a one-time configuration on npmjs.com (package →
+#    Settings → Trusted publisher): organisation/user, repository, **workflow file name**
+#    `misakanet-publish.yml`, **environment** `npm-release`, and the allowed actions.
+#
+#    The `NPM_TOKEN` fallback existed only until a publish proved OIDC works, and it did:
+#    run 37442613070 on 2026-10-06 published `misakanet@2.42.0` through OIDC. A token with an expiry
+#    date is worse than no token — it reads like a backup right up until the day it is not — so it is
+#    gone, and `NODE_AUTH_TOKEN` is no longer set anywhere in this job. Note that npm *prefers* a token
+#    when one is present, so keeping the env var while removing the secret would have silently changed
+#    nothing; both had to go.
 #
 # ── Rolling back a bad automatic publish (added 2026-09-30) ─────────────────────────────────────────
 # npm cannot republish a version, and it allows `npm unpublish` for only **72 hours** after the publish
@@ -210,37 +213,34 @@ jobs:
       # Same diagnostics as the setup package: a 401 here means the token is expired (npm
       # tokens default to 90 days), not that it lacks permissions - say so instead of leaving
       # a bare "PUT 404".
+      # #2113, closed 2026-10-06. This step preferred OIDC and fell back to `NPM_TOKEN`. That
+      # fallback is gone, and the evidence for removing it is a run rather than a plan:
+      #
+      #     run 37442613070, 2026-10-06T09:23:37Z, publishing misakanet@2.42.0
+      #     OIDC available: npm will authenticate with trusted publishing (no long-lived token).
+      #     npm notice  misakanet@2.42.0
+      #
+      # The token branch has not executed since it became the second choice, and a token with
+      # an expiry date is worse than no token — it reads like a working backup right up until
+      # the day it is not. `ACTIONS_ID_TOKEN_REQUEST_URL` is present on every run whose job asked
+      # for `id-token: write`, which this one does, so its absence means the OIDC exchange is
+      # broken, not that a secret should cover for it.
+      #
+      # The setup and fatal-guard packages keep their fallbacks deliberately: neither has
+      # published since OIDC was added (setup: 2026-09-19, before it; fatal-guard: 2026-07-25),
+      # so neither has a measured proof that its trusted publisher is configured on npmjs.com.
+      # Delete their fallbacks once each has published once through OIDC.
       - name: Check npm identity
         run: |
-          # **Trusted publishing first** (2026-09-30). With `id-token: write`, GitHub exposes
-          # `ACTIONS_ID_TOKEN_REQUEST_URL` and npm CLI (>= 11.5.1) exchanges the OIDC token for a
-          # short-lived publish credential — *before* falling back to a token (npm docs, "Trusted
-          # publishing": "automatically detects OIDC environments and uses them for authentication before
-          # falling back to traditional tokens"). So this step must not demand NPM_TOKEN when OIDC is
-          # available: it would fail the very run that no longer needs a secret.
-          #
-          # The token path stays as the documented transitional fallback, and still fails loudly: with
-          # neither mechanism there is nothing to publish with, and the message names both.
-          if [ -n "${ACTIONS_ID_TOKEN_REQUEST_URL:-}" ]; then
-            echo "OIDC available: npm will authenticate with trusted publishing (no long-lived token)."
-            echo "node $(node --version) / npm $(npm --version)"
-          elif [ -z "${NODE_AUTH_TOKEN}" ]; then
-            echo "::error::Neither trusted publishing (no OIDC token request URL) nor NPM_TOKEN is available."
-            echo "::error::Configure a trusted publisher on npmjs.com for workflow misakanet-publish.yml"
-            echo "::error::and environment npm-release, or set the transitional NPM_TOKEN secret."
+          if [ -z "${ACTIONS_ID_TOKEN_REQUEST_URL:-}" ]; then
+            echo "::error::No OIDC token request URL, so npm trusted publishing cannot run."
+            echo "::error::This job asks for id-token: write, so that URL is always present unless"
+            echo "::error::the workflow's permissions changed. Fix the workflow, not a secret:"
+            echo "::error::restoring NPM_TOKEN would hide the cause and expire again."
             exit 1
-          elif ! ACCOUNT=$(npm whoami 2>/tmp/whoami.err); then
-            echo "::error::npm rejected NPM_TOKEN (npm whoami failed)."
-            sed 's/^/    /' /tmp/whoami.err | head -5
-            echo "::error::A rejected token is usually expired; create a new automation token and"
-            echo "::error::update the NPM_TOKEN secret in the release environment — or finish the"
-            echo "::error::trusted-publishing migration so no token is needed at all."
-            exit 1
-          else
-            echo "account: $ACCOUNT (token fallback; OIDC not available in this run)"
           fi
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          echo "OIDC available: npm will authenticate with trusted publishing (no long-lived token)."
+          echo "node $(node --version) / npm $(npm --version)"
 
       - name: Publish to npm
         id: publish
@@ -251,6 +251,18 @@ jobs:
           (github.event_name == 'release' || github.event_name == 'push' ||
           inputs.dry_run == false || inputs.version != '')
         run: |
+          # Name the credential before using it. npm performs the OIDC exchange inside `npm
+          # publish` itself, so a missing OIDC environment would otherwise surface as a bare
+          # 401 from the registry with nothing in the log to explain it. There is no token
+          # fallback here to name: `NODE_AUTH_TOKEN` is deliberately unset, so this branch is
+          # the only thing standing between a misconfigured permissions block and a mystery.
+          if [ -z "${ACTIONS_ID_TOKEN_REQUEST_URL:-}" ]; then
+            echo "::error::npm publish has no OIDC environment (ACTIONS_ID_TOKEN_REQUEST_URL is empty)."
+            echo "::error::This job declares id-token: write, so that URL is present unless the workflow"
+            echo "::error::permissions changed. Fix the workflow; there is no long-lived token to fall back to."
+            exit 1
+          fi
+          echo "::notice::publishing through npm trusted publishing (OIDC); no long-lived token is set"
           set +e
           npm publish --access public
           RC=$?
@@ -258,8 +270,9 @@ jobs:
             echo "::error::npm publish failed (exit $RC)."
           fi
           exit $RC
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        # No NODE_AUTH_TOKEN: npm reads the OIDC exchange above and this job has no long-lived
+        # secret to fall back on. Setting it here would also mask a broken OIDC path, because
+        # npm prefers the token whenever one is present.
 
       # Its own step, so a failed publish says in the job summary which half did not happen. Deliberately
       # not "nothing was published": a `npm publish` that fails on the way back from the registry may
