@@ -1,8 +1,16 @@
 # Contributing to Misaka Network
 
 > 💡 **Before you contribute:**
-> MisakaNet is a zero-bounty open-source project. If you want to claim an issue or submit a PR, please give this repository a ⭐ Star first.
+> MisakaNet is a zero-bounty open-source project — **this repository pays nothing and promises
+> nothing**. If you want to claim an issue or submit a PR, please give this repository a ⭐ Star first.
 > This helps us grow and ensures we can review your PRs faster!
+>
+> **About reward banners on issues.** Some issues carry an Opire banner (`/reward`, `/try`,
+> `/claim`) advertising a third-party payout. We attach it automatically in
+> `scripts/question_autopilot.py`; we do not administer those payments, and Opire is not part of
+> this project's contribution policy. Treat any such offer as **unverified** and confirm it
+> independently before planning around it. Merging a PR is the only reward this repository has ever
+> paid out. See [#2903](https://github.com/Ikalus1988/MisakaNet/issues/2903).
 
 Thank you for your interest in contributing! There are several ways to help:
 

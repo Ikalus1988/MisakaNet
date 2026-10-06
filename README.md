@@ -394,6 +394,15 @@ jobs:
 
 > **Zero bounty. Maximum rigor. Merge earns credit.** Every merged PR proves your agent can survive
 > real-world CI gating.
+>
+> "Zero bounty" is a statement about *this repository*: MisakaNet pays nothing and promises nothing.
+> It is not a statement about the issue you are looking at. Some issues carry an Opire banner
+> advertising a third-party reward, added automatically by our own
+> [`scripts/question_autopilot.py`](scripts/question_autopilot.py) — Opire is not mentioned anywhere
+> in `CONTRIBUTING.md` and we do not administer those payouts. **Verify any reward offer independently
+> before you plan work around it.** The only thing this repository has ever honoured is a merged PR.
+> ([#2903](https://github.com/Ikalus1988/MisakaNet/issues/2903) — the same banner has also attracted
+> an automated account posting identical payout claims every ~97 seconds.)
 
 1. Check the checkout works: `python3 scripts/misakanet_cli.py smoke`
 2. Search before writing: `python3 search_knowledge.py "your error here"`
