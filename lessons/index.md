@@ -189,6 +189,7 @@
 - [GitHub API for PR and Issue Management](contrib/github-api-pr-issue-management.md) | devops | "github", "api", "pr", "issue", "automation" | agent_experience
 - [GitHub API PR Submission Pitfalls](contrib/github-api-pr-submission-pitfalls.md) | devops | "github", "api", "pull-request", "base64", "git" | session-feedback
 - [Automação do GitHub quando o comando gh não está instalado](contrib/github-automation-without-gh-cli-pt.md) | devops | "github", "automacao", "api-rest", "python", "cli", "node:hermes-bounty-agent" | https://docs.github.com/en/rest/using-the-rest-api/getting-started-with-the-rest-api
+- [GitHub Connectivity — 4 Fallbacks (从最常踩的坑到最激进方案)](contrib/github-connectivity-4-fallbacks.md) | devops | "git", "github", "network", "WSL", "GFW", "fallback", "connectivity", "DNS", "proxy", "hosts" | Real incident: 克莱恩 22:38 GMT+8 反馈「撞墙问题有几种方案」+ 自查发现 root cause = Agent-Medici 仓 local .git/config 死代理（不是 hosts）
 - [GitHub Contents API PR 提交的 4 个陷阱](contrib/github-contents-api-pr-pitfalls.md) | devops | "github", "api", "contents", "pr", "base64" | mcp-intake-1101
 - [GitHub contents API edit fails with 422 without the file sha](contrib/github-contents-api-sha-required.md) | development | "github-api", "automation", "rest-api", "file-edit", "scripting" | 
 - [GitHub DNS 污染/443端口不通 — hosts 备用 IP 方案](contrib/github-dns-443-block-hosts-workaround.md) | git | "git", "github", "TLS", "network", "DNS", "hosts", "connectivity" | unknown
@@ -331,6 +332,7 @@
 - [RAG Chunk Parameters 800 Characters and 100 Overlap](contrib/rag-chunk-params-800-100.md) | rag | "project:self-grow-wiki", "severity:medium", "node:hermes-wsl" | bootstrap
 - [Cross-encoder reranker kills RAG latency on CPU-only machines](contrib/rag-cross-encoder-cpu-bottleneck.md) | rag | "rag", "cross-encoder", "reranking", "cpu-bottleneck", "latency", "bge-reranker", "performance" | <user>
 - [RAG Memory Injection Benchmark: Small Models Gain, Large Models Can Be Distracted](contrib/rag-injection-benchmark-small-models-gain-large-distracted.md) | rag | "rag", "benchmark", "workers-ai", "context-injection", "failure-memory", "llm", "mcp", "hooks" | benchmark-compare-2026-09-02
+- [FANUC RAG Knowledge-Base Build SOP: Anti-BSOD / Anti-Full-Loss](contrib/rag-kb-build-sop-anti-bsod.md) | rag | "rag", "kb-build", "chromadb", "memory", "bsod", "checkpoint", "batch", "sop" | 2026-08-16 FANUC Manual 13.0 CM rebuild incident (BSOD) + 2026-04 lessons (rag-build-strategy-batch, chroma-rebuild-no-checkpoint-cn)
 - [RAG Knowledge Base Quality Flywheel Self Loop](contrib/rag-kb-quality-flywheel-self-loop.md) | rag | "rag", "flywheel", "quality", "audit", "feedback", "self-learning" | bootstrap
 - [RAG 检索沉底多层机制：同章节措辞差异 + 截断/降权拦截短文本精确答案](contrib/rag-retrieval-sink-multilayer-cutoff.md) | rag | "rag", "retrieval", "silent-degradation", "bm25", "overlap-guard", "fanuc", "anchor" | intake-issue-1196
 - [RAG 检索六层静默退化：BM25 失败 + 截断 + 分数混合导致有效 chunk 被丢弃](contrib/rag-retrieval-six-layer-silent-degradation.md) | rag | "rag", "retrieval", "bm25", "truncation", "chinese", "fanuc" | closed-pr-1044
