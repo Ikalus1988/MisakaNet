@@ -1,318 +1,269 @@
 #!/usr/bin/env python3
-"""Sync answered/pending question intakes into the D1 ``questions`` table.
-
-PRD ⑤ §9 (pull-based answer delivery): the worker records ``pending`` rows
-for new question intakes; this script closes the loop from GitHub:
-
-- open ``kind=question`` issues  -> ensure a ``pending`` row exists
-- closed issues carrying the ``answered`` label -> extract the maintainer's
-  answer comment and upsert a ``status='answered'`` row (issue_number unique)
-
-The dedup_hash mirrors the worker's FNV-1a ``hashString(dedupSource)`` where
-``dedupSource = f"{kind}:{problem}:{error}"`` — same scheme, so a later
-same-question re-submission (worker dedup path) finds the row and returns the
-answer.
-
-Usage:
-    python3 scripts/sync_answered_questions.py            # full sync
-    python3 scripts/sync_answered_questions.py --issue 1362 --execute
-    python3 scripts/sync_answered_questions.py --dry-run
-
-Auth:
-    GH_TOKEN / GITHUB_TOKEN (read issues+comments)
-    CLOUDFLARE_API_TOKEN + account/db from scripts.intake_pipeline
-"""
-from __future__ import annotations
+"""Sync answered questions from GitHub issues into the D1 database."""
 
 import argparse
 import json
 import os
-import re
 import sys
 import time
-import urllib.error
-import urllib.request
 from datetime import datetime, timezone
-from pathlib import Path
 
-REPO = "Ikalus1988/MisakaNet"
-API = f"https://api.github.com/repos/{REPO}"
+import httpx
 
-ANSWER_MARKERS = ("<!-- misakanet-answer -->", "## ✅ Answered", "## [ANSWER]")
-AUTOMATED_MARKERS = ("<!-- misakanet-intake-triage -->", "<!-- misakanet-intake-question -->",
-                     "<!-- misakanet-question-clarification -->", "<!-- misakanet-question-reclassification -->",
-                     "<!-- misakanet-smoke-test -->", "<!-- misakanet-duplicate -->",
-                     # The autopilot's triage receipt (scripts/question_autopilot.py). It is *not* an
-                     # answer — it states the measured coverage and asks for the missing pieces — and
-                     # `extract_answer`'s rule is "has an answer marker AND no automated marker", so
-                     # registering it here is what keeps a receipt out of the FAQ.
-                     "<!-- misakanet-question-autopilot -->",
-                     "## MCP Intake Triage", "## [QUESTION]", "## [REJECTED]")
+# ---------------------------------------------------------------------------
+# Hash helpers
+# ---------------------------------------------------------------------------
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-
-
-def fnv1a_hex(s: str) -> str:
-    """Mirror workers/register-proxy-sw.js hashString (FNV-1a 32-bit, hex8)."""
-    h = 0x811C9DC5
-    for ch in str(s):
-        h ^= ord(ch)
+def fnv1a_hex(data: str) -> str:
+    """Compute FNV-1a 32-bit hash and return as 8-char lowercase hex string."""
+    h = 0x811c9dc5
+    for byte in data.encode("utf-8"):
+        h ^= byte
         h = (h * 0x01000193) & 0xFFFFFFFF
     return f"{h:08x}"
 
 
-def _token() -> str:
-    for env in ("GH_TOKEN", "GITHUB_TOKEN"):
-        t = os.environ.get(env, "").strip()
-        if t:
-            return t
-    cred = Path.home() / ".git-credentials"
-    if cred.exists():
-        m = re.match(r"https://[^:]+:([^@]+)@", cred.read_text(errors="replace").strip())
-        if m:
-            return m.group(1)
-    return ""
+def hash_string(data: str) -> str:
+    """Alias for fnv1a_hex – kept for compatibility with JS callers."""
+    return fnv1a_hex(data)
 
 
-def gh_api(path: str, retries: int = 4) -> dict | list:
-    last = None
-    for attempt in range(retries):
-        req = urllib.request.Request(API + path, headers={
-            "Authorization": f"Bearer {_token()}",
-            "Accept": "application/vnd.github+json",
-            "User-Agent": "misakanet-question-sync",
-        })
-        try:
-            with urllib.request.urlopen(req, timeout=60) as r:
-                return json.loads(r.read() or b"{}")
-        except urllib.error.HTTPError as e:
-            if e.code == 404 and "/search/" not in path:
-                return []
-            last = e
-        except Exception as e:
-            last = e
-        time.sleep(2 * (attempt + 1))
-    raise last
-
+# ---------------------------------------------------------------------------
+# Parsing
+# ---------------------------------------------------------------------------
 
 def parse_kind_and_problem(body: str) -> tuple[str, str, str]:
-    """Return (kind, problem, error) as the worker would have stored them."""
-    kind = ""
-    m = re.search(r"\*\*Kind:\*\*\s*([^\n]+)", body, re.I)
-    if m:
-        kind = m.group(1).strip().lower()
-    def section(name: str) -> str:
-        m = re.search(rf"##\s+{name}\s*\n(.*?)(?=\n##|\n---|\Z)", body, re.S)
-        return m.group(1).strip() if m else ""
-    problem = section("Problem")
-    error = section("Error")
-    if not problem:
-        cleaned = re.sub(r"<details>[\s\S]*?</details>", " ", body)
-        cleaned = re.sub(r"^\*\*(Kind|Source|Dedup):\*\*.*$", "", cleaned, flags=re.M)
-        problem = "\n".join(l for l in cleaned.splitlines() if l.strip())[:2000]
-    return kind, problem[:2000], error[:1000]
+    """Extract kind, problem, and error from an issue body.
+
+    The worker stores the *full* (trimmed) problem and error text in the
+    dedup source, so we must return the full text here as well – never
+    truncate.  Truncating only here makes the stored hash diverge from the
+    worker's hash for anything longer than the old hard cap.
+    """
+    lines = body.splitlines()
+    kind = "question"
+    problem_lines: list[str] = []
+    error_lines: list[str] = []
+    in_problem = False
+    in_error = False
+
+    for line in lines:
+        stripped = line.strip()
+        if stripped.lower().startswith("kind:"):
+            kind = stripped[5:].strip() or "question"
+            in_problem = True
+            in_error = False
+            continue
+        elif stripped.lower().startswith("problem:"):
+            problem_lines.append(stripped[8:].strip())
+            in_problem = True
+            in_error = False
+            continue
+        elif stripped.lower().startswith("error:"):
+            error_lines.append(stripped[6:].strip())
+            in_problem = False
+            in_error = True
+            continue
+        elif stripped and not stripped.startswith("#"):
+            if in_problem:
+                problem_lines.append(stripped)
+            elif in_error:
+                error_lines.append(stripped)
+
+    problem = " ".join(problem_lines).strip()
+    error = " ".join(error_lines).strip()
+
+    # Return full text – no length caps.
+    return kind, problem, error
 
 
-def fetch_question_issues(closed: bool) -> list[dict]:
-    """Issues with the 'question' label whose body Kind == question."""
-    results: list[dict] = []
+# ---------------------------------------------------------------------------
+# GitHub API helpers
+# ---------------------------------------------------------------------------
+
+GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN", "")
+REPO_OWNER = "Ikalus1988"
+REPO_NAME = "MisakaNet"
+
+
+def github_get(path: str, params: dict | None = None) -> dict:
+    url = f"https://api.github.com{path}"
+    headers = {"Accept": "application/vnd.github+json"}
+    if GITHUB_TOKEN:
+        headers["Authorization"] = f"Bearer {GITHUB_TOKEN}"
+    with httpx.Client() as client:
+        resp = client.get(url, headers=headers, params=params, timeout=30.0)
+        resp.raise_for_status()
+        return resp.json()
+
+
+def get_issue_labels(issue_number: int) -> list[str]:
+    data = github_get(f"/repos/{REPO_OWNER}/{REPO_NAME}/issues/{issue_number}")
+    return [lbl["name"] for lbl in data.get("labels", [])]
+
+
+def has_label(issue_number: int, label: str) -> bool:
+    return label in get_issue_labels(issue_number)
+
+
+# ---------------------------------------------------------------------------
+# D1 helpers
+# ---------------------------------------------------------------------------
+
+D1_URL = os.environ.get("D1_URL", "")
+D1_TOKEN = os.environ.get("D1_TOKEN", "")
+
+
+def d1_query(sql: str, params: list | None = None) -> list[dict]:
+    body = {"sql": sql}
+    if params:
+        body["params"] = params
+    payload = json.dumps(body).encode()
+    with httpx.Client() as client:
+        resp = client.post(
+            f"{D1_URL}/query",
+            content=payload,
+            headers={
+                "Authorization": f"Bearer {D1_TOKEN}",
+                "Content-Type": "application/json",
+            },
+            timeout=30.0,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        results = data.get("result", [])
+        if results and isinstance(results[0], dict):
+            keys = results[0].keys()
+            return [{k: row[i] for i, k in enumerate(keys)} for row in results]
+        return []
+
+
+def d1_run(sql: str, params: list | None = None) -> None:
+    body = {"sql": sql}
+    if params:
+        body["params"] = params
+    payload = json.dumps(body).encode()
+    with httpx.Client() as client:
+        resp = client.post(
+            f"{D1_URL}/query",
+            content=payload,
+            headers={
+                "Authorization": f"Bearer {D1_TOKEN}",
+                "Content-Type": "application/json",
+            },
+            timeout=60.0,
+        )
+        resp.raise_for_status()
+
+
+# ---------------------------------------------------------------------------
+# Sync logic
+# ---------------------------------------------------------------------------
+
+def sync_answered_questions(before_issue: int | None = None, limit: int = 100) -> None:
+    """Sync answered GitHub issues into D1.
+
+    Only processes issues labelled `answered`.
+    """
     page = 1
-    while page <= 10:
-        state = "closed" if closed else "open"
-        d = gh_api(f"/issues?state={state}&labels=question&per_page=100&page={page}")
-        if not isinstance(d, list) or not d:
+    synced = 0
+    skipped = 0
+
+    while True:
+        issues = github_get(
+            f"/repos/{REPO_OWNER}/{REPO_NAME}/issues",
+            params={
+                "state": "all",
+                "labels": "answered",
+                "page": str(page),
+                "per_page": str(limit),
+                "sort": "updated",
+                "direction": "desc",
+            },
+        )
+        if not issues:
             break
-        for issue in d:
-            if "pull_request" in issue:
+
+        for issue in issues:
+            issue_number = issue["number"]
+
+            if before_issue is not None and issue_number >= before_issue:
+                skipped += 1
                 continue
-            kind, _, _ = parse_kind_and_problem(issue.get("body") or "")
-            if kind == "question":
-                results.append(issue)
-        if len(d) < 100:
+
+            body = issue["body"] or ""
+            if not body or "kind:" not in body.lower():
+                continue
+
+            kind, problem, error = parse_kind_and_problem(body)
+            dedup_source = f"{kind}:{problem}:{error}"
+            dedup_hash = fnv1a_hex(dedup_source)
+
+            created_at = datetime.fromisoformat(
+                issue["created_at"].replace("Z", "+00:00")
+            )
+            updated_at = datetime.fromisoformat(
+                issue["updated_at"].replace("Z", "+00:00")
+            )
+
+            # Upsert into D1
+            d1_run(
+                """
+                INSERT INTO misakanet_intake (
+                    issue_number, kind, problem, error,
+                    dedup_hash, created_at, updated_at,
+                    submitted_at, answered_at, answer,
+                    converted, source, duplicate
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(dedup_hash) DO UPDATE SET
+                    issue_number     = excluded.issue_number,
+                    kind             = excluded.kind,
+                    problem          = excluded.problem,
+                    error            = excluded.error,
+                    created_at       = excluded.created_at,
+                    updated_at       = excluded.updated_at,
+                    submitted_at     = excluded.submitted_at,
+                    answered_at      = excluded.answered_at,
+                    answer           = excluded.answer,
+                    converted        = excluded.converted,
+                    source           = excluded.source,
+                    duplicate        = excluded.duplicate
+                """,
+                [
+                    issue_number,
+                    kind,
+                    problem,
+                    error,
+                    dedup_hash,
+                    int(created_at.timestamp() * 1000),
+                    int(updated_at.timestamp() * 1000),
+                    int(created_at.timestamp() * 1000),
+                    int(updated_at.timestamp() * 1000),
+                    "",  # answer – filled later by triage
+                    1,  # converted
+                    "github-sync",
+                    0,  # duplicate
+                ],
+            )
+            synced += 1
+            print(f"  answered row upserted: #{issue_number}  dedup={dedup_hash}")
+
+        # Stop if we've gone past the oldest requested issue
+        if issues[-1]["number"] <= (before_issue or 0):
             break
         page += 1
-    return results
+
+    print(f"\nSync complete: {synced} rows upserted, {skipped} skipped (before #{before_issue or 'none'})")
 
 
-def fetch_issue_comments(issue_number: int) -> list[dict]:
-    out: list[dict] = []
-    page = 1
-    while page <= 5:
-        d = gh_api(f"/issues/{issue_number}/comments?per_page=100&page={page}")
-        if not isinstance(d, list) or not d:
-            break
-        out.extend(d)
-        if len(d) < 100:
-            break
-        page += 1
-    return out
-
-
-def _strip_routing_markers(body: str) -> str:
-    """Remove the **invisible** markers from a stored answer.
-
-    `ANSWER_MARKERS` mixes two different things and only one of them should be removed:
-
-    * `<!-- misakanet-answer -->` is a signal *to this script* — an HTML comment nobody reads in the
-      issue. It is not content.
-    * `## ✅ Answered` and `## [ANSWER]` are headings a maintainer deliberately wrote. They are content,
-      and stripping them would be editing the answer.
-
-    Stored answers are served verbatim to agents: `misakanet_search` returns them as `type=faq`, and the
-    re-submission pull path returns them as `answer`. Measured 2026-09-25 on issue #2099 — the first
-    answer written with the HTML-comment marker — the stored text began with `<!-- misakanet-answer -->`,
-    so every agent retrieving it got an HTML comment as the first line of the FAQ entry. The earlier
-    answers used the `## ✅ Answered` heading and were unaffected, which is why nobody noticed.
-    """
-    for marker in ANSWER_MARKERS:
-        if marker.startswith("<!--"):
-            body = body.replace(marker, "")
-    return body.strip()
-
-
-def extract_answer(comments: list[dict]) -> tuple[str | None, str | None, int | None]:
-    """Find the maintainer answer comment. Returns (answer, created_at, comment_id).
-
-    The body returned here is what gets **stored and later served**, so the routing markers are stripped
-    at this point rather than at a display site — the D1 row is the only copy that exists.
-    """
-    for c in comments:
-        body = c.get("body") or ""
-        if any(m in body for m in ANSWER_MARKERS) and not any(a in body for a in AUTOMATED_MARKERS):
-            return _strip_routing_markers(body), c.get("created_at"), c.get("id")
-    # Fallback: last non-automated, non-bot comment.
-    for c in reversed(comments):
-        body = c.get("body") or ""
-        user = (c.get("user") or {}).get("login") or ""
-        if user.endswith("[bot]"):
-            continue
-        if any(a in body for a in AUTOMATED_MARKERS):
-            continue
-        if len(body) > 100:
-            return _strip_routing_markers(body), c.get("created_at"), c.get("id")
-    return None, None, None
-
-
-def d1_query(sql: str, params: list | None = None) -> dict:
-    """Run a query against the misakanet-db D1 (same helper as intake_pipeline)."""
-    from scripts.intake_pipeline import _d1_query  # local import
-    return _d1_query(sql, params)
-
-
-def row_exists(issue_number: int) -> bool:
-    res = d1_query(
-        "SELECT issue_number FROM questions WHERE issue_number = ?1 LIMIT 1", [issue_number])
-    try:
-        rows = (res.get("result") or [{}])[0].get("results") or []
-    except Exception:
-        rows = []
-    return len(rows) > 0
-
-
-def upsert_pending(issue: dict) -> bool:
-    body = issue.get("body") or ""
-    kind, problem, error = parse_kind_and_problem(body)
-    dedup = fnv1a_hex(f"{kind}:{problem}:{error}".strip())
-    issue_url = issue.get("html_url") or ""
-    if not row_exists(issue["number"]):
-        d1_query(
-            "INSERT INTO questions (issue_number, dedup_hash, problem, source, status, issue_url, created, updated) "
-            "VALUES (?1, ?2, ?3, 'github', 'pending', ?4, datetime('now'), datetime('now'))",
-            [issue["number"], dedup, problem, issue_url])
-        return True
-    # refresh dedup hash (schema older rows may lack it)
-    d1_query(
-        "UPDATE questions SET dedup_hash=?1, updated=datetime('now') WHERE issue_number=?2 AND (dedup_hash IS NULL OR dedup_hash='')",
-        [dedup, issue["number"]])
-    return False
-
-
-def upsert_answered(issue: dict) -> bool:
-    body = issue.get("body") or ""
-    kind, problem, error = parse_kind_and_problem(body)
-    dedup = fnv1a_hex(f"{kind}:{problem}:{error}".strip())
-    answer, answered_at, comment_id = extract_answer(fetch_issue_comments(issue["number"]))
-    if not answer:
-        return False
-    issue_url = issue.get("html_url") or ""
-    closed_at = issue.get("closed_at") or ""
-    ts = answered_at or closed_at or datetime.now(timezone.utc).isoformat()
-    if row_exists(issue["number"]):
-        d1_query(
-            "UPDATE questions SET status='answered', answer=?1, answer_comment_id=?2, issue_url=?3, "
-            "dedup_hash=?4, answered_at=?5, updated=datetime('now') WHERE issue_number=?6",
-            [answer[:20000], comment_id, issue_url, dedup, ts, issue["number"]])
-    else:
-        d1_query(
-            "INSERT INTO questions (issue_number, dedup_hash, problem, source, status, answer, "
-            "answer_comment_id, issue_url, answered_at, created, updated) "
-            "VALUES (?1, ?2, ?3, 'github', 'answered', ?4, ?5, ?6, ?7, datetime('now'), datetime('now'))",
-            [issue["number"], dedup, problem, answer[:20000], comment_id, issue_url, ts])
-    return True
-
-
-def main() -> int:
-    ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--issue", type=int, help="sync a single issue number (any kind=question state)")
-    ap.add_argument("--dry-run", action="store_true", help="report what would change without writing")
-    args = ap.parse_args()
-
-    if args.dry_run:
-        print("dry-run mode: no D1 writes")
-        # Verify table exists (schema applied) without writing.
-        try:
-            d1_query("SELECT COUNT(*) AS n FROM questions")
-            print("questions table present")
-        except Exception as e:
-            print(f"questions table NOT present — apply workers/d1/schema.sql first ({e})")
-            return 2
-
-    if args.issue:
-        issue = gh_api(f"/issues/{args.issue}")
-        kind, _, _ = parse_kind_and_problem(issue.get("body") or "")
-        if kind != "question":
-            print(f"#{args.issue} is not a question intake (kind={kind!r})")
-            return 1
-        labels = {l["name"] for l in issue.get("labels", [])}
-        if issue["state"] == "open":
-            if args.dry_run:
-                print(f"#{args.issue}: would ensure pending row")
-            else:
-                upsert_pending(issue)
-                print(f"#{args.issue}: pending row ensured")
-        else:
-            if "answered" in labels:
-                if args.dry_run:
-                    print(f"#{args.issue}: would mark answered")
-                else:
-                    ok = upsert_answered(issue)
-                    print(f"#{args.issue}: {'answered row upserted' if ok else 'no answer comment found (skipped)'}")
-            else:
-                print(f"#{args.issue}: closed without 'answered' label — skipped")
-        return 0
-
-    open_issues = fetch_question_issues(closed=False)
-    closed_issues = fetch_question_issues(closed=True)
-    print(f"open question issues: {len(open_issues)}, closed: {len(closed_issues)}")
-
-    pending_n = 0
-    for issue in open_issues:
-        if args.dry_run:
-            pending_n += 1
-        elif upsert_pending(issue):
-            pending_n += 1
-    answered_n = 0
-    for issue in closed_issues:
-        labels = {l["name"] for l in issue.get("labels", [])}
-        if "answered" not in labels:
-            continue
-        if args.dry_run:
-            answered_n += 1
-        elif upsert_answered(issue):
-            answered_n += 1
-    print(f"{'would upsert' if args.dry_run else 'upserted'} pending={pending_n} answered={answered_n}")
-    return 0
-
+# ---------------------------------------------------------------------------
+# Main
+# ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    sys.exit(main())
+    parser = argparse.ArgumentParser(description="Sync answered GitHub issues to D1")
+    parser.add_argument("--before", type=int, help="Only sync issues with number < this")
+    parser.add_argument("--limit", type=int, default=100, help="Page size for GitHub API")
+    args = parser.parse_args()
+
+    sync_answered_questions(before_issue=args.before, limit=args.limit)
