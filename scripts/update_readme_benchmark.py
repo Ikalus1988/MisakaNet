@@ -178,7 +178,14 @@ def main() -> int:
     seeded = [r for r in SEED_ROWS if not rows or r[0] < rows[0][0]]
     block = render_table(seeded + rows, unstamped)
 
-    readme = args.readme.read_text(encoding="utf-8")
+    # `newline=""` on the read as well as the write, so the file keeps whatever endings it
+    # already has and only the replaced block changes. Reading with the default newline
+    # translates CRLF to LF, which on a Windows checkout (`core.autocrlf=true`) rewrote the
+    # whole README to LF and left `git status` reporting ` M` on a file whose blob hash
+    # still equalled `HEAD:` — `git diff` silent, exactly like the generator regression in
+    # `update_lessons_json.py`. `Path.read_text` takes no `newline=` argument, so `open()`.
+    with open(args.readme, "r", encoding="utf-8", newline="") as handle:
+        readme = handle.read()
     updated = replace_block(readme, block)
     if updated is None:
         print(f"::error::{args.readme} has no `{BEGIN}` / `{END}` anchor", file=sys.stderr)
