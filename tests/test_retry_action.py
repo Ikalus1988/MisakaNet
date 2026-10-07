@@ -37,6 +37,8 @@ from pathlib import Path
 
 import pytest
 
+from posix_shell import require_posix_shell
+
 yaml = pytest.importorskip("yaml", reason="PyYAML parses the workflow")
 
 REPO = Path(__file__).resolve().parent.parent
@@ -66,14 +68,6 @@ def resolve(text: str, values: dict[str, str]) -> str:
     return EXPRESSION.sub(replace, text)
 
 
-def input_values(step: dict, **overrides) -> dict[str, str]:
-    """The action's `inputs:` defaults, with the caller's `with:` layered on top."""
-    declared = {name: str(spec.get("default", "")) for name, spec in action_step_inputs().items()}
-    declared.update({k: str(v) for k, v in (step.get("with") or {}).items()})
-    declared.update({k: str(v) for k, v in overrides.items()})
-    return declared
-
-
 def action_step_inputs() -> dict:
     return yaml.safe_load(ACTION.read_text(encoding="utf-8"))["inputs"]
 
@@ -85,12 +79,17 @@ def run_action(script: str, *, env_extra: dict | None = None, cwd: Path | None =
     The `env:` block is applied the way Actions applies it — as real process environment, not as
     text written into the step file. Writing it into the file would put the caller's quotes back
     into the generated script and reproduce the very bug this test exists to catch.
+
+    `shell_override` is set to the shell this test is itself running under, because the step
+    invokes `$SHELL_CMD` and the action's default of `bash` resolves to the WSL launcher on
+    `windows-latest` — see `scripts/posix_shell.py` for the full account. Letting the two agree is
+    also the honest arrangement: the step runs under the same shell the test can reason about.
     """
+    shell = require_posix_shell()
     step = action_step()
-    with_values = {"run": script, **inputs}
+    with_values = {"run": script, "shell_override": shell, **inputs}
     env_map = {name: str(spec.get("default", "")) for name, spec in action_step_inputs().items()}
     env_map.update({k: str(v) for k, v in with_values.items()})
-    env_map.update(env_map_defaults())
 
     body = step["run"]
     unknown = {m.group(1).strip() for m in EXPRESSION.finditer(body)}
@@ -112,15 +111,9 @@ def run_action(script: str, *, env_extra: dict | None = None, cwd: Path | None =
     with tempfile.TemporaryDirectory() as tmp:
         target = Path(tmp) / "step.sh"
         target.write_text(resolved_body, encoding="utf-8")
-        proc = subprocess.run(["bash", str(target)], capture_output=True, text=True,
+        proc = subprocess.run([shell, str(target)], capture_output=True, text=True,
                               env=env, cwd=str(workspace), timeout=120)
     return proc
-
-
-def env_map_defaults() -> dict[str, str]:
-    """The action's own defaults, which `inputs:` already carries — kept separate so a caller that
-    omits an input still gets the declared default rather than an empty string."""
-    return {}
 
 
 def caller_steps(workflow: str) -> list[tuple[str, dict]]:

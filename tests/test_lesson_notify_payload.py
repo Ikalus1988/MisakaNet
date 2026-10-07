@@ -41,6 +41,8 @@ from pathlib import Path
 
 import pytest
 
+from posix_shell import require_posix_shell
+
 yaml = pytest.importorskip("yaml", reason="PyYAML parses the workflow")
 
 REPO = Path(__file__).resolve().parent.parent
@@ -111,15 +113,22 @@ class _StubFeishu:
 
 
 def post(title: str, body: str = "a body line") -> tuple[int, list[bytes]]:
-    """Run the real notify step against the stub, once, with no retry delay."""
+    """Run the real notify step against the stub, once, with no retry delay.
+
+    The shell comes from `require_posix_shell()` rather than a literal `bash`: on `windows-latest`
+    `bash` on PATH is the WSL launcher and dies with *"Windows Subsystem for Linux has no
+    installed distributions"*, which is a fact about the runner and not a test result.
+    `scripts/posix_shell.py` has the full account — these four tests were the red legs it
+    describes, a second time.
+    """
+    shell = require_posix_shell()
     with tempfile.TemporaryDirectory() as tmp:
         step = Path(tmp) / "notify.sh"
         step.write_text(notify_script(), encoding="utf-8")
         proc = subprocess.run(
-            ["bash", str(step)], capture_output=True, text=True, timeout=120, cwd=tmp,
+            [shell, str(step)], capture_output=True, text=True, timeout=120, cwd=tmp,
             env={
-                "PATH": os.environ["PATH"],
-                "HOME": tmp,
+                **os.environ,
                 "GITHUB_WORKSPACE": tmp,
                 "WEBHOOK": f"http://127.0.0.1:{_CURRENT_STUB[0].port}/hook",
                 "TITLE": title,
@@ -216,6 +225,7 @@ def test_a_rejected_payload_would_be_visible(tmp_path):
     Uses a script with the step's own `curl` line rather than the whole step, so the receiver can
     be made to fail on demand without a second workflow shape.
     """
+    shell = require_posix_shell()
     curl_line = next(line for line in notify_script().splitlines() if "curl" in line and "POST" in line)
     assert "--fail" in curl_line, "the curl line lost --fail"
 
@@ -235,8 +245,8 @@ def test_a_rejected_payload_would_be_visible(tmp_path):
         script += '\n-d \'{}\'\n'
         target = tmp_path / "only-curl.sh"
         target.write_text(script, encoding="utf-8")
-        proc = subprocess.run(["bash", str(target)], capture_output=True, text=True,
-                              env={"PATH": os.environ["PATH"],
+        proc = subprocess.run([shell, str(target)], capture_output=True, text=True,
+                              env={**os.environ,
                                    "WEBHOOK": f"http://127.0.0.1:{server.server_address[1]}/hook"},
                               timeout=60)
     finally:
