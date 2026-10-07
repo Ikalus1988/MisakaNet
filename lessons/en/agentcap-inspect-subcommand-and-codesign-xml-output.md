@@ -7,6 +7,9 @@ evidence_level: "E1"
 summary_plain: "AgentCap inspect not show; codesign -xml for plistlib XML."
 trigger: "agentcap invalid choice show inspect codesign plistlib InvalidFileException"
 verify: "agentcap inspect --help 2>&1 | grep -q inspect && echo PASS || echo FAIL"
+provenance:
+  issue: "#2463, #2478"
+  source: "MCP intake (codex), contributor-reported"
 ---
 
 # AgentCap uses 'inspect' not 'show'; macOS codesign needs -xml for plistlib
