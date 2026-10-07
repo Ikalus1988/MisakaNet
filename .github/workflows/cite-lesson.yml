@@ -4,17 +4,25 @@ on:
   issues:
     types: [opened, edited]
   workflow_dispatch:
+    inputs:
+      issue_number:
+        description: "Existing usage issue number to trace citations"
+        required: true
+        type: string
 
 jobs:
   cite-lesson:
-    # Only run for issues with 'usage' label; skip workflow_dispatch gracefully
-    if: >
-      github.event_name == 'issues' &&
-      contains(github.event.issue.labels.*.name, 'usage')
+    # Run for issues with 'usage' label, or manual trigger via workflow_dispatch
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'issues' && contains(github.event.issue.labels.*.name, 'usage'))
     runs-on: ubuntu-latest
     permissions:
-      issues: read
+      issues: write
       contents: write
+    env:
+      ISSUE_NUMBER: ${{ github.event.inputs.issue_number || github.event.issue.number }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
@@ -22,6 +30,9 @@ jobs:
       - name: Parse usage report and cite lessons
         id: cite
         uses: ./.github/actions/retry/
+        env:
+          ISSUE_JSON: ${{ toJson(github.event.issue) }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
         with:
           run: |
             python3 << 'PYEOF'
@@ -29,14 +40,37 @@ jobs:
             import re
             import os
             import sys
+            import subprocess
             from datetime import datetime
 
-            issue = json.loads(os.environ.get('ISSUE_JSON', '{}'))
+            issue_num = os.environ.get('ISSUE_NUMBER', '').strip()
+            issue = json.loads(os.environ.get('ISSUE_JSON', '{}') or '{}')
+
+            # Fallback to gh CLI if ISSUE_JSON lacks details (e.g. on workflow_dispatch)
+            if not issue or not issue.get('body'):
+                if issue_num:
+                    try:
+                        res = subprocess.run(
+                            ['gh', 'issue', 'view', str(issue_num), '--repo', os.environ.get('GITHUB_REPOSITORY', ''), '--json', 'title,body,author,number,url'],
+                            capture_output=True, text=True, check=True
+                        )
+                        raw_data = json.loads(res.stdout)
+                        issue = {
+                            'number': raw_data.get('number', issue_num),
+                            'title': raw_data.get('title', ''),
+                            'body': raw_data.get('body', ''),
+                            'html_url': raw_data.get('url', ''),
+                            'user': {'login': raw_data.get('author', {}).get('login', '?')}
+                        }
+                    except Exception as e:
+                        print(f"Error fetching issue #{issue_num} via gh: {e}")
+                        sys.exit(1)
+
             body = issue.get('body', '')
             node = issue.get('title', '?').replace('usage:', '').strip()
             user = issue.get('user', {}).get('login', '?')
             issue_url = issue.get('html_url', '')
-            issue_num = issue.get('number', 0)
+            issue_num = issue.get('number', issue_num or 0)
             date = datetime.utcnow().strftime('%Y-%m-%d')
 
             # Parse used section
@@ -99,7 +133,7 @@ jobs:
             git config user.name "misakanet-bot"
             git config user.email "bot@misakanet.dev"
             git add -A
-            git diff --cached --quiet || git commit -m "cite: update references for issue #${{ github.event.issue.number }}"
+            git diff --cached --quiet || git commit -m "cite: update references for issue #${{ github.event.inputs.issue_number || github.event.issue.number }}"
             git push
           max_attempts: 3
           backoff: exponential
