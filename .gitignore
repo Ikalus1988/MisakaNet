@@ -52,6 +52,11 @@ workers/wrangler.api.jsonc
 .hydra/
 .worktrees/
 data/sag.db
+# Debris from an atomic write killed between write and rename
+# (scripts/update_lessons_json.py writes a sibling temp, then os.replace). An exception cleans
+# up after itself; a SIGKILL cannot, and the residue is a 1.4 MB file that looks enough like a
+# lesson index to be swept into a commit by `git add -A`.
+*.lessons.json.*.tmp
 
 # Local toolchain (agent session caches, OAuth vaults — machine-specific)
 .tools/

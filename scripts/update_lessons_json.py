@@ -10,6 +10,7 @@ import json
 import os
 import re
 import sys
+import tempfile
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
@@ -64,6 +65,83 @@ EXCLUDED = {"README.md", "index.md", "TEMPLATE.md", "CONTRIBUTING.md"}
 # because no index entry has a `frontmatter` key. docs/maintainer/lesson-fields.md
 # documented this gap; this closes it.
 PLAIN_FIELD_KEYS = ("summary_plain", "trigger", "verify")
+
+
+# ── writing the corpus ────────────────────────────────────────────────────────
+#
+# Every write below replaces a *published* file: the 1.4 MB authoritative index and the two copies
+# Cloudflare Workers Builds serves from `docs/`. `Path.write_text` / `Path.write_bytes` open the
+# destination with O_TRUNC, so the file a reader is using is already gone by the time the first byte
+# is written — a `kill -9`, a full disk or any exception between open and close leaves
+# `data/lessons.json` half a JSON document, and the next thing to read it is the site's search page or
+# `scripts/check_docs_data_copy.py`. Measured 2026-10-07 in this repository, on a different file: an
+# unrelated edit opened a 255-line document with `open(path, "wb")` and raised before writing, which
+# truncated it to zero bytes; only git had a copy.
+#
+# So: write a sibling temp file, then `os.replace`. The rename is atomic within a filesystem, which
+# is the whole guarantee — a reader sees either the old bytes or the new ones, never a prefix. The
+# temp file must be a *sibling* for that to hold, which is also why this is not `NamedTemporaryFile`
+# in the system temp dir (which is very often a different filesystem, where `os.replace` raises
+# EXDEV instead of renaming).
+#
+# This is the same pattern as `misakanet/profile.py::_save`, the repository's other JSON writer that
+# must not leave a half-written file; two details that file does not need and this one does, because
+# the destination is tracked and world-readable rather than a private per-machine file: the temp
+# file's 0600 mode is copied onto the destination, and the directory is fsynced as well as the file.
+
+
+def fsync_dir(directory: Path) -> None:
+    """Flush a directory entry so a finished rename survives a power loss.
+
+    `os.replace` is atomic for readers the instant it returns, but the new *name* is only durable
+    once the directory itself is on disk — fsyncing the file's bytes is not enough. Best-effort:
+    Windows/WSL mounts and some network filesystems refuse to open or fsync a directory (EACCES /
+    EINVAL / ENOTSUP), and the atomicity guarantee above does not depend on this call, so a refusal
+    is ignored rather than turned into a failed corpus regeneration on a platform that cannot satisfy
+    it. The guarantee deliberately not made is "survives power loss", not "is never half-written".
+    """
+    try:
+        fd = os.open(str(directory), os.O_RDONLY)
+    except OSError:
+        return
+    try:
+        os.fsync(fd)
+    except OSError:
+        pass
+    finally:
+        os.close(fd)
+
+
+def atomic_write(target: Path, payload: bytes) -> None:
+    """Replace `target` with `payload` in one step. Returns nothing; raises on failure.
+
+    The failure mode this exists for is a *partial* destination, so the temp file is removed on any
+    way out that is not the rename (`BaseException`, not `Exception`: a KeyboardInterrupt between
+    the write and the rename must not leave the debris either).
+    """
+    target.parent.mkdir(parents=True, exist_ok=True)
+    # mkstemp creates 0600; a tracked file that is rewritten must not silently become private.
+    mode = target.stat().st_mode & 0o777 if target.exists() else None
+    fd, tmp_name = tempfile.mkstemp(
+        dir=str(target.parent),
+        prefix=f".{target.name}.",
+        suffix=".tmp",
+    )
+    try:
+        with os.fdopen(fd, "wb") as handle:
+            handle.write(payload)
+            handle.flush()
+            os.fsync(handle.fileno())
+        if mode is not None:
+            os.chmod(tmp_name, mode)
+        os.replace(tmp_name, str(target))
+    except BaseException:
+        try:
+            os.unlink(tmp_name)
+        except OSError:
+            pass
+        raise
+    fsync_dir(target.parent)
 
 
 def plain_fields(meta: dict) -> dict:
@@ -243,7 +321,7 @@ def mirror_published_index(source: Path | None = None) -> bool:
         print(f"OK site copy already current: {DOCS_INDEX}")
         return False
     DOCS_INDEX.parent.mkdir(parents=True, exist_ok=True)
-    DOCS_INDEX.write_bytes(payload)
+    atomic_write(DOCS_INDEX, payload)
     print(f"OK site copy refreshed: {DOCS_INDEX} ({len(payload)} bytes)")
     return True
 
@@ -292,7 +370,7 @@ def mirror_lite_projection(source: Path | None = None) -> bool:
         print(f"OK browser projection already current: {target}")
         return False
     target.parent.mkdir(parents=True, exist_ok=True)
-    target.write_bytes(payload)
+    atomic_write(target, payload)
     print(f"OK browser projection refreshed: {target} ({len(payload)} bytes)")
     return True
 
@@ -375,7 +453,7 @@ def main():
             "contributor": meta.get("contributor", ""),  # Issue #1342
         })
 
-    OUTPUT.write_text(json.dumps(entries, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    atomic_write(OUTPUT, (json.dumps(entries, ensure_ascii=False, indent=2) + "\n").encode("utf-8"))
     print(f"OK lessons.json updated: {len(entries)} entries")
     # The count surfaces say "N indexed failure-recovery lessons about `data/lessons.json`". Refreshing
     # them from a run that wrote the index somewhere else would publish a number the published index
