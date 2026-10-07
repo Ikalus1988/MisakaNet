@@ -6,6 +6,7 @@ Matches agent intent against lesson triggers to provide proactive warnings.
 from __future__ import annotations
 import json
 import re
+import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -47,17 +48,54 @@ RISK_PROFILES = {
 }
 
 
+class LessonIndexUnreadable(Exception):
+    """The lesson index this check depends on could not be read.
+
+    This used to be `except Exception: pass` followed by `return []`, which is a result the caller
+    cannot tell apart from "the index is fine and no lesson carries triggers" (#2940). Measured on
+    the real corpus: an intent that matches `rag-build-strategy-batch` reports `risk: critical`
+    with 1 matched lesson against the healthy index, and `risk: high` with 0 matched lessons
+    against a truncated one — the `high` coming from the static keyword profile, so the only thing
+    that had gone missing was the evidence.
+
+    Raising is the honest option, for the same reason `UnreadableScanTarget` is raised in
+    `check_worker_secrets.py`: a sentinel the caller has to remember to check is a sentinel some
+    caller will not check. `preflight_check` is the one caller, and it converts this into an
+    explicit status rather than letting it disappear.
+    """
+
+    def __init__(self, path: Path, reason: str):
+        self.path = path
+        self.reason = reason
+        super().__init__(f"{path} could not be used as a lesson index: {reason}")
+
+
 def load_lessons_with_triggers() -> List[Dict[str, Any]]:
-    """Load lessons that have triggers metadata."""
+    """Load lessons that have triggers metadata, or refuse.
+
+    Raises `LessonIndexUnreadable` rather than reporting no lessons. A missing file, an unreadable
+    one, text that is not JSON, and JSON that is not a list are all evidence gaps, and none of
+    them is "there is nothing here".
+    """
     if not DATA_LESSONS.exists():
-        return []
+        raise LessonIndexUnreadable(DATA_LESSONS, "file does not exist")
+
     try:
-        data = json.loads(DATA_LESSONS.read_text(encoding="utf-8"))
-        if isinstance(data, list):
-            return [l for l in data if l.get("triggers")]
-    except Exception:
-        pass
-    return []
+        raw = DATA_LESSONS.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise LessonIndexUnreadable(DATA_LESSONS, f"{exc.__class__.__name__}: {exc}") from exc
+
+    try:
+        data = json.loads(raw)
+    except ValueError as exc:
+        raise LessonIndexUnreadable(DATA_LESSONS, f"not valid JSON ({exc})") from exc
+
+    if not isinstance(data, list):
+        raise LessonIndexUnreadable(
+            DATA_LESSONS, f"expected a JSON list of lessons, got {type(data).__name__}"
+        )
+
+    return [lesson for lesson in data if isinstance(lesson, dict) and lesson.get("triggers")]
 
 
 def tokenize(text: str) -> set:
@@ -107,7 +145,19 @@ def preflight_check(
             })
 
     # 2. Check lesson triggers
-    lessons = load_lessons_with_triggers()
+    index_status = "ok"
+    index_error = None
+    try:
+        lessons = load_lessons_with_triggers()
+    except LessonIndexUnreadable as exc:
+        # The keyword profiles above still stand — they are a literal table in this file. What is
+        # missing is the lesson evidence, and a caller reading `matched_lessons: []` cannot tell
+        # that from a lesson that simply did not match. So it is stated, and the recommendation
+        # stops claiming the operation is safe.
+        index_status = "unreadable"
+        index_error = str(exc)
+        lessons = []
+
     matched_lessons = []
     for lesson in lessons:
         triggers = lesson.get("triggers", {})
@@ -137,12 +187,27 @@ def preflight_check(
     for p in matched_profiles:
         all_guards.extend(p["guards"])
 
+    if index_status != "ok":
+        recommendation = (
+            f"Lesson index unreadable ({index_error}); the risk above reflects keyword profiles "
+            "only, and no lesson evidence was checked. Treat as unverified."
+        )
+    elif risk in ("high", "critical"):
+        recommendation = "Run small-scale probe first, then scale"
+    else:
+        recommendation = "Safe to proceed"
+
     return {
         "risk": risk,
         "matched_profiles": matched_profiles,
         "matched_lessons": matched_lessons,
         "guards": list(set(all_guards)),
-        "recommendation": "Run small-scale probe first, then scale" if risk in ("high", "critical") else "Safe to proceed",
+        "recommendation": recommendation,
+        # `ok` or `unreadable`. Added because `matched_lessons: []` was documented as the normal
+        # signal for "the profile matched but no lesson was close enough" — which made a corrupted
+        # index indistinguishable from a clean one to exactly the clients most likely to rely on it.
+        "index_status": index_status,
+        "index_error": index_error,
     }
 
 
@@ -170,3 +235,9 @@ if __name__ == "__main__":
             print("Guards:")
             for g in result["guards"][:3]:
                 print(f"  - {g}")
+
+    # The printout above already says the evidence was missing; the exit code is what stops a
+    # pipeline from reading the same run as a pass. This script used to always exit 0.
+    if result["index_status"] != "ok":
+        print(f"\nLesson index unusable: {result['index_error']}", file=sys.stderr)
+        sys.exit(1)

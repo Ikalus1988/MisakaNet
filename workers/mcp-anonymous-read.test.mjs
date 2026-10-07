@@ -169,10 +169,25 @@ test('anonymous session accepts notifications/initialized (202, not 401)', async
 test('every method the worker answers is reachable without a token', async () => {
   // The public set, as source. Read rather than reimplemented, so this cannot drift from
   // `isPublicMethod` in a way that makes the assertion below pass for the wrong reason.
+  //
+  // Sliced from the `Set` literal rather than from the `isPublicMethod = …` assignment: the
+  // assignment used to be a chain of `=== "…"` comparisons and was made a `Set` lookup when the
+  // set outgrew it (#2963 — `resources/list` and three siblings were answered by the dispatcher
+  // and unreachable behind the gate). Anchoring on the definition rather than on the use site
+  // keeps this readable whichever form the gate takes.
   const src = await readFile(new URL('./register-proxy-sw.js', import.meta.url), 'utf8');
-  const publicBlock = src.slice(
-    src.indexOf('isPublicMethod = peekBody?.method'),
-    src.indexOf('} catch (peekErr)'),
+  const setStart = src.indexOf('const MCP_PUBLIC_METHODS = new Set([');
+  assert.notEqual(setStart, -1,
+    'MCP_PUBLIC_METHODS is gone; this gate must follow the public set to wherever it now lives ' +
+    'rather than silently slicing an empty string and passing for the wrong reason');
+  const publicBlock = src.slice(setStart, src.indexOf(']);', setStart));
+
+  // The set must be the one the gate actually consults. Otherwise this test could pass on a
+  // correct-looking constant that nothing reads.
+  assert.ok(
+    /isPublicMethod\s*=\s*MCP_PUBLIC_METHODS\.has\(/.test(src),
+    'isPublicMethod no longer consults MCP_PUBLIC_METHODS — this test is reading a set that the ' +
+    'auth gate does not use',
   );
 
   // Every `if (method === "…")` branch the dispatcher answers, minus the ones that are
