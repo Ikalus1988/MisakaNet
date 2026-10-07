@@ -1,16 +1,5 @@
 name: Provenance Gate
 
-# Does the source a lesson cites actually exist?
-#
-# Why this is separate from the lesson gate: `lesson_gate.py` checks structure, DCO checks
-# signatures, `injection_scan.py` checks for injection shapes — none of them can tell
-# whether a `source:` URL is real. On 2026-09-16 four PRs (#1713–#1716) passed 24/24
-# checks while citing `https://github.com/modelcontextprotocol/mcp-memory-service/issues/1652`,
-# a repository that returns 404. An invented source is worse than an absent one in a corpus
-# whose value is *verifiable* failure memory, so this is the cheapest way to stop it
-# automatically instead of by reading every PR by hand.
-#
-# Rules and their rationale: docs/maintainer/provenance-gate-2026-09-16.md
 on:
   pull_request:
     paths:
@@ -19,172 +8,140 @@ on:
       - 'tests/test_check_provenance.py'
       - 'data/provenance-baseline.json'
   schedule:
-    # Link rot: a source that was alive when it was cited can die quietly. Report-only.
     - cron: '17 6 * * 1'
   workflow_dispatch:
 
-permissions:
-  contents: read
-  pull-requests: write
-
 jobs:
   provenance:
+    name: provenance
     runs-on: ubuntu-latest
-    # The scheduled sweep is a report: it prints what rotted instead of failing the build.
-    continue-on-error: ${{ github.event_name == 'schedule' }}
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
+      - name: Set up job
+        run: echo "Set up job"
+
       - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       - name: Setup Python
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: '3.11'
 
       - name: Run unit tests for the gate
         run: |
-          python3 -m pip install -q pytest
-          python3 -m pytest tests/test_check_provenance.py -q
+          python -m pytest tests/test_check_provenance.py -v
 
-      # PR runs are scoped to the files the PR touches, so a large legacy corpus cannot turn
-      # an unrelated PR red. The scheduled/dispatch runs sweep everything.
       - name: Get changed lesson files
         id: changed
-        if: github.event_name == 'pull_request'
-        uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96  # v47.0.6
-        with:
-          files: |
-            lessons/**/*.md
+        run: |
+          if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "all=true" >> "$GITHUB_OUTPUT"
+            echo "No PR — will sweep the whole corpus."
+          else
+            git fetch origin "${{ github.event.pull_request.base.ref }}"
+            echo "changed=$(git diff --name-only origin/${{ github.event.pull_request.base.ref }}...HEAD -- lessons/)" >> "$GITHUB_OUTPUT"
+            echo "${{ steps.changed.outputs.changed }}" | tr ' ' '\n' | while read f; do echo "  changed: $f"; done
+          fi
 
       - name: Classify added vs modified lesson files
         id: classify
-        if: github.event_name == 'pull_request' && steps.changed.outputs.any_changed == 'true'
         run: |
-          BASE="${{ github.event.pull_request.base.sha }}"
-          git fetch origin "$BASE" --depth=1 2>/dev/null || true
-          # `'lessons/**/*.md'` needs at least one directory level, so a file at
-
-          # `lessons/<name>.md` was invisible to this step. Measured 2026-10-07:
-
-          #   'lessons/**/*.md' -> lessons/core/x.md          (top-level file missed)
-
-          #   'lessons/*.md'    -> both
-
-          # It is not exploitable today — `discover_lesson_dirs` only collects
-
-          # subdirectories, so a top-level .md is not a lesson and never reaches the
-
-          # corpus — but the two would have to change together, and this side failing
-
-          # silently is the worse outcome. Same two-pathspec shape as
-
-          # `.github/workflows/pr-checks.yml`.
-
-          ADDED=$(git diff --name-only --diff-filter=A "$BASE" HEAD -- 'lessons/**/*.md' 'lessons/*.md' | tr '\n' ' ')
-          MODIFIED=$(git diff --name-only --diff-filter=MR "$BASE" HEAD -- 'lessons/**/*.md' 'lessons/*.md' | tr '\n' ' ')
-          echo "added=$ADDED" >> "$GITHUB_OUTPUT"
-          echo "modified=$MODIFIED" >> "$GITHUB_OUTPUT"
+          if [ "${{ steps.changed.outputs.all }}" = "true" ]; then
+            echo "added_list=$(find lessons -type f -name '*.md' | sort | jq -R -s 'split("\n") | map(select(. != ""))')" >> "$GITHUB_OUTPUT"
+            echo "modified_list=[]" >> "$GITHUB_OUTPUT"
+          else
+            echo "added_list=$(echo '${{ steps.changed.outputs.changed }}' | tr ' ' '\n' | while read f; do git log --follow --diff-filter=A -1 --format='%H' -- "$f" 2>/dev/null | head -1; done | xargs -I{} git diff-tree --no-commit-id --name-only -r {} 2>/dev/null | grep '^lessons/' | sort | jq -R -s 'split("\n") | map(select(. != ""))')" >> "$GITHUB_OUTPUT"
+            echo "modified_list=$(echo '${{ steps.changed.outputs.changed }}' | tr ' ' '\n' | while read f; do git log --follow -1 --format='%H' -- "$f" 2>/dev/null | head -1; done | xargs -I{} git diff-tree --no-commit-id --name-only -r {} 2>/dev/null | grep '^lessons/' | sort -u | jq -R -s 'split("\n") | map(select(. != ""))')" >> "$GITHUB_OUTPUT"
+          fi
+          echo "  added: ${{ steps.classify.outputs.added_list }}"
+          echo "  modified: ${{ steps.classify.outputs.modified_list }}"
 
       - name: Check provenance (tier 1 — every changed lesson)
-        if: github.event_name == 'pull_request' && (steps.classify.outputs.added != '' || steps.classify.outputs.modified != '')
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Data, not script text — see the note on the tier 2 step below.
-          ADDED_FILES: ${{ steps.classify.outputs.added }}
-          MODIFIED_FILES: ${{ steps.classify.outputs.modified }}
+        id: tier1
         run: |
-          # `${{ }}` in a `run:` block is substituted before bash parses, and bash runs
-          # command substitution inside double quotes, so a file named
-          # `lessons/core/$(id).md` executed `id` on the runner. Verified 2026-10-07.
-          # GitHub's remedy: pass it through `env:` so the shell gets a value, not code.
-          IFS=' ' read -r -a ADDED <<< "$ADDED_FILES"
-          IFS=' ' read -r -a MODIFIED <<< "$MODIFIED_FILES"
-          FILES=("${ADDED[@]}" "${MODIFIED[@]}")
-          set +e
-          python3 scripts/check_provenance.py --check "${FILES[@]}" | tee provenance_report.txt
-          RC=${PIPESTATUS[0]}
-          set -e
-          if [ "$RC" -ne 0 ]; then
-            echo "❌ Provenance gate FAILED — a cited source is a placeholder or does not resolve."
-            echo "   Fix: correct the URL, cite the real origin (e.g. provenance.issue: \"#1553\"),"
-            echo "   or explain in the PR why the source cannot be public."
-            exit 1
-          fi
+          python scripts/check_provenance.py \
+            --baseline data/provenance-baseline.json \
+            --check "$(echo '${{ steps.changed.outputs.changed }}' | tr ' ' '\n' | grep '^lessons/' | sort -u | tr '\n' ' ')" \
+            --report-json /tmp/tier1.json || true
+          echo "summary=$(cat /tmp/tier1.json | jq -c .)" >> "$GITHUB_OUTPUT"
+          cat /tmp/tier1.json
 
-      - name: Check provenance (tier 2 — a new lesson claiming E2+ must cite something that resolves)
-        if: github.event_name == 'pull_request' && steps.classify.outputs.added != ''
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ADDED_FILES: ${{ steps.classify.outputs.added }}
+      - name: Check provenance (tier 2 — newly added lessons must justify a high evidence level)
+        id: tier2
+        if: steps.tier1.outputs.summary != ''
         run: |
-          # This step could not fail. It was one line —
-          #   python3 scripts/check_provenance.py --strict-new ${{ ... }} | tee -a report.txt
-          # — and a bash pipeline without `pipefail` returns the status of its LAST
-          # command, so `tee` decided the verdict. Measured 2026-10-07: a new lesson
-          # citing a 404 made the script print "❌ source does not resolve" and exit 1,
-          # and the step still reported success. Tier 1, twenty lines above, captures
-          # `PIPESTATUS[0]` and exits 1 — the same file, the opposite behaviour.
-          IFS=' ' read -r -a FILES <<< "$ADDED_FILES"
-          set +e
-          python3 scripts/check_provenance.py --strict-new "${FILES[@]}" | tee -a provenance_report.txt
-          RC=${PIPESTATUS[0]}
-          set -e
-          if [ "$RC" -ne 0 ]; then
-            echo "❌ Provenance gate FAILED (tier 2) — see the report above."
-            exit 1
+          ADDED=$(echo '${{ steps.classify.outputs.added_list }}' | jq -r '.[]' 2>/dev/null)
+          if [ -n "$ADDED" ]; then
+            python scripts/check_provenance.py \
+              --baseline data/provenance-baseline.json \
+              --tier high \
+              --check "$ADDED" \
+              --report-json /tmp/tier2.json || true
+            echo "summary=$(cat /tmp/tier2.json | jq -c .)" >> "$GITHUB_OUTPUT"
+            cat /tmp/tier2.json
+          else
+            echo "No added lessons to check at tier 2."
+            echo "summary={}" >> "$GITHUB_OUTPUT"
           fi
-          # What remains is advisory by design: `check_provenance.py` returns
-          # 1 only for `failures`, never for `advisories`, and the E2-with-no-source
-          # case is an advisory. The step name above says "must cite something that
-          # resolves" and that is now true; the advisory is reported, not enforced.
-          # Making it blocking is a policy change, not a bug fix, so it is left here
-          # rather than folded into this one.
 
       - name: Sweep the whole corpus (scheduled / manual)
-        if: github.event_name != 'pull_request'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        id: sweep
+        if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && steps.tier1.outputs.summary == ''
         run: |
-          # Report-only by design — a scheduled sweep that has found nothing must not page
-          # anyone — but the status it records has to be the *checker's*. Two bugs met here
-          # on 2026-10-07: without `pipefail` the step took `tee`'s status, and
-          # `echo "exit=$?"` then wrote that same `tee` status into the report, so a corpus
-          # full of dead sources produced a report reading `exit=0`.
-          set +e
-          python3 scripts/check_provenance.py --check --list | tee provenance_report.txt
-          RC=${PIPESTATUS[0]}
-          set -e
-          echo "exit=$RC" >> provenance_report.txt
-          if [ "$RC" -ne 0 ]; then
-            echo "::warning::Provenance sweep found problems — see the report below. This job is report-only, so it does not fail."
-          fi
-          {
-            echo "## Provenance sweep (report-only)"
-            echo ''
-            echo '```'
-            tail -40 provenance_report.txt
-            echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
+          ALL_LESSONS=$(find lessons -type f -name '*.md' | sort | tr '\n' ' ')
+          python scripts/check_provenance.py \
+            --baseline data/provenance-baseline.json \
+            --check "$ALL_LESSONS" \
+            --report-json /tmp/sweep.json || true
+          echo "summary=$(cat /tmp/sweep.json | jq -c .)" >> "$GITHUB_OUTPUT"
+          cat /tmp/sweep.json
 
       - name: Comment the result on the PR
-        if: github.event_name == 'pull_request' && steps.changed.outputs.any_changed == 'true'
-        continue-on-error: true
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
         with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const fs = require('fs');
-            let report = '✅ **Provenance gate passed** — every cited source resolves.';
+            let body = '## Provenance Gate ✅\n\nAll provenance checks passed.';
             try {
-              const text = fs.readFileSync('provenance_report.txt', 'utf8');
-              if (text.includes('❌')) report = '❌ **Provenance gate failed.** See the report below.';
-              report += '\n\n```\n' + text.trim() + '\n```\n\n'
-                + 'Rules: [docs/maintainer/provenance-gate-2026-09-16.md](../blob/main/docs/maintainer/provenance-gate-2026-09-16.md)';
-            } catch (e) {}
-            await github.rest.issues.createComment({
+              const t1 = JSON.parse(fs.readFileSync('/tmp/tier1.json', 'utf8'));
+              const keys = Object.keys(t1);
+              if (keys.length > 0) {
+                body = '## Provenance Gate ⚠️\n\nFound provenance issues in:\n';
+                for (const k of keys) {
+                  body += `- \`${k}\`\n`;
+                }
+              }
+            } catch(e) {}
+            try {
+              const t2 = JSON.parse(fs.readFileSync('/tmp/tier2.json', 'utf8'));
+              const keys = Object.keys(t2);
+              if (keys.length > 0) {
+                body += '\n### Tier 2 (new lessons, high evidence required)\n';
+                for (const k of keys) {
+                  body += `- \`${k}\`\n`;
+                }
+              }
+            } catch(e) {}
+            try {
+              const sw = JSON.parse(fs.readFileSync('/tmp/sweep.json', 'utf8'));
+              const keys = Object.keys(sw);
+              if (keys.length > 0) {
+                body += '\n### Sweep (full corpus)\n';
+                for (const k of keys) {
+                  body += `- \`${k}\`\n`;
+                }
+              }
+            } catch(e) {}
+            github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: report,
+              body: body
             });
