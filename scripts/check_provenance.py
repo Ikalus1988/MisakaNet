@@ -45,6 +45,7 @@ import re
 import socket
 import sys
 import urllib.error
+import urllib.parse
 import urllib.request
 
 REPO = pathlib.Path(__file__).resolve().parent.parent
@@ -60,8 +61,16 @@ EXEMPT_HOSTS = {"localhost", "example.com", "example.org", "example.net", "test.
 
 def _host_of(url: str) -> str:
     """The hostname (or bracketed IPv6 literal) of a URL, lower-cased, without the port."""
+    try:
+        parsed = urllib.parse.urlsplit(url)
+        if parsed.hostname:
+            return parsed.hostname.lower()
+    except Exception:
+        pass
     rest = re.sub(r"^https?://", "", url, flags=re.I)
-    rest = rest.split("/")[0].split("?")[0]
+    rest = rest.split("/")[0].split("?")[0].split("#")[0]
+    if "@" in rest:
+        rest = rest.split("@")[-1]
     if rest.startswith("["):                       # [fe80::1]:8080
         return rest[1:rest.find("]")].lower()
     return rest.split(":")[0].lower()
