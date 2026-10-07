@@ -112,12 +112,24 @@ def fsync_dir(directory: Path) -> None:
         os.close(fd)
 
 
-def atomic_write(target: Path, payload: bytes) -> None:
+def atomic_write(target: Path, payload: "str | bytes") -> None:
     """Replace `target` with `payload` in one step. Returns nothing; raises on failure.
 
     The failure mode this exists for is a *partial* destination, so the temp file is removed on any
     way out that is not the rename (`BaseException`, not `Exception`: a KeyboardInterrupt between
     the write and the rename must not leave the debris either).
+
+    The temp file is written in **text mode on purpose**. `newline=None` means the OS translates
+    `\n` to `os.linesep`, which is exactly what `Path.write_text` did before this function
+    existed — and that is load-bearing on Windows. Under `core.autocrlf=true` a checkout lands
+    LF as CRLF, so git expects CRLF in the working tree; a generator that writes LF leaves a file
+    whose blob hash still equals `HEAD:` and yet which `git status --porcelain` reports as ` M`.
+    The atomicity comes from `os.replace`, not from writing bytes, so text mode gives nothing up.
+
+    Measured 2026-10-07: this exact regression turned
+    `test_lesson_source_contract.py::test_the_generators_are_a_no_op_on_an_unchanged_corpus` red on
+    all three `windows-latest` legs while macOS and ubuntu stayed green — and `git diff` reported
+    no content change at all, which is what made it hard to diagnose from the log.
     """
     target.parent.mkdir(parents=True, exist_ok=True)
     # mkstemp creates 0600; a tracked file that is rewritten must not silently become private.
@@ -128,7 +140,17 @@ def atomic_write(target: Path, payload: bytes) -> None:
         suffix=".tmp",
     )
     try:
-        with os.fdopen(fd, "wb") as handle:
+        # The mode follows the payload, and the difference is not cosmetic:
+        # `data/lessons.json` is written as text so a Windows checkout lands CRLF, which is what
+        # git expects under `core.autocrlf=true`; the two mirrors copy that file's bytes
+        # verbatim and inherit CRLF with it. Writing either as raw bytes put LF on disk and left
+        # `git status --porcelain` reporting ` M` on files whose blob hash still equalled
+        # `HEAD:` — which is what turned the corpus contract test red on every windows leg.
+        if isinstance(payload, bytes):
+            handle = os.fdopen(fd, "wb")
+        else:
+            handle = os.fdopen(fd, "w", encoding="utf-8", newline=None)
+        with handle:
             handle.write(payload)
             handle.flush()
             os.fsync(handle.fileno())
@@ -453,7 +475,7 @@ def main():
             "contributor": meta.get("contributor", ""),  # Issue #1342
         })
 
-    atomic_write(OUTPUT, (json.dumps(entries, ensure_ascii=False, indent=2) + "\n").encode("utf-8"))
+    atomic_write(OUTPUT, json.dumps(entries, ensure_ascii=False, indent=2) + "\n")
     print(f"OK lessons.json updated: {len(entries)} entries")
     # The count surfaces say "N indexed failure-recovery lessons about `data/lessons.json`". Refreshing
     # them from a run that wrote the index somewhere else would publish a number the published index
