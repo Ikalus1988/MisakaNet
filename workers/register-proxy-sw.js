@@ -388,7 +388,7 @@ const MCP_TOOLS = [
       // silently registers **zero tools** for the whole server. `anyOf` would say this more
       // directly but is outside that subset; the three `oneOf` branches below cover exactly the
       // three accepted argument shapes, including both-supplied, which `path` gives precedence.
-      // tests/test_mcp_schema_keywords.py holds the subset.
+      // tests/test_mcp_schema_branches.py holds the subset.
       oneOf: [
         { required: ["path"] },
         { required: ["id"] },
