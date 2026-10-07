@@ -105,8 +105,27 @@ def test_illustrative_urls_are_exempt_by_construction(url):
 
 
 # ── tier 2: high evidence level needs a verifiable source (new files only) ────
-def test_high_evidence_level_without_a_source_is_advisory_for_new_files(tmp_path):
+def test_high_evidence_level_with_no_source_at_all_fails_for_new_files(tmp_path):
+    """Tier 2a: E3 with nothing cited at all is decidable offline, so it must *fail*.
+
+    It used to be an advisory, which `main()` never folded into the exit code, so a CI step
+    named after this rule enforced nothing (open-code-review §2.3, 2026-10-06). Mutation
+    `high-evidence-no-source` in scripts/gate_mutation_audit.py is the proof.
+    """
     path = lesson(tmp_path, frontmatter_lesson(level="E3"))
+    rows = cp.scan([path], fetcher=None)
+    failures, advisories = cp.evaluate(rows, {"known_dead": [], "exempt_urls": []}, {cp.rel_to_repo(path)})
+    assert len(failures) == 1 and "E3" in failures[0] and "tier 2a" in failures[0]
+    assert advisories == []
+
+
+def test_high_evidence_level_citing_something_unresolvable_stays_advisory(tmp_path):
+    """Tier 2b: it does cite a source, we just cannot resolve it — never a failure.
+
+    Failing here would fail on the *absence* of evidence, which is the one thing this gate
+    must not do (an offline run, a 403 or a 429 must not turn a PR red).
+    """
+    path = lesson(tmp_path, frontmatter_lesson(source="intake #1460", level="E3"))
     rows = cp.scan([path], fetcher=None)
     failures, advisories = cp.evaluate(rows, {"known_dead": [], "exempt_urls": []}, {cp.rel_to_repo(path)})
     assert failures == []
@@ -212,6 +231,25 @@ def test_strict_new_alone_targets_only_those_files(tmp_path, capsys):
     out = capsys.readouterr().out
     assert code == 0
     assert "检查 1 篇课程" in out, out
+
+
+def test_cli_fails_a_new_lesson_that_claims_e3_and_cites_nothing(tmp_path, capsys):
+    """The end-to-end shape CI uses: `--strict-new <file>` must exit 1, not print a ⚠️ and exit 0."""
+    path = lesson(tmp_path, frontmatter_lesson(level="E3"), name="e3-no-source.md")
+    code = cp.main(["--offline", "--strict-new", str(path)])
+    out = capsys.readouterr().out
+    assert code == 1, out
+    assert "tier 2a" in out
+
+
+def test_declares_citation_separates_no_source_from_a_non_url_source():
+    assert cp.declares_citation('title: "t"\nevidence_level: E3\n') is False
+    assert cp.declares_citation('source: "intake #1460"\n') is True
+    assert cp.declares_citation('provenance:\n  source: "intake"\n') is True
+    assert cp.declares_citation('provenance:\n  issue: "#1460"\n') is True
+    assert cp.declares_citation('tags:\n  - "https://not-a-source.example/x"\n') is False
+    assert cp.declares_citation('{"title":"t","source":""}') is False
+    assert cp.declares_citation('{"title":"t","source":"intake #1"}') is True
 
 
 def test_cli_fails_on_a_placeholder_source(tmp_path, capsys):
