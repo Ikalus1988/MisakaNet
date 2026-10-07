@@ -23,7 +23,13 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
 
       - name: Run tests (example)
-        run: python -m pytest || true
+        # No `|| true`. An external review noted that it made the next step's `if: failure()`
+        # permanently false, so this example could never capture anything — and it is an example
+        # people copy, so it taught the dead pattern. The step is *meant* to fail: that is the
+        # state the capture exists to handle. If a run of this workflow should end green, the
+        # honest place to say so is the capture step's own `if:`, not a `|| true` that also
+        # disables the example's only interesting behaviour.
+        run: python -m pytest
 
       - name: Capture failure
         if: failure()
