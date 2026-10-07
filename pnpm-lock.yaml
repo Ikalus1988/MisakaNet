@@ -1,0 +1,91 @@
+# pnpm-lockfile: 9.0
+# lockfileVersion: '9.0'
+
+importers:
+  .:
+    specifiers:
+      next: '15.1.0'
+      react: ^19.0.0
+      react-dom: ^19.0.0
+      type-fest: ^4.30.0
+      '@types/node': ^22.10.0
+      '@types/react': ^19.0.0
+      '@types/react-dom': ^19.0.0
+      typescript: ^5.7.0
+    dependencies:
+      next:
+        specifier: '15.1.0'
+        version: '15.1.0'
+      react:
+        specifier: ^19.0.0
+        version: '19.0.0'
+      react-dom:
+        specifier: ^19.0.0
+        version: '19.0.0'(react@19.0.0)
+      type-fest:
+        specifier: ^4.30.0
+        version: '4.30.0'
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.0
+        version: '22.10.0'
+      '@types/react':
+        specifier: ^19.0.0
+        version: '19.0.0'
+      '@types/react-dom':
+        specifier: ^19.0.0
+        version: '19.0.0'(@types/react@19.0.0)
+      typescript:
+        specifier: ^5.7.0
+        version: '5.7.0'
+
+packages:
+  next@15.1.0:
+    resolution: {integrity: sha512-8qzwrnWwFYzkaICLkgTDFoQdSgQc1FxKc+ULN9sDpCf58gXfE7QsYNhBgxi+pxHfZvPyEYh1wG5fIl56IeTGgQ==}
+    engines: {node: '>=18.18.0'}
+    peerDependencies:
+      '@opentelemetry/api': ^1.1.0
+      '@playwright/test': ^1.41.2
+      babel-plugin-react-compiler: '*'
+      react: ^18.2.0 || 19.0.0-rc-de68d2f4-20241205 || ^19.0.0
+      react-dom: ^18.2.0 || 19.0.0-rc-de68d2f4-20241205 || ^19.0.0
+      sass: ^1.3.0
+    peerDependenciesMeta:
+      '@opentelemetry/api':
+        optional: true
+      '@playwright/test':
+        optional: true
+      babel-plugin-react-compiler:
+        optional: true
+      sass:
+        optional: true
+    optionalDependencies:
+      sharp: 0.33.5
+
+  react-dom@19.0.0:
+    resolution: {integrity: sha512-LD0wJ02mytT+DjKp/nV1A0JhLLXU7lGbO2MvGn9R2jA0oJyGJikFqe9qK5b8/Y3QuoT8VrW1OJ0w2g8j6PpDA==}
+    peerDependencies:
+      react: ^19.0.0
+
+  react@19.0.0:
+    resolution: {integrity: sha512-cRGNuR3cLVEedJs9ySg/JehJZVMUYCeGZLMhKlSMGWMt/LhYc46xVGHX/sH/yl6qJdKsMN0Ji5rjdZ8kJkJgQ==}
+
+  type-fest@4.30.0:
+    resolution: {integrity: sha512-0LJmBb7lDQcm8g4aT+XgP7RzPfX/x8iGQnT+pPzbL+4Lp8R5+ZG+I4v9KqKZk+o2iXrXFfBJBKbC8sxbRg0TQ==}
+    engines: {node: '>=16'}
+
+  '@types/node@22.10.0':
+    resolution: {integrity: sha512-x5ucBnE/jh7ByF8ZMh9AOU8q1m+ryTSop+rK9XQd7t+kPeZKWPm/YYfbZmRgBs/TA6vHF825SNvpjx3f6D/ng==}
+
+  '@types/react-dom@19.0.0':
+    resolution: {integrity: sha512-6dVZfGbdVUUJCkwZvxCmS5qosGeE97tUrmtbIQJ1ByaSIOLyE3s9UP0T1rUnJR99mCbdA4jXt3XHjHQL+HqFA==}
+    peerDependencies:
+      '@types/react': ^19.0.0
+
+  '@types/react@19.0.0':
+    resolution: {integrity: sha512-MS3bJiO9q6H82IltHsK/vuSQg6W5HnqRKHuG7lWM0HmF2bqg5E+vQp/BElLlZ0iQpNrHNNgnw2SfQBEVvBvCg==}
+
+  typescript@5.7.0:
+    resolution: {integrity: sha512-5zuE7VeEERdKq5L4YRWM0g8Wm/5U7M1Pib2D31cEXZm2J3YuwCbnxVBdLkfNtPMbOA6pBNuGbTm7kAzMLUhIw==}
+    engines: {node: '>=14.17'}
+    hasBin: true
