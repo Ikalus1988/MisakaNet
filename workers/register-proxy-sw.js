@@ -4755,9 +4755,21 @@ async function handleMcpRequest(request, env, useSse = false, ctx) {
 
     if (method === "tools/list") {
       debugLog(env, 2, "tools/list: returning", MCP_TOOLS.length, "tools");
+      // `ListToolsResult.required` is `['cacheScope', 'resultType', 'tools', 'ttlMs']` in
+      // schema 2026-07-28 (read 2026-10-07). This response carried only `tools`, so it was
+      // non-conformant for the very version `SUPPORTED_PROTOCOL_VERSIONS` advertises — the same
+      // shape of defect `server/discover` had, and one a strict client rejects the way it rejects
+      // an unknown schema keyword (#2968). The tool definitions are identical for every caller and
+      // the method is public, so `public` is the honest `cacheScope` here; it is deliberately NOT
+      // added to `tools/call`, whose results can be per-node and must not be declared public.
       return respond({
         jsonrpc: "2.0", id: reqId,
-        result: { tools: MCP_TOOLS },
+        result: {
+          tools: MCP_TOOLS,
+          resultType: "complete",
+          ttlMs: 3600000,
+          cacheScope: "public",
+        },
       });
     }
 
@@ -4832,6 +4844,11 @@ async function handleMcpRequest(request, env, useSse = false, ctx) {
         result: {
           content: [{ type: "text", text: JSON.stringify(result) }],
           structuredContent,
+          // `CallToolResult.required` is `['content', 'resultType']`. No `cacheScope` and no
+          // `ttlMs` here: those belong to `CacheableResult`, which `CallToolResult` does not
+          // extend, and a per-node result declared `public` would be a lie the client would then
+          // act on by caching it across authorization contexts.
+          resultType: "complete",
         },
       });
     }
