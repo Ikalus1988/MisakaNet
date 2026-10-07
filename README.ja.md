@@ -335,10 +335,6 @@ jobs:
 
 → [入力と出力](docs/agents/external-usage.md) · [`actions: read` が省略できない理由](docs/agents/external-usage.md)
 
-### 8秒で見る
-
-![Search lesson demo](promotional/search%20lesson.gif)
-
 ## ドキュメント
 
 **ジャーニーを選んでください** — MisakaNet の使い方は、やりたいことに応じて異なります:
