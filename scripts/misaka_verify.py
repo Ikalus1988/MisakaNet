@@ -84,7 +84,18 @@ def run_verification(task: dict) -> tuple[str, str]:
     # No test command — verify source file integrity
     if source_path.stat().st_size > 100:
         return PASS, f"Source exists ({source_path.stat().st_size} bytes)"
-    return SKIP, f"No test_cmd and source too small" if source_path.stat().st_size > 0 else FAIL, f"Empty source"
+    # The parentheses are load-bearing, not decoration. Written flat, this parses as the
+    # 3-tuple `SKIP, (A if cond else FAIL), B` — the conditional binds only its middle
+    # element — while the signature says `tuple[str, str]` and both call sites
+    # (`status, detail = run_verification(task)`) unpack two. Measured: a task with no
+    # `test_cmd` and a source of ≤100 bytes raised
+    # `ValueError: too many values to unpack (expected 2)`. No task in `tasks/` meets that
+    # shape today, so it was latent; the next one that does would not be.
+    return (
+        (SKIP, f"No test_cmd and source too small")
+        if source_path.stat().st_size > 0
+        else (FAIL, f"Empty source")
+    )
 
 
 def main():
