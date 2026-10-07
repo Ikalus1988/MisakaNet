@@ -17,6 +17,7 @@ jobs:
       issues: write
       pull-requests: write
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout Code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
@@ -259,7 +260,27 @@ jobs:
           echo "--- Checking workflow action pinning ---"
           for wf in .github/workflows/*.yml .github/workflows/*.yaml; do
             [ -f "$wf" ] || continue
-            UNPINNED=$(grep -E 'uses: [a-zA-Z0-9_-]+/[a-zA-Z0-9_-]+@v[0-9]' "$wf" | grep -v '@[a-f0-9]{40}' || true)
+            # The first grep is the whole check: it selects tag-pinned `uses:`, which is exactly
+            # what the warning is about. A second `grep -v '@[a-f0-9]{40}'` used to follow it,
+            # and an external review correctly noticed that `{40}` there is a literal in a basic
+            # regular expression, so the filter matched nothing. Giving that grep `-E` — the
+            # review's suggestion — makes it live and makes the check **worse**: `[a-f0-9]` does
+            # not contain `v`, so the filter can only fire on a line that mentions a 40-hex SHA
+            # somewhere *else* on the line, and it then suppresses a genuine tag pin. Measured on
+            # a line that is tag-pinned and also names the SHA it was upgraded from: without `-E`
+            # it is reported (correct), with `-E` it is dropped (a real finding, lost). So the
+            # filter is removed rather than repaired. A `uses:` line cannot be both `@v1` and
+            # `@<40 hex>` at the same position, which is why it was dead.
+            #
+            # Full-line comments are dropped first, because a `uses:` inside a comment is prose
+            # and not a pin. Two of them exist today — the note above and one in
+            # `release-please.yml` — and both were being reported as unpinned actions. Only whole
+            # comment lines are removed, never a trailing `#…`, so a `#` inside a quoted string
+            # cannot be mistaken for a comment. The same reasoning as the orphan-test rule in
+            # tests/test_workflow_inventory.py, which reads workflows through `yaml.safe_load`
+            # precisely so that a comment cannot satisfy it.
+            UNPINNED=$(grep -vE '^[[:space:]]*#' "$wf" \
+              | grep -E 'uses: [a-zA-Z0-9_-]+/[a-zA-Z0-9_-]+@v[0-9]' || true)
             if [ -n "$UNPINNED" ]; then
               echo "::warning file=$wf::Unpinned actions (should use SHA): $UNPINNED"
               ISSUES=$((ISSUES + 1))

@@ -41,6 +41,7 @@ permissions:
 jobs:
   guarded-repository:
     uses: hashgraph-online/hol-guard/.github/workflows/guarded-repository.yml@adea57108e1ff63d2fa182cfdadf74865a3faa17  # v3.16.5
+    timeout-minutes: 30
     with:
       profile: default
       fail_on_severity: critical
@@ -60,6 +61,7 @@ jobs:
   automation-output-audit:
     if: github.event_name != 'push'
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions:
       actions: read
       contents: read

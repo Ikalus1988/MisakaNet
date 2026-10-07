@@ -8,6 +8,7 @@ on:
 jobs:
   salvage-digest:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions:
       issues: write
     # Every other workflow that shells out to `gh` exports GH_TOKEN; this one did

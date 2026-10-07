@@ -20,8 +20,11 @@ permissions:
 jobs:
   benchmark:
     runs-on: ubuntu-latest
-    # A job with no bound holds its runner until the platform default (six hours).
-    timeout-minutes: 90
+    # A job with no bound holds its runner until the platform default (six hours). This was 90,
+    # which is nineteen times what the job has ever needed: 16 completed runs measured on
+    # 2026-10-07 came in at a median of 0.5 minutes and a maximum of 4.7. 30 keeps roughly six
+    # times that headroom and is the same bound the 54 previously-unbounded jobs were given.
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
         with:
