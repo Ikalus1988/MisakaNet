@@ -161,8 +161,13 @@ class _Evaluator:
     def _postfix(self):
         value = self._primary()
         while self._peek()[0] == "punct" and self._peek()[1] in (".", "["):
-            self._take()
-            if self._peek()[1] == "[":
+            # The delimiter is captured from the token that was **consumed**, not looked up
+            # afterwards. The first version discarded it and then asked whether the *next* token
+            # was `[` — which it never is, since `[` is followed by an index and `.` by a name, so
+            # the bracket branch was dead and `labels[0].name` raised. PR-Agent's review of #2953
+            # found it; `test_bracket_indexing_works` now keeps it honest.
+            _, delimiter = self._take()
+            if delimiter == "[":
                 _, index = self._take()
                 self._expect("]")
                 if isinstance(value, list):
@@ -369,6 +374,31 @@ def test_a_comment_with_no_command_is_refused_even_for_an_owner():
 
 # ── 2. The rule generalises, so the next workflow added is caught too ───────────────────────────────
 
+def privileged_comment_workflows(directory: Path) -> list[tuple[Path, bool, set[str]]]:
+    """The `(path, spends_a_model, write_scopes)` triples in `directory` the rule applies to.
+
+    Split out from the test so a fixture can be pointed at this rule directly. The first version
+    inlined the whole walk, which meant the only way to check the rule fired on a given shape was
+    to commit a workflow with that shape — and PR-Agent's review of #2953 found a hole
+    (`permissions: write-all`) that a committed fixture would not have surfaced either.
+    """
+    found = []
+    for path in sorted(set(directory.glob("*.yml")) | set(directory.glob("*.yaml"))):
+        if "issue_comment" not in triggers(path):
+            continue
+        document = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+        spends = any(marker in json.dumps(document) for marker in
+                     ("Codium-ai/pr-agent", "OPENAI_KEY", "ANTHROPIC", "@cf/", "AI_GATEWAY"))
+        scopes = write_scopes(path)
+        # `write_scopes` only ever collects write-granting scopes, and `write-all` is itself one
+        # of them. The first version subtracted `{"write-all"}` before this test, which exempted the
+        # broadest permission a workflow can ask for — the one case where the gate matters most.
+        if not spends and not scopes:
+            continue
+        found.append((path, spends, scopes))
+    return found
+
+
 def test_every_privileged_issue_comment_workflow_gates_on_association():
     """A workflow that acts on a comment and holds write scope or a model key must check who commented.
 
@@ -379,15 +409,7 @@ def test_every_privileged_issue_comment_workflow_gates_on_association():
     the only one of the four without the check.
     """
     privileged: list[str] = []
-    for path in sorted(set(WORKFLOWS.glob("*.yml")) | set(WORKFLOWS.glob("*.yaml"))):
-        if "issue_comment" not in triggers(path):
-            continue
-        document = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
-        spends = any(marker in json.dumps(document) for marker in
-                     ("Codium-ai/pr-agent", "OPENAI_KEY", "ANTHROPIC", "@cf/", "AI_GATEWAY"))
-        scopes = write_scopes(path)
-        if not spends and not (scopes - {"write-all"}):
-            continue
+    for path, spends, scopes in privileged_comment_workflows(WORKFLOWS):
         privileged.append(path.name)
         for name, job in workflow_jobs(path).items():
             condition = str(job.get("if", ""))
@@ -399,6 +421,43 @@ def test_every_privileged_issue_comment_workflow_gates_on_association():
     assert "pr-agent-review.yml" in privileged, (
         "the rule stopped seeing the workflow it exists for — the file was renamed or its trigger "
         "changed, and this test would otherwise pass on an empty set")
+
+
+@pytest.mark.parametrize(
+    ("label", "trigger", "permissions", "expected_privileged"),
+    [
+        ("write-all, no model", "issue_comment", "permissions: write-all\n", True),
+        ("read-all, no model", "issue_comment", "permissions: read-all\n", False),
+        ("an explicit write scope", "issue_comment", "permissions:\n  contents: write\n", True),
+        ("an explicit read scope", "issue_comment", "permissions:\n  contents: read\n", False),
+        ("no permissions block at all", "issue_comment", "", False),
+        ("write scope, no model, no comment trigger", "push",
+         "permissions:\n  contents: write\n", False),
+    ],
+)
+def test_the_rule_covers_the_permission_shapes_that_grant_write(
+        tmp_path, label, trigger, permissions, expected_privileged):
+    """`permissions: write-all` must be *more* covered, not exempt.
+
+    PR-Agent's review of #2953 found that the first version subtracted `{"write-all"}` before
+    deciding a workflow was unprivileged, so the broadest permission a workflow can ask for was the
+    one shape the rule skipped.
+
+    `trigger` is a parameter rather than something read out of `label`. The first version inferred
+    it from a substring of the label text, so rewording a label silently changed which workflow
+    shape was under test — a fixture that stops testing what it says, which is the same failure this
+    file exists to rule out, one level up.
+    """
+    on_block = ("on:\n  issue_comment:\n    types: [created]\n" if trigger == "issue_comment"
+                else "on:\n  push:\n    branches: [main]\n")
+    path = tmp_path / "probe.yml"
+    path.write_text(
+        f"name: probe\n{on_block}{permissions}\njobs:\n  j:\n    runs-on: ubuntu-latest\n"
+        "    steps:\n      - run: echo hi\n",
+        encoding="utf-8")
+    found = privileged_comment_workflows(tmp_path)
+    assert bool(found) is expected_privileged, (
+        f"{label}: the rule {'required' if found else 'skipped'} a gate on this workflow")
 
 
 # ── 3. The runner must not be held open by a job nobody is waiting on ───────────────────────────────
@@ -478,3 +537,22 @@ def test_unary_not_binds_tighter_than_a_comparison():
     assert evaluate("!github.event_name == 'pull_request'", context) is False
     assert evaluate("!(github.event_name == 'pull_request')", context) is True
     assert evaluate("!github.event_name == 'issue_comment'", context) is False
+
+
+def test_bracket_indexing_works():
+    """`labels[0].name` has to resolve. It did not, and nothing noticed.
+
+    The first version of `_postfix` consumed the `.`/`[` delimiter without keeping it and then
+    asked whether the *next* token was `[`. It never is — `[` is followed by an index and `.` by a
+    name — so the bracket branch was dead code and `labels[0].name` raised `SyntaxError`. PR-Agent's
+    review of #2953 found it; nothing in the suite did, because no workflow in the repository uses
+    bracket indexing. The same reasoning that hid the three dead guards in
+    `test_automated_prs_skip_llm_review.py` applies to a parser nobody exercises.
+    """
+    context = pull_request_context(labels=["docs-only", "bug"])
+    assert evaluate("contains(github.event.pull_request.labels[0].name, 'docs-only')", context) is True
+    assert evaluate("contains(github.event.pull_request.labels[1].name, 'docs-only')", context) is False
+    assert evaluate("contains(github.event.pull_request.labels[1].name, 'bug')", context) is True
+    # The splat over the same list has to keep working; it is what `pr-agent-review.yml` uses.
+    assert evaluate("contains(github.event.pull_request.labels.*.name, 'docs-only')", context) is True
+    assert evaluate("contains(github.event.pull_request.labels.*.name, 'nope')", context) is False
