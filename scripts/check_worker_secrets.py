@@ -84,8 +84,42 @@ REQUIRED_ENV_CHECKS = {
 }
 
 
+class UnreadableScanTarget(Exception):
+    """A file the scan was pointed at that it could not read.
+
+    This used to be `except Exception: return hits` — an empty list, which the caller could not
+    tell from "the file was read and there is nothing in it". So a `chmod 000` file, a directory
+    that matched the suffix glob, or a dangling symlink each made a credential scanner print
+    "No hardcoded secrets found" about a file it never opened (#2940). Measured on a temporary
+    tree: a file holding a `ghp_` shape reports one finding readable and **zero** unreadable.
+
+    Raising is the honest option. The alternative — returning a sentinel — puts the distinction
+    in a value every caller has to remember to check, and this one did not.
+    """
+
+    def __init__(self, path: Path, cause: OSError):
+        self.path = path
+        self.cause = cause
+        super().__init__(f"{path} could not be read: {cause.__class__.__name__}: {cause}")
+
+
+def _read_for_scan(filepath: Path) -> str:
+    """Read a scan target, or refuse loudly.
+
+    Only `OSError` is translated. A bare `except Exception` here would also swallow a typo in this
+    module and report it as an unreadable file — the same "I could not do it became there was
+    nothing to find" substitution this class exists to remove.
+    """
+    try:
+        return filepath.read_text(encoding="utf-8", errors="replace")
+    except OSError as exc:
+        raise UnreadableScanTarget(filepath, exc) from exc
+
+
 def scan_credential_patterns(filepath: Path) -> list[dict]:
     """Scan a file for hardcoded secret patterns.
+
+    Raises `UnreadableScanTarget` rather than reporting nothing; see that class for why.
 
     Returns dicts with metadata ONLY (file/line/type) — never the matched
     secret content. The `type` field is a static pattern description, `line`
@@ -95,10 +129,7 @@ def scan_credential_patterns(filepath: Path) -> list[dict]:
     -data).
     """
     hits = []
-    try:
-        content = filepath.read_text(encoding="utf-8", errors="replace")
-    except Exception:
-        return hits
+    content = _read_for_scan(filepath)
 
     rel_path = str(filepath.relative_to(REPO))
     # Independent line counter — NOT derived from content values, so the
@@ -128,12 +159,13 @@ def scan_credential_patterns(filepath: Path) -> list[dict]:
 
 
 def check_env_var_handling(filepath: Path, checks: list[dict]) -> list[dict]:
-    """Verify that required env vars are handled with proper error responses."""
+    """Verify that required env vars are handled with proper error responses.
+
+    Raises `UnreadableScanTarget` like the credential scan does; the same substitution — an
+    unreadable file looking like a clean one — was here too (#2940).
+    """
     results = []
-    try:
-        content = filepath.read_text(encoding="utf-8", errors="replace")
-    except Exception:
-        return results
+    content = _read_for_scan(filepath)
 
     for check in checks:
         var_name = check["var"]
@@ -214,8 +246,13 @@ def main():
     print("\n📋 Phase 1: Hardcoded secret scan")
     print("-" * 40)
     all_hits = []
+    unreadable = []
     for source_file in secret_scan_files():
-        hits = scan_credential_patterns(source_file)
+        try:
+            hits = scan_credential_patterns(source_file)
+        except UnreadableScanTarget as exc:
+            unreadable.append(exc)
+            continue
         all_hits.extend(hits)
 
     if all_hits:
@@ -228,8 +265,19 @@ def main():
             hit_kind = str(hit.get("type", ""))
             print("  ❌ {}:{} — {}".format(file_path, line_no, hit_kind))
             errors += 1
-    else:
+    elif not unreadable:
         print("  ✅ No hardcoded secrets found in worker source code")
+
+    # An unscanned file is not a clean file. This is an error, not a warning: the whole point of
+    # the gate is that the files it names were read, and "I could not read it" is the opposite of
+    # a finding — it is the absence of the scan itself. Counted into `errors` so the exit code is
+    # non-zero, because a red here is actionable (fix the permissions) and a warning is not.
+    if unreadable:
+        print(f"  ❌ {len(unreadable)} scan target(s) could not be read — "
+              f"these were NOT scanned:")
+        for exc in unreadable:
+            print("     ⚠️  {} — {}".format(exc.path, exc.cause))
+        errors += len(unreadable)
 
     # Phase 2: Check known env var handling
     print("\n📋 Phase 2: Env var missing-scenario checks")
@@ -241,7 +289,15 @@ def main():
             warnings += 1
             continue
 
-        results = check_env_var_handling(filepath, checks)
+        try:
+            results = check_env_var_handling(filepath, checks)
+        except UnreadableScanTarget as exc:
+            # Same rule as phase 1: not being able to read it is not a pass. Counted as an error
+            # because a warning is not actionable here — a required env-var check that never ran
+            # is indistinguishable from one that passed until the file is readable again.
+            print(f"  ❌ {rel_path} could not be read — env var handling NOT checked: {exc.cause}")
+            errors += 1
+            continue
         for r in results:
             status_icon = "✅" if r["verdict"] == "OK" else "⚠️"
             # Security audit tool: logging env var handling metadata is intentional

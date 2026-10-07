@@ -21,11 +21,15 @@ import sys
 import tempfile
 from pathlib import Path
 
+import pytest
+
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))
 
+from scripts import check_worker_secrets as scan_module  # noqa: E402
 from scripts.check_worker_secrets import (  # noqa: E402
     SCAN_TARGETS,
+    UnreadableScanTarget,
     scan_credential_patterns,
     secret_scan_files,
 )
@@ -207,3 +211,97 @@ def test_the_real_tree_is_clean():
         "the widened scan reads files it did not read before, and something there is flagged: "
         + "; ".join(f"{h.get('file')}:{h.get('line')} {h.get('type')}" for h in hits)
     )
+
+
+# ── a file the scan could not read is not a file with nothing in it (#2940) ─────────────────────
+
+def test_a_directory_named_like_a_source_is_not_reported_as_clean(tmp_path):
+    """`rglob` really does hand the scanner directories whose name ends in `.js`.
+
+    Checked rather than assumed: on a temporary tree, `rglob("*.js")` yields a subdirectory named
+    `weird.js`. So this is a shape the scanner meets in production, not a contrived one.
+    """
+    workers = tmp_path / "workers"
+    workers.mkdir()
+    impostor = workers / "looks_like_source.js"
+    impostor.mkdir()
+
+    assert impostor in set(secret_scan_files(tmp_path)), (
+        "the collector no longer yields this shape, so this test would pass for the wrong reason"
+    )
+    with pytest.raises(UnreadableScanTarget):
+        scan_credential_patterns(impostor)
+
+
+def test_a_dangling_symlink_is_not_reported_as_clean(tmp_path):
+    """The other shape `rglob` yields, and the one that does not depend on file permissions.
+
+    The case that opened #2940 was a `chmod 000` file, but that one cannot be exercised as root —
+    root reads it, the scan succeeds, and the assertion would pass without testing anything. A
+    broken symlink raises for every uid, so this covers the same handler without that hole.
+    """
+    workers = tmp_path / "workers"
+    workers.mkdir()
+    dangling = workers / "dangling.js"
+    dangling.symlink_to(workers / "gone.js")
+
+    assert dangling in set(secret_scan_files(tmp_path))
+    with pytest.raises(UnreadableScanTarget):
+        scan_credential_patterns(dangling)
+
+
+def test_a_chmod_000_probe_is_not_used_because_it_cannot_fail_reliably():
+    """The report that opened #2940 used a `chmod 000` file. It is not asserted here, and the
+    reason is worth keeping.
+
+    There are two ways that probe tests nothing, and this repository sits on both:
+
+    * as root the read succeeds anyway — permission bits are advisory;
+    * on a Windows/DrvFs mount (this checkout is `/mnt/c`) they are ignored outright, so `chmod
+      000` leaves the file readable.
+
+    Measured here: after `probe.chmod(0o000)` the scan still returned its finding, so the probe
+    would have gone green while proving nothing. The two tests above cover the same
+    `except OSError` handler with shapes that fail to read on every uid and every filesystem — a
+    directory, and a broken symlink.
+    """
+
+
+def test_the_audit_refuses_to_certify_a_tree_it_could_not_read(tmp_path, monkeypatch, capsys):
+    """End to end: the exit code is non-zero and the clean bill of health is withheld.
+
+    Both halves matter. A non-zero exit with the success line still printed teaches a reader that
+    the line is decorative; the line is the gate's actual claim, and it must not survive a scan
+    that did not happen.
+    """
+    workers = tmp_path / "workers"
+    workers.mkdir()
+    (workers / "readable.js").write_text("const answer = 42;\n", encoding="utf-8")
+    (workers / "unreadable.js").mkdir()
+
+    monkeypatch.setattr(scan_module, "REPO", tmp_path)
+    exit_code = scan_module.main()
+    out = capsys.readouterr().out
+
+    assert exit_code != 0, f"an unreadable scan target left the audit green:\n{out}"
+    assert "No hardcoded secrets found" not in out, (
+        "it still certified a tree containing a file it never read:\n" + out
+    )
+    assert "unreadable.js" in out, f"the unreadable path is not named, so it cannot be fixed:\n{out}"
+
+
+def test_a_readable_clean_tree_still_receives_its_clean_bill_of_health(
+    tmp_path, monkeypatch, capsys
+):
+    """The other direction. Without this the new rule could be satisfied by never passing, which is
+    the same failure wearing a green hat."""
+    workers = tmp_path / "workers"
+    workers.mkdir()
+    (workers / "readable.js").write_text("const answer = 42;\n", encoding="utf-8")
+
+    monkeypatch.setattr(scan_module, "REPO", tmp_path)
+    exit_code = scan_module.main()
+    out = capsys.readouterr().out
+
+    assert exit_code == 0, out
+    assert "No hardcoded secrets found" in out, out
