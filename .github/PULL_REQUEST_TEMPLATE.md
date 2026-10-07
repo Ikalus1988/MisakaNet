@@ -1,34 +1,24 @@
-## Summary
+## Description
 
-<!-- What does this PR do? One sentence is fine. -->
+<!-- Provide a brief description of the changes -->
 
 ## Type of Change
 
-- [ ] 📚 New lesson submission
-- [ ] 🐛 Bug fix
-- [ ] ✨ New feature
-- [ ] 📝 Documentation update
-- [ ] 🧪 Test improvement
-- [ ] Other (please describe)
-
-## Lessons Added (if applicable)
-
-<!-- List lesson filenames if adding new lessons -->
+<!-- Mark relevant items -->
+- [ ] Bug fix (non-breaking change which fixes an issue)
+- [ ] New feature (non-breaking change which adds functionality)
+- [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
+- [ ] Documentation update
 
 ## Checklist
 
-- [ ] My commit has `Signed-off-by:` (DCO required)
-- [ ] I have tested that the changes work correctly
-- [ ] I have NOT modified generated files (data/lessons.json, docs/data/*, feeds) — maintainer will regenerate after merge
+- [ ] I have read the CONTRIBUTING guidelines
+- [ ] My code follows the style of this project
+- [ ] I have added tests (if applicable)
+- [ ] I have updated documentation (if applicable)
 
-## Before submitting — check related lessons
+## Related Issues
 
-<!-- If your PR fixes a known issue, check if a lesson already covers it: -->
-
-- [DCO sign-off fix](https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/core/dco-auto-fix-workflow.md)
-- [Secret scan / token fix](https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/core/codeql-alert-dismissal-false-positive.md)
-- [pip install timeout/SSL](https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/pip-install-timeout-ssl.md)
-- [GitHub API 401](https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/core/github-401-credential-lookup.md)
-- [🔍 Search all lessons](https://ikalus1988.github.io/MisakaNet/search/)
-
-<!-- Don't worry about perfection. Small fixes are welcome too. -->
+<!-- Link any related issues here -->
+Fixes #
+<<<ENDFILE<<<

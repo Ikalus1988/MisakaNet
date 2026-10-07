@@ -1,0 +1,32 @@
+name: Anti-Spam Cleanup
+
+on:
+  schedule:
+    # Run every 6 hours to catch new spam
+    - cron: '0 */6 * * *'
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  cleanup:
+    name: Anti-Spam Cleanup
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run anti-spam bot
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python anti_spam_bot.py
+<<<ENDFILE<<<
