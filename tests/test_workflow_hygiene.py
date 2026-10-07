@@ -25,6 +25,8 @@ from pathlib import Path
 
 import pytest
 
+from posix_shell import require_posix_shell
+
 yaml = pytest.importorskip("yaml", reason="PyYAML parses the workflow")
 
 REPO = Path(__file__).resolve().parent.parent
@@ -76,11 +78,23 @@ def _run_pinning_check(workflow_text: str, tmp_path: Path) -> tuple[int, str]:
     end = script.index("# 2. Overly broad permissions")
     loop = script[start:end]
     target = tmp_path / "wf.yml"
-    target.write_text(workflow_text, encoding="utf-8")
-    body = loop.replace('.github/workflows/*.yml .github/workflows/*.yaml', str(target))
+    target.write_text(workflow_text, encoding="utf-8", newline="\n")
+    body = loop.replace('.github/workflows/*.yml .github/workflows/*.yaml',
+                        # Forward slashes: this string is spliced into a shell command, and bash
+                        # reads a backslash in a Windows path as an escape.
+                        str(target).replace("\\", "/"))
     runner = tmp_path / "run.sh"
-    runner.write_text("set -u\n" + body, encoding="utf-8")
-    proc = subprocess.run(["bash", str(runner)], capture_output=True, text=True, timeout=60)
+    # `newline="\n"` makes the bytes the same on every platform. It is **not** a fix for a
+    # failure observed here: `write_text` does emit CRLF on Windows, and a CRLF script does fail
+    # on a Linux bash (`set: -: invalid option`), which is what this comment originally claimed.
+    # But nine other call sites in this suite write their `.sh` exactly that way and pass on
+    # `windows-latest`, including ones asserting the script exited 0 — so under Git Bash the
+    # prediction does not hold, and the leg this file had red for a different reason entirely
+    # (see `posix_shell` below). Pinning the newline is hygiene; do not read it as evidence.
+    runner.write_text("set -u\n" + body, encoding="utf-8", newline="\n")
+    shell = require_posix_shell()
+    proc = subprocess.run([shell, str(runner)], capture_output=True, text=True,
+                          encoding="utf-8", errors="replace", timeout=60)
     return proc.returncode, proc.stdout + proc.stderr
 
 
