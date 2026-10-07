@@ -83,7 +83,7 @@ runs:
 
           # Run the command and preserve its output for downstream classification.
           echo "Command: $RETRY_COMMAND" | tee -a "$LOG_FILE"
-          $SHELL_CMD -c "$RETRY_COMMAND" 2>&1 | tee -a "$LOG_FILE"
+          "$SHELL_CMD" -c "$RETRY_COMMAND" 2>&1 | tee -a "$LOG_FILE"
           EXIT_CODE=${PIPESTATUS[0]}
           FINAL_CODE=$EXIT_CODE
 

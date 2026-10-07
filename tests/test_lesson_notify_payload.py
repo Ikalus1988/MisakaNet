@@ -35,6 +35,7 @@ import os
 import shutil
 import socket
 import subprocess
+import sys
 import tempfile
 import threading
 from pathlib import Path
@@ -49,6 +50,17 @@ REPO = Path(__file__).resolve().parent.parent
 WORKFLOW = REPO / ".github" / "workflows" / "lesson-notify.yml"
 
 #: The two execution tests below need `jq` to build the payload. The text assertions do not.
+#: `lesson-notify.yml`'s job declares `runs-on: ubuntu-latest`, so the Feishu card is never
+#: assembled on Windows. Measured there: Git Bash does not round-trip the non-ASCII literals in
+#: the card, and the test reported `assert '?? ? Lesson ??' == '📘 新 Lesson 贡献'` — a red that
+#: says nothing about the workflow. The two text assertions below are platform-independent and
+#: still run everywhere.
+ubuntu_only = pytest.mark.skipif(
+    sys.platform == "win32",
+    reason="lesson-notify.yml declares `runs-on: ubuntu-latest`; Git Bash on windows-latest does "
+           "not round-trip the non-ASCII literals in the card",
+)
+
 needs_jq = pytest.mark.skipif(
     shutil.which("jq") is None,
     reason="jq is not on PATH here, so the step's payload cannot be built or read; "
@@ -157,6 +169,7 @@ def stub():
 # ── The payload has to survive the title it is given ───────────────────────────────────────────────
 
 @needs_jq
+@ubuntu_only
 def test_a_title_containing_a_double_quote_still_produces_valid_json(stub):
     code, bodies = post(QUOTED_TITLE)
     assert bodies, "the stub received nothing — the step never posted"
@@ -170,6 +183,7 @@ def test_a_title_containing_a_double_quote_still_produces_valid_json(stub):
 
 
 @needs_jq
+@ubuntu_only
 def test_a_title_containing_a_backslash_still_produces_valid_json(stub):
     code, bodies = post(BACKSLASH_TITLE)
     assert bodies, "the stub received nothing — the step never posted"
@@ -181,6 +195,7 @@ def test_a_title_containing_a_backslash_still_produces_valid_json(stub):
 
 
 @needs_jq
+@ubuntu_only
 def test_the_plain_title_still_works(stub):
     """The regression guard for the regression guard: `jq` must not have changed the happy path."""
     code, bodies = post(PLAIN_TITLE)
@@ -194,6 +209,7 @@ def test_the_plain_title_still_works(stub):
 
 
 @needs_jq
+@ubuntu_only
 def test_a_multi_line_body_is_summarised_into_one_line(stub):
     code, bodies = post(PLAIN_TITLE, body="one\ntwo\nthree\nfour\nfive\nsix")
     assert code == 0
@@ -218,6 +234,7 @@ def test_the_step_uses_curl_fail():
         "notification nobody hears about.")
 
 
+@ubuntu_only
 def test_a_rejected_payload_would_be_visible(tmp_path):
     """The other half, demonstrated rather than asserted: point the step at a receiver that always
     answers 400, and `curl --fail` must turn that into a non-zero exit.

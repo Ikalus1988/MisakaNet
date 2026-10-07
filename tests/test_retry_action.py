@@ -32,6 +32,7 @@ from __future__ import annotations
 import os
 import re
 import subprocess
+import sys
 import tempfile
 from pathlib import Path
 
@@ -40,6 +41,18 @@ import pytest
 from posix_shell import require_posix_shell
 
 yaml = pytest.importorskip("yaml", reason="PyYAML parses the workflow")
+
+#: Both workflows that use this action declare `runs-on: ubuntu-latest`, and the action's two
+#: callers are `ubuntu-latest` jobs. Measured on `windows-latest` before this marker existed: the
+#: step ran under Git Bash and every script that carried a non-ASCII literal came back mangled —
+#: `assert '?? ? Lesson ??' == '📘 新 Lesson 贡献'` — because the runner's codepage is not UTF-8.
+#: That is a property of the Windows image, not of the action, and these tests would be asserting
+#: a platform the workflows never run on. A skip that says so beats a green that means nothing.
+ubuntu_only = pytest.mark.skipif(
+    sys.platform == "win32",
+    reason="the workflows under test declare `runs-on: ubuntu-latest`; Git Bash on windows-latest "
+           "does not round-trip the non-ASCII literals these scripts contain",
+)
 
 REPO = Path(__file__).resolve().parent.parent
 ACTION = REPO / ".github" / "actions" / "retry" / "action.yml"
@@ -137,6 +150,7 @@ ONE_ATTEMPT = {"max_attempts": 1, "backoff": "fixed", "backoff_base_seconds": 0}
 
 # ── The class: a script with quotes has to survive ─────────────────────────────────────────────────
 
+@ubuntu_only
 def test_a_script_containing_double_quotes_runs():
     """The minimal shape: two double quotes around a variable, on one line.
 
@@ -151,6 +165,7 @@ def test_a_script_containing_double_quotes_runs():
         f"the step ran something other than the script it was given:\n{proc.stdout}")
 
 
+@ubuntu_only
 def test_a_multi_line_script_containing_double_quotes_runs():
     """The shape both real callers use. Under the old inlining this was a hard syntax error."""
     script = (
@@ -167,6 +182,7 @@ def test_a_multi_line_script_containing_double_quotes_runs():
     assert "matched" in proc.stdout, proc.stdout
 
 
+@ubuntu_only
 def test_a_script_containing_a_command_substitution_is_not_expanded_by_the_outer_shell():
     """`$(…)` in the caller's script is the caller's business, not the action's.
 
@@ -182,6 +198,7 @@ def test_a_script_containing_a_command_substitution_is_not_expanded_by_the_outer
 
 # ── The two real callers ───────────────────────────────────────────────────────────────────────────
 
+@ubuntu_only
 def test_the_real_lesson_notify_step_runs_through_the_action():
     """`lesson-notify.yml` builds a Feishu card; the script is quotes from top to bottom.
 
@@ -206,6 +223,7 @@ def test_the_real_lesson_notify_step_runs_through_the_action():
             f"{label} never reached its own first branch:\n{proc.stdout}")
 
 
+@ubuntu_only
 def test_both_real_cite_lesson_steps_survive_the_transformation():
     """`cite-lesson.yml` passes a python heredoc and two `git config` lines with quoted values.
 
@@ -233,6 +251,7 @@ def test_both_real_cite_lesson_steps_survive_the_transformation():
 
 # ── The retry behaviour itself, which the rewrite had to preserve ───────────────────────────────────
 
+@ubuntu_only
 def test_a_failing_script_is_retried_the_configured_number_of_times():
     script = 'COUNT_FILE="$GITHUB_WORKSPACE/attempts"\necho x >> "$COUNT_FILE"\nexit 3\n'
     with tempfile.TemporaryDirectory() as tmp:
@@ -243,6 +262,7 @@ def test_a_failing_script_is_retried_the_configured_number_of_times():
     assert "Max attempts reached" in proc.stdout, proc.stdout
 
 
+@ubuntu_only
 def test_a_succeeding_script_is_not_retried():
     script = 'COUNT_FILE="$GITHUB_WORKSPACE/attempts"\necho x >> "$COUNT_FILE"\nexit 0\n'
     with tempfile.TemporaryDirectory() as tmp:
@@ -253,6 +273,7 @@ def test_a_succeeding_script_is_not_retried():
     assert "Success on attempt 1" in proc.stdout, proc.stdout
 
 
+@ubuntu_only
 def test_an_unlisted_exit_code_stops_immediately():
     """`retry_on_exit_code: "1"` is what `cite-lesson.yml` sets; a `git push` failure that is not
     code 1 should not burn the remaining attempts."""
@@ -266,6 +287,7 @@ def test_an_unlisted_exit_code_stops_immediately():
     assert "not in retry list" in proc.stdout, proc.stdout
 
 
+@ubuntu_only
 def test_a_listed_exit_code_is_retried():
     script = 'COUNT_FILE="$GITHUB_WORKSPACE/attempts"\necho x >> "$COUNT_FILE"\nexit 1\n'
     with tempfile.TemporaryDirectory() as tmp:
@@ -276,6 +298,7 @@ def test_a_listed_exit_code_is_retried():
     assert len(attempts) == 2, f"exit 1 is in the retry list, so both attempts should run: {len(attempts)}"
 
 
+@ubuntu_only
 def test_the_output_file_records_the_attempt_count():
     script = "exit 0\n"
     with tempfile.TemporaryDirectory() as tmp:
