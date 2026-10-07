@@ -227,10 +227,27 @@ COMMANDS = {
 
 
 def main():
-    if len(sys.argv) < 2 or sys.argv[1] not in COMMANDS:
+    # The two ways to get here were indistinguishable, and both printed the same line.
+    #
+    # #2858 asked "what is the correct minimal call to smoke?" after getting exit 2 and a usage
+    # string. The usage string named every valid command and *none of them was wrong* — smoke
+    # takes no arguments and works from any working directory — so the only way to recover was to
+    # guess. The likeliest causes, reproduced 2026-10-07: no subcommand at all, or a case slip
+    # (`Smoke`). Both exit 2 with byte-identical output.
+    #
+    # So say which one happened, and echo back what was received. A diagnostic that cannot be
+    # acted on is the same defect shape as the checks in #2940: the thing failed, and the report
+    # did not carry the information needed to fix it.
+    received = sys.argv[1] if len(sys.argv) > 1 else None
+    if received is None or received not in COMMANDS:
         print(json.dumps({
-            "error": "usage: misakanet_cli.py <doctor|smoke|validate>",
-            "commands": list(COMMANDS.keys()),
+            "error": (
+                "no subcommand given — pass one of expected_one_of"
+                if received is None
+                else f"unknown subcommand {received!r} — matching is exact and case-sensitive"
+            ),
+            "received": received,
+            "expected_one_of": list(COMMANDS.keys()),
         }))
         sys.exit(2)
 
@@ -246,6 +263,11 @@ def main():
     elif overall in ("degraded", "fail"):
         sys.exit(1)
     else:
+        # Unreachable today: cmd_doctor returns healthy|degraded, cmd_smoke and cmd_validate return
+        # pass|fail — all from literal assignments, no variable can widen the set. Kept as a
+        # fail-closed default, and noted because adding a fourth command that returns anything else
+        # would land here silently and start emitting exit 2 that means neither "healthy" nor
+        # "you typed it wrong". There is a gate for that.
         sys.exit(2)
 
 
