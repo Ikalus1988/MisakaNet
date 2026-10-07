@@ -55,6 +55,7 @@ concurrency:
 jobs:
   auto-merge-lessons:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     # Not a gate. If this job fails, the pull request is simply not merged and the reason is
     # in the log; painting a red check on an unrelated PR (which is what the first version
     # did, via a 403 on `gh api user`) costs every contributor attention and teaches them to

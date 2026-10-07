@@ -23,6 +23,7 @@ jobs:
       !startsWith(github.head_ref, 'bot/') &&
       !contains(github.event.pull_request.labels.*.name, 'docs-only')
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       # The action moved in v1.9.x, and that is what the dependabot bump could not express.
       #

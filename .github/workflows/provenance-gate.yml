@@ -30,6 +30,7 @@ permissions:
 jobs:
   provenance:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     # The scheduled sweep is a report: it prints what rotted instead of failing the build.
     continue-on-error: ${{ github.event_name == 'schedule' }}
     steps:

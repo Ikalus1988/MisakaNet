@@ -21,7 +21,12 @@ jobs:
   analyze:
     name: Analyze (${{ matrix.language }})
     runs-on: ubuntu-latest
-    timeout-minutes: 360
+    # This was `360`, which is GitHub's default and therefore no bound at all — a hung analysis
+    # held its runner for six hours. There is no completed run of this job in the retrievable
+    # window to measure against, so 120 is a judgement rather than a derived number: it keeps the
+    # intent of not killing a slow security scan while cutting a hang at two hours instead of six.
+    # If an analysis is ever seen to need longer, raise it with the run that showed it.
+    timeout-minutes: 120
     strategy:
       fail-fast: false
       matrix:
