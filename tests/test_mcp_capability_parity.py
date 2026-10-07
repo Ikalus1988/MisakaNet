@@ -137,6 +137,14 @@ def _hosted_tool_definitions() -> dict[str, dict]:
             out.append(char)
             index += 1
             continue
+        # A `//` comment inside `MCP_TOOLS`. This pass was string-aware but not comment-aware, so
+        # a comment explaining a schema — the natural thing to add next to one — broke
+        # `json.loads` with an error pointing at the comment rather than at the schema. Comments
+        # are not JSON; drop them the way a JS parser would, and only outside strings.
+        if char == "/" and source[index + 1:index + 2] == "/":
+            newline = source.find("\n", index)
+            index = len(source) if newline == -1 else newline
+            continue
         if char == ",":  # JS allows a trailing comma; JSON does not
             if source[index + 1:].lstrip()[:1] in ("}", "]"):
                 index += 1
@@ -325,7 +333,7 @@ def test_the_local_server_can_route_a_me_events_call():
 
 
 def test_a_missing_reference_is_refused_without_a_network_call(monkeypatch):
-    """Mirrors the hosted schema (`minProperties: 1`) before spending a round-trip."""
+    """Mirrors the hosted schema (`oneOf`: at least one of the two) before spending a round-trip."""
     called = []
 
     def fail_if_called(*args, **kwargs):  # pragma: no cover - only runs on a regression

@@ -381,7 +381,19 @@ const MCP_TOOLS = [
         path: { type: "string", description: "Lesson path relative to the repository, e.g. lessons/core/auto-merge-ci-pipeline.md — must be a file under lessons/ ending in .md (other repository files are not readable through this tool). Either path or id is required." },
         id: { type: "string", description: "Lesson ID, usually the filename without .md, e.g. auto-merge-ci-pipeline. Either id or path is required." },
       },
-      minProperties: 1,
+      // "At least one of" written out, because `minProperties` is not in the keyword subset a
+      // conservative MCP client accepts (#2967). dsh 0.2.0-rc.2 validates tool schemas against
+      // {type, oneOf, properties, required, additionalProperties, items, enum, const} and, because
+      // its bundle sets failOnStartupError: false, one unrecognised keyword does not raise — it
+      // silently registers **zero tools** for the whole server. `anyOf` would say this more
+      // directly but is outside that subset; the three `oneOf` branches below cover exactly the
+      // three accepted argument shapes, including both-supplied, which `path` gives precedence.
+      // tests/test_mcp_schema_branches.py holds the subset.
+      oneOf: [
+        { required: ["path"] },
+        { required: ["id"] },
+        { required: ["path", "id"] },
+      ],
     },
     annotations: {
       readOnlyHint: true,
@@ -544,7 +556,14 @@ const MCP_TOOLS = [
         lesson_id: { type: "string", description: "Lesson ID (filename stem), e.g. dco-auto-fix-workflow. Either lesson_id or lesson_path is required." },
         lesson_path: { type: "string", description: "Optional full path, e.g. lessons/core/dco-auto-fix-workflow.md. Either lesson_id or lesson_path is required." },
       },
-      minProperties: 1,
+      // See the note on `misakanet_get_lesson` above: `minProperties` sits outside the keyword
+      // subset a conservative MCP client accepts, and an unrecognised keyword there costs the
+      // client every tool on the server (#2967).
+      oneOf: [
+        { required: ["lesson_id"] },
+        { required: ["lesson_path"] },
+        { required: ["lesson_id", "lesson_path"] },
+      ],
     },
     annotations: {
       readOnlyHint: true,

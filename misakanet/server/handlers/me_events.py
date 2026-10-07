@@ -35,7 +35,7 @@ _TOOL = "misakanet_me_events"
 def handle_me_events(args: dict) -> dict:
     """Proxy `misakanet_me_events` to the hosted endpoint.
 
-    Argument validation mirrors the worker's definition (`minProperties: 1`): at least one of
+    Argument validation mirrors the worker's definition (the `oneOf` branch set): at least one of
     `lesson_id` / `lesson_path`, the latter accepted because the endpoint derives the id from the
     path the same way. An empty reference is refused before spending a network round-trip — and the
     hosted server would answer the same error anyway.
