@@ -28,7 +28,7 @@ npm install                            # devDep: wrangler（部署 worker 用）
 | 路径 | 内容 |
 |---|---|
 | `workers/register-proxy-sw.js` | **主 worker**（`misakanet.org` 的 `/mcp`、`/api/*`、cron）；绝大多数线上行为在这里 |
-| `workers/**/*.test.mjs` | worker 的 `node:test` 测试（无框架依赖，直接 `node --test`）；**66** 个文件，含嵌套的 `workers/email-register/email-utils.test.mjs` |
+| `workers/**/*.test.mjs` | worker 的 `node:test` 测试（无框架依赖，直接 `node --test`）；文件数会随新增测试漂移，用 `ls workers/*.test.mjs workers/*/*.test.mjs \| wc -l` 自己数，含嵌套的 `workers/email-register/email-utils.test.mjs` |
 | `workers/email-register/` | 邮件 intake worker（独立部署） |
 | `scripts/` | 维护/分析脚本（`lesson_gate.py`、`injection_scan.py`、`cf_mcp_auth.py`、`doctor.py` …） |
 | `lessons/{core,contrib,en,...}/` | 课程语料（本仓的"产品"） |
@@ -102,6 +102,10 @@ python3 scripts/bench_production_recall.py --json     # 机器可读
 
 ### PR 上的硬阻断门禁
 
+> 本表说的是「失败会不会拦合并」，不是「会不会跑」。只有 ruleset `23826057` 里的那四项是硬阻断
+> （DCO / `test (ubuntu-latest, 3.11)` / `gate` / `audit`，用 `gh api repos/Ikalus1988/MisakaNet/rulesets/23826057`
+> 自己读，不要信本文档）。`docs/ci-gates.md` 的 *Soft Gates* 表列了完整清单和每一条为什么软。
+
 | 门禁 | 何时跑 | 失败原因示例 |
 |---|---|---|
 | **DCO** | 所有 PR | 提交缺 `Signed-off-by:`（用 `git commit --signoff`） |
@@ -109,9 +113,9 @@ python3 scripts/bench_production_recall.py --json     # 机器可读
 | **audit-shape**（shape guard） | 所有 PR | 在源码/测试里粘贴 diff 或 markdown；改动越出标题声称的范围 |
 | **lesson-gate** | 变更 `lessons/**` | frontmatter 缺字段、标题重复、domain 不在白名单、正文 <100 字符 |
 | **lesson-security** | 变更 `lessons/**` | 代码块外的危险命令；注入/污染扫描 high 级命中 |
-| **tests** | 所有 PR | ubuntu/macos/windows × 3.11–3.13 任一失败 |
+| **tests** | 所有 PR | ubuntu/macos/windows × 3.11–3.13 任一失败——**但只有 `test (ubuntu-latest, 3.11)` 是硬阻断**，其余腿红不拦合并 |
 | **unit / e2e**（`misakanet-setup-ci.yml`） | 变更 `packages/misakanet-setup/**`、`workers/misakanet-setup.test.mjs`、`integrations/agent-autostart/**` | 安装器单测或打包产物 e2e 任一失败；某个 `--inject` 没能让对应检查变红 |
-| **CodeQL** | push main + PR + 每周 | 安全查询命中 |
+| **CodeQL** | push main + PR + 每周 | 安全查询命中——**不阻断合并**（soft gate）|
 | `pr-agent` / `pr-genius` | 所有 PR | **非阻断**（评审参考） |
 
 ### 三类改动的标准步骤

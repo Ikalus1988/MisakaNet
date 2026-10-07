@@ -33,7 +33,7 @@ gates naming scope they did not have):
   54,527 LOC of non-test Python). Measuring `scripts/` properly is a separate investment decision;
   until then the debt is recorded here and in `pyproject.toml`, and the threshold is deliberately
   left alone.
-* **The worker suite is `node --test 'workers/**/*.test.mjs'` — 66 files, not 65.** The unquoted
+* **The worker suite is `node --test 'workers/**/*.test.mjs'`, quoted.** The file count is deliberately absent (it drifted 66 → 75 between 2026-10-02 and 2026-10-07 and nothing warns when it does again — see `tests/test_ci_runs_what_it_claims.py`, which pins the *nested file exists* instead); count it yourself with `ls workers/*.test.mjs workers/*/*.test.mjs | wc -l`.
   `workers/*.test.mjs` did not reach `workers/email-register/email-utils.test.mjs` (the nested
   email worker's test, shipped by `make deploy-email`), so that file ran in no workflow at all. The
   quotes matter: unquoted, the shell expands the glob to the nested files only.
@@ -46,7 +46,7 @@ Three notes that have each cost someone an afternoon:
 * **`audit` runs pytest too** (with a coverage floor), so the suite *is* gated even though the
   `Run Test Suite` step inside `pr-checks.yml` is `continue-on-error`.
 * **The node suite is behind the required `audit` verdict — it was not, until 2026-10-02.**
-  `node --test 'workers/**/*.test.mjs'` (66 `.test.mjs` files; 634 tests — 633 pass, 1 skipped — measured
+  `node --test 'workers/**/*.test.mjs'` (634 tests — 633 pass, 1 skipped — measured
   2026-10-02) is the only automated verification of `workers/register-proxy-sw.js`, i.e. of the MCP
   endpoint, search and the public API. It runs in the **required** `audit` job (`pr-checks.yml`) and in
   `mcp-stress.yml`, which is not required. The `audit` step carried `continue-on-error: true` and no
