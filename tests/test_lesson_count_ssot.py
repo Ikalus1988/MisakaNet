@@ -356,8 +356,12 @@ _DE_NUMBERED_SURFACES = (
     "docs/.well-known/glama.json",
 )
 
-# `(?<![\w%])` keeps URL-encoded spaces out of it: `promotional/search%20lesson.gif` in the READMEs reads
-# as "20lesson" to a naive `\b\d+…lessons?\b` and would fail this test on an image path.
+# `(?<![\w%])` keeps URL-encoded spaces out of it: a path like `promotional/search%20lesson.gif`
+# reads as "20lesson" to a naive `\b\d+…lessons?\b` and would fail this test on an image path. The
+# file that used to carry that name is gone (removed 2026-10-07 — it was a 6 MB recording whose
+# screen showed `235 searchable lessons` while the corpus held 469, which is precisely the claim a
+# regex cannot reach; see tests/test_readme_asset_budget.py), but the rule stays: any asset path
+# with an encoded space must not be mistaken for a corpus count.
 _CORPUS_COUNT_CLAIM = re.compile(
     r"(?<![\w%])\d{2,5}\+?\s*(?:indexed\s+|verified\s+)?"
     r"(?:failure[-\s]?recovery\s+|failure\s+|debugging\s+)?lessons?\b"

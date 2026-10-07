@@ -346,10 +346,6 @@ jobs:
 
 → [inputs and outputs](docs/agents/external-usage.md) · [why `actions: read` is not optional](docs/agents/external-usage.md)
 
-### See it in 8 seconds
-
-![Search lesson demo](promotional/search%20lesson.gif)
-
 ## Documentation
 
 **Choose your journey** — MisakaNet is useful in different ways depending on what you are trying to do:
