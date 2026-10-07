@@ -13,6 +13,11 @@ permissions:
 
 jobs:
   pr-agent:
+    # The slash commands below cost a paid model call, and the job carries `pull-requests: write`
+    # plus `issues: write`. Unbound, that is an unbounded spend and a six-hour runner hold on a
+    # comment any account can post — the same exposure `fix-dco.yml` closes. The association gate
+    # goes on the `issue_comment` branch only: on `pull_request` there is no comment author, and
+    # the event already carries its own author (see `pr-welcome.yml`).
     if: |
       (github.event_name == 'pull_request' &&
        !github.event.pull_request.draft &&
@@ -23,8 +28,11 @@ jobs:
        (contains(github.event.comment.body, '/review') ||
         contains(github.event.comment.body, '/describe') ||
         contains(github.event.comment.body, '/improve') ||
-        contains(github.event.comment.body, '/ask')))
+        contains(github.event.comment.body, '/ask')) &&
+       contains(fromJSON('["MEMBER", "OWNER", "COLLABORATOR"]'),
+                github.event.comment.author_association))
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: PR-Agent Review
         uses: Codium-ai/pr-agent@1d01f24f455bb879c1d9c557ad7de3d72dcc7975  # v0.46.0
