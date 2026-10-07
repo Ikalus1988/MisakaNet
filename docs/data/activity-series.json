@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-07T06:01:59Z",
+  "generated_at": "2026-10-07T06:11:08Z",
   "series": [
     {
       "calls": {
@@ -63,13 +63,13 @@
     },
     {
       "calls": {
-        "agent": 14,
+        "agent": 16,
         "crawler": 12,
-        "mcp": 2689,
-        "pageview": 17
+        "mcp": 2923,
+        "pageview": 21
       },
       "date": "2026-10-07",
-      "total": 2732
+      "total": 2972
     }
   ],
   "source": "https://misakanet.org/api/activity/history",
