@@ -268,6 +268,66 @@ def test_a_host_without_plugin_support_does_not_fail_activation():
     assert "THREW" not in out, out
 
 
+def _run_apply_counting_warns() -> tuple[int, str, int]:
+    """`apply()` with a warn spy, returning (exit code, output, warn count).
+
+    Separate from `_run_apply` because this test's whole subject is *what the host was told*,
+    and the existing helper deliberately discards the ctx it builds.
+    """
+    script = _apply_script(
+        "{ logger: { warn: (m) => { globalThis.__warns = (globalThis.__warns || 0) + 1; console.log('WARN:' + m); } }, plugin: () => {} }",
+        "{}",
+    )
+    script += "console.log('WARNCOUNT:' + (globalThis.__warns || 0));\n"
+    done = subprocess.run([NODE, "--input-type=module", "-e", script],
+                          capture_output=True, text=True, timeout=120)
+    out = (done.stdout + done.stderr).strip()
+    count = 0
+    for line in out.splitlines():
+        if line.startswith("WARNCOUNT:"):
+            count = int(line.split(":", 1)[1])
+    return done.returncode, out, count
+
+
+def test_an_unresolvable_client_is_reported_not_silently_swallowed():
+    """A profile that *should* have MCP tools, and does not, has to say so in the host log.
+
+    `apply()` guards three failure paths. Two of them already report through
+    `ctx.logger.warn` (a host without `plugin()`, and the outer catch). The third — the
+    dynamic `import('@deepseek-ai/dsh-mcp-client')` failing, which is the *expected* path on a
+    skill-only npm install — used to `return` with nothing logged at all.
+
+    Silence is the wrong default here even though "absence is not failure" is the right rule
+    for **boot**: the browser half (`lib/client.js`) mounts regardless, so the outcome is a
+    rendered MisakaNet panel whose tools never reach the agent. Measured 2026-10-08 with the
+    client genuinely unresolvable: `apply()` returned and `logger.warn` was called **0 times**.
+
+    That is what intake #2759 reported as "the sidebar is decorative because MCP tools never
+    reach the agent", with zero network requests to misakanet.org and nothing in the host log
+    to distinguish an intentionally absent plugin from a broken one.
+
+    Not throwing is still correct — a failed activation can take the whole `dsh web` host
+    down. This pins only that the silence is *broken*, not that the mount is.
+    """
+    if shutil.which(NODE) is None:
+        pytest.skip("node is what runs the host half")
+    # Skip where the client IS resolvable: then apply() succeeds and this path is not taken.
+    probe = subprocess.run(
+        [NODE, "--input-type=module", "-e",
+         "try { await import('@deepseek-ai/dsh-mcp-client'); console.log('RESOLVED'); } catch { console.log('ABSENT'); }"],
+        capture_output=True, text=True, timeout=120)
+    if "ABSENT" not in probe.stdout:
+        pytest.skip("this environment resolves @deepseek-ai/dsh-mcp-client, so the path is not taken")
+
+    code, out, warns = _run_apply_counting_warns()
+    assert code == 0, out
+    assert "RETURNED" in out, f"a missing client must not take the host down: {out}"
+    assert warns > 0, (
+        "an unresolvable @deepseek-ai/dsh-mcp-client returned with nothing logged — the panel "
+        f"still mounts, so the operator has no way to tell 'not installed' from 'broken': {out}"
+    )
+
+
 def test_the_opt_in_still_gets_its_error():
     """`failOnStartupError` is a real choice, and hardening must not silently delete it.
 

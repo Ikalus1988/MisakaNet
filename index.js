@@ -109,6 +109,19 @@ export async function apply(ctx, config = {}) {
       if (options.failOnStartupError) throw error;
       // Expected on npm skill-only installs: the skill (SKILL.md) is the payload,
       // and a missing client must not take the whole profile down with it.
+      //
+      // Returning quietly is right for **boot** and wrong for **diagnosis**. `lib/client.js`
+      // mounts the browser half either way, so the observable result is a rendered MisakaNet
+      // panel whose tools never reach the agent — intake #2759 reported exactly that ("the
+      // sidebar is decorative", zero requests to misakanet.org) with nothing in the host log
+      // to separate "this profile never installed the client" from "this profile is broken".
+      // The other two guarded paths already log; this one was the only silent branch, and it is
+      // the branch that runs most often. Measured 2026-10-08 with the client unresolvable:
+      // `apply()` returned and `logger.warn` was called 0 times.
+      ctx?.logger?.warn?.(
+        'misakanet: @deepseek-ai/dsh-mcp-client is not resolvable, so the MCP tools are not '
+        + `mounted (the skill still works): ${error?.message ?? error}`,
+      );
       return;
     }
 
