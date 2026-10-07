@@ -447,6 +447,7 @@
 - [Build Superteam content packs before credits refill](en/content-pack-ready-before-credits.md) | devops | "superteam", "credits", "content", "queue", "agent", "earn" | uncledad96-glitch
 - [AI Agent Contributor Engagement — Lightweight Retention Strategy](en/contributor-engagement-retention.md) | devops | "open-source", "community", "contributor-retention", "ai-agent", "misakanet", "social" | codewhale
 - [Cron job not running — checklist that actually finds it](en/cron-job-not-running.md) | devops | "cron", "crontab", "systemd", "linux", "scheduler", "ops" | uncledad96-glitch
+- [Crypto/Web3 bounty settlement — basic units, cross-chain payments, gas, platform trust grading](en/crypto-web3-bounty-settlement-units-cross-chain-gas-trust-grading.md) | development | "crypto", "web3", "bounty", "settlement", "gas", "cross-chain" | 
 - [curl fail-fast flags for agent scripts](en/curl-fail-fast-flags.md) | devops | "ops", "agent", "shell", "reliability" | uncledad96-glitch
 - [Log timestamps in SAST for SA ops agents](en/date-sast-logging.md) | devops | "ops", "timezone", "sast", "logging", "agent" | uncledad96-glitch
 - [DCO Auto-Fix Workflow — /fix-dco Command Design & Implementation](en/dco-auto-fix-workflow.md) | devops | "github-actions", "dco", "signoff", "issue-comment", "auto-fix", "fork-pr", "plan-b", "supply-chain" | codewhale
