@@ -1,9 +1,30 @@
 {
-  "generated_at": "2026-10-07T17:03:16.091417+00:00",
+  "generated_at": "2026-10-07T20:40:04.578223+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "docs(handoff): phase 4 — ten §3.1 closures, the delivery half proven in production, and seven bad judgment criteria",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3010",
+      "timestamp": "2026-10-07T17:29:22Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3013",
+      "timestamp": "2026-10-07T17:13:34Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore: auto-update lessons.json, public counts and generated pages",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3014",
+      "timestamp": "2026-10-07T17:10:55Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "fix(dsh): an unresolvable MCP client returned silently, leaving no way to tell absent from broken (#2759)",
@@ -16,27 +37,6 @@
       "title": "lesson: git diff --check misses removed-line whitespace, and -w hides string content (#2256)",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/3007",
       "timestamp": "2026-10-07T17:01:40Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "fix(lessons): three lessons answer their intakes but cite no issue, so no receipt is sent",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3003",
-      "timestamp": "2026-10-07T16:13:36Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "fix(sync): the dedup hash was computed over different bytes on each side, twice (#2983)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2987",
-      "timestamp": "2026-10-07T15:03:28Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "fix(ci): the lesson lint step discarded its own verdict, twice (#2940 §4)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2979",
-      "timestamp": "2026-10-07T15:03:14Z",
       "source": "github"
     },
     {
