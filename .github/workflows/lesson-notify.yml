@@ -24,23 +24,33 @@ jobs:
               exit 0
             fi
             SUMMARY=$(echo "$BODY" | head -5 | tr '\n' ' ' | cut -c1-200)
-            curl -s -X POST "$WEBHOOK" \
+            # `jq -n --arg` builds the payload rather than interpolating into a heredoc. The issue
+            # title and body are attacker-chosen text: a title carrying `"` or `\` produced JSON
+            # that Feishu rejects with 400, and `curl -s` without `--fail` still exited 0, so the
+            # notification was dropped and the job reported success. Measured against a stub
+            # receiver: plain title ACCEPTED/exit 0, quoted title REJECTED/exit 0, quoted title
+            # with `--fail` REJECTED/exit 22. Both halves are load-bearing — `--fail` alone makes
+            # the loss visible but still loses it.
+            PAYLOAD=$(jq -n \
+              --arg user "$USER" \
+              --arg title "$TITLE" \
+              --arg summary "$SUMMARY" \
+              --arg url "$URL" \
+              '{
+                msg_type: "interactive",
+                card: {
+                  header: {
+                    title: {tag: "plain_text", content: "📘 新 Lesson 贡献"},
+                    template: "blue"
+                  },
+                  elements: [
+                    {tag: "markdown", content: "**贡献者：** \($user)\n**标题：** \($title)\n**摘要：** \($summary)\n**链接：** [查看详情](\($url))"}
+                  ]
+                }
+              }')
+            curl -s --fail -X POST "$WEBHOOK" \
               -H "Content-Type: application/json" \
-              -d "$(cat <<PAYLOAD
-            {
-              "msg_type": "interactive",
-              "card": {
-                "header": {
-                  "title": {"tag": "plain_text", "content": "📘 新 Lesson 贡献"},
-                  "template": "blue"
-                },
-                "elements": [
-                  {"tag": "markdown", "content": "**贡献者：** $USER\n**标题：** $TITLE\n**摘要：** $SUMMARY\n**链接：** [查看详情]($URL)"}
-                ]
-              }
-            }
-            PAYLOAD
-            )"
+              -d "$PAYLOAD"
           max_attempts: 3
           backoff: exponential
           backoff_base_seconds: 10

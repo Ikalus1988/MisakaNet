@@ -37,13 +37,41 @@ runs:
     - name: Retry execution
       id: retry
       shell: bash
+      # `${{ … }}` is **textually** substituted into a `run:` body before bash parses it — the same
+      # mechanism that let a pull request execute commands on a runner (#2938). This action used to
+      # inline the caller's whole script:
+      #
+      #     $SHELL_CMD -c "${{ inputs.run }}"
+      #
+      # so a script containing a double quote closed the string it was inlined into. Measured, with
+      # the two callers in this repository as the examples:
+      #
+      #     bash -c "if [ -n "$FOO" ]; then
+      #       echo "value is $FOO"
+      #     fi"
+      #     -> syntax error: unexpected end of file   (exit 2)
+      #
+      # and a single-line script did not even fail — it ran the wrong command and exited 0. Both
+      # callers pass scripts full of quotes, so the action could not run either of them.
+      #
+      # Carrying the values through `env:` fixes the class rather than this one script: bash
+      # expands `"$RETRY_COMMAND"` as a single word and does not re-scan the result for quotes or
+      # command substitutions, so the caller's text arrives exactly as written. It is also the shape
+      # the injection fix settled on — see tests/test_workflow_script_injection.py.
+      env:
+        RETRY_COMMAND: ${{ inputs.run }}
+        RETRY_MAX_ATTEMPTS: ${{ inputs.max_attempts }}
+        RETRY_BACKOFF: ${{ inputs.backoff }}
+        RETRY_BASE_SECONDS: ${{ inputs.backoff_base_seconds }}
+        RETRY_CODES: ${{ inputs.retry_on_exit_code }}
+        SHELL_CMD: ${{ inputs.shell_override }}
       run: |
         set +e
-        MAX_ATTEMPTS="${{ inputs.max_attempts }}"
-        BACKOFF="${{ inputs.backoff }}"
-        BASE_SECONDS="${{ inputs.backoff_base_seconds }}"
-        RETRY_CODES="${{ inputs.retry_on_exit_code }}"
-        SHELL_CMD="${{ inputs.shell_override }}"
+        MAX_ATTEMPTS="$RETRY_MAX_ATTEMPTS"
+        BACKOFF="$RETRY_BACKOFF"
+        BASE_SECONDS="$RETRY_BASE_SECONDS"
+        RETRY_CODES="$RETRY_CODES"
+        SHELL_CMD="$SHELL_CMD"
         LOG_FILE="${GITHUB_WORKSPACE:-$PWD}/.retry-output.log"
         : > "$LOG_FILE"
         ATTEMPT=0
@@ -54,8 +82,8 @@ runs:
           echo "::group::Attempt $ATTEMPT/$MAX_ATTEMPTS"
 
           # Run the command and preserve its output for downstream classification.
-          echo "Command: ${{ inputs.run }}" | tee -a "$LOG_FILE"
-          $SHELL_CMD -c "${{ inputs.run }}" 2>&1 | tee -a "$LOG_FILE"
+          echo "Command: $RETRY_COMMAND" | tee -a "$LOG_FILE"
+          $SHELL_CMD -c "$RETRY_COMMAND" 2>&1 | tee -a "$LOG_FILE"
           EXIT_CODE=${PIPESTATUS[0]}
           FINAL_CODE=$EXIT_CODE
 
