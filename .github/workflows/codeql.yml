@@ -22,11 +22,12 @@ jobs:
     name: Analyze (${{ matrix.language }})
     runs-on: ubuntu-latest
     # This was `360`, which is GitHub's default and therefore no bound at all — a hung analysis
-    # held its runner for six hours. There is no completed run of this job in the retrievable
-    # window to measure against, so 120 is a judgement rather than a derived number: it keeps the
-    # intent of not killing a slow security scan while cutting a hang at two hours instead of six.
-    # If an analysis is ever seen to need longer, raise it with the run that showed it.
-    timeout-minutes: 120
+    # held its runner for six hours. This is now measured rather than judged: across 12 runs of
+    # each matrix language (2026-10-07) the longest analysis was 1.73 min for python and 1.47 min
+    # for javascript-typescript, medians 1.53 and 1.13. 30 keeps about seventeen times that, and is
+    # the same bound every previously-unbounded job in this repository was given. If a language is
+    # ever added that is slower to analyse, raise this with the run that showed it.
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:

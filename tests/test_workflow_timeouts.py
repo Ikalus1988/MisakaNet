@@ -64,11 +64,17 @@ OBSERVED_MAX_JOB_MINUTES = 7.5
 #: the job was cut at 15:00. That 15.2-minute figure is a hang the bound caught, not a duration
 #: the job needs, so it is not what the row records. Its two healthy runs are 3m15s and a review
 #: that completed 6.4 minutes in; the slowest of those is the number a bound must clear.
+#:
+#: `codeql.yml`'s `analyze` is a matrix, so its 24 samples are 12 runs of each of its two
+#: languages; the row records the slowest leg across both, because a matrix adds legs rather than
+#: lengthening them.
 OBSERVED_JOB_MINUTES = (
     ("dco-check.yml", "dco", 0.1, 29),
     ("mcp-stress.yml", "stress", 0.7, 30),
-    ("pr-agent-review.yml", "pr-agent", 6.4, 2),
+    ("nightly-mirror-consistency.yml", "check", 0.13, 12),
     ("benchmark-workers-ai.yml", "benchmark", 4.7, 16),
+    ("codeql.yml", "analyze", 1.73, 24),
+    ("pr-agent-review.yml", "pr-agent", 6.4, 2),
 )
 
 
@@ -124,11 +130,11 @@ def test_each_tight_bound_is_above_what_that_job_was_observed_to_need():
     repository-wide constant in for a per-job fact. So the comparison is made per job, against
     what that job was actually observed to take.
 
-    Only jobs with a completed run in the retrievable window can appear here. `codeql.yml`'s
-    `analyze` and `nightly-mirror-consistency.yml`'s `check` and `register.yml`'s `register` have
-    none, so they are not in the table and this rule says nothing about them — which is stated
-    rather than papered over, because a table entry invented to fill a gap is the same error as a
-    bound invented for a job nobody has seen run.
+    Only jobs with a completed run in the retrievable window can appear here. `register.yml`'s
+    `register` has none — its last 40 runs are all `skipped`, because it only does anything when
+    someone files a registration issue — so it is not in the table and this rule says nothing
+    about it. That is stated rather than papered over, because a table entry invented to fill a
+    gap is the same error as a bound invented for a job nobody has seen run.
     """
     at_risk = [
         f"{path}:{name} bound={job['timeout-minutes']} observed_max={observed} min (n={samples})"
