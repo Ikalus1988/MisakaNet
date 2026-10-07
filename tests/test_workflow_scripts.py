@@ -198,3 +198,49 @@ def test_missing_pyyaml_is_reported_instead_of_misread_as_w1():
     assert result.returncode == 2, result.stdout + result.stderr
     assert "PyYAML is required" in result.stderr
     assert "W1-yaml" not in result.stdout, "a missing dependency must not be reported as a finding"
+
+
+def test_a_path_that_resolves_to_nothing_is_not_reported_as_a_clean_check():
+    """#2940: an explicit path that matched no file used to fall through with nothing appended and
+    nothing said, so `check_workflow_scripts.py .github/workflows/does-not-exist.yml` printed
+    nothing and exited 0. A typo, a deleted file, or a wrong path prefix all produced a green
+    check that had opened nothing.
+
+    This is the sibling of `test_missing_pyyaml_is_reported_instead_of_misread_as_w1` above: a
+    dependency that cannot load must not look like repo-wide breakage, and a path that cannot be
+    opened must not look like a clean file.
+    """
+    result = subprocess.run(
+        [sys.executable, str(SCRIPT), ".github/workflows/does-not-exist.yml"],
+        capture_output=True, text=True, timeout=10,
+    )
+    assert result.returncode == 2, result.stdout + result.stderr
+    assert "no such file or directory" in result.stderr, result.stderr
+    assert "does-not-exist.yml" in result.stderr, result.stderr
+
+
+def test_an_empty_directory_is_also_refused():
+    """A directory that resolves but holds no workflow is the same absence, one step later."""
+    with tempfile.TemporaryDirectory() as tmp:
+        result = subprocess.run(
+            [sys.executable, str(SCRIPT), tmp], capture_output=True, text=True, timeout=10,
+        )
+    assert result.returncode == 2, result.stdout + result.stderr
+    assert "no workflow" in result.stderr, result.stderr
+
+
+def test_one_unresolvable_path_does_not_hide_the_ones_that_resolved():
+    """The refusal names every path that failed, and the exit code does not depend on how many."""
+    with tempfile.TemporaryDirectory() as tmp:
+        wf = Path(tmp) / "good.yml"
+        wf.write_text("name: test\non: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n"
+                      "    steps:\n      - run: echo hi\n", encoding="utf-8")
+        result = subprocess.run(
+            [sys.executable, str(SCRIPT), str(wf), ".github/workflows/nope.yml"],
+            capture_output=True, text=True, timeout=10,
+        )
+    assert result.returncode == 2, result.stdout + result.stderr
+    assert "nope.yml" in result.stderr
+    assert "good.yml" not in result.stderr, (
+        "a path that resolved should not be reported as a failure — it is not why this returned 2"
+    )
