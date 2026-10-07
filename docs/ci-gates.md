@@ -68,6 +68,7 @@ worth knowing before treating a green page as coverage.
 | **MCP Endpoint Stress Tests** | `mcp-stress.yml` | The worker suite, not in the required set — see the note above |
 | **CodeQL (python / javascript-typescript)** | GitHub default | Security queries; findings do not block |
 | **Agent Quality Score / Validate Lesson Schema** | `pr-checks.yml` | `continue-on-error: true` |
+| **Lesson Quality Score (the 0.5 threshold)** | `lesson-quality.yml` (`quality-check`) | Advisory **by decision**, and the job says so. The `lint-check` job in the same workflow *does* block — it could not before 2026-10-07, when `grep -n 'exit 1'` over the file returned nothing and the lint's own `--fail-on high` was discarded by both `\|\| true` and a job-level `continue-on-error` (#2940). The score half is left advisory because the threshold fails 5% of the corpus (3 of 60 sampled 2026-10-07, `scripts/quality_scorer.py --json`, lowest 0.46) and it scores the whole changed *file*, not the diff — so blocking it would reject unrelated edits to a pre-existing low-scoring lesson. Its result is reported in a PR comment. |
 | **pr-agent / pr-genius** | external | Review helpers |
 | **Workers Builds: misakanet-web** | Cloudflare bot | The site build; external, and noisy on bot PRs |
 

@@ -16,7 +16,6 @@ jobs:
   lint-check:
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    continue-on-error: true  # Non-blocking for now
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
@@ -29,19 +28,47 @@ jobs:
       - name: Run lesson lint
         id: lint
         run: |
-          python scripts/lesson_lint.py --lessons-dir lessons --fail-on high --json > lint-output.json 2>&1 || true
-          HIGH=$(python -c "import json; d=json.load(open('lint-output.json')); print(sum(1 for i in d if i.get('severity')=='high'))" 2>/dev/null || echo "0")
-          MEDIUM=$(python -c "import json; d=json.load(open('lint-output.json')); print(sum(1 for i in d if i.get('severity')=='medium'))" 2>/dev/null || echo "0")
-          LOW=$(python -c "import json; d=json.load(open('lint-output.json')); print(sum(1 for i in d if i.get('severity')=='low'))" 2>/dev/null || echo "0")
-          echo "high=$HIGH" >> $GITHUB_OUTPUT
-          echo "medium=$MEDIUM" >> $GITHUB_OUTPUT
-          echo "low=$LOW" >> $GITHUB_OUTPUT
-          {
-            echo "### Lesson Lint Report"
-            echo "High: $HIGH | Medium: $MEDIUM | Low: $LOW"
-            echo ""
-            echo "Run locally: \`python scripts/lesson_lint.py --lessons-dir lessons -v\`"
-          } >> "$GITHUB_STEP_SUMMARY"
+          # `2>&1` is gone on purpose. This file is JSON and the counts below parse it, so folding
+          # stderr into it corrupts the parse — and the old `|| echo "0"` on every count then
+          # turned that corruption into "High: 0": a lint that had crashed reported a clean corpus
+          # (#2940). The same shape as a credential scanner reporting "no secrets found" about a
+          # file it never opened (#2971).
+          #
+          # `|| lint_status=$?` instead of letting the shell abort, so the counts and the summary
+          # are still published when there is something to report. The failure is raised below.
+          lint_status=0
+          python scripts/lesson_lint.py --lessons-dir lessons --fail-on high --json > lint-output.json || lint_status=$?
+
+          # Deliberately unguarded: an unreadable count file is not a count of zero. This raises,
+          # and under `bash -e` that fails the step — which is the entire point of this change.
+          python - lint-output.json >> "$GITHUB_OUTPUT" <<'PY'
+          import json
+          import os
+          import pathlib
+          import sys
+
+          issues = json.loads(pathlib.Path(sys.argv[1]).read_text(encoding="utf-8"))
+          counts = {
+              name: sum(1 for issue in issues if issue.get("severity") == name)
+              for name in ("high", "medium", "low")
+          }
+          for name, value in counts.items():
+              print(f"{name}={value}")
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as summary:
+              summary.write("### Lesson Lint Report\n")
+              summary.write(" | ".join(f"{k.capitalize()}: {v}" for k, v in counts.items()) + "\n\n")
+              summary.write("Run locally: `python scripts/lesson_lint.py --lessons-dir lessons -v`\n")
+          PY
+
+          # The exit this job had never taken. `--fail-on high` was already being passed, and its
+          # answer was discarded twice: by `|| true` here and by the job-level `continue-on-error`
+          # that sat above these steps. `grep -n 'exit 1'` over the whole workflow returned nothing.
+          #
+          # Measured before making it blocking: `lesson_lint.py --fail-on high --json` over the
+          # shipped corpus reports zero issues and exits 0, and exits 1 with JSON on stdout when
+          # pointed at a lesson with no frontmatter. The threshold this now enforces is the one
+          # the workflow already asked for.
+          exit "$lint_status"
 
   quality-check:
     runs-on: ubuntu-latest
