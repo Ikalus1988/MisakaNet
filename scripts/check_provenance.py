@@ -13,10 +13,20 @@ Two rule tiers, because legacy debt must not block every future PR:
 
   tier 1 (always fails)   a placeholder URL, or a URL that is confirmed dead (404/410)
                           and is not recorded in the baseline
-  tier 2 (--strict-new)   a lesson that claims `evidence_level: E2`/`E3` while citing no
-                          resolvable source at all. Only applied to *newly added* files,
-                          the same strict/advisory split the lesson gate uses for
-                          structural rules (see .github/workflows/lesson-gate.yml).
+  tier 2 (--strict-new)   a lesson that claims `evidence_level: E2`/`E3`. Only applied to
+                          *newly added* files, the same strict/advisory split the lesson
+                          gate uses for structural rules (see
+                          .github/workflows/lesson-gate.yml). Split in two, because the two
+                          halves are not equally provable:
+
+  tier 2a (fails)         it cites *nothing at all* — no citation key carries any value.
+                          This is decidable offline, so it fails (open-code-review §2.3:
+                          the branch printed a ⚠️ and still exited 0, so a step named
+                          "newly added lessons must justify a high evidence level"
+                          enforced nothing). It used to be an advisory and could not fail.
+  tier 2b (advisory)      it cites something, but nothing could be confirmed resolvable
+                          (`unknown`, 403/429, offline). Failing here would fail on the
+                          *absence* of evidence, which this gate never does.
 
 Statuses are deliberately conservative: a network failure, a timeout, a rate limit or an
 unusual HTTP code is `unknown` and never fails the build — the gate only fails on
@@ -218,6 +228,63 @@ def citations(fm: str) -> list[str]:
     return found
 
 
+def declares_citation(fm: str) -> bool:
+    """True when a citation key carries *any* value — URL or not.
+
+    `citations()` only finds URLs, so it cannot tell "this lesson cites nothing at all"
+    from "this lesson cites `intake #1460`, which is not a URL". Both are unresolvable, but
+    only the first is a claim with no provenance whatsoever, and it is decidable with no
+    network — which is what makes it enforceable (tier 2a, see the module docstring).
+    """
+    text = fm.strip()
+    if text.startswith("{"):
+        try:
+            data = json.loads(text)
+        except Exception:
+            data = None
+        if data is not None:
+            return _json_declares_citation(data)
+    # `open_block` is a citation key that opened a nested block (`provenance:` with no inline
+    # value, or `source: |`). Everything indented under it is provenance that was recorded —
+    # `issue: "#1460"` is not a URL, but it is not "no citation at all" either.
+    open_block = ""
+    for line in text.splitlines():
+        stripped = line.strip()
+        if not stripped:
+            continue
+        match = re.match(r'\s*"?([A-Za-z_]+)"?\s*:\s*(.*)$', line)
+        if match:
+            key, value = match.group(1), match.group(2).strip()
+            if key in CITATION_KEYS:
+                if value not in ("", "|", ">"):
+                    return True
+                open_block = key
+                continue
+            if open_block and line[:1] in (" ", "\t"):
+                return True
+            open_block = ""
+            continue
+        if not (open_block and line[:1] in (" ", "\t") and stripped):
+            open_block = ""
+    return False
+
+
+def _json_declares_citation(node) -> bool:
+    if isinstance(node, dict):
+        for key, value in node.items():
+            if key in CITATION_KEYS:
+                if isinstance(value, str) and value.strip():
+                    return True
+                if isinstance(value, (list, dict)) and value:
+                    return True
+            if _json_declares_citation(value):
+                return True
+        return False
+    if isinstance(node, list):
+        return any(isinstance(item, str) and item.strip() for item in node)
+    return False
+
+
 def evidence_level(fm: str) -> str:
     text = fm.strip()
     if text.startswith("{"):
@@ -351,16 +418,16 @@ def scan(paths: list[pathlib.Path], fetcher=None) -> list[dict]:
         level = evidence_level(fm)
         rel = rel_to_repo(path)
         cited = citations(fm)
-        resolvable = 0
+        # `declared` separates "cites nothing" from "cites something we cannot resolve" —
+        # the tier 2a / 2b split. Carried on every row so `evaluate()` needs no second pass.
+        declared = declares_citation(fm)
         for url in cited:
             status, detail = resolve(url, fetcher)
-            if status == "ok":
-                resolvable += 1
             rows.append({"lesson": rel, "url": url, "status": status, "detail": detail,
-                         "evidence_level": level})
+                         "evidence_level": level, "declared": declared})
         if not cited:
             rows.append({"lesson": rel, "url": "", "status": "none", "detail": "",
-                         "evidence_level": level})
+                         "evidence_level": level, "declared": declared})
     return rows
 
 
@@ -386,9 +453,23 @@ def evaluate(rows: list[dict], baseline: dict, strict_new: set[str]) -> tuple[li
             continue
         level = next((r["evidence_level"] for r in rows if r["lesson"] == lesson), "")
         if level in HIGH_LEVELS and bucket["resolvable"] == 0 and not bucket["dead"]:
-            advisories.append(
-                f"{lesson}: claims evidence_level {level} but cites no resolvable source "
-                "- cite where it was reproduced, or lower the level / say it is unreproduced")
+            if not any(r.get("declared") for r in rows if r["lesson"] == lesson):
+                # Tier 2a: the lesson claims E2/E3 and cites *nothing*. Nothing to resolve, so
+                # this is decidable offline and it fails. It used to be appended to
+                # `advisories`, which `main()` never reads into its exit code — so the branch
+                # printed a warning and exited 0, and the CI step named after this rule
+                # enforced nothing (open-code-review §2.3, 2026-10-06).
+                failures.append(
+                    f"{lesson}: claims evidence_level {level} but cites no source at all "
+                    "(tier 2a) - add `provenance.source` / `source` naming where it was "
+                    "reproduced, or lower the level / say it is unreproduced")
+            else:
+                # Tier 2b: it does cite something, but nothing could be confirmed resolvable
+                # (`unknown`, 403/429, offline). Failing here would fail on the *absence* of
+                # evidence, which this gate never does.
+                advisories.append(
+                    f"{lesson}: claims evidence_level {level} but cites no resolvable source "
+                    "- cite where it was reproduced, or lower the level / say it is unreproduced")
     return failures, advisories
 
 

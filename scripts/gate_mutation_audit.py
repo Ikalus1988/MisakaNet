@@ -158,6 +158,35 @@ def _mutate_json_placeholder_source(lesson: Path) -> None:
         encoding="utf-8")
 
 
+def _mutate_high_evidence_no_source(lesson: Path) -> None:
+    """Claim `evidence_level: E3` while citing nothing at all — the tier-2a path.
+
+    The three mutations above all replace a URL with a *bad* URL, so they only ever reach
+    `failures`. The tier-2 branch was therefore structurally invisible to this audit: it
+    appended to `advisories`, which `check_provenance.main()` never folded into its exit
+    code, so a new E2/E3 lesson with no source printed a ⚠️ and exited 0 — the branch could
+    not fail (open-code-review §2.3, 2026-10-06). Rewriting the whole frontmatter block is
+    what makes "cites nothing" unambiguous: the baseline lesson carries `source:` *and* a
+    `provenance:` block, so deleting one line would leave a citation behind.
+    """
+    text = lesson.read_text(encoding="utf-8")
+    if not text.startswith("---"):
+        raise MutationError("high-evidence-no-source: the lesson has no frontmatter block")
+    end = text.find("\n---", 3)
+    if end == -1:
+        raise MutationError("high-evidence-no-source: the frontmatter block is not closed with `---`")
+    frontmatter = text[3:end]
+    title = re.search(r"(?m)^title:[ \t]*(.+)$", frontmatter)
+    domain = re.search(r"(?m)^domain:[ \t]*(.+)$", frontmatter)
+    if not title or not domain:
+        raise MutationError("high-evidence-no-source: could not read title/domain out of the "
+                            "frontmatter block")
+    lines = [f"title: {title.group(1).strip()}",
+             f"domain: {domain.group(1).strip()}",
+             "evidence_level: E3"]
+    lesson.write_text("---\n" + "\n".join(lines) + "\n---" + text[end + 4:], encoding="utf-8")
+
+
 def _mutate_dead_source(lesson: Path) -> None:
     """Cite a source that returns 404 — the case that motivated the gate.
 
@@ -215,10 +244,12 @@ def _lesson_gate_command(lesson: Path, online: bool) -> list[str]:
 
 
 def _provenance_gate_command(lesson: Path, online: bool) -> list[str]:
+    # `--strict-new <lesson>` is how CI runs this gate, and without it the tier-2 branch
+    # never runs at all — so a mutation that only breaks tier 2 could not be observed.
     argv = [sys.executable, str(PROVENANCE_GATE), "--check"]
     if not online:
         argv.append("--offline")
-    argv.append(str(lesson))
+    argv += ["--strict-new", str(lesson)]
     return argv
 
 
@@ -255,6 +286,10 @@ GATES: dict[str, Gate] = {
                      "hide the same fabricated source in JSON-style frontmatter "
                      "(the 2026-09-16 red-team blind spot)",
                      _mutate_json_placeholder_source),
+            Mutation("high-evidence-no-source",
+                     "claim `evidence_level: E3` with no source at all (the tier-2 branch, "
+                     "which advisories-only left unfailable)",
+                     _mutate_high_evidence_no_source),
             Mutation("dead-source",
                      f"cite the 404 repository from the 2026-09-16 incident ({DEAD_SOURCE_URL})",
                      _mutate_dead_source,

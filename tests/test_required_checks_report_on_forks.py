@@ -39,6 +39,7 @@ WORKFLOWS = REPO / ".github" / "workflows"
 REQUIRED = {
     "DCO / Signed-off-by": "api",
     "gate": "job",
+    "audit": "job",
     "test (ubuntu-latest, 3.11)": "job",
 }
 
@@ -85,6 +86,8 @@ def producers() -> dict[str, list[tuple[pathlib.Path, str]]]:
             names = {str(job), str((spec or {}).get("name") or "")}
             if "gate" in names:
                 found["gate"].append((path, "job"))
+            if "audit" in names:
+                found["audit"].append((path, "job"))
             if "test" in names:
                 matrix = ((spec or {}).get("strategy") or {}).get("matrix") or {}
                 oses = matrix.get("os") or []

@@ -54,7 +54,13 @@ jobs:
 
       - name: Test uncaughtException invokes handler
         run: |
-          node --test tests/smoke.test.js
+            # Every `*.test.js` in this package, not just smoke. The other four
+            # (`runhandler-env`, `sanitize-command`, `windows-compat`, `windows-path`) were
+            # written and then never executed by anything: this step named one file, so 15
+            # passing tests measured nothing. Quoted so the *node* expands the glob rather than
+            # the shell — the same rule as `AGENTS.md`, though this directory has no nesting so
+            # the two forms agree here today.
+            node --test 'tests/*.test.js'
 
       - name: Test legacy verification suite
         run: |

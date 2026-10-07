@@ -35,15 +35,21 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: 6b92325b505f2b76aec49e9fe4195d31
+          # `days` is declared `type: number`, which reads like a guarantee and is not one:
+          # the dispatch API accepts `inputs` as `map[string]string` and never checks it
+          # against that type. Through the environment it cannot become code, because bash
+          # does not re-expand the result of a substitution — `$DAYS` holding `$(id)` becomes
+          # the six characters in the SQL string below and nothing runs.
+          DAYS: ${{ inputs.days }}
         run: |
           set -euo pipefail
           cd workers
           echo "== totals by scope =="
           wrangler d1 execute misakanet-db --remote --json --command \
             "SELECT scope, COUNT(*) AS buckets, SUM(count) AS total, MAX(updated_at) AS last_update FROM counters GROUP BY scope ORDER BY total DESC;"
-          echo "== last ${{ inputs.days }} day(s) by scope =="
+          echo "== last $DAYS day(s) by scope =="
           wrangler d1 execute misakanet-db --remote --json --command \
-            "SELECT period, scope, COUNT(*) AS buckets, SUM(count) AS total FROM counters WHERE period >= date('now', '-${{ inputs.days }} day') AND scope NOT IN ('rate_read') GROUP BY period, scope ORDER BY period DESC, total DESC LIMIT 40;"
+            "SELECT period, scope, COUNT(*) AS buckets, SUM(count) AS total FROM counters WHERE period >= date('now', '-$DAYS day') AND scope NOT IN ('rate_read') GROUP BY period, scope ORDER BY period DESC, total DESC LIMIT 40;"
           # `rate_read` is excluded on purpose: it is written per *minute* (a burst window is its
           # period), so on a real day it contributes hundreds of single-count rows and the LIMIT 40
           # was spent entirely on them — measured 2026-09-23, when the two-day view printed nothing but

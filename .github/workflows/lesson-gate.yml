@@ -51,19 +51,51 @@ jobs:
           # NEW files get the strict gate; files that already exist on the base
           # branch (metadata/provenance/retag touches) are advisory so legacy
           # debt never blocks metadata batches (#1506).
-          ADDED=$(git diff --name-only --diff-filter=A "$BASE" HEAD -- 'lessons/**/*.md' | tr '\n' ' ')
-          MODIFIED=$(git diff --name-only --diff-filter=MR "$BASE" HEAD -- 'lessons/**/*.md' | tr '\n' ' ')
+          # `'lessons/**/*.md'` needs at least one directory level, so a file at
+
+          # `lessons/<name>.md` was invisible to this step. Measured 2026-10-07:
+
+          #   'lessons/**/*.md' -> lessons/core/x.md          (top-level file missed)
+
+          #   'lessons/*.md'    -> both
+
+          # It is not exploitable today — `discover_lesson_dirs` only collects
+
+          # subdirectories, so a top-level .md is not a lesson and never reaches the
+
+          # corpus — but the two would have to change together, and this side failing
+
+          # silently is the worse outcome. Same two-pathspec shape as
+
+          # `.github/workflows/pr-checks.yml`.
+
+          ADDED=$(git diff --name-only --diff-filter=A "$BASE" HEAD -- 'lessons/**/*.md' 'lessons/*.md' | tr '\n' ' ')
+          MODIFIED=$(git diff --name-only --diff-filter=MR "$BASE" HEAD -- 'lessons/**/*.md' 'lessons/*.md' | tr '\n' ' ')
           echo "added=$ADDED" >> "$GITHUB_OUTPUT"
           echo "modified=$MODIFIED" >> "$GITHUB_OUTPUT"
 
       - name: Run lesson quality gate (strict — NEW files)
         if: steps.classify.outputs.added != ''
         id: gate
+        env:
+          # Passed as an environment variable, never interpolated into the script.
+          #
+          # `${{ }}` inside a `run:` block is substituted *before* bash parses the
+          # script, and bash performs command substitution inside double quotes. So
+          # `FILES="${{ steps.classify.outputs.added }}"` meant a file named
+          # `lessons/core/$(id).md` ran `id` on the runner: verified 2026-10-07 by
+          # creating that file and watching `uid=1000(...)` land in the variable.
+          # GitHub's documented remedy is exactly this — hand the value over through
+          # `env:` so the shell receives it as data, not as script text.
+          ADDED_FILES: ${{ steps.classify.outputs.added }}
         run: |
-          FILES="${{ steps.classify.outputs.added }}"
+          # Split into an argument list without pathname expansion. Unquoted `$FILES`
+          # would let a path containing a glob character expand against the
+          # filesystem; a lesson path is never a glob, so disable it outright.
+          IFS=' ' read -r -a FILES <<< "$ADDED_FILES"
           # bash -e would abort before the report and exit code are captured.
           set +e
-          python3 scripts/lesson_gate.py $FILES > gate_report.txt 2>&1
+          python3 scripts/lesson_gate.py "${FILES[@]}" > gate_report.txt 2>&1
           GATE_EXIT=$?
           set -e
           cat gate_report.txt
@@ -75,10 +107,13 @@ jobs:
 
       - name: Run lesson quality gate (advisory — modified existing files)
         if: steps.classify.outputs.modified != ''
+        env:
+          # Same reason as the step above: data, not script text.
+          MODIFIED_FILES: ${{ steps.classify.outputs.modified }}
         run: |
-          FILES="${{ steps.classify.outputs.modified }}"
+          IFS=' ' read -r -a FILES <<< "$MODIFIED_FILES"
           set +e
-          python3 scripts/lesson_gate.py --existing $FILES > gate_report_existing.txt 2>&1
+          python3 scripts/lesson_gate.py --existing "${FILES[@]}" > gate_report_existing.txt 2>&1
           GATE_EXIT=$?
           set -e
           cat gate_report_existing.txt

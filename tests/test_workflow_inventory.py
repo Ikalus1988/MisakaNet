@@ -21,6 +21,7 @@ mutated copy through the same code the repository is judged by.
 """
 from __future__ import annotations
 
+import fnmatch
 import re
 from pathlib import Path
 
@@ -96,6 +97,135 @@ def inventory_problems(workflows: dict[str, str], doc_text: str) -> list[str]:
     for ghost in sorted(listed - actual):
         problems.append(f"docs/CI.md lists {ghost}, which does not exist")
     return problems
+
+
+
+# ── rule 4: a JavaScript test no workflow runs is a check that measures nothing ─────────────────
+
+# `node --test <path>` invocations, extracted per step. Two things this must get right, both of
+# which a naive regex over the whole file gets wrong:
+#
+#   * **Comments are not invocations.** `mcp-stress.yml` and `pr-checks.yml` both explain their
+#     globs in prose — "the unquoted `workers/*.test.mjs` did not reach …" — and a whole-file regex
+#     happily collects those as paths that are covered. It would have green-lit every orphan in the
+#     tree on the strength of a sentence describing a bug that was already fixed.
+#   * **`node --test` resolves against the step's `working-directory`.** `fatal-guard.yml` runs
+#     `node --test 'tests/*.test.js'` with `working-directory: packages/fatal-guard`, so the path it
+#     covers is `packages/fatal-guard/tests/*.test.js`, not `tests/*.test.js`. Without that, five
+#     tests that really do run looked orphaned — which is the over-firing that gets a rule like this
+#     argued out of existence instead of fixed.
+#
+# The quoting is read as written rather than resolved by a shell, because that is the point:
+# `node --test 'tests/*.test.js'` lets *node* expand the glob, while unquoted lets the shell do it,
+# and with bash's `globstar` off an unquoted `workers/**/*.test.mjs` collapses to the top level and
+# silently drops the nested file. `AGENTS.md` records that rule; here both spellings count as
+# coverage, and matching is on the pattern as written, never on an expansion.
+_STEP_SPLIT = re.compile(r"^\s{2,}-\s", re.M)
+_WORKING_DIR = re.compile(r"^\s+working-directory:\s*(?P<dir>[^\s#]+)", re.M)
+_NODE_TEST = re.compile(r"node\s+--test\s+(?P<arg>[^\n|;&]+)")
+_COMMENT = re.compile(r"(?<!:)#[^\n]*")
+
+
+def _strip_quotes(arg: str) -> str:
+    return arg.strip().strip("\"'").strip()
+
+
+def _covered_paths(workflows: dict[str, str]) -> list[str]:
+    """Every repo-relative path a `node --test` invocation in this tree could reach."""
+    seen: list[str] = []
+    for text in workflows.values():
+        job_wd = _WORKING_DIR.search(text)
+        for step in _STEP_SPLIT.split(text):
+            body = _COMMENT.sub("", step)
+            step_wd = _WORKING_DIR.search(body)
+            prefix = (step_wd or job_wd).group("dir").strip() if (step_wd or job_wd) else ""
+            for match in _NODE_TEST.finditer(body):
+                arg = _strip_quotes(match.group("arg"))
+                if not arg:
+                    continue
+                seen.append(f"{prefix}/{arg}" if prefix and not arg.startswith("/") else arg)
+    return seen
+
+
+def js_tests_outside_workers() -> list[str]:
+    """Every JS test file that is not under `workers/`, as a repo-relative POSIX path.
+
+    The worker suite is one `node --test 'workers/**/*.test.mjs'` line covering 75 files, so
+    per-file coverage there would be noise. Everything else is named or globbed individually.
+    """
+    found: set[str] = set()
+    for pattern in ("tests/*.test.js", "tests/*.test.mjs",
+                    "packages/*/tests/*.test.js", "packages/*/tests/*.test.mjs",
+                    "integrations/*/tests/*.test.js", "integrations/*/tests/*.test.mjs"):
+        for candidate in sorted(REPO.glob(pattern)):
+            if candidate.is_file():
+                found.add(candidate.relative_to(REPO).as_posix())
+    return sorted(found)
+
+
+def unrun_js_tests(workflows: dict[str, str]) -> list[str]:
+    """Test files no workflow can execute.
+
+    `tests/frontend.test.js` was in this set until 2026-10-07 — it imported `vitest`, which the
+    root `package.json` does not depend on — along with four of the five tests in
+    `packages/fatal-guard/tests/`, which `fatal-guard.yml` ran one at a time out of five.
+    """
+    patterns = _covered_paths(workflows)
+    return [test for test in js_tests_outside_workers()
+            # `fnmatch`'s `*` crosses `/`, which is what a shell-free comparison needs: the
+            # patterns are compared as written and never expanded, so a directory prefix still
+            # has to match the file's own path.
+            if not any(fnmatch.fnmatch(test, pat) for pat in patterns)]
+
+
+def test_no_javascript_test_is_left_without_a_workflow_that_runs_it():
+    orphans = unrun_js_tests(load_workflows())
+    assert not orphans, (
+        "these JavaScript test files are executed by nothing, so they cannot fail and cannot "
+        "help:\n  " + "\n  ".join(orphans)
+        + "\n\nA file no workflow runs is worse than no file: it reads as coverage in review and "
+        "in the tree, while `pytest` (which collects `test_*.py` only) never sees it either. Add a "
+        "`node --test` line to a workflow, or delete the file."
+    )
+
+
+def test_the_unrun_test_rule_would_catch_the_frontend_file_it_was_written_for():
+    """The self-test: the rule is evidence only if it fires on the case that motivated it."""
+    workflows = load_workflows()
+    assert "tests/frontend.test.js" in js_tests_outside_workers(), (
+        "the file this rule exists for is gone or renamed — check that the rule still aims at "
+        "something"
+    )
+    stripped = {name: re.sub(r"[^\n]*frontend\.test\.js[^\n]*", "", text)
+                for name, text in workflows.items()}
+    assert "tests/frontend.test.js" in unrun_js_tests(stripped), (
+        "removing every reference to tests/frontend.test.js did not make the rule fire — the "
+        "matching is too loose to be evidence of anything"
+    )
+
+
+def test_a_glob_credits_the_files_it_names_though_no_workflow_lists_them():
+    """The over-firing direction. `fatal-guard.yml` says `node --test 'tests/*.test.js'` and never
+    names the five files; a rule demanding a literal path per file would report all five as
+    orphaned, and the first person to hit that would delete the rule rather than its author."""
+    workflows = load_workflows()
+    assert "packages/fatal-guard/tests/smoke.test.js" not in unrun_js_tests(workflows), (
+        "a working-directory-relative glob is not being credited with the files it names"
+    )
+
+
+def test_prose_describing_a_glob_does_not_count_as_running_it():
+    """Comments are stripped, so a sentence about a fixed bug cannot green-light an orphan."""
+    workflows = load_workflows()
+    probe = dict(workflows)
+    probe["zz-probe.yml"] = (
+        "name: probe\njobs:\n  probe:\n    steps:\n      - name: talk about a glob\n"
+        "        run: echo the unquoted `tests/*.test.js` did not reach the nested file\n"
+    )
+    assert unrun_js_tests(probe) == unrun_js_tests(workflows), (
+        "a comment mentioning a glob changed which files the rule considers covered"
+    )
+
 
 
 def test_every_path_that_only_a_failure_can_start_is_also_startable_by_hand():

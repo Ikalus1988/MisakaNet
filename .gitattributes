@@ -58,3 +58,23 @@ docs/_lessons_count.txt linguist-generated=true
 # `tests/test_shell_scripts_are_lf.py` enforces both halves: every committed `.sh` blob is
 # LF-only, and this rule stays here.
 *.sh text eol=lf
+
+# A generator that *writes* a tracked text file has to write it the way the platform's
+# checkout expects, or `git status` will disagree with its own hash. This is the other
+# direction of the same problem, and it is not visible in a diff:
+#
+#   `Path.write_text(...)` on Windows emits CRLF, which is what `core.autocrlf=true` puts in
+#   the working tree, so a checkout that regenerates the file stays clean. Replace it with
+#   `write_bytes` or an atomic writer that writes bytes, and the file lands LF — byte-for-byte
+#   identical to `HEAD:`, `git diff` silent, and `git status --porcelain` still ` M`.
+#
+# Measured 2026-10-07: `scripts/update_lessons_json.py` had its `data/lessons.json` write made
+# atomic in binary mode, which turned
+# `test_lesson_source_contract.py::test_the_generators_are_a_no_op_on_an_unchanged_corpus` red on
+# all three `windows-latest` legs while macOS and ubuntu stayed green. The judgement is the
+# same both ways round: the content was right and only the line endings were wrong.
+#
+# So: atomicity comes from writing a sibling temp file and `os.replace`, which says nothing
+# about the write *mode*. `scripts/update_lessons_json.py::atomic_write` takes `str | bytes`
+# and picks the mode from the type — text for the index it generates, bytes for the two
+# mirrors that copy it verbatim.

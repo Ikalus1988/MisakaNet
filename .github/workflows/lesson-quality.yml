@@ -66,12 +66,21 @@ jobs:
       - name: Run quality scorer
         if: steps.changed.outputs.any_changed == 'true'
         id: quality
+        env:
+          # Data, not script text. `${{ }}` is substituted before bash parses, and bash
+          # runs `$(…)` inside double quotes *and* inside an unquoted `for` word — a file
+          # named `lessons/core/$(id).md` executes `id` on the runner. Same defect class
+          # as `lesson-gate.yml`, found by `tests/test_workflow_script_injection.py`.
+          ALL_CHANGED_FILES: ${{ steps.changed.outputs.all_changed_files }}
         run: |
           SCORES=""
           PASS=true
           THRESHOLD=0.5
 
-          for file in ${{ steps.changed.outputs.all_changed_files }}; do
+          # Split without pathname expansion: a lesson path is never a glob, and letting
+          # one expand against the filesystem would read files the PR never mentioned.
+          IFS=$'\n' read -r -d '' -a CHANGED_FILES <<< "$ALL_CHANGED_FILES" || true
+          for file in "${CHANGED_FILES[@]}"; do
             if [[ "$file" == lessons/*.md ]]; then
               SCORE=$(python3 scripts/quality_scorer.py "$file" --json 2>/dev/null | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('total_score') if d.get('total_score') is not None else (d.get('lessons') or [{}])[0].get('total_score') or (d.get('lessons') or [{}])[0].get('score',0)/100)" 2>/dev/null || echo "0")
               SCORES="$SCORES\n$file: $SCORE"

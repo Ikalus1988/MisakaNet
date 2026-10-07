@@ -427,6 +427,21 @@ jobs:
           echo "Worker suite exit: $NODE_EXIT"
           exit $NODE_EXIT
 
+
+      # `tests/frontend.test.js` is the only frontend module the repository has a test for, and
+      # until 2026-10-07 it ran nowhere: it imported `vitest`, which the root `package.json` does
+      # not depend on and `node_modules/vitest` does not contain. `pytest` collects `test_*.py`
+      # only, so the `audit` job never saw it either — the same shape as `tests/dsh/`, deleted in
+      # #2920. It is ported to `node:test` now (the runner the other 74 worker tests use), and
+      # this step is what stops that from being true again: a file that nothing runs is a file
+      # that checks nothing, and this job is the required check.
+      #
+      # No `tee` here on purpose — there is no report artefact to keep, and a pipe would need
+      # `PIPESTATUS` handling that this step has no reason to get wrong.
+      - name: Run Frontend Test Suite (node)
+        if: steps.scope.outputs.scope == 'full'
+        run: node --test tests/frontend.test.js
+
       - name: Upload Coverage to Codecov
         if: steps.scope.outputs.scope == 'full'
         uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5  # v7
