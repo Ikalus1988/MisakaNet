@@ -591,6 +591,41 @@ const MCP_PROTOCOL_VERSION = "2025-06-18";
 const SUPPORTED_PROTOCOL_VERSIONS = ["2025-06-18", "2026-07-28"];
 const MAX_MCP_REQUEST_BYTES = 64 * 1024;
 
+/**
+ * MCP methods reachable without a token, because nothing they can return is private.
+ *
+ * This set was three explicit `===` comparisons — `initialize`, `tools/list`, `server/discover` —
+ * and every other method fell behind the 401 gate even though the handler below answers all of
+ * them. The SDK treats a 401 as a *transport* failure rather than a protocol miss, so from the
+ * client's side an answered-but-gated method and an unimplemented one look identical.
+ *
+ * Measured on 2026-10-07, unauthenticated vs. with a token:
+ *
+ *     initialize                200 / result   →  200 / result
+ *     tools/list                200 / result   →  200 / result
+ *     server/discover           200 / result   →  200 / result
+ *     ping                      401 / -32000   →  200 / -32601
+ *     resources/list            401 / -32000   →  200 / -32601
+ *     resources/templates/list  401 / -32000   →  200 / -32601
+ *     prompts/list              401 / -32000   →  200 / -32601
+ *
+ * Those four are what #2963 reports: DSH's `list_mcp_resources` calls `resources/list` on this
+ * server and surfaces `mcp-client(misakanet): server is disconnected`.
+ *
+ * `tools/call` is deliberately absent — it is the quota-bounded read and write path
+ * (`mcp-anonymous-read.test.mjs` pins anonymous reads through it), and a token does not unlock
+ * anything about it beyond the anonymous burst limit.
+ */
+const MCP_PUBLIC_METHODS = new Set([
+  "initialize",
+  "ping",
+  "tools/list",
+  "resources/list",
+  "resources/templates/list",
+  "prompts/list",
+  "server/discover",
+]);
+
 function getMcpServerInfo(env) {
   return {
     name: "misakanet",
@@ -4594,8 +4629,7 @@ async function handleMcpRequest(request, env, useSse = false, ctx) {
     // So this is a gate and its implementation disagreeing: the response was written
     // and the door in front of it was closed. A method that is answered but
     // unreachable is indistinguishable from one that is not implemented.
-    isPublicMethod = peekBody?.method === "initialize" || peekBody?.method === "tools/list"
-      || peekBody?.method === "server/discover"
+    isPublicMethod = MCP_PUBLIC_METHODS.has(peekBody?.method)
       || (typeof peekBody?.method === "string" && peekBody.method.startsWith("notifications/"));
   } catch (peekErr) {
     // Non-JSON body — treat as non-intake; log for diagnostics
