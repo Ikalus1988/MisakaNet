@@ -184,8 +184,17 @@ def main() -> int:
     # whole README to LF and left `git status` reporting ` M` on a file whose blob hash
     # still equalled `HEAD:` — `git diff` silent, exactly like the generator regression in
     # `update_lessons_json.py`. `Path.read_text` takes no `newline=` argument, so `open()`.
+    # The generated block is re-terminated to match, below. `newline=""` on its own would
+    # make every `--check` against a CRLF README report a staleness that is not there.
     with open(args.readme, "r", encoding="utf-8", newline="") as handle:
         readme = handle.read()
+    # The generated block is LF; a CRLF README has to be handed a CRLF block, or
+    # `updated != readme` for a table that is in fact current and `--check` reports a
+    # staleness that does not exist. The same defect as the generator that put LF on disk,
+    # arriving from the comparison side rather than the write side.
+    eol = "\r\n" if "\r\n" in readme else "\n"
+    block = block.replace("\n", eol)
+
     updated = replace_block(readme, block)
     if updated is None:
         print(f"::error::{args.readme} has no `{BEGIN}` / `{END}` anchor", file=sys.stderr)
