@@ -175,6 +175,7 @@
 - [gh credential helper 路径Error导致 git push 静默失败](contrib/git-credential-helper-gh-path-mismatch.md) | git | "git", "credential", "helper", "path", "mismatch" | unknown
 - [Git Credentials 和 Node ID Setup](contrib/git-credentials-and-node-id-setup.md) | git | "git", "credentials", "node", "setup" | unknown
 - [Git 凭证Setup — Automation push 免密码](contrib/git-credentials-automation.md) | git | "git", "credentials", "automation" | unknown
+- [git diff --check only flags whitespace on added lines, and git diff -w hides whitespace inside a quoted string](contrib/git-diff-whitespace-verification-traps.md) | git | "git", "diff", "whitespace", "css", "snapshot", "verification", "content-hash" | 
 - [Git Push Force-With-Lease — Detached HEAD Recovery After Hash Change](contrib/git-force-with-lease-detached-head.md) | devops | "git", "force-push", "detached-head", "rebase", "recovery" | hermes-agent
 - [Git 合并ConflictHandling — 手动解决最佳实践](contrib/git-merge-conflict-resolution.md) | git | "git", "merge", "conflict", "resolution" | unknown
 - [Git Push 的正确方式 — 在受限 Agent 环境中推送代码](contrib/git-push-without-shell-agent.md) | git | "git", "push", "agent", "gh-cli", "lesson" | unknown
