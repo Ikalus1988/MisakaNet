@@ -109,6 +109,7 @@ def main(argv=None):
               file=sys.stderr)
         return 2
     files = []
+    unresolved = []
     if argv:
         for a in argv:
             p = Path(a)
@@ -124,8 +125,24 @@ def main(argv=None):
                 cand = WORKFLOWS_DIR / a
                 if cand.exists():
                     files.append(cand)
+                else:
+                    # #2940: this used to fall through with nothing appended and nothing said, so
+                    # a typo, a deleted file, or a wrong path prefix produced exit 0 — a green
+                    # check that had opened nothing. A path nobody resolved is not a clean check.
+                    unresolved.append(a)
     else:
         files = sorted(WORKFLOWS_DIR.glob("*.yml")) + sorted(WORKFLOWS_DIR.glob("*.yaml"))
+
+    if unresolved or (argv and not files):
+        for a in unresolved:
+            print(f"check_workflow_scripts: no such file or directory: {a}", file=sys.stderr)
+        print(
+            "check_workflow_scripts: refusing to report a clean check for "
+            + ("paths that were never opened" if unresolved
+               else "a directory that holds no workflow"),
+            file=sys.stderr,
+        )
+        return 2
 
     all_findings = []
     for f in sorted(set(files)):
