@@ -330,6 +330,9 @@ def test_block_scalar_and_list_parent_keys(tmp_path):
 # ── SSRF and credential-leak guards (open-code-review findings 11-13) ──────────
 @pytest.mark.parametrize("url", [
     "http://169.254.169.254/latest/meta-data/",
+    "http://169.254.169.254#@example.com/",
+    "http://user@169.254.169.254/",
+    "http://user:password@169.254.169.254:80/latest/meta-data/",
     "http://100.64.0.1/x",
     "http://0.0.0.0:8080/x",
     "http://[::1]/x",
