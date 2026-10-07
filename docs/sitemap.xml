@@ -214,6 +214,7 @@
   <url><loc>https://misakanet.org/lessons/git-credential-helper-gh-path-mismatch/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/git-credentials-and-node-id-setup/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/git-credentials-automation/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/git-diff-check-only-flags-whitespace-on-added-lines-and-git-diff-w-hides-whitesp/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/git-force-with-lease-detached-head/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/git-merge-conflict-resolution/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/git-push-without-shell-agent/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
