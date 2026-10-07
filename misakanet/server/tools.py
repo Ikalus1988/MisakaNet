@@ -665,7 +665,16 @@ TOOLS = [
                     ),
                 },
             },
-            "minProperties": 1,
+            # Kept in step with the worker's definition; see the note there. `minProperties` is
+            # outside the keyword subset a conservative MCP client accepts, and an unrecognised
+            # keyword makes such a client register zero tools (#2967). These three branches say
+            # "at least one of" and also allow both, which the handler resolves by preferring
+            # lesson_id.
+            "oneOf": [
+                {"required": ["lesson_id"]},
+                {"required": ["lesson_path"]},
+                {"required": ["lesson_id", "lesson_path"]},
+            ],
         },
     },
 ]
