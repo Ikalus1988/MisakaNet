@@ -489,6 +489,7 @@
 - [Regex Trap — Escaped Quotes in Source Code Cause Premature Non-Greedy Match Termination](en/regex-escaped-quotes-source-parsing.md) | development | "regex", "python", "source-parsing", "escape-sequences", "debug" | practical-experience
 - [Regex greedy matching — debugging unintended captures](en/regex-greedy-matching.md) | development | "regex", "debug", "greedy", "pattern" | uncledad96-glitch
 - [Restart long-lived earn loops after code fixes](en/restart-earn-loop-after-code-fix.md) | devops | "ops", "restart", "daemon", "agent", "deploy" | uncledad96-glitch
+- [Ruby Path Resolution and Docker Port Allocation Issues](en/ruby-require-relative-and-docker-port-allocation.md) | devops | "ruby", "docker", "path-resolution", "port-allocation", "troubleshooting", "shell-helpers" | 
 - [Separate scout vs worker modes in earn agents](en/separate-scout-and-worker-modes.md) | devops | "mode", "scout", "worker", "safety", "agent", "ops" | uncledad96-glitch
 - [Shell script debugging checklist for agent jobs](en/shell-script-debugging.md) | devops | "bash", "shell", "debug", "cron", "set-e", "agent" | uncledad96-glitch
 - [Timeout wrapper for runaway agent children](en/signal-timeout-wrapper.md) | devops | "ops", "agent", "shell", "reliability" | uncledad96-glitch

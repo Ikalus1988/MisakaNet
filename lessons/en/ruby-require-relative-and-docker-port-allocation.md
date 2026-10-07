@@ -5,7 +5,7 @@ status: published
 evidence_level: E1
 tags: [ruby, docker, path-resolution, port-allocation, troubleshooting, shell-helpers]
 summary_plain: Solutions for Ruby require_relative path errors and Docker port allocation conflicts
-trigger: "require_relative LoadError OR docker port already allocated" OR "Bind for 0.0.0.0:8080 failed: port is already allocated"
+trigger: "require_relative LoadError OR docker port already allocated OR Bind for 0.0.0.0:8080 failed: port is already allocated"
 verify: "ruby try.rb runs without LoadError; docker ps shows no conflict on 8080"
 ---
 
