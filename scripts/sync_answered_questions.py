@@ -53,10 +53,24 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 
 def fnv1a_hex(s: str) -> str:
-    """Mirror workers/register-proxy-sw.js hashString (FNV-1a 32-bit, hex8)."""
+    """Mirror workers/register-proxy-sw.js hashString (FNV-1a 32-bit, hex8).
+
+    The loop walks **UTF-16 code units**, not code points, because that is what `hashString` does:
+    `str.charCodeAt(i)` returns one 16-bit unit of the JS string. Python's `for ch in s` yields code
+    points, so an astral character (anything above U+FFFF — an emoji, a CJK extension ideograph) is
+    one step in Python and two in JS, and the two implementations silently produce different hashes.
+
+    That is not hypothetical: `👇` (U+1F447) appears in the problem text of five real question
+    intakes (#2818, #2833, #2834, #2844, and #2981), and for each of them the D1 row ended up with a
+    `dedup_hash` the worker could never compute — so the reporter re-submitting their own words got
+    "duplicate" instead of the maintainer's answer (#2983).
+    """
     h = 0x811C9DC5
-    for ch in str(s):
-        h ^= ord(ch)
+    units = str(s).encode("utf-16-le")
+    for offset in range(0, len(units), 2):
+        # Little-endian byte pair -> the same 16-bit value `charCodeAt` would return.
+        unit = units[offset] | (units[offset + 1] << 8)
+        h ^= unit
         h = (h * 0x01000193) & 0xFFFFFFFF
     return f"{h:08x}"
 
@@ -109,8 +123,14 @@ def parse_kind_and_problem(body: str) -> tuple[str, str, str]:
     if not problem:
         cleaned = re.sub(r"<details>[\s\S]*?</details>", " ", body)
         cleaned = re.sub(r"^\*\*(Kind|Source|Dedup):\*\*.*$", "", cleaned, flags=re.M)
-        problem = "\n".join(l for l in cleaned.splitlines() if l.strip())[:2000]
-    return kind, problem[:2000], error[:1000]
+        problem = "\n".join(l for l in cleaned.splitlines() if l.strip())
+    # No length cap here. This function's job is to reproduce the text the worker hashed, and the
+    # worker hashed the whole thing (`String(safeProblem).trim()`). A `problem[:2000]` used to sit
+    # on this return, which made every intake with a problem longer than 2,000 characters store a
+    # hash that no re-submission could ever match — the answer existed in D1 and was unreachable.
+    # `questions.problem` is a SQLite `TEXT` column with no length limit, so nothing downstream
+    # wanted the cap either (#2983).
+    return kind, problem, error
 
 
 def fetch_question_issues(closed: bool) -> list[dict]:
