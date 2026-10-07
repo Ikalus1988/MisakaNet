@@ -136,17 +136,31 @@ class TestParseKindAndProblem:
         assert kind == ""
         assert "Something is broken" in problem
 
-    def test_truncation_at_2000_chars(self):
+    def test_a_long_problem_is_not_truncated(self):
+        """The 2,000-char cap this used to assert is the defect, not the contract (#2983).
+
+        `parse_kind_and_problem` exists to reproduce the text the worker hashed, and the worker
+        hashed the whole submission. Truncating here produced a `dedup_hash` no re-submission could
+        ever match, so the answer sat in D1 unreachable. `tests/test_dedup_hash_agreement.py` pins
+        the consequence; this pins that the text survives at all.
+        """
         long_problem = "x" * 5000
         body = f"**Kind:** question\n## Problem\n{long_problem}"
         _, problem, _ = parse_kind_and_problem(body)
-        assert len(problem) <= 2000
+        assert len(problem) == 5000
 
-    def test_error_truncation_at_1000(self):
+    def test_a_long_error_is_not_truncated(self):
         long_error = "e" * 3000
         body = f"**Kind:** question\n## Problem\nP\n## Error\n{long_error}"
         _, _, error = parse_kind_and_problem(body)
-        assert len(error) <= 1000
+        assert len(error) == 3000
+
+    def test_the_fallback_branch_does_not_truncate_either(self):
+        # The no-`## Problem` path had its own `[:2000]`, which would have diverged from the
+        # section path on the same text.
+        body = "**Kind:** question\n**Source:** github\n" + ("y" * 4000)
+        _, problem, _ = parse_kind_and_problem(body)
+        assert len(problem) == 4000
 
     def test_strips_source_and_dedup_from_fallback(self):
         body = "**Kind:** question\n**Source:** github\n**Dedup:** abc123\nActual content here"
