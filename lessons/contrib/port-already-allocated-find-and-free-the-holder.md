@@ -4,7 +4,7 @@ title: "A port that is already allocated is an OS-level EADDRINUSE: name the hol
 tags: [network, docker, compose, port, bind, eaddrinuse, troubleshooting, ss, lsof]
 status: "published"
 evidence_level: "E2"
-summary_plain: "The bind failure comes from the kernel, not compose; SO_REUSEADDR will not share a live port, so identify the pid and stop it."
+summary_plain: "The bind failure is the kernel's, not compose's; SO_REUSEADDR will not share a live port. Name the pid, stop it."
 trigger: "Bind for 0.0.0.0:8080 failed: port is already allocated, docker compose port already allocated, address already in use after restarting a stack"
 verify: 'python3 -c "import socket as k;s=k.socket();s.bind((k.gethostname(),8080));t=k.socket();t.setsockopt(k.SOL_SOCKET,k.SO_REUSEADDR,1);t.bind((k.gethostname(),8080))" 2>&1 | grep -q "Errno 98"'
 provenance:
