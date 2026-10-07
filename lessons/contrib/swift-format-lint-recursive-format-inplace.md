@@ -7,6 +7,9 @@ evidence_level: E2
 summary_plain: "swift-format needs -r for directories; format --in-place only fixes formatting rules, not linter-only rules"
 trigger: "swift-format lint directory error 'is a path to a directory' --recursive"
 verify: "swift-format lint -r Sources/ exits 0; format -r --in-place Sources/ fixes formatting rules only"
+provenance:
+  issue: "#2495"
+  source: "MCP intake (codex), contributor-reported"
 ---
 
 ## Problem

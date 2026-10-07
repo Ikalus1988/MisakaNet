@@ -7,6 +7,9 @@ evidence_level: E2
 summary_plain: "ScrollViewReader.scrollTo needs .id() on each row, must be called in onChange not in body"
 trigger: "SwiftUI scrollTo no effect ScrollViewReader .id onChange LazyVStack scroll position"
 verify: "Add .id(row.id) to each child; call reader.scrollTo(id, anchor:) inside .onChange(of:); verify first visible row matches target"
+provenance:
+  issue: "#2484"
+  source: "MCP intake (codex), contributor-reported"
 ---
 
 ## Problem
