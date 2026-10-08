@@ -1,9 +1,30 @@
 {
-  "generated_at": "2026-10-08T18:35:23.716243+00:00",
+  "generated_at": "2026-10-08T18:55:51.740844+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "lessons: six contributor submissions, rebuilt on current main",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3072",
+      "timestamp": "2026-10-08T18:53:25Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3071",
+      "timestamp": "2026-10-08T18:44:33Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore: auto-update lessons.json, public counts and generated pages",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3070",
+      "timestamp": "2026-10-08T18:40:08Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "lesson: README --profile name verbatim installs into unloaded profile (closes #2865)",
@@ -16,27 +37,6 @@
       "title": "docs(handoff): phase 9 — seven PRs finished, and four ways I read silence as success",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/3067",
       "timestamp": "2026-10-08T18:02:22Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "fix(test): the burst-limit test assumed a clock it does not control",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3066",
-      "timestamp": "2026-10-08T17:28:30Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "test(okf): the #3004 guard was only as broad as its own regex",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3064",
-      "timestamp": "2026-10-08T17:11:31Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "docs(handoff): phase 8 — two conclusions overturned, and a guard as narrow as its own heuristic",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3065",
-      "timestamp": "2026-10-08T17:02:45Z",
       "source": "github"
     },
     {
