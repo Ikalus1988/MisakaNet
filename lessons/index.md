@@ -342,6 +342,7 @@
 - [RAG 检索六层静默退化：BM25 失败 + 截断 + 分数混合导致有效 chunk 被丢弃](contrib/rag-retrieval-six-layer-silent-degradation.md) | rag | "rag", "retrieval", "bm25", "truncation", "chinese", "fanuc" | closed-pr-1044
 - [RAG Three-Channel LLM Disaster Recovery](contrib/rag-three-channel-llm-disaster-recovery.md) | rag | "project:self-grow-wiki", "node:hermes-wsl", "scope:broad" | bootstrap
 - [rdt-cli — Reddit in Your Terminal (Reverse-Engineered API)](contrib/rdt-cli-reddit-terminal.md) | devops | "rdt-cli", "reddit", "scraping", "cli", "anti-detection" | github.com/public-clis/rdt-cli
+- [Following a README's --profile name verbatim installs into a profile the running host never loads](contrib/readme-profile-name-verbatim-installs-into-unloaded-profile.md) | devops | "plugin-manager", "profile", "install", "documentation", "silent-failure", "dsh" | 
 - [开源项目 README Optimization — 7 个常见Pitfalls与Fix Checklist](contrib/readme-seven-traps-fix-checklist.md) | meta | "readme", "seven", "traps", "checklist" | unknown
 - [正则陷阱 — 源码中转义引号导致非贪婪匹配提前终止](contrib/regex-escaped-quotes-source-parsing.md) | development | "regex", "python", "source-parsing", "escape-sequences", "debug" | practical-experience
 - [正则表达式 debugging — 贪婪匹配造成的意外结果](contrib/regex-greedy-matching.md) | development | "regex", "debug", "greedy", "pattern" | unknown
