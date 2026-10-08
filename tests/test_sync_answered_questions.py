@@ -318,3 +318,58 @@ class TestStoredAnswerHasNoRoutingMarkers:
         assert cid == 9
         assert "misakanet-answer" not in answer
         assert answer.startswith("A plain maintainer answer")
+
+
+# ── the two paths must agree on the same data (#3012) ─────────────────────
+
+
+class TestLabelAndBodyDisagreement:
+    """An issue can carry the `question` label and declare another kind in its body.
+
+    Two code paths read that: `main(--issue N)` and the daily sweep. Until #3012 they disagreed —
+    the sweep skipped it in silence while `--issue` returned 1 and turned the closing workflow
+    red. Neither wrote a row, which is the safe outcome; the silence is what made it invisible.
+    """
+
+    @staticmethod
+    def _issue(number: int, body: str, labels: list[str], state: str = "closed") -> dict:
+        return {
+            "number": number,
+            "body": body,
+            "state": state,
+            "html_url": f"https://github.com/Ikalus1988/MisakaNet/issues/{number}",
+            "labels": [{"name": n} for n in labels],
+        }
+
+    def test_the_sweep_records_a_mismatch_instead_of_dropping_it_silently(self, monkeypatch):
+        from scripts import sync_answered_questions as s
+
+        monkeypatch.setattr(s, "MISMATCHES", [])
+        monkeypatch.setattr(s, "gh_api", lambda _path: [
+            self._issue(2895, "## a body with no Kind marker at all", ["question", "answered"]),
+        ])
+        assert s.fetch_question_issues(closed=True) == []
+        assert s.MISMATCHES == [(2895, "")], (
+            "the label/body disagreement must be recorded; a silent skip is the bug"
+        )
+
+    def test_the_sweep_does_not_record_a_real_question(self, monkeypatch):
+        from scripts import sync_answered_questions as s
+
+        monkeypatch.setattr(s, "MISMATCHES", [])
+        monkeypatch.setattr(s, "gh_api", lambda _path: [
+            self._issue(1, "**Kind:** question\n\n## Problem\nq", ["question"]),
+        ])
+        assert len(s.fetch_question_issues(closed=True)) == 1
+        assert s.MISMATCHES == []
+
+    def test_the_issue_path_skips_cleanly_instead_of_failing(self, monkeypatch, capsys):
+        """Returning 1 here made every such close turn a required-looking job red for nothing."""
+        from scripts import sync_answered_questions as s
+
+        monkeypatch.setattr(s, "gh_api", lambda _path: self._issue(
+            2895, "## no Kind marker", ["question", "answered"]))
+        monkeypatch.setattr(s.sys, "argv", ["sync_answered_questions.py", "--issue", "2895"])
+        assert s.main() == 0, "not-a-question is a skip, not a sync failure"
+        out = capsys.readouterr().out
+        assert "2895" in out and "nothing" in out, out[:200]

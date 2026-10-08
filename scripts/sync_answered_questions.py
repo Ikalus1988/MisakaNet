@@ -133,6 +133,12 @@ def parse_kind_and_problem(body: str) -> tuple[str, str, str]:
     return kind, problem, error
 
 
+# (issue number, the kind the body actually declares) for issues carrying the `question` label
+# whose body says otherwise. Reported by the sweep so the disagreement is visible without
+# having to close an issue and notice a red workflow (#3012).
+MISMATCHES: list[tuple[int | None, str]] = []
+
+
 def fetch_question_issues(closed: bool) -> list[dict]:
     """Issues with the 'question' label whose body Kind == question."""
     results: list[dict] = []
@@ -148,6 +154,13 @@ def fetch_question_issues(closed: bool) -> list[dict]:
             kind, _, _ = parse_kind_and_problem(issue.get("body") or "")
             if kind == "question":
                 results.append(issue)
+            else:
+                # The label says question, the body says something else, and until now the two
+                # paths disagreed about what that means: this one skipped it in silence while
+                # `--issue` returned 1 and turned the closing workflow red (#3012). Neither wrote
+                # a row — which is the safe outcome — but the silence is what made it invisible.
+                # Collect them and say so; do not guess which source is right.
+                MISMATCHES.append((issue.get("number"), kind))
         if len(d) < 100:
             break
         page += 1
@@ -291,8 +304,17 @@ def main() -> int:
         issue = gh_api(f"/issues/{args.issue}")
         kind, _, _ = parse_kind_and_problem(issue.get("body") or "")
         if kind != "question":
-            print(f"#{args.issue} is not a question intake (kind={kind!r})")
-            return 1
+            # Not a failure of the sync — there is nothing to sync. Returning 1 here made every
+            # such close turn the workflow red for a reason that was never going to resolve itself
+            # (#3012). If the issue really is a question its body needs the marker; if it is not,
+            # the label needs removing. Say which, and skip cleanly.
+            print(
+                f"#{args.issue}: not a question intake "
+                f"(body declares kind={kind!r}); nothing to sync. "
+                "If this IS a question, add '**Kind:** question' to its body; "
+                "if it is not, drop the 'question' label."
+            )
+            return 0
         labels = {l["name"] for l in issue.get("labels", [])}
         if issue["state"] == "open":
             if args.dry_run:
@@ -331,6 +353,21 @@ def main() -> int:
         elif upsert_answered(issue):
             answered_n += 1
     print(f"{'would upsert' if args.dry_run else 'upserted'} pending={pending_n} answered={answered_n}")
+    if MISMATCHES:
+        # Say it out loud. A skipped issue is the right outcome, but a silent one is how this sat
+        # unnoticed while a different code path turned the same data into a red workflow (#3012).
+        print(
+            f"\n{len(MISMATCHES)} issue(s) carry the 'question' label but their body declares "
+            "another kind, so they were skipped in both directions:",
+            file=sys.stderr,
+        )
+        for number, kind in MISMATCHES:
+            print(f"  #{number}  body kind={kind!r}", file=sys.stderr)
+        print(
+            "  Add '**Kind:** question' to the body if these are questions; "
+            "remove the 'question' label if they are not.",
+            file=sys.stderr,
+        )
     return 0
 
 
