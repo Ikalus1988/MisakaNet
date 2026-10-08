@@ -883,9 +883,17 @@ function applyDetailLevel(results, detail) {
 }
 
 // ── Kind filter + query-intent routing (Issue #1441) ──
+//
+// `usage` is anchored, and that is the whole point of #3001. Bare `usage` matched any
+// query containing the word — and the word is everywhere in CLI error text (`npm usage`,
+// `Usage: pip install ...`). An evidence-intent query then runs `filterByKind(results,
+// "evidence")`, and an FAQ row carries no `evidence_level`/`evidence_refs`, so EVERY
+// answered-question hit was filtered out: a question containing "usage" lost its FAQ
+// entirely. The intent this token was for is "how many times was this used", which is
+// `usage count` / `usage of …`, or 引用次数 / 被用过 above.
 
 const LESSON_INTENT_RE = /(lesson|lessons|learned|踩坑|记录|经验|memory|remember|preference)/i;
-const EVIDENCE_INTENT_RE = /(evidence|被用过|多少人|E4|验证|verification|引用次数|usage)/i;
+const EVIDENCE_INTENT_RE = /(evidence|被用过|多少人|E4|验证|verification|引用次数|usage\s*(?:count|of|number|次数|数))/i;
 
 // Client-supplied stable identity for anonymous registration (2026-09-13). A UUID,
 // a workspace id, a hostname — anything the client can regenerate. It is an
