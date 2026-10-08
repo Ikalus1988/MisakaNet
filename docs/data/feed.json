@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-10-08T12:43:56.806469+00:00",
+  "generated_at": "2026-10-08T14:33:21.195936+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "fix(ci): FR3 read one directory while the leak was in three (#3011)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3029",
-      "timestamp": "2026-10-08T12:43:45Z",
+      "title": "lesson: a doc link to the run's own output is not a broken link (#2258)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3037",
+      "timestamp": "2026-10-08T14:25:03Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "docs(field-reports): scope the claims this report cannot support (#3011)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3036",
+      "timestamp": "2026-10-08T14:07:43Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "fix(docs): the phase-5 handoff reached main carrying the path it warns about",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3035",
+      "timestamp": "2026-10-08T13:39:52Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "docs(handoff): phase 5 — a rule whose corpus was narrower than what it guards (#3011, #3029)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3034",
+      "timestamp": "2026-10-08T13:21:00Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
       "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3032",
-      "timestamp": "2026-10-08T10:52:29Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3031",
-      "timestamp": "2026-10-08T06:20:33Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore: auto-update lessons.json, public counts and generated pages",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3030",
-      "timestamp": "2026-10-08T06:10:05Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "lesson: a port that is already allocated is EADDRINUSE — name the holder with ss, free it, retry (#2804)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3016",
-      "timestamp": "2026-10-08T06:02:46Z",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3033",
+      "timestamp": "2026-10-08T12:49:33Z",
       "source": "github"
     },
     {
