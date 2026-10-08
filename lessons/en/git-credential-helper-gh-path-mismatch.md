@@ -26,7 +26,7 @@ provenance:
 `git push` hangs or errors with:
 
 ```text
-/home/hp/.local/bin/gh auth git-credential get: 1: /home/hp/.local/bin/gh: not found
+/home/<user>/.local/bin/gh auth git-credential get: 1: /home/<user>/.local/bin/gh: not found
 ```
 
 or:
@@ -43,7 +43,7 @@ even when the repo exists and the token is valid.
 `gh` may live at `/usr/bin/gh` while git’s credential helper points at a **stale path**:
 
 ```text
-credential.https://github.com.helper=!/home/hp/.local/bin/gh auth git-credential
+credential.https://github.com.helper=!/home/<user>/.local/bin/gh auth git-credential
 ```
 
 Common after mixed install methods (`apt` vs manual) or moved user local bins.

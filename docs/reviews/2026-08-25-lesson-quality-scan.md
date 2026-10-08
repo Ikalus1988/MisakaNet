@@ -23,7 +23,7 @@
 - Add duplicate lesson detection
 
 ### 2. Privacy Cleanup
-- Replaced 23 files with banned content (zsxh1990, cc_haha, /home/eric_jia/)
+- Replaced 23 files with banned content (zsxh1990, cc_haha, /home/<user>/)
 - Used placeholders: <user>, <agent>, /home/<user>/
 
 ### 3. Auto-fix Results

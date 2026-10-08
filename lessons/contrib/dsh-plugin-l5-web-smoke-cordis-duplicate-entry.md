@@ -58,7 +58,7 @@ $ export DSH_HOME=/tmp/dsh-home
 $ mkdir -p $DSH_HOME/profiles/test
 $ cat > $DSH_HOME/profiles/test/package.json <<EOF
 { "name":"dsh-test-profile", "private":true,
-  "dependencies": { "misakanet": "file:/home/eric_jia/MisakaNet" },
+  "dependencies": { "misakanet": "file:/home/<user>/MisakaNet" },
   "dsh": { "profile": { "bundles": [
     "@deepseek-ai/dsh-base", "@deepseek-ai/dsh-headless", "misakanet"
   ]}}

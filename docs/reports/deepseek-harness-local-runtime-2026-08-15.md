@@ -2,7 +2,7 @@
 
 Issue: #1048
 Run date: 2026-08-16T10:16:46.0487879+08:00
-Repo: C:\Users\hp\MisakaNet
+Repo: C:\Users\<user>\MisakaNet
 Git SHA: $full ($sha)
 Version: 2.17.0
 Environment: Microsoft Windows 11 专业版 10.0.26200 build 26200; Python 3.11.9
@@ -18,8 +18,8 @@ This report verifies the MisakaNet DeepSeekHarness recovery adapter in a local W
   "mcpServers": {
     "misakanet-recovery": {
       "command": "python",
-      "args": ["C:/Users/hp/MisakaNet/scripts/mcp_deepseek_adapter.py"],
-      "cwd": "C:/Users/hp/MisakaNet"
+      "args": ["C:/Users/<user>/MisakaNet/scripts/mcp_deepseek_adapter.py"],
+      "cwd": "C:/Users/<user>/MisakaNet"
     }
   }
 }

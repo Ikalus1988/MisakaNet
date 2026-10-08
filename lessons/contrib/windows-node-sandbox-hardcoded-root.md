@@ -70,7 +70,7 @@ win32.join('/root','notes.txt')                            \root\notes.txt
 sanity check while naming a location that does not exist and that the process does not control.
 
 **2. A prefix check written with `/` matches nothing that Windows produces.** Windows workspace
-paths are backslash-separated, so `"C:\Users\shubh\automaton_zero\server.js".startsWith("/root")`
+paths are backslash-separated, so `"C:\Users\<user>\automaton_zero\server.js".startsWith("/root")`
 is `false` — the sandbox root is unrecognised even after the path is corrected.
 
 **3. `startsWith(root)` is not a containment check on either platform.** It is a *prefix* check, and
@@ -97,9 +97,9 @@ directory and an unresolved `..` walk pass the check.
 different questions and neither is a drop-in for "where this harness is allowed to write":
 
 ```
-process.cwd()      /home/eric_jia/MisakaNet     (where the harness was launched)
-os.homedir()       /home/eric_jia               (the user's home — unrelated to the workspace)
-posix.resolve('')  /home/eric_jia/MisakaNet     (relative paths resolve against cwd)
+process.cwd()      /home/<user>/MisakaNet     (where the harness was launched)
+os.homedir()       /home/<user>               (the user's home — unrelated to the workspace)
+posix.resolve('')  /home/<user>/MisakaNet     (relative paths resolve against cwd)
 ```
 
 So the trade-off is explicit:
@@ -135,8 +135,8 @@ containment function.
 **And the fix cannot be validated on the wrong platform.** Node's `resolve` uses the *host's* rules:
 
 ```
-resolve(winWorkspace)   [posix module]                     /home/eric_jia/MisakaNet/C:\Users\shubh\automaton_zero
-win32.resolve(winWorkspace) [windows module]               C:\Users\shubh\automaton_zero
+resolve(winWorkspace)   [posix module]                     /home/<user>/MisakaNet/C:\Users\<user>\automaton_zero
+win32.resolve(winWorkspace) [windows module]               C:\Users\<user>\automaton_zero
 ```
 
 A Linux test that feeds Windows paths through the POSIX `path` module proves nothing about Windows:
@@ -160,8 +160,8 @@ const confined = (root, p, path) => {
 };
 
 for (const [path, root, target, label] of [
-  [win32, 'C:\\Users\\shubh\\automaton_zero', 'C:\\Users\\shubh\\automaton_zero\\server.js', 'windows'],
-  [win32, 'C:\\Users\\shubh\\automaton_zero', 'C:\\Users\\shubh\\automaton_zero-evil\\pwn.js', 'windows sibling'],
+  [win32, 'C:\\Users\\<user>\\automaton_zero', 'C:\\Users\\<user>\\automaton_zero\\server.js', 'windows'],
+  [win32, 'C:\\Users\\<user>\\automaton_zero', 'C:\\Users\\<user>\\automaton_zero-evil\\pwn.js', 'windows sibling'],
   [posix, '/srv/sandbox', '/srv/sandbox/../etc/passwd', 'posix traversal'],
 ]) {
   console.log(`[${label}] naive=${naive(root, target)} confined=${confined(root, target, path)}`);
@@ -178,14 +178,14 @@ win32.isAbsolute('/root')  <- rooted but partial           true
 win32.join('/root','notes.txt')                            \root\notes.txt
 
 --- 2. why a Linux test cannot validate a Windows path (and vice versa) ---
-resolve(winWorkspace)   [posix module]                     /home/eric_jia/MisakaNet/C:\Users\shubh\automaton_zero
-win32.resolve(winWorkspace) [windows module]               C:\Users\shubh\automaton_zero
+resolve(winWorkspace)   [posix module]                     /home/<user>/MisakaNet/C:\Users\<user>\automaton_zero
+win32.resolve(winWorkspace) [windows module]               C:\Users\<user>\automaton_zero
 
 --- 3. naive prefix check vs relative-based confinement ---
-  [windows] C:\Users\shubh\automaton_zero\server.js
+  [windows] C:\Users\<user>\automaton_zero\server.js
       startsWith(root)                                     true
       relative-based check                                 true
-  [windows sibling] C:\Users\shubh\automaton_zero-evil\pwn.js
+  [windows sibling] C:\Users\<user>\automaton_zero-evil\pwn.js
       startsWith(root)                                     true
       relative-based check                                 false
   [posix] /srv/sandbox/ok.txt
@@ -199,9 +199,9 @@ win32.resolve(winWorkspace) [windows module]               C:\Users\shubh\automa
       relative-based check                                 false
 
 --- 4. cwd vs homedir are different questions ---
-process.cwd()                                              /home/eric_jia/MisakaNet
-os.homedir()                                               /home/eric_jia
-posix.resolve('')                                          /home/eric_jia/MisakaNet
+process.cwd()                                              /home/<user>/MisakaNet
+os.homedir()                                               /home/<user>
+posix.resolve('')                                          /home/<user>/MisakaNet
 
 --- 5. writing through a guessed root: the original failure class ---
 write /root/automaton_zero/probe.txt                       EACCES
@@ -209,7 +209,7 @@ write /tmp/sandbox-c01kks/probe.txt                        ok (root derived from
 ```
 
 On the reporter's Windows host, the harness after the fix wrote its files to
-`C:/Users/shubh/automaton_zero` and the confinement check passed (contributor report, not
+`C:/Users/<user>/automaton_zero` and the confinement check passed (contributor report, not
 independently reproduced here — this session has no Windows host; the Windows-specific rows above are
 `path.win32` semantics, which is what Node itself uses on Windows).
 

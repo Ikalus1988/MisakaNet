@@ -337,7 +337,7 @@
    "tags": [
     "- git"
    ],
-   "description": "执行 `git push` 时卡住或报错： ``` /home/hp/.local/bin/gh auth git-credential get: 1: /home/hp/.local/bin/gh: not found ``` 或： ``` remote: Repository not found. fatal: repository 'https://github.com/...' no"
+   "description": "执行 `git push` 时卡住或报错： ``` /home/<user>/.local/bin/gh auth git-credential get: 1: /home/<user>/.local/bin/gh: not found ``` 或： ``` remote: Repository not found. fatal: repository 'https://github.com/...' no"
   },
   {
    "id": "pip-install-proxy-timeout",
@@ -698,7 +698,7 @@
    "expect": [
     "git-credential-helper-gh-path-mismatch"
    ],
-   "error": "git: credential helper Error git push failed — 执行 `git push` 时卡住或报错： ``` /home/hp/.local/bin/gh auth git-credential get: 1: /home/hp/.local/bin/gh: not found ``` 或： ``",
+   "error": "git: credential helper Error git push failed — 执行 `git push` 时卡住或报错： ``` /home/<user>/.local/bin/gh auth git-credential get: 1: /home/<user>/.local/bin/gh: not found ``` 或： ``",
    "source_lesson": "git-credential-helper-gh-path-mismatch"
   },
   {

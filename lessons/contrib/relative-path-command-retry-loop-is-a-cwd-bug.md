@@ -29,7 +29,7 @@ A command that has always worked starts failing with a path error, and the failu
 change no matter how many times it is re-sent:
 
 ```text
-python3: can't open file '/home/eric_jia/scripts/lesson_gate.py': [Errno 2] No such file or directory
+python3: can't open file '/home/<user>/scripts/lesson_gate.py': [Errno 2] No such file or directory
 ```
 
 The reported symptom was an agent sending the **identical** command
@@ -111,14 +111,14 @@ and if `ls` finds the file, the directory was wrong — do not retry the origina
 ## Verification
 
 Reproduced end to end on this repository, running from a deliberately wrong working directory
-(`/home/eric_jia`) rather than the checkout root (`/tmp/mn-lessons`):
+(`/home/<user>`) rather than the checkout root (`/tmp/mn-lessons`):
 
 ```text
 $ cd ~ && pwd
-/home/eric_jia
+/home/<user>
 
 $ python3 scripts/lesson_gate.py lessons/contrib/foo.md
-python3: can't open file '/home/eric_jia/scripts/lesson_gate.py': [Errno 2] No such file or directory
+python3: can't open file '/home/<user>/scripts/lesson_gate.py': [Errno 2] No such file or directory
 ```
 
 The path in the error is the resolved one — it is prefixed with the *wrong* directory, which is
@@ -130,7 +130,7 @@ Both fixes hold from that same wrong directory:
 $ git -C /tmp/mn-lessons status --porcelain
 ?? lessons/contrib/…                       # exit 0 — git -C does not depend on cwd
 
-$ /home/eric_jia/MisakaNet/.venv/bin/python \
+$ /home/<user>/MisakaNet/.venv/bin/python \
     /tmp/mn-lessons/scripts/lesson_gate.py --help
 Lesson Quality Gate — structural validation for new lesson contributions (issue #889).
 …
