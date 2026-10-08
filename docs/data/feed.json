@@ -1,9 +1,23 @@
 {
-  "generated_at": "2026-10-08T01:04:42.205796+00:00",
+  "generated_at": "2026-10-08T06:03:05.781726+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "lesson: a port that is already allocated is EADDRINUSE — name the holder with ss, free it, retry (#2804)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3016",
+      "timestamp": "2026-10-08T06:02:46Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3024",
+      "timestamp": "2026-10-08T01:11:39Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "chore: update leaderboard snapshot",
@@ -23,20 +37,6 @@
       "title": "docs(handoff): phase 4 — ten §3.1 closures, the delivery half proven in production, and seven bad judgment criteria",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/3010",
       "timestamp": "2026-10-07T17:29:22Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3013",
-      "timestamp": "2026-10-07T17:13:34Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore: auto-update lessons.json, public counts and generated pages",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3014",
-      "timestamp": "2026-10-07T17:10:55Z",
       "source": "github"
     },
     {
