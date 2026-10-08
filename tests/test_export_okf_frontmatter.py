@@ -104,18 +104,44 @@ def exported() -> list[dict]:
     return [json.loads(line) for line in EXPORT.read_text(encoding="utf-8").splitlines() if line.strip()]
 
 
-def test_every_lesson_that_declares_an_issue_exports_it(exported):
-    """The defect as a corpus invariant — this is the test that would have caught #3004."""
-    by_path = {r["path"]: r for r in exported}
-    declaring = []
-    for md in sorted((REPO / "lessons").rglob("*.md")):
+def _declaring_issue_paths(lesson_files) -> set:
+    """Lessons that declare `provenance.issue`, located two independent ways (#3004).
+
+    The two detectors disagree about what counts as a valid spelling, so the guard takes
+    the union. The regex covers the `  issue: "#1234"` YAML shape even when the parser is
+    the component that broke; the parser covers every other shape — JSON frontmatter, a
+    bare `issue: 2804` — even though the regex was never taught those. Either detector
+    alone would make the invariant only as broad as the heuristic behind it, and the
+    failure is silent: the lesson is simply exempt from the check.
+    """
+    found = set()
+    for md in lesson_files:
         if md.name == "README.md":
             continue
-        rel = md.relative_to(REPO).as_posix()
         head = md.read_text(encoding="utf-8", errors="replace")
         m = re.match(r"^---\s*\n(.*?)\n---", head, re.DOTALL)
         if m and re.search(r"^\s+issue:\s*[\"']?#\d+", m.group(1), re.M):
-            declaring.append(rel)
+            found.add(md)
+            continue
+        fm = export_okf.extract_frontmatter(md)
+        if isinstance(fm, dict):
+            prov = fm.get("provenance")
+            if isinstance(prov, dict) and prov.get("issue") not in (None, ""):
+                found.add(md)
+    return found
+
+
+def test_the_guard_sees_an_issue_spelling_the_regex_never_learned(tmp_path):
+    """Proves the parser arm of the union is load-bearing, rather than asserting it."""
+    md = write(tmp_path, "---\ntitle: t\nprovenance:\n  issue: 2804\n---\nbody\n")
+    assert _declaring_issue_paths([md]) == {md}
+
+
+def test_every_lesson_that_declares_an_issue_exports_it(exported):
+    """The defect as a corpus invariant — this is the test that would have caught #3004."""
+    by_path = {r["path"]: r for r in exported}
+    declaring = sorted(p.relative_to(REPO).as_posix()
+                       for p in _declaring_issue_paths((REPO / "lessons").rglob("*.md")))
     assert len(declaring) >= 40, f"only {len(declaring)} lessons declare provenance.issue — corpus changed?"
     missing = [p for p in declaring if not (by_path.get(p, {}).get("provenance") or {}).get("issue")]
     assert not missing, (
