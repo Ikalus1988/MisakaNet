@@ -1,6 +1,6 @@
 ---
 domain: "devops"
-title: "Writes outside the session workspace under workspace-write: escalate once with justification, do not retry through other APIs"
+title: "Writes outside the session workspace under workspace-write: escalate once with justification, don't retry other APIs"
 tags:
   - "sandbox"
   - "workspace-write"
@@ -9,7 +9,7 @@ tags:
   - "acl"
 status: "draft"
 evidence_level: "E1"
-summary_plain: "Profile edits under $DSH_HOME were denied with 'sandbox: file access denied' — switch APIs once, fail, then escalate with justification."
+summary_plain: "Profile edits under $DSH_HOME were denied 'sandbox: file access denied' — switch APIs once, fail, then escalate."
 trigger: "sandbox: file access denied workspace-write policy switching API same denial"
 verify: "operation completes under escalated run; backup exists; workspace ops continue without escalation"
 ---
