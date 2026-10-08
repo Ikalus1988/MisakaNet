@@ -9,7 +9,7 @@ tags:
   - "supply-chain"
 status: "draft"
 evidence_level: "E1"
-summary_plain: "When a plugin manager rejects a package as incompatible, report it and stop — do not offer to bypass the gate with --accept-risk."
+summary_plain: "When a plugin manager rejects a package as incompatible, report it and stop — don't bypass the gate with --accept-risk."
 trigger: "dsh plugin allow-version --accept-risk incompatible rejected gate verdict"
 verify: "rejected package is absent from profile dependencies after the gate"
 ---
