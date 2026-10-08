@@ -1,9 +1,23 @@
 {
-  "generated_at": "2026-10-07T20:40:04.578223+00:00",
+  "generated_at": "2026-10-08T01:04:42.205796+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "chore: update leaderboard snapshot",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3021",
+      "timestamp": "2026-10-07T20:58:19Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3020",
+      "timestamp": "2026-10-07T20:49:07Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "docs(handoff): phase 4 — ten §3.1 closures, the delivery half proven in production, and seven bad judgment criteria",
@@ -23,20 +37,6 @@
       "title": "chore: auto-update lessons.json, public counts and generated pages",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/3014",
       "timestamp": "2026-10-07T17:10:55Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "fix(dsh): an unresolvable MCP client returned silently, leaving no way to tell absent from broken (#2759)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3009",
-      "timestamp": "2026-10-07T17:01:44Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "lesson: git diff --check misses removed-line whitespace, and -w hides string content (#2256)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3007",
-      "timestamp": "2026-10-07T17:01:40Z",
       "source": "github"
     },
     {
