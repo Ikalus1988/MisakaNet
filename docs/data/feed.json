@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-10-08T14:33:21.195936+00:00",
+  "generated_at": "2026-10-08T15:03:04.391958+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "lesson: a doc link to the run's own output is not a broken link (#2258)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3037",
-      "timestamp": "2026-10-08T14:25:03Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "docs(field-reports): scope the claims this report cannot support (#3011)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3036",
-      "timestamp": "2026-10-08T14:07:43Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "fix(docs): the phase-5 handoff reached main carrying the path it warns about",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3035",
-      "timestamp": "2026-10-08T13:39:52Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "docs(handoff): phase 5 — a rule whose corpus was narrower than what it guards (#3011, #3029)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3034",
-      "timestamp": "2026-10-08T13:21:00Z",
+      "title": "lesson: a failed later hunk does not mean earlier files are untouched (#2469)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3039",
+      "timestamp": "2026-10-08T15:02:50Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
       "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3033",
-      "timestamp": "2026-10-08T12:49:33Z",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3047",
+      "timestamp": "2026-10-08T14:50:21Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore: auto-update lessons.json, public counts and generated pages",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3045",
+      "timestamp": "2026-10-08T14:35:18Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "fix(search): a query containing \"usage\" was zeroing the whole FAQ corpus (#3001)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3043",
+      "timestamp": "2026-10-08T14:33:28Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "lesson: a doc link to the run's own output is not a broken link (#2258)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3037",
+      "timestamp": "2026-10-08T14:25:03Z",
       "source": "github"
     },
     {
