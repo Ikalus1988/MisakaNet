@@ -10,7 +10,7 @@ tags:
   - "dsh"
 status: "draft"
 evidence_level: "E1"
-summary_plain: "README said to install with --profile web, but this machine only had a desktop profile, so the plugin installed and silently never loaded."
+summary_plain: "README said --profile web, but only a desktop profile existed, so the plugin installed and never loaded."
 trigger: "--profile name from README installs into a profile the running host never loads"
 verify: "list $DSH_HOME/profiles/ before install, confirm the profile name matches the running host, rewrite the command"
 ---
