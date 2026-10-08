@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-10-08T15:03:04.391958+00:00",
+  "generated_at": "2026-10-08T18:35:23.716243+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "lesson: a failed later hunk does not mean earlier files are untouched (#2469)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3039",
-      "timestamp": "2026-10-08T15:02:50Z",
+      "title": "lesson: README --profile name verbatim installs into unloaded profile (closes #2865)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3040",
+      "timestamp": "2026-10-08T18:34:35Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3047",
-      "timestamp": "2026-10-08T14:50:21Z",
+      "title": "docs(handoff): phase 9 — seven PRs finished, and four ways I read silence as success",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3067",
+      "timestamp": "2026-10-08T18:02:22Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore: auto-update lessons.json, public counts and generated pages",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3045",
-      "timestamp": "2026-10-08T14:35:18Z",
+      "title": "fix(test): the burst-limit test assumed a clock it does not control",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3066",
+      "timestamp": "2026-10-08T17:28:30Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(search): a query containing \"usage\" was zeroing the whole FAQ corpus (#3001)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3043",
-      "timestamp": "2026-10-08T14:33:28Z",
+      "title": "test(okf): the #3004 guard was only as broad as its own regex",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3064",
+      "timestamp": "2026-10-08T17:11:31Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "lesson: a doc link to the run's own output is not a broken link (#2258)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3037",
-      "timestamp": "2026-10-08T14:25:03Z",
+      "title": "docs(handoff): phase 8 — two conclusions overturned, and a guard as narrow as its own heuristic",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3065",
+      "timestamp": "2026-10-08T17:02:45Z",
       "source": "github"
     },
     {
