@@ -81,6 +81,7 @@
 /lessons/onchain-payout-preflight-checklist/ /lessons/an-on-chain-payout-has-no-retry-the-checks-an-agent-must-pass-before-it-signs/ 301
 /lessons/openclaw-session-row-entry-updatedat-mismatch/ /lessons/openclaw-82-session-nodes-entry-valid-stays-0-after-manual-sqlite-edit/ 301
 /lessons/owa-thread-view-historical-attachments-not-accessible/ /lessons/owa-thread-view-exposes-only-the-newest-messages-attachments-older-ones-need-a-m/ 301
+/lessons/patch-failed-hunk-already-changed-earlier-files/ /lessons/a-patch-that-fails-on-a-later-hunk-has-usually-already-changed-the-earlier-ones/ 301
 /lessons/pdf-text-extraction-drops-hyphen/ /lessons/pdf-oxide-drops-compound-word-hyphen-when-pdf-wraps-at-that-hyphen/ 301
 /lessons/pkill-pattern-matches-its-own-shell/ /lessons/pkill-f-kills-the-shell-that-runs-it-the-pattern-matches-its-own-command-line/ 301
 /lessons/port-already-allocated-find-and-free-the-holder/ /lessons/port-is-already-allocated-is-an-os-level-eaddrinuse-name-the-holder-with-ss-free/ 301
