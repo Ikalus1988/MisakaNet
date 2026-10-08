@@ -42,8 +42,8 @@
     }
   ],
   "corpus": {
-    "lesson_count": 471,
-    "fingerprint": "sha256:2cdd9a7ff287d285b51a80c9a9f1eed5f44464857326d9ee4c457e0d167f08c9"
+    "lesson_count": 472,
+    "fingerprint": "sha256:c70512621ce15599aa607dc6d94b611dd834daa724d42ac2ba9e3dbf4c25efeb"
   },
   "queries": [
     {
@@ -56,39 +56,39 @@
         },
         {
           "path": "lessons/contrib/hermes-model-switch-ccswitch.md",
-          "score": 0.740399
+          "score": 0.740417
         },
         {
           "path": "lessons/contrib/rag-three-channel-llm-disaster-recovery.md",
-          "score": 0.562708
+          "score": 0.562774
         },
         {
           "path": "lessons/contrib/rag-cross-encoder-cpu-bottleneck.md",
-          "score": 0.500207
+          "score": 0.500337
         },
         {
           "path": "lessons/contrib/git-clean-branch-after-merged-pr-ru.md",
-          "score": 0.49197
+          "score": 0.491928
         },
         {
           "path": "lessons/contrib/fanuc-dcs-safety-configuration.md",
-          "score": 0.471061
+          "score": 0.471169
         },
         {
           "path": "lessons/core/search-first-roadmap-loop.md",
-          "score": 0.414299
+          "score": 0.414385
         },
         {
           "path": "lessons/contrib/git-checkout-discards-uncommitted-work.md",
-          "score": 0.377693
+          "score": 0.377815
         },
         {
           "path": "lessons/contrib/llm-cost-telemetry-undercount.md",
-          "score": 0.372328
+          "score": 0.372396
         },
         {
           "path": "lessons/contrib/vertex-gemini-model-id-naming.md",
-          "score": 0.368669
+          "score": 0.368738
         }
       ]
     },
@@ -102,39 +102,39 @@
         },
         {
           "path": "lessons/contrib/wxauto-windows-python-not-wsl.md",
-          "score": 0.740643
+          "score": 0.74058
         },
         {
           "path": "lessons/contrib/python-venv-tiktoken-module-not-found.md",
-          "score": 0.653962
+          "score": 0.653903
         },
         {
           "path": "lessons/contrib/agent-manual-update-timeout.md",
-          "score": 0.55817
+          "score": 0.558185
         },
         {
           "path": "lessons/contrib/pip-install-proxy-timeout.md",
-          "score": 0.54311
+          "score": 0.543102
         },
         {
           "path": "lessons/contrib/wcferry-wechat-version-lock.md",
-          "score": 0.519042
+          "score": 0.519054
         },
         {
           "path": "lessons/contrib/lesson-08-pip-https-proxy-clash.md",
-          "score": 0.51629
+          "score": 0.516301
         },
         {
           "path": "lessons/core/auto-merge-ci-pipeline.md",
-          "score": 0.495029
+          "score": 0.495042
         },
         {
           "path": "lessons/contrib/browser-harness-cdp-browser-automation.md",
-          "score": 0.492399
+          "score": 0.492432
         },
         {
           "path": "lessons/contrib/lesson-10-agent-reach-doctor-baseline.md",
-          "score": 0.490858
+          "score": 0.490893
         }
       ]
     },
@@ -148,39 +148,39 @@
         },
         {
           "path": "lessons/contrib/pip-install-proxy-timeout.md",
-          "score": 0.764043
+          "score": 0.7639
         },
         {
           "path": "lessons/contrib/lesson-08-pip-https-proxy-clash.md",
-          "score": 0.726519
+          "score": 0.726416
         },
         {
           "path": "lessons/contrib/pt-br/instalacao-pip-timeout-proxy.md",
-          "score": 0.664783
+          "score": 0.66464
         },
         {
           "path": "lessons/core/auto-merge-ci-pipeline.md",
-          "score": 0.656077
+          "score": 0.656047
         },
         {
           "path": "lessons/contrib/agent-web-access-toolchain-selection.md",
-          "score": 0.637353
+          "score": 0.637265
         },
         {
           "path": "lessons/contrib/wxauto-windows-python-not-wsl.md",
-          "score": 0.62839
+          "score": 0.628388
         },
         {
           "path": "lessons/contrib/ci-dco-decouple-pythonpath-fork-pr.md",
-          "score": 0.604522
+          "score": 0.604621
         },
         {
           "path": "lessons/contrib/fehler-python-modul-nicht-gefunden.md",
-          "score": 0.590716
+          "score": 0.590609
         },
         {
           "path": "lessons/contrib/lesson-07-uv-venv-seed-fix-no-pip.md",
-          "score": 0.588279
+          "score": 0.588176
         }
       ]
     },
@@ -194,39 +194,39 @@
         },
         {
           "path": "lessons/contrib/lesson-template-network.md",
-          "score": 0.733476
+          "score": 0.733495
         },
         {
           "path": "lessons/contrib/pip-install-timeout-ssl.md",
-          "score": 0.7295
+          "score": 0.729716
         },
         {
           "path": "lessons/contrib/es/proxy-corporativo-curl-timeout.md",
-          "score": 0.714839
+          "score": 0.714862
         },
         {
           "path": "lessons/contrib/python-smtplib-ssl-certificate-verify-failed-fix.md",
-          "score": 0.680407
+          "score": 0.680389
         },
         {
           "path": "lessons/contrib/pip-install-proxy-timeout.md",
-          "score": 0.674433
+          "score": 0.674476
         },
         {
           "path": "lessons/contrib/git-tls-handshake-failure.md",
-          "score": 0.667652
+          "score": 0.667852
         },
         {
           "path": "lessons/contrib/npm-e403-forbidden-three-layers.md",
-          "score": 0.59754
+          "score": 0.597716
         },
         {
           "path": "lessons/contrib/github-release-large-asset-download-cn.md",
-          "score": 0.595876
+          "score": 0.596028
         },
         {
           "path": "lessons/contrib/wechat-pubacct-fetch-separate-search-from-retrieval.md",
-          "score": 0.54575
+          "score": 0.545912
         }
       ]
     },
@@ -240,39 +240,39 @@
         },
         {
           "path": "lessons/en/disk-full-agent-tmp-gc.md",
-          "score": 0.613341
+          "score": 0.610195
         },
         {
           "path": "lessons/core/pr-cleanup-sop.md",
-          "score": 0.502784
+          "score": 0.504241
         },
         {
           "path": "lessons/contrib/openclaw-reinstall-lesson.md",
-          "score": 0.501501
+          "score": 0.503775
         },
         {
           "path": "lessons/contrib/github-connectivity-4-fallbacks.md",
-          "score": 0.465051
+          "score": 0.46717
         },
         {
           "path": "lessons/contrib/agent-manual-update-timeout.md",
-          "score": 0.442015
+          "score": 0.443971
         },
         {
           "path": "lessons/core/whole-file-content-push-reverts-managed-lines.md",
-          "score": 0.439765
+          "score": 0.438864
         },
         {
           "path": "lessons/contrib/git-tls-handshake-failure.md",
-          "score": 0.420518
+          "score": 0.422364
         },
         {
           "path": "lessons/contrib/oss-refactor-lessons.md",
-          "score": 0.41515
+          "score": 0.417522
         },
         {
           "path": "lessons/contrib/feishu-markdown-table-not-rendered.md",
-          "score": 0.406843
+          "score": 0.408597
         }
       ]
     },
@@ -286,39 +286,39 @@
         },
         {
           "path": "lessons/contrib/lesson-06-git-push-credential-helper-403.md",
-          "score": 0.549893
+          "score": 0.54984
         },
         {
           "path": "lessons/contrib/erreur-permission-docker-linux.md",
-          "score": 0.541333
+          "score": 0.541277
         },
         {
           "path": "lessons/contrib/npm-eacces-permission-error-linux.md",
-          "score": 0.502206
+          "score": 0.50218
         },
         {
           "path": "lessons/contrib/a-child-probe-failure-must-not-poison-the-parent-listing.md",
-          "score": 0.479986
+          "score": 0.479993
         },
         {
           "path": "lessons/core/dco-auto-fix-workflow.md",
-          "score": 0.465678
+          "score": 0.465782
         },
         {
           "path": "lessons/core/auto-merge-ci-pipeline.md",
-          "score": 0.399693
+          "score": 0.399716
         },
         {
           "path": "lessons/core/pr-cleanup-sop.md",
-          "score": 0.397616
+          "score": 0.397707
         },
         {
           "path": "lessons/contrib/js-dead-code-chain-break.md",
-          "score": 0.393028
+          "score": 0.393107
         },
         {
           "path": "lessons/contrib/shell-script-debugging.md",
-          "score": 0.388529
+          "score": 0.388606
         }
       ]
     },
@@ -332,39 +332,39 @@
         },
         {
           "path": "lessons/core/dco-auto-fix-workflow.md",
-          "score": 0.546314
+          "score": 0.54642
         },
         {
           "path": "lessons/contrib/js-dead-code-chain-break.md",
-          "score": 0.538586
+          "score": 0.538674
         },
         {
           "path": "lessons/contrib/shell-script-debugging.md",
-          "score": 0.534046
+          "score": 0.534132
         },
         {
           "path": "lessons/core/pr-cleanup-sop.md",
-          "score": 0.48769
+          "score": 0.487839
         },
         {
           "path": "lessons/contrib/ci-lambda-module-level-side-effects.md",
-          "score": 0.48686
+          "score": 0.486973
         },
         {
           "path": "lessons/core/cronjob-one-shot-race-condition-duplicate-execution.md",
-          "score": 0.486509
+          "score": 0.486435
         },
         {
           "path": "lessons/contrib/lesson-15-cloudflare-workflows-durable.md",
-          "score": 0.47742
+          "score": 0.477496
         },
         {
           "path": "lessons/contrib/lesson-13-aws-lambda-microvms.md",
-          "score": 0.476504
+          "score": 0.476615
         },
         {
           "path": "lessons/contrib/fanuc-rgcore-hang-endpoint-security-injection.md",
-          "score": 0.452406
+          "score": 0.45257
         }
       ]
     },
@@ -378,39 +378,39 @@
         },
         {
           "path": "lessons/core/pr-cleanup-sop.md",
-          "score": 0.661854
+          "score": 0.66208
         },
         {
           "path": "lessons/core/contributor-engagement-retention.md",
-          "score": 0.60387
+          "score": 0.603989
         },
         {
           "path": "lessons/contrib/import-path-verification-after-refactor.md",
-          "score": 0.548467
+          "score": 0.548254
         },
         {
           "path": "lessons/contrib/github-api-pr-submission-pitfalls.md",
-          "score": 0.536345
+          "score": 0.536386
         },
         {
           "path": "lessons/contrib/fanuc-ls-parser-comment-and-segment-boundary.md",
-          "score": 0.519202
+          "score": 0.519244
         },
         {
           "path": "lessons/contrib/python-venv-troubleshoot.md",
-          "score": 0.499778
+          "score": 0.4996
         },
         {
           "path": "lessons/contrib/ci-lambda-module-level-side-effects.md",
-          "score": 0.49788
+          "score": 0.497827
         },
         {
           "path": "lessons/contrib/ci-dco-decouple-pythonpath-fork-pr.md",
-          "score": 0.48411
+          "score": 0.484232
         },
         {
           "path": "lessons/contrib/json-parse-failure-handling.md",
-          "score": 0.47956
+          "score": 0.479509
         }
       ]
     },
@@ -424,39 +424,39 @@
         },
         {
           "path": "lessons/contrib/tts-chinese-encoding-powershell.md",
-          "score": 0.75786
+          "score": 0.757869
         },
         {
           "path": "lessons/contrib/python-gbk-encoding-error.md",
-          "score": 0.754069
+          "score": 0.754082
         },
         {
           "path": "lessons/core/allowlist-must-be-tested-against-the-corpus.md",
-          "score": 0.752354
+          "score": 0.752477
         },
         {
           "path": "lessons/contrib/aider-windows-unicode-error.md",
-          "score": 0.748591
+          "score": 0.748599
         },
         {
           "path": "lessons/contrib/wsl-pip-gbk-hub-poller-crash.md",
-          "score": 0.734516
+          "score": 0.734537
         },
         {
           "path": "lessons/contrib/windows-ci-splitcommand-backslash-unicode-detached.md",
-          "score": 0.690293
+          "score": 0.690361
         },
         {
           "path": "lessons/contrib/voice-pipeline-silent-failures.md",
-          "score": 0.619224
+          "score": 0.619345
         },
         {
           "path": "lessons/core/whole-file-content-push-reverts-managed-lines.md",
-          "score": 0.576441
+          "score": 0.576586
         },
         {
           "path": "lessons/en/jsonl-activity-ledger.md",
-          "score": 0.562343
+          "score": 0.562399
         }
       ]
     },
@@ -470,39 +470,39 @@
         },
         {
           "path": "lessons/contrib/pip-install-timeout-ssl.md",
-          "score": 0.623342
+          "score": 0.623496
         },
         {
           "path": "lessons/contrib/playwright-snap-chromium-libnss3-sandbox-launch.md",
-          "score": 0.551227
+          "score": 0.551394
         },
         {
           "path": "lessons/contrib/ci-dco-decouple-pythonpath-fork-pr.md",
-          "score": 0.549624
+          "score": 0.549837
         },
         {
           "path": "lessons/contrib/browser-harness-cdp-browser-automation.md",
-          "score": 0.52756
+          "score": 0.527701
         },
         {
           "path": "lessons/contrib/git-tls-handshake-failure.md",
-          "score": 0.497727
+          "score": 0.497899
         },
         {
           "path": "lessons/contrib/openclaw-reinstall-lesson.md",
-          "score": 0.494972
+          "score": 0.495014
         },
         {
           "path": "lessons/contrib/agent-manual-update-timeout.md",
-          "score": 0.466759
+          "score": 0.466832
         },
         {
           "path": "lessons/contrib/testimonio-misakanet.md",
-          "score": 0.456053
+          "score": 0.455974
         },
         {
           "path": "lessons/contrib/git-credential-helper-gh-path-mismatch.md",
-          "score": 0.452257
+          "score": 0.452347
         }
       ]
     },
@@ -516,39 +516,39 @@
         },
         {
           "path": "lessons/contrib/feishu-websocket-404-error-http-webhook-required.md",
-          "score": 0.763787
+          "score": 0.763739
         },
         {
           "path": "lessons/contrib/feishu-setup-complete-cc-connect.md",
-          "score": 0.710985
+          "score": 0.710954
         },
         {
           "path": "lessons/contrib/registration-chain-worker-fallback.md",
-          "score": 0.680598
+          "score": 0.680712
         },
         {
           "path": "lessons/contrib/wxauto-im-feedback-collection-jsonl-queue.md",
-          "score": 0.679855
+          "score": 0.679871
         },
         {
           "path": "lessons/contrib/hub-feishu-wsclient-start-never-called.md",
-          "score": 0.633793
+          "score": 0.633667
         },
         {
           "path": "lessons/contrib/process-card-sequence-extraction-rules.md",
-          "score": 0.585933
+          "score": 0.585973
         },
         {
           "path": "lessons/contrib/feishu-display-optimization-cc-connect.md",
-          "score": 0.580149
+          "score": 0.580102
         },
         {
           "path": "lessons/contrib/openclaw-gateway-dynamic-module-missing.md",
-          "score": 0.548339
+          "score": 0.548353
         },
         {
           "path": "lessons/contrib/feishu-markdown-table-not-rendered.md",
-          "score": 0.515368
+          "score": 0.515314
         }
       ]
     },
@@ -562,39 +562,39 @@
         },
         {
           "path": "lessons/contrib/finding-and-fixing-ghostty-s-largest-memory-leak.md",
-          "score": 0.733235
+          "score": 0.733131
         },
         {
           "path": "lessons/contrib/rag-build-strategy-batch.md",
-          "score": 0.569109
+          "score": 0.569128
         },
         {
           "path": "lessons/contrib/debugging-memory-leaks-in-ruby.md",
-          "score": 0.53631
+          "score": 0.536326
         },
         {
           "path": "lessons/contrib/lesson-08-pip-https-proxy-clash.md",
-          "score": 0.535833
+          "score": 0.535897
         },
         {
           "path": "lessons/contrib/permission-denied-fix.md",
-          "score": 0.507299
+          "score": 0.507298
         },
         {
           "path": "lessons/contrib/wsl-pip-gbk-hub-poller-crash.md",
-          "score": 0.496877
+          "score": 0.49688
         },
         {
           "path": "lessons/contrib/wsl-terminal-underscore-corruption.md",
-          "score": 0.495481
+          "score": 0.495488
         },
         {
           "path": "lessons/contrib/wsl-proxy-setup.md",
-          "score": 0.495093
+          "score": 0.495097
         },
         {
           "path": "lessons/contrib/wsl-proxy-huggingface-external.md",
-          "score": 0.487844
+          "score": 0.487851
         }
       ]
     },
@@ -608,39 +608,39 @@
         },
         {
           "path": "lessons/contrib/fanuc-rgcore-hang-endpoint-security-injection.md",
-          "score": 0.624096
+          "score": 0.624228
         },
         {
           "path": "lessons/contrib/gateway-hang-watchdog-recovery.md",
-          "score": 0.597563
+          "score": 0.597552
         },
         {
           "path": "lessons/contrib/tmux-session-management.md",
-          "score": 0.522163
+          "score": 0.522177
         },
         {
           "path": "lessons/core/contributor-engagement-retention.md",
-          "score": 0.491739
+          "score": 0.491837
         },
         {
           "path": "lessons/contrib/an-archive-container-name-is-not-an-entity-name.md",
-          "score": 0.446702
+          "score": 0.446744
         },
         {
           "path": "lessons/contrib/kubernetes-crashloopbackoff-debugging.md",
-          "score": 0.437204
+          "score": 0.437162
         },
         {
           "path": "lessons/contrib/github-connectivity-4-fallbacks.md",
-          "score": 0.401894
+          "score": 0.401986
         },
         {
           "path": "lessons/contrib/registration-chain-worker-fallback.md",
-          "score": 0.397418
+          "score": 0.397536
         },
         {
           "path": "lessons/contrib/docker-compose-basics.md",
-          "score": 0.385596
+          "score": 0.385592
         }
       ]
     },
@@ -650,7 +650,7 @@
       "results": [
         {
           "path": "lessons/core/dco-auto-fix-workflow.md",
-          "score": 0.952009
+          "score": 0.952058
         },
         {
           "path": "lessons/contrib/dco-signoff-force-push-pitfall.md",
@@ -658,35 +658,35 @@
         },
         {
           "path": "lessons/contrib/error-dco-signoff-windows.md",
-          "score": 0.759386
+          "score": 0.759446
         },
         {
           "path": "lessons/core/auto-merge-ci-pipeline.md",
-          "score": 0.612684
+          "score": 0.612727
         },
         {
           "path": "lessons/contrib/ci-dco-decouple-pythonpath-fork-pr.md",
-          "score": 0.588234
+          "score": 0.588326
         },
         {
           "path": "lessons/contrib/ci-github-token-push-does-not-trigger-workflows.md",
-          "score": 0.539188
+          "score": 0.539322
         },
         {
           "path": "lessons/en/ci-dco-fork-pr-signoff.md",
-          "score": 0.480661
+          "score": 0.480688
         },
         {
           "path": "lessons/core/pr-cleanup-sop.md",
-          "score": 0.433827
+          "score": 0.433897
         },
         {
           "path": "lessons/core/pull-request-welcome-trigger-trap.md",
-          "score": 0.403605
+          "score": 0.403667
         },
         {
           "path": "lessons/contrib/json-schema-boolean-subschema-means-any-value.md",
-          "score": 0.386014
+          "score": 0.386059
         }
       ]
     },
@@ -700,7 +700,7 @@
         },
         {
           "path": "lessons/contrib/postgresql-connection-pool-exhaustion-ar.md",
-          "score": 0.663073
+          "score": 0.663022
         },
         {
           "path": "lessons/contrib/nodejs-missing-require-inside-try-catch.md",
@@ -708,31 +708,31 @@
         },
         {
           "path": "lessons/contrib/webcrypto-fallback-consistency-node-worker.md",
-          "score": 0.547029
+          "score": 0.547006
         },
         {
           "path": "lessons/contrib/npm-eacces-permission-error-linux.md",
-          "score": 0.511174
+          "score": 0.51118
         },
         {
           "path": "lessons/contrib/windows-ci-splitcommand-backslash-unicode-detached.md",
-          "score": 0.414553
+          "score": 0.414601
         },
         {
           "path": "lessons/contrib/windows-node-sandbox-hardcoded-root.md",
-          "score": 0.410939
+          "score": 0.411006
         },
         {
           "path": "lessons/contrib/cloudflare-email-worker-registration-trap.md",
-          "score": 0.398588
+          "score": 0.398676
         },
         {
           "path": "lessons/core/contributor-engagement-retention.md",
-          "score": 0.388831
+          "score": 0.388878
         },
         {
           "path": "lessons/contrib/node-strip-types-rejects-syntax-that-needs-lowering.md",
-          "score": 0.386191
+          "score": 0.386202
         }
       ]
     },
@@ -746,39 +746,39 @@
         },
         {
           "path": "lessons/contrib/corporate-proxy-curl-timeout.md",
-          "score": 0.738928
+          "score": 0.739143
         },
         {
           "path": "lessons/contrib/git-push-without-shell-agent.md",
-          "score": 0.636863
+          "score": 0.636802
         },
         {
           "path": "lessons/contrib/python-smtplib-ssl-certificate-verify-failed-fix.md",
-          "score": 0.636239
+          "score": 0.635651
         },
         {
           "path": "lessons/contrib/es/proxy-corporativo-curl-timeout.md",
-          "score": 0.631197
+          "score": 0.631414
         },
         {
           "path": "lessons/contrib/gfw-tls-sni-block-pattern.md",
-          "score": 0.610083
+          "score": 0.610247
         },
         {
           "path": "lessons/contrib/gfw-tls-sni-blocking-tool-layer-ineffective.md",
-          "score": 0.592719
+          "score": 0.592866
         },
         {
           "path": "lessons/contrib/curl-exit-23-is-a-write-failure-not-a-network-failure.md",
-          "score": 0.576656
+          "score": 0.576232
         },
         {
           "path": "lessons/contrib/lesson-template-network.md",
-          "score": 0.549651
+          "score": 0.549798
         },
         {
           "path": "lessons/contrib/github-connectivity-4-fallbacks.md",
-          "score": 0.546433
+          "score": 0.546743
         }
       ]
     },
@@ -792,39 +792,39 @@
         },
         {
           "path": "lessons/contrib/rag-chunk-params-800-100.md",
-          "score": 0.738636
+          "score": 0.739618
         },
         {
           "path": "lessons/contrib/search-evaluation-rank-tracking-bias.md",
-          "score": 0.651132
+          "score": 0.651933
         },
         {
           "path": "lessons/contrib/rag-alarm-code-mandatory-recall.md",
-          "score": 0.648311
+          "score": 0.649105
         },
         {
           "path": "lessons/contrib/retrieval-projection-truncation-caps-recall.md",
-          "score": 0.589873
+          "score": 0.589034
         },
         {
           "path": "lessons/contrib/rag-retrieval-six-layer-silent-degradation.md",
-          "score": 0.585068
+          "score": 0.585819
         },
         {
           "path": "lessons/contrib/bm25-chinese-sliding-window-tuning.md",
-          "score": 0.582523
+          "score": 0.583336
         },
         {
           "path": "lessons/contrib/rag-chinese-encoding-pymupdf.md",
-          "score": 0.569783
+          "score": 0.57048
         },
         {
           "path": "lessons/contrib/rag-retrieval-sink-multilayer-cutoff.md",
-          "score": 0.546762
+          "score": 0.546792
         },
         {
           "path": "lessons/contrib/rag-cross-encoder-cpu-bottleneck.md",
-          "score": 0.526101
+          "score": 0.526783
         }
       ]
     },
@@ -838,39 +838,39 @@
         },
         {
           "path": "lessons/contrib/process-card-sequence-extraction-rules.md",
-          "score": 0.773967
+          "score": 0.773978
         },
         {
           "path": "lessons/contrib/wxauto-im-feedback-collection-jsonl-queue.md",
-          "score": 0.743972
+          "score": 0.744006
         },
         {
           "path": "lessons/contrib/feishu-setup-complete-cc-connect.md",
-          "score": 0.733788
+          "score": 0.733832
         },
         {
           "path": "lessons/contrib/wecom-robot-long-connect-no-ngrok.md",
-          "score": 0.719851
+          "score": 0.719874
         },
         {
           "path": "lessons/contrib/firewall-port-open-not-public.md",
-          "score": 0.700112
+          "score": 0.700124
         },
         {
           "path": "lessons/contrib/fanuc-r-2000ic-retrieval-fix.md",
-          "score": 0.642632
+          "score": 0.642689
         },
         {
           "path": "lessons/contrib/fanuc-rgcore-hang-endpoint-security-injection.md",
-          "score": 0.612643
+          "score": 0.612741
         },
         {
           "path": "lessons/contrib/vertical-kb-question-bank-strategy.md",
-          "score": 0.579838
+          "score": 0.579947
         },
         {
           "path": "lessons/contrib/chrome-relay-browser-automation.md",
-          "score": 0.568198
+          "score": 0.568296
         }
       ]
     },
@@ -884,39 +884,39 @@
         },
         {
           "path": "lessons/core/github-actions-code-injection.md",
-          "score": 0.541661
+          "score": 0.541735
         },
         {
           "path": "lessons/contrib/openclaw-prefer-cli-and-policy-over-direct-edit.md",
-          "score": 0.464588
+          "score": 0.464703
         },
         {
           "path": "lessons/core/dco-auto-fix-workflow.md",
-          "score": 0.437571
+          "score": 0.43765
         },
         {
           "path": "lessons/core/pull-request-welcome-trigger-trap.md",
-          "score": 0.398394
+          "score": 0.398435
         },
         {
           "path": "lessons/core/pr-cleanup-sop.md",
-          "score": 0.386085
+          "score": 0.386138
         },
         {
           "path": "lessons/contrib/feishu-wiki-batch-download.md",
-          "score": 0.364944
+          "score": 0.36501
         },
         {
           "path": "lessons/contrib/registration-chain-worker-fallback.md",
-          "score": 0.360429
+          "score": 0.360545
         },
         {
           "path": "lessons/contrib/fanuc-ls-parser-comment-and-segment-boundary.md",
-          "score": 0.356638
+          "score": 0.356644
         },
         {
           "path": "lessons/contrib/github-actions-composite-pitfalls.md",
-          "score": 0.346296
+          "score": 0.346344
         }
       ]
     },
@@ -930,39 +930,39 @@
         },
         {
           "path": "lessons/contrib/multi-forum-scraping-architecture.md",
-          "score": 0.728061
+          "score": 0.728095
         },
         {
           "path": "lessons/contrib/browser-harness-cdp-browser-automation.md",
-          "score": 0.701921
+          "score": 0.701954
         },
         {
           "path": "lessons/contrib/agent-web-access-toolchain-selection.md",
-          "score": 0.641894
+          "score": 0.641972
         },
         {
           "path": "lessons/contrib/chrome-relay-browser-automation.md",
-          "score": 0.63866
+          "score": 0.638747
         },
         {
           "path": "lessons/contrib/session-lesson-2-forum-accessibility-testing.md",
-          "score": 0.582808
+          "score": 0.582903
         },
         {
           "path": "lessons/en/user-agent-identify-bots.md",
-          "score": 0.575966
+          "score": 0.575952
         },
         {
           "path": "lessons/contrib/lessons-md-fix-heading-block-type.md",
-          "score": 0.558176
+          "score": 0.558216
         },
         {
           "path": "lessons/contrib/openclaw-playwright-wsl-libnss3-libnspr4-snap-chromium.md",
-          "score": 0.540889
+          "score": 0.540911
         },
         {
           "path": "lessons/contrib/feishu-block-type-values-limits.md",
-          "score": 0.525557
+          "score": 0.525615
         }
       ]
     },
@@ -972,7 +972,7 @@
       "results": [
         {
           "path": "lessons/core/dco-auto-fix-workflow.md",
-          "score": 0.952009
+          "score": 0.952058
         },
         {
           "path": "lessons/contrib/dco-signoff-force-push-pitfall.md",
@@ -980,35 +980,35 @@
         },
         {
           "path": "lessons/contrib/error-dco-signoff-windows.md",
-          "score": 0.759386
+          "score": 0.759446
         },
         {
           "path": "lessons/core/auto-merge-ci-pipeline.md",
-          "score": 0.612684
+          "score": 0.612727
         },
         {
           "path": "lessons/contrib/ci-dco-decouple-pythonpath-fork-pr.md",
-          "score": 0.588234
+          "score": 0.588326
         },
         {
           "path": "lessons/contrib/ci-github-token-push-does-not-trigger-workflows.md",
-          "score": 0.539188
+          "score": 0.539322
         },
         {
           "path": "lessons/en/ci-dco-fork-pr-signoff.md",
-          "score": 0.480661
+          "score": 0.480688
         },
         {
           "path": "lessons/core/pr-cleanup-sop.md",
-          "score": 0.433827
+          "score": 0.433897
         },
         {
           "path": "lessons/core/pull-request-welcome-trigger-trap.md",
-          "score": 0.403605
+          "score": 0.403667
         },
         {
           "path": "lessons/contrib/json-schema-boolean-subschema-means-any-value.md",
-          "score": 0.386014
+          "score": 0.386059
         }
       ]
     },
@@ -1018,7 +1018,7 @@
       "results": [
         {
           "path": "lessons/core/dco-auto-fix-workflow.md",
-          "score": 0.955752
+          "score": 0.955747
         },
         {
           "path": "lessons/contrib/dco-signoff-force-push-pitfall.md",
@@ -1026,35 +1026,35 @@
         },
         {
           "path": "lessons/contrib/error-dco-signoff-windows.md",
-          "score": 0.743513
+          "score": 0.743817
         },
         {
           "path": "lessons/contrib/ci-github-token-push-does-not-trigger-workflows.md",
-          "score": 0.614448
+          "score": 0.614765
         },
         {
           "path": "lessons/contrib/ci-dco-decouple-pythonpath-fork-pr.md",
-          "score": 0.613589
+          "score": 0.613701
         },
         {
           "path": "lessons/en/ci-dco-fork-pr-signoff.md",
-          "score": 0.611578
+          "score": 0.611466
         },
         {
           "path": "lessons/core/auto-merge-ci-pipeline.md",
-          "score": 0.588619
+          "score": 0.588772
         },
         {
           "path": "lessons/contrib/git-checkout-discards-uncommitted-work.md",
-          "score": 0.530853
+          "score": 0.53109
         },
         {
           "path": "lessons/en/gh-pr-ready-checklist.md",
-          "score": 0.488513
+          "score": 0.488317
         },
         {
           "path": "lessons/contrib/git-stash-is-repository-wide.md",
-          "score": 0.457685
+          "score": 0.457657
         }
       ]
     },
@@ -1068,39 +1068,39 @@
         },
         {
           "path": "lessons/contrib/pip-install-timeout-ssl.md",
-          "score": 0.752707
+          "score": 0.752762
         },
         {
           "path": "lessons/contrib/pt-br/instalacao-pip-timeout-proxy.md",
-          "score": 0.752467
+          "score": 0.752469
         },
         {
           "path": "lessons/contrib/python-smtplib-ssl-certificate-verify-failed-fix.md",
-          "score": 0.71246
+          "score": 0.712481
         },
         {
           "path": "lessons/contrib/agent-web-access-toolchain-selection.md",
-          "score": 0.619299
+          "score": 0.619357
         },
         {
           "path": "lessons/contrib/corporate-proxy-curl-timeout.md",
-          "score": 0.607218
+          "score": 0.607155
         },
         {
           "path": "lessons/contrib/lesson-08-pip-https-proxy-clash.md",
-          "score": 0.552646
+          "score": 0.552727
         },
         {
           "path": "lessons/core/auto-merge-ci-pipeline.md",
-          "score": 0.5412
+          "score": 0.541234
         },
         {
           "path": "lessons/contrib/git-tls-handshake-failure.md",
-          "score": 0.535442
+          "score": 0.535498
         },
         {
           "path": "lessons/contrib/lesson-template-network.md",
-          "score": 0.511564
+          "score": 0.511577
         }
       ]
     },
@@ -1114,39 +1114,39 @@
         },
         {
           "path": "lessons/contrib/git-credentials-and-node-id-setup.md",
-          "score": 0.776685
+          "score": 0.776764
         },
         {
           "path": "lessons/contrib/git-credential-helper-gh-path-mismatch.md",
-          "score": 0.757306
+          "score": 0.757273
         },
         {
           "path": "lessons/contrib/github-sudo-email-otp-wrong-input-field.md",
-          "score": 0.611105
+          "score": 0.610957
         },
         {
           "path": "lessons/core/an-error-code-that-says-retry-cannot-carry-a-not-found.md",
-          "score": 0.554757
+          "score": 0.554819
         },
         {
           "path": "lessons/contrib/git-credentials-automation.md",
-          "score": 0.513335
+          "score": 0.513242
         },
         {
           "path": "lessons/en/github-pat-scopes-minimum.md",
-          "score": 0.498154
+          "score": 0.498017
         },
         {
           "path": "lessons/contrib/lesson-06-git-push-credential-helper-403.md",
-          "score": 0.451069
+          "score": 0.450946
         },
         {
           "path": "lessons/contrib/mcp-intake-no-account-submission.md",
-          "score": 0.425237
+          "score": 0.425138
         },
         {
           "path": "lessons/contrib/auth-header-bug.md",
-          "score": 0.423931
+          "score": 0.424059
         }
       ]
     },
@@ -1156,7 +1156,7 @@
       "results": [
         {
           "path": "lessons/core/hermes-state-database-lock-issues-cleanup-protocol.md",
-          "score": 0.906512
+          "score": 0.906529
         },
         {
           "path": "lessons/contrib/agent-state-database-lock-cleanup.md",
@@ -1164,35 +1164,35 @@
         },
         {
           "path": "lessons/contrib/wsl-ntfs-sqlite-update-100x-slower.md",
-          "score": 0.678625
+          "score": 0.678614
         },
         {
           "path": "lessons/contrib/an-unlikely-database-migration.md",
-          "score": 0.57617
+          "score": 0.576202
         },
         {
           "path": "lessons/contrib/lesson-9-redis-postgresql-replacement.md",
-          "score": 0.572155
+          "score": 0.572192
         },
         {
           "path": "lessons/contrib/alembic-upgrade-failure.md",
-          "score": 0.471395
+          "score": 0.471417
         },
         {
           "path": "lessons/core/search-first-roadmap-loop.md",
-          "score": 0.46114
+          "score": 0.461112
         },
         {
           "path": "lessons/contrib/openclaw-session-row-entry-updatedat-mismatch.md",
-          "score": 0.440571
+          "score": 0.440526
         },
         {
           "path": "lessons/contrib/mcp-server-testing-patterns-ru.md",
-          "score": 0.43643
+          "score": 0.436482
         },
         {
           "path": "lessons/contrib/codex-keyring-user-interaction-not-allowed.md",
-          "score": 0.432571
+          "score": 0.432511
         }
       ]
     },
@@ -1206,39 +1206,39 @@
         },
         {
           "path": "lessons/contrib/python-gbk-encoding-error.md",
-          "score": 0.724767
+          "score": 0.724555
         },
         {
           "path": "lessons/contrib/wsl-pip-gbk-hub-poller-crash.md",
-          "score": 0.59749
+          "score": 0.597303
         },
         {
           "path": "lessons/contrib/tts-chinese-encoding-powershell.md",
-          "score": 0.542655
+          "score": 0.542698
         },
         {
           "path": "lessons/core/allowlist-must-be-tested-against-the-corpus.md",
-          "score": 0.517649
+          "score": 0.517752
         },
         {
           "path": "lessons/contrib/voice-pipeline-silent-failures.md",
-          "score": 0.464531
+          "score": 0.464694
         },
         {
           "path": "lessons/contrib/windows-ci-splitcommand-backslash-unicode-detached.md",
-          "score": 0.418212
+          "score": 0.418123
         },
         {
           "path": "lessons/contrib/rag-chinese-encoding-pymupdf.md",
-          "score": 0.412171
+          "score": 0.412062
         },
         {
           "path": "lessons/contrib/fanuc-intp-102-detect-joint-olp-whitespace.md",
-          "score": 0.394873
+          "score": 0.394976
         },
         {
           "path": "lessons/contrib/a-pystray-menu-thread-crash-is-an-appkit-main-thread-violation.md",
-          "score": 0.384469
+          "score": 0.384359
         }
       ]
     },
@@ -1252,39 +1252,39 @@
         },
         {
           "path": "lessons/contrib/feishu-setup-complete-cc-connect.md",
-          "score": 0.618078
+          "score": 0.617903
         },
         {
           "path": "lessons/contrib/feishu-block-batch-limit.md",
-          "score": 0.564471
+          "score": 0.564713
         },
         {
           "path": "lessons/contrib/feishu-mcp-server-deepseek-tui-setup.md",
-          "score": 0.555889
+          "score": 0.556164
         },
         {
           "path": "lessons/contrib/feishu-block-type-values-limits.md",
-          "score": 0.549761
+          "score": 0.550031
         },
         {
           "path": "lessons/contrib/lessons-md-fix-heading-block-type.md",
-          "score": 0.490719
+          "score": 0.490993
         },
         {
           "path": "lessons/contrib/feishu-display-optimization-cc-connect.md",
-          "score": 0.48233
+          "score": 0.481945
         },
         {
           "path": "lessons/contrib/browser-automation-csp-bypass.md",
-          "score": 0.481846
+          "score": 0.481832
         },
         {
           "path": "lessons/contrib/feishu-markdown-table-not-rendered.md",
-          "score": 0.469791
+          "score": 0.46949
         },
         {
           "path": "lessons/contrib/feishu-doc-url-use-api-return.md",
-          "score": 0.467492
+          "score": 0.467671
         }
       ]
     },
@@ -1298,39 +1298,39 @@
         },
         {
           "path": "lessons/contrib/fanuc-program-inspection-methodology.md",
-          "score": 0.653226
+          "score": 0.653779
         },
         {
           "path": "lessons/contrib/fanuc-intp-102-detect-joint-olp-whitespace.md",
-          "score": 0.580357
+          "score": 0.580153
         },
         {
           "path": "lessons/contrib/fanuc-mi-standard-software-instructions.md",
-          "score": 0.561664
+          "score": 0.562071
         },
         {
           "path": "lessons/contrib/fanuc-payload-estimation.md",
-          "score": 0.548855
+          "score": 0.548826
         },
         {
           "path": "lessons/contrib/fanuc-backup-restore-guide.md",
-          "score": 0.522612
+          "score": 0.522988
         },
         {
           "path": "lessons/contrib/agent-readfile-silent-truncation.md",
-          "score": 0.490151
+          "score": 0.489978
         },
         {
           "path": "lessons/contrib/fanuc-spot-wear-max-lookup.md",
-          "score": 0.475356
+          "score": 0.47568
         },
         {
           "path": "lessons/contrib/vertical-kb-question-bank-strategy.md",
-          "score": 0.462148
+          "score": 0.462518
         },
         {
           "path": "lessons/contrib/fanuc-dcs-safety-configuration.md",
-          "score": 0.460939
+          "score": 0.461251
         }
       ]
     },
@@ -1344,39 +1344,39 @@
         },
         {
           "path": "lessons/contrib/ghidra-mcp-server-reverse-engineering.md",
-          "score": 0.775327
+          "score": 0.775038
         },
         {
           "path": "lessons/contrib/mcp-registry-readiness-requires-qa-before-promotion.md",
-          "score": 0.728483
+          "score": 0.728567
         },
         {
           "path": "lessons/contrib/feishu-mcp-server-deepseek-tui-setup.md",
-          "score": 0.691286
+          "score": 0.690977
         },
         {
           "path": "lessons/contrib/lesson-17-segmentfault-mcp-standardization.md",
-          "score": 0.669885
+          "score": 0.669485
         },
         {
           "path": "lessons/contrib/mcp-server-direct-handler-testing.md",
-          "score": 0.665051
+          "score": 0.664787
         },
         {
           "path": "lessons/contrib/cloudflare-observability-mcp-oauth-separate-domain.md",
-          "score": 0.645462
+          "score": 0.645097
         },
         {
           "path": "lessons/contrib/mcp-context-mode-98-reduction.md",
-          "score": 0.645104
+          "score": 0.644724
         },
         {
           "path": "lessons/contrib/lesson-review-4-mcp-bedrock-integration.md",
-          "score": 0.605741
+          "score": 0.605601
         },
         {
           "path": "lessons/contrib/mcporter-cloudflare-oauth-endpoint-scope-wsl-callback.md",
-          "score": 0.5908
+          "score": 0.590809
         }
       ]
     },
@@ -1390,39 +1390,39 @@
         },
         {
           "path": "lessons/core/github-actions-code-injection.md",
-          "score": 0.666529
+          "score": 0.666556
         },
         {
           "path": "lessons/contrib/agentcap-secret-safe-verification-failure.md",
-          "score": 0.493949
+          "score": 0.494016
         },
         {
           "path": "lessons/contrib/gitguardian-placeholder-url-credential-safe-form.md",
-          "score": 0.424903
+          "score": 0.424994
         },
         {
           "path": "lessons/en/log-redaction-secrets.md",
-          "score": 0.365958
+          "score": 0.365989
         },
         {
           "path": "lessons/core/auto-merge-ci-pipeline.md",
-          "score": 0.362436
+          "score": 0.362482
         },
         {
           "path": "lessons/contrib/mcp-registry-readiness-requires-qa-before-promotion.md",
-          "score": 0.347745
+          "score": 0.347829
         },
         {
           "path": "lessons/contrib/github-actions-secrets-one-shot-workflow-pattern.md",
-          "score": 0.34204
+          "score": 0.342091
         },
         {
           "path": "lessons/contrib/heartbeat-scan-improvement.md",
-          "score": 0.33129
+          "score": 0.331327
         },
         {
           "path": "lessons/contrib/agentcap-is-not-on-pypi.md",
-          "score": 0.324046
+          "score": 0.324142
         }
       ]
     },
@@ -1436,39 +1436,39 @@
         },
         {
           "path": "lessons/contrib/permission-denied-fix.md",
-          "score": 0.714414
+          "score": 0.714415
         },
         {
           "path": "lessons/contrib/wsl-proxy-setup.md",
-          "score": 0.607087
+          "score": 0.607192
         },
         {
           "path": "lessons/contrib/wsl-proxy-huggingface-external.md",
-          "score": 0.595859
+          "score": 0.595963
         },
         {
           "path": "lessons/contrib/lesson-08-pip-https-proxy-clash.md",
-          "score": 0.500195
+          "score": 0.500304
         },
         {
           "path": "lessons/contrib/wsl-pip-gbk-hub-poller-crash.md",
-          "score": 0.498402
+          "score": 0.498471
         },
         {
           "path": "lessons/contrib/wsl-terminal-underscore-corruption.md",
-          "score": 0.487945
+          "score": 0.488019
         },
         {
           "path": "lessons/contrib/wsl2-memory-leak-fix.md",
-          "score": 0.487709
+          "score": 0.487781
         },
         {
           "path": "lessons/contrib/openclaw-playwright-wsl-libnss3-libnspr4-snap-chromium.md",
-          "score": 0.485192
+          "score": 0.485341
         },
         {
           "path": "lessons/core/search-first-roadmap-loop.md",
-          "score": 0.461381
+          "score": 0.461438
         }
       ]
     }
