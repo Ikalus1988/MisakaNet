@@ -315,6 +315,7 @@
     "docs/lessons/multi-forum-scraping-architecture/index.html",
     "docs/lessons/n8n-nodejs-econnreset-connection-reset-fix/index.html",
     "docs/lessons/navigating-a-shared-browser-tab-is-a-destructive-action-treat-it-like-deleting-a/index.html",
+    "docs/lessons/node-child-process-with-piped-stdio-fails-with-eperm-under-the-windows-sandbox/index.html",
     "docs/lessons/node-strip-only-mode-rejects-typescript-syntax-that-needs-lowering-not-just-type/index.html",
     "docs/lessons/nodejs-missing-require-inside-try-catch/index.html",
     "docs/lessons/normalize-mixed-types-in-linksjson-pack-manifests/index.html",
@@ -526,6 +527,7 @@
     "docs/topics/web3/index.html",
     "docs/topics/wechat/index.html",
     "docs/topics/windows-encoding/index.html",
+    "docs/topics/windows/index.html",
     "docs/topics/wsl/index.html"
   ],
   "slugs": {
@@ -844,6 +846,7 @@
     "multi-forum-scraping-architecture": "multi-forum-scraping-architecture",
     "multi-lane-rotate-on-block": "rotate-earn-lanes-when-one-market-is-blocked",
     "n8n-nodejs-econnreset-connection-reset-fix": "n8n-nodejs-econnreset-connection-reset-fix",
+    "node-child-process-eperm-windows-sandbox-redirect-to-file": "node-child-process-with-piped-stdio-fails-with-eperm-under-the-windows-sandbox",
     "node-strip-types-rejects-syntax-that-needs-lowering": "node-strip-only-mode-rejects-typescript-syntax-that-needs-lowering-not-just-type",
     "nodejs-missing-require-inside-try-catch": "nodejs-missing-require-inside-try-catch",
     "npc-dispatch-speaker-dislocation": "npc-dispatch-causes-spatial-bilocation-and-active-speaker-loss",

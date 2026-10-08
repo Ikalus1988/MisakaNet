@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Node child_process with piped stdio fails with EPERM under the Windows sandbox — MisakaNet</title>
-<meta name="description" content="`spawn` / `execSync` that captured a child's output through pipes failed with `EPERM` inside the Windows sandbox, making ordinary command capture look...">
+<meta name="description" content="Draft (not published): `spawn` / `execSync` that captured a child's output through pipes failed with `EPERM` inside the Windows sandbox, making ordinary command capture look...">
 <link rel="canonical" href="https://misakanet.org/lessons/node-child-process-with-piped-stdio-fails-with-eperm-under-the-windows-sandbox/">
 <meta property="og:title" content="Node child_process with piped stdio fails with EPERM under the Windows sandbox">
-<meta property="og:description" content="`spawn` / `execSync` that captured a child's output through pipes failed with `EPERM` inside the Windows sandbox, making ordinary command capture look...">
+<meta property="og:description" content="Draft (not published): `spawn` / `execSync` that captured a child's output through pipes failed with `EPERM` inside the Windows sandbox, making ordinary command capture look...">
 <meta property="og:url" content="https://misakanet.org/lessons/node-child-process-with-piped-stdio-fails-with-eperm-under-the-windows-sandbox/">
 <style>
   body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #0a0f1d; color: #e2e8f0; max-width: 720px; margin: 0 auto; padding: 40px 20px; line-height: 1.6; }
@@ -26,6 +26,7 @@
 </style>
 </head>
 <body>
+<div class="draft-banner" role="note" style="border:1px solid rgba(210,153,34,0.5);background:rgba(210,153,34,0.12);color:#e3b341;border-radius:6px;padding:10px 14px;margin-bottom:20px;font-size:13px;line-height:1.5;"><strong>Draft — not published.</strong> This lesson is <code style="background:rgba(210,153,34,0.15);padding:1px 5px;border-radius:3px;">draft</code> and may be incomplete or wrong. The MCP API returns it with <code>status: "draft"</code> so callers can filter it.</div>
 <h1>Node child_process with piped stdio fails with EPERM under the Windows sandbox</h1>
 <div class="meta">Domain: <a href="/topics/windows/">windows</a> · <span class="evidence" title="A maintainer accepted the intake">Evidence E1 — Maintainer reviewed</span></div>
 <div class="tags"><span class="tag">windows</span><span class="tag">sandbox</span><span class="tag">EPERM</span><span class="tag">child-process</span><span class="tag">stdio</span></div>

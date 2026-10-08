@@ -8800,6 +8800,38 @@
     "contributor": ""
   },
   {
+    "id": "node-child-process-eperm-windows-sandbox-redirect-to-file",
+    "title": "Node child_process with piped stdio fails with EPERM under the Windows sandbox",
+    "domain": "windows",
+    "tags": [
+      "windows",
+      "sandbox",
+      "EPERM",
+      "child-process",
+      "stdio"
+    ],
+    "summary": "`spawn` / `execSync` that captured a child's output through pipes failed with `EPERM` inside the Windows sandbox, making ordinary command capture look like a br…",
+    "preview": "# Node child_process with piped stdio fails with EPERM under the Windows sandbox\n\n## Problem\n\n`spawn` / `execSync` that captured a child's output through pipes failed with `EPERM` inside the Windows sandbox, making ordinary command capture look like a broken tool.\n\nThe error surfaced as `Error: spawn EPERM` or `Error: EPERM: operation not permitted` when the child process was configured with `stdio: ['pipe', 'pipe', 'pipe']` (or the shorthand `'pipe'`).\n\n## Root Cause\n\nThe confined sandbox cannot open named pipes, and piped stdio is implemented with them. On Windows, Node.js implements `stdio: 'pipe'` by creating anonymous pipes via the Windows API. The sandbox denies the pipe-creation call, so `spawn()` fails at the stdio-setup step — before the child process even starts.\n\nThe failure is the documented boundary, not a transient error. Retrying the same `spawn()` with the same `stdio` configuration will fail identically every time.\n\n## Solution\n\n### Step 1 — Do not retry the same spawn\n\nAfter the first `EPERM` on `spawn()`, do NOT:\n- retry with the same `stdio: 'pipe'` configuration\n- retry with `execSync` (it uses pipes internally)\n- retry with `execFile` (also uses pipes)\n- retry with `child_process.spawn` + manual pipe setup\n\nAll of these create named pipes; all will be denied identically.\n\n### Step 2 — Redirect the child's output to a file and read that file\n\nInstead of piping, redirect stdout/stderr to a temporary file:\n\n```javascript\nconst { execFileSync } = require('child_process');\nconst fs = require('fs');\nconst path = require('path');\n\nconst outFile = path.join(require('os').tmpdir(), `cmd-out-${Date.now()}.txt`);\nexecFileSync('some-command', ['--arg'], {\n  stdio: ['ignore', fs.openSync(outFile, 'w'), 'ignore'],\n  // 'ignore' for stdin/stderr, file fd for stdout — no pipes created\n});\n\nconst output = fs.readFileSync(outFile, 'utf-8');\nfs.unlinkSync(outFile); // cleanup\n```\n\nThe file redirect uses the filesystem (which the sandbox allows for the session workspace), not named pipes.\n\n### Step 3 — Or run the command through the harness's own command tool\n\nIf the sandboxed environment provides a command-execution tool (e.g., the agent's tool interface), use it instead of `child_process` directly. The tool handles capture outside the pipe restriction — it may use a different IPC mechanism (shared memory, a socket on an allowed address, or an out-of-band\n\n[clipped]",
+    "summary_plain": "spawn and execSync that capture output through pipes fail with EPERM inside the Windows sandbox; redirect to a file instead.",
+    "trigger": "EPERM spawn execSync piped stdio Windows sandbox",
+    "verify": "command completes with stdio redirect to file; output readable from the redirect target",
+    "url": "lessons/contrib/node-child-process-eperm-windows-sandbox-redirect-to-file.md",
+    "created": "",
+    "updated": "",
+    "triggers": null,
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "draft",
+    "evidence_refs": [],
+    "supersedes": "",
+    "verified": true,
+    "evidence_level": "E1",
+    "evidence_source": "frontmatter",
+    "trust_score": 0.387,
+    "contributor": ""
+  },
+  {
     "id": "node-strip-types-rejects-syntax-that-needs-lowering",
     "title": "Node strip-only mode rejects TypeScript syntax that needs lowering, not just type annotations",
     "domain": "nodejs",
