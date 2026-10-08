@@ -23,43 +23,73 @@ DEFAULT_OUTPUT = REPO_ROOT / "data" / "okf"
 
 
 def extract_frontmatter(path: Path) -> dict | None:
-    """Extract JSON or YAML frontmatter from a lesson file."""
+    """Extract a lesson's frontmatter: JSON first, YAML second, and neither silently wrong.
+
+    This used to walk the lines doing `key, _, val = line.partition(":")` after `line.strip()`.
+    That destroyed three things at once (#3004): indentation (so `provenance:` and its nested
+    `  issue:` collapsed onto one level, and a nested `provenance.source` overwrote the top-level
+    `source`), escape handling, and block sequences (a `tags:` written as a `- item` list parsed
+    to nothing). Measured: 48 lessons declare `provenance.issue` and the export carried **none**
+    of them, in any record.
+
+    32 older lessons carry a *mixed* block — a JSON object followed by a YAML-ish `provenance:`
+    (081e64d5). `yaml.safe_load` rejects that outright, and dropping them would have silently cut
+    32 lessons out of the index, so the JSON path uses `raw_decode` to take the leading object and
+    then parses the remainder as YAML and merges it. `update_lessons_json.parse_frontmatter`
+    handles the same shape but stops at the object, losing those lessons' provenance; this one
+    keeps it.
+
+    PyYAML is a declared dependency (requirements.txt, pyproject.toml), installed by the lesson
+    gate, and used by fix_frontmatter.py / check_lesson_quality.py / emit_intake_receipt.py — so
+    the hand-rolled version was never a constraint here, only an oversight.
+    """
     try:
         text = path.read_text(encoding="utf-8", errors="replace")
     except OSError:
         return None
 
-    # Try JSON frontmatter first
     import re
-    m = re.match(r"^---\s*\n(\{.*?\})\n---", text, re.DOTALL)
-    if m:
-        try:
-            return json.loads(m.group(1))
-        except json.JSONDecodeError:
-            pass
 
-    # Try YAML-like frontmatter
     m = re.match(r"^---\s*\n(.*?)\n---", text, re.DOTALL)
     if not m:
         return None
+    raw = m.group(1).strip()
+    if not raw:
+        return None
 
-    meta = {}
-    for line in m.group(1).split("\n"):
-        line = line.strip()
-        if ":" not in line or line.startswith("{"):
-            continue
-        key, _, val = line.partition(":")
-        key = key.strip()
-        val = val.strip().strip('"').strip("'")
-        if val.startswith("[") and val.endswith("]"):
-            try:
-                meta[key] = json.loads(val.replace("'", '"'))
-            except json.JSONDecodeError:
-                meta[key] = [v.strip().strip('"').strip("'") for v in val[1:-1].split(",")]
-        else:
-            meta[key] = val
-    return meta
+    import yaml
 
+    if raw.startswith("{"):
+        try:
+            obj, consumed = json.JSONDecoder().raw_decode(raw)
+        except (json.JSONDecodeError, ValueError):
+            obj = None
+        if isinstance(obj, dict):
+            tail = raw[consumed:].strip()
+            if tail:
+                try:
+                    extra = yaml.safe_load(tail)
+                except yaml.YAMLError:
+                    extra = None
+                if isinstance(extra, dict):
+                    obj.update(extra)
+            return _jsonable(obj)
+
+    try:
+        loaded = yaml.safe_load(raw)
+    except yaml.YAMLError:
+        return None
+    if not isinstance(loaded, dict):
+        return None
+    return _jsonable(loaded)
+
+
+def _jsonable(meta: dict) -> dict:
+    """YAML turns `created: 2026-10-01` into a date, which json.dumps cannot serialise.
+
+    `update_lessons_json.py` normalises the same way; keep the two consistent.
+    """
+    return {k: (v.isoformat() if hasattr(v, "isoformat") else v) for k, v in meta.items()}
 
 def extract_description(text: str, max_len: int = 200) -> str:
     """Extract a short description from the lesson body."""
@@ -159,6 +189,17 @@ def lesson_to_okf(path: Path, domain_filter: str | None = None) -> dict | None:
     # Optional fields
     if meta.get("verified_date"):
         okf["verified_date"] = meta["verified_date"]
+    # `provenance.issue` is the anchor of the receipt chain: it is what pairs an intake with
+    # the lesson that answers it, and therefore what makes `converted: true` nameable.
+    # It used to be dropped on the floor — the hand-rolled parser flattened
+    # `provenance:` / `  issue:` onto one level and the nested `source` overwrote the top-level
+    # one, so all 48 lessons that declare it exported without it (#3004). Only `issue` and
+    # `source` are carried; anything else a lesson puts there is left to that lesson.
+    provenance = meta.get("provenance")
+    if isinstance(provenance, dict):
+        kept = {k: provenance[k] for k in ("issue", "source") if provenance.get(k)}
+        if kept:
+            okf["provenance"] = kept
     if meta.get("domain_expert"):
         okf["domain_expert"] = meta["domain_expert"]
 
