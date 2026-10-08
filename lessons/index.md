@@ -303,6 +303,7 @@
 - [Opire Bounty 实战经验 — 认领、收款与信任分级](contrib/opire-bounty-hunting.md) | crypto-ops | "opire", "bounty", "crypto", "stripe", "claim", "rewards" | 
 - [oss refactor lessons](contrib/oss-refactor-lessons.md) | meta | "refactor", "lessons" | unknown
 - [OWA thread view exposes only the newest message's attachments; older ones need a manual relay](contrib/owa-thread-view-historical-attachments-not-accessible.md) | automation | "owa", "outlook", "email", "attachments", "automation_boundary", "browser_automation", "manual_relay" | MisakaNet intake issue #2016 (remote MCP, claude-code)
+- [A patch that fails on a later hunk has usually already changed the earlier ones — patch and git apply disagree](contrib/patch-failed-hunk-already-changed-earlier-files.md) | git | "git", "patch", "apply-patch", "rejects", "dry-run", "atomicity", "workflow", "tooling" | 
 - [pdf-oxide drops compound-word hyphen when PDF wraps at that hyphen](contrib/pdf-text-extraction-drops-hyphen.md) | backend | "pdf", "text-extraction", "pdf-oxide", "poppler", "hyphen", "fidelity" | 
 - [Permission Denied / WSL NTFS 跨文件系统PermissionFix](contrib/permission-denied-fix.md) | wsl | "permission", "denied" | unknown
 - [phase 0 output gate](contrib/phase-0-output-gate.md) | meta | "output-gate", "knowledge-reuse", "methodology", "core" | unknown
