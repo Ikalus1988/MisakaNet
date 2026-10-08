@@ -17,9 +17,15 @@ name: Field Report Schema
 #   * any other report in the corpus → findings are printed as `legacy:` (advisory) and land in the
 #     job summary, but do not fail a PR that did not change them. The corpus has pre-existing prose
 #     reports that predate the schema, and one legacy leak (see the summary); making every PR red for
-#     debt it did not create is how a gate gets switched off. `--strict-all` audits the whole corpus
-#     on demand — that is what `workflow_dispatch` runs, so a red manual run means "the corpus itself
-#     has findings", not "this workflow is broken";
+#     debt it did not create is how a gate gets switched off. The whole corpus is audited by
+#     `--strict-all`, which every scheduled and manual run is: a red one means "the corpus itself has
+#     findings", not "this workflow is broken". Before the `schedule:` trigger below existed that mode
+#     had run **zero times** (#3011): PRs and pushes both pass `--base`, so a finding in a file nobody
+#     touched was structurally unreportable, and three published handoffs carried an unredacted home
+#     path under a rule whose own text calls that directory published;
+#   * the published surfaces outside the report corpus (`docs/**` minus the generated paths, and
+#     `lessons/**`) are checked for home paths only — the same rule, a wider corpus, because a leak
+#     rule narrower than the set of published surfaces reports "no leaks where I looked" (#3011);
 #   * the one exception is FR1 (a host that is not `misakanet.org`): it gates even in an untouched
 #     file, because it is a false statement about our own infrastructure with no legitimate reading.
 #
@@ -31,6 +37,12 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  schedule:
+    # The one mode that reads the whole corpus, on a clock rather than on someone remembering: it ran
+    # zero times as `workflow_dispatch` alone (#3011). A scheduled failure names every finding without
+    # failing anybody's pull request, which is the point — the debt becomes visible, not blocking.
+    # Offset from `provenance-gate.yml` (06:17) and `gate-mutation-audit.yml` (06:43) on the same day.
+    - cron: "23 6 * * 1"
 
 permissions:
   contents: read

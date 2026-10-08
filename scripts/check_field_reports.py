@@ -164,8 +164,30 @@ _PLACEHOLDERS = frozenset({
     "user", "users", "username", "youruser", "your-user", "your_user", "name", "me", "you",
     "someone", "somebody", "example", "redacted", "xxx", "foo", "bar", "baz", "alice", "bob",
     "tester", "test", "runner", "yourname", "your-name", "your_name",
+    # Found by running FR3 over the whole published surface (#3011): the corpus's own redaction
+    # shorthand, which the first corpus never contained.
+    "yourusername", "your_username", "your.username", "replace_me", "replaceme",
 })
 _PLACEHOLDER_RE = re.compile(r"[<$%{][\w-]*[>$%}]?|%username%|\$\{?\w+\}?")
+
+
+def _is_redacted(name: str) -> bool:
+    """Is this captured "username" a redaction rather than an account?
+
+    Three shapes, all of which the shipped corpus does use and none of which names a person:
+
+    * a placeholder from `_PLACEHOLDERS` or the bracketed forms (`<user>`, `${USER}`, `%username%`);
+    * a **dotfile** — `/home/.git-credentials` captures `.git-credentials`, which is a file *under*
+      some home directory, not an account (26 of these in the corpus, all of them a false alarm);
+    * a capture with no letter or digit at all — `/mnt/c/Users/...` is an elided path, and a
+      username is never `...`.
+    """
+    lowered = name.lower()
+    if lowered in _PLACEHOLDERS or _PLACEHOLDER_RE.fullmatch(name):
+        return True
+    if name.startswith("."):
+        return True
+    return not any(ch.isalnum() for ch in name)
 
 # ── FR4/FR5: search evidence and handshake count ─────────────────────────────────────────────────
 
@@ -306,7 +328,7 @@ def _check_home_paths(lines: list[str], path: str) -> list[Finding]:
             for match in pattern.finditer(line):
                 if any(start <= match.start() < end for start, end in spans):
                     continue
-                if match.group(1).lower() in _PLACEHOLDERS or _PLACEHOLDER_RE.fullmatch(match.group(1)):
+                if _is_redacted(match.group(1)):
                     continue
                 spans.append(match.span())
                 hits.append((match.start(), kind, match.group(0)))
@@ -444,10 +466,81 @@ def collect(directory: Path, changed: set[Path] | None, strict_all: bool) -> tup
     return gating, legacy, len(files)
 
 
+# ── FR3 over the published surfaces *outside* the report corpus (#3011) ───────────────────────────
+#
+# FR3 shipped with a corpus of exactly one directory, and the rule's own subject — an unredacted home
+# path, which `docs/field-reports/README.md` calls published — turned out to live in two more:
+#
+#     docs/maintainer/handoff-2026-09-15.md:259   /mnt/c/Users/Eric Jia
+#     docs/maintainer/handoff-2026-10-05.md:355   /mnt/c/Users/Eric Jia/MisakaNet
+#     docs/maintainer/handoff-2026-10-05.md:385   /mnt/c/Users/Eric Jia/misakanet-whale-test
+#
+# A leak rule whose corpus is narrower than the set of published surfaces does not report "no leaks";
+# it reports "no leaks where I looked", and the difference is invisible in the output. So FR3 runs over
+# every published surface: `docs/**` (minus the generated paths the repository itself marks) and
+# `lessons/**`, because a lesson is published too and `docs/lessons/**/*.html` is generated *from* it.
+# The evidence rules (FR4–FR8) deliberately do **not** travel: a handoff is not a setup report and
+# owes none of those fields.
+PUBLISHED_SURFACES = (REPO_ROOT / "docs", REPO_ROOT / "lessons")
+
+# Paths under a published surface that a human does not edit — they are produced from a source that is
+# itself scanned, so flagging them would name the wrong file. Mirrors the `linguist-generated=true`
+# set in `.gitattributes` (plus `docs/benchmarks/`, written by `scripts/benchmark_workers_ai.py`).
+# `tests/test_field_reports_published_surface.py` fails if the `.gitattributes` half drifts.
+_GENERATED_UNDER_PUBLISHED = (
+    "docs/lessons/", "docs/topics/", "docs/data/", "docs/benchmarks/",
+    "docs/sitemap.xml", "docs/.generated-pages.json", "docs/_lessons_count.txt",
+)
+
+
+def collect_published_home_paths(report_dir: Path, changed: set[Path] | None, strict_all: bool
+                                 ) -> tuple[list[Finding], list[Finding], int]:
+    """FR3 over every published surface except the report corpus and the generated paths.
+
+    Same gating split as `collect`, and for the same reason: with a `changed` set only the files this
+    run touched gate, so pre-existing debt in a handoff cannot hold an unrelated pull request (the
+    failure mode `lesson-gate.yml` was fixed for on 2026-09-21). One leak, one finding — the report
+    corpus is excluded here because `collect` already reads it with the full rule set.
+    """
+    gating: list[Finding] = []
+    legacy: list[Finding] = []
+    corpus = report_dir.resolve()
+
+    candidates: list[Path] = []
+    for root in PUBLISHED_SURFACES:
+        if not root.is_dir():
+            continue
+        candidates.extend(p for p in root.rglob("*")
+                          if p.is_file() and p.suffix.lower() in SUFFIXES)
+
+    scanned = 0
+    for path in sorted(set(candidates)):
+        resolved = path.resolve()
+        if resolved == corpus or corpus in resolved.parents:
+            continue
+        try:
+            rel = str(path.relative_to(REPO_ROOT))
+        except ValueError:
+            rel = str(path)
+        if any(rel == g or rel.startswith(g) for g in _GENERATED_UNDER_PUBLISHED):
+            continue
+        scanned += 1
+        lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
+        for finding in _check_home_paths(lines, rel):
+            if strict_all or changed is None or resolved in changed:
+                gating.append(finding)
+            elif finding.rule in GATING_ALWAYS:
+                gating.append(finding)
+            else:
+                legacy.append(finding)
+    return gating, legacy, scanned
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--dir", default=str(DEFAULT_DIR),
-                        help="report directory (default: docs/field-reports)")
+    parser.add_argument("--dir", default=None,
+                        help="report directory (default: docs/field-reports). Given explicitly, that "
+                             "corpus is audited on its own and the published-docs FR3 pass is skipped")
     parser.add_argument("--base", default="",
                         help="git ref to diff against; findings on files this PR did not change "
                              "are reported as LEGACY (advisory) instead of gating")
@@ -455,9 +548,15 @@ def main(argv: list[str] | None = None) -> int:
                         help="explicit changed-file list instead of --base (for tests)")
     parser.add_argument("--strict-all", action="store_true",
                         help="every file gates, even with --base (corpus audits)")
+    parser.add_argument("--no-published-docs", action="store_true",
+                        help="skip the FR3 pass over the rest of docs/")
     args = parser.parse_args(argv)
 
-    directory = Path(args.dir)
+    # `--dir` means "audit exactly this corpus", so it stays hermetic: every test passes one, and a
+    # test corpus must not be affected by whatever the checkout's own `docs/` happens to contain. The
+    # published-docs pass is a property of the repository, so it rides along on a default run only.
+    default_corpus = args.dir is None
+    directory = DEFAULT_DIR if default_corpus else Path(args.dir)
     if not directory.is_dir():
         print(f"cannot run: {directory} is not a directory", file=sys.stderr)
         return 2
@@ -475,8 +574,33 @@ def main(argv: list[str] | None = None) -> int:
 
     gating, legacy, scanned = collect(directory, changed, strict_all=args.strict_all or changed is None)
 
+    docs_scanned = 0
+    changed_docs: set[Path] | None = None
+    if default_corpus and not args.no_published_docs:
+        try:
+            if args.changed is not None:
+                changed_docs = {Path(p).resolve() for p in args.changed}
+            elif args.base and not args.strict_all:
+                changed_docs = set()
+                for root in PUBLISHED_SURFACES:
+                    changed_docs |= _changed_via_git(root, args.base)
+            else:
+                changed_docs = None
+        except RuntimeError as exc:
+            print(f"cannot run: {exc}", file=sys.stderr)
+            return 2
+        docs_gating, docs_legacy, docs_scanned = collect_published_home_paths(
+            directory, changed_docs, strict_all=args.strict_all or changed_docs is None)
+        gating += docs_gating
+        legacy += docs_legacy
+
     scope = "every report (strict)" if changed is None else f"{len(changed)} changed file(s)"
     print(f"# field reports: {directory}  ·  {scanned} file(s)  ·  scope: {scope}")
+    if default_corpus and not args.no_published_docs:
+        docs_scope = "strict" if changed_docs is None else "changed-only"
+        roots = ", ".join(str(r.relative_to(REPO_ROOT)) for r in PUBLISHED_SURFACES)
+        print(f"# published surfaces (FR3 only): {roots}  ·  {docs_scanned} file(s) besides the "
+              f"report corpus and the generated paths  ·  scope: {docs_scope}")
     if changed is not None:
         print(f"# changed: {', '.join(sorted(p.name for p in changed)) or '(none)'}")
     for finding in gating:

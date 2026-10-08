@@ -20,7 +20,7 @@ verification: metadata-normalized
 执行 `git push` 时卡住或报错：
 
 ```
-/home/hp/.local/bin/gh auth git-credential get: 1: /home/hp/.local/bin/gh: not found
+/home/<user>/.local/bin/gh auth git-credential get: 1: /home/<user>/.local/bin/gh: not found
 ```
 
 或：
@@ -38,7 +38,7 @@ fatal: repository 'https://github.com/...' not found
 
 ```
 credential.https://github.com.helper=
-credential.https://github.com.helper=!/home/hp/.local/bin/gh auth git-credential
+credential.https://github.com.helper=!/home/<user>/.local/bin/gh auth git-credential
                                                    ^^^^^^^^^^^^^^^^^^
                                                    这个路径没有 gh 二进制
 ```

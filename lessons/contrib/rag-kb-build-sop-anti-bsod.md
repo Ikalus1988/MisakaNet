@@ -83,7 +83,7 @@ After any crash/reboot, verify before continuing: ChromaDB count matches expecta
 ## Verification
 
 ```bash
-python3 -c "import chromadb; c=chromadb.PersistentClient('/home/eric_jia/rag_chromadb'); print(c.get_collection('wiki_docs').count())"
+python3 -c "import chromadb; c=chromadb.PersistentClient('/home/<user>/rag_chromadb'); print(c.get_collection('wiki_docs').count())"
 # retrieval smoke test
 python3 -m pytest tests/test_retrieval_regression.py -q
 # peak memory recorded in build log < WSL limit

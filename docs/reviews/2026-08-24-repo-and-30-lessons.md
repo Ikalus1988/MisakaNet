@@ -105,7 +105,7 @@
 2. **缺 Verification 章节或验证不可复现**（约 20/30）：多数只有散文式断言（"验证通过"），无命令、无预期输出、无前后数据。
 3. **缺 Root Cause 或根因含糊**（约 15/30）：常见"复述 Problem"而非技术机制；少数有技术性错误（如 squash-rebase-force-push-lease 把 force-with-lease 的正常拒绝说成"误判"）。
 4. **去重不足**（约 12/30）：DCO、force-with-lease、BM25/RRF、mcp-intake 主题大量重叠且无交叉引用；2 个 lesson 在 `lessons/` 根目录存在**逐字重复副本**（`data-quality-three-layer-fix-pattern`、`wsl-ntfs-sqlite-update-100x-slower`，且副本 frontmatter 混排/status 冲突）。
-5. **硬编码项目特定内容**：codewhale 二进制名、`C:/Users/hp/` 路径、`/home/eric_jia/.hermes/.env` 路径、真实邮箱（wrangler.jsonc:15 sheldonisspark@gmail.com）。
+5. **硬编码项目特定内容**：codewhale 二进制名、`C:/Users/<user>/` 路径、`/home/<user>/.hermes/.env` 路径、真实邮箱（wrangler.jsonc:15 sheldonisspark@gmail.com）。
 6. **缺 confidence 字段**（约 25/30）；部分 domain 不在规范列表（"data-engineering"、"search"）；部分未收录进 lessons/index.md。
 7. **内容过薄**：多篇 < 300 词（bm25-vector-hybrid-search-weights 仅 89 词），低于质量门槛。
 

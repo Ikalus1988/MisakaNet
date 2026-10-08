@@ -131,7 +131,7 @@ Two residual boundaries, both expected rather than regressions:
 ## Notes
 
 * **Generalization and boundaries.** The submitter's paths and account are environment-specific
-  (`C:\Users\hp\...`); generalized here to `<workspace>` and `<user>`. The account name must be
+  (`C:\Users\<user>\...`); generalized here to `<workspace>` and `<user>`. The account name must be
   resolvable on the host being repaired — a local account, `DOMAIN\user`, or a SID. Repair the
   workspace root the harness actually provisions, not a parent directory: an over-broad `/grant:r`
   with inheritance hands out more than the sandbox ever intended.

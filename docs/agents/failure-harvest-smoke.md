@@ -33,7 +33,7 @@ events:10 | cleaned_noise:2 | clusters:4 | drafts:3 | skipped:1
 
 ```json
 [
-  {"error": "/home/hp/.local/bin/gh auth git-credential get: ... gh: not found",
+  {"error": "/home/<user>/.local/bin/gh auth git-credential get: ... gh: not found",
    "source": "agent-a", "what_tried": "checked gh install path"},
   {"error": "fatal: could not read Username for 'https://github.com': credential helper ...",
    "source": "agent-b", "what_tried": "reinstalled gh"}

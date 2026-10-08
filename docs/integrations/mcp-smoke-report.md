@@ -10,7 +10,7 @@ This report verifies the MisakaNet MCP server through local stdio. It is intende
 
 ## Environment
 
-- Repository: `C:\Users\hp\MisakaNet`
+- Repository: `C:\Users\<user>\MisakaNet`
 - Entry point: `scripts/mcp_server.py`
 - Transport tested: MCP JSON-RPC over stdio
 - Search backend observed: SAG-Lite available, BM25 fallback not available in this local environment

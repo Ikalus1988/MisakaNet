@@ -24,7 +24,7 @@
 | `dco-check.yml` | DCO Check | PR, 手动 |  |
 | `external-asset-integrity.yml` | External Asset Integrity | 定时, 手动 | `23 7 * * 3` —— 重算 CDN 实际下发的字节，和 `data/external_assets.json` 里钉的 sha384 对比。离线的另一半在 `tests/test_external_asset_integrity.py`（每个 PR 跑）：markup 与清单必须一致、且不允许存在清单外的外部脚本。见 #2683 |
 | `dsh-client-e2e.yml` | DSH Client E2E（真宿主 + Chromium：`/misakanet` 浮层、全窗口 toast、设置行↔面板三条行为场景；库请求被拦截，不依赖公网。**2026-10-02 起跑 PR**：composer 起不来的根因是 seed 的 workspace 记录缺 `createdAt`/`updatedAt`，宿主会自己建首条会话）| PR, 手动, 定时 | `40 3 * * *` |
-| `field-report-schema.yml` | Field Report Schema | PR, push, 手动 |  |
+| `field-report-schema.yml` | Field Report Schema（FR3 家目录规则另跑语料外的已发布面：`docs/**` 减去 `linguist-generated` 的路径，加上 `lessons/**`）| PR, push, 手动, 定时 | `23 6 * * 1` —— `--strict-all` 全量审计唯一的定时入口；#3011 之前它只在 `workflow_dispatch` 上，而那个入口的累计运行数是 **0**，于是"某个没人碰过的文件里有泄漏"在结构上不可能被报出来 |
 | `fix-dco.yml` | DCO Auto-Fix | 评论 |  |
 | `gate-mutation-audit.yml` | Gate Mutation Audit | 定时, 手动 | `43 6 * * 1` |
 | `lesson-gate.yml` | Lesson Quality Gate | PR |  |

@@ -63,7 +63,7 @@ toolSummary: {"calls": 2, "tools": ["exec"], "failures": 0}      ← 根本没�
 # 修复后（新 session，避免"已回答过"）：
 toolSummary: {"calls": 1, "tools": ["misakanet__misakanet_search"], "failures": 0}
 projectContextChars: 29522 → 29999                              ← 正好 +477 = 我们的规则块
-injectedWorkspaceFiles: [{"name":"AGENTS.md","path":"/mnt/c/Users/Eric Jia/AGENTS.md",…}]
+injectedWorkspaceFiles: [{"name":"AGENTS.md","path":"/mnt/c/Users/<user>/AGENTS.md",…}]
 ```
 
 修复后它的回答还诚实报告了语料缺口：「MisakaNet 没有针对 `exit code 137` 的专 lesson（搜索命中 3 条
@@ -87,7 +87,7 @@ injectedWorkspaceFiles: [{"name":"AGENTS.md","path":"/mnt/c/Users/Eric Jia/AGENT
 ### 3.2 OpenClaw 的规则写错目录（工具注册了，模型不知道要用）
 
 `~/.openclaw/workspace/AGENTS.md` 是猜的；agent 实际读 `~/.openclaw/openclaw.json` 里
-`agents.defaults.workspace` 指定的目录（本机 `/mnt/c/Users/Eric Jia`）。
+`agents.defaults.workspace` 指定的目录（本机 `/mnt/c/Users/<user>`）。
 **规则文件躺在猜的目录里、`--verify` 还找到了自己的标记 —— 一切看起来都对，模型从未看到规则。**
 
 这说明**"文件写成功"不能当作"规则生效"的证据**：唯一可信的判据是 agent 侧的可观测输出
