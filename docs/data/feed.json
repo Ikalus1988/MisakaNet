@@ -1,9 +1,23 @@
 {
-  "generated_at": "2026-10-08T10:44:41.935983+00:00",
+  "generated_at": "2026-10-08T12:43:56.806469+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "fix(ci): FR3 read one directory while the leak was in three (#3011)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3029",
+      "timestamp": "2026-10-08T12:43:45Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3032",
+      "timestamp": "2026-10-08T10:52:29Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "chore(data): sync lessons.json + refresh feed",
@@ -23,20 +37,6 @@
       "title": "lesson: a port that is already allocated is EADDRINUSE — name the holder with ss, free it, retry (#2804)",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/3016",
       "timestamp": "2026-10-08T06:02:46Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3024",
-      "timestamp": "2026-10-08T01:11:39Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore: update leaderboard snapshot",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3021",
-      "timestamp": "2026-10-07T20:58:19Z",
       "source": "github"
     },
     {
