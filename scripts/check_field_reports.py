@@ -601,6 +601,12 @@ def main(argv: list[str] | None = None) -> int:
         roots = ", ".join(str(r.relative_to(REPO_ROOT)) for r in PUBLISHED_SURFACES)
         print(f"# published surfaces (FR3 only): {roots}  ·  {docs_scanned} file(s) besides the "
               f"report corpus and the generated paths  ·  scope: {docs_scope}")
+        # Printed separately because the two passes have two different change sets, and a reader who
+        # sees only `# changed: (none)` above a *gating* finding has no way to tell why. (Measured:
+        # the first run of this pass over a handoff append showed exactly that.)
+        if changed_docs is not None:
+            names = ", ".join(sorted(str(p.relative_to(REPO_ROOT)) for p in changed_docs)) or "(none)"
+            print(f"# changed (published surfaces): {names}")
     if changed is not None:
         print(f"# changed: {', '.join(sorted(p.name for p in changed)) or '(none)'}")
     for finding in gating:
