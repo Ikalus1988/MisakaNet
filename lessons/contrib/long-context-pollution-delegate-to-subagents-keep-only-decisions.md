@@ -1,5 +1,5 @@
 ---
-domain: "agent-tooling"
+domain: "agent"
 title: "Long context pollution — delegate independent tasks to subagents, keep only decisions in the main context"
 tags:
   - "context-management"
@@ -9,7 +9,7 @@ tags:
   - "orchestration"
 status: "draft"
 evidence_level: "E1"
-summary_plain: "In long sessions, raw logs and file contents pollute the main context and dilute the original constraints; delegate independent work to subagents and keep only conclusions."
+summary_plain: "Raw logs and file contents pollute the main context; delegate work to subagents and keep only conclusions."
 trigger: "context window exceeded long session dilutes constraints repeated work subagent delegation"
 verify: "main context line count does not grow with subtask count; subtask process material does not enter main context"
 ---
