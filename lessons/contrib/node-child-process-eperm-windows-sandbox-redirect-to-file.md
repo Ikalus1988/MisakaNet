@@ -1,5 +1,5 @@
 ---
-domain: "windows"
+domain: "nodejs"
 title: "Node child_process with piped stdio fails with EPERM under the Windows sandbox"
 tags:
   - "windows"
@@ -9,7 +9,7 @@ tags:
   - "stdio"
 status: "draft"
 evidence_level: "E1"
-summary_plain: "spawn and execSync that capture output through pipes fail with EPERM inside the Windows sandbox; redirect to a file instead."
+summary_plain: "spawn/execSync that capture output through pipes fail with EPERM in the Windows sandbox; redirect to a file instead."
 trigger: "EPERM spawn execSync piped stdio Windows sandbox"
 verify: "command completes with stdio redirect to file; output readable from the redirect target"
 ---
