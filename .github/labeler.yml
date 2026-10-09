@@ -1,40 +1,24 @@
-# Auto-label PRs by changed file paths
-# Used by .github/workflows/auto-label.yml
+# Documentation
+documentation:
+  - changed-files:
+      - any-glob-to-any-file: ['docs/**/*', 'README.md', 'ROADMAP.md', 'CONTRIBUTING.md']
 
-area:core:
-- changed-files:
-  - any-glob-to-any-file: misakanet/**/*
+# Bug fixes
+bug:
+  - head-branch: ['^fix/']
+  - title: ['^fix', '^bug']
 
-area:lessons:
-- changed-files:
-  - any-glob-to-any-file: lessons/**/*
+# Features
+enhancement:
+  - head-branch: ['^feat/']
+  - title: ['^feat', '^feature']
 
-area:workflow:
-- changed-files:
-  - any-glob-to-any-file: .github/workflows/*
+# Performance
+performance:
+  - head-branch: ['^perf/']
+  - title: ['^perf', '^performance']
 
-area:ci:
-- changed-files:
-  - any-glob-to-any-file: .github/workflows/pr-checks.yml
-  - any-glob-to-any-file: .github/workflows/dco-check.yml
-
-area:tests:
-- changed-files:
-  - any-glob-to-any-file: tests/**/*
-
-area:docs:
-- changed-files:
-  - any-glob-to-any-file: docs/**/*
-  - any-glob-to-any-file: '**/*.md'
-  - any-glob-to-any-file: README.md
-
-area:scripts:
-- changed-files:
-  - any-glob-to-any-file: scripts/**/*
-
-area:config:
-- changed-files:
-  - any-glob-to-any-file: '**/*.yml'
-  - any-glob-to-any-file: '**/*.yaml'
-  - any-glob-to-any-file: '**/*.json'
-  - any-glob-to-any-file: '**/*.toml'
+# Tests
+tests:
+  - changed-files:
+      - any-glob-to-any-file: ['tests/**/*', '**/*test.rs']
