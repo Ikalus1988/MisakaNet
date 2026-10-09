@@ -1,0 +1,37 @@
+name: Build Windows NSIS Installer
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build Windows NSIS Installer
+    runs-on: windows-latest
+    env:
+      ELECTRON_BUILDER_BINARIES_MIRROR: "https://registry.npmmirror.com/-/binary/electron-builder-binaries/"
+      ELECTRON_BUILDER_CACHE: ${{ runner.temp }}\\electron-builder-cache
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Windows NSIS installer
+        run: npx electron-builder --win nsis
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: misakanet-windows-installer
+          path: dist/*.exe
