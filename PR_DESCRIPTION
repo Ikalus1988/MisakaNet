@@ -1,0 +1,20 @@
+## Summary
+Fixed the dsh-tool-vision plugin's `lookupAttachment` function to correctly resolve attachment IDs after DSH upgrade. 
+
+**Problem:** After the DSH upgrade, some `Session` implementations no longer expose the `events` property directly on the session object. The original code only checked `'events' in session`, which returned `false` for these upgraded session types, causing `lookupAttachment` to always return `undefined`. This resulted in the error: `tool-vision: unknown attachment id "sha256:..." (it must come from an image uploaded in this conversation)`.
+
+**Fix:** The `lookupAttachment` function now has a two-path resolution:
+1. If `"events" in session` is true, use `session.events` directly (preserves pre-upgrade behavior)
+2. Otherwise, fall back to `session.snapshotEvents()` if available (handles post-upgrade session shapes)
+
+This ensures vision tools (`vision_materialize`, `vision_ocr`, `vision_crop`) can find attachments uploaded via `vision_present` regardless of which DSH session shape is in use.
+
+**Verification:**
+- `events in session === false` for upgraded sessions, `session.snapshotEvents()` returns correct events
+- Both files pass `node --check`
+- CRLF/LF line endings preserved
+
+Closes #3101
+/attempt
+/claim #3101
+<<<END_PR_DESCRIPTION>>>
