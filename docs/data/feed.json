@@ -1,35 +1,35 @@
 {
-  "generated_at": "2026-10-09T10:43:42.350408+00:00",
+  "generated_at": "2026-10-09T18:14:26.076189+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "chore: update leaderboard snapshot",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3077",
-      "timestamp": "2026-10-09T01:30:06Z",
+      "title": "lesson: PID-kill by LLM-API inference terminates own turn (closes #2864)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3038",
+      "timestamp": "2026-10-09T18:14:11Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "docs(handoff): phase 10 — the release PR is wrong, not merely stale",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3103",
+      "timestamp": "2026-10-09T18:12:36Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
       "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3076",
-      "timestamp": "2026-10-09T01:22:13Z",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3087",
+      "timestamp": "2026-10-09T10:51:30Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3073",
-      "timestamp": "2026-10-08T19:09:33Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore: auto-update lessons.json, public counts and generated pages",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3074",
-      "timestamp": "2026-10-08T19:02:04Z",
+      "title": "lessons: six contributor submissions, rebuilt on current main",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3072",
+      "timestamp": "2026-10-08T18:53:25Z",
       "source": "github"
     },
     {
