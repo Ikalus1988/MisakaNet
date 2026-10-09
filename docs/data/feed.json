@@ -1,21 +1,28 @@
 {
-  "generated_at": "2026-10-09T01:16:29.292108+00:00",
+  "generated_at": "2026-10-09T10:43:42.350408+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3073",
-      "timestamp": "2026-10-08T19:09:33Z",
+      "title": "chore: update leaderboard snapshot",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3077",
+      "timestamp": "2026-10-09T01:30:06Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "docs(handoff): phase 9 closing — \"mergeable\" was the false part",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3075",
-      "timestamp": "2026-10-08T19:06:47Z",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3076",
+      "timestamp": "2026-10-09T01:22:13Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3073",
+      "timestamp": "2026-10-08T19:09:33Z",
       "source": "github"
     },
     {
@@ -27,16 +34,9 @@
     },
     {
       "type": "merged_pr",
-      "title": "lessons: six contributor submissions, rebuilt on current main",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3072",
-      "timestamp": "2026-10-08T18:53:25Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3071",
-      "timestamp": "2026-10-08T18:44:33Z",
+      "title": "lesson: README --profile name verbatim installs into unloaded profile (closes #2865)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3040",
+      "timestamp": "2026-10-08T18:34:35Z",
       "source": "github"
     },
     {
