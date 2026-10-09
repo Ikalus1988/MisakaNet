@@ -1,0 +1,79 @@
+name: Auto-Triage Milestones
+
+on:
+  issues:
+    types: [opened]
+  pull_request_target:
+    types: [opened]
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  triage:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check required env vars
+        run: |
+          if [ -z "${{ secrets.GH_TOKEN }}" ]; then
+            echo "Error: GH_TOKEN secret is not set."
+            exit 1
+          fi
+
+      - name: Triage open issues to milestones
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GH_TOKEN }}
+          script: |
+            const { repo, owner } = context.repo;
+
+            // Ensure milestones exist
+            const milestoneTitles = ['v2.36', 'v2.37', 'later'];
+            const milestoneData = {};
+            for (const title of milestoneTitles) {
+              const list = await github.rest.issues.listMilestones({
+                owner, repo, state: 'all', title
+              });
+              if (list.data.length > 0) {
+                milestoneData[title] = list.data[0].number;
+              } else {
+                const create = await github.rest.issues.createMilestone({
+                  owner, repo, title, state: 'open'
+                });
+                milestoneData[title] = create.data.number;
+                console.log(`Created milestone: ${title} (#${create.data.number})`);
+              }
+            }
+
+            const laterId = milestoneData['later'];
+
+            // Triage open issues not yet assigned to a milestone
+            const issuesPage = await github.paginate(github.rest.issues.listForRepo, {
+              owner, repo, state: 'open', sort: 'created', direction: 'asc'
+            });
+            let updated = 0;
+            for (const issue of issuesPage) {
+              if (issue.pull_request) continue;
+              if (issue.milestone) continue;
+              await github.rest.issues.update({
+                owner, repo, issue_number: issue.number, milestone: laterId
+              });
+              updated++;
+            }
+            console.log(`Triage complete: ${updated} issues auto-assigned to 'later'.`);
+
+      - name: Label new pull requests as 'scope:pending'
+        if: github.event_name == 'pull_request_target'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GH_TOKEN }}
+          script: |
+            const { repo, owner } = context.repo;
+            const pr = context.payload.pull_request;
+            const existingLabels = (pr.labels || []).map(l => l.name);
+            if (!existingLabels.includes('scope:pending')) {
+              await github.rest.issues.addLabels({
+                owner, repo, issue_number: pr.number, labels: ['scope:pending']
+              });
+            }
