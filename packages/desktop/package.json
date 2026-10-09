@@ -1,0 +1,36 @@
+{
+  "name": "deepseek-desktop",
+  "version": "1.0.0",
+  "description": "DeepSeek Desktop Application",
+  "main": "src/main/index.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "node ../../scripts/build-windows.js",
+    "validate": "node ../../scripts/validate-appid.js"
+  },
+  "build": {
+    "appId": "${DSH_DESKTOP_APP_ID}",
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    },
+    "files": [
+      "**/*",
+      "!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,package.json}",
+      "!**/*.{map,ts,tsx,less,scss,sass,gitignore}",
+      "!**/__tests__",
+      "!**/__fixtures__",
+      "!**/__mocks__"
+    ]
+  },
+  "dshDesktopAppId": "${DSH_DESKTOP_APP_ID}",
+  "dependencies": {
+    "electron": "^31.0.0"
+  },
+  "devDependencies": {
+    "electron-builder": "^25.0.0"
+  }
+}
