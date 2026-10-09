@@ -1,96 +1,34 @@
 {
   "name": "misakanet",
-  "version": "2.42.2",
-  "license": "Apache-2.0",
-  "description": "MisakaNet failure-memory skill — evidence-rated failure lessons for AI agents. DSH bundle: registers the MCP tools as mcp__misakanet__* (misakanet_search/get_lesson/…), served by the public Streamable HTTP endpoint https://misakanet.org/mcp — live tools from an npm install, in any profile, with no local python. A profile that prefers the repo's own stdio server can override the bundle row.",
-  "icon": "icon.svg",
-  "files": [
-    "SKILL.md",
-    "skills/",
-    "index.js",
-    "index.d.ts",
-    "icon.svg",
-    "lib/client.js",
-    "cordis.patch.yml",
-    ".codex-plugin/**",
-    "locale/"
-  ],
-  "dsh": {
-    "bundle": {
-      "patch": "./cordis.patch.yml"
-    },
-    "client": {
-      "platform": "web",
-      "inject": [
-        "@deepseek-ai/dsh-client-ui-chat",
-        "@deepseek-ai/dsh-client-ui-conversation",
-        "@deepseek-ai/dsh-client-ui-sidebar-right",
-        "@deepseek-ai/dsh-client-ui-tool"
-      ]
-    },
-    "compatibility": {
-      "dshReleases": {
-        "0.1.5-rc.1": "compatible",
-        "0.1.7-rc.2": "compatible",
-        "0.2.0-rc.2": "compatible"
-      }
-    }
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/Ikalus1988/MisakaNet.git"
-  },
-  "homepage": "https://misakanet.org",
-  "bugs": {
-    "url": "https://github.com/Ikalus1988/MisakaNet/issues"
-  },
-  "keywords": [
-    "misakanet",
-    "dsh",
-    "dsh-plugin",
-    "dsh-plugins",
-    "deepseek-harness",
-    "deepseek-harness-plugin",
-    "cordis",
-    "failure-memory",
-    "mcp",
-    "skill",
-    "lessons"
-  ],
-  "peerDependencies": {
-    "@deepseek-ai/dsh-mcp-client": ">=0.1.0-rc.8 <0.2.0 || >=0.1.5-rc.1 <0.2.0 || >=0.1.7-rc.1 <0.2.0 || >=0.2.0-rc.1 <0.3.0",
-    "@deepseek-ai/schemastery": ">=3.0.0"
-  },
-  "peerDependenciesMeta": {
-    "@deepseek-ai/dsh-mcp-client": {
-      "optional": true
-    },
-    "@deepseek-ai/schemastery": {
-      "optional": true
-    }
-  },
-  "engines": {
-    "node": ">=20.0.0"
-  },
+  "version": "1.0.0",
+  "description": "MisakaNet - A modern desktop application",
+  "main": "src/main.js",
   "scripts": {
-    "deploy": "wrangler deploy",
-    "deploy:api": "cd workers && npx wrangler deploy --config wrangler.toml",
-    "deploy:email": "cd workers/email-register && npx wrangler deploy",
-    "deploy:all": "npm run deploy && npm run deploy:api && npm run deploy:email",
-    "preview": "wrangler dev"
+    "start": "electron .",
+    "build:win": "set ELECTRON_BUILDER_BINARIES_MIRROR=https://registry.npmmirror.com/-/binary/electron-builder-binaries/& set ELECTRON_BUILDER_CACHE=%USERPROFILE%\\.cache\\electron-builder && electron-builder --win nsis",
+    "build:win:ci": "ELECTRON_BUILDER_BINARIES_MIRROR=https://registry.npmmirror.com/-/binary/electron-builder-binaries/ ELECTRON_BUILDER_CACHE=%USERPROFILE%\\.cache\\electron-builder electron-builder --win nsis"
   },
   "devDependencies": {
-    "wrangler": "^4.146.0"
+    "electron": "^28.0.0",
+    "electron-builder": "^24.0.0"
   },
-  "overrides": {
-    "sharp": "0.35.5"
-  },
-  "main": "index.js",
-  "exports": {
-    ".": "./index.js",
-    "./client": "./lib/client.js",
-    "./package.json": "./package.json"
-  },
-  "types": "index.d.ts",
-  "type": "module"
+  "build": {
+    "appId": "com.misakanet.app",
+    "productName": "MisakaNet",
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  }
 }
