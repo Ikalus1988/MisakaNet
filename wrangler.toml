@@ -1,0 +1,9 @@
+name = "misakanet-web"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+
+[build]
+command = "npm run build:docs"
+
+[vars]
+NODE_ENV = "production"
