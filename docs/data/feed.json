@@ -1,9 +1,23 @@
 {
-  "generated_at": "2026-10-09T18:14:26.076189+00:00",
+  "generated_at": "2026-10-09T18:25:17.886816+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3104",
+      "timestamp": "2026-10-09T18:23:08Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore: auto-update lessons.json, public counts and generated pages",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3105",
+      "timestamp": "2026-10-09T18:22:55Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "lesson: PID-kill by LLM-API inference terminates own turn (closes #2864)",
@@ -20,23 +34,9 @@
     },
     {
       "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3087",
-      "timestamp": "2026-10-09T10:51:30Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
       "title": "lessons: six contributor submissions, rebuilt on current main",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/3072",
       "timestamp": "2026-10-08T18:53:25Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "lesson: README --profile name verbatim installs into unloaded profile (closes #2865)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3040",
-      "timestamp": "2026-10-08T18:34:35Z",
       "source": "github"
     },
     {
