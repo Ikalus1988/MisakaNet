@@ -7,6 +7,13 @@ All notable changes to the Misaka Network project are documented here.
 
 ---
 
+## [2.42.4](https://github.com/Ikalus1988/MisakaNet/compare/v2.42.3...v2.42.4) (2026-10-10)
+
+
+### Documentation
+
+* **reputation:** the contributor snapshot is not a published board ([#3127](https://github.com/Ikalus1988/MisakaNet/issues/3127)) ([3a2a631](https://github.com/Ikalus1988/MisakaNet/commit/3a2a6317ba08ef5fa9251ea5266eb84ee9a85aca))
+
 ## [2.42.3](https://github.com/Ikalus1988/MisakaNet/compare/v2.42.2...v2.42.3) (2026-10-10)
 
 
