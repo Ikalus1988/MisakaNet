@@ -1,0 +1,24 @@
+packages:
+  - 'packages/*'
+
+pnpm:
+  registry: 'https://registry.npmmirror.com'
+  onlyBuiltDependencies:
+    - '@astrojs/check'
+    - '@swc/core'
+    - esbuild
+  peerDependencyRules:
+    ignoreMissing:
+      - '@algolia/client-search'
+      - 'react'
+      - 'react-dom'
+      - 'search-insights'
+
+  # Fix for ERR_PNPM_MINIMUM_RELEASE_AGE_VIOLATION:
+  # pnpm 11 evaluateVersionPolicy hits the FIRST matching rule per package name and returns immediately.
+  # pnpm 11.7.0 appends duplicate rules at EOF (dead code — never evaluated), causing lockfile checks to
+  # fail on newly-published versions even though they SHOULD be excluded.
+  # Strategy: merge all versions per package name into a single rule using "||" separators.
+  minimumReleaseAgeExclude:
+    - 'is-number@6.0.0 || 7.0.0'
+    - 'billion-context@0.1.188 || 0.1.189 || 0.1.191 || 0.1.192'

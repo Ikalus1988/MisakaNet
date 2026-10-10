@@ -1,96 +1,29 @@
 {
   "name": "misakanet",
-  "version": "2.42.3",
-  "license": "Apache-2.0",
-  "description": "MisakaNet failure-memory skill — evidence-rated failure lessons for AI agents. DSH bundle: registers the MCP tools as mcp__misakanet__* (misakanet_search/get_lesson/…), served by the public Streamable HTTP endpoint https://misakanet.org/mcp — live tools from an npm install, in any profile, with no local python. A profile that prefers the repo's own stdio server can override the bundle row.",
-  "icon": "icon.svg",
-  "files": [
-    "SKILL.md",
-    "skills/",
-    "index.js",
-    "index.d.ts",
-    "icon.svg",
-    "lib/client.js",
-    "cordis.patch.yml",
-    ".codex-plugin/**",
-    "locale/"
-  ],
-  "dsh": {
-    "bundle": {
-      "patch": "./cordis.patch.yml"
-    },
-    "client": {
-      "platform": "web",
-      "inject": [
-        "@deepseek-ai/dsh-client-ui-chat",
-        "@deepseek-ai/dsh-client-ui-conversation",
-        "@deepseek-ai/dsh-client-ui-sidebar-right",
-        "@deepseek-ai/dsh-client-ui-tool"
-      ]
-    },
-    "compatibility": {
-      "dshReleases": {
-        "0.1.5-rc.1": "compatible",
-        "0.1.7-rc.2": "compatible",
-        "0.2.0-rc.2": "compatible"
-      }
-    }
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/Ikalus1988/MisakaNet.git"
-  },
-  "homepage": "https://misakanet.org",
-  "bugs": {
-    "url": "https://github.com/Ikalus1988/MisakaNet/issues"
-  },
-  "keywords": [
-    "misakanet",
-    "dsh",
-    "dsh-plugin",
-    "dsh-plugins",
-    "deepseek-harness",
-    "deepseek-harness-plugin",
-    "cordis",
-    "failure-memory",
-    "mcp",
-    "skill",
-    "lessons"
-  ],
-  "peerDependencies": {
-    "@deepseek-ai/dsh-mcp-client": ">=0.1.0-rc.8 <0.2.0 || >=0.1.5-rc.1 <0.2.0 || >=0.1.7-rc.1 <0.2.0 || >=0.2.0-rc.1 <0.3.0",
-    "@deepseek-ai/schemastery": ">=3.0.0"
-  },
-  "peerDependenciesMeta": {
-    "@deepseek-ai/dsh-mcp-client": {
-      "optional": true
-    },
-    "@deepseek-ai/schemastery": {
-      "optional": true
-    }
-  },
-  "engines": {
-    "node": ">=20.0.0"
-  },
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
   "scripts": {
-    "deploy": "wrangler deploy",
-    "deploy:api": "cd workers && npx wrangler deploy --config wrangler.toml",
-    "deploy:email": "cd workers/email-register && npx wrangler deploy",
-    "deploy:all": "npm run deploy && npm run deploy:api && npm run deploy:email",
-    "preview": "wrangler dev"
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "astro": "^5.15.0",
+    "@astrojs/react": "^4.2.0",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
   },
   "devDependencies": {
-    "wrangler": "^4.146.0"
-  },
-  "overrides": {
-    "sharp": "0.35.5"
-  },
-  "main": "index.js",
-  "exports": {
-    ".": "./index.js",
-    "./client": "./lib/client.js",
-    "./package.json": "./package.json"
-  },
-  "types": "index.d.ts",
-  "type": "module"
+    "@typescript-eslint/parser": "^8.33.1",
+    "@typescript-eslint/eslint-plugin": "^8.33.1",
+    "eslint": "^9.28.0",
+    "eslint-plugin-astro": "^1.3.1",
+    "@astrojs/check": "^0.9.4",
+    "typescript": "^5.8.3",
+    "@astrojs/ts-plugin": "^1.10.4"
+  }
 }
