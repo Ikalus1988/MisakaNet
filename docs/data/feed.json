@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-10-10T09:59:16.497191+00:00",
+  "generated_at": "2026-10-10T17:23:08.651697+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3110",
-      "timestamp": "2026-10-10T01:05:35Z",
+      "title": "docs(reputation): the contributor snapshot is not a published board",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3127",
+      "timestamp": "2026-10-10T17:19:29Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "docs(handoff): phase 10 — three rows that went stale within the hour",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3106",
-      "timestamp": "2026-10-09T22:50:48Z",
+      "title": "docs(handoff): phase 18 — reputation.md fixed on main, decoupled from #2496",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3128",
+      "timestamp": "2026-10-10T17:18:22Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3107",
-      "timestamp": "2026-10-09T18:33:52Z",
+      "title": "docs(handoff): phases 16-17 — closed the test gap, corrected a wrong excuse, cut branches",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3124",
+      "timestamp": "2026-10-10T17:07:56Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3104",
-      "timestamp": "2026-10-09T18:23:08Z",
+      "title": "fix(handoff): redact the home path FR3 caught, and re-audit three \"needs a decision\" labels",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3123",
+      "timestamp": "2026-10-10T16:40:50Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore: auto-update lessons.json, public counts and generated pages",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3105",
-      "timestamp": "2026-10-09T18:22:55Z",
+      "title": "docs(handoff): phase 14 — two of the three \"awaiting reply\" items had moved",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3121",
+      "timestamp": "2026-10-10T16:22:44Z",
       "source": "github"
     },
     {
