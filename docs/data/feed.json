@@ -1,9 +1,23 @@
 {
-  "generated_at": "2026-10-09T18:25:17.886816+00:00",
+  "generated_at": "2026-10-10T00:59:59.201677+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "docs(handoff): phase 10 — three rows that went stale within the hour",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3106",
+      "timestamp": "2026-10-09T22:50:48Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3107",
+      "timestamp": "2026-10-09T18:33:52Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "chore(data): sync lessons.json + refresh feed",
@@ -23,20 +37,6 @@
       "title": "lesson: PID-kill by LLM-API inference terminates own turn (closes #2864)",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/3038",
       "timestamp": "2026-10-09T18:14:11Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "docs(handoff): phase 10 — the release PR is wrong, not merely stale",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3103",
-      "timestamp": "2026-10-09T18:12:36Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "lessons: six contributor submissions, rebuilt on current main",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3072",
-      "timestamp": "2026-10-08T18:53:25Z",
       "source": "github"
     },
     {
