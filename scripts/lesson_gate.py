@@ -5,7 +5,7 @@ Validates lesson Markdown files against the quality gate checklist:
   - Required frontmatter fields: title, domain, tags, status, evidence_level
   - Minimum content length: 100 chars (excluding frontmatter)
   - No duplicate titles (against all existing lessons)
-  - Domain must be in the allowed list (docs/domains/ + lessons/core|contrib|en)
+  - Domain must be in the canonical vocabulary (data/domains.json)
   - Tags validated for format (1-10 unique strings, min 2 chars)
   - status ∈ {active, archived, draft, published, stale, superseded} — this list is
     restated from VALID_STATUS below; tests/test_lesson_status_vocabulary.py fails if
@@ -766,7 +766,11 @@ def validate_file(path: Path, repo: Path = REPO, dirs: tuple[str, ...] | None = 
         domain = fm.get("domain")
         if isinstance(domain, str) and domain:
             if domain.lower() not in allowed_domains(repo):
-                errors.append(f"domain {domain!r} not in allowed list (docs/domains/ or existing lessons)")
+                errors.append(
+                    f"domain {domain!r} is not in the canonical vocabulary — add it to "
+                    f"{DOMAIN_VOCAB.relative_to(REPO)} only if it names a topic that is genuinely "
+                    "new (docs/domains/*.md is long-form documentation, not the list the gate reads)"
+                )
         if find_duplicate_title(fm["title"], repo, exclude_file=path):
             errors.append(f"duplicate title: {fm['title']!r}")
 
