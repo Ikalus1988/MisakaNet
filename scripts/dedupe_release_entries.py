@@ -37,10 +37,23 @@ REPO = Path(__file__).resolve().parent.parent
 _TRAILING_GROUP = re.compile(r"\s*\((?:[^()]|\([^()]*\))*\)\s*$")
 _BULLET = re.compile(r"^\s*\*\s+")
 
+# `release-please` renders an issue reference the commit body already carried as a **trailing suffix**,
+# after the commit link and outside any parenthesised group:
+#
+#     * **test:** … ([9adcef7](…)), closes [#1648](…)
+#
+# `_TRAILING_GROUP` cannot peel that, so the entry never matches its PR-numbered twin
+#     * **test:** … ([#3066](…)) ([9adcef7](…))
+# and one commit ships two lines. Measured on 2.42.3 (2026-10-09): `9adcef7` listed twice, and
+# `CHANGELOG.md: no duplicate entries` was reported — the tool was right about what it could see and
+# wrong about what it was asked to see.
+_VERB_REF = r"(?:closes|closes:|fixes|fixes:|resolves|addresses)\s*(?:\[#\d+\]\([^)]*\)|#\d+)"
+_TRAILING_VERB_REFS = re.compile(r"(?:(?:,\s*|\s+and\s+)" + _VERB_REF + r")+\s*$")
+
 
 def normalise(entry: str) -> str:
-    """The entry without its trailing `([#N](…)) ([sha](…))` groups."""
-    text = entry.strip()
+    """The entry without its trailing `([#N](…)) ([sha](…))` groups or `, closes #N` suffix."""
+    text = _TRAILING_VERB_REFS.sub("", entry.strip())
     while True:
         peeled = _TRAILING_GROUP.sub("", text)
         if peeled == text:

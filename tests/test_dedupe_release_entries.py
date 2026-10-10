@@ -272,3 +272,37 @@ def test_the_current_changelog_on_main_needs_no_repair():
     is the signal that the same shape reached `main` through a path that squashes."""
     text = (REPO / "CHANGELOG.md").read_text(encoding="utf-8")
     assert gate.duplicate_entries(section_of(text)) == []
+
+# The shape 2.42.3 actually shipped (2026-10-09). `9adcef7`'s message ends with `Refs #1648`, and
+# release-please renders that as a suffix *after* the commit link — outside any parenthesised group,
+# so `_TRAILING_GROUP` could not peel it and the entry never matched its PR-numbered twin. The tool
+# reported "no duplicate entries" and was, strictly, correct about what it could see.
+ONE_COMMIT_TWO_SHAPES = """# Changelog
+
+## [2.42.3](https://example/compare/v2.42.2...v2.42.3) (2026-10-09)
+
+
+### Bug Fixes
+
+* **test:** the burst-limit test assumed a clock it does not control ([9adcef7](https://example/9adcef7)), closes [#1648](https://example/1648)
+* **test:** the burst-limit test assumed a clock it does not control ([#3066](https://example/3066)) ([9adcef7](https://example/9adcef7))
+"""
+
+_SUFFIX_COPY = ONE_COMMIT_TWO_SHAPES.splitlines()[7]
+_PR_NUMBERED_COPY = ONE_COMMIT_TWO_SHAPES.splitlines()[8]
+
+
+def test_a_trailing_closes_suffix_does_not_hide_a_duplicate():
+    """One commit rendered two ways must normalise to one entry."""
+    assert normalise(_SUFFIX_COPY) == normalise(_PR_NUMBERED_COPY)
+
+
+def test_the_closes_suffix_copy_is_the_one_dropped():
+    """The PR-numbered copy carries more references, so it is the one worth keeping."""
+    new, dropped = dedupe(ONE_COMMIT_TWO_SHAPES)
+    assert len(dropped) == 1, f"expected one drop, got {dropped}"
+    assert "closes [#1648]" in dropped[0][1], "the copy carrying only the issue suffix should go"
+    # Counted per line, not as a substring: the kept entry names the SHA twice — once in
+    # the link text and once inside its URL.
+    listed = [ln for ln in new.splitlines() if "9adcef7" in ln]
+    assert len(listed) == 1, f"the commit must be listed once, got {listed}"
