@@ -1,9 +1,16 @@
 {
-  "generated_at": "2026-10-10T17:23:08.651697+00:00",
+  "generated_at": "2026-10-10T21:52:19.607411+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3131",
+      "timestamp": "2026-10-10T17:32:19Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "docs(reputation): the contributor snapshot is not a published board",
@@ -30,13 +37,6 @@
       "title": "fix(handoff): redact the home path FR3 caught, and re-audit three \"needs a decision\" labels",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/3123",
       "timestamp": "2026-10-10T16:40:50Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "docs(handoff): phase 14 — two of the three \"awaiting reply\" items had moved",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3121",
-      "timestamp": "2026-10-10T16:22:44Z",
       "source": "github"
     },
     {
