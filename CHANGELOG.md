@@ -7,6 +7,62 @@ All notable changes to the Misaka Network project are documented here.
 
 ---
 
+## [2.42.3](https://github.com/Ikalus1988/MisakaNet/compare/v2.42.2...v2.42.3) (2026-10-10)
+
+
+### Bug Fixes
+
+* **ci:** a path the workflow-script checker could not resolve was reported as clean ([#2975](https://github.com/Ikalus1988/MisakaNet/issues/2975)) ([f9e4ea0](https://github.com/Ikalus1988/MisakaNet/commit/f9e4ea0aa8b1b9050a968d7ab4bbb472ad057f88)), closes [#2940](https://github.com/Ikalus1988/MisakaNet/issues/2940)
+* **ci:** close /review and friends to unprivileged commenters, and bound the runner ([#2953](https://github.com/Ikalus1988/MisakaNet/issues/2953)) ([93c7cd8](https://github.com/Ikalus1988/MisakaNet/commit/93c7cd893810c4b28c08d40a8efc707a46dddd17))
+* **ci:** close the script-injection class in run: bodies, guard it, and restore the [#1920](https://github.com/Ikalus1988/MisakaNet/issues/1920) guard's sight of pr-checks.yml ([#2938](https://github.com/Ikalus1988/MisakaNet/issues/2938)) ([5517ec2](https://github.com/Ikalus1988/MisakaNet/commit/5517ec2687e175e86c06b8edb5bdfe4306acfcd0))
+* **ci:** FR3 read one directory while the leak was in three ([#3011](https://github.com/Ikalus1988/MisakaNet/issues/3011)) ([#3029](https://github.com/Ikalus1988/MisakaNet/issues/3029)) ([40f500b](https://github.com/Ikalus1988/MisakaNet/commit/40f500b026821475cc45770b46dd6da2356e8ec0))
+* **ci:** the credential gate reported "no secrets found" about files it never opened ([#2971](https://github.com/Ikalus1988/MisakaNet/issues/2971)) ([2f48a0f](https://github.com/Ikalus1988/MisakaNet/commit/2f48a0fad898d2a5231be55e97dca567467223ab)), closes [#2940](https://github.com/Ikalus1988/MisakaNet/issues/2940)
+* **ci:** the lesson lint step discarded its own verdict, twice ([#2940](https://github.com/Ikalus1988/MisakaNet/issues/2940) §4) ([#2979](https://github.com/Ikalus1988/MisakaNet/issues/2979)) ([a92c0cc](https://github.com/Ikalus1988/MisakaNet/commit/a92c0cc79ef669d8902ee602e3fdfbebcecc67fa))
+* **ci:** the pinning advisory's filter was dead, and the suggested repair makes it worse ([#2959](https://github.com/Ikalus1988/MisakaNet/issues/2959)) ([02afebc](https://github.com/Ikalus1988/MisakaNet/commit/02afebc2030887d8d350cb73d3c0549d8539a387))
+* **ci:** the retry action could not run a script containing a double quote, and the notify it carries failed silently ([#2955](https://github.com/Ikalus1988/MisakaNet/issues/2955)) ([4fbcaa0](https://github.com/Ikalus1988/MisakaNet/commit/4fbcaa0469013391633477bf16ec1f149d11a97a))
+* **cli:** a usage error that named every valid command and could not be acted on ([#2858](https://github.com/Ikalus1988/MisakaNet/issues/2858)) ([#2993](https://github.com/Ikalus1988/MisakaNet/issues/2993)) ([0754205](https://github.com/Ikalus1988/MisakaNet/commit/075420528bc3f6c9365faf4b1235338d61e296f1))
+* **docs:** the phase-5 handoff reached main carrying the path it warns about ([#3035](https://github.com/Ikalus1988/MisakaNet/issues/3035)) ([354a3f3](https://github.com/Ikalus1988/MisakaNet/commit/354a3f39503c06980f029aedad86a5ceee93dbc6))
+* **dsh:** an unresolvable MCP client returned silently, leaving no way to tell "absent" from "broken" ([#3009](https://github.com/Ikalus1988/MisakaNet/issues/3009)) ([2155185](https://github.com/Ikalus1988/MisakaNet/commit/21551853e6ea2f6ba8f9d911d2a0cff3618298e6)), closes [#2759](https://github.com/Ikalus1988/MisakaNet/issues/2759)
+* **export:** the OKF frontmatter parser was hand-rolled, and it lost the receipt chain ([#3004](https://github.com/Ikalus1988/MisakaNet/issues/3004)) ([#3061](https://github.com/Ikalus1988/MisakaNet/issues/3061)) ([093ef4a](https://github.com/Ikalus1988/MisakaNet/commit/093ef4af19df44c36374f6894e35dde419d0a80a))
+* **lessons:** three lessons answer their intakes but cite no issue, so no receipt is sent ([#3003](https://github.com/Ikalus1988/MisakaNet/issues/3003)) ([2ff3943](https://github.com/Ikalus1988/MisakaNet/commit/2ff394364e7aef12415ec863042caae1287e47bb))
+* **mcp:** four methods the dispatcher answers were unreachable behind the 401 gate ([#2963](https://github.com/Ikalus1988/MisakaNet/issues/2963)) ([#2980](https://github.com/Ikalus1988/MisakaNet/issues/2980)) ([6a23969](https://github.com/Ikalus1988/MisakaNet/commit/6a23969263048064155609c4bb3acdb3618520c4))
+* **mcp:** minProperties cost one client every tool this server offers ([#2967](https://github.com/Ikalus1988/MisakaNet/issues/2967)) ([#2976](https://github.com/Ikalus1988/MisakaNet/issues/2976)) ([266b605](https://github.com/Ikalus1988/MisakaNet/commit/266b60562edb464c6046bdd6926f4b673560ddff))
+* **mcp:** tools/list and tools/call omitted fields the advertised version requires ([#2968](https://github.com/Ikalus1988/MisakaNet/issues/2968)) ([#2977](https://github.com/Ikalus1988/MisakaNet/issues/2977)) ([a6dfcf3](https://github.com/Ikalus1988/MisakaNet/commit/a6dfcf38396abe4252b19e2ee7fea8718c60f43e))
+* **preflight:** a lesson index that could not be read was reported as "no risk lesson" ([#2940](https://github.com/Ikalus1988/MisakaNet/issues/2940)) ([#2978](https://github.com/Ikalus1988/MisakaNet/issues/2978)) ([98b6a93](https://github.com/Ikalus1988/MisakaNet/commit/98b6a93b959c44707df9bb8e7ae365e928bb1e0c))
+* **provenance:** parse hostname using urlsplit to prevent SSRF guard bypass ([#2960](https://github.com/Ikalus1988/MisakaNet/issues/2960)) ([b4111b3](https://github.com/Ikalus1988/MisakaNet/commit/b4111b38d8bc165554a53761322fdf3233b36bbf))
+* **release:** lesson commits were silently dropped, and one commit listed twice ([#3118](https://github.com/Ikalus1988/MisakaNet/issues/3118)) ([c7f6230](https://github.com/Ikalus1988/MisakaNet/commit/c7f6230acac45d5abb88671836522977e9e0a9d1)), closes [#2951](https://github.com/Ikalus1988/MisakaNet/issues/2951)
+* **search:** a query containing "usage" was zeroing the whole FAQ corpus ([#3001](https://github.com/Ikalus1988/MisakaNet/issues/3001)) ([#3043](https://github.com/Ikalus1988/MisakaNet/issues/3043)) ([a91baa5](https://github.com/Ikalus1988/MisakaNet/commit/a91baa5be4ba9bcd924aed605faff0be94b56219))
+* **search:** the evidence filter matched words the corpus never uses, so it dropped everything ([#3056](https://github.com/Ikalus1988/MisakaNet/issues/3056)) ([dcaa7ee](https://github.com/Ikalus1988/MisakaNet/commit/dcaa7eeda7320213dd21049c15def2034783ddec))
+* **sync:** the dedup hash was computed over different bytes on each side, twice ([#2983](https://github.com/Ikalus1988/MisakaNet/issues/2983)) ([#2987](https://github.com/Ikalus1988/MisakaNet/issues/2987)) ([73a4545](https://github.com/Ikalus1988/MisakaNet/commit/73a4545969633b910f7bb9cc3d7c2f954d388822))
+* **sync:** the two paths disagreed about the same labelled issue ([#3012](https://github.com/Ikalus1988/MisakaNet/issues/3012)) ([#3062](https://github.com/Ikalus1988/MisakaNet/issues/3062)) ([d7fe462](https://github.com/Ikalus1988/MisakaNet/commit/d7fe462e8310e8a32413433d73328be7546f6b49))
+* **test:** the burst-limit test assumed a clock it does not control ([#3066](https://github.com/Ikalus1988/MisakaNet/issues/3066)) ([9adcef7](https://github.com/Ikalus1988/MisakaNet/commit/9adcef7e8fee2e919ecae10006a5c175f2b3977d))
+* **verify:** run_verification returned a 3-tuple and raised at both call sites ([#2952](https://github.com/Ikalus1988/MisakaNet/issues/2952)) ([9c160e3](https://github.com/Ikalus1988/MisakaNet/commit/9c160e30b3ab26b23d9c5e09a1799f077ae5c25a))
+
+
+### Documentation
+
+* **field-reports:** scope the claims this report cannot support, instead of leaving them over-claimed ([#3011](https://github.com/Ikalus1988/MisakaNet/issues/3011)) ([#3036](https://github.com/Ikalus1988/MisakaNet/issues/3036)) ([f61bada](https://github.com/Ikalus1988/MisakaNet/commit/f61bada4bb97f2df8665b785d993aec0a96ffbb6))
+* **handoff:** phase 4 — ten §3.1 closures, the delivery half proven in production, and seven bad judgment criteria ([#3010](https://github.com/Ikalus1988/MisakaNet/issues/3010)) ([83bcfc6](https://github.com/Ikalus1988/MisakaNet/commit/83bcfc6aaf88619885004542c89933258c47b919))
+* **readme:** drop a 6 MB recording that advertises 235 lessons out of 469 ([#2990](https://github.com/Ikalus1988/MisakaNet/issues/2990)) ([e71bd09](https://github.com/Ikalus1988/MisakaNet/commit/e71bd09c64d32158f54a6765c3cdc52b36d42e14))
+
+
+### Tests
+
+* **okf:** the [#3004](https://github.com/Ikalus1988/MisakaNet/issues/3004) guard was only as broad as its own regex ([#3064](https://github.com/Ikalus1988/MisakaNet/issues/3064)) ([68d09a3](https://github.com/Ikalus1988/MisakaNet/commit/68d09a35e22778f45f0ec970b5297efdcfd75790))
+
+
+### Lessons
+
+* a doc link to the run's own output is not a broken link ([#2258](https://github.com/Ikalus1988/MisakaNet/issues/2258)) ([#3037](https://github.com/Ikalus1988/MisakaNet/issues/3037)) ([4149d2d](https://github.com/Ikalus1988/MisakaNet/commit/4149d2dc9d7f65c380fd1e6e3a62485f0ee2502c))
+* a failed later hunk does not mean earlier files are untouched ([#2469](https://github.com/Ikalus1988/MisakaNet/issues/2469)) ([#3039](https://github.com/Ikalus1988/MisakaNet/issues/3039)) ([213c7c0](https://github.com/Ikalus1988/MisakaNet/commit/213c7c0768f998217e9e1be8c611fd6ecc81efdf))
+* a port that is already allocated is EADDRINUSE — name the holder with ss, free it, retry ([#2804](https://github.com/Ikalus1988/MisakaNet/issues/2804)) ([#3016](https://github.com/Ikalus1988/MisakaNet/issues/3016)) ([c446d61](https://github.com/Ikalus1988/MisakaNet/commit/c446d61c435d3046245b2a7628001be8849bdd56))
+* crypto/Web3 bounty settlement ([#2629](https://github.com/Ikalus1988/MisakaNet/issues/2629)) ([#2662](https://github.com/Ikalus1988/MisakaNet/issues/2662)) ([c6c0195](https://github.com/Ikalus1988/MisakaNet/commit/c6c019561612aee950e02e5d86a6580b649a6add))
+* git diff --check misses removed-line whitespace, and -w hides string content ([#2256](https://github.com/Ikalus1988/MisakaNet/issues/2256)) ([#3007](https://github.com/Ikalus1988/MisakaNet/issues/3007)) ([1efb11d](https://github.com/Ikalus1988/MisakaNet/commit/1efb11d851f83db8e634a3aaeabf02c0de44d6fc))
+* PID-kill by LLM-API inference terminates own turn ([#3038](https://github.com/Ikalus1988/MisakaNet/issues/3038)) ([4007582](https://github.com/Ikalus1988/MisakaNet/commit/4007582ecd33e6760c271de11e08c962b47408f2)), closes [#2871](https://github.com/Ikalus1988/MisakaNet/issues/2871) [#2864](https://github.com/Ikalus1988/MisakaNet/issues/2864)
+* README --profile name verbatim installs into unloaded profile (closes [#2865](https://github.com/Ikalus1988/MisakaNet/issues/2865)) ([#3040](https://github.com/Ikalus1988/MisakaNet/issues/3040)) ([0f4490c](https://github.com/Ikalus1988/MisakaNet/commit/0f4490cb5f837b96478a78cf7a52cdf36482e60d))
+* six contributor submissions, rebuilt on current main ([#3072](https://github.com/Ikalus1988/MisakaNet/issues/3072)) ([23c9d0a](https://github.com/Ikalus1988/MisakaNet/commit/23c9d0a0863989af93b8836d24db78c6a2d4eed8))
+* three checks that were green and covered nothing ([#2932](https://github.com/Ikalus1988/MisakaNet/issues/2932)) ([d39fdce](https://github.com/Ikalus1988/MisakaNet/commit/d39fdcec1be8077fd4aabc0f96c3cac80b4226d1))
+
 ## [2.42.2](https://github.com/Ikalus1988/MisakaNet/compare/v2.42.1...v2.42.2) (2026-10-06)
 
 
