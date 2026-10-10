@@ -28,6 +28,14 @@
         {
           "type": "ci",
           "section": "CI/CD"
+        },
+        {
+          "type": "lesson",
+          "section": "Lessons"
+        },
+        {
+          "type": "lessons",
+          "section": "Lessons"
         }
       ],
       "extra-files": [
