@@ -27,9 +27,16 @@ The project publishes **two** rankings, and neither of them answers "is this a p
 | board | what it ranks | where it comes from |
 |---|---|---|
 | **Reputation points** (this document's formula) | contributors in the `data/contributor-points.json` ledger, weighted by *reuse* — a lesson somebody actually used | `/api/insights/reputation-leaderboard`, rendered on `docs/insights/reputation-leaderboard.html` |
-| **Contributor snapshot** (`data/leaderboard.json`) | **commit authors on `main`**, scored by commit recency (30-day half-life) × median PR size | `scripts/leaderboard_watch.py` |
+| **Contributor snapshot** (`data/leaderboard.json`, in-repo only — **not published**) | **commit authors on `main`**, scored by commit recency (30-day half-life) × median PR size | `scripts/leaderboard_watch.py` |
 
 The second one is not the formula above, and it is worth knowing why its rows are what they are:
+
+> **It is not a published board.** `data/leaderboard.json` is written into this repository and nothing
+> serves it — `https://misakanet.org/data/leaderboard.json` returns **404**, no page fetches it, and no
+> code in the repository reads it (measured 2026-10-11; #1919 measured the same on 2026-09-20).
+> Read it from the repository, not from the site; the only board a reader can actually load is the
+> reputation-points one above. The attribution notes below still apply, because they are the reason its
+> rows must not be read as people.
 
 * contributors are taken from *commit authors* — `author.user.login` when GitHub can resolve one, and
   otherwise **the raw git author name**. So a board row can be an account, an identity that has no
@@ -40,7 +47,7 @@ The second one is not the formula above, and it is worth knowing why its rows ar
   (GitHub's own automation identity) and `claude` (a coding agent) are `type=User`. A `User` row is
   therefore **not** evidence of a human;
 * the only filter was a hardcoded list, which had missed `github-actions[bot]` — the most active
-  automation identity in the repository — so it sat at **rank #2** on the public board until
+  automation identity in the repository — so it sat at **rank #2** on this board until
   2026-09-25. The filter is now a rule (`[bot]` suffix, plus this repository's own identities, checked
   against the workflows by `tests/test_leaderboard_exclusions.py`).
 
