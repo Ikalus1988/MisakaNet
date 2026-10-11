@@ -1,9 +1,16 @@
 {
-  "generated_at": "2026-10-11T06:00:32.037391+00:00",
+  "generated_at": "2026-10-11T13:06:13.661203+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3147",
+      "timestamp": "2026-10-11T06:09:47Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "docs(handoff): phase 19 — main grew a lesson, so #2921's premise changed",
@@ -30,13 +37,6 @@
       "title": "docs(reputation): the contributor snapshot is not a published board",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/3127",
       "timestamp": "2026-10-10T17:19:29Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "docs(handoff): phase 18 — reputation.md fixed on main, decoupled from #2496",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3128",
-      "timestamp": "2026-10-10T17:18:22Z",
       "source": "github"
     },
     {
