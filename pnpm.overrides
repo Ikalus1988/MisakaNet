@@ -1,0 +1,4 @@
+# Pin all @deepseek-ai packages to the exact engine version used by DSH.
+# This prevents accidental mixing of alpha / beta releases that break the
+# dependency graph required for subprocess spawning on Windows.
+@deepseek-ai/*: 0.2.0-rc.2

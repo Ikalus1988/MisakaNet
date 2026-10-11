@@ -1,0 +1,18 @@
+{
+  "name": "dsh-profile-web",
+  "version": "0.2.0-rc.2",
+  "private": true,
+  "main": "index.js",
+  "license": "MIT",
+  "dependencies": {
+    "@deepseek-ai/dsh-base": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-web-app": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-subprocess": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-http-proxy": "0.2.0-rc.2"
+  },
+  "pnpm": {
+    "overrides": {
+      "@deepseek-ai/*": "0.2.0-rc.2"
+    }
+  }
+}
