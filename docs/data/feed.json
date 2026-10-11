@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-10-11T13:06:13.661203+00:00",
+  "generated_at": "2026-10-11T19:36:13.100669+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
+      "title": "fix(readme): give README.zh-CN.md the same 19 badges as the canonical one",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3154",
+      "timestamp": "2026-10-11T15:03:56Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "feat(bench): measure whether a relevance floor could separate #2790's two bands",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3153",
+      "timestamp": "2026-10-11T14:55:24Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "docs(handoff): phase 20 — an issue I closed for no reason, and a triage worth doing",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3152",
+      "timestamp": "2026-10-11T14:32:48Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore: update leaderboard snapshot",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3151",
+      "timestamp": "2026-10-11T13:24:46Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
       "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3147",
-      "timestamp": "2026-10-11T06:09:47Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "docs(handoff): phase 19 — main grew a lesson, so #2921's premise changed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3144",
-      "timestamp": "2026-10-11T05:06:27Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3133",
-      "timestamp": "2026-10-10T22:01:20Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3131",
-      "timestamp": "2026-10-10T17:32:19Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "docs(reputation): the contributor snapshot is not a published board",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3127",
-      "timestamp": "2026-10-10T17:19:29Z",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3150",
+      "timestamp": "2026-10-11T13:14:41Z",
       "source": "github"
     },
     {
