@@ -1,9 +1,16 @@
 {
-  "generated_at": "2026-10-11T19:36:13.100669+00:00",
+  "generated_at": "2026-10-12T00:37:47.464464+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3158",
+      "timestamp": "2026-10-11T19:45:25Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "fix(readme): give README.zh-CN.md the same 19 badges as the canonical one",
@@ -30,13 +37,6 @@
       "title": "chore: update leaderboard snapshot",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/3151",
       "timestamp": "2026-10-11T13:24:46Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3150",
-      "timestamp": "2026-10-11T13:14:41Z",
       "source": "github"
     },
     {
