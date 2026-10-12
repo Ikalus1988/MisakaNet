@@ -1,9 +1,30 @@
 {
-  "generated_at": "2026-10-12T00:37:47.464464+00:00",
+  "generated_at": "2026-10-12T11:04:52.562782+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "chore(benchmark): weekly Workers AI lesson benchmark report [2026-10-12]",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3165",
+      "timestamp": "2026-10-12T08:29:01Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(deps-dev): bump wrangler from 4.146.0 to 4.149.0 in the npm group",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3159",
+      "timestamp": "2026-10-12T06:13:54Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3162",
+      "timestamp": "2026-10-12T00:46:40Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "chore(data): sync lessons.json + refresh feed",
@@ -16,27 +37,6 @@
       "title": "fix(readme): give README.zh-CN.md the same 19 badges as the canonical one",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/3154",
       "timestamp": "2026-10-11T15:03:56Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat(bench): measure whether a relevance floor could separate #2790's two bands",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3153",
-      "timestamp": "2026-10-11T14:55:24Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "docs(handoff): phase 20 — an issue I closed for no reason, and a triage worth doing",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3152",
-      "timestamp": "2026-10-11T14:32:48Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore: update leaderboard snapshot",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3151",
-      "timestamp": "2026-10-11T13:24:46Z",
       "source": "github"
     },
     {
