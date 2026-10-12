@@ -1,12 +1,12 @@
 {
   "calls": {
-    "agent": 1,
-    "crawler": 0,
-    "mcp": 41,
-    "pageview": 0
+    "agent": 19,
+    "crawler": 11,
+    "mcp": 1872,
+    "pageview": 27
   },
   "date": "2026-10-12",
-  "generated_at": "2026-10-12T00:37:47Z",
+  "generated_at": "2026-10-12T11:04:52Z",
   "source": "https://misakanet.org/api/analytics/traffic",
-  "total": 42
+  "total": 1929
 }
