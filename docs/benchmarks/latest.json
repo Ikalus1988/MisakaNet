@@ -24291,6 +24291,757 @@
         "lesson_hit_rate": 0.0
       },
       "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "A compatibility-gate rejection is a verdict, not something to overwrite with --accept-risk (compatibility-gate-rejection-is-verdict-not-accept-risk)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "To fix the error, you can follow the steps below:\n\n### Step 1: Report the gate's verdict verbatim and stop\n\nInstead of offering the user an option to self-grant a version exemption, you should report the gate's verdict verbatim and stop the installation process.\n\n```bash\necho \"Compatibility-gate rejection is a verdict, not something to overwrite with --accept-risk (compatibility-gate-rejection-is-verdict-not-accept-risk)\"\n```\n\n### Step 2: Do not self-grant a version exemption\n\nThe agent should never invoke the `allow-version ... --accept-risk` command on the user's behalf. The exemption must be the user's own explicit risk acceptance, labelled as such.\n\n```bash\n# Do not do this\n# allow-version dsh-compaction-instant@0.1.4 --accept-risk\n\n# Do this instead\necho \"Please manually allow the version if you want to proceed.\"\n```\n\n### Step 3: If the user still wants the package, label the risk explicit\n\nIf the user still wants the package, you can provide a concrete, actionable fix with exact commands.\n\n```bash\necho \"If you still want to install the package, please manually run the following command to allow the version",
+      "metrics": {
+        "length": 1129,
+        "commands": 2,
+        "command_list": [
+          "echo \"Compatibility-gate rejection is a verdict, not something to overwrite with --accept-risk (compatibility-gate-rejection-is-verdict-not-accept-risk)\"",
+          "echo \"Please manually allow the version if you want to proceed.\""
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 5,
+        "lesson_hits": 1,
+        "lesson_hit_rate": 1.0
+      },
+      "error": null,
+      "run_at": "2026-10-12T08:20:51+00:00"
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "git diff --check only flags whitespace on added lines, and git diff -w hides whitespace inside a quoted string (git-diff-whitespace-verification-traps)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "To resolve the issue of `git diff --check` only flagging whitespace on added lines and `git diff -w` hiding whitespace inside quoted strings, you can use the following commands:\n\n```bash\n# Remove trailing whitespace from the CSS file\nprintf 'a {\\n  color: red;\\n}\\n' s.css > s.css.trim\n\n# Stage the updated CSS file\ngit add -A\n\n# Commit the changes\ngit commit -qm \"Trimmed trailing whitespace\"\n\n# Use `git diff --cached` to check for whitespace changes\ngit diff --cached --check s.css\n\n# Use `git diff -w --` to check for whitespace changes, ignoring quoted strings\ngit diff -w -- s.css\n```\n\nHere's what's happening:\n\n1. We use `printf` to trim trailing whitespace from the CSS file `s.css`. The `> s.css.trim` redirection sends the output to a new file `s.css.trim`.\n2. We stage the updated CSS file using `git add -A`.\n3. We commit the changes using `git commit -qm`.\n4. We use `git diff --cached --check` to check for whitespace changes. This command only checks for added lines, which is what we want.\n5",
+      "metrics": {
+        "length": 1007,
+        "commands": 5,
+        "command_list": [
+          "printf 'a {\\n  color: red;\\n}\\n' s.css > s.css.trim",
+          "git add -A",
+          "git commit -qm \"Trimmed trailing whitespace\"",
+          "git diff --cached --check s.css",
+          "git diff -w -- s.css"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 12,
+        "lesson_hits": 3,
+        "lesson_hit_rate": 0.75
+      },
+      "error": null,
+      "run_at": "2026-10-12T08:20:51+00:00"
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "git diff --check only flags whitespace on added lines, and git diff -w hides whitespace inside a quoted string (git-diff-whitespace-verification-traps)",
+      "condition": "plain",
+      "status": 200,
+      "content": "The issue you're encountering is due to the way Git handles whitespace in diffs. To fix this, you can use the following commands:\n\n1. For `git diff --check`, you can use the following command to flag whitespace on added lines and ignore whitespace inside quoted strings:\n\n```bash\ngit diff -w --check --ignore-space-at-eol\n```\n\n   The `--ignore-space-at-eol` option tells Git to ignore whitespace at the end of lines.\n\n2. For `git diff -w`, you can use the following command to show whitespace inside quoted strings and flag whitespace on added lines:\n\n```bash\ngit diff -w --ignore-space-at-eol --check\n```\n\n   The `--check` option will only flag whitespace on added lines, and the `--ignore-space-at-eol` option will ignore whitespace at the end of lines.\n\nAlternatively, you can use `git diff -w --ignore-all-space` to ignore all whitespace in the diff output, including whitespace inside quoted strings.\n\n```bash\ngit diff -w --ignore-all-space --check\n```\n\nNote that `--ignore-all-space` is a more aggressive option that will ignore all whitespace, including spaces inside quoted strings, and may not be suitable for all use cases",
+      "metrics": {
+        "length": 1132,
+        "commands": 3,
+        "command_list": [
+          "git diff -w --check --ignore-space-at-eol",
+          "git diff -w --ignore-space-at-eol --check",
+          "git diff -w --ignore-all-space --check"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 12,
+        "lesson_hits": 1,
+        "lesson_hit_rate": 0.25
+      },
+      "error": null,
+      "run_at": "2026-10-12T08:20:51+00:00"
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "A compatibility-gate rejection is a verdict, not something to overwrite with --accept-risk (compatibility-gate-rejection-is-verdict-not-accept-risk)",
+      "condition": "plain",
+      "status": 200,
+      "content": "The error message you're seeing is a known issue with the `--accept-risk` flag in some versions of the `git` command. Here's a concrete, actionable fix with exact commands:\n\n1. Update to the latest version of Git:\n   ```bash\ngit version\n```\n   Check the version of Git installed on your system. If it's an older version, you can update it using the following command:\n\n   ```bash\ngit --version\n```\n\n   For Windows users:\n   ```bash\ngit --version\n```\n   For macOS users:\n   ```bash\ngit --version\n```\n   For Linux users:\n   ```bash\ngit --version\n```\n\n   You can download the latest version of Git from the official Git website: https://git-scm.com/downloads\n\n2. If you're using a Linux or macOS system, you can update Git using your package manager. For example:\n\n   - On Ubuntu/Debian:\n     ```bash\nsudo apt-get update\nsudo apt-get install git\n```\n   - On Red Hat/Fedora/CentOS:\n     ```bash\nsudo yum update\nsudo yum install git\n```\n   - On macOS (using Homebrew):\n     ```bash\nbrew update\nbrew",
+      "metrics": {
+        "length": 993,
+        "commands": 9,
+        "command_list": [
+          "git version",
+          "git --version",
+          "git --version",
+          "git --version",
+          "git --version"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 16,
+        "lesson_hits": 1,
+        "lesson_hit_rate": 1.0
+      },
+      "error": null,
+      "run_at": "2026-10-12T08:20:51+00:00"
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "在 WSL2 上 `git push` / `git clone` / `git ls-remote` 卡到 124 超时，但**裸 `curl https://github.com` 反而 HTTP 200**。第一次遇到时很容易判成\"网络被墙\"，于是去改 hosts、加代理、装 CA——而真正的原因在仓库自己的 `.git/config` 里。\n\n2026-08-01 的实际案例：`Agent-Medici` 仓（已废弃）配了 `http.proxy=socks5://172.19.128.1:7890`，那是一条已经死掉的 Windows Clash 链路。WSL 不继承 Windows 的 git 配置，所以**只有这一个仓**的 git 操作撞墙，其他仓正常——这个\"只有部分仓坏\"的特征正是本条的第一判据。 (github-connectivity-4-fallbacks)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "解决git push/clone/ls-remote卡到124超时的问题步骤如下：\n\n1. 检查当前仓的`.git/config`文件中是否有代理配置：\n```bash\ngit config --local --list | grep -i proxy\n```\n2. 如果有代理配置，则清除http.proxy和https.proxy：\n```bash\ngit config --local --unset http.proxy\ngit config --local --unset https.proxy\n```\n3. 全局也清除http.proxy和https.proxy（保险）：\n```bash\ngit config --global --unset http.proxy\ngit config --global --unset https.proxy\n```\n4. 验证：\n```bash\ncd /tmp\ngit ls-remote https://github.com/<org>/<repo>.git HEAD\n```\n如果命令执行正常，则代理配置已清除。\n\n如果上述步骤无法解决问题，则可以尝试Fallback2：git alias ghub 强制IP解析。\n\n1. 添加alias到~/.gitconfig：\n```bash\ngit config --global alias.ghub '!f() {\n  http --resolve $@ --no-check-certificate\n}'\n```\n2. 验证：\n```bash\ncd /tmp\n",
+      "metrics": {
+        "length": 684,
+        "commands": 10,
+        "command_list": [
+          "git config --local --list | grep -i proxy",
+          "git config --local --unset http.proxy",
+          "git config --local --unset https.proxy",
+          "git config --global --unset http.proxy",
+          "git config --global --unset https.proxy"
+        ],
+        "has_command_block": true,
+        "actionable": false,
+        "inline_code_count": 11,
+        "lesson_hits": 7,
+        "lesson_hit_rate": 1.0
+      },
+      "error": null,
+      "run_at": "2026-10-12T08:20:52+00:00"
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "在 WSL2 上 `git push` / `git clone` / `git ls-remote` 卡到 124 超时，但**裸 `curl https://github.com` 反而 HTTP 200**。第一次遇到时很容易判成\"网络被墙\"，于是去改 hosts、加代理、装 CA——而真正的原因在仓库自己的 `.git/config` 里。\n\n2026-08-01 的实际案例：`Agent-Medici` 仓（已废弃）配了 `http.proxy=socks5://172.19.128.1:7890`，那是一条已经死掉的 Windows Clash 链路。WSL 不继承 Windows 的 git 配置，所以**只有这一个仓**的 git 操作撞墙，其他仓正常——这个\"只有部分仓坏\"的特征正是本条的第一判据。 (github-connectivity-4-fallbacks)",
+      "condition": "plain",
+      "status": 200,
+      "content": "解决 WSL2 上 Git Push/Clone/LS-Remote 卡到 124 超时的问题\n\n问题出在 `.git/config` 文件中，WSL2 不继承 Windows 的 Git 配置。为了解决这个问题，我们需要修改 `.git/config` 文件。\n\n**步骤 1：找到 `.git/config` 文件**\n\n在 WSL2 中，`.git/config` 文件位于 `~/.gitconfig` 或 `~/.git/config`（取决于你的 WSL2 phiên本）。你可以使用以下命令找到它：\n\n```bash\ngit config --get --show-origin config file\n```\n\n**步骤 2：查找相关配置**\n\n在 `.git/config` 文件中，找到以下配置：\n```yaml\nhttp.proxy = socks5://172.19.128.1:7890\n```\n如果找到该配置，则说明你的 Git 配置是从 Windows Clash 链路继承的。\n\n**步骤 3：修改配置**\n\n要解决这个问题，你需要删除 `.git/config` 中的 `http.proxy` 配置。可以使用以下命令：\n\n```bash\ngit config --local --remove http.proxy\n```\n\n如果你只想为特定仓库修改配置",
+      "metrics": {
+        "length": 595,
+        "commands": 4,
+        "command_list": [
+          "git config --get --show-origin config file",
+          "如果找到该配置，则说明你的 Git 配置是从 Windows Clash 链路继承的。",
+          "**步骤 3：修改配置**",
+          "要解决这个问题，你需要删除 `.git/config` 中的 `http.proxy` 配置。可以使用以下命令："
+        ],
+        "has_command_block": true,
+        "actionable": false,
+        "inline_code_count": 14,
+        "lesson_hits": 6,
+        "lesson_hit_rate": 0.857
+      },
+      "error": null,
+      "run_at": "2026-10-12T08:20:52+00:00"
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "Three checks that were green and covered nothing: the subject was outside the scope (green-check-subject-outside-scope)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "The issue here is that the `type` field is not present in the lesson data, but the code is trying to access it. To fix this, you need to make sure that the code is only trying to access fields that are present in the data. Here's a concrete, actionable fix with exact commands:\n\n**Step 1: Update the `misakanet_tool.py` files**\n\nOpen the `integrations/langchain/misakanet_tool.py` and `integrations/llamaindex/misakanet_tool.py` files and update the lines that format the results to use the `domain` field instead of `type`:\n\n```python\npython\nlesson_type = result.get(\"domain\", \"unknown\")\nlines.append(f\"{i}. [{lesson_type}] {title} (relevance: {score:.2f})\")\n```\n\n**Step 2: Update the `test_integrations.py` file**\n\nOpen the `tests/test_integrations.py` file and update the assertion to check for the presence of the `domain` field:\n\n```python\npython\nassert \"Found 1 relevant lessons\" in re.search(r\".*domain.*\", re.search(r\".*domain.*\", re.search(r\".*domain.*\", re.search",
+      "metrics": {
+        "length": 973,
+        "commands": 2,
+        "command_list": [
+          "**Step 2: Update the `test_integrations.py` file**",
+          "Open the `tests/test_integrations.py` file and update the assertion to check for the presence of the `domain` field:"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 11,
+        "lesson_hits": 2,
+        "lesson_hit_rate": 0.5
+      },
+      "error": null,
+      "run_at": "2026-10-12T08:20:52+00:00"
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "Three checks that were green and covered nothing: the subject was outside the scope (green-check-subject-outside-scope)",
+      "condition": "plain",
+      "status": 200,
+      "content": "The error you're encountering is due to a variable being used outside its scope. To fix this, you need to make sure that the variable is accessible within the scope where it's being used. Here's a concrete example with a step-by-step fix:\n\nLet's say you have a JavaScript function that calculates the area of a rectangle:\n\n```javascript\nfunction calculateArea(length, width) {\n    // Use a variable 'area' that is not accessible outside the function\n    let area = length * width;\n    return area;\n}\n\n// Now, you're trying to use the 'area' variable outside the function\nconsole.log(calculateArea(10, 5));\n```\n\nWhen you run this code, you'll get the error: `Three checks that were green and covered nothing: the subject was outside the scope (green-check-subject-outside-scope)`.\n\nTo fix this, you can simply declare the `area` variable as a global variable or return it from the function:\n\n**Option 1: Declare `area` as a global variable**\n\n```javascript\nlet area;\n\nfunction calculateArea(length, width) {\n    area = length * width;\n}\n\ncalculateArea(10, 5);\nconsole.log(area);\n```\n\n**Option 2: Return",
+      "metrics": {
+        "length": 1101,
+        "commands": 3,
+        "command_list": [
+          "When you run this code, you'll get the error: `Three checks that were green and covered nothing: the subject was outside the scope (green-check-subject-outside-scope)`.",
+          "To fix this, you can simply declare the `area` variable as a global variable or return it from the function:",
+          "**Option 1: Declare `area` as a global variable**"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 6,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": null,
+      "run_at": "2026-10-12T08:20:53+00:00"
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "Killing a PID by 'has a connection to the LLM API' inference terminated the agent's own running turn (kill-pid-by-llm-api-inference-terminates-own-turn)",
+      "condition": "plain",
+      "status": 200,
+      "content": "The error you're experiencing is due to the fact that the process that terminated the agent's turn is the same process that's trying to kill the PID. This can happen when the process that's running the inference is the same process that's running the agent.\n\nTo fix this issue, you can try killing the PID using the `kill` command, but first, you need to find the PID of the process that's running the inference. You can do this by running the following command:\n\n```bash\npgrep kill-pid-by-llm-api-inference\n```\n\nThis will give you the PID of the process that's running the inference.\n\nOnce you have the PID, you can kill the process using the following command:\n\n```bash\nkill <PID>\n```\n\nHowever, be careful when killing a process, as it can cause unexpected behavior or data loss.\n\nAlternatively, you can also try to use the `pkill` command to kill the process, which is a more gentle way of killing a process:\n\n```bash\npkill -9 kill-pid-by-llm-api-inference\n```\n\nThe `-9` flag tells `pkill` to force the process to exit immediately.\n\nIf you're using a Linux-based system, you can also try",
+      "metrics": {
+        "length": 1090,
+        "commands": 3,
+        "command_list": [
+          "pgrep kill-pid-by-llm-api-inference",
+          "kill <PID>",
+          "pkill -9 kill-pid-by-llm-api-inference"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 9,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": null,
+      "run_at": "2026-10-12T08:20:53+00:00"
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "Killing a PID by 'has a connection to the LLM API' inference terminated the agent's own running turn (kill-pid-by-llm-api-inference-terminates-own-turn)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "Based on the problem description, the issue arises from the agent trying to kill a process that has a connection to the LLM API endpoint. This process can be either the agent itself or a background service, and the agent is unable to distinguish between the two.\n\nTo fix this issue, you need to modify the agent's logic to handle this case correctly. Here's a concrete, actionable fix with exact commands:\n\n**Step 1: Modify the agent's logic**\n\nAdd the following code to the agent's script:\n```python\n# Define a new variable to store the process with the connection to the LLM API\nllm_api_process = None\n\n# ...\n\n# When the agent finds a process with a connection to the LLM API\nif has_connection_to_llm_api():\n    # Get the process details\n    process = get_process_with_connection_to_llm_api()\n    \n    # Check if the process is the agent itself\n    if process.pid == get_my_pid():\n        # If it's the agent, do not kill it\n        print(\"Agent itself, skipping kill\")\n    else:\n        # If it's not the agent, kill the process\n        kill_process(process)\n```\nThis code checks if the process with the connection to the LLM API",
+      "metrics": {
+        "length": 1132,
+        "commands": 0,
+        "command_list": [],
+        "has_command_block": false,
+        "actionable": true,
+        "inline_code_count": 1,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": null,
+      "run_at": "2026-10-12T08:20:53+00:00"
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "A silent truncation in the MCP intake worker, fixed four times, each time at the next cap (mcp-intake-silent-truncation-family)",
+      "condition": "plain",
+      "status": 200,
+      "content": "The error you're encountering is likely due to a silent truncation issue in the MCP (Message Queuing Component) intake worker. This issue occurs when the worker tries to read a message from the queue that is longer than the buffer size. To fix this issue, you can try the following steps:\n\n**Step 1: Check the buffer size**\n\nOpen the MCPSQL database and run the following query to check the buffer size:\n```sql\nSELECT MAX(BufferSize) FROM sys.message_types\n```\nThis will return the maximum buffer size for the message type.\n\n**Step 2: Increase the buffer size**\n\nIf the buffer size is too small, you can increase it to prevent silent truncations. To do this, run the following command:\n```sql\nALTER MESSAGE TYPE mcp_intake TYPE 'text' WITH MAX_SIZE 65536;\n```\nThis will increase the buffer size to 65536 bytes for the `mcp_intake` message type.\n\n**Step 3: Update the worker configuration**\n\nOpen the MCPSQL database and run the following query to update the worker configuration:\n```sql\nUPDATE mcpsysmessageset\nSET BufferSize = 65536\nWHERE Name = 'mcp_intake';\n```\nThis will update the",
+      "metrics": {
+        "length": 1085,
+        "commands": 6,
+        "command_list": [
+          "This will return the maximum buffer size for the message type.",
+          "**Step 2: Increase the buffer size**",
+          "If the buffer size is too small, you can increase it to prevent silent truncations. To do this, run the following command:",
+          "This will increase the buffer size to 65536 bytes for the `mcp_intake` message type.",
+          "**Step 3: Update the worker configuration**"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 6,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": null,
+      "run_at": "2026-10-12T08:20:54+00:00"
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "Node child_process with piped stdio fails with EPERM under the Windows sandbox (node-child-process-eperm-windows-sandbox-redirect-to-file)",
+      "condition": "plain",
+      "status": 200,
+      "content": "The error you're encountering is due to the way Node.js handles child processes on Windows. By default, Node.js uses the `spawn` method, which doesn't support piping to a file when running in a sandboxed environment.\n\nTo fix this issue, you can use the `spawn` method with the `stdio` option set to `'ignore'` or `'pipe'`. However, since you're running in a Windows sandbox, you'll need to use the `spawn` method with the `stdio` option set to `'pipe'`, and then redirect the output to a file using the `stdout` option.\n\nHere's an example of how you can modify your code to fix the issue:\n\n```javascript\nconst { spawn } = require('child_process');\n\nconst child = spawn('your_command_here', ['arg1', 'arg2'], {\n  stdio: 'pipe',\n  cwd: 'your_cwd_here',\n  env: {\n    // Add any environment variables you need here\n  },\n});\n\n// Redirect the output to a file\nchild.stdout.pipe(require('fs').createWriteStream('output.txt'));\n\n// Wait for the child process to finish\nchild.on('close', (code) => {\n  if (code === 0) {\n    console",
+      "metrics": {
+        "length": 1022,
+        "commands": 0,
+        "command_list": [],
+        "has_command_block": false,
+        "actionable": true,
+        "inline_code_count": 9,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": null,
+      "run_at": "2026-10-12T08:20:54+00:00"
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "A silent truncation in the MCP intake worker, fixed four times, each time at the next cap (mcp-intake-silent-truncation-family)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "To fix the silent truncation in the MCP intake worker, you need to identify the root cause and apply the necessary changes. Based on the provided information, it seems that the issue lies in the Cloudflare Worker at `workers/register-proxy-sw.js`. The problem is that the limits on submitted text are not being checked correctly, resulting in silent truncations.\n\nHere's a concrete, actionable fix with exact commands:\n\n**Step 1: Update the `workers/register-proxy-sw.js` file**\n\nOpen the `workers/register-proxy-sw.js` file in your code editor and update the `redactIntake()` and `redactSecrets()` functions to correctly check the length of the submitted text.\n\n```javascript\n// workers/register-proxy-sw.js\n\nconst LIMIT = 2000;\n\nfunction redactIntake(text) {\n  if (text.length > LIMIT) {\n    // truncate the text to the limit\n    return text.substring(0, LIMIT);\n  }\n  return text;\n}\n\nfunction redactSecrets(text) {\n  if (text.length > LIMIT) {\n    // truncate the text to the limit\n    return text.substring(0, LIMIT);\n  }\n  return text;\n}\n```\n\n**Step 2: Update the `workers/register-proxy-sw.js`",
+      "metrics": {
+        "length": 1099,
+        "commands": 0,
+        "command_list": [],
+        "has_command_block": false,
+        "actionable": true,
+        "inline_code_count": 7,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": null,
+      "run_at": "2026-10-12T08:20:54+00:00"
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "npmjs registry unreachable from this host (self-signed/expired cert): pin a mirror, never disable TLS (npmjs-registry-unreachable-pin-a-mirror-never-disable-tls)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "To fix the issue, you'll need to pin a mirror for npm and never disable TLS. Here are the steps:\n\n**Step 1: Pin a mirror for npm**\n\nRun the following command to pin a mirror for npm:\n```bash\nnpm config set registry https://registry.npmjs.org/\n```\nThis sets the registry to the official npm registry, which is more likely to have a valid certificate.\n\n**Step 2: Verify the mirror**\n\nRun the following command to verify the mirror:\n```bash\ncurl -vI https://registry.npmjs.org/\n```\nThis should return a successful response with a 200 status code.\n\n**Step 3: Disable TLS verification temporarily**\n\nIf you need to install packages temporarily, you can disable TLS verification to force the installation through. However, as mentioned in the solution, this is not recommended as it exposes every subsequent download to silent MITM attacks.\n\nRun the following command to disable TLS verification temporarily:\n```bash\nnpm config set https-proxy false\n```\nThis disables the HTTPS proxy, which allows you to install packages without TLS verification.\n\n**Step 4: Re-enable TLS verification after installation**\n\nAfter installation, re-enable TLS verification to prevent silent MITM attacks:\n```bash\nnpm config set https-proxy",
+      "metrics": {
+        "length": 1215,
+        "commands": 3,
+        "command_list": [
+          "npm config set registry https://registry.npmjs.org/",
+          "curl -vI https://registry.npmjs.org/",
+          "npm config set https-proxy false"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 6,
+        "lesson_hits": 4,
+        "lesson_hit_rate": 0.667
+      },
+      "error": null,
+      "run_at": "2026-10-12T08:20:54+00:00"
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "Node child_process with piped stdio fails with EPERM under the Windows sandbox (node-child-process-eperm-windows-sandbox-redirect-to-file)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "To fix the issue, you can redirect the child's output to a file and read that file. Here's a concrete, actionable fix with exact commands:\n\n```javascript\nconst { execFileSync } = require('child_process');\nconst fs = require('fs');\n\n// Create a temporary file\nconst tempFile = fs.mkdtempSync('tmp-');\n\ntry {\n  // Redirect stdout/stderr to the temporary file\n  const output = execFileSync('your-command', { stdio: ['pipe', 'pipe', 'pipe'] });\n  \n  // Read the output from the temporary file\n  const outputContent = fs.readFileSync(tempFile, 'utf8');\n  \n  console.log(outputContent);\n  \n  // Clean up the temporary file\n  fs.unlinkSync(tempFile);\n} catch (error) {\n  if (error.code === 'EPERM') {\n    console.error('Error: EPERM operation not permitted.');\n  } else {\n    console.error('Error:', error);\n  }\n}\n```\n\nReplace `'your-command'` with the actual command you want to execute.\n\nThis code creates a temporary file, redirects the child's output to it, reads the output from the temporary file, and then cleans up the temporary file. If an EPERM error occurs",
+      "metrics": {
+        "length": 1060,
+        "commands": 0,
+        "command_list": [],
+        "has_command_block": false,
+        "actionable": true,
+        "inline_code_count": 2,
+        "lesson_hits": 1,
+        "lesson_hit_rate": 0.333
+      },
+      "error": null,
+      "run_at": "2026-10-12T08:20:55+00:00"
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "npmjs registry unreachable from this host (self-signed/expired cert): pin a mirror, never disable TLS (npmjs-registry-unreachable-pin-a-mirror-never-disable-tls)",
+      "condition": "plain",
+      "status": 200,
+      "content": "The error you're encountering is due to the fact that your system's certificate trust store is not configured to trust the NPM registry's self-signed certificate. Here's a step-by-step solution to resolve this issue:\n\n**Step 1: Update your system's certificate trust store**\n\nYou'll need to update the certificate trust store on your Linux or macOS system. The steps vary depending on your operating system:\n\n**For Linux (Ubuntu/Debian):**\n\n1. Update the package list: `sudo apt update`\n2. Install the `ca-certificates` package: `sudo apt install ca-certificates`\n3. Update the certificate trust store: `sudo update-ca-certificates`\n\n**For macOS (with Homebrew):**\n\n1. Update the certificate trust store: `brew install ca-certificates`\n\n**For Linux (with yum/rpm):**\n\n1. Update the package list: `sudo yum update`\n2. Install the `ca-certificates` package: `sudo yum install ca-certificates`\n3. Update the certificate trust store: `sudo update-ca-certificates`\n\n**Step 2: Verify the NPM registry's certificate**\n\nYou can verify the NPM registry's certificate by running the following command:\n```bash\nopenssl s_client -connect registry.npm",
+      "metrics": {
+        "length": 1138,
+        "commands": 0,
+        "command_list": [],
+        "has_command_block": false,
+        "actionable": true,
+        "inline_code_count": 9,
+        "lesson_hits": 2,
+        "lesson_hit_rate": 0.333
+      },
+      "error": null,
+      "run_at": "2026-10-12T08:20:55+00:00"
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "A permission denial that removes the deciding evidence is a stop signal, not an obstacle to route around (permission-denial-removes-evidence-is-stop-signal)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "To address the error, you'll need to modify your code to handle permission denials correctly. Here's an example of how you can modify your code to follow the steps outlined in the solution:\n\n**Step 1: Enumerate evidence before the destructive action**\n\nBefore performing any destructive action, list every piece of evidence the action depends on. If any of that evidence requires a channel the sandbox denies, stop and escalate rather than re-derive it.\n\n```python\nimport os\n\ndef enumerate_evidence(action):\n    evidence = []\n    # Process identity\n    process_id = action['process_id']\n    evidence.append({'type': 'process_id', 'value': process_id})\n    \n    # File path\n    file_path = action['file_path']\n    evidence.append({'type': 'file_path', 'value': file_path})\n    \n    # Ownership\n    ownership = action['ownership']\n    evidence.append({'type': 'ownership', 'value': ownership})\n    \n    # State\n    state = action['state']\n    evidence.append({'type': 'state', 'value': state})\n    \n    return evidence\n```\n\n**Step 2: Keep inference separate from fact**\n\nMaintain an explicit written separation between log fact (what the system reported) and your inference (",
+      "metrics": {
+        "length": 1173,
+        "commands": 0,
+        "command_list": [],
+        "has_command_block": false,
+        "actionable": false,
+        "inline_code_count": 1,
+        "lesson_hits": 2,
+        "lesson_hit_rate": 1.0
+      },
+      "error": null,
+      "run_at": "2026-10-12T08:20:56+00:00"
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "A patch that fails on a later hunk has usually already changed the earlier ones — patch and git apply disagree (patch-failed-hunk-already-changed-earlier-files)",
+      "condition": "plain",
+      "status": 200,
+      "content": "This error occurs when you're trying to apply a patch to your codebase, but the patch has already changed some files that were modified earlier. Here's a step-by-step solution to resolve the issue:\n\n**Step 1: Remove the changes from the patch**\n\nFirst, you need to remove the changes from the patch that were made to files that were modified earlier. You can do this using the `git apply` command with the `--reject` option.\n\n```bash\ngit apply --reject --patch-header < patch_file.patch\n```\n\nThis command will apply the patch to your codebase, but it will leave the changes from the patch in the files that were modified earlier.\n\n**Step 2: Use `git apply` with the `--ignore-whitespace` option**\n\nNext, you need to use `git apply` with the `--ignore-whitespace` option to ignore the whitespace changes from the patch.\n\n```bash\ngit apply --ignore-whitespace < patch_file.patch\n```\n\nThis command will apply the patch to your codebase, ignoring any whitespace changes.\n\n**Step 3: Resolve the conflicts**\n\nAfter applying the patch, you'll need to resolve the conflicts manually. You can do this using the `git diff` command to identify the conflicting",
+      "metrics": {
+        "length": 1148,
+        "commands": 2,
+        "command_list": [
+          "git apply --reject --patch-header < patch_file.patch",
+          "git apply --ignore-whitespace < patch_file.patch"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 10,
+        "lesson_hits": 3,
+        "lesson_hit_rate": 0.75
+      },
+      "error": null,
+      "run_at": "2026-10-12T08:20:56+00:00"
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "A permission denial that removes the deciding evidence is a stop signal, not an obstacle to route around (permission-denial-removes-evidence-is-stop-signal)",
+      "condition": "plain",
+      "status": 200,
+      "content": "To fix the error \"permission denial that removes the deciding evidence is a stop signal, not an obstacle to route around,\" you'll need to modify your code to handle this scenario. Since the error doesn't provide a specific code, I'll assume you're using a programming language like Python.\n\nHere's a concrete, actionable fix with exact commands:\n\n**Assumptions:**\n\n* You're using Python as your programming language.\n* You're using a library like `requests` to make API calls.\n* The API endpoint you're calling returns a JSON response.\n\n**Fix:**\n\n1. **Check the API documentation**: Before making any changes, check the API documentation to see if they have a specific error handling mechanism for this scenario. You might need to use a different endpoint or parameter to avoid this issue.\n\n2. **Handle the error**: If the API documentation doesn't provide a solution, you can handle the error using a try-except block. Here's an example in Python:\n```python\nimport requests\n\ndef make_api_call(url, params):\n    try:\n        response = requests.get(url, params=params)\n        response.raise_for_status()  # Raise an exception for HTTP errors\n        return response.json()\n    except requests.exceptions.HTTPError as http_err:\n       ",
+      "metrics": {
+        "length": 1235,
+        "commands": 0,
+        "command_list": [],
+        "has_command_block": false,
+        "actionable": true,
+        "inline_code_count": 1,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": null,
+      "run_at": "2026-10-12T08:20:56+00:00"
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "A port that is already allocated is an OS-level EADDRINUSE: name the holder with ss, free it, then retry (port-already-allocated-find-and-free-the-holder)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "To resolve the issue of a port being already allocated, you'll need to identify the process holding the port and stop it. Here's a step-by-step guide:\n\n1. Identify the process holding the port:\n\n   You can use the `ss` command to list all listening sockets and find the one that's causing the issue:\n\n   ```bash\nss -tlnp | grep 8080\n```\n\n   This will show you the process ID (PID) of the process holding the port. Note down the PID.\n\n2. Find the process details:\n\n   You can use `ss` with the `-p` option to show more detailed information about the process:\n\n   ```bash\nss -ptlnp | grep 8080\n```\n\n   This will show you the process name, command, and other details.\n\n3. Stop the process:\n\n   You can use the `kill` command to stop the process:\n\n   ```bash\nkill <PID>\n```\n\n   Replace `<PID>` with the actual PID of the process you want to stop.\n\n4. Check if the port is available:\n\n   After stopping the process, you can try binding to the port again:\n\n   ```bash\nnc -l -p 8080\n```\n\n   If the",
+      "metrics": {
+        "length": 990,
+        "commands": 4,
+        "command_list": [
+          "ss -tlnp | grep 8080",
+          "ss -ptlnp | grep 8080",
+          "kill <PID>",
+          "nc -l -p 8080"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 12,
+        "lesson_hits": 4,
+        "lesson_hit_rate": 0.5
+      },
+      "error": null,
+      "run_at": "2026-10-12T08:20:56+00:00"
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "A patch that fails on a later hunk has usually already changed the earlier ones — patch and git apply disagree (patch-failed-hunk-already-changed-earlier-files)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "The issue arises because `patch` and `git apply` behave differently when a hunk fails and the earlier files have already been modified. `patch` keeps the changes it has already applied, while `git apply` is atomic and starts from scratch.\n\nTo resolve this issue, you can try the following steps:\n\n1. Use `git apply` with the `--ignore-missing` option. This will allow `git apply` to ignore the failed hunk and continue applying the rest of the patch.\n\n    ```bash\ngit apply --ignore-missing m.diff\n```\n\n2. If the above method doesn't work, you can try using `git apply` with the `--reject` option. This will allow `git apply` to create a reject file for the failed hunk, which you can then manually edit to fix the conflict.\n\n    ```bash\ngit apply --reject m.diff\n```\n\n3. If you still encounter issues, you can try to manually resolve the conflict by editing the file and then applying the patch again.\n\n    ```bash\n# Manually edit the file to resolve the conflict\n# ...\n\n# Apply the patch again\ngit apply --apply-patch m.diff\n```\n\nNote: Make sure to replace `m.diff`",
+      "metrics": {
+        "length": 1067,
+        "commands": 3,
+        "command_list": [
+          "git apply --ignore-missing m.diff",
+          "git apply --reject m.diff",
+          "git apply --apply-patch m.diff"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 16,
+        "lesson_hits": 2,
+        "lesson_hit_rate": 0.5
+      },
+      "error": null,
+      "run_at": "2026-10-12T08:20:57+00:00"
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "A port that is already allocated is an OS-level EADDRINUSE: name the holder with ss, free it, then retry (port-already-allocated-find-and-free-the-holder)",
+      "condition": "plain",
+      "status": 200,
+      "content": "The error message indicates that the port you're trying to use is already in use by another process. Here's a concrete, actionable fix:\n\n**Step 1: Identify the process using the port**\n\nUse the `ss` command to identify the process using the port:\n```bash\nss -tlnp | grep <port_number>\n```\nReplace `<port_number>` with the actual port number you're trying to use.\n\nFor example:\n```bash\nss -tlnp | grep 8080\n```\nThis will show you the process ID and name of the process using port 8080.\n\n**Step 2: Kill the process using the port**\n\nUse the `kill` command to kill the process:\n```bash\nkill <process_id>\n```\nReplace `<process_id>` with the actual process ID shown in the previous step.\n\nFor example:\n```bash\nkill 1234\n```\nThis will kill the process using port 8080.\n\n**Step 3: Free the port**\n\nUse the `netsh` command to free the port:\n```bash\nnetsh int ip reset\n```\nThis will reset the port allocation and free the port.\n\n**Step 4: Retry your command**\n\nOnce the port is freed, you can",
+      "metrics": {
+        "length": 983,
+        "commands": 5,
+        "command_list": [
+          "ss -tlnp | grep <port_number>",
+          "ss -tlnp | grep 8080",
+          "kill <process_id>",
+          "kill 1234",
+          "netsh int ip reset"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 14,
+        "lesson_hits": 3,
+        "lesson_hit_rate": 0.375
+      },
+      "error": null,
+      "run_at": "2026-10-12T08:20:57+00:00"
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "Writes outside the session workspace under workspace-write: escalate once with justification, don't retry other APIs (workspace-write-policy-denial-escalate-once-not-retry-apis)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "To fix the issue, you need to recognize that the error is a policy denial and not a transient failure. The solution involves escalating the denial with justification and not retrying through other APIs.\n\nHere's a step-by-step fix:\n\n1. **Escalate the denial**: Provide a justification for the denial. In this case, the justification is that the operation is outside the session workspace.\n\n   ```bash\n   # Escalate the denial with justification\n   sandbox: escalate-write-access-denial-justification\n   ```\n\n2. **Do not retry through other APIs**: Avoid retrying the operation through other APIs, such as PowerShell, Node fs, or the host CLI.\n\n   ```bash\n   # Avoid retrying through other APIs\n   workspace-write-policy-denial-escalate-once-not-retry-apis\n   ```\n\nHere's the complete command:\n\n```bash\nsandbox: escalate-write-access-denial-justification workspace-write-policy-denial-escalate-once-not-retry-apis\n```\n\nBy following these steps, you should be able to resolve the issue and write outside the session workspace.",
+      "metrics": {
+        "length": 1023,
+        "commands": 3,
+        "command_list": [
+          "sandbox: escalate-write-access-denial-justification",
+          "workspace-write-policy-denial-escalate-once-not-retry-apis",
+          "sandbox: escalate-write-access-denial-justification workspace-write-policy-denial-escalate-once-not-retry-apis"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 5,
+        "lesson_hits": 1,
+        "lesson_hit_rate": 0.2
+      },
+      "error": null,
+      "run_at": "2026-10-12T08:20:58+00:00"
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "Following a README's --profile name verbatim installs into a profile the running host never loads (readme-profile-name-verbatim-installs-into-unloaded-profile)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "Here's a concrete, actionable fix with exact commands:\n\n**Step 1: Enumerate the real profiles before any plugin install**\n\nBefore running any install command, list the actual profiles on this host:\n\n```bash\n# On a default install\n$DSH_HOME/profiles/\n\n# On a managed host\n/opt/dsh/profiles/\n```\n\nThis command will show you the names of the profiles available on your host.\n\n**Step 2: Confirm which profile the running GUI/CLI actually consumes**\n\nOnce you have the list of profiles, check which one is currently being used by the GUI or CLI:\n\n```bash\n# On a default install\n$DSH_HOME/profiles/\n\n# On a managed host\n/opt/dsh/profiles/\n\n# To determine which profile is being used, you can run the following command:\n$DSH_HOME/bin/dsh --version\n```\n\nThis command will show you the version of DSH being used, which includes the name of the profile being used.\n\n**Step 3: Update the install command with the correct profile name**\n\nNow that you know which profile is being used, update the install command to use that profile name:\n\n```bash\n# Example: if the running GUI/CLI is using the \"web\" profile\n",
+      "metrics": {
+        "length": 1096,
+        "commands": 5,
+        "command_list": [
+          "$DSH_HOME/profiles/",
+          "/opt/dsh/profiles/",
+          "$DSH_HOME/profiles/",
+          "/opt/dsh/profiles/",
+          "$DSH_HOME/bin/dsh --version"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 4,
+        "lesson_hits": 3,
+        "lesson_hit_rate": 1.0
+      },
+      "error": null,
+      "run_at": "2026-10-12T08:20:58+00:00"
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "Following a README's --profile name verbatim installs into a profile the running host never loads (readme-profile-name-verbatim-installs-into-unloaded-profile)",
+      "condition": "plain",
+      "status": 200,
+      "content": "The error you're encountering is likely due to a mismatch between the profile name specified in the README file and the actual profile name loaded by the host.\n\nHere's a step-by-step solution to resolve this issue:\n\n**Step 1: Identify the mismatched profile name**\n\nRun the following command to list all profiles on your system:\n```bash\naws cloudformation describe-stacks --stack-name <your-stack-name> --query 'Stacks[0].Resources[]|{ProfileName}' --output text\n```\nReplace `<your-stack-name>` with the actual name of your CloudFormation stack.\n\n**Step 2: Update the README file**\n\nLocate the line in the README file that specifies the profile name. Update the profile name to match the actual profile name loaded by the host.\n\nFor example, if the current line is:\n```markdown\n--profile my-profile\n```\nUpdate it to:\n```markdown\n--profile <actual-profile-name>\n```\nReplace `<actual-profile-name>` with the actual profile name returned in Step 1.\n\n**Step 3: Update the CloudFormation template**\n\nIf the README file is part of a CloudFormation template, update the `Resources` section to reference the correct profile name. You can do this by adding the `Profile",
+      "metrics": {
+        "length": 1160,
+        "commands": 2,
+        "command_list": [
+          "aws cloudformation describe-stacks --stack-name <your-stack-name> --query 'Stacks[0].Resources[]|{ProfileName}' --output text",
+          "Update it to:"
+        ],
+        "has_command_block": true,
+        "actionable": false,
+        "inline_code_count": 9,
+        "lesson_hits": 2,
+        "lesson_hit_rate": 0.667
+      },
+      "error": null,
+      "run_at": "2026-10-12T08:20:58+00:00"
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "Writes outside the session workspace under workspace-write: escalate once with justification, don't retry other APIs (workspace-write-policy-denial-escalate-once-not-retry-apis)",
+      "condition": "plain",
+      "status": 200,
+      "content": "The error message you're seeing indicates that you're trying to write data outside of the session workspace, which is causing an escalation. The specific policy being applied is \"workspace-write-policy-denial-escalate-once-not-retry-apis\". To fix this, you'll need to modify the policy to allow retries or move the write operation inside the session workspace. Here are the steps to resolve this issue:\n\n**Option 1: Modify the policy to allow retries**\n\nYou can modify the policy to allow retries by updating the `workspace-write-policy` with the following command:\n\n```bash\nkubectl patch policy workspace-write-policy -p '{\"spec\":{\"retryPolicy\":{\"maxAttempts\":3,\"retryInterval\":\"1m\"}}}'\n```\n\nThis will update the policy to allow up to 3 retries with a 1-minute interval between each retry.\n\n**Option 2: Move the write operation inside the session workspace**\n\nIf you can't modify the policy, you can move the write operation inside the session workspace by using the following command:\n\n```bash\nkubectl exec -it <pod_name> -- /bin/bash\n```\n\nReplace `<pod_name>` with the name of the pod where you're trying to write data. This will open a shell session inside the pod.\n\nThen, use",
+      "metrics": {
+        "length": 1180,
+        "commands": 2,
+        "command_list": [
+          "kubectl patch policy workspace-write-policy -p '{\"spec\":{\"retryPolicy\":{\"maxAttempts\":3,\"retryInterval\":\"1m\"}}}'",
+          "kubectl exec -it <pod_name> -- /bin/bash"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 5,
+        "lesson_hits": 1,
+        "lesson_hit_rate": 0.2
+      },
+      "error": null,
+      "run_at": "2026-10-12T08:20:59+00:00"
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "Long context pollution — delegate independent tasks to subagents, keep only decisions in the main context (long-context-pollution-delegate-to-subagents-keep-only-decisions)",
+      "condition": "plain",
+      "status": 200,
+      "content": "The error \"Long context pollution — delegate independent tasks to subagents, keep only decisions in the main context\" is a warning in the context of functional programming, specifically in Haskell. It's suggesting that you're passing too much context to your subagents, which can lead to long context pollution.\n\nHere's a concrete, actionable fix with exact commands:\n\n### Step 1: Identify the problematic code\n\nFind the functions or modules where you're delegating tasks to subagents and passing a large amount of context.\n\n### Step 2: Break down the context\n\nIdentify the parts of the context that are necessary for the subagent to perform its task. You can do this by:\n\n*   Looking at the documentation or source code of the subagent library or module.\n*   Analyzing the input and output types of the subagent functions.\n*   Using a debugger or print statements to understand the flow of data.\n\n### Step 3: Refactor the code to reduce context pollution\n\nOnce you've identified the necessary parts of the context, refactor your code to pass only those parts to the subagent. You can do this by:\n\n*   Creating a new data structure to hold the necessary context.\n*   Passing the new data structure to the subagent function.\n*  ",
+      "metrics": {
+        "length": 1227,
+        "commands": 0,
+        "command_list": [],
+        "has_command_block": false,
+        "actionable": false,
+        "inline_code_count": 0,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": null,
+      "run_at": "2026-10-12T08:20:59+00:00"
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "FANUC RAG Knowledge-Base Build SOP: Anti-BSOD / Anti-Full-Loss (rag-kb-build-sop-anti-bsod)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "Here's a concrete, actionable fix with exact commands to prevent the BSOD/Full-Loss issue:\n\n**Step 1: Consult Lessons First**\n\nBefore starting the KB build, run the following commands to search for relevant lessons, read their contents, and copy the rules into the executable:\n\n```bash\n# Search for lessons related to build, chroma, ingest, rebuild, batch, and memory\ngrep -r 'build|chroma|ingest|rebuild|batch|memory' MisakaNet-lessons/ | grep -v 'not applicable' | grep -v 'skip' | grep -v 'not implemented'\n\n# Read the contents of each lesson and copy the rules into the executable\nfor file in MisakaNet-lessons/*; do\n  if [[ $file == *build* || $file == *chroma* || $file == *ingest* || $file == *rebuild* || $file == *batch* || $file == *memory* ]]; then\n    echo \"Copying rules from $file into the executable...\"\n    cat $file >> MisakaNet-lessons/executable.sh\n  fi\ndone\n```\n\n**Verify the Results**\n\nAfter running the above commands, verify that the executable file (`",
+      "metrics": {
+        "length": 975,
+        "commands": 7,
+        "command_list": [
+          "grep -r 'build|chroma|ingest|rebuild|batch|memory' MisakaNet-lessons/ | grep -v 'not applicable' | grep -v 'skip' | grep -v 'not implemented'",
+          "for file in MisakaNet-lessons/*; do",
+          "if [[ $file == *build* || $file == *chroma* || $file == *ingest* || $file == *rebuild* || $file == *batch* || $file == *memory* ]]; then",
+          "echo \"Copying rules from $file into the executable...\"",
+          "cat $file >> MisakaNet-lessons/executable.sh"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 2,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": null,
+      "run_at": "2026-10-12T08:20:59+00:00"
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "Long context pollution — delegate independent tasks to subagents, keep only decisions in the main context (long-context-pollution-delegate-to-subagents-keep-only-decisions)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "To fix the \"Long context pollution\" issue, you can use the following steps:\n\n### Step 1: Delegate Independent Work Units to Subagents\n\nYou can delegate independent work units to subagents using the `multiprocessing` module in Python. Here's an example:\n\n```python\nimport multiprocessing\nimport os\n\ndef delegate_work_unit(subagent_id, work_unit):\n    # Process the work unit\n    result = process_work_unit(work_unit)\n    return result\n\ndef process_work_unit(work_unit):\n    # Replace this with your actual work unit processing function\n    return work_unit\n\nif __name__ == \"__main__\":\n    # Define the work units to delegate\n    work_units = [\n        \"file1.txt\",\n        \"search1\",\n        \"regression_check1\",\n        \"enumerate1\",\n        \"file2.txt\",\n        \"search2\",\n        \"regression_check2\",\n        \"enumerate2\",\n    ]\n\n    # Create subagents\n    subagents = []\n    for i, work_unit in enumerate(work_units):\n        subagent = multiprocessing.Process(target=delegate_work_unit, args=(i, work_unit))\n        subagents.append(subagent)\n        subagent.start()\n\n    # Wait for all subagents to finish\n    for subagent in",
+      "metrics": {
+        "length": 1131,
+        "commands": 0,
+        "command_list": [],
+        "has_command_block": false,
+        "actionable": true,
+        "inline_code_count": 1,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": null,
+      "run_at": "2026-10-12T08:20:59+00:00"
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "A doc link to the run's own output is not a broken link: validate against declared outputs, then re-check after writing (self-referential-verification-link)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "The issue arises from the fact that the verifier is checking the links before the report is written. This creates a circular dependency between the checks and the report. To fix this issue, we need to reorder the checks so that the report is written before the links are checked.\n\nHere is an example of how you can modify your code to fix this issue:\n\n```bash\n# Create a new directory to store the run\nmkdir my-run\ncd my-run\n\n# Create a directory to store the report\nmkdir report\n\n# Create a file to store the report\necho \"content: pass\" > report/verification-results.json\n\n# Create a file to store the checks\ncat > checks.json <<EOF\n{\n  \"checks\": {\n    \"content\": \"pass\",\n    \"pdf-structure\": \"pass\",\n    \"fonts\": \"pass\",\n    \"pages\": \"pass\"\n  },\n  \"all_passed\": true\n}\nEOF\n\n# Create a link to the report\nln -s report/verification-results.json verification-results.json\n\n# Create a document with links to the checks\ncat > document.json <<EOF\n{\n  \"checks\": [\"./checks.json\"],\n  \"links\": [\"./verification-results.json\"]\n}\nEOF\n\n# Run the checks\n./run",
+      "metrics": {
+        "length": 1048,
+        "commands": 0,
+        "command_list": [],
+        "has_command_block": false,
+        "actionable": true,
+        "inline_code_count": 0,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": null,
+      "run_at": "2026-10-12T08:21:00+00:00"
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "FANUC RAG Knowledge-Base Build SOP: Anti-BSOD / Anti-Full-Loss (rag-kb-build-sop-anti-bsod)",
+      "condition": "plain",
+      "status": 200,
+      "content": "The error you're encountering is likely related to the FANUC RAG Knowledge-Base Build SOP, specifically the anti-BSOD (Blue Screen of Death) or full-loss protection. To resolve this issue, follow these steps:\n\n**Step 1: Update the FANUC RAG Knowledge-Base**\n\n1. Open the FANUC RAG Knowledge-Base by navigating to the FANUC RAG directory on your system.\n2. Run the following command to update the knowledge base:\n```bash\nsudo ./rag-kb-upgrade.sh\n```\nThis command will update the knowledge base to the latest version.\n\n**Step 2: Rebuild the FANUC RAG Knowledge-Base**\n\n1. Run the following command to rebuild the knowledge base:\n```bash\nsudo ./rag-kb-build.sh\n```\nThis command will recreate the knowledge base from scratch.\n\n**Step 3: Verify the Knowledge-Base Build**\n\n1. Run the following command to verify the knowledge-base build:\n```bash\nsudo ./rag-kb-verify.sh\n```\nThis command will check the knowledge base for any errors or issues.\n\n**Step 4: Update the FANUC RAG Configuration**\n\n1. Run the following command to update the FAN",
+      "metrics": {
+        "length": 1033,
+        "commands": 3,
+        "command_list": [
+          "sudo ./rag-kb-upgrade.sh",
+          "sudo ./rag-kb-build.sh",
+          "sudo ./rag-kb-verify.sh"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 5,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": null,
+      "run_at": "2026-10-12T08:21:00+00:00"
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "A doc link to the run's own output is not a broken link: validate against declared outputs, then re-check after writing (self-referential-verification-link)",
+      "condition": "plain",
+      "status": 200,
+      "content": "The error message indicates that there's a self-referential verification link in your document, which means it's linking to itself. This can cause issues with the validation process. Here's a step-by-step fix:\n\n**Step 1: Delete the self-referential link**\n\nYou can delete the self-referential link by finding the link in your document and deleting it. Here's how to do it using the `grep` and `sed` commands in the terminal:\n\n```bash\n# Find the self-referential link\ngrep -n 'https://your-run-url.com' your-document.md\n\n# Assuming the link is on line 10\nsed -i '10,10d' your-document.md\n```\n\nReplace `your-run-url.com` with the actual URL of your run and `your-document.md` with the path to your Markdown file.\n\n**Step 2: Rebuild your document**\n\nAfter deleting the self-referential link, rebuild your document to ensure that the link is updated correctly. You can use the following command to rebuild your document:\n\n```bash\n# Rebuild your document\npandoc -s your-document.md -o your-output.md\n```\n\nReplace `your-document.md` with the path to your Markdown file",
+      "metrics": {
+        "length": 1062,
+        "commands": 3,
+        "command_list": [
+          "grep -n 'https://your-run-url.com' your-document.md",
+          "sed -i '10,10d' your-document.md",
+          "pandoc -s your-document.md -o your-output.md"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 8,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": null,
+      "run_at": "2026-10-12T08:21:00+00:00"
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "Crypto/Web3 bounty settlement — basic units, cross-chain payments, gas, platform trust grading (crypto-web3-bounty-settlement-units-cross-chain-gas-trust-grading)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "To fix the issue, you need to understand the settlement mechanics of the crypto bounty platforms you're working with. Here's a concrete, actionable fix with exact commands:\n\n**Step 1: Research the settlement mechanics of the platforms**\n\n* Go to the platform's documentation or FAQ section to understand their settlement mechanics.\n* Look for information on payment units, chains, gas models, and trust levels.\n\n**Step 2: Verify the settlement value**\n\n* Use a platform like [Etherscan](https://etherscan.io/) or [BscScan](https://bscscan.com/) to verify the settlement value.\n* Use the following commands to verify the settlement value:\n\n```bash\n# Etherscan\netherscan --address <platform_address> --api-key <api_key> --contract 0x<contract_address> --method getBalance --gasPrice <gas_price>\n\n# BscScan\nbscscan --address <platform_address> --api-key <api_key> --contract 0x<contract_address> --method getBalance --gasPrice <gas_price>\n```\n\n**Step 3: Update the bounty description**\n\n* Update the bounty description to include the settlement value, payment unit, chain, gas model, and trust level.\n",
+      "metrics": {
+        "length": 1098,
+        "commands": 2,
+        "command_list": [
+          "etherscan --address <platform_address> --api-key <api_key> --contract 0x<contract_address> --method getBalance --gasPrice <gas_price>",
+          "bscscan --address <platform_address> --api-key <api_key> --contract 0x<contract_address> --method getBalance --gasPrice <gas_price>"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 1,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": null,
+      "run_at": "2026-10-12T08:21:01+00:00"
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "Crypto/Web3 bounty settlement — basic units, cross-chain payments, gas, platform trust grading (crypto-web3-bounty-settlement-units-cross-chain-gas-trust-grading)",
+      "condition": "plain",
+      "status": 200,
+      "content": "I'll provide a step-by-step guide to resolve the error. However, I need to know the programming language and the exact error message you're encountering.\n\nAssuming you're using Solidity for smart contracts, I'll provide a general solution for the error \"Crypto/Web3 bounty settlement — basic units, cross-chain payments, gas, platform trust grading\".\n\nHere's an example of a basic contract that might be causing the issue:\n\n```solidity\npragma solidity ^0.8.0;\n\ncontract BountySettlement {\n    // Basic units\n    uint256 public basicUnits = 10;\n\n    // Cross-chain payments\n    mapping(address => uint256) public crossChainPayments;\n\n    // Gas\n    uint256 public gas = 2000000;\n\n    // Platform trust grading\n    mapping(address => uint256) public trustGrading;\n}\n```\n\nTo fix the error, you need to specify the exact error message you're encountering. However, I can provide a general solution for common errors related to this topic:\n\n### Error: \"unknown\" or \"not implemented\"\n\nIf you're encountering an \"unknown\" or \"not implemented\" error, it's likely because you're trying to use a function or variable that doesn't exist in the contract.\n\n```bash\n",
+      "metrics": {
+        "length": 1152,
+        "commands": 2,
+        "command_list": [
+          "To fix the error, you need to specify the exact error message you're encountering. However, I can provide a general solution for common errors related to this topic:",
+          "If you're encountering an \"unknown\" or \"not implemented\" error, it's likely because you're trying to use a function or variable that doesn't exist in the contract."
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 2,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": null,
+      "run_at": "2026-10-12T08:21:01+00:00"
     }
   ],
   "metric_definition": "lesson_hit_rate = the share of the injected lesson's commands reproduced in the answer. The scenario is that same lesson's title, no retrieval call is made, and correctness is not checked — it measures recitation of the document that was handed to the model.",
