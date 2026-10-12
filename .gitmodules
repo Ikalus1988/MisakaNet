@@ -1,0 +1,6 @@
+[submodule "frontend"]
+	path = frontend
+	url = https://github.com/Ikalus1988/MisakaNet-frontend.git
+[submodule "backend"]
+	path = backend
+	url = https://github.com/Ikalus1988/MisakaNet-backend.git
