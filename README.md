@@ -203,19 +203,20 @@ previous copy go stale while the paragraph directly above it explained what the 
 | 2026-09-06 | 48.3% | 24.1% | 455 |
 | 2026-09-14 | 46.6% | 23.4% | 494 |
 | 2026-09-21 | 46.1% | 23.3% | 512 |
+| 2026-10-12 | 43.8% | 26.1% | 34 |
 
 _1155 run(s) in `latest.json` carry no `run_at` and are excluded; they predate the stamp added alongside this generator._
 
 ```
 with_lesson hit rate (per run date)
-46.1% │ ▁
-46.6% │ ▂
+43.8% │ ▁
+46.1% │ ▄
+46.6% │ ▄
 48.3% │ ▆
 49.1% │ █
-46.4% │ ▁
       └──────────────────
-       08  08  09  09  09
-       30  31  06  14  21
+       08  09  09  09  10
+       31  06  14  21  12
 ```
 
 <!-- END generated: benchmark-trend -->
