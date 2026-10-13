@@ -413,6 +413,15 @@ def _metadata_bonus_breakdown(query: str, doc: CachedDoc) -> list[tuple[str, flo
 
 
 def _normalize(values: list[float]) -> list[float]:
+    """Min–max to [0, 1] — a position **within this result set**, not a match quality.
+
+    This is the reason two "retrieval quality" readings can coexist and disagree: the CLI prints
+    this value as a percentage (top hit ≈ 100% by construction, whether or not the query has an
+    answer), while the worker-side evaluation reports an unnormalised score (12–19 relevant, 2–4
+    irrelevant). Neither is wrong; **they are different scales, and the numbers cannot be compared
+    across the two paths** (#2790 / §86.4). `tests/test_search_score_is_relative.py` pins the
+    property so a reader cannot re-derive the wrong conclusion from a 96%.
+    """
     if not values:
         return values
     mn, mx = min(values), max(values)
