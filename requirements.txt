@@ -2,7 +2,7 @@
 # 核心搜索和 lesson 管理功能依赖轻量核心包。
 misakanet-core>=2.7.0
 jsonschema>=4.26.0
-mcp>=2.2.0
+mcp>=2.3.0
 pyyaml>=6.0
 #
 # And the repository's own package, in editable mode.
