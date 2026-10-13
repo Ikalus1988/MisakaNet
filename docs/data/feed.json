@@ -1,9 +1,30 @@
 {
-  "generated_at": "2026-10-13T02:37:16.496360+00:00",
+  "generated_at": "2026-10-13T10:47:30.339074+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "feat(domains): add windows / dsh / android, and require reserved slots to say why",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3190",
+      "timestamp": "2026-10-13T06:19:30Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "docs(handoff): phase 21 — a 15-badge drift nobody gated, and a subagent call I overturned",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3155",
+      "timestamp": "2026-10-13T05:31:58Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3186",
+      "timestamp": "2026-10-13T02:44:15Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "chore: update leaderboard snapshot",
@@ -16,27 +37,6 @@
       "title": "chore(data): sync lessons.json + refresh feed",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/3184",
       "timestamp": "2026-10-12T21:25:11Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3174",
-      "timestamp": "2026-10-12T11:10:49Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(benchmark): weekly Workers AI lesson benchmark report [2026-10-12]",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3165",
-      "timestamp": "2026-10-12T08:29:01Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(deps-dev): bump wrangler from 4.146.0 to 4.149.0 in the npm group",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3159",
-      "timestamp": "2026-10-12T06:13:54Z",
       "source": "github"
     },
     {
