@@ -83,5 +83,41 @@ def test_intakes_and_digests_are_exempt_and_the_exemption_is_named():
     """Reports are not specs: an intake has no acceptance criteria to hold (2026-09-13, five of six
     `needs-ac` issues were intakes, including a digest this repository's own workflow opened)."""
     text = GATE.read_text(encoding="utf-8")
-    for label in ("intake", "mcp-intake", "salvage-digest", "question-digest"):
+    for label in ("intake", "mcp-intake", "salvage-digest", "question-digest", "lesson-submission"):
         assert f"'{label}'" in text, f"{label} left the exemption list — that label would collect `needs-ac`"
+
+
+def test_a_report_label_is_exempt_because_it_is_a_report_not_a_spec():
+    """The list is not an arbitrary set — it is every label the repository opens as a *report*.
+
+    `lesson-submission` went missing and the failure is invisible from inside the workflow: it still
+    runs, still labels, and the label it applies (`needs-ac`) reads as a fact about the work rather
+    than as an artefact of which labels the submitter happened to pick. Measured 2026-10-13, 28 of 28
+    open `lesson-submission` issues carried `needs-ac`.
+
+    So assert the exemption the way the gate applies it — by *shape*, not by name — which is what
+    catches the next report label that gets added without updating this array.
+    """
+    text = GATE.read_text(encoding="utf-8")
+    m = re.search(r"\[\s*((?:'[^']+'\s*,?\s*)+)\]\s*\n\s*\.includes", text)
+    assert m, "the exemption array moved — this test must move with it"
+    exempt = set(re.findall(r"'([^']+)'", m.group(1)))
+
+    # Every label this repository's own automation opens as a report rather than a spec. Sourced from
+    # the workflows that create them, so the list cannot quietly drift from reality.
+    report_labels = {"intake", "mcp-intake", "salvage-digest", "question-digest", "lesson-submission"}
+    missing = report_labels - exempt
+    assert not missing, (
+        f"these report labels are not exempt from `needs-ac`: {sorted(missing)}. A report has no "
+        f"acceptance criteria to hold, so requiring them marks completed investigation as unfinished "
+        f"work — the exact failure the exemption was added for (2026-09-13, five of six `needs-ac` "
+        f"issues were intakes).\n  currently exempt: {sorted(exempt)}"
+    )
+
+    # And the converse must stay true: a label that means "someone will implement this" is exactly
+    # what the AC requirement exists for, so it must never drift into this list.
+    for impl_label in ("bounty", "task"):
+        assert impl_label not in exempt, (
+            f"{impl_label!r} asks someone to implement the work, so acceptance criteria are the "
+            f"point of the label — it must not be exempt"
+        )
