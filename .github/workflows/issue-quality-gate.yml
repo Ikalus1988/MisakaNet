@@ -58,7 +58,12 @@ jobs:
               // `question-digest` is opened by scripts/question_autopilot.py: a report of the open
               // question backlog, with no acceptance criteria to hold. Registering it here is the
               // agreement that keeps it out of `needs-ac` — the same fix as `salvage-digest`.
-              ['intake', 'mcp-intake', 'salvage-digest', 'question-digest']
+              // `lesson-submission` is the same class of thing: someone reporting a failure they hit
+              // and proposing what the lesson should say. It carries Problem/Root Cause/Fix/
+              // Verification, has no checkbox list, and asks nobody to implement anything — the
+              // report, not a spec. Measured 2026-10-13: 28 of 28 open `lesson-submission` issues
+              // carried `needs-ac`, which is the phantom-AC failure this array exists to prevent.
+              ['intake', 'mcp-intake', 'salvage-digest', 'question-digest', 'lesson-submission']
                 .includes(typeof l === 'string' ? l : l.name));
             const satisfied = HAS_AC && HAS_CHECKBOX;
             if (isIntake) {

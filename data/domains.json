@@ -4,6 +4,7 @@
   "canonical": [
     "agent",
     "agent-network",
+    "android",
     "api",
     "audio",
     "automation",
@@ -17,6 +18,7 @@
     "development",
     "devops",
     "docker",
+    "dsh",
     "fanuc",
     "feishu",
     "frontend",
@@ -47,6 +49,7 @@
     "ux",
     "web3",
     "wechat",
+    "windows",
     "wsl"
   ],
   "aliases": {
@@ -110,10 +113,14 @@
     "lessons/contrib/wecom-robot-long-connect-no-ngrok.md": "wechat"
   },
   "notes": {
-    "docker": "kept because docs/domains/docker.md documents it; no lesson uses it yet",
+    "android": "平台族，与 linux、wsl 同族。判据是检索而非学科归属：会去找这几堂课的人输入的是 MuMu / KernelSU / Shamiko / su 找不到，而这些全属 Android 系统层。塞进 mobile 会让它们与 React Native 内容混在一起——mobile 至今 1 篇，讲的是 Orbot 隐私流，属应用开发。**这是三个里基础最薄的一个**，五条全部来自同一贡献者在同一台 MuMu 上的同一天会话；若日后 Android 内容不再从第二个来源出现，应重新审视此值。",
     "audio": "new in this pass — the ffmpeg/GPT-SoVITS/TTS lessons were all filed under `contrib`",
+    "ci": "documented by docs/domains/ci.md; two CI-gate lessons use it",
+    "docker": "kept because docs/domains/docker.md documents it; no lesson uses it yet",
+    "dsh": "产品名族，与 feishu(18 篇)、openclaw(6)、wechat(5)、claude(1) 同族；本仓也自带 DSH 插件（cordis.patch.yml）与 dsh-* 课程。入库依据是检索：会去找这堂课的人输入 的是产品名，不会输入上位学科名。",
+    "integrations": "**待确认的保留位（2026-10-13 标出）**：无课程使用、无 docs/domains/ 长文、无别名、代码中无引用；它随 #1742 建词表时从旧语料带入，而那次提交并未单独说明它。#1742 的立意是「一个 domain 只有被写下来并审过才能进词表」，所以它属于漏审。写不出理由，故如实标记而不是补一句编的说明——请维护者确认其去留（保留则补理由，退retire则移入 retired）。",
     "memory": "renamed from `memory_management` (underscores are a style outlier, not a topic)",
     "ruby": "renamed from `ruby/performance` (a slash is not a domain name)",
-    "ci": "documented by docs/domains/ci.md; two CI-gate lessons use it"
+    "windows": "平台族，与既有的 linux、wsl 同族。linux 至今 0 篇——词表允许持有尚未使用的值，对外发布的 domain 计数由 sync_lesson_count.canonical_domains() 从实际用到的值推导，不受词表长度影响。入库依据：5 条彼此独立的 Windows 平台失败（PowerShell 双层转义、中文用户名下 initdb 失败、目录名结尾点破坏 glob、child_process EPERM、PowerShell 5.1 无 BOM UTF-8 被当 ANSI/GBK），没有一条能塞进 wsl（那是 WSL 专有）或 devops。"
   }
 }

@@ -585,3 +585,56 @@ def test_confidence_cancels_so_the_weighted_score_is_the_verdict():
         for confidence in (0.2, 0.5, 0.7, 1.0):
             assert make_decision(weighted * confidence, confidence) == band(weighted), (
                 f"weighted {weighted} at confidence {confidence} disagreed with the band")
+
+
+# ── numbered lists are lists ────────────────────────────────────────────────────────────────────
+#
+# `score_format` counted list items with `^[\s]*[-*]\s+` and `score_verification` looked for the
+# same shape, so a report written as `1. …` scored as if it had no list at all. Issue #3192 is the
+# measured case: six numbered steps, zero bullets, and the dimension reported "✗ No lists" while
+# its sibling #3191 — the same template — escaped auto-reject on nothing but different wording.
+# Every markdown renderer turns `1.` into <ol>, so the two spellings are the same construct and
+# scoring them differently measures the author's keyboard, not the report.
+
+NUMBERED_STEPS = (
+    "## Problem\n\n"
+    "同一逻辑单元有两种表示，都进了分析器。\n\n"
+    "## Error\n\n"
+    "计数翻倍，每项都 x2。\n\n"
+    "## Solution\n\n"
+    "1. 入口处按逻辑单元去重。\n"
+    "2. 判据化：整齐翻倍就是双计数指纹。\n"
+    "3. 命名冲突单独验，导出与缓存都要看。\n"
+    "4. 重新导出后再比一次计数。\n"
+    "5. 把去重规则写进任务定义。\n\n"
+    "## Verification\n\n"
+    "1. 90 文本 + 76 二进制 → 去重后 76。\n"
+    "2. 76 处同名冲突逐一核对。\n"
+)
+
+
+def test_numbered_lists_count_as_lists():
+    """`1.` / `1)` are markdown lists; a report must not be penalised for choosing that spelling."""
+    formatted = score_format(NUMBERED_STEPS, {})
+    # `in` on a list is equality, not substring: the reason is "✗ No lists", so `"No lists" in
+    # reasons` is False no matter what the scorer decided. Written the obvious way this test
+    # cannot fail — which is worse than having no test, because it reads as coverage.
+    assert not any("No lists" in r for r in formatted.reasons), (
+        "a body of six numbered steps was scored as having no lists at all — the list detector "
+        f"recognises `-` and `*` but not `1.`: {formatted.reasons}"
+    )
+
+
+def test_numbered_steps_count_as_verification_steps():
+    """Same blind spot in the 30%-weighted dimension, which is where it costs the most."""
+    scored = score_verification(NUMBERED_STEPS, {})
+    assert not any("verification steps" in r and r.startswith("✗") for r in scored.reasons), (
+        f"numbered steps under ## Verification were not recognised as steps: {scored.reasons}"
+    )
+    assert any("Has verification steps" in r for r in scored.reasons), scored.reasons
+
+
+def test_bullet_lists_still_count():
+    """The fix widens the shape; it must not become vacuous for the shape it already handled."""
+    bulleted = NUMBERED_STEPS.replace("1. ", "- ")
+    assert not any("No lists" in r for r in score_format(bulleted, {}).reasons)

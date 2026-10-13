@@ -266,6 +266,21 @@ def _doc_cache_id(doc: CachedDoc) -> str:
     return str(doc.filepath.relative_to(REPO))
 
 
+def _display_path(doc: CachedDoc) -> str:
+    """The path a reader can actually open: repo-relative, POSIX, **directory included**.
+
+    `CachedDoc.filename` is a basename, so the old `f"lessons/{doc.filename}"` named a file
+    that exists only for the three lessons sitting directly in `lessons/`. The other 521 are
+    in a subdirectory (`contrib/` 432, `en/` 64, `core/` 14, …), so the one line a reader
+    follows to open the answer pointed at a path that does not exist for 99% of the corpus.
+    A `reference/` document used to be relabelled `reference/<basename>` the same way.
+    """
+    try:
+        return doc.filepath.relative_to(REPO).as_posix()
+    except ValueError:  # filepath outside REPO — keep it absolute
+        return str(doc.filepath)
+
+
 def _search_cached(
     query: str, docs: list[CachedDoc], titles_only: bool = False, broad_only: bool = False,
     rerank: bool = False,
@@ -939,13 +954,15 @@ def _score_breakdown(query: str, doc: CachedDoc, docs: list[CachedDoc] | None = 
 def _get_related_lessons(
     doc: CachedDoc, all_docs: list[CachedDoc], max_related: int = 3
 ) -> list[tuple[str, str]]:
-    """Find related lessons by shared tags. Returns [(title, filename), ...]."""
+    """Find related lessons by shared tags. Returns [(title, repo-relative path), ...]."""
     if not doc.tags or not all_docs:
         return []
     doc_tags = set(t.lower() for t in doc.tags)
     scored = []
     for other in all_docs:
-        if other.filename == doc.filename:
+        # Compare the full path, not the basename: `contrib/x.md` and `en/x.md` are two
+        # different lessons, and the basename test silently merged them.
+        if other.filepath == doc.filepath:
             continue
         if not other.tags:
             continue
@@ -953,7 +970,7 @@ def _get_related_lessons(
         overlap = doc_tags & other_tags
         if len(overlap) >= 1:
             # Score by number of shared tags
-            scored.append((len(overlap), other.title, other.filename))
+            scored.append((len(overlap), other.title, _display_path(other)))
     scored.sort(key=lambda x: -x[0])
     return [(t, f) for _, t, f in scored[:max_related]]
 
@@ -1038,8 +1055,7 @@ def _format_output(
                 print(f"  {'':>25} 🔗 Related: {rel_line}")
         if titles_only:
             continue
-        rel_dir = "lessons" if doc.is_lesson else "reference"
-        print(f"  {'':>25} 📄 {rel_dir}/{doc.filename}")
+        print(f"  {'':>25} 📄 {_display_path(doc)}")
         preview = _get_preview(doc.content, max_chars=120)
         if preview:
             print(f"  {'':>25} {_highlight(preview, query)}")

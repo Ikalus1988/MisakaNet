@@ -324,7 +324,8 @@ def score_verification(body: str, sections: dict[str, str]) -> DimensionScore:
             reasons.append("✓ Has expected results")
 
         # Has verification steps
-        if re.search(r"^\s*[-*]\s+", verification_content, re.MULTILINE) or re.search(r"^\s*[-*]\s+", body, re.MULTILINE):
+        if (re.search(r"^\s*(?:[-*]|\d+[.)])\s+", verification_content, re.MULTILINE)
+                or re.search(r"^\s*(?:[-*]|\d+[.)])\s+", body, re.MULTILINE)):
             score += 15
         reasons.append("✓ Has verification steps (list)")
     else:
@@ -564,8 +565,13 @@ def score_format(body: str, sections: dict[str, str]) -> DimensionScore:
     else:
         reasons.append("✗ No headers")
 
-    # Lists
-    list_items = re.findall(r"^[\s]*[-*]\s+.+", body, re.MULTILINE)
+    # Lists. `1.` / `1)` are lists: every markdown renderer turns them into <ol>, so a report
+    # written as numbered steps is not "no lists" — it is a report whose author happened to choose
+    # the other half of markdown's list syntax. Measured 2026-10-13 on issue #3192: six numbered
+    # steps, zero bullets, and the dimension reported "✗ No lists". Its sibling #3191 is the same
+    # template and escaped auto-reject only because its author happened to use different words.
+    LIST_ITEM = re.compile(r"^[\s]*(?:[-*]|\d+[.)])\s+.+", re.MULTILINE)
+    list_items = LIST_ITEM.findall(body)
     if len(list_items) >= 5:
         score += 25
         reasons.append(f"✓ {len(list_items)} list items (excellent)")
