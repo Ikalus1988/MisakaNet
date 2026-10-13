@@ -79,6 +79,28 @@ def test_the_label_pair_stays_mutually_exclusive():
     assert "removeLabel" in text, "the stale label is never removed"
 
 
+def _exempt_labels(text: str) -> set[str]:
+    r"""The labels the gate's `.includes(...)` checks, read by structure rather than by pattern.
+
+    The obvious version of this is one regex for the array literal,
+    `\['a'\s*,\s*'b'\]` and so on — and written as `(?:'[^']+'\s*,?\s*)+` it is a nested
+    quantifier, which CodeQL flags as `py/redos` at high severity (it did, on the version that
+    first shipped here). The input is a workflow file this repository owns, so the practical
+    exposure is nil, but a gate that blocks on the pattern is a gate you learn to ignore.
+
+    So: find `.includes(`, walk backwards to the `[` that opens its array, and pull the quoted
+    names out of that slice. No quantifier wraps another quantifier, and the failure mode if the
+    shape changes is "no labels found", which the caller already treats as a moved rule.
+    """
+    at = text.find(".includes(")
+    assert at != -1, "the gate no longer filters by `.includes(...)` — this helper must follow it"
+    start = text.rfind("[", 0, at)
+    assert start != -1, f"no array literal before `.includes(` at offset {at}"
+    end = text.find("]", start)
+    assert end != -1, f"unterminated array literal starting at offset {start}"
+    return set(re.findall(r"'([^']*)'", text[start:end]))
+
+
 def test_intakes_and_digests_are_exempt_and_the_exemption_is_named():
     """Reports are not specs: an intake has no acceptance criteria to hold (2026-09-13, five of six
     `needs-ac` issues were intakes, including a digest this repository's own workflow opened)."""
@@ -99,9 +121,8 @@ def test_a_report_label_is_exempt_because_it_is_a_report_not_a_spec():
     catches the next report label that gets added without updating this array.
     """
     text = GATE.read_text(encoding="utf-8")
-    m = re.search(r"\[\s*((?:'[^']+'\s*,?\s*)+)\]\s*\n\s*\.includes", text)
-    assert m, "the exemption array moved — this test must move with it"
-    exempt = set(re.findall(r"'([^']+)'", m.group(1)))
+    exempt = _exempt_labels(text)
+    assert exempt, "the exemption array moved — this test must move with it"
 
     # Every label this repository's own automation opens as a report rather than a spec. Sourced from
     # the workflows that create them, so the list cannot quietly drift from reality.
