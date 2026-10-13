@@ -52,9 +52,10 @@ def test_there_are_handoffs_to_check():
 # Debt that predates the rule. A ratchet, not a waiver: the test below fails both when a *new*
 # file goes over the limit and when one of these is fixed without being removed from here — so the
 # list can only shrink, and it cannot silently rot.
-PRE_EXISTING_OVER_LIMIT = {
-    "handoff-2026-09-06.md": 1414,   # one file, one day, 1414 lines; needs the same split treatment
-}
+# Empty as of 2026-10-13: `handoff-2026-09-06.md` (1414 lines) was the last one, and it is split.
+# The mechanism stays because the next monolith will need it — and because an empty ratchet that is
+# still *checked* is what proves the list was cleared rather than forgotten.
+PRE_EXISTING_OVER_LIMIT: dict[str, int] = {}
 
 
 def _measured() -> dict[str, int]:
