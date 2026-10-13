@@ -22,6 +22,15 @@ const { GITHUB_API, REPO, PUBLIC_DATA_BASE } = _handlers;
 // daily sync), so five minutes is both fresher than the data and ~10x cheaper in
 // writes against the 1,000/day budget.
 const PROXY_CACHE_TTL = 300_000;
+
+// The lifetime of a registered token — one constant, because it is one number.
+//
+// It used to be written out at each site, and the sites disagreed: `misakanet_register` granted
+// `86400 * 30` while the `/mcp/pair` flow behind the `/start` page granted `86400`, so a new user
+// who onboarded through the page lost access after a day while `AGENTS.md` §3.3 promised 30
+// (measured 2026-10-13; reported as #2084). The `client:<client_id>` mapping is deliberately on
+// the same window: if it expired first, renewing a token would silently return a *new* node.
+const MCP_TOKEN_TTL_SECONDS = 86400 * 30;
 // These probes are for endpoints this worker does **not** serve. Its own public URLs cannot be used
 // from inside it, and the reason is worth writing down, because the previous list did exactly that
 // and produced nothing but noise.
@@ -3579,13 +3588,13 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
             agent_type: known.agent_type || agentType,
             registered_at: known.registered_at || mapping.created_at || now,
             token: known.token,
-          }), { expirationTtl: 86400 * 30 }),
+          }), { expirationTtl: MCP_TOKEN_TTL_SECONDS }),
           storePut(env, `mcp_token:${known.token}`, JSON.stringify({
             node_id: mapping.node_id,
             agent_type: known.agent_type || agentType,
             registered_at: known.registered_at || mapping.created_at || now,
-            expires: new Date(Date.now() + 86400 * 30 * 1000).toISOString(),
-          }), { expirationTtl: 86400 * 30 }),
+            expires: new Date(Date.now() + MCP_TOKEN_TTL_SECONDS * 1000).toISOString(),
+          }), { expirationTtl: MCP_TOKEN_TTL_SECONDS }),
         ]);
         if (refreshed.some((ok) => !ok)) {
           logInternal("register: token refresh on reuse failed", kvWriteStats.last_error);
@@ -3632,15 +3641,15 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
       registered_at: new Date().toISOString(),
       token: token,
       ...(referralOk ? { referred_by: referralCode } : {}),
-    }), { expirationTtl: 86400 * 30 });
+    }), { expirationTtl: MCP_TOKEN_TTL_SECONDS });
 
     // Store token lookup (for auth verification)
     const tokenStored = await storePut(env, `mcp_token:${token}`, JSON.stringify({
       node_id: nodeId,
       agent_type: agentType,
       registered_at: new Date().toISOString(),
-      expires: new Date(Date.now() + 86400 * 30 * 1000).toISOString(),
-    }), { expirationTtl: 86400 * 30 });
+      expires: new Date(Date.now() + MCP_TOKEN_TTL_SECONDS * 1000).toISOString(),
+    }), { expirationTtl: MCP_TOKEN_TTL_SECONDS });
 
     // Never hand out a token that was not stored: the caller would fail on its very
     // next authenticated call with no way to tell why. Storage trouble is temporary,
@@ -3665,7 +3674,7 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
         node_id: nodeId,
         agent_type: agentType,
         created_at: new Date().toISOString(),
-      }), { expirationTtl: 86400 * 30 });
+      }), { expirationTtl: MCP_TOKEN_TTL_SECONDS });
       if (!mapped) logInternal("register: client_id mapping write failed", kvWriteStats.last_error);
     }
 
@@ -4261,6 +4270,8 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
               // count whatever an unauthenticated caller felt like writing (#2075).
               const ck = `intake_source_count:${intakeSourceBucket(args.source)}`;
               const cn = parseInt((await storeGet(env, ck, "text")) || "0", 10) || 0;
+              // 30 days here is a *ledger window* for the intake-source count, unrelated to the token
+              // lifetime above — deliberately its own number rather than MCP_TOKEN_TTL_SECONDS.
               await storePut(env, ck, String(cn + 1), { expirationTtl: 86400 * 30 });
             } catch (_) { /* best-effort ledger (feeds #1528) */ }
           }
@@ -4688,10 +4699,31 @@ async function handleMcpRequest(request, env, useSse = false, ctx) {
       hasExpectedToken: !!expectedToken,
       isIntakeCall,
     });
+    // The recovery hint lives in `error.data` (JSON-RPC's own field for structured error info),
+    // deliberately **not** inside `addDebugContext`: that helper returns the bare object when
+    // DEBUG_LEVEL < 1, which is production. Measured 2026-10-13 against production, a caller with a
+    // wrong token received exactly `{"code":-32000,"message":"Unauthorized"}` — and the SDK behind
+    // DeepSeek Harness classifies that as a *transport* fault and retries forever instead of
+    // recovering (the same shape as the `server/discover` bug documented at
+    // `mcp-anonymous-read.test.mjs:161`). A token that expired on schedule is not a transport fault
+    // and is fixable in one call, so the body the caller actually gets has to say how.
+    //
+    // `code` and `message` are unchanged on purpose: clients match on them.
+    const reason = token ? "token_invalid_or_expired" : "no_token_provided";
     return respond(
-      { jsonrpc: "2.0", error: addDebugContext(env, { code: -32000, message: "Unauthorized" }, {
+      { jsonrpc: "2.0", error: addDebugContext(env, {
+        code: -32000,
+        message: "Unauthorized",
+        data: {
+          reason,
+          recovery: "misakanet_register",
+          recovery_hint: "Call misakanet_register with the same `client_id` you registered with: "
+            + "it returns the same node_id and a fresh token. Without a `client_id` each call "
+            + "creates a new node, so keep it.",
+        },
+      }, {
         step: "authentication",
-        reason: token ? "token_invalid_or_expired" : "no_token_provided",
+        reason,
         token_prefix: maskToken(token),
       }) },
       401,
@@ -7778,7 +7810,20 @@ export default {
       pairData.used_ip = request.headers.get("CF-Connecting-IP") || "unknown";
       await storePut(env, pairKey, JSON.stringify(pairData), { expirationTtl: 86400 });
 
-      // Generate short-lived token (24h, cryptographically secure)
+      // Generate a token with the same lifetime the rest of the product grants.
+      //
+      // This used to be 24h, deliberately, and that was the defect (measured 2026-10-13): the
+      // `/start` page is the path a *new human user* takes (`/connect` → `/start` → paste the code),
+      // so the page onboarding handed out a token 30× shorter than `misakanet_register` does
+      // (`86400 * 30` at the two issuance sites above) and than `AGENTS.md` §3.3 documents
+      // ("token 有效期 30 天"). A day later the caller is refused — with a bare `Unauthorized` until
+      // the same-day fix above — and the reported symptom is "registration failed, I can't use
+      // MisakaNet" (#2084: "agent loses token after 24h silent period; misakanet_register returns a
+      // brand-new node_id every cold-start").
+      //
+      // The *pairing code* is the short-lived part (600s) and stays that way; the token is a bearer
+      // credential, and there is no path that grants one under stronger trust than this one. One
+      // lifetime, stated in one place, for the same kind of credential.
       const tokenChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-";
       let token = "mcp_";
       const pairTokenBytes = new Uint8Array(32);
@@ -7788,11 +7833,11 @@ export default {
       // Store token in KV for validation
       await storePut(env, `mcp_token:${token}`, JSON.stringify({
         created: new Date().toISOString(),
-        expires: new Date(Date.now() + 86400000).toISOString(),
+        expires: new Date(Date.now() + MCP_TOKEN_TTL_SECONDS * 1000).toISOString(),
         ip: pairData.ip,
-      }), { expirationTtl: 86400 });
+      }), { expirationTtl: MCP_TOKEN_TTL_SECONDS });
 
-      return jsonResponse({ token, expires_in: 86400 });
+      return jsonResponse({ token, expires_in: MCP_TOKEN_TTL_SECONDS });
     }
 
     // POST /mcp — Streamable HTTP MCP endpoint (read-only tools)
