@@ -79,9 +79,66 @@ def test_the_label_pair_stays_mutually_exclusive():
     assert "removeLabel" in text, "the stale label is never removed"
 
 
+def _exempt_labels(text: str) -> set[str]:
+    r"""The labels the gate's `.includes(...)` checks, read by structure rather than by pattern.
+
+    The obvious version of this is one regex for the array literal,
+    `\['a'\s*,\s*'b'\]` and so on — and written as `(?:'[^']+'\s*,?\s*)+` it is a nested
+    quantifier, which CodeQL flags as `py/redos` at high severity (it did, on the version that
+    first shipped here). The input is a workflow file this repository owns, so the practical
+    exposure is nil, but a gate that blocks on the pattern is a gate you learn to ignore.
+
+    So: find `.includes(`, walk backwards to the `[` that opens its array, and pull the quoted
+    names out of that slice. No quantifier wraps another quantifier, and the failure mode if the
+    shape changes is "no labels found", which the caller already treats as a moved rule.
+    """
+    at = text.find(".includes(")
+    assert at != -1, "the gate no longer filters by `.includes(...)` — this helper must follow it"
+    start = text.rfind("[", 0, at)
+    assert start != -1, f"no array literal before `.includes(` at offset {at}"
+    end = text.find("]", start)
+    assert end != -1, f"unterminated array literal starting at offset {start}"
+    return set(re.findall(r"'([^']*)'", text[start:end]))
+
+
 def test_intakes_and_digests_are_exempt_and_the_exemption_is_named():
     """Reports are not specs: an intake has no acceptance criteria to hold (2026-09-13, five of six
     `needs-ac` issues were intakes, including a digest this repository's own workflow opened)."""
     text = GATE.read_text(encoding="utf-8")
-    for label in ("intake", "mcp-intake", "salvage-digest", "question-digest"):
+    for label in ("intake", "mcp-intake", "salvage-digest", "question-digest", "lesson-submission"):
         assert f"'{label}'" in text, f"{label} left the exemption list — that label would collect `needs-ac`"
+
+
+def test_a_report_label_is_exempt_because_it_is_a_report_not_a_spec():
+    """The list is not an arbitrary set — it is every label the repository opens as a *report*.
+
+    `lesson-submission` went missing and the failure is invisible from inside the workflow: it still
+    runs, still labels, and the label it applies (`needs-ac`) reads as a fact about the work rather
+    than as an artefact of which labels the submitter happened to pick. Measured 2026-10-13, 28 of 28
+    open `lesson-submission` issues carried `needs-ac`.
+
+    So assert the exemption the way the gate applies it — by *shape*, not by name — which is what
+    catches the next report label that gets added without updating this array.
+    """
+    text = GATE.read_text(encoding="utf-8")
+    exempt = _exempt_labels(text)
+    assert exempt, "the exemption array moved — this test must move with it"
+
+    # Every label this repository's own automation opens as a report rather than a spec. Sourced from
+    # the workflows that create them, so the list cannot quietly drift from reality.
+    report_labels = {"intake", "mcp-intake", "salvage-digest", "question-digest", "lesson-submission"}
+    missing = report_labels - exempt
+    assert not missing, (
+        f"these report labels are not exempt from `needs-ac`: {sorted(missing)}. A report has no "
+        f"acceptance criteria to hold, so requiring them marks completed investigation as unfinished "
+        f"work — the exact failure the exemption was added for (2026-09-13, five of six `needs-ac` "
+        f"issues were intakes).\n  currently exempt: {sorted(exempt)}"
+    )
+
+    # And the converse must stay true: a label that means "someone will implement this" is exactly
+    # what the AC requirement exists for, so it must never drift into this list.
+    for impl_label in ("bounty", "task"):
+        assert impl_label not in exempt, (
+            f"{impl_label!r} asks someone to implement the work, so acceptance criteria are the "
+            f"point of the label — it must not be exempt"
+        )

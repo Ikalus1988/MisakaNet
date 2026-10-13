@@ -84,5 +84,15 @@ def test_the_fallback_is_what_actually_gets_installed():
             if line.strip() and not line.strip().startswith("#")]
     dropped = [line for line in _pip_requirements() if line not in kept]
     assert dropped == [EDITABLE], f"the filter must drop exactly the editable line, dropped: {dropped}"
-    for dependency in ["misakanet-core>=2.7.0", "jsonschema>=4.26.0", "mcp>=2.2.0", "pyyaml>=6.0"]:
-        assert dependency in kept, f"{dependency} must survive the filter"
+    # And nothing else may be dropped, for *any* dependency — which is what this test used to
+    # assert badly. It ended with a loop over four hand-picked version strings, one of them
+    # "mcp>=2.2.0", which is the text this test's own docstring says it does not pin. Dependabot
+    # #3160 raised mcp to >=2.3.0, changed nothing else, and turned it red on all seven platforms.
+    # Those four literals were also strictly weaker than the line above, which is derived: it
+    # covers every dependency rather than four of them. Asserting the exact filtered contents
+    # pins the mechanism, keeps a version bump out of its blast radius, and would still fail if
+    # the filter quietly dropped a dependency nobody thought to write down.
+    assert kept == [line for line in _pip_requirements() if line != EDITABLE], (
+        "the filtered copy must be requirements.txt minus exactly the editable line, in order; "
+        f"got {kept}"
+    )

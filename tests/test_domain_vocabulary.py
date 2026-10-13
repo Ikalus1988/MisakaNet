@@ -24,6 +24,7 @@ pins the invariants that keep it honest:
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -150,3 +151,40 @@ def test_public_domain_count_is_derived_from_the_vocabulary():
 
     assert counted <= set(VOCAB["canonical"]), sorted(counted - set(VOCAB["canonical"]))
     assert slc.canonical_domains(REPO) == len(counted)
+
+
+def test_a_reserved_slot_must_state_why_it_is_reserved():
+    """A canonical value no lesson uses has to say, in the vocabulary itself, why it is there.
+
+    #1742 built this file so that "a domain can only enter the vocabulary by being written down
+    and reviewed". Writing it down happened; reviewing it did not — `integrations` carried in
+    from the pre-vocabulary corpus with no note, no long-form doc, no alias, and no reader, and
+    nothing in the repository could tell that apart from a deliberate reservation.
+
+    This is the check that makes the "written down" half mean something. It is deliberately about
+    *unused* values only: a value with lessons needs no defence, and requiring one would be
+    bookkeeping for its own sake. The published domain count is unaffected either way —
+    `sync_lesson_count.canonical_domains()` counts values in use, not values listed — so a
+    reserved slot costs nothing and only has to be honest.
+    """
+    used: dict[str, int] = {}
+    for path in (REPO / "lessons").rglob("*.md"):
+        head = path.read_text(encoding="utf-8", errors="ignore")[:400]
+        m = re.search(r"^domain:\s*(\S+)", head, re.M)
+        if m:
+            key = m.group(1).strip().lower()
+            used[key] = used.get(key, 0) + 1
+
+    notes = VOCAB.get("notes") or {}
+    reserved = [v for v in VOCAB["canonical"] if used.get(v.lower(), 0) == 0]
+    undocumented = [v for v in reserved if v not in notes]
+
+    assert not undocumented, (
+        f"these canonical values have no lesson and no note saying why they are reserved: "
+        f"{sorted(undocumented)}.\n\n"
+        f"  A value with lessons needs no defence. A value with none is either a mistake or a "
+        f"reservation, and only this file can tell you which — so either give it a note or move "
+        f"it to `retired`. Adding a domain is cheap (the published count is derived from use, not "
+        f"from this list) and only has to be honest.\n\n"
+        f"  reserved with a note: {sorted(set(reserved) - set(undocumented))}"
+    )

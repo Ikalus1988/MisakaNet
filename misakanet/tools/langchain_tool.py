@@ -84,7 +84,7 @@ class MisakaNetSearchTool(BaseTool):
 
     def _execute_search(self, query: str) -> str:
         # Import core engine elements
-        from misakanet.search.engine import _load_docs, _rank_docs, LESSONS, REFERENCES
+        from misakanet.search.engine import _display_path, _load_docs, _rank_docs, LESSONS, REFERENCES
         
         lessons_docs = _load_docs(LESSONS, is_lesson=True)
         ref_docs = _load_docs(REFERENCES, is_lesson=False)
@@ -102,7 +102,7 @@ class MisakaNetSearchTool(BaseTool):
             preview_lines = [l for l in preview if l.strip() and not l.startswith('---')][:8]
             content_preview = '\n'.join(preview_lines)
             results.append(
-                f"📄 File: lessons/{doc.filename}\n"
+                f"📄 File: {_display_path(doc)}\n"
                 f"📌 Title: {doc.title}\n"
                 f"🔍 Domain: {doc.domain}\n"
                 f"📝 Preview:\n{content_preview}\n"
