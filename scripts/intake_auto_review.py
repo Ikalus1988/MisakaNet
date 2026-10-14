@@ -743,6 +743,64 @@ def calculate_confidence(body: str, is_test: bool) -> float:
     return min(1.0, confidence)
 
 
+# === Placeholder / fixture detection ===
+# Two fixtures from this repository's own test suite reached the live pipeline three
+# seconds apart (#3136 / #3137) and were judged as real reports; the complete-looking
+# one landed in the human queue as needs-human-review + type:bug + priority:high, with
+# the literal string `test-verification` in its body.
+#
+# This is a classifier, not a threshold, and the measurements are why: no placeholder
+# body reaches the approval band. The most complete one built (frontmatter, six
+# sections, padding to raise the word count) scored 65.75 against a threshold of 75,
+# and the gap is closed by two dimensions that have nothing to do with fixtures —
+# "Only 1 generic tech keywords" and "Contains specific project names". So a guard
+# here moves nothing on the scoring path and no weight or threshold is touched.
+#
+# Two signals, and neither is a bare prefix match:
+#   * every acceptance-criteria value is a `test-*` placeholder — with the section
+#     required to be present and to carry at least one value, because "all values
+#     match" is vacuously true when there are none, and a report legitimately has no
+#     acceptance criteria (`issue-quality-gate.yml` exempts them as "reports, not
+#     specs"). Getting that wrong rejects every AC-less report in the repository.
+#   * the problem section is a single `test-*` token. Anchoring on "starts with
+#     test-" instead would swallow "test-flaky CI fails on the 3.12 runner", which is
+#     a genuine report about test infrastructure.
+PLACEHOLDER_VALUE = re.compile(r"^test[-_ ]", re.IGNORECASE)
+PLACEHOLDER_SOLE_TOKEN = re.compile(r"^test[-_ ]?[a-z0-9][a-z0-9._-]*$", re.IGNORECASE)
+LIST_MARKER = re.compile(r"^\s*(?:[-*+]|\d+[.)])\s+")
+
+
+def detect_placeholder_fixture(body: str) -> tuple[bool, str]:
+    """True when the body is a test fixture rather than a report. Returns (hit, reason)."""
+    if not body:
+        return False, ""
+
+    stripped = strip_pipeline_boilerplate(body)
+
+    acceptance = _section_text(stripped, ("acceptance criteria", "acceptance"))
+    values = [
+        LIST_MARKER.sub("", line).strip()
+        for line in acceptance.splitlines()
+        if LIST_MARKER.match(line)
+    ]
+    values = [v for v in values if v]
+    if values and all(PLACEHOLDER_VALUE.match(v) for v in values):
+        return True, (
+            f"all {len(values)} acceptance criteria are test placeholders "
+            f"({', '.join(values[:3])})"
+        )
+
+    problem = [
+        line.strip()
+        for line in _section_text(stripped, ("problem", "问题")).splitlines()
+        if line.strip()
+    ]
+    if problem and all(PLACEHOLDER_SOLE_TOKEN.match(line) for line in problem):
+        return True, f"the problem section is the bare placeholder {problem[0]!r}"
+
+    return False, ""
+
+
 # === Decision Maker ===
 
 def make_decision(final_score: float, confidence: float) -> str:
@@ -903,6 +961,17 @@ def auto_review_issue(
 
     # Step 8: Make decision
     result.decision = make_decision(result.final_score, result.confidence)
+
+    # A fixture is not a report that scored badly, so it gets its own decision rather
+    # than the nearest score band. Routing it to `reject` would hand it to the daily
+    # salvage digest, which sweeps the `auto-rejected` label and puts
+    # `needs-human-review` straight back on it the next morning — the opposite of what
+    # this is for. The score is left exactly as computed, so the JSON still shows what
+    # the body would have scored and nothing on the scoring path moves.
+    placeholder, why = detect_placeholder_fixture(body)
+    if placeholder:
+        result.decision = "placeholder"
+        result.reasons.append(f"✗ Detected a test fixture rather than a report: {why}")
 
     # Step 9: Collect reasons and suggestions
     for dim in result.dimensions:

@@ -22,6 +22,7 @@ from intake_auto_review import (
     score_format,
     calculate_confidence,
     make_decision,
+    detect_placeholder_fixture,
     generate_lesson_from_intake,
 )
 
@@ -638,3 +639,107 @@ def test_bullet_lists_still_count():
     """The fix widens the shape; it must not become vacuous for the shape it already handled."""
     bulleted = NUMBERED_STEPS.replace("1. ", "- ")
     assert not any("No lists" in r for r in score_format(bulleted, {}).reasons)
+
+
+# === Placeholder / fixture detection (#3136, #3137) ===
+
+# #3137 as it reached the pipeline: complete-looking, every acceptance criterion a
+# `test-*` placeholder, and the literal string `test-verification` in the body.
+FIXTURE_COMPLETE = """## Problem
+test-problem
+
+## Acceptance Criteria
+- test-error
+- test-what_tried
+- test-fix
+- test-verification
+- test-matched_lesson_id
+"""
+
+# #3136: the skeleton, one placeholder line under Problem and nothing else.
+FIXTURE_SKELETON = """## Problem
+test-problem
+"""
+
+# The counterexample that decides how tight the anchor has to be. A report *about* test
+# infrastructure is a real report, and it can start with `test-` on every line — which
+# is why the anchor is "the whole line is one placeholder token", not "starts with
+# test-". Written so that a bare-prefix anchor really does misfire here.
+REPORT_ABOUT_TESTING = """## Problem
+test-suite hangs on windows-latest
+test-hang predates my change and reproduces on a clean checkout
+"""
+
+
+def test_a_fixture_with_placeholder_acceptance_criteria_is_detected():
+    hit, reason = detect_placeholder_fixture(FIXTURE_COMPLETE)
+    assert hit, "the #3137 body is a fixture and must be caught"
+    assert "acceptance criteria" in reason, reason
+
+
+def test_a_skeleton_fixture_is_detected():
+    """#3136 carried no acceptance criteria at all, so the other signal has to work."""
+    hit, _ = detect_placeholder_fixture(FIXTURE_SKELETON)
+    assert hit, "the #3136 body is a fixture and must be caught"
+
+
+def test_a_report_about_test_infrastructure_is_not_a_fixture():
+    """The false positive this guard is most likely to cause, pinned in both directions."""
+    hit, _ = detect_placeholder_fixture(REPORT_ABOUT_TESTING)
+    assert not hit, "a real report that starts with `test-` was classified as a fixture"
+
+
+def test_a_report_without_acceptance_criteria_is_not_a_fixture():
+    """The vacuous-truth trap: "all criteria are placeholders" is true when there are none.
+
+    Reports legitimately have no acceptance criteria — `issue-quality-gate.yml` exempts
+    them as "reports, not specs" — so a body with no such section must not be caught.
+    """
+    hit, _ = detect_placeholder_fixture(GENUINE_REPORT)
+    assert not hit, "a report with no acceptance-criteria section was classified as a fixture"
+
+
+def test_a_report_whose_criteria_are_real_is_not_a_fixture():
+    mixed = "## Problem\n\nSomething is broken in the parser.\n\n## Acceptance Criteria\n\n- the parser round-trips\n- the CLI exits 0\n"
+    hit, _ = detect_placeholder_fixture(mixed)
+    assert not hit, "real acceptance criteria were read as placeholders"
+
+
+def test_the_fixture_decision_is_added_on_top_of_the_score_not_instead_of_it():
+    """Nothing on the scoring path moves: the score path still runs and still verdicts."""
+    result = auto_review_issue(0, "fixture", FIXTURE_COMPLETE)
+    assert result.decision == "placeholder", result.decision
+    assert result.weighted_score > 0, "the score was zeroed rather than reported"
+    assert make_decision(result.final_score, result.confidence) != "placeholder"
+    assert any("test fixture" in r for r in result.reasons), result.reasons
+
+
+def test_a_fixture_is_not_labelled_auto_rejected():
+    """The routing decision, pinned.
+
+    The daily salvage digest sweeps `auto-rejected` and re-applies
+    `needs-human-review`, so a fixture routed through `reject` returns to the human
+    queue every morning. The placeholder branch must therefore never *add* that label.
+    """
+    root = Path(__file__).parent.parent
+    workflow = (root / ".github/workflows/intake-auto-review.yml").read_text()
+    branch = workflow.split('elif [ "$DECISION" = "placeholder" ]', 1)[1].split("\n          else", 1)[0]
+
+    assert '--add-label "auto-placeholder"' in branch, "the placeholder branch adds no label"
+    assert '--add-label "auto-rejected"' not in branch, (
+        "the placeholder branch adds auto-rejected, which the salvage digest sweeps back "
+        "into the human queue the next morning"
+    )
+    assert '--remove-label "needs-human-review"' in branch, (
+        "a fixture must not stay in the human queue"
+    )
+
+
+def test_the_salvage_digest_does_not_sweep_fixtures():
+    digest = (
+        Path(__file__).parent.parent / ".github/workflows/intake-salvage-digest.yml"
+    ).read_text()
+    assert "auto-placeholder" not in digest, (
+        "the digest would have to opt fixtures out explicitly; the label is meant to be "
+        "invisible to it"
+    )

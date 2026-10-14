@@ -198,6 +198,20 @@ jobs:
             gh issue edit $ISSUE_NUMBER --repo ${{ github.repository }} \
               --add-label "auto-rejected" \
               --add-label "needs-salvage"
+          elif [ "$DECISION" = "placeholder" ]; then
+            # Its own label, and deliberately NOT `auto-rejected`. The daily salvage
+            # digest sweeps exactly that label and re-applies `needs-human-review`
+            # (intake-salvage-digest.yml), so a fixture routed to `reject` comes back
+            # into the human queue every morning — which is the shape this branch exists
+            # to stop. Triage's own `type:bug` / `priority:high` are left in place: if a
+            # real report is ever misread as a fixture, that is the evidence a
+            # maintainer needs to see.
+            gh issue edit $ISSUE_NUMBER --repo ${{ github.repository }} \
+              --add-label "auto-placeholder" 2>/dev/null || true
+            gh issue edit $ISSUE_NUMBER --repo ${{ github.repository }} \
+              --remove-label "needs-human-review" \
+              --remove-label "needs-salvage" \
+              --remove-label "auto-rejected" 2>/dev/null || true
           else
             gh issue edit $ISSUE_NUMBER --repo ${{ github.repository }} \
               --add-label "needs-human-review"
