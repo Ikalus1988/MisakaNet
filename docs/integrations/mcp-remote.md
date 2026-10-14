@@ -349,7 +349,7 @@ When using MisakaNet, search existing lessons first. If no lesson matches, do no
 **Use MisakaNet in Claude Code / Cursor / VS Code via Glama — 3 steps**
 
 > Your agent hits an error (DCO failure, pip timeout, token leak…). MisakaNet
-> gives it 393+ **indexed failure-recovery lessons** so it finds the fix
+> gives it the **indexed failure-recovery lessons** so it finds the fix
 > instead of re-debugging. No self-hosting — the Glama gateway proxies to
 > our hosted endpoint.
 
