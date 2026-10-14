@@ -103,7 +103,7 @@ Browser → Proxy Worker (with token) → api.github.com
 schemas/lesson.json           — JSON Schema for lesson validation
 misaka-protocol.json          — Machine-readable config (rings, DCO, scoring, registration)
 workers/email-register/       — Email + Web registration worker
-workers/register-proxy.js     — GitHub API proxy worker
+workers/register-proxy-sw.js  — GitHub API proxy worker
 .github/workflows/            — All workflow files (permissions audit done)
 docs/LIMITATIONS.md           — Anti-hype disclosure
 GOVERNANCE.md                 — Anti-Web3 charter

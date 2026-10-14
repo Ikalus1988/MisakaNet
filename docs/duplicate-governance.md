@@ -152,7 +152,7 @@ lesson-b: DCO fix for Windows (额外的 troubleshooting)
 
 处理重复 lesson 时：
 
-- [ ] 搜索现有 lessons（`python scripts/search_knowledge.py "关键词"`）
+- [ ] 搜索现有 lessons（`python3 search_knowledge.py "关键词"`）
 - [ ] 检查 `data/lessons.json` 中的相似标题
 - [ ] 评估内容重叠程度
 - [ ] 选择合适的处理动作
