@@ -24,6 +24,8 @@ from intake_auto_review import (
     make_decision,
     detect_placeholder_fixture,
     generate_lesson_from_intake,
+    AutoReviewResult,
+    DimensionScore,
 )
 
 
@@ -743,3 +745,121 @@ def test_the_salvage_digest_does_not_sweep_fixtures():
         "the digest would have to opt fixtures out explicitly; the label is meant to be "
         "invisible to it"
     )
+
+
+# ── three fall-throughs and one loose anchor, found by review of #3239 ───────────────
+# Each of these was reproduced against this branch's own head before being fixed.
+
+
+# The counterexample the acceptance-criteria anchor never had. `REPORT_ABOUT_TESTING` above
+# covers the *problem* anchor; the criteria anchor was still a bare `^test-` prefix, so the
+# same class of real report slipped through the other door — and an intake about the fixture
+# bug itself is exactly the report that has acceptance criteria phrased that way.
+REPORT_ABOUT_TESTING_CRITERIA = """## Problem
+
+The intake pipeline classifies a real report as a test fixture.
+
+## Acceptance Criteria
+
+- test-hang predates my change
+- test-suite fails on windows-latest
+"""
+
+
+def test_a_report_whose_criteria_happen_to_start_with_test_is_not_a_fixture():
+    hit, _ = detect_placeholder_fixture(REPORT_ABOUT_TESTING_CRITERIA)
+    assert not hit, "a bare ^test- prefix on the criteria anchor swallows real reports"
+
+
+def test_a_fixture_with_snake_case_criteria_is_still_detected():
+    """The anchor got tighter, so the shapes it must still catch need saying out loud."""
+    hit, _ = detect_placeholder_fixture(
+        "## Problem\ntest-problem\n\n## Acceptance Criteria\n"
+        "- test-what_tried\n- test-matched_lesson_id\n"
+    )
+    assert hit
+
+
+# `_section_text` stops at the first `#{2,3}` heading after the one it matched, so a Problem
+# section followed by a `###` subsection was read as the bare placeholder `test-hang` with the
+# evidence silently cut off below it.
+REPORT_WITH_TRUNCATED_PROBLEM = """## Problem
+test-hang
+### Steps
+1. run the suite
+2. read the log
+
+## Fix
+
+Change the classifier.
+
+## Acceptance Criteria
+
+- the suite passes
+"""
+
+
+def test_a_problem_section_cut_short_by_a_subheading_is_not_judged():
+    hit, _ = detect_placeholder_fixture(REPORT_WITH_TRUNCATED_PROBLEM)
+    assert not hit, "a truncated section must not be read as a bare placeholder"
+
+
+def test_the_truncation_helper_distinguishes_the_two_shapes():
+    from scripts.intake_auto_review import _section_is_truncated
+
+    assert _section_is_truncated(REPORT_WITH_TRUNCATED_PROBLEM, ("problem", "问题"))
+    assert not _section_is_truncated("## Problem\ntest-problem\n", ("problem", "问题"))
+    assert not _section_is_truncated("## Problem\n\nA real description.\n", ("problem", "问题"))
+
+
+# `placeholder` had no arm in `format_result_comment`, at either the heading or the decision
+# line, so it fell into `else` and told the author "Auto-rejected (weighted score < 40)" beside
+# a score table reading 64.25. No test pinned the comment text, which is why CI was green.
+
+
+def test_a_placeholder_comment_does_not_claim_the_issue_was_rejected():
+    result = AutoReviewResult(
+        issue_number=3137, decision="placeholder", weighted_score=64.25, final_score=64.25,
+        confidence=1.0, dimensions=[DimensionScore(name="d", weight=1.0, score=64.25)],
+        reasons=["✗ Detected a test fixture rather than a report"], suggestions=[],
+    )
+    text = format_result_comment(result)
+    assert "Auto-Rejected" not in text and "Auto-rejected" not in text
+    assert "[REJECTED]" not in text
+    assert "fixture" in text.lower()
+
+
+def test_a_rejected_issue_still_says_it_was_rejected():
+    """The counterpart: adding a new arm must not swallow the existing `else` branch."""
+    result = AutoReviewResult(
+        issue_number=1, decision="reject", weighted_score=22.1, final_score=22.1,
+        confidence=1.0, dimensions=[DimensionScore(name="d", weight=1.0, score=22.1)],
+        reasons=["✗ Only 1 generic tech keywords"], suggestions=[],
+    )
+    text = format_result_comment(result)
+    assert "[REJECTED] Auto-Rejected" in text
+    assert "Auto-rejected" in text
+
+
+@pytest.mark.parametrize("decision,marker", [
+    ("approve", "[APPROVED]"),
+    ("review", "[REVIEW]"),
+    ("reject", "[REJECTED]"),
+    ("placeholder", "[FIXTURE]"),
+])
+def test_each_decision_value_gets_its_own_heading_and_decision_line(decision, marker):
+    """No decision may fall through to `else` — that is how `placeholder` printed a rejection.
+
+    Asserting the *marker*, not merely that some `## [` and some `**Decision:**` exist: a first
+    version of this test passed with both `placeholder` arms deleted, because the `else` branch
+    also produces a well-formed heading. It has to pin which one.
+    """
+    result = AutoReviewResult(
+        issue_number=1, decision=decision, weighted_score=50.0, final_score=50.0,
+        confidence=1.0, dimensions=[DimensionScore(name="d", weight=1.0, score=50.0)],
+        reasons=["✗ x"], suggestions=[],
+    )
+    lines = format_result_comment(result).splitlines()
+    assert marker in lines[0], f"{decision} rendered as {lines[0]!r}, expected {marker}"
+    assert any(l.startswith("**Decision:**") for l in lines), \
+        f"{decision} produced no decision line"
