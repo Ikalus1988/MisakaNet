@@ -1,9 +1,30 @@
 {
-  "generated_at": "2026-10-14T00:22:45.773666+00:00",
+  "generated_at": "2026-10-14T05:08:28.185293+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "docs(handoff): §90 — two premises of mine, each overturned by a measurement",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3240",
+      "timestamp": "2026-10-14T01:01:05Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore: update leaderboard snapshot",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3238",
+      "timestamp": "2026-10-14T00:43:10Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3237",
+      "timestamp": "2026-10-14T00:32:49Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "chore(data): sync lessons.json + refresh feed",
@@ -16,27 +37,6 @@
       "title": "docs(handoff): §89 — the registration bug, reproduced as a user and closed on live evidence",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/3235",
       "timestamp": "2026-10-13T16:53:02Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "fix(worker): the page onboarding grants a 30-day token, and the 401 says how to recover",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3234",
-      "timestamp": "2026-10-13T16:01:10Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "docs(handoff): split both monoliths and enforce the 800-line limit",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3229",
-      "timestamp": "2026-10-13T15:23:07Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "test(search): pin that the displayed score is relative to its own result set",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3230",
-      "timestamp": "2026-10-13T15:10:01Z",
       "source": "github"
     },
     {
