@@ -345,6 +345,8 @@ _DE_NUMBERED_SURFACES = (
     "docs/integrations/continue.md",
     "docs/integrations/claude-code.md",
     "docs/integrations/gemini-cli.md",
+    "docs/integrations/mcp-remote.md",
+    ".claude-plugin/marketplace.json",
     "docs/install/index.html",
     "docs/worker-bm25-search.md",
     "docs/json-ld-schema.md",
@@ -363,8 +365,16 @@ _DE_NUMBERED_SURFACES = (
 # regex cannot reach; see tests/test_readme_asset_budget.py), but the rule stays: any asset path
 # with an encoded space must not be mistaken for a corpus count.
 _CORPUS_COUNT_CLAIM = re.compile(
-    r"(?<![\w%])\d{2,5}\+?\s*(?:indexed\s+|verified\s+)?"
-    r"(?:failure[-\s]?recovery\s+|failure\s+|debugging\s+)?lessons?\b"
+    # `[*_ \t]*` after the number and an optional lowercase adjective before the qualifier: both
+    # exist because of a measured miss. `393+ **indexed failure-recovery lessons**`
+    # (`docs/integrations/mcp-remote.md`) hid behind the `**`, and
+    # `426 evidence-rated failure lessons` (`.claude-plugin/marketplace.json`) behind the
+    # adjective — so neither was flagged while both were wrong (393 and 426 against a corpus of
+    # 481). The separator is `[ \t]`, never `\s`, so the filler cannot cross a line break and turn
+    # "123 files" on one line and "lessons" on another into a single claim.
+    r"(?<![\w%])\d{2,5}\+?[*_ \t]*(?:[a-z]{2,12}[- \t]){0,2}"
+    r"(?:indexed[ \t]+|verified[ \t]+)?"
+    r"(?:failure[-\s]?recovery[ \t]+|failure[ \t]+|debugging[ \t]+)?lessons?\b"
     r"|(?<![\w%])\d{2,5}\+?\s*(?:curated\s+|个)?\s*domains?\b"
     r"|(?<![\w%])\d{2,5}\s*条[^|\n]{0,12}(?:经验|课程)"
     r"|(?<![\w%])\d{2,5}\s*件[^|\n]{0,12}レッスン"

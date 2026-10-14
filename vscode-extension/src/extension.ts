@@ -63,7 +63,11 @@ class LessonTreeProvider implements vscode.TreeDataProvider<LessonItem> {
         const lessonsDir = path.join(this.repoRoot, 'lessons');
         this.lessons = [];
 
-        for (const subdir of ['core', 'contrib']) {
+        // The active lesson subdirectories, as `scripts/lesson_gate.py:48` defines them
+        // (`ACTIVE_LESSON_SUBDIRS`). `en` was missing here, so the whole English tree — 64 lessons
+        // — was invisible to this extension while the README advertised a browsable domain view.
+        // tests/test_vscode_extension_manifest.py fails if the two lists drift apart.
+        for (const subdir of ['core', 'contrib', 'en']) {
             const dir = path.join(lessonsDir, subdir);
             if (!fs.existsSync(dir)) continue;
 

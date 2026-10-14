@@ -50,4 +50,5 @@ npm run compile
 
 ## License
 
-MIT
+Apache-2.0 — the same license as the rest of this repository (see `LICENSE` at the root, which
+also matches `package.json` and `pyproject.toml`).

@@ -21,6 +21,14 @@
       {
         "command": "misakanet.list",
         "title": "List MisakaNet Lessons"
+      },
+      {
+        "command": "misakanet.openLesson",
+        "title": "Open MisakaNet Lesson"
+      },
+      {
+        "command": "misakanet.refresh",
+        "title": "Refresh MisakaNet Lessons"
       }
     ],
     "viewsContainers": {

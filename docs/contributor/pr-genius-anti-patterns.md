@@ -58,19 +58,27 @@ Common mistakes that cause PR rejection or delays. PR Genius checks for these au
 
 ## How PR Genius Checks These
 
-PR Genius automatically scans your PR for these anti-patterns and provides feedback. Run it before pushing:
+PR Genius runs **automatically on every pull request** — you do not run it locally and there is
+no local entry point. `.github/workflows/pr-genius-check.yml` runs the upstream check against your
+PR title and body, then `scripts/pr_genius_report.py` renders the enhanced report from
+`.pr-genius.yaml` (the rule set, size thresholds and severities) and posts it as a PR comment.
+
+Two things are worth running yourself, and both are in the repository:
+
+**DCO sign-off** — install the hook once and every commit is checked as you make it:
 
 ```bash
-python scripts/pr_genius.py coach --diff-file changes.diff
+pip install pre-commit
+pre-commit install --hook-type commit-msg
 ```
 
-The `coach` command checks:
-- DCO sign-off presence
-- Commit message format
-- PR size and scope
-- Test coverage changes
-- Secret scanning
-- Documentation updates
-- CI status
+**The test suite** — this is the gate that actually blocks:
+
+```bash
+pytest tests/          # Python 3.11+; the suite imports tomllib, stdlib only from 3.11
+```
+
+The PR Genius check itself is **advisory** (`continue-on-error: true`) — it reports, it never
+blocks a merge. Nothing below is a substitute for the two commands above.
 
 Fix issues before submitting to maintain a clean contribution history.
