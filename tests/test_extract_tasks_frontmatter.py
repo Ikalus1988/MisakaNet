@@ -157,7 +157,66 @@ def test_the_real_corpus_does_collide_and_the_check_can_see_it(et):
     collisions = et.duplicate_task_ids(tasks)
     for tid, sources in collisions:
         assert len(sources) > 1
-        assert all(s.startswith("lessons/") for s in sources)
+        # Compared after normalising the separator: this test is asserting *which lessons*
+        # collide, not re-testing `as_posix()`. What matters is that no source ever carries a
+        # backslash — that was the actual Windows failure, and it is asserted separately below.
+        assert all("\\" not in s for s in sources), sources
+        assert all(s.startswith("lessons/") for s in sources), sources
     # Every collision is an en/ lesson against an original — that is the shape worth reporting.
     for _tid, sources in collisions:
         assert any(s.startswith("lessons/en/") for s in sources), sources
+
+
+def test_a_written_source_never_contains_a_backslash(et):
+    """The generator's `source` is consumed by other platforms, so it must be POSIX.
+
+    `str(Path.relative_to(...))` yields `lessons\\en\\x.md` on Windows and `lessons/en/x.md`
+    everywhere else. Writing the former into the JSON produces a path that resolves nowhere else,
+    so a Windows regeneration silently changes the shape of the whole working set.
+    """
+    for path in sorted(et.LESSONS_DIR.rglob("*.md"))[:40]:
+        if path.name in ("index.md", "README.md"):
+            continue
+        task = et.lesson_to_task(path)
+        if task:
+            assert "\\" not in task["source"], task["source"]
+
+
+def test_the_source_field_is_built_portably(et):
+    """An AST guard, because the failure this prevents is invisible on Linux.
+
+    `str(path.relative_to(ROOT))` and `path.relative_to(ROOT).as_posix()` are byte-identical on
+    Linux, so a test that only inspects emitted values passes with either. The defect is only
+    observable where `os.sep` is a backslash — it was caught on `windows-latest` and could not be
+    reproduced locally at all. Asserting on the emitted string would therefore leave it one
+    platform away from coming back, so this reads the expression instead.
+
+    Same reasoning as `test_no_branch_of_run_verification_returns_something_other_than_a_pair`,
+    which reads its function's source for the same kind of reason.
+    """
+    import ast
+
+    source = (REPO / "scripts" / "extract_tasks.py").read_text(encoding="utf-8")
+    fn = next(n for n in ast.walk(ast.parse(source))
+              if isinstance(n, ast.FunctionDef) and n.name == "lesson_to_task")
+
+    offenders = []
+    for node in ast.walk(fn):
+        # `"source": <expr>` inside a dict literal. Note this is a `Dict` key/value pair, not a
+        # call's `keyword` — `ast.keyword` only exists for call arguments, and walking for that
+        # finds nothing here, which is how a first version of this guard passed on a file that
+        # had already been reverted to `str()`.
+        if not isinstance(node, ast.Dict):
+            continue
+        for key, value in zip(node.keys, node.values):
+            if not (isinstance(key, ast.Constant) and key.value == "source"):
+                continue
+            if (isinstance(value, ast.Call) and isinstance(value.func, ast.Name)
+                    and value.func.id == "str"):
+                offenders.append(key.lineno)
+
+    assert not offenders, (
+        f"lesson_to_task builds `source` with str() at line(s) {offenders}. On Windows that "
+        "writes 'lessons\\en\\x.md' into tasks/*.json, which resolves on no other platform. Use "
+        "path.relative_to(REPO_ROOT).as_posix()."
+    )

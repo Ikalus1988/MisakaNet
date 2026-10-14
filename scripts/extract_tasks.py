@@ -139,7 +139,12 @@ def lesson_to_task(path: Path) -> dict | None:
         "tags": tags,
         "problem": problem,
         "solution": solution,
-        "source": str(path.relative_to(REPO_ROOT)),
+        # `as_posix()`, not `str()`: on Windows `str()` yields `lessons\en\foo.md`, which then
+        # goes into the JSON verbatim. That string does not resolve on any other platform, so the
+        # same `tasks/` directory would carry a different `source` shape depending on who last
+        # regenerated it. Caught by `test_the_real_corpus_does_collide_and_the_check_can_see_it`,
+        # which failed on windows-latest and passed on Linux for exactly this reason.
+        "source": path.relative_to(REPO_ROOT).as_posix(),
         "test_cmd": test_cmd,
     }
 
