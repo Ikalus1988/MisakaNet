@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-10-14T12:07:28.013758+00:00",
+  "generated_at": "2026-10-14T17:21:08.602255+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
+      "title": "fix(intake): write tasks/ source as a POSIX path — Windows CI caught this",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3257",
+      "timestamp": "2026-10-14T16:40:40Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "fix: remove two orphan working sets, and repair the generator that made one look stale",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3256",
+      "timestamp": "2026-10-14T16:17:24Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "fix: three stale surfaces — a benchmark index, two counts, three dead commands",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3252",
+      "timestamp": "2026-10-14T13:24:37Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3251",
+      "timestamp": "2026-10-14T12:18:46Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
       "title": "chore(data): sync lessons.json + refresh feed",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/3242",
       "timestamp": "2026-10-14T05:18:00Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "docs(handoff): §90 — two premises of mine, each overturned by a measurement",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3240",
-      "timestamp": "2026-10-14T01:01:05Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore: update leaderboard snapshot",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3238",
-      "timestamp": "2026-10-14T00:43:10Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3237",
-      "timestamp": "2026-10-14T00:32:49Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3236",
-      "timestamp": "2026-10-13T19:31:47Z",
       "source": "github"
     },
     {
