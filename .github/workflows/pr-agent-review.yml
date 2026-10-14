@@ -35,7 +35,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: PR-Agent Review
-        uses: Codium-ai/pr-agent@1d01f24f455bb879c1d9c557ad7de3d72dcc7975  # v0.46.0
+        uses: Codium-ai/pr-agent@8e5a9295973b24af4b70cafd0b660a230811ef9e  # v0.47.0
         env:
           OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
           OPENAI_API_BASE: "https://api.minimax.chat/v1"
