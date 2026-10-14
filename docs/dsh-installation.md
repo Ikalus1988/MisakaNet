@@ -193,8 +193,8 @@ the **hosted** endpoint exposes, not a local server.
 
 | Form | What it installs | MCP tools you get | Needs |
 |---|---|---|---|
-| `dsh plugin --profile web add misakanet` (**npm**) | `SKILL.md`, `index.js` (wires the MCP row), `cordis.patch.yml` | the **hosted** endpoint's tools at `https://misakanet.org/mcp` — **7**, declared in `.codex-plugin/plugin.json` (`mcp.tools`); `misakanet_me_events` is one of them | network. **No Python, no local process** |
-| `dsh plugin --profile web add github:Ikalus1988/MisakaNet` (**git+**) | the above **plus the repository**, including `scripts/mcp_server.py` | the **local stdio** server (`python3 scripts/mcp_server.py`) — **10**: the same 7 hosted tools **plus** the 3 that only make sense on your machine, `misakanet_submit_usage`, `misakanet_usage_status`, `misakanet_memory_context` | **Python ≥ 3.10** and a checkout |
+| `dsh plugin --profile web add misakanet` (**npm**) | `SKILL.md`, `index.js` (wires the MCP row), `cordis.patch.yml` | the **hosted** endpoint's tools at `https://misakanet.org/mcp` — **8**, declared in `.codex-plugin/plugin.json` (`mcp.tools`); `misakanet_me_events` and `misakanet_me_inbox` are two of them | network. **No Python, no local process** |
+| `dsh plugin --profile web add github:Ikalus1988/MisakaNet` (**git+**) | the above **plus the repository**, including `scripts/mcp_server.py` | the **local stdio** server (`python3 scripts/mcp_server.py`) — **11**: the same 8 hosted tools **plus** the 3 that only make sense on your machine, `misakanet_submit_usage`, `misakanet_usage_status`, `misakanet_memory_context` | **Python ≥ 3.10** and a checkout |
 | `cp -r skills/misakanet ~/.dsh/skills/` (**manual skill**) | the skill only | none until you wire an MCP row yourself | — |
 
 Why: the npm bundle deliberately has **no `bin`** and does not ship the local server — `scripts/mcp_server.py`

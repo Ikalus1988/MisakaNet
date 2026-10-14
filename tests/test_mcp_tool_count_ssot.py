@@ -50,11 +50,11 @@ def test_the_documented_and_registered_sets_are_identical():
         "documented only": sorted(documented - registered),
         "registered only": sorted(registered - documented),
     }
-    assert len(documented) == 7, sorted(documented)
+    assert len(documented) == 8, sorted(documented)
 
 
 def test_the_heading_count_in_agents_matches_its_own_table():
-    """`### 3.2 工具清单（7 个）` — a number a human retypes. The reader parses the table instead, and
+    """`### 3.2 工具清单（8 个）` — a number a human retypes. The reader parses the table instead, and
     this makes the heading answerable to it."""
     text = (REPO / "AGENTS.md").read_text(encoding="utf-8")
     heading = re.search(r"(?m)^###\s+3\.2\s+工具清单（(\d+)\s*个）", text)
@@ -71,9 +71,9 @@ def test_the_docs_page_derives_the_same_set_from_the_stdio_list():
     tools, so the row no longer needs a `**plus**` leg — the reader accepts either form, because the
     derivation it can express is exactly what the surfaces must agree on."""
     stdio = set(NAME_RE.findall(_mcp_doc_row("**local stdio**")))
-    # 10 since 2026-09-30: the local stdio server gained `misakanet_me_events` (proxied to the
-    # hosted service) so the skill's reuse-evidence step works on either surface (D4=A, #2000).
-    assert len(stdio) == 10, sorted(stdio)
+    # 11: 10 on 2026-09-30 (`misakanet_me_events`, proxied so the skill's reuse-evidence step works
+    # on either surface, D4=A / #2000), plus `misakanet_me_inbox` from #2494.
+    assert len(stdio) == 11, sorted(stdio)
 
     hosted = _mcp_doc_row("**hosted**")
     derivation = hosted.split("**minus**")[1]
