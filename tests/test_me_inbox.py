@@ -24,6 +24,8 @@ import urllib.error
 from pathlib import Path
 from unittest.mock import patch
 
+import pytest  # the __main__ block below
+
 from misakanet.server.handlers.inbox import handle_me_inbox
 
 _URLOPEN = "misakanet.server.handlers.inbox._url_request.urlopen"
