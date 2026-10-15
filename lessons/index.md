@@ -102,6 +102,7 @@
 - [Erro de push rejeitado no Git: branches divergentes e como resolver](contrib/erro-push-git-rejeitado-divergente.md) | devops | "git", "push", "merge", "rebase", "divergente" | https://docs.github.com/en/get-started/using-git/dealing-with-non-fast-forward-errors
 - [Error de DCO sign-off en commits de Git en Windows](contrib/error-dco-signoff-windows.md) | devops | "git", "dco", "windows", "signoff", "commit" | https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/core/dco-auto-fix-workflow.md
 - [Banking-style escrow fee estimate has a per-provider rounding disparity](contrib/escrow-fee-rounding-per-provider.md) | development | "payments", "calculation", "rounding", "precision", "ledger" | 
+- [An event count is not a health signal: auto-remediation keyed on it restarts a healthy service](contrib/event-count-is-not-a-health-signal.md) | devops | "monitoring", "health-check", "auto-remediation", "false-positive", "watchdog", "backpressure", "blast-radius" | 
 - [FANUC Robot Alarm Code Reference Table](contrib/fanuc-alarm-code-reference.md) | fanuc | "fanuc", "alarm", "error-code", "troubleshooting", "reference" | bbs.gongkong.com/d/202401/915680
 - [FANUC Alarm Severity Levels — Handling and Color Codes](contrib/fanuc-alarm-severity-guide.md) | fanuc | "alarm", "severity", "warn", "pause", "stop", "servo", "abort", "system", "troubleshooting" | internal-training
 - [FANUC Auto Abort on Fault — Restart $SHELL_WRK Program](contrib/fanuc-auto-abort-on-fault-restart.md) | fanuc | "abort", "fault", "restart", "shell-wrk", "bg-logic", "error-severity", "auto-recovery" | robot-forum.com
@@ -502,6 +503,7 @@
 - [Regex Trap — Escaped Quotes in Source Code Cause Premature Non-Greedy Match Termination](en/regex-escaped-quotes-source-parsing.md) | development | "regex", "python", "source-parsing", "escape-sequences", "debug" | practical-experience
 - [Regex greedy matching — debugging unintended captures](en/regex-greedy-matching.md) | development | "regex", "debug", "greedy", "pattern" | uncledad96-glitch
 - [Restart long-lived earn loops after code fixes](en/restart-earn-loop-after-code-fix.md) | devops | "ops", "restart", "daemon", "agent", "deploy" | uncledad96-glitch
+- [Ruby Path Resolution and Docker Port Allocation Issues](en/ruby-require-relative-and-docker-port-allocation.md) | devops | "ruby", "docker", "path-resolution", "port-allocation", "troubleshooting", "shell-helpers" | 
 - [Separate scout vs worker modes in earn agents](en/separate-scout-and-worker-modes.md) | devops | "mode", "scout", "worker", "safety", "agent", "ops" | uncledad96-glitch
 - [Shell script debugging checklist for agent jobs](en/shell-script-debugging.md) | devops | "bash", "shell", "debug", "cron", "set-e", "agent" | uncledad96-glitch
 - [Timeout wrapper for runaway agent children](en/signal-timeout-wrapper.md) | devops | "ops", "agent", "shell", "reliability" | uncledad96-glitch

@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-10-14T21:49:33.031007+00:00",
+  "generated_at": "2026-10-15T09:36:47.452066+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3262",
-      "timestamp": "2026-10-14T17:29:48Z",
+      "title": "lesson: an event count is not a health signal — auto-remediation restarts a healthy service",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3280",
+      "timestamp": "2026-10-15T09:36:35Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(intake): write tasks/ source as a POSIX path — Windows CI caught this",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3257",
-      "timestamp": "2026-10-14T16:40:40Z",
+      "title": "docs(handoff): §92.7 — a quoted closing keyword is read as a bounty claim",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3279",
+      "timestamp": "2026-10-15T09:22:39Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix: remove two orphan working sets, and repair the generator that made one look stale",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3256",
-      "timestamp": "2026-10-14T16:17:24Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "fix: three stale surfaces — a benchmark index, two counts, three dead commands",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3252",
-      "timestamp": "2026-10-14T13:24:37Z",
+      "title": "docs(handoff): §92 — four breaks in the intake chain, one of them silent for days",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3278",
+      "timestamp": "2026-10-15T09:09:03Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
       "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3251",
-      "timestamp": "2026-10-14T12:18:46Z",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3277",
+      "timestamp": "2026-10-15T08:59:41Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "lesson: Ruby require_relative + docker port already allocated (rebase of #2921)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3258",
+      "timestamp": "2026-10-15T08:51:57Z",
       "source": "github"
     },
     {
