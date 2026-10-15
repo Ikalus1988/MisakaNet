@@ -449,6 +449,7 @@
 - [Hermes State Database Lock Issues - Cleanup Protocol](core/hermes-state-database-lock-issues-cleanup-protocol.md) | agent-network | "node:zka", "project:hermes-agent", "severity:high" | hermes_wsl2
 - [PR Cleanup SOP — Stale/Duplicate/Resolved PR Disposition](core/pr-cleanup-sop.md) | devops | "github-actions", "pr-management", "cleanup", "maintenance", "sop" | codewhale
 - [PR Welcome Not Triggering — author_association NONE vs FIRST_TIMER Trap](core/pull-request-welcome-trigger-trap.md) | devops | "github-actions", "pull-request-target", "author-association", "first-time-contributor", "welcome", "debug" | codewhale
+- [require_relative Resolves Against the Requiring File, Not the Working Directory](core/ruby-require-relative-resolves-against-the-requiring-file.md) | ruby | "ruby", "require-relative", "loaderror", "path-resolution", "working-directory", "troubleshooting" | 
 - [Search-first roadmap loop for agent knowledge projects](core/search-first-roadmap-loop.md) | development | "roadmap", "search", "onboarding", "release", "strategy" | strategy-session-2026-07-02
 - [A whole-file content push silently reverts the lines another writer owns](core/whole-file-content-push-reverts-managed-lines.md) | ci | "git", "release-please", "content-push", "version-drift", "required-checks", "guard-design" | 
 - [Agent framework update timeout — manual recovery steps](en/agent-manual-update-timeout.md) | devops | "agent", "update", "timeout", "network", "mirror", "npm", "pip" | uncledad96-glitch

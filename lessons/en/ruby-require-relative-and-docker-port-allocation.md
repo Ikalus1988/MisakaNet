@@ -1,7 +1,7 @@
 ---
 title: Ruby Path Resolution and Docker Port Allocation Issues
 domain: devops
-status: published
+status: superseded
 evidence_level: E1
 tags: [ruby, docker, path-resolution, port-allocation, troubleshooting, shell-helpers]
 summary_plain: Solutions for Ruby require_relative path errors and Docker port allocation conflicts
@@ -11,6 +11,18 @@ provenance:
   issue: "#2465 + #2804"
   source: "MCP intake, contributor-reported via PR #2921 claiming bounty #2838"
 ---
+
+> **CORRECTION (this lesson is `status: superseded`; do not follow its Ruby steps).**
+> The Root Cause line for Issue 1 below is correct — `require_relative` resolves against the
+> file that contains the call — but the Issue 1 *Solution* (Steps 1–3: `pwd`, `cd` into the
+> script's directory, and the `File.expand_path(File.dirname(__FILE__), …)` rewrite) is
+> wrong and cannot repair the failure: a `cd` does not change a file-anchored lookup, and
+> the `File.expand_path` form is semantically what `require_relative` already does. The
+> corrected diagnosis and fix live in
+> `lessons/core/ruby-require-relative-resolves-against-the-requiring-file.md`, which
+> supersedes this lesson. The Docker port half of this lesson is unaffected and is covered
+> by `lessons/contrib/port-already-allocated-find-and-free-the-holder.md`. This file is
+> kept as-is for history; lessons are immutable once merged.
 
 ## Problem
 
