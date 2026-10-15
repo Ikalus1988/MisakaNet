@@ -32,6 +32,7 @@
       "misakanet_submit_intake",
       "misakanet_write_lesson",
       "misakanet_preflight",
+      "misakanet_me_inbox",
       "misakanet_me_events"
     ],
     "local": {
@@ -47,6 +48,7 @@
         "misakanet_submit_intake",
         "misakanet_write_lesson",
         "misakanet_preflight",
+        "misakanet_me_inbox",
         "misakanet_me_events",
         "misakanet_submit_usage",
         "misakanet_usage_status",

@@ -8,6 +8,7 @@ from ._config import get_server_version
 from .handlers import (
     handle_get_lesson,
     handle_me_events,
+    handle_me_inbox,
     handle_memory_context,
     handle_preflight,
     handle_register,
@@ -36,6 +37,7 @@ _HANDLERS = {
     # steps (D4=A, intake #2000). A name in tools/list with no row here answers "Unknown tool" —
     # tests/test_mcp_capability_parity.py pins the two lists against each other.
     "misakanet_me_events": handle_me_events,
+    "misakanet_me_inbox": handle_me_inbox,
 }
 
 
