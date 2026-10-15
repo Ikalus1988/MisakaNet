@@ -7230,9 +7230,14 @@ async function refreshContributorLeaderboard(env) {
 
   // The bench board is a different ranking (`scripts/gen_leaderboard.py` → `data/`), so it stays
   // where it is; only its #1 is carried here, as before.
+  //
+  // `main`, not `data`: measured 2026-10-15, `git ls-tree origin/data -- data/bench_leaderboard.json`
+  // is empty while the file is tracked on `main`. The `data` branch carries the lesson index and the
+  // badges, not this file, and a wrong ref here would 404 on every run — inside a `catch` that only
+  // logs, so the bench half of the notification would have gone quietly dead.
   let benchTop = null;
   try {
-    const bench = await fetchFromGitHub(token, "bench_leaderboard.json", "data");
+    const bench = await fetchFromGitHub(token, "data/bench_leaderboard.json", "main");
     const row = bench && bench.leaderboard && bench.leaderboard[0];
     if (row && row.agent) benchTop = { top_agent: row.agent, top_score: row.passed };
   } catch (_) {

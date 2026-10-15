@@ -31,7 +31,7 @@
 | `lesson_reuse_leaderboard.json` | 手动运行的基准产物（数据停在 2026-07）| 无 | 手动 |
 | `benchmark_tasks.json` | **手写输入**（不是生成物）| `tests/test_benchmark_tasks.py` | 手动 |
 | `regression_queries.json` | **手写输入**；`archive/dead/scripts/verify_regression_queries.py` 是旧写入者 | `workers/query-alias-expansion.test.mjs` | 手动 |
-| `bench_leaderboard.json` | `scripts/gen_leaderboard.py`（**手动运行**，唯一的生成者）| `workers/register-proxy-sw.js`（每日 cron `fetchFromGitHub(..., "bench_leaderboard.json", "data")`，只取榜首做变化检测）| 手动 —— 随 bench 重跑；原 `leaderboard-watch.yml` 已于 2026-10-15 删除（#1919），不再是 push 到 main 的产物 |
+| `bench_leaderboard.json` | `scripts/gen_leaderboard.py`（**手动运行**，唯一的生成者）| `workers/register-proxy-sw.js`（每日 cron `fetchFromGitHub(..., "data/bench_leaderboard.json", "main")`，只取榜首做变化检测）| 手动 —— 随 bench 重跑；原 `leaderboard-watch.yml` 已于 2026-10-15 删除（#1919），不再是 push 到 main 的产物 |
 | `leaderboard_meta.json` | `scripts/gen_leaderboard.py`（**手动运行**，唯一的生成者）| `scripts/gen_leaderboard.py`（下一次运行时 `load_meta()` 读它取上次榜首）| 手动 —— 随 `bench_leaderboard.json` 一起重算 |
 | `okf/lessons.jsonl` | `scripts/export_okf.py` | 外部 OKF 消费者 | 手动 |
 | `external_assets.json` | **手写维护**（清单；SRI 哈希随依赖版本一起手改）| `tests/test_external_asset_integrity.py`（离线：版本/URL/哈希/`integrity` 属性四者是否同一条事实）、`scripts/check_external_asset_integrity.py`（在线：CDN 实际返回的字节是否还是钉住的那份）| 清单手动；`external-asset-integrity.yml` 每周三 07:23 UTC |
