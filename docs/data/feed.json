@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-10-15T08:52:09.286851+00:00",
+  "generated_at": "2026-10-15T09:36:47.452066+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "lesson: Ruby require_relative + docker port already allocated (rebase of #2921)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3258",
-      "timestamp": "2026-10-15T08:51:57Z",
+      "title": "lesson: an event count is not a health signal — auto-remediation restarts a healthy service",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3280",
+      "timestamp": "2026-10-15T09:36:35Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "docs(handoff): §92.7 — a quoted closing keyword is read as a bounty claim",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3279",
+      "timestamp": "2026-10-15T09:22:39Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "docs(handoff): §92 — four breaks in the intake chain, one of them silent for days",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3278",
+      "timestamp": "2026-10-15T09:09:03Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
       "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3275",
-      "timestamp": "2026-10-15T05:06:55Z",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3277",
+      "timestamp": "2026-10-15T08:59:41Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(handoff): redact the home path §91.6 quoted to report a broken cron path",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3274",
-      "timestamp": "2026-10-15T03:26:27Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "docs(handoff): §91 — a reboot cost one commit, and the two red counts it hid",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3272",
-      "timestamp": "2026-10-15T03:11:36Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore: update leaderboard snapshot",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3271",
-      "timestamp": "2026-10-15T03:10:25Z",
+      "title": "lesson: Ruby require_relative + docker port already allocated (rebase of #2921)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3258",
+      "timestamp": "2026-10-15T08:51:57Z",
       "source": "github"
     },
     {
