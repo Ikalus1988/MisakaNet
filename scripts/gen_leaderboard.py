@@ -6,6 +6,11 @@
   2. Reputation Card 文本摘要（每个 Agent 一张）
   3. data/leaderboard_meta.json — 记录当前榜首，用于 #1 变化检测
 
+天梯榜是本仓库**唯一**剩下的排行榜产物，生成者是这个脚本的**手动运行**：贡献者排行榜
+（commit 作者榜）已于 2026-10-15 连同它的 `leaderboard-watch.yml` 一起删除，改由 Worker 的
+每日 cron 计算、状态存在 D1，只能从 `GET /api/leaderboard/state` 读（#1919）。Worker 仍会
+从 `data` 分支读 bench_leaderboard.json，但只取它的榜首做变化检测。
+
 用法:
     python3 scripts/gen_leaderboard.py               # 全量生成
     python3 scripts/gen_leaderboard.py --dry-run      # 只预览
@@ -263,7 +268,8 @@ def main():
         previous_top_score = meta.get("top_score", 0)
 
         if previous_top_agent and previous_top_agent != current_top["agent"]:
-            # #1 changed — print notification for caller (leaderboard_watch.py)
+            # #1 changed — 打印通知；`leaderboard_watch.py`（已于 2026-10-15 随其 workflow 删除，#1919）
+            # 曾消费这一行，现在 Worker 的 cron 自行比对 bench 榜首，这里只提醒手动运行的人
             print(f"\n🔔 Leaderboard #1 changed: {previous_top_agent} → {current_top['agent']}")
 
         meta["top_agent"] = current_top["agent"]

@@ -66,7 +66,6 @@ MAIN_PUSHERS = {
 CONVERTED = (
     "update-lessons.yml",
     "build-feed.yml",
-    "leaderboard-watch.yml",
     "benchmark-workers-ai.yml",
     "d1-bootstrap.yml",
     "release-please.yml",

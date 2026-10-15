@@ -27,16 +27,17 @@ The project publishes **two** rankings, and neither of them answers "is this a p
 | board | what it ranks | where it comes from |
 |---|---|---|
 | **Reputation points** (this document's formula) | contributors in the `data/contributor-points.json` ledger, weighted by *reuse* — a lesson somebody actually used | `/api/insights/reputation-leaderboard`, rendered on `docs/insights/reputation-leaderboard.html` |
-| **Contributor snapshot** (`data/leaderboard.json`, in-repo only — **not published**) | **commit authors on `main`**, scored by commit recency (30-day half-life) × median PR size | `scripts/leaderboard_watch.py` |
+| **Contributor snapshot** (no file of its own — **not published**) | **commit authors on `main`**, scored by commit recency (30-day half-life) × median PR size | the Worker, on a daily cron (`workers/lib/contributor-leaderboard.js`); readable as JSON at `GET /api/leaderboard/state` |
 
 The second one is not the formula above, and it is worth knowing why its rows are what they are:
 
-> **It is not a published board.** `data/leaderboard.json` is written into this repository and nothing
-> serves it — `https://misakanet.org/data/leaderboard.json` returns **404**, no page fetches it, and no
-> code in the repository reads it (measured 2026-10-11; #1919 measured the same on 2026-09-20).
-> Read it from the repository, not from the site; the only board a reader can actually load is the
-> reputation-points one above. The attribution notes below still apply, because they are the reason its
-> rows must not be read as people.
+> **It is not a published board.** It was a file in this repository that nothing served: no page
+> fetched it, and no code in the repository read it (measured 2026-10-11; #1919 measured the same on
+> 2026-09-20). That file and the workflow that wrote it were deleted on 2026-10-15 (#1919). The same
+> ranking is computed by the Worker on a daily cron and kept as state in D1, exposed read-only at
+> `GET /api/leaderboard/state`. **There is still no page for it** — the only board a reader can load on
+> the site is the reputation-points one above. The attribution notes below still apply, because they
+> are the reason its rows must not be read as people.
 
 * contributors are taken from *commit authors* — `author.user.login` when GitHub can resolve one, and
   otherwise **the raw git author name**. So a board row can be an account, an identity that has no
@@ -48,8 +49,9 @@ The second one is not the formula above, and it is worth knowing why its rows ar
   therefore **not** evidence of a human;
 * the only filter was a hardcoded list, which had missed `github-actions[bot]` — the most active
   automation identity in the repository — so it sat at **rank #2** on this board until
-  2026-09-25. The filter is now a rule (`[bot]` suffix, plus this repository's own identities, checked
-  against the workflows by `tests/test_leaderboard_exclusions.py`).
+  2026-09-25. The filter is now a rule (`[bot]` suffix, plus this repository's own identities) in
+  `workers/lib/contributor-leaderboard.js`, and `workers/contributor-leaderboard.test.mjs` checks it
+  against every `git config user.name` the workflows actually set.
 
 There is one genuine self-declaration in the system, and it is about *nodes* rather than accounts: a
 registered MCP node reports an `agent_type` (`claude-code`, `codex`, …). It is **not verified** — agents

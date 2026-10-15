@@ -86,14 +86,13 @@
 | `misakanet-setup-publish.yml` | Publish @misaka-net/misakanet-setup | tag push, 手动 |  |
 | `publish-mcp-registry.yml` | Publish to MCP Registry（等 PyPI 落地后发布）| 手动 |  |
 
-## 社区/机器人（15）
+## 社区/机器人（14）
 
 | workflow | 用途 | 触发 | 定时 |
 |---|---|---|---|
 | `cite-lesson.yml` | 知识引用追踪 | issues, 手动 |  |
 | `claim-enforcer.yml` | Claim Window Enforcer | 定时, 手动 | `0 */6 * * *` |
 | `issue-quality-gate.yml` | Issue Quality Gate | issues |  |
-| `leaderboard-watch.yml` | Leaderboard Watch | push, 手动 |  |
 | `lesson-notify.yml` | 新 Lesson 通知 | issues |  |
 | `newbie-welcome.yml` | Newbie Welcome | 评论 |  |
 | `pr-merged-thank.yml` | Thank Merged PR Contributor | PR(目标) |  |
@@ -162,6 +161,10 @@
 - 53 个文件中有部分是**一次性/演练**性质（如 `d1-bootstrap.yml`、
   `intake-pipeline-test.yml`、`example-capture.yml`——后者注释自述不自动发布），
   日常开发主要关心「质量门禁」组。
+- **贡献者排行榜不再由 workflow 维护**，因此上表没有它：`leaderboard-watch.yml` 已于 2026-10-15
+  删除（#1919），同一份计算搬进了 Worker 的每日 cron（`workers/wrangler.toml` 的 `17 3 * * *`），
+  状态存 D1、只读入口是 `GET /api/leaderboard/state`；#1 换人时 Worker 自己开带 `leaderboard`、
+  `automated` 标签的 issue。天梯榜是另一张榜，仍由手动脚本产出（见 `data/README.md`）。
 - 维护：`.github/workflows/` 增删后手工更新本表；本页为 2026-09-05 快照
   （53 个 workflow，触发条件由脚本读取 `on:` 提取）。
 

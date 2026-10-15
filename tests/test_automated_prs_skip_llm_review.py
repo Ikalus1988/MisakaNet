@@ -72,12 +72,6 @@ INVALID_GUARDS = (
     f"!startsWith(github.event.head_ref, '{AUTOMATION_BRANCH_PREFIX}')",
     f"!startsWith(github.ref_name, '{AUTOMATION_BRANCH_PREFIX}')",
 )
-#: The publishing cadence for the leaderboard snapshot, decided by the maintainer on 2026-10-02: the
-#: recompute runs on every push to `main`, but a standings page does not need to be published more than
-#: once a day. Measured the same day, before the decision: 0 of the last 42 gaps between snapshots were
-#: 24 h or longer, so this bound binds on nearly every push. Change this constant and the workflow
-#: together — the failure message says so.
-SNAPSHOT_CADENCE_SECONDS = 86400
 
 
 # Known limits of the rule below, each one **measured** by a review rather than assumed — and the first
@@ -191,20 +185,3 @@ def test_the_required_audit_check_still_runs_on_those_branches():
         "the `audit` job now has a condition, so a `bot/*` pull request would never see its required "
         "check report — the extra work is what should skip, not the job")
     assert _guarded(job), "the model-scoring step no longer skips the automation's branches"
-
-
-def test_the_snapshot_lands_at_the_cadence_that_was_decided():
-    """The recompute can run on every push; the *pull request* cannot be opened that often."""
-    text = (WORKFLOWS / "leaderboard-watch.yml").read_text(encoding="utf-8")
-    land = text.split("Land the snapshot", 1)[1]
-    assert "RATE_LIMIT_SECONDS=" in land, "the landing step has no rate limit"
-    seconds = int(re.search(r"RATE_LIMIT_SECONDS=(\d+)", land).group(1))
-    assert seconds == SNAPSHOT_CADENCE_SECONDS, (
-        f"the snapshot lands every {seconds}s but the agreed cadence is {SNAPSHOT_CADENCE_SECONDS}s "
-        f"({SNAPSHOT_CADENCE_SECONDS // 3600}h). If the cadence really changed, update both this constant "
-        "and the workflow.")
-    assert "git log -1 --format=%ct -- data/leaderboard.json" in land, (
-        "the rate limit must read when the snapshot last landed, from git history rather than a file the "
-        "job itself rewrites")
-    assert "exit 0" in land.split("RATE_LIMIT_SECONDS=")[1].split("python3 scripts/ci/land_change.py")[0], (
-        "exceeding the rate limit has to leave the job green — recomputing and not landing is normal")

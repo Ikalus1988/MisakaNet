@@ -17,6 +17,10 @@ const {
 const _handlers = await import("./lib/handlers.js");
 const { GITHUB_API, REPO, PUBLIC_DATA_BASE } = _handlers;
 
+// The contributor ranking and its exclusion rule (#1919). Pure — no env, no clock, no network.
+const _leaderboard = await import("./lib/contributor-leaderboard.js");
+const { scoreBoard, boardMoved, shouldNotifyTopChange } = _leaderboard;
+
 // 30s meant the corpus cache expired every half minute of traffic and each expiry
 // cost a KV write of the whole lesson list. The corpus changes at most daily (the
 // daily sync), so five minutes is both fresher than the data and ~10x cheaper in
@@ -7068,6 +7072,197 @@ function classifyRequest(request, url) {
 
 // ── end classification ──
 
+// ── Contributor leaderboard: computed and stored here, not in git (issue #1919) ────
+//
+// The scoring, the exclusion rule and the reasoning live in
+// `workers/lib/contributor-leaderboard.js` — read its header for why this is in the worker and
+// what it replaced. This block is only the I/O: fetch, compare against stored state, persist,
+// notify.
+//
+// The state is one `kv_store` row (D1, KV as fallback), so there is no new table and no new
+// endpoint with a credential to leak. `GET /api/leaderboard/state` reads it; nothing writes it
+// over HTTP.
+const LEADERBOARD_STATE_KEY = "contributor_leaderboard";
+
+// `17 3 * * *` — daily, 03:17 UTC. The minute is arbitrary and kept from PR #2496's proposal.
+const LEADERBOARD_CRON = "17 3 * * *";
+
+/** One page of the default branch's commit history, via GraphQL. */
+async function fetchDefaultBranchCommits({ token, owner, repo, cursor }) {
+  const after = cursor ? `, after: ${JSON.stringify(cursor)}` : "";
+  const query = `query {
+  repository(owner: ${JSON.stringify(owner)}, name: ${JSON.stringify(repo)}) {
+    defaultBranchRef {
+      target {
+        ... on Commit {
+          history(first: 100${after}) {
+            pageInfo { hasNextPage endCursor }
+            nodes { oid committedDate author { user { login } name } }
+          }
+        }
+      }
+    }
+  }
+}`;
+  const resp = await fetchWithTimeout(GITHUB_API + "/graphql", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+      "User-Agent": "MisakaNet-Worker",
+    },
+    body: JSON.stringify({ query }),
+  });
+  if (!resp.ok) throw new Error(`GitHub GraphQL HTTP ${resp.status}`);
+  const data = await resp.json();
+  if (data.errors) throw new Error(`GitHub GraphQL error: ${JSON.stringify(data.errors).slice(0, 200)}`);
+  const history = data?.data?.repository?.defaultBranchRef?.target?.history;
+  if (!history) throw new Error("GitHub GraphQL response had no commit history");
+  return { nodes: history.nodes || [], pageInfo: history.pageInfo || {} };
+}
+
+/** Merged pull requests, via REST, for the per-author median PR size. Capped at `maxPages`×100. */
+async function fetchMergedPulls({ token, owner, repo, maxPages = 10 }) {
+  const merged = [];
+  for (let page = 1; page <= maxPages; page++) {
+    const resp = await fetchWithTimeout(
+      `${GITHUB_API}/repos/${owner}/${repo}/pulls?state=closed&sort=updated&direction=desc&per_page=100&page=${page}`,
+      { headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github.v3+json", "User-Agent": "MisakaNet-Worker" } },
+    );
+    if (!resp.ok) throw new Error(`GitHub REST HTTP ${resp.status} listing pull requests`);
+    const batch = await resp.json();
+    if (!Array.isArray(batch) || batch.length === 0) break;
+    merged.push(...batch.filter((pr) => pr && pr.merged_at));
+    if (batch.length < 100) break;
+  }
+  return merged;
+}
+
+/** The stored board, or `{ board: null }` when nothing has been recorded yet. */
+async function readLeaderboardState(env) {
+  const raw = await storeGet(env, LEADERBOARD_STATE_KEY, "json");
+  if (!raw || typeof raw !== "object") return { board: null };
+  return {
+    board: Array.isArray(raw.board) ? raw.board : null,
+    bench: raw.bench || null,
+    updated_at: raw.updated_at || null,
+  };
+}
+
+/** How many rows differ from `previous` by login or by more than 0.5 points. */
+function countChangedRows(previous, current) {
+  if (!Array.isArray(previous)) return current.length;
+  const before = new Map(previous.map((r) => [String(r && r.login), Number(r && r.score) || 0]));
+  let changed = 0;
+  for (const row of current) {
+    const was = before.get(String(row.login));
+    if (was === undefined || Math.abs(was - row.score) > 0.5) changed++;
+  }
+  return changed + Math.max(0, previous.length - current.length);
+}
+
+async function openLeaderboardIssue(env, board, previous, now) {
+  const token = env.REGISTER_TOKEN;
+  if (!token) return { ok: false, error: "REGISTER_TOKEN not configured" };
+  const top = board[0];
+  const oldTop = previous && previous[0] ? previous[0] : null;
+  const title = oldTop
+    ? `🏆 Leaderboard Update: ${top.login} is now #1!`
+    : `🏆 First Leaderboard: ${top.login} takes #1!`;
+
+  const lines = [oldTop ? "## Leaderboard Change Detected" : "## First Leaderboard Snapshot", ""];
+  if (oldTop) {
+    lines.push("| | Previous | Current |", "|---|---|---|");
+    lines.push(`| **#1** | ${oldTop.login} (${oldTop.score}) | **${top.login} (${top.score})** |`);
+    // The Python labelled this "spots changed" while passing it the whole roster, so it printed the
+    // number of contributors. It is the changed count here, which is what the label says.
+    lines.push(`| **Changed** | ${countChangedRows(previous, board)} spots changed |`);
+    lines.push("");
+  }
+  lines.push("### Full Leaderboard", "", "| Rank | Contributor | Score |", "|------|------------|-------|");
+  board.slice(0, 20).forEach((entry, i) => lines.push(`| ${i + 1} | ${entry.login} | ${entry.score} |`));
+  lines.push("", "_Auto-generated by the MisakaNet worker's daily cron. State: `GET /api/leaderboard/state`._");
+  lines.push(`_Timestamp: ${new Date(now).toISOString().replace(/\.\d+Z$/, "Z")}_`);
+
+  const resp = await fetchWithTimeout(`${GITHUB_API}/repos/${REPO}/issues`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+      Accept: "application/vnd.github.v3+json",
+      "User-Agent": "MisakaNet-Worker",
+    },
+    body: JSON.stringify({ title, body: lines.join("\n"), labels: ["leaderboard", "automated"] }),
+  });
+  const data = await resp.json().catch(() => ({}));
+  if (!resp.ok) return { ok: false, error: `issue creation failed: ${data.message || resp.status}` };
+  return { ok: true, issue: data.number, url: data.html_url };
+}
+
+/**
+ * Recompute the board, reconcile it with the stored state, and record the result.
+ *
+ * Returns a summary rather than throwing: the caller is a cron, and a failure has to be visible in
+ * the log without taking the other cron jobs down with it.
+ */
+async function refreshContributorLeaderboard(env) {
+  const token = env.REGISTER_TOKEN;
+  if (!token) return { ok: false, error: "REGISTER_TOKEN not configured" };
+
+  const [owner, repo] = String(REPO).split("/");
+  const now = Date.now();
+
+  const commits = [];
+  let cursor = null;
+  for (let page = 0; page < 20; page++) {
+    const batch = await fetchDefaultBranchCommits({ token, owner, repo, cursor });
+    commits.push(...batch.nodes);
+    if (!batch.pageInfo.hasNextPage) break;
+    cursor = batch.pageInfo.endCursor;
+  }
+
+  const mergedPrs = await fetchMergedPulls({ token, owner, repo });
+  const board = scoreBoard(commits, mergedPrs, now);
+  if (!board.length) return { ok: false, error: "computed an empty leaderboard" };
+
+  const stored = await readLeaderboardState(env);
+  const previous = stored.board;
+
+  // The bench board is a different ranking (`scripts/gen_leaderboard.py` → `data/`), so it stays
+  // where it is; only its #1 is carried here, as before.
+  let benchTop = null;
+  try {
+    const bench = await fetchFromGitHub(token, "bench_leaderboard.json", "data");
+    const row = bench && bench.leaderboard && bench.leaderboard[0];
+    if (row && row.agent) benchTop = { top_agent: row.agent, top_score: row.passed };
+  } catch (_) {
+    // Absent or unreadable bench data is not a reason to skip the contributor board.
+  }
+
+  // `boardMoved` already answers "no state yet" (it treats a missing previous board as moved), so
+  // there is no separate first-run branch here. The write is conditional for the same reason the
+  // Python's `git diff --cached --quiet` guard was: an unchanged day must not touch the store, or
+  // `updated_at` alone would count as a change and the daily cron would never settle.
+  const benchChanged = !!(benchTop && benchTop.top_agent && benchTop.top_agent !== stored.bench?.top_agent);
+  const moved = boardMoved(previous, board);
+
+  let storedOk = true;
+  if (moved || benchChanged) {
+    storedOk = await storePut(env, LEADERBOARD_STATE_KEY, JSON.stringify({
+      board,
+      bench: benchTop,
+      updated_at: new Date(now).toISOString(),
+    }));
+  }
+
+  let notified = null;
+  if (shouldNotifyTopChange(previous, board) || benchChanged) {
+    notified = await openLeaderboardIssue(env, board, previous, now).catch((e) => ({ ok: false, error: e.message }));
+  }
+
+  return { ok: true, entries: board.length, top: board[0], moved, benchChanged, stored: storedOk, notified };
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
@@ -7841,6 +8036,28 @@ export default {
       return handleReputationLeaderboard(request, env);
     }
 
+    // GET /api/leaderboard/state — the contributor ranking this worker computes on its own cron.
+    //
+    // Read-only **by construction**: the handler is registered for GET only, so a POST on this path
+    // falls through to the 404 below rather than reaching any write. The state is written by the
+    // cron through `storePut`, never over HTTP — the design point of #1919 is that this row is a
+    // worker's own bookkeeping, so there is no public write surface to protect. An earlier version
+    // of this change (PR #2496) proposed a POST endpoint here with no credential check; it was
+    // rejected in review and this route exists so the state is readable without adding one.
+    if (request.method === "GET" && url.pathname === "/api/leaderboard/state") {
+      try {
+        const state = await readLeaderboardState(env);
+        return jsonResponse({
+          source: "worker-cron",
+          cron: LEADERBOARD_CRON,
+          available: !!state.board,
+          board: state.board,
+          bench: state.bench,
+          updated_at: state.updated_at || null,
+        });
+      } catch (e) { return errorResponse("api handler failed", "internal_error", 502, e); }
+    }
+
     // GET /api/insights/demand-board — public aggregate view of intake clusters
     if (request.method === "GET" && url.pathname === "/api/insights/demand-board") {
       if (!env.MISAKANET_KV) return jsonResponse({ success: true, available: false, summary: [] });
@@ -8356,6 +8573,18 @@ async function getCode() {
       ctx.waitUntil(refreshSearchIndex(env).then(r =>
         console.log("[bm25-index]", JSON.stringify(r))
       ).catch(e => console.error("[bm25-index] failed", e.message)));
+    }
+
+    // Contributor leaderboard: recompute, reconcile with the stored state, notify on a change of #1.
+    //
+    // Gated on the cron expression, not on the interval: this worker runs every 15 minutes and a
+    // ranking walk of 2,000 commits plus up to 1,000 pull requests is not something to do 96 times
+    // a day. The state it compares against used to be a commit on `main` — 1,026 of them, 25% of
+    // the repository's history (#1919) — and the daily cadence is the fix for that too.
+    if (controller.cron === LEADERBOARD_CRON && hasDurableStore(env)) {
+      ctx.waitUntil(refreshContributorLeaderboard(env).then(r =>
+        console.log("[leaderboard]", JSON.stringify(r))
+      ).catch(e => console.error("[leaderboard] failed", e.message)));
     }
   },
 };

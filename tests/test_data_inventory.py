@@ -74,7 +74,7 @@ def table_rows(doc_text: str) -> dict[str, str] | None:
 def _resolves(token: str, repo: Path) -> bool:
     """A reference resolves as written, or as a workflow/action basename.
 
-    `leaderboard-watch.yml` is how a person writes it; the file is `.github/workflows/leaderboard-watch.yml`.
+    `build-feed.yml` is how a person writes it; the file is `.github/workflows/build-feed.yml`.
     The rule is about the claim being true, not about the path spelling.
     """
     if (repo / token).exists():
@@ -203,13 +203,15 @@ def test_the_files_this_issue_was_about_are_all_described():
     # `counter.json` was in this list until 2026-09-28: the file, its mirror workflow and the
     # row describing it were deleted together (a second copy of a number that is read to predict
     # the next registrant's id — a stale one is worse than none, #1820).
-    for name in ("lessons.json", "leaderboard.json", "quality_scores.json",
+    # `leaderboard.json` left this list on 2026-10-15 with its producer: the ranking
+    # moved into the worker's D1 state (#1919), so the file had no writer and no reader.
+    for name in ("lessons.json", "quality_scores.json",
                  "okf/lessons.jsonl"):
         assert name in rows, f"{name} lost its row"
         assert rows[name].count("|") >= 5, f"{name}'s row lost its columns: {rows[name]!r}"
 
 
-@pytest.mark.parametrize("name", ["lessons.json", "leaderboard.json", "domains.json"])
+@pytest.mark.parametrize("name", ["lessons.json", "domains.json"])
 def test_the_consumer_column_is_not_empty(name):
     row = table_rows(README.read_text(encoding="utf-8"))[name]
     consumer = row.split("|")[3]

@@ -352,7 +352,7 @@ def test_the_gate_sits_on_the_comment_branch_and_not_on_the_pull_request_branch(
         (pull_request_context(draft=True), False, "a draft"),
         (pull_request_context(labels=["docs-only"]), False, "a docs-only pull request"),
         (pull_request_context(labels=["bug"]), True, "a pull request with an unrelated label"),
-        (pull_request_context(head_ref="bot/leaderboard-watch"), False, "an automation branch"),
+        (pull_request_context(head_ref="bot/build-feed"), False, "an automation branch"),
         (pull_request_context(title="chore(main): release 2.46.0"), False, "a release pull request"),
     )
     for context, expected, label in kept:
