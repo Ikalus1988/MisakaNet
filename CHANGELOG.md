@@ -7,6 +7,51 @@ All notable changes to the Misaka Network project are documented here.
 
 ---
 
+## [2.43.0](https://github.com/Ikalus1988/MisakaNet/compare/v2.42.3...v2.43.0) (2026-10-15)
+
+
+### Features
+
+* **bench:** measure whether a relevance floor could separate [#2790](https://github.com/Ikalus1988/MisakaNet/issues/2790)'s two bands ([#3153](https://github.com/Ikalus1988/MisakaNet/issues/3153)) ([6e4fe3f](https://github.com/Ikalus1988/MisakaNet/commit/6e4fe3f7e71f30ddeab4764d7e2b7f1d6d3492ed))
+* **docs:** land the backlog's own measures, re-check the rest, and make the weekly ritual a command ([#3287](https://github.com/Ikalus1988/MisakaNet/issues/3287)) ([d4c397e](https://github.com/Ikalus1988/MisakaNet/commit/d4c397ec2cd4a286a1d348355b74e8819709d37f))
+* **domains:** add windows / dsh / android, and require reserved slots to say why ([#3190](https://github.com/Ikalus1988/MisakaNet/issues/3190)) ([4717861](https://github.com/Ikalus1988/MisakaNet/commit/4717861af40e3b412c1ffaf614fd4e37f8d8e5c0))
+* **intake:** re-score the intakes an older scorer rejected ([#3226](https://github.com/Ikalus1988/MisakaNet/issues/3226)) ([b94b331](https://github.com/Ikalus1988/MisakaNet/commit/b94b3310d103db438832bf8ee1e97f23d15621bd))
+* **leaderboard:** hold the contributor board in D1, not in 1,026 commits ([#3288](https://github.com/Ikalus1988/MisakaNet/issues/3288)) ([fb25972](https://github.com/Ikalus1988/MisakaNet/commit/fb25972113b4c065709415ec60bd78697fd2ec55))
+* **mcp:** misakanet_me_inbox — poll an intake without re-submitting (rebase of [#2494](https://github.com/Ikalus1988/MisakaNet/issues/2494)) ([#3259](https://github.com/Ikalus1988/MisakaNet/issues/3259)) ([24c2259](https://github.com/Ikalus1988/MisakaNet/commit/24c22590f37fe1f454505bb12dec5a9e5ef08931))
+
+
+### Bug Fixes
+
+* **dev-install-test:** derive the dependency assertion instead of pinning four versions ([#3219](https://github.com/Ikalus1988/MisakaNet/issues/3219)) ([2910159](https://github.com/Ikalus1988/MisakaNet/commit/29101593fb0ec4e25016d69cd1f747fe3d3b0acb))
+* **intake-scorer:** count `1.` as a list item, not only `-` and `*` ([#3220](https://github.com/Ikalus1988/MisakaNet/issues/3220)) ([d0b3c47](https://github.com/Ikalus1988/MisakaNet/commit/d0b3c4781d9c772064850fcad71644b73163c702))
+* **intake:** a test fixture is not a report that scored badly, so give it its own label ([#3239](https://github.com/Ikalus1988/MisakaNet/issues/3239)) ([292569b](https://github.com/Ikalus1988/MisakaNet/commit/292569bdac67211f81b40d3b9723cf512d5b3091))
+* **intake:** write `source` as a POSIX path — CI caught this on Windows ([#3257](https://github.com/Ikalus1988/MisakaNet/issues/3257)) ([d7db809](https://github.com/Ikalus1988/MisakaNet/commit/d7db809fbd45a7714cac88001b82e015d72f30c3))
+* **quality-gate:** stop labelling lesson submissions as missing acceptance criteria ([#3189](https://github.com/Ikalus1988/MisakaNet/issues/3189)) ([90b7a16](https://github.com/Ikalus1988/MisakaNet/commit/90b7a16512c3e608ec90d70c054e325c7cf21cc5))
+* **readme:** give README.zh-CN.md the same 19 badges as the canonical one ([#3154](https://github.com/Ikalus1988/MisakaNet/issues/3154)) ([e580f56](https://github.com/Ikalus1988/MisakaNet/commit/e580f569183d0709013bf30f987d1a9e09e213b7))
+* remove two orphan working sets, and repair the generator that made one look stale ([#3256](https://github.com/Ikalus1988/MisakaNet/issues/3256)) ([bbf675e](https://github.com/Ikalus1988/MisakaNet/commit/bbf675e43f507bae701bd6adfd8715b8e08ece29))
+* **search:** the path the results print is one a reader can open ([#3225](https://github.com/Ikalus1988/MisakaNet/issues/3225)) ([fa91886](https://github.com/Ikalus1988/MisakaNet/commit/fa918869c362104f8d93a9f2f2b4ef7014a92060))
+* three stale surfaces — a benchmark index, two counts, three dead commands ([#3252](https://github.com/Ikalus1988/MisakaNet/issues/3252)) ([aec7449](https://github.com/Ikalus1988/MisakaNet/commit/aec7449b76fd94678418aaea89c53981c598e20b))
+* two files I edited in an earlier change were committed as CRLF ([#3221](https://github.com/Ikalus1988/MisakaNet/issues/3221)) ([4888163](https://github.com/Ikalus1988/MisakaNet/commit/488816332c9dda31ece47abc8cb95e781e9fb409))
+* **worker:** the page onboarding grants a 30-day token, and the 401 says how to recover ([#3234](https://github.com/Ikalus1988/MisakaNet/issues/3234)) ([c14b29d](https://github.com/Ikalus1988/MisakaNet/commit/c14b29de298afabeff3e57e73b6aa9064aaecbae))
+
+
+### Documentation
+
+* **handoff:** split both monoliths and enforce the 800-line limit ([#3229](https://github.com/Ikalus1988/MisakaNet/issues/3229)) ([5290b2c](https://github.com/Ikalus1988/MisakaNet/commit/5290b2cf4ec1e3c2dc93348f0e7fb2c83cca9a28))
+* **handoff:** the four rules the owner decided, and the citations that constrain the split ([#3227](https://github.com/Ikalus1988/MisakaNet/issues/3227)) ([48c1b51](https://github.com/Ikalus1988/MisakaNet/commit/48c1b51104c00f1e6b0ff814b6957ca72d8855f0))
+* **reputation:** the contributor snapshot is not a published board ([#3127](https://github.com/Ikalus1988/MisakaNet/issues/3127)) ([3a2a631](https://github.com/Ikalus1988/MisakaNet/commit/3a2a6317ba08ef5fa9251ea5266eb84ee9a85aca))
+
+
+### Tests
+
+* **search:** pin that the displayed score is relative to its own result set ([#3230](https://github.com/Ikalus1988/MisakaNet/issues/3230)) ([5fcd91e](https://github.com/Ikalus1988/MisakaNet/commit/5fcd91e7679d1ac0d97e287fe464fdd78e57dd1d)), closes [#2790](https://github.com/Ikalus1988/MisakaNet/issues/2790)
+
+
+### Lessons
+
+* an event count is not a health signal — auto-remediation restarts a healthy service ([#3280](https://github.com/Ikalus1988/MisakaNet/issues/3280)) ([9d51fef](https://github.com/Ikalus1988/MisakaNet/commit/9d51fefb09ebcd598ea85502a63701e17046f950))
+* Ruby require_relative + docker port already allocated (rebase of [#2921](https://github.com/Ikalus1988/MisakaNet/issues/2921)) ([#3258](https://github.com/Ikalus1988/MisakaNet/issues/3258)) ([44d4cc0](https://github.com/Ikalus1988/MisakaNet/commit/44d4cc01cd5f85032f0dec315b9baa6037585006))
+
 ## [2.42.3](https://github.com/Ikalus1988/MisakaNet/compare/v2.42.2...v2.42.3) (2026-10-10)
 
 
