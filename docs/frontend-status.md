@@ -1,12 +1,15 @@
 # Frontend Status
 
-> Last updated: 2026-10-01 | v2.39.0
+> Last updated: 2026-10-15 | v2.42.3
 >
-> Version sources agree as of this update: `.release-please-manifest.json`, npm
+> Version sources agree as of this update: `pyproject.toml` via release-please, npm
 > `misakanet@latest`, `server.json`/`glama.json`, and `.codex-plugin/plugin.json`
-> all report 2.39.0 (`GET /api/versions` shows the four sources side by side).
-> A `release 2.40.0` PR is open and not yet merged — re-check this line against
-> `/api/versions` before landing a change if that PR has merged in the meantime.
+> all report 2.42.3 (`GET /api/versions` shows the four sources side by side, and
+> PyPI reports the same).
+>
+> The line above was stale for two weeks: it said 2.39.0 while the site served 2.42.3,
+> and carried a forward-looking note about a `release 2.40.0` PR that had long since
+> merged. Re-check `/api/versions` before landing a change here.
 
 ## Modules
 
@@ -79,10 +82,15 @@
 
 模块表按线上站点重新核对，不是只改版本号。逐条实测：
 
-- `/api/versions` → 200，四个版本源均 2.39.0
-- `/api/activity` → 200，`generated_at` 为当日，`total` 4144，`calls.mcp` 3987
-- `/data/lessons-lite.json` → 200,185188 字节,7 字段；`/data/lessons.json` → 200,1325134 字节；两者均 427 行
+- `/api/versions` → 200，四个版本源均 2.42.3
+- `/api/activity` → 200，`generated_at` 为当日，`total` 3456，`calls.mcp` 3293（另 agent 39 / crawler 12 / pageview 112）
+- `/data/lessons-lite.json` → 200,212539 字节,483 条 × 7 字段；`/data/lessons.json` → 200,1546880 字节,483 条 × 24 字段
 - `/connect` → 301 → `/start`
 - 首页 HTML 含 `id="activity"`、`data-i18n="activitySection|activityCalls|activityNote"`
+
+**两处数字与上一版（2026-10-01）对不上，按实测改写，不是笔误**：版本 2.39.0 → 2.42.3（站点上一直
+是新的，是这份文档落后）；课程 427 → 483 条。`/api/activity` 的 `total` 从 4144 降到 3456、
+`calls.mcp` 从 3987 降到 3293 —— **这一条不做解读**：上一版的取数时刻与本次不同，且该接口按日滚动，
+两个数不构成趋势，趋势要看 `docs/maintainer/growth-funnel.md` 的周更序列（而那个序列至今为空）。
 
 **未写入的一项**：Marketplace listing 我在站上没找到对应区块（`/marketplace` 与 `/integrations` 均 404，首页无 marketplace 锚点）。如果它指的是插件市场里的上架条目而非本站页面，请指个位置，我补上——没有依据的行我不写进状态表。
