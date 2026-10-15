@@ -1,9 +1,23 @@
 {
-  "generated_at": "2026-10-15T16:30:23.253238+00:00",
+  "generated_at": "2026-10-15T17:10:24.821255+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "docs(handoff): §93 — the wrap-up where three of the four premises had to be retracted",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3290",
+      "timestamp": "2026-10-15T16:42:01Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3291",
+      "timestamp": "2026-10-15T16:39:50Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "lesson: two intakes become lessons — a saturation cap that amplifies at zero, and initdb under a non-ASCII Windows path",
@@ -23,20 +37,6 @@
       "title": "chore(deps): the seven safe action bumps from #3161, without the pr-genius one",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/3260",
       "timestamp": "2026-10-15T15:38:49Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "fix(intake): a test fixture is not a report that scored badly, so give it its own label",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3239",
-      "timestamp": "2026-10-15T15:38:41Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat(leaderboard): hold the contributor board in D1, not in 1,026 commits",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3288",
-      "timestamp": "2026-10-15T15:00:38Z",
       "source": "github"
     },
     {
