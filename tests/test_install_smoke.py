@@ -113,10 +113,9 @@ def test_a_url_inside_a_comment_is_not_read_as_the_row():
 
 def test_the_documented_stdio_tool_set_is_read_from_the_document():
     documented = documented_stdio_tools((REPO / "docs" / "mcp.md").read_text(encoding="utf-8"))
-    # 10 since 2026-09-30 (intake #2486, D4): `misakanet_me_events` was hosted-only, so the skill's own
-    # reuse-evidence step failed on a local install. The local server now proxies it, which makes the hosted
-    # set a strict subset of the local one — the mirror image of the old asymmetry.
-    assert len(documented) == 10, sorted(documented)
+    # 11: 10 since 2026-09-30 (intake #2486, D4) when `misakanet_me_events` was proxied, plus
+    # `misakanet_me_inbox` from #2494. The hosted set stays a strict subset of the local one.
+    assert len(documented) == 11, sorted(documented)
     assert "misakanet_search" in documented
     assert "misakanet_me_events" in documented, (
         "the local surface must include me_events now that it proxies it; the probe's whole point is that "

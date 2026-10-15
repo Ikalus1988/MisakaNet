@@ -40,7 +40,7 @@ test('every version channel is reported with the source that owns it', () => {
 test('the capability surface comes from the worker itself, not from a copy', () => {
   const p = buildVersionsPayload(FULL);
   assert.deepEqual(p.capabilities.hosted.tools, MCP_TOOLS.map(t => t.name));
-  assert.equal(p.capabilities.hosted.tools.length, 7, 'the hosted surface is the worker\'s seven tools');
+  assert.equal(p.capabilities.hosted.tools.length, 8, 'the hosted surface is the worker\'s eight tools');
   assert.equal(p.capabilities.hosted.transport, 'http');
   // …and the manifest's own declaration is passed through untouched, so D4's block is what a reader sees.
   assert.deepEqual(p.capabilities.declared, FULL.manifest.mcp);
@@ -76,6 +76,6 @@ test('GET /api/versions answers 200 even when every upstream fetch fails', async
   assert.equal(resp.status, 200);
   const body = await resp.json();
   assert.equal(body.versions.release.version, '8.8.8', 'the release line is the worker\'s own constant');
-  assert.equal(body.capabilities.hosted.tools.length, 7);
+  assert.equal(body.capabilities.hosted.tools.length, 8);
   assert.ok(body.generated_at, JSON.stringify(body).slice(0, 200));
 });

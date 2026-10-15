@@ -103,7 +103,7 @@ call visible (plain `exec` output does not name it).
 | Integration | Status | Notes |
 |---|---|---|
 | Smithery | ⏸ Paused | Pending upstream changes |
-| Any other MCP client | ✅ unverified but standard | `https://misakanet.org/mcp` speaks Streamable HTTP and answers `tools/list` with 7 tools; reads are anonymous and unmetered. If your client needs a bridge (`mcp-remote`, `supergateway`), say so in [#1550](https://github.com/Ikalus1988/MisakaNet/issues/1550) and we will document it |
+| Any other MCP client | ✅ unverified but standard | `https://misakanet.org/mcp` speaks Streamable HTTP and answers `tools/list` with 8 tools; reads are anonymous and unmetered. If your client needs a bridge (`mcp-remote`, `supergateway`), say so in [#1550](https://github.com/Ikalus1988/MisakaNet/issues/1550) and we will document it |
 
 ## Field reports
 

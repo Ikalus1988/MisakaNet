@@ -1,9 +1,16 @@
 {
-  "generated_at": "2026-10-14T17:21:08.602255+00:00",
+  "generated_at": "2026-10-14T21:49:33.031007+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3262",
+      "timestamp": "2026-10-14T17:29:48Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "fix(intake): write tasks/ source as a POSIX path — Windows CI caught this",
@@ -30,13 +37,6 @@
       "title": "chore(data): sync lessons.json + refresh feed",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/3251",
       "timestamp": "2026-10-14T12:18:46Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3242",
-      "timestamp": "2026-10-14T05:18:00Z",
       "source": "github"
     },
     {
