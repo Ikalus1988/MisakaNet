@@ -159,6 +159,7 @@
   <url><loc>https://misakanet.org/lessons/error-dco-signoff-windows/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/proxy-corporativo-curl-timeout/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/escrow-fee-rounding-per-provider/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/an-event-count-is-not-a-health-signal-auto-remediation-keyed-on-it-restarts-a-he/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/fanuc-alarm-severity-guide/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/fanuc-auto-abort-on-fault-restart/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/fanuc-backup-payload-extraction/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
