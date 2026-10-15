@@ -107,18 +107,18 @@ when the committed table stops matching the corpus, so it cannot rot the way a h
 | Level | Lessons | Share |
 |---|---|---|
 | **E0** | 38 | 7.9% |
-| **E1** (declared) | 49 | 10.2% |
-| **E2** (declared) | 76 | 15.8% |
+| **E1** (declared) | 50 | 10.4% |
+| **E2** (declared) | 77 | 15.9% |
 | **E3** (declared) | 16 | 3.3% |
 | **E4** (declared) | 0 | 0.0% |
 
-- Total lessons: **481**
-- At **E0** in total (declared + default): **340** (70.7%) — of which **302** declare no level at all
+- Total lessons: **483**
+- At **E0** in total (declared + default): **340** (70.4%) — of which **302** declare no level at all
 - At **E4** (*reused by another contributor or agent*): **0**
 
 Three things this says that the definitions above do not:
 
-1. **302 of 481 lessons never declare a level.** They read as E0 by the default rule, not by a
+1. **302 of 483 lessons never declare a level.** They read as E0 by the default rule, not by a
    decision. That is the honest reading of "evidence is never assumed" — and it means the E0
    population is mostly *unwritten*, not *unevidenced*.
 2. **No lesson has ever reached E4.** The top of the scale means "a different contributor or agent
