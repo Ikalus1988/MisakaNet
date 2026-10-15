@@ -241,7 +241,7 @@ def test_the_manifest_hosted_tools_are_the_workers_and_the_agents_md_table():
         "manifest only": sorted(declared - documented_hosted_tools()),
         "AGENTS.md §3.2 only": sorted(documented_hosted_tools() - declared),
     }
-    assert len(declared) == 7, sorted(declared)
+    assert len(declared) == 8, sorted(declared)
 
 
 def test_the_manifest_local_tools_are_what_the_stdio_server_registers():
@@ -252,7 +252,7 @@ def test_the_manifest_local_tools_are_what_the_stdio_server_registers():
         "manifest only": sorted(declared - _local_tool_names()),
         "misakanet/server/tools.py only": sorted(_local_tool_names() - declared),
     }
-    assert len(declared) == 10, sorted(declared)
+    assert len(declared) == 11, sorted(declared)
 
 
 def test_every_declared_local_tool_is_dispatchable():

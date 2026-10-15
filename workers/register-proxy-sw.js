@@ -594,6 +594,35 @@ const MCP_TOOLS = [
       },
     },
   },
+  {
+    name: "misakanet_me_inbox",
+    description: "[AGENT READABLE INBOX] Check the status of a previously submitted intake (question, missing_lesson, etc.) without re-submitting. Accepts an intake_id (e.g. 'issue-1234' or '1234') from a prior misakanet_submit_intake response, or a dedup_key (the 16-char hash). Returns: {status: 'answered'|'pending'|'converted'|'not_found', ...} — 'answered' includes the maintainer's answer, 'converted' includes the lesson_id this intake became. Read-only, rate-limited, no auth required.\nReturns: object {intake_id, status, answer?, lesson_id?, issue_url?, note}.\nExample: misakanet_me_inbox(intake_id='issue-1528') or misakanet_me_inbox(dedup_key='a1b2c3d4e5f67890')",
+    inputSchema: {
+      type: "object",
+      properties: {
+        intake_id: { type: "string", description: "Intake ID from a prior submit_intake response, e.g. 'issue-1528' or '1528'. Either intake_id or dedup_key is required." },
+        dedup_key: { type: "string", description: "The dedup_key (16-char hash) from a prior submit_intake response. Either intake_id or dedup_key is required." },
+      },
+      minProperties: 1,
+    },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
+    outputSchema: {
+      type: "object",
+      properties: {
+        intake_id: { type: "string" },
+        status: { type: "string", enum: ["answered", "pending", "converted", "unknown", "not_found"] },
+        answer: { type: "string" },
+        lesson_id: { type: "string" },
+        issue_url: { type: "string" },
+        note: { type: "string" },
+      },
+    },
+  },
 ];
 
 const MCP_PROTOCOL_VERSION = "2025-06-18";
@@ -4132,6 +4161,128 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
     };
   }
 
+  if (toolName === "misakanet_me_inbox") {
+    // Rate-limit anonymous reads (same window as search/get_lesson).
+    if (!authToken) {
+      const ip = clientIp || "unknown";
+      const refusal = await consumeQuota(env, {
+        scope: "rate_read", bucket: ip, period: readBurstPeriod(), limit: READ_BURST_LIMIT,
+        message: READ_BURST_MESSAGE,
+        hint: `retry after up to ${READ_BURST_WINDOW_SECONDS}s; no registration needed`,
+      });
+      if (refusal) return refusal;
+    }
+
+    const rawId = String(args.intake_id || "").trim();
+    const dedupKey = String(args.dedup_key || "").trim();
+    if (!rawId && !dedupKey) return { error: "intake_id or dedup_key is required" };
+
+    // Normalise intake_id: "issue-1234" → "1234", "1234" → "1234"
+    const issueNum = rawId.replace(/^issue-/, "").replace(/\D/g, "");
+
+    // 1. Look up in D1 questions table (works for questions and any intake
+    //    whose dedup_hash was synced by sync_answered_questions.py).
+    const d1 = d1Binding(env);
+    let row = null;
+    if (d1) {
+      try {
+        let res;
+        if (dedupKey) {
+          res = await d1.prepare(
+            "SELECT issue_number, dedup_hash, problem, status, answer, issue_url, answered_at FROM questions WHERE dedup_hash = ?1 LIMIT 1"
+          ).bind(dedupKey).all();
+        } else if (issueNum) {
+          res = await d1.prepare(
+            "SELECT issue_number, dedup_hash, problem, status, answer, issue_url, answered_at FROM questions WHERE issue_number = ?1 LIMIT 1"
+          ).bind(parseInt(issueNum, 10)).all();
+        }
+        row = (res && res.results && res.results[0]) || null;
+      } catch (_) {}
+    }
+
+    if (row) {
+      if (row.status === "answered" && row.answer) {
+        return {
+          intake_id: `issue-${row.issue_number}`,
+          status: "answered",
+          answer: row.answer,
+          issue_url: row.issue_url || "",
+          answered_at: row.answered_at || "",
+          note: "Maintainer answered this question.",
+        };
+      }
+      return {
+        intake_id: `issue-${row.issue_number}`,
+        status: "pending",
+        issue_url: row.issue_url || "",
+        note: "Open and awaiting a maintainer answer. Check again later.",
+      };
+    }
+
+    // 2. Not in questions table — check if the intake was converted to a
+    //    lesson. Delegated to lookupIntakeConversion, which is the faithful
+    //    port of scripts/intake_receipt.py and reads the citation fields that
+    //    actually exist (source / provenance.issue / provenance.related /
+    //    provenance.source).
+    //
+    //    The previous version of this branch scanned meta.intake_id /
+    //    contrib_id / source_issue / related_issues. None of those keys exist
+    //    in the corpus — measured 2026-10-01 across 461 lessons: 0 / 0 / 0 / 0,
+    //    while `provenance` appears in 428. That scan could never match, so
+    //    this branch always fell through and every converted intake reported
+    //    `pending` forever. Same defect as the JSONL files the review called
+    //    out, just pointed at a different source that is also not there.
+    if (issueNum) {
+      try {
+        const hits = await lookupIntakeConversion(env, parseInt(issueNum, 10));
+        if (hits && hits.length) {
+          const first = hits[0];
+          return {
+            intake_id: `issue-${issueNum}`,
+            status: hits.length === 1 ? "converted" : "converted",
+            lesson_id: first.id || first.path || "",
+            lesson_title: first.title || "",
+            lesson_path: first.path || "",
+            lesson_status: first.status || "",
+            converted_count: hits.length,
+            note: hits.length === 1
+              ? "This intake was converted into a lesson."
+              : `This intake is cited by ${hits.length} lessons.`,
+          };
+        }
+      } catch (_) {}
+    }
+
+    // 3. Fallback: check KV dedup store for the issue URL.
+    if (hasDurableStore(env)) {
+      try {
+        // Try by issue number in dedup keys — not directly indexable,
+        // but the original submit_intake stores the issue URL at intake_dedup:{hash}.
+        if (dedupKey) {
+          const stored = await storeGet(env, `intake_dedup:${dedupKey}`, "text");
+          if (stored) {
+            return {
+              intake_id: rawId || `dedup-${dedupKey}`,
+              status: "pending",
+              issue_url: stored,
+              note: "Intake found in dedup store. It may still be pending review.",
+            };
+          }
+        }
+      } catch (_) {}
+    }
+
+    return {
+      intake_id: rawId || `dedup-${dedupKey}`,
+      status: "unknown",
+      note: "Nothing found in the D1 question table, the lesson corpus, or the dedup store. " +
+            "Read this as 'cannot be determined', not 'never happened': only a minority of " +
+            "lessons carry an intake citation (provenance.issue / source), so most converted " +
+            "intakes leave no backlink to find. A bare `not_found` would claim more than the " +
+            "data supports.",
+    };
+  }
+
   if (toolName === "misakanet_submit_intake") {
     if (!args.problem) return { error: "problem is required" };
 
@@ -4649,7 +4800,7 @@ async function handleMcpRequest(request, env, useSse = false, ctx) {
     // checkable by any agent before reusing a lesson (E4 reuse receipts).
     const openTools = ["misakanet_submit_intake", "misakanet_register",
                        "misakanet_search", "misakanet_get_lesson",
-                       "misakanet_me_events"];
+                       "misakanet_me_events", "misakanet_me_inbox"];
     isIntakeCall = peekBody?.method === "tools/call" && openTools.includes(peekBody?.params?.name);
     // Notifications (notifications/initialized etc.) are lifecycle fire-and-forget
     // with no response and no business data — the MCP spec requires clients to
