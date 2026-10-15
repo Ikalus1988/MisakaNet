@@ -1,9 +1,16 @@
 {
-  "generated_at": "2026-10-15T09:36:47.452066+00:00",
+  "generated_at": "2026-10-15T11:44:22.005155+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3282",
+      "timestamp": "2026-10-15T09:44:58Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "lesson: an event count is not a health signal — auto-remediation restarts a healthy service",
@@ -30,13 +37,6 @@
       "title": "chore(data): sync lessons.json + refresh feed",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/3277",
       "timestamp": "2026-10-15T08:59:41Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "lesson: Ruby require_relative + docker port already allocated (rebase of #2921)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3258",
-      "timestamp": "2026-10-15T08:51:57Z",
       "source": "github"
     },
     {
