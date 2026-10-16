@@ -1,10 +1,12 @@
 # MisakaNet 4-Month Roadmap
 
-Last updated: 2026-10-02（上一版：2026-09-16，原文保留在下方，未改写）
+Last updated: 2026-10-16（上一版：2026-10-02，原文保留在下方，未改写）
 
-> **要看当前计划，直接看 [`2026-10-02 更新 — 交付、在飞与 KV 迁移到 D1`](#2026-10-02-更新--交付在飞与-kv-迁移到-d1)。**
-> 它只补 2026-09-16 之后的增量，并回答"现在在哪、下一步做什么"；`2026-09-16 更新 — 五层拼图与优先事项`
-> 是上一轮的记录，其文字、数字、裁定一律未改写（本仓惯例：旧条目只加状态裁定，不改写历史）。
+> **要看当前计划，直接看 [`2026-10-16 增量 — 三条从未写进路线图的自动化工作线`](#2026-10-16-增量--三条从未写进路线图的自动化工作线)。**
+> `2026-10-02 更新 — 交付、在飞与 KV 迁移到 D1` 已降为上一轮的记录：本轮把它的"在飞 / 未验证"条目
+> 逐条实测改判（已完成项、版本与 tag、intake conversion receipt），并按它自己写的排序依据动过一次顺序
+> ——每处都留了日期与证据。`2026-09-16 更新 — 五层拼图与优先事项` **与更早各节一字未改**：
+> 2026-10-16 的重测裁定集中写在该节的「2026-10-16 重测裁定」块里（本仓惯例：旧条目只加状态裁定，不改写历史）。
 > 下面 2026-08-22 的原文全部保留，只作历史记录：其中的版本号、课程数、工具数都已前移，
 > 逐条状态裁定（已完成 / 已过时 / 已放弃 + 理由 + 证据）写在 09-16 那节的「旧条目状态裁定」里。
 >
@@ -23,6 +25,90 @@ private intake -> classification -> maintainer demand board -> curated lesson/re
 
 MisakaNet should stay offline-first and Git-backed. External listings are useful
 "amplifiers", not the product itself.
+
+## 2026-10-16 增量 — 三条从未写进路线图的自动化工作线
+
+> 本节只补 2026-10-02 之后的增量，并补三条**路线图从未记录、但已在 `main` 上每天发生**的工作线。
+> 数字均为 2026-10-16 实测（命令见文末）；旧节一字未改，只加状态裁定。
+> 与 10-02 节同一口径：**语料规模不写成本节的"当前值"**，只认 09-16 节的动态徽章。
+
+### 一、排行榜 / 贡献者认可（`data/leaderboard_meta.json`）
+
+- **30 天里 `data/leaderboard*.json` 被提交了 208 次**，占同期 1292 个提交的 **16.1%**
+  （`git log --since=2026-09-15T00:00:00Z --oneline -- "data/leaderboard*.json" | wc -l` → 208；
+  `git log --since=2026-09-15T00:00:00Z --oneline | wc -l` → 1292）。
+  **窗口起点必须写成 `2026-09-15T00:00:00Z`**：裸写 `--since=2026-09-15` 时 git 把当前时刻的
+  时分秒填进这个日期，窗口起点会随你跑命令的钟点漂移（实测同一分钟内读数从 205 掉到 204）。
+  作者分布：`misakanet-bot` 151 / `Ikalus1988` 57。
+- worker 侧 `LEADERBOARD_CRON = "17 3 * * *"`（`workers/register-proxy-sw.js:7088`）：
+  2026-10-16 **03:18:19Z** 首次产出 issue **#3306**（labels `leaderboard, automated, needs-ac`）；
+  `GET /api/leaderboard/state` → `available:true`，board **27** 人、top `zsxh1990` **28.47**。
+- 最近 80 条合并 PR 里另有 **5 条** `chore: update leaderboard snapshot`。
+- **未解**：它衡量的是贡献量，不是课程被复用——与下面「待 owner 决定」第 2 条同源。
+
+### 二、生成物同步（`chore(data): sync lessons.json + refresh feed`）
+
+- **最近 80 条合并 PR 里 27 条（33.8%）**是这一类（`gh pr list --state merged --limit 80`，
+  区间 2026-10-09T18:33:52Z → 2026-10-16T04:52:27Z）。
+- 机制在 `.github/workflows/update-lessons.yml`：重新生成 `lessons.json` / 课程页 / OKF 导出 / 索引，
+  再把结果推到一个稳定分支并开 squash auto-merge（不是直接 push `main`——ruleset 要求 DCO 签核）。
+  "生成物靠机器人落地"已是常态，而路线图里没有这一节。
+
+### 三、handoff 文档流（`docs(handoff): …`）
+
+- **最近 80 条合并 PR 里 17 条（21.3%）**；`docs/maintainer/handoff-*.md` 已有 **29** 个文件。
+- 这条通道有自己的三条门禁：`tests/test_handoff_size_limit.py`（上限从
+  `docs/maintainer/handoff-rules.md` 读出，不许写死）、`tests/test_handoff_citations_resolve.py`
+  （代码引用 handoff 就必须真实存在）、`tests/test_doc_line_citations.py`（`文件:行号` 引用必须落在
+  真实行数内）。它已是本仓最活跃的文档产出通道，却没有被写进任何一条"下一步"。
+
+### 待 owner 决定（两条，只记录，不给结论）
+
+1. **纯引擎包 `misakanet-core` 的月下载远高于产品包 `misakanet`。**
+   实测（2026-10-16，pypistats）：`misakanet-core` last_month **16809**（week 1905 / day 412）；
+   `misakanet` last_month **2987**（week 405 / day 121）。两者相差 **5.6 倍**，方向与
+   "引擎包下载 = CI / 镜像拉取"还是"真实用户"这两种解释都相容——**待 owner 决定**该读哪一层。
+
+2. **dsh 侧栏的成功指标不可归因。**
+   `POST /api/helpful` 只接收 `lesson_id`（`workers/register-proxy-sw.js:7794` 起：无鉴权检查、
+   无 source / actor 字段、无去重），因此"一票"无法回答"谁投的、从哪个入口"。
+   实测：把 `tests/fixtures/ranking-snapshot.json` 的 31 条 pinned 查询各自 top-3 的并集
+   （= **73 门最常被检索的课**）逐条 `GET /api/helpful?lesson_id=`，**只有 3 门有票、共 6 票**
+   （`pip-install-proxy-timeout` 4、`pip-install-timeout-ssl` 1、`browser-harness-cdp-browser-automation` 1）。
+   **待 owner 决定**：是把投票收敛成可归因事件，还是承认它只是"弱信号"而不当成功指标。
+
+### 附录：本节断言的复现命令
+
+```bash
+# ① 排行榜提交占比（30 天窗口；起点必须带 T00:00:00Z，裸日期会随钟点漂移）
+git log --since=2026-09-15T00:00:00Z --oneline -- "data/leaderboard*.json" | wc -l
+git log --since=2026-09-15T00:00:00Z --oneline | wc -l
+git log --since=2026-09-15T00:00:00Z --format='%an' -- "data/leaderboard*.json" | sort | uniq -c | sort -rn
+
+# ② 首次 leaderboard cron（issue + 端点）
+gh issue view 3306 --json number,state,title,createdAt,labels
+curl -sS https://misakanet.org/api/leaderboard/state | python3 -c "import json,sys;d=json.load(sys.stdin);print(d['available'],len(d['board']),d['board'][0])"
+
+# ③ 最近 80 条合并 PR 的构成
+gh pr list --state merged --limit 80 --json title --jq '.[].title' | sort | uniq -c | sort -rn | head
+
+# ④ intake 队列吞吐（8 天窗口）
+gh api "search/issues?q=repo:Ikalus1988/MisakaNet+label:intake+created:%3E=2026-10-08&per_page=1" --jq .total_count
+gh api "search/issues?q=repo:Ikalus1988/MisakaNet+label:intake+closed:%3E=2026-10-08&per_page=1" --jq .total_count
+gh api "search/issues?q=repo:Ikalus1988/MisakaNet+label:intake+state:open&per_page=1" --jq .total_count
+
+# ⑤ PyPI 下载（两个包，同一窗口）
+for p in misakanet-core misakanet; do curl -sS "https://pypistats.org/api/packages/$p/recent"; echo; done
+
+# ⑥ helpful 票：31 条 pinned 查询 top-3 的并集 = 73 门课，再逐条查票
+python3 - <<'PY'
+import json, pathlib
+d = json.load(open('tests/fixtures/ranking-snapshot.json'))
+ids = sorted({pathlib.Path(r['path']).stem for q in d['queries'] for r in q['results'][:3]})
+print(len(ids)); open('/tmp/top3ids.txt','w').write("\n".join(ids))
+PY
+while read -r id; do curl -sS "https://misakanet.org/api/helpful?lesson_id=$id"; echo; done < /tmp/top3ids.txt
+```
 
 ## 2026-10-02 更新 — 交付、在飞与 KV 迁移到 D1
 
@@ -49,11 +135,13 @@ MisakaNet should stay offline-first and Git-backed. External listings are useful
 | 设置 → General 的 MisakaNet 行（语音开关） | #2600 | 已合并（10-01） |
 | zh/en locale（UI 走 `ctx.locale`，包元数据走 `locale/*.json`） | #2602 | 已合并（10-01） |
 | 全窗口 toast + 侧栏底部动作（复制本会话活动） | #2618 | 已合并（10-01） |
-| 客户端行为 e2e：一次性真宿主 + 真 Chromium，三场景 | #2610 | **在飞（open）** |
-| 2.41.0 的 release 承载 | #2591 | **在飞（open）** |
+| 客户端行为 e2e：一次性真宿主 + 真 Chromium，三场景 | #2610 | 已合并（2026-10-02T01:22:46Z） |
+| 2.41.0 的 release 承载 | #2591 | 已合并（2026-10-04T03:54:28Z） |
 
-- 这些客户端面由 **2.41.0 的 release PR #2591** 承载；截至本行 #2591 仍是 open，仓库里最后一个 tag 是
-  `v2.40.0`（附录命令 ④）——所以"已合并"指**落在 `main` 上**，不等于"已发布"。
+- 这些客户端面由 **2.41.0 的 release PR #2591** 承载；**2026-10-16 改判**：#2591 已合并
+  （2026-10-04T03:54:28Z）——原文"截至本行 #2591 仍是 open、最后一个 tag 是 `v2.40.0`"是 2026-10-02 的记录。
+  现在仓库里最新的 tag 是 `v2.43.0`（2026-10-15，附录命令 ④），npm `latest` 也是 2.43.0：
+  所以"已合并"指**落在 `main` 上**，与"已发布"不再是两件事。
 - **检索行与投票是两个座位，不是一个**（#2551 的第一版把它们混在一起，动机就是纠正它）：`tool.call.toolview`
   只做可见性，**不发任何投票**；投票注册在 `conversation.chat.assistant-actions`（`misakanet-verdict`，
   `order: 20`），即"最终助手消息"那一条动作行——检索时修复还没跑，"did this help?" 在那个时刻答不了。
@@ -65,7 +153,9 @@ MisakaNet should stay offline-first and Git-backed. External listings are useful
   `settings-to-panel` 三场景变成可自动跑的检查；宿主是一次性的 `DSH_HOME`，语料库被拦截，不依赖线上。
 - 一条会踩坑的记法：同一批里的 **#2607（"toast + 侧栏底部动作"）关闭未合并**，#2618 把这两面连同
   "面板抄哪一段会话"一起落地——按"关掉的 PR"去找产物会找不到。
-- **未验证**：线上 2.41.0 的实际发布状态（本节只读仓库与 tag，没有调 npm / PyPI；`v2.40.0` 之后无新 tag）。
+- **已核（2026-10-16）**：线上发布状态不再是问题——npm `misakanet` 的 `dist-tags.latest == 2.43.0`
+  （2026-10-15T15:52:06Z），GitHub release 也是 `v2.43.0`；2.41.0 早已被后续版本覆盖，
+  所以"线上 2.41.0 的发布状态"这个问题本身过期了。
 
 **二、容量：唯一真把功能打挂过的配额问题，现在有位置了。**
 
@@ -81,9 +171,42 @@ MisakaNet should stay offline-first and Git-backed. External listings are useful
 - 它给出的容量口径：D1 免费档 500 万行读 + 10 万行写每天，Workers 10 万请求每天；相除 = **每请求 50 行读 /
   1 行写**。**D1 超限是 Worker 内部报错，fail open 救不了这一层**——写侧迁移是下一面墙，不是"优化"。
 
-### 下一步（2026-10-02 起）
+### 下一步（2026-10-02 起；2026-10-16 重排）
 
-**① KV → D1 写侧迁移（#2115，open，`priority:high`）** ← 本仓唯一真把功能打挂过的配额问题，排第一
+**① intake 队列吞吐（分诊 → 课程 / 回执）** ← 2026-10-16 按本节自己的排序依据改判（owner 可否决）
+
+- 实测（2026-10-16，8 天窗口 2026-10-08 → 2026-10-16，`gh api search/issues`，复现命令见「2026-10-16 增量」节附录 ④）：
+  `label:intake created:>=2026-10-08` → **新建 63**；`closed:>=2026-10-08` → **关闭 10**；
+  `label:intake state:open` → **仍开 146**。逐条枚举那 63 条，**只有 4 条已关**（窗口内关闭率约 16%）。
+- 为什么排第一：本节写下的排序依据是"是否直接作用于漏斗 × 结构性风险 ÷ 成本"。按这条尺子，
+  **输入增速 > 处理速度**是唯一已经能用一条命令量出来的环节；而 KV 写侧最近一次失败是
+  `2026-09-22T23:57:17.084Z`（见节末「收尾」），距今 23 天——它仍是风险，但不再是"排第一"的理由。
+- **合规声明**：把 #2115 从第一位降为「收尾」是**按本节自己的排序依据应用的判断，owner 可否决**；
+  它的现状与验收口径原文一字未改，整体下移到节末。
+
+**② provenance gate 已在跑（#1768）；intake conversion receipt 已交付（#1528 / #2491，2026-10-03 关闭）。**
+
+- #1768（2026-09-16 合并）：`scripts/check_provenance.py` + `.github/workflows/provenance-gate.yml` +
+  `data/provenance-baseline.json`（`known_dead: []`）。它把"来源存不存在"从人工阅读变成自动挡：
+  触发条件是 PR 动了 `lessons/**`、检查脚本或基线，另有一条每周的 link-rot 定时（report-only）。
+- 本轮实跑（离线口径，附录命令 ⑤）：**检查 477 篇课程、引用 35 条外链，exit 0**。这是 2026-10-02 的
+  命令输出，**不是当前值**——当前语料规模看动态徽章（两个口径的差别 09-16 节已解释）。
+- **仍未解决**（09-16 节已写，本节不改写）：语义真伪——一个真实但无关的链接仍会通过这一档。
+- intake conversion receipt：**已交付**（2026-10-16 实测）#1528（issue，2026-10-03 completed）的设计由
+  **#2491**（PR，2026-10-03 关闭）实现——课程转正后给报料来源回执。它决定"报料者能不能知道自己有用"，
+  是飞轮闭环的那一环。
+- 这两条是 09-16 节优先级 ② / ③ 的前置：**先让来源可信、让报料者有回执，再谈中文检索与企业材料。**
+
+**③ 09-16 节的其他优先级不动。** ① provenance 门禁已由 #1768 落地；③ 中文检索、④ 首次调用可观测、
+⑤ 两页企业说明、⑥ 多 agent 协同语义仍按原顺序——缺的是执行，不是重新排序。
+
+**收尾：KV → D1 写侧迁移（#2115，open，`priority:high`；#2075 / #2074 同族）** ← 2026-10-16 从第一位降下来
+
+> **状态裁定（2026-10-16）**：它不再是"本仓唯一真把功能打挂过的配额问题"。`/api/health` 实测
+> `kv_writes.global_last_failure_at = 2026-09-22T23:57:17.084Z`、`global_backend = "d1"`、`attempts = 0`
+> ——最近一次写失败距今 **23 天**；#1647（2026-09-13 completed）、#2111（2026-09-25 completed）已关闭，
+> #2115 与同族的 #2075 / #2074 仍 open。**是否收回"收尾"这个位置由 owner 定**（排序依据见上方 ①）。
+> 下面这段现状与验收原文一字未改，只是下移。
 
 - 现状（2026-10-02 在 `main` 上重数，附录命令 ②）：
 
@@ -102,27 +225,12 @@ MisakaNet should stay offline-first and Git-backed. External listings are useful
   "每请求一个新 key"：`gap:<query>` + `gap:index`（#1649 起 D1 优先；KV 路径只给没有 D1 binding 的部署，
   另受每天 400 个新 key 的上限）、`node_counter`（单个固定 key，重写不新增）、`telemetry:newkeys:<date>`
   （每天一个新 key，它本身就是那个上限计数器）、以及 `bumpCounter` 的 legacy counters 回退（附录命令 ⑦）。
-- 为什么放在最前：它不是性能问题，是**用户看得见的失败**——注册路径直接报错、索引重发不了、检索字段变空；
-  这三件事在 09-12 与 09-22 各发生过一次。
+- 为什么它曾经放在最前（2026-10-02 的判断）：它不是性能问题，是**用户看得见的失败**——注册路径直接报错、
+  索引重发不了、检索字段变空；这三件事在 09-12 与 09-22 各发生过一次。
 - 验收（**口径以 #2115 的 "How this epic ends" 为准**）：`/api/health` 在普通日子不再出现
   `degraded_reason: kv writes failing`，即**写量降到免费额度以下**（#2115 原文：不是因为配额几小时后就重置），
   #2111 可以关闭。**与 #2115 的差异写在明处**：本节还想再严一档——`kvPut(env,` / `MISAKANET_KV.put(`
   的每个直写点都写明"为什么必须留 KV"——但那是**本节的自我要求，不是 #2115 的关闭条件**，不能拿它当判据。
-
-**② provenance gate 已在跑（#1768）；intake conversion receipt 在飞（#1528 / #2491）。**
-
-- #1768（2026-09-16 合并）：`scripts/check_provenance.py` + `.github/workflows/provenance-gate.yml` +
-  `data/provenance-baseline.json`（`known_dead: []`）。它把"来源存不存在"从人工阅读变成自动挡：
-  触发条件是 PR 动了 `lessons/**`、检查脚本或基线，另有一条每周的 link-rot 定时（report-only）。
-- 本轮实跑（离线口径，附录命令 ⑤）：**检查 477 篇课程、引用 35 条外链，exit 0**。这是 2026-10-02 的
-  命令输出，**不是当前值**——当前语料规模看动态徽章（两个口径的差别 09-16 节已解释）。
-- **仍未解决**（09-16 节已写，本节不改写）：语义真伪——一个真实但无关的链接仍会通过这一档。
-- intake conversion receipt：#1528（issue，open）的设计由 **#2491**（PR，open）实现——课程转正后给报料
-  来源回执。它决定"报料者能不能知道自己有用"，是飞轮闭环的那一环。
-- 这两条是 09-16 节优先级 ② / ③ 的前置：**先让来源可信、让报料者有回执，再谈中文检索与企业材料。**
-
-**③ 09-16 节的其他优先级不动。** ① provenance 门禁已由 #1768 落地；③ 中文检索、④ 首次调用可观测、
-⑤ 两页企业说明、⑥ 多 agent 协同语义仍按原顺序——缺的是执行，不是重新排序。
 
 ### 本节不做
 
@@ -130,7 +238,8 @@ MisakaNet should stay offline-first and Git-backed. External listings are useful
 - **不把语料规模写成"当前值"**：受管计数句子在 09-16 节的「当前数字」，只认 `badges/*.json` 动态徽章；
   本节唯一的规模数字是带日期的命令输出（477 篇），引用时必须带那个日期。
 - 不为对齐路线图去动生成物（`data/lessons.json`、`docs/data/*`、`docs/lessons/**`）。
-- 不顺手重构 `workers/register-proxy-sw.js`：① 是一项独立迁移（#2115），不是这条路线图的附带修改。
+- 不顺手重构 `workers/register-proxy-sw.js`：**收尾**的 KV → D1 写侧迁移（#2115）是一项独立迁移，
+  不是这条路线图的附带修改。
 
 ### 附录：本节断言的复现命令
 
@@ -287,6 +396,31 @@ grep -n "await kvPut(env," workers/register-proxy-sw.js   # 7 处：6 处直写 
 | External channel policy | **基本不变** | MCP Registry 元数据已随 2.30.2 更新（见 10 月行）；Smithery 仍暂停、GitHub `/mcp` 仍未提名（**未验证**） |
 | Standing principles（7 条） | **全部保留，且有第 7 条的反例** | DCO + gate + CI **挡不住编造来源**：蓝图审视 §3 的 #1713 是 24 项检查全绿、`source:` 指向 404 仓库 |
 
+> **2026-10-16 重测裁定（本节与更早各节的原文一字未改，下面只列改判后的实测值）**
+>
+> - **状态快照表**（上表，2026-09-16 的记录 → 2026-10-16 实测）：语料 **393 → 485**
+>   （`python3 scripts/sync_lesson_count.py --check`）、`lessons/` 下 Markdown **440 → 528**、
+>   domain 覆盖 **43 → 45**、主包 / 发布账本 / `server.json` **2.30.2 → 2.43.0**、npx 安装器
+>   **0.5.3 → 0.5.6**、远端 MCP 工具 **7 → 8**（新增 `misakanet_me_inbox`）、本地 stdio 工具
+>   **10 → 11**、Python / worker 测试 **123 / 32 → 333 / 79**。节点数那一行早在 2026-09-26
+>   就按自己的裁定退出发布（见上方「当前数字」），不重测。
+> - **行号引用漂移**（「旧条目状态裁定」表里的 `文件:行号`，实测于 2026-10-16）：
+>   `POST /api/intake` 的 **:3801-3803 → :7961**；MCP `kind` 的 **:300 → :428 / :432**
+>   （`:300` 现在是 MCP 版本注释）；远端 `freshness()` 的 **:473 → :704**（调用在 :877）；
+>   版本回退字面量 **:447 的 `"2.27.1"` → :678 的 `"2.43.0"`**——它现在带
+>   `// x-release-please-version`，由 release-please 随版本维护，**10 月那一行的"未验证漂移"因此闭合**
+>   （仍然没有任何 workflow 注入 `MCP_VERSION`）。
+> - **不可复现的引用**：`data/search_gaps.jsonl`（原文写"35 行"）**在本仓从未存在**——
+>   `ls` 报 No such file，`git log --all` 与 `git ls-files` 都查不到该路径。那一行的其余部分
+>   （`scripts/demand_board.py` + 远端 `/api/search-signal`）仍然成立，只需删掉那个不存在的文件名。
+> - **计数更正**：`data/query-aliases.json` 的别名 **约 90 → 180** 条（下方 ③ 的现状行已同步改判）。
+> - **改判：企业自托管不是「零材料」**。`docs/enterprise/index.html`（13 KB，线上 `/enterprise/`）
+>   与 `docs/maintainer/enterprise-deployment.md`（28.8 KB）已由 `8855a869`（2026-09-25，PR #2245）
+>   交付；"现状：零材料"只是当时没看见，不是当时没有。**边界仍在**：无合规认证、无组织级审计导出、
+>   托管端点没有自托管形态——材料自己就是这么写的（下方 ⑤ 已同步改判）。
+> - **「Current baseline」那条 2026-08-22 快照同理**：现行值是 2.43.0 / 语料 485 / 本地 11 个工具
+>   （远端 8）；那段原文保留。
+
 补充三处文档之间的矛盾（不是状态问题，是记录问题，供后续整理时注意；本轮只改
 `ROADMAP.md` 与 `docs/rfc-280-90-day-roadmap.md`，下面各处**未在本轮修改**）：
 
@@ -354,6 +488,8 @@ grep -n "await kvPut(env," workers/register-proxy-sw.js   # 7 处：6 处直写 
   接在 `misakanet/search/engine.py` 的查询改写里，并内嵌进 worker 默认开启。
   设计记录仍在 `docs/maintainer/query-alias-design-2026-09-16.md`；
   实测 top-1 40%→70%、top-3 50%→80%、线上零查询词 11/20→0/20（同文件 `:8-9`）。
+  > **2026-10-16 重测**：别名表已是 **180** 条（`len(data/query-aliases.json["aliases"])`），
+  > 不是"约 90"——上面这句原文保留，只在这里改判（见上方「2026-10-16 重测裁定」块）。
 - 可接手内容：别名表 → 查询改写；FAQ 前置（`misakanet_search` 已有 FAQ 命中路径，返回
   `type="faq"` + `issue_url` + `answer`）；注意 `data/synonyms.json` 与
   `tests/test_synonym_expansion.py` 已存在，**不要再造第二份同义词数据**。
@@ -375,6 +511,10 @@ grep -n "await kvPut(env," workers/register-proxy-sw.js   # 7 处：6 处直写 
 - 现状：**零材料**。`docs/rfc-280-90-day-roadmap.md` 的 Vision 4 只提过 Enterprise / Internal
   deployment，无 PRD、无实现。机构会问的三件事（数据不出域 / 可审计 / 配额可见）逐条对照见
   蓝图审视 §2.4。
+  > **2026-10-16 改判：这条前提被实测推翻。** 材料已经存在——`docs/enterprise/index.html`（13 KB，
+  > 线上 `/enterprise/`）与 `docs/maintainer/enterprise-deployment.md`（28.8 KB），由 `8855a869`
+  > （2026-09-25，PR #2245）交付，材料自己写明"无合规认证 / 无组织级审计导出 / 托管端点无自托管形态"。
+  > 上面那句"零材料"是 2026-09-16 的记录，保留（见上方「2026-10-16 重测裁定」块）。
 - 可接手内容：两页 Markdown——一页边界（哪些数据留在本地、哪些必须出网：远端 MCP、D1、KV），
   一页问答（事件表 `misakanet_me_events` / `/api/search-signal` 的聚合能回答什么、**不能**回答什么，
   因为当前没有 tenant / actor 维度；配额现状是 IP 级 5 次/天）。
@@ -607,6 +747,10 @@ A release is not ready if intake accumulates without a review path.
 > 仍是 `"2.27.1"` 而发布已是 2.30.2，且没有任何 workflow 注入 `MCP_VERSION`——**线上实际返回值未验证**。
 > Glama / GitHub `/mcp` / Smithery 三条需要外部证据，本轮**未验证**。
 > 另注：本节标题与下一节都提到 v2.18，而 v2.18.0 早在 2026-08-21 就已发布。
+>
+> **2026-10-16 闭合**：上面那条"版本回退字面量仍未验证"的漂移已经解了——真实行号是
+> `workers/register-proxy-sw.js:678`，字面量是 `"2.43.0"` 且带 `// x-release-please-version`
+> （仍无 workflow 注入 `MCP_VERSION`）；远端 `tools/list` 实测 **8** 个工具。
 
 Goal: make external discovery channels reflect a stable product, not a vanity
 badge collection.
