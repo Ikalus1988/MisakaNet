@@ -7,6 +7,24 @@ All notable changes to the Misaka Network project are documented here.
 
 ---
 
+## [2.43.1](https://github.com/Ikalus1988/MisakaNet/compare/v2.43.0...v2.43.1) (2026-10-16)
+
+
+### Bug Fixes
+
+* **ci:** 形状门禁把「引用」当成「认领」的误报 —— 引用形态不再命中，真认领仍被抓 ([#3311](https://github.com/Ikalus1988/MisakaNet/issues/3311)) ([7fde252](https://github.com/Ikalus1988/MisakaNet/commit/7fde25245c9fae58befc1b49968ba2bb21f2dc13))
+* **schema:** the lesson status enum held three values while the gate enforced six, and the required audit check reads the schema ([#3302](https://github.com/Ikalus1988/MisakaNet/issues/3302)) ([04f203e](https://github.com/Ikalus1988/MisakaNet/commit/04f203effbcc7bb46e24686f1fb930ca52dba954))
+
+
+### Documentation
+
+* **roadmap:** align the roadmap with the 2026-10-16 re-measurement, and retire one §93.10 row that lived 17 minutes ([#3310](https://github.com/Ikalus1988/MisakaNet/issues/3310)) ([ec7a683](https://github.com/Ikalus1988/MisakaNet/commit/ec7a683e5496fa627bbfd9675cfeafacbf5342b8))
+
+
+### Lessons
+
+* two intakes become lessons — a saturation cap that amplifies at zero, and initdb under a non-ASCII Windows path ([#3289](https://github.com/Ikalus1988/MisakaNet/issues/3289)) ([07c64ca](https://github.com/Ikalus1988/MisakaNet/commit/07c64caf8fba882527d06ca8301c825fc7c1a8b9))
+
 ## [2.43.0](https://github.com/Ikalus1988/MisakaNet/compare/v2.42.3...v2.43.0) (2026-10-15)
 
 
