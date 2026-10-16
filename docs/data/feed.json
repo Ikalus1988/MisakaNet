@@ -1,9 +1,16 @@
 {
-  "generated_at": "2026-10-15T17:10:24.821255+00:00",
+  "generated_at": "2026-10-15T21:31:53.438409+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3293",
+      "timestamp": "2026-10-15T17:20:31Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "docs(handoff): §93 — the wrap-up where three of the four premises had to be retracted",
@@ -30,13 +37,6 @@
       "title": "chore(main): release 2.43.0",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/3130",
       "timestamp": "2026-10-15T15:50:23Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(deps): the seven safe action bumps from #3161, without the pr-genius one",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3260",
-      "timestamp": "2026-10-15T15:38:49Z",
       "source": "github"
     },
     {

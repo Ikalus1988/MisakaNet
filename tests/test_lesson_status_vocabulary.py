@@ -22,6 +22,7 @@ that matters: anything the writer accepts, the gate accepts.
 """
 from __future__ import annotations
 
+import json
 import re
 import subprocess
 import sys
@@ -36,6 +37,11 @@ QUEUE_LESSON = REPO / "scripts" / "queue_lesson.py"
 GATE = REPO / "scripts" / "lesson_gate.py"
 TRUST_SEMANTICS = REPO / "docs" / "trust-semantics.md"
 TEMPLATE = REPO / "lessons" / "TEMPLATE.md"
+# The surface that actually blocks a merge: `scripts/validate_lessons.py` runs
+# `jsonschema.validate(fm, schema)` against this file, and the required `audit` check runs
+# that script. It was the only status surface this module did not pin, and it had drifted
+# to three values while the gate enforced six (measured 2026-10-15).
+SCHEMA = REPO / "schemas" / "lesson.json"
 
 # The value the writer used to advertise and the gate never accepted. Named explicitly so
 # that removing it from the writer produces a test that says *why*, not just a set diff.
@@ -169,4 +175,26 @@ def test_the_contributor_template_lists_the_statuses_the_gate_enforces() -> None
     listed = {part.strip() for part in line.split("REQUIRED", 1)[1].lstrip(" —").split("|")}
     assert listed == VALID_STATUS, (
         f"lessons/TEMPLATE.md offers {sorted(listed)} but the gate enforces {sorted(VALID_STATUS)}."
+    )
+
+
+def test_the_json_schema_accepts_every_status_the_gate_accepts() -> None:
+    """The one restatement that can actually block a merge.
+
+    `scripts/validate_lessons.py` validates frontmatter against `schemas/lesson.json`, and the
+    required `audit` check runs it — so an out-of-date enum here is not a documentation
+    inaccuracy, it is a red required check on a lesson the quality gate just accepted.
+
+    Measured 2026-10-15: the enum held `published, draft, archived` while the gate enforced six
+    values. Nothing had noticed because all 460 lessons in the corpus were `published` (420) or
+    `draft` (40) — `active`, `stale` and `superseded` had never been used. The first PR to use
+    the documented `superseded` (to retire a lesson superseded by a correction) was blocked by
+    `audit`, having passed `lesson_gate.py` without a finding.
+    """
+    schema = json.loads(SCHEMA.read_text(encoding="utf-8"))
+    listed = set(schema["properties"]["status"]["enum"])
+    assert listed == VALID_STATUS, (
+        f"schemas/lesson.json accepts {sorted(listed)} but the gate enforces "
+        f"{sorted(VALID_STATUS)}. A lesson the quality gate passes can still fail the required "
+        f"`audit` check — missing: {sorted(VALID_STATUS - listed)}, extra: {sorted(listed - VALID_STATUS)}."
     )
