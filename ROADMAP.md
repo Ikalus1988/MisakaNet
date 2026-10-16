@@ -77,6 +77,15 @@ MisakaNet should stay offline-first and Git-backed. External listings are useful
    （`pip-install-proxy-timeout` 4、`pip-install-timeout-ssl` 1、`browser-harness-cdp-browser-automation` 1）。
    **待 owner 决定**：是把投票收敛成可归因事件，还是承认它只是"弱信号"而不当成功指标。
 
+   **2026-10-16 更新（owner 已决定，实现见 `docs/maintainer/client-half-acceptance.md` §F）**：
+   按"**面**"归因，不按人归因。`POST /api/helpful` 现在接受一个可选的**常量** `source` 标签
+   （面板投的是 `dsh-web`），每票另外记进 worker 现成的计数器形状
+   `helpful-source:<source>:<YYYY-MM-DD>`；`helpful:<lesson_id>` 与返回的 `count` 一律不变，
+   缺席 `source` 的行为与改动前完全一致。常量标签**不是身份**——没有账号、没有 `client_id`、
+   没有 cookie、没有指纹、没有按会话取值——所以它不越过"除了你的投票与报料，不上传任何东西"
+   这条线，却让"面板投了多少、什么时候投的"第一次可答。有意未做：没有任何公开路由读这些计数，
+   那是另一份契约。
+
 ### 附录：本节断言的复现命令
 
 ```bash

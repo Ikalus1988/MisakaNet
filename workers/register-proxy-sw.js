@@ -7791,6 +7791,19 @@ export default {
     }
 
     // POST /api/helpful — record a helpful vote
+    //
+    // `source` (optional since 2026-10-16) is the **surface** that cast the vote, e.g. `dsh-web` for the
+    // DSH browser panel. It is deliberately a fixed label and not an identity: no account, no client_id,
+    // no cookie, no per-session value. Before it existed, a vote cast from the panel was byte-identical
+    // to one cast by `curl`, so the panel's own effect could not be measured at all — the panel shipped a
+    // feature whose outcome was unobservable by construction.
+    //
+    // The two writes are independent on purpose:
+    //   * `helpful:<lesson_id>` — the counter `GET /api/helpful` and `misakanet_me_events` read, unchanged;
+    //   * `counters:helpful-source:<source>` rows via `bumpCounter` — the same shape `traffic:<class>` and
+    //     `gap:<query>` already use, bucketed by UTC day so "how many panel votes, and when" is answerable
+    //     later without touching the lesson counter.
+    // Absent or unusable `source` writes no source row at all, so the pre-change behaviour is exact.
     if (request.method === "POST" && url.pathname === "/api/helpful") {
       if (!hasDurableStore(env)) return jsonResponse({ error: "no storage configured" }, 503);
       let voteBody;
@@ -7801,6 +7814,12 @@ export default {
       const cur = parseInt(await storeGet(env, kvKey, "text") || "0", 10) || 0;
       const newCount = cur + 1;
       await storePut(env, kvKey, String(newCount));
+      const voteSource = sanitizeIdentifier(voteBody.source, 40);
+      if (voteSource) {
+        const day = new Date().toISOString().slice(0, 10);
+        try { await bumpCounter(env, "helpful-source", voteSource, day, 1); }
+        catch (e) { logInternal("helpful source counter failed", e); }
+      }
       return jsonResponse({ lesson_id: lessonId, count: newCount });
     }
 

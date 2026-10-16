@@ -517,19 +517,33 @@ def test_the_vote_is_never_cast_for_the_person():
 
 
 def test_the_cheap_vote_sends_the_least_it_can():
-    """Rule 3: 👍 carries the lesson id alone; 👎 carries the search text, and the UI says so.
-
+    """Rule 3: 👍 carries the lesson id and the fixed surface label; 👎 carries the search text too.
     The disclosure is not decoration. `/api/feedback` stores the query text and an IP for 90 days, so a
-    click that sends it has to be a click the person understood.
+    click that sends it has to be a click the person understood. `source: "dsh-web"` is a constant, not an
+    identity (see `test_the_vote_source_is_a_fixed_label_and_never_an_identity`); what this rule still
+    refuses is the *query* travelling with a 👍.
     """
     source = client_source()
     matches = CALL_TO_HELPFUL.findall(source)
     assert matches, "the helpful vote must post to /api/helpful"
     assert len(matches) == 1, f"one call site expected for /api/helpful, found {len(matches)}"
     assert "query" not in matches[0], (
-        f"👍 must send only lesson_id, but its body carries more: {matches[0].strip()!r}")
+        f"👍 must not carry the search text, but its body does: {matches[0].strip()!r}")
     assert "sends the lesson id" in source and "also sends the search text" in source, (
         "each action must state what it sends, in the UI, before the click")
+
+
+def test_the_visibility_surface_still_cannot_vote():
+    """Rule 1 is unchanged by the panel's new button: the *search row* still posts nothing.
+
+    The panel is a different surface from `tool.call.toolview` — it reviews the session, and its own
+    section ① was already rendering "not voted" next to every search. Moving that state to a button is
+    what the owner asked for; adding one to the transcript's search row is what this refuses.
+    """
+    search, _ = surface_bodies(client_source())
+    assert "post(" not in search and "sendHelpfulVote(" not in search, (
+        "the search row must not post anything: judgment belongs on the finalized assistant message or "
+        "in the panel that reviews the session")
 
 
 def test_the_design_rules_can_go_red():
@@ -540,7 +554,7 @@ def test_the_design_rules_can_go_red():
     # the visibility surface posting is the misplacement
     assert "post(" in "function MisakanetSearchRow() { post('/api/helpful', {}); } function MisakanetVerdictAction() {}"
     # 👍 carrying the query is the disclosure bug
-    ok = """/api/helpful", { lesson_id: lesson }"""
+    ok = """/api/helpful", { lesson_id: lesson, source: "dsh-web" }"""
     bad = """/api/helpful", { lesson_id: lesson, query: memory.query }"""
     assert "query" not in CALL_TO_HELPFUL.findall(ok)[0]
     assert "query" in CALL_TO_HELPFUL.findall(bad)[0]
@@ -775,22 +789,189 @@ def test_the_slot_registration_rules_can_go_red():
     assert SIDEBAR_KEY.findall('{ name: "sidebar.right.pane.tab" }') == []  # non-vacuity matters
 
 
+# ── D4, third iteration: an allowlist of outbound targets, not a blacklist of bad names ─────────────
+#
+# The rule has been wrong twice, and both times in the same direction — it listed the ways a page could
+# file an issue *that we already knew about*:
+#
+#   1. `no "/mcp" call` — true while the bundle made no MCP call at all. Broken by the mere existence of
+#      `POST /api/intake`, a route on the same worker that opens an intake issue and mentions neither
+#      `/mcp` nor a tool name;
+#   2. `no misakanet_submit_intake / misakanet_write_lesson tool name` — more precise about the *operation*
+#      (and that reasoning was right), but still a blacklist, and still blind to `POST /api/intake`, which
+#      is reachable from a page (`export default { fetch }` at `register-proxy-sw.js:7272`) and calls none
+#      of the names on the list.
+#
+# So the rule stops naming the bad and starts enumerating the good: **every outbound target the bundle
+# mentions must be on a list a human wrote on purpose**. Adding a new call — `/api/intake`, a new route, the
+# MCP endpoint — now fails the gate instead of sliding past it, which is the property D4 actually wants.
+#
+# How the targets are extracted: every route- or URL-shaped **string literal** in the bundle, plus its
+# endpoint constants (`SEARCH_ENDPOINT = "…/api/lessons"`). The extraction is deliberately syntactic, so it
+# cannot see a target assembled from pieces that never appear as one literal. What it *does* see is the
+# shape every call in this file actually has, and what it misses is named in the test rather than hidden.
+
+#: Every outbound target `lib/client.js` is allowed to reach, and why. One entry per call site.
+CLIENT_TARGETS = {
+    "/api/helpful": "the vote (POST) and the confirmations the panel reads (GET)",
+    "/api/feedback": "the 👎 gap statistic",
+    "/assets/voice/": "the server-named voice cue's audio",
+    "/api/lessons": "the /misakanet composer overlay search",
+    "https://misakanet.org/lessons/": "the two lesson links a person clicks (the row and the toast)",
+    "https://misakanet.org/": "the site link behind a result that has no id",
+}
+
+#: The literal, absolute forms the same targets can take in the source. `var API = "https://misakanet.org"`
+#: is the host every path rides — a bare host, not a call — and the overlay's search URL is written in full
+#: because it is a single constant rather than an `API + path` join.
+CLIENT_TARGET_ALIASES = {
+    "/api/lessons": {"https://misakanet.org/api/lessons"},
+}
+
+CLIENT_TARGET_LITERALS = set(CLIENT_TARGETS) | {"https://misakanet.org"}
+for _alias in CLIENT_TARGET_ALIASES.values():
+    CLIENT_TARGET_LITERALS |= _alias
+
+#: Named so they can be excluded *and* asserted absent from the call sites. These are not destinations: the
+#: MCP URL is the settings row's **config default** (displayed, never fetched) and the other two are the
+#: bundle's own constants. Each is still scanned by the allowlist rule above, so a new fetch to any of them
+#: is a finding until a human adds the literal — which is the whole point.
+CLIENT_NON_CALL_LITERALS = {
+    "https://misakanet.org/mcp",
+    "misakanet-panel",
+    "mcp__misakanet__misakanet_search",
+    "mcp__misakanet__search",
+    "mcp__misakanet__misakanet_submit_intake",
+    "mcp__misakanet__submit_intake",
+}
+
+#: Route- or URL-shaped literals a finding is reported as. Three shapes: a full URL, an absolute path, and
+#: the MCP endpoint. Kept to strings a `fetch`/`post` call could actually carry — an extension list such as
+#: `.mp3` is not a shape (the voice cue's audio arrives on the allowlisted `/assets/voice/` prefix).
+CLIENT_TARGET_SHAPE = re.compile(r"""["']((?:https?://[^"']+|/[A-Za-z0-9][A-Za-z0-9/._-]*|/mcp))["']""")
+TARGET_CONST = re.compile(r"""var\s+[A-Z][A-Z0-9_]*\s*=\s*["']([^"']+)["']""")
+FETCH_CALL = re.compile(r"\bfetch\(")
+POST_CALL = re.compile(r"""\bpost\(\s*["']([^"']+)["']""")
+
+
+def client_outbound_targets(source: str) -> list[str]:
+    """Every route- or URL-shaped literal this bundle's source names.
+
+    Only constant values that are themselves URLs or rooted paths count — `PANEL_ID = "misakanet"` is a slot
+    id, not a destination, and pulling every string constant in would drown the rule in fixtures.
+    """
+    found = set(CLIENT_TARGET_SHAPE.findall(source))
+    for value in TARGET_CONST.findall(source):
+        if value.startswith("/") or value.startswith("http"):
+            found.add(value)
+    return sorted(found)
+
+
+def client_target_findings(source: str) -> list[str]:
+    """Targets the bundle names that a human has not put on the allowlist."""
+    return [target for target in client_outbound_targets(source)
+            if target not in CLIENT_TARGET_LITERALS and target not in CLIENT_NON_CALL_LITERALS]
+
+
+def unreviewed_fetch_targets(source: str) -> list[str]:
+    """Every fetch/post call site, checked the second way: by *count*, not by literal.
+
+    The literal allowlist cannot see a target built from pieces. This can: it counts the bundle's call
+    sites and requires each one to be accounted for by an allowlisted target. A new call — whether it names
+    a literal or computes one — changes the count and fails here, even if the literal rule stayed quiet.
+    """
+    return sorted(set(POST_CALL.findall(source)) - CLIENT_TARGET_LITERALS)
+
+
+def test_the_browser_half_only_calls_targets_a_human_allowlisted():
+    """D4, third iteration: the bundle's outbound targets are a closed, reviewed set.
+
+    A finding here is not automatically "this files an issue" — it is "this bundle now reaches somewhere
+    nobody approved", which is the question that catches `/api/intake` *and* the next route like it.
+    """
+    source = client_source()
+    findings = client_target_findings(source)
+    assert not findings, (
+        "the browser half names an outbound target that is not on the allowlist: "
+        + str(findings) + ". If the call is intended, add it to CLIENT_TARGETS with a reason — that review "
+        "is the gate. If it is not on the list by accident, this is how D4 is meant to fail: loudly.")
+    # Call-site accounting: five `fetch(` sites (overlay search, the POST helper, the panel's GET, the
+    # click-through link is not one) and two `post(` sites, every one of them against an approved target.
+    assert source.count("fetch(") == 3, (
+        "the bundle gained or lost a `fetch(` call site: " + str(source.count("fetch(")) + ". The literal "
+        "allowlist cannot see a computed target; this count is what makes a new call fail anyway")
+    assert unreviewed_fetch_targets(source) == [], unreviewed_fetch_targets(source)
+    # The MCP endpoint is *displayed* as a config default and never fetched. The allowlist excludes it;
+    # this is the other half — the exclusions are not hiding a call.
+    for literal in ("https://misakanet.org/mcp",):
+        for i, line in enumerate(source.splitlines(), 1):
+            assert "fetch(" not in line or literal not in line, (
+                f"line {i} fetches {literal}, which the allowlist deliberately does not approve: {line}")
+    # And the list is not allowed to rot into a superset of what the bundle does.
+    targets = set(client_outbound_targets(source))
+    assert targets, "the extraction found no target at all — this check would pass vacuously"
+    for entry in sorted(CLIENT_TARGETS):
+        named = {entry} | CLIENT_TARGET_ALIASES.get(entry, set())
+        assert named & targets, (
+            f"{entry!r} is on the allowlist but the bundle no longer names it in any form "
+            f"({sorted(named)}): remove it, or the list stops describing the code it pins")
+
+
 def test_the_panel_cannot_file_an_issue():
     """The browser half reads and votes; it never submits an intake.
 
     The only way to pull a receipt is to submit the same text again, and the server's dedup window is
     finite — so a page-triggered re-submit could file a *second* GitHub issue for the same problem. No
     click in a UI may create an issue, which is why the panel explains who re-checks instead of offering
-    a button. This gate is the difference between a design note and an enforced one.
+    a button. This gate is the difference between a design note and an enforced one; its history (three
+    iterations, two of them bypassed by `POST /api/intake`) is recorded above.
     """
     source = client_source()
-    assert 'API + "/mcp"' not in source and '"tools/call"' not in source, (
-        "the browser half must not call the MCP endpoint at all: submits create issues")
+    assert not client_target_findings(source), (
+        "an unapproved outbound target reached the bundle: " + str(client_target_findings(source)))
+    # The positive control that keeps the extraction honest: the one route that files from a *page* with
+    # no tool name involved. If this line stops being a finding, the rule above proves nothing.
+    probe = source.replace('post("/api/feedback"', 'post("/api/intake"', 1)
+    assert "post(\"/api/intake\"" in probe, "the red fixture did not take — update it with the call sites"
+    assert "/api/intake" in client_target_findings(probe), (
+        "`POST /api/intake` opens an issue for anyone who calls it and appears in no ban list; an "
+        "allowlist must catch it, and this fixture is what proves the allowlist is not another blacklist")
     panel = panel_body(source)
     assert 'T("panel.report.recheck")' in panel, (
         "the panel must say who re-checks a pending report, or the missing control looks like an oversight")
     assert "by the agent, not by this page" in dict_value("panel.report.recheck"), (
         "the sentence behind that key is what makes the missing control read as deliberate")
+    # The no-match row's affordance is the copy the person hands to the agent, and the panel says why.
+    assert "intakeNextStep(" in panel, (
+        "a recorded no-match must surface the agent's next step as a copyable line")
+    assert "copyText(intakeNextStep(" in panel, (
+        "that line is written to the clipboard and posted nowhere")
+
+
+def test_the_no_issue_allowlist_rule_can_go_red():
+    """The three fixtures the allowlist has to get right: a new route, the approved vote, the MCP submit.
+
+    * `POST /api/intake` — a route on the same worker that opens an intake issue, naming no tool: this is
+      the call both earlier versions of the rule missed, and it must be a finding;
+    * `POST /api/helpful` — the vote this change exists for, and the clearest way to make the rule useless
+      is to have it ban its own feature: it must not be a finding;
+    * `/mcp` + `misakanet_submit_intake` — the direct submit the *second* version caught; the allowlist
+      must still catch it, so the new shape does not lose the old one's ground.
+    """
+    intake = 'post("/api/intake", { problem: text })'
+    assert client_target_findings(intake) == ["/api/intake"], client_target_findings(intake)
+    assert client_target_findings('post("/api/helpful", { lesson_id: id, source: HELPFUL_SOURCE })') == []
+    assert client_target_findings('fetch(API + "/assets/voice/" + cue + ".mp3")') == []
+    assert "/assets/voice/" in client_outbound_targets('fetch(API + "/assets/voice/" + cue)'), (
+        "the voice cue's fetch is an `API + path` join; the extractor must see the path it joins")
+    submitter = (
+        'fetch(API + "/mcp", { method: "POST", body: JSON.stringify({ method: "tools/call",'
+        ' params: { name: "misakanet_submit_intake", arguments: { problem: text } } }) });'
+    )
+    assert "/mcp" in client_target_findings(submitter), client_target_findings(submitter)
+    # The extraction's own positive control: the bundle as shipped names the host it rides and the five
+    # approved targets, so a check that suddenly finds nothing is a broken check, not a clean bundle.
+    assert client_target_findings(client_source()) == []
 
 
 def test_every_counted_noun_in_the_panel_can_be_singular():
@@ -859,6 +1040,150 @@ def test_the_panel_asks_each_lesson_once_and_only_nags_about_open_reports():
     assert "asked.current[lesson.lessonId] = true" in panel, "the guard must be set before the request"
     assert "var openReports = intakes.filter(" in panel, (
         "the re-check hint must be derived from the reports that are still open, not from any report")
+
+
+# ── the panel's vote (the reason this half exists, moved one click closer) ───
+#
+# Section 0 of the acceptance list says the UI's one measurable job is to raise the rate at which a human
+# judgment gets recorded. The verdict row asks the question where the outcome is visible; the panel is
+# where a person *reviews*, and it was already printing "not voted" next to every search without offering
+# the action. These rules pin the action, what it sends, that a click is visible in its own row, and that
+# the failure path of a search becomes something the person can hand back to the agent.
+
+SOURCE_FIELD = re.compile(r"source:\s*HELPFUL_SOURCE")
+
+
+def test_the_panel_can_vote_from_the_search_it_recorded():
+    """One click in section ①, doing exactly what the message verdict does (one call site, one body)."""
+    panel = panel_body(client_source())
+    assert "sendHelpfulVote(log, entry)" in panel, (
+        "the panel's search row must offer the same vote action the verdict offers")
+    assert "voteFromPanel(entry)" in panel, "the affordance must be wired to that action"
+    assert "T(\"panel.asked.voteHint\")" in panel, (
+        "the panel's vote states what it sends before the click, like the verdict's disclosure does")
+    # The action is offered only where the log says nothing has been voted yet.
+    assert "entry.lessonId && !entry.voted" in panel, (
+        "the button belongs on a sighting that carries a lesson and has no vote recorded")
+    # Nothing in the panel posts from an effect: the click is the only trigger.
+    assert not auto_votes(panel), "a panel vote must never be cast without a click"
+
+
+def test_the_vote_source_is_a_fixed_label_and_never_an_identity():
+    """Change #5's whole privacy argument, as a gate.
+
+    `POST /api/helpful` used to take `{lesson_id}` alone, which made a panel vote indistinguishable from a
+    `curl` vote — the panel's effect was unmeasurable by construction. The fix is a **constant** surface
+    label. A constant is not an identity: it is identical for every person, every install and every
+    session, and it cannot be joined to anything. The forbidden shapes below are the ones that would cross
+    the line the repository documents ("no account, no client_id, nothing uploaded but your votes and
+    reports"), so the client half and the worker are both pinned to the same literal.
+    """
+    source = client_source()
+    assert 'var HELPFUL_SOURCE = "dsh-web";' in source, (
+        "the vote's surface label must be one named constant")
+    assert SOURCE_FIELD.search(source), (
+        "the helpful POST must send that constant as `source`, not a computed value")
+    worker = (REPO / "workers" / "register-proxy-sw.js").read_text(encoding="utf-8")
+    assert "voteBody.source" in worker, "the worker must read the source field"
+    assert 'bumpCounter(env, "helpful-source", voteSource, day, 1)' in worker, (
+        "the source counter must follow the worker's existing `bumpCounter` shape")
+    assert "helpful:${lessonId}" in worker, "the lesson counter the client reads must be unchanged"
+    # No identity may be *generated* anywhere near the label: the constant is a literal, and nothing in
+    # this file mints a value that could be joined back to a voter.
+    assert "crypto" not in source, "the browser half generates nothing that could identify a voter"
+    assert not re.search(r"HELPFUL_SOURCE\s*=\s*[^;]*(\+|\$\{|randomUUID)", source), (
+        "the surface label must be a literal, never composed from a session, a time or a random id")
+
+
+def test_the_vote_source_rule_can_go_red():
+    """The red fixture: what an identity in the vote body looks like, and why it is refused."""
+    good = 'post("/api/helpful", { lesson_id: entry.lessonId, source: HELPFUL_SOURCE })'
+    bad = 'post("/api/helpful", { lesson_id: entry.lessonId, source: "dsh-web-" + sessionId })'
+    assert SOURCE_FIELD.search(good), "the constant is what the rule looks for"
+    assert not SOURCE_FIELD.search(bad), (
+        "a composed value must not satisfy the rule — that is the whole difference between a surface "
+        "label and an identity")
+    assert re.search(r"var HELPFUL_SOURCE = [^;]*(\+|\$\{)", 'var HELPFUL_SOURCE = "x-" + y;'), (
+        "the red fixture must trip that rule")
+    assert not re.search(r"var HELPFUL_SOURCE = [^;]*(\+|\$\{)",
+                         'var HELPFUL_SOURCE = "dsh-web";'), (
+        "and the shape actually shipped must satisfy it")
+
+
+def test_one_click_says_what_it_changed():
+    """Change #2: the confirmation names the consequence in the project's own vocabulary.
+
+    "One makes the reuse event appear; the second is what agents read as E4" is the rule the trust section
+    states, so the post-click line repeats it rather than inventing a metric. The browser words it; the
+    count comes from the server's own answer.
+    """
+    source = client_source()
+    panel = panel_body(source)
+    assert 'T("panel.asked.voteOne")' in source and 'T("panel.asked.voteTwo")' in source, (
+        "the click's receipt must distinguish the first confirmation from the second")
+    assert "the reuse event now appears" in dict_value("panel.asked.voteOne"), (
+        "the first vote says what it made appear")
+    assert "E4" in dict_value("panel.asked.voteTwo") and "second is what agents read as E4" \
+        in dict_value("panel.trust.footnote"), (
+        "the second vote uses the same E4 sentence the trust rule uses")
+    assert "answer.count" in panel, "the receipt must carry the count the server answered with"
+    assert "setTrust(function (prev)" in panel, (
+        "the count must land in the same per-lesson receipt section ③ renders, or the two disagree")
+
+
+def test_a_search_that_matched_nothing_hands_the_agent_a_line_and_files_nothing():
+    """Change #3: a miss becomes something the person can pass on — a copy, never a submit.
+
+    D4 is why this is a string and not a button that files: the receipt path is "submit the same text
+    again", the server's dedup window is finite, and a page-triggered submit could open a second issue for
+    one problem. The panel therefore renders the next step and says who may act on it.
+    """
+    source = client_source()
+    panel = panel_body(source)
+    assert "panel.asked.noMatchTag" in panel, (
+        "a recorded `no_match` must be visually distinct from a found search (acceptance B1)")
+    assert "missed" in panel and "T(\"panel.asked.noMatchTag\")" in panel, (
+        "the distinct rendering must be driven by the recorded miss, not by the row's hit count")
+    assert "copyText(intakeNextStep(entry.query)" in panel, (
+        "the affordance writes the next step to the clipboard")
+    assert "text: intakeNextStep" not in source or "onClick" in panel, (
+        "the copy is a click handler, never a render-time side effect")
+    line = dict_value("panel.asked.agentNextText")
+    assert "misakanet_submit_intake" in line, (
+        "the line has to name the tool the agent must call, or it is not a next step")
+    assert "panel.asked.agentNextWhy" in panel, (
+        "the panel must say why it cannot file the gap itself")
+    assert "dedup window is finite" in dict_value("panel.asked.agentNextWhy"), (
+        "the reason is D4's: the dedup window is finite, so a second submit can open a second issue")
+
+
+def test_the_external_reuse_evidence_is_not_the_local_count():
+    """Change #4: section ③ shows *other people's* confirmations, from the public endpoint.
+
+    The local counters ("used 1×") say what this session did; they say nothing about whether anyone else
+    ever reused the lesson, which is the only question an agent reading E4 cares about. The count comes
+    from `GET /api/helpful?lesson_id=`, and the section must be explicit that it is not yours.
+    """
+    source = client_source()
+    panel = panel_body(source)
+    start = panel.index('rows.push(h("div", { key: "s3"')
+    section = panel[start:panel.index('key: "s4"')]
+    # The comment that explains what the section does NOT render sits directly above this push.
+    at = source.index('rows.push(h("div", { key: "s3"')
+    nearby = source[max(0, at - 1600):at]
+    assert "misakanet_me_events" in nearby, (
+        "the code must say why the richer receipt is not rendered rather than leaving a bare count")
+    assert "canNOT show" in nearby, (
+        "the comment must state what this half cannot call, not that it chose not to")
+    assert 'T("panel.trust.external")' in section, (
+        "the trust list must label the external reuse evidence it renders")
+    assert "count(confirmations, T(\"panel.trust.human\"))" in section, (
+        "each row must print the public confirmation count through the plural helper")
+    assert 'T("panel.trust.footnote")' in section, "the section states the rule once"
+    assert "not yours" in dict_value("panel.trust.footnote"), (
+        "the count must be labelled as other people's votes")
+    assert 'T("panel.trust.declared")' in section, (
+        "the lesson's own stored level and the external count are different facts, shown apart")
 
 
 # ── the rule the real host enforced, as a red/green gate ─────────────────────
