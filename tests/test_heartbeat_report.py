@@ -351,16 +351,21 @@ def test_a_long_client_list_says_it_was_cut_rather_than_stopping_silently():
     assert "8 more self-declared names with fewer calls" in out
 
 
-def test_every_edited_file_is_lf_and_carries_no_dynamic_code_evaluation():
-    """Two repository-wide rules, asserted where the change is: LF endings, and no dynamic code
-    evaluation (a scanner watches for the two call spellings below). The needles are assembled at
-    run time so this test does not itself contain the strings it forbids."""
+def test_every_edited_file_carries_no_dynamic_code_evaluation():
+    """A code scanner watches this repository for the two dynamic-code call spellings, and no test
+    under `tests/` asserts them for a newly added file — so the new file asserts itself. The needles
+    are assembled at run time so this test does not contain the strings it forbids.
+
+    Line endings are deliberately **not** checked here. `tests/test_tracked_text_files_are_lf.py`
+    owns that rule for `*.py` / `*.md` / `*.yml` and reads the bytes out of the **index**, which is
+    the question that matters ("what will be committed"). The first version of this test read the
+    working tree instead and went red on the `windows-latest` legs — the checkout there is CRLF
+    while the committed blob is LF — so this keeps the half that has no other owner.
+    """
     forbidden = ("ev" + "al(", "new " + "Function(")
     for relative in ("scripts/heartbeat_report.py", "tests/test_heartbeat_report.py",
                      ".github/workflows/heartbeat.yml", "docs/maintainer/heartbeat.md"):
-        raw = (REPO / relative).read_bytes()
-        assert b"\r\n" not in raw, f"{relative} is not LF"
-        text = raw.decode("utf-8")
+        text = (REPO / relative).read_text(encoding="utf-8")
         for needle in forbidden:
             assert needle not in text, f"{relative} contains {needle}"
 
