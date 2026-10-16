@@ -20,7 +20,22 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 REPO = "Ikalus1988/MisakaNet"
-LESSONS_DIR = Path(__file__).resolve().parent.parent / "lessons"
+REPO_ROOT = Path(__file__).resolve().parent.parent
+LESSONS_DIR = REPO_ROOT / "lessons"
+
+# Where a new lesson goes. `lesson_gate.ACTIVE_LESSON_SUBDIRS` owns the rule ("Nothing reads a
+# markdown file outside those directories") and its error text names `lessons/contrib/` as the
+# destination. This writer used to hardcode `lessons/<slug>.md` — the root of `lessons/`, outside
+# every directory the corpus reads (`update_lessons_json.py: INDEXED_DIRS = ("core", "contrib")`),
+# so a contributed lesson passed every content rule on its way to never appearing in search, with
+# nothing red anywhere. The path is checked against the gate itself below rather than restated
+# here, because a second answer to "where do lessons live" is how this file got it wrong.
+NEW_LESSON_SUBDIR = "contrib"
+
+_SCRIPTS_DIR = Path(__file__).resolve().parent
+if str(_SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(_SCRIPTS_DIR))
+from lesson_gate import validate_location  # noqa: E402
 
 API_BASE = "https://api.github.com"
 HEADERS = {
@@ -180,6 +195,14 @@ def contribute(filepath: str):
     title = lesson["title"]
     filename = f"{_slugify(title)}.md"
     branch = f"contribute/{_slugify(title)[:40]}"
+    rel_path = f"lessons/{NEW_LESSON_SUBDIR}/{filename}"
+    # Ask the gate that owns the location rule instead of trusting the constant above. If the rule
+    # ever changes — a subdirectory renamed, `contrib` retired — this refuses to write rather than
+    # writing a lesson into a directory nothing reads.
+    location_errors = validate_location(REPO_ROOT / rel_path, REPO_ROOT)
+    if location_errors:
+        print(f"  ❌ 拒绝提交：{location_errors[0]}")
+        return False
     # Rollback scope: from the moment the branch exists, every later step either completes or the
     # branch is deleted again. The old chain had seven calls and four `return False` exits after the
     # branch was created, so a failed blob/tree/commit left `contribute/*` branches in the repository
@@ -212,7 +235,7 @@ def contribute(filepath: str):
         tree = _api("git/trees", data={
             "base_tree": base_sha,
             "tree": [{
-                "path": f"lessons/{filename}",
+                "path": rel_path,
                 "mode": "100644",
                 "type": "blob",
                 "sha": blob_sha,
@@ -261,6 +284,7 @@ def contribute(filepath: str):
         print(f"  ✅ PR 已创建: {pr['html_url']}")
         print(f"  标题: {pr['title']}")
         print(f"  分支: {branch}")
+        print(f"  文件: {rel_path}")
         return True
 
 

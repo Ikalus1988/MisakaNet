@@ -39,6 +39,67 @@ CFG = str(REPO / ".tools" / "mcporter.json")
 VALID_KINDS = {"missing_lesson", "stale_lesson", "new_lesson_candidate", "question"}
 
 
+# ── Field caps, and the cut that travels with the draft ─────────────────────
+#
+# Every cap below used to bite silently, and the silence was the whole defect: a draft that lost
+# its tail is still a well-formed draft, so nothing downstream re-checks it. The cost is on
+# record. A contributor's final `ASKING` section was sheared off by the 2,000-character cap in
+# `generate_draft` and they had to open a follow-up to report the loss — intake #2760, titled
+# "the body got cut by 2,000-char truncation (final 'ASKING' section … missing)".
+#
+# The model is already in this repository: `misakanet_get_lesson` used to truncate the lesson body
+# silently and now returns `{truncated, content_length, content_returned, full_content_url}` with
+# the response (`workers/register-proxy-sw.js`: "The cut now travels with the response"), after
+# 53 of 457 lesson bodies arrived cut in half (2026-09-24). Same rule here, on both surfaces the
+# pipeline produces: the draft it writes, and the result it returns.
+ERROR_SECTION_CAP = 2000
+# intake field -> cap, for the D1 `lesson_drafts` columns. One mapping, read by both the cut and
+# the truncation report, so the two cannot disagree about which number applied — the worker's cap
+# family cost four rounds to exactly that mismatch ("the fix was a number, not a shape").
+DRAFT_COLUMN_CAPS = {"problem": 2000, "fix": 4000, "verification": 2000}
+# The draft preview embedded in the notification issue. GitHub caps an issue body at 65,536
+# characters; this is a preview of a draft whose full text lives in `lesson_drafts.content_md`,
+# not a body limit, so it is deliberately much smaller than `QUESTION_BODY_CAP`.
+DRAFT_PREVIEW_CAP = 3000
+
+
+def _clip(text: str, cap: int, what: str, full_copy: str) -> tuple[str, str]:
+    """Return `(head, notice)`. `notice` is `""` when nothing was cut.
+
+    `what` names the surface the text was submitted to and `full_copy` says where the whole text
+    still is — or, when this pipeline did not keep it, says that plainly. A notice that only said
+    "truncated" would leave the reader with the same question the silent cut did.
+    """
+    if len(text) <= cap:
+        return text, ""
+    notice = (
+        f"⚠️ **Truncated at {cap:,} characters by intake-pipeline** "
+        f"({len(text):,} were submitted to {what}). The text above is the head only. {full_copy}"
+    )
+    return text[:cap], notice
+
+
+def _clip_value(text: str, cap: int, what: str, full_copy: str) -> str:
+    """`_clip` folded into one storable value — for a D1 column, which has nowhere else to say it."""
+    head, notice = _clip(text, cap, what, full_copy)
+    return f"{head}\n\n---\n{notice}\n" if notice else head
+
+
+def truncation_report(intake: dict) -> dict:
+    """Which submitted fields had to be cut, and by how much.
+
+    The response half of the same announcement, shaped after `misakanet_get_lesson`'s
+    `{truncated, content_length, content_returned, …}`: a caller that never opens the issue can
+    still tell from the result alone that part of what it sent was not used.
+    """
+    out = {}
+    for field, cap in [("error", ERROR_SECTION_CAP), *DRAFT_COLUMN_CAPS.items()]:
+        submitted = len(intake.get(field) or "")
+        if submitted > cap:
+            out[field] = {"cap": cap, "content_length": submitted, "content_returned": cap}
+    return out
+
+
 # ── Step 2: parse ──
 def parse_intake(raw: dict) -> dict:
     """Normalize an intake payload into pipeline fields."""
@@ -106,7 +167,12 @@ def generate_draft(intake: dict, cls: dict) -> dict:
     }
     sections = [f"## Problem\n\n{intake['problem']}"]
     if intake["error"]:
-        sections.append(f"## Error\n\n```\n{intake['error'][:2000]}\n```")
+        head, notice = _clip(
+            intake["error"], ERROR_SECTION_CAP, "the draft's Error section",
+            f"This pipeline keeps only that head, because the draft is the only artifact it "
+            f"writes: the full error text is in the intake of record (`{intake['source_id']}`), "
+            f"so re-submit the tail there if it carries the evidence.")
+        sections.append(f"## Error\n\n```\n{head}\n```" + (f"\n\n---\n{notice}" if notice else ""))
     if intake["what_tried"]:
         sections.append(f"## What was tried\n\n{intake['what_tried']}")
     if intake["fix"]:
@@ -173,10 +239,20 @@ def persist_draft(intake: dict, cls: dict, draft: dict, pre: dict) -> bool:
         "VALUES (?1,?2,?3,?4,'prechecked',?5,?6,?7,?8,'',?9,?10,?11,?12,datetime('now'),datetime('now')) "
         "ON CONFLICT(source_id, kind) DO NOTHING"
     )
+    # Each column announces its own cut and points at the copy that still holds the whole text:
+    # `content_md` of this same row. The columns are summaries; the draft is the record. The D1
+    # column names differ from the payload keys (`fix` is stored in `solution`), so the marker
+    # names the column a reader will actually query.
+    columns = [
+        _clip_value(intake[field], DRAFT_COLUMN_CAPS[field], f"the lesson_drafts.{column} column",
+                    "The full text is in `content_md` of this same row.")
+        for field, column in (("problem", "problem"), ("fix", "solution"),
+                              ("verification", "verification"))
+    ]
     params = [
         draft["slug"], intake["kind"], intake["source"], intake["source_id"],
         draft["title"], cls["domain"], json.dumps(draft["tags"], ensure_ascii=False),
-        intake["problem"][:2000], intake["fix"][:4000], intake["verification"][:2000],
+        *columns,
         draft["content_md"], json.dumps(pre, ensure_ascii=False),
     ]
     try:
@@ -274,13 +350,18 @@ def notify(intake: dict, cls: dict, draft: dict, pre: dict, is_new: bool) -> dic
     labels = ["intake", "mcp-intake", "pending-review"]
     if intake["kind"] == "question":
         labels.append("needs-human-review")
+    preview, preview_cut = _clip(
+        draft["content_md"], DRAFT_PREVIEW_CAP, "the draft preview in this issue",
+        f"The full draft is `lesson_drafts.content_md` for `source_id={intake['source_id']}`; the "
+        f"issue carries the head of it so a reviewer can triage without the D1 binding.")
     body = (
         f"**Kind:** {intake['kind']}\n**Source:** {intake['source']}\n"
         f"**Domain:** {cls['domain']}\n**Precheck:** score {pre['score']} — "
         f"{'pass' if pre['pass'] else 'needs work'}\n"
         f"**Issues:** {', '.join(pre['issues']) or 'none'}\n\n"
-        f"## Draft\n\n```markdown\n{draft['content_md'][:3000]}\n```\n\n"
-        f"---\n_Generated by intake-pipeline (PRD ③). Review and promote to lessons/._"
+        f"## Draft\n\n```markdown\n{preview}\n```\n"
+        + (f"\n---\n{preview_cut}\n" if preview_cut else "")
+        + "\n---\n_Generated by intake-pipeline (PRD ③). Review and promote to lessons/._"
     )
     req = urllib.request.Request(
         "https://api.github.com/repos/Ikalus1988/MisakaNet/issues",
@@ -311,6 +392,17 @@ def run(intake_raw: dict, dry_run: bool = False) -> dict:
             "routed_as": "question",
             "note": "Questions are not lesson candidates — no lesson draft was created.",
         }
+        # The question body is the deliverable, and `_clip_question` announces its 60,000-char cut
+        # in the issue. The response says it too, so a caller that only reads the result is not
+        # left thinking the whole question arrived (#2760 was reported by a human who noticed a
+        # missing section, because nothing in the response told them).
+        if len(intake["problem"]) > QUESTION_BODY_CAP:
+            result["truncated"] = True
+            result["truncations"] = {"problem": {
+                "cap": QUESTION_BODY_CAP,
+                "content_length": len(intake["problem"]),
+                "content_returned": QUESTION_BODY_CAP,
+            }}
         if dry_run:
             result["dry_run"] = True
             result["draft_preview"] = f"[Question] {(intake['problem'].splitlines() or ['help request'])[0][:80]}"
@@ -323,10 +415,17 @@ def run(intake_raw: dict, dry_run: bool = False) -> dict:
     cls = classify(intake)
     draft = generate_draft(intake, cls)
     pre = precheck(intake, draft)
+    cuts = truncation_report(intake)
     result = {
         "kind": intake["kind"], "source": intake["source"], "source_id": intake["source_id"],
         "slug": draft["slug"], "domain": cls["domain"], "precheck": pre,
     }
+    if cuts:
+        # The same announcement, on the surface the caller reads. Without it the caller sees
+        # `persisted: true` and a slug — a successful-looking response for a submission whose tail
+        # was dropped, which is the #2760 shape one level up.
+        result["truncated"] = True
+        result["truncations"] = cuts
     if dry_run:
         result["dry_run"] = True
         result["draft_preview"] = draft["content_md"][:200]

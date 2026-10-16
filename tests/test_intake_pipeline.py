@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Tests for scripts/intake_pipeline.py (PRD ③) — parse/classify/draft/precheck."""
 import json
+import os
 import sys
 import unittest
 from pathlib import Path
@@ -180,6 +181,135 @@ class TestQuestionRouting(unittest.TestCase):
         )
         self.assertIn(problem, body)
         self.assertNotIn("Truncated", body)
+
+
+class TestTruncationTravelsWithTheDraft(unittest.TestCase):
+    """#2760: the 2,000-character caps used to cut silently, so a draft that lost its
+    tail was indistinguishable from a complete one. The cut has to travel with both
+    artifacts the pipeline produces — the draft it writes and the result it returns —
+    which is the shape `misakanet_get_lesson` uses (`{truncated, content_length,
+    content_returned, full_content_url}`)."""
+
+    def _over_cap(self) -> dict:
+        return ip.parse_intake({
+            "kind": "missing_lesson", "source": "mcp", "source_id": "s1",
+            "problem": "P" * 2500, "error": "E" * 2100, "fix": "F" * 4100,
+            "verification": "V" * 2100,
+        })
+
+    def test_the_error_section_announces_its_cut(self):
+        intake = self._over_cap()
+        md = ip.generate_draft(intake, ip.classify(intake))["content_md"]
+        self.assertIn("Truncated at 2,000 characters by intake-pipeline", md)
+        self.assertIn("2,100 were submitted", md)
+        self.assertIn("intake of record", md, "the notice must say where the full text still is")
+        self.assertNotIn("E" * (ip.ERROR_SECTION_CAP + 1), md, "the head is the cap, not more")
+
+    def test_the_stored_columns_announce_their_own_cut(self):
+        """The D1 columns are what a triage query reads, and they are cut separately."""
+        intake = self._over_cap()
+        cls = ip.classify(intake)
+        draft = ip.generate_draft(intake, cls)
+        pre = ip.precheck(intake, draft)
+        captured = {}
+
+        def fake_query(sql, params=None):
+            captured["params"] = params
+            return {"result": [{"meta": {"changes": 1}}]}
+
+        original = ip._d1_query
+        ip._d1_query = fake_query
+        try:
+            self.assertTrue(ip.persist_draft(intake, cls, draft, pre))
+        finally:
+            ip._d1_query = original
+        problem, fix, verification = captured["params"][7:10]
+        self.assertIn("Truncated at 2,000 characters", problem)
+        self.assertIn("lesson_drafts.solution column", fix)
+        self.assertIn("lesson_drafts.verification column", verification)
+        self.assertIn("`content_md` of this same row", problem,
+                      "the notice must name the copy that still has the full text")
+
+    def test_the_result_says_which_fields_were_cut_and_by_how_much(self):
+        result = ip.run({"kind": "missing_lesson", "source": "mcp", "source_id": "s1",
+                         "problem": "P" * 2500, "error": "E" * 2100, "fix": "F" * 4100,
+                         "verification": "V" * 2100}, dry_run=True)
+        self.assertTrue(result["truncated"])
+        self.assertEqual(set(result["truncations"]),
+                         {"problem", "error", "fix", "verification"})
+        self.assertEqual(result["truncations"]["fix"],
+                         {"cap": ip.DRAFT_COLUMN_CAPS["fix"], "content_length": 4100,
+                          "content_returned": ip.DRAFT_COLUMN_CAPS["fix"]})
+
+    def test_the_issue_preview_announces_its_cut(self):
+        """`notify` embeds `content_md[:3000]` in the issue; that cut has to be visible too."""
+        intake = ip.parse_intake({"kind": "missing_lesson", "source": "mcp",
+                                  "problem": "database connection pool exhausted", "source_id": "s1"})
+        cls = ip.classify(intake)
+        draft = ip.generate_draft(intake, cls)
+        draft["content_md"] = "x" * (ip.DRAFT_PREVIEW_CAP + 10)
+        pre = ip.precheck(intake, draft)
+        sent = {}
+
+        class _Resp:
+            def read(self):
+                return json.dumps({"number": 7, "html_url": "https://example.invalid/7"}).encode()
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *exc):
+                return False
+
+        def fake_urlopen(req, timeout=None):
+            sent["body"] = json.loads(req.data.decode())["body"]
+            return _Resp()
+
+        original = ip.urllib.request.urlopen
+        had_token = os.environ.get("GH_TOKEN")
+        os.environ["GH_TOKEN"] = "test-token"
+        ip.urllib.request.urlopen = fake_urlopen
+        try:
+            ip.notify(intake, cls, draft, pre, is_new=True)
+        finally:
+            ip.urllib.request.urlopen = original
+            if had_token is None:
+                os.environ.pop("GH_TOKEN", None)
+            else:
+                os.environ["GH_TOKEN"] = had_token
+        self.assertIn("Truncated at 3,000 characters by intake-pipeline", sent["body"])
+        self.assertIn("lesson_drafts.content_md", sent["body"])
+        fence = sent["body"].index("```markdown")
+        close = sent["body"].index("```", fence + len("```markdown"))
+        self.assertGreater(sent["body"].index("Truncated at"), close,
+                           "the notice inside the fenced block would render as the draft's own text")
+
+    def test_no_field_can_be_cut_without_the_result_saying_so(self):
+        """The shape, not the value: each named cap must surface, whatever the number becomes."""
+        for field, cap in [("error", ip.ERROR_SECTION_CAP), *ip.DRAFT_COLUMN_CAPS.items()]:
+            raw = {"kind": "missing_lesson", "source": "mcp",
+                   "problem": "a real problem statement"}
+            raw[field] = "z" * (cap + 1)
+            report = ip.truncation_report(ip.parse_intake(raw))
+            self.assertIn(field, report, f"{field} was cut without the result reporting it")
+
+    def test_an_under_cap_submission_is_not_announced(self):
+        intake = ip.parse_intake({"kind": "missing_lesson", "problem": "a real problem statement",
+                                  "error": "Segfault", "fix": "increase the stack size",
+                                  "verification": "restart ok", "source": "mcp"})
+        self.assertNotIn("Truncated", ip.generate_draft(intake, ip.classify(intake))["content_md"])
+        self.assertEqual(ip.truncation_report(intake), {})
+        self.assertNotIn("truncated", ip.run({"kind": "missing_lesson", "source": "mcp",
+                                              "problem": "a real problem statement",
+                                              "fix": "increase the stack size"}, dry_run=True))
+
+    def test_an_over_cap_question_reports_its_cut_in_the_result(self):
+        """The question body is the deliverable; `_clip_question` already says so in the issue."""
+        problem = "q" * (ip.QUESTION_BODY_CAP + 5)
+        result = ip.run({"kind": "question", "problem": problem, "source": "mcp"}, dry_run=True)
+        self.assertTrue(result["truncated"])
+        self.assertEqual(result["truncations"]["problem"]["cap"], ip.QUESTION_BODY_CAP)
+        self.assertEqual(result["truncations"]["problem"]["content_length"], len(problem))
 
 
 if __name__ == "__main__":

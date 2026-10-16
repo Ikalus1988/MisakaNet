@@ -326,11 +326,36 @@ def bounty_body(anchor_number: int, members: list[dict], shared: list[str]) -> s
         "",
         "## Deliverable",
         "",
-        "A lesson under `lessons/` that answers the question(s) above, following "
+        "A lesson in `lessons/contrib/` that answers the question(s) above, following "
         "`docs/maintainer/lesson-fields.md` (title / domain / problem / root cause / fix, and a "
         "`## Verification` that is a checkable command with an expected result). A written answer in the "
         "issue is welcome as a first step, but the lesson is what makes it count — it is the artifact the "
-        "corpus keeps and the FAQ is built from.",
+        "corpus keeps and the FAQ is built from. (The directory is not decoration: the corpus is read "
+        "from `lessons/core/` and `lessons/contrib/`, so a file at `lessons/<slug>.md` passes every "
+        "content rule and is then never indexed.)",
+        "",
+        "## How this lands — read this before you start",
+        "",
+        "**1. Every commit needs a `Signed-off-by` trailer (`git commit --signoff`).** `DCO / "
+        "Signed-off-by` is a required check, and a fork pull request whose commits are unsigned "
+        "cannot land however good the lesson is. Measured 2026-10-17: seven open pull requests answer "
+        "tasks like this one (#3340–#3346) and every one of them is red on that check alone, so none "
+        "of them can merge as written.",
+        "",
+        "If you cannot or will not sign off, say so on this issue instead of opening the PR: a "
+        "maintainer can adopt it with `/adopt`. That fetches your branch, rebases it with `--signoff`, "
+        "pushes `adopted/<n>` and opens a new pull request with your commits — **your authorship is "
+        "preserved** and you are credited with a `Co-authored-by` trailer, and your fork is never "
+        "written to (`docs/maintainer/adopt-fork-pr.md`).",
+        "",
+        "**2. One intake converts to one lesson.** A lesson names the intake it converts in "
+        "`provenance.issue`, and no two lessons may name the same one: the conversion receipt "
+        "(`scripts/intake_receipt.py`) reads exactly that field, and two claims leave it unable to say "
+        "which lesson answered the reporter. Measured 2026-10-17 on this backlog: the open pull "
+        "requests #3344 and #3345 both claim `#2760`. The gate rule in #3361 makes a second claim fail "
+        "`scripts/lesson_gate.py` on a new lesson. So when this task lists several questions, write "
+        "**one** lesson, put the one it actually answers in `provenance.issue`, and list the rest in "
+        "`provenance.related` — one lesson per question is the failure that rule exists to stop.",
         "",
         "## MANDATORY ACCEPTANCE CRITERIA (AC)",
         "",
@@ -390,7 +415,9 @@ def bounty_body(anchor_number: int, members: list[dict], shared: list[str]) -> s
         "## Closes",
         "",
         "A merged lesson closes this task **and** the questions above (link them with `Fixes #N` so the "
-        "receipt rule applies). If you cannot finish it, comment here and it goes back to the pool.",
+        "receipt rule applies). The lesson names one of them in `provenance.issue`; the rest go in "
+        "`provenance.related`, per rule 2 above. If you cannot finish it, comment here and it goes back "
+        "to the pool.",
         "",
         "<sub>Opened automatically by `scripts/question_autopilot.py` from measured coverage of the open "
         "questions. The grouping is a suggestion: if these are not really one question, say so and this "
