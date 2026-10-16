@@ -69,13 +69,14 @@
 | `update-lessons.yml` | Update lessons.json（`lessons/**` 合并进来时也跑一遍，别让新课程等一天才有页面）| push, 定时, 手动 | `0 0 * * *` |
 | `nightly-mirror-consistency.yml` | Nightly Mirror Consistency（镜像一致性）| 定时 |  |
 
-## 发布/部署（12）
+## 发布/部署（13）
 
 | workflow | 用途 | 触发 | 定时 |
 |---|---|---|---|
 | `d1-bootstrap.yml` | D1 Bootstrap (PRD ④) | 手动 |  |
 | `deploy-worker.yml` | Deploy Cloudflare Worker（`workers/register-proxy-sw.js` **和** `workers/wrangler.toml` 变更都触发；部署后按 config 校对 keepalive cron，不一致即失败） | push, 手动 |  |
 | `docs.yml` | Deploy Documentation | PR, push |  |
+| `publish-dist.yml` | Publish generated site artifacts to dist（把生成站点发到 `dist`：`dist` = `main` 的树 + 生成物，Cloudflare Workers Builds 的 production branch 指向它，**尚未切换**）。只推 `dist`、不推 `main`；提交信息里**故意没有** `[skip ci]`——那会抑制它唯一要触发的部署。切换/验证/回滚见 `docs/maintainer/dist-branch-cutover.md` | push, 手动 |  |
 | `fatal-guard-publish.yml` | Publish @misaka-net/fatal-guard | push |  |
 | `fatal-guard.yml` | fatal-guard CI | PR, push, 手动 |  |
 | `publish-container.yml` | Publish Container to GHCR | 手动, release |  |

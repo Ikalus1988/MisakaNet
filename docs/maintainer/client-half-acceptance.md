@@ -184,3 +184,49 @@ The vote surface changed on 2026-10-16 and this paragraph records what did and d
   panel votes, and when" publicly is a new contract with its own privacy review and was not smuggled into
   this one.
 
+## Correction (2026-10-16): `E4` is observed reuse, not a vote
+
+Rows **B6**, **B8** and **B10** above record a rule that has since changed, and this repository does
+not rewrite dated acceptance records into agreement with today. They read: one human confirmation makes
+the reuse event appear, and the second is what agents read as `E4`. That is what the UI did, and it was
+wrong for a vote to *confer* `E4`.
+
+Since 2026-10-16 a `lesson_found_helpful` event is capped below `E4` at every count
+(`workers/register-proxy-sw.js`). A vote is one person's opinion, recorded as a hint: almost every
+retrieval is agent-initiated, so the person shown the "did this help?" button did not ask the question
+and usually cannot evaluate the answer — the vote surveys what the transport layer can observe, and the
+`E4` it produced was an artefact of politeness. Measured against production that day: of the 24
+most-retrieved lessons, 3 carried any vote at all (6 votes in total), and 0 of 483 lessons sat at `E4`.
+
+What the rows' intent becomes, still true to what they were checking — the count is other people's, and
+the number comes from the server's own answer:
+
+* **B6 / B8** — the row still renders the public count, labelled as other people's, as **external reuse
+  evidence**; it no longer renders `→ E4` or `live signal: E4`, because a vote cannot confer the rung.
+* **B10** — the receipt still carries the server's `answer.count` and the same sentence section ③
+  states; that sentence now says a vote is a hint and that `E4` comes from observable reuse.
+
+`E4` itself is unchanged in the tool: `misakanet_me_events` still returns `evidence: 'E0'|'E3'|'E4'`, and
+cross-node confirmation still emits `E4`. What changed is that only an observed signal can.
+
+## Correction (2026-10-17): *which* observation `E4` names
+
+The correction above ends "cross-node confirmation still emits `E4`". That sentence describes the rule
+it was replacing, and it is left exactly as written; the producer it names has changed since, so this
+records the change instead of rewriting a dated record.
+
+"Cross-node confirmation" in `misakanet_me_events` was a regex over the lesson's own body
+(`verified by:` / `contributors:`). That is a *declaration*, not an observation: anyone who can edit
+the lesson can type the line, which makes it cheaper to fake than the vote the previous correction had
+just demoted. So `E4` now has exactly one producer, and it is observed — two or more distinct
+`search_signals.client_hint` values actually retrieved the lesson
+(`lesson_retrieved_by_distinct_clients`), counted with `COUNT(DISTINCT client_hint)` so forty
+retrievals by one client add nothing. The declared line is still reported, as `lesson_confirmed_by`,
+an `E3` hint.
+
+This under-counts on purpose: an anonymous caller sends no `client_id`, writes no `client_hint`, and
+does not count. A trust signal may be wrong by staying silent; it must not be inflatable from inside
+the artifact it rates, and falling back to the User-Agent would remove exactly that property. Measured
+the same day, **0 of 483 lessons** had two distinct observed clients — so "nothing is at `E4`" is the
+honest answer, a true state of the world rather than a number to soften.
+

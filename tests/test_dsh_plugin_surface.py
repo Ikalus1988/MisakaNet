@@ -637,7 +637,8 @@ def panel_body(source: str) -> str:
 
 
 def test_the_panel_answers_the_questions_it_exists_for():
-    """Problems, lessons, contributions, trust, activity, voice — each labelled, in both languages.
+    """Problems, lessons, contributions, trust, activity, voice, the network's own ranking — each
+    labelled, in both languages.
 
     The copy moved into the dictionaries when the surfaces were localized, so this pins the key the panel
     asks for **and** the English string behind it: a key that resolves to nothing would pass a keys-only
@@ -649,7 +650,9 @@ def test_the_panel_answers_the_questions_it_exists_for():
                          ("panel.reports", "Reports you filed"),
                          ("panel.trust", "How much these lessons are trusted"),
                          ("panel.activity", "Your activity"),
-                         ("panel.voice", "Voice")):
+                         ("panel.voice", "Voice"),
+                         ("panel.hot", "What the corpus returns most"),
+                         ("panel.coverage", "The topics the corpus cannot answer yet")):
         assert f'T("{key}")' in panel, f"the panel lost its `{key}` section"
         assert f'"{key}": "{english}"' in source, f"`{key}` no longer reads as `{english}`"
 
@@ -817,6 +820,12 @@ CLIENT_TARGETS = {
     "/api/feedback": "the 👎 gap statistic",
     "/assets/voice/": "the server-named voice cue's audio",
     "/api/lessons": "the /misakanet composer overlay search",
+    "/api/analytics": "the panel's retrieval ranking (section ⑥): a public GET, the only per-lesson count",
+    # The panel's coverage read: one public GET of the coverage board, whose `gaps` ranking section ⑦
+    # renders (topics by unanswered searches, with the published lesson count behind each). A read, never a
+    # write, and the only target section ⑦ adds.
+    "https://misakanet.org/api/insights/lesson-coverage":
+        "the panel's coverage section ⑦: the public coverage board's ranking of topics by unanswered searches",
     "https://misakanet.org/lessons/": "the two lesson links a person clicks (the row and the toast)",
     "https://misakanet.org/": "the site link behind a result that has no id",
 }
@@ -895,9 +904,10 @@ def test_the_browser_half_only_calls_targets_a_human_allowlisted():
         "the browser half names an outbound target that is not on the allowlist: "
         + str(findings) + ". If the call is intended, add it to CLIENT_TARGETS with a reason — that review "
         "is the gate. If it is not on the list by accident, this is how D4 is meant to fail: loudly.")
-    # Call-site accounting: five `fetch(` sites (overlay search, the POST helper, the panel's GET, the
-    # click-through link is not one) and two `post(` sites, every one of them against an approved target.
-    assert source.count("fetch(") == 3, (
+    # Call-site accounting: five `fetch(` sites (overlay search, the POST helper, the panel's per-lesson
+    # GET, the panel's analytics GET, the panel's coverage GET — the click-through link is not one) and two
+    # `post(` sites, every one of them against an approved target.
+    assert source.count("fetch(") == 5, (
         "the bundle gained or lost a `fetch(` call site: " + str(source.count("fetch(")) + ". The literal "
         "allowlist cannot see a computed target; this count is what makes a new call fail anyway")
     assert unreviewed_fetch_targets(source) == [], unreviewed_fetch_targets(source)
@@ -915,6 +925,81 @@ def test_the_browser_half_only_calls_targets_a_human_allowlisted():
         assert named & targets, (
             f"{entry!r} is on the allowlist but the bundle no longer names it in any form "
             f"({sorted(named)}): remove it, or the list stops describing the code it pins")
+
+
+#: Section ⑦'s outbound target — one public GET of the coverage board. Named once so the entry above and
+#: the rule that checks it cannot drift apart.
+COVERAGE_TARGET = "https://misakanet.org/api/insights/lesson-coverage"
+
+#: The commit section ⑦ was cut from: the bytes *before* this section and *after* section ⑥, pinned so the
+#: red proof keeps isolating the new rule after this merges. `origin/main` would become the fixed bytes the
+#: day this lands, which is how the localization gate's fixture went red on `main`.
+COVERAGE_PRE_FIX_SHA = "babf2edf4403f7261f0a352c83d8fc35b6a384bf"
+
+
+def coverage_target_problem(source: str, targets: dict[str, str] = CLIENT_TARGETS) -> str | None:
+    """`None` when the coverage read is an allowlisted **literal**, else why it is not.
+
+    Both halves are needed. The list half is the review — a human decided this new destination is
+    acceptable, one entry at a time, which is what catches the *next* `/api/intake`. The literal half keeps
+    that review meaningful: a target assembled from pieces is invisible to the extraction below while still
+    being fetched, so the call must name its constant.
+    """
+    if COVERAGE_TARGET not in targets:
+        return f"{COVERAGE_TARGET} is not on CLIENT_TARGETS — a new outbound target needs a human's reason"
+    if not targets[COVERAGE_TARGET].strip():
+        return f"{COVERAGE_TARGET} is on the allowlist without a reason, which is not a review"
+    if f'var COVERAGE_ENDPOINT = "{COVERAGE_TARGET}";' not in source:
+        return f"the target must be one named literal, the way SEARCH_ENDPOINT is ({COVERAGE_TARGET})"
+    if COVERAGE_TARGET not in client_outbound_targets(source):
+        return "the extraction does not see the literal, so the allowlist entry pins nothing"
+    return None
+
+
+def test_the_coverage_read_is_one_allowlisted_literal():
+    """The read section ⑦ makes, and the review it had to pass to exist.
+
+    `CLIENT_TARGETS` exists because two successive blacklists were blind to `POST /api/intake`: a new
+    outbound target fails loudly until a human writes it down with a reason. Section ⑦ adds exactly one — a
+    public GET — so exactly one entry was added.
+    """
+    source = client_source()
+    problem = coverage_target_problem(source)
+    assert problem is None, problem
+    # The extraction's positive control for this shape: an unlisted URL literal in a `fetch` is a finding.
+    # Without it, "it is on the list" would be satisfied by an extractor that sees nothing at all.
+    probe = COVERAGE_TARGET + "-probe"
+    assert client_target_findings(f'fetch("{probe}")') == [probe], (
+        client_target_findings(f'fetch("{probe}")'))
+
+
+def test_the_coverage_target_rule_can_go_red():
+    """Three sets of bytes that must fail it, the last of them what `main` actually shipped."""
+    source = client_source()
+    # (a) The constant assembled instead of named: still a fetch to the same host, invisible to the literal
+    #     extraction the allowlist is built on.
+    assembled = source.replace(f'var COVERAGE_ENDPOINT = "{COVERAGE_TARGET}";',
+                               'var COVERAGE_ENDPOINT = API + "/api/insights/lesson-coverage";', 1)
+    assert assembled != source, "the fixture expects the constant to be a plain literal today"
+    problem = coverage_target_problem(assembled)
+    assert problem and "one named literal" in problem, problem
+    # (b) The entry removed: the review half, on the same bytes.
+    without_entry = {name: why for name, why in CLIENT_TARGETS.items() if name != COVERAGE_TARGET}
+    problem = coverage_target_problem(source, without_entry)
+    assert problem and "not on CLIENT_TARGETS" in problem, problem
+    # (c) The pinned bytes, which carry neither half.
+    showed = subprocess.run(["git", "show", f"{COVERAGE_PRE_FIX_SHA}:lib/client.js"],
+                            cwd=REPO, capture_output=True, text=True, timeout=60)
+    if showed.returncode != 0:
+        pytest.skip("this clone does not carry " + COVERAGE_PRE_FIX_SHA[:12]
+                    + "; use a full clone to replay the red proof")
+    pre = showed.stdout
+    assert COVERAGE_TARGET not in pre, (
+        f"{COVERAGE_PRE_FIX_SHA[:12]} already carries the coverage read; wrong base for this fixture")
+    assert COVERAGE_TARGET not in client_outbound_targets(pre), (
+        "the extraction found the target in bytes that do not contain it")
+    problem = coverage_target_problem(pre)
+    assert problem and "one named literal" in problem, problem
 
 
 def test_the_panel_cannot_file_an_issue():
@@ -969,8 +1054,8 @@ def test_the_no_issue_allowlist_rule_can_go_red():
         ' params: { name: "misakanet_submit_intake", arguments: { problem: text } } }) });'
     )
     assert "/mcp" in client_target_findings(submitter), client_target_findings(submitter)
-    # The extraction's own positive control: the bundle as shipped names the host it rides and the five
-    # approved targets, so a check that suddenly finds nothing is a broken check, not a clean bundle.
+    # The extraction's own positive control: the bundle as shipped names the host it rides and every
+    # approved target, so a check that suddenly finds nothing is a broken check, not a clean bundle.
     assert client_target_findings(client_source()) == []
 
 
@@ -1012,15 +1097,19 @@ def test_the_trust_rule_is_stated_once_and_every_row_shows_its_own_count():
 
     The first version printed the E4 sentence only on rows whose count was 0 — so a lesson people had
     already confirmed twice read as a bare "2 human confirmations" with no explanation of what that
-    means. Now the sentence is stated once for the section, and each row carries its own count plus an
-    `→ E4` marker when it has crossed.
+    means. The sentence is now stated once for the section, and it carries what 2026-10-16 decided: a
+    vote is one person's opinion recorded as a hint, and the rung agents read (`E4`) comes from
+    observable reuse. No row carries a `→ E4` marker any more, because a count of votes is no longer
+    allowed to reach the rung.
     """
     panel = panel_body(client_source())
     assert panel.count('T("panel.trust.footnote")') == 1, (
         "the rule belongs once per section, not once per row")
-    assert "second is what agents read as E4" in dict_value("panel.trust.footnote"), (
-        "the sentence behind that key is the rule")
-    assert '→ E4' in panel, "a row past the threshold should say what its count means"
+    footnote = dict_value("panel.trust.footnote")
+    assert "hint" in footnote and "E4" in footnote and "observable reuse" in footnote, (
+        "the sentence behind that key is the rule: a vote is a hint, E4 comes from observable reuse")
+    assert '→ E4' not in panel, (
+        "a vote count must not be marked as the rung — that mapping is what 2026-10-16 removed")
     assert 'count(confirmations, T("panel.trust.human"))' in panel, (
         "each row must print its own confirmation count through the plural helper")
 
@@ -1113,9 +1202,11 @@ def test_the_vote_source_rule_can_go_red():
 def test_one_click_says_what_it_changed():
     """Change #2: the confirmation names the consequence in the project's own vocabulary.
 
-    "One makes the reuse event appear; the second is what agents read as E4" is the rule the trust section
-    states, so the post-click line repeats it rather than inventing a metric. The browser words it; the
-    count comes from the server's own answer.
+    The post-click line used to repeat the trust section's old rule — "one makes the reuse event appear;
+    the second is what agents read as E4". The first half still holds and is what this pins. The second
+    was the bug: since 2026-10-16 the second vote says a vote is a hint and that `E4` comes from
+    observable reuse, the same sentence the trust rule states. The browser words it; the count still
+    comes from the server's own answer.
     """
     source = client_source()
     panel = panel_body(source)
@@ -1123,9 +1214,9 @@ def test_one_click_says_what_it_changed():
         "the click's receipt must distinguish the first confirmation from the second")
     assert "the reuse event now appears" in dict_value("panel.asked.voteOne"), (
         "the first vote says what it made appear")
-    assert "E4" in dict_value("panel.asked.voteTwo") and "second is what agents read as E4" \
-        in dict_value("panel.trust.footnote"), (
-        "the second vote uses the same E4 sentence the trust rule uses")
+    assert "observable reuse" in dict_value("panel.asked.voteTwo") \
+        and "hint" in dict_value("panel.trust.footnote"), (
+        "the second vote says what it did not do — reach E4 — in the words the trust rule uses")
     assert "answer.count" in panel, "the receipt must carry the count the server answered with"
     assert "setTrust(function (prev)" in panel, (
         "the count must land in the same per-lesson receipt section ③ renders, or the two disagree")

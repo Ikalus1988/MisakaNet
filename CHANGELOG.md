@@ -7,6 +7,23 @@ All notable changes to the Misaka Network project are documented here.
 
 ---
 
+## [2.44.2](https://github.com/Ikalus1988/MisakaNet/compare/v2.44.1...v2.44.2) (2026-10-16)
+
+
+### Bug Fixes
+
+* **dsh-panel:** the counters a Chinese reader sees, and the entry point nobody could find ([#3347](https://github.com/Ikalus1988/MisakaNet/issues/3347)) ([536661c](https://github.com/Ikalus1988/MisakaNet/commit/536661c1780ad7694f9cd7260e7ba476bc35012c)), closes [#3314](https://github.com/Ikalus1988/MisakaNet/issues/3314)
+
+
+### Tests
+
+* **dsh:** pin the localization red fixture to a commit, not to `origin/main` ([#3352](https://github.com/Ikalus1988/MisakaNet/issues/3352)) ([a9e0a4b](https://github.com/Ikalus1988/MisakaNet/commit/a9e0a4b90043178d470c43779871c8314387fbda))
+
+
+### CI/CD
+
+* **site:** publish the generated site to a `dist` branch (part 1 of 2 — nothing is deleted here) ([#3317](https://github.com/Ikalus1988/MisakaNet/issues/3317)) ([d1eeba6](https://github.com/Ikalus1988/MisakaNet/commit/d1eeba6f4ec5eef276998793d8d9ef2c5cd049cc))
+
 ## [2.44.1](https://github.com/Ikalus1988/MisakaNet/compare/v2.44.0...v2.44.1) (2026-10-16)
 
 
