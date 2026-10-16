@@ -129,9 +129,39 @@ function walk(node, visit) {
 let currentRoot = null;
 let renderedTree = null;
 
+// ── effects ──────────────────────────────────────────────────────────────────────────────────────
+//
+// `useEffect` used to be a no-op here, and that was invisible while everything this file asserted came
+// from a click handler or from state the harness set itself. Section ⑥'s read is *scheduled* — an effect
+// is the whole point of it, because a fetch on the render path would block the first paint — so a stub
+// that dropped effects could not tell a scheduled read from a missing one: the render under test would be
+// a panel that never asks, and it would look exactly like a panel that asks and renders nothing. Effects
+// therefore run after the tree is realized (never during render), once per mount or per changed dep,
+// which is where React runs them. Cleanups are not exercised: each render is a fresh process and the
+// harness mounts one environment.
+let pendingEffects = [];
+
+/** React's dep rule for the stub: per-slot identity, shallow over the array. */
+function depsEqual(a, b) {
+	if (!a || !b || a.length !== b.length) return false;
+	for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
+	return true;
+}
+
+/**
+ * Run what the last realize pass scheduled. Effects only *schedule* their promises, so draining the queue
+ * cannot re-enter `realize`; a setter called from a promise handler re-renders later, through `rerender`.
+ */
+function runEffects() {
+	const queue = pendingEffects;
+	pendingEffects = [];
+	for (const entry of queue) entry.fn();
+}
+
 /** A state update re-renders in place, the way React would. */
 function rerender() {
 	renderedTree = realize(currentRoot);
+	runEffects();
 	return text(renderedTree);
 }
 
@@ -178,8 +208,71 @@ const react = {
 		};
 		return [slots[at], set];
 	},
-	useEffect: () => {},
+	useEffect: (fn, deps) => {
+		cursor += 1;
+		const at = cursor;
+		const slots = current.slots;
+		const record = slots[at] || (slots[at] = { ran: false, deps: undefined });
+		if (record.ran && deps !== undefined && depsEqual(record.deps, deps)) return;
+		record.ran = true;
+		record.deps = deps;
+		pendingEffects.push({ fn });
+	},
 };
+
+/**
+ * `/api/analytics`'s real shape, trimmed to what section ⑥ renders: the live `top_lessons` as it answered
+ * on 2026-10-16 (ids and counts copied from the endpoint, order preserved), plus the same response's
+ * `top_searches` — the unfiltered query list the section deliberately does **not** render.
+ *
+ * Two properties of this fixture are load-bearing:
+ *
+ * * **Six rows for a panel that shows five.** `dsh-plugin-install-github-codeload-timeout` must not reach
+ *   the reader, so a client that drops the cap fails here rather than in production.
+ * * **The order is the payload's own, not a sort.** `pip-install-timeout-ssl` and
+ *   `fanuc-rgcore-hang-endpoint-security-injection` both have 4, and the alphabetically-first one leads:
+ *   a render that re-sorted, or that paired a lesson with another row's count, comes out different.
+ *
+ * `top_searches` is here for the opposite reason: it is the payload's pollution, verbatim. `npm run
+ * build`, `init` and `start` are generic strings with no lesson behind them, and the render gate asserts
+ * that none of them reaches the panel — a client that "helpfully" showed this list as the questions people
+ * ask would carry them into the tree.
+ */
+const ANALYTICS_FIXTURE = {
+	top_searches: [
+		{ query: "pip install timeout", count: 24 },
+		{ query: "Error response from daemon: exit code 137", count: 23 },
+		{ query: "npm run build", count: 23 },
+		{ query: "init", count: 12 },
+		{ query: "start", count: 8 },
+	],
+	top_lessons: [
+		{ lesson_id: "lessons/contrib/pip-install-timeout-ssl.md", count: 4 },
+		{ lesson_id: "lessons/contrib/fanuc-rgcore-hang-endpoint-security-injection.md", count: 4 },
+		{ lesson_id: "lessons/contrib/dsh-plugin-install-github-codeload-timeout.md", count: 3 },
+		{ lesson_id: "lessons/core/auto-merge-ci-pipeline.md", count: 2 },
+		{ lesson_id: "lessons/contrib/readme-profile-name-verbatim-installs-into-unloaded-profile.md", count: 2 },
+		{ lesson_id: "lessons/contrib/instrumentation-that-never-reached-the-artifact.md", count: 2 },
+	],
+	intents: [],
+	withheld: ["knowledge_gaps", "mcpClients"],
+};
+
+/**
+ * Which analytics payload this run answers with. `full` is the live shape; `empty` and `absent` are the
+ * two ways the ranking can be missing, and they must render the same "no ranking" sentence rather than a
+ * manufactured `0` — the difference between them is only whether the key is there.
+ */
+const ANALYTICS_MODE = process.env.DSH_PANEL_ANALYTICS || "full";
+function analyticsBody() {
+	if (ANALYTICS_MODE === "empty") return Object.assign({}, ANALYTICS_FIXTURE, { top_lessons: [] });
+	if (ANALYTICS_MODE === "absent") {
+		const withoutRanking = Object.assign({}, ANALYTICS_FIXTURE);
+		delete withoutRanking.top_lessons;
+		return withoutRanking;
+	}
+	return ANALYTICS_FIXTURE;
+}
 
 function createEnvironment(locale, mod) {
 	const dicts = Object.create(null);
@@ -219,7 +312,8 @@ function createEnvironment(locale, mod) {
 			ok: true,
 			status: 200,
 			json: () => Promise.resolve(target.indexOf("/api/helpful") >= 0
-				? { lesson_id: "pip-timeout", count: 2 } : {}),
+				? { lesson_id: "pip-timeout", count: 2 }
+				: (target.indexOf("/api/analytics") >= 0 ? analyticsBody() : {})),
 		});
 	};
 
@@ -271,6 +365,7 @@ function createEnvironment(locale, mod) {
 			if (!seat) throw new Error("no component registered as " + seatKey);
 			currentRoot = react.createElement(seat.component, props || {});
 			renderedTree = realize(currentRoot);
+			runEffects();
 			return text(renderedTree);
 		},
 		text: () => text(renderedTree),
@@ -339,6 +434,11 @@ if (emptyState) {
 
 env.render("conversation.view|misakanet", { sessionId: sessionId });
 if (!env.text()) throw new Error("the panel rendered nothing");
+
+// The tree this render returned, captured before any effect's promise handler could run: the retrieval
+// rows are not in it yet, because the read is scheduled rather than awaited. Their absence *here* and
+// their presence in the final readout is what "the read does not block the first paint" means in a render.
+const firstPaint = env.text();
 
 // ── the two rows, the copy affordance, and the vote ──────────────────────────
 const rowNoMatch = "qcall-1" + log.searches[0].at;
@@ -421,5 +521,44 @@ setImmediate(() => {
 		activity: activityText,
 		emptyState: emptyStateText,
 		entryPoint: entryPointClick,
+		// Section ⑥ read off the realized tree by key, so it is the panel's own children rather than a
+		// second render: the rule, the cap line and the rows in the payload's order. `find` answers `null`
+		// for a client that has no such section — the pre-fix bytes the red fixtures mount — and `text(null)`
+		// is `""`, so that case is an empty string rather than a throw.
+		hotTitle: text(env.find("s6")),
+		hotRule: text(env.find("s6rule")),
+		hotLimit: text(env.find("s6l")),
+		hotRows: (() => {
+			const box = env.find("s6r");
+			return box ? childrenOf(box).map((row) => childrenOf(row).map(text).join("  ")) : [];
+		})(),
+		hotLoading: text(env.find("s6w")),
+		hotEmpty: text(env.find("s6e")),
+		hotSection: text(env.find("s6")),
+		firstPaint: firstPaint,
+		// The requests this run made, by target and by count. `analyticsGets` is the one that has to be 1:
+		// the panel re-renders after every state change and mounts twice in this harness, so a read that
+		// rode the render, or that lost its once-only guard, shows up here as more than one.
+		gets: env.gets.slice(),
+		analyticsGets: env.gets.filter((u) => u.indexOf("/api/analytics") >= 0).length,
+		helpfulGets: env.gets.filter((u) => u.indexOf("/api/helpful") >= 0).length,
+		// The queries the payload really carried. The gate asserts none of them reached the panel, so the
+		// test compares against the fixture rather than against a second copy of the strings.
+		searchQueries: ANALYTICS_FIXTURE.top_searches.map((row) => row.query),
+		// The ranking the payload really carried, so the cap and the order are checked against the endpoint's
+		// own rows rather than against a second copy. `empty` and `absent` answer `[]`.
+		hotFixture: analyticsBody().top_lessons || [],
+		// Section ⑥'s own copy, so the gate compares the render against the dictionary that produced it —
+		// the way the counter-strip gate already does.
+		hotWords: {
+			title: env.word("panel.hot"),
+			rule: env.word("panel.hot.rule"),
+			loading: env.word("panel.hot.loading"),
+			none: env.word("panel.hot.none"),
+			limit: env.word("panel.hot.limit"),
+			noCount: env.word("panel.hot.noCount"),
+			retrievalUnit: env.word("unit.retrieval"),
+			retrievalUnits: env.word("unit.retrievals"),
+		},
 	}, null, 0) + "\n");
 });

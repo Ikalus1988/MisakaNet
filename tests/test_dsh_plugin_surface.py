@@ -637,7 +637,8 @@ def panel_body(source: str) -> str:
 
 
 def test_the_panel_answers_the_questions_it_exists_for():
-    """Problems, lessons, contributions, trust, activity, voice — each labelled, in both languages.
+    """Problems, lessons, contributions, trust, activity, voice, the network's own ranking — each
+    labelled, in both languages.
 
     The copy moved into the dictionaries when the surfaces were localized, so this pins the key the panel
     asks for **and** the English string behind it: a key that resolves to nothing would pass a keys-only
@@ -649,7 +650,8 @@ def test_the_panel_answers_the_questions_it_exists_for():
                          ("panel.reports", "Reports you filed"),
                          ("panel.trust", "How much these lessons are trusted"),
                          ("panel.activity", "Your activity"),
-                         ("panel.voice", "Voice")):
+                         ("panel.voice", "Voice"),
+                         ("panel.hot", "What the corpus returns most")):
         assert f'T("{key}")' in panel, f"the panel lost its `{key}` section"
         assert f'"{key}": "{english}"' in source, f"`{key}` no longer reads as `{english}`"
 
@@ -817,6 +819,7 @@ CLIENT_TARGETS = {
     "/api/feedback": "the 👎 gap statistic",
     "/assets/voice/": "the server-named voice cue's audio",
     "/api/lessons": "the /misakanet composer overlay search",
+    "/api/analytics": "the panel's retrieval ranking (section ⑥): a public GET, the only per-lesson count",
     "https://misakanet.org/lessons/": "the two lesson links a person clicks (the row and the toast)",
     "https://misakanet.org/": "the site link behind a result that has no id",
 }
@@ -895,9 +898,10 @@ def test_the_browser_half_only_calls_targets_a_human_allowlisted():
         "the browser half names an outbound target that is not on the allowlist: "
         + str(findings) + ". If the call is intended, add it to CLIENT_TARGETS with a reason — that review "
         "is the gate. If it is not on the list by accident, this is how D4 is meant to fail: loudly.")
-    # Call-site accounting: five `fetch(` sites (overlay search, the POST helper, the panel's GET, the
-    # click-through link is not one) and two `post(` sites, every one of them against an approved target.
-    assert source.count("fetch(") == 3, (
+    # Call-site accounting: four `fetch(` sites (overlay search, the POST helper, the panel's per-lesson
+    # GET, the panel's analytics GET — the click-through link is not one) and two `post(` sites, every one
+    # of them against an approved target.
+    assert source.count("fetch(") == 4, (
         "the bundle gained or lost a `fetch(` call site: " + str(source.count("fetch(")) + ". The literal "
         "allowlist cannot see a computed target; this count is what makes a new call fail anyway")
     assert unreviewed_fetch_targets(source) == [], unreviewed_fetch_targets(source)
@@ -969,8 +973,8 @@ def test_the_no_issue_allowlist_rule_can_go_red():
         ' params: { name: "misakanet_submit_intake", arguments: { problem: text } } }) });'
     )
     assert "/mcp" in client_target_findings(submitter), client_target_findings(submitter)
-    # The extraction's own positive control: the bundle as shipped names the host it rides and the five
-    # approved targets, so a check that suddenly finds nothing is a broken check, not a clean bundle.
+    # The extraction's own positive control: the bundle as shipped names the host it rides and every
+    # approved target, so a check that suddenly finds nothing is a broken check, not a clean bundle.
     assert client_target_findings(client_source()) == []
 
 
