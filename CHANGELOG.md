@@ -7,6 +7,13 @@ All notable changes to the Misaka Network project are documented here.
 
 ---
 
+## [2.44.1](https://github.com/Ikalus1988/MisakaNet/compare/v2.44.0...v2.44.1) (2026-10-16)
+
+
+### Tests
+
+* drop two `eval`s a code scanner is right about, and fix a recipe that expired ([#3327](https://github.com/Ikalus1988/MisakaNet/issues/3327)) ([27c24fd](https://github.com/Ikalus1988/MisakaNet/commit/27c24fd179711c289ed33ff533535469d83b6eb4)), closes [#3314](https://github.com/Ikalus1988/MisakaNet/issues/3314) [#3322](https://github.com/Ikalus1988/MisakaNet/issues/3322)
+
 ## [2.44.0](https://github.com/Ikalus1988/MisakaNet/compare/v2.43.1...v2.44.0) (2026-10-16)
 
 
