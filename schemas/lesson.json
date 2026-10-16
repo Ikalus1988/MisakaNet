@@ -33,8 +33,8 @@
     },
     "status": {
       "type": "string",
-      "enum": ["published", "draft", "archived"],
-      "description": "Publication status"
+      "enum": ["published", "draft", "archived", "active", "stale", "superseded"],
+      "description": "Publication status. Must stay identical to VALID_STATUS in scripts/lesson_gate.py — tests/test_lesson_status_vocabulary.py fails when the two disagree, because this enum is what the required `audit` check validates against."
     },
     "evidence_level": {
       "type": "string",
