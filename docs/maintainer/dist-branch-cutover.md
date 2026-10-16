@@ -208,11 +208,24 @@ update_lessons_json.py → build_lesson_pages.py → export_okf.py
 
 ## 4. 切换清单（有序；🧑 = 只有人能做）
 
-### 阶段 A：本次 PR 合并后（自动化，无需人工）
+### 阶段 A：本次 PR 合并后（**首次必须手动触发一次**，之后自动）
 
 - [ ] A1. 合并本 PR（发布器 + 文档 + 门禁改造）。
-- [ ] A2. `publish-dist.yml` 在合并产生的 push 上自动运行；确认它绿。
+- [ ] A2. **手动创建 `dist`：`gh workflow run publish-dist.yml --ref main`。**
+      这一步不是图省事，而是没有它 `dist` 根本不会被创建：**GitHub 不会用引入某个 workflow 的那次
+      push 去触发它自己**。实测 2026-10-16（本 PR 合入当天）：`publish-dist.yml` 在 `main` 上
+      `state=active`、触发块就是正确的 `push: branches: [main]`、也没有 `paths:` 过滤，而该 workflow
+      的 run 总数是 **0**——它自己的引入提交没有产生任何 run。`workflow_dispatch` 本来就在文件里，
+      注释也写着 "first creation of `dist`"。
+      **之后**每次 push 才会自动触发，且已实测：同一天 `main` 从 `d1eeba6f` 走到 `a9e0a4b9` 时，
+      `event=push` 的那次 run `completed success`，`dist` 前移到 `1f431726`（父提交 = 那一刻的 `main`）。
+      所以本文档初稿写的"在合并产生的 push 上自动运行"是错的，且错法值得记住：**一个只被手动跑过一次
+      的管道，不能让它承载线上站点**——切换之前必须在一次真实的 push 上见过它绿。
 - [ ] A3. 确认 `dist` 分支已创建，且它确实是 `main` 的 **superset**、差异只有生成物。
+      **此时两边的树应当完全相同**（`git rev-parse origin/dist^{tree}` 与 `origin/main^{tree}` 相等）：
+      阶段 B 还没执行，`main` 自己仍带着全部生成物，所以发布器重跑生成器后产出字节相同、提交是
+      `--allow-empty`。这不是"检查没意义"——它意味着此刻切过去，线上内容与切换前**逐字节一致**；
+      这项检查要到阶段 B 把生成物从 `main` 删掉之后才真正开始承重。
       **用 tree 比，不要只用 ancestry**：`dist` 的父提交是"构建那一刻的 `main`"，所以 `main` 在构建
       之后又动了的话，`origin/main` 会暂时不是 `origin/dist` 的祖先（下一次发布器运行就追平）——
 
