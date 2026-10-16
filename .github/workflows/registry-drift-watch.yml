@@ -74,12 +74,21 @@ jobs:
 
       - name: Compare the live Glama listing with what the worker serves
         id: compare
-        # continue-on-error so a non-zero exit reaches the branch below instead of ending the job.
-        # It does **not** make the run green: the last step re-raises anything that is neither 0
-        # nor 1.
+        # continue-on-error so an unexpected abort inside the script cannot end the job before the
+        # branches below read its outputs. It does **not** make the run green: an abort leaves
+        # `compare_exit` unwritten, and the last step re-raises anything that is neither 0 nor 1.
         continue-on-error: true
         run: |
           set -uo pipefail
+          # `-e` off, and that is the fix rather than a tidy-up. The runner executes this file as
+          # `bash -e {0}` (the `shell:` line in any run log), and `set -uo pipefail` adds `u` and
+          # `o` without clearing `-e`. With `-e` live, the first probe that exited 1 killed the
+          # script before the `compare_exit` write below, so every branch keyed on
+          # `steps.compare.outputs.compare_exit` read an empty string: real drift produced no
+          # annotation and no tracking issue (none has ever been opened), and `continue-on-error`
+          # finished the job green. A probe's exit status is a value this step inspects, not a
+          # reason to stop here.
+          set +e
 
           # Three attempts, then a verdict. One request is a measurement; three in a row is a claim
           # about the service. A TLS handshake to misakanet.org drops often enough on a real
