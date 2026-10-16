@@ -212,3 +212,87 @@ gh run list --repo Ikalus1988/MisakaNet --workflow auto-merge-lessons.yml
 
 判定规则改了必须同步改三处：`scripts/lesson_pr_mergeable.py`（规则）·
 `tests/test_lesson_pr_mergeable.py`（断言）· 本页的决策表（§2）。
+
+---
+
+## 8. 2026-10-17：标签**存在**、以及"谁把标签打上"这件事
+
+> 本节是**追加**的（本页的日期史不改写）。它记录两件事的实测结论：本页 §3 里"打标签"
+> 这一步的现状，以及为什么这一步**不能**在 PR 打开的那一刻做。
+
+### 8.1 前提核对：`auto-merge-lesson` 标签一直都在
+
+要改动这条通道之前的前提是"标签不存在，通道因此从不触发"。**实测前提为假**（2026-10-17）：
+
+```console
+$ gh label list --repo Ikalus1988/MisakaNet --limit 300 --json name,description,color \
+    --jq '.[] | select(.name=="auto-merge-lesson") | "\(.name) | \(.color) | \(.description)"'
+auto-merge-lesson | 0e8a16 | Maintainer opt-in: squash-merge this lesson PR automatically once every mechanical check is green
+
+$ gh pr list --repo Ikalus1988/MisakaNet --state all --label auto-merge-lesson --limit 20 \
+    --json number,state,mergedAt
+[{"number":1909,…,"mergedAt":"2026-09-20T06:25:09Z"},
+ {"number":1908,…,"mergedAt":"2026-09-20T06:26:51Z"},
+ {"number":1907,…,"mergedAt":"2026-09-20T09:14:28Z"},
+ {"number":1796,…,"mergedAt":"2026-09-17T09:43:22Z"}]
+```
+
+标签存在、描述与 §3 的政策一致，并且已经被用过 **4 次**（#1796 是 §5 记的第一次真实运行；
+#1907–#1909 是 2026-09-20 的三次）。所以"通道从不触发"的正确原因是**没有任何东西去应用这个
+标签**，不是标签缺失。新增一个同名标签是空操作；本页因此只记录核对结果，不改标签。
+
+### 8.2 为什么"在 PR 打开时打标签"是错的（这条决定了实现位置）
+
+本工作流只监听 `labeled` / `synchronize` / `ready_for_review`（`opened` 是**故意**不在里面的），
+`check_suite` 兜底也已在 2026-10-02 删除。§1 已经写了它的后果：
+
+> 一个已 opt-in 的 PR 如果在 `synchronize` / `ready_for_review` / `labeled` 之后检查才全绿，
+> **不会**自动合并，需要人手动合一次。
+
+于是"pipeline 在开 PR 时顺手打标签"这条**看起来**顺理成章的路径，实际结果是：`labeled` 事件到达时
+检查还在跑 → 判定 `wait`（按设计不评论、不重试）→ 检查变绿时**没有任何事件再叫醒这条通道** →
+标签挂在那里、PR 永远等人。这正是本仓反复记录的"看起来做了、其实什么都没发生"的形状。
+
+**结论：标签必须在机械条件已经成立的时刻打上。** 而能承载"此刻已成立"的事件只剩时钟 ——
+所以这一步落在既有的定时清扫里（`.github/workflows/auto-sync-prs.yml` 的
+`arm-lesson-auto-merge` job，调用 `scripts/arm_auto_merge_lesson_prs.py`），**不新增工作流**。
+
+它的判定**不是**第二套规则：脚本 `import` 本页 §2 的判定器（`scripts/lesson_pr_mergeable.py`），
+把标签**模拟为已存在**后问它"现在会不会合"；只有答案是 `merge` 才真的打标签。另一条同样硬的要求是
+**令牌必须是 PAT**（`secrets.SHELDON_PAT`）：GitHub 会抑制由内置 `GITHUB_TOKEN` 引起的事件，
+用它打的标签**不会**触发任何 `pull_request: labeled` 运行——标签看起来打上了，实际什么都没叫醒。
+（同一个坑在 push 路径上已经付过三次学费，见 `scripts/ci/land_change.py`。）
+
+清扫范围与"外部贡献者仍然是手动 opt-in"并不冲突：只有 **head 分支在本仓库内** 的 PR 会被考虑，
+而本仓库的分支不是外部贡献者能创建的（那需要写权限）——所以集合恰好是"本来就能直接 push/merge 的人"，
+外部 fork PR 一个都不碰。`wip` / `do-not-merge` / draft / 被请求修改 / 改动 `lessons/` 之外的文件，
+全部由共用的判定器拒绝。
+
+### 8.3 还没被证明的那一步（只在真实 PR 上才能观测）
+
+本节的实现只证明了"标签会在正确的时刻被打上，且判定与通道完全一致"（`tests/test_arm_auto_merge_lesson_prs.py`，
+含 `test_arming_means_the_label_is_the_only_thing_missing` 这条不变量）。**"打上标签之后通道真的被叫醒并合并"
+至今没有在本次改动里观测到**——历史上它只在 #1796 上跑通过一次。要看的是：
+
+```bash
+# 1) 标签是否由 PAT 打上（不是 GITHUB_TOKEN）：run 的 triggering_actor 应是普通账号
+gh api repos/Ikalus1988/MisakaNet/issues/<PR> --jq '[.labels[].name]'
+gh run list --repo Ikalus1988/MisakaNet --workflow auto-merge-lessons.yml --limit 5
+
+# 2) 那次 run 的日志里有没有 `verdict (exit 0): merge` 与合并动作
+gh run view <run-id> --repo Ikalus1988/MisakaNet --log | grep -E "verdict \(exit|mergeable"
+```
+
+若第 1 步里**没有**出现 `auto-merge-lessons` 的新 run，唯一原因就是令牌：`SHELDON_PAT` 为空时
+清扫只打 `::warning::` 并跳过（它绝不用 `GITHUB_TOKEN` 去补），因为那个标签是"打了也没用"的。
+
+### 8.4 残余缺口（写在前面，不留给下一个人发现）
+
+* **armed 之后又被 push**：`synchronize` 会让通道重新判定；若那次 push 之后检查才全绿，标签已在，
+  没有人再叫醒通道。清扫的 6 小时周期**不会**重打一个已存在的标签（重复打标签不产生事件，
+  只是一个看起来像动作的空操作）。这与 §1 记录的安全侧是同一件事，修法（扫描时对"已 armed 且判定为
+  merge"的 PR 做 remove+add 重新触发）**故意没有做**：那会在真正的阻塞（如冲突）上每 6 小时制造一次
+  无意义的重新触发，而收益是一个已知需要人类合一次的窄窗口。
+* **判定所需的事实全部读 API**：清扫与通道都不执行 PR 的内容；清扫 job 用全新的
+  `actions/checkout` 只取默认分支（sync job 会 checkout 贡献者分支，所以这一步**不能**放在那个 job 里，
+  否则等于用写权限执行 PR 带来的脚本副本）。

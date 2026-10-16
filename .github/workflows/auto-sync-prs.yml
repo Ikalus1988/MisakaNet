@@ -185,3 +185,72 @@ jobs:
               sleep 10
             done
           done
+
+  # ── Arm the lesson auto-merge channel (the flow half of the #2760 fix) ────────────────────
+  #
+  # `docs/maintainer/auto-merge-lessons.md` documents an **opt-in** channel: a lesson PR carrying
+  # `auto-merge-lesson` is evaluated by `scripts/lesson_pr_mergeable.py` and squash-merged once
+  # every mechanical condition holds. Nothing applied the label, so lesson PRs piled up at
+  # `auto-merge-lessons = skipping` and a human merged each one by hand.
+  #
+  # The label cannot be applied when the PR is opened: that channel fires on `labeled`,
+  # `synchronize` and `ready_for_review` — deliberately not `opened` — and its `check_suite`
+  # fallback was removed on 2026-10-02 as a fan-out. Its own documentation states the consequence
+  # (docs/maintainer/auto-merge-lessons.md §1): a PR armed *before* its checks finish waits
+  # forever, because nothing re-triggers the channel when they later go green. So arming has to
+  # happen after the conditions hold, and the only event left that can carry "now they hold" is a
+  # clock — this sweep. `scripts/arm_auto_merge_lesson_prs.py` asks the channel's own judge
+  # (imported, not copied) whether the PR would merge the moment it carried the label, and applies
+  # the label only when the answer is yes.
+  #
+  # Why a second **job** rather than one more step in `sync`:
+  #
+  #   * **trust** — the sync job checks out contributor branches (`git checkout "$HEAD_REF"`).
+  #     Running a repository script in that working tree would execute whatever copy of it the PR
+  #     carries, with `pull-requests: write` in hand. This job gets a fresh `actions/checkout` of
+  #     the default branch, so the script that decides is the one on `main` (`auto-merge-lessons.yml`
+  #     states the same rule for the same reason).
+  #   * **ordering** — arming first and then re-heading the branch would race the channel: the
+  #     `labeled` event can be evaluated against a head the sync is about to replace.
+  #
+  # Scope, and why this is not a policy change for contributors: only PRs whose head branch lives
+  # in **this** repository are considered. A branch in this repository cannot be created without
+  # write access, so the set is exactly the authors who could have pushed or merged directly; an
+  # external contributor's fork PR stays opt-in by hand. `wip`, `do-not-merge`, drafts, a review
+  # requesting changes, and any file outside `lessons/` are refused by the shared judge.
+  arm-lesson-auto-merge:
+    needs: sync
+    # `always()` because arming is independent of the branch sync: a sync that could not run must
+    # not also leave the channel unarmed.
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout the trusted decision scripts (default branch, never a PR head)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+        with:
+          persist-credentials: false
+
+      - name: Arm every lesson PR whose mechanical conditions already hold
+        env:
+          # A **PAT**, never GITHUB_TOKEN. GitHub suppresses workflow runs for events caused by
+          # the built-in token, so a `GITHUB_TOKEN`-applied label starts no `pull_request: labeled`
+          # run and the label does nothing at all — the same trap that cost this repository three
+          # times on the push path (`scripts/ci/land_change.py` documents it). A label that looks
+          # applied and wakes nothing is worse than no label: it is indistinguishable from "the
+          # channel looked and decided not to merge".
+          GH_TOKEN: ${{ secrets.SHELDON_PAT }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          if [ -z "${GH_TOKEN:-}" ]; then
+            echo "::warning::SHELDON_PAT is empty — skipping the arming sweep. Arming with GITHUB_TOKEN would add a label that triggers no workflow run, i.e. a label that does nothing; fix the secret and re-run this workflow."
+            exit 0
+          fi
+          # One run, `--apply`, which prints the decision for every candidate *and* then acts —
+          # including the "nothing to arm" line, because a sweep that only speaks when it writes
+          # is the shape whose silent runs look healthy.
+          python3 scripts/arm_auto_merge_lesson_prs.py --repo "$REPO" --apply

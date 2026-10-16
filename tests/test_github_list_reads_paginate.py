@@ -169,6 +169,19 @@ ALLOWED: dict[tuple[str, str], str] = {
         "four to the cliff, because the list is the autopilot's own receipts and grows with its run "
         "count. Paginate when the digest issues it manages reach 100 comments; at the current cadence "
         "they are well under.",
+
+    ("scripts/arm_auto_merge_lesson_prs.py", "/issues/N/check-runs"):
+        "`fetch_facts` reads a head commit's check runs to decide whether the lesson auto-merge channel "
+        "would merge this PR the moment it were labelled. **This read is already whole** — it passes "
+        "`--paginate` through `gh_api(paginate=True)` — and the entry exists because this scanner looks "
+        "for a `page=` parameter or a paging loop, neither of which a `--paginate` flag is. One page is "
+        "measured to be nowhere near all of them on this repository's busy commits: 187 check runs on "
+        "`80540341` and 280 check suites on `dedc383b` (both recorded in `auto-sync-prs.yml`). Half-seen "
+        "check runs are the failure mode that matters here: a missing green run reads as 'not green "
+        "yet', so the sweep would silently never arm the PR and the label would look like the thing "
+        "that failed. What would change that: dropping `paginate=True` from that call, at which point "
+        "this entry becomes a lie and the test that the entry still matches a live read is the thing "
+        "to delete with it.",
 }
 
 
@@ -394,9 +407,11 @@ def test_the_prose_detector_does_not_depend_on_a_python_version_specific_token()
         f"`tokenize.tok_name.get(...)` instead — it maps whatever types the running interpreter has.")
 
     # Same answer regardless of which string tokens this interpreter knows about. A 3.11 run has no
-    # FSTRING_* at all and must still find the same four reads.
+    # FSTRING_* at all and must still find the same reads. The count is part of the guard (a scan
+    # that silently stops matching is not a guard), so it moves with the corpus: it was 4 until
+    # `scripts/arm_auto_merge_lesson_prs.py` added a fifth read (2026-10-17).
     reads = exhaustive_reads()
-    assert len(reads) == 4, f"expected 4 exhaustive reads on any supported interpreter, got {len(reads)}"
+    assert len(reads) == 5, f"expected 5 exhaustive reads on any supported interpreter, got {len(reads)}"
 
     # And a multi-line f-string is prose here whichever way the interpreter tokenises it.
     sample = 'x = 1\ny = f"""\nper_page=100\n"""\nz = 2\n'
