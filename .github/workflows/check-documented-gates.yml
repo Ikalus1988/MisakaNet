@@ -101,7 +101,7 @@ jobs:
         if: steps.compare.outputs.compare_exit == '1'
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9
         # The diff arrives through the environment, never spliced into the script text. A
-        # `${{ }}` expansion inside a single-quoted JS string literal breaks the moment the value
+        # workflow-expression expansion inside a single-quoted JS string literal breaks the moment the value
         # contains a newline — which this one always does, since the diff *is* the newline-separated
         # list of differences — and the step then dies with `SyntaxError` on the one run that was
         # supposed to report something. Same shape as auto-merge-docs.yml's `OFFENDERS`.

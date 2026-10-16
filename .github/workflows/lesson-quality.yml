@@ -96,7 +96,7 @@ jobs:
         if: steps.changed.outputs.any_changed == 'true'
         id: quality
         env:
-          # Data, not script text. `${{ }}` is substituted before bash parses, and bash
+          # Data, not script text. An Actions expression is substituted before bash parses, and bash
           # runs `$(…)` inside double quotes *and* inside an unquoted `for` word — a file
           # named `lessons/core/$(id).md` executes `id` on the runner. Same defect class
           # as `lesson-gate.yml`, found by `tests/test_workflow_script_injection.py`.

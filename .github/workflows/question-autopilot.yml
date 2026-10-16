@@ -42,7 +42,7 @@ jobs:
       - name: Triage the open questions
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # `${{ }}` inside a `run:` block is substituted *before* bash parses, so a value
+          # an Actions expression inside a `run:` block is substituted *before* bash parses, so a value
           # spelling `$(…)` arrives already expanded into shell code. `inputs.post` is
           # declared `type: boolean`, but the dispatch API takes `inputs` as
           # `map[string]string` and does not check it against the declared type — the type is

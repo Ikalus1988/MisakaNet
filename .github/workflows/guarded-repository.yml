@@ -41,7 +41,6 @@ permissions:
 jobs:
   guarded-repository:
     uses: hashgraph-online/hol-guard/.github/workflows/guarded-repository.yml@94f14e6351f1a80a12a42e51df4dd55b42e41014  # v3.36.1
-    timeout-minutes: 30
     with:
       profile: default
       fail_on_severity: critical

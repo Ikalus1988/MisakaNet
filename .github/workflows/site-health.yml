@@ -52,7 +52,7 @@ jobs:
       - name: Probe the public surface
         env:
           # Through the environment, not interpolated into the script: a `workflow_dispatch` input is free
-          # text, and `${{ inputs… }}` inside `run:` is how a dispatch input becomes shell code.
+          # text, and an Actions expression inside `run:` is how a dispatch input becomes shell code.
           BASE_URL: ${{ inputs.base-url }}
         run: |
           set -uo pipefail

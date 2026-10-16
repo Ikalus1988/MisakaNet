@@ -96,7 +96,7 @@ jobs:
           ADDED_FILES: ${{ steps.classify.outputs.added }}
           MODIFIED_FILES: ${{ steps.classify.outputs.modified }}
         run: |
-          # `${{ }}` in a `run:` block is substituted before bash parses, and bash runs
+          # an Actions expression in a `run:` block is substituted before bash parses, and bash runs
           # command substitution inside double quotes, so a file named
           # `lessons/core/$(id).md` executed `id` on the runner. Verified 2026-10-07.
           # GitHub's remedy: pass it through `env:` so the shell gets a value, not code.
@@ -121,7 +121,7 @@ jobs:
           ADDED_FILES: ${{ steps.classify.outputs.added }}
         run: |
           # This step could not fail. It was one line —
-          #   python3 scripts/check_provenance.py --strict-new ${{ ... }} | tee -a report.txt
+          #   python3 scripts/check_provenance.py --strict-new <added lesson files> | tee -a report.txt
           # — and a bash pipeline without `pipefail` returns the status of its LAST
           # command, so `tee` decided the verdict. Measured 2026-10-07: a new lesson
           # citing a 404 made the script print "❌ source does not resolve" and exit 1,

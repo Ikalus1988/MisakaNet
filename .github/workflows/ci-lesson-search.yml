@@ -57,7 +57,7 @@ jobs:
         id: context
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9
         env:
-          # Passed through env rather than interpolated into the script: a `${{ }}` inside a
+          # Passed through env rather than interpolated into the script: an Actions expression inside a
           # `github-script` body is substituted by the workflow engine *before* node sees it, so a
           # value containing a quote would edit the program (tests/test_workflow_gh_script_contexts.py
           # is the rule that keeps this shape out).

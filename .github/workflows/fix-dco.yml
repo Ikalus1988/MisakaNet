@@ -109,7 +109,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # Through the environment, not interpolated into the script: both values come from the pull
-          # request, and `${{ … }}` inside `run:` is substituted *before* bash parses — so a crafted ref
+          # request, and an Actions expression inside `run:` is substituted *before* bash parses — so a crafted ref
           # would be parsed as shell. (Open Code Review's GitHub Actions ruleset, "Script injection";
           # branch names may contain `$`, backticks and parentheses.)
           BASE_REF: ${{ steps.pr.outputs.baseRef }}

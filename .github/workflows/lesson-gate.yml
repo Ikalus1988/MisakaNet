@@ -81,9 +81,9 @@ jobs:
         env:
           # Passed as an environment variable, never interpolated into the script.
           #
-          # `${{ }}` inside a `run:` block is substituted *before* bash parses the
+          # an Actions expression inside a `run:` block is substituted *before* bash parses the
           # script, and bash performs command substitution inside double quotes. So
-          # `FILES="${{ steps.classify.outputs.added }}"` meant a file named
+          # an interpolated `FILES=` assignment meant a file named
           # `lessons/core/$(id).md` ran `id` on the runner: verified 2026-10-07 by
           # creating that file and watching `uid=1000(...)` land in the variable.
           # GitHub's documented remedy is exactly this — hand the value over through
