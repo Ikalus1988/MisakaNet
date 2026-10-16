@@ -26,9 +26,9 @@ Three rules, each with the failure it prevents:
   either an English word (then the default `+s` is right) or it is not (then no default may touch it).
 
 A gate nobody has seen fail is a gate nobody can trust: `test_the_gate_can_go_red` materializes the
-pre-fix bytes with `git show origin/main:lib/client.js` and asserts that the same render trips. If that
-fixture ever stops reproducing, the check above it is allowed to fail loudly here rather than quietly in
-a user's panel.
+pre-fix bytes from `PRE_FIX_SHA` — a commit, never a branch — and asserts that the same render trips. If
+that fixture ever stops reproducing, the check above it is allowed to fail loudly here rather than quietly
+in a user's panel.
 
 Run: python3 -m pytest tests/test_dsh_plugin_panel_localization.py -q
 """
@@ -45,7 +45,23 @@ import pytest
 
 REPO = Path(__file__).resolve().parents[1]
 CLIENT = REPO / "lib" / "client.js"
-HARNESS = REPO / "tests" / "dsh_panel_render_harness.cjs"
+# The harness is this file's own asset, not the fixture repo's: `test_the_gate_can_go_red` renders the
+# pre-fix bundle through *our* harness, so this path must not follow a redirected REPO.
+HARNESS = Path(__file__).resolve().parent / "dsh_panel_render_harness.cjs"
+
+#: The pre-fix bytes, by commit and never by branch. This is the `main` tip this change was cut from
+#: (`chore(main): release 2.44.1`, 2026-10-16) and the parent of the commit that fixes it, so:
+#:
+#: * it reproduces the screenshot's `1 with a lesson · 1 lesson surfaced · 0 票s · 0 转化s` forever —
+#:   nothing can land on top of it, because it is not a ref anything moves;
+#: * and the fixture cannot invert the way a branch would. `origin/main` here would *become* the fixed
+#:   bytes the moment this lands, so the "can it go red" check would fail on every later PR while
+#:   claiming the opposite. That is not hypothetical: `tests/test_registry_drift_watch_reports.py` lost
+#:   its red proof exactly that way (#3322), and only its recipe could be quietly wrong. This one is a
+#:   test body.
+PRE_FIX_SHA = "9133f6ba625130dcde83b25fa0ff733e97296c74"
+#: Where the fixture SHA can be fetched from when a shallow clone does not carry it.
+PRE_FIX_REMOTES = ("origin", "upstream", "https://github.com/Ikalus1988/MisakaNet.git")
 
 #: What `count(n, singular, many)` promises for an English unit: the plural is `singular + "s"`.
 ENGLISH_UNITS = {"1": "1 lesson", "2": "2 lessons", "one_search": "1 search", "two_search": "2 searches"}
@@ -219,38 +235,66 @@ def test_the_empty_state_names_the_entry_point_in_both_languages():
             + repr(entry))
 
 
+def _pre_fix_source(repo: Path = REPO) -> str:
+    """The pre-fix `lib/client.js`, by commit SHA, fetching it when the clone is shallow.
+
+    `PRE_FIX_SHA` is not a ref, so nothing in this repository can move it — but a shallow or
+    single-branch clone may simply not *have* it, and "the object is absent" is a different fact from
+    "the bytes changed". Only the first is allowed to skip, it must say so, and it must say how to make
+    the fixture run; a SHA that exists and no longer carries the defect is reported by the caller as a
+    failure, because that means the red proof expired.
+
+    @returns the file's text.
+    @raises pytest.skip when the commit is genuinely absent and unfetchable — with what was tried and
+      the exact command that would make the fixture run. It never returns bytes it did not verify, so a
+      skipped run is never mistaken for a red proof, and the caller's sanity assertions (not this
+      function) own the "the bytes are no longer the pre-fix ones" failure.
+    """
+    showed = subprocess.run(["git", "show", f"{PRE_FIX_SHA}:lib/client.js"],
+                            cwd=repo, capture_output=True, text=True, timeout=60)
+    if showed.returncode == 0:
+        return showed.stdout
+
+    tried = []
+    for remote in PRE_FIX_REMOTES:
+        fetched = subprocess.run(["git", "fetch", "--quiet", "--depth=1", remote, PRE_FIX_SHA],
+                                 cwd=repo, capture_output=True, text=True, timeout=120)
+        tried.append(f"{remote} {'ok' if fetched.returncode == 0 else fetched.stderr.strip()[-80:]}")
+        if fetched.returncode != 0:
+            continue
+        showed = subprocess.run(["git", "show", f"{PRE_FIX_SHA}:lib/client.js"],
+                                cwd=repo, capture_output=True, text=True, timeout=60)
+        if showed.returncode == 0:
+            return showed.stdout
+    pytest.skip(
+        "the pre-fix fixture did not run: this clone does not carry " + PRE_FIX_SHA[:12]
+        + " and it could not be fetched (tried " + "; ".join(tried) + "). "
+        "Run `git fetch --depth=1 <remote> " + PRE_FIX_SHA + "` (or use a full clone) to replay the "
+        "red proof; the checks above it ran and are the reason this is a skip rather than a failure.")
+
+
 def test_the_gate_can_go_red(tmp_path):
     """A gate nobody has seen fail is a gate nobody can trust: replay it against the pre-fix bytes.
 
-    `origin/main` is the commit that shipped the screenshot (`0 with a lesson · 0 lessons surfaced`).
-    The fixture is materialized with `git show` rather than kept as a copy, so it cannot drift into
-    agreeing with the fixed code, and the assertions below can only pass against a frozen artifact.
-
-    The ref is searched rather than fixed: a checkout that fetched only the branch under test has no
-    `origin/main`, and a red fixture that skips on the developer's own machine is the version nobody
-    runs. If no candidate resolves *and* the working file still carries the fix, that is a real gap and
-    the test fails instead of skipping quietly.
+    The fixture is `PRE_FIX_SHA` — the commit that *shipped* the screenshot (`1 with a lesson`,
+    `0 票s`), materialized with `git show` rather than kept as a copy. The reference is a commit and not
+    a branch, which is the whole point: a branch drift cannot happen *because nothing can move the
+    commit*, so it cannot start agreeing with the fixed code. `origin/main` would **become** the fixed
+    bytes the moment this lands, and the check would then fail on every later PR while claiming the
+    opposite. The assertions below can only pass against that frozen artifact, and a fixture that stops
+    reproducing is a failure here, not a quiet pass (see the module docstring).
     """
-    tried = []
-    pre_source = None
-    for ref in ("origin/main", "main", "refs/remotes/origin/HEAD"):
-        done = subprocess.run(["git", "show", f"{ref}:lib/client.js"],
-                              cwd=REPO, capture_output=True, text=True, timeout=60)
-        tried.append(ref)
-        if done.returncode == 0:
-            pre_source = done.stdout
-            break
-    if pre_source is None:
-        pytest.skip("no ref with the pre-fix bytes is available here (tried: " + ", ".join(tried)
-                    + "); run this against a full clone to replay the red fixture")
+    pre_source = _pre_fix_source()
     pre = tmp_path / "client.js"
     pre.write_text(pre_source, encoding="utf-8")
 
     # Sanity: the fixture really is the pre-fix file, or the replay proves nothing.
     assert 'count(lessons.length, "lesson")' in pre_source, (
-        "the pre-fix bytes no longer contain the hard-coded unit this gate exists for")
+        f"{PRE_FIX_SHA[:12]} no longer carries the hard-coded unit this gate exists for; the red proof "
+        "has expired and the frozen commit must be replaced by one that still shows the defect")
     assert "panel.strip.hitTpl" not in pre_source, (
-        "the pre-fix bytes already carry the fix; check out the right base before trusting this replay")
+        f"{PRE_FIX_SHA[:12]} already contains the fix, so it cannot replay it; pick the commit before "
+        "the fix and update PRE_FIX_SHA")
 
     line = _counter_line("zh", pre)
     assert "with a lesson" in line, (
