@@ -209,5 +209,7 @@ python3 scripts/doctor.py                        # 仓库自检
   三条标准改动流程、部署与数据、排错手册）· `docs/maintainer/intake-triage.md`（intake 处置 SOP，
   **含"修复后必须给报料者回执"铁律**）· `docs/agents/content-injection-defense.md`（注入威胁模型与四层防护）
   · `docs/maintainer/credentials-and-environments.md`（**凭据与环境**：哪个密钥放在哪个 environment、
-  谁能读、什么时候轮换）· `docs/maintainer/handoff-*.md`（逐轮交接与待办快照）
+  谁能读、什么时候轮换）· `docs/maintainer/product-evaluation-lens.md`（**产品功能评估**：动手前先答
+  谁操作/谁受益/在什么场合；能观察的信号不要发问卷——2026-10-16 由"人类投票"这件事写成的清单）
+  · `docs/maintainer/handoff-*.md`（逐轮交接与待办快照）
 - **架构/接口**：`ARCHITECTURE.md` · `API.md` · `docs/`（基线、基准、registry 维护）
