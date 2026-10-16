@@ -30,11 +30,17 @@ with, so the fixture below takes the step's actual `run:` text out of the YAML, 
 `bash -e`, and reads the outputs back — the same execution the runner performs, with the network
 replaced by a stub probe at the script's own path.
 
-It goes red against the bytes on `main`, which is the only reason to trust it:
+It goes red against the bytes from before the fix, which is the only reason to trust it:
 
-    git show origin/main:.github/workflows/registry-drift-watch.yml > /tmp/pre-fix.yml
+    git show fe55c7d6^:.github/workflows/registry-drift-watch.yml > /tmp/pre-fix.yml
     MISAKANET_DRIFT_WATCH_YML=/tmp/pre-fix.yml \
       python3 -m pytest tests/test_registry_drift_watch_reports.py -q
+    # → 2 failed, 4 passed
+
+`fe55c7d6` is the commit that fixed the step, so `fe55c7d6^` is the last revision that still had the
+defect. This recipe used to say `git show origin/main:…`, which stopped being the pre-fix bytes the
+moment the fix merged: a reproduction step that names a moving ref expires without saying so. It names
+a commit now.
 
 `MISAKANET_DRIFT_WATCH_YML` exists for that proof; CI never sets it.
 """
@@ -42,6 +48,7 @@ from __future__ import annotations
 
 import os
 import pathlib
+import re
 import subprocess
 import sys
 
@@ -240,26 +247,51 @@ def _condition(step: dict) -> str:
     return " ".join(str(step.get("if", "")).replace("${{", "").replace("}}", "").split())
 
 
+_COMPARE_EXIT = "steps.compare.outputs.compare_exit"
+_CLAUSE = re.compile(r"^(?P<ref>[A-Za-z_][\w.]*)\s*(?P<op>==|!=)\s*'(?P<literal>[^']*)'$")
+
+
+def _clause(clause: str, values: dict[str, str]) -> bool:
+    """One `<ref> == '<literal>'` (or `!=`) clause, taken from the branch's real `if:` text."""
+    match = _CLAUSE.match(clause.strip())
+    if match is None:
+        raise AssertionError(
+            "this evaluator knows only `<ref> == '<literal>'` and `<ref> != '<literal>'` clauses. "
+            "The branch's real condition is neither, and the test will not guess at it — teach the "
+            f"evaluator the new shape on purpose. Offending clause: {clause!r}")
+    if match["ref"] not in values:
+        raise AssertionError(
+            f"the branch reads {match['ref']!r}, which this test does not model. It exists to prove "
+            "the branches key off the compare step's exit output, so another output here is a change "
+            "that should be looked at rather than evaluated.")
+    return ((values[match["ref"]] == match["literal"]) if match["op"] == "=="
+            else (values[match["ref"]] != match["literal"]))
+
+
 def _fires(condition: str, compare_exit: str) -> bool:
     """Whether an `if:` fires for a given value of the compare step's exit output.
 
-    The conditions compare `steps.compare.outputs.compare_exit` against string literals, so
-    substituting the value leaves a Python expression (`&&`/`||` rewritten). Reading the real text
-    means a branch that stops keying off `compare_exit` fails here instead of being copied into a
-    second statement that can drift from it.
+    The conditions compare `steps.compare.outputs.compare_exit` against string literals, and this
+    reads that **real text** rather than a hand-copied second statement, so a branch that stops
+    keying off `compare_exit` fails here instead of drifting away from it.
+
+    Two clauses are interpreted here instead of handing the text to Python's `eval`. That is a
+    deliberate trade, not a dodge: `eval` accepts *any* expression the workflow later grows — 
+    including one this test does not model — and then reports a verdict about it that it cannot
+    justify. A shape the interpreter below does not know fails loudly, which is the direction that
+    gets a human to look, and a code scanner is right to flag `eval` in a test even when the input
+    is repository-owned.
     """
-    expression = (
-        condition.replace("steps.compare.outputs.compare_exit", repr(compare_exit))
-        .replace("&&", " and ")
-        .replace("||", " or ")
-    )
-    try:
-        return bool(eval(expression, {"__builtins__": {}}, {}))
-    except Exception as exc:
+    if "(" in condition or ")" in condition:
         raise AssertionError(
-            f"this branch no longer reads the compare step's output as a value: {condition!r} "
-            f"({exc})"
-        ) from exc
+            "the condition grew parentheses; this evaluator implements no precedence rules and will "
+            f"not guess at them: {condition!r}")
+    values = {_COMPARE_EXIT: compare_exit}
+    # `&&` binds tighter than `||`, which is the only precedence these conditions use.
+    for alternative in condition.split("||"):
+        if all(_clause(part, values) for part in alternative.split("&&")):
+            return True
+    return False
 
 
 def test_the_branches_still_key_off_compare_exit():
