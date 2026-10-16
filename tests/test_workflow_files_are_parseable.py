@@ -200,15 +200,27 @@ def test_the_job_key_check_does_not_flag_a_normal_job() -> None:
     assert illegal_job_keys("synthetic.yml", text) == []
 
 
-def test_every_workflow_file_parses_as_yaml() -> None:
-    """A file that is not YAML at all is the crudest version of the same failure."""
-    unparseable = []
-    for path in _workflow_files():
-        try:
-            yaml.safe_load(path.read_text(encoding="utf-8"))
-        except yaml.YAMLError as exc:
-            unparseable.append(f"  {path.name}: {exc}")
-    assert not unparseable, "these workflow files are not valid YAML:\n" + "\n".join(unparseable)
+def test_yaml_validity_is_still_pinned_somewhere() -> None:
+    """This file does **not** re-assert YAML validity, and that is deliberate.
+
+    `tests/test_workflow_yaml_validity.py` already parses every workflow and composite action with a
+    loader that additionally refuses duplicate mapping keys — stricter than anything here. Restating
+    it would be a second, weaker copy of a fact another gate already owns, which is the shape this
+    repository keeps removing. What was missing was never "is this YAML": it is the two rules below,
+    a token the expression parser evaluates inside a comment and a job key GitHub refuses on a
+    reusable-workflow call. Both defects produce files that are perfectly valid YAML.
+
+    This test exists so the relationship is recorded rather than assumed — if the validity gate is
+    ever deleted, this fails and says where the coverage went.
+    """
+    validity_gate = REPO / "tests" / "test_workflow_yaml_validity.py"
+    assert validity_gate.exists(), (
+        "tests/test_workflow_yaml_validity.py is gone, so YAML validity of the workflows is pinned "
+        "nowhere. Either restore it or move its rules into this file.")
+    body = validity_gate.read_text(encoding="utf-8")
+    assert "duplicate" in body, (
+        "the validity gate no longer refuses duplicate mapping keys; that was the stricter half of "
+        "the pair and it is deliberately not duplicated here.")
 
 
 if __name__ == "__main__":  # pragma: no cover
