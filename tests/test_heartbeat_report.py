@@ -255,13 +255,109 @@ def test_comments_load_from_json_lines_as_well_as_an_array():
     assert hr.load_comments("") == []
 
 
+# ── the E4 rung: a separate reading, and a zero that is a finding rather than a fault ─────────
+
+E4_FIXTURE = {"rows_total": 5475, "rows_solved": 4450, "lessons_seen": 483, "e4_lessons": 0}
+
+
+def test_the_e4_reading_is_its_own_section_not_a_fourth_question():
+    out = digest(e4=E4_FIXTURE)
+    who = out.split("## 1 · Who is calling")[1].split("## 2 ·")[0]
+    helped = out.split("## 3 · Whether it helped")[1].split("## A separate reading")[0]
+    assert "E4" not in who and "E4" not in helped, (
+        "the E4 stock leaked into a day's flow — a cumulative rung beside a daily count reads as "
+        "part of that count")
+    assert "## A separate reading" in out
+
+
+def test_the_e4_reading_states_the_zero_plainly_and_names_the_denominators():
+    out = digest(e4=E4_FIXTURE)
+    assert "**E4 lessons: 0 of 483.**" in out
+    assert "`search_signals` holds 5475 rows, 4450 of them hits (`solved=1`)" in out
+
+
+def test_a_zero_e4_is_a_finding_about_the_design_not_a_missing_number():
+    """The instruction this test exists for: never soften the 0 into "no data yet"."""
+    out = digest(e4=E4_FIXTURE)
+    assert "**Read the 0 as a finding, not as a fault.**" in out
+    assert "under-counts by construction" in out
+    assert "silence can make it too small" in out
+    # The softening shapes, all of which would make the number unreadable as a result.
+    for softened in ("no data", "暂无", "not available yet", "coming soon", "cannot be determined"):
+        assert softened not in out.lower()
+
+
+def test_a_non_zero_e4_reading_prints_the_count_and_keeps_the_floor_caveat():
+    out = digest(e4={"rows_total": 100, "rows_solved": 90, "lessons_seen": 20, "e4_lessons": 3})
+    assert "**E4 lessons: 3 of 20.**" in out
+    assert "floor, never a ceiling" in out
+
+
+def test_an_unreadable_e4_is_not_a_density_of_zero():
+    out = digest(e4=None, errors={"search_signals": "no such table"})
+    assert "The E4 count could not be read" in out
+    assert "no such table" in out
+    assert "**not** a density of zero" in out
+    assert "E4 lessons: 0" not in out
+
+
+def test_the_e4_row_parser_treats_a_missing_row_as_unreadable():
+    assert hr.e4_density(None) is None
+    assert hr.e4_density({}) is None
+    assert hr.e4_density({"error": "boom"}) is None
+    assert hr.e4_density(E4_FIXTURE) == E4_FIXTURE
+
+
+def test_the_e4_threshold_mirror_matches_the_worker():
+    worker = (REPO / "workers" / "register-proxy-sw.js").read_text(encoding="utf-8")
+    match = re.search(r"E4_MIN_DISTINCT_CLIENTS\s*=\s*(\d+)", worker)
+    assert match, "the worker no longer declares E4_MIN_DISTINCT_CLIENTS where this test looks"
+    assert int(match.group(1)) == hr.E4_MIN_DISTINCT_CLIENTS
+
+
+def test_the_e4_query_selects_exactly_what_the_predicate_claims():
+    """Run the workflow's **own SQL text** against `sqlite3` and the worker's own DDL.
+
+    Production `search_signals` is the one thing in this change no local test can read, so the
+    query's selection semantics are pinned here instead: a lesson counts only when two *distinct*
+    `client_hint` values retrieved it, repeats of one client do not, and an anonymous caller
+    (`NULL` or empty hint) never counts. The schema comes from
+    `ensureSearchSignalsTable` in the worker, so a column rename breaks this test rather than the
+    query.
+    """
+    import sqlite3
+
+    worker = (REPO / "workers" / "register-proxy-sw.js").read_text(encoding="utf-8")
+    create = re.search(r"CREATE TABLE IF NOT EXISTS search_signals \(([\s\S]*?)\)`", worker)
+    assert create, "the worker no longer declares search_signals where this test looks"
+    alter = re.search(r'ALTER TABLE search_signals ADD COLUMN (client_hint [A-Z]+)', worker)
+    assert alter, "client_hint is added by an ALTER the worker no longer contains"
+
+    db = sqlite3.connect(":memory:")
+    db.execute(f"CREATE TABLE search_signals ({create.group(1)})")
+    db.execute(f"ALTER TABLE search_signals ADD COLUMN {alter.group(1)}")
+    db.executemany("INSERT INTO search_signals (solved, top_id, client_hint) VALUES (?, ?, ?)", [
+        (1, "lessons/a.md", "h1"), (1, "lessons/a.md", "h2"),   # two clients → E4
+        (1, "lessons/a.md", "h2"),                              # the same client again: no change
+        (1, "lessons/b.md", "h1"), (1, "lessons/b.md", "h1"),   # one client, twice → not E4
+        (0, "lessons/c.md", "h1"), (0, "lessons/c.md", ""), (0, "lessons/c.md", None),
+        (1, "lessons/d.md", None), (1, "lessons/d.md", ""),     # anonymous only → not E4
+    ])
+    row = db.execute(hr.E4_SQL).fetchone()
+    assert row == (10, 7, 4, 1), (
+        "the E4 SQL no longer selects (rows_total, rows_solved, lessons_seen, e4_lessons) the way "
+        "the predicate is described")
+
+
 # ── the raw rows: parsing, scoping, and the redaction that a public comment needs ───────────
 
 def test_wrangler_json_envelopes_and_bare_row_arrays_both_parse():
     rows = [{"scope": "traffic", "bucket": "mcp", "period": DAY, "count": 1}]
-    assert hr.counter_rows(json.dumps([{"results": rows, "success": True}])) == rows
-    assert hr.counter_rows(json.dumps(rows)) == rows
-    assert hr.counter_rows(json.dumps([{"results": [], "success": True}])) == []
+    assert hr.result_rows(json.dumps([{"results": rows, "success": True}])) == rows
+    assert hr.result_rows(json.dumps(rows)) == rows
+    assert hr.result_rows(json.dumps([{"results": [], "success": True}])) == []
+    # An error envelope is a failed read, not a row of zeroes.
+    assert hr.result_rows(json.dumps({"error": {"text": "no such table"}})) == []
 
 
 def test_only_the_requested_day_and_scope_reach_a_panel():

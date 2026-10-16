@@ -22,7 +22,7 @@ python3 scripts/heartbeat_report.py --fetch --out /tmp/heartbeat.md
 
 # a day already collected, or a fixture: no network, no credential
 python3 scripts/heartbeat_report.py --day 2026-10-16 --counters-json rows.json \
-  --analytics analytics.json --funnel funnel.json
+  --analytics analytics.json --funnel funnel.json --e4-json search_signals.json
 ```
 
 ## Panel 1 — who is calling
@@ -89,6 +89,44 @@ which series is authoritative (unanswered `gap` rows or matched searches), what 
 applied to compare two days, and what recurrence threshold is worth reporting. Until that lands,
 the panel stays a retrieval count with the paragraph attached.
 
+## A separate reading — how dense the `E4` rung is
+
+`E4` is the top rung of the evidence ladder: a lesson retrieved by **two distinct clients**
+(`COUNT(DISTINCT client_hint) >= 2`, the worker's `E4_MIN_DISTINCT_CLIENTS`). It is conferred by an
+observation and cannot be typed into a lesson, and until this reading nobody had measured it against
+the real table.
+
+It is a section of its own, **not one of the three panels**, because it is a *stock* and the panels
+are a *day's flow*: a cumulative number printed next to daily counts reads as part of them. One more
+D1 query answers it, next to the counters query and with the same credential:
+
+```sql
+SELECT
+  (SELECT COUNT(*) FROM search_signals) AS rows_total,
+  (SELECT COUNT(*) FROM search_signals WHERE solved = 1) AS rows_solved,
+  (SELECT COUNT(DISTINCT top_id) FROM search_signals) AS lessons_seen,
+  (SELECT COUNT(*) FROM (
+     SELECT top_id FROM search_signals
+      WHERE client_hint IS NOT NULL AND client_hint <> ''
+      GROUP BY top_id
+     HAVING COUNT(DISTINCT client_hint) >= 2
+   )) AS e4_lessons;
+```
+
+The three denominators are what make a `0` readable: `search_signals` rows, hit rows (`solved=1`),
+and the distinct lessons those rows name. The rendered sentence is
+`**E4 lessons: <n> of <lessons_seen>.**`, and when `n` is `0` the panel says so as a **finding about
+the design** — the rung is empty because two distinct `client_hint`s are required and only a caller
+that sends a `client_id` writes one, so the number under-counts by construction. That direction is
+the point: a trust signal may be wrong by staying silent, but nothing written inside a lesson can
+inflate it. **The `0` is never softened** into "no data yet": a real zero is the more interesting
+answer, and a failed read is a different sentence entirely (rule 4 — the one place where confusing
+the two would matter most).
+
+`tests/test_heartbeat_report.py` runs this exact SQL text against `sqlite3`, with the table created
+from the worker's own `ensureSearchSignalsTable` DDL, so the selection semantics are pinned even
+though the production table itself is reachable only from CI.
+
 ## Rule 4 — a day with no data says so
 
 A source that could not be read and a source that was read and held nothing are two different
@@ -112,6 +150,7 @@ answers", `workers/register-proxy-sw.js`), and the composer keeps the distinctio
 |---|---|---|
 | `counters` (D1) | traffic classes, `mcpclient:` buckets, `gap` buckets | the client dimension exists only where a client sends `initialize`; `gap` text is caller-supplied |
 | `GET /api/analytics` | rolling `lesson_usage` aggregates | `knowledge_gaps` and `mcpClients` are withheld there on purpose — read from D1 instead, without changing that policy |
+| `search_signals` (D1) | rows, hits, distinct lessons, and lessons at the `E4` rung | a lesson is counted only when **two distinct** `client_hint`s retrieved it, and `client_hint` exists only for a caller that sent a `client_id` — so the number is a floor by construction |
 | `GET /api/funnel` | `visit` / `register` / `authorize` / `pair` / `search` | `visit` counts only pageviews *this* worker serves (`/` and `/search/` come from `misakanet-web`); `register` counts **nodes**, and a client that omits `client_id` creates one per call, so it is neither people nor agents; `drop_off_rate` divides two different units and is deliberately unclamped, so the digest omits it and quotes its value rather than printing it as a rate |
 
 - **No new endpoint, no change to what any counter records, no change to the withhold policy.**

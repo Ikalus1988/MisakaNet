@@ -19,6 +19,10 @@ shell around them:
 4. a day with no rows says so — `None` (unreadable) and `[]` (genuinely empty) render as two
    different sentences and neither renders as `0`.
 
+One more reading rides along, marked as *not* one of the three: the density of `E4`, the evidence
+ladder's top rung, which the worker now confers on `COUNT(DISTINCT client_hint) >= 2`. It needs the
+same D1 credential, and a real `0` there is a finding about the design rather than a quiet day.
+
 Why D1 and not the public API for two of these: `/api/analytics` withholds `knowledge_gaps` and
 `mcpClients` on purpose (a failed query can be a whole prompt; a client name is someone else's
 tooling). This script reads them from `counters` with the same Cloudflare credential the counters
@@ -96,6 +100,30 @@ GENERIC_QUERIES = frozenset({
     "npm run", "npm run build", "npm install", "npm test", "npm start", "pip install",
 })
 
+#: The evidence ladder's top rung, as the worker defines it: a lesson retrieved by this many
+#: *distinct* observed clients is `E4`. The worker's own constant is `E4_MIN_DISTINCT_CLIENTS`
+#: (`workers/register-proxy-sw.js`, next to `countDistinctRetrievingClients`), and
+#: `tests/test_heartbeat_report.py` fails if the two disagree — this mirror exists so the digest can
+#: print the threshold it measured against, not so it can drift.
+E4_MIN_DISTINCT_CLIENTS = 2
+
+#: One row, four numbers. Held as a module constant so the test suite can run **this exact text**
+#: against `sqlite3` and the worker's own `CREATE TABLE`, which is the only way to check the query's
+#: selection semantics without production D1.
+#:
+#: `client_hint` is written only for a caller that sends a `client_id` / `X-MisakaNet-Client`, so the
+#: fourth number under-counts by construction — a property, not a defect, and the panel says so.
+E4_SQL = """SELECT
+  (SELECT COUNT(*) FROM search_signals) AS rows_total,
+  (SELECT COUNT(*) FROM search_signals WHERE solved = 1) AS rows_solved,
+  (SELECT COUNT(DISTINCT top_id) FROM search_signals) AS lessons_seen,
+  (SELECT COUNT(*) FROM (
+     SELECT top_id FROM search_signals
+      WHERE client_hint IS NOT NULL AND client_hint <> ''
+      GROUP BY top_id
+     HAVING COUNT(DISTINCT client_hint) >= {threshold}
+   )) AS e4_lessons;""".replace("{threshold}", str(E4_MIN_DISTINCT_CLIENTS))
+
 #: Substrings that make a failed query look like a prompt rather than a query. Together with the
 #: length bound and a newline check this is what keeps a public comment from republishing the
 #: text `/api/analytics` withholds. It is a heuristic and is described as one.
@@ -159,21 +187,24 @@ def find_comment_for_day(comments: list[dict], day: str) -> int | None:
     return None
 
 
-def counter_rows(payload: str) -> list[dict]:
-    """Rows out of `wrangler d1 execute --json`, or out of a bare row array.
+def result_rows(payload: str) -> list[dict]:
+    """Rows out of a `wrangler d1 execute --json` payload, or out of a bare row array.
 
-    Wrangler answers with a list of result envelopes (`[{"results": [...], "success": true}]`);
-    the fixtures in `tests/` pass the row array directly. Both shapes end up as the same list of
-    `{scope, bucket, period, count}`.
+    Wrangler answers with a list of result envelopes (`[{"results": [...], "success": true}]`); the
+    fixtures in `tests/` and `--counters-json` pass the row array directly. An envelope that carries
+    an `error` is skipped rather than turned into a row — a failed query must not become a row of
+    zeroes at the call site that reads it.
     """
     document = json.loads(payload)
     if isinstance(document, dict):
         document = [document]
     rows: list[dict] = []
     for envelope in document:
-        if isinstance(envelope, dict) and isinstance(envelope.get("results"), list):
+        if not isinstance(envelope, dict):
+            continue
+        if isinstance(envelope.get("results"), list):
             rows.extend(envelope["results"])
-        elif isinstance(envelope, dict) and "bucket" in envelope:
+        elif "error" not in envelope:
             rows.append(envelope)
     return rows
 
@@ -222,6 +253,23 @@ def gap_counts(rows, day: str) -> dict[str, int] | None:
         query = str(row.get("bucket") or "")
         counts[query] = counts.get(query, 0) + int(row.get("count") or 0)
     return counts if counts else {}
+
+
+def e4_density(row: dict | None) -> dict | None:
+    """The E4 count and its three denominators, from the single row `E4_SQL` returns.
+
+    `None` in, `None` out: a failed read is not a density of zero, and the panel renders the two
+    differently (rule 4) — which matters more here than anywhere else in the digest, because a real
+    zero is a *finding* and a failed read is not.
+    """
+    if not row or "e4_lessons" not in row:
+        return None
+    return {
+        "e4_lessons": int(row.get("e4_lessons") or 0),
+        "lessons_seen": int(row.get("lessons_seen") or 0),
+        "rows_total": int(row.get("rows_total") or 0),
+        "rows_solved": int(row.get("rows_solved") or 0),
+    }
 
 
 def classify_client(name: str) -> str:
@@ -481,8 +529,56 @@ def panel_helped(analytics: dict | None, day: str, errors: dict[str, str]) -> li
     return lines
 
 
-def panel_sources(counters, analytics: dict | None, funnel: dict | None, day: str,
-                  errors: dict[str, str]) -> list[str]:
+def panel_e4(e4: dict | None, day: str, errors: dict[str, str]) -> list[str]:
+    """A separate reading: how many lessons actually reach the ladder's top rung.
+
+    Deliberately **not** folded into the three panels. "Who is calling" is about this day's traffic
+    and "whether it helped" is about retrievals; E4 is a cumulative property of the whole
+    `search_signals` table, and mixing a stock into a day's flow is how a digest starts lying by
+    adjacency.
+    """
+    lines = [
+        "---",
+        "",
+        "## A separate reading · how dense the E4 rung is",
+        "",
+        "_Not one of the three questions above._ `E4` is the top rung of the evidence ladder: a "
+        f"lesson retrieved by **{E4_MIN_DISTINCT_CLIENTS} distinct clients** "
+        f"(`COUNT(DISTINCT client_hint) >= {E4_MIN_DISTINCT_CLIENTS}`, the worker's "
+        "`E4_MIN_DISTINCT_CLIENTS`) — conferred by an observation, and impossible to type into a "
+        "lesson. Nobody had measured it against the real table, and this digest is the one job "
+        "here with the credential to do it.",
+        "",
+    ]
+    if e4 is None:
+        lines += [f"⚠️ **The E4 count could not be read for {day}** "
+                  f"({errors.get('search_signals', 'no reason recorded')}). That is **not** a density "
+                  f"of zero: a zero here would be a finding about the design, and a failed read is a "
+                  f"failed read.", ""]
+        return lines
+
+    lines += [f"**E4 lessons: {e4['e4_lessons']} of {e4['lessons_seen']}.** `search_signals` holds "
+              f"{e4['rows_total']} rows, {e4['rows_solved']} of them hits (`solved=1`).", ""]
+    if e4["e4_lessons"] == 0:
+        lines += [
+            "**Read the 0 as a finding, not as a fault.** No lesson has been retrieved by two "
+            "distinct clients, so the top rung is empty — and that is evidence about the design, not "
+            "a broken counter to be nursed back to health with softer wording. The rung is conferred "
+            "only by two distinct `client_hint` values, and `client_hint` is written only for a "
+            "caller that sends a `client_id`; an anonymous caller leaves none. So this number "
+            "under-counts by construction, and under-counting is the direction a trust signal is "
+            "allowed to be wrong in: silence can make it too small, but no lesson body and no vote "
+            "button can make it too big.", "",
+        ]
+    else:
+        lines += [f"{e4['e4_lessons']} lesson(s) have been retrieved by at least "
+                  f"{E4_MIN_DISTINCT_CLIENTS} distinct clients. The same construction note applies: "
+                  f"anonymous callers carry no `client_hint`, so this is a floor, never a ceiling.", ""]
+    return lines
+
+
+def panel_sources(counters, analytics: dict | None, funnel: dict | None, e4: dict | None,
+                  day: str, errors: dict[str, str]) -> list[str]:
     """The footer: what was read, what each number cannot say, and the errors, if any."""
     lines = ["---", "", "## Sources, and what each number cannot say", ""]
     counters_state = ("read" if counters is not None
@@ -491,6 +587,8 @@ def panel_sources(counters, analytics: dict | None, funnel: dict | None, day: st
                        else f"**could not be read** ({errors.get('analytics', 'no reason recorded')})")
     funnel_state = ("read" if funnel is not None
                     else f"**could not be read** ({errors.get('funnel', 'no reason recorded')})")
+    e4_state = ("read" if e4 is not None
+                else f"**could not be read** ({errors.get('search_signals', 'no reason recorded')})")
     lines += _table(
         ["source", "state", "what it is"],
         [
@@ -501,6 +599,9 @@ def panel_sources(counters, analytics: dict | None, funnel: dict | None, day: st
              "rolling 7 days of `lesson_usage`; its `knowledge_gaps` and `mcpClients` are withheld "
              "there and read from D1 here instead"],
             ["`/api/funnel`", funnel_state, "the first-call funnel, from the worker's counters"],
+            ["`search_signals` (D1)", e4_state,
+             "the E4 reading above: rows, hits, distinct lessons, and how many lessons sit at the "
+             "top rung"],
         ],
     )
     lines += [""]
@@ -544,10 +645,10 @@ def panel_sources(counters, analytics: dict | None, funnel: dict | None, day: st
 
 
 def render_digest(*, day: str, counters, analytics: dict | None, funnel: dict | None,
-                  errors: dict[str, str] | None = None) -> str:
+                  e4: dict | None = None, errors: dict[str, str] | None = None) -> str:
     """The whole comment body for one UTC day.
 
-    `counters` / `analytics` / `funnel` are plain data or `None` for "could not be read";
+    `counters` / `analytics` / `funnel` / `e4` are plain data or `None` for "could not be read";
     `errors` maps a source to the reason, so the digest can say what it could not see instead of
     printing a number nobody can trust.
     """
@@ -576,7 +677,8 @@ def render_digest(*, day: str, counters, analytics: dict | None, funnel: dict | 
     lines += panel_what(counters, analytics, day, errors)
     lines += ["---", ""]
     lines += panel_helped(analytics, day, errors)
-    lines += panel_sources(counters, analytics, funnel, day, errors)
+    lines += panel_e4(e4, day, errors)
+    lines += panel_sources(counters, analytics, funnel, e4, day, errors)
     return "\n".join(lines).rstrip() + "\n"
 
 
@@ -614,7 +716,24 @@ def fetch_counter_rows(day: str) -> list[dict]:
     )
     if result.returncode != 0:
         raise RuntimeError(wrangler_failure(result.stdout, result.stderr))
-    return counter_rows(result.stdout)
+    return result_rows(result.stdout)
+
+
+def fetch_e4_density() -> dict | None:
+    """Run `E4_SQL` against D1, through the same credential and the same `wrangler` invocation.
+
+    `None` when the table does not exist yet (the worker creates it lazily, so a young deployment
+    answers `no such table`) rather than raising: the digest already has a sentence for "could not be
+    read", and it is a truer one than a traceback.
+    """
+    result = subprocess.run(
+        ["wrangler", "d1", "execute", "misakanet-db", "--remote", "--json", "--command", E4_SQL],
+        cwd=REPO_ROOT / "workers", capture_output=True, text=True, check=False,
+    )
+    if result.returncode != 0:
+        raise RuntimeError(wrangler_failure(result.stdout, result.stderr))
+    rows = result_rows(result.stdout)
+    return e4_density(rows[0] if rows else None)
 
 
 def fetch_json(url: str) -> dict:
@@ -625,13 +744,18 @@ def fetch_json(url: str) -> dict:
         return json.loads(response.read().decode("utf-8"))
 
 
-def collect(day: str) -> tuple[list[dict] | None, dict | None, dict | None, dict[str, str]]:
-    """Read all three sources, keeping every failure as a *reason* rather than as a zero."""
+def collect(day: str) -> tuple[list[dict] | None, dict | None, dict | None, dict | None,
+                               dict[str, str]]:
+    """Read every source, keeping each failure as a *reason* rather than as a zero."""
     errors: dict[str, str] = {}
     try:
         counters: list[dict] | None = fetch_counter_rows(day)
     except Exception as error:  # noqa: BLE001 — the digest reports the reason, it does not crash
         counters, errors["counters"] = None, reason_text(f"{type(error).__name__}: {error}")
+    try:
+        e4: dict | None = fetch_e4_density()
+    except Exception as error:  # noqa: BLE001 — same reason: a failed read is reported, not fatal
+        e4, errors["search_signals"] = None, reason_text(f"{type(error).__name__}: {error}")
     try:
         analytics: dict | None = fetch_json("https://misakanet.org/api/analytics")
     except (urllib.error.URLError, OSError, ValueError) as error:
@@ -640,7 +764,7 @@ def collect(day: str) -> tuple[list[dict] | None, dict | None, dict | None, dict
         funnel: dict | None = fetch_json("https://misakanet.org/api/funnel?days=7")
     except (urllib.error.URLError, OSError, ValueError) as error:
         funnel, errors["funnel"] = None, reason_text(f"{type(error).__name__}: {error}")
-    return counters, analytics, funnel, errors
+    return counters, analytics, funnel, e4, errors
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -650,6 +774,8 @@ def main(argv: list[str] | None = None) -> int:
                        help="a saved `wrangler d1 execute --json` output, or a bare row array")
     parser.add_argument("--analytics", type=Path, help="a saved /api/analytics payload")
     parser.add_argument("--funnel", type=Path, help="a saved /api/funnel payload")
+    parser.add_argument("--e4-json", type=Path,
+                       help="a saved `E4_SQL` result (one row), or nothing to leave it unread")
     parser.add_argument("--fetch", action="store_true",
                        help="read all three sources live (needs the Cloudflare credential for D1)")
     parser.add_argument("--out", type=Path, help="write the digest here instead of stdout")
@@ -669,18 +795,22 @@ def main(argv: list[str] | None = None) -> int:
     counters: list[dict] | None = None
     analytics: dict | None = None
     funnel: dict | None = None
+    e4: dict | None = None
     errors: dict[str, str] = {}
 
     if args.fetch:
-        counters, analytics, funnel, errors = collect(day)
+        counters, analytics, funnel, e4, errors = collect(day)
     if args.counters_json:
-        counters = counter_rows(args.counters_json.read_text(encoding="utf-8"))
+        counters = result_rows(args.counters_json.read_text(encoding="utf-8"))
     if args.analytics:
         analytics = json.loads(args.analytics.read_text(encoding="utf-8"))
     if args.funnel:
         funnel = json.loads(args.funnel.read_text(encoding="utf-8"))
+    if args.e4_json:
+        rows = result_rows(args.e4_json.read_text(encoding="utf-8"))
+        e4 = e4_density(rows[0] if rows else None)
 
-    digest = render_digest(day=day, counters=counters, analytics=analytics, funnel=funnel,
+    digest = render_digest(day=day, counters=counters, analytics=analytics, funnel=funnel, e4=e4,
                            errors=errors)
     if args.out:
         args.out.write_text(digest, encoding="utf-8")
