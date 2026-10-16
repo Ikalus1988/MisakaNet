@@ -184,3 +184,28 @@ The vote surface changed on 2026-10-16 and this paragraph records what did and d
   panel votes, and when" publicly is a new contract with its own privacy review and was not smuggled into
   this one.
 
+## Correction (2026-10-16): `E4` is observed reuse, not a vote
+
+Rows **B6**, **B8** and **B10** above record a rule that has since changed, and this repository does
+not rewrite dated acceptance records into agreement with today. They read: one human confirmation makes
+the reuse event appear, and the second is what agents read as `E4`. That is what the UI did, and it was
+wrong for a vote to *confer* `E4`.
+
+Since 2026-10-16 a `lesson_found_helpful` event is capped below `E4` at every count
+(`workers/register-proxy-sw.js`). A vote is one person's opinion, recorded as a hint: almost every
+retrieval is agent-initiated, so the person shown the "did this help?" button did not ask the question
+and usually cannot evaluate the answer — the vote surveys what the transport layer can observe, and the
+`E4` it produced was an artefact of politeness. Measured against production that day: of the 24
+most-retrieved lessons, 3 carried any vote at all (6 votes in total), and 0 of 483 lessons sat at `E4`.
+
+What the rows' intent becomes, still true to what they were checking — the count is other people's, and
+the number comes from the server's own answer:
+
+* **B6 / B8** — the row still renders the public count, labelled as other people's, as **external reuse
+  evidence**; it no longer renders `→ E4` or `live signal: E4`, because a vote cannot confer the rung.
+* **B10** — the receipt still carries the server's `answer.count` and the same sentence section ③
+  states; that sentence now says a vote is a hint and that `E4` comes from observable reuse.
+
+`E4` itself is unchanged in the tool: `misakanet_me_events` still returns `evidence: 'E0'|'E3'|'E4'`, and
+cross-node confirmation still emits `E4`. What changed is that only an observed signal can.
+

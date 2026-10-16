@@ -1012,15 +1012,19 @@ def test_the_trust_rule_is_stated_once_and_every_row_shows_its_own_count():
 
     The first version printed the E4 sentence only on rows whose count was 0 — so a lesson people had
     already confirmed twice read as a bare "2 human confirmations" with no explanation of what that
-    means. Now the sentence is stated once for the section, and each row carries its own count plus an
-    `→ E4` marker when it has crossed.
+    means. The sentence is now stated once for the section, and it carries what 2026-10-16 decided: a
+    vote is one person's opinion recorded as a hint, and the rung agents read (`E4`) comes from
+    observable reuse. No row carries a `→ E4` marker any more, because a count of votes is no longer
+    allowed to reach the rung.
     """
     panel = panel_body(client_source())
     assert panel.count('T("panel.trust.footnote")') == 1, (
         "the rule belongs once per section, not once per row")
-    assert "second is what agents read as E4" in dict_value("panel.trust.footnote"), (
-        "the sentence behind that key is the rule")
-    assert '→ E4' in panel, "a row past the threshold should say what its count means"
+    footnote = dict_value("panel.trust.footnote")
+    assert "hint" in footnote and "E4" in footnote and "observable reuse" in footnote, (
+        "the sentence behind that key is the rule: a vote is a hint, E4 comes from observable reuse")
+    assert '→ E4' not in panel, (
+        "a vote count must not be marked as the rung — that mapping is what 2026-10-16 removed")
     assert 'count(confirmations, T("panel.trust.human"))' in panel, (
         "each row must print its own confirmation count through the plural helper")
 
@@ -1113,9 +1117,11 @@ def test_the_vote_source_rule_can_go_red():
 def test_one_click_says_what_it_changed():
     """Change #2: the confirmation names the consequence in the project's own vocabulary.
 
-    "One makes the reuse event appear; the second is what agents read as E4" is the rule the trust section
-    states, so the post-click line repeats it rather than inventing a metric. The browser words it; the
-    count comes from the server's own answer.
+    The post-click line used to repeat the trust section's old rule — "one makes the reuse event appear;
+    the second is what agents read as E4". The first half still holds and is what this pins. The second
+    was the bug: since 2026-10-16 the second vote says a vote is a hint and that `E4` comes from
+    observable reuse, the same sentence the trust rule states. The browser words it; the count still
+    comes from the server's own answer.
     """
     source = client_source()
     panel = panel_body(source)
@@ -1123,9 +1129,9 @@ def test_one_click_says_what_it_changed():
         "the click's receipt must distinguish the first confirmation from the second")
     assert "the reuse event now appears" in dict_value("panel.asked.voteOne"), (
         "the first vote says what it made appear")
-    assert "E4" in dict_value("panel.asked.voteTwo") and "second is what agents read as E4" \
-        in dict_value("panel.trust.footnote"), (
-        "the second vote uses the same E4 sentence the trust rule uses")
+    assert "observable reuse" in dict_value("panel.asked.voteTwo") \
+        and "hint" in dict_value("panel.trust.footnote"), (
+        "the second vote says what it did not do — reach E4 — in the words the trust rule uses")
     assert "answer.count" in panel, "the receipt must carry the count the server answered with"
     assert "setTrust(function (prev)" in panel, (
         "the count must land in the same per-lesson receipt section ③ renders, or the two disagree")
