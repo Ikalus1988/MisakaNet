@@ -40,6 +40,16 @@ permissions:
 
 jobs:
   guarded-repository:
+    # No `timeout-minutes` here, and that is not an oversight: GitHub refuses the whole file when a
+    # job that calls a reusable workflow carries one —
+    #   Invalid workflow file: Unexpected value 'timeout-minutes'
+    # — and a refused file runs nothing while failing no job, so the only symptom is a failed check
+    # suite with zero check runs. This key was added on 2026-10-07 to satisfy
+    # `tests/test_workflow_timeouts.py`, which asks every job for a bound; the result was that this
+    # workflow could not run at all until 2026-10-15, and its Monday schedule produced no run in
+    # between. The bound lives inside the called workflow (third-party, version-pinned above). The
+    # timeouts rule now exempts reusable-workflow calls and the exemption is paired with
+    # `tests/test_workflow_files_are_parseable.py`, which fails if this key comes back.
     uses: hashgraph-online/hol-guard/.github/workflows/guarded-repository.yml@94f14e6351f1a80a12a42e51df4dd55b42e41014  # v3.36.1
     with:
       profile: default

@@ -90,11 +90,76 @@ def _jobs() -> list[tuple[str, str, dict]]:
 
 def test_every_job_declares_a_timeout():
     """A job with no `timeout-minutes` holds its runner for the six-hour platform default."""
-    missing = [f"{path}:{name}" for path, name, job in _jobs() if job.get("timeout-minutes") is None]
+    missing = unbounded_jobs(_jobs())
     assert not missing, (
         f"{len(missing)} jobs have no `timeout-minutes` and will hold their runner for "
         f"{PLATFORM_DEFAULT} minutes: {missing}. Add one — this repository used {ADDED_BOUND} for "
         "the 54 that had none, and the ones that already had a considered value keep it.")
+
+
+# ── The one job GitHub forbids a bound on ────────────────────────────────────────────────────
+#
+# This rule's first victim was a workflow it was written to protect, and the damage was silent for
+# eight days. `guarded-repository.yml` calls a reusable workflow (`uses:` at job level), and GitHub
+# refuses `timeout-minutes` on such a job:
+#
+#     Invalid workflow file: Line: 44, Col: 5): Unexpected value 'timeout-minutes'
+#
+# A refused file runs nothing and fails no job — it produces a **failed check suite with zero check
+# runs**, so the only symptom is a banner on the run page. Satisfying this test is exactly what put
+# the key there (commit 02afebc2, 2026-10-07), and the HOL Guard scanner did not run again until it
+# was removed (measured 2026-10-15: its last successful run was 2026-10-05, and the Monday schedule
+# after the break produced no run at all, because an unparseable workflow is never scheduled).
+#
+# So a reusable-workflow call is exempt here, and the exemption is paired with a rule that forbids
+# the key in the first place: `tests/test_workflow_files_are_parseable.py`
+# (`test_no_reusable_workflow_call_carries_a_job_only_key`). One rule permits the absence, the other
+# makes the presence fatal. Neither is sufficient alone — without the pair, this test would demand
+# the key and the parser would reject the file, which is the state that existed.
+#
+# The bound for such a job is not missing; it lives inside the called workflow, which is
+# third-party and version-pinned, so it cannot be restated here.
+
+def calls_a_reusable_workflow(job: dict) -> bool:
+    """Is this a job that cannot carry `timeout-minutes` because GitHub forbids it there?"""
+    return "uses" in job
+
+
+def unbounded_jobs(jobs: list[tuple[str, str, dict]]) -> list[str]:
+    """`path:job` for every job that should declare a bound and does not.
+
+    Pure over an explicit job list so the exemption can be given a red fixture below: the failure
+    mode of an exemption is that it silently swallows ordinary jobs, and this repository does not
+    trust a rule whose red case has never been seen.
+    """
+    return [f"{path}:{name}" for path, name, job in jobs
+            if job.get("timeout-minutes") is None and not calls_a_reusable_workflow(job)]
+
+
+def test_the_timeout_exemption_covers_only_reusable_workflow_calls():
+    """The exemption must not become a way for an ordinary job to skip its bound."""
+    synthetic = [
+        ("x.yml", "normal", {"runs-on": "ubuntu-latest", "steps": []}),
+        ("x.yml", "normal-but-bounded", {"runs-on": "ubuntu-latest", "timeout-minutes": 30}),
+        ("x.yml", "caller", {"uses": "owner/repo/.github/workflows/x.yml@abc123"}),
+    ]
+    assert unbounded_jobs(synthetic) == ["x.yml:normal"], (
+        "the exemption let an ordinary job through, or started flagging the reusable-workflow call")
+
+
+def test_no_exempted_job_carries_the_key_that_makes_github_refuse_the_file():
+    """The other half of the pair, asserted from this side too.
+
+    If an exempted job carried `timeout-minutes`, this file's exemption and the parser's prohibition
+    would both be describing the same job, and the exemption would be hiding the exact defect it
+    exists to accommodate rather than accommodating it.
+    """
+    offenders = [f"{path}:{name}" for path, name, job in _jobs()
+                 if calls_a_reusable_workflow(job) and job.get("timeout-minutes") is not None]
+    assert not offenders, (
+        f"these reusable-workflow calls carry `timeout-minutes`, which makes GitHub refuse the whole "
+        f"file (the workflow then never runs): {offenders}. The bound belongs inside the called "
+        "workflow.")
 
 
 def test_no_bound_is_the_platform_default():
