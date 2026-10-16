@@ -37,15 +37,37 @@ jobs:
     timeout-minutes: 20
     # gh must be authenticated in every step that runs it (tests/test_workflow_gh_auth.py):
     # `permissions:` alone does not export a token.
+    #
+    # `SHELDON_PAT` rather than `GITHUB_TOKEN`, and that is not a preference. This job pushes
+    # `adopted/<n>` and opens the new PR; a `GITHUB_TOKEN` push succeeds, but GitHub then creates
+    # every one of that PR's `pull_request` runs *held* (`conclusion: action_required`, no job
+    # starts), so the adopted PR reports no required check and can never merge. Measured
+    # 2026-10-17 on #3366 (created by github-actions[bot]): 14 runs, all held at 0s, only the
+    # Cloudflare check-run reported. In the same repository, #3362 — pushed by `build-feed.yml`
+    # with `SHELDON_PAT` — ran 22 checks normally. `fix-dco.yml`, `build-feed.yml` and
+    # `auto-sync-prs.yml` carry the same note. The fallback keeps a PAT-less run working exactly
+    # as it does today (a PR plus held runs) instead of failing, and the step below says so.
     env:
-      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_TOKEN: ${{ secrets.SHELDON_PAT || secrets.GITHUB_TOKEN }}
     steps:
+      # `secrets.SHELDON_PAT` cannot be read in a shell; this passes the *name* through and the
+      # value never reaches the log (same idiom as check-documented-gates.yml).
+      - name: Check the push token
+        env:
+          SHELDON_PAT: ${{ secrets.SHELDON_PAT }}
+        run: |
+          if [ -z "${SHELDON_PAT:-}" ]; then
+            echo "::warning::SHELDON_PAT is empty — the adopted PR will be opened with GITHUB_TOKEN, whose pull_request runs are held as action_required. No required check will report and the PR cannot merge until a maintainer approves every held run (gh api repos/${{ github.repository }}/actions/runs/<id>/approve -X POST). Set the secret and re-run /adopt --apply."
+          else
+            echo "SHELDON_PAT is set — the adopted PR's checks will start normally."
+          fi
+
       - name: Checkout the base repository (main, full history)
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
         with:
           ref: main
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.SHELDON_PAT || secrets.GITHUB_TOKEN }}
           # Persisted credentials are what lets the Phase 2 `git push origin` write the
           # adopted/<n> branch; the fork is only ever fetched, never pushed to.
           persist-credentials: true
@@ -58,7 +80,6 @@ jobs:
       - name: Resolve the command, the fork head and the original PR payload
         id: resolve
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           COMMENT_BODY: ${{ github.event.comment.body }}
           COMMENT_AUTHOR: ${{ github.event.comment.user.login }}
         run: |
@@ -126,7 +147,6 @@ jobs:
       - name: Phase 1 — dry run, post the plan
         if: steps.resolve.outputs.mode == 'dry-run'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
         run: |
           set +e
@@ -160,7 +180,6 @@ jobs:
         id: apply
         if: steps.resolve.outputs.mode == 'apply'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
         run: |
           set +e
@@ -199,8 +218,6 @@ jobs:
       - name: Open the adopted PR
         id: create
         if: steps.resolve.outputs.mode == 'apply'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           URL="$(gh pr create --base main --head "adopted/$ADOPT_PR" --title "$ADOPT_TITLE" --body-file "$RUNNER_TEMP/adopt-body.md")"
           echo "url=$URL" >> "$GITHUB_OUTPUT"
@@ -209,7 +226,6 @@ jobs:
       - name: Credit the original author and close the original PR
         if: steps.resolve.outputs.mode == 'apply'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NEW_PR_URL: ${{ steps.create.outputs.url }}
         run: |
           sed "s|{{NEW_PR_URL}}|$NEW_PR_URL|g" "$RUNNER_TEMP/adopt-notice.md" > "$RUNNER_TEMP/adopt-notice-final.md"
