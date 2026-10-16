@@ -12,7 +12,7 @@ mcp-name: io.github.Ikalus1988/misakanet
 > 誰かがすでに代償を支払ったバグを、セッションごとに一つずつ再発見せずに済みます —— 上部の **Lessons**
 > バッジが現在のコーパス規模です。
 >
-> エージェントネイティブなインターフェース: [MCP サーバー](https://misakanet.org/mcp)（7 ツール）、WebMCP（ブラウザの
+> エージェントネイティブなインターフェース: [MCP サーバー](https://misakanet.org/mcp)（8 ツール）、WebMCP（ブラウザの
 > `navigator.modelContext`）、`llms.txt` / `llms-full.txt`、そして `.well-known/agent-card.json` 経由の A2A ディスカバリー。
 
 <p align="center">

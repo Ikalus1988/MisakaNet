@@ -25,7 +25,7 @@ two separate questions, and only the first one is answerable without the client 
 | | Question | Answerable from the repo? |
 |---|---|---|
 | **A** | Did the installer write the entry? | **Yes** — the path and the key are in the installer's own table |
-| **B** | Does the client see 7 tools, and call one? | **No** — needs the client on your machine |
+| **B** | Does the client see 8 tools, and call one? | **No** — needs the client on your machine |
 
 ## A. Reading the entry back (we know this; here are the commands)
 

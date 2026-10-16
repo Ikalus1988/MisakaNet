@@ -45,8 +45,8 @@ Do NOT use MisakaNet for:
 > stdio server adds `misakanet_me_events` as a **proxy** of the hosted tool, so the reuse-evidence
 > steps below work on either install.
 >
-> * **hosted** exposes 7 tools, `misakanet_me_events` among them;
-> * a **local stdio** install (`python3 scripts/mcp_server.py`) exposes those same 7 **plus three that
+> * **hosted** exposes 8 tools, `misakanet_me_events` among them;
+> * a **local stdio** install (`python3 scripts/mcp_server.py`) exposes those same 8 **plus three that
 >   only make sense on your machine** — `misakanet_submit_usage`, `misakanet_usage_status` and
 >   `misakanet_memory_context`. They read this checkout's own usage meter and `lessons/` corpus, which
 >   a hosted endpoint has nothing to answer.

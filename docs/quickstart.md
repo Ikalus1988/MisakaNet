@@ -24,7 +24,7 @@ each assistant's own config; it does not install anything behind your back.
    model`, `context window exceeded`, `tool call permission denied` — and the assistant should search the
    lessons *before* it answers.
 
-   Check: `claude mcp list` (or `codex mcp list`) lists `misakanet` with 7 tools. Nothing to undo?
+   Check: `claude mcp list` (or `codex mcp list`) lists `misakanet` with 8 tools. Nothing to undo?
    `npx @misaka-net/misakanet-setup --uninstall`.
 
 ## Track B — Call the endpoint yourself (30 seconds)

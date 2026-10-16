@@ -12,7 +12,7 @@ mcp-name: io.github.Ikalus1988/misakanet
 > the bugs someone already paid for, instead of rediscovering them one session at a time — the **Lessons**
 > badge above is the live corpus size.
 >
-> Agent-native interfaces: [MCP server](https://misakanet.org/mcp) (7 tools), WebMCP (browser
+> Agent-native interfaces: [MCP server](https://misakanet.org/mcp) (8 tools), WebMCP (browser
 > `navigator.modelContext`), `llms.txt` / `llms-full.txt`, and A2A discovery through
 > `.well-known/agent-card.json`.
 

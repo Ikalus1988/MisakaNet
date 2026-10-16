@@ -439,7 +439,7 @@ npx @misaka-net/misakanet-setup
 
 | 层 | 是什么 | 缺了它会怎样 |
 |---|---|---|
-| **① 服务** | `https://misakanet.org/mcp`（Streamable HTTP，7 个工具，匿名**不限次数**，只有反爬突发保护）或**本地 stdio**（clone 后 `python3 scripts/mcp_server.py`，无限额）| 没有可查的地方 |
+| **① 服务** | `https://misakanet.org/mcp`（Streamable HTTP，8 个工具，匿名**不限次数**，只有反爬突发保护）或**本地 stdio**（clone 后 `python3 scripts/mcp_server.py`，无限额）| 没有可查的地方 |
 | **② 接入** | `npx @misaka-net/misakanet-setup`：把服务写进每个助手**自己的**配置文件（Claude Code / Codex / Hermes / OpenClaw / codewhale 各一套）| 你得自己知道 5 种配置文件分别怎么写 |
 | **③ 触发** | 规则块（「遇到报错先查经验库」）+ 检查点钩子（约 20 轮提醒沉淀）+ 14 天升级提示 | **端点在，但没有任何人会去调用它** |
 
@@ -452,8 +452,8 @@ setup 保证的是"工具确实在"和"该查的时刻更容易被抓住"，不�
 
 ### 装完你得到什么（逐条可自检）
 
-1. **7 个 `misakanet_*` 工具出现在助手里** —— `codex mcp list` / `codewhale mcp tools` /
-   `claude mcp list` / `hermes mcp list`；**证据**：列表里有 `misakanet` 且 7 个工具；
+1. **8 个 `misakanet_*` 工具出现在助手里** —— `codex mcp list` / `codewhale mcp tools` /
+   `claude mcp list` / `hermes mcp list`；**证据**：列表里有 `misakanet` 且 8 个工具；
 2. **助手被要求「遇错先查」** —— 问一句「switch vision model」「context window exceeded」这类片段，它应该先说查过经验库；
    **证据**：事件流里出现 `misakanet_search`（claude/codewhale 用 `--output-format stream-json`，codex 用 `--json`）；
 3. **长会话会提醒沉淀** —— 约 20 轮后提醒把本次「失败 → 根因 → 修复 → 验证」变成一条课程
