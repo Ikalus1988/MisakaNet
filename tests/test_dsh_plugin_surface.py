@@ -651,7 +651,8 @@ def test_the_panel_answers_the_questions_it_exists_for():
                          ("panel.trust", "How much these lessons are trusted"),
                          ("panel.activity", "Your activity"),
                          ("panel.voice", "Voice"),
-                         ("panel.hot", "What the corpus returns most")):
+                         ("panel.hot", "What the corpus returns most"),
+                         ("panel.coverage", "The topics the corpus cannot answer yet")):
         assert f'T("{key}")' in panel, f"the panel lost its `{key}` section"
         assert f'"{key}": "{english}"' in source, f"`{key}` no longer reads as `{english}`"
 
@@ -820,6 +821,11 @@ CLIENT_TARGETS = {
     "/assets/voice/": "the server-named voice cue's audio",
     "/api/lessons": "the /misakanet composer overlay search",
     "/api/analytics": "the panel's retrieval ranking (section ⑥): a public GET, the only per-lesson count",
+    # The panel's coverage read: one public GET of the coverage board, whose `gaps` ranking section ⑦
+    # renders (topics by unanswered searches, with the published lesson count behind each). A read, never a
+    # write, and the only target section ⑦ adds.
+    "https://misakanet.org/api/insights/lesson-coverage":
+        "the panel's coverage section ⑦: the public coverage board's ranking of topics by unanswered searches",
     "https://misakanet.org/lessons/": "the two lesson links a person clicks (the row and the toast)",
     "https://misakanet.org/": "the site link behind a result that has no id",
 }
@@ -898,10 +904,10 @@ def test_the_browser_half_only_calls_targets_a_human_allowlisted():
         "the browser half names an outbound target that is not on the allowlist: "
         + str(findings) + ". If the call is intended, add it to CLIENT_TARGETS with a reason — that review "
         "is the gate. If it is not on the list by accident, this is how D4 is meant to fail: loudly.")
-    # Call-site accounting: four `fetch(` sites (overlay search, the POST helper, the panel's per-lesson
-    # GET, the panel's analytics GET — the click-through link is not one) and two `post(` sites, every one
-    # of them against an approved target.
-    assert source.count("fetch(") == 4, (
+    # Call-site accounting: five `fetch(` sites (overlay search, the POST helper, the panel's per-lesson
+    # GET, the panel's analytics GET, the panel's coverage GET — the click-through link is not one) and two
+    # `post(` sites, every one of them against an approved target.
+    assert source.count("fetch(") == 5, (
         "the bundle gained or lost a `fetch(` call site: " + str(source.count("fetch(")) + ". The literal "
         "allowlist cannot see a computed target; this count is what makes a new call fail anyway")
     assert unreviewed_fetch_targets(source) == [], unreviewed_fetch_targets(source)
@@ -919,6 +925,81 @@ def test_the_browser_half_only_calls_targets_a_human_allowlisted():
         assert named & targets, (
             f"{entry!r} is on the allowlist but the bundle no longer names it in any form "
             f"({sorted(named)}): remove it, or the list stops describing the code it pins")
+
+
+#: Section ⑦'s outbound target — one public GET of the coverage board. Named once so the entry above and
+#: the rule that checks it cannot drift apart.
+COVERAGE_TARGET = "https://misakanet.org/api/insights/lesson-coverage"
+
+#: The commit section ⑦ was cut from: the bytes *before* this section and *after* section ⑥, pinned so the
+#: red proof keeps isolating the new rule after this merges. `origin/main` would become the fixed bytes the
+#: day this lands, which is how the localization gate's fixture went red on `main`.
+COVERAGE_PRE_FIX_SHA = "babf2edf4403f7261f0a352c83d8fc35b6a384bf"
+
+
+def coverage_target_problem(source: str, targets: dict[str, str] = CLIENT_TARGETS) -> str | None:
+    """`None` when the coverage read is an allowlisted **literal**, else why it is not.
+
+    Both halves are needed. The list half is the review — a human decided this new destination is
+    acceptable, one entry at a time, which is what catches the *next* `/api/intake`. The literal half keeps
+    that review meaningful: a target assembled from pieces is invisible to the extraction below while still
+    being fetched, so the call must name its constant.
+    """
+    if COVERAGE_TARGET not in targets:
+        return f"{COVERAGE_TARGET} is not on CLIENT_TARGETS — a new outbound target needs a human's reason"
+    if not targets[COVERAGE_TARGET].strip():
+        return f"{COVERAGE_TARGET} is on the allowlist without a reason, which is not a review"
+    if f'var COVERAGE_ENDPOINT = "{COVERAGE_TARGET}";' not in source:
+        return f"the target must be one named literal, the way SEARCH_ENDPOINT is ({COVERAGE_TARGET})"
+    if COVERAGE_TARGET not in client_outbound_targets(source):
+        return "the extraction does not see the literal, so the allowlist entry pins nothing"
+    return None
+
+
+def test_the_coverage_read_is_one_allowlisted_literal():
+    """The read section ⑦ makes, and the review it had to pass to exist.
+
+    `CLIENT_TARGETS` exists because two successive blacklists were blind to `POST /api/intake`: a new
+    outbound target fails loudly until a human writes it down with a reason. Section ⑦ adds exactly one — a
+    public GET — so exactly one entry was added.
+    """
+    source = client_source()
+    problem = coverage_target_problem(source)
+    assert problem is None, problem
+    # The extraction's positive control for this shape: an unlisted URL literal in a `fetch` is a finding.
+    # Without it, "it is on the list" would be satisfied by an extractor that sees nothing at all.
+    probe = COVERAGE_TARGET + "-probe"
+    assert client_target_findings(f'fetch("{probe}")') == [probe], (
+        client_target_findings(f'fetch("{probe}")'))
+
+
+def test_the_coverage_target_rule_can_go_red():
+    """Three sets of bytes that must fail it, the last of them what `main` actually shipped."""
+    source = client_source()
+    # (a) The constant assembled instead of named: still a fetch to the same host, invisible to the literal
+    #     extraction the allowlist is built on.
+    assembled = source.replace(f'var COVERAGE_ENDPOINT = "{COVERAGE_TARGET}";',
+                               'var COVERAGE_ENDPOINT = API + "/api/insights/lesson-coverage";', 1)
+    assert assembled != source, "the fixture expects the constant to be a plain literal today"
+    problem = coverage_target_problem(assembled)
+    assert problem and "one named literal" in problem, problem
+    # (b) The entry removed: the review half, on the same bytes.
+    without_entry = {name: why for name, why in CLIENT_TARGETS.items() if name != COVERAGE_TARGET}
+    problem = coverage_target_problem(source, without_entry)
+    assert problem and "not on CLIENT_TARGETS" in problem, problem
+    # (c) The pinned bytes, which carry neither half.
+    showed = subprocess.run(["git", "show", f"{COVERAGE_PRE_FIX_SHA}:lib/client.js"],
+                            cwd=REPO, capture_output=True, text=True, timeout=60)
+    if showed.returncode != 0:
+        pytest.skip("this clone does not carry " + COVERAGE_PRE_FIX_SHA[:12]
+                    + "; use a full clone to replay the red proof")
+    pre = showed.stdout
+    assert COVERAGE_TARGET not in pre, (
+        f"{COVERAGE_PRE_FIX_SHA[:12]} already carries the coverage read; wrong base for this fixture")
+    assert COVERAGE_TARGET not in client_outbound_targets(pre), (
+        "the extraction found the target in bytes that do not contain it")
+    problem = coverage_target_problem(pre)
+    assert problem and "one named literal" in problem, problem
 
 
 def test_the_panel_cannot_file_an_issue():
