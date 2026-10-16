@@ -7,6 +7,27 @@ All notable changes to the Misaka Network project are documented here.
 
 ---
 
+## [2.44.0](https://github.com/Ikalus1988/MisakaNet/compare/v2.43.1...v2.44.0) (2026-10-16)
+
+
+### Features
+
+* **dsh-panel:** make the sidebar useful rather than ornamental, and its effect measurable ([#3314](https://github.com/Ikalus1988/MisakaNet/issues/3314)) ([1ea54dd](https://github.com/Ikalus1988/MisakaNet/commit/1ea54ddfb17a57e5d5af6c3cdfcac93f4601e655))
+* **lessons:** convert five intake blind spots into contrib lessons ([#3313](https://github.com/Ikalus1988/MisakaNet/issues/3313)) ([5cbccf9](https://github.com/Ikalus1988/MisakaNet/commit/5cbccf982a2d39eb41b68a185e0e8efbb34888a1)), closes [#2300](https://github.com/Ikalus1988/MisakaNet/issues/2300) [#3068](https://github.com/Ikalus1988/MisakaNet/issues/3068) [#3246](https://github.com/Ikalus1988/MisakaNet/issues/3246) [#3145](https://github.com/Ikalus1988/MisakaNet/issues/3145) [#3175](https://github.com/Ikalus1988/MisakaNet/issues/3175)
+* **worker:** implement the first-call funnel out of the counters (P0[#3](https://github.com/Ikalus1988/MisakaNet/issues/3)) ([#3319](https://github.com/Ikalus1988/MisakaNet/issues/3319)) ([2e0d954](https://github.com/Ikalus1988/MisakaNet/commit/2e0d954bbe08e465a1823c8e8ff2862ecfe77050))
+
+
+### Bug Fixes
+
+* **ci:** registry-drift-watch could never report the drift it detects ([#3322](https://github.com/Ikalus1988/MisakaNet/issues/3322)) ([fe55c7d](https://github.com/Ikalus1988/MisakaNet/commit/fe55c7d6454aa4abfb0ebc7bf7c6c5da021098d8))
+* **ci:** two workflow files GitHub refuses to parse, and a gate so the third one is caught ([#3308](https://github.com/Ikalus1988/MisakaNet/issues/3308)) ([3f135eb](https://github.com/Ikalus1988/MisakaNet/commit/3f135eb4f8155a767ad97e4c9e37a7d793a2bd16))
+* **docs:** pin the retyped hosted tool counts, and reject a duplicated docs/mcp.md row ([#3315](https://github.com/Ikalus1988/MisakaNet/issues/3315)) ([6fb386e](https://github.com/Ikalus1988/MisakaNet/commit/6fb386ea99694ac3096ccce43567c5d6b597129b)), closes [#1822](https://github.com/Ikalus1988/MisakaNet/issues/1822)
+
+
+### Lessons
+
+* **core:** require_relative anchors on the requiring file, so retire the `cd` advice ([#3294](https://github.com/Ikalus1988/MisakaNet/issues/3294)) ([63ea6d1](https://github.com/Ikalus1988/MisakaNet/commit/63ea6d114868702c1de98cad3bdd9b8ca2b436a3))
+
 ## [2.43.1](https://github.com/Ikalus1988/MisakaNet/compare/v2.43.0...v2.43.1) (2026-10-16)
 
 
