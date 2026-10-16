@@ -561,14 +561,15 @@ def panel_e4(e4: dict | None, day: str, errors: dict[str, str]) -> list[str]:
               f"{e4['rows_total']} rows, {e4['rows_solved']} of them hits (`solved=1`).", ""]
     if e4["e4_lessons"] == 0:
         lines += [
-            "**Read the 0 as a finding, not as a fault.** No lesson has been retrieved by two "
-            "distinct clients, so the top rung is empty — and that is evidence about the design, not "
-            "a broken counter to be nursed back to health with softer wording. The rung is conferred "
-            "only by two distinct `client_hint` values, and `client_hint` is written only for a "
-            "caller that sends a `client_id`; an anonymous caller leaves none. So this number "
-            "under-counts by construction, and under-counting is the direction a trust signal is "
-            "allowed to be wrong in: silence can make it too small, but no lesson body and no vote "
-            "button can make it too big.", "",
+            "**Read the 0 as a finding, not as a fault.** No lesson has been retrieved by "
+            f"{E4_MIN_DISTINCT_CLIENTS} distinct clients, so the top rung is empty — and that is "
+            "evidence about the design, not a broken counter to be nursed back to health with "
+            "softer wording. The rung is conferred only by "
+            f"{E4_MIN_DISTINCT_CLIENTS} distinct `client_hint` values, and `client_hint` is written "
+            "only for a caller that sends a `client_id`; an anonymous caller leaves none. So this "
+            "number under-counts by construction, and under-counting is the direction a trust "
+            "signal is allowed to be wrong in: silence can make it too small, but no lesson body "
+            "and no vote button can make it too big.", "",
         ]
     else:
         lines += [f"{e4['e4_lessons']} lesson(s) have been retrieved by at least "
