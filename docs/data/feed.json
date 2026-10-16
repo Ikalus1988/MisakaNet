@@ -1,9 +1,23 @@
 {
-  "generated_at": "2026-10-15T21:31:53.438409+00:00",
+  "generated_at": "2026-10-16T04:43:15.307032+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "fix(schema): the lesson status enum held three values while the gate enforced six, and the required audit check reads the schema",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3302",
+      "timestamp": "2026-10-16T00:54:51Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3300",
+      "timestamp": "2026-10-15T21:42:00Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "chore(data): sync lessons.json + refresh feed",
@@ -23,20 +37,6 @@
       "title": "chore(data): sync lessons.json + refresh feed",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/3291",
       "timestamp": "2026-10-15T16:39:50Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "lesson: two intakes become lessons — a saturation cap that amplifies at zero, and initdb under a non-ASCII Windows path",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3289",
-      "timestamp": "2026-10-15T16:30:08Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(main): release 2.43.0",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3130",
-      "timestamp": "2026-10-15T15:50:23Z",
       "source": "github"
     },
     {
