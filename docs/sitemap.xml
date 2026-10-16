@@ -43,11 +43,12 @@
   <url><loc>https://misakanet.org/topics/openclaw/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/backend/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/wsl/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://misakanet.org/topics/windows/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/ux/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/web3/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/mobile/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/cloudflare-worker/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
-  <url><loc>https://misakanet.org/topics/windows/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://misakanet.org/topics/android/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/java/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/dco/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/github-token/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
@@ -354,6 +355,7 @@
   <url><loc>https://misakanet.org/lessons/playwright-snap-chromium-libnss3-sandbox-launch/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/port-is-already-allocated-is-an-os-level-eaddrinuse-name-the-holder-with-ss-free/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/postgresql-connection-pool-exhaustion-ar/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/powershell-51-decodes-a-bom-less-utf-8-ps1-as-ansigbk-so-non-ascii-becomes-bogus/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/powershell-add-type-blocked-by-policy-call-the-win32-api-with-python-ctypes-inst/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/pr-genius-issue-evaluator-for-intake/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/pr-strategy/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -398,6 +400,7 @@
   <url><loc>https://misakanet.org/lessons/sag-lite-data-quality-cleaning/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-saturation-cap-with-slope-k-at-zero-amplifies-small-deviations-instead-of-comp/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/schema-coupled-cross-repo-ci/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/a-database-schema-newer-than-the-pinned-runtime-every-write-failed-silently-whil/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/scrapling-installation-and-usage/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/search-evaluation-rank-tracking-bias/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/search-ssot-data-source-pollution-fix/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -427,6 +430,7 @@
   <url><loc>https://misakanet.org/lessons/swiftui-scrollview-scrollto-no-effect-unless-id-on-each-row-and-scrollto-called/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/taskbounty-payout-api-ok-readiness-still-fail/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/testimonio-misakanet/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/anthropic-compatible-endpoints-return-400-for-a-text-block-ordered-after-tool-us/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/tmux-session-management/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/tor-orbot-privacy-in-react-native-tr/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/ts2305-under-nodenext-is-usually-a-real-missing-export-not-a-types-condition-pro/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -452,6 +456,7 @@
   <url><loc>https://misakanet.org/lessons/wecom-robot-long-connect-no-ngrok/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/welcome-bot-mcp-intake-path/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/windows-ci-splitcommand-backslash-unicode-detached/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/a-windows-directory-name-ending-in-a-dot-breaks-ripgrep-glob-and-recursive-io-os/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/windows-node-sandbox-a-hardcoded-root-silently-confined-the-agent-to-the-wrong-d/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/initdb-fails-with-invalid-byte-sequence-for-encoding-utf8-when-the-installation/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/worktree-git-path-deepseek-tui/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -465,6 +470,7 @@
   <url><loc>https://misakanet.org/lessons/wxauto-windows-python-not-wsl/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/yaml-inline-comment-type-coercion/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/zero-bounty-agent-competition-flywheel/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/zygiskassistant-breaks-mumus-houdini-arm-translation-so-arm64-only-apps-crash-wi/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/자바-버전-불일치-빌드-오류/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/pid-lockfile-so-earn-loops-do-not-double-run/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/agentcap-uses-inspect-not-show-for-capability-lookup-macos-codesign-needs-xml-fo/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>

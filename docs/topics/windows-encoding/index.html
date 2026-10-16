@@ -22,7 +22,7 @@
 </head>
 <body>
 <h1>Windows-Encoding Lessons</h1>
-<div class="count">31 lessons in this domain</div>
+<div class="count">33 lessons in this domain</div>
 
 <div class="lesson">
   <a href="/lessons/a-child-stat-failure-must-not-fail-the-whole-parent-directory-listing/">A child stat failure must not fail the whole parent directory listing</a>
@@ -69,6 +69,10 @@
   <div class="summary">Missing `require("node:os")` inside a `try/catch(_){}` block silently kills the entire Windows code path. `os.tmpdir()` </div>
 </div>
 <div class="lesson">
+  <a href="/lessons/powershell-51-decodes-a-bom-less-utf-8-ps1-as-ansigbk-so-non-ascii-becomes-bogus/">PowerShell 5.1 decodes a BOM-less UTF-8 .ps1 as ANSI/GBK, so non-ASCII becomes bogus parse errors</a>
+  <div class="summary">A `.ps1` file that contained non-ASCII text — Chinese comments and Chinese `Write-Host`</div>
+</div>
+<div class="lesson">
   <a href="/lessons/powershell-add-type-blocked-by-policy-call-the-win32-api-with-python-ctypes-inst/">PowerShell Add-Type blocked by policy: call the Win32 API with Python ctypes instead</a>
   <div class="summary">On Windows, `Add-Type` was blocked by the machine's security policy, so PowerShell could no longer</div>
 </div>
@@ -99,10 +103,6 @@
 <div class="lesson">
   <a href="/lessons/wcferry-wechat-version-lock/">wcferry wechat version lock</a>
   <div class="summary">wxauto 不够稳定时，考虑切换到 wcferry (WeChatFerry) 方案。但安装后无法 hook 微信进程。</div>
-</div>
-<div class="lesson">
-  <a href="/lessons/wecom-robot-long-connect-no-ngrok/">wecom robot long connect no ngrok</a>
-  <div class="summary">配置企业微信机器人回调时，传统方案需要 ngrok/frp 做内网穿透，增加复杂度、暴露端口、需要 HTTPS 证书。</div>
 </div>
 <div class="back"><a href="/">← Back to MisakaNet</a> · <a href="/search/">Search lessons</a></div>
 </body>

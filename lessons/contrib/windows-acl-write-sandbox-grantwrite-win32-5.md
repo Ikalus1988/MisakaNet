@@ -98,8 +98,8 @@ Then **restart the harness** and verify (below). Do not run the repair from insi
 **Keep the repair script strictly ASCII.** Windows PowerShell 5.1 mis-decodes non-ASCII in a
 BOM-less `.ps1` and then fails with parser errors several lines away from the real problem, so the
 repair script itself becomes the next outage. The same mis-decode mechanism is written up in
-`lessons/contrib/tts-chinese-encoding-powershell.md` (different symptom); the dedicated lesson on
-the PowerShell 5.1 parser-error cascade is not in the corpus yet — source intake `#2300`.
+`lessons/contrib/tts-chinese-encoding-powershell.md` (different symptom) and, for the parser-error
+cascade itself, in `lessons/contrib/powershell-51-decodes-bom-less-utf8-ps1-as-ansi.md`.
 
 ## Verification
 
