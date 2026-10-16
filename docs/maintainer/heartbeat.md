@@ -123,6 +123,12 @@ inflate it. **The `0` is never softened** into "no data yet": a real zero is the
 answer, and a failed read is a different sentence entirely (rule 4 — the one place where confusing
 the two would matter most).
 
+The framing is [`product-evaluation-lens.md`](product-evaluation-lens.md)'s rule — **a dead signal is
+evidence about the design, not a promotion problem** — so the panel reports the number and stops. It
+does not suggest that more people should vote, or that callers should send a `client_id`: the fix for
+an empty rung is a better instrument or a different rung, and neither is a thing to ask of a reader who
+came for a failure memory.
+
 `tests/test_heartbeat_report.py` runs this exact SQL text against `sqlite3`, with the table created
 from the worker's own `ensureSearchSignalsTable` DDL, so the selection semantics are pinned even
 though the production table itself is reachable only from CI.
