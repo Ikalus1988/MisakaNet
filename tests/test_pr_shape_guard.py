@@ -21,6 +21,7 @@ REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))
 
 from scripts.pr_shape_guard import (  # noqa: E402
+    _mask_inner,
     findings,
     linked_issues,
     mentions_issues,
@@ -143,6 +144,91 @@ def test_a_release_pr_body_that_lists_merged_prs_is_not_a_claim():
         release_body) == [], "the release train must not be reported as a bounty claim"
     # And the lookup helper still sees the mentions, so the workflow can fetch their bodies.
     assert 2283 in mentions_issues(release_body)
+
+
+# ── rule 3b: a quoted example is not a claim (#3281, §92.7) ───────────────────────────────────────
+#
+# §92.7: PR #3278 changed only `docs/maintainer/handoff-2026-10-15.md`. Its body quoted, in a code span,
+# the line that `pr-agent` had stripped from the rebased PR — and `CLAIMS_ISSUE` read the quote as a
+# claim, so #2838's bounty marker made the guard report "claims a question bounty without a lesson"
+# against the PR that was documenting the defect. The tests below are the red-bounded half: each names
+# one exemption, its raw fixture *must* still be caught (or the guard has been weakened), and the
+# explanatory sentence around it must survive with the rest of its claims intact.
+
+_DEFECT_CLAIM = "{verb} #{n}"                    # the line pr-agent strips, as typed
+_QUOTED_DEFECT = "`" + _DEFECT_CLAIM + "`"       # the same line quoted in a code span (the #3278 shape)
+
+
+def test_a_code_span_is_a_quote_not_a_claim_but_the_raw_claim_still_hits():
+    """The #3278 shape: the only claim-looking text is *inside* the code span."""
+    quoted = f"the body rewrite replaced {_QUOTED_DEFECT.format(verb='Closes', n=2838)}. with a section"
+    raw = _DEFECT_CLAIM.format(verb="Closes", n=2838)
+    assert linked_issues(raw) == [2838], "the red bound: the unquoted claim must still be caught"
+    assert linked_issues(quoted) == [], "a code span is described text, not intent"
+
+
+def test_a_double_quoted_sentence_is_a_quote_not_a_claim_but_the_raw_claim_still_hits():
+    """The same sentence outside a code span, as prose quotes it."""
+    quoted = f'the rewrite dropped "{_DEFECT_CLAIM.format(verb="Fixes", n=2838)}." before the merge'
+    raw = _DEFECT_CLAIM.format(verb="Fixes", n=2838)
+    assert linked_issues(raw) == [2838], "the red bound: the unquoted claim must still be caught"
+    assert linked_issues(quoted) == [], "the quoted sentence is described text, not intent"
+
+
+def test_a_claim_beside_a_quoted_example_is_still_caught():
+    """Masking must remove one span, not the line — the failure mode that would be a real weakening.
+
+    A code span and a live claim share the line, and the code span comes first, so a masker that ate the
+    rest of the line would silently drop the claim that follows it.
+    """
+    text = f"{_QUOTED_DEFECT.format(verb='Closes', n=2838)} is what got stripped; this PR closes #2299"
+    assert linked_issues(text) == [2299], linked_issues(text)
+    # And `mentions_issues()` is deliberately *not* masked: the workflow still has to fetch #2838's body
+    # to decide whether it is a question bounty at all.
+    assert mentions_issues(text) == [2299, 2838], mentions_issues(text)
+
+
+def test_a_blockquote_marker_is_a_quote_but_a_quoted_verb_alone_does_not_hide_a_claim():
+    """A `>` marker is attribution, not the quoted text — and a quoted word is not a paraphrase."""
+    assert linked_issues("> `Closes #2838.`") == [], "a blockquote's quoted example is a quote"
+    assert linked_issues("> Closes #2838") == [2838], "the red bound: the text itself still counts"
+    # Only a quoted span that *states* a claim is masked; quoting the verb alone must not swallow a
+    # claim that is typed outside the quotes.
+    text = '"Fixes" is the word the guard matches; this PR closes #2283'
+    assert linked_issues(text) == [2283], linked_issues(text)
+
+
+def test_the_documenting_pr_from_92_7_is_clean_and_the_bounty_rule_agrees():
+    """The end-to-end shape: a docs-only PR that explains the defect, against a bounty-marked issue.
+
+    `pr-agent` generated the second occurrence as a mermaid diagram that reproduced the matching token,
+    so the fenced case is not hypothetical either.
+    """
+    body = (
+        "### What changed\n\n"
+        "`docs/maintainer/handoff-2026-10-15.md` only.\n\n"
+        "## Why\n\n"
+        "`pr-agent` rewrites every body and strips the original closing keyword: the rebased PR's body "
+        f"had {_QUOTED_DEFECT.format(verb='Closes', n=2838)} and now has a generated section.\n\n"
+        "```mermaid\n"
+        f'flowchart TD\n  A["PR body quotes {_QUOTED_DEFECT.format(verb="Closes", n=2838)} in a code span\n'
+        "```\n"
+    )
+    assert linked_issues(body) == [], linked_issues(body)
+    for paths in (["docs/maintainer/handoff-2026-10-15.md"], []):
+        assert question_bounty_without_a_lesson(paths, {2838: QUESTION_BOUNTY_BODY}, body) == [], paths
+    # The red bound: the same body with the sentence typed as a claim *is* a claim. Without this the
+    # first assertion could pass because the rule stopped working altogether.
+    assert linked_issues(f"Fixes #{2838}") == [2838]
+
+
+def test_mask_inner_masks_without_moving_anything():
+    """Masked, never deleted: a claim after a quote keeps its own span, and nothing shifts position."""
+    text = f"explain {_QUOTED_DEFECT.format(verb='Closes', n=2838)} then Fixes #2299"
+    masked = _mask_inner(text)
+    assert len(masked) == len(text), "masking must preserve offsets, not delete text"
+    assert masked.endswith("then Fixes #2299"), masked
+    assert "#2838" not in masked and "#2299" in masked, masked
 
 
 # ── the aggregation, and the CLI the workflow calls ───────────────────────────────────────────────

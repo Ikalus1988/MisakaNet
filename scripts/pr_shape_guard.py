@@ -114,14 +114,121 @@ CLAIMS_ISSUE = re.compile(
     r"(?:\s+\w+){0,3}?\s+#(\d{1,6})"
 )
 
+# The verb alone, for the "does this quoted span contain a claim?" question below. Kept as a separate
+# pattern so the two cannot drift apart.
+CLOSING_VERB = re.compile(
+    r"(?i)\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?|solve[sd]?|address(?:es|ed)?)\b"
+)
+
+_FENCE = re.compile(r"^ {0,3}(?:```|~~~)")
+_BLOCKQUOTE_MARKER = re.compile(r"^ {0,3}> ?")
+
+
+def _mask_inner(text: str) -> str:
+    """Same text, same length — with quoted regions replaced by spaces.
+
+    The distinction this module needs is *claim* vs *quote*, and a regex over the raw body cannot make
+    it: §92.7 of `docs/maintainer/handoff-2026-10-15.md` records a PR that only *explained* that
+    `pr-agent` strips a closing keyword, quoted the stripped line in a code span, and was then reported
+    as "claims a question bounty without a lesson" — by the very defect it was documenting. A quoted
+    example is described text, not intent, so it is removed here and `linked_issues()` matches what is
+    left. Masked, never deleted, so positions and lengths survive and a claim that shares a line with a
+    quote (`` `Closes <n>` is stripped; this PR closes <m> ``) keeps its own span.
+
+    Masked: fenced code blocks, HTML comments, inline code spans, a double-quoted span whose text
+    states a claim, and a blockquote's `>` marker. Deliberately not masked — that would be a way to
+    write a claim and hide it: 4-space indented code (it cannot be told from a list continuation), a
+    blockquote's text, and a quoted span with no closing keyword.
+
+    Used by :func:`linked_issues` only. `mentions_issues()` and the workflow's issue-body lookup read
+    the raw text on purpose: a *mention* decides nothing, but the bodies of issues a claim refers to
+    must still be fetched even when the claim itself is quoted.
+    """
+    out: list[str] = []
+    in_fence = False
+    in_comment = False
+    in_code = False
+    for line in text.splitlines(keepends=True):
+        s = line.rstrip("\r\n")
+        eol = line[len(s):]  # `\n`, `\r\n` or ``
+        if in_fence:
+            if _FENCE.match(s):
+                in_fence = False
+            out.append(" " * len(s) + eol)
+            continue
+        if _FENCE.match(s):
+            in_fence = True
+            out.append(" " * len(s) + eol)
+            continue
+        if in_comment:
+            cut = s.find("-->")
+            if cut < 0:
+                out.append(" " * len(s) + eol)
+                continue
+            in_comment = False
+            s = " " * (cut + 3) + s[cut + 3:]
+        s = _BLOCKQUOTE_MARKER.sub(lambda m: " " * len(m.group(0)), s)  # keep the `>` a quote, not the text
+        if not s.strip():
+            in_code = False  # a code span cannot cross a blank line
+            out.append(s + eol)
+            continue
+        buf: list[str] = []
+        i = 0
+        while i < len(s):
+            if s[i] == "`" and not in_comment:
+                if in_code:
+                    buf.append("`")
+                    in_code = False
+                    i += 1
+                    continue
+                j = s.find("`", i + 1)
+                if j < 0:
+                    buf.append(s[i:])
+                    break
+                buf.append("`" + " " * (j - i - 1) + "`")
+                i = j + 1
+                continue
+            if s.startswith("<!--", i) and not in_code:
+                end = s.find("-->", i + 4)
+                if end < 0:
+                    in_comment = True
+                    buf.append(" " * (len(s) - i))
+                    i = len(s)
+                    continue
+                buf.append(" " * (end + 3 - i))
+                i = end + 3
+                continue
+            buf.append(s[i])
+            i += 1
+        out.append("".join(buf) + eol)
+    masked = "".join(out)
+
+    # A quoted sentence that states a claim (`the rewrite replaced "Closes <n>." with a generated
+    # section`) is quoted text, not a claim. Quotes are paired on the already-masked line so
+    # apostrophes and backticked text are not read as delimiters. A quoted span without a closing
+    # keyword is left alone: `"Fixes" is the word the guard matches` must not hide a real claim.
+    def mask_quoted(line: str) -> str:
+        spans = [(m.start(), m.end()) for m in re.finditer(r'"', line)]
+        if len(spans) < 2:
+            return line
+        chars = list(line)
+        for (start, _), (stop, _) in zip(spans[0::2], spans[1::2]):
+            inner = line[start + 1:stop]
+            if CLOSING_VERB.search(inner):
+                chars[start + 1:stop] = " " * len(inner)
+        return "".join(chars)
+
+    return "\n".join(mask_quoted(line) for line in masked.split("\n"))
+
 
 def linked_issues(pr_text: str) -> list[int]:
     """Issue numbers the PR **claims** to resolve (`Closes`/`Fixes`/`Resolves #N`).
 
-    A bare `#N` is deliberately not enough — see :data:`CLAIMS_ISSUE`. `mentions_issues()` returns those,
-    for callers that want to look something up.
+    A bare `#N` is deliberately not enough — see :data:`CLAIMS_ISSUE`; `mentions_issues()` returns those,
+    for callers that want to look something up. Quoted text is not a claim, so the text is read through
+    :func:`_mask_inner` first — that is the §92.7 fix, and it removes only the quote, never the rule.
     """
-    return sorted({int(n) for n in CLAIMS_ISSUE.findall(pr_text or "")})
+    return sorted({int(n) for n in CLAIMS_ISSUE.findall(_mask_inner(pr_text or ""))})
 
 
 def mentions_issues(pr_text: str) -> list[int]:
