@@ -1,0 +1,128 @@
+name: Daily Heartbeat
+
+# One comment per UTC day on the long-lived `heartbeat` issue: who is calling, what they asked,
+# whether it helped. The owner reads one notification and does nothing — no vote, no button, no
+# manual dispatch. Everything the digest knows about *meaning* lives in
+# `scripts/heartbeat_report.py`; this file is the schedule, the credential, and the comment.
+#
+# Why the numbers are read the way they are (each one is a hole someone already fell into):
+#
+#   * **D1, not the public API, for two fields.** `/api/analytics` withholds `knowledge_gaps` and
+#     `mcpClients` on purpose — a failed query can be a whole prompt, and a client name is someone
+#     else's tooling. The digest is the owner's own view, so it reads `counters` directly with the
+#     same Cloudflare credential `d1-counters-report.yml` already uses for exactly this table. The
+#     withhold policy is untouched, and `env.MCP_TOKEN` (the maintainer token) appears in no step:
+#     `docs/maintainer/credentials-and-environments.md` §1 is the rule, and a heartbeat is not a
+#     reason to copy a secret out of its environment.
+#   * **`environment: automation`, not `release`.** `release` requires a reviewer, and a cron
+#     behind a reviewer does not become safer — it stops. That is the failure
+#     `tests/test_secret_scoping.py` exists to prevent, and `automation`'s token is D1-scoped,
+#     which is all this job does with it.
+#   * **The day that just ended, not the day in progress.** A 05:00 run reporting "today" would
+#     quote five hours of a day as if it were the day; the digest would need a caveat on every
+#     number, and a caveat on every number is a digest nobody reads.
+#
+# Idempotency is a per-day marker inside the body (`<!-- heartbeat-day:YYYY-MM-DD -->`), matched by
+# `scripts/heartbeat_report.py --find-comment`, so a re-run edits the existing comment. That is
+# also the re-run path a maintainer uses while testing, which is why `workflow_dispatch` is here.
+
+on:
+  schedule:
+    # 00:12 UTC — 08:12 in the owner's timezone, reporting the day that just closed. The slot is
+    # free in this directory: no other cron uses minute 12, and hour 0 is otherwise taken only at
+    # `0 0 * * *` (update-lessons) and by the `*/30` and `17,47 * * * *` sweeps.
+    - cron: '12 0 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write          # one comment per day, on the issue labelled `heartbeat`
+
+# Two runs for the same day must not race for the same marker. `cancel-in-progress: false` because
+# cancelling the run that carries the digest is the one outcome worse than a queue.
+concurrency:
+  group: heartbeat
+  cancel-in-progress: false
+
+jobs:
+  heartbeat:
+    runs-on: ubuntu-latest
+    # A job without a bound holds its runner for the platform default of six hours.
+    timeout-minutes: 15
+    environment: automation
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7
+        with:
+          # Stdlib only: the composer imports json, urllib, subprocess and pathlib. The pin
+          # matches the suite's floor rather than a dependency of this script.
+          python-version: "3.11"
+
+      - name: Compose the digest
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: 6b92325b505f2b76aec49e9fe4195d31
+        run: |
+          set -euo pipefail
+          npm install -g wrangler
+          # The day is computed once, here, and handed to both steps: `date -u -d yesterday` at
+          # 00:1x UTC is stable for the whole run, but a run that straddles midnight would
+          # otherwise post today's marker with yesterday's numbers.
+          DAY=$(date -u -d 'yesterday' +%F)
+          echo "HEARTBEAT_DAY=$DAY" >> "$GITHUB_ENV"
+          # A source that cannot be read is reported *inside* the digest rather than by failing the
+          # job: the owner asked for a heartbeat, and a red run would be a second notification
+          # asking for an action. The script writes `::warning::` annotations for the same reason.
+          python3 scripts/heartbeat_report.py --day "$DAY" --fetch --out /tmp/heartbeat.md
+          cat /tmp/heartbeat.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Post one comment for the reported day
+        run: |
+          set -euo pipefail
+          DAY="$HEARTBEAT_DAY"
+
+          # The issue is long-lived and found by its label. `--force` on the label create means a
+          # first run in a fresh repository works, and a later run does not fail on an existing
+          # label; `|| true` because a label is a convenience, not the thing being delivered.
+          gh label create heartbeat --color FBCA04 \
+            --description "The daily heartbeat: who is calling, what they asked, whether it helped" \
+            --force >/dev/null 2>&1 || true
+
+          ISSUE=$(gh issue list --repo "$GITHUB_REPOSITORY" --label heartbeat --state open \
+            --limit 1 --json number --jq '.[0].number // ""')
+          if [ -z "$ISSUE" ]; then
+            printf '%s\n' \
+              '<!-- heartbeat-issue -->' \
+              '**The pulse of MisakaNet, one comment per UTC day.**' \
+              '' \
+              'Each comment below covers one closed UTC day and answers three questions: who is' \
+              'calling, what they asked, and whether it helped. Nobody has to do anything with it —' \
+              'it is a reading, not a to-do list. Re-running `heartbeat.yml` edits the comment for' \
+              'that day instead of adding another one.' \
+              > /tmp/heartbeat-issue-body.md
+            ISSUE=$(gh issue create --repo "$GITHUB_REPOSITORY" --label heartbeat \
+              --title "MisakaNet daily heartbeat" \
+              --body-file /tmp/heartbeat-issue-body.md | grep -o '[0-9]*$')
+            echo "opened the heartbeat issue as #$ISSUE"
+          fi
+
+          # JSON Lines, not one array: `gh api --paginate` prints one array per page, and the day
+          # marker is matched by the same function the tests exercise.
+          gh api --paginate "repos/$GITHUB_REPOSITORY/issues/$ISSUE/comments?per_page=100" \
+            --jq '.[] | {id, body}' > /tmp/heartbeat-comments.jsonl
+          COMMENT_ID=$(python3 scripts/heartbeat_report.py \
+            --find-comment "$DAY" --comments-json /tmp/heartbeat-comments.jsonl)
+
+          if [ -n "$COMMENT_ID" ]; then
+            jq -n --rawfile body /tmp/heartbeat.md '{body:$body}' > /tmp/heartbeat-patch.json
+            gh api -X PATCH "repos/$GITHUB_REPOSITORY/issues/comments/$COMMENT_ID" \
+              --input /tmp/heartbeat-patch.json >/dev/null
+            echo "updated comment $COMMENT_ID with the digest for $DAY"
+          else
+            gh issue comment "$ISSUE" --repo "$GITHUB_REPOSITORY" --body-file /tmp/heartbeat.md
+            echo "posted the digest for $DAY as a new comment on #$ISSUE"
+          fi

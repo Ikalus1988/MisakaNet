@@ -11,7 +11,7 @@
 > 许多 workflow 是机器人/数据管道，失败常在外部依赖（D1、registry、配额）。
 
 
-## 质量门禁（25）
+## 质量门禁（26）
 
 | workflow | 用途 | 触发 | 定时 |
 |---|---|---|---|
@@ -27,6 +27,7 @@
 | `field-report-schema.yml` | Field Report Schema（FR3 家目录规则另跑语料外的已发布面：`docs/**` 减去 `linguist-generated` 的路径，加上 `lessons/**`）| PR, push, 手动, 定时 | `23 6 * * 1` —— `--strict-all` 全量审计唯一的定时入口；#3011 之前它只在 `workflow_dispatch` 上，而那个入口的累计运行数是 **0**，于是"某个没人碰过的文件里有泄漏"在结构上不可能被报出来 |
 | `fix-dco.yml` | DCO Auto-Fix | 评论 |  |
 | `gate-mutation-audit.yml` | Gate Mutation Audit | 定时, 手动 | `43 6 * * 1` |
+| `heartbeat.yml` | Daily Heartbeat（每天一条评论回答"谁在调用、问了什么、有没有帮上"；发在 `heartbeat` 标签的长寿 issue 上，正文里的 `<!-- heartbeat-day:YYYY-MM-DD -->` 标记让它**幂等** —— 重跑改当天那条评论，而不是再发一条。D1 里的 `mcpclient:` / `gap` 行用 `d1-counters-report.yml` 那套 Cloudflare 凭据读，`env.MCP_TOKEN` 不进入任何 workflow。口径与四条诚实规则见 `docs/maintainer/heartbeat.md`）| 定时, 手动 | `12 0 * * *` —— 00:12 UTC（北京时间 08:12）报**刚结束的**那个 UTC 日：日报在当天还没过完时出数，就是把部分计数当成全天 |
 | `lesson-gate.yml` | Lesson Quality Gate | PR |  |
 | `lesson-quality.yml` | Lesson Quality Score | PR |  |
 | `lesson-security.yml` | Lesson Security Scan | PR, push |  |

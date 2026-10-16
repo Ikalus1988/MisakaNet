@@ -224,5 +224,7 @@ python3 scripts/doctor.py                        # 仓库自检
   · `docs/maintainer/credentials-and-environments.md`（**凭据与环境**：哪个密钥放在哪个 environment、
   谁能读、什么时候轮换）· `docs/maintainer/product-evaluation-lens.md`（**产品功能评估**：动手前先答
   谁操作/谁受益/在什么场合；能观察的信号不要发问卷——2026-10-16 由"人类投票"这件事写成的清单）
+  · `docs/maintainer/heartbeat.md`（**每日心跳**：每天一条评论回答"谁在调用、问了什么、有没有帮上"，
+  三块面板各测什么、四条诚实规则各配一个红灯证据）
   · `docs/maintainer/handoff-*.md`（逐轮交接与待办快照）
 - **架构/接口**：`ARCHITECTURE.md` · `API.md` · `docs/`（基线、基准、registry 维护）
