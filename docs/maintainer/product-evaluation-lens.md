@@ -8,6 +8,25 @@ their implementation was fine. The defects were not in the code.
 This is a checklist, not an essay. Use it before scoping, and again when reviewing something that
 already shipped.
 
+## The standing decision rule (set by the owner — do not re-litigate)
+
+**Development is the hard requirement, and reducing user friction is the second one.** They are parallel,
+not ranked: an element that advances the project while adding friction to its user is not a win, and an
+element that removes friction without advancing anything is decoration.
+
+For **any** element — a badge, a document, a gate, a script, a workflow, a roadmap item, a sentence —
+ask this first: **whose trust, or whose capability, does this build, and how?**
+
+1. **It does that → keep it** (or add something of the same kind that does it better).
+2. **It does not → see whether it can be changed so that it does.**
+3. **It cannot → delete it.**
+
+Two failure modes this rule exists to stop, both observed in this repository on 2026-10-16/17: keeping
+something because it has always been there — a README badge rendering `failing` while the real CI passes,
+another asserting a weekly benchmark that had stopped — and deleting something that still carries weight
+in order to look tidy. The test is never "is it old" or "does it look professional"; it is the two
+sentences above. The three questions in the next section are how you answer them for a feature.
+
 ## The three questions, in this order
 
 **1. Who performs the action, and who receives the benefit?**
