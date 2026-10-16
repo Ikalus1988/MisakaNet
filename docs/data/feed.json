@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-10-16T16:55:12.156122+00:00",
+  "generated_at": "2026-10-16T21:32:16.529064+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "fix(evidence): E4 is observed, not declared — distinct clients, not a line in the lesson",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3358",
-      "timestamp": "2026-10-16T16:40:28Z",
+      "title": "docs(handoff): §99.7 — workflow_dispatch is evidence, not a mergeable check",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3373",
+      "timestamp": "2026-10-16T18:18:49Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(dsh-panel): show the corpus's most-retrieved lessons in the review panel",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3357",
-      "timestamp": "2026-10-16T16:31:36Z",
+      "title": "docs(handoff): 第 9 卷 —— 收口日：六类失效门禁、一次我造成的事故、队列的真根因",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3367",
+      "timestamp": "2026-10-16T18:08:37Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(main): release 2.44.2",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3348",
-      "timestamp": "2026-10-16T16:22:47Z",
+      "title": "fix(contribute): stop dropping contributor work silently (intake cuts, landing rules, lesson location)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3365",
+      "timestamp": "2026-10-16T17:46:27Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "docs(dist): the first run of the publisher is manual, and the doc said it was automatic",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3355",
-      "timestamp": "2026-10-16T16:21:43Z",
+      "title": "docs: write down the owner's standing decision rule, where every session will read it",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3363",
+      "timestamp": "2026-10-16T17:32:02Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "test(dsh): pin the localization red fixture to a commit, not to `origin/main`",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3352",
-      "timestamp": "2026-10-16T16:03:36Z",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3362",
+      "timestamp": "2026-10-16T17:31:27Z",
       "source": "github"
     },
     {
