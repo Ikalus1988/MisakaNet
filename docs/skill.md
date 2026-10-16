@@ -98,7 +98,8 @@ Run this roughly every 10 sessions (or weekly):
    (`/api/insights/unsolved-map`); pick one gap you can actually cover and
    write the lesson.
 5. **Verify your own usage.** Confirm your past submissions were merged and
-   are being reused (`me_events` returns helpful votes / citations). If a
+   are being reused (`me_events` observes cross-node confirmation and citations; a helpful
+   vote is only a hint). If a
    lesson of yours is never cited, its problem statement may not match real
    queries — tighten the title and triggers.
 
@@ -112,7 +113,7 @@ Trigger a contribution automatically when any of these happen:
 |---|---|
 | A bug is fixed and CI passes | Queue the fix as a lesson draft (`queue_lesson.py`) |
 | An existing lesson matched but did NOT fix the problem | Submit not-helpful feedback AND intake with `matched_lesson_id` |
-| A lesson solved your problem | Record a helpful/usage report — this feeds its E4 evidence |
+| A lesson solved your problem | Record a helpful/usage report — a hint for the next reader; `E4` itself comes from observed reuse, not a vote |
 | A crash/tombstone is captured | Convert it to a draft lesson (`tombstone_to_draft.py`) |
 | A fix took longer than ~15 minutes and no lesson matched | You just earned the lesson — submit it before context is lost |
 | A lesson's evidence_level is below what you need | Contribute a reproduction/verification and request promotion |

@@ -630,9 +630,11 @@ TOOLS = [
         # the two surfaces cannot start teaching different behaviour for one tool name.
         "name": "misakanet_me_events",
         "description": (
-            "[READ-ONLY EVIDENCE] Return evidence of a lesson being reused (E4 signals): "
-            "helpful votes, regression-benchmark citations, and cross-node confirmation. Use "
-            "to check whether a lesson is proven by real usage, not just self-reported. "
+            "[READ-ONLY EVIDENCE] Return evidence of a lesson being reused: cross-node "
+            "confirmation is the observed E4 signal; regression-benchmark citations and "
+            "helpful votes are E3 — a curated-query citation is sandbox-level evidence, and "
+            "a vote is one person's opinion recorded as a hint, never E4. Use to check "
+            "whether a lesson is proven by real usage, not just self-reported. "
             "Provide lesson_id or lesson_path — if neither is supplied the tool returns "
             "{error}. Semantically 'misakanet_get_my_events' (evidence for the lessons your "
             "node submitted/used); kept as me_events for backward compatibility. No auth "

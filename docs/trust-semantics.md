@@ -129,10 +129,11 @@ Three things this says that the definitions above do not:
 
 ### me_events: live reuse signals (tool-level semantics)
 
-`misakanet_me_events` aggregates a lesson's **live reuse evidence** — helpful votes (KV), regression-benchmark citations, and cross-node confirmations. It uses the E-level vocabulary as *signal strength*, not as the frontmatter promotion chain:
+`misakanet_me_events` aggregates a lesson's **live reuse evidence** — cross-node confirmation, regression-benchmark citations, and helpful votes. It uses the E-level vocabulary as *signal strength*, not as the frontmatter promotion chain:
 
-- **Single helpful vote** is labeled `E3` — it is a reuse signal, **not** CI verification; it does not claim the lesson passed a sandbox run.
-- **E4 in the tool** means ≥2 independent reuse signals, or the strongest single signal reaching E4 level (e.g. 2+ helpful votes from different users).
+- **E4 in the tool comes only from an observed signal**: cross-node confirmation, where a lesson's provenance names another contributor or agent. It is never conferred by counting lower signals — since 2026-10-16 a helpful vote cannot reach it at any count.
+- **A helpful vote is `E3`** — one person's opinion, recorded as a hint. Almost every retrieval is agent-initiated, and the person shown the "did this help?" button did not ask the question, so a vote surveys what the transport layer can observe instead (measured 2026-10-16: 3 of the 24 most-retrieved lessons carried any vote, 6 votes in total). A vote is a reuse *hint*; it is **not** CI verification and does not claim the lesson passed a sandbox run.
+- **Regression-benchmark citations are `E3`** — a curated query references the lesson: sandbox-level evidence, not external reuse.
 - This is a query over live signals. The authoritative `evidence_level` for a lesson lives in its frontmatter and follows the one-step-at-a-time promotion rules above; me_events does not edit it.
 
 ### How evidence affects scoring

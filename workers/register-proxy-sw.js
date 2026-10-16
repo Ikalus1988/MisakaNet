@@ -562,7 +562,7 @@ const MCP_TOOLS = [
   },
   {
     name: "misakanet_me_events",
-    description: "[READ-ONLY EVIDENCE] Return evidence of a lesson being reused (E4 signals): helpful votes, regression-benchmark citations, and cross-node confirmation. Use to check whether a lesson is proven by real usage, not just self-reported. Provide lesson_id or lesson_path — if neither is supplied the tool returns {error}. Semantically 'misakanet_get_my_events' (evidence for the lessons your node submitted/used); kept as me_events for backward compatibility. No auth required (read-only, rate-limited).\nReturns: object {lesson_id, events: [{type, count|queries|sources, evidence_level}], evidence: 'E0'|'E3'|'E4', note}.\nExample: misakanet_me_events(lesson_id='dco-auto-fix-workflow')",
+    description: "[READ-ONLY EVIDENCE] Return evidence of a lesson being reused: cross-node confirmation is the observed E4 signal; regression-benchmark citations and helpful votes are E3 — a curated-query citation is sandbox-level evidence, and a vote is one person's opinion recorded as a hint, never E4. Use to check whether a lesson is proven by real usage, not just self-reported. Provide lesson_id or lesson_path — if neither is supplied the tool returns {error}. Semantically 'misakanet_get_my_events' (evidence for the lessons your node submitted/used); kept as me_events for backward compatibility. No auth required (read-only, rate-limited).\nReturns: object {lesson_id, events: [{type, count|queries|sources, evidence_level}], evidence: 'E0'|'E3'|'E4', note}.\nExample: misakanet_me_events(lesson_id='dco-auto-fix-workflow')",
     inputSchema: {
       type: "object",
       properties: {
@@ -4150,9 +4150,11 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
     }
   }
 
-  // PRD ③ Coogen 借鉴 (Phase 1): E4 reuse evidence — aggregate real usage
-  // signals for a lesson: helpful votes, regression-benchmark citations,
-  // cross-node confirmation. Turns "self-reported E4" into queryable facts.
+  // PRD ③ Coogen 借鉴 (Phase 1): E4 reuse evidence — aggregate the signals that
+  // show a lesson was actually reused: cross-node confirmation and
+  // regression-benchmark citations. Helpful votes are reported alongside them as
+  // a subjective hint, never as the rung. Turns "self-reported E4" into
+  // queryable facts.
   if (toolName === "misakanet_me_events") {
     // Same anonymous read burst window as search/get_lesson (one counter per address per minute).
     if (!authToken) {
@@ -4168,12 +4170,26 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
     if (!lessonId) return { error: "lesson_id or lesson_path is required" };
 
     const events = [];
-    // 1. Helpful votes (real usage signal).
+    // 1. Helpful votes — a subjective hint, and never E4 at any count.
+    //
+    // Two reasons, and the second is the one that matters. (a) The signal is near-dead: measured
+    // 2026-10-16 against production, 3 of the 24 most-retrieved lessons carried any vote at all —
+    // 6 votes in total (pip-install-proxy-timeout 4, pip-install-timeout-ssl 1,
+    // browser-harness-cdp-browser-automation 1) — and 0 of 483 lessons sat at E4. (b) It is
+    // structurally wrong. Almost every retrieval is agent-initiated: the agent asks, the agent
+    // reads, and the person shown a "did this help?" button did not ask the question and usually
+    // cannot evaluate the answer. A vote is a survey instrument; the thing it tries to measure —
+    // was this lesson reused, and did it work — is observable at the transport layer, and
+    // surveying what you can observe is a category error. The E4 it conferred was an artefact of
+    // politeness, so E4 now rests only on observed reuse (lesson_confirmed_by, below).
+    //
+    // The vote endpoint and the counter are untouched: same POST, same `helpful:<lesson_id>` key,
+    // same count. This is about what a vote is worth, not whether it can be cast.
     if (hasDurableStore(env)) {
       try {
         const helpful = parseInt(await storeGet(env, `helpful:${lessonId}`, "text") || "0", 10) || 0;
         if (helpful > 0) {
-          events.push({ type: "lesson_found_helpful", count: helpful, evidence_level: helpful >= 2 ? "E4" : "E3" });
+          events.push({ type: "lesson_found_helpful", count: helpful, evidence_level: "E3" });
         }
       } catch (_) {}
     }
@@ -4214,14 +4230,14 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
       }
     } catch (_) {}
 
-    // E4 promotion: ≥2 independent reuse signals → E4.
-    const e4Ready = events.filter(e => e.evidence_level === "E4").length >= 1
-      && events.filter(e => e.type !== "lesson_confirmed_by").length >= 2;
+    // E4 is conferred by an E4-level *observed* signal being present — never by counting lower
+    // ones. Counting was how two votes (or a vote plus a citation) added up to proof.
+    const e4Ready = events.some(e => e.evidence_level === "E4");
     return {
       lesson_id: lessonId,
       events,
       evidence: events.length > 0 ? (e4Ready ? "E4" : events[0]?.evidence_level || "E0") : "E0",
-      note: "E4 = reused by another contributor/agent. Helpful votes, regression citations, and cross-node confirmations are real usage evidence.",
+      note: "E4 = observed reuse (cross-node confirmation), not a report. Helpful votes are one person's opinion, recorded as an E3 hint; they cannot confer E4.",
     };
   }
 

@@ -64,9 +64,10 @@ def test_the_click_says_what_it_changed_in_the_words_the_project_uses():
         "the count from `/api/helpful` must land in the trust row, not only in the click's own line: "
         + receipt[receipt.find("external reuse evidence"):][:120])
     assert "2 human confirmations" in receipt and "E4" in receipt, (
-        "the confirmation repeats the rule in the project's vocabulary (one is the reuse event, the "
-        "second is what agents read as E4)")
-    assert "→ E4" in receipt, "a row past the threshold carries the marker the acceptance list pins"
+        "the confirmation repeats the rule in the project's vocabulary: a vote is a hint, and the E4 "
+        "rung comes from observable reuse rather than the count")
+    assert "→ E4" not in receipt, (
+        "a vote count must not be marked as the rung — that mapping is what 2026-10-16 removed")
     assert "not voted" not in receipt, (
         "the row must stop offering a vote it already has: one sighting, one vote")
     assert "1 lesson reused · 1 vote ·" in receipt, (
