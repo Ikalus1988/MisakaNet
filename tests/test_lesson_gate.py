@@ -19,8 +19,10 @@ sys.path.insert(0, str(REPO))
 
 from scripts.lesson_gate import (  # noqa: E402
     allowed_domains,
+    find_duplicate_intake_claim,
     find_duplicate_title,
     frontmatter_diagnostic,
+    intake_claim,
     parse_frontmatter,
     validate_content_len,
     validate_evidence,
@@ -519,3 +521,194 @@ def test_the_no_lesson_annotation_says_the_check_verified_nothing():
     assert "still reports success on purpose" in text, (
         "the reason the job cannot simply fail (a required check must report) must stay written down"
     )
+
+
+# ── One intake, one lesson (2026-10-17) ───────────────────────────────────────────────────────
+#
+# The failure this rule prevents, stated as the artifact: two lesson pull requests on unrelated
+# topics (`#3344` "intake pipeline truncation", `#3345` "DSH plugin registration seats"), both
+# citing intake `#2760` — which is a **question**, not a missing-lesson report. `scripts/
+# intake_receipt.py` decides "this intake was converted into a lesson" by reading each lesson's
+# `provenance.issue`, so with two lessons the receipt is ambiguous: it can point the reporter at a
+# lesson that does not answer them, and it can report a question as `converted`.
+#
+# A rule about two files cannot be enforced by looking at one of them, so these tests build a
+# two-lesson tree every time. The last one replays the rule against the **committed pre-fix bytes**
+# of a duplicate that really is in the corpus, by commit and never by branch.
+
+#: The `main` tip this change was cut from (2026-10-17), and the commit the two duplicate-claim
+#: lessons below are read from. A commit cannot move, so the fixture cannot start agreeing with a
+#: fixed corpus — which is exactly how a red proof expires when it names a branch instead
+#: (`tests/test_dsh_plugin_panel_localization.py` records that failure, and `#3352` fixed it).
+PRE_FIX_SHA = "9133f6ba625130dcde83b25fa0ff733e97296c74"
+#: Where the fixture commit can be fetched from when a shallow clone does not carry it.
+PRE_FIX_REMOTES = ("origin", "upstream", "https://github.com/Ikalus1988/MisakaNet.git")
+#: Two lessons that both claim intake #1553 (`provenance.issue: "#1553"`), measured in the corpus
+#: at `PRE_FIX_SHA`. The intake came from `tests/intake_receipt_cases/1553-two-lessons-one-intake.json`,
+#: whose own note reads "one intake can end in several lessons" — the reading this rule replaces.
+PRE_FIX_DUPLICATE_PAIR = (
+    "lessons/contrib/alembic-upgrade-failure.md",
+    "lessons/contrib/alembic-upgrade-head-failed.md",
+)
+
+
+def _pre_fix_lesson(rel_path: str) -> str:
+    """The committed bytes of `rel_path` at `PRE_FIX_SHA`, fetching the commit when it is absent.
+
+    A shallow or single-branch clone may simply not *have* the object, and "the object is absent"
+    is a different fact from "the bytes changed". Only the first is allowed to skip, it must say
+    so, and it must say how to make the fixture run — a red fixture that skips silently is the
+    version nobody notices (`tests/test_dsh_plugin_panel_localization.py` established the pattern).
+    """
+    showed = subprocess.run(["git", "show", f"{PRE_FIX_SHA}:{rel_path}"],
+                            cwd=REPO, capture_output=True, text=True, timeout=60)
+    if showed.returncode == 0:
+        return showed.stdout
+
+    tried = []
+    for remote in PRE_FIX_REMOTES:
+        fetched = subprocess.run(["git", "fetch", "--quiet", "--depth=1", remote, PRE_FIX_SHA],
+                                 cwd=REPO, capture_output=True, text=True, timeout=120)
+        tried.append(f"{remote} {'ok' if fetched.returncode == 0 else fetched.stderr.strip()[-80:]}")
+        if fetched.returncode != 0:
+            continue
+        showed = subprocess.run(["git", "show", f"{PRE_FIX_SHA}:{rel_path}"],
+                                cwd=REPO, capture_output=True, text=True, timeout=60)
+        if showed.returncode == 0:
+            return showed.stdout
+    pytest.skip(
+        "the pre-fix fixture did not run: this clone does not carry " + PRE_FIX_SHA[:12]
+        + " and it could not be fetched (tried " + "; ".join(tried) + "). "
+        "Run `git fetch --depth=1 <remote> " + PRE_FIX_SHA + "` (or use a full clone) to replay the "
+        "red proof; the checks above it ran and are the reason this is a skip rather than a failure.")
+
+
+class TestIntakeClaimParsing:
+    """Which intakes a `provenance.issue` value names. The shapes are the ones in the corpus."""
+
+    @pytest.mark.parametrize("value,expected", [
+        ("#1553", {"1553"}),
+        ("1553", {"1553"}),
+        (1553, {"1553"}),                       # unquoted YAML int
+        ("#01553", {"1553"}),                   # zero-padded
+        ("#2465 + #2804", {"2465", "2804"}),    # the shape one lesson in the corpus writes
+        ("intake #1472 + #1473", {"1472", "1473"}),
+        ("intake-1130", {"1130"}),
+    ])
+    def test_shapes_that_are_claims(self, value, expected):
+        assert intake_claim({"provenance": {"issue": value}}) == expected
+
+    @pytest.mark.parametrize("value", ["", "n/a", "2026-10-17 correction", "#", "-", None, True])
+    def test_values_that_are_not_claims(self, value):
+        """A date inside the field must not become an intake: the failure mode is a false *block*."""
+        assert intake_claim({"provenance": {"issue": value}}) == set()
+
+    def test_source_and_related_are_not_claims(self):
+        """`source:` is free text and `provenance.related` means "also about".
+
+        Reading either here would block the metadata batches that touch those lines (#1506's
+        `--existing` mode exists for exactly them), and neither is the field the receipt contract
+        treats as the conversion.
+        """
+        assert intake_claim({"source": "intake #1553 — a narrative"}) == set()
+        assert intake_claim({"provenance": {"source": "intake #1553",
+                                           "related": "#1553"}}) == set()
+
+
+class TestOneIntakeOneLesson:
+    def _tree(self, tmp_path: Path, first_fm: dict, second_fm: dict, content: str = None):
+        root = make_lesson_tree(tmp_path, {
+            "a.md": (first_fm, content or long_content()),
+            "b.md": (second_fm, content or long_content()),
+        })
+        return root, root / "lessons" / "contrib" / "a.md"
+
+    def test_two_lessons_claiming_one_intake_fail(self, tmp_path):
+        fm_a = dict(valid_fm(), provenance={"issue": "#1553"})
+        fm_b = dict(valid_fm(), title="A different lesson on a different topic",
+                    provenance={"issue": "#1553"})
+        root, a = self._tree(tmp_path, fm_a, fm_b)
+        errors = validate_file(a, root, dirs=("contrib",))
+        claim_errors = [e for e in errors if "#1553" in e]
+        assert claim_errors, errors
+        # The message has to name the other file: a rule that says "already claimed" without
+        # saying by what leaves the contributor to search 400 lessons for the collision.
+        assert "lessons/contrib/b.md" in claim_errors[0], claim_errors[0]
+
+    def test_a_unique_claim_passes(self, tmp_path):
+        fm_a = dict(valid_fm(), provenance={"issue": "#9001"})
+        fm_b = dict(valid_fm(), title="A different lesson on a different topic",
+                    provenance={"issue": "#9002"})
+        root, a = self._tree(tmp_path, fm_a, fm_b)
+        assert [e for e in validate_file(a, root, dirs=("contrib",)) if "intake #" in e] == []
+
+    def test_a_translation_mirror_is_not_a_second_conversion(self, tmp_path):
+        """One lesson, two languages, one intake: the shared stem is the corpus's identity rule.
+
+        Without this exemption every translated lesson is reported as a second claim on its own
+        intake, which would make translating a lesson impossible.
+        """
+        fm_en = dict(valid_fm(), provenance={"issue": "#1553"})
+        fm_zh = dict(valid_fm(), title="另一篇完全不同的课程", provenance={"issue": "#1553"})
+        root = make_lesson_tree(tmp_path, {"same-stem.md": (fm_en, long_content())})
+        # The mirror shares the stem, in another directory.
+        other = root / "lessons" / "core"
+        other.mkdir(parents=True)
+        (other / "same-stem.md").write_text(
+            f"---\n{json.dumps(fm_zh, ensure_ascii=False, indent=2)}\n---\n\n{long_content()}",
+            encoding="utf-8")
+        a = root / "lessons" / "contrib" / "same-stem.md"
+        assert [e for e in validate_file(a, root, dirs=("contrib", "core")) if "intake #" in e] == []
+
+    def test_an_existing_file_is_advisory_not_blocking(self, tmp_path):
+        """#1506's principle, applied to this rule: legacy debt is not a new PR's debt.
+
+        Two lessons already claiming one intake must not block a metadata batch that touches one
+        of them, or the repository becomes less fixable with every batch.
+        """
+        fm_a = dict(valid_fm(), provenance={"issue": "#1553"})
+        fm_b = dict(valid_fm(), title="A different lesson on a different topic",
+                    provenance={"issue": "#1553"})
+        root, a = self._tree(tmp_path, fm_a, fm_b)
+        issues = validate_file(a, root, dirs=("contrib",), existing=True)
+        assert any(e.startswith("[warn]") and "#1553" in e for e in issues), issues
+        assert not [e for e in issues if not e.startswith("[warn]") and "#1553" in e], issues
+
+    def test_the_gate_can_go_red(self, tmp_path):
+        """A gate nobody has seen fail is a gate nobody can trust: replay it on the real bytes.
+
+        The two files are the corpus's own duplicate — `#1553` was converted into two lessons, and
+        `tests/intake_receipt_cases/1553-two-lessons-one-intake.json` records that as intended.
+        This rule reverses that reading, so the fixture is the evidence that the rule actually
+        fires on the shape it was written for rather than only on a synthetic pair.
+        """
+        fixtures = []
+        for rel in PRE_FIX_DUPLICATE_PAIR:
+            text = _pre_fix_lesson(rel)
+            fixtures.append(text)
+            # Sanity: these bytes really are the pre-fix ones, or the replay proves nothing.
+            fm, _ = parse_frontmatter(text)
+            assert "1553" in intake_claim(fm), (
+                f"{rel} at {PRE_FIX_SHA[:12]} no longer claims #1553; the red proof has expired "
+                f"and the frozen commit must be replaced by one that still shows the duplicate")
+
+        root = tmp_path
+        for rel, text in zip(PRE_FIX_DUPLICATE_PAIR, fixtures):
+            target = root / rel
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(text, encoding="utf-8")
+
+        first = root / PRE_FIX_DUPLICATE_PAIR[0]
+        errors = validate_file(first, root)
+        assert any("#1553" in e for e in errors), (
+            "the pre-fix corpus pair claiming one intake was accepted: " + repr(errors))
+
+    def test_the_rule_can_go_red_on_the_committed_corpus(self):
+        """The corpus itself carries the duplicates the rule is about, read through the function.
+
+        Not a repo-wide assertion (three pairs predate the rule and are advisory): this pins that
+        `find_duplicate_intake_claim` finds a duplicate in the *committed* corpus, so a future
+        refactor that quietly stops matching `provenance.issue` fails here rather than passing
+        every synthetic test above.
+        """
+        assert find_duplicate_intake_claim("1553", REPO) == sorted(PRE_FIX_DUPLICATE_PAIR)

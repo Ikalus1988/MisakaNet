@@ -17,6 +17,23 @@ Auth for D1 + GitHub:
     - GitHub issue: GH_TOKEN env (or GITHUB_TOKEN)
 
 Idempotent: lesson_drafts has UNIQUE(source_id, kind); re-runs skip.
+
+Questions are not lessons
+-------------------------
+A `question` intake is routed to a `[Question]` issue (`notify_question`) and never mints a
+lesson draft (#1396). Two signals say "this is a question":
+
+* `kind: "question"` — the MCP contract, and the only signal the MCP payload carries;
+* an issue label `question` / `type:question` — added to every question intake by
+  `.github/workflows/intake-auto-review.yml`. This is the **authoritative** signal when the
+  caller has it (the issue is the intake of record), and the payload may carry it under
+  `labels` (list or comma string) or `label`.
+
+Labels are **not** part of the MCP `submit_intake` payload (measured against
+`docs/mcp-intake-guide.md` and `scripts/mcp_http_server.py`, 2026-10-17), so for the MCP path
+the only check the data supports is `kind` — which `workers/lib/utils.js` sets from the
+question detector. A lesson `kind` carrying a `question`/`type:question` label is still routed
+as a question, because the label is what the issue workflows acted on.
 """
 import argparse
 import json
@@ -37,6 +54,47 @@ MC = str(REPO / ".tools" / "bin" / "mcporter")
 CFG = str(REPO / ".tools" / "mcporter.json")
 
 VALID_KINDS = {"missing_lesson", "stale_lesson", "new_lesson_candidate", "question"}
+
+#: Labels that mean "this intake is a question", never a lesson candidate.
+#: `intake-auto-review.yml` applies both to every intake it routes as a question (#1396).
+QUESTION_LABELS = frozenset({"question", "type:question"})
+
+#: What the pipeline says instead of silently dropping a question, and where the question goes.
+QUESTION_ROUTE_NOTE = (
+    "Questions are not lesson candidates: this intake is routed to a [Question] issue "
+    "(scripts/intake_pipeline.py:notify_question) instead of minting a lesson draft. It is "
+    "answered there, and once the `answered` label is set the answer reaches the FAQ through "
+    ".github/workflows/sync-question-answers.yml — the question channel, not `lessons/`."
+)
+
+
+def _normalized_labels(raw: dict) -> list[str]:
+    """Issue labels, when the caller has them, lower-cased and stripped.
+
+    Neither spelling is required: `labels` (list or comma-separated string) and the singular
+    `label` are both accepted because the intake paths that have labels pass them differently.
+    Anything that is not a string is dropped rather than stringified — a stray number must not
+    become a label that happens to match nothing.
+    """
+    value = raw.get("labels", raw.get("label"))
+    if isinstance(value, str):
+        value = value.split(",")
+    if not isinstance(value, (list, tuple, set, frozenset)):
+        return []
+    return [v.strip().lower() for v in value if isinstance(v, str) and v.strip()]
+
+
+def question_routed_by(intake: dict) -> str | None:
+    """Why this intake is a question, or None. `kind` first, then the issue labels.
+
+    Returns `"kind"` / `"label"` so the caller can report *which* signal fired — "skipped" with
+    no reason is the shape that turns a routing rule into a silent drop.
+    """
+    if intake["kind"] == "question":
+        return "kind"
+    if QUESTION_LABELS.intersection(intake["labels"]):
+        return "label"
+    return None
 
 
 # ── Field caps, and the cut that travels with the draft ─────────────────────
@@ -118,6 +176,7 @@ def parse_intake(raw: dict) -> dict:
         "verification": (raw.get("verification") or "").strip(),
         "domain": (raw.get("domain") or "").strip(),
         "tags": raw.get("tags") or [],
+        "labels": _normalized_labels(raw),
     }
 
 
@@ -382,15 +441,24 @@ def notify(intake: dict, cls: dict, draft: dict, pre: dict, is_new: bool) -> dic
 def run(intake_raw: dict, dry_run: bool = False) -> dict:
     intake = parse_intake(intake_raw)
 
-    # Question / knowledge-gap intakes are NOT lesson candidates (see #1396):
-    # never mint a lesson-shaped draft into lesson_drafts. Route straight to a
-    # [Question] issue so the intake workflows treat it as a question.
-    if intake["kind"] == "question":
+    # Question / knowledge-gap intakes are NOT lesson candidates (see #1396): never mint a
+    # lesson-shaped draft into lesson_drafts. Route straight to a [Question] issue so the intake
+    # workflows treat it as a question. Two signals count (see the module docstring): the MCP
+    # `kind` contract, and the `question` / `type:question` issue labels when the caller has
+    # them. The skip is announced on stderr as well as in the result: a routing rule whose only
+    # trace is a missing draft is indistinguishable from a bug.
+    routed_by = question_routed_by(intake)
+    if routed_by:
+        reason = ("kind=question" if routed_by == "kind"
+                  else "issue label question/type:question")
+        print(f"  ↪ question intake ({reason}) — no lesson draft minted; "
+              f"routed to a [Question] issue, answered there.", file=sys.stderr)
         result = {
             "kind": intake["kind"], "source": intake["source"],
             "source_id": intake["source_id"],
             "routed_as": "question",
-            "note": "Questions are not lesson candidates — no lesson draft was created.",
+            "routed_by": routed_by,
+            "note": QUESTION_ROUTE_NOTE,
         }
         # The question body is the deliverable, and `_clip_question` announces its 60,000-char cut
         # in the issue. The response says it too, so a caller that only reads the result is not

@@ -5,6 +5,7 @@ Validates lesson Markdown files against the quality gate checklist:
   - Required frontmatter fields: title, domain, tags, status, evidence_level
   - Minimum content length: 100 chars (excluding frontmatter)
   - No duplicate titles (against all existing lessons)
+  - One intake, one lesson: no two lessons may claim the same `provenance.issue`
   - Domain must be in the canonical vocabulary (data/domains.json)
   - Tags validated for format (1-10 unique strings, min 2 chars)
   - status ∈ {active, archived, draft, published, stale, superseded} — this list is
@@ -471,6 +472,85 @@ def find_duplicate_title(title: str, repo: Path = REPO, exclude_file: Path | Non
     return False
 
 
+# ── One intake, one lesson (2026-10-17) ─────────────────────────────────────
+# Which intakes a `provenance.issue` value names. The field is written in several shapes in the
+# corpus — `"#1553"`, `"1553"`, `"intake #1472 + #1473"`, `"#2465 + #2804"` — so the parser reads
+# the shapes that exist rather than one canonical value. `#`-prefixed numbers and `intake-N`
+# forms are explicit; a bare number counts only when it is the whole value (`issue: 1553`), so a
+# date inside the field cannot masquerade as an intake. This mirrors, deliberately, what
+# `scripts/intake_receipt.py::_cites` treats as a citation — the gate and the receipt must agree
+# about what a claim is, or the gate permits exactly the ambiguity the receipt then suffers.
+INTAKE_HASH_RE = re.compile(r"#\s*0*(\d{1,7})\b")
+INTAKE_NAMED_RE = re.compile(r"\bintake[-_ ]\s*#?0*(\d{1,7})\b", re.IGNORECASE)
+INTAKE_BARE_RE = re.compile(r"^0*(\d{1,7})$")
+
+
+def intake_claim(fm: dict) -> set[str]:
+    """The intakes this lesson claims to convert, from `provenance.issue`, as bare digits.
+
+    **Only `provenance.issue` counts, and that is a deliberate narrowing.** `source:` is free
+    text — `"intake #1553 — subprocess.CalledProcessError: …"` — and both
+    `scripts/check_provenance.py` and `scripts/intake_receipt.py` accept it as a *tolerant*
+    fallback because they are trying to find a link, not to judge one. A gate cannot be tolerant:
+    reading `source:` here would turn a narrative sentence into a hard failure and block the very
+    metadata batches (#1506's `--existing` mode exists for them) that touch those lines.
+    `provenance.related` is the other accepted spelling of "something else this is about" — it is
+    not a conversion claim, so it is not read either. `provenance.issue` is the field the receipt
+    contract's own docstring names as authoritative, so it is the field this rule reads.
+
+    Returns an empty set when there is no claim to check.
+    """
+    provenance = fm.get("provenance")
+    if not isinstance(provenance, dict):
+        return set()
+    raw = provenance.get("issue")
+    if isinstance(raw, bool):                     # bool is an int subclass; never a claim
+        return set()
+    if isinstance(raw, (int, float)):
+        return {str(int(raw))}
+    if not isinstance(raw, str):
+        return set()
+    text = raw.strip()
+    claims = set(INTAKE_HASH_RE.findall(text)) | set(INTAKE_NAMED_RE.findall(text))
+    bare = INTAKE_BARE_RE.match(text)
+    if bare:
+        claims.add(bare.group(1))
+    return claims
+
+
+def find_duplicate_intake_claim(issue: str, repo: Path = REPO,
+                                exclude_file: Path | None = None) -> list[str]:
+    """Active lessons other than `exclude_file` that already claim intake `issue`.
+
+    Mirrors are one conversion, not two: an original and its translation share a stem across
+    directories, which is the same identity rule `find_duplicate_title` uses (`lessons/core/x.md`
+    ↔ `lessons/en/x.md`). Without that exemption every translated lesson would be reported as a
+    second claim on its own intake.
+
+    Returns repo-relative paths, sorted, so the message a contributor reads is stable.
+    """
+    if not issue:
+        return []
+    exclude_resolved = Path(exclude_file).resolve() if exclude_file is not None else None
+    exclude_stem = Path(exclude_file).stem if exclude_file is not None else None
+    others: list[str] = []
+    for other in _iter_active_lessons(repo):
+        if exclude_resolved is not None and other.resolve() == exclude_resolved:
+            continue
+        if exclude_stem and other.stem == exclude_stem:
+            continue
+        try:
+            other_fm, _ = parse_frontmatter(other.read_text(encoding="utf-8", errors="ignore"))
+        except Exception:
+            continue
+        if issue in intake_claim(other_fm):
+            try:
+                others.append(str(other.relative_to(repo)))
+            except ValueError:
+                others.append(str(other))
+    return sorted(others)
+
+
 # ── Content-similarity & fake-verification detection (2026-08-30) ──
 # Near-duplicate lessons (same problem, copy-pasted sections) slip past the
 # exact-title check. We tokenize the body (after frontmatter) and report
@@ -773,6 +853,36 @@ def validate_file(path: Path, repo: Path = REPO, dirs: tuple[str, ...] | None = 
                 )
         if find_duplicate_title(fm["title"], repo, exclude_file=path):
             errors.append(f"duplicate title: {fm['title']!r}")
+
+    # One intake, one lesson (2026-10-17).
+    #
+    # `scripts/intake_receipt.py` answers "was this intake converted into a lesson?" by reading
+    # `provenance.issue` out of every lesson. Two lessons naming one intake make that receipt
+    # ambiguous in the only way that matters: it may point the reporter at a lesson that does not
+    # answer them, and — measured on #2760, which is a `question` — report a question as
+    # `converted`, i.e. tell the asker their question was answered by a lesson about something else.
+    #
+    # The failure this prevents, stated as the artifact: two lesson PRs on unrelated topics, both
+    # closing the same intake (`#3344` and `#3345`, both citing `#2760`). The receipt contract cannot
+    # tell them apart, so the fix belongs in the gate that lets a lesson in, not in the receipt.
+    # `find_duplicate_intake_claim` documents what counts as a claim (and what deliberately does not).
+    #
+    # Tiered like the structured fields above, and for the same reason: a pair that is *already* in
+    # the corpus predates the rule, so it is reported and never blocks — not even under `--all`,
+    # which treats every file as new (`existing_on_base_branch` is what tells the two apart; a
+    # fixture outside the checkout answers None and stays strict).
+    if fm:
+        legacy = existing or exists_on_base_branch(path, repo) is True
+        for claim in sorted(intake_claim(fm)):
+            already = find_duplicate_intake_claim(claim, repo, exclude_file=path)
+            if already:
+                message = (
+                    f"intake #{claim} is already claimed by {', '.join(already)} — one intake "
+                    f"converts to one lesson; a second lesson makes the conversion receipt ambiguous "
+                    f"(scripts/intake_receipt.py reads provenance.issue), and the intake it is most "
+                    f"likely to be is a question, which is answered rather than made into a lesson"
+                )
+                errors.append(f"[warn] (already on the base branch) {message}" if legacy else message)
 
     # Near-duplicate content (same language, Jaccard >= 0.55): real duplicates
     # that a title check misses. Reported as a warning so maintainers can review

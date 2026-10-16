@@ -310,6 +310,79 @@ class TestTruncationTravelsWithTheDraft(unittest.TestCase):
         self.assertTrue(result["truncated"])
         self.assertEqual(result["truncations"]["problem"]["cap"], ip.QUESTION_BODY_CAP)
         self.assertEqual(result["truncations"]["problem"]["content_length"], len(problem))
+class TestQuestionLabels(unittest.TestCase):
+    """A question must not become a lesson because its `kind` field was wrong (#2760).
+
+    `#2760` is a question — labels `question`, `type:question`, body a follow-up about a truncated
+    intake — and two lesson pull requests on unrelated topics both cited it (`#3344`/`#3345`).
+    `kind` is the only signal the MCP payload carries; when a caller *does* have the issue labels
+    (the issue is the intake of record, and `intake-auto-review.yml` adds both), the label wins.
+    """
+
+    def test_labels_are_collected_in_every_spelling_the_callers_use(self):
+        self.assertEqual(ip.parse_intake({"labels": ["Question", "type:question"]})["labels"],
+                         ["question", "type:question"])
+        self.assertEqual(ip.parse_intake({"labels": "intake, question"})["labels"],
+                         ["intake", "question"])
+        self.assertEqual(ip.parse_intake({"label": "type:question"})["labels"], ["type:question"])
+        # Junk is dropped, never stringified into a label that happens to match nothing.
+        self.assertEqual(ip.parse_intake({"labels": [1, None, "  ", "question"]})["labels"],
+                         ["question"])
+        self.assertEqual(ip.parse_intake({})["labels"], [])
+
+    def test_routing_signal_is_named(self):
+        self.assertEqual(ip.question_routed_by(ip.parse_intake({"kind": "question"})), "kind")
+        self.assertEqual(
+            ip.question_routed_by(ip.parse_intake({"kind": "missing_lesson", "labels": ["type:question"]})),
+            "label")
+        self.assertIsNone(ip.question_routed_by(ip.parse_intake({"kind": "missing_lesson"})))
+        # `question` inside a longer label is not the label: matching must be exact, or a future
+        # `question-followup` label silently reroutes failure reports.
+        self.assertIsNone(
+            ip.question_routed_by(ip.parse_intake({"labels": ["question-followup"]})))
+
+    def test_a_question_label_never_mints_a_lesson_draft(self):
+        """`kind` says `missing_lesson`; the label says question. The label is what the issue
+        workflows acted on, so the pipeline must not score it as a lesson."""
+        calls = {"persist": 0, "notify": 0, "notify_q": 0}
+        orig = (ip.persist_draft, ip.notify, ip.notify_question)
+        ip.persist_draft = lambda *a, **k: calls.__setitem__("persist", calls["persist"] + 1) or True
+        ip.notify = lambda *a, **k: calls.__setitem__("notify", calls["notify"] + 1) or {"issue_number": 1}
+        ip.notify_question = (lambda intake: calls.__setitem__("notify_q", calls["notify_q"] + 1)
+                              or {"issue_number": 42, "issue_url": "https://github.com/x/issues/42"})
+        try:
+            res = ip.run({"kind": "missing_lesson", "problem": "Follow-up on a truncated body",
+                          "source": "mcp", "labels": ["intake", "question", "type:question"]})
+        finally:
+            ip.persist_draft, ip.notify, ip.notify_question = orig
+        self.assertEqual(calls["persist"], 0, "a labelled question must not persist a lesson draft")
+        self.assertEqual(calls["notify"], 0, "the lesson notify path must not run for a question")
+        self.assertEqual(calls["notify_q"], 1)
+        self.assertEqual(res["routed_as"], "question")
+        self.assertEqual(res["routed_by"], "label")
+
+    def test_a_labelled_failure_report_still_mints_a_lesson(self):
+        """The control: the rule must not fire on every labelled intake."""
+        self.assertIsNone(ip.question_routed_by(
+            ip.parse_intake({"kind": "missing_lesson", "labels": ["intake", "mcp-intake", "pending-review"]})))
+
+    def test_the_skip_says_where_the_question_goes(self):
+        """A skip whose only trace is a missing draft is indistinguishable from a bug."""
+        import contextlib
+        import io
+
+        stderr = io.StringIO()
+        with contextlib.redirect_stderr(stderr):
+            res = ip.run({"kind": "question", "problem": "How do I configure MCP auth?",
+                          "source": "mcp"}, dry_run=True)
+        printed = stderr.getvalue()
+        self.assertIn("question intake", printed)
+        self.assertIn("kind=question", printed)
+        # The result carries the same statement, for callers that read JSON rather than a log.
+        note = res["note"]
+        for fragment in ("[Question]", "sync-question-answers.yml", "FAQ", "lessons/"):
+            self.assertIn(fragment, note, note)
+        self.assertIn("not lesson candidates", note)
 
 
 if __name__ == "__main__":
