@@ -1,0 +1,198 @@
+name: Publish generated site artifacts to dist
+
+# WHY THIS EXISTS (owner decision, 2026-10-16)
+# --------------------------------------------
+# `main` carries the source, the gates and the worker. It also carried the *generated* site: 485
+# lesson pages, 52 topic pages, the sitemap, the redirect table, the page manifest and the two
+# corpus copies the browser downloads. Measured over the 30 days before that decision — 1,205
+# commits, `git log --since="30 days ago" --format=%H -- <path>` — `docs/` appears in 475 (39.4%)
+# and `data/` in 241 (20.0%), while the corpus itself, `lessons/`, appears in 71 (5.9%). The
+# generated site this branch owns is 51 commits (4.2%) and 685 of 4404 (commit, file) pairs
+# (15.6%). A lesson-only pull request carries 17-18 files, of which 8-9 are that generated site
+# (PR #3258: 9 of 18; PR #3280: 8 of 17) — both collapse to 9 files once `dist` has them.
+#
+# So the generated set moves to a branch that only this workflow writes, and Cloudflare **Workers
+# Builds** (a Git integration whose configuration lives in the Cloudflare console, not in this
+# repository) is pointed at that branch instead of `main`.
+#
+# `dist` = `main`'s tree + the generated artifacts. Not a branch anyone edits: every run rebuilds it
+# from `main`'s HEAD, so it is a function of `main` and can always be thrown away and rebuilt. The
+# ordered cutover — including the console-side steps, the verification and the rollback — is
+# `docs/maintainer/dist-branch-cutover.md`.
+#
+# WHAT THIS IS NOT
+# ----------------
+# This workflow does **not** delete the generated files from `main`. Doing that before the console
+# is repointed would take 485 live pages off misakanet.org. The deletion is a separate, ordered
+# follow-up (scope in the cutover document's last section).
+on:
+  # Every push, with no `paths:` filter. `dist` has to follow `main` everywhere, not only where a
+  # lesson changed: a hand-edited `docs/**` page or a new static page is *source* that the site
+  # serves, and a `dist` that filtered on `lessons/**` would keep serving the old one. The cost is
+  # the same rebuild Cloudflare already does on every push today — this moves which commit gets
+  # built, not how often.
+  push:
+    branches: [main]
+  workflow_dispatch:  # republish by hand (first creation of `dist`, or after a bad build)
+
+permissions:
+  # The only scope needed: create/update the `dist` branch and force-push it. Nothing here opens a
+  # pull request, comments, or touches releases.
+  contents: write
+
+# `dist` is a pure function of `main`, so the newest run is the only one worth finishing: an older
+# run can only publish an older corpus over a newer one. Cancelling it is free — the branch it
+# would have pushed is rebuilt from scratch by the run that replaced it. (`update-badges.yml` uses
+# the same argument for the `data` branch; the difference is that `dist` is force-pushed, so a lost
+# race is not even a conflict.)
+concurrency:
+  group: publish-dist
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+        with:
+          ref: main
+          # Depth 1 is enough: the commit this run publishes is created on top of the checkout, and
+          # the guard's `--base` is that checkout's SHA. The previous `dist` commit is fetched
+          # separately, below, for the one thing it carries that `main` will not have after the
+          # deletion follow-up (the sticky-slug manifest).
+          fetch-depth: 1
+          # The push below supplies its own credentials. `actions/checkout` otherwise stores
+          # `GITHUB_TOKEN` in `http.extraheader` *and* in an `includeIf` credentials file, and that
+          # stored token takes precedence over the URL — the failure recorded in
+          # `docs/agents/repo-operations.md` §4, where a PAT push still came out as
+          # `github-actions[bot]`.
+          persist-credentials: false
+
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      # PyYAML is required, not optional: most lessons carry YAML frontmatter and
+      # `update_lessons_json.py` refuses to fall back to slug/dir metadata without it. A job that
+      # installed nothing wrote every YAML lesson into the index with its file stem as the title and
+      # its parent directory as the domain (`update-lessons.yml` records that incident).
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      # Set up once, before anything reads or writes the remote: the seed step below fetches `dist`,
+      # and the last step pushes it. Done here rather than in the push step so that the fetch is
+      # authenticated too — a public repository would let an anonymous fetch work, which means the
+      # day it stopped working the seed would silently degrade to an empty slug map (see below) and
+      # nobody would see it.
+      - name: Configure git credentials
+        env:
+          GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.name "misakanet-bot"
+          git config user.email "bot@misakanet.dev"
+          git remote set-url origin "https://x-access-token:${GIT_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+
+      # `docs/.generated-pages.json` is not only output — it is the page generator's *state*.
+      # `build_lesson_pages.py` records the lesson-id → slug map there and reads it back as the
+      # authority on which URLs are already live, because slugs are sticky and re-deriving them from
+      # titles is what orphaned 88 live URLs once. The deletion follow-up removes that file from
+      # `main`, and the first run after it would start with no slug map and re-derive every URL. So:
+      # use `main`'s copy while it is still there (today), otherwise seed from the previous `dist`
+      # commit.
+      #
+      # The `ls-remote` distinction is load-bearing. "no dist branch" is normal on the very first run
+      # and means an empty slug map is correct; "I could not reach `origin`" is a transport or
+      # credential failure, and swallowing it would produce the empty slug map *and* re-derive every
+      # URL — a silent mass re-addressing of the site. `git ls-remote --exit-code` exits 2 for "no
+      # matching ref" and 128 for a real failure, so the two are told apart rather than lumped into
+      # `|| true`.
+      - name: Seed the sticky-slug manifest from the published branch
+        run: |
+          if [ -f docs/.generated-pages.json ]; then
+            echo "docs/.generated-pages.json is still on main — using it as the slug authority"
+            exit 0
+          fi
+          set +e
+          git ls-remote --exit-code --heads origin dist > /dev/null 2>&1
+          STATUS=$?
+          set -e
+          case "$STATUS" in
+            0)
+              git fetch --depth=1 origin dist:refs/remotes/origin/dist
+              git show refs/remotes/origin/dist:docs/.generated-pages.json > docs/.generated-pages.json
+              echo "seeded docs/.generated-pages.json from the previous dist commit"
+              ;;
+            2)
+              echo "dist does not exist yet — starting with an empty slug map, as a fresh clone does"
+              ;;
+            *)
+              echo "::error title=Cannot read the dist branch::git ls-remote exited $STATUS. If dist already exists, seeding the slug map is what keeps every lesson URL stable; publishing without it would re-derive and orphan URLs."
+              exit 1
+              ;;
+          esac
+
+      # The generators, in the order the repository documents them (`scripts/question_autopilot.py`
+      # names the first three for contributors; `update-lessons.yml` adds the index rebuild;
+      # `docs/maintainer/handoff-2026-10-11.md` §80 records what forgetting the last one costs — a
+      # stale `tests/fixtures/ranking-snapshot.json` and a red suite with nothing but the corpus to
+      # blame).
+      #
+      # Running them is the job, whether or not they have anything to write: measured on a clean
+      # `main` (2026-10-16) all six are byte-for-byte idempotent — an unchanged `git status
+      # --porcelain` afterwards, ~8 s — and that is the *normal* case here, not an early exit.
+      - name: Regenerate the published artifacts
+        run: |
+          python3 scripts/update_lessons_json.py
+          python3 scripts/build_lesson_pages.py
+          python3 scripts/export_okf.py
+          python3 scripts/sync_lesson_count.py
+          python3 scripts/rebuild_lessons_index.py
+          python3 scripts/gen_ranking_snapshot.py
+
+      - name: Publish to dist
+        run: |
+          BASE=$(git rev-parse HEAD)
+          git checkout -B dist
+
+          git add -A   # `-A`, not a path list: the page generator both creates files (a new lesson
+                       # gets a page) and deletes them (a retitled lesson orphans the old URL).
+
+          # The commit is unconditional, and `--allow-empty` is the point rather than a convenience.
+          #
+          # `dist` is not "the generated files" — it is **`main`'s whole tree** plus them. Because
+          # the generators are idempotent, a "skip when the regeneration produced no diff" step looks
+          # like a harmless optimisation. It is not: a push that changes only *source* — a new
+          # `docs/quickstart.md`, a fixed `docs/index.html` — leaves the generators with nothing to
+          # do, and an early exit there would leave `dist` serving the **old** source forever, with a
+          # green run. On today's tree it would also mean the branch is never created at all, which
+          # is the state the cutover starts from.
+          #
+          # The tree comparison that would let us skip a genuinely redundant publish is deliberately
+          # not made: a commit whose tree happens to equal the previous one is cheap, and Cloudflare
+          # rebuilds on it exactly as often as it builds on `main` today.
+          #
+          # No `[skip ci]` in this message, deliberately — and this is the one place the `data`-branch
+          # precedents (`update-badges.yml`, `update-smithery-badge.yml`) must not be copied. They
+          # skip because nothing builds `data`; `dist` exists *to be built*, since Cloudflare Workers
+          # Builds deploys from it. A skip marker in the commit that is supposed to trigger the deploy
+          # would suppress the only thing it is for. Nothing here needs suppressing anyway: a push
+          # made with `GITHUB_TOKEN` starts no workflow runs, and this workflow triggers on
+          # `push: main` and nothing else.
+          git commit --allow-empty -m "chore(dist): publish generated site artifacts from ${BASE}"
+
+          # Assert what is about to be published, before publishing it: `dist` must contain every
+          # path `main` has, and may differ from it only in the artifacts the six generators own.
+          # This is the half that used to live in `lesson-gate.yml` as "run the generators and fail
+          # if `git diff` is not empty" — a rule that cannot survive the generated files leaving
+          # `main`, restated as the property that actually matters here.
+          python3 scripts/ci/check_dist_diff.py diff --base "${BASE}"
+
+          # `--force` is correct and not a shortcut: every run rebuilds `dist` from `main`'s HEAD,
+          # so the previous `dist` commit is not a parent of this one and the push is never
+          # fast-forward. The branch is disposable and rebuilt, never edited — the same reason the
+          # rollback in the cutover document is "repoint the build at `main` and delete `dist`".
+          # This pushes `dist`, never `main` (`tests/test_no_workflow_pushes_to_main.py` reads this
+          # file, and `main`'s ruleset would refuse it anyway).
+          git push --force origin dist:dist

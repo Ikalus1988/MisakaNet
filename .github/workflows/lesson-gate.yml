@@ -124,34 +124,48 @@ jobs:
 
       # The generators, run rather than trusted.
       #
-      # A pull request that adds a lesson without re-running `update_lessons_json.py` and
-      # `build_lesson_pages.py` is not *wrong* — the lesson is fine and the gate above says so. It is
-      # **incomplete**, and incompleteness is the one thing nothing else here reports:
-      # `data/lessons.json`, `docs/data/lessons.json`, `docs/data/lessons-lite.json` and every lesson
-      # page are generated from `lessons/`, and the index only ever lists what the last committed run
-      # produced. The symptom arrived days later as a conflict with the next lesson pull request —
-      # three were stuck on exactly this in one day, each a complete, well-written lesson by a
-      # contributor who was told nothing.
+      # A pull request that adds a lesson without re-running the generators is not *wrong* — the
+      # lesson is fine and the gate above says so. It is **incomplete**, and incompleteness is the
+      # one thing nothing else here reports: `data/lessons.json`, the count surfaces, the OKF export,
+      # `lessons/index.md` and the generated site are all derived from `lessons/`, and the index only
+      # ever lists what the last committed run produced. The symptom arrived days later as a conflict
+      # with the next lesson pull request — three were stuck on exactly this in one day, each a
+      # complete, well-written lesson by a contributor who was told nothing.
       #
-      # Run them and look at the diff, rather than asking either generator for a `--check` mode. A
-      # dry run has to either re-implement the write path — a second answer to "what would this
-      # produce", free to drift from the one that ships — or write and restore, which
-      # `tests/conftest.py` refuses by name because a restored file still has a new mtime and the
-      # damage lands in whichever test reads it next. The checkout here is disposable, so the
-      # honest question — *would running this change anything?* — is answerable by running it.
-      - name: Generated files must match the corpus
+      # Run them and look at the tree, rather than asking a generator for a `--check` mode. A dry run
+      # has to either re-implement the write path — a second answer to "what would this produce",
+      # free to drift from the one that ships — or write and restore, which `tests/conftest.py`
+      # refuses by name because a restored file still has a new mtime and the damage lands in
+      # whichever test reads it next. The checkout here is disposable, so the honest question —
+      # *would running this change anything?* — is answerable by running it.
+      #
+      # **This step changed when the generated site moved to `dist` (2026-10-16).** It used to run
+      # `update_lessons_json.py` + `build_lesson_pages.py` and fail on any `git diff` — which cannot
+      # survive `docs/lessons/**` leaving `main`: after the cutover, `build_lesson_pages.py` writes
+      # files that are *not supposed* to be in the pull request, and a rule demanding them would be
+      # demanding the churn the move exists to remove. So the assertion is now split by where the file
+      # lives: the generators that write files `main` keeps are run here, and only those files are
+      # required to be fresh (`scripts/ci/check_dist_diff.py` holds the two lists, and
+      # `docs/maintainer/dist-branch-cutover.md` holds the evidence for each path).
+      #
+      # The generated site is not unguarded by this: while it is still on `main`,
+      # `tests/test_lesson_page_generator.py::test_repo_pages_match_the_index` (required status check
+      # `test (ubuntu-latest, 3.11)`) and `docs.yml`'s push check both fail on a stale page, which is
+      # the same merge-blocking power this step had. After the cutover the publisher regenerates the
+      # site on every push to `main`, so it cannot be stale at all.
+      #
+      # `gen_ranking_snapshot.py` is deliberately not run here: it needs `misakanet-core`, which this
+      # job does not install (it is the fast gate — `pyyaml` only), and
+      # `tests/test_ranking_snapshot.py` already fails on a stale fixture in the required test matrix
+      # with a message that names the regenerate command.
+      - name: Main-side generated files must match the corpus
         if: steps.changed.outputs.any_changed == 'true'
         run: |
           python3 scripts/update_lessons_json.py
-          python3 scripts/build_lesson_pages.py
-          if ! git diff --quiet; then
-            echo "::error title=Generated lesson files are stale::A lesson was added or changed without re-running the generators. Nothing is wrong with the lesson itself — the files derived from it are a revision behind."
-            echo "These files are generated from lessons/ and the pull request did not carry them:"
-            git --no-pager diff --stat
-            echo "Fix: run the two commands above, then commit what they wrote."
-            exit 1
-          fi
-          echo "Generated files are in sync with lessons/."
+          python3 scripts/export_okf.py
+          python3 scripts/sync_lesson_count.py
+          python3 scripts/rebuild_lessons_index.py
+          python3 scripts/ci/check_dist_diff.py main-side
 
       # Always run: now that the job fires on every PR, this is the only step that proves the gate
       # itself can still fail. It used to rely on the path filter to guarantee a lesson-related

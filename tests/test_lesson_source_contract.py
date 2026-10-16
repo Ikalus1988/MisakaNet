@@ -16,6 +16,13 @@ cleanly and joined nothing. Two facts the repository already knew, and neither w
   no other check reported. The symptom arrived days later as a conflict with the next lesson pull
   request, which is how "add a lesson" learned to cost a round trip.
 
+  Since 2026-10-16 that set is **split by branch** (`docs/maintainer/dist-branch-cutover.md`): the
+  generated *site* — `docs/lessons/**`, `docs/topics/**`, `docs/sitemap.xml`, `docs/_redirects`,
+  `docs/.generated-pages.json`, `docs/data/**` — is regenerated and published to `dist` by
+  `.github/workflows/publish-dist.yml`, and everything else stays on `main`. The tests in this file
+  describe both halves, because which half a file is in is exactly what decides whether a pull
+  request is incomplete without it.
+
 Both rules exist so the failure a contributor meets is one they can fix themselves, stated as a
 command, at the moment they push — not a merge conflict three days later that nobody can explain.
 
@@ -289,12 +296,21 @@ def test_regenerating_first_makes_the_tree_clean(sandbox: Path) -> None:
 
 # ── the rule is actually wired up ────────────────────────────────────────────────────────────────
 
-def test_the_generator_check_is_wired_into_the_lesson_gate() -> None:
+def test_the_generator_check_is_wired_into_the_lesson_gate(monkeypatch, capsys) -> None:
     """A rule nothing runs documents an intention.
 
     Read off the parsed workflow's `run:` blocks rather than by substring over the file:
     `tests/test_workflow_env_is_used.py` records that a comment in a workflow satisfied a substring
     assertion five times in this repository, and this test is written after that was learned.
+
+    **Rewritten 2026-10-16, with the `dist` split.** The gate used to run `update_lessons_json.py`
+    + `build_lesson_pages.py` and fail on any `git diff`. That rule cannot survive the generated
+    site leaving `main`: `build_lesson_pages.py` writes `docs/lessons/**`, which after the cutover
+    must *not* be in the pull request, and `git diff` is blind to the untracked files it writes — so
+    the old rule would have gone permanently green while checking nothing, which is the failure mode
+    this whole file exists for one level up. The assertion is now "no generated file that stays on
+    `main` is stale", computed by `scripts/ci/check_dist_diff.py main-side`; the two path lists live
+    in that script, and `docs/maintainer/dist-branch-cutover.md` §1 is the evidence for each entry.
     """
     yaml = pytest.importorskip("yaml", reason="PyYAML reads the workflow")
     workflow = yaml.safe_load(
@@ -303,13 +319,28 @@ def test_the_generator_check_is_wired_into_the_lesson_gate() -> None:
     job = next(j for j in workflow["jobs"].values() if "steps" in j)
     runs = "\n".join(step.get("run", "") for step in job["steps"])
     assert "update_lessons_json.py" in runs, "the index generator is not run by the gate"
-    assert "build_lesson_pages.py" in runs, "the page generator is not run by the gate"
-    assert "git diff --quiet" in runs, (
-        "running the generators is not the check; the check is whether they changed anything"
+    assert "check_dist_diff.py main-side" in runs, (
+        "running the generators is not the check; the check is whether they changed a file that "
+        "stays on `main`"
     )
-    step = next(s for s in job["steps"] if "git diff --quiet" in (s.get("run") or ""))
-    assert "exit 1" in step["run"], "a stale generated file must fail the required check"
-    # and the failure has to name the fix
-    assert "commit what they wrote" in step["run"], (
-        "the error must say what to do, so the round trip is running two commands"
+    assert "build_lesson_pages.py" not in runs, (
+        "the page generator writes the generated site, which belongs to `dist` after the cutover — "
+        "running it here makes the checkout dirty for the right reason and the gate red for the "
+        "wrong one"
     )
+
+    # The verdict and the fix moved into the script the step calls. Both halves are still required:
+    # a check that cannot go red is not a check, and a failure that does not say what to do is the
+    # round trip this contract exists to remove.
+    sys.path.insert(0, str(REPO / "scripts" / "ci"))
+    import check_dist_diff as cdd  # noqa: PLC0415  (path inserted above)
+
+    monkeypatch.setattr(cdd, "_git", lambda *args: " M data/lessons.json\n?? new-file\n")
+    assert cdd.run_main_side() == 1, "a stale main-side generated file must fail the required check"
+    message = capsys.readouterr().out
+    assert "Fix: run" in message and "update_lessons_json.py" in message, (
+        f"the failure must name the commands that fix it:\n{message}"
+    )
+    # …and the same check has to stay quiet about what `dist` owns.
+    monkeypatch.setattr(cdd, "_git", lambda *args: "?? docs/lessons/zz-probe/index.html\n")
+    assert cdd.run_main_side() == 0, "the main-side check now fails on a file the publisher owns"
