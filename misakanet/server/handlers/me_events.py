@@ -7,8 +7,9 @@ own reuse-evidence step — the one flow that asks an agent to verify its contri
 answered `Unknown tool: misakanet_me_events` on a local install. Neither tool set contained the
 other.
 
-The evidence the tool returns (helpful votes, regression-benchmark citations, cross-node
-confirmation) is aggregated by the worker against its KV store and
+The evidence the tool returns (observed retrieval by distinct clients, helpful votes,
+regression-benchmark citations) is aggregated by the worker against its D1 `search_signals` table,
+KV store and
 `data/regression_queries.json`, so a checkout *cannot* compute it locally: it is a read of the
 caller's reuse evidence **from the hosted service**. This handler is that read, using the same MCP
 JSON-RPC client the repo's CLI already uses (`misakanet/remote.py`) rather than a second,

@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-10-16T11:37:06.611528+00:00",
+  "generated_at": "2026-10-16T16:55:12.156122+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "test: drop two `eval`s a code scanner is right about, and fix a recipe that expired",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3327",
-      "timestamp": "2026-10-16T10:19:50Z",
+      "title": "fix(evidence): E4 is observed, not declared — distinct clients, not a line in the lesson",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3358",
+      "timestamp": "2026-10-16T16:40:28Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "docs(dsh): record the E3 smoke re-run by revision, not by a byte count",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3326",
-      "timestamp": "2026-10-16T10:11:06Z",
+      "title": "feat(dsh-panel): show the corpus's most-retrieved lessons in the review panel",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3357",
+      "timestamp": "2026-10-16T16:31:36Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(main): release 2.44.0",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3318",
-      "timestamp": "2026-10-16T08:21:07Z",
+      "title": "chore(main): release 2.44.2",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3348",
+      "timestamp": "2026-10-16T16:22:47Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3320",
-      "timestamp": "2026-10-16T08:11:54Z",
+      "title": "docs(dist): the first run of the publisher is manual, and the doc said it was automatic",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3355",
+      "timestamp": "2026-10-16T16:21:43Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(ci): registry-drift-watch could never report the drift it detects",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3322",
-      "timestamp": "2026-10-16T08:10:41Z",
+      "title": "test(dsh): pin the localization red fixture to a commit, not to `origin/main`",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3352",
+      "timestamp": "2026-10-16T16:03:36Z",
       "source": "github"
     },
     {

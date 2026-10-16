@@ -255,6 +255,40 @@ def test_the_task_carries_its_idempotency_marker():
     assert qa.BOUNTY_MARKER.format(2254) in body
 
 
+# ── the task must state the rules that decide whether a PR can land ─────────
+#
+# Measured 2026-10-17: seven open pull requests (#3340–#3346, all forks from one account) answer
+# tasks like this one and every single one fails the required `DCO / Signed-off-by` check, so none
+# can merge however good the lesson is. The invite never mentioned sign-off. The same run also
+# produced two PRs claiming the *same* intake (#3344 and #3345 both cite #2760), which is the
+# ambiguity the `provenance.issue` rule in #3361 closes. A task that omits either rule sets up a
+# contributor to fail at the last step.
+
+def test_the_task_states_the_dco_rule_and_the_adopt_fallback():
+    body = qa.bounty_body(2254, [_item(2254, "a"), _item(2257, "b")], [])
+    assert "--signoff" in body, "the task does not tell contributors how to sign off"
+    assert "Signed-off-by" in body and "DCO" in body, "the required check is not named"
+    assert "/adopt" in body, "a contributor who will not sign off is not told what happens instead"
+    assert "docs/maintainer/adopt-fork-pr.md" in body, "the adoption path is not cited"
+    assert "Co-authored-by" in body, "the adopted PR's authorship credit is the whole point of /adopt"
+
+
+def test_the_task_states_one_intake_converts_to_one_lesson():
+    body = qa.bounty_body(2254, [_item(2254, "a"), _item(2257, "b")], [])
+    assert "provenance.issue" in body, "the field the conversion receipt reads is not named"
+    assert "provenance.related" in body, (
+        "a cluster of questions needs somewhere to put the ones the lesson does not convert"
+    )
+    assert "#3361" in body, "the gate rule that fails a second claim is not named"
+    assert "one intake converts to one lesson" in body.lower()
+
+
+def test_the_task_says_where_a_lesson_must_live():
+    """`lessons/<slug>.md` is read by nothing (`update_lessons_json.py: INDEXED_DIRS`)."""
+    body = qa.bounty_body(2254, [_item(2254, "a"), _item(2257, "b")], [])
+    assert "lessons/contrib/" in body, "the task does not name a directory the corpus reads"
+
+
 def test_a_lone_question_is_not_given_a_bounty():
     """A cluster is the unit one answer clears, and one question is not a cluster.
 

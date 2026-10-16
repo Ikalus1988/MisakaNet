@@ -58,10 +58,11 @@ pair into a served bundle and a graph row. It renders two things, on purpose in 
 | `conversation.chat.assistant-actions` (list entry `misakanet-verdict`) | 👍 Helpful / 👎 Not what I needed, beside the host's own Like/Dislike | the finalized assistant message is where the outcome is visible, and the only surface a human can judge from |
 
 The verdict is not cosmetic: `POST /api/helpful` is the only writer of the counter `misakanet_me_events`
-reports as `lesson_found_helpful`, so one click is what turns a private success into reuse evidence every
-later agent can read. 👍 sends the lesson id alone; 👎 also sends the search text — `/api/feedback` stores
-that query and an IP for 90 days, which is why the row says so before the click. Nothing votes
-automatically and abstaining is free.
+reports as `lesson_found_helpful`. That event is a hint, not the rung — since 2026-10-16 a vote is capped
+below `E4` at every count, because the reuse `E4` is about is observable at the transport layer and the
+person shown the button did not ask the question. 👍 sends the lesson id alone; 👎 also sends the search
+text — `/api/feedback` stores that query and an IP for 90 days, which is why the row says so before the
+click. Nothing votes automatically and abstaining is free.
 
 **Measured (2026-10-01, `dsh 0.2.0-rc.2`), installing the working tree rather than the published tarball:**
 

@@ -65,7 +65,7 @@ Agent 侧更常用 MCP：`misakanet_search` → `misakanet_get_lesson` → （�
 | `misakanet_write_lesson` | 结构化提交完整课程（`title`/`domain`/`problem`/`root_cause`/`fix`）→ 走 lesson-gate | **需 `Authorization: Bearer mcp_...`** |
 | `misakanet_preflight` | 高风险操作前的风险检查 | **需 Bearer** |
 | `misakanet_register` | 注册匿名节点 → 返回 `node_id` + token | 开放 |
-| `misakanet_me_events` | 取"课程被复用"的证据（E4 信号：helpful 票、基准引用、跨节点确认）| 开放（**刻意开放**：复用前应能自由核验信任证据）|
+| `misakanet_me_events` | 取"课程被复用"的证据（E4 = **观测到的**复用：`search_signals` 里 ≥2 个不同 `client_hint` 真的检索到过这篇；基准引用、helpful 票、课程正文里的 `verified by:` 行都只是 E3 提示 —— 引用只是沙箱级证据，票只是**提示**，正文自述是课程在说自己，三者任何数量都不给 E4：票自 2026-10-16、正文自述自 2026-10-17）| 开放（**刻意开放**：复用前应能自由核验信任证据）|
 
 `initialize` 与 `tools/list` 也开放（供 MCP registry 扫描）。
 
@@ -178,6 +178,19 @@ python3 scripts/queue_lesson.py \
 改代码前只需记住这几条；测试矩阵、门禁全表、部署细节、排错手册都在
 **`docs/agents/repo-operations.md`**。
 
+> **⚖️ 判断一切元素的第一性原理（owner 设定，2026-10-17；不要再回头对齐这条）**
+>
+> **以发展作为硬道理 + 减少用户摩擦**——两个**并列**的需求。任何元素（徽章、文档、门禁、脚本、
+> workflow、路线图条目、甚至一句话）的存在意义，都必须能回答：**它在为谁建立什么价值或信任？**
+>
+> 1. **能满足** → 留着；或者补足它、让它能。
+> 2. **不能满足** → 看**能不能改**。
+> 3. **不能改** → **删掉**。
+>
+> 判据是上面那两句，**不是**"历史上一直有""看起来专业"或"删了会不会可惜"。不要为保留一个已经
+> 无意义的元素找理由，也不要为了显得干净而砍掉仍在承重的东西。详见
+> `docs/maintainer/product-evaluation-lens.md`（含产品功能评估的三问）。
+
 ```bash
 pip install -r requirements.txt                 # core 依赖（Python 侧零外部依赖是设计目标）
 pytest tests/ -v --tb=short                      # Python 测试（与 CI 同命令）
@@ -209,5 +222,7 @@ python3 scripts/doctor.py                        # 仓库自检
   三条标准改动流程、部署与数据、排错手册）· `docs/maintainer/intake-triage.md`（intake 处置 SOP，
   **含"修复后必须给报料者回执"铁律**）· `docs/agents/content-injection-defense.md`（注入威胁模型与四层防护）
   · `docs/maintainer/credentials-and-environments.md`（**凭据与环境**：哪个密钥放在哪个 environment、
-  谁能读、什么时候轮换）· `docs/maintainer/handoff-*.md`（逐轮交接与待办快照）
+  谁能读、什么时候轮换）· `docs/maintainer/product-evaluation-lens.md`（**产品功能评估**：动手前先答
+  谁操作/谁受益/在什么场合；能观察的信号不要发问卷——2026-10-16 由"人类投票"这件事写成的清单）
+  · `docs/maintainer/handoff-*.md`（逐轮交接与待办快照）
 - **架构/接口**：`ARCHITECTURE.md` · `API.md` · `docs/`（基线、基准、registry 维护）

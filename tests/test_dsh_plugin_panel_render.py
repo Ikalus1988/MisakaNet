@@ -37,7 +37,8 @@ CLIENT = REPO / "lib" / "client.js"
 HARNESS = REPO / "tests" / "dsh_panel_render_harness.cjs"
 
 
-def _render(client_file: Path = CLIENT, analytics: str = "full", locale: str = "en") -> dict:
+def _render(client_file: Path = CLIENT, analytics: str = "full", locale: str = "en",
+            coverage: str = "full") -> dict:
     node = shutil.which("node")
     if node is None:
         pytest.skip("node renders the client half")
@@ -47,6 +48,8 @@ def _render(client_file: Path = CLIENT, analytics: str = "full", locale: str = "
     # Which `/api/analytics` body the harness answers with: the live shape, an empty `top_lessons`, or a
     # body with no such key. Section ⑥'s empty-state rule needs both of the last two.
     env["DSH_PANEL_ANALYTICS"] = analytics
+    # The same three choices for section ⑦'s `/api/insights/lesson-coverage` body.
+    env["DSH_PANEL_COVERAGE"] = coverage
     done = subprocess.run([node, str(HARNESS), str(client_file)],
                           capture_output=True, text=True, timeout=120, env=env)
     assert done.returncode == 0, done.stderr[-800:]
@@ -78,9 +81,10 @@ def test_the_click_says_what_it_changed_in_the_words_the_project_uses():
         "the count from `/api/helpful` must land in the trust row, not only in the click's own line: "
         + receipt[receipt.find("external reuse evidence"):][:120])
     assert "2 human confirmations" in receipt and "E4" in receipt, (
-        "the confirmation repeats the rule in the project's vocabulary (one is the reuse event, the "
-        "second is what agents read as E4)")
-    assert "→ E4" in receipt, "a row past the threshold carries the marker the acceptance list pins"
+        "the confirmation repeats the rule in the project's vocabulary: a vote is a hint, and the E4 "
+        "rung comes from observable reuse rather than the count")
+    assert "→ E4" not in receipt, (
+        "a vote count must not be marked as the rung — that mapping is what 2026-10-16 removed")
     assert "not voted" not in receipt, (
         "the row must stop offering a vote it already has: one sighting, one vote")
     assert "1 lesson reused · 1 vote ·" in receipt, (
@@ -173,12 +177,12 @@ def pre_fix_client(tmp_path_factory) -> Path:
 
 
 def _mutation(tmp_path: Path, source: str, name: str, analytics: str = "full",
-              locale: str = "en") -> dict:
+              locale: str = "en", coverage: str = "full") -> dict:
     """Render a deliberately broken copy. Callers assert the mutation took: this helper cannot tell a
     substitution that landed from one that quietly missed, and a missed one would prove nothing."""
     path = tmp_path / (name + ".js")
     path.write_text(source, encoding="utf-8")
-    return _render(path, analytics=analytics, locale=locale)
+    return _render(path, analytics=analytics, locale=locale, coverage=coverage)
 
 
 def _label_problems(result: dict, locale: str) -> list[str]:
@@ -413,3 +417,267 @@ def test_section_6_reads_each_dictionary_in_its_own_language(pre_fix_client):
     # Red proof: the pre-fix bytes declare no section ⑥ copy in either language.
     pre = _render(pre_fix_client, locale="zh")
     assert not pre["hotWords"].get("rule") and not pre["hotWords"].get("limit")
+
+
+# ── section ⑦: the coverage board, and the four ways it could lie ────────────
+#
+# Section ⑥ ranks what searches *brought back*. This one ranks what they could **not** find: the coverage
+# board's `gaps`, ordered by `unsolved30d` (unanswered searches in the last 30 days), each row carrying the
+# number of published lessons that match the topic. It is the other half of the owner's question, and the
+# panel now has two rankings — so it also has to say, where the reader meets them, that they are two
+# different measurements rather than one sorted twice. Four rules, each replayed against the pinned pre-fix
+# bytes *and* against a mutated copy that breaks exactly that rule.
+
+#: The pre-fix bytes for **this** section, by commit and never by branch: the `main` tip this change was cut
+#: from, which already carries section ⑥ and does not carry section ⑦. That isolation is the point — the red
+#: proof below shows the *new* rules failing, not the whole panel missing. `origin/main` would become the
+#: fixed bytes the moment this lands, which is how a fixture on this repository went red on `main`.
+COVERAGE_PRE_FIX_SHA = "babf2edf4403f7261f0a352c83d8fc35b6a384bf"
+
+#: What section ⑦'s rule must say in each language: which measurement it is, and how it differs from the
+#: ranking above. A translation may phrase these differently; it may not drop one.
+CONTRAST_PHRASES = {
+    "en": ("brought back", "did not find", "unanswered"),
+    "zh": ("带回来了什么", "没找到什么", "没有拿到答案"),
+}
+
+
+def _coverage_pre_fix_source(repo: Path = REPO) -> str:
+    """The coverage section's pre-fix `lib/client.js`, by commit SHA (main's fixture, own commit)."""
+    showed = subprocess.run(["git", "show", f"{COVERAGE_PRE_FIX_SHA}:lib/client.js"],
+                            cwd=repo, capture_output=True, text=True, timeout=60)
+    if showed.returncode != 0:
+        pytest.skip(
+            "the pre-fix fixture did not run: this clone does not carry " + COVERAGE_PRE_FIX_SHA[:12]
+            + ". Run `git fetch origin " + COVERAGE_PRE_FIX_SHA + "` (or use a full clone) to replay the "
+            "red proof; the checks above it ran and are the reason this is a skip rather than a failure.")
+    return showed.stdout
+
+
+@pytest.fixture(scope="session")
+def coverage_pre_fix_client(tmp_path_factory) -> Path:
+    """The pinned pre-fix bundle on disk, once per session."""
+    source = _coverage_pre_fix_source()
+    assert "COVERAGE_ENDPOINT" not in source and 'T("panel.coverage")' not in source, (
+        f"{COVERAGE_PRE_FIX_SHA[:12]} already contains section ⑦ or its read, so it cannot replay its "
+        "absence; pick the commit before the change and update COVERAGE_PRE_FIX_SHA")
+    # And the isolation the docstring promises: this fixture is *after* section ⑥, so a red proof here can
+    # only be about ⑦.
+    assert 'T("panel.hot")' in source, (
+        f"{COVERAGE_PRE_FIX_SHA[:12]} predates section ⑥ too, so a failure below would not isolate ⑦")
+    path = tmp_path_factory.mktemp("coverage-pre-fix") / "client.js"
+    path.write_text(source, encoding="utf-8")
+    return path
+
+
+def _coverage_ranking_problems(result: dict) -> list[str]:
+    """Rule 1: five rows, in the payload's order, each paired with its own two numbers."""
+    problems: list[str] = []
+    rows, fixture = result["coverageRows"], result["coverageFixture"]
+    if not rows:
+        return ["section ⑦ rendered no ranking at all, so nothing below it is being tested"]
+    if len(rows) != 5:
+        problems.append(f"section ⑦ shows 5 rows; it rendered {len(rows)}")
+    families = [row.split("  ")[0] for row in rows]
+    if families != [entry["taskFamily"] for entry in fixture[:5]]:
+        problems.append("the rows are not the payload's own order: " + repr(families))
+    for row, entry in zip(rows, fixture[:5]):
+        for value in (entry["taskFamily"], str(entry["lessonCount"]), str(entry["unsolved30d"])):
+            if value not in row:
+                problems.append(f"row {row!r} does not carry the payload's own {value!r} from {entry!r}")
+    for entry in fixture[5:]:
+        if entry["taskFamily"] in " ".join(rows):
+            problems.append("a topic past the cap reached the reader: " + entry["taskFamily"])
+    published = str(result["coveragePublished"])
+    if published not in result["coverageTotals"]:
+        problems.append("the totals line does not carry the payload's published count: "
+                        + repr(result["coverageTotals"]))
+    return problems
+
+
+@pytest.mark.parametrize("locale", ["en", "zh"])
+def test_section_7_renders_the_coverage_boards_own_ranking(locale, coverage_pre_fix_client, tmp_path):
+    """The topics the corpus cannot answer, in the endpoint's order, with the corpus size behind each."""
+    result = _render(locale=locale)
+    assert result["coverageGets"] == 1, "the fixture answered, so the read happened exactly once"
+    assert _coverage_ranking_problems(result) == [], _coverage_ranking_problems(result)
+
+    # Red proof 1: the pinned pre-fix bytes render no such section (they carry ⑥, not ⑦).
+    assert _coverage_ranking_problems(_render(coverage_pre_fix_client, locale=locale)) != [], (
+        "the pre-fix bytes pass this rule, so it does not test the change")
+
+    # Red proof 2: the rows are re-sorted by lesson count — the one order this ranking is *not*. It is the
+    # mistake a reader is most likely to make by eye, because `lessonCount` looks like a size ranking.
+    source = CLIENT.read_text(encoding="utf-8")
+    resort = source.replace(
+        "coverage.gaps.slice(0, COVERAGE_LIMIT)",
+        "coverage.gaps.slice(0, COVERAGE_LIMIT).slice().sort(function (a, b) {"
+        " return b.lessonCount - a.lessonCount; })")
+    assert resort != source, "the resort mutation did not take — update it with the call site"
+    assert _coverage_ranking_problems(
+        _mutation(tmp_path, resort, "resort-" + locale, locale=locale)) != []
+    # Red proof 3: every row wears the *first* topic's name — one family's label over another's numbers.
+    # (Not a slot swap: the two templates read different slots — `{count}` under en, `{n} {unit}` under zh —
+    # so a mutation that broke only one of them would pass in the other language and prove nothing.)
+    unpaired = source.replace('h("span", {}, gap.taskFamily)',
+                              'h("span", {}, coverage.gaps[0].taskFamily)')
+    assert unpaired != source, "the pairing mutation did not take — update it with the call site"
+    assert _coverage_ranking_problems(
+        _mutation(tmp_path, unpaired, "unpaired-" + locale, locale=locale)) != []
+
+
+def _coverage_contrast_problems(result: dict, locale: str) -> list[str]:
+    """Rule 2: the rule says which measurement this is and how it differs from the ranking above."""
+    problems: list[str] = []
+    rule = result["coverageRule"]
+    if not rule:
+        return ["section ⑦ declares no rule sentence, so two rankings sit unexplained side by side"]
+    if rule != result["coverageWords"].get("rule"):
+        problems.append("the rendered rule is not the dictionary's own sentence: " + repr(rule))
+    for phrase in CONTRAST_PHRASES[locale]:
+        if phrase not in rule:
+            problems.append(f"section ⑦'s rule never says {phrase!r}: " + repr(rule))
+    if result["coverageTitle"] == result["hotTitle"]:
+        problems.append("the two rankings wear the same title: " + repr(result["coverageTitle"]))
+    if rule == result["hotWords"].get("rule"):
+        problems.append("section ⑦ reused section ⑥'s rule sentence, so the difference is unstated")
+    return problems
+
+
+@pytest.mark.parametrize("locale", ["en", "zh"])
+def test_section_7_says_how_it_differs_from_the_ranking_above(locale, coverage_pre_fix_client, tmp_path):
+    """Two rankings in one panel must not read as one measured twice: the rule states the difference.
+
+    `#3357`'s section ⑥ counts retrievals ("what searches brought back"); this counts unanswered searches
+    ("what they did not find"). A reader who is not told that will assume the second is a re-sort of the
+    first — the exact confusion two adjacent rankings invite, which is why this is a gate and not a note.
+    """
+    result = _render(locale=locale)
+    assert _coverage_contrast_problems(result, locale) == [], _coverage_contrast_problems(result, locale)
+    # The sections are keyed apart, not merely worded apart: a shared React key is the defect underneath.
+    source = CLIENT.read_text(encoding="utf-8")
+    for key in ('key: "s6"', 'key: "s7"', 'key: "s6r"', 'key: "s7r"'):
+        assert key in source, f"the panel lost {key}, so the two sections are not keyed apart"
+
+    # Red proof 1: the pinned pre-fix bytes carry ⑥ and not ⑦, so there is no rule to contrast with.
+    assert _coverage_contrast_problems(_render(coverage_pre_fix_client, locale=locale), locale) != [], (
+        "the pre-fix bytes pass this rule, so it does not test the change")
+    # Red proof 2: the contrast sentence is dropped from the rule, which is what "one sorted twice" looks
+    # like — the numbers stay right and the reader is left to guess what they are.
+    dropped = source.replace(*{
+        "en": ("The ranking above counts what searches brought back; this one counts what they did not find. ",
+               ""),
+        "zh": ("上面那一节数的是检索带回来了什么；这一节数的是没找到什么。", ""),
+    }[locale])
+    assert dropped != source, "the contrast mutation did not take — update it with the dictionary"
+    assert _coverage_contrast_problems(
+        _mutation(tmp_path, dropped, "flat-" + locale, locale=locale), locale) != []
+
+
+@pytest.mark.parametrize("locale", ["en", "zh"])
+def test_section_7_never_reads_as_an_opinion(locale, coverage_pre_fix_client):
+    """`unsolved30d` is a count of searches, so no word of this section may dress it as approval."""
+    result = _render(locale=locale)
+    assert result["coverageRows"], "the fixture ranks six topics, so the section must show some"
+    rendered = " ".join([result["coverageTitle"], result["coverageRule"], result["coverageTotals"]]
+                        + result["coverageRows"]).lower()
+    for banned in OPINION_WORDS[locale]:
+        assert banned not in rendered, (
+            f"section ⑦ says {banned!r}, which reads a count of unanswered searches as an opinion: "
+            + repr(rendered))
+    # Non-vacuous in the other direction too: the pre-fix bytes have no section, so the rule above cannot
+    # pass by there being nothing to scan.
+    assert not _render(coverage_pre_fix_client, locale=locale)["coverageRows"], (
+        "the pre-fix bytes render rows, so the scan above proves nothing about this change")
+
+
+def _coverage_no_ranking_problems(result: dict) -> list[str]:
+    """Rule 3: an absent or empty `gaps` is stated, never a corpus total over rows of nothing."""
+    problems: list[str] = []
+    none_sentence = result["coverageWords"].get("none")
+    if not none_sentence:
+        return ["section ⑦ declares no 'no ranking' sentence, so an empty payload has nothing to say"]
+    if result["coverageEmpty"] != none_sentence:
+        problems.append("an unranked payload does not render the dictionary's 'no ranking' sentence: "
+                        + repr(result["coverageEmpty"]))
+    if result["coverageRows"]:
+        problems.append("an unranked payload still rendered rows: " + repr(result["coverageRows"]))
+    if result["coverageRule"] or result["coverageTotals"]:
+        problems.append("an unranked payload still described a corpus: "
+                        + repr(result["coverageRule"] + " | " + result["coverageTotals"]))
+    return problems
+
+
+@pytest.mark.parametrize("mode", ["empty", "absent"])
+def test_section_7_never_describes_a_corpus_over_no_ranking(mode, coverage_pre_fix_client):
+    """`gaps: []` and a body with no such key are the same fact: there is no ranking to stand a total on."""
+    result = _render(coverage=mode)
+    assert result["coverageGets"] == 1, "the fixture answered, so the read happened exactly once"
+    assert _coverage_no_ranking_problems(result) == [], _coverage_no_ranking_problems(result)
+
+    assert _coverage_no_ranking_problems(_render(coverage_pre_fix_client, coverage=mode)) != [], (
+        "the pre-fix bytes pass this rule, so it does not test the change")
+
+
+def test_the_no_ranking_rule_can_go_red(tmp_path):
+    """The one mutation of this rule that a render can see: an empty ranking collapsed into a corpus.
+
+    Only `empty` is mutated, and that is a statement about the code rather than a shortcut. With the key
+    *gone* (`absent`), `setCoverage(body)` reaches `coverage.gaps.slice` and throws inside the promise
+    handler, where the effect's own `.catch` lands on the very "no ranking" sentence this rule asks for:
+    the defect is real but unobservable in a render, so a red proof built on it would prove nothing. The
+    `empty` half is observable — the endpoint answered, `gaps` is `[]`, and the collapsed client prints a
+    corpus total above rows that do not exist.
+    """
+    source = CLIENT.read_text(encoding="utf-8")
+    collapsed = source.replace("setCoverage(ranked && ranked.length ? body : null);", "setCoverage(body);")
+    assert collapsed != source, "the empty-state mutation did not take — update it with the call site"
+    broken = _mutation(tmp_path, collapsed, "collapse-cov", coverage="empty")
+    assert broken["coverageTotals"], (
+        "the mutation was supposed to leave the totals line standing over no rows: "
+        + repr(broken["coverageTotals"]))
+    assert _coverage_no_ranking_problems(broken) != []
+
+
+def _coverage_schedule_problems(source: str, result: dict) -> list[str]:
+    """Rule 4: the read is scheduled (not awaited) and asked exactly once."""
+    problems: list[str] = []
+    if result["coverageGets"] != 1:
+        problems.append(f"expected exactly one coverage request; saw {result['coverageGets']}: "
+                        + repr(result["gets"]))
+    if "askedCoverage.current" not in source:
+        problems.append("the coverage read has no once-only ref guard, so a re-running effect re-asks")
+    loading = result["coverageWords"].get("loading")
+    if not loading:
+        problems.append("no loading sentence is declared for section ⑦")
+    elif loading not in result["firstPaint"]:
+        problems.append("the first paint carries no loading sentence, so the read is on the render path")
+    if result["coverageRule"] and result["coverageRule"] in result["firstPaint"]:
+        problems.append("the ranking is already in the first paint, i.e. the render awaited it")
+    leaked = [entry["taskFamily"] for entry in result["coverageFixture"]
+              if entry["taskFamily"] in result["firstPaint"]]
+    if leaked:
+        problems.append("a ranked topic is in the first paint: " + repr(leaked))
+    return problems
+
+
+def test_section_7_is_scheduled_and_asked_once(coverage_pre_fix_client, tmp_path):
+    """One public GET of the coverage board per panel, after the paint — never during it."""
+    result = _render()
+    assert _coverage_schedule_problems(CLIENT.read_text(encoding="utf-8"), result) == [], (
+        _coverage_schedule_problems(CLIENT.read_text(encoding="utf-8"), result))
+
+    assert _coverage_schedule_problems(_coverage_pre_fix_source(), _render(coverage_pre_fix_client)) != [], (
+        "the pre-fix bytes pass this rule, so it does not test the change")
+
+    # Red proof 2: drop the guard *and* let the effect re-run on a vote — the pair the guard exists for.
+    source = CLIENT.read_text(encoding="utf-8")
+    unguarded = source.replace("if (askedCoverage.current) return;\n\t\t\t\taskedCoverage.current = true;\n", "")
+    unguarded = unguarded.replace("setCoverage(null); });\n\t\t\t}, []);",
+                                  "setCoverage(null); });\n\t\t\t}, [panelVotes]);")
+    assert unguarded != source, "the guard mutation did not take — update it with the effect"
+    assert "askedCoverage.current" not in unguarded
+    broken = _mutation(tmp_path, unguarded, "unguarded-coverage")
+    assert broken["coverageGets"] > 1, (
+        "the mutation was supposed to make the effect re-ask; it measured " + str(broken["coverageGets"]))
+    assert _coverage_schedule_problems(unguarded, broken) != []

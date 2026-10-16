@@ -274,6 +274,55 @@ function analyticsBody() {
 	return ANALYTICS_FIXTURE;
 }
 
+/**
+ * `/api/insights/lesson-coverage`'s real shape, trimmed to what section ⑦ renders: the top six of the
+ * live `gaps` array as it answered on 2026-10-16 (families, `lessonCount` and `unsolved30d` copied from
+ * the endpoint, order preserved — it is `unsolved30d` descending), plus the `metrics` its totals line
+ * reads.
+ *
+ * Three properties are load-bearing:
+ *
+ * * **The order is the payload's, not a sort.** `python-env` (66 lessons, 22 unanswered) ranks above
+ *   `ci-pipeline` (95 lessons, 21 unanswered), so a render that re-sorted by lesson count, or that paired
+ *   a family with a neighbouring row's numbers, comes out in a different order and fails.
+ * * **Six rows for a panel that shows five.** `crawler-block` must not reach the reader, which pins the cap.
+ * * **It is the *other* ranking, not section ⑥ re-sorted.** These rows are lesson *shortages*; the
+ *   analytics fixture's rows are lesson *retrievals*. A section that rendered one payload's order under the
+ *   other's heading would satisfy neither this fixture nor that one.
+ */
+const COVERAGE_FIXTURE = {
+	success: true,
+	available: true,
+	signalsAvailable: true,
+	generatedAt: "2026-10-16T15:34:38.757Z",
+	metrics: { totalLessons: 491, publishedLessons: 451, totalFamilies: 12, coveredFamilies: 12,
+		coveragePercent: 100, gapCount: 11, unsolvedFamilyCount: 13, staleLessonCount: 4 },
+	gaps: [
+		{ taskFamily: "github-auth", lessonCount: 128, coverageStatus: "needs-review", unsolved7d: 3, unsolved30d: 35, lastSeen: "2026-10-11" },
+		{ taskFamily: "agent-tooling", lessonCount: 118, coverageStatus: "needs-review", unsolved7d: 0, unsolved30d: 29, lastSeen: "2026-09-30" },
+		{ taskFamily: "python-env", lessonCount: 66, coverageStatus: "needs-review", unsolved7d: 2, unsolved30d: 22, lastSeen: "2026-10-12" },
+		{ taskFamily: "ci-pipeline", lessonCount: 95, coverageStatus: "needs-review", unsolved7d: 0, unsolved30d: 21, lastSeen: "2026-09-30" },
+		{ taskFamily: "cloudflare-worker", lessonCount: 26, coverageStatus: "needs-review", unsolved7d: 0, unsolved30d: 10, lastSeen: "2026-09-30" },
+		{ taskFamily: "crawler-block", lessonCount: 21, coverageStatus: "needs-review", unsolved7d: 0, unsolved30d: 7, lastSeen: "2026-09-30" },
+	],
+};
+
+/**
+ * Which coverage payload this run answers with. `full` is the live shape; `empty` and `absent` are the two
+ * ways the ranking can be missing, and both must render the same "no ranking" sentence rather than a corpus
+ * total standing over rows of nothing.
+ */
+const COVERAGE_MODE = process.env.DSH_PANEL_COVERAGE || "full";
+function coverageBody() {
+	if (COVERAGE_MODE === "empty") return Object.assign({}, COVERAGE_FIXTURE, { gaps: [] });
+	if (COVERAGE_MODE === "absent") {
+		const withoutRanking = Object.assign({}, COVERAGE_FIXTURE);
+		delete withoutRanking.gaps;
+		return withoutRanking;
+	}
+	return COVERAGE_FIXTURE;
+}
+
 function createEnvironment(locale, mod) {
 	const dicts = Object.create(null);
 	let active = locale || "en";
@@ -313,7 +362,8 @@ function createEnvironment(locale, mod) {
 			status: 200,
 			json: () => Promise.resolve(target.indexOf("/api/helpful") >= 0
 				? { lesson_id: "pip-timeout", count: 2 }
-				: (target.indexOf("/api/analytics") >= 0 ? analyticsBody() : {})),
+				: (target.indexOf("/api/analytics") >= 0 ? analyticsBody()
+					: (target.indexOf("/api/insights/lesson-coverage") >= 0 ? coverageBody() : {}))),
 		});
 	};
 
@@ -559,6 +609,37 @@ setImmediate(() => {
 			noCount: env.word("panel.hot.noCount"),
 			retrievalUnit: env.word("unit.retrieval"),
 			retrievalUnits: env.word("unit.retrievals"),
+		},
+		// Section ⑦, read the same way and for the same reason: its own keys (`s7*` — section ⑥ owns
+		// `s6*`), its own rows, and the payload's own order rather than a re-sort of ⑥'s.
+		coverageTitle: text(env.find("s7")),
+		coverageRule: text(env.find("s7rule")),
+		coverageTotals: text(env.find("s7t")),
+		coverageRows: (() => {
+			const box = env.find("s7r");
+			return box ? childrenOf(box).map((row) => childrenOf(row).map(text).join("  ")) : [];
+		})(),
+		coverageLoading: text(env.find("s7w")),
+		coverageEmpty: text(env.find("s7e")),
+		coverageGets: env.gets.filter((u) => u.indexOf("/api/insights/lesson-coverage") >= 0).length,
+		// The topics the payload really carried, so the order, the pairing and the cap are checked against
+		// the endpoint's own rows. `empty` and `absent` answer `[]`.
+		coverageFixture: coverageBody().gaps || [],
+		// The published count the totals line reads, from the same payload.
+		coveragePublished: coverageBody().metrics ? coverageBody().metrics.publishedLessons : null,
+		coverageWords: {
+			title: env.word("panel.coverage"),
+			rule: env.word("panel.coverage.rule"),
+			loading: env.word("panel.coverage.loading"),
+			none: env.word("panel.coverage.none"),
+			totals: env.word("panel.coverage.totals"),
+			lessonsTpl: env.word("panel.coverage.lessonsTpl"),
+			unsolvedTpl: env.word("panel.coverage.unsolvedTpl"),
+			footnote: env.word("panel.footnote"),
+			lessonUnit: env.word("unit.lesson"),
+			lessonUnits: env.word("unit.lessons"),
+			searchUnit: env.word("unit.search"),
+			searchUnits: env.word("unit.searches"),
 		},
 	}, null, 0) + "\n");
 });

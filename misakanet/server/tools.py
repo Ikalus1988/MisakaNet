@@ -621,8 +621,9 @@ TOOLS = [
         # lack this tool while the hosted endpoint had it, so the skill's reuse-evidence step — the
         # one flow that verifies a contribution was actually reused — answered "Unknown tool" on a
         # local install, and neither surface's tool set contained the other. It is a proxy of the
-        # hosted tool, because the evidence it returns is aggregated server-side (helpful votes,
-        # regression citations, cross-node confirmation) and no checkout can compute it locally.
+        # hosted tool, because the evidence it returns is aggregated server-side (observed retrieval
+        # by distinct clients, helpful votes, regression citations) and no checkout can compute it
+        # locally.
         #
         # The description below is the hosted definition verbatim (workers/register-proxy-sw.js,
         # MCP_TOOLS) followed by the local operating contract every stdio tool carries. Keeping the
@@ -630,13 +631,17 @@ TOOLS = [
         # the two surfaces cannot start teaching different behaviour for one tool name.
         "name": "misakanet_me_events",
         "description": (
-            "[READ-ONLY EVIDENCE] Return evidence of a lesson being reused (E4 signals): "
-            "helpful votes, regression-benchmark citations, and cross-node confirmation. Use "
-            "to check whether a lesson is proven by real usage, not just self-reported. "
-            "Provide lesson_id or lesson_path — if neither is supplied the tool returns "
-            "{error}. Semantically 'misakanet_get_my_events' (evidence for the lessons your "
-            "node submitted/used); kept as me_events for backward compatibility. No auth "
-            "required (read-only, rate-limited).\n"
+            "[READ-ONLY EVIDENCE] Return evidence of a lesson being reused. E4 is observed "
+            "reuse: `search_signals` shows two or more distinct clients actually retrieved "
+            "the lesson — a count of requests, never of prose. Regression-benchmark "
+            "citations, helpful votes and a lesson's own `verified by:` line are E3 hints: a "
+            "citation is sandbox-level evidence, a vote is one person's opinion, and a "
+            "provenance line is the lesson talking about itself, so none of them can confer "
+            "E4. Use to check whether a lesson is proven by real usage, not just "
+            "self-reported. Provide lesson_id or lesson_path — if neither is supplied the "
+            "tool returns {error}. Semantically 'misakanet_get_my_events' (evidence for the "
+            "lessons your node submitted/used); kept as me_events for backward compatibility. "
+            "No auth required (read-only, rate-limited).\n"
             "Returns: object {lesson_id, events: [{type, count|queries|sources, "
             "evidence_level}], evidence: 'E0'|'E3'|'E4', note}.\n"
             "Example: misakanet_me_events(lesson_id='dco-auto-fix-workflow')\n"
