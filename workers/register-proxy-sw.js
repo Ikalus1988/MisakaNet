@@ -562,7 +562,7 @@ const MCP_TOOLS = [
   },
   {
     name: "misakanet_me_events",
-    description: "[READ-ONLY EVIDENCE] Return evidence of a lesson being reused: cross-node confirmation is the observed E4 signal; regression-benchmark citations and helpful votes are E3 — a curated-query citation is sandbox-level evidence, and a vote is one person's opinion recorded as a hint, never E4. Use to check whether a lesson is proven by real usage, not just self-reported. Provide lesson_id or lesson_path — if neither is supplied the tool returns {error}. Semantically 'misakanet_get_my_events' (evidence for the lessons your node submitted/used); kept as me_events for backward compatibility. No auth required (read-only, rate-limited).\nReturns: object {lesson_id, events: [{type, count|queries|sources, evidence_level}], evidence: 'E0'|'E3'|'E4', note}.\nExample: misakanet_me_events(lesson_id='dco-auto-fix-workflow')",
+    description: "[READ-ONLY EVIDENCE] Return evidence of a lesson being reused. E4 is observed reuse: `search_signals` shows two or more distinct clients actually retrieved the lesson — a count of requests, never of prose. Regression-benchmark citations, helpful votes and a lesson's own `verified by:` line are E3 hints: a citation is sandbox-level evidence, a vote is one person's opinion, and a provenance line is the lesson talking about itself, so none of them can confer E4. Use to check whether a lesson is proven by real usage, not just self-reported. Provide lesson_id or lesson_path — if neither is supplied the tool returns {error}. Semantically 'misakanet_get_my_events' (evidence for the lessons your node submitted/used); kept as me_events for backward compatibility. No auth required (read-only, rate-limited).\nReturns: object {lesson_id, events: [{type, count|queries|sources, evidence_level}], evidence: 'E0'|'E3'|'E4', note}.\nExample: misakanet_me_events(lesson_id='dco-auto-fix-workflow')",
     inputSchema: {
       type: "object",
       properties: {
@@ -4151,10 +4151,12 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
   }
 
   // PRD ③ Coogen 借鉴 (Phase 1): E4 reuse evidence — aggregate the signals that
-  // show a lesson was actually reused: cross-node confirmation and
-  // regression-benchmark citations. Helpful votes are reported alongside them as
-  // a subjective hint, never as the rung. Turns "self-reported E4" into
-  // queryable facts.
+  // show a lesson was actually reused. E4 has exactly one producer, and it is an
+  // observation: `lesson_retrieved_by_distinct_clients`, counted from
+  // `search_signals.client_hint` (below). Regression-benchmark citations,
+  // helpful votes and a lesson's own `verified by:` line are reported alongside
+  // it as E3 hints — none of them can confer the rung. Turns "self-reported E4"
+  // into queryable facts.
   if (toolName === "misakanet_me_events") {
     // Same anonymous read burst window as search/get_lesson (one counter per address per minute).
     if (!authToken) {
@@ -4181,7 +4183,8 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
     // cannot evaluate the answer. A vote is a survey instrument; the thing it tries to measure —
     // was this lesson reused, and did it work — is observable at the transport layer, and
     // surveying what you can observe is a category error. The E4 it conferred was an artefact of
-    // politeness, so E4 now rests only on observed reuse (lesson_confirmed_by, below).
+    // politeness, so E4 now rests on the observed retrieval count below
+    // (`lesson_retrieved_by_distinct_clients`), not on a vote.
     //
     // The vote endpoint and the counter are untouched: same POST, same `helpful:<lesson_id>` key,
     // same count. This is about what a vote is worth, not whether it can be cast.
@@ -4216,28 +4219,59 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
         }
       }
     } catch (_) {}
-    // 3. Cross-node confirmation: lessons whose provenance shows multiple
-    //    contributors (parsed from frontmatter "verified_by"/provenance).
+    // 3. Observed reuse — the E4 producer. How many *distinct* clients actually retrieved this
+    //    lesson, counted from the one row `recordSearchSignal` writes per completed search.
+    //    `client_hint` is written by the worker from the request (`args.client_id` /
+    //    `X-MisakaNet-Client`, salted-hashed), so nobody can put it there by editing a lesson:
+    //    the cost of one more "client" is one more real retrieval, not one more typed line.
+    try {
+      const clients = await countDistinctRetrievingClients(env, { lessonId, lessonPath: args.lesson_path });
+      if (clients !== null && clients > 0) {
+        // Below the floor the event is still reported — a single observed client is information,
+        // and hiding it would make "1" and "the table is empty" look the same. It just is not E4.
+        events.push({
+          type: "lesson_retrieved_by_distinct_clients",
+          count: clients,
+          evidence_level: clients >= E4_MIN_DISTINCT_CLIENTS ? "E4" : "E3",
+        });
+      }
+    } catch (_) {}
+    // 4. Declared provenance — a hint, and never E4.
+    //
+    // This reads `verified by:` / `contributors:` out of the lesson's own body. It is a
+    // *declaration*, not an observation: anyone who can edit the lesson can type the line, which
+    // makes it cheaper to fake than the vote next to it and strictly weaker than the retrieval
+    // count above. So it is reported as information at E3 and cannot confer E4. It used to emit
+    // E4, and the comment above it claimed "provenance shows multiple contributors" while the
+    // code accepted a single name and could report the same line twice — a comment describing
+    // behaviour that was not there. Names are de-duplicated for the same reason.
     try {
       const lesson = await fetchLessonContent(env, args.lesson_path, lessonId);
       if (lesson?.content) {
         const verifiedBy = lesson.content.match(/verified\s+by\s*[:\s]+([^\n]+)/i);
         const contributors = lesson.content.match(/contributors?\s*[:\s]+([^\n]+)/i);
-        const names = [verifiedBy?.[1], contributors?.[1]].filter(Boolean).map(s => s.trim().slice(0, 60));
+        const names = [...new Set(
+          [verifiedBy?.[1], contributors?.[1]]
+            .filter(Boolean)
+            .map(s => s.trim().slice(0, 60))
+            .filter(Boolean)
+        )];
         if (names.length > 0) {
-          events.push({ type: "lesson_confirmed_by", sources: names, evidence_level: "E4" });
+          events.push({ type: "lesson_confirmed_by", sources: names, evidence_level: "E3" });
         }
       }
     } catch (_) {}
 
     // E4 is conferred by an E4-level *observed* signal being present — never by counting lower
-    // ones. Counting was how two votes (or a vote plus a citation) added up to proof.
+    // ones, and never by prose. Counting was how two votes (or a vote plus a citation) added up to
+    // proof; prose was how the lesson itself could award the rung. Exactly one event type can reach
+    // E4 now: `lesson_retrieved_by_distinct_clients`.
     const e4Ready = events.some(e => e.evidence_level === "E4");
     return {
       lesson_id: lessonId,
       events,
       evidence: events.length > 0 ? (e4Ready ? "E4" : events[0]?.evidence_level || "E0") : "E0",
-      note: "E4 = observed reuse (cross-node confirmation), not a report. Helpful votes are one person's opinion, recorded as an E3 hint; they cannot confer E4.",
+      note: "E4 = observed reuse: two or more distinct clients actually retrieved this lesson (search_signals), not a report. Helpful votes, regression citations and a lesson's own `verified by:` line are E3 hints — the provenance line is the lesson talking about itself, so it cannot confer E4.",
     };
   }
 
@@ -6550,6 +6584,71 @@ async function handleSearchSignalStats(env, url) {
     }
     return errorResponse("api handler failed", "internal_error", 502, e);
   }
+}
+
+// The floor for the one signal that can confer E4: how many *distinct* observed clients must have
+// retrieved a lesson. Two, because "cross-node" means more than one node and one is just the author
+// reading their own lesson — the smaller count is a claim about a second party, which is the whole
+// content of the rung. It is deliberately not higher: `search_signals` under-counts (an anonymous
+// caller sends no `client_id`, so it writes no `client_hint` and is invisible here), and a threshold
+// above the literal reading of "cross-node" would starve an already-sparse signal into never firing.
+const E4_MIN_DISTINCT_CLIENTS = 2;
+
+/**
+ * How many distinct observed clients retrieved a lesson — the E4 producer.
+ *
+ * `search_signals` carries one row per completed search and `client_hint` is the salted hash of the
+ * caller's `client_id` / `X-MisakaNet-Client` header, written by the worker from the request (see
+ * `recordSearchSignal`). This is therefore a *count of requests*, never of prose: nothing a lesson
+ * says can raise it, and the only way to add a client is to make one more real retrieval.
+ *
+ * Distinctness, not repetition: forty searches from one `client_hint` are one client, so the query is
+ * `COUNT(DISTINCT client_hint)`. Two `client_hint`s are two distinct *observed* callers, not two
+ * authenticated ones — `client_id` is self-declared (see `misakanet_register`), so this measures
+ * independent-looking traffic rather than proven human identity. That is a real bound and is stated
+ * rather than implied; it is still strictly stronger than a vote or a typed `verified by:` line,
+ * because it cannot be produced from inside the artifact being rated.
+ *
+ * Anonymous callers carry no `client_id`, so `client_hint` is NULL for them and they do not count.
+ * The signal therefore UNDER-counts, and that is the correct direction for a trust signal: it can be
+ * wrong by staying silent, but it cannot be inflated by editing a lesson. Do NOT "fix" the undercount
+ * by falling back to the User-Agent — the UA is shared by every curl and every browser build of the
+ * same version and is trivially spoofed, so counting it would make the number meaningless while
+ * removing the single property that makes this signal worth having.
+ *
+ * Returns `null` when there is no row store (no D1 binding) so the caller can tell "no data" from
+ * "zero clients". Matching is on the identity the search wrote into `top_id` — the top result's `id`
+ * when it has one, else its `path` — so both the id form and the path form are matched, plus the
+ * `<id>.md` path form for a caller that passes only `lesson_id`. A lesson whose search-time id and
+ * call-time id genuinely differ is missed, which is again a silent undercount rather than an
+ * overcount.
+ */
+async function countDistinctRetrievingClients(env, { lessonId, lessonPath } = {}) {
+  const d1 = d1Binding(env);
+  if (!d1) return null;
+  // Same lazy `CREATE TABLE IF NOT EXISTS` the writer uses, so a cold isolate that has served no
+  // search yet reads an empty table instead of throwing "no such table". A throw would be swallowed
+  // by the caller's `catch` and produce the same absence of an event, but only by accident.
+  await ensureSearchSignalsTable(d1);
+  const exact = [lessonId, lessonPath].filter(Boolean).map(String);
+  const clauses = exact.map(() => "top_id = ?");
+  const binds = [...exact];
+  // `_` and `%` are LIKE wildcards; the stem is escaped so an id can never widen the match.
+  const stem = String(lessonId || "").replace(/[\\%_]/g, ch => `\\${ch}`);
+  if (stem) {
+    clauses.push("top_id LIKE ? ESCAPE '\\'");
+    binds.push(`%/${stem}.md`);
+  }
+  if (clauses.length === 0) return null;
+  const row = await d1.prepare(
+    `SELECT COUNT(DISTINCT client_hint) AS clients
+       FROM search_signals
+      WHERE client_hint IS NOT NULL
+        AND client_hint <> ''
+        AND (${clauses.join(" OR ")})`
+  ).bind(...binds).first();
+  const clients = Number(row?.clients ?? 0);
+  return Number.isFinite(clients) ? clients : 0;
 }
 
 // POST /api/search-signal — records that a search went unsolved. The query is

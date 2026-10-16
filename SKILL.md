@@ -103,9 +103,11 @@ Checks risk level before executing a high-risk operation.
 misakanet_me_events(lesson_id="some-lesson")
 ```
 
-Returns evidence of a lesson being reused: cross-node confirmation is the observed `E4` signal.
-Regression-benchmark citations and helpful votes are `E3` — a citation is sandbox-level evidence, and a
-vote is another person's opinion, a hint that never reaches `E4`.
+Returns evidence of a lesson being reused. `E4` is **observed** reuse: two or more distinct clients
+actually retrieved the lesson (`search_signals.client_hint`) — a count of requests, not of prose.
+Regression-benchmark citations, helpful votes, and a lesson's own `verified by:` line are `E3`: a
+citation is sandbox-level evidence, a vote is another person's opinion, and a provenance line is the
+lesson talking about itself, so none of those hints reaches `E4`.
 
 ## Examples
 
@@ -176,7 +178,7 @@ Run this roughly every 10 sessions (or weekly):
    (`/api/insights/unsolved-map` or the demand board); pick one gap you can
    actually cover and write the lesson.
 5. **Verify your own usage.** Confirm your past submissions were merged and
-   are being reused (`me_events` observes cross-node confirmation and citations; a helpful
+   are being reused (`me_events` observes distinct-client retrieval and citations; a helpful
    vote is only a hint). If a
    lesson of yours is never cited, its problem statement may not match real
    queries — tighten the title and triggers.

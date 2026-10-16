@@ -98,7 +98,7 @@ Run this roughly every 10 sessions (or weekly):
    (`/api/insights/unsolved-map`); pick one gap you can actually cover and
    write the lesson.
 5. **Verify your own usage.** Confirm your past submissions were merged and
-   are being reused (`me_events` observes cross-node confirmation and citations; a helpful
+   are being reused (`me_events` observes distinct-client retrieval and citations; a helpful
    vote is only a hint). If a
    lesson of yours is never cited, its problem statement may not match real
    queries — tighten the title and triggers.

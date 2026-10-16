@@ -45,3 +45,13 @@ Badges are automatically rendered in the lesson search results and detail pages.
 > vote is one person's opinion, recorded as a hint. The canonical scale is `misakanet/evidence.py`
 > and [`docs/trust-semantics.md`](trust-semantics.md); the `E0`–`E3` wording in the table above and
 > in the `assets/badges/evidence-e*.svg` titles predates that scale and is tracked separately.
+
+> **2026-10-17 — which observation.** The `me_events` half of the sentence above is now pinned to a
+> named producer: `E4` is conferred by `lesson_retrieved_by_distinct_clients` — two or more distinct
+> `search_signals.client_hint` values actually retrieved the lesson. A lesson's own
+> `verified by:` / `contributors:` line used to reach `E4` as "cross-node confirmation"; it is a
+> declaration parsed out of the lesson body, so it is demoted to an `E3` hint
+> (`lesson_confirmed_by`) and no longer touches the rung. Anonymous callers write no `client_hint`
+> and therefore do not count: the signal under-counts rather than over-counts. Measured that day,
+> **0 of 483 lessons** had two distinct observed clients — the honest answer is "nothing is at `E4`",
+> not a number to soften.

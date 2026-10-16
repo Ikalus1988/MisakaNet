@@ -209,3 +209,24 @@ the number comes from the server's own answer:
 `E4` itself is unchanged in the tool: `misakanet_me_events` still returns `evidence: 'E0'|'E3'|'E4'`, and
 cross-node confirmation still emits `E4`. What changed is that only an observed signal can.
 
+## Correction (2026-10-17): *which* observation `E4` names
+
+The correction above ends "cross-node confirmation still emits `E4`". That sentence describes the rule
+it was replacing, and it is left exactly as written; the producer it names has changed since, so this
+records the change instead of rewriting a dated record.
+
+"Cross-node confirmation" in `misakanet_me_events` was a regex over the lesson's own body
+(`verified by:` / `contributors:`). That is a *declaration*, not an observation: anyone who can edit
+the lesson can type the line, which makes it cheaper to fake than the vote the previous correction had
+just demoted. So `E4` now has exactly one producer, and it is observed — two or more distinct
+`search_signals.client_hint` values actually retrieved the lesson
+(`lesson_retrieved_by_distinct_clients`), counted with `COUNT(DISTINCT client_hint)` so forty
+retrievals by one client add nothing. The declared line is still reported, as `lesson_confirmed_by`,
+an `E3` hint.
+
+This under-counts on purpose: an anonymous caller sends no `client_id`, writes no `client_hint`, and
+does not count. A trust signal may be wrong by staying silent; it must not be inflatable from inside
+the artifact it rates, and falling back to the User-Agent would remove exactly that property. Measured
+the same day, **0 of 483 lessons** had two distinct observed clients — so "nothing is at `E4`" is the
+honest answer, a true state of the world rather than a number to soften.
+
