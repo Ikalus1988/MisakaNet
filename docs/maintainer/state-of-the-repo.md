@@ -286,18 +286,40 @@ $ curl -sS -H "Authorization: Bearer $GITHUB_TOKEN" \
 来源标注：**【#】** = open issue；**【H】** = `handoff-2026-09-19.md` §24.2 C（**该文件不公开**，
 这是把它搬出来的一部分原因）；**【API】** = 本次实测。
 
-1. **等审批的这一个 run 批不批？** 实测此刻有 1 个：`Publish misakanet`（`main`，
-   2026-09-21T12:13:42Z 起）。【API】
-2. **release PR #2020（2.35.0）合不合？** 它从 2026-09-21 起一直是 `mergeable_state: blocked`。【API】
-3. **要不要把 `audit` 加进必需检查？**（以及 `lesson-gate`——#2039 正在把"永远上报"准备好，
-   让它可以被设为必需）。这一步是把 #1920 关掉的"另一半"。【#1920 / #2039，API】
-4. **`misakanet-automation-d1` 什么时候轮换？** 它 2027-03-01 过期；轮换需要有 Cloudflare 账号权限的
-   人（步骤写在 #1886 里）。过期当天两个 cron 会开始失败，而没有人盯着 03:00 的 cron。【#1886】
-5. **304 个分支清不清？**（改法建议：只清 >60 天、有开放 PR 的不碰）。【H / API】
-6. **客户端提示头是否在 Python 安装器里补齐？** 两个安装器发的 `X-MisakaNet-*` 头不一致，影响客户端统计。【H】
-7. **`v1` 这个 tag 是否随 action 变更前移？**【H】
-8. **第二维护者席位给不给、给谁？** 这是本文件存在的理由：环境审批人只有 1 个、admin 只有 1 个，
-   而交接面按 §1.4 第 5 条只存在于一台机器上。【#2044 / API】
+**2026-10-17 更新**（自 `handoff-2026-10-17.md` §98 搬入；旧条目见下，其中两条本轮已复核并解决）
+
+1. **问句该被回答，还是该被写成课程？** `question_autopilot.py` 的 bounty **刻意**把 `type:question`
+   的 intake 变成"写成课程"的任务；而本仓的既定路由（以及 `#3361` 新增的规则）说问句应被**回答**
+   （`[Question]` issue → `answered` → 同步进 FAQ），"而不是被当成课程评分"。两侧的实测数字见
+   `handoff-2026-10-17.md` §96.5。**【API】**
+2. **`docs/data/feed.json` + `activity.json` + `activity-series.json`（= 137 个提交，11.4%）搬不搬去
+   `dist`？** 比本轮已搬走的 4.2% 更大；写入者是 `build-feed.yml`（走 `land_change` 落 `main`）。
+   **【API】**
+3. **计数面搬不搬？**（`docs/index.html`、两份 `llms.txt`、`docs/_lessons_count.txt`）要搬必须先改
+   **必需** `audit` 作业里的 `sync_lesson_count --check` 与 `pr-thank-you.yml` 的运行期读取。
+   **【API】**
+4. **CI 精简的取舍**：`#3360` 给出按第一性原理量出来的清单与建议（**不删任何东西**）。头号候选是
+   `pr-quality-gate.yml`——30 天 **2,500 次**运行、最近 12 次里 **8 次仍在 queued**、**不在必需检查里**、
+   只打标签，而它的徽章挂在 README 第一行渲染 `failing`。**【API】**
+
+**需要 owner 动作（是动作，不是拍板）**
+
+- **审批 `Deploy Cloudflare Worker`**（sha `babf2edf`，2026-10-16T16:40:31Z 起等待）。**不点它，
+  "E4 改成观测"只在本仓生效，线上仍是旧逻辑**（旧逻辑里两票就能给 E4）。**【API】**
+- **`dist` 切换的控制台三步**（production branch `main` → `dist`；先确认 build token 有效；再触发一次构建）。
+  前置条件已**连续三次实测满足**（自动触发成功、`dist` 树与 `main` 相同）；首次创建 `dist` 必须手动
+  `workflow_dispatch`（已修正进 `dist-branch-cutover.md`）。**【API】**
+
+**本轮已复核并解决**（按维护规则移出，结论为实测事实）
+
+- ~~`audit` 要不要加进必需检查~~ → **已是必需检查**：ruleset `23826057` 要求 `DCO / Signed-off-by`、
+  `test (ubuntu-latest, 3.11)`、`gate`、`audit` 四条。**【API】**
+- ~~`#2020`（2.35.0）合不合~~ → **已合**（2026-09-25T09:34:02Z）。**【API】**
+- ~~等审批的那个 run 批不批（原第 1 条）~~ → 那个 run 已不在；**当前等待中的是上面那条 worker 部署**。**【API】**
+
+**以下旧条目本轮未复核**（日期停留在 2026-09-21，**不要把它们当作仍然有效**；下一次更新本文时逐条复核）：
+原第 4 条（`misakanet-automation-d1` 轮换）、第 5 条（分支清理）、第 6 条（两个安装器的 `X-MisakaNet-*`
+头不一致）、第 7 条（`v1` tag）、第 8 条（第二维护者席位）。
 
 > **维护规则**：每次更新本文（§5）时，把已经拍板的条目**从这里删掉**，把结论写成一行事实放进 §1 或 §2；
 > 同时从 handoff 的最新一篇里把新的"需用户拍板"搬进来。这样 handoff 只留凭据线索，决策留在这里。
