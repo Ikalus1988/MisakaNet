@@ -10675,9 +10675,9 @@
     "evidence_refs": [],
     "supersedes": "",
     "verified": true,
-    "evidence_level": "E4",
+    "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.9,
+    "trust_score": 0.63,
     "contributor": ""
   },
   {
@@ -12538,9 +12538,9 @@
     "evidence_refs": [],
     "supersedes": "",
     "verified": true,
-    "evidence_level": "E4",
+    "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.9,
+    "trust_score": 0.63,
     "contributor": ""
   },
   {

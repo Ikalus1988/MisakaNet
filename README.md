@@ -8,9 +8,16 @@
 
 mcp-name: io.github.Ikalus1988/misakanet
 
-> **Stop debugging the same error twice.** MisakaNet searches its indexed failure lessons so an agent skips
-> the bugs someone already paid for, instead of rediscovering them one session at a time — the **Lessons**
-> badge above is the live corpus size.
+> **The same failure, paid for twice.**
+>
+> A `pip install` times out behind a corporate proxy. An agent reads the certificate chain, finds the
+> flag, and fixes it. Days later the same timeout appears in another repository, on another machine,
+> under another model — and it is debugged from the beginning by an agent that cannot know someone
+> already paid for this. The fix existed. It was just never written down anywhere the next agent looks.
+>
+> MisakaNet is that place. A git-backed **failure memory**: every lesson is a Markdown file in this
+> repository — graded by evidence, reviewed like code, and retrieved by an agent instead of guessed
+> at. You fail once. The next agent does not.
 >
 > Agent-native interfaces: [MCP server](https://misakanet.org/mcp) (8 tools), WebMCP (browser
 > `navigator.modelContext`), `llms.txt` / `llms-full.txt`, and A2A discovery through
@@ -23,7 +30,16 @@ mcp-name: io.github.Ikalus1988/misakanet
 <p align="center">
   <em>Core</em>
   &nbsp;&nbsp;
-  <a href="https://github.com/Ikalus1988/MisakaNet/actions/workflows/pr-quality-gate.yml"><img src="https://github.com/Ikalus1988/MisakaNet/actions/workflows/pr-quality-gate.yml/badge.svg" alt="CI"></a>
+  <!-- CI points at `pr-checks.yml`, whose `audit` job runs the repository's Python test suite — not at
+       `pr-quality-gate.yml`, which this badge used until 2026-10-17. That workflow only applies
+       quality *labels*; it is triggered by `check_run: [completed]` and cancels in progress, and its
+       own header records the consequence: a run cancelled and `gh` reported it as `fail`, while the
+       check it produced was `cancelled` with no log at all — "Across the last 12 runs, 2 were
+       cancelled and 0 had failed for any real reason." Measured 2026-10-17 the old badge rendered
+       "PR Quality Gate — failing" while `pr-checks.yml` rendered "passing". It is not one of the
+       repository's four required checks, so this is a correction, not a hide: those checks were never
+       represented by this badge in the first place. -->
+  <a href="https://github.com/Ikalus1988/MisakaNet/actions/workflows/pr-checks.yml"><img src="https://github.com/Ikalus1988/MisakaNet/actions/workflows/pr-checks.yml/badge.svg" alt="CI"></a>
   <a href="https://github.com/Ikalus1988/MisakaNet/tree/main/lessons"><img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/Ikalus1988/MisakaNet/data/badges/lessons.json" alt="Lessons"></a>
   <a href="https://github.com/Ikalus1988/MisakaNet/blob/main/scripts/mcp_server.py"><img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/Ikalus1988/MisakaNet/data/badges/tools.json" alt="MCP Tools"></a>
   <a href="https://misakanet.org/api/search-index"><img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/Ikalus1988/MisakaNet/data/badges/retrieval.json" alt="Retrieval backend (today)"></a>
@@ -46,24 +62,41 @@ mcp-name: io.github.Ikalus1988/misakanet
 <p align="center">
   <em>Ecosystem</em>
   &nbsp;&nbsp;
-  <a href="https://glama.ai/mcp/servers/Ikalus1988/MisakaNet/score"><img src="https://glama.ai/mcp/servers/Ikalus1988/MisakaNet/badges/score.svg" alt="Glama score"></a>
   <a href="https://glama.ai/mcp/connectors/org.misakanet/misaka-net"><img src="https://glama.ai/mcp/connectors/org.misakanet/misaka-net/badges/score.svg" alt="MisakaNet MCP connector – tool definition quality and endpoint health on Glama"></a>
   <a href="https://mcptoplist.com/server/io.github.Ikalus1988%2Fmisakanet"><img src="https://mcptoplist.com/badge/io.github.Ikalus1988%2Fmisakanet.svg" alt="MCP Toplist"></a>
   <!-- Smithery badge uses a shields.io 'endpoint' badge that dynamically reads the Kin
        score from data/badges/smithery.json -- updated daily by the update-smithery-badge
        workflow, so it stays in sync without manual PRs. -->
   <a href="https://smithery.ai/servers/misakanet/misakanet"><img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/Ikalus1988/MisakaNet/refs/heads/data/badges/smithery.json" alt="Smithery"></a>
-  <!-- HOL badge: the link still points at hol.org (its listing detector looks for the badge
-       in the README, worth +2% trust), but the image is a static flat shield — the live
-       hol.org/api/... endpoint is slow/unstable through shields.io and rendered as
-       "inaccessible" / a mismatched for-the-badge style. -->
-  <a href="https://hol.org/registry/plugins/Ikalus1988%2FMisakaNet"><img src="https://img.shields.io/badge/HOL%20Registry-listed-5599FE?style=flat" alt="MisakaNet on HOL Registry"></a>
-  <a href="https://github.com/Ikalus1988/MisakaNet/tree/main/docs/benchmarks"><img src="https://img.shields.io/badge/Benchmark-Weekly%20Workers%20AI-blue" alt="Benchmark"></a>
+  <!-- HOL Registry badge removed 2026-10-17. It was a static shield serving our own string
+       ("HOL Registry: listed"), and the listing it pointed at answers 403 to every non-browser
+       fetch — including hol.org/registry itself, which is a Cloudflare challenge, not a page we can
+       read. So nothing in this file was evidence that hol.org lists us, and an unverifiable "listed"
+       claim is the class of badge this rework removes. Bring it back with a link whose listing a
+       reader (or a check) can actually open. -->
+  <!-- Benchmark badge removed 2026-10-17: it was `Benchmark / Weekly Workers AI` as a hard-coded
+       string, while the weekly run is paused — a static badge cannot be made true, and one that says
+       "weekly" next to a stopped job costs more trust than no badge at all. The honest form is in the
+       body: `## Benchmark: what it measured, and why it is paused`, with the last snapshot linked. -->
+  <!-- Two additions were considered on 2026-10-17 and declined, so the next person does not have to
+       re-derive the answer. (1) A badge for the corpus's own evidence distribution: the existing
+       generator prints the E0–E4 counts but writes no badge-shaped file, so a badge would need a new
+       publishing step — new CI, which this change deliberately does not add. The distribution is
+       published where it already has a writer and a check (`docs/trust-semantics.md`). (2) An
+       official-MCP-registry badge: the registry offers no badge image, so the image would be our own
+       static string (the HOL failure above), and the listing is stale — queried 2026-10-17 it still
+       served version 2.12.2 with a description using the retired "verified … lessons" vocabulary that
+       `docs/trust-semantics.md` forbids. A badge pointing there would advertise that. -->
 </p>
+
+<p align="center"><em>Third-party install badge, read correctly: <a href="https://www.dsh.so/artifact/misakanet/">dsh.so</a> verifies an install against a <b>dsh host release</b> and prints that version. Its unversioned badge lags — measured 2026-10-17 it read <code>0.1.6a2</code> (dsh <code>0.1.6-alpha.2</code>, 2026-09-20) while dsh.so's version-pinned badge for <code>0.2.1-alpha.4</code> also renders verified. So the badge is their record, not our release marker, and not our compatibility claim: the releases this repository declares are in <a href="docs/compatibility.md">compatibility</a>. It stays unversioned on purpose — a version-pinned badge would need something to move it on every release, and this repository does not add a job for that.</em></p>
 
 ---
 
 ## Install (30 seconds)
+
+The point of an install is the first **successful search**, not the install. Most rows below are a single
+command, and none of them needs an account, a token, or a local Python.
 
 | Your host | Command |
 |---|---|
@@ -86,46 +119,50 @@ No account, no token, no Python needed for the plugin path: the npm bundle mount
 Declared hosts and what was measured: [compatibility](docs/compatibility.md). Every channel, the
 prerequisites, and the two-package trap that costs people an install: [How to use it](#how-to-use-it).
 
+## Your first five minutes
+
+One command, one real search, one thing you can look at. Do this before reading the rest.
+
+**1. Ask it something you have actually broken.** The corpus is failures, so a failure you remember is
+the honest test — not a demo keyword. No client installed? This `curl` is the whole interface:
+
+```bash
+curl -sS https://misakanet.org/mcp \
+  -H 'Content-Type: application/json' -H 'Accept: application/json' \
+  -H 'MCP-Protocol-Version: 2025-06-18' -H 'Origin: https://misakanet.org' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/call",
+       "params":{"name":"misakanet_search","arguments":{"query":"database is locked","top":3}}}'
+```
+
+**2. Read what came back.** A hit returns the lesson, its `evidence_level`, and its path in this
+repository — open the file and read the fix before running any command in it. A miss returns
+`no_match` plus a ready-to-call intake, which is a result too: it is the corpus telling you it does not
+know this one yet, and the fastest way to fix that is [Take part](#take-part).
+
+**3. Check the trust signal, not the tone.** `E0`–`E3` say how far a lesson was verified; the top rung,
+`E4`, is the one nobody can write or vote into. [Where it is today](#where-it-is-today) says where the
+corpus actually stands on it.
+
 ## What the DeepSeek Harness plugin adds
 
-Version 2.40.0 ships the browser half, and 2.41.0 adds the rest of it: the surfaces below did not all land in
-the same release, so this section lists them by the version that carries them. It is not a dialog: it puts
-MisakaNet where the session already is.
-
-**In 2.40.0 — published.** These six seats are what `npm view misakanet version` gives you today.
+It is not a dialog: it puts MisakaNet where the session already is. The host's own contract text, and
+which seats are `root` or `session` scope: [compatibility](docs/compatibility.md).
 
 | Where | What you get |
 | --- | --- |
-| **Left column** | A permanent `MisakaNet` entry directly under `Plugins`. It is a shortcut, not the panel: clicking it opens a full page in the main column. Root scope — it does not come and go with a session. |
-| **Conversation tab** | A `MisakaNet` tab beside Chat and Trajectory: what this session asked, what came back, and what you filed, rebuilt from the conversation's own rows. |
-| **Right column** | The same panel as a pane, so it can sit next to the file tree, a terminal, or a document. |
-| **Tool call rows** | Every `misakanet_search` and `misakanet_submit_intake` call gets its own row on the tool card: the query as it was sent, whether a lesson came back, and which lesson is on top, with the raw result one disclosure away. The row reports and never posts — the vote belongs on the answer's action row below. |
-| **Assistant action row** | 👍 / 👎 on the answer that used a lesson. Those two are the only things the page ever sends — counters live in the browser, not on a server. |
-| **Voice** | An off-by-default switch that explains both mechanisms: the cue the server names on the next search, and the local hook a page cannot read. |
+| **Left column** | A permanent `MisakaNet` entry under `Plugins`; clicking it opens a full page in the main column. Root scope — it does not come and go with a session. |
+| **Conversation tab** | A `MisakaNet` tab beside Chat and Trajectory: what this session asked, what came back, what you filed. |
+| **Right column** | The same panel as a pane, next to the file tree, a terminal, or a document. |
+| **Tool call rows** | Everyday `misakanet_search` / `misakanet_submit_intake` calls get their own row: the query as sent, whether a lesson came back, which one is on top. The row reports and never posts. |
+| **Assistant action row** | 👍 / 👎 on the answer that used a lesson — the only two things the page ever sends; counters live in the browser. |
+| **`/misakanet` in the composer** | Type `/misakanet pip install timeout` and press Enter: lessons come back in a card inside the composer, no agent in the loop. The query is the only thing it sends. |
+| **Frame-wide toast · sidebar foot** | The top hit appears over every column after a `/misakanet` search; one action beside Settings copies this session's activity as an issue or PR summary. |
+| **Settings → General** | A MisakaNet row: play voice cues in this browser, and how much the surfaces show (compact / full). Both stay in the browser. |
+| **中文 / English** | Every MisakaNet surface follows the host language, including the plugin page's own title and description. |
 
-<p align="center">
-  <img src="docs/assets/dsh-client-left-column.png" width="820" alt="DeepSeek Harness: a permanent MisakaNet entry in the left column under Plugins, and the full page it opens"/>
-</p>
-
-<p align="center">
-  <img src="docs/assets/dsh-client-right-panel.png" width="820" alt="The MisakaNet pane in the right column of a DeepSeek Harness session"/>
-</p>
-
-**With 2.41.0 — [release PR #2591](https://github.com/Ikalus1988/MisakaNet/pull/2591).** These six surfaces
-are in `main` and ship in 2.41.0; a 2.40.0 install does not have them yet.
-
-| Where | What you get |
-| --- | --- |
-| **`/misakanet` in the composer** | Type `/misakanet pip install timeout` and press Enter: the lessons come back in a card inside the composer, with no agent in the loop. The query is the only thing it sends. |
-| **Frame-wide toast** | After a `/misakanet` search comes back with lessons, a card appears over every column with the top hit; dismiss it or click through to the lesson. |
-| **Sidebar foot** | One action beside Settings: copy this session's MisakaNet activity as a summary for an issue or a PR body. |
-| **中文 / English** | Every MisakaNet surface follows the host language: the panel, the `/misakanet` card, the settings row, and the plugin page's own title and description. |
-| **Settings → General** | A MisakaNet preference row: play voice cues in this browser, and how much the surfaces show (compact / full). Both stay in the browser. |
-| **Plugin page** | The MCP row's effective configuration — endpoint, transport, timeout — shown read-only, next to where it is edited (the profile's `cordis.patch.yml`). |
-
-Which seats the half occupies and why they are `root` or `session` scope, with the host's own contract text
-quoted: [compatibility](docs/compatibility.md). Running a host of your own and want a check that cannot
-touch your profile: `python3 scripts/install_smoke.py dsh-client --serve`.
+Surfaces landed across 2.40.0 and 2.41.0; `npm view misakanet version` is what you get today, and the
+[changelog](CHANGELOG.md) says which release carried which. Running a host of your own and want a check
+that cannot touch your profile: `python3 scripts/install_smoke.py dsh-client --serve`.
 
 ## What is MisakaNet?
 
@@ -139,9 +176,14 @@ library. No vector database, no embedding model, no server unless you want one.
 |---|---|
 | **Lessons** | failure-recovery knowledge base, open and auditable under `lessons/` |
 | **Domains** | rag · devops · fanuc · docker · feishu · mcp · network · ci · wsl · windows … |
-| **Evidence levels** | E0 intake → E1 CI → E2 merged PR → E3 maintainer → E4 production reuse |
+| **Evidence levels** | E0 intake → E1 maintainer reviewed → E2 reproduced locally → E3 CI / sandbox verified → **E4 observed reuse by two or more distinct clients** |
 
-Registry listings ([Glama](https://glama.ai/mcp/servers/Ikalus1988/MisakaNet/score),
+The top rung is the one nobody can write, vote, or merge a lesson into: E0–E3 say what a person or a
+pipeline did *to* a lesson, and E4 says two different clients actually came back and used it. It is
+observed at the transport layer, not declared in the file — which is why a lesson's own claim about
+itself cannot reach it. [Where it is today](#where-it-is-today) reports where that leaves the corpus.
+
+Registry listings ([Glama](https://glama.ai/mcp/connectors/org.misakanet/misaka-net),
 [Smithery](https://smithery.ai/servers/misakanet/misakanet), MCP Toplist) proxy the hosted endpoint, which
 serves **indexed failure-recovery lessons** — *indexed*, never "verified": evidence level is what says
 how much a lesson has been proven.
@@ -153,6 +195,8 @@ how much a lesson has been proven.
 | ❌ A vector database or RAG system | ✅ BM25 keyword search — **stdlib only**, no third-party packages, but a **Python ≥ 3.10 interpreter is still required** |
 | ❌ A cloud service requiring signup | ✅ `git clone` → search locally |
 | ❌ A skill marketplace | ✅ Debugging knowledge from real sessions |
+| ❌ A pile of "verified lessons" | ✅ Every lesson carries an evidence level you can check — and the top grade is empty today |
+| ❌ A retrieval benchmark | ✅ A corpus, graded by the evidence behind each lesson; the benchmark we do have measures recitation and is paused |
 
 ### What it can and cannot answer
 
@@ -167,32 +211,116 @@ A **skill** teaches an agent *how to do something*. A **lesson** records *what w
 not to fail again*. MisakaNet is only the second thing: not a skill marketplace, not an agent runtime, not
 a general memory layer, not a vector database. → [FAQ](FAQ.md)
 
-## Benchmark: how much of a lesson does a model reproduce when handed one?
+## Where it is today
 
-Weekly benchmark (Cloudflare Workers AI). **Read the metric before the numbers** — the scenario in this benchmark is each lesson's own title, the "matching lesson" injected into the `with_lesson` arm is *that same lesson*, and the
-score is `lesson_hit_rate`: **the share of the injected lesson's commands reproduced in the answer**.
-No retrieval is called and correctness is not checked, so this is the **recitation** half of RAG, not
-evidence that search works.
+**The numbers that change are badges, on purpose.** The **Lessons** badge above is not typed into this
+page: it renders `data/badges/lessons.json`, which `update-badges.yml` regenerates from
+`data/lessons.json` — on every push that touches `lessons/**`, and weekly in any case. So it is a
+*measurement on a schedule*, not a live read, and it can lag by a run; that is still better than a total
+this repository would have to keep in sync by hand (it has deleted its hard-coded corpus counts instead).
+The **MCP Tools** badge is the same idea for the hosted tool set, and the **Retrieval backend** badge
+reports which search path is answering right now. `python3 scripts/sync_lesson_count.py --check` is the
+gate that keeps the counts and the prose pointing at the same source.
 
-Latest aggregated data: [`docs/benchmarks/latest.json`](docs/benchmarks/latest.json) (2026-09-22, two
-independent runs of ≈500 scenarios each):
+Where a number comes from matters, so: our tool count is the **MCP Tools** badge, read from
+`data/badges/tools.json`. A registry's own rating badge is a third party's text, and it can be stale —
+Glama's server badge still described "11 tools" on 2026-10-17 while the endpoint served 8, which is why
+the duplicate connector badge (the one that says 8) is the one kept above, and why two Glama badges are
+not left side by side as if they agreed.
 
-| Condition | Run 1 hit rate | Run 2 hit rate | Avg | n (per run) | Actionable |
-|---|---|---|---|---|---|
-| plain (no lesson) | 0.239 | 0.233 | **23.3%** | ≈510 | 82–83% |
-| with_lesson (pasted) | 0.464 | 0.461 | **46.1%** | ≈512 | 76–77% |
+**The top of the evidence ladder is empty, and this README says so.** E4 requires an observation: two or
+more distinct clients actually retrieved a lesson. `python3 scripts/evidence_distribution.py` reports the
+corpus at **0**. The full distribution — declared, defaulted, and empty — is generated into
+[`docs/trust-semantics.md`](docs/trust-semantics.md), and CI re-derives it against the corpus, so it
+cannot go stale quietly. We are publishing the measurement that flatters us least, in the file visitors
+read first.
 
-**Reproducibility.** Two runs with identical config produce hit rates within 0.3% of each other
-(0.464 vs 0.461 for `with_lesson`; 0.239 vs 0.233 for `plain`), confirming the metric is stable.
+What that number is really saying, and the other gaps we can see:
 
-**Aggregation.** Each run evaluates every lesson in the corpus as a scenario. The `with_lesson` arm pastes the matching lesson
-into the prompt; `plain` uses no lesson. `actionable` is a boolean per scenario indicating whether the
-model produced a usable answer. Actionable rates are stable across runs (76–77% with lesson, 82–83% plain).
+- **Nothing has ever proved itself by being used.** Not because reuse does not happen — because the
+  signal only started being counted recently, and it under-counts on purpose: an anonymous caller writes
+  no `client_hint`, so a lesson can be reused every day and still sit at zero. A trust signal that can be
+  wrong by staying silent is better than one that can be inflated by editing a file.
+- **Most lessons declare no evidence level at all.** They read as `E0` by the default rule, not because
+  anyone judged them unproven. The E0 population is mostly *unwritten*, not *unevidenced* — and saying
+  "E0" as if it meant "bad" would be its own false claim.
+- **Search is BM25, so it matches words, not meaning.** A failure described in vocabulary the corpus has
+  never seen is a miss, and no retriever tuning fixes a corpus gap. That is why a miss returns `no_match`
+  plus an intake call instead of an empty page.
+- **The benchmark in this file is paused, and it never measured retrieval.** It measured how much of a
+  handout a model repeats. [Benchmark](#benchmark-what-it-measured-and-why-it-is-paused) below says what
+  it does and does not prove, and links the last snapshot rather than implying a running programme.
+- **Reported gaps arrive faster than they are triaged.** The intake queue is the honest bottleneck; the
+  roadmap's first milestone is about closing that loop rather than growing anything.
 
-**Trend.** Rows below are **generated** by [`scripts/update_readme_benchmark.py`](scripts/update_readme_benchmark.py)
-from [`docs/benchmarks/latest.json`](docs/benchmarks/latest.json) — regenerate them with
-`python3 scripts/update_readme_benchmark.py`. Do not hand-edit: a second source of truth is what made the
-previous copy go stale while the paragraph directly above it explained what the metric does and does not mean.
+## Where it is going
+
+Two things that must not be confused, because one is a product and the other is a hypothesis.
+
+**A — a failure memory that works for one person's agents.** The owner's own agents, across hosts,
+sessions and models, stop paying twice for the same failure. This is the product, and its KPI is the
+**recurrence rate**: when a normalised query comes back days later, the earlier answer did not stick.
+Internal metrics only. No growth, no users, no stars are required for A to be working.
+
+**B — a public network of other people's agents.** This is *not* on the roadmap. It is an option with a
+test, and its entry gate is an observation rather than an intention: the client breakdown must show a
+node that is not ours doing **both** a retrieval and a write. Until that appears, B is not planned,
+promised, or designed for — and `B` staying absent would be a finding, not a failure.
+
+The path to A is three milestones. Each carries the observation that would show it is **not** working,
+because a plan whose failure cannot be seen is a slogan:
+
+| # | Milestone | What done looks like | What would show it is not working |
+|---|---|---|---|
+| **1** | **Close A's loop.** Intake attribution integrity first (a report must be traceable to the lesson it produced); then let the pipeline vouch for its own output, so a conversion receipt is pullable by the reporter; then have the heartbeat read the client breakdown; then let recurrence become the KPI. | A failure reported once stops arriving as a new query, and every conversion is attributable to the report that produced it. | Normalised queries keep recurring *after* their lesson exists — or conversions exist that cannot be attributed to anything, which would make the loop unauditable. |
+| **2** | **Search before acting, not after failing.** A pre-task hook so an agent consults the memory *before* it attempts a fix. | Retrieval happens before the attempt, on the agent's own initiative, in an ordinary session. | Retrieval volume does not move, or it only ever fires after a failure has already happened — a post-mortem aid wearing a prevention label. |
+| **3** | **B, evidence-gated.** If and only if the entry gate fires: co-creation with the new users who are already there. Its shape is participation, not promotion. | A node that is not ours does a retrieval **and** a write, and its lesson is used by a third node. | A quarter passes with no non-our node; or a stranger's node reads without writing (a consumer, not a participant); or writes without reading (a spam channel). |
+
+Milestone 3 has no date, and that is deliberate: it is gated on evidence, not on a calendar. The full
+reasoning, including what is explicitly *not* being done, is in [ROADMAP.md](ROADMAP.md).
+
+## Take part
+
+A miss is not a dead end. It is the input this whole system runs on.
+
+**1. Report a failure the corpus does not have.** Search first — and when nothing matches, call
+`misakanet_submit_intake`. No account, no email, no token: a five-line report is enough, and it becomes a
+tracked issue a maintainer can turn into a lesson. Other agents will hit that same wall; you are the only
+one whose session still remembers the details.
+
+**2. Reuse a lesson and leave the trace.** A "this helped" vote is recorded as an `E3` hint — we do not
+pretend it is proof, because the person shown the button usually did not ask the question. The proof is
+quieter and needs nothing from you: your retrieval is counted, anonymously, as one more distinct client
+that used the lesson.
+
+**What you get back: attribution.** A lesson cites the intake that produced it in its own frontmatter
+(`source:`, `provenance.issue:`), so the chain from "someone reported this" to "a merged lesson" is
+written down and checkable. When your report converts, the pipeline can emit a receipt naming the lesson
+and its evidence level — and because anonymous reporters have no thread to be notified in, they pull that
+receipt back by re-submitting the same problem text
+([`scripts/intake_receipt.py`](scripts/intake_receipt.py)). Contributor standing is reuse-weighted rather
+than volume-weighted, which is exactly the signal the empty E4 rung is about
+([`docs/reputation.md`](docs/reputation.md)).
+
+Nothing here is a bounty: this repository pays nothing and promises nothing. The one disclosure that
+matters — some issues carry third-party reward banners added by our own automation, which we do not
+administer — is written out in [Contributing](#contributing). What this repository does do is merge your
+lesson, name it, and keep it where the next agent looks.
+
+## Benchmark: what it measured, and why it is paused
+
+One question was measured, and it is narrower than it sounds: **when you hand a model a lesson, how much of that lesson comes back?** The metric is `lesson_hit_rate` — the share of the injected lesson's commands reproduced in the answer. Read the setup before the number: the scenario in this benchmark is each lesson's own title, the "matching lesson" injected into the `with_lesson` arm is *that same lesson*, no retrieval call is made, and correctness is not checked. So it measures the **recitation** half of RAG: necessary for MisakaNet to help, and **not evidence that search finds anything**. The claim "search surfaces the right lesson for a failure you described" is measured nowhere yet.
+
+The run is **paused**. The weekly aggregate is no longer maintained as a headline, the scheduled job is
+off, and what remains is the last snapshot plus its dated record: two independent runs of ≈500 scenarios
+each on 2026-09-22, at **46.1%** with the lesson pasted in against **23.3%** without it. Linking the last
+snapshot is the honest form of this section — a paused programme shown as a trend is how the previous
+copy drifted out of agreement with its own artifact.
+
+The table below is generated from [`docs/benchmarks/latest.json`](docs/benchmarks/latest.json) by
+[`scripts/update_readme_benchmark.py`](scripts/update_readme_benchmark.py) and is kept as a dated record,
+not as a running metric. Do not hand-edit it: a hand-typed copy is what went stale three lines under a
+paragraph explaining the metric.
 
 <!-- BEGIN generated: benchmark-trend -->
 
@@ -222,28 +350,17 @@ with_lesson hit rate (per run date)
 <!-- END generated: benchmark-trend -->
 
 A model repeats more of a document it was handed, and the weaker the model the bigger the relative
-difference. That is *necessary* for the product to help and it is not sufficient — the claim "search finds the
-right lesson for a failure you described" is measured nowhere yet. Details:
-[`docs/benchmarks/latest.json`](docs/benchmarks/latest.json) · per-run files in
+difference — useful as a ceiling, useless as a promise. Per-run files:
 [`docs/benchmarks/`](docs/benchmarks/) · metric definition: `METRIC_DEFINITION` in
-[`scripts/benchmark_workers_ai.py`](scripts/benchmark_workers_ai.py)
-
-→ [Full changelog](CHANGELOG.md) · [Release notes](https://github.com/Ikalus1988/MisakaNet/releases)
-
-**Beware of a single number.** A benchmark is only as good as what it measures, so here is what these mean
-and where this design loses:
-
-| Metric | What it measures | Why it matters here |
-|---|---|---|
-| Hit rate | share of the **injected** lesson's commands reproduced in the answer — a recitation check; the scenario is that lesson's own title and no retrieval happens | it is the ceiling on usefulness, not the measure of it: a corpus can be recitable and still unfindable |
-| Gain (with − without) | how much more of that lesson appears when it is pasted in | separates "the model can use a lesson" from "the model guessed the same words" — it says nothing about finding the lesson |
-| Actionable | whether the model produced a usable answer at all (boolean per scenario) | a high hit rate on an answer that is not actionable is noise; this tracks whether the model engages with the problem |
-| Cost / latency | tokens and wall-clock per answer | the whole premise is cheaper than re-debugging, so it has to stay cheap |
+[`scripts/benchmark_workers_ai.py`](scripts/benchmark_workers_ai.py) · a repository gate ties the prose
+above to that JSON, so the section cannot drift from the artifact it describes.
 
 **Where it loses on purpose:** BM25 matches words, not meaning. A failure described in vocabulary the
 corpus has never seen is a miss, and no amount of tuning in the retriever fixes a corpus gap. That is why a
 miss returns `no_match` plus an intake call rather than an empty result — the honest answer is "we do not
 know this one yet", and it is also the signal that tells maintainers what to write next.
+
+→ [Full changelog](CHANGELOG.md) · [Release notes](https://github.com/Ikalus1988/MisakaNet/releases)
 
 ## Why failure-memory?
 
@@ -258,7 +375,8 @@ Three deliberate engineering choices, each of which trades something:
 * **No third-party packages by default.** The retriever is BM25 over the standard library, so the offline path
   runs on an air-gapped box and cannot rot with an embedding model. The cost is recall on paraphrases.
 * **Evidence is graded, not asserted.** E0–E4 lets an agent weigh a community intake differently from a
-  production-proven fix. The cost is bookkeeping, and most lessons sit at E0–E2.
+  fix a pipeline verified — and the top rung is an observation, not a declaration, so a lesson cannot
+  promote itself. The cost is bookkeeping, and most lessons sit at E0–E2.
 
 ## How to use it
 
@@ -280,7 +398,7 @@ Pick one channel — they are independent, and none of them needs an account (th
 |---|---|---|
 | my assistant to search the lessons | `npx @misaka-net/misakanet-setup` | writes the MCP endpoint into each assistant's own config; optionally a rules block and a hook |
 | my **Claude Code** assistant to search the lessons, as a plugin | `/plugin marketplace add Ikalus1988/MisakaNet` then `/plugin install misakanet@misakanet` | adds the hosted MCP tools to Claude Code from this repository — no installer, no local process |
-| to call the endpoint myself | the `curl` below | nothing to install |
+| to call the endpoint myself | the `curl` in [Your first five minutes](#your-first-five-minutes) | nothing to install |
 | the library in my own code | `pip install misakanet-core` | nothing |
 
 **The two-package trap** (this one cost a real install failure, #1849):
@@ -296,18 +414,10 @@ Pick one channel — they are independent, and none of them needs an account (th
 A marketplace error such as `@misaka-net/misakanet-setup: entry file missing: index.js` means the resolver
 picked the wrong package — the installer deliberately has no `index.js`.
 
-**One anonymous read — no account, no token, no browser:**
-
-```bash
-curl -sS https://misakanet.org/mcp \
-  -H 'Content-Type: application/json' -H 'Accept: application/json' \
-  -H 'MCP-Protocol-Version: 2025-06-18' -H 'Origin: https://misakanet.org' \
-  -d '{"jsonrpc":"2.0","id":1,"method":"tools/call",
-       "params":{"name":"misakanet_search","arguments":{"query":"database is locked","top":3}}}'
-```
-
-Reads are unlimited and anonymous — the only limit is a per-address burst window, which is a speed limit,
-not a quota. **Registration is for writing**, not for reading: it unlocks `misakanet_write_lesson` and
+**One anonymous read — no account, no token, no browser.** The `curl` is in
+[Your first five minutes](#your-first-five-minutes), so it is not repeated here. Reads are unlimited and
+anonymous — the only limit is a per-address burst window, which is a speed limit, not a quota.
+**Registration is for writing**, not for reading: it unlocks `misakanet_write_lesson` and
 `misakanet_preflight` and returns a token valid ~30 days
 ([why](AGENTS.md#33-注册与配额)).
 

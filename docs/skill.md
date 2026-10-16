@@ -113,7 +113,7 @@ Trigger a contribution automatically when any of these happen:
 |---|---|
 | A bug is fixed and CI passes | Queue the fix as a lesson draft (`queue_lesson.py`) |
 | An existing lesson matched but did NOT fix the problem | Submit not-helpful feedback AND intake with `matched_lesson_id` |
-| A lesson solved your problem | Record a helpful/usage report — a hint for the next reader; `E4` itself comes from observed reuse, not a vote |
+| A lesson solved your problem | Record a helpful/usage report — a hint for the next reader; `E4` itself comes from observed reuse (two or more distinct clients retrieved it), never from a vote and never from a line the lesson writes about itself |
 | A crash/tombstone is captured | Convert it to a draft lesson (`tombstone_to_draft.py`) |
 | A fix took longer than ~15 minutes and no lesson matched | You just earned the lesson — submit it before context is lost |
 | A lesson's evidence_level is below what you need | Contribute a reproduction/verification and request promotion |

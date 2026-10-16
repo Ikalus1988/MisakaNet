@@ -82,7 +82,7 @@ def render(counts: collections.Counter) -> str:
     rows.append(f"- Total lessons: **{total}**")
     rows.append(f"- At **E0** in total (declared + default): **{e0_total}** "
                 f"({e0_total / total * 100:.1f}%) — of which **{default}** declare no level at all")
-    rows.append(f"- At **E4** (*reused by another contributor or agent*): "
+    rows.append(f"- At **E4** (*observed reuse by two or more distinct clients*): "
                 f"**{counts.get('E4', 0)}**")
     return "\n".join(rows)
 

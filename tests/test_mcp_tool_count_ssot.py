@@ -65,6 +65,10 @@ HOSTED_COUNT_SURFACES: tuple[tuple[str, re.Pattern[str], str], ...] = (
      "the interface line in the lead block"),
     ("README.ja.md", re.compile(r"\[MCP サーバー\]\(https://misakanet\.org/mcp\)（(\d+)\s*ツール）"),
      "the interface line in the lead block"),
+    # Added 2026-10-17 with the README rework: the zh-CN lead block now mirrors the English one, so the
+    # count it retypes is pinned here rather than sitting in prose the gate cannot see.
+    ("README.zh-CN.md", re.compile(r"\[MCP 服务器\]\(https://misakanet\.org/mcp\)（(\d+)\s*个工具）"),
+     "the interface line in the lead block"),
     ("README.zh-CN.md", re.compile(r"Streamable HTTP，(\d+)\s*个工具"),
      "the service row of the three-layer table"),
     ("README.zh-CN.md", re.compile(r"\*\*(\d+)\s*个\s*`misakanet_\*`\s*工具"),

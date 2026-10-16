@@ -7,7 +7,16 @@ self-reported guess and a CI-verified fix stop looking identical.
     E1  maintainer reviewed
     E2  local smoke reproduced
     E3  sandbox / CI verified recovery
-    E4  reused successfully by another contributor or agent
+    E4  observed reuse by distinct clients  (never declared, never voted)
+
+E0–E3 describe what somebody did *to* a lesson (review it, reproduce it, run it
+through CI). E4 is the one rung that is not a review action and not a statement
+anyone can write: two or more distinct clients actually retrieved the lesson,
+counted as ``COUNT(DISTINCT client_hint)`` over ``search_signals`` in the hosted
+worker. A helpful vote and a lesson's own ``verified by:`` line are declarations
+— they are recorded as E3 hints at every count and cannot confer E4
+(2026-10-16 votes, 2026-10-17 the lesson's own line). See
+``docs/trust-semantics.md``.
 
 Anything unknown, missing, or malformed normalises to E0 — the claim is never
 upgraded by accident.
@@ -22,7 +31,8 @@ EVIDENCE_SEMANTICS: dict[str, tuple[str, str, float]] = {
     "E1": ("Maintainer reviewed", "A maintainer accepted the intake", 0.25),
     "E2": ("Local smoke reproduced", "Maintainer or CI reproduced the fix", 0.5),
     "E3": ("Sandbox / CI verified recovery", "Automated verification in CI", 0.75),
-    "E4": ("Reused by another contributor / agent", "Usage report from a different user", 1.0),
+    "E4": ("Reused by distinct clients (observed)",
+           "Two or more distinct clients retrieved the lesson, counted from search_signals", 1.0),
 }
 
 EVIDENCE_LEVELS = list(EVIDENCE_SEMANTICS)
@@ -32,7 +42,7 @@ PROMOTION_RULES = [
     ("E0", "E1", "A maintainer reviews the lesson and accepts it (review)"),
     ("E1", "E2", "Someone reproduces the failure and the fix locally (reproduce)"),
     ("E2", "E3", "CI or a sandbox run verifies the recovery automatically (CI verify)"),
-    ("E3", "E4", "A different contributor or agent reports reusing it successfully (external reuse)"),
+    ("E3", "E4", "Two or more distinct clients are observed retrieving the lesson (observed reuse)"),
 ]
 
 # Quality score keeps its own 0–1 range; evidence rescales it into a trust

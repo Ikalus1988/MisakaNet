@@ -6,7 +6,17 @@
 
 # failure-memory protocol（failure-memory protocol）
 
-> **MisakaNet** 是 failure-memory protocol 的参考实现：一个 Git 驱动、纯标准库优先的 AI Agent 失败经验知识网络。
+> **同一个失败，付两次钱。**
+>
+> 一次 `pip install` 在公司代理后面超时。某个 agent 读了证书链、找到那个参数、修好了。几天后同样的超时
+> 出现在另一个仓库、另一台机器、另一个模型上 —— 而这一次要从头查一遍，因为新的 agent 无从知道有人已经
+> 为它付过账。修复一直都在，只是没有写在下一个 agent 会去看的地方。
+>
+> MisakaNet 就是那个地方：一个 Git 支撑的**失败记忆**。每条 lesson 都是本仓的一个 Markdown 文件，
+> 按证据分级、像代码一样评审，被 agent 检索而不是被猜。你踩一次，下一个 agent 不必再踩。
+>
+> Agent 原生接口：[MCP 服务器](https://misakanet.org/mcp)（8 个工具）、WebMCP（浏览器
+> `navigator.modelContext`）、`llms.txt` / `llms-full.txt`，以及 `.well-known/agent-card.json` 的 A2A 发现。
 
 <p align="center">
   <img src="promotional/og-card.png" width="720" alt="MisakaNet — failure-memory protocol 参考实现"/>
@@ -15,7 +25,12 @@
 <p align="center">
   <em>核心</em>
   &nbsp;&nbsp;
-  <a href="https://github.com/Ikalus1988/MisakaNet/actions/workflows/pr-quality-gate.yml"><img src="https://github.com/Ikalus1988/MisakaNet/actions/workflows/pr-quality-gate.yml/badge.svg" alt="CI"/></a>
+  <!-- CI 徽章指向 `pr-checks.yml`（`audit` job：跑本仓的 Python 测试套件），2026-10-17 之前指向
+       `pr-quality-gate.yml` —— 那个 workflow 只打质量标签，由 `check_run: [completed]` 触发且
+       cancel-in-progress，它自己的文件头记着后果：被取消的 run 会被 `gh` 报成 `fail`，而同一次检查
+       实际是 `cancelled`（"最近 12 次里 2 次被取消、0 次因真实原因失败"）。实测 2026-10-17：旧徽章渲染
+       "failing"，`pr-checks.yml` 渲染 "passing"。它本来就不在四条必需检查里，所以这是纠正而不是藏红。 -->
+  <a href="https://github.com/Ikalus1988/MisakaNet/actions/workflows/pr-checks.yml"><img src="https://github.com/Ikalus1988/MisakaNet/actions/workflows/pr-checks.yml/badge.svg" alt="CI"/></a>
   <a href="https://github.com/Ikalus1988/MisakaNet/tree/main/lessons"><img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/Ikalus1988/MisakaNet/data/badges/lessons.json" alt="知识"/></a>
   <a href="https://github.com/Ikalus1988/MisakaNet/blob/main/scripts/mcp_server.py"><img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/Ikalus1988/MisakaNet/data/badges/tools.json" alt="MCP 工具"/></a>
   <a href="https://misakanet.org/api/search-index"><img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/Ikalus1988/MisakaNet/data/badges/retrieval.json" alt="检索后端（今日）"/></a>
@@ -38,18 +53,22 @@
 <p align="center">
   <em>生态</em>
   &nbsp;&nbsp;
-  <a href="https://glama.ai/mcp/servers/Ikalus1988/MisakaNet/score"><img src="https://glama.ai/mcp/servers/Ikalus1988/MisakaNet/badges/score.svg" alt="Glama 评分"/></a>
   <a href="https://glama.ai/mcp/connectors/org.misakanet/misaka-net"><img src="https://glama.ai/mcp/connectors/org.misakanet/misaka-net/badges/score.svg" alt="MisakaNet MCP 连接器 — Glama 上的工具定义质量与端点健康度"/></a>
   <a href="https://mcptoplist.com/server/io.github.Ikalus1988%2Fmisakanet"><img src="https://mcptoplist.com/badge/io.github.Ikalus1988%2Fmisakanet.svg" alt="MCP Toplist"/></a>
   <!-- Smithery 徽章使用 shields.io 的 'endpoint' 徽章，动态读取 data/badges/smithery.json 里的
        Kin 评分 —— 由 update-smithery-badge 工作流每日刷新，因此无需手工 PR 也能保持同步。 -->
   <a href="https://smithery.ai/servers/misakanet/misakanet"><img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/Ikalus1988/MisakaNet/refs/heads/data/badges/smithery.json" alt="Smithery"/></a>
-  <!-- HOL 徽章：链接仍指向 hol.org（其收录检测会在 README 里找这块徽章，值 +2% 信任分），
-       但图片是一块静态 flat 盾牌 —— 走 shields.io 访问实时的 hol.org/api/... 端点过慢且不稳定，
-       曾渲染成 "inaccessible" / 样式不符。 -->
-  <a href="https://hol.org/registry/plugins/Ikalus1988%2FMisakaNet"><img src="https://img.shields.io/badge/HOL%20Registry-listed-5599FE?style=flat" alt="MisakaNet 已上架 HOL Registry"/></a>
-  <a href="https://github.com/Ikalus1988/MisakaNet/tree/main/docs/benchmarks"><img src="https://img.shields.io/badge/Benchmark-Weekly%20Workers%20AI-blue" alt="Benchmark"/></a>
+  <!-- HOL Registry 徽章已于 2026-10-17 移除：它是一块 shields 静态盾牌，写的是我们自己的字符串
+       （"HOL Registry: listed"），而它指向的收录页对任何非浏览器抓取都返回 403 —— 包括 hol.org/registry
+       本身（那是 Cloudflare 挑战页，不是我们能读到的页面）。也就是说这个文件里没有任何东西能证明 hol.org
+       真的收录了我们，而无法核验的「listed」正是本次重写要清掉的那一类。若要恢复，请换成读者（或某条检查）
+       真的能打开的收录链接。 -->
+  <!-- Benchmark 徽章已于 2026-10-17 移除：它写死的字符串是 `Benchmark / Weekly Workers AI`，而周度
+       运行已经暂停 —— 静态徽章没法变真，而一个写着 "weekly"、旁边却是停掉的 job 的徽章，比没有徽章更
+       伤信任。诚实的形态在正文里：`## 基准：它测了什么，为什么暂停了`，并链接最后一份快照。 -->
 </p>
+
+<p align="center"><em>第三方安装徽章要读对：<a href="https://www.dsh.so/artifact/misakanet/">dsh.so</a> 验证的是安装跑在哪个 <b>dsh 宿主版本</b>上，并把这个版本号印在徽章里。它的无版本徽章会滞后 —— 2026-10-17 实测它写 <code>0.1.6a2</code>（dsh <code>0.1.6-alpha.2</code>，2026-09-20），而 dsh.so 针对 <code>0.2.1-alpha.4</code> 的定版徽章同样显示已验证。所以这个数字是它的记录，不是我们的发布标记，也不是我们的兼容性声明：本仓声明的宿主版本在 <a href="docs/compatibility.md">compatibility</a> 里。它保持不带版本号是刻意的 —— 定版徽章需要有人在每次发布时改它，而本仓不会为此加 job。</em></p>
 
 ---
 
@@ -158,6 +177,28 @@ for r in search_lessons("pip install timeout"):
     print(r["title"], r["score"])
 ```
 
+> **徽章墙上的数字要读对。** MCP 工具数只认我们自己那块 **MCP 工具**徽章（读 `data/badges/tools.json`，现在是 8）；
+> 第三方评级徽章里的数字是第三方的文字，可能过期 —— 实测 2026-10-17 Glama 的 server 徽章仍写着 "11 tools"，
+> 而端点服务 8 个。所以墙上只留措辞正确的那块 connector 徽章（并已说明理由），两个 Glama 徽章并排会让人以为它们互相印证。
+> Glama 列表本身的陈旧由 [#3323](https://github.com/Ikalus1988/MisakaNet/issues/3323) 追踪。
+
+### 第一次成功：跑一次真实检索
+
+装好只是过程，**第一次查到东西**才是目的。拿一个你自己踩过的错误去问（语料就是失败本身，
+一个你真记得的失败才是最诚实的测试），不要用 demo 关键词。没装任何客户端时，这一段 `curl` 就是全部接口：
+
+```bash
+curl -sS https://misakanet.org/mcp \
+  -H 'Content-Type: application/json' -H 'Accept: application/json' \
+  -H 'MCP-Protocol-Version: 2025-06-18' -H 'Origin: https://misakanet.org' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/call",
+       "params":{"name":"misakanet_search","arguments":{"query":"database is locked","top":3}}}'
+```
+
+命中会返回 lesson、它的 `evidence_level` 和它在仓库里的路径 —— 打开文件读修复，再决定要不要执行里面的命令。
+未命中会返回 `no_match` 和一条可直接调用的 intake：那也是一个结果，是语料在告诉你它还不认识这个失败，
+而把它补上最快的方式就是[参与共创](#参与共创)。
+
 ---
 
 **遇到 CI / DCO / pip / token / Agent 问题？** [从 Journey 开始](https://misakanet.org/journey/)，先搜索 lesson 再提 PR。
@@ -175,7 +216,8 @@ AI Agent 在不同环境中反复遇到相同的 bug：WSL 上 pip 超时、NTFS
 
 MisakaNet 把个人调试经验变成**可搜索的共享知识**。一个 Agent 踩坑 → 记录修复路径 → 所有 Agent 跳过同一个失败路径。
 
-> **不需要服务器、不需要数据库、不需要守护进程。** `git clone` + `python3 search_knowledge.py` 即可。
+> **可以完全离线用。** `git clone` + `python3 search_knowledge.py` 就是一条完整的检索路径；
+> 托管的 MCP 端点（`https://misakanet.org/mcp`）只是为了让你不必 clone，二者是同一份语料。
 
 ### 核心概念
 
@@ -233,6 +275,104 @@ Benchmark           →  验证是否真的学会避坑
 
 ---
 
+## 今天的它在哪里
+
+**会变的数字是徽章，这是刻意的。** 顶部「知识」徽章不是写在这页上的数字，而是渲染
+`data/badges/lessons.json` —— 由 `update-badges.yml` 从 `data/lessons.json` 重新生成：每次 push 碰到
+`lessons/**` 时跑一次，另外每周至少一次。所以它是**按计划生成的测量值**，不是实时读取，可能滞后一轮；
+即便这样，也好过让本仓手工维护一个总数（本仓已经把硬编码的语料计数**删掉**了）。「MCP 工具」徽章同理，
+「检索后端」徽章报告此刻是哪条检索路径在答。`python3 scripts/sync_lesson_count.py --check` 是让计数和文案
+指向同一来源的门禁。
+
+**证据阶梯的最高一档是空的，README 直说。** E4 要求一条观测：**两个及以上不同客户端真的检索过这条 lesson**。
+`python3 scripts/evidence_distribution.py` 报出来的是 **0**。完整分布（declared / 默认 / 空档）由脚本生成到
+[`docs/trust-semantics.md`](docs/trust-semantics.md)，CI 每次都用语料重新推导，所以它不会悄悄过期。
+我们把最不利于自己的那个数写进访客最先读的文件里。
+
+完整阶梯（**E0–E3 是有人对 lesson 做过什么；E4 是别人真的回来用过它**）：
+
+| 等级 | 含义 | 怎么达到 |
+|---|---|---|
+| **E0** | 贡献者自报（默认） | intake 的默认值 |
+| **E1** | 维护者复核过 | 维护者接受这条 intake |
+| **E2** | 本地复现过 | 维护者或 CI 复现了修复 |
+| **E3** | CI / 沙箱验证过 | 自动化验证跑通 |
+| **E4** | **两个及以上不同客户端观测到复用** | 由 worker 从 `search_signals` 的 `COUNT(DISTINCT client_hint)` 数出来 —— 投票给不了，课程正文里写「verified by」也给不了 |
+
+这个数字真正在说什么，以及我们看得到的其他缺口：
+
+- **还没有任何一条 lesson 靠「被用过」证明过自己。** 不是因为没人复用，而是因为这条信号刚开始统计，
+  而且它**故意少算**：匿名调用者不写 `client_hint`，所以一条每天都被复用的 lesson 也可能停在 0。
+  一个"沉默时可能算错、但无法靠改文件灌水"的信任信号，好过一个能被编辑出来的信号。
+- **大多数 lesson 根本没声明等级。** 按默认规则它们读作 `E0`，不是因为有人判定它们没证据。
+  E0 这一档大多是**没写**，不是**没证据** —— 把 E0 当成「差」是另一种假话。
+- **检索是 BM25，匹配词，不匹配意思。** 用一份语料从没见过的说法描述失败就是未命中，而调检索器修不了语料缺口。
+  这就是未命中返回 `no_match` + intake 而不是返回空页面的原因。
+- **本文里的 benchmark 已经暂停，而且它从来没测过检索。** 它测的是"把一份材料递给模型，模型复述多少"。
+  下面[基准](#基准它测了什么为什么暂停了)那一节说明它证明了什么、没证明什么，并链接最后一份快照。
+- **报上来的缺口比被分诊的快。** intake 队列才是诚实的瓶颈；路线图的第一个里程碑就是闭合这条循环，而不是增长什么。
+
+## 它要往哪里去
+
+有两件事必须分开：一件是产品，另一件只是假设。
+
+**A —— 为一个人的 agent 服务的失败记忆（产品）。** owner 自己的 agent，跨宿主、跨会话、跨模型，
+不再为同一个失败付两次钱。这就是产品，KPI 是**复发率**：一条归一化后的查询隔几天又出现，说明上一次的答案没生效。
+**只看内部指标** —— A 要成立，不需要增长、用户数或 star。
+
+**B —— 别人 agent 组成的公开网络（选项，不是承诺）。** 它**不在路线图上**。它是一个带检验的假设，
+入口**判据是一条观测**：client breakdown 里必须出现一个**不是我们的**节点，且**同时**做过一次检索和一次写入。
+在那之前，B 不做计划、不做承诺、不为其设计 —— **B 不出现本身是一个发现，不是失败**。
+
+通往 A 的三个里程碑。每个都带一个**证伪判据**：出现什么观测就说明它没在起作用 —— 看不到失败的计划是口号。
+
+| # | 里程碑 | 做成的样子 | 没在起作用的观测 |
+|---|---|---|---|
+| **1** | **闭合 A 的循环。** 先做 intake 归因完整性（一条报料必须能追溯到它产出的课程）→ 让管线为自己的产出作证（报料者能拉回 conversion receipt）→ 让心跳读 client breakdown → 让复发率成为 KPI。 | 报过一次的失败不再以新查询的形式回来；每次转化都能归因到产生它的那条报料。 | 课程已经存在之后，归一化查询仍在复发；或存在无法归因的转化 —— 那意味着这条循环不可审计。 |
+| **2** | **先查再动手。** pre-task hook：让 agent 在**动手之前**查记忆，而不是失败之后。 | 检索发生在尝试之前，由 agent 自己发起，出现在普通会话里。 | 检索量不动；或只在失败之后才触发 —— 那是挂着「预防」名字的尸检工具。 |
+| **3** | **B，证据门控。** 入口判据成立才做；形态是**与新用户的共创**，不是推广。 | 非我们的节点做了一次检索**和**一次写入，且它的课程被第三个节点用上。 | 一个季度过去仍无非我们的节点；或陌生节点只读不写（消费者，不是参与者）；或只写不读（垃圾渠道）。 |
+
+里程碑 3 **不设日期**：它由证据门控，不由日历门控。完整推理与"明确不做什么"见 [ROADMAP.md](ROADMAP.md)。
+
+## 参与共创
+
+未命中不是死胡同，它是这套系统真正的输入。
+
+**① 报一个语料里还没有的失败。** 先搜；搜不到就调 `misakanet_submit_intake` —— 不要账号、不要邮箱、不要 token，
+五行就够，它会变成一条可追踪的 issue，维护者可以把它写成 lesson。别的 agent 也会撞上同一面墙；
+只有你的会话还记得那些细节。
+
+**② 复用之后留下痕迹。** 「这条帮到了我」会记成一条 `E3` 提示 —— 我们不假装它是证据，因为被展示这个按钮的人
+通常不是提问的人。真正的证据更安静，也不需要你做任何事：你的检索会被**匿名**计成又一个用过这条 lesson 的不同客户端。
+
+**你会拿回什么：署名。** 一条 lesson 会在自己的 frontmatter 里引用产生它的 intake（`source:`、`provenance.issue:`），
+所以"有人报过 → 合并成 lesson"这条链是写下来、可核对的。你的报料转正后，管线**可以**发出一张回执，
+写明 lesson 和它的证据等级 —— 而匿名报料者没有可被通知的 thread，所以他们用**原样重发同一段 problem 文本**
+把回执拉回来（[`scripts/intake_receipt.py`](scripts/intake_receipt.py)）。贡献者积分按**复用**加权而不是按提交量加权
+（[`docs/reputation.md`](docs/reputation.md)）—— 这正是空的 E4 那一档在说的事。
+
+这里没有 bounty：本仓不付钱、也不承诺任何奖励。唯一会做的是把你的 lesson 合并、署上来源，放在下一个 agent 会看的地方。
+（第三方悬赏横幅的披露见 [CONTRIBUTING.md](CONTRIBUTING.md)：那些横幅由我们自己的自动化附加，我们不发放、也不管理那些赏金。）
+
+## 基准：它测了什么，为什么暂停了
+
+只测过一个更窄的问题：**把一条 lesson 递给模型，它能把这条 lesson 复述回多少？** 指标是 `lesson_hit_rate`
+（被注入的那条 lesson 的命令在回答里复现的比例）。题目用的是每条 lesson 自己的标题，注入的"匹配 lesson"就是它自己，
+**不调用检索、也不检查正确性**。所以它测的是 RAG 里的**复述**那一半：MisakaNet 要能帮上忙，这是必要条件；
+它**不是"搜索能找到东西"的证据** —— "按你描述的失败检索到对的那条 lesson"这句话目前没有任何测量支撑。
+
+这条流水线**已暂停**：它不再作为门面指标维护，定时任务已关掉，留下的是最后一版快照和它的日期记录 ——
+2026-09-22 两次各约 500 条场景的独立运行，**贴入 lesson 46.1%** 对**不贴 23.3%**。链接最后一份快照
+[`docs/benchmarks/latest.json`](docs/benchmarks/latest.json) 才是这一节诚实的样子：把一个已暂停的项目画成趋势线，
+正是上一版文案和自己的产物对不上的原因。逐次运行的文件在 [`docs/benchmarks/`](docs/benchmarks/)，
+指标定义是 [`scripts/benchmark_workers_ai.py`](scripts/benchmark_workers_ai.py) 里的 `METRIC_DEFINITION`。
+
+**它有意输在哪里：** BM25 匹配词，不匹配意思。用一份语料从没见过的说法描述失败就是未命中，而调检索器修不了语料缺口。
+这就是未命中返回 `no_match` + intake 而不是返回空结果的原因 —— 诚实的回答是"这条我们还不知道"，
+而它同时也是告诉维护者下一篇该写什么的信号。
+
+---
+
 ## 和传统 RAG / 私人记忆系统有什么不同？
 
 | | MisakaNet | Letta | MemMachine | LangMem | Evolver |
@@ -243,7 +383,8 @@ Benchmark           →  验证是否真的学会避坑
 | **离线优先** | ✅ 完整离线搜索 | ❌ 需要服务器 | ❌ 需要服务器 | ⚠️ 部分 | ❌ 需要服务器 |
 | **入门成本** | `git clone`（5 秒） | Docker（~15 分钟） | Docker（~15 分钟） | `pip install` | Docker（~20 分钟） |
 
-**MisakaNet 的护城河：** 每个新节点和每条新 lesson 都让网络指数级更强——不需要服务器基础设施。
+**MisakaNet 的取舍：** 每个新节点和每条新 lesson 都让这张网更值钱；代价是检索质量取决于语料是否覆盖了你
+遇到的那类失败 —— BM25 匹配词，不匹配意思，没收录过的说法就是查不到。这也正是"未命中"要变成一条 intake 的原因。
 
 ---
 
@@ -349,7 +490,7 @@ python3 search_knowledge.py "database locked"
 |------|------|
 | **Lesson Lint** | 自动化质量检查：断链、重复标题、缺少 frontmatter |
 | **竞争分析** | "这不是什么" 表格 + Git-backed 定位 |
-| **289 篇 Lessons** | 新增 14 篇失败修复经验（原 275） |
+| **Lessons 语料** | 新增 14 篇失败修复经验（当时的总数见顶部「知识」徽章 —— 这个数字有活来源，所以这里不再写死） |
 | **安全加固** | MCP 路径遍历修复、XSS 转义、邮箱脱敏 |
 | **移动端适配** | /connect 页面手机可用（768px + 480px 断点） |
 | **代码规范** | CONTRIBUTING.md 含 ruff（Python）+ ESLint（TypeScript）约定 |

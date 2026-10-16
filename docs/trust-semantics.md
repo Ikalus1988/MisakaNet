@@ -76,13 +76,15 @@ Claiming "verified" when lessons are only "indexed" erodes trust when a lesson t
 | **E1** | Maintainer reviewed | A maintainer accepted the intake | 0.25 |
 | **E2** | Local smoke reproduced | Maintainer or CI reproduced the fix | 0.50 |
 | **E3** | Sandbox / CI verified recovery | Automated verification in CI | 0.75 |
-| **E4** | Reused by another contributor / agent | Usage report from a different user | 1.00 |
+| **E4** | Reused by distinct clients (**observed**) | Two or more distinct clients actually retrieved the lesson (`COUNT(DISTINCT client_hint)` over `search_signals`) | 1.00 |
 
 ### Rules
 
 - **Default is E0.** A missing, empty, malformed, or unknown `evidence_level` reads as E0 everywhere — evidence is never assumed. `scripts/queue_lesson.py` writes `"evidence_level": "E0"` on new lessons.
 - **One step at a time.** Promotion is E0 → E1 → E2 → E3 → E4; skipping levels means the intermediate evidence was never produced.
 - **Evidence is not writing quality.** A beautifully written but unreproduced lesson is still E0.
+
+- **E4 is the one rung nobody can write, vote, or merge a lesson into.** It reads an observation from the transport layer, so it is the only level not produced by editing a file. `scripts/infer_evidence_level.py` therefore never infers it (see below), and the `E3 → E4` row above is the only way up.
 
 ### Promotion rules
 
@@ -91,9 +93,9 @@ Claiming "verified" when lessons are only "indexed" erodes trust when a lesson t
 | E0 | E1 | A maintainer reviews the lesson and accepts it (**review**) |
 | E1 | E2 | Someone reproduces the failure and the fix locally (**reproduce**) |
 | E2 | E3 | CI or a sandbox run verifies the recovery automatically (**CI verify**) |
-| E3 | E4 | A different contributor or agent reports reusing it successfully (**external reuse**) |
+| E3 | E4 | Two or more distinct clients are **observed** retrieving the lesson (**observed reuse**) |
 
-To promote a lesson, edit `evidence_level` in its frontmatter in the same PR that carries the evidence (review comment, reproduction log, CI run link, or the usage report).
+To promote a lesson through E1–E3, edit `evidence_level` in its frontmatter in the same PR that carries the evidence (review comment, reproduction log, or CI run link). E4 is not edited into a file: it is counted from `search_signals` by the worker, and a lesson that declares `E4` in frontmatter without that observation is claiming something no file can establish.
 
 ### What the corpus actually looks like
 
@@ -114,16 +116,20 @@ when the committed table stops matching the corpus, so it cannot rot the way a h
 
 - Total lessons: **489**
 - At **E0** in total (declared + default): **340** (69.5%) — of which **302** declare no level at all
-- At **E4** (*reused by another contributor or agent*): **0**
+- At **E4** (*observed reuse by two or more distinct clients*): **0**
 
 Three things this says that the definitions above do not:
 
 1. **302 of 489 lessons never declare a level.** They read as E0 by the default rule, not by a
    decision. That is the honest reading of "evidence is never assumed" — and it means the E0
    population is mostly *unwritten*, not *unevidenced*.
-2. **No lesson has ever reached E4.** The top of the scale means "a different contributor or agent
-   reports reusing it", and not one has. Any reuse narrative the project tells should be read
-   against that zero.
+2. **No lesson has ever reached E4.** The top of the scale rests on an observation — two or more
+   distinct clients actually retrieving the lesson — and nothing has met it. It is also not
+   reachable by declaring it: on 2026-10-17 the two lesson pages that carried an `E4` badge were
+   found to have been inferred from their own prose (`scripts/infer_evidence_level.py` matched
+   `verified by` / `cross-node confirmation` in the body), which is the declaration this rung
+   excludes. That branch was removed; the two lessons declare no level and therefore read `E0` by
+   the default rule above. Any reuse narrative the project tells should be read against that zero.
 3. **E3 is 16 lessons (3.3%).** CI-verified recovery is rare, so a "promote on CI evidence" push has
    a small denominator to work with.
 

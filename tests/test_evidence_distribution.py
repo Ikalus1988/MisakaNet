@@ -49,9 +49,14 @@ def test_check_fails_when_the_table_drifts(tmp_path):
     to know it bites is to make it bite on purpose.
     """
     original = DOC.read_text(encoding="utf-8")
-    doctored = original.replace("| **E2** (declared) | 76 |", "| **E2** (declared) | 75 |")
+    # The row is read out of the document rather than typed: the mutation used to name `76` while the
+    # table said `77`, so the `if doctored == original` guard turned this red case into a permanent
+    # skip — a gate that could no longer fail, which is the failure this whole file is about.
+    row = next((line for line in original.splitlines() if line.startswith("| **E2** (declared) |")), None)
+    assert row is not None, "the E2 row disappeared — this fixture mutates the published table"
+    doctored = original.replace(row, row.replace("| 77 |", "| 76 |", 1))
     if doctored == original:
-        pytest.skip("the E2 row no longer says 76 — update the mutation to a row that exists")
+        pytest.skip(f"the E2 row no longer reads `| 77 |` — update the mutation: {row!r}")
     target = tmp_path / "trust-semantics.md"
     target.write_text(doctored, encoding="utf-8")
     result = _run("--check", str(target))

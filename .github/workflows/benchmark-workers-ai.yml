@@ -1,9 +1,15 @@
-name: Workers AI Lesson Benchmark (weekly)
+name: Workers AI Lesson Benchmark (paused)
 
+# Paused 2026-10-17. The weekly aggregate is no longer maintained as a public headline: it measures
+# recitation of a document that was pasted into the prompt (no retrieval call runs), and the README
+# demoted its section to a short, dated record. `tests/test_benchmark_claims.py` reads this trigger and
+# the README together — a README that says "paused" next to a live cron is the same defect as the stale
+# trend table, one layer up. `workflow_dispatch` stays so the measurement can be re-run on purpose;
+# re-adding the schedule means re-adding the claim in all three READMEs.
 on:
-  schedule:
-    # Weekly: Monday 02:00 UTC (Sun night US / Mon morning Asia — high-traffic window)
-    - cron: '0 2 * * 1'
+  # schedule:                 # deliberately off (2026-10-17) — see the header comment
+  #   # Weekly: Monday 02:00 UTC (Sun night US / Mon morning Asia — high-traffic window)
+  #   - cron: '0 2 * * 1'
   workflow_dispatch:          # manual trigger
     inputs:
       scenarios:
