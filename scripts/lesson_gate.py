@@ -544,10 +544,17 @@ def find_duplicate_intake_claim(issue: str, repo: Path = REPO,
         except Exception:
             continue
         if issue in intake_claim(other_fm):
+            # `as_posix()`, not `str()`: these paths are read by a human in the gate message, and
+            # on Windows `str(Path)` renders them `lessons\contrib\b.md` while every other path in
+            # this repository — the `lessons/...` citations, the docs, git's own output, the fix
+            # commands `validate_location` prints — is forward-slash. A path that reads two ways is
+            # a path nobody trusts, and this message exists to let a contributor find that file in
+            # one look. Normalised here, at the point the value is produced, so no caller can
+            # forget it. (`validate_location` carries the same rule and the same reasoning.)
             try:
-                others.append(str(other.relative_to(repo)))
+                others.append(other.relative_to(repo).as_posix())
             except ValueError:
-                others.append(str(other))
+                others.append(other.as_posix())
     return sorted(others)
 
 

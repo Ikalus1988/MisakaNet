@@ -10,13 +10,14 @@ Structural validation for new lesson contributions:
 import json
 import subprocess
 import sys
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 
 import pytest
 
 REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO))
 
+import scripts.lesson_gate as lesson_gate  # noqa: E402
 from scripts.lesson_gate import (  # noqa: E402
     allowed_domains,
     find_duplicate_intake_claim,
@@ -712,3 +713,83 @@ class TestOneIntakeOneLesson:
         every synthetic test above.
         """
         assert find_duplicate_intake_claim("1553", REPO) == sorted(PRE_FIX_DUPLICATE_PAIR)
+
+
+# ── the message is a path a contributor reads: POSIX on every platform ───────────────────────
+#
+# `test (windows-latest, 3.11)` / `3.12` caught this on the first push of the rule above: the
+# duplicate-claim message named `lessons\contrib\b.md`. The rule was right and the *rendering* was
+# wrong — `str(Path)` is the native separator, while every other path in this repository (the
+# `lessons/...` citations, the docs, git's output, the `git mv` commands `validate_location`
+# prints) is forward-slash. This test exists because the Windows leg is the only place the
+# difference shows, and a red proof that can only run there is a red proof nobody replays locally.
+
+CLAIMING_LESSON_WINDOWS = """---
+{
+  "title": "a lesson that claims intake 1553",
+  "domain": "devops",
+  "tags": ["alembic"],
+  "status": "published",
+  "evidence_level": "E3",
+  "provenance": {"issue": "#1553"}
+}
+---
+
+## Problem
+
+## Root Cause
+
+## Solution
+
+## Verification
+"""
+
+
+class _WindowsShapedLesson(PureWindowsPath):
+    """A path object whose `as_posix()` differs from `str()`, like a real `WindowsPath`.
+
+    Deliberately **not** `pathlib.WindowsPath`: that class cannot be instantiated off Windows
+    (`NotImplementedError`), which is exactly the problem — the Windows rendering has to be
+    reproducible on a Linux/macOS developer machine, or the only thing enforcing it is a CI leg
+    nobody can run locally. `PureWindowsPath` renders `C:\\repo\\lessons\\b.md` from `str()` and
+    `C:/repo/lessons/b.md` from `as_posix()`, which is the whole difference under test.
+
+    The two shims are the only methods `find_duplicate_intake_claim` needs beyond `PurePath`:
+    `resolve()` (identity — the paths are already absolute) and `read_text()` (the frontmatter
+    the claim is read from).
+    """
+
+    def resolve(self):
+        return self
+
+    def read_text(self, encoding=None, errors=None):  # noqa: ARG002 — signature mirrors Path
+        return CLAIMING_LESSON_WINDOWS
+
+
+def test_the_duplicate_message_renders_posix_paths_on_every_platform(monkeypatch):
+    """The gate message a Windows contributor reads must name `lessons/contrib/x.md`.
+
+    Written as an *injection* rather than as an assertion about the local filesystem: the test
+    hands `find_duplicate_intake_claim` Windows-shaped paths (through the iterable it walks, which
+    is a module-level function precisely so this is possible without refactoring the rule) and
+    checks what comes back. That makes the fix bind locally instead of only on
+    `test (windows-latest, *)` — the same reason `tests/test_lesson_source_contract.py` says its
+    own separator check "can and cannot" do this, except here the injection is available.
+
+    Reverting the production line to `str(other.relative_to(repo))` fails the equality below, on
+    every platform, with the Windows rendering — which is the point.
+    """
+    repo = PureWindowsPath("C:/repo")
+    a = _WindowsShapedLesson("C:/repo/lessons/contrib/a.md")
+    b = _WindowsShapedLesson("C:/repo/lessons/contrib/b.md")
+
+    # Premise: this fixture really models Windows, or the assertion below proves nothing.
+    assert "\\" in str(b.relative_to(repo)), "the fixture no longer renders a Windows separator"
+    assert b.relative_to(repo).as_posix() == "lessons/contrib/b.md"
+
+    monkeypatch.setattr(lesson_gate, "_iter_active_lessons",
+                        lambda repo=None: iter([a, b]))  # noqa: ARG005 — mirrors the real signature
+
+    found = find_duplicate_intake_claim("1553", repo)
+    assert found == ["lessons/contrib/a.md", "lessons/contrib/b.md"], found
+    assert not any("\\" in path for path in found), found
