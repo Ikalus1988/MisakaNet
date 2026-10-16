@@ -117,8 +117,8 @@ ruleset 现在还能正常放行。
 | `pr-checks.yml` | 审计门禁：DCO 审计、密钥扫描、依赖审计、worker 测试、覆盖率 —— 必需 context `audit` 所在 | PR+types, 手工 | 2026-10-16 | — | 100+ | 4748 | success:78 failure:20 in_progress:2 | **是** |
 | `pr-genius-check.yml` | PR-Genius 机器评审，把分析贴成 PR 评论 | PR+types | 2026-10-16 | success | 100+ | 4116 | success:87 skipped:13 | — |
 | `pr-merged-thank.yml` | PR 合并后感谢贡献者 | PRt+types | 2026-10-16 | — | 100+ | 1918 | success:92 skipped:7 queued:1 | — |
-| `pr-quality-gate.yml` | 按 check 结果给 PR 贴质量标签 | PR+types, check后+types | 2026-10-16 | — | 100+ | 13758 | success:47 skipped:27 cancelled:22 queued:4 | — |
-| `pr-shape-guard.yml` | PR 形状（单主题、无 diff/markdown 泄露、引用不是认领） | PRt+types | 2026-10-16 | — | 100+ | 4190 | success:95 failure:4 queued:1 | — |
+| `pr-quality-gate.yml` | 按 check 结果给 PR 打标签（`needs-rebase`/`ready-to-merge`/`needs-dco`）——非必需检查 | PR+types, check后+types | 2026-10-16 | — | **1000（见 §2.4）** | 13798 | success:47 skipped:27 cancelled:22 queued:4 | — |
+| `pr-shape-guard.yml` | PR 形状标签与裁决（`shape-risk`/`generated-file`/`destructive-rewrite`/`needs-dco`；无 diff/markdown 泄露、引用不是认领） | PRt+types | 2026-10-16 | — | 100+ | 4190 | success:95 failure:4 queued:1 | — |
 | `pr-thank-you.yml` | PR 合并后感谢贡献者（另一份实现） | PRt+types | 2026-10-16 | success | 100+ | 1404 | success:93 skipped:7 | — |
 | `pr-welcome.yml` | 首次贡献者 PR 欢迎语 | PRt+types | 2026-10-16 | skipped | 100+ | 1974 | skipped:93 success:7 | — |
 | `protect-pinned-issues.yml` | 被 `Closes #N` 误关的长期 issue 自动 reopen | issue+types | 2026-10-16 | success | 100+ | 315 | success:100 | — |
@@ -222,7 +222,83 @@ cron 本来就是每月 1 日）。9 个 workflow 的 API `state` 全是 `active
 `pr-agent-review` / `pr-genius-check`（两个第三方机器评审，付费面与触发面不同）、
 `intake-kind-audit` / `dependency-vuln-audit`（都开周报 issue，但查的是两个不相干的清单）。
 
-### 2.4 补充：那个"从未报过它要报的漂移"的监控
+### 2.4 头号案例：`pr-quality-gate.yml`（一个只打标签的 workflow，成了最大的队列消费者）
+
+这一节是清点过程中单独追查的一条，因为它的形状与"门禁比它守的代码更容易出事故"正好对上。
+全部数字为 **2026-10-16 17:05 UTC** 实测。
+
+| 事实 | 值 | 怎么量的 |
+|---|---|---|
+| 有史以来运行 | **13,798** | `…/workflows/316639474/runs?per_page=1` 的 `total_count` |
+| 最近 8 天（10-09…10-16，本报告一次采集的上限 1000 条） | **1,000 次运行**，即 **125 次/天**，峰值 **264 次/天（10-16）** | 按 `created` 过滤并翻页到上限；10-09 是 33 次/天，一周内涨了 8 倍 |
+| 事件构成 | **`check_run` 867（86.7%）** / `pull_request` 133 | 同上 |
+| `check_run` 那一侧在做什么 | **0 次真正评估一个 PR**：最近 12 次全是 `head_branch: main`，7 次 `queued`、3 次 `cancelled`、2 次 `skipped` | `…/runs?event=check_run&per_page=12` |
+| `pull_request` 那一侧 | 最近 12 次**全 `success`** | `…/runs?event=pull_request&per_page=12` |
+| 是否必需检查 | **否**（必需四条见 §1.2） | ruleset API |
+| 它做什么 | 只打标签：`needs-rebase`、`ready-to-merge`、`needs-dco`（job id 与 check run 名都是 `quality-labels`） | 读文件 |
+| 前端影响 | README **第一行**的徽章就是它的**原始 workflow 徽章**，实测此刻渲染为 **`PR Quality Gate - failing`**；而真正的必需 CI（`pr-checks.yml` = "Misaka Network Agent Auditor"）是绿的 | `curl …/pr-quality-gate.yml/badge.svg` 的 `<title>` |
+
+**问题一：自触发环今天关上了吗？关上了，但它把成本留下来了。**
+文件头记的环是"`quality-labels` 这个 check run 完成 → 又触发自己"。今天的 `if:` 有两条边：
+
+```yaml
+if: >-
+  github.event_name == 'pull_request'
+  || (github.event.check_run.name != 'quality-labels'
+      && github.event.check_run.pull_requests[0].number != null)
+```
+
+第一条边**确实切断了环**：`quality-labels` 这个名字不再启动自己。但第二条边是 **job 级**的——
+它只在 run 被创建之后生效，所以**仓库里任何 check run 完成，仍然会创建一个 run**，只是这个 run
+的 job 被 skip。实测的形状正是如此：`check_run` 占 86.7%，它们的 job 结论要么 `skipped`
+（0 秒，不占 runner）要么 `cancelled`（在并发组里等约 1 分钟后被取消，也不占 runner）。
+所以真正的代价**不是 runner 分钟**，是两样别的：
+
+* **Actions 历史与队列**：每天约 108 次 `check_run` run（125 × 86.7%）被创建、排队、然后被取消。
+  它们的 `head_branch` 是 `main`，对任何一个 PR 都算不出结论。实测同一时刻**仓库有 77 个 run
+  在排队**（`status=queued`：`PR Quality Gate` 8、`PR Shape Guard` 7、CodeQL 7、`Bounty Claim
+  Guard` 5、`Cross-Platform Tests` 5…），而免费档的并发上限是 20 个 job——**队列才是这里最稀缺
+  的资源**。
+* **一个假的失败信号**：被取消的 run 让 workflow 级徽章变红。README 第一行因此显示
+  `PR Quality Gate - failing`，而它既不是必需检查，也没有真的评估失败过。
+
+**问题二：它重复吗？一半重复。**
+全仓只有两个 workflow 给 **PR** 打这些标签（`addLabels` 的调用点）：
+
+| 标签 | `pr-quality-gate.yml` | `pr-shape-guard.yml` | 有自动消费者吗 |
+|---|---|---|---|
+| `needs-dco` | 加/删 | 加/删（同一个 DCO 事实） | `pr-quality-gate` 自己把它当 `ready-to-merge` 的阻断项 |
+| `needs-rebase` | 加/删 | — | 无；`docs/label-system.md` 写给维护者看 |
+| `ready-to-merge` | 加/删 | — | 无；`docs/label-system.md` 写给维护者看 |
+| `shape-risk` / `shape-safe` / `generated-file` / `destructive-rewrite` / `risk:high` / `workflow-change` | — | 加/删 | `pr-quality-gate` 把前三个当 `ready-to-merge` 的阻断项 |
+
+所以 `needs-dco` 是**真重复**（两个 job 用同一个事实各写一次），`ready-to-merge` 是**唯一由它
+独家维护**的东西。`pr-checks.yml`、`auto-merge-docs.yml`、`auto-merge-lessons.yml` 都**不**打
+标签（实测 `grep -c addLabels` = 0）。
+
+**问题三：值这一个月约 3,750 次运行吗？**
+**不值，但删之前得搬走两样东西。** 建议顺序：
+
+1. 先把 `ready-to-merge` / `needs-rebase` 的判定搬进 `pr-shape-guard.yml`（它已经在
+   `pull_request_target` 上、已经读 check 与 mergeable、已经在维护 `needs-dco`），
+   并顺手把 README 第一行的徽章换成**必需检查**的那一个（`audit` / `gate` /
+   `test (ubuntu-latest, 3.11)`）。
+2. 然后删 `pr-quality-gate.yml`，同步 `docs/CI.md`（`tests/test_workflow_inventory.py` 会强制）
+   与 `docs/label-system.md` 里 `ready-to-merge` 的说明。
+
+**少了它会漏掉哪一种失败？** 就本报告能查到的范围：**没有**。它不阻断合并（不在 ruleset 里），
+它打的三个标签有两个没有任何自动消费者，第三个（`needs-dco`）`pr-shape-guard` 已经在打。
+它**唯一独有的产物是 `ready-to-merge` 这个给维护者看的提示**，以及 README 第一行那个徽章
+——而那个徽章现在报的是假失败。这是本报告里最干净的一个"说不出少了它会漏掉什么"。
+
+**一条与它相关、尚未证明的嫌疑（写给调查者，不是结论）：** 有报告称某类 PR 上必需检查从未被创建
+（`#3317` 那条分支整个历史的 `pull_request` 类 run 数为 0，而同一时刻别的分支正常）。
+一个每天创建上百次、大量占用队列、且以 `cancelled` 收场的 workflow 是**合理的嫌疑之一**，
+但本报告没有证据把两者连起来：它只创建自己的 run，没有任何机制阻止别的 workflow 的 run 被创建。
+**要证伪或证实，看队列深度与那批缺失 run 的时间戳是否重合**（`gh api
+'…/actions/runs?status=queued' | jq .total_count`），而不是看这个文件本身。
+
+### 2.5 补充：那个"从未报过它要报的漂移"的监控
 
 上一次提交（`fe55c7d6`，2026-10-16）修的是 `registry-drift-watch.yml`——它的检测逻辑写错了，
 所以它**从来没有报过它存在的唯一理由**。这类失败没法从运行历史里自动检出（"逻辑写错"不留形状），
@@ -264,10 +340,10 @@ cron 本来就是每月 1 日）。9 个 workflow 的 API `state` 全是 `active
 `stale.yml`、`question-autopilot.yml`、`issue-intake-triage.yml`、`issue-quality-gate.yml`、
 `intake-auto-review.yml`、`intake-salvage-digest.yml`、`intake-kind-audit.yml`、
 `protect-pinned-issues.yml`、`workers-builds-watch.yml`、`pr-audit-watch.yml`、
-`pr-shape-guard.yml`、`pr-quality-gate.yml`、`bounty-claim-guard.yml`、`codeql.yml`、
+`pr-shape-guard.yml`、`bounty-claim-guard.yml`、`codeql.yml`、
 `docs.yml`、`dsh-client-e2e.yml`、`provenance-gate.yml`、`guarded-repository.yml`、
 `shadow-branch.yml`、`intake-benchmark.yml`、`benchmark-workers-ai.yml`、
-`arch-review.yml`、`cf-diagnostics.yml`（后两个见 §2.4），以及 `intake-bot-demo.yml`
+`arch-review.yml`、`cf-diagnostics.yml`（后两个见 §2.5），以及 `intake-bot-demo.yml`
 ——它是那个**已发布 GitHub Action** 的唯一狗粮路径：`tests/test_intake_bot_action.py` 用 13 个
 测试钉着它，删它会让 `Ikalus1988/MisakaNet@v1` 没有任何自动验证。**要减它的运行数，走 §3.3
 组 A 的合并，而不是删文件。**
@@ -283,7 +359,7 @@ cron 本来就是每月 1 日）。9 个 workflow 的 API `state` 全是 `active
   集中在窗口前段（含 2026-10-07 那次被 `timeout-minutes` 弄成"GitHub 拒绝解析"的时段）。
   要归因得去 Actions 页读一个具体失败的 run（API 日志已不可取，见 §1.5）。
 
-### 3.3 合并（三组，按可行性排序）
+### 3.3 合并（四组，按可行性排序）
 
 **组 A（推荐，但需要一次小心的一致性改动）：`intake-bot-demo.yml` → 并入
 `ci-lesson-search.yml`。**
@@ -313,6 +389,14 @@ skipped run。累计 35,825 + 24,134 = **59,959 次运行**。
 `concurrency` 组（或让三者都走同一条 `land_change.py` 式通道），**不删任何文件**。
 少了它会漏掉：**没有**。
 
+**组 D（推荐，但需要两步）：`pr-quality-gate.yml` → 并入 `pr-shape-guard.yml`。**
+完整实测见 §2.4：一个只打标签、不在 ruleset 里的 workflow，却是有史以来运行最多的几个之一
+（13,798 次；最近 8 天 1,000 次、峰值 264 次/天），86.7% 的 run 由 `check_run` 触发、对任何 PR
+都算不出结论，而它的原始徽章挂在 README 第一行、此刻渲染为 `PR Quality Gate - failing`。
+**不能直接删**：`ready-to-merge` / `needs-rebase` 目前只有它在维护。先搬标签判定，
+再删文件并同步 `docs/CI.md`、`docs/label-system.md` 与 README 的徽章。少了它会漏掉：**没有**
+（`needs-dco` 两边都在打；另两个标签没有自动消费者，见 §2.4 的表）。
+
 ### 3.4 移除：建议删（3 个），附"少了它会漏掉什么"
 
 | # | 文件 | 建议 | 少了它会漏掉哪一种失败 |
@@ -320,6 +404,10 @@ skipped run。累计 35,825 + 24,134 = **59,959 次运行**。
 | 1 | `example-capture.yml` | **删**（或搬进 `docs/`） | **说不出。** 文件自述 "does NOT auto-publish"、名字带 "(not active)"、**累计 0 次运行**。它是给外部用户抄的用法示例。搬去文档后功能仍在，Actions 列表少一条。 |
 | 2 | `intake-pipeline-test.yml` | **删**（需第二次意见） | **说不出。** 累计 **1 次**运行（2026-08-28），30 天 0 次，是 PRD ③ 的一次性手工冒烟，今天没有任何自动调用者。**为什么需要第二意见**：它验证的是"D1 里真的落了 draft 行、issue 真的开了"这条端到端路径；如果 `intake_pipeline.py` 仍需要一个人工冒烟入口，删它会少一个工具。 |
 | 3 | `cite-lesson.yml` | **删**（需第二次意见） | **说不出。** 最近 30 天 100/100 skipped，窗口内没有一次非 skipped 结果；它已经在 `tests/test_no_workflow_pushes_to_main.py` 的例外名单里，理由是"它的 `git push` 目前什么都不推（前一步不写任何文件）——**是一次 no-op，不是被拦住的写**"。也就是说它维护着一条什么都不做的路径。**为什么需要第二意见**：`usage` 标签的引用追踪是**产品特性**（不是 CI），删 workflow 等于 retire 这个特性；`docs/CI.md` 也把它列为"设计上安静"的一类。**先决定特性是否还要，再决定 workflow。** |
+
+> `pr-quality-gate.yml` 也是一个"说不出少了它会漏掉什么"的候选，但它有一件必须**先搬走**的
+> 独家产物（`ready-to-merge` / `needs-rebase`），所以它的处置写在 §3.3 组 D，不列在这里：
+> 一个"先删再补"的顺序会把标签静默丢在空档里。
 
 ### 3.5 移除：**不建议**删（容易被误删，逐个说明）
 
@@ -358,7 +446,10 @@ skipped run。累计 35,825 + 24,134 = **59,959 次运行**。
 
 ### 3.7 结论：把数说出来
 
-**84 个 workflow 文件保护着远少于 84 类的失败。** 按本报告能叫出名字的独立失败面归类，
+**84 个 workflow 文件保护着远少于 84 类的失败。** 单是 §2.4 的 `pr-quality-gate.yml`
+（一个只打标签、不阻断合并的 workflow）就占了最近 8 天 1,000 次运行里的 86.7% 的"算了半天没有 PR"
+的份额——**workflow 数量与失败面之间的差距，最大的那一块就是这种"触发面按事件而不是按需要"的
+形状**。 按本报告能叫出名字的独立失败面归类，
 真正不可替代的失败面约 **20 种**（四个必需 context、安装器 e2e、wheel、MCP 压测、
 课程结构 / 质量 / 安全 / 来源、field report schema、外部资源完整性、已存在依赖的 CVE、
 门禁能否变红、文档 vs ruleset、站点健康、部署新鲜度、审批等待、D1 同步、question 同步、
