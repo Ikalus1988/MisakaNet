@@ -3,7 +3,8 @@
 > 来源：[issue #1778 — fork PR 签核短路径：`/adopt` 收养流程（不依赖 PAT）](https://github.com/Ikalus1988/MisakaNet/issues/1778)
 > 相关文件：`.github/workflows/adopt-pr.yml`（触发与编排）· `scripts/adopt_pr.py`（计划与执行）· `tests/test_adopt_pr.py`（离线测试）
 > 先例：[PR #1756](https://github.com/Ikalus1988/MisakaNet/pull/1756) —— 维护者用 `Co-authored-by: 2lll5` 把别人的工作落地成 squash commit
-> 状态：本文件描述的能力已实现；PAT 方案（§6）**未执行**，需要维护者自己配 secret
+> 状态：本文件描述的能力已实现；§6 的"给 `fix-dco.yml` fork 写权限 PAT"方案**未执行**。
+> `/adopt` 自己用**既有的** `SHELDON_PAT` 推同仓分支——这不是新密钥，原因是 §2.1 那条实测（2026-10-17）。
 
 ---
 
@@ -59,6 +60,33 @@ dry run **不写任何东西、不访问网络**：只读本地 refs 与 API 已
 
 bot 会依次：fetch fork 的提交 → 建 `adopted/<n>` → `git rebase --signoff main` → push 同仓分支 →
 `gh pr create --base main --head adopted/<n>` → 在新旧两个 PR 上留评论 → `gh pr close <原PR> --delete-branch=false`。
+
+### 2.1 推分支的 token 决定新 PR 能不能跑起来（实测 2026-10-17）
+
+收养的产物是一张 PR，而这张 PR 的检查**可能一个都不会启动**——取决于推分支用哪个 token：
+
+| 推分支/开 PR 用的身份 | 新 PR 上的 `pull_request` run | 实测 |
+|---|---|---|
+| `github-actions[bot]`（`GITHUB_TOKEN`） | 全部被创建为 held：`conclusion: action_required`、0 秒结束、**没有任何 job 启动** | #3366：14 条 run 全部如此，只有 Cloudflare 的 check-run 上报 |
+| `Ikalus1988`（`SHELDON_PAT`） | 正常执行 | 同仓 #3362（`build-feed.yml` 推的）：22 项检查全部正常 |
+
+机制是老熟人：**`GITHUB_TOKEN` 引起的事件不触发 workflow**（`build-feed.yml:139`、
+`auto-sync-prs.yml:73`、`fix-dco.yml:156` 各记过一次）。被推分支上的 run 仍会被创建，但停在
+approval 等待态，于是新 PR **永远凑不齐必需检查、永远合不了**，而日志里只有一句 `action_required`。
+
+因此 `adopt-pr.yml` 的 `GH_TOKEN` 与 checkout `token` 都是
+`${{ secrets.SHELDON_PAT || secrets.GITHUB_TOKEN }}`：PAT 在用时检查正常启动；secret 为空时
+**降级为今天的行为**并打一条 `::warning::`（不静默失败），同时在 workflow 第一步显式打印一行状态。
+
+**已经开出去的收养 PR 怎么补**（把 `<sha>` 换成新 PR 的 head SHA）：
+
+```bash
+gh api "repos/Ikalus1988/MisakaNet/actions/runs?head_sha=<sha>&per_page=100" \
+  --jq '.workflow_runs[] | select(.conclusion=="action_required") | .id' \
+| while read -r id; do gh api -X POST "repos/Ikalus1988/MisakaNet/actions/runs/$id/approve"; done
+```
+
+批准后 run 会转 `queued` 并正常执行（2026-10-17 在 #3366 上实测：批准 1 条 → 该 run 立即转 queued）。
 全过程 **不写 fork、不 force-push main、不碰别的分支**。
 
 > 想先看计划再执行第三步以外的动作？不需要——`--apply` 会重新跑一遍全部前置检查，
@@ -181,6 +209,7 @@ git push origin --delete adopted/<n>
 | 触发 | PR 评论 `/adopt`（计划）、`/adopt --apply`（执行） |
 | 权限门槛 | `MEMBER` / `OWNER` / `COLLABORATOR` |
 | 目标分支 | `adopted/<n>`（同仓；永不 `main`、永不 fork） |
+| 推分支/开 PR 的 token | `SHELDON_PAT || GITHUB_TOKEN`（前者才让新 PR 的检查真的启动，见 §2.1） |
 | 补的签核 | `Signed-off-by: <跑 --apply 的维护者> <login>@users.noreply.github.com` |
 | 作者保留 | 是（重放前后比对作者集合，`authors_preserved`） |
 | 退出码 | 0 计划/成功 · 1 运行时失败（冲突、push 被拒） · 2 拒绝前置条件 |
