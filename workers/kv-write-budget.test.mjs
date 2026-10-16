@@ -96,7 +96,15 @@ test('many cheap requests cost few KV writes', async () => {
     `the traffic counter never reached the counter store; KV keys: ${[...env._store.keys()]}`);
 
   // Batching is TRAFFIC_FLUSH_BATCH per flush, each flush also costs one get per key.
-  const budget = Math.ceil(requests / TRAFFIC_FLUSH_BATCH) + 1;
+  //
+  // **Two counter rows per flush since the funnel landed** (backlog P0#3): `funnel.visit` is the
+  // pageview count under its own scope, so a pageview batch writes `counters:traffic:pageview:<day>`
+  // *and* `counters:funnel:visit:<day>`. The cost that matters on the free tier is *distinct keys per
+  // day*, and this is +1 of those — a same-key rewrite is exempt — but this test counts puts, so the
+  // bound says two. The invariant it exists for is unchanged: writes scale with flushes, not with
+  // requests (200 requests → at most 9 puts, not 200).
+  const COUNTER_ROWS_PER_FLUSH = 2;
+  const budget = Math.ceil(requests / TRAFFIC_FLUSH_BATCH) * COUNTER_ROWS_PER_FLUSH + 1;
   assert.ok(env.stats.puts <= budget,
     `${requests} requests cost ${env.stats.puts} writes; batching should keep this at ${budget} or fewer`);
 

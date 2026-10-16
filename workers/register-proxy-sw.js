@@ -2960,6 +2960,17 @@ function flushTraffic(env, ctx) {
       // rollback still sees the counters it wrote before and the free tier stops paying for
       // analytics — which is what it exhausted every day (#1890).
       await bumpCounter(env, "traffic", cls, day, delta);
+      // `funnel.visit`, through the funnel's own scope (backlog P0#3).
+      //
+      // Rides this flush rather than adding a per-request write: the count is the same pageview
+      // count this loop already writes, so it costs one extra statement per *batch*, and the two
+      // rows must agree for a single day — which is what `funnel-events.test.mjs` asserts.
+      //
+      // What it is *not* is "unique visitors". A unique visitor is a per-person fact and this
+      // worker has no per-person identifier to compute it from (see the privacy note above
+      // `FUNNEL_EVENTS`); it is the number of requests this worker served that `classifyRequest`
+      // called a pageview, which is a level, not a headcount.
+      if (cls === "pageview") await bumpCounter(env, "funnel", "visit", day, delta);
     }
   })();
   if (ctx && typeof ctx.waitUntil === "function") ctx.waitUntil(work);
@@ -3721,6 +3732,30 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
       if (!referralCounted) logInternal("register: referral counter write failed", kvWriteStats.last_error);
     }
 
+    // `funnel.register` — the day's *completed new-node* count (backlog P0#3), and the one number
+    // the funnel was genuinely missing.
+    //
+    // Placed here, after both `storePut`s and after the `storage_unavailable` return above, for the
+    // same reason the referral count is: a registration whose token never landed did not complete —
+    // the caller is told to retry — so counting it would report a funnel step that did not happen.
+    // The `reused: true` renewal path returns earlier still, so re-presenting an existing `client_id`
+    // cannot inflate "today's registrations" either.
+    //
+    // `/api/counter` cannot answer this: `nextNodeCounter` is one `('node','all','all-time')` row,
+    // so "how many today" would need the caller to remember the previous value. The daily
+    // `period` *is* the question here (`counters` is keyed on it).
+    //
+    // The human path has its own buckets (`authorize`/`pair`): somebody who pairs through `/start`
+    // never calls this tool, so a funnel that counted only `register` would systematically
+    // overstate drop-off.
+    //
+    // Best-effort, exactly like the referral above: a counter that cannot be written must not cost
+    // the caller the node it just created, and it must not change the response.
+    const registerCounted = await bumpCounter(
+      env, "funnel", "register", new Date().toISOString().slice(0, 10), 1,
+    );
+    if (registerCounted === null) logInternal("funnel register counter failed", kvWriteStats.last_error);
+
     return {
       node_id: nodeId,
       token: token,
@@ -3939,6 +3974,31 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
     // How-to / knowledge-gap queries route to kind="question"; error-like
     // queries keep routing to kind="missing_lesson" (see #1396 — questions
     // forced into missing_lesson were auto-rejected as malformed lessons).
+    // `funnel.search` — how many `misakanet_search` calls this worker answered today (backlog P0#3).
+    //
+    // This *replaces* the documented `funnel.first_search`, which cannot be computed here at all:
+    // "first" relates one search to the caller who made it, and this worker deliberately has no
+    // identifier it may use for that — the client half's contract is "no credential, no account,
+    // no client_id" (docs/maintainer/client-half-acceptance.md, D3). The identifier exists a few
+    // lines away and the substitution is named so that nobody reaches for it: `args.client_id` /
+    // `X-MisakaNet-Client` are hashed into `search_signals.client_hint` below, and
+    // `mcp_token:<token>` maps to `node:<id>`. Neither may be read here.
+    //
+    // Placed after the anonymous burst check (a refused call returns before this) and after the FAQ
+    // merge and the kind filter, so the number is "calls answered", not "calls received". A no-match
+    // search counts too: it completed, and `funnel.error_search` is the *separate* question of
+    // whether it found anything (that one already has an implementation, in `lesson_usage`).
+    //
+    // The bucket is the literal `"search"` — never the query. A per-query counter is how the thing
+    // the caller typed becomes a key, which is exactly the leak this shape avoids;
+    // `tests/test_funnel_event_names.py` fails if a second, non-literal argument ever appears here.
+    //
+    // Fire-and-forget through `waitUntil`, the same discipline as `trackUsage`/
+    // `recordSearchSignal` below: telemetry must not be able to change, delay, or break the answer.
+    if (ctx) ctx.waitUntil(
+      bumpCounter(env, "funnel", "search", new Date().toISOString().slice(0, 10), 1).catch(() => {}),
+    );
+
     const aura = await getIdentityAura(env, authToken);
     if (!results || results.length === 0) {
       const noMatchKind = inferIntakeKind({ problem: args.query || "" }).kind;
@@ -6652,6 +6712,85 @@ async function readTrafficBreakdown(env, day) {
   };
 }
 
+// ── The first-call funnel, out of the same counters (backlog P0#3) ────────────────────────────────
+//
+// `docs/analytics/first-call-funnel.md` declared four funnel metrics and pointed at an implementation
+// that had moved away with `hub/`. What it *asked* for was never ambiguous; what was missing was a
+// shape that could be answered without an identity, and that is what this is:
+//
+//   * the events are five literals — `visit`, `register`, `authorize`, `pair`, `search` — written as
+//     `counters` rows with `scope='funnel'`, `period=<UTC day>`, `delta=1`;
+//   * the aggregation is therefore "how many requests of this kind did this worker serve that day".
+//     There is no second dimension, and no argument to any write comes from the request;
+//   * `first_search` and a per-visitor `drop_off` are **not** represented, because both need to
+//     connect one request to one caller. The identifiers that could do it exist in this worker
+//     (`args.client_id` / `X-MisakaNet-Client` → `search_signals.client_hint`; `mcp_token:<token>` →
+//     `node:<id>`) and are deliberately not read on any funnel path. `funnel.search` plus the
+//     `search/register` ratio stands in for the first, and `GET /api/funnel` derives `drop_off_rate`
+//     from two day-level integers for the second.
+//
+// What this costs and what it cannot see: `visit` reuses the traffic batch, so it is one extra
+// statement per flush rather than one per request; the four other writes are one counter upsert each,
+// fire-and-forget. All of it is *this worker's* traffic — `/` and `/search/` are served by
+// `misakanet-web` from `docs/` and never reach here, so `visit` must never be presented as "visitors
+// to misakanet.org". `tests/test_funnel_event_names.py` pins the closed event set, the absence of any
+// caller-supplied value at a write site, and that the doc and this list name the same five things.
+const FUNNEL_EVENTS = Object.freeze(["visit", "register", "authorize", "pair", "search"]);
+
+/** One day of funnel counters, D1 first and the `counters:` KV key as the fallback.
+ *
+ * Two places can hold them, not the three `readTrafficCount` checks: the funnel scope is new, so
+ * there is no legacy `funnel:<event>:<day>` key from before the migration to look for. Both of the
+ * remaining two are *read*, even when D1 answered: `bumpCounter` sends a delta to KV precisely when
+ * D1 refused it, so a day can be split across the two stores, and a reader that returned on the
+ * first successful D1 query would drop exactly the counts written during an outage. That is the
+ * same reason `readTrafficCount` adds its two sources instead of picking one.
+ *
+ * What must not drift is the *set* of events: this reader and the five write sites are the two
+ * halves of it, and a reader that enumerated fewer would silently drop an event the writer records.
+ */
+async function readFunnelDay(env, day) {
+  const d1 = d1Binding(env);
+  const out = Object.fromEntries(FUNNEL_EVENTS.map(e => [e, 0]));
+  if (d1) {
+    try {
+      const { results } = await d1.prepare(
+        `SELECT bucket, count FROM counters WHERE scope = 'funnel' AND period = ?1`,
+      ).bind(day).all();
+      for (const row of results || []) {
+        if (row.bucket in out) out[row.bucket] = Number(row.count) || 0;
+      }
+    } catch (error) {
+      logInternal("funnel counter read failed, falling back to KV", error);
+    }
+  }
+  if (env.MISAKANET_KV) {
+    const fallback = await Promise.all(FUNNEL_EVENTS.map(event =>
+      env.MISAKANET_KV.get(legacyCounterKey("funnel", event, day), "text").catch(() => null)));
+    FUNNEL_EVENTS.forEach((event, i) => {
+      out[event] += parseInt(fallback[i] || "0", 10) || 0;
+    });
+  }
+  return out;
+}
+
+/**
+ * The last `days` days of funnel counters, oldest first, through `readFunnelDay`.
+ *
+ * A day with no rows comes back as five zeros and is kept, for the same reason the traffic series
+ * keeps its quiet days: an absent row and a genuinely empty day are the same bytes here, and dropping
+ * the day would redraw the axis instead of reporting it. The route above refuses a series that is
+ * *all* zeros — that shape is a store outage wearing a quiet week's clothes.
+ */
+async function readFunnelSeries(env, days) {
+  const series = [];
+  for (let i = days - 1; i >= 0; i--) {
+    const date = utcDayKey(i);
+    series.push({ date, ...(await readFunnelDay(env, date)) });
+  }
+  return series;
+}
+
 // ── The activity trend: our own counters, read back as a series (issue #2521, option A) ───────────
 //
 // The homepage's "Network activity" panel has always shown *one* day — the counters of whatever
@@ -7664,6 +7803,98 @@ export default {
       } catch (e) { return errorResponse("api handler failed", "internal_error", 502, e); }
     }
 
+    // GET /api/funnel?days=N — the first-call funnel, out of the counters (backlog P0#3).
+    //
+    // A route of its own rather than two fields on `/api/analytics/traffic`: that route's body varies
+    // by caller (`mcpClients`, maintainer-only) and an edge cache keys on the URL, not on
+    // `Authorization` — the same reason `/api/activity` exists (2026-09-29). Nothing here reads the
+    // caller, so the body is identical for everyone and a shared entry is safe.
+    //
+    // What it answers, and what it refuses to:
+    //   * `visit` / `register` / `authorize` / `pair` / `search` are per-day integer counts of
+    //     requests this worker served — the operational definitions are at the write sites and in
+    //     `docs/analytics/first-call-funnel.md`;
+    //   * `activation_per_register` and `drop_off_rate` are **derived here at read time** and stored
+    //     nowhere. They are ratios between day-level aggregates, which is the only form the question
+    //     can take without an identifier: a per-visitor funnel needs to know that *this* search
+    //     belongs to *that* visit, and this worker does not (and will not) know it. `first_search`
+    //     and a per-visitor `drop_off` are therefore not approximated — they are absent, and the doc
+    //     says so;
+    //   * a day whose `visit` is 0 reports `null`, not `0`. "A counter that cannot be read and a
+    //     counter that is genuinely empty are two answers" — the rule `tests/test_referral_server_side.py`
+    //     states for a different counter, applied here so a zero denominator cannot masquerade as
+    //     "nobody dropped off";
+    //   * a window in which *every* event of *every* day is zero is refused, not drawn: this store is
+    //     touched by every search and every pageview, so an all-zero week is a reader that cannot see
+    //     the counters (the same judgement `/api/activity/history` makes about `total: 0`).
+    if (request.method === "GET" && url.pathname === "/api/funnel") {
+      if (!d1Binding(env) && !env.MISAKANET_KV) {
+        return jsonResponse({ error: "no counter store configured" }, 503);
+      }
+      const requested = parseInt(url.searchParams.get("days"), 10);
+      const days = Number.isFinite(requested) ? Math.min(
+        ACTIVITY_HISTORY_MAX_DAYS,
+        Math.max(ACTIVITY_HISTORY_MIN_DAYS, requested),
+      ) : ACTIVITY_HISTORY_DEFAULT_DAYS;
+      try {
+        const cache = (typeof caches !== "undefined" && caches.default) ? caches.default : null;
+        // The window is part of the key, so a `?days=30` probe cannot seed the 7-day entry with a
+        // month of data (or the reverse) — the failure `/api/activity/history` names for its own key.
+        const cacheKey = new Request(`${url.origin}/api/funnel?days=${days}`);
+        if (cache) {
+          const hit = await cache.match(cacheKey);
+          if (hit) return hit;
+        }
+        const round4 = (n) => Math.round(n * 10000) / 10000;
+        const series = (await readFunnelSeries(env, days)).map(day => ({
+          ...day,
+          // A ratio, not a conversion rate: one caller can search many times, and today's searches
+          // can come from a node that registered days ago. `register` is the denominator rather than
+          // `visit` because the question is "did the agents that appeared actually call us".
+          activation_per_register: day.register > 0 ? round4(day.search / day.register) : null,
+          // `1 - (register + pair) / visit`. Both human doors count as completions: an agent that
+          // self-registers through `misakanet_register`, and a person who pairs through `/start`.
+          // It can go *negative* when more nodes registered in a day than this worker served
+          // pageviews — numerator and denominator are different units, and that is visible on
+          // purpose rather than clamped into looking like a rate.
+          drop_off_rate: day.visit > 0 ? round4(1 - (day.register + day.pair) / day.visit) : null,
+        }));
+        if (!series.some(day => FUNNEL_EVENTS.some(event => day[event] > 0))) {
+          return jsonResponse({
+            error: "the funnel counters read as zero for every day in the window",
+            code: "counters_unreadable",
+          }, 503);
+        }
+        const response = jsonResponse({
+          generated_at: new Date().toISOString().replace(/\.\d{3}Z$/, "Z"),
+          // Names the computation, like `ACTIVITY_SOURCE` does: the numbers are `counters` rows in
+          // the `funnel` scope, not a third-party analytics product.
+          source: "counters/funnel",
+          days,
+          series,
+          note: "Aggregate request counts per UTC day, from the worker's own counters. Nothing here "
+              + "identifies a visitor: no cookie, no IP, no client id, no per-query bucket. "
+              + "'first_search' and per-visitor 'drop_off' cannot be computed without an identifier "
+              + "and are deliberately not attempted; the ratios shown are day-level proxies, not "
+              + "conversion rates. 'visit' counts only requests this worker served — the site's home "
+              + "and search pages are served by another worker — so it is not a visitor count.",
+          // Empty on purpose and by construction, unlike the routes whose bodies vary by caller:
+          // there is no field here that could carry another party's words or name.
+          withheld: [],
+        }, 200, {
+          "Cache-Control":
+            `public, max-age=${ACTIVITY_TTL_SECONDS}, s-maxage=${ACTIVITY_TTL_SECONDS}`,
+          "X-Robots-Tag": "noindex",
+        });
+        if (cache) {
+          const putting = cache.put(cacheKey, response.clone()).catch(e =>
+            console.error("[funnel] cache put failed", e && e.message));
+          if (ctx && typeof ctx.waitUntil === "function") ctx.waitUntil(putting); else await putting;
+        }
+        return response;
+      } catch (e) { return errorResponse("api handler failed", "internal_error", 502, e); }
+    }
+
     // GET /api/activity — the homepage panel's live read of today's activity (2026-09-29).
     //
     // Why this is a route of its own rather than a TTL on `/api/analytics/traffic`:
@@ -8159,6 +8390,19 @@ export default {
         ip: connIp,
       }), { expirationTtl: 600 });
 
+      // `funnel.authorize` — the first step of the *human* door (backlog P0#3).
+      //
+      // A person arriving from the `/start` page calls this to get a code; the agent then calls
+      // `/mcp/pair` with it. Neither path goes through `misakanet_register`, so without these two
+      // buckets the funnel would only see the agent door and would read every human visitor as a
+      // drop-off. Counted after the refusal above returns, so a rate-limited request is not a step.
+      //
+      // Fire-and-forget: a counter must not add a round trip to handing out a credential, and the
+      // failure mode of a missing count is a smaller number, not a broken pairing.
+      if (ctx) ctx.waitUntil(
+        bumpCounter(env, "funnel", "authorize", new Date().toISOString().slice(0, 10), 1).catch(() => {}),
+      );
+
       return jsonResponse({ code, expires_in: 600 });
     }
 
@@ -8182,6 +8426,19 @@ export default {
       pairData.used_at = new Date().toISOString();
       pairData.used_ip = request.headers.get("CF-Connecting-IP") || "unknown";
       await storePut(env, pairKey, JSON.stringify(pairData), { expirationTtl: 86400 });
+
+      // `funnel.pair` — the second and last step of the human door (backlog P0#3).
+      //
+      // Written only past the two returns above: an unknown/expired code (404) and an already-used
+      // one (409) are attempts, not funnel steps, and counting them would make the pair rate say
+      // more people got through than actually hold a token.
+      //
+      // `register` + `pair` are the numerator of the derived drop-off ratio `GET /api/funnel`
+      // computes. They are two unconnected integer rows and stay that way: the pair is *not* joined
+      // to the `authorize` row, and none of the four carries an address or a caller id.
+      if (ctx) ctx.waitUntil(
+        bumpCounter(env, "funnel", "pair", new Date().toISOString().slice(0, 10), 1).catch(() => {}),
+      );
 
       // Generate a token with the same lifetime the rest of the product grants.
       //
@@ -8722,6 +8979,11 @@ export {
   // Exported so workers/kv-write-budget.test.mjs asserts the *ratio* against the real batch size
   // instead of a hardcoded 10 that stops being true the moment the constant moves.
   TRAFFIC_FLUSH_BATCH,
+  // Exported for workers/funnel-events.test.mjs: `visit` is counted inside the batched flush, and the
+  // batch only fires at 50 requests or after five minutes — neither of which a test can wait for, and
+  // driving 50 requests to observe one count would test the batch rather than the counter. This is
+  // the seam the flusher is callable through, the same reasoning as `fetchWithTimeout` below.
+  flushTraffic,
   mcpClientBucket,
   MCP_CLIENT_BUCKET_PREFIX,
   noteSearchBackend,
@@ -8797,6 +9059,15 @@ export {
   readTrafficBreakdown,
   readActivitySeries,
   utcDayKey,
+  // Exported for workers/funnel-events.test.mjs: the event *list* is the contract this feature is —
+  // `readFunnelDay` and the five write sites both enumerate it — so the test asserts the exported
+  // constant rather than a literal copied out of the file, which would keep passing after an event
+  // was renamed on one side only. The two readers are exported so the route's derived ratios
+  // (`activation_per_register`, `drop_off_rate`, and `null` on a zero denominator) are asserted
+  // against the same code the route runs.
+  FUNNEL_EVENTS,
+  readFunnelDay,
+  readFunnelSeries,
   ACTIVITY_TTL_SECONDS,
   ACTIVITY_CACHE_CONTROL,
   ACTIVITY_SOURCE,
