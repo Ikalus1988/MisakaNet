@@ -109,7 +109,7 @@ file *names*, and the test says so rather than implying a proof about obfuscatio
 | --- | --- | --- | --- |
 | E1 | static gates exist for: loader contract, bundle purity, slot↔inject consistency (5 slots), no credentials, compact-field discipline, the three design rules, the panel rules, the brand-mark pin, the plural rule, the no-issue-filing **allowlist**, the vote's constant source label, the panel vote, the consequential click and the no-match copy line | `pytest tests/test_dsh_plugin_surface.py` | ✅ **51 pass** (was 38; the new rules and their red fixtures are listed below) |
 | E2 | every gate has a red fixture — a gate nobody has seen fail is a gate nobody can trust | one `*_can_go_red` test per rule | ✅ — and every rule added on 2026-10-16 ships one: the allowlist on `POST /api/intake` **and** on the `/mcp` submit (plus the green halves, so it cannot ban its own feature), the source label on a composed value, and the panel vote on a bundle with the affordance removed |
-| E3 | **smoke**: a disposable profile installs the plugin, boots the web host, and the boot graph plus the served bytes match | disposable `DSH_HOME` → `dsh plugin add` → `dsh web` → `__DSH_BOOT__` entry + combo route compared with the file | ✅ (43,971 B served verbatim, inject array echoed back) — **not re-run for this change**: the byte count moves with any edit to `lib/client.js`, and this worktree could not boot a web host. Owed |
+| E3 | **smoke**: a disposable profile installs the plugin, boots the web host, and the boot graph plus the served bytes match | disposable `DSH_HOME` → `dsh plugin add` → `dsh web` → `__DSH_BOOT__` entry + combo route compared with the file | ✅ **re-run 2026-10-16T09:58Z** — served bytes matched `lib/client.js` (115,968 B at that revision, rev `9131ad464f95`), the inject array came back as declared (4 packages), all 7 seats registered. This row now records the **revision**, not a byte count, because the script never asserts a length — it compares content (`source.strip() in served`) — so a hand-copied number is checked by nothing. The previous entry's "43,971 B" proves it: that number matches no revision, and the commit that wrote it (`5a86c37f`, 2026-10-01) already served a 46,586 B file. It had been wrong for two weeks without a gate noticing |
 | E4 | the preview matches the **current** file (re-render after the last edit, and the fixture is a payload the server really returns) | re-render + compare the rendered row text with a real payload | ⏳ **still owed.** No screenshot was produced for this change: the previous shot predates the plural fix, the header mark *and* everything added on 2026-10-16 (the panel vote, the receipt, the miss row, the external-evidence line). The worktree has no browser, so the browser render is owed rather than claimed. What *is* new is E6: a headless render now gates the behaviour a screenshot would only illustrate |
 | E5 | the panel renders without the host's CSS, in both a wide and a narrow column, with no clipping | live browser render of the real components mounted through `apply()`, with real `/api/helpful` calls (see `ops/panel-live/`) | ⚠️ **the evidence path does not exist in the repository.** `git ls-files ops/` is empty and there is no `ops/` directory, so the two shots this row cites cannot be re-checked by anyone reading the file. The row is left standing (it was produced once) but it is now marked unverifiable rather than closed; re-producing it in-repo is owed |
 | E6 | the panel is **rendered** by a gate, not only read: one click posts one vote with the fixed body, the receipt shows the server's count and the `E4` sentence, and the miss row writes a copyable line and posts nothing | `pytest tests/test_dsh_plugin_panel_render.py` — the registered component is mounted through `apply()` against a stub React with a stubbed `fetch`, and the tree is read back | ✅ **4 pass** (2026-10-16), with a red fixture that removes the affordance and watches the same run fail. Scope stated plainly: this is a headless render (no CSS, no layout, no browser) and it does **not** close E4 or E5 |
@@ -183,4 +183,50 @@ The vote surface changed on 2026-10-16 and this paragraph records what did and d
 * no new **read** route was added for the source counters. The write side is in F3; exposing "how many
   panel votes, and when" publicly is a new contract with its own privacy review and was not smuggled into
   this one.
+
+## Correction (2026-10-16): `E4` is observed reuse, not a vote
+
+Rows **B6**, **B8** and **B10** above record a rule that has since changed, and this repository does
+not rewrite dated acceptance records into agreement with today. They read: one human confirmation makes
+the reuse event appear, and the second is what agents read as `E4`. That is what the UI did, and it was
+wrong for a vote to *confer* `E4`.
+
+Since 2026-10-16 a `lesson_found_helpful` event is capped below `E4` at every count
+(`workers/register-proxy-sw.js`). A vote is one person's opinion, recorded as a hint: almost every
+retrieval is agent-initiated, so the person shown the "did this help?" button did not ask the question
+and usually cannot evaluate the answer — the vote surveys what the transport layer can observe, and the
+`E4` it produced was an artefact of politeness. Measured against production that day: of the 24
+most-retrieved lessons, 3 carried any vote at all (6 votes in total), and 0 of 483 lessons sat at `E4`.
+
+What the rows' intent becomes, still true to what they were checking — the count is other people's, and
+the number comes from the server's own answer:
+
+* **B6 / B8** — the row still renders the public count, labelled as other people's, as **external reuse
+  evidence**; it no longer renders `→ E4` or `live signal: E4`, because a vote cannot confer the rung.
+* **B10** — the receipt still carries the server's `answer.count` and the same sentence section ③
+  states; that sentence now says a vote is a hint and that `E4` comes from observable reuse.
+
+`E4` itself is unchanged in the tool: `misakanet_me_events` still returns `evidence: 'E0'|'E3'|'E4'`, and
+cross-node confirmation still emits `E4`. What changed is that only an observed signal can.
+
+## Correction (2026-10-17): *which* observation `E4` names
+
+The correction above ends "cross-node confirmation still emits `E4`". That sentence describes the rule
+it was replacing, and it is left exactly as written; the producer it names has changed since, so this
+records the change instead of rewriting a dated record.
+
+"Cross-node confirmation" in `misakanet_me_events` was a regex over the lesson's own body
+(`verified by:` / `contributors:`). That is a *declaration*, not an observation: anyone who can edit
+the lesson can type the line, which makes it cheaper to fake than the vote the previous correction had
+just demoted. So `E4` now has exactly one producer, and it is observed — two or more distinct
+`search_signals.client_hint` values actually retrieved the lesson
+(`lesson_retrieved_by_distinct_clients`), counted with `COUNT(DISTINCT client_hint)` so forty
+retrievals by one client add nothing. The declared line is still reported, as `lesson_confirmed_by`,
+an `E3` hint.
+
+This under-counts on purpose: an anonymous caller sends no `client_id`, writes no `client_hint`, and
+does not count. A trust signal may be wrong by staying silent; it must not be inflatable from inside
+the artifact it rates, and falling back to the User-Agent would remove exactly that property. Measured
+the same day, **0 of 483 lessons** had two distinct observed clients — so "nothing is at `E4`" is the
+honest answer, a true state of the world rather than a number to soften.
 

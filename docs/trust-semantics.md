@@ -129,10 +129,13 @@ Three things this says that the definitions above do not:
 
 ### me_events: live reuse signals (tool-level semantics)
 
-`misakanet_me_events` aggregates a lesson's **live reuse evidence** — helpful votes (KV), regression-benchmark citations, and cross-node confirmations. It uses the E-level vocabulary as *signal strength*, not as the frontmatter promotion chain:
+`misakanet_me_events` aggregates a lesson's **live reuse evidence** — observed retrieval by distinct clients, regression-benchmark citations, helpful votes, and a lesson's own declared provenance. It uses the E-level vocabulary as *signal strength*, not as the frontmatter promotion chain:
 
-- **Single helpful vote** is labeled `E3` — it is a reuse signal, **not** CI verification; it does not claim the lesson passed a sandbox run.
-- **E4 in the tool** means ≥2 independent reuse signals, or the strongest single signal reaching E4 level (e.g. 2+ helpful votes from different users).
+- **E4 in the tool comes only from an observation**: `search_signals` shows **two or more distinct `client_hint` values** actually retrieved the lesson. `client_hint` is the salted hash of the caller's `client_id` / `X-MisakaNet-Client`, written by the worker from the request on every completed search — nothing the lesson body says can raise it, and one client retrieving the lesson forty times is still one client (`COUNT(DISTINCT client_hint)`). It is never conferred by counting lower signals — since 2026-10-16 a helpful vote cannot reach it at any count, and since 2026-10-17 neither can a `verified by:` line in the lesson's own prose.
+- **Anonymous callers do not count.** A caller with no `client_id` writes no `client_hint`, so the observed count **under**-counts. That is the correct direction for a trust signal: it can be wrong by staying silent, but it cannot be inflated by editing a lesson. Do not "fix" the undercount with a User-Agent fallback — the UA is shared and spoofable, and counting it would make the number meaningless.
+- **A helpful vote is `E3`** — one person's opinion, recorded as a hint. Almost every retrieval is agent-initiated, and the person shown the "did this help?" button did not ask the question, so a vote surveys what the transport layer can observe instead (measured 2026-10-16: 3 of the 24 most-retrieved lessons carried any vote, 6 votes in total). A vote is a reuse *hint*; it is **not** CI verification and does not claim the lesson passed a sandbox run.
+- **Regression-benchmark citations are `E3`** — a curated query references the lesson: sandbox-level evidence, not external reuse.
+- **A declared `verified by:` / `contributors:` line is `E3`** — it is parsed out of the lesson's own body, so anyone who can edit the lesson can write it. It is reported as a hint and cannot confer `E4`.
 - This is a query over live signals. The authoritative `evidence_level` for a lesson lives in its frontmatter and follows the one-step-at-a-time promotion rules above; me_events does not edit it.
 
 ### How evidence affects scoring

@@ -1,6 +1,6 @@
 # MisakaNet API Reference
 
-> **Version:** 2.43.1 <!-- x-release-please-version --> | **Protocol:** `misaka-protocol.json`
+> **Version:** 2.44.2 <!-- x-release-please-version --> | **Protocol:** `misaka-protocol.json`
 
 MisakaNet exposes a multi-surface API: CLI search, MCP tools, GitHub-based contribution endpoints, and optional Hub federation. This document catalogues every supported interface.
 
@@ -86,7 +86,7 @@ endpoint; `python3 -c "from misakanet.server import TOOLS; print(len(TOOLS))"`):
 | `misakanet_preflight` | `intent` (str), `context?` | Risk level, matched lessons, guards |
 | `misakanet_register` | `agent_type?`, `client_id?` | `node_id` + token |
 | `misakanet_memory_context` | `task` (str), `domain?`, `top_n?` | Session memory context |
-| `misakanet_me_events` | `lesson_id` (str) **or** `lesson_path` (str) | Reuse evidence (E4 signals) — proxied to `https://misakanet.org/mcp` since 2026-09-30, needs the network |
+| `misakanet_me_events` | `lesson_id` (str) **or** `lesson_path` (str) | Observed reuse (E4: two or more distinct `search_signals.client_hint` retrieved the lesson; E3 hints: benchmark citations, helpful votes, a declared `verified by:` line) — proxied to `https://misakanet.org/mcp` since 2026-09-30, needs the network |
 
 #### Claude Code Configuration
 
