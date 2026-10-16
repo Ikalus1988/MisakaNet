@@ -118,6 +118,19 @@ python3 scripts/bench_production_recall.py --json     # 机器可读
 | **CodeQL** | push main + PR + 每周 | 安全查询命中——**不阻断合并**（soft gate）|
 | `pr-agent` / `pr-genius` | 所有 PR | **非阻断**（评审参考） |
 
+### 加 CI 之前：三问（2026-10-17 起）
+
+> 背景与实录：`docs/maintainer/ci-inventory-first-principles-2026-10-17.md`（84 个 workflow，
+> 实测约 20 种失败面）。**默认答案是"不加"**；要加，先回答：
+
+1. **它防哪一种具体的失败？** 说得出名字，不是"多加一道保险"。答不出就不加。
+2. **有没有红夹具证明它能在该失败出现时变红？** 没有夹具的门禁，和没有门禁从外面看一模一样
+   ——2026-10-07 的两个 workflow（`provenance-gate.yml`、`guarded-repository.yml`）就是这样
+   在 `main` 上死了八天：GitHub 拒绝整个文件、只留一个零 check run 的失败 check suite。
+3. **它会不会阻断合并？** 会（进 ruleset）的话，它必须在**每一个** PR 上都给出结论：
+   不要给必需检查加 `paths:` 过滤，否则 PR 永远停在 "Expected — waiting for status to be
+   reported"（#1920）。不会阻断的，就在文件头写明**谁读它的输出**——没人读的绿等于没跑。
+
 ### 三类改动的标准步骤
 
 - **改 worker**：改 `workers/register-proxy-sw.js` → `node --check` → `node --test 'workers/**/*.test.mjs'`
@@ -264,6 +277,8 @@ gh workflow run apply-d1-schema.yml
 
 ## 5. 相关文档
 
+- **CI 清点与加 CI 的判据**：`docs/maintainer/ci-inventory-first-principles-2026-10-17.md`
+  （84 个 workflow 的逐文件实测清点、建议的保留/合并/移除/修，以及本节那条三问的来源）
 - 使用方规则：`AGENTS.md`（§1–§5）+ `docs/agents/retrieval-and-contribution.md`
 - 维护者流程：`docs/maintainer/intake-triage.md`（**修复后必须给报料者回执**）、
   `docs/maintainer/automation-lands-via-pr.md`（**自动化怎么把改动落到 main**：分支 → PR →
