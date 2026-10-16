@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-10-16T04:43:15.307032+00:00",
+  "generated_at": "2026-10-16T07:56:48.791904+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "fix(schema): the lesson status enum held three values while the gate enforced six, and the required audit check reads the schema",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3302",
-      "timestamp": "2026-10-16T00:54:51Z",
+      "title": "feat(lessons): convert five intake blind spots into contrib lessons",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3313",
+      "timestamp": "2026-10-16T07:56:31Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3300",
-      "timestamp": "2026-10-15T21:42:00Z",
+      "title": "feat(worker): implement the first-call funnel out of the counters (P0#3)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3319",
+      "timestamp": "2026-10-16T07:51:00Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3293",
-      "timestamp": "2026-10-15T17:20:31Z",
+      "title": "feat(dsh-panel): make the sidebar useful rather than ornamental, and its effect measurable",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3314",
+      "timestamp": "2026-10-16T07:47:25Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "docs(handoff): §93 — the wrap-up where three of the four premises had to be retracted",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3290",
-      "timestamp": "2026-10-15T16:42:01Z",
+      "title": "fix(docs): pin the retyped hosted tool counts, and reject a duplicated docs/mcp.md row",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3315",
+      "timestamp": "2026-10-16T07:36:43Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3291",
-      "timestamp": "2026-10-15T16:39:50Z",
+      "title": "lesson(core): require_relative anchors on the requiring file, so retire the `cd` advice",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3294",
+      "timestamp": "2026-10-16T07:20:40Z",
       "source": "github"
     },
     {
