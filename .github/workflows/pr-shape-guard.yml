@@ -2,7 +2,9 @@ name: PR Shape Guard
 
 on:
   pull_request_target:
-    types: [opened, synchronize, reopened]
+    # `edited` is what makes the declared-rewrite marker usable: a contributor learns about the rule
+    # from a failed run, adds the line to the PR body, and the guard re-evaluates without a push.
+    types: [opened, synchronize, reopened, edited]
 
 permissions:
   contents: read
@@ -88,6 +90,15 @@ jobs:
             const marker = '<!-- misakanet-pr-shape-guard -->';
             const pr = context.payload.pull_request;
 
+            // A declared whole-file rewrite. Rule 2 below is a *heuristic* for "the body was replaced
+            // rather than edited", and it fires on the legitimate case too: a PR whose whole purpose is
+            // to shorten the front door deletes far more than 120 lines (2026-10-17, #3399 — 384 lines
+            // removed on purpose, owner-requested). The author declares it in the body, the run records
+            // a notice, and the diff is still fully reviewable — which is the property the rule is
+            // actually protecting. Undeclared rewrites keep failing.
+            const declaredReadmeRewrite =
+              /<!--\s*shape-guard:\s*allow-readme-rewrite\s*-->/i.test(pr.body || '');
+
             const files = await github.paginate(
               github.rest.pulls.listFiles,
               {
@@ -123,9 +134,15 @@ jobs:
                 failures.push(`**文件名污染**: \`${name}\` 看起来是生成器残留文件名。`);
               }
 
-              // Rule 2: destructive README rewrite
+              // Rule 2: destructive README rewrite (unless the PR body declares the rewrite)
               if (name === 'README.md' && f.deletions > 120) {
-                failures.push(`**破坏性 README 修改**: README.md 删除了 ${f.deletions} 行，疑似替换全文而非小改。`);
+                if (declaredReadmeRewrite) {
+                  core.notice(`README.md deleted ${f.deletions} lines — allowed by the PR body marker `
+                    + '`<!-- shape-guard: allow-readme-rewrite -->`');
+                } else {
+                  failures.push(`**破坏性 README 修改**: README.md 删除了 ${f.deletions} 行，疑似替换全文而非小改。`
+                    + ' 如果这次就是有意的整文重写，在 PR 描述里加一行 `<!-- shape-guard: allow-readme-rewrite -->`。');
+                }
               }
 
               // Rule 3: source file contains pasted markdown/diff
