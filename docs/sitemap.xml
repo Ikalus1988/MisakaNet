@@ -355,6 +355,7 @@
   <url><loc>https://misakanet.org/lessons/pip-install-timeout-ssl/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/pkill-f-kills-the-shell-that-runs-it-the-pattern-matches-its-own-command-line/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/playwright-snap-chromium-libnss3-sandbox-launch/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/pnpm-minimumreleaseageexclude-looks-ignored-when-manifest-and-lockfile-specifier/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/port-is-already-allocated-is-an-os-level-eaddrinuse-name-the-holder-with-ss-free/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/postgresql-connection-pool-exhaustion-ar/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/powershell-51-decodes-a-bom-less-utf-8-ps1-as-ansigbk-so-non-ascii-becomes-bogus/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
