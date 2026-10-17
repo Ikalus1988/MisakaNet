@@ -191,6 +191,7 @@
   <url><loc>https://misakanet.org/lessons/fanuc-program-inspection-methodology/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/fanuc-r-2000ic-retrieval-fix/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/fanuc-客户端假活排查装有-dlpedr-的工控站上分层定位注入与内核过滤/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/roboguide-handlingpro-plugin-unavailable-a-missing-install-feature-not-com-regis/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/fanuc-spot-wear-max-lookup/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/fanuc-tcp-tool-configuration-standards/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/fatal-guard-cli-hardening/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
