@@ -35,6 +35,21 @@ All of them are config files written file-to-file — no subprocess is spawned, 
 Without (3) a rule saying "summarise every 20 turns" never fires — agents do not keep
 counters. Without (1)/(2) the hook has nothing to call.
 
+### dsh is not a file target — it is a plugin
+
+dsh takes its MCP servers from a **plugin bundle**, not from a JSON file, and it loads rules from the
+**project's** `AGENTS.md` (it has no user-level rules file and no Claude-Code-style hooks). So this
+installer does not write anything for dsh; the two commands are:
+
+```bash
+dsh plugin --profile web add misakanet   # ① the tools (mcp__misakanet__*)
+# ② paste the rules block into your project's AGENTS.md so the agent consults before deciding
+```
+
+Measured 2026-10-17: `misakanet@2.44.2` installs in ~1s into `~/.dsh/profiles/web`; the plugin's
+`index.js` mounts the MCP client and `lib/client.js` is the web panel — **neither injects a rule**,
+which is why ② is a separate, manual step. Full guide: `docs/integrations/dsh.md`.
+
 ## Flags
 
 ```bash
