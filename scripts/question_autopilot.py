@@ -631,8 +631,8 @@ def main(argv: list[str] | None = None) -> int:
                 gh(f"/issues/{found['number']}", {"body": body}, method="PATCH")
                 updated += 1
             else:
-                issue = gh("/issues", {"title": f"[Bounty] Answer {len(entry['members'])} linked "
-                                                  f"question(s) as a lesson",
+                issue = gh("/issues", {"title": f"[Bounty] Answer the {len(entry['members'])} linked "
+                                                  f"question(s)",
                                        "body": body, "labels": [BOUNTY_LABEL]})
                 print(f"  bounty opened: #{issue['number']}")
                 created += 1
