@@ -86,11 +86,21 @@ jobs:
       # fallback, and a stale copy of a number read to predict the next registrant's id is worse
       # than no answer (#1820). The endpoint now says `counter_unavailable` instead.
       - name: Generate badge JSONs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           mkdir -p /tmp/badges
           LESSON_COUNT="${{ steps.count.outputs.lessons }}"
           TOOL_COUNT="${{ steps.tools.outputs.tools }}"
           DOMAIN_COUNT="${{ steps.domains.outputs.domains }}"
+          # Stars are published by us, not read live by shields. Measured 2026-10-17: the
+          # `github/stars` badge renders `invalid` whenever shields' shared GitHub token is
+          # rate-limited (its JSON endpoint answered `"message":"invalid"` while the SVG happened to
+          # say 527, and badgen returned `github: 403` in the same minute). A count cached on the
+          # data branch is a number that lags a day, which is honest; a badge that says `invalid`
+          # on the front door is not.
+          STARS=$(gh api "repos/${GITHUB_REPOSITORY}" --jq .stargazers_count)
+          echo "{\"schemaVersion\":1,\"label\":\"stars\",\"message\":\"$STARS\",\"color\":\"yellow\"}" > /tmp/badges/stars.json
           echo "{\"schemaVersion\":1,\"label\":\"lessons\",\"message\":\"$LESSON_COUNT\",\"color\":\"brightgreen\"}" > /tmp/badges/lessons.json
           echo "{\"schemaVersion\":1,\"label\":\"MCP tools\",\"message\":\"$TOOL_COUNT\",\"color\":\"purple\"}" > /tmp/badges/tools.json
           echo "{\"schemaVersion\":1,\"label\":\"domains\",\"message\":\"$DOMAIN_COUNT\",\"color\":\"blue\"}" > /tmp/badges/domains.json
