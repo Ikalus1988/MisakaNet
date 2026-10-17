@@ -5724,7 +5724,7 @@ async function loadLessons(env, filters = {}) {
   }
   const fromD1 = await fetchLessonsFromD1(env, { limit: INTERNAL_LESSON_LIMIT, rich: true });
   if (fromD1 && fromD1.length > 0) return fromD1;
-  return snapshotLessons(env);
+  return getWithCache(env, "proxy:lessons", () => fetchFromGitHub(env.REGISTER_TOKEN, "lessons.json", "data"));
 }
 
 // ── D1 question service (PRD ⑤ §9: pull-based answer delivery) ──

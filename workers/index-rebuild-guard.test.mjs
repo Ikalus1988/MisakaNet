@@ -44,8 +44,11 @@ test('no D1 binding at all still builds from the snapshot (the case that never h
   const realFetch = globalThis.fetch;
   const rows = [{ id: 'a', title: 'pip install timeout', domain: 'python', tags: ['pip'], summary: 'pip times out' }];
   globalThis.fetch = async (url) => {
-    assert.match(String(url), /lessons-lite\.json/, 'the snapshot is the only corpus in this case');
-    return new Response(JSON.stringify(rows), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    // Without D1 the corpus comes from the GitHub proxy (`fetchFromGitHub` → contents API); answer that
+    // shape, which is what this path has always read.
+    assert.match(String(url), /contents\/lessons\.json/, 'the corpus in this case is the repo snapshot');
+    return new Response(JSON.stringify({ content: Buffer.from(JSON.stringify(rows)).toString('base64'), encoding: 'base64' }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } });
   };
   try {
     const env = { MISAKANET_KV: { get: async (k) => store.get(k) ?? null, put: async (k, v) => { store.set(k, v); }, delete: async () => {}, list: async () => ({ keys: [] }) } };
