@@ -2729,7 +2729,7 @@ function healthWithLessons(kvHealth, lessonsRead) {
   return { status, reason };
 }
 
-function healthStatus({ hasKV, attempts = 0, failures = 0, global = null, now = Date.now() } = {}) {
+function healthStatus({ hasKV, attempts = 0, failures = 0, global = null, lastError = "", now = Date.now() } = {}) {
   if (!hasKV) return { status: "ok" };                       // nothing bound: not a failure, a config
   const localFailing = attempts >= 2 && failures >= attempts;
   const since = global && global.lastErrorAt ? Date.parse(global.lastErrorAt) : NaN;
@@ -2737,7 +2737,11 @@ function healthStatus({ hasKV, attempts = 0, failures = 0, global = null, now = 
     && (!global.lastOkAt || global.lastOkAt < global.lastErrorAt)
     && Number.isFinite(since) && now - since < KV_HEALTH_WINDOW_MS;
   if (!localFailing && !globalFailing) return { status: "ok" };
-  const { code, kind } = kvErrorKind(global && global.error);
+  // The isolate's own last message when the global row is unreadable. During the 2026-10-17 outage the
+  // global row lived in D1, whose reads were quota-refused, so `global` was null and a condition we
+  // understood completely (KV's daily write allowance) reported `unknown` — the same defect the
+  // classifier's own docstring records for 2026-09-20, one layer down.
+  const { code, kind } = kvErrorKind((global && global.error) || lastError || "");
   const detail = kind === "unknown" ? "" : ` (${kind}${code ? ` ${code}` : ""})`;
   const counts = localFailing
     ? `${failures}/${attempts} attempts, no successful write`
@@ -7726,7 +7730,10 @@ export default {
 
     if (request.method === "GET" && url.pathname === "/api/health") {
       const kvGlobal = await readKvHealth(env);
-      const kvHealth = healthStatus({ hasKV: !!env.MISAKANET_KV, ...kvWriteStats, global: kvGlobal });
+      const kvHealth = healthStatus({
+        hasKV: !!env.MISAKANET_KV, ...kvWriteStats, global: kvGlobal,
+        lastError: kvWriteStats.last_error,
+      });
       // The read path a *search* takes, which this endpoint watched for writes only until
       // 2026-10-17: it answered `status: ok` all day while every search returned a D1 quota error.
       const lessonsRead = await probeLessonsRead(env);
