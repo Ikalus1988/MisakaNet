@@ -3156,6 +3156,11 @@ const PROBE_DECLARATIONS = [
   "self-test probe",
   "test friction",
   "verbatim doc probe",
+  // "gap probe" (2026-10-15, issue #3284): a probe that exercises the
+  // knowledge-gap path named itself but matched none of the markers above, so it
+  // entered the review queue as a lesson candidate. Anchored to the probe word
+  // like the rest, so a real report that merely discusses a "gap" is untouched.
+  "gap probe",
 ];
 
 // (2) A knowledge question about subject matter the corpus does not cover and

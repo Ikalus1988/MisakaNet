@@ -32,6 +32,29 @@ test('a self-declared monitoring probe is taken out of the queue', () => {
   assert.ok(r.reason.length > 40, 'a closure must carry a reason a reader can act on');
 });
 
+test('a knowledge-gap probe is recognized even though it named no earlier marker', () => {
+  // Regression for issue #3284: the monitoring stack filed "test gap probe" — a probe that
+  // exercises the knowledge-gap path — and the body declared itself as a probe but matched
+  // none of the markers above, so it entered the review queue as a lesson candidate. The
+  // marker stays anchored to the probe word ("gap probe"), like every other entry.
+  const r = decide('test gap probe', 'missing_lesson');
+  assert.equal(r.file, false);
+  assert.equal(r.disposition, 'probe');
+  assert.ok(r.reason.length > 40, 'a closure must carry a reason a reader can act on');
+});
+
+test('the gap-probe marker does not swallow a real report that merely uses the word gap', () => {
+  // A loose marker here is a marker that can hide a real submission, so the boundary is
+  // asserted: only the probe-word anchor may match, not prose that discusses a gap.
+  for (const prose of [
+    'there is a gap in the corpus: pip dry-run still hits the network',
+    'the gap between docs and behavior tripped me up — full log attached',
+    'coverage gap: no lesson for uv venv activation on Windows, Traceback ...',
+  ]) {
+    assert.equal(decide(prose, 'missing_lesson').file, true, `must still be filed: ${prose}`);
+  }
+});
+
 test('every probe marker is lowercase and non-empty (they are matched against lowered text)', () => {
   for (const m of PROBE_DECLARATIONS) {
     assert.equal(typeof m, 'string');
