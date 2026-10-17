@@ -7,6 +7,34 @@ All notable changes to the Misaka Network project are documented here.
 
 ---
 
+## [2.46.0](https://github.com/Ikalus1988/MisakaNet/compare/v2.45.0...v2.46.0) (2026-10-17)
+
+
+### Features
+
+* **heartbeat:** a daily pulse that answers who called, what they asked, and whether it helped ([#3356](https://github.com/Ikalus1988/MisakaNet/issues/3356)) ([913e4ad](https://github.com/Ikalus1988/MisakaNet/commit/913e4ad5b0a7e7b8599f7a8d842abfd2b8e54596))
+* **lessons:** adopt [#3340](https://github.com/Ikalus1988/MisakaNet/issues/3340) — AgentCap registry secret-safe false positive ([#3409](https://github.com/Ikalus1988/MisakaNet/issues/3409)) ([24b1308](https://github.com/Ikalus1988/MisakaNet/commit/24b13086d4cc072da70e3f6c77f55d820045f8cd))
+* **lessons:** adopt the six remaining bounty lessons, with provenance and regenerated artifacts ([#3417](https://github.com/Ikalus1988/MisakaNet/issues/3417)) ([0cf5ee8](https://github.com/Ikalus1988/MisakaNet/commit/0cf5ee8d889c9a4bef7800befd2994714dd63c28))
+* **lessons:** answer intakes [#2752](https://github.com/Ikalus1988/MisakaNet/issues/2752) and [#2760](https://github.com/Ikalus1988/MisakaNet/issues/2760) on intake pipeline truncation (closes [#2839](https://github.com/Ikalus1988/MisakaNet/issues/2839)) ([#3366](https://github.com/Ikalus1988/MisakaNet/issues/3366)) ([8e3d8a3](https://github.com/Ikalus1988/MisakaNet/commit/8e3d8a305fdb0128d38d955131b5f64c511034e5))
+
+
+### Bug Fixes
+
+* **e2e:** read the documented tool list from AGENTS.md instead of copying it ([#3404](https://github.com/Ikalus1988/MisakaNet/issues/3404)) ([7878a9e](https://github.com/Ikalus1988/MisakaNet/commit/7878a9ea77286a0c77d965838cb3eeb5cca73bdc))
+* **intake:** one intake converts to one lesson, and the lesson channel arms itself ([#3361](https://github.com/Ikalus1988/MisakaNet/issues/3361)) ([b8403c8](https://github.com/Ikalus1988/MisakaNet/commit/b8403c8f4381c35c8e324d5a6368e0a0c4db4bd9))
+* **readme:** make the license badge a fact instead of a live lookup, and stop shipping LICENSE as CRLF ([#3408](https://github.com/Ikalus1988/MisakaNet/issues/3408)) ([b9a9266](https://github.com/Ikalus1988/MisakaNet/commit/b9a92664c6b75724c0ec1fbc080b49cf41e72424))
+* **readme:** publish the star count from our own badge data, so it cannot say "invalid" ([#3420](https://github.com/Ikalus1988/MisakaNet/issues/3420)) ([39d208d](https://github.com/Ikalus1988/MisakaNet/commit/39d208dab4a88d70d7fdf2481a9c9abf2de282c2))
+
+
+### Documentation
+
+* **dsh:** what the plugin actually gives, and the one step it cannot do for you ([#3398](https://github.com/Ikalus1988/MisakaNet/issues/3398)) ([c8c53aa](https://github.com/Ikalus1988/MisakaNet/commit/c8c53aa063a0d12225d3b008db748dc18e9ab56b))
+
+
+### Lessons
+
+* **contrib:** a fix verified in a working tree is not a fix that shipped ([#3353](https://github.com/Ikalus1988/MisakaNet/issues/3353)) ([591b357](https://github.com/Ikalus1988/MisakaNet/commit/591b357c056e0624142e572a63feebec13bc9116))
+
 ## [2.45.0](https://github.com/Ikalus1988/MisakaNet/compare/v2.44.2...v2.45.0) (2026-10-17)
 
 
