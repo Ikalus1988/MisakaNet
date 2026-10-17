@@ -37,14 +37,19 @@ counters. Without (1)/(2) the hook has nothing to call.
 
 ### dsh is not a file target — it is a plugin
 
-dsh takes its MCP servers from a **plugin bundle**, not from a JSON file, and it loads rules from the
-**project's** `AGENTS.md` (it has no user-level rules file and no Claude-Code-style hooks). So this
-installer does not write anything for dsh; the two commands are:
+dsh takes its MCP servers from a **plugin bundle**, not from a JSON file. Its instruction files are a
+chain: **`$DSH_HOME/AGENTS.md`** (user-global, default `~/.dsh/AGENTS.md`, applies to every session)
+first, then the project's `AGENTS.md`/`CLAUDE.md` from the project root down to the working directory
+(`@deepseek-ai/dsh-agent-instructions`, byte-budgeted at 65,536 by default). It has no Claude-Code-style
+hooks. So the two commands are:
 
 ```bash
 dsh plugin --profile web add misakanet   # ① the tools (mcp__misakanet__*)
-# ② paste the rules block into your project's AGENTS.md so the agent consults before deciding
+# ② put the rules block in ~/.dsh/AGENTS.md (global) or the project's AGENTS.md
 ```
+
+Measured 2026-10-17: writing `~/.dsh/AGENTS.md` is picked up as `user-global` instructions on the next
+message, with no restart.
 
 Measured 2026-10-17: `misakanet@2.44.2` installs in ~1s into `~/.dsh/profiles/web`; the plugin's
 `index.js` mounts the MCP client and `lib/client.js` is the web panel — **neither injects a rule**,

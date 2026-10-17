@@ -4,7 +4,10 @@
 > 它给的是**工具**——`mcp__misakanet__*` 与右栏面板；**「决策之前先查经验库」这条前置不在插件里**。
 > 原因是 dsh 没有 Claude Code 那种 `settings.json` hooks，而插件也没有「注入系统提示」的扩展点：
 > 拆开 2.44.2 的包看，`index.js` 只挂官方 MCP client，`lib/client.js` 只做 UI，全文没有
-> `systemPrompt` / `instructions` / `hook`。**所以前置靠 `AGENTS.md`**——dsh 启动时自动加载它。
+> `systemPrompt` / `instructions` / `hook`。**所以前置靠指令文件**——dsh 自带
+> `@deepseek-ai/dsh-agent-instructions`：它先加载用户全局的 `$DSH_HOME/AGENTS.md`（默认
+> `~/.dsh/AGENTS.md`），再加载项目链。**实测 2026-10-17：写入 `~/.dsh/AGENTS.md` 后，下一条消息就被
+> 注入为 `user-global` instructions，无需重启。**
 
 ## 1. 安装（一条命令）
 
@@ -24,10 +27,23 @@ node -e "const p=require(process.env.HOME+'/.dsh/profiles/web/package.json');con
 > ⚠️ **升级会让 profile 热重载一次**，MCP 工具可能中断几十秒（实测：升级后头两次调用超时，随后恢复）。
 > 不要在长任务中途升级。
 
-## 2. 让 agent「先查再动手」：把规则块放进项目的 `AGENTS.md`
+## 2. 让 agent「先查再动手」：规则块 → `$DSH_HOME/AGENTS.md`（全局）或项目 `AGENTS.md`
 
-dsh 读**工作区根目录**的 `AGENTS.md`（没有全局规则文件——这与 Claude Code 的 `~/.claude/CLAUDE.md` 不同）。
-把下面这块贴进你项目的 `AGENTS.md`：
+dsh 按**链式顺序**加载指令文件（`@deepseek-ai/dsh-agent-instructions`，`dsh-base` 默认开启）：
+
+1. **`$DSH_HOME/AGENTS.md`**（默认 `~/.dsh/AGENTS.md`）——用户全局，对**所有** dsh 会话生效；
+2. 项目链：从项目根到当前工作目录的 `AGENTS.md` / `CLAUDE.md`（`.local.md` 作为覆盖）；
+3. 同一份内容被 `CLAUDE.md` 重复时只渲染一次；整条链有**字节上限**（默认 65,536 字节），
+   宽泛的文件先被省略，最具体的文件最后才截断。
+
+所以：**想一次装好、所有会话都生效 → 写全局那份**（安装器可以写，它不在你的项目里）；只想某个仓库生效 → 写项目的 `AGENTS.md`。
+
+```bash
+# 全局（推荐）
+$EDITOR "${DSH_HOME:-$HOME/.dsh}/AGENTS.md"
+```
+
+把下面这块贴进去：
 
 ```text
 调用规则（按顺序照做）：
@@ -72,7 +88,7 @@ dsh plugin --profile web add misakanet@<旧版本>   # 回到旧版本
 | 机制 | Claude Code | dsh |
 |---|---|---|
 | 工具 | MCP server 条目 | **插件里的 MCP 行**（`cordis.patch.yml` → `misakanet-mcp`） |
-| 规则 | `~/.claude/CLAUDE.md`（安装器写） | **项目 `AGENTS.md`**（安装器不写别人的项目文件） |
+| 规则 | `~/.claude/CLAUDE.md`（安装器写） | **`$DSH_HOME/AGENTS.md`**（全局，安装器可写）+ 项目 `AGENTS.md` 链 |
 | 前置/钩子 | `UserPromptSubmit` / `PostToolUse` hooks | **无等价配置**；插件侧也没有 prompt 注入点（实测 2.44.2） |
 
 要在 dsh 里做真正的「每次动手前自动触发」，需要 dsh 暴露一个 prompt/工具生命周期的插件扩展点；
