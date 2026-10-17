@@ -96,7 +96,6 @@ _SECRET_SHAPES = re.compile(
 def _redact(text: str) -> str:
     """Scrub anything token-shaped from a message before it reaches stdout or an exception."""
     return _SECRET_SHAPES.sub("<REDACTED>", str(text))
-    return text
 
 
 def gh_api(path: str, paginate: bool = False, jq: str | None = None):
