@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-10-17T15:43:43.590503+00:00",
+  "generated_at": "2026-10-17T20:44:08.899046+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "docs(handoff): §100 — the D1 quota cascade, six fixes, and what is still open",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3441",
-      "timestamp": "2026-10-17T15:33:29Z",
+      "title": "fix(backup): export table by table — --no-schema alone does not dodge the FTS5 refusal",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3452",
+      "timestamp": "2026-10-17T17:28:42Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(health): classify this isolate's KV error when the global row cannot be read",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3440",
-      "timestamp": "2026-10-17T15:05:31Z",
+      "title": "fix(automation): three reds, one cause (D1's free tier) and one standing defect",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3450",
+      "timestamp": "2026-10-17T17:11:43Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(bounty): the issue title no longer promises a lesson the task does not ask for",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3439",
-      "timestamp": "2026-10-17T14:47:07Z",
+      "title": "docs(handoff): §101 — the three generations of CodeQL alerts, and why the suppression did not work",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3449",
+      "timestamp": "2026-10-17T16:54:17Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3438",
-      "timestamp": "2026-10-17T14:35:40Z",
+      "title": "chore(main): release 2.48.0",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3436",
+      "timestamp": "2026-10-17T16:45:07Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(lessons): adopt #3422 and #3426 — JS regex escaping, ROBOGUIDE plugin unavailable",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3437",
-      "timestamp": "2026-10-17T14:26:12Z",
+      "title": "docs(auto-merge): record what the CodeQL alerts actually cost",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3448",
+      "timestamp": "2026-10-17T16:28:37Z",
       "source": "github"
     },
     {
