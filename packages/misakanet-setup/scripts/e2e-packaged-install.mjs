@@ -92,10 +92,27 @@ let ACTIVE_BIN = INSTALLED_BIN;
 // The production tool contract (AGENTS.md §3.2). Pinned here because this is the only check that
 // asks the *live* endpoint: if the server grows a tool without the docs, the two disagree in CI
 // rather than inside a user's session.
-const DOCUMENTED_REMOTE_TOOLS = [
-  'misakanet_search', 'misakanet_get_lesson', 'misakanet_submit_intake',
-  'misakanet_write_lesson', 'misakanet_preflight', 'misakanet_register', 'misakanet_me_events',
-];
+/**
+ * The tools AGENTS.md §3.2 documents, read from the document rather than copied.
+ *
+ * It was a hand-kept list of seven, and the hosted endpoint grew an eighth (`misakanet_me_inbox`)
+ * while the list did not — so `live-endpoint-serves-the-documented-tools` failed on `main` from
+ * 2026-10-15 until this change, blaming the endpoint for a stale copy. Parsing the table means the
+ * check compares the endpoint to the document a reader actually follows.
+ */
+function documentedRemoteTools() {
+  const agents = readFileSync(join(REPO_ROOT, 'AGENTS.md'), 'utf8');
+  const start = agents.indexOf('### 3.2');
+  const end = start === -1 ? -1 : agents.indexOf('\n### ', start + 1);
+  const section = start === -1 ? '' : agents.slice(start, end === -1 ? undefined : end);
+  const names = [...section.matchAll(/^\|\s*`(misakanet_[a-z_]+)`/gm)].map((m) => m[1]);
+  if (names.length === 0) {
+    throw new Error('AGENTS.md §3.2 no longer has a tool table this check can read — fix the parser, '
+      + 'do not fall back to a hand-kept list');
+  }
+  return names;
+}
+const DOCUMENTED_REMOTE_TOOLS = documentedRemoteTools();
 
 if (!argv.includes('--list-checks') && !PREFIX) {
   console.error('usage: e2e-packaged-install.mjs --prefix <npm global prefix> [--expect-version v]'
@@ -839,7 +856,7 @@ const LIVE_CHECKS = [
     // `-H 'Origin: …'` in every published example is decoration.
     const evil = await mcpCall(CANONICAL_ENDPOINT, 'tools/list', {}, { origin: 'https://evil.example.com' });
     need(evil.status === 403, `a foreign Origin must be refused, got HTTP ${evil.status}`);
-    log('live endpoint: 7 documented tools, foreign Origin → 403');
+    log(`live endpoint: ${documented.length} documented tools, foreign Origin → 403`);
     return `${tools.length} tools, foreign Origin refused`;
   }],
 
