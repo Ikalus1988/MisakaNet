@@ -110,17 +110,17 @@ when the committed table stops matching the corpus, so it cannot rot the way a h
 |---|---|---|
 | **E0** | 38 | 7.6% |
 | **E1** (declared) | 57 | 11.4% |
-| **E2** (declared) | 79 | 15.8% |
+| **E2** (declared) | 80 | 16.0% |
 | **E3** (declared) | 16 | 3.2% |
 | **E4** (declared) | 0 | 0.0% |
 
-- Total lessons: **499**
-- At **E0** in total (declared + default): **347** (69.5%) — of which **309** declare no level at all
+- Total lessons: **500**
+- At **E0** in total (declared + default): **347** (69.4%) — of which **309** declare no level at all
 - At **E4** (*observed reuse by two or more distinct clients*): **0**
 
 Three things this says that the definitions above do not:
 
-1. **302 of 489 lessons never declare a level.** They read as E0 by the default rule, not by a
+1. **309 of 500 lessons never declare a level.** They read as E0 by the default rule, not by a
    decision. That is the honest reading of "evidence is never assumed" — and it means the E0
    population is mostly *unwritten*, not *unevidenced*.
 2. **No lesson has ever reached E4.** The top of the scale rests on an observation — two or more
@@ -130,7 +130,7 @@ Three things this says that the definitions above do not:
    `verified by` / `cross-node confirmation` in the body), which is the declaration this rung
    excludes. That branch was removed; the two lessons declare no level and therefore read `E0` by
    the default rule above. Any reuse narrative the project tells should be read against that zero.
-3. **E3 is 16 lessons (3.3%).** CI-verified recovery is rare, so a "promote on CI evidence" push has
+3. **E3 is 16 lessons (3.2%).** CI-verified recovery is rare, so a "promote on CI evidence" push has
    a small denominator to work with.
 
 ### me_events: live reuse signals (tool-level semantics)
