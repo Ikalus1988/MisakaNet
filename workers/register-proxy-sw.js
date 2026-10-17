@@ -2685,6 +2685,23 @@ async function getIdentityAura(env, token) {
  */
 const KV_HEALTH_WINDOW_MS = 24 * 60 * 60 * 1000;
 
+/**
+ * Compose the endpoint's verdict from the two subsystems that can be down independently.
+ *
+ * KV writes had this rule first (`healthStatus`, issue #1822). The read path did not have one until
+ * 2026-10-17, which is why the endpoint said `ok` through a whole day of failed searches: a subsystem
+ * that is not watched is a subsystem whose failure is invisible, not absent.
+ */
+function healthWithLessons(kvHealth, lessonsRead) {
+  const lessonsDegraded = !!lessonsRead && lessonsRead.ok === false;
+  const reason = [
+    (kvHealth && kvHealth.reason) || "",
+    lessonsDegraded ? `lessons read failing: ${lessonsRead.error_kind || "error"}` : "",
+  ].filter(Boolean).join("; ");
+  const status = lessonsDegraded && (!kvHealth || kvHealth.status === "ok") ? "degraded" : (kvHealth && kvHealth.status) || "ok";
+  return { status, reason };
+}
+
 function healthStatus({ hasKV, attempts = 0, failures = 0, global = null, now = Date.now() } = {}) {
   if (!hasKV) return { status: "ok" };                       // nothing bound: not a failure, a config
   const localFailing = attempts >= 2 && failures >= attempts;
@@ -5547,6 +5564,51 @@ async function loadLessonsFresh(env) {
   }
 }
 
+/**
+ * What the last corpus read in this isolate did, and a cooldown after D1 refuses.
+ *
+ * `/api/health` reported `status: ok` through the whole of 2026-10-17 while every search returned
+ * `D1_ERROR: … exceeded D1's free tier daily row read limit` — the endpoint watched KV writes and
+ * never the read path a user actually takes. These two pieces give it something to report.
+ */
+let lastLessonsRead = null;
+const D1_READ_COOLDOWN_MS = 5 * 60_000;
+let d1ReadCooldownUntil = 0;
+
+function recordLessonsRead(fields) {
+  lastLessonsRead = { at: new Date().toISOString(), ...fields };
+}
+
+/** Test seams for the isolate state above (exported below, next to the loaders). */
+const lastLessonsReadOf = () => lastLessonsRead;
+const resetLessonsReadState = () => { lastLessonsRead = null; d1ReadCooldownUntil = 0; };
+
+/** Classify a D1 failure for the health payload: `quota` clears at 00:00 UTC, the rest do not. */
+function d1ErrorKind(error) {
+  const message = String((error && error.message) || error || "");
+  if (/exceeded D1|row read limit|daily .*limit|quota/i.test(message)) return "quota";
+  if (/no such table|not found|does not exist/i.test(message)) return "binding";
+  if (/network|timeout|connection/i.test(message)) return "transport";
+  return "error";
+}
+
+/**
+ * One-row probe of the corpus read — the path a search takes, which health did not watch.
+ *
+ * `SELECT 1 … LIMIT 1` costs **one row**, so a monitor polling this endpoint is not the thing that
+ * exhausts the daily budget; the search reads are.
+ */
+async function probeLessonsRead(env) {
+  const d1 = d1Binding(env);
+  if (!d1) return { ok: null, source: "no-d1" };
+  try {
+    const { results } = await d1.prepare("SELECT 1 AS ok FROM lessons LIMIT 1").all();
+    return { ok: !!(results && results.length > 0), source: "d1" };
+  } catch (error) {
+    return { ok: false, source: "d1", error_kind: d1ErrorKind(error) };
+  }
+}
+
 /** The data-branch snapshot: the same corpus, one day behind, and readable without D1. */
 const snapshotLessons = (env) =>
   getWithCache(env, "proxy:lessons", () => fetchFromGitHub(env.REGISTER_TOKEN, "lessons.json", "data"));
@@ -5579,12 +5641,19 @@ async function loadLessons(env, filters = {}) {
   // measured 2026-10-17, when `/api/lessons` answered 502 and `misakanet_search` returned the
   // D1_ERROR text to every caller while the data-branch snapshot held the same 500 lessons.
   if (filters && Object.keys(filters).length > 0) {
+    if (Date.now() < d1ReadCooldownUntil) {
+      recordLessonsRead({ ok: false, source: "snapshot-cooldown" });
+      return filterSnapshot(await snapshotLessons(env), filters);
+    }
     try {
       const fromD1 = await fetchLessonsFromD1(env, filters);
+      recordLessonsRead({ ok: true, source: "d1" });
       if (fromD1) return fromD1;
       return [];
     } catch (error) {
+      d1ReadCooldownUntil = Date.now() + D1_READ_COOLDOWN_MS;
       logInternal("D1 filtered lesson read failed; filtering the data-branch snapshot instead", error);
+      recordLessonsRead({ ok: false, source: "snapshot", error_kind: d1ErrorKind(error) });
       return filterSnapshot(await snapshotLessons(env), filters);
     }
   }
@@ -5596,14 +5665,25 @@ async function loadLessons(env, filters = {}) {
   // kubernetes-crashloopbackoff-debugging for "kubectl crashloopbackoff" while
   // production answered no_match). The KV cache below keeps this cheap.
   if (d1Binding(env)) {
+    if (Date.now() < d1ReadCooldownUntil) {
+      recordLessonsRead({ ok: false, source: "snapshot-cooldown" });
+      return snapshotLessons(env);
+    }
     try {
       const fromD1 = await getWithCache(env, "proxy:lessons:d1", () =>
         fetchLessonsFromD1(env, { limit: INTERNAL_LESSON_LIMIT, rich: true }));
-      if (fromD1 && fromD1.length > 0) return fromD1;
+      if (fromD1 && fromD1.length > 0) {
+        recordLessonsRead({ ok: true, source: "d1" });
+        return fromD1;
+      }
     } catch (error) {
+      d1ReadCooldownUntil = Date.now() + D1_READ_COOLDOWN_MS;
       logInternal("D1 lesson read failed; serving the data-branch snapshot", error);
+      recordLessonsRead({ ok: false, source: "snapshot", error_kind: d1ErrorKind(error) });
+      return snapshotLessons(env);
     }
-    // D1 empty/absent/refusing — fall back to the GitHub snapshot.
+    // D1 answered but empty — fall back to the GitHub snapshot.
+    recordLessonsRead({ ok: true, source: "d1-empty" });
     return snapshotLessons(env);
   }
   const fromD1 = await fetchLessonsFromD1(env, { limit: INTERNAL_LESSON_LIMIT, rich: true });
@@ -7583,14 +7663,22 @@ export default {
     if (request.method === "GET" && url.pathname === "/api/health") {
       const kvGlobal = await readKvHealth(env);
       const kvHealth = healthStatus({ hasKV: !!env.MISAKANET_KV, ...kvWriteStats, global: kvGlobal });
+      // The read path a *search* takes, which this endpoint watched for writes only until
+      // 2026-10-17: it answered `status: ok` all day while every search returned a D1 quota error.
+      const lessonsRead = await probeLessonsRead(env);
+      const composed = healthWithLessons(kvHealth, lessonsRead);
       return jsonResponse({
-        status: kvHealth.status,
+        status: composed.status,
         // Present only when something is wrong, so a reader of this endpoint learns *why* instead
         // of seeing `ok` next to `kv_writes: {attempts: 5, failures: 5}` (issue #1822). Since
         // 2026-09-20 the reason also names the *kind* of failure — `quota` (10048, clears at 00:00
         // UTC), `binding` (10009/404, needs a config fix) or `throttle` (429, per-key 1/s) —
         // because those three want three different responses and used to read identically.
-        ...(kvHealth.reason ? { degraded_reason: kvHealth.reason } : {}),
+        ...(composed.reason ? { degraded_reason: composed.reason } : {}),
+        // `ok: null` means "no D1 bound"; `ok: false` is the state that used to be invisible here.
+        // `last` is what the most recent search in this isolate did, including whether it fell back
+        // to the snapshot, so a reader can tell "the probe passes now" from "search recovered".
+        lessons_read: { ...lessonsRead, last: lastLessonsRead },
         worker: "misakanet-register-proxy",
         scheduled_keepalive: true,
         // The commit this worker was built from (#2779). The version number above cannot answer
@@ -9085,6 +9173,13 @@ export {
   // down with it.
   loadLessons,
   filterSnapshot,
+  // Exported for workers/health-lessons-read.test.mjs: the probe, its classifier, and the isolate
+  // state that `/api/health` now reports.
+  probeLessonsRead,
+  d1ErrorKind,
+  healthWithLessons,
+  lastLessonsReadOf,
+  resetLessonsReadState,
   MCP_TOOLS,
   buildVersionsPayload,
   healthStatus,

@@ -126,6 +126,18 @@ def check_endpoint(label: str, path: str, expected_type, required_keys, base_url
             ok = False
             notes.append(f"missing key '{key}'")
 
+    # `/api/health` answering 200 is not the same as it answering *ok*. Until 2026-10-17 this probe
+    # counted a `status: degraded` payload as healthy, which is how a day of failed searches sat behind
+    # a green site check — the check and the endpoint shared the same blind spot.
+    if path == "/api/health" and isinstance(payload, dict):
+        if payload.get("status") not in (None, "ok"):
+            ok = False
+            notes.append(f"status={payload.get('status')} — {payload.get('degraded_reason') or 'no reason given'}")
+        lessons = payload.get("lessons_read")
+        if isinstance(lessons, dict) and lessons.get("ok") is False:
+            ok = False
+            notes.append(f"lessons read failing ({lessons.get('error_kind') or 'unknown'})")
+
     if ok and not notes:
         notes.append(f"{response['bytes']:,} bytes in {response['elapsed_ms']} ms")
         if isinstance(payload, dict):
