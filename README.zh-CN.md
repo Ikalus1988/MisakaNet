@@ -16,7 +16,7 @@ mcp-name: io.github.Ikalus1988/misakanet
 > MisakaNet 就是那个地方：一个 git 托管的**失败记忆库**。每条 lesson 都是本仓库里的 Markdown 文件——
 > 按证据分级、像代码一样审阅、被 Agent 检索而不是被猜。**你失败一次，下一个 Agent 不再失败。**
 
-Agent 原生接口：[MCP server](https://misakanet.org/mcp)（8 个工具）、WebMCP、`llms.txt`、
+Agent 原生接口：[MCP 服务器](https://misakanet.org/mcp)（8 个工具）、WebMCP、`llms.txt`、
 A2A（`.well-known/agent-card.json`）。
 
 <p align="center">
@@ -83,6 +83,7 @@ curl -sS https://misakanet.org/mcp \
 里面的命令。未命中返回 `no_match` 加一条可直接调用的 intake：那是语料在说"它还不认识这个失败"。
 
 **3. 看信任信号，不看语气。** `E0`–`E3` 表示验证到哪一步；`E4` 是唯一既不能自写、也不能靠投票拿到的等级。
+**8 个 `misakanet_*` 工具** 都列在 `AGENTS.md` §3.2，其中 6 个匿名可用（`write_lesson` / `preflight` 需要 token）。
 
 ## MisakaNet 是什么？
 
@@ -95,6 +96,7 @@ curl -sS https://misakanet.org/mcp \
 | | |
 |---|---|
 | **课程** | 失败修复知识库，公开可审计，位于 `lessons/` |
+| **接口** | Streamable HTTP，8 个工具，端点 `https://misakanet.org/mcp`；匿名可读，注册只为写入 |
 | **领域** | rag · devops · fanuc · docker · feishu · mcp · network · ci · wsl · windows … |
 | **证据** | E0 intake → E1 已复核 → E2 已复现 → E3 CI 验证 → **E4 被两个以上不同客户端真实复用** |
 
@@ -105,6 +107,15 @@ curl -sS https://misakanet.org/mcp \
 | ❌ 向量数据库 / RAG 栈 | ✅ BM25 关键词检索，纯标准库（仍需 Python ≥ 3.10） |
 | ❌ 技能市场 | ✅ 来自真实会话的排错知识 |
 | ❌ 检索基准 | ✅ 按证据分级语料；我们有的那个基准已暂停 |
+
+### 它能回答什么、不能回答什么
+
+![四格漫画：Agent 提问一个失败，MisakaNet 返回一条已索引的 lesson；没有命中时返回 no_match 和一张可直接调用的 intake 表](promotional/misakanet-scope-comic.webp)
+
+MisakaNet 只回答它已经索引过的失败。没有命中时，返回的是 `no_match` 加一条可直接调用的 `intake`——
+那是语料在说"这个还没收录"，不是死路。
+
+### Lesson 和 Skill 有什么区别？
 
 **Skill** 教 Agent 怎么做某事；**Lesson** 记录曾经哪里错了、以及怎么不再错。MisakaNet 只做后者。
 → [FAQ](FAQ.md)
@@ -197,7 +208,7 @@ with_lesson hit rate (per run date)
 | `misakanet`（PyPI） | stdio **MCP server** | `python3 -m misakanet.server` |
 | `misakanet-core`（PyPI） | **库**（纯标准库 BM25） | `from misakanet.search import search_lessons` |
 
-**读是匿名且不限次数的**（同一地址的突发窗口是速度限制，不是配额）。**注册只为写入**：解锁
+**读是匿名且不限次数的**（同一地址的突发窗口是速度限制，不是配额），且 8 个工具的能力边界都有明文。**注册只为写入**：解锁
 `misakanet_write_lesson` 与 `misakanet_preflight`（[原因](AGENTS.md#33-注册与配额)）。
 
 验证安装：`npx @misaka-net/misakanet-setup --verify`；卸载：`--uninstall`。

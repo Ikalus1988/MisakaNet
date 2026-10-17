@@ -63,9 +63,11 @@ account or a token.
 |---|---|
 | **DeepSeek Harness** | `dsh plugin --profile web add misakanet` — or type `misakanet` in **Add plugin** |
 | **Claude Code** | `/plugin marketplace add Ikalus1988/MisakaNet` then `/plugin install misakanet@misakanet` |
-| **Codex, Cursor, Gemini CLI, Copilot CLI, OpenCode, …** | `npx @misaka-net/misakanet-setup` — writes the MCP row into each host's config |
+| Installer-managed | Claude Code · Codex · Hermes · OpenClaw · codewhale · Cursor · Gemini CLI · Copilot CLI · OpenCode · Kiro |
 | **Any other MCP client** | point it at `https://misakanet.org/mcp` — public endpoint, anonymous reads |
 | **Your own code** | `pip install misakanet-core` (library) · `pip install misakanet` (stdio server) |
+
+The installer-managed row is what `npx @misaka-net/misakanet-setup` writes into each host's config.
 
 Updates: `dsh plugin --profile web update misakanet@latest` · `npx @misaka-net/misakanet-setup@latest`.
 Full prerequisites and the two-package trap: [How to use it](#how-to-use-it).
@@ -111,6 +113,15 @@ Python standard library. No vector database, no embedding model, no server unles
 | ❌ a vector database / RAG stack | ✅ BM25 keyword search, stdlib only (Python ≥ 3.10 still required) |
 | ❌ a skill marketplace | ✅ debugging knowledge from real sessions |
 | ❌ a retrieval benchmark | ✅ a corpus graded by evidence; the benchmark we have is paused |
+
+### What it answers — and what it does not
+
+![Four-panel comic: an agent asks about a failure, gets an indexed lesson back, or gets "no_match" and a ready-to-call intake form](promotional/misakanet-scope-comic.webp)
+
+MisakaNet answers for the failures it has indexed, and only those. When nothing matches the reply is
+`no_match` plus a ready-to-call `intake` — the corpus saying "not this one yet", not a dead end.
+
+### Lesson vs Skill
 
 A **skill** teaches an agent how to do something; a **lesson** records what went wrong before and how
 not to fail again. MisakaNet is only the second thing. → [FAQ](FAQ.md)
@@ -276,7 +287,7 @@ plan work around it. The only thing this repository has ever honoured is a merge
 
 1. Check the checkout: `python3 scripts/misakanet_cli.py smoke`
 2. Search before writing: `python3 search_knowledge.py "your error here"`
-3. Found nothing? [Share a five-line failure note](https://github.com/Ikalus1988/MisakaNet/issues/new?template=lesson-feedback.yml)
+3. Found nothing? [Share your failure lesson](https://github.com/Ikalus1988/MisakaNet/issues/new?template=lesson-feedback.yml) — five lines is enough
 
 → [CONTRIBUTING.md](CONTRIBUTING.md) · [good first issues](https://github.com/Ikalus1988/MisakaNet/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) · [code of conduct](CODE_OF_CONDUCT.md)
 
