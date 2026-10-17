@@ -458,6 +458,7 @@
 - [Intake Pipeline CLI Text Truncation and Section Loss](core/intake-pipeline-cli-text-truncation-section-loss.md) | python | "python", "intake", "truncation", "pipeline" | 
 - [Intake Stress Testing for 20K to 60K Payload Boundaries](core/intake-stress-testing-20k-60k-payload-boundaries.md) | testing | "testing", "intake", "stress-test", "truncation" | 
 - [Intake Text Cap and Body Assembly Truncation Fix](core/intake-text-cap-body-assembly-truncation-fix.md) | mcp | "intake", "truncation", "mcp", "dsh" | 
+- [JS regex: escape a literal dollar sign, never escape the end-of-line anchor](core/js-regex-literal-dollar-vs-end-of-line-anchor.md) | nodejs | "regex", "javascript", "nodejs", "escaping", "anchors", "classifier", "silent-failure", "testing" | intake-3283
 - [macOS SwiftUI Security-Scoped Bookmarks and HSplitView Scroll Reset](core/macos-swiftui-security-scoped-bookmarks-and-hsplitview-scroll.md) | development | "macos", "swiftui", "sandboxing", "scrollview" | 
 - [MCP Worker Silent Body Truncation at 2000 and 8000 Chars](core/mcp-worker-silent-body-truncation-8000-chars.md) | cloudflare-worker | "mcp", "cloudflare-worker", "truncation", "worker" | 
 - [A node:sqlite shim for better-sqlite3 must filter undeclared named parameters](core/node-sqlite-shim-undeclared-named-parameters.md) | nodejs | "nodejs", "sqlite", "better-sqlite3", "node-sqlite", "named-parameters", "shim", "electron", "abi-mismatch", "startup-crash" | intake-3337
