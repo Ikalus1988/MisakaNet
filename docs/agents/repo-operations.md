@@ -202,6 +202,36 @@ python3 scripts/bench_production_recall.py --json     # 机器可读
 - 涉及 intake 的改动：提交一个明确标注的测试 intake，确认 issue 行为（创建后关闭）——参考
   issue #1621 的探针做法
 
+### 分支与 worktree 卫生（2026-10-17 起，每次收口做一次）
+
+**判据**：分支本身不是资产，**"有人正在这条分支上工作"这个信号**才是。删的门槛是"它不再承载任何独有内容
+或活着的意图"；留的门槛是"删了会丢东西，或让正在进行的 PR 消失"。
+
+| 类别 | 处理 | 判据 / 命令 |
+|---|---|---|
+| `main` / `dist` / `data` / `release-please--*` | **永不删** | 默认分支；`dist`、`data` 由发布器 force-push（删了发布器会重建，但会制造一次假故障）；`release-please--*` 属工具 |
+| 有**开放 PR**的分支 | **保留** | `gh pr list --state open --json headRefName` |
+| PR 已合并 / 已关闭 | **删** | 合并后 GitHub 自动删（`delete_branch_on_merge=true`）；更早留下的手工清 |
+| 无 PR，且 `git cherry origin/main <branch>` **没有 `+` 行** | **删** | 每个补丁都已在 `main` 里。**不能用 `merge-base --is-ancestor`**：本仓用 squash 合并，祖先关系从一开始就不成立 |
+| 无 PR，且有 `+` 行 | **归档成 tag 再删** | `git tag -a archive/<日期>/<branch> origin/<branch>` → push → 删分支；取回 `git branch <name> archive/<日期>/<branch>` |
+
+> ⚠️ **不要用"上游还在不在"判断"是否已落地"**（2026-10-17 的真实教训）：那次本地清理我就是用
+> "上游 gone + 没被 worktree 占用"做判据，误删了 **41 条有独特提交的本地分支**。提交对象当时仍在、
+> `gc.pruneExpire` 被设成 `never` 才没真丢。**落地判据只有 `git cherry`（patch-id）**，`@{upstream}`
+> 既可能是 `origin/main`（永远存在），也可能是早就被 prune 掉的远端——两边都不能说明内容落没落地。
+
+**worktree**：`/home/<user>/wt/*` 下的历史 worktree，**dirty 就不许删**（可能装着未提交的工作）；clean 的
+用 `git worktree remove <path>`；目录已不存在的用 `git worktree prune` 收元数据。先体检再动手：
+
+```bash
+for w in $(git worktree list --porcelain | awk '/^worktree /{print $2}' | tail -n +2); do
+  printf '%-40s dirty=%s\n' "$w" "$(git -C "$w" status --porcelain | wc -l)"
+done
+```
+
+**实测基线（2026-10-17 首次执行）**：远程 **58 → 11**（删 43：合并 6 / 关闭 6 / 补丁已在 main 30 / 游离 ref 1；
+归档 5）、本地 **151 → 7**、worktree **13 → 6**（保留的 5 个全是 dirty）。
+
 ## 4. 排错手册（真实踩过的坑）
 
 | 症状 | 原因 / 处理 |
