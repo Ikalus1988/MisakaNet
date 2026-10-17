@@ -178,6 +178,7 @@
   <url><loc>https://misakanet.org/lessons/fanuc-backup-restore-guide/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/fanuc-dcs-safety-configuration/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/fanuc-do-not-found-in-program-reference-position/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/fanuc-roboguide-frvrc-auto-backup-fails-on-every-restart-file-077-file-079-file/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/fanuc-intp-102-detect-joint-olp-whitespace/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/fanuc-io-marker-m-instruction/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/fanuc-kl-1086-is-line-number-not-error-code/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
