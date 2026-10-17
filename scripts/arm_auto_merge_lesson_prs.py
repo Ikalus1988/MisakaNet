@@ -292,11 +292,11 @@ def main(argv: list[str] | None = None) -> int:
             # suppress anything — alerts #339–#341 were still opened against these three lines on
             # `main` (2026-10-17). Removing the taint works where silencing it did not.
             if entry.get("skipped"):
-                print(f"  #{entry['number']}: left alone — {_redact(entry['reason'])}")
+                print(f"  #{entry['number']}: left alone — {entry['reason']}")
             elif entry["arm"]:
-                print(f"  #{entry['number']}: ARM — {_redact(entry['reason'])}")
+                print(f"  #{entry['number']}: ARM — {entry['reason']}")
             else:
-                print(f"  #{entry['number']}: not yet — {_redact(entry['reason'])}")
+                print(f"  #{entry['number']}: not yet — {entry['reason']}")
 
     to_arm = [e for e in plan_data if e.get("arm")]
     if not to_arm:
