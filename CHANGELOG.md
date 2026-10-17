@@ -7,6 +7,23 @@ All notable changes to the Misaka Network project are documented here.
 
 ---
 
+## [2.47.0](https://github.com/Ikalus1988/MisakaNet/compare/v2.46.0...v2.47.0) (2026-10-17)
+
+
+### Features
+
+* **health:** report the corpus read path, and stop retrying D1 while it is refusing ([#3427](https://github.com/Ikalus1988/MisakaNet/issues/3427)) ([726326b](https://github.com/Ikalus1988/MisakaNet/commit/726326bc75b9b885adb3cfc49cecbca07bc8e36e))
+* **lessons:** adopt [#3324](https://github.com/Ikalus1988/MisakaNet/issues/3324) — a command piped into tail reports tail's exit code ([#3421](https://github.com/Ikalus1988/MisakaNet/issues/3421)) ([d9c520b](https://github.com/Ikalus1988/MisakaNet/commit/d9c520b723b49ad177183673773a8cf691c88b56))
+* **worker:** rebuild the index from the full snapshot, so an outage keeps full-text search ([#3435](https://github.com/Ikalus1988/MisakaNet/issues/3435)) ([fd4f73a](https://github.com/Ikalus1988/MisakaNet/commit/fd4f73a63483284347cf3933b22fc0353a87449e))
+
+
+### Bug Fixes
+
+* **worker:** a D1 quota refusal falls back to the snapshot instead of taking search down ([#3423](https://github.com/Ikalus1988/MisakaNet/issues/3423)) ([b1756f5](https://github.com/Ikalus1988/MisakaNet/commit/b1756f5dd41236ffc298d941037d1b3084516492))
+* **worker:** get_lesson reads the public file when D1 refuses ([#3434](https://github.com/Ikalus1988/MisakaNet/issues/3434)) ([40aa08b](https://github.com/Ikalus1988/MisakaNet/commit/40aa08b8974a50537d5f00e71c2e7325fc5360f1))
+* **worker:** never rebuild the search index from the quota fallback ([#3433](https://github.com/Ikalus1988/MisakaNet/issues/3433)) ([00f944a](https://github.com/Ikalus1988/MisakaNet/commit/00f944a1321cb407d877422a20978d571fc2bfae))
+* **worker:** the fallback serves the current corpus, not a 192-row copy of it ([#3432](https://github.com/Ikalus1988/MisakaNet/issues/3432)) ([f11e489](https://github.com/Ikalus1988/MisakaNet/commit/f11e4892670259c12b16321b83341a5c52926749))
+
 ## [2.46.0](https://github.com/Ikalus1988/MisakaNet/compare/v2.45.0...v2.46.0) (2026-10-17)
 
 
