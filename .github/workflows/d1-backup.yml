@@ -55,15 +55,25 @@ jobs:
           STAMP=$(date -u +%Y-%m-%d)
           echo "stamp=$STAMP" >> "$GITHUB_OUTPUT"
 
-          # `--no-schema`, deliberately. `d1 export` refuses any database carrying an FTS5 virtual
-          # table ("D1 Export error: cannot export databases with virtual tables (like FTS5)") and this
-          # one carries the lesson search index — which is why this job had failed **every week since
-          # 2026-09-28** while nobody read it.
+          # Export **table by table**, deliberately, and data-only.
           #
-          # The split is honest: the rows are the part git does not hold, while the schema is
-          # versioned in `workers/d1/schema.sql` (the file `sync-d1.yml` applies) and the FTS5 table is
-          # derived from `lessons` and rebuilt, so a dump that excluded it loses nothing.
-          wrangler d1 export misakanet-db --remote --no-schema --output "/tmp/misakanet-db-$STAMP.sql"
+          # `d1 export` refuses any database carrying an FTS5 virtual table ("D1 Export error: cannot
+          # export databases with virtual tables (like FTS5)") and this one carries the lesson search
+          # index — which is why this job had failed **every week since 2026-09-28** while nobody read
+          # it. Measured 2026-10-17: `--no-schema` alone does **not** get around the check; naming the
+          # tables does.
+          #
+          # The split is honest: these are the rows git does not hold, the schema is versioned in
+          # `workers/d1/schema.sql` (the file `sync-d1.yml` applies), and the FTS5 table is derived from
+          # `lessons` and rebuilt by the worker, so a dump that omits it loses nothing.
+          TABLES="lessons lesson_sync_log lesson_drafts lesson_usage questions counters kv_store"
+          : > "/tmp/misakanet-db-$STAMP.sql"
+          for t in $TABLES; do
+            wrangler d1 export misakanet-db --remote --no-schema --table "$t" \
+              --output "/tmp/export-$t.sql"
+            cat "/tmp/export-$t.sql" >> "/tmp/misakanet-db-$STAMP.sql"
+            echo "exported $t: $(wc -c < "/tmp/export-$t.sql") bytes"
+          done
 
           DUMP="/tmp/misakanet-db-$STAMP.sql"
           ls -l "$DUMP"

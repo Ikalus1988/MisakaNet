@@ -55,16 +55,26 @@ EMPTY_DUMP = ""
 
 
 def write_stub(bindir: Path, dump: str) -> None:
-    """A `wrangler` that writes `dump` wherever `--output` points, and a no-op `npm`."""
+    """A `wrangler` that writes `dump` where `--output` points — for the `lessons` table only.
+
+    The export step names its tables one at a time (see the step's comment: `d1 export` refuses a
+    database that carries an FTS5 virtual table, and `--no-schema` alone does not get around it). The
+    stub therefore answers the `lessons` export with the fixture and every other table with a one-line
+    placeholder, which keeps the numbers the step prints exactly what a reader sees in CI.
+    """
     (bindir / "wrangler").write_text(
         "#!/usr/bin/env bash\n"
         "set -euo pipefail\n"
         'if [ "$1" = "d1" ] && [ "$2" = "export" ]; then\n'
         '  for arg in "$@"; do case "$arg" in --output=*) out="${arg#--output=}";; --output) out="";; esac; done\n'
         '  if [ -z "${out:-}" ]; then out="${@: -1}"; fi\n'
-        '  cat > "$out" <<\'DUMP\'\n'
+        '  case " $* " in\n'
+        '    *" --table lessons "*) cat > "$out" <<\'DUMP\'\n'
         f"{dump}"
         "\nDUMP\n"
+        "      ;;\n"
+        '    *) echo "-- other table" > "$out" ;;\n'
+        "  esac\n"
         "  exit 0\n"
         "fi\n"
         'echo "stub wrangler: $*"\n'
