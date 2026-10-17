@@ -128,6 +128,16 @@ test('a Chinese query still finds its lesson (the #1780 path, where expansions a
     // `query-alias-expansion.test.mjs` ("the whole path through the MCP endpoint finds the lesson"),
     // which this change must keep green; re-asserting it here with a query the alias table happens
     // not to cover would only add a test that fails for an unrelated reason.
+    // The corpus fallback reads the public snapshot over the network; a unit test must not. An empty
+    // answer keeps `lessons` at the fixture's own size, which is what the index was built from.
+    const realFetch = globalThis.fetch;
+    globalThis.fetch = async (url, opts) => {
+      if (typeof url === 'string' && url.includes('lessons-lite.json')) {
+        return new Response('[]', { status: 200, headers: { 'Content-Type': 'application/json' } });
+      }
+      return realFetch(url, opts);
+    };
+    try {
     const corpus = JSON.parse(readFileSync(new URL('../data/lessons.json', import.meta.url), 'utf8'));
     const rows = Array.isArray(corpus) ? corpus : corpus.lessons || [];
     const index = buildBM25Index(rows, { textMode: 'rich' });
@@ -136,4 +146,7 @@ test('a Chinese query still finds its lesson (the #1780 path, where expansions a
     const sc = await search('公司代理导致 SSL 证书校验失败', createEnv(index));
     assert.equal(sc.source, 'worker-bm25', 'the BM25 path must still be the one answering');
     assert.ok(Array.isArray(sc.results), `expected a result array, got ${JSON.stringify(sc).slice(0, 120)}`);
+    } finally {
+      globalThis.fetch = realFetch;
+    }
   });
