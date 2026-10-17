@@ -2535,8 +2535,16 @@ function lessonReferenceProblem(value, kind) {
 
 // Fetch a single lesson markdown from GitHub
 async function fetchLessonContent(env, lessonPath, lessonId) {
-  // PRD ④: prefer D1 (real-time serving layer) when bound
-  const fromD1 = await fetchLessonFromD1(env, lessonPath, lessonId);
+  // PRD ④: prefer D1 (real-time serving layer) when bound — but a D1 *quota* is not "no such lesson".
+  // Measured 2026-10-17: with the daily row-read budget exhausted, every `misakanet_get_lesson` answered
+  // `internal_error` while the same file was readable from `main`, which is the path below. Search kept
+  // working (it reads the index), so a user could find a lesson and then be unable to open it.
+  let fromD1 = null;
+  try {
+    fromD1 = await fetchLessonFromD1(env, lessonPath, lessonId);
+  } catch (error) {
+    logInternal("D1 lesson read failed; reading the file through the GitHub proxy", error);
+  }
   if (fromD1) return fromD1;
 
   const token = env.REGISTER_TOKEN;
@@ -9214,6 +9222,8 @@ export {
   probeLessonsRead,
   d1ErrorKind,
   healthWithLessons,
+  // Exported for workers/get-lesson-fallback.test.mjs: the D1 → GitHub degradation.
+  fetchLessonContent,
   lastLessonsReadOf,
   resetLessonsReadState,
   MCP_TOOLS,
