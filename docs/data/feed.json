@@ -1,9 +1,30 @@
 {
-  "generated_at": "2026-10-17T03:21:13.919013+00:00",
+  "generated_at": "2026-10-17T04:41:27.671885+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "ci(shape-guard): let a PR declare a whole-file README rewrite",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3400",
+      "timestamp": "2026-10-17T04:16:14Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "feat(site,ci): fold the contributor ranking, and state the landing rules where a fork contributor reads them",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3395",
+      "timestamp": "2026-10-17T03:38:33Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3396",
+      "timestamp": "2026-10-17T03:30:31Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "docs(readme): positioning rework — E4 is an observation, the benchmark is paused, and the badge wall states what it can prove",
@@ -16,13 +37,6 @@
       "title": "fix(adopt): the adopted PR's checks never started, because the push used GITHUB_TOKEN",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/3378",
       "timestamp": "2026-10-17T03:20:58Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "docs(ops): branch and worktree hygiene rules (and the criterion I got wrong)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3391",
-      "timestamp": "2026-10-17T02:42:11Z",
       "source": "github"
     },
     {
@@ -64,20 +78,6 @@
       "timestamp": "2026-10-03",
       "domain": "data",
       "source": "lessons"
-    },
-    {
-      "type": "merged_pr",
-      "title": "fix(test): the concurrency gate asserted an absolute 0.35s, so macOS runners failed it",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2330",
-      "timestamp": "2026-09-27T05:16:55Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "fix(ci): iteration 1 listed a fix it did not apply — the dispatch input was still interpolated into the shell",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2234",
-      "timestamp": "2026-09-25T10:59:22Z",
-      "source": "github"
     },
     {
       "type": "challenge",
