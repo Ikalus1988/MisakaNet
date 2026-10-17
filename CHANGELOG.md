@@ -7,6 +7,14 @@ All notable changes to the Misaka Network project are documented here.
 
 ---
 
+## [2.48.1](https://github.com/Ikalus1988/MisakaNet/compare/v2.48.0...v2.48.1) (2026-10-17)
+
+
+### Bug Fixes
+
+* **automation:** three reds, one cause (D1's free tier) and one standing defect ([#3450](https://github.com/Ikalus1988/MisakaNet/issues/3450)) ([030b203](https://github.com/Ikalus1988/MisakaNet/commit/030b2031ea81a7998943c67a2ec4c809aeeade48))
+* **backup:** export table by table — `--no-schema` alone does not dodge the FTS5 refusal ([#3452](https://github.com/Ikalus1988/MisakaNet/issues/3452)) ([72aaa6c](https://github.com/Ikalus1988/MisakaNet/commit/72aaa6c3bd37ac48a2aaf6356048eb599b020f55))
+
 ## [2.48.0](https://github.com/Ikalus1988/MisakaNet/compare/v2.47.0...v2.48.0) (2026-10-17)
 
 
