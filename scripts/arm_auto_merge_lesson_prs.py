@@ -285,12 +285,13 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(plan_data, indent=2, ensure_ascii=False))
     else:
         for entry in plan_data:
-            # `_redact` here is shape-based (see its definition): it scrubs anything that looks like a
-            # credential without ever reading the token, so these lines carry no taint to report.
-            #
-            # The `# codeql[py/clear-text-logging-sensitive-data]` comments this replaces did not
-            # suppress anything — alerts #339–#341 were still opened against these three lines on
-            # `main` (2026-10-17). Removing the taint works where silencing it did not.
+            # What this printer cost to leave alone (2026-10-17). `# codeql[py/clear-text-logging-
+            # sensitive-data]` comments do **not** suppress this query here — alerts #339–#341 were
+            # opened against exactly these lines while they carried those comments. Nor is the finding
+            # about `_redact`: the alerts stayed when the strings were printed bare (#3445), so the
+            # analyser's source is upstream of this printer. What is printed is PR metadata — a number,
+            # a verdict, and a sentence built from the head repo / author association / the judge.
+            # Alerts #342–#344 were therefore dismissed as false positives, reasoning recorded on each.
             if entry.get("skipped"):
                 print(f"  #{entry['number']}: left alone — {entry['reason']}")
             elif entry["arm"]:
