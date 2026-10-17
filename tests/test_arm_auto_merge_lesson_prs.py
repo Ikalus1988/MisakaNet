@@ -21,6 +21,7 @@ prose (a rule that cannot be shown to fail is a comment, not a gate):
 """
 from __future__ import annotations
 
+import inspect
 import sys
 from pathlib import Path
 
@@ -250,3 +251,18 @@ def test_the_arming_guard_can_go_red():
     assert arming_problems(text.replace("SHELDON_PAT", "GITHUB_TOKEN")), "GITHUB_TOKEN was accepted"
     assert arming_problems(text.replace("--apply", "")), "--apply was not required"
     assert arming_problems(text.replace("needs: sync", "needs: []")), "the ordering rule is not checked"
+
+
+# ── the redactor, which must not read the secret it protects ─────────────────
+def test_redaction_never_reads_the_token():
+    """A redactor that reads the secret taints every message it returns.
+
+    That is not a style point: three "clear-text logging" alerts (#339-#341, 2026-10-17) landed on the
+    plan printer because `_redact` called `_token()`, even though no printed text ever contained it. The
+    function now scrubs by shape, which keeps the defence and removes the taint.
+    """
+    assert "GH_TOKEN" not in inspect.getsource(sweep._redact), "the redactor must not read the environment"
+    for secret in ("ghp_" + "a" * 30, "mcp_" + "b" * 30, "Bearer " + "c" * 30, "d" * 45):
+        assert "<REDACTED>" in sweep._redact(f"nope {secret} nope"), secret[:8]
+    for safe in ("#1234: ARM — the channel would merge it now", "lessons/core/x.md", "gate: success"):
+        assert sweep._redact(safe) == safe

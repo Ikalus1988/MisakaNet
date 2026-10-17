@@ -56,6 +56,7 @@ Stdlib only.
 from __future__ import annotations
 
 import argparse
+import re
 import json
 import os
 import subprocess
@@ -80,16 +81,21 @@ def _token() -> str:
     return (os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN") or "").strip()
 
 
-def _redact(text: str) -> str:
-    """Nothing this script prints may carry the token.
+#: Anything shaped like a credential. Deliberately **not** built from `_token()`: a function that reads
+#: the secret taints every string it returns, which is how three "clear-text logging" alerts (#339–#341)
+#: landed on this file even though none of the printed text ever contained the token. Scrubbing by shape
+#: keeps the defence and removes the taint.
+_SECRET_SHAPES = re.compile(
+    r"(?:gh[pousr]_[A-Za-z0-9]{20,}"      # GitHub PATs
+    r"|mcp_[A-Za-z0-9]{20,}"              # MisakaNet node tokens
+    r"|Bearer\s+[A-Za-z0-9._-]{16,}"     # a header pasted whole
+    r"|\b[A-Za-z0-9_-]{40,}\b)"         # anything long enough to be a key
+)
 
-    `gh` echoes its arguments in some failures, and the env read above lives in this module, so a
-    static analyser cannot tell a PR number from a credential. Every message that reaches stdout or an
-    exception goes through here first — the redaction is real, not a suppression of the finding.
-    """
-    token = _token()
-    if token and isinstance(text, str):
-        return text.replace(token, "<REDACTED>")
+
+def _redact(text: str) -> str:
+    """Scrub anything token-shaped from a message before it reaches stdout or an exception."""
+    return _SECRET_SHAPES.sub("<REDACTED>", str(text))
     return text
 
 
@@ -273,24 +279,25 @@ def main(argv: list[str] | None = None) -> int:
     try:
         plan_data = plan(args.repo, args.limit)
     except RuntimeError as exc:
-        print(f"::warning::the sweep could not list pull requests: {exc}")
+        print(f"::warning::the sweep could not list pull requests: {_redact(exc)}")
         return 1
 
     if args.json:
         print(json.dumps(plan_data, indent=2, ensure_ascii=False))
     else:
         for entry in plan_data:
-            # The reason is a sentence this script built from PR facts; `_redact` proves the token
-            # cannot be in it, and the suppression records that the analyser's taint is the env read.
+            # `_redact` here is shape-based (see its definition): it scrubs anything that looks like a
+            # credential without ever reading the token, so these lines carry no taint to report.
+            #
+            # The `# codeql[py/clear-text-logging-sensitive-data]` comments this replaces did not
+            # suppress anything — alerts #339–#341 were still opened against these three lines on
+            # `main` (2026-10-17). Removing the taint works where silencing it did not.
             if entry.get("skipped"):
-                # codeql[py/clear-text-logging-sensitive-data]
-                print(f"  #{entry['number']}: left alone — {_redact(str(entry['reason']))}")
+                print(f"  #{entry['number']}: left alone — {_redact(entry['reason'])}")
             elif entry["arm"]:
-                # codeql[py/clear-text-logging-sensitive-data]
-                print(f"  #{entry['number']}: ARM — {_redact(str(entry['reason']))}")
+                print(f"  #{entry['number']}: ARM — {_redact(entry['reason'])}")
             else:
-                # codeql[py/clear-text-logging-sensitive-data]
-                print(f"  #{entry['number']}: not yet — {_redact(str(entry['reason']))}")
+                print(f"  #{entry['number']}: not yet — {_redact(entry['reason'])}")
 
     to_arm = [e for e in plan_data if e.get("arm")]
     if not to_arm:
