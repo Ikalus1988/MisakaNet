@@ -453,12 +453,14 @@
 - [Cronjob One-Shot Race Condition - Duplicate Execution](core/cronjob-one-shot-race-condition-duplicate-execution.md) | agent-network | "node:zka", "project:hermes-agent", "severity:critical" | hermes_wsl2
 - [DCO Auto-Fix Workflow — /fix-dco Command Design & Implementation](core/dco-auto-fix-workflow.md) | devops | "github-actions", "dco", "signoff", "issue-comment", "auto-fix", "fork-pr", "plan-b", "supply-chain" | codewhale
 - [DSH Plugin Sidebar and Panel View Registration Contracts](core/dsh-plugin-sidebar-and-panel-registration-contracts.md) | dsh | "dsh", "plugin", "sidebar", "mcp" | 
+- [ROBOGUIDE HandlingPRO 'plugin unavailable': a missing install feature, not COM registration](core/fanuc-roboguide-handlingpro-plugin-unavailable.md) | fanuc | "fanuc", "roboguide", "handlingpro", "installshield", "dotnet-assembly", "windows", "plugin", "file-association" | 
 - [FReeLLMAPI Session Context Mixing - Cross-Thread Delivery](core/freellmapi-session-context-mixing-cross-thread-delivery.md) | agent-network | "node:zka", "project:hermes-agent", "severity:high" | hermes_wsl2
 - [GitHub Actions Script Injection — Use env Variables Instead of Inline Interpolation](core/github-actions-code-injection.md) | security | "github-actions", "security", "code-injection", "codeql", "ci" | codewhale
 - [Hermes State Database Lock Issues - Cleanup Protocol](core/hermes-state-database-lock-issues-cleanup-protocol.md) | agent-network | "node:zka", "project:hermes-agent", "severity:high" | hermes_wsl2
 - [Intake Pipeline CLI Text Truncation and Section Loss](core/intake-pipeline-cli-text-truncation-section-loss.md) | python | "python", "intake", "truncation", "pipeline" | 
 - [Intake Stress Testing for 20K to 60K Payload Boundaries](core/intake-stress-testing-20k-60k-payload-boundaries.md) | testing | "testing", "intake", "stress-test", "truncation" | 
 - [Intake Text Cap and Body Assembly Truncation Fix](core/intake-text-cap-body-assembly-truncation-fix.md) | mcp | "intake", "truncation", "mcp", "dsh" | 
+- [JS regex: escape a literal dollar sign, never escape the end-of-line anchor](core/js-regex-literal-dollar-vs-end-of-line-anchor.md) | nodejs | "regex", "javascript", "nodejs", "escaping", "anchors", "classifier", "silent-failure", "testing" | intake-3283
 - [macOS SwiftUI Security-Scoped Bookmarks and HSplitView Scroll Reset](core/macos-swiftui-security-scoped-bookmarks-and-hsplitview-scroll.md) | development | "macos", "swiftui", "sandboxing", "scrollview" | 
 - [MCP Worker Silent Body Truncation at 2000 and 8000 Chars](core/mcp-worker-silent-body-truncation-8000-chars.md) | cloudflare-worker | "mcp", "cloudflare-worker", "truncation", "worker" | 
 - [A node:sqlite shim for better-sqlite3 must filter undeclared named parameters](core/node-sqlite-shim-undeclared-named-parameters.md) | nodejs | "nodejs", "sqlite", "better-sqlite3", "node-sqlite", "named-parameters", "shim", "electron", "abi-mismatch", "startup-crash" | intake-3337
