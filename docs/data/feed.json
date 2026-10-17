@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-10-17T08:06:14.896932+00:00",
+  "generated_at": "2026-10-17T10:16:03.796451+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
+      "title": "feat(lessons): adopt #3324 — a command piped into tail reports tail's exit code",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3421",
+      "timestamp": "2026-10-17T10:15:38Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(main): release 2.46.0",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3402",
+      "timestamp": "2026-10-17T10:15:15Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "fix(readme): publish the star count from our own badge data, so it cannot say \"invalid\"",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3420",
+      "timestamp": "2026-10-17T08:22:15Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3419",
+      "timestamp": "2026-10-17T08:13:35Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
       "title": "feat(lessons): adopt the six remaining bounty lessons",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/3417",
       "timestamp": "2026-10-17T08:06:05Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3416",
-      "timestamp": "2026-10-17T07:48:27Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat(lessons): adopt #3340 — AgentCap registry secret-safe false positive",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3409",
-      "timestamp": "2026-10-17T07:17:14Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "fix(readme): a static license badge, and LICENSE without CRLF",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3408",
-      "timestamp": "2026-10-17T06:52:40Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3407",
-      "timestamp": "2026-10-17T06:47:01Z",
       "source": "github"
     },
     {
