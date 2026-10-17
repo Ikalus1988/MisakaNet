@@ -10,6 +10,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { filterSnapshot, loadLessons } from './register-proxy-sw.js';
+import { testToken } from './_test-token.mjs';
+
+// Synthetic token (workers/_test-token.mjs explains why this is never a literal).
+const TOKEN = testToken('lessons-fallback');
 
 const QUOTA = new Error(
   "D1_ERROR: Your account has exceeded D1's free tier daily row read limit. Upgrade to a paid plan or "
@@ -45,13 +49,13 @@ function withSnapshotFetch(fn) {
 
 test('an unfiltered read falls back to the snapshot when D1 refuses', () =>
   withSnapshotFetch(async () => {
-    const lessons = await loadLessons({ MISAKANET_D1: refusingD1(), REGISTER_TOKEN: 'test-token' });
+    const lessons = await loadLessons({ MISAKANET_D1: refusingD1(), REGISTER_TOKEN: TOKEN });
     assert.deepEqual(lessons.map((l) => l.id), ['pip-timeout', 'wsl-perms', 'draft-one']);
   }));
 
 test('a filtered read filters the snapshot instead of answering 502', () =>
   withSnapshotFetch(async () => {
-    const lessons = await loadLessons({ MISAKANET_D1: refusingD1(), REGISTER_TOKEN: 'test-token' },
+    const lessons = await loadLessons({ MISAKANET_D1: refusingD1(), REGISTER_TOKEN: TOKEN },
       { domain: 'python' });
     assert.deepEqual(lessons.map((l) => l.id), ['pip-timeout', 'draft-one']);
   }));
