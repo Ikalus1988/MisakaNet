@@ -1763,7 +1763,9 @@
   <div class="drawer-section">
     <div class="drawer-section-title" data-i18n="navNetworkSection">Network</div>
     <a class="drawer-link" href="#activity" onclick="closeDrawer()"><span class="link-icon">📈</span><span data-i18n="navActivity">Network activity</span></a>
-    <a class="drawer-link" href="#contributors" onclick="closeDrawer()"><span class="link-icon">🏆</span><span data-i18n="navRanking">Contributor ranking</span></a>
+    <!-- The "Contributor ranking" entry was removed on 2026-10-17 together with the section it pointed
+         at: the wall is folded, so a nav link to it would be a link to nothing. The i18n key
+         `navRanking` is left in place — it belongs to the markup that comes back when the section does. -->
     <a class="drawer-link" href="https://github.com/Ikalus1988/MisakaNet/issues?q=is%3Aissue+is%3Aopen+label%3Aready+label%3Aagent-friendly" target="_blank" onclick="closeDrawer()"><span class="link-icon">🎯</span><span data-i18n="navChallenges">Challenges</span></a>
     <a class="drawer-link" href="#voices" onclick="closeDrawer()"><span class="link-icon">💬</span><span data-i18n="navVoices">Voices from the Network</span></a>
   </div>
@@ -3518,7 +3520,24 @@ async function loadActivityHistory() {
   }
 }
 
+// The contributor ranking is folded (2026-10-17, owner) without deleting anything: flipping this flag
+// back to `false` restores the section. Why it is folded, and why by a flag rather than by deleting
+// the call: `tests/test_site_request_fanout.py` requires every below-the-fold panel to be started
+// from the same deferred `setTimeout` — a property worth keeping even for a panel that renders
+// nothing, because it is what stops the next panel from blocking the first paint.
+//
+//   * the contributor base is small enough that a top-10 is a nearly-empty table whose first row is
+//     usually the maintainer — a ranking that mostly ranks its own maintainer is a claim about the
+//     project's size, not about its users;
+//   * the basis got *stricter* at the same time (a row now requires a merged PR; self-declared
+//     `usage:` issues no longer count), so the list could only shrink from what readers saw before.
+//
+// Folded here means: no fetch, no render, no drawer link — see `.drawer-link[href="#contributors"]`
+// in the markup, and the `return` below.
+const CONTRIBUTOR_RANKING_FOLDED = true;
+
 async function loadContributors() {
+  if (CONTRIBUTOR_RANKING_FOLDED) return;
   const title = document.getElementById("contrib-title");
   const list = document.getElementById("contrib-list");
   const basis = document.querySelector(".contrib-basis");
