@@ -5547,15 +5547,46 @@ async function loadLessonsFresh(env) {
   }
 }
 
+/** The data-branch snapshot: the same corpus, one day behind, and readable without D1. */
+const snapshotLessons = (env) =>
+  getWithCache(env, "proxy:lessons", () => fetchFromGitHub(env.REGISTER_TOKEN, "lessons.json", "data"));
+
+/**
+ * The SQL predicates `fetchLessonsFromD1` builds, applied in memory.
+ *
+ * Only reachable when D1 refused the read — the snapshot is the whole corpus, so a filter over it
+ * costs a few hundred comparisons instead of a billed row read.
+ */
+function filterSnapshot(lessons, filters) {
+  let rows = Array.isArray(lessons) ? lessons : [];
+  const lower = (v) => String(v == null ? "" : v).toLowerCase();
+  if (filters.domain) rows = rows.filter((l) => lower(l.domain) === lower(filters.domain));
+  if (filters.status) rows = rows.filter((l) => lower(l.status) === lower(filters.status));
+  if (filters.tag) rows = rows.filter((l) => JSON.stringify(l.tags == null ? "" : l.tags).includes(`"${filters.tag}"`));
+  if (filters.id) rows = rows.filter((l) => lower(l.id) === lower(filters.id));
+  const limit = Math.min(Math.max(parseInt(filters.limit, 10) || 100, 1), 5000);
+  return rows.slice(0, limit);
+}
+
 async function loadLessons(env, filters = {}) {
   // Filtered queries must go to D1 (GitHub proxy can't filter). Unfiltered
   // keeps the D1-first / GitHub fallback behavior, with a KV cache over the
   // D1 read (PRD ④ #1358) to keep the hot path cheap — D1 data changes only
   // on sync, so a short TTL is safe.
+  //
+  // Every D1 read is wrapped: its *daily row-read limit* is a quota, not a fault, and exhausting it
+  // used to turn the whole search surface into `Failed to load lessons` until midnight UTC —
+  // measured 2026-10-17, when `/api/lessons` answered 502 and `misakanet_search` returned the
+  // D1_ERROR text to every caller while the data-branch snapshot held the same 500 lessons.
   if (filters && Object.keys(filters).length > 0) {
-    const fromD1 = await fetchLessonsFromD1(env, filters);
-    if (fromD1) return fromD1;
-    return [];
+    try {
+      const fromD1 = await fetchLessonsFromD1(env, filters);
+      if (fromD1) return fromD1;
+      return [];
+    } catch (error) {
+      logInternal("D1 filtered lesson read failed; filtering the data-branch snapshot instead", error);
+      return filterSnapshot(await snapshotLessons(env), filters);
+    }
   }
   // Internal callers need the WHOLE corpus, not a page of it. Without an explicit
   // limit, fetchLessonsFromD1 falls back to `|| 100`, so search only ever saw the
@@ -5565,11 +5596,15 @@ async function loadLessons(env, filters = {}) {
   // kubernetes-crashloopbackoff-debugging for "kubectl crashloopbackoff" while
   // production answered no_match). The KV cache below keeps this cheap.
   if (d1Binding(env)) {
-    const fromD1 = await getWithCache(env, "proxy:lessons:d1", () =>
-      fetchLessonsFromD1(env, { limit: INTERNAL_LESSON_LIMIT, rich: true }));
-    if (fromD1 && fromD1.length > 0) return fromD1;
-    // D1 empty/absent — fall back to the GitHub snapshot.
-    return getWithCache(env, "proxy:lessons", () => fetchFromGitHub(env.REGISTER_TOKEN, "lessons.json", "data"));
+    try {
+      const fromD1 = await getWithCache(env, "proxy:lessons:d1", () =>
+        fetchLessonsFromD1(env, { limit: INTERNAL_LESSON_LIMIT, rich: true }));
+      if (fromD1 && fromD1.length > 0) return fromD1;
+    } catch (error) {
+      logInternal("D1 lesson read failed; serving the data-branch snapshot", error);
+    }
+    // D1 empty/absent/refusing — fall back to the GitHub snapshot.
+    return snapshotLessons(env);
   }
   const fromD1 = await fetchLessonsFromD1(env, { limit: INTERNAL_LESSON_LIMIT, rich: true });
   if (fromD1 && fromD1.length > 0) return fromD1;
@@ -9045,6 +9080,11 @@ function findCoveringLesson(problemText, errorText, lessons) {
 
 
 export {
+  // Exported for workers/lessons-fallback.test.mjs: D1's daily row-read limit is a quota, and the
+  // question this pair answers is whether a refused read degrades to the snapshot or takes search
+  // down with it.
+  loadLessons,
+  filterSnapshot,
   MCP_TOOLS,
   buildVersionsPayload,
   healthStatus,
