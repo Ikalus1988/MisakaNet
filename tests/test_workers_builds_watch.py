@@ -479,7 +479,7 @@ def write_event(tmp_path: Path, sha: str, branch: str) -> str:
 
 
 def test_the_event_payload_supplies_the_commit_and_the_branch(stub, tmp_path):
-    event = write_event(tmp_path, SHA, "main")
+    event = write_event(tmp_path, SHA, "dist")
     proc = run_watch(stub, "--event", event)
     assert proc.returncode == 0, proc.stdout + proc.stderr
     assert f"sha={SHA[:9]}" in proc.stdout, proc.stdout
@@ -495,7 +495,7 @@ def test_a_red_build_on_a_feature_branch_is_not_the_maintainers_problem(stub, tm
     # The message has to name the real reason: the first version printed "no commit for main (branch
     # main is not visible?)", which sends a reader hunting a token problem that is not there.
     assert "skipped on purpose" in proc.stdout, proc.stdout
-    assert "feature/whatever is not main" in proc.stdout, proc.stdout
+    assert "feature/whatever is not dist" in proc.stdout, proc.stdout
     assert StubGitHub.writes == [], StubGitHub.writes
 
 
@@ -506,10 +506,10 @@ def test_any_branch_can_be_watched_on_request(stub, tmp_path):
     assert ("POST", f"/repos/{OWNER_REPO}/issues") in posts(), posts()
 
 
-def test_the_scheduled_path_reads_the_tip_of_main(stub):
-    proc = run_watch(stub, "--branch", "main")
+def test_the_scheduled_path_reads_the_tip_of_dist(stub):
+    proc = run_watch(stub, "--branch", "dist")
     assert proc.returncode == 0, proc.stdout + proc.stderr
-    assert any(f"/branches/main" in s for s in StubGitHub.seen), StubGitHub.seen
+    assert any(f"/branches/dist" in s for s in StubGitHub.seen), StubGitHub.seen
     assert ("POST", f"/repos/{OWNER_REPO}/issues") in posts(), posts()
 
 
@@ -529,7 +529,7 @@ def test_a_missing_event_payload_falls_back_to_the_branch_tip(stub, tmp_path):
         "an unreadable payload must not end the run in a traceback:\n" + proc.stdout + proc.stderr)
     assert "Event payload unreadable" in proc.stderr, proc.stderr
     assert str(missing) in proc.stderr, "the warning has to name the file, or nobody can check it"
-    assert "/branches/main" in " ".join(StubGitHub.seen), StubGitHub.seen
+    assert "/branches/dist" in " ".join(StubGitHub.seen), StubGitHub.seen
     assert ("POST", f"/repos/{OWNER_REPO}/issues") in posts(), (
         "the run still has to report the red build it was triggered by")
 
@@ -583,7 +583,7 @@ def test_the_job_does_not_even_start_for_feature_branches():
     exercise and the one the cron uses.
     """
     condition = workflow()["jobs"]["watch"]["if"]
-    assert "check_suite.head_branch == 'main'" in condition, condition
+    assert "check_suite.head_branch == 'dist'" in condition, condition
 
 
 def test_only_one_watcher_runs_at_a_time():

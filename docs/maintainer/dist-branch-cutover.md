@@ -3,7 +3,10 @@
 > **决定（owner，2026-10-16）**：`main` 只承载「源 + 门禁 + worker」。生成产物搬到 `dist` 分支，
 > Cloudflare **Workers Builds** 的 production branch 从 `main` 改指 `dist`。
 >
-> **状态**：发布器（`.github/workflows/publish-dist.yml`）与门禁改造已落地；**尚未切换**。
+> **状态（2026-10-17）**：发布器与门禁改造已落地；**B1（production branch → `dist`）与 B2（build token
+> 复核有效）已完成**，`dist` 与 `main` 的树当时逐字节相同；**B3（对 `dist` 触发一次构建并等绿）仍未做**
+> —— 切换后 `dist` 头上只有切换前那次构建（build `a770f4c9`）。**`Site build watch` 已改为只看 `dist`**
+> （`workers-builds-watch.yml` + 脚本默认值）：留在 `main` 上它会一直读到最后一次绿、从此沉默。
 > 本文件 §4 的清单里带 🧑 的步骤**只能由有 Cloudflare 控制台权限的人做**（Workers Builds 是 Git
 > 集成，配置在 CF 控制台，不在本仓——见 `docs/agents/repo-operations.md` §3 的 `misakanet-web` 行）。
 >
@@ -267,14 +270,24 @@ update_lessons_json.py → build_lesson_pages.py → export_okf.py
 ### 阶段 C：验证（见 §5 的对照表；任何人可做）
 
 - [ ] C1. 逐条跑 §5 的对照命令，确认切换前后**字节一致**。
-- [ ] C2. 确认 `main` 上的 push **不再**产生 `Workers Builds: misakanet-web` check-run，而 `dist`
-      上的 push 产生它（check-run 由 Cloudflare app 发出，带 Version ID）。
-- [ ] C3. 观察一个完整周期（至少跨一次 `lessons/**` 合并）：课程页面在合并后几分钟内上线，
+      **注意 HTML 不能直接逐字节比**：Cloudflare 会给每个 HTML 响应注入一行
+      `window.__CF$cv$params={...}`（每次请求都不同）。实测 2026-10-17：`/` 连抓三次哈希全不同，
+      把含 `__CF$cv$params` 的行过滤掉后三次完全一致；而静态资源（`/data/lessons.json`、
+      `/sitemap.xml`、`/llms.txt`、`/trust-semantics.md`）本来就逐字节稳定，直接比。
+- [ ] C2. 确认 `dist` 上的 push 产生 `Workers Builds: misakanet-web` check-run（由 Cloudflare app
+      发出，带 Version ID），且**部署的确实是 production**。注意 `main` 也不一定"完全不产生"它：
+      Workers Builds 的 preview 构建对所有分支生效（切换前 `dist` 自己就有过一条 preview 构建），
+      所以判据是"`dist` 的新构建存在且是 production 部署"，不是"`main` 上一条都没有"。
+- [ ] C3. 确认 `Site build watch` 在切到 `dist` 后仍然会喊：手动跑一次
+      `python3 scripts/workers_builds_watch.py --branch dist --dry-run`，应看到
+      `site build: green …`（不是 `absent`→red）。**这一步必须做**——watcher 若仍看 `main`，
+      它会在站点停更时保持沉默，而那正是 #2136 的失败形态。
+- [ ] C4. 观察一个完整周期（至少跨一次 `lessons/**` 合并）：课程页面在合并后几分钟内上线，
       且**该合并的 PR 只带 `main` 侧文件**。
 
 ### 阶段 D：确认稳定之后
 
-- [ ] D1. 开删除 PR（范围见 §9）。**在 C1–C3 全部通过之前不要开。**
+- [ ] D1. 开删除 PR（范围见 §9）。**在 C1–C4 全部通过之前不要开。**
 
 ---
 

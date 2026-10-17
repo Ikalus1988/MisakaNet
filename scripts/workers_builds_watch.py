@@ -38,7 +38,7 @@ the maintainer's call, not a script's.
 Usage::
 
     python3 scripts/workers_builds_watch.py --event "$GITHUB_EVENT_PATH"   # from check_suite
-    python3 scripts/workers_builds_watch.py --branch main                  # scheduled safety net
+    python3 scripts/workers_builds_watch.py --branch dist                  # scheduled safety net
     python3 scripts/workers_builds_watch.py --dry-run ...                  # print, write nothing
 
 Env: `GH_TOKEN` (or `GITHUB_TOKEN`), `GH_REPO` (default `Ikalus1988/MisakaNet`), `GH_API_BASE`
@@ -311,9 +311,9 @@ def main() -> int:
     parser.add_argument("--repo", default=os.environ.get("GH_REPO", DEFAULT_REPO),
                         help=f"owner/name (default $GH_REPO, else {DEFAULT_REPO})")
     parser.add_argument("--sha", help="check this commit instead of reading an event")
-    parser.add_argument("--branch", default="main", help="the branch that deploys the site (default main)")
+    parser.add_argument("--branch", default="dist", help="the branch that deploys the site (default dist)")
     parser.add_argument("--any-branch", action="store_true",
-                        help="also report builds on other branches (default: main only)")
+                        help="also report builds on other branches (default: dist only)")
     parser.add_argument("--dry-run", action="store_true", help="print the decision, write nothing")
     args = parser.parse_args()
 
