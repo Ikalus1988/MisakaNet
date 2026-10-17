@@ -159,6 +159,7 @@
 - [Feishu WebSocket 404 Error - HTTP Webhook Required](contrib/feishu-websocket-404-error-http-webhook-required.md) | feishu | "feishu", "websocket", "webhook", "http", "api" | session-feedback
 - [Feishu WikiBatch Download：文件类型Handling策略](contrib/feishu-wiki-batch-download.md) | feishu | "feishu", "wiki", "batch", "download" | unknown
 - [ffmpeg audio libopus not ogg](contrib/ffmpeg-audio-libopus-not-ogg.md) | audio | "ffmpeg", "audio", "libopus" | hanged-man
+- [FFmpeg: force Rec.709 on H.264 exports from mixed-primary sources](contrib/ffmpeg-rec709-filter-stage-color-conversion.md) | development | "ffmpeg", "video", "color-management", "rec709", "h264", "colorspace", "overlay" | 
 - [Finding and fixing Ghostty's largest memory leak](contrib/finding-and-fixing-ghostty-s-largest-memory-leak.md) | memory | "memory_leak", "memory_management", "terminal", "optimization", "debugging" | https://mitchellh.com/writing/ghostty-memory-leak-fix
 - [firewall port open not public](contrib/firewall-port-open-not-public.md) | network | "project:rag", "platform:wsl", "node:hermes_wsl", "scope:broad" | bootstrap
 - [Fiverr PerimeterX captcha blocks headless seller gig creation](contrib/fiverr-perimeterx-blocks-seller-automation.md) | frontend | "fiverr", "captcha", "perimeterx", "playwright", "seller", "automation" | uncledad96-glitch
