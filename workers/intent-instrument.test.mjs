@@ -117,6 +117,11 @@ test('misakanet_submit_intake records valid intent and still submits', async () 
   // Mock the GitHub issue POST.
   const origFetch = globalThis.fetch;
   globalThis.fetch = async (url, opts) => {
+    // The corpus fallback reads the public snapshot; a unit test must not go to the network for it.
+    // An empty corpus keeps this test about the *intent* path, which is what it asserts.
+    if (typeof url === 'string' && url.includes('lessons-lite.json')) {
+      return new Response('[]', { status: 200, headers: { 'Content-Type': 'application/json' } });
+    }
     if (typeof url === 'string' && url.includes('/issues')) {
       return new Response(JSON.stringify({ number: 7, html_url: 'https://github.com/x/issues/7' }), {
         status: 201, headers: { 'Content-Type': 'application/json' },
@@ -144,6 +149,11 @@ test('misakanet_submit_intake silently drops invalid intent', async () => {
   const { ctx, pending } = collectCtx();
   const origFetch = globalThis.fetch;
   globalThis.fetch = async (url, opts) => {
+    // The corpus fallback reads the public snapshot; a unit test must not go to the network for it.
+    // An empty corpus keeps this test about the *intent* path, which is what it asserts.
+    if (typeof url === 'string' && url.includes('lessons-lite.json')) {
+      return new Response('[]', { status: 200, headers: { 'Content-Type': 'application/json' } });
+    }
     if (typeof url === 'string' && url.includes('/issues')) {
       return new Response(JSON.stringify({ number: 8, html_url: 'https://github.com/x/issues/8' }), {
         status: 201, headers: { 'Content-Type': 'application/json' },
