@@ -1,9 +1,23 @@
 {
-  "generated_at": "2026-10-17T07:32:35.990792+00:00",
+  "generated_at": "2026-10-17T08:06:14.896932+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "feat(lessons): adopt the six remaining bounty lessons",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3417",
+      "timestamp": "2026-10-17T08:06:05Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3416",
+      "timestamp": "2026-10-17T07:48:27Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "feat(lessons): adopt #3340 — AgentCap registry secret-safe false positive",
@@ -26,18 +40,12 @@
       "source": "github"
     },
     {
-      "type": "merged_pr",
-      "title": "feat(lessons): answer intakes #2752 and #2760 on intake pipeline truncation (closes #2839)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3366",
-      "timestamp": "2026-10-17T06:37:36Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "fix(e2e): read the documented tool list from AGENTS.md instead of copying it",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3404",
-      "timestamp": "2026-10-17T06:23:54Z",
-      "source": "github"
+      "type": "lesson",
+      "title": "A node:sqlite shim for better-sqlite3 must filter undeclared named parameters",
+      "url": "lessons/core/node-sqlite-shim-undeclared-named-parameters.md",
+      "timestamp": "2026-10-17",
+      "domain": "nodejs",
+      "source": "lessons"
     },
     {
       "type": "lesson",
@@ -69,14 +77,6 @@
       "url": "lessons/contrib/a-pystray-menu-thread-crash-is-an-appkit-main-thread-violation.md",
       "timestamp": "2026-10-03",
       "domain": "python",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "An archive container name is not an entity name: parse the entries before grouping",
-      "url": "lessons/contrib/an-archive-container-name-is-not-an-entity-name.md",
-      "timestamp": "2026-10-03",
-      "domain": "data",
       "source": "lessons"
     },
     {
