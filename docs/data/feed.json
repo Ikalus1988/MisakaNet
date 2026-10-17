@@ -1,43 +1,51 @@
 {
-  "generated_at": "2026-10-17T10:57:01.426535+00:00",
+  "generated_at": "2026-10-17T14:26:21.451130+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "feat(health): report the corpus read path, and stop retrying D1 while it is refusing",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3427",
-      "timestamp": "2026-10-17T10:54:04Z",
+      "title": "feat(lessons): adopt #3422 and #3426 — JS regex escaping, ROBOGUIDE plugin unavailable",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3437",
+      "timestamp": "2026-10-17T14:26:12Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(worker): a D1 quota refusal falls back to the snapshot instead of taking search down",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3423",
-      "timestamp": "2026-10-17T10:36:52Z",
+      "title": "[Intake] test gap probe",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3429",
+      "timestamp": "2026-10-17T14:10:31Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3424",
-      "timestamp": "2026-10-17T10:28:21Z",
+      "title": "chore(main): release 2.47.0",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3425",
+      "timestamp": "2026-10-17T13:48:43Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(lessons): adopt #3324 — a command piped into tail reports tail's exit code",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3421",
-      "timestamp": "2026-10-17T10:15:38Z",
+      "title": "feat(worker): rebuild the index from the full snapshot, so an outage keeps full-text search",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3435",
+      "timestamp": "2026-10-17T13:39:21Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(main): release 2.46.0",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3402",
-      "timestamp": "2026-10-17T10:15:15Z",
+      "title": "fix(worker): get_lesson reads the public file when D1 refuses",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3434",
+      "timestamp": "2026-10-17T13:05:22Z",
       "source": "github"
+    },
+    {
+      "type": "lesson",
+      "title": "JS regex: escape a literal dollar sign, never escape the end-of-line anchor",
+      "url": "lessons/core/js-regex-literal-dollar-vs-end-of-line-anchor.md",
+      "timestamp": "2026-10-17",
+      "domain": "nodejs",
+      "source": "lessons"
     },
     {
       "type": "lesson",
@@ -69,14 +77,6 @@
       "url": "lessons/contrib/a-child-probe-failure-must-not-poison-the-parent-listing.md",
       "timestamp": "2026-10-03",
       "domain": "nodejs",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "A pystray menu crash on macOS is an AppKit main-thread violation in a background thread, not a host-app bug",
-      "url": "lessons/contrib/a-pystray-menu-thread-crash-is-an-appkit-main-thread-violation.md",
-      "timestamp": "2026-10-03",
-      "domain": "python",
       "source": "lessons"
     },
     {
