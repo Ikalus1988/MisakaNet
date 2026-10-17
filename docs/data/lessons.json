@@ -1,5 +1,38 @@
 [
   {
+    "id": "a-security-fix-that-turns-tests-red-is-the-fix-working",
+    "title": "A security fix that turns tests red is the fix working — rewrite the test that encoded the leak as the contract",
+    "domain": "security",
+    "tags": [
+      "security",
+      "regression-testing",
+      "credential-leak",
+      "api-key",
+      "access-log",
+      "test-contract"
+    ],
+    "summary": "A security fix deliberately removed a credential-carrying code path: an API key accepted as a",
+    "preview": "# A security fix that turns tests red is the fix working — rewrite the test that encoded the leak as the contract\n\n## Problem\n\nA security fix deliberately removed a credential-carrying code path: an API key accepted as a\nquery parameter (`GET /api/memories?api_key=...`). Uvicorn logs the whole request line, query\nstring included, so the key ended up in the access log — a place nobody audits and rotates. The\nfix removed the query-parameter path and left the key in a header, where it is not logged.\n\nThe suite immediately went red. Two tests still asserted that the removed path **works**:\n\n```python\nassert response.status_code == 200\n```\n\n…executed against exactly the request the fix now refuses. Read cold, the diff looked like the\nsecurity change had broken authentication — a regression introduced by the fix.\n\n## Root Cause\n\nWhen a leaky path is also the convenient one — no header plumbing, one call, works pasted into a\nbrowser URL — it accumulates callers *and tests*. Those tests are written from the working\nbehaviour, not from the security property, so they record the leak as the contract.\n\nThat makes them look authoritative after the fix: `main` is green, the branch is red, and the red\nassertions sit in the auth file, which reads as \"this change broke auth\". The tempting resolution\nis to make the suite green again by restoring the query-parameter path — which undoes the security\nfix while every test passes. The regression ships silently, because the tests that would have\ncaught it are the ones that were edited to expect it.\n\nIn this case the trade-off was named in the test's own comment — *\"Useful for quick scripts, though\nless secure\"* — so the risk was known and had been accepted as the contract instead of flagged as\ndebt. A comment that documents a security trade-off is a marker to write the refusal test, not a\nlicence to keep the behaviour.\n\n## Solution\n\n### 1. Rewrite the test to assert the refusal, and put the reason in the docstring\n\nKeep the old test name. A person searching \"why did query auth stop working\" then finds the\nassertion **with** the explanation, instead of turning it back to `200`.\n\n```python\nasync def test_query_parameter_success(self, client):\n    \"\"\"`api_key` as a query parameter is refused.\n\n    This used to return 200 and is why the key ended up in the access log:\n    uvicorn logs the whole request line. The query-parameter name is\n\n[clipped]",
+    "summary_plain": "A security fix removed the URL path carrying the API key, but two tests still expected it, so the fix looked like a bug.",
+    "trigger": "security fix turns tests red; assert response.status_code == 200 on removed api_key query parameter; test_query_parameter_success; credential in access log",
+    "verify": "Run the auth test file before the rewrite: only the tests naming the removed query-parameter path fail; after the rewrite they assert the refusal and the replacement's new cases pass.",
+    "url": "lessons/core/a-security-fix-that-turns-tests-red-is-the-fix-working.md",
+    "created": "",
+    "updated": "",
+    "triggers": null,
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "published",
+    "evidence_refs": [],
+    "supersedes": "",
+    "verified": true,
+    "evidence_level": "E1",
+    "evidence_source": "frontmatter",
+    "trust_score": 0.387,
+    "contributor": ""
+  },
+  {
     "id": "agentcap-registry-secret-safe-validation-failure-metadata",
     "title": "AgentCap Registry Secret-Safe Validation Failure in Capability Metadata",
     "domain": "security",

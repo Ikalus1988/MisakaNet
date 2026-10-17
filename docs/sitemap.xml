@@ -57,6 +57,7 @@
   <url><loc>https://misakanet.org/topics/feishu-mcp/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/mcp-setup/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/windows-encoding/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://misakanet.org/lessons/a-security-fix-that-turns-tests-red-is-the-fix-working-rewrite-the-test-that-enc/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/agentcap-registry-secret-safe-validation-failure-in-capability-metadata/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/an-allowlist-that-rejects-real-data-is-worse-than-no-validation-test-the-rule-ag/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-not-found-answered-with-a-retryable-error-code-makes-agents-retry-a-404-foreve/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
