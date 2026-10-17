@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.10"
 resolution-markers = [
     "python_full_version >= '3.14'",
@@ -1498,7 +1498,7 @@ wheels = [
 
 [[package]]
 name = "misakanet"
-version = "2.41.3"
+version = "2.45.0"
 source = { editable = "." }
 dependencies = [
     { name = "misakanet-core" },
