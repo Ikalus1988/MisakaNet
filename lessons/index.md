@@ -162,6 +162,7 @@
 - [Finding and fixing Ghostty's largest memory leak](contrib/finding-and-fixing-ghostty-s-largest-memory-leak.md) | memory | "memory_leak", "memory_management", "terminal", "optimization", "debugging" | https://mitchellh.com/writing/ghostty-memory-leak-fix
 - [firewall port open not public](contrib/firewall-port-open-not-public.md) | network | "project:rag", "platform:wsl", "node:hermes_wsl", "scope:broad" | bootstrap
 - [Fiverr PerimeterX captcha blocks headless seller gig creation](contrib/fiverr-perimeterx-blocks-seller-automation.md) | frontend | "fiverr", "captcha", "perimeterx", "playwright", "seller", "automation" | uncledad96-glitch
+- [Frame-grid validation when a replacement shot is shorter than its montage slot](contrib/frame-grid-validation-replacement-shorter-than-slot.md) | video | "video", "montage", "ffmpeg", "frame-timing", "frame-grid", "validation", "timebase" | intake-3388
 - [Frontmatter Parsing Edge Cases — Silent Failures and Data Loss](contrib/frontmatter-parsing-edge-cases.md) | devops | "frontmatter", "parsing", "validation", "edge-cases", "data-loss" | MisakaNet validate_lessons.py testing
 - [Game MCP: End Turn Returns 409 Conflict](contrib/game-mcp-end-turn-conflict-409.md) | mcp | "mcp", "game", "turn", "conflict" | hanged-man
 - [Game MCP: GAME OVER Restart Flow](contrib/game-mcp-game-over-restart-flow.md) | mcp | "mcp", "game", "over", "restart", "flow" | hanged-man
