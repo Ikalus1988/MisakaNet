@@ -173,8 +173,8 @@ What was actually observed on the reporter's machine, all concrete:
    No match (`shim gone`) → restore from the saved shim copy. On Windows:
 
    ```powershell
-   Select-String -Path 'C:\Users\h1859\.dsh\profiles\desktop\node_modules\better-sqlite3\lib\index.js' -Pattern 'node:sqlite'
-   if (-not $?) { Copy-Item 'C:\Users\h1859\.dsh\.memos-shim-test\shim-index.js' 'C:\Users\h1859\.dsh\profiles\desktop\node_modules\better-sqlite3\lib\index.js' -Force }
+   Select-String -Path 'C:\Users\<user>\.dsh\profiles\desktop\node_modules\better-sqlite3\lib\index.js' -Pattern 'node:sqlite'
+   if (-not $?) { Copy-Item 'C:\Users\<user>\.dsh\.memos-shim-test\shim-index.js' 'C:\Users\<user>\.dsh\profiles\desktop\node_modules\better-sqlite3\lib\index.js' -Force }
    ```
 
 Independently re-verified in this repository's CI machine (node 24.22.0, no Electron): the driver
