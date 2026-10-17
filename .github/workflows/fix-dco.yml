@@ -60,6 +60,17 @@ jobs:
                 "git commit --amend --signoff --no-edit",
                 "git push --force",
                 "```",
+                "",
+                "**Or don't touch the branch at all**: ask a maintainer to post `/adopt` on this PR.",
+                "That replays your commits onto a same-repo branch with the trailers added, keeps you",
+                "as the author (`Co-authored-by`), and opens the landing PR — it never writes to your",
+                "fork. When the sign-off is the only thing missing, that is the shorter path for both",
+                "sides. See `docs/maintainer/adopt-fork-pr.md`.",
+                "",
+                "Two more things CI will check once the sign-off is fixed (they are the other half of",
+                "the landing rules): run `scripts/update_lessons_json.py` and",
+                "`scripts/build_lesson_pages.py` and commit what they write, and cite exactly one",
+                "intake in `provenance.issue`.",
               ].join('\n')
             });
 
