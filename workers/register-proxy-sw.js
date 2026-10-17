@@ -2336,11 +2336,39 @@ async function recordIndexHealth(env, record) {
   }
 }
 
+/**
+ * Which matcher answers: the stored BM25 index, or the naive one over the corpus just loaded.
+ *
+ * A stale index is worse than the naive matcher: it answers `no_match` for lessons that are *in* the
+ * corpus but not in it. Measured 2026-10-17, after the quota fallback rebuilt the index from a 192-row
+ * snapshot while the corpus had 501 — "docker" and "macos" returned nothing, "pip install timeout" kept
+ * working, so the failure looked like a corpus gap rather than a stale index. The index is used only
+ * when it covers at least 90% of the corpus it would answer for.
+ */
+function pickSearchBackend(bm25Index, lessons) {
+  const indexed = Array.isArray(bm25Index && bm25Index.docs) ? bm25Index.docs.length : 0;
+  const corpus = Array.isArray(lessons) ? lessons.length : 0;
+  if (indexed === 0) return "naive";
+  if (corpus === 0) return "bm25";
+  return indexed >= Math.floor(corpus * 0.9) ? "bm25" : "naive";
+}
+
 async function refreshSearchIndex(env) {
   if (!hasDurableStore(env)) return { refreshed: false, reason: "no storage" };
   try {
     // From D1, not from the cached lessons payload — see loadLessonsFresh (#1731).
-    const lessons = (await loadLessonsFresh(env)) || (await loadLessons(env));
+    //
+    // And **not** from the quota fallback: rebuilding from the snapshot is how a thin corpus becomes a
+    // thin *index* (2026-10-17 — 192 indexed, 501 in the corpus, search silently answering `no_match`).
+    // A failing D1 means "keep the previous index", not "reindex from whatever answered".
+    const fresh = await loadLessonsFresh(env);
+    let lessons = fresh;
+    if ((!Array.isArray(lessons) || lessons.length === 0) && d1Binding(env)) {
+      return { refreshed: false, reason: "d1 unavailable — keeping the previous index" };
+    }
+    if (!Array.isArray(lessons) || lessons.length === 0) {
+      lessons = await loadLessons(env);
+    }
     if (!Array.isArray(lessons) || lessons.length === 0) {
       return { refreshed: false, reason: "no lessons" };
     }
@@ -3895,7 +3923,7 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
       });
     }
     const bm25Index = await loadBM25Index(env);
-    if (bm25Index) {
+    if (pickSearchBackend(bm25Index, lessons) === "bm25") {
       // `args.query` is also passed as the floor query: the expansion may add score, but
       // the relevance floor keeps judging what the user typed (see searchLessonsBM25).
       results = searchLessonsBM25(bm25Index, scoringQuery, args.domain, args.top || 5, args.query);
@@ -9203,6 +9231,8 @@ export {
   probeLessonsRead,
   d1ErrorKind,
   healthWithLessons,
+  // Exported for workers/search-backend-staleness.test.mjs: the index/corpus coverage decision.
+  pickSearchBackend,
   lastLessonsReadOf,
   resetLessonsReadState,
   MCP_TOOLS,
