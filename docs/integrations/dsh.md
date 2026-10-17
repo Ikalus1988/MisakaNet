@@ -3,7 +3,7 @@
 > **状态（2026-10-17，实测）**：`misakanet` 以 **dsh 插件** 形式发布（npm 包，`dsh.bundle.patch` + web 客户端注入）。
 > 它给的是**工具**——`mcp__misakanet__*` 与右栏面板；**「决策之前先查经验库」这条前置不在插件里**。
 > 原因是 dsh 没有 Claude Code 那种 `settings.json` hooks，而插件也没有「注入系统提示」的扩展点：
-> 拆开 2.44.2 的包看，`index.js` 只挂官方 MCP client，`lib/client.js` 只做 UI，全文没有
+> 拆开当前发布版的包看，`index.js` 只挂官方 MCP client，`lib/client.js` 只做 UI，全文没有
 > `systemPrompt` / `instructions` / `hook`。**所以前置靠指令文件**——dsh 自带
 > `@deepseek-ai/dsh-agent-instructions`：它先加载用户全局的 `$DSH_HOME/AGENTS.md`（默认
 > `~/.dsh/AGENTS.md`），再加载项目链。**实测 2026-10-17：写入 `~/.dsh/AGENTS.md` 后，下一条消息就被
@@ -15,9 +15,9 @@
 dsh plugin --profile web add misakanet
 ```
 
-`--profile` 换成你实际用的 profile（`web` / `headless` / `sdk` …）。实测 2026-10-17：`… add misakanet@2.44.2`
-耗时 1 秒，profile 的 `package.json` 变成 `"misakanet": "^2.44.2"`，`dsh.profile.bundles` 里本来就有
-`misakanet`，不变。
+`--profile` 换成你实际用的 profile（`web` / `headless` / `sdk` …）。实测（写入时）：`… add misakanet@latest`
+耗时约 1 秒，profile 的 `package.json` 里 `misakanet` 的版本约束升到当前发布版，`dsh.profile.bundles`
+里本来就有 `misakanet`，不变。
 
 ```bash
 # 确认装进了哪个版本、进了 bundles
@@ -74,7 +74,7 @@ curl -sS https://misakanet.org/mcp \
   -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"probe","version":"0"}}}'
 ```
 
-实测（2026-10-17）返回 `serverInfo: {name: "misakanet", version: "2.44.2"}`。
+返回的 `serverInfo.version` 应与当前发布版一致——版本号以徽章或包页为准，不要抄文档里的数字。
 
 ## 4. 卸载 / 回滚
 
@@ -89,7 +89,7 @@ dsh plugin --profile web add misakanet@<旧版本>   # 回到旧版本
 |---|---|---|
 | 工具 | MCP server 条目 | **插件里的 MCP 行**（`cordis.patch.yml` → `misakanet-mcp`） |
 | 规则 | `~/.claude/CLAUDE.md`（安装器写） | **`$DSH_HOME/AGENTS.md`**（全局，安装器可写）+ 项目 `AGENTS.md` 链 |
-| 前置/钩子 | `UserPromptSubmit` / `PostToolUse` hooks | **无等价配置**；插件侧也没有 prompt 注入点（实测 2.44.2） |
+| 前置/钩子 | `UserPromptSubmit` / `PostToolUse` hooks | **无等价配置**；插件侧也没有 prompt 注入点（拆开当前发布版实测） |
 
 要在 dsh 里做真正的「每次动手前自动触发」，需要 dsh 暴露一个 prompt/工具生命周期的插件扩展点；
 在拿到那个 API 之前，`AGENTS.md` 规则块是唯一今天就能生效的形态。

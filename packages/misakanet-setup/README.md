@@ -51,7 +51,7 @@ dsh plugin --profile web add misakanet   # ① the tools (mcp__misakanet__*)
 Measured 2026-10-17: writing `~/.dsh/AGENTS.md` is picked up as `user-global` instructions on the next
 message, with no restart.
 
-Measured 2026-10-17: `misakanet@2.44.2` installs in ~1s into `~/.dsh/profiles/web`; the plugin's
+Measured 2026-10-17: installing the current `misakanet` takes ~1s into `~/.dsh/profiles/web`; the plugin's
 `index.js` mounts the MCP client and `lib/client.js` is the web panel — **neither injects a rule**,
 which is why ② is a separate, manual step. Full guide: `docs/integrations/dsh.md`.
 
