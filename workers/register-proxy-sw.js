@@ -5609,9 +5609,34 @@ async function probeLessonsRead(env) {
   }
 }
 
-/** The data-branch snapshot: the same corpus, one day behind, and readable without D1. */
+/**
+ * The snapshot calls a lesson's file `url`; D1 calls it `path`, and every caller knows `path`.
+ */
+function normaliseSnapshotRows(rows) {
+  return (Array.isArray(rows) ? rows : []).map((row) =>
+    (row && row.path ? row : { ...row, path: (row && row.url) || "" }));
+}
+
+/**
+ * The corpus, readable without D1 — and *current*, which the data branch's copy was not.
+ *
+ * Measured 2026-10-17, right after the quota fallback went live: the `data` branch still carries a thin
+ * projection (`id/title/domain/tags/summary/updated/url`) that had rotted to **192 lessons**, so a
+ * degraded search answered from 38% of the corpus. `main`'s `docs/data/lessons-lite.json` is the file
+ * `build-feed` keeps in step with the corpus (501 rows, 257 KB), which is small enough to cache and
+ * complete enough to answer from. The data branch stays as the last resort, because a stale answer
+ * beats an error when both snapshots are unreachable.
+ */
 const snapshotLessons = (env) =>
-  getWithCache(env, "proxy:lessons", () => fetchFromGitHub(env.REGISTER_TOKEN, "lessons.json", "data"));
+  getWithCache(env, "proxy:lessons", async () => {
+    try {
+      const rows = await readPublicJson(`https://raw.githubusercontent.com/${REPO}/main/docs/data/lessons-lite.json`);
+      return normaliseSnapshotRows(rows);
+    } catch (error) {
+      logInternal("current snapshot read failed; trying the data branch", error);
+      return normaliseSnapshotRows(await fetchFromGitHub(env.REGISTER_TOKEN, "lessons.json", "data"));
+    }
+  });
 
 /**
  * The SQL predicates `fetchLessonsFromD1` builds, applied in memory.

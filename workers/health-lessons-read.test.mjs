@@ -43,7 +43,7 @@ function withSnapshotFetch(fn) {
   globalThis.fetch = async () => ({
     ok: true,
     status: 200,
-    json: async () => ({ content: Buffer.from(JSON.stringify(SNAPSHOT)).toString('base64'), encoding: 'base64' }),
+    json: async () => SNAPSHOT,
   });
   return fn().finally(() => { globalThis.fetch = real; });
 }

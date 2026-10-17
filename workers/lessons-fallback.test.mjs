@@ -37,11 +37,11 @@ function refusingD1() {
 function withSnapshotFetch(fn) {
   const real = globalThis.fetch;
   globalThis.fetch = async (url) => {
-    assert.match(String(url), /contents\/lessons\.json/, 'only the snapshot may be fetched here');
+    assert.match(String(url), /docs\/data\/lessons-lite\.json/, 'the current snapshot is what a fallback reads');
     return {
       ok: true,
       status: 200,
-      json: async () => ({ content: Buffer.from(JSON.stringify(SNAPSHOT)).toString('base64'), encoding: 'base64' }),
+      json: async () => SNAPSHOT,
     };
   };
   return fn().finally(() => { globalThis.fetch = real; });
