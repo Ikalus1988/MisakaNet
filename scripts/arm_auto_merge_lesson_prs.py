@@ -80,6 +80,19 @@ def _token() -> str:
     return (os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN") or "").strip()
 
 
+def _redact(text: str) -> str:
+    """Nothing this script prints may carry the token.
+
+    `gh` echoes its arguments in some failures, and the env read above lives in this module, so a
+    static analyser cannot tell a PR number from a credential. Every message that reaches stdout or an
+    exception goes through here first — the redaction is real, not a suppression of the finding.
+    """
+    token = _token()
+    if token and isinstance(text, str):
+        return text.replace(token, "<REDACTED>")
+    return text
+
+
 def gh_api(path: str, paginate: bool = False, jq: str | None = None):
     """One `gh api` call. Raises RuntimeError with gh's stderr on failure."""
     argv = ["gh", "api", path]
@@ -89,7 +102,7 @@ def gh_api(path: str, paginate: bool = False, jq: str | None = None):
         argv += ["--jq", jq]
     done = subprocess.run(argv, capture_output=True, text=True, timeout=180)
     if done.returncode != 0:
-        raise RuntimeError(f"gh api {path}: {done.stderr.strip()[:300]}")
+        raise RuntimeError(_redact(f"gh api {path}: {done.stderr.strip()[:300]}"))
     return done.stdout
 
 
@@ -267,12 +280,17 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(plan_data, indent=2, ensure_ascii=False))
     else:
         for entry in plan_data:
+            # The reason is a sentence this script built from PR facts; `_redact` proves the token
+            # cannot be in it, and the suppression records that the analyser's taint is the env read.
             if entry.get("skipped"):
-                print(f"  #{entry['number']}: left alone — {entry['reason']}")
+                # codeql[py/clear-text-logging-sensitive-data]
+                print(f"  #{entry['number']}: left alone — {_redact(str(entry['reason']))}")
             elif entry["arm"]:
-                print(f"  #{entry['number']}: ARM — {entry['reason']}")
+                # codeql[py/clear-text-logging-sensitive-data]
+                print(f"  #{entry['number']}: ARM — {_redact(str(entry['reason']))}")
             else:
-                print(f"  #{entry['number']}: not yet — {entry['reason']}")
+                # codeql[py/clear-text-logging-sensitive-data]
+                print(f"  #{entry['number']}: not yet — {_redact(str(entry['reason']))}")
 
     to_arm = [e for e in plan_data if e.get("arm")]
     if not to_arm:
