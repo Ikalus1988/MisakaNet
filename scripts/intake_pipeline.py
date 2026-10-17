@@ -278,8 +278,21 @@ def _d1_query(sql: str, params: list | None = None) -> dict:
                      "User-Agent": "misakanet-intake"},
             method="POST",
         )
-        with urllib.request.urlopen(req, timeout=60) as r:
-            return json.loads(r.read())
+        try:
+            with urllib.request.urlopen(req, timeout=60) as r:
+                return json.loads(r.read())
+        except urllib.error.HTTPError as exc:
+            # D1 answers a *quota* refusal with HTTP 400 and a body carrying `code: 7500`, so a bare
+            # `HTTP Error 400: Bad Request` is what an exhausted free tier looked like in CI on
+            # 2026-10-17 — a condition we understand completely reading as a malformed request.
+            try:
+                payload = json.loads(exc.read().decode("utf-8", "replace") or "{}")
+            except Exception:
+                payload = {}
+            first = ((payload.get("errors") or [{}])[0] or {})
+            code = first.get("code")
+            message = first.get("message") or exc.reason or "no detail"
+            raise RuntimeError(f"D1 query failed: HTTP {exc.code} {('code ' + str(code) + ': ') if code else ''}{message}") from None
     # mcporter OAuth path
     code = (f"async () => {{ const r = await cloudflare.request({{ method: 'POST', "
             f"path: '/accounts/{CF_ACCOUNT}/d1/database/{D1_ID}/query', "

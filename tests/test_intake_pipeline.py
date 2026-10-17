@@ -387,3 +387,38 @@ class TestQuestionLabels(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+class TestD1QueryErrorIsReadable(unittest.TestCase):
+    """A quota refusal must not read as a malformed request.
+
+    Measured 2026-10-17: `sync-question-answers.yml` failed with `urllib.error.HTTPError: HTTP Error
+    400: Bad Request` and nothing else, because D1 answers an exhausted free tier with HTTP 400 and a
+    body carrying `code: 7500`. The run looked like a bug in the SQL.
+    """
+
+    def test_the_d1_error_body_reaches_the_message(self):
+        import io
+        import urllib.error
+        payload = json.dumps({"success": False, "errors": [{
+            "code": 7500,
+            "message": "Your account has exceeded D1's free tier daily row read limit.",
+        }]}).encode()
+        error = urllib.error.HTTPError(
+            "https://api.cloudflare.com/client/v4/accounts/x/d1/database/y/query", 400,
+            "Bad Request", {}, io.BytesIO(payload))
+        original = ip.urllib.request.urlopen
+        ip.urllib.request.urlopen = lambda *a, **k: (_ for _ in ()).throw(error)
+        original_token = os.environ.get("CLOUDFLARE_API_TOKEN")
+        os.environ["CLOUDFLARE_API_TOKEN"] = "test-token"
+        try:
+            with self.assertRaises(RuntimeError) as caught:
+                ip._d1_query("SELECT 1")
+        finally:
+            ip.urllib.request.urlopen = original
+            if original_token is None:
+                os.environ.pop("CLOUDFLARE_API_TOKEN", None)
+            else:
+                os.environ["CLOUDFLARE_API_TOKEN"] = original_token
+        message = str(caught.exception)
+        assert "7500" in message, message
+        assert "daily row read limit" in message, message

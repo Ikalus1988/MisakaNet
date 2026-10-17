@@ -55,10 +55,15 @@ jobs:
           STAMP=$(date -u +%Y-%m-%d)
           echo "stamp=$STAMP" >> "$GITHUB_OUTPUT"
 
-          # `d1 export --remote` reads the database as it is right now. The schema travels with the
-          # data (no --no-schema): a dump that needs the current schema to be meaningful is not a
-          # backup, it is a fragment.
-          wrangler d1 export misakanet-db --remote --output "/tmp/misakanet-db-$STAMP.sql"
+          # `--no-schema`, deliberately. `d1 export` refuses any database carrying an FTS5 virtual
+          # table ("D1 Export error: cannot export databases with virtual tables (like FTS5)") and this
+          # one carries the lesson search index — which is why this job had failed **every week since
+          # 2026-09-28** while nobody read it.
+          #
+          # The split is honest: the rows are the part git does not hold, while the schema is
+          # versioned in `workers/d1/schema.sql` (the file `sync-d1.yml` applies) and the FTS5 table is
+          # derived from `lessons` and rebuilt, so a dump that excluded it loses nothing.
+          wrangler d1 export misakanet-db --remote --no-schema --output "/tmp/misakanet-db-$STAMP.sql"
 
           DUMP="/tmp/misakanet-db-$STAMP.sql"
           ls -l "$DUMP"
@@ -77,8 +82,10 @@ jobs:
           INSERTS=$(grep -ciE '^[[:space:]]*insert into' "$DUMP" || true)
           TABLES=$(grep -ciE '^[[:space:]]*create table' "$DUMP" || true)
           LESSONS=$(grep -ciE '(create table|insert into)[^(]*lessons' "$DUMP" || true)
-          echo "size=$SIZE bytes, INSERT statements=$INSERTS, CREATE TABLE=$TABLES, lines naming the lessons table=$LESSONS"
-          if [ "$SIZE" -lt 500000 ] || [ "$INSERTS" -lt 1 ] || [ "$TABLES" -lt 1 ] || [ "$LESSONS" -lt 1 ]; then
+          echo "size=$SIZE bytes, INSERT statements=$INSERTS, CREATE TABLE=$TABLES (schema lives in workers/d1/schema.sql), lines naming the lessons table=$LESSONS"
+          # `TABLES` is recorded but no longer required: a data-only dump has no CREATE TABLE by
+          # design, and asserting one would fail every run for the right reason at the wrong layer.
+          if [ "$SIZE" -lt 500000 ] || [ "$INSERTS" -lt 1 ] || [ "$LESSONS" -lt 1 ]; then
             echo "::error::the dump looks wrong (size=$SIZE, inserts=$INSERTS, tables=$TABLES, lessons lines=$LESSONS) — refusing to archive it"
             exit 1
           fi

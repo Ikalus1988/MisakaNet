@@ -113,4 +113,17 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: 6b92325b505f2b76aec49e9fe4195d31
         run: |
           cd workers
-          wrangler d1 execute misakanet-db --remote --command "SELECT COUNT(*) AS n FROM lessons;"
+          # A read, so it is the one step a **read** quota can fail — and on 2026-10-17 it did: the
+          # sync's writes succeeded, then this probe hit "exceeded D1's free tier daily row read
+          # limit [code: 7500]" and turned the whole job red for a condition that says nothing about
+          # whether the sync worked. That refusal is reported as a warning; every other failure still
+          # fails the job, because then the row count is evidence about the sync itself.
+          if ! out=$(wrangler d1 execute misakanet-db --remote --command "SELECT COUNT(*) AS n FROM lessons;" 2>&1); then
+            echo "$out"
+            if grep -qiE "exceeded D1's free tier|daily row read limit|code: 7500" <<<"$out"; then
+              echo "::warning::D1 refused the row-count probe (its daily read allowance). The sync's own writes are unaffected; check again after 00:00 UTC, or read docCount from /api/search-index."
+              exit 0
+            fi
+            exit 1
+          fi
+          echo "$out"
