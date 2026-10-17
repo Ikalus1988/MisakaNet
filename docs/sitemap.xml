@@ -326,6 +326,7 @@
   <url><loc>https://misakanet.org/lessons/model-switch-script-pattern/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/multi-forum-scraping-architecture/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/n8n-nodejs-econnreset-connection-reset-fix/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/a-nodesqlite-shim-for-better-sqlite3-must-filter-undeclared-named-parameters/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/node-strip-only-mode-rejects-typescript-syntax-that-needs-lowering-not-just-type/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/nodejs-missing-require-inside-try-catch/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/npc-dispatch-causes-spatial-bilocation-and-active-speaker-loss/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
