@@ -4611,7 +4611,7 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
       // triage help requests distinctly from failure intakes.
       const labels = attention.file
         ? (kind === "question"
-          ? ["intake", "mcp-intake", "pending-review", "needs-human-review"]
+          ? ["intake", "mcp-intake", "pending-review", "needs-answer"]
           : ["intake", "mcp-intake", "pending-review"])
         : attention.labels;
       // L4: surface the flag to triage instead of silently publishing injection text.

@@ -139,7 +139,7 @@ class TestQuestionRouting(unittest.TestCase):
         )
         self.assertTrue(title.startswith("[Question]"))
         self.assertIn("question", labels)
-        self.assertIn("needs-human-review", labels)
+        self.assertIn("needs-answer", labels)
         self.assertNotIn("new-lesson", labels)
         self.assertIn("**Kind:** question", body)
         self.assertIn("NOT a lesson candidate", body)

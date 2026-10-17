@@ -60,7 +60,7 @@ function submitIntake(args, env) {
   }), env);
 }
 
-test('submit_intake question kind creates issue with needs-human-review label', async () => {
+test('submit_intake question kind creates issue with needs-answer label', async () => {
   const env = createEnv();
   let captured = null;
   const restore = captureGitHubFetch(env, (p) => { captured = p; });
@@ -72,7 +72,7 @@ test('submit_intake question kind creates issue with needs-human-review label', 
     assert.equal(result.submitted, true);
     assert.equal(result.intake_id, 'issue-42');
     assert.ok(captured);
-    assert.ok(captured.labels.includes('needs-human-review'));
+    assert.ok(captured.labels.includes('needs-answer'));
     assert.ok(captured.labels.includes('intake'));
     assert.match(captured.title, /^\[Question\]/);
     assert.match(captured.body, /\*\*Kind:\*\* question/);
@@ -93,7 +93,7 @@ test('submit_intake missing_lesson keeps standard labels and title', async () =>
     assert.equal(result.submitted, true);
     assert.ok(captured);
     assert.ok(captured.labels.includes('intake'));
-    assert.ok(!captured.labels.includes('needs-human-review'));
+    assert.ok(!captured.labels.includes('needs-answer'));
     assert.match(captured.title, /^\[Intake\]/);
   } finally {
     restore();
@@ -120,7 +120,7 @@ test('submit_intake default kind is missing_lesson when omitted', async () => {
     const result = JSON.parse(body.result.content[0].text);
     assert.equal(result.submitted, true);
     assert.match(captured.body, /\*\*Kind:\*\* missing_lesson/);
-    assert.ok(!captured.labels.includes('needs-human-review'));
+    assert.ok(!captured.labels.includes('needs-answer'));
   } finally {
     restore();
   }
@@ -196,7 +196,7 @@ test('omitted kind + EN question phrasing auto-routes to question', async () => 
   assert.equal(result.routing.auto_detected, true);
   assert.ok(captured);
   assert.match(captured.title, /^\[Question\]/);
-  assert.ok(captured.labels.includes('needs-human-review'));
+  assert.ok(captured.labels.includes('needs-answer'));
   assert.match(captured.body, /\*\*Kind:\*\* question/);
 });
 
@@ -242,7 +242,7 @@ test('failure submissions are never re-routed to question', async () => {
   assert.equal(result.routing.kind, 'missing_lesson');
   assert.equal(result.routing.auto_detected, false);
   assert.match(captured.title, /^\[Intake\]/);
-  assert.ok(!captured.labels.includes('needs-human-review'));
+  assert.ok(!captured.labels.includes('needs-answer'));
 });
 
 test('non-missing_lesson explicit kinds are never overridden', async () => {

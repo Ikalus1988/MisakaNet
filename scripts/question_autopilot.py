@@ -301,21 +301,26 @@ BOUNTY_LABEL = "bounty"
 
 
 def bounty_body(anchor_number: int, members: list[dict], shared: list[str]) -> str:
-    """An AC-complete task body, in the shape `ai-bounty-template.md` and the quality gate expect.
+    """The task the autopilot delegates: **an answer in the question thread**, not a lesson PR.
 
-    Two structural requirements are not cosmetic: the gate looks for an acceptance-criteria section **and**
-    a checkbox list to grant `ready`, and `ai-bounty-template.md` names reproducible evidence as "the
-    condition most submissions fail" — so the first criterion is a pasted command and its output.
+    The previous shape asked for a lesson. Measured on 2026-10-17, that produced exactly the failure the
+    owner named: every submission arrived as a fork PR that could not land (seven of them, all blocked on
+    DCO plus the derived artifacts). The answer is what the asker needs, the FAQ is built from answers
+    rather than files, and an answer needs no branch, no signature and no generators — so the whole
+    landing problem disappears for this class of contribution.
+
+    A lesson remains *optional* (two lines at the end), because the corpus can keep it — but it is not
+    the deliverable, and the task says so.
     """
     lines = [
         BOUNTY_MARKER.format(anchor_number),
-        f"# [Bounty] Answer the {len(members)} linked question(s) as a lesson",
+        f"# [Bounty] Answer the {len(members)} linked question(s)",
         "",
         "## Context",
         "",
         "These intakes ask about something no lesson covers. Measured through the production retrieval path "
         "(BM25 plus the IDF-weighted relevance floor), every one of them returns `no_match` — so there is "
-        "nothing to link the asker to, and the answer has to be written rather than looked up.",
+        "nothing to link the asker to, and the answer has to be written by someone who saw the failure.",
         "",
     ]
     for member in members:
@@ -326,36 +331,22 @@ def bounty_body(anchor_number: int, members: list[dict], shared: list[str]) -> s
         "",
         "## Deliverable",
         "",
-        "A lesson in `lessons/contrib/` that answers the question(s) above, following "
-        "`docs/maintainer/lesson-fields.md` (title / domain / problem / root cause / fix, and a "
-        "`## Verification` that is a checkable command with an expected result). A written answer in the "
-        "issue is welcome as a first step, but the lesson is what makes it count — it is the artifact the "
-        "corpus keeps and the FAQ is built from. (The directory is not decoration: the corpus is read "
-        "from `lessons/core/` and `lessons/contrib/`, so a file at `lessons/<slug>.md` passes every "
-        "content rule and is then never indexed.)",
+        "**An answer, posted as a comment on each question issue above.** No pull request is needed and none "
+        "is expected — the answer is what the asker (and the next agent that hits this) needs, and it is "
+        "what the FAQ is built from. `sync-question-answers.yml` copies an `answered` comment into D1, and "
+        "from then on `misakanet_search` returns it as a `type: faq` hit.",
         "",
-        "## How this lands — read this before you start",
+        "The answer has to be *observed*, not generated. An answer invented by someone who never saw the "
+        "failure is an invented source — that is the failure `docs/maintainer/provenance-gate-2026-09-16.md` "
+        "exists to prevent. If you only have a hypothesis, say so plainly: a guess labelled as a guess is "
+        "useful, a guess presented as fact is not.",
         "",
-        "**1. Every commit needs a `Signed-off-by` trailer (`git commit --signoff`).** `DCO / "
-        "Signed-off-by` is a required check, and a fork pull request whose commits are unsigned "
-        "cannot land however good the lesson is. Measured 2026-10-17: seven open pull requests answer "
-        "tasks like this one (#3340–#3346) and every one of them is red on that check alone, so none "
-        "of them can merge as written.",
+        "## How your answer reaches readers",
         "",
-        "If you cannot or will not sign off, say so on this issue instead of opening the PR: a "
-        "maintainer can adopt it with `/adopt`. That fetches your branch, rebases it with `--signoff`, "
-        "pushes `adopted/<n>` and opens a new pull request with your commits — **your authorship is "
-        "preserved** and you are credited with a `Co-authored-by` trailer, and your fork is never "
-        "written to (`docs/maintainer/adopt-fork-pr.md`).",
-        "",
-        "**2. One intake converts to one lesson.** A lesson names the intake it converts in "
-        "`provenance.issue`, and no two lessons may name the same one: the conversion receipt "
-        "(`scripts/intake_receipt.py`) reads exactly that field, and two claims leave it unable to say "
-        "which lesson answered the reporter. Measured 2026-10-17 on this backlog: the open pull "
-        "requests #3344 and #3345 both claim `#2760`. The gate rule in #3361 makes a second claim fail "
-        "`scripts/lesson_gate.py` on a new lesson. So when this task lists several questions, write "
-        "**one** lesson, put the one it actually answers in `provenance.issue`, and list the rest in "
-        "`provenance.related` — one lesson per question is the failure that rule exists to stop.",
+        "1. Post it on **each** linked question issue as a comment — not only here. The sync reads the "
+        "question's own thread.",
+        "2. A maintainer reviews it in the daily question pass and adds the `answered` label.",
+        "3. `sync-question-answers.yml` copies the labelled comment into the FAQ (D1) within a day.",
         "",
         "## MANDATORY ACCEPTANCE CRITERIA (AC)",
         "",
@@ -363,61 +354,44 @@ def bounty_body(anchor_number: int, members: list[dict], shared: list[str]) -> s
         "",
         "- [ ] Paste the command you ran and the output you got. Not a description of what you did — the "
         "command and its output. If you name an endpoint it must be `misakanet.org`.",
-        "- [ ] Say what you observed yourself versus what you read somewhere. A lesson citing a source "
-        "that does not exist is worse than one citing nothing (`scripts/check_provenance.py` fails on it).",
+        "- [ ] Say what you observed yourself versus what you read somewhere.",
         "",
-        "**1. The derived artifacts are regenerated — this is the step that fails CI most often**",
+        "**1. The answer is complete**",
         "",
-        "- [ ] Run the three commands the daily job runs, in this order, and commit what they change:",
+        "- [ ] It states the root cause, the fix (with the exact command or setting), and how to check it "
+        "worked — the last one is a command plus the result that means success, not \"it should work\".",
+        "- [ ] It names the version / environment it was observed on. \"Works on my machine\" without that "
+        "line is unfalsifiable.",
         "",
-        "```bash",
-        "python3 scripts/update_lessons_json.py    # data/lessons.json",
-        "python3 scripts/build_lesson_pages.py     # docs/lessons/**, docs/topics/**, docs/sitemap.xml",
-        "python3 scripts/export_okf.py             # data/okf/lessons.jsonl",
-        "```",
+        "**2. It is posted where the question lives**",
         "",
-        "  Skipping this fails three tests on every platform — `test_lesson_page_generator` and",
-        "  `test_okf_export_freshness` twice — because a new lesson makes the index, the generated pages and",
-        "  the OKF export stale. Measured 2026-09-26 on the first two lesson PRs opened against these tasks.",
+        "- [ ] A comment on **every** linked question issue above. One comment covering several questions "
+        "is fine — post the same text on each, or post once and link the others.",
         "",
-        "**2. The lesson passes the repository's own gates**",
+        "**3. Claiming**",
         "",
-        "- [ ] `python3 scripts/lesson_gate.py <your lesson>` is clean.",
-        "- [ ] `python3 scripts/check_provenance.py --check` does not report a dead source for it.",
-        "- [ ] `python3 -m pytest tests/ -q` still passes.",
-        "",
-        "**3. Answering means being found**",
-        "",
-        "- [ ] Your lesson is reachable for the question text that produced this bounty. **Two steps, and "
-        "the second one is ours, not yours:**",
-        "  - run the query locally against a fresh index and paste the result:",
-        "    `MISAKANET_LESSONS_INDEX=/tmp/idx.json python3 scripts/update_lessons_json.py` then search "
-        "that file for the question's words (`grep -i`), or run the shipped search over the corpus "
-        "(`python3 search_knowledge.py \"<question>\"`);",
-        "  - after the merge, a maintainer confirms it against the **hosted** `misakanet_search` once the "
-        "daily index job has run. Measured 2026-09-26: the live index lagged the corpus by hours (and "
-        "froze outright for seven of them), so \"the hosted search finds it\" cannot be a condition you "
-        "satisfy before the merge — a submission was failed by us for a state we caused.",
-        "",
-        "**4. Claiming**",
-        "",
-        "- [ ] Comment `/try` (or `/claim`) so others know you are on it; one open PR per task. The claim "
-        "rules are in `JOIN.md` and `CONTRIBUTING.md`.",
+        "- [ ] Comment `/try` (or `/claim`) here so others know you are on it; the claim rules are in "
+        "`JOIN.md` and `CONTRIBUTING.md`.",
         "",
         "## What the reward is, stated plainly",
         "",
-        "**This is a `zero-bounty` task: $0.** The reward is merge credit, a leaderboard entry and a line in "
-        "the Hall of Fame. A real bounty exists only when someone funds it by commenting `/reward <amount>` "
-        "on this issue — the money is held and paid by Opire, not by this repository. If you want this one "
-        "funded, say so; if nobody funds it, it is still worth doing, because the answer gets reused by "
-        "every agent that hits the same thing.",
+        "**This is a `zero-bounty` task: $0.** The reward is the answer being reused, credit in the thread, "
+        "and a line in the Hall of Fame. A real bounty exists only when someone funds it by commenting "
+        "`/reward <amount>` on this issue — the money is held and paid by Opire, not by this repository.",
+        "",
+        "## Optional: also land it as a lesson",
+        "",
+        "Never required for this task. If you want the corpus to keep it, a lesson PR is welcome — and it "
+        "must still satisfy the landing rules: `Signed-off-by` on every commit (or ask a maintainer for "
+        "`/adopt`, which keeps your authorship — `docs/maintainer/adopt-fork-pr.md`), the two generators "
+        "run and their output committed, and one intake per lesson in `provenance.issue` (the rest in "
+        "`provenance.related`, per #3361). Say here first if you plan to open one.",
         "",
         "## Closes",
         "",
-        "A merged lesson closes this task **and** the questions above (link them with `Fixes #N` so the "
-        "receipt rule applies). The lesson names one of them in `provenance.issue`; the rest go in "
-        "`provenance.related`, per rule 2 above. If you cannot finish it, comment here and it goes back "
-        "to the pool.",
+        "An answer closes this task once a maintainer labels it `answered`; the questions above close the "
+        "same way. If a lesson lands instead, `Fixes #N` closes them through the receipt rule. If you "
+        "cannot finish it, comment here and it goes back to the pool.",
         "",
         "<sub>Opened automatically by `scripts/question_autopilot.py` from measured coverage of the open "
         "questions. The grouping is a suggestion: if these are not really one question, say so and this "

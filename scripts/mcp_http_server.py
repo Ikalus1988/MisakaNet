@@ -396,7 +396,7 @@ def misakanet_submit_intake(
         # help requests distinctly from failure intakes.
         labels = "intake,mcp-intake,pending-review"
         if kind == "question":
-            labels += ",needs-human-review"
+            labels += ",needs-answer"
 
         # Create GitHub issue
         import subprocess

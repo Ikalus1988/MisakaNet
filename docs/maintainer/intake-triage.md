@@ -25,6 +25,8 @@
 - **修复类**：开 PR（引用 issue），合并后 issue 由 `Fixes #N` 自动关——**自动关不等于完成**，见 §3。
 - **lesson 类**：走 lesson-gate（evidence_level + provenance），合入后关 issue。
 - **question 类**：维护者直接在 issue 内答复（**答复即回执**），必要时沉淀进 FAQ/lesson。
+  标签是 `needs-answer`（2026-10-17 起，不再是 `needs-human-review`）：问句的出口是"被回答"，
+  回答写在 issue 线程里、`answered` 之后由 `sync-question-answers.yml` 进 FAQ——**不需要 PR**。
 - **服务端 auto-rejected 噪音**：保留标签，不占用维护者时间。
 
 ## 3. 铁律：修复/答复后必须给报料者回执（致谢）

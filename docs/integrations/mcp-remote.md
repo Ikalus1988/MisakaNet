@@ -36,7 +36,7 @@ curl -sS https://misakanet.org/mcp \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"misakanet_submit_intake","arguments":{"kind":"missing_lesson","problem":"SHORT REDACTED PROBLEM","error":"OPTIONAL REDACTED ERROR","what_tried":"OPTIONAL","fix":"OPTIONAL","verification":"OPTIONAL","matched_lesson_id":"","source":"remote-agent"}}}'
 ```
 
-**Questions vs failures:** `kind="missing_lesson"` is for failure reports. For a how-to / knowledge question, set `kind="question"` — the issue opens as `[Question]` with a `needs-human-review` label and is **not** scored/archived as a lesson. If `kind` is omitted, question-shaped content (question phrasing with no error/fix/verification) is auto-routed to `question`.
+**Questions vs failures:** `kind="missing_lesson"` is for failure reports. For a how-to / knowledge question, set `kind="question"` — the issue opens as `[Question]` with a `needs-answer` label and is **not** scored/archived as a lesson. Its exit is an answer posted in the thread (a maintainer labels it `answered`, and `sync-question-answers.yml` copies it into the FAQ) — not a pull request, and not a human review of each item. Questions left the `needs-human-review` queue on 2026-10-17: that label meant "a person must read this one", and 153 intake issues carried it. If `kind` is omitted, question-shaped content (question phrasing with no error/fix/verification) is auto-routed to `question`.
 
 ### Python snippet (direct `tools/call`)
 

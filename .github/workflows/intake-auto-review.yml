@@ -163,17 +163,28 @@ jobs:
           DECISION="${{ steps.review.outputs.decision }}"
 
           # Question routing labels — never auto-approved/auto-rejected/salvage.
+          #
+          # Questions leave the `needs-human-review` queue (2026-10-17, owner): that label meant "a human
+          # must read this", and 153 intake issues carried it — a queue no human can process. A question's
+          # next step is *answer it* (posted in the thread; `sync-question-answers.yml` copies an
+          # `answered` comment into the FAQ), so it gets `needs-answer` instead. The label is created
+          # defensively: `--add-label` on an unknown label fails the step, and this job must not depend on
+          # a one-time console action.
           if [ "$DECISION" = "question" ]; then
+            gh label create needs-answer \
+              --description "A question needs an answer (answer it in the issue thread; no PR required)" \
+              --color "0E8A16" 2>/dev/null || true
             gh issue edit $ISSUE_NUMBER --repo ${{ github.repository }} \
               --remove-label "auto-approved" \
               --remove-label "auto-rejected" \
               --remove-label "needs-salvage" \
+              --remove-label "needs-human-review" \
               --remove-label "type:feature" \
               --remove-label "type:bug" 2>/dev/null || true
             gh issue edit $ISSUE_NUMBER --repo ${{ github.repository }} \
               --add-label "question" \
               --add-label "type:question" \
-              --add-label "needs-human-review"
+              --add-label "needs-answer"
             exit 0
           fi
 

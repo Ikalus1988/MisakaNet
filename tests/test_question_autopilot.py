@@ -264,30 +264,31 @@ def test_the_task_carries_its_idempotency_marker():
 # ambiguity the `provenance.issue` rule in #3361 closes. A task that omits either rule sets up a
 # contributor to fail at the last step.
 
-def test_the_task_states_the_dco_rule_and_the_adopt_fallback():
+def test_the_optional_lesson_path_still_names_the_landing_rules():
+    """A lesson is optional now, but if a contributor takes that path it must not repeat the failure."""
     body = qa.bounty_body(2254, [_item(2254, "a"), _item(2257, "b")], [])
-    assert "--signoff" in body, "the task does not tell contributors how to sign off"
-    assert "Signed-off-by" in body and "DCO" in body, "the required check is not named"
-    assert "/adopt" in body, "a contributor who will not sign off is not told what happens instead"
-    assert "docs/maintainer/adopt-fork-pr.md" in body, "the adoption path is not cited"
-    assert "Co-authored-by" in body, "the adopted PR's authorship credit is the whole point of /adopt"
+    assert "Optional: also land it as a lesson" in body, "the lesson path is not marked optional"
+    assert "Never required for this task" in body, "the optional paragraph still reads as a requirement"
+    assert "Signed-off-by" in body, "the sign-off requirement vanished"
+    assert "/adopt" in body and "docs/maintainer/adopt-fork-pr.md" in body, "the adoption path is not cited"
+    assert "provenance.issue" in body and "provenance.related" in body, "the one-intake rule is not named"
 
 
-def test_the_task_states_one_intake_converts_to_one_lesson():
+def test_the_answer_is_posted_where_the_question_lives():
+    """The FAQ sync reads the **question's** thread, so an answer posted only on the bounty is lost."""
     body = qa.bounty_body(2254, [_item(2254, "a"), _item(2257, "b")], [])
-    assert "provenance.issue" in body, "the field the conversion receipt reads is not named"
-    assert "provenance.related" in body, (
-        "a cluster of questions needs somewhere to put the ones the lesson does not convert"
-    )
-    assert "#3361" in body, "the gate rule that fails a second claim is not named"
-    assert "one intake converts to one lesson" in body.lower()
+    assert "linked question issue" in body.lower() and "each" in body.lower(), \
+        "the task does not say where to post the answer"
+    assert "answered" in body, "the label that arms the FAQ sync is not named"
+    assert "sync-question-answers.yml" in body, "the mechanism that copies the answer into the FAQ is not named"
 
 
-def test_the_task_says_where_a_lesson_must_live():
-    """`lessons/<slug>.md` is read by nothing (`update_lessons_json.py: INDEXED_DIRS`)."""
+def test_the_task_requires_an_observed_answer_not_a_generated_one():
+    """`provenance-gate-2026-09-16.md` exists because four lesson PRs once passed 24/24 with invented
+    sources. An answer invented by someone who never saw the failure is the same defect in a comment."""
     body = qa.bounty_body(2254, [_item(2254, "a"), _item(2257, "b")], [])
-    assert "lessons/contrib/" in body, "the task does not name a directory the corpus reads"
-
+    assert "observed" in body.lower(), "the task does not require an observed answer"
+    assert "provenance-gate-2026-09-16.md" in body, "the rule that forbids an invented source is not cited"
 
 def test_a_lone_question_is_not_given_a_bounty():
     """A cluster is the unit one answer clears, and one question is not a cluster.
@@ -352,16 +353,18 @@ def test_the_receipt_does_not_claim_a_related_answered_question():
     )
 
 
-def test_the_task_tells_contributors_to_regenerate_the_derived_artifacts():
-    """The step that fails CI most often, and the one this task's first version omitted.
+def test_the_answer_path_needs_no_pull_request():
+    """The owner's decision (2026-10-17): questions are answered, not converted into lesson PRs.
 
-    A new lesson makes `data/lessons.json`, the generated pages and the OKF export stale, and three tests
-    fail on every platform until they are regenerated — measured 2026-09-26 on the first two lesson PRs
-    opened against these tasks (#2299 among them). A task that omits it sets the contributor up to fail,
-    so the commands are named rather than described.
+    The previous shape asked for a lesson, and measured on 2026-10-17 every submission arrived as a fork
+    PR that could not land (seven of them, #3340–#3346, all blocked on DCO plus the derived artifacts).
+    An answer in the question thread needs no branch, no signature and no generators — so those commands
+    must *not* be in the task, or it is still asking for a PR in a longer form.
     """
     body = qa.bounty_body(2254, [_item(2254, "a"), _item(2257, "b")], [])
-    for command in ("scripts/update_lessons_json.py", "scripts/build_lesson_pages.py", "scripts/export_okf.py"):
-        assert command in body, f"the task does not tell contributors to run {command} — CI will fail them"
-    assert "update_lessons_json.py`\npython3 scripts/build_lesson_pages.py" in body or \
-           "update_lessons_json.py" in body, "the order matters and should read as a sequence"
+    assert "No pull request is needed" in body, "the task does not say the answer path needs no PR"
+    for command in ("scripts/update_lessons_json.py", "scripts/build_lesson_pages.py",
+                    "scripts/export_okf.py"):
+        assert command not in body, f"the task still asks for the lesson pipeline: {command}"
+
+

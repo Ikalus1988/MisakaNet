@@ -304,7 +304,7 @@ def _question_issue_payload(intake: dict) -> tuple[str, list[str], str]:
     problem = _clip_question((intake["problem"] or "").strip())
     first_line = (problem.splitlines() or ["help request"])[0][:80]
     title = f"[Question] {first_line}"
-    labels = ["intake", "mcp-intake", "pending-review", "needs-human-review", "question"]
+    labels = ["intake", "mcp-intake", "pending-review", "needs-answer", "question"]
     body = (
         f"**Kind:** question\n**Source:** {intake['source']}\n"
         f"**Dedup:** `{intake['source_id'] or 'n/a'}`\n\n"
@@ -349,7 +349,7 @@ def notify(intake: dict, cls: dict, draft: dict, pre: dict, is_new: bool) -> dic
     prefix = "[Question]" if intake["kind"] == "question" else "[Intake]"
     labels = ["intake", "mcp-intake", "pending-review"]
     if intake["kind"] == "question":
-        labels.append("needs-human-review")
+        labels.append("needs-answer")
     preview, preview_cut = _clip(
         draft["content_md"], DRAFT_PREVIEW_CAP, "the draft preview in this issue",
         f"The full draft is `lesson_drafts.content_md` for `source_id={intake['source_id']}`; the "
