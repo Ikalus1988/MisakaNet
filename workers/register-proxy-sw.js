@@ -2347,7 +2347,15 @@ async function refreshSearchIndex(env) {
     const fresh = await loadLessonsFresh(env);
     let lessons = fresh;
     if ((!Array.isArray(lessons) || lessons.length === 0) && d1Binding(env)) {
-      return { refreshed: false, reason: "d1 unavailable — keeping the previous index" };
+      // A lite snapshot has no bodies — rebuilding from it is exactly how the index lost its text on
+      // 2026-10-17 (docCount 192 lean against a 501-row corpus). A snapshot may stand in for D1 only
+      // when it actually carries the body text the index ranks on (`detectTextMode` says rich), and
+      // that is the full `data/lessons.json`, not the listing projection.
+      const snapshot = await snapshotLessons(env, { rich: true }).catch(() => null);
+      if (detectTextMode(snapshot) !== "rich") {
+        return { refreshed: false, reason: "d1 unavailable and the snapshot carries no text — keeping the previous index" };
+      }
+      lessons = snapshot;
     }
     if (!Array.isArray(lessons) || lessons.length === 0) {
       lessons = await loadLessons(env);
@@ -5646,13 +5654,20 @@ function normaliseSnapshotRows(rows) {
  * complete enough to answer from. The data branch stays as the last resort, because a stale answer
  * beats an error when both snapshots are unreachable.
  */
-const snapshotLessons = (env) =>
-  getWithCache(env, "proxy:lessons", async () => {
+const SNAPSHOT_URLS = {
+  // The listing copy: 501 rows, no bodies, 257 KB.
+  lite: `https://raw.githubusercontent.com/${REPO}/main/docs/data/lessons-lite.json`,
+  // The full corpus: 1.8 MB, and the only copy that carries the body (`preview`) the index ranks on.
+  rich: `https://raw.githubusercontent.com/${REPO}/main/data/lessons.json`,
+};
+
+const snapshotLessons = (env, { rich = false } = {}) =>
+  getWithCache(env, rich ? "proxy:lessons:rich" : "proxy:lessons", async () => {
     try {
-      const rows = await readPublicJson(`https://raw.githubusercontent.com/${REPO}/main/docs/data/lessons-lite.json`);
+      const rows = await readPublicJson(rich ? SNAPSHOT_URLS.rich : SNAPSHOT_URLS.lite);
       return normaliseSnapshotRows(rows);
     } catch (error) {
-      logInternal("current snapshot read failed; trying the data branch", error);
+      logInternal(`snapshot read failed (${rich ? "rich" : "lite"}); trying the data branch`, error);
       return normaliseSnapshotRows(await fetchFromGitHub(env.REGISTER_TOKEN, "lessons.json", "data"));
     }
   });

@@ -10,6 +10,22 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readStoredIndex, refreshSearchIndex } from './register-proxy-sw.js';
 
+/** A lesson row as the full snapshot carries it: `preview` is the body the index ranks on. */
+const richRow = (id) => ({ id, title: id, domain: 'python', tags: ['pip'], preview: "x".repeat(2000), url: `lessons/core/${id}.md` });
+
+function kvEnv(extra = {}) {
+  const store = new Map();
+  return {
+    MISAKANET_KV: {
+      get: async (k) => store.get(k) ?? null,
+      put: async (k, v) => { store.set(k, v); },
+      delete: async (k) => { store.delete(k); },
+      list: async () => ({ keys: [] }),
+    },
+    ...extra,
+  };
+}
+
 const QUOTA = new Error(
   "D1_ERROR: Your account has exceeded D1's free tier daily row read limit. Upgrade to a paid plan or "
   + 'wait until tomorrow (midnight UTC) to continue.',
@@ -21,23 +37,49 @@ const refusingD1 = () => {
   return { prepare() { return stmt; }, exec: refused, batch: refused };
 };
 
-test('a bound-but-failing D1 keeps the previous index instead of rebuilding from the fallback', async () => {
+test('a bound-but-failing D1 with no textured snapshot keeps the previous index', async () => {
+  const realFetch = globalThis.fetch;
+  // No snapshot at all: every read 404s, which is the state a thin fallback must be treated like.
+  globalThis.fetch = async () => new Response('{}', { status: 404, headers: { 'Content-Type': 'application/json' } });
   const writes = [];
-  const env = {
-    MISAKANET_D1: refusingD1(),
-    MISAKANET_KV: {
-      get: async () => null,
-      put: async (key) => { writes.push(String(key)); },
-      delete: async () => {},
-      list: async () => ({ keys: [] }),
-    },
+  try {
+    const env = {
+      MISAKANET_D1: refusingD1(),
+      MISAKANET_KV: {
+        get: async () => null,
+        put: async (key) => { writes.push(String(key)); },
+        delete: async () => {},
+        list: async () => ({ keys: [] }),
+      },
+    };
+    const result = await refreshSearchIndex(env);
+    assert.equal(result.refreshed, false);
+    assert.match(String(result.reason), /d1 unavailable/);
+    assert.deepEqual(writes.filter((k) => k.includes('worker_search_index')), [],
+      'an index built from a corpus without text must not be written');
+    assert.equal(await readStoredIndex(env), null);
+  } finally {
+    globalThis.fetch = realFetch;
+  }
+});
+
+test('a refusing D1 rebuilds from the full snapshot, because it carries the body text', async () => {
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = async (url) => {
+    assert.match(String(url), /main\/data\/lessons\.json/, 'the rich snapshot is the only usable stand-in');
+    return new Response(JSON.stringify([richRow('a'), richRow('b')]),
+      { status: 200, headers: { 'Content-Type': 'application/json' } });
   };
-  const result = await refreshSearchIndex(env);
-  assert.equal(result.refreshed, false);
-  assert.match(String(result.reason), /d1 unavailable/);
-  assert.deepEqual(writes.filter((k) => k.includes('worker_search_index')), [],
-    'an index built from a fallback corpus must not be written');
-  assert.equal(await readStoredIndex(env), null);
+  try {
+    const env = kvEnv({ MISAKANET_D1: refusingD1() });
+    const result = await refreshSearchIndex(env);
+    assert.equal(result.refreshed, true, JSON.stringify(result));
+    const index = await readStoredIndex(env);
+    assert.equal(index.textMode, 'rich', 'the rebuilt index must carry the bodies');
+    assert.equal(index.docs.length, 2);
+  } finally {
+    globalThis.fetch = realFetch;
+  }
 });
 
 test('no D1 binding at all still builds from the snapshot (the case that never had an index)', async () => {
