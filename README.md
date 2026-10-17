@@ -69,7 +69,8 @@ account or a token.
 
 The installer-managed row is what `npx @misaka-net/misakanet-setup` writes into each host's config.
 
-Updates: `dsh plugin --profile web update misakanet@latest` · `npx @misaka-net/misakanet-setup@latest`.
+Updates: `dsh plugin --profile web update misakanet@latest`.
+Installer updates: `npx @misaka-net/misakanet-setup@latest`.
 Full prerequisites and the two-package trap: [How to use it](#how-to-use-it).
 
 ## Your first five minutes
