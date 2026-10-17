@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-10-17T06:11:43.651582+00:00",
+  "generated_at": "2026-10-17T06:37:50.089151+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
+      "title": "feat(lessons): answer intakes #2752 and #2760 on intake pipeline truncation (closes #2839)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3366",
+      "timestamp": "2026-10-17T06:37:36Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "fix(e2e): read the documented tool list from AGENTS.md instead of copying it",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3404",
+      "timestamp": "2026-10-17T06:23:54Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3403",
+      "timestamp": "2026-10-17T06:18:44Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "fix(intake): one intake converts to one lesson, and the lesson channel arms itself",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3361",
+      "timestamp": "2026-10-17T06:11:44Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
       "title": "feat(heartbeat): a daily pulse that answers who called, what they asked, and whether it helped",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/3356",
       "timestamp": "2026-10-17T06:11:39Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "lesson(contrib): a fix verified in a working tree is not a fix that shipped",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3353",
-      "timestamp": "2026-10-17T06:11:32Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "docs(dsh): what the plugin actually gives, and the one step it cannot do for you",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3398",
-      "timestamp": "2026-10-17T06:05:19Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(main): release 2.45.0",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3359",
-      "timestamp": "2026-10-17T05:29:34Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat(intake): a question's exit is an answer, not a human review item",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3397",
-      "timestamp": "2026-10-17T05:29:27Z",
       "source": "github"
     },
     {
