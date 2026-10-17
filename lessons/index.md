@@ -453,6 +453,7 @@
 - [FReeLLMAPI Session Context Mixing - Cross-Thread Delivery](core/freellmapi-session-context-mixing-cross-thread-delivery.md) | agent-network | "node:zka", "project:hermes-agent", "severity:high" | hermes_wsl2
 - [GitHub Actions Script Injection — Use env Variables Instead of Inline Interpolation](core/github-actions-code-injection.md) | security | "github-actions", "security", "code-injection", "codeql", "ci" | codewhale
 - [Hermes State Database Lock Issues - Cleanup Protocol](core/hermes-state-database-lock-issues-cleanup-protocol.md) | agent-network | "node:zka", "project:hermes-agent", "severity:high" | hermes_wsl2
+- [Intake Pipeline CLI Text Truncation and Section Loss](core/intake-pipeline-cli-text-truncation-section-loss.md) | python | "python", "intake", "truncation", "pipeline" | 
 - [PR Cleanup SOP — Stale/Duplicate/Resolved PR Disposition](core/pr-cleanup-sop.md) | devops | "github-actions", "pr-management", "cleanup", "maintenance", "sop" | codewhale
 - [PR Welcome Not Triggering — author_association NONE vs FIRST_TIMER Trap](core/pull-request-welcome-trigger-trap.md) | devops | "github-actions", "pull-request-target", "author-association", "first-time-contributor", "welcome", "debug" | codewhale
 - [require_relative Resolves Against the Requiring File, Not the Working Directory](core/ruby-require-relative-resolves-against-the-requiring-file.md) | ruby | "ruby", "require-relative", "loaderror", "path-resolution", "working-directory", "troubleshooting" | 
