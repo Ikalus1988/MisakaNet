@@ -1,42 +1,28 @@
 {
-  "generated_at": "2026-10-16T23:43:59.875502+00:00",
+  "generated_at": "2026-10-17T03:21:13.919013+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3386",
-      "timestamp": "2026-10-16T21:43:56Z",
+      "title": "docs(readme): positioning rework — E4 is an observation, the benchmark is paused, and the badge wall states what it can prove",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3364",
+      "timestamp": "2026-10-17T03:21:03Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "docs(ci): 按第一性原理量一遍 84 个 workflow：约 20 种失败面，本 PR 不删任何 workflow",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3360",
-      "timestamp": "2026-10-16T21:39:55Z",
+      "title": "fix(adopt): the adopted PR's checks never started, because the push used GITHUB_TOKEN",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3378",
+      "timestamp": "2026-10-17T03:20:58Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "docs(handoff): §99.7 — workflow_dispatch is evidence, not a mergeable check",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3373",
-      "timestamp": "2026-10-16T18:18:49Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "docs(handoff): 第 9 卷 —— 收口日：六类失效门禁、一次我造成的事故、队列的真根因",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3367",
-      "timestamp": "2026-10-16T18:08:37Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "fix(contribute): stop dropping contributor work silently (intake cuts, landing rules, lesson location)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3365",
-      "timestamp": "2026-10-16T17:46:27Z",
+      "title": "docs(ops): branch and worktree hygiene rules (and the criterion I got wrong)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3391",
+      "timestamp": "2026-10-17T02:42:11Z",
       "source": "github"
     },
     {
@@ -78,6 +64,20 @@
       "timestamp": "2026-10-03",
       "domain": "data",
       "source": "lessons"
+    },
+    {
+      "type": "merged_pr",
+      "title": "fix(test): the concurrency gate asserted an absolute 0.35s, so macOS runners failed it",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2330",
+      "timestamp": "2026-09-27T05:16:55Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "fix(ci): iteration 1 listed a fix it did not apply — the dispatch input was still interpolated into the shell",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2234",
+      "timestamp": "2026-09-25T10:59:22Z",
+      "source": "github"
     },
     {
       "type": "challenge",
