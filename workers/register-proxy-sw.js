@@ -8896,6 +8896,9 @@ export default {
 </style></head>
 <body>
 <div class="card">
+  <div style="text-align:left;margin-bottom:12px;font-size:13px;">
+    <a href="/#quickstart" style="color:#58a6ff;text-decoration:none;">← Back to Quickstart / 回到 Quickstart</a>
+  </div>
   <h1>⚡ MisakaNet Start</h1>
   <div class="tagline">你只做两件事——授权，看结果</div>
   <p>You only do two things — authorize, then see results.</p>
@@ -8921,7 +8924,7 @@ export default {
     </div>
     <div style="margin-top:16px;padding:12px;background:rgba(163,113,247,0.1);border:1px solid rgba(163,113,247,0.3);border-radius:8px;font-size:13px;color:#a371f7;">
       <strong>🧠 Upgrade to Shared Vision Mode</strong><br>
-      Complete registration + avatar to unlock the Misaka Network identity badge.<br>
+      Register a node to unlock the shared-knowledge mode (an anonymous id, no account).<br>
       <span style="color:#8b949e;font-size:12px;">御坂ネットワークの共有視界モードにアップグレードできます。</span>
     </div>
   </div>
