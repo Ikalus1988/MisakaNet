@@ -19,8 +19,8 @@ The tool count was worse than invisible: it was wrong. ``docs/index.html``'s sel
 said "claude mcp list shows misakanet with 7 tools" while ``canonical_mcp_tools()`` — the
 documented set in ``AGENTS.md`` §3.2 against what ``workers/register-proxy-sw.js`` registers —
 has been 8 since ``misakanet_me_inbox`` landed. ``tests/test_mcp_tool_count_ssot.py`` pins the
-count on the READMEs, the skill and ``docs/quickstart.md``; the homepage sentence was never on
-that list, so nothing noticed it sitting at 7.
+count on the READMEs, the skill and ``docs/quickstart.md``; the homepage sentence and its two
+``qsAVerify`` dictionary values were never on that list, so nothing noticed them sitting at 7.
 
 The route, and why not ``sync_lesson_count.py``
 -----------------------------------------------
@@ -34,8 +34,8 @@ name and docstring lie about what it gates. This sibling module is the other hal
 SSOT idea, and the tool count reuses the existing ``Site`` machinery (imported) rather than
 reimplementing it.
 
-What is managed (three command facts + one count)
--------------------------------------------------
+What is managed (three command facts + one count on three surfaces)
+-------------------------------------------------------------------
 Each command fact names a *source* surface (README.md — the repo-facing prose) and one or more
 *mirrors* (docs/index.html — the bytes a crawler or a no-JS reader sees). The captured command
 text must be **verbatim identical** after edge-whitespace normalisation (a code fence and a
@@ -44,17 +44,22 @@ is compared). ``--check`` fails on any disagreement and names every surface with
 line; the default mode rewrites the mirrors from the source, so the source is the only writer.
 
 The tool count is a count, so it goes through ``Site``/``stale_entries``/``sync_all`` with
-``canonical_mcp_tools()`` as the source of truth: the homepage phrase is re-matched every run
-(idempotent by construction) and a reworded phrase is a hard error, never a silent skip.
+``canonical_mcp_tools()`` as the source of truth, over **three** rows: the homepage's static
+self-check sentence and the two ``qsAVerify`` dictionary values that overwrite it at render
+time. All three are re-matched every run (idempotent by construction) and a reworded phrase is
+a hard error, never a silent skip. Omitting the dictionaries was tried and was wrong: the HTML
+fallback was corrected to 8 while ``docs/locales/*.json`` kept saying 7, and because ``t()``
+prefers the dictionary the *live* page still showed 7 — a second handwritten source of a
+managed fact, which is the defect this module exists to kill. Owning the count value inside
+those strings is this module's job; the keys and the wording around the number stay with the
+i18n surface (#1894), so no key is added, removed or renamed here.
 
 Deliberately NOT managed
 ------------------------
 ``npx @misaka-net/misakanet-setup@latest`` (a different invocation), the ``register`` curl on
 the homepage (it has no README counterpart to pair with), ``docs/install/index.html`` and
 ``docs/quickstart.md`` (the issue's acceptance pairs the homepage against the README), and
-``docs/locales/*.json`` — the i18n dictionaries are issue #1894's surface. The dictionaries
-still carry the old "7 tools" in ``qsAVerify``/``qsB``; that is reported in the PR rather than
-edited here, because touching them would collide with the i18n work.
+anything else inside ``docs/locales/*.json`` besides the tool-count value itself.
 
 Root ``llms.txt`` needs nothing from this module: it is already a pointer at ``docs/llms.txt``
 and ``tests/test_lesson_count_ssot.py`` keeps it one (issue #1895's fourth bullet, closed by
@@ -85,15 +90,33 @@ from scripts.sync_lesson_count import (  # noqa: E402
 
 REPO = Path(__file__).resolve().parent.parent
 
-# The homepage's Quickstart self-check sentence. The count is *retyped* in the static bytes
-# (crawlers and no-JS readers cannot run the JS that fetches data/lessons.json), which is exactly
-# why it needs a writer rather than a human with good intentions.
+# The tool count is *retyped* in static bytes a crawler or a no-JS reader sees, and in the i18n
+# dictionary values that overwrite the HTML fallback at render time. Both kinds need the same
+# writer: a hand-edit to one and not the other is exactly how the live page showed "7 tools"
+# while the served set had 8 (2026-10-18, the gap this row family closed — the HTML fallback had
+# been fixed to 8 and the dictionaries still overwrote it with 7).
+#
+# Only the count *value* inside these existing strings is owned here. The keys, the wording
+# around the number and the dictionaries' shape stay with the i18n surface (#1894): this file
+# rewrites the `n` group and nothing else.
 TOOL_SITES: tuple[Site, ...] = (
     Site(
         "docs/index.html",
         r"misakanet with (?P<n>\d+) tools",
         "misakanet with {n} tools",
         "Quickstart Track A self-check ('claude mcp list shows misakanet with N tools')",
+    ),
+    Site(
+        "docs/locales/en.json",
+        r"misakanet with (?P<n>\d+) tools",
+        "misakanet with {n} tools",
+        "qsAVerify dictionary value (renders over the HTML fallback, so it is the live sentence)",
+    ),
+    Site(
+        "docs/locales/zh.json",
+        r"misakanet 与 (?P<n>\d+) 个工具",
+        "misakanet 与 {n} 个工具",
+        "qsAVerify dictionary value (renders over the HTML fallback, so it is the live sentence)",
     ),
 )
 

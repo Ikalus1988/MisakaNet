@@ -95,7 +95,7 @@
   "qsA1": "Install the endpoint into every assistant you use:",
   "qsA2": "Close and reopen your assistant window, then confirm it landed:",
   "qsA3": "Ask with the rawest fragment of an error — it should search the lessons before answering:",
-  "qsAVerify": "Check: claude mcp list shows misakanet with 7 tools · undo: npx @misaka-net/misakanet-setup --uninstall",
+  "qsAVerify": "Check: claude mcp list shows misakanet with 8 tools · undo: npx @misaka-net/misakanet-setup --uninstall",
   "qsTrackB": "B · Call the endpoint yourself",
   "qsTrackBSub": "Nothing to install. Reads are open; a per-address burst limit is a speed limit, not a quota.",
   "qsB1": "Search:",

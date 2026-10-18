@@ -95,7 +95,7 @@
   "qsA1": "把端点装进你用到的每个助手：",
   "qsA2": "关掉助手窗口再打开，然后确认装上去了：",
   "qsA3": "拿报错原文里最独特的片段去问 —— 它应该先查课程再回答：",
-  "qsAVerify": "自检：claude mcp list 里能看到 misakanet 与 7 个工具 · 撤销：npx @misaka-net/misakanet-setup --uninstall",
+  "qsAVerify": "自检：claude mcp list 里能看到 misakanet 与 8 个工具 · 撤销：npx @misaka-net/misakanet-setup --uninstall",
   "qsTrackB": "B · 自己直连端点",
   "qsTrackBSub": "什么都不用装。读是开放的；按地址计的突发限制是限速，不是配额。",
   "qsB1": "检索：",

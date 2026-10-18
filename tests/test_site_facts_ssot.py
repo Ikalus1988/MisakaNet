@@ -17,14 +17,21 @@ homepage sentence was never on that list.
 
 ``scripts/sync_site_facts.py`` is the writer: README.md is the source of the command strings
 and the homepage is a copy it makes; the tool count is rewritten through the same ``Site``
-machinery ``scripts/sync_lesson_count.py`` uses. These tests pin three properties:
+machinery ``scripts/sync_lesson_count.py`` uses, over three rows — the homepage's static
+sentence **and** the two ``qsAVerify`` dictionary values that overwrite it at render time.
 
-1. the gate is green on the tree as committed;
+That third leg was found the hard way. The first version of this gate fixed the HTML fallback
+from 7 to 8 and stopped there, while ``docs/locales/*.json`` kept saying 7 — and because ``t()``
+prefers the dictionary, the live page still showed 7. A second handwritten source of a managed
+fact, invisible to ``grep docs/index.html``. These tests pin four properties:
+
+1. the gate is green on the tree as committed, on every tool-count row (homepage + both locales);
 2. it can go red, and a red run names **both** files with their lines — the reader needs to see
    the two spellings side by side, not only which one "won";
 3. the capture patterns are anchored on the surrounding prose rather than on the command text,
    which is the only reason a corrupted command is *captured and compared* instead of silently
-   reported as "pattern not found".
+   reported as "pattern not found";
+4. a stale dictionary value fails the check naming its file — the exact gap that shipped.
 """
 from __future__ import annotations
 
@@ -64,6 +71,38 @@ def test_the_homepage_tool_count_matches_the_canonical_one():
         "homepage tool count drifted:\n  - " + "\n  - ".join(problems)
         + "\nFix: python3 scripts/sync_site_facts.py"
     )
+
+
+def test_the_locale_tool_counts_are_on_the_same_writer():
+    """The dictionary values render *over* the HTML fallback, so they are the live sentence.
+
+    The first version of this gate fixed only the HTML and the page kept showing 7 — the exact
+    "second handwritten source" 验收 #2 forbids. All three rows must sit in TOOL_SITES.
+    """
+    paths = [site.path for site in ssf.TOOL_SITES]
+    for required in ("docs/index.html", "docs/locales/en.json", "docs/locales/zh.json"):
+        assert paths.count(required) == 1, (required, paths)
+    from scripts.sync_lesson_count import canonical_mcp_tools
+    canonical = canonical_mcp_tools(REPO)
+    for lang, phrase in (("en", rf"misakanet with {canonical} tools"),
+                         ("zh", rf"misakanet 与 {canonical} 个工具")):
+        text = (REPO / "docs" / "locales" / f"{lang}.json").read_text(encoding="utf-8")
+        assert phrase in text, (
+            f"docs/locales/{lang}.json does not state the canonical tool count ({canonical}) — "
+            f"the rendered page will show whatever the dictionary says"
+        )
+
+
+def test_a_stale_locale_tool_count_names_its_file(tmp_path):
+    """The gap that shipped: the dictionary said 7 while the HTML (and the worker) said 8."""
+    (tmp_path / "docs" / "locales").mkdir(parents=True)
+    (tmp_path / "docs" / "locales" / "en.json").write_text(
+        '"qsAVerify": "…misakanet with 7 tools…"', encoding="utf-8")
+    from scripts.sync_lesson_count import stale_entries
+    problems = stale_entries(8, root=tmp_path, sites=ssf.TOOL_SITES, check_count_file=False)
+    named = [p for p in problems if "docs/locales/en.json" in p]
+    assert named, problems
+    assert "should be 8" in named[0], named[0]
 
 
 # ── and it can go red, naming both files ─────────────────────────────────────────────────────────
@@ -123,25 +162,37 @@ def test_sync_rewrites_the_mirror_from_the_source(tmp_path):
 
 
 def test_the_tool_count_site_rewrites_again_on_a_second_run(tmp_path):
-    """The lesson-count write-once bug, pinned for this row: a second run must rewrite again.
+    """The lesson-count write-once bug, pinned for this row family: a second run must rewrite again.
 
     Driven through ``sync_all`` (the machinery ``sync_tool_count`` delegates to) with an explicit
     count, because ``canonical_mcp_tools`` measures the real AGENTS.md/worker pair and has no
-    meaning inside a fixture tree.
+    meaning inside a fixture tree. All three rows are exercised together — the HTML fallback and
+    the two dictionary values must move as one, which is the whole point of putting them under
+    one writer.
     """
-    (tmp_path / "docs").mkdir()
-    target = tmp_path / "docs" / "index.html"
-    target.write_text("shows misakanet with 7 tools", encoding="utf-8")
+    (tmp_path / "docs" / "locales").mkdir(parents=True)
+    targets = {
+        "docs/index.html": ("shows misakanet with 7 tools", "shows misakanet with {} tools"),
+        "docs/locales/en.json": ('"qsAVerify": "…misakanet with 7 tools…"',
+                                 '"qsAVerify": "…misakanet with {} tools…"'),
+        "docs/locales/zh.json": ('"qsAVerify": "…misakanet 与 7 个工具…"',
+                                 '"qsAVerify": "…misakanet 与 {} 个工具…"'),
+    }
+    for rel, (text, _) in targets.items():
+        (tmp_path / rel).write_text(text, encoding="utf-8")
 
     changes, errors = sync_all(8, root=tmp_path, sites=ssf.TOOL_SITES, write_count_file=False)
     assert errors == [], errors
-    assert changes, "the stale count was not rewritten"
-    assert target.read_text(encoding="utf-8") == "shows misakanet with 8 tools"
+    assert len(changes) == len(ssf.TOOL_SITES), changes
+    for rel, (_, template) in targets.items():
+        assert (tmp_path / rel).read_text(encoding="utf-8") == template.format(8)
 
     changes, errors = sync_all(9, root=tmp_path, sites=ssf.TOOL_SITES, write_count_file=False)
     assert errors == [], errors
-    assert changes, "a second sync with a different count found nothing to rewrite (write-once)"
-    assert target.read_text(encoding="utf-8") == "shows misakanet with 9 tools"
+    assert len(changes) == len(ssf.TOOL_SITES), (
+        "a second sync with a different count found nothing to rewrite (write-once)", changes)
+    for rel, (_, template) in targets.items():
+        assert (tmp_path / rel).read_text(encoding="utf-8") == template.format(9)
 
 
 def test_a_reworded_tool_count_sentence_is_an_error_not_a_skip(tmp_path):
