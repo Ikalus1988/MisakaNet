@@ -1881,6 +1881,22 @@
     #quickstart-section .qs-verify { font-size:11px; color:var(--text-dim); margin-top:11px; line-height:1.55; border-top:1px solid rgba(255,255,255,0.07); padding-top:9px; }
     #quickstart-section .qs-links { text-align:center; margin-top:12px; font-size:12px; color:var(--text-dim); }
     #quickstart-section .qs-links a { color:var(--cyan); text-decoration:none; }
+    /* #1893: a copy button per code block. The block and its button share a row so the
+       button cannot be separated from the text it copies. */
+    #quickstart-section .qs-cmd-row { display:flex; gap:8px; align-items:flex-start; margin-top:5px; }
+    #quickstart-section .qs-cmd-row .qs-cmd,
+    #quickstart-section .qs-cmd-row .qs-sample { flex:1 1 auto; min-width:0; margin-top:0; }
+    #quickstart-section .qs-code { font-family:'JetBrains Mono',monospace; font-size:11.5px; color:#a5f3fc; }
+    #quickstart-section .qs-chip-row { display:flex; flex-wrap:wrap; gap:6px 10px; align-items:center; margin-top:5px; }
+    #quickstart-section .qs-chip { display:inline-flex; gap:6px; align-items:center; }
+    #quickstart-section .qs-copy { flex:0 0 auto; background:rgba(0,229,255,0.12); border:1px solid rgba(0,229,255,0.28); color:var(--cyan); padding:5px 11px; border-radius:6px; cursor:pointer; font-size:11px; font-family:'JetBrains Mono',monospace; transition:all 0.2s; }
+    #quickstart-section .qs-copy:hover, #quickstart-section .qs-copy:focus-visible { background:rgba(0,229,255,0.18); }
+    #quickstart-section .qs-copy-mini { padding:2px 8px; font-size:10px; }
+    /* The self-check line for the step above it — an executable command or an observable
+       signal, never "it should just work". */
+    #quickstart-section .qs-check { font-size:11px; color:var(--text-dim); margin-top:7px; line-height:1.55; }
+    #quickstart-section .qs-stuck { text-align:center; margin-top:12px; font-size:12px; color:var(--text-dim); }
+    #quickstart-section .qs-stuck a { color:var(--cyan); text-decoration:none; }
   </style>
   <div id="quickstart" class="anchor-target"></div>
   <div id="quickstart-section" style="max-width:760px;margin:26px auto 0;">
@@ -1897,17 +1913,36 @@
 
         <div class="qs-step"><span class="qs-num">1</span><div style="flex:1;min-width:0;">
           <div style="font-size:12.5px;color:var(--text-primary);line-height:1.5;" data-i18n="qsA1">Install the endpoint into every assistant you use:</div>
-          <div class="qs-cmd">npx @misaka-net/misakanet-setup</div>
+          <div class="qs-cmd-row">
+            <div class="qs-cmd" id="qs-a1">npx @misaka-net/misakanet-setup</div>
+            <button type="button" class="qs-copy" aria-label="Copy command to clipboard" data-copy-target="qs-a1" data-i18n="qsCopy" onclick="copyQS(this)">Copy</button>
+          </div>
+          <div class="qs-check" data-i18n="qsA1Check">Check: the installer exits 0 and lists the assistants it configured.</div>
         </div></div>
 
         <div class="qs-step"><span class="qs-num">2</span><div style="flex:1;min-width:0;">
           <div style="font-size:12.5px;color:var(--text-primary);line-height:1.5;" data-i18n="qsA2">Close and reopen your assistant window, then confirm it landed:</div>
-          <div class="qs-cmd">npx @misaka-net/misakanet-setup --verify</div>
+          <div class="qs-cmd-row">
+            <div class="qs-cmd" id="qs-a2">npx @misaka-net/misakanet-setup --verify</div>
+            <button type="button" class="qs-copy" aria-label="Copy command to clipboard" data-copy-target="qs-a2" data-i18n="qsCopy" onclick="copyQS(this)">Copy</button>
+          </div>
+          <div class="qs-check" data-i18n="qsA2Check">Check: claude mcp list or codex mcp list lists misakanet and its tools.</div>
         </div></div>
 
         <div class="qs-step"><span class="qs-num">3</span><div style="flex:1;min-width:0;">
           <div style="font-size:12.5px;color:var(--text-primary);line-height:1.5;" data-i18n="qsA3">Ask with the rawest fragment of an error — it should search the lessons before answering:</div>
-          <div style="margin-top:4px;"><code style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#a5f3fc;">switch vision model</code> <span style="color:var(--text-dim);font-size:11px;">·</span> <code style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#a5f3fc;">context window exceeded</code></div>
+          <div class="qs-chip-row">
+            <span class="qs-chip">
+              <code class="qs-code" id="qs-a3q1">switch vision model</code>
+              <button type="button" class="qs-copy qs-copy-mini" aria-label="Copy example query to clipboard" title="Copy example query to clipboard" data-copy-target="qs-a3q1" data-i18n="qsCopy" onclick="copyQS(this)">Copy</button>
+            </span>
+            <span style="color:var(--text-dim);font-size:11px;">·</span>
+            <span class="qs-chip">
+              <code class="qs-code" id="qs-a3q2">context window exceeded</code>
+              <button type="button" class="qs-copy qs-copy-mini" aria-label="Copy example query to clipboard" title="Copy example query to clipboard" data-copy-target="qs-a3q2" data-i18n="qsCopy" onclick="copyQS(this)">Copy</button>
+            </span>
+          </div>
+          <div class="qs-check" data-i18n="qsA3Check">Check: the assistant's reply names a lesson (an id or a title) — the search ran before the answer.</div>
         </div></div>
 
         <div class="qs-verify" data-i18n="qsAVerify">Check: claude mcp list shows misakanet with 7 tools. Undo any time: npx @misaka-net/misakanet-setup --uninstall</div>
@@ -1920,26 +1955,38 @@
 
         <div class="qs-step"><span class="qs-num">1</span><div style="flex:1;min-width:0;">
           <div style="font-size:12.5px;color:var(--text-primary);line-height:1.5;" data-i18n="qsB1">Search:</div>
-          <div class="qs-cmd">curl -sS https://misakanet.org/mcp \
+          <div class="qs-cmd-row">
+            <div class="qs-cmd" id="qs-b1">curl -sS https://misakanet.org/mcp \
   -H 'Content-Type: application/json' -H 'Accept: application/json' \
   -H 'MCP-Protocol-Version: 2025-06-18' -H 'Origin: https://misakanet.org' \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/call",
        "params":{"name":"misakanet_search","arguments":{"query":"database is locked","top":3}}}'</div>
+            <button type="button" class="qs-copy" aria-label="Copy command to clipboard" title="Copy command to clipboard" data-copy-target="qs-b1" data-i18n="qsCopy" onclick="copyQS(this)">Copy</button>
+          </div>
+          <div class="qs-check" data-i18n="qsB1Check">Check: the response has results, or no_match with a copyable intake.</div>
         </div></div>
 
         <div class="qs-step"><span class="qs-num">2</span><div style="flex:1;min-width:0;">
           <div style="font-size:12.5px;color:var(--text-primary);line-height:1.5;" data-i18n="qsB2">Read the answer — a hit gives the lesson id, no hit gives no_match plus the intake call:</div>
-          <div style="margin-top:4px;font-size:11px;color:var(--text-dim);font-family:'JetBrains Mono',monospace;overflow-x:auto;white-space:pre;">{"structuredContent":{"source":"worker-bm25",
+          <div class="qs-cmd-row">
+            <div class="qs-sample" id="qs-b2" style="flex:1 1 auto;min-width:0;font-size:11px;color:var(--text-dim);font-family:'JetBrains Mono',monospace;overflow-x:auto;white-space:pre;">{"structuredContent":{"source":"worker-bm25",
   "results":[{"id":"hermes-state-database-lock-issues-cleanup-protocol",
               "title":"Hermes State Database Lock Issues - Cleanup Protocol"}]}}</div>
+            <button type="button" class="qs-copy" aria-label="Copy sample response to clipboard" title="Copy sample response to clipboard" data-copy-target="qs-b2" data-i18n="qsCopy" onclick="copyQS(this)">Copy</button>
+          </div>
+          <div class="qs-check" data-i18n="qsB2Check">Check: each results entry carries id and title, like the sample above.</div>
         </div></div>
 
         <div class="qs-step"><span class="qs-num">3</span><div style="flex:1;min-width:0;">
           <div style="font-size:12.5px;color:var(--text-primary);line-height:1.5;" data-i18n="qsB3">Need the write tools? Register once and keep the token:</div>
-          <div class="qs-cmd">curl -sS https://misakanet.org/mcp \
+          <div class="qs-cmd-row">
+            <div class="qs-cmd" id="qs-b3">curl -sS https://misakanet.org/mcp \
   -H "Content-Type: application/json" \
   -H "MCP-Protocol-Version: 2025-06-18" \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"misakanet_register","arguments":{"agent_type":"your-agent"}}}'</div>
+            <button type="button" class="qs-copy" aria-label="Copy command to clipboard" title="Copy command to clipboard" data-copy-target="qs-b3" data-i18n="qsCopy" onclick="copyQS(this)">Copy</button>
+          </div>
+          <div class="qs-check" data-i18n="qsB3Check">Check: the response carries node_id and a token to keep.</div>
         </div></div>
 
         <div class="qs-verify" data-i18n="qsBVerify">Check: the response has results, or no_match with an intake call to copy — a miss is a useful answer, not an error.</div>
@@ -1950,6 +1997,14 @@
       <a href="/install/" data-i18n="qsMoreInstall">Full install guide</a>
       &nbsp;·&nbsp;
       <a href="https://ikalus1988.github.io/MisakaNet/quickstart/" target="_blank" rel="noopener" data-i18n="qsMoreDoc">All the ways to use it</a>
+    </div>
+    <!-- The exit for "it didn't work": one line, two doors. /start is the 30-second retry path;
+         docs/troubleshooting.md is the error-scene index. -->
+    <div class="qs-stuck">
+      <span data-i18n="qsStuck">Not working?</span>
+      <a href="/start" data-i18n="qsStuckStart">Start again at /start</a>
+      &nbsp;·&nbsp;
+      <a href="https://github.com/Ikalus1988/MisakaNet/blob/main/docs/troubleshooting.md" data-i18n="qsStuckGuide">Open docs/troubleshooting.md</a>
     </div>
   </div>
 
@@ -2344,32 +2399,92 @@ function diag(level, ...args) {
 }
 
 // ── Toast notification ──
+// One toast for the whole page (#toast): the register bar and every Quickstart copy button
+// report through here. `toast()` is the only place that shows and hides it — #1893 refactored
+// the block that used to live inside copyAndToast into this so the Quickstart buttons reuse
+// the same mechanism instead of adding a second one.
 let toastTimer = null;
 let copyBtnTimer = null;
+function toast(message) {
+  const el = document.getElementById('toast');
+  if (!el) return;
+  el.textContent = message;
+  el.className = 'toast show';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.className = 'toast'; }, 2000);
+}
+
+// Button feedback — COPIED ✓ + green flash, then put the label back.
+function flashCopied(btn) {
+  if (!btn) return;
+  const orig = btn.textContent;
+  btn.textContent = 'COPIED ✓';
+  btn.style.borderColor = '#22c55e';
+  btn.style.color = '#22c55e';
+  btn.style.boxShadow = '0 0 12px rgba(34,197,94,0.3)';
+  clearTimeout(copyBtnTimer);
+  copyBtnTimer = setTimeout(() => {
+    btn.textContent = orig;
+    btn.style.borderColor = 'rgba(0,229,255,0.28)';
+    btn.style.color = 'var(--cyan)';
+    btn.style.boxShadow = 'none';
+  }, 1800);
+}
+
 function copyAndToast(btn) {
   const cmd = 'curl -s -X POST https://misakanet.org/api/register -H "Content-Type: application/json" -d \'{"agent_type":"YOUR_AGENT"}\'';
   navigator.clipboard?.writeText(cmd);
-  // Toast
-  const toast = document.getElementById('toast');
-  toast.textContent = '> Agent Registration Command Copied to Clipboard.';
-  toast.className = 'toast show';
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { toast.className = 'toast'; }, 2000);
-  // Button feedback — COPIED ✓ + green flash
-  if (btn) {
-    const orig = btn.textContent;
-    btn.textContent = 'COPIED ✓';
-    btn.style.borderColor = '#22c55e';
-    btn.style.color = '#22c55e';
-    btn.style.boxShadow = '0 0 12px rgba(34,197,94,0.3)';
-    clearTimeout(copyBtnTimer);
-    copyBtnTimer = setTimeout(() => {
-      btn.textContent = orig;
-      btn.style.borderColor = 'rgba(0,229,255,0.28)';
-      btn.style.color = 'var(--cyan)';
-      btn.style.boxShadow = 'none';
-    }, 1800);
+  toast('> Agent Registration Command Copied to Clipboard.');
+  flashCopied(btn);
+}
+
+// ── Quickstart copy buttons (#1893) ──
+// The clipboard receives the code block's `textContent` and nothing else — the same characters
+// the reader sees in the block, entities already decoded, every newline and space intact. Not
+// `innerHTML` (that would hand back `&amp;`-style escapes) and not `innerText` (that re-wraps
+// lines). Nothing is trimmed: the curl blocks end in `}` and the blocks must stay byte-identical
+// to the markup. tests/test_quickstart_copy.py pins the payload against the block text.
+function codeTextOf(el) {
+  return el ? el.textContent : '';
+}
+
+// navigator.clipboard first (misakanet.org is HTTPS, so the async API exists);
+// document.execCommand('copy') behind it for the browsers that gate the API.
+function legacyCopy(text) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.setAttribute('readonly', '');
+  ta.style.position = 'fixed';
+  ta.style.left = '-9999px';
+  document.body.appendChild(ta);
+  ta.select();
+  let ok = false;
+  try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+  document.body.removeChild(ta);
+  return ok;
+}
+
+function writeClipboard(text) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    return navigator.clipboard.writeText(text).then(() => true, () => legacyCopy(text));
   }
+  return Promise.resolve(legacyCopy(text));
+}
+
+function copyQS(btn) {
+  const id = btn.getAttribute('data-copy-target');
+  const block = id ? document.getElementById(id) : null;
+  if (!block) return Promise.resolve(false);
+  const text = codeTextOf(block);
+  return writeClipboard(text).then((ok) => {
+    if (ok) {
+      toast(t('qsCopyToast'));
+      flashCopied(btn);
+    } else {
+      toast(t('qsCopyFailToast'));
+    }
+    return ok;
+  });
 }
 
 // ── Onboarding modal ──
