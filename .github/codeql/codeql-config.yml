@@ -42,8 +42,15 @@ queries:
 # GENERATED ARTEFACTS (2026-10-18). Sixteen HARDCODED_SECRET alerts (#350-#365) opened against the
 # **files a lesson generates**, not against the lesson: `pytest-k-ma**sk-deselects**-more-tests-than-
 # intended.md` carries an `sk-` junction in its own path, every generated copy repeats that path, and the
-# query reads the junction as an OpenAI-style key. The lesson's body holds no credential — the match is
+# pattern reads the junction as an OpenAI-style key. The lesson's body holds no credential — the match is
 # the filename.
+#
+# Correction, recorded because the first version of this comment claimed otherwise: **those alerts did not
+# come from CodeQL.** Their tool is `plugin-scanner 2.2.0` (hol-guard's `codex-plugin-scanner`, uploaded
+# as SARIF by `guarded-repository.yml`), and a CodeQL config cannot silence it — those 16 were dismissed
+# with that reasoning on each alert instead. This list therefore stands on its own merit rather than as
+# their fix: generated lesson pages, topic pages, index and data projections are outputs, and analysing
+# them reports the same synthetic shape once per copy.
 #
 # These paths are outputs, not sources: `build_lesson_pages.py`, `update_lessons_json.py`,
 # `export_okf.py` and `rebuild_lessons_index.py` rewrite them from `lessons/**` on every merge, so an
