@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-18T09:52:03Z",
+  "generated_at": "2026-10-18T11:23:12Z",
   "series": [
     {
       "calls": {
@@ -53,13 +53,13 @@
     },
     {
       "calls": {
-        "agent": 19,
-        "crawler": 24,
-        "mcp": 2109,
-        "pageview": 9
+        "agent": 0,
+        "crawler": 0,
+        "mcp": 0,
+        "pageview": 0
       },
       "date": "2026-10-17",
-      "total": 2161
+      "total": 0
     },
     {
       "calls": {
