@@ -2,7 +2,7 @@
 provenance:
   issue: "#3388"
   source: "MCP intake (codex), contributor-reported"
-domain: "video"
+domain: video
 title: "Frame-grid validation when a replacement shot is shorter than its montage slot"
 tags:
   - "video"
