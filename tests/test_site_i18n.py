@@ -29,6 +29,7 @@ from __future__ import annotations
 import json
 import re
 import sys
+from html.parser import HTMLParser
 from pathlib import Path
 
 import pytest
@@ -115,6 +116,111 @@ def test_the_gate_sees_both_surfaces(page):
     assert len(keys - (attrs | calls)) > 0, (
         "every key is now reachable through the two text patterns, so the quoted-literal fallback "
         "is no longer exercised — keep it or drop it deliberately"
+    )
+
+
+# ── Quickstart (#1894): the block this issue is about ─────────────────────────────────────────────
+#
+# The parity rules above cannot see the failure #1894 is named after: Quickstart prose written
+# straight into the HTML with no `data-i18n` attribute. That adds no key to either dictionary and
+# removes none, so every rule above stays green while Chinese mode shows the English sentence —
+# the same silent half-translation `README.zh-CN.md` fell into. The block is therefore checked as
+# text, not as keys: whatever a visitor can read there must either be keyed, or be a command /
+# sample payload / example query (those are inputs and outputs, not copy).
+
+QS_BLOCK = re.compile(r'<div id="quickstart-section".*?(?=<!-- Voices)', re.S)
+
+
+class _ProseOutsideSurfaces(HTMLParser):
+    """Visible text of the Quickstart block that is not behind a translation surface.
+
+    Opaque (never collected): `script`/`style`, anything carrying `data-i18n`(-placeholder),
+    and the command/sample containers (`.qs-cmd`, `code`, `pre`).
+    """
+
+    VOID = {"br", "hr", "img", "input", "meta", "link", "source", "wbr", "area", "base", "col", "embed", "track"}
+    NEVER_COPY = {"style", "script"}
+    COPYLESS = {"code", "pre"}
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self._stack: list[tuple[str, bool]] = []  # (tag, opaque)
+        self.chunks: list[str] = []
+
+    def handle_starttag(self, tag: str, attrs) -> None:
+        if tag in self.VOID:
+            return
+        ad = dict(attrs)
+        classes = (ad.get("class") or "").split()
+        opaque = (
+            tag in self.NEVER_COPY
+            or tag in self.COPYLESS
+            or "qs-cmd" in classes
+            or "data-i18n" in ad
+            or "data-i18n-placeholder" in ad
+        )
+        self._stack.append((tag, opaque))
+
+    def handle_endtag(self, tag: str) -> None:
+        for i in range(len(self._stack) - 1, -1, -1):
+            if self._stack[i][0] == tag:
+                del self._stack[i:]
+                break
+
+    def handle_data(self, data: str) -> None:
+        if self._stack and not any(opaque for _, opaque in self._stack):
+            self.chunks.append(data)
+
+
+def quickstart_prose(page: str) -> list[str]:
+    """Hardcoded UI copy in the Quickstart block: visible text that is not keyed and not a
+    command/sample. Step numbers and separators are punctuation; JSON payloads start with `{`/`[`.
+    """
+    m = QS_BLOCK.search(page)
+    assert m, "could not find #quickstart-section in docs/index.html — did the markup change shape?"
+    parser = _ProseOutsideSurfaces()
+    parser.feed(m.group(0))
+    leftovers = []
+    for raw in parser.chunks:
+        s = " ".join(raw.split())
+        if not s:
+            continue
+        if re.fullmatch(r"[\d\W]+", s):  # step numbers, · separators
+            continue
+        if s[0] in "{[":  # sample response payload
+            continue
+        leftovers.append(s)
+    return leftovers
+
+
+def test_quickstart_ui_copy_is_not_hardcoded_in_the_html(page):
+    """#1894 goal 1 / 验收 1: every sentence a visitor reads in Quickstart goes through `data-i18n`."""
+    assert quickstart_prose(page) == [], (
+        "hardcoded UI copy in the Quickstart block — give it a data-i18n key and add that key to "
+        f"both locale files instead: {quickstart_prose(page)}"
+    )
+
+
+def test_quickstart_zh_values_are_chinese_not_english_copies(page):
+    """#1894 验收 1, the dictionary side: a key can exist in `zh.json` and still show English.
+
+    `switchLang` falls back to the en value when zh lacks the key — and an *empty* or byte-identical
+    English value in `zh.json` has the same effect while looking like coverage. Quickstart keys must
+    therefore carry real Chinese copy (CJK, or at least text that differs from the English string).
+    """
+    en, zh = dictionary("en"), dictionary("zh")
+    qs_keys = sorted({k for k in ATTR.findall(page) if k.startswith("qs")})
+    assert len(qs_keys) >= 12, f"only {len(qs_keys)} qs* keys on the page — did the Quickstart markup change?"
+    untranslated = []
+    for k in qs_keys:
+        zh_v, en_v = zh.get(k, ""), en.get(k, "")
+        if not zh_v.strip():
+            untranslated.append((k, zh_v or "<missing>"))
+        elif zh_v == en_v and re.search(r"[A-Za-z]{3,}", zh_v):
+            untranslated.append((k, zh_v))
+    assert not untranslated, (
+        f"these Quickstart keys are in zh.json but still read as English (or are empty), so Chinese "
+        f"mode would show them unchanged: {untranslated}"
     )
 
 
