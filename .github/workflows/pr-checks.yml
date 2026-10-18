@@ -563,6 +563,18 @@ jobs:
           echo "=== Lesson Count Consistency (count SSOT) ==="
           python3 scripts/sync_lesson_count.py --check
 
+      # ── Site Facts Check (#1895) ──
+      # The homepage Quickstart's command strings (install / verify / MCP search curl) are copies
+      # of the README's, and the homepage's tool count is a retype of `canonical_mcp_tools()`.
+      # `sync_site_facts.py --check` is the same SSOT idea as the count gate above, for facts that
+      # are not corpus counts: a one-character drift between the two surfaces must fail here with
+      # both files named, instead of shipping a site that teaches a command the README does not.
+      - name: Site Facts Check
+        if: steps.scope.outputs.scope == 'full'
+        run: |
+          echo "=== Site Facts Consistency (homepage commands + tool count) ==="
+          python3 scripts/sync_site_facts.py --check
+
       - name: Validate lessons.json schema
         run: |
           echo "=== lessons.json Schema Validation (Issue #1374) ==="

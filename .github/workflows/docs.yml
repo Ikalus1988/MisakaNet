@@ -58,6 +58,13 @@ jobs:
         if: github.event_name == 'push'
         run: python3 scripts/sync_lesson_count.py --check --quiet
 
+      # Same idea for the facts that are not corpus counts (#1895): the homepage Quickstart
+      # command strings must stay verbatim-identical to the README's, and the homepage tool
+      # count must stay equal to canonical_mcp_tools(). Zero-dependency, same as the count gate.
+      - name: Verify site facts
+        if: github.event_name == 'push'
+        run: python3 scripts/sync_site_facts.py --check --quiet
+
       # Same idea for the generated lesson/topic pages: they are derived from
       # data/lessons.json, so a hand-edit (or a lesson whose page was never
       # regenerated) fails here instead of living on the site.
