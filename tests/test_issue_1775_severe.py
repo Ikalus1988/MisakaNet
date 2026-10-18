@@ -135,6 +135,25 @@ def test_heal_write_does_not_persist_the_raw_log_body(monkeypatch, tmp_path):
     )
 
 
+def test_heal_write_refuses_a_signature_that_carries_a_credential(monkeypatch, tmp_path):
+    """One line is not proof of safety: the signature itself can quote the token.
+
+    The previous case covers noise lines; this one puts the credential *inside the matched
+    signature*, where narrowing "raw log" to "one line" does nothing. The fixture is one `git add`
+    away from the repository, so the shape test decides rather than the width of the extraction.
+    """
+    from misakanet.cli import heal as heal_mod
+
+    _heal_env(monkeypatch, tmp_path)
+    token = "mcp_" + "A1b2C3d4" * 4   # exactly the node-token shape the publication scanner rejects
+    heal_mod.heal(f"RuntimeError: upstream rejected {token}\n", write_fixtures=True)
+
+    written = list((tmp_path / "tests" / "fixtures" / "openclaw").glob("unmatched_*.log"))
+    assert written == [], f"a credential-shaped signature must not be written: {written}"
+    assert heal_mod._looks_like_credential(f"x {token} y")
+    assert not heal_mod._looks_like_credential("RuntimeError: probe-unmatched-signature-xyz")
+
+
 # ── (3) remote path must stay inside the repo root ───────────────────────────────────────────────
 
 def _remote_payload(path_value: str) -> list:

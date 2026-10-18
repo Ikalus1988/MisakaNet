@@ -25,6 +25,23 @@ def _strip_ansi(text: str) -> str:
     return _ANSI_RE.sub('', text)
 
 
+#: Credential shapes that must never reach a fixture file. Same four families the repository's
+#: publication scanner uses (`scripts/check_published_secrets.py`), trimmed to the prefix + length
+#: test it applies, because that scanner deliberately does not read `tests/fixtures/**` and a
+#: fixture is one `git add` away from being published (#1775).
+_SECRET_SHAPES = (
+    re.compile(r"\bmcp_[A-Za-z0-9_-]{32}\b"),
+    re.compile(r"\bghp_[A-Za-z0-9]{36}\b"),
+    re.compile(r"\bgithub_pat_[A-Za-z0-9_]{82}\b"),
+    re.compile(r"\bsk-[A-Za-z0-9]{48}\b"),
+)
+
+
+def _looks_like_credential(text: str) -> bool:
+    """True when `text` carries something shaped like a credential."""
+    return any(pattern.search(text) for pattern in _SECRET_SHAPES)
+
+
 def _parse_error_signature(log_text: str) -> str:
     """
     4-level cascading error signature extractor.
@@ -174,6 +191,14 @@ def heal(raw_log: str, write_fixtures: bool = False):
                 # be auto-persisted; a signature hash as the *filename* does not make the *content*
                 # safe. The signature is the extracted error line (what a lesson needs), and this
                 # file is one `git add` away from the repository (#1775).
+                #
+                # One line is not proof of safety: an error line can quote the token that caused
+                # it (`401 with Authorization: Bearer …`, a curl echo, a config dump). A fixture
+                # whose whole purpose is to be committed later must refuse those rather than write
+                # them, so the shape test decides.
+                if _looks_like_credential(sig):
+                    print("      → fixture skipped: the signature carries a credential-shaped token")
+                    continue
                 with open(fixture_path, "w") as f:
                     f.write(sig + "\n")
                 print(f"      → fixture: {fixture_path}")
