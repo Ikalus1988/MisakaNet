@@ -531,7 +531,7 @@ const MCP_TOOLS = [
   },
   {
     name: "misakanet_preflight",
-    description: "[GUARD / RISK CHECK] Check risk level before executing high-risk operations. Matches agent intent against lesson triggers to provide proactive warnings. Use before RAG builds, WSL/GPU tasks, bulk imports, or any operation that might fail. No side effects — safe to call multiple times before acting.\nReturns: object {risk_level: 'low'|'medium'|'high', intent, matched_lessons: [{id, title, domain, relevance}], guards: [string]}.\nExample: misakanet_preflight(intent='build RAG pipeline with ChromaDB')",
+    description: "[GUARD / RISK CHECK] Check risk level before executing high-risk operations. Matches agent intent against lesson triggers to provide proactive warnings. Use before RAG builds, WSL/GPU tasks, bulk imports, or any operation that might fail. No side effects — safe to call multiple times before acting. **Requires a Bearer token** (`misakanet_register` first, and pass the same `client_id` to keep your node): an anonymous call is refused with JSON-RPC -32000 `Unauthorized` plus a `recovery` hint, which this sentence exists to keep you from discovering the hard way.\nReturns: object {risk_level: 'low'|'medium'|'high', intent, matched_lessons: [{id, title, domain, relevance}], guards: [string]}.\nExample: misakanet_preflight(intent='build RAG pipeline with ChromaDB')",
     inputSchema: {
       type: "object",
       properties: {

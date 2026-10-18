@@ -111,6 +111,26 @@ test('the token itself is never echoed back', async () => {
     'the rejected token must not be reflected, not even for debugging');
 });
 
+test('the schema states the Bearer requirement before the caller finds out the hard way', async () => {
+  // #3022: a caller read `tools/list`, saw "[GUARD / RISK CHECK] … No side effects", called
+  // `misakanet_preflight`, and got 401. The recovery hint added in #3234 only helps *after* the
+  // failure; the schema is the one thing a client reads before calling, so the requirement belongs
+  // there too. Asserted through `tools/list` rather than by reading the constant, because the
+  // constant is not what a client sees.
+  const response = await worker.fetch(new Request('https://misakanet.org/mcp', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'MCP-Protocol-Version': '2025-06-18' },
+    body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/list' }),
+  }), createEnv());
+  const { result } = await response.json();
+  const tool = (result.tools || []).find((t) => t.name === 'misakanet_preflight');
+  assert.ok(tool, 'misakanet_preflight must be listed');
+  assert.match(tool.description, /Requires a Bearer token/,
+    'a caller that only reads the schema must learn this tool is not anonymous');
+  assert.match(tool.description, /misakanet_register/,
+    'and it must name the call that fixes the refusal, not just the requirement');
+});
+
 test('a valid token is not sent down this path at all', async () => {
   // Guards the guard: if the auth gate broke and rejected everything, the four assertions above
   // would still pass while the endpoint was unusable.
