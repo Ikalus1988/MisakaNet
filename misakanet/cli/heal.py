@@ -164,7 +164,7 @@ def heal(raw_log: str, write_fixtures: bool = False):
             print(f"  ❌ [uncovered] {sig[:80]}")
 
             # ⑥ Auto-generate fixture for unmatched signatures (opt-in: --heal --write)
-            sig_hash = hashlib.md5(sig.encode()).hexdigest()[:8]
+            sig_hash = hashlib.sha256(sig.encode()).hexdigest()[:8]
             fixture_name = f"unmatched_{sig_hash}.log"
             if write_fixtures:
                 os.makedirs(fixture_dir, exist_ok=True)

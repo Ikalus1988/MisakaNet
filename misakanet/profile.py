@@ -44,7 +44,7 @@ def _profile_lock():
     """
     PROFILE_PATH.parent.mkdir(parents=True, exist_ok=True)
     lock_path = PROFILE_PATH.parent / ".profile.lock"
-    fd = os.open(str(lock_path), os.O_CREAT | os.O_RDWR, 0o644)
+    fd = os.open(str(lock_path), os.O_CREAT | os.O_RDWR, 0o600)
     try:
         try:
             import fcntl
