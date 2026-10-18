@@ -1,9 +1,23 @@
 {
-  "generated_at": "2026-10-18T04:46:26.317091+00:00",
+  "generated_at": "2026-10-18T09:52:02.107102+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "feat(lessons): adopt eleven bounty lessons, and add \"video\" to the domain vocabulary",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3485",
+      "timestamp": "2026-10-18T09:51:52Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3472",
+      "timestamp": "2026-10-18T04:52:33Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "docs(handoff): §102 — the round's closing ledger, and why it can be archived",
@@ -16,20 +30,6 @@
       "title": "chore(data): sync lessons.json + refresh feed",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/3467",
       "timestamp": "2026-10-17T23:18:42Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3466",
-      "timestamp": "2026-10-17T20:50:20Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "fix(backup): export table by table — --no-schema alone does not dodge the FTS5 refusal",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3452",
-      "timestamp": "2026-10-17T17:28:42Z",
       "source": "github"
     },
     {
@@ -57,26 +57,26 @@
     },
     {
       "type": "lesson",
-      "title": "Three checks that were green and covered nothing: the subject was outside the scope",
-      "url": "lessons/contrib/green-check-subject-outside-scope.md",
-      "timestamp": "2026-10-06",
-      "domain": "testing",
+      "title": "FANUC ROBOGUIDE FRVRC auto backup fails on every restart — FILE-077 / FILE-079 / FILE-031",
+      "url": "lessons/contrib/fanuc-frvrc-auto-backup-illegal-path.md",
+      "timestamp": "2026-10-17",
+      "domain": "fanuc",
       "source": "lessons"
     },
     {
       "type": "lesson",
-      "title": "A silent truncation in the MCP intake worker, fixed four times, each time at the next cap",
-      "url": "lessons/contrib/mcp-intake-silent-truncation-family.md",
-      "timestamp": "2026-10-04",
-      "domain": "mcp",
+      "title": "FANUC 虚拟控制器诊断纪律：对回环端口的 TCP 探测会亲手把控制器弄崩",
+      "url": "lessons/contrib/fanuc-rgcore-diagnostic-probe-triggers-controller-crash.md",
+      "timestamp": "2026-10-17",
+      "domain": "fanuc",
       "source": "lessons"
     },
     {
       "type": "lesson",
-      "title": "A child stat failure must not fail the whole parent directory listing",
-      "url": "lessons/contrib/a-child-probe-failure-must-not-poison-the-parent-listing.md",
-      "timestamp": "2026-10-03",
-      "domain": "nodejs",
+      "title": "Frame-grid validation when a replacement shot is shorter than its montage slot",
+      "url": "lessons/contrib/frame-grid-validation-replacement-shorter-than-slot.md",
+      "timestamp": "2026-10-17",
+      "domain": "video",
       "source": "lessons"
     },
     {
