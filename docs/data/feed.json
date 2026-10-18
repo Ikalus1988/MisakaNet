@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-10-18T11:23:10.190773+00:00",
+  "generated_at": "2026-10-18T15:59:22.842437+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "fix: the six verified severe defects from #1775",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3478",
-      "timestamp": "2026-10-18T11:21:05Z",
+      "title": "docs(triage): the intake backlog sweep, and why 26 issues sat open after being fixed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3498",
+      "timestamp": "2026-10-18T15:40:57Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "docs(codeql): correct which tool produced the sixteen secret alerts",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3490",
-      "timestamp": "2026-10-18T10:25:13Z",
+      "title": "fix(mcp): the preflight schema says it needs a Bearer token, not just its error",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3497",
+      "timestamp": "2026-10-18T15:28:41Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(codeql): keep generated lesson artefacts out of the secret query",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3488",
-      "timestamp": "2026-10-18T10:08:32Z",
+      "title": "docs(handoff): §104–§106 — what the three §103.6 items actually measured",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3496",
+      "timestamp": "2026-10-18T14:55:27Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3487",
-      "timestamp": "2026-10-18T10:01:27Z",
+      "title": "docs(handoff): §103 — the adoption batch, the sixteen alerts that were not CodeQL, and the Quickstart review",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3495",
+      "timestamp": "2026-10-18T14:33:46Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(lessons): adopt eleven bounty lessons, and add \"video\" to the domain vocabulary",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3485",
-      "timestamp": "2026-10-18T09:51:52Z",
+      "title": "feat(quickstart): copy buttons per code block — #3491 resolved against the site-facts SSOT",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3494",
+      "timestamp": "2026-10-18T12:54:12Z",
       "source": "github"
     },
     {
