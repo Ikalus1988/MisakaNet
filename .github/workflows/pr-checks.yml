@@ -84,7 +84,7 @@ jobs:
       # lessons-only pull request would have no `uv`, every test in that file would skip, and the
       # uv.lock drift they exist to catch would go unseen — the "gate that skips" failure this
       # repository has already paid for once (see the comment above the `ruff` install).
-      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7  # v10.2.0
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884  # v10.3.0
 
       - name: Install Dependencies
         if: steps.scope.outputs.scope == 'full'
