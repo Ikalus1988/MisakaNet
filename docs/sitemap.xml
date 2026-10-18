@@ -170,6 +170,7 @@
   <url><loc>https://misakanet.org/lessons/migrating-dsh-home-with-robocopy-materializes-the-profile-node-modules-junctions/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/dsh-plugin-install-github-codeload-timeout/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/dsh-plugin-l5-web-smoke-cordis-duplicate-entry/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/a-tray-icon-is-not-evidence-test-whether-security-software-still-injects-into-a/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/erreur-permission-docker-linux/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/erro-push-git-rejeitado-divergente/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/error-dco-signoff-windows/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -229,6 +230,7 @@
   <url><loc>https://misakanet.org/lessons/gemini-safety-settings-multi-hop-passthrough/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/gfw-tls-sni-block-pattern/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/gfw-tls-sni-blocking-tool-layer-ineffective/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/gh-auth-login-times-out-while-the-same-browser-opens-githubcom-the-command-line/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/ghidra-mcp-server-reverse-engineering/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/git-checkout-discards-uncommitted-work/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/git-clean-branch-after-merged-pr-ru/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
