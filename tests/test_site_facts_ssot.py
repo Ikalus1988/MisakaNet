@@ -36,6 +36,7 @@ fact, invisible to ``grep docs/index.html``. These tests pin four properties:
 from __future__ import annotations
 
 import shutil
+import re
 import sys
 from pathlib import Path
 
@@ -128,10 +129,12 @@ def test_a_one_character_corruption_on_the_homepage_names_both_files(tmp_path):
     root = _mini_tree(tmp_path)
     index = root / "docs" / "index.html"
     text = index.read_text(encoding="utf-8")
-    old = '<div class="qs-cmd">npx @misaka-net/misakanet-setup</div>'
-    new = '<div class="qs-cmd">npx @misaka-net/misakanet-setuq</div>'
-    assert text.count(old) == 1, "the homepage install command moved — update this test with it"
-    index.write_text(text.replace(old, new, 1), encoding="utf-8")
+    # The wrapper is not the subject: #3491 wrapped the command in a row and an id for its copy
+    # button, and a test that pins the wrapper would have to be edited by every UI change. What it
+    # pins is the command text inside whichever `.qs-cmd` holds it.
+    pattern = re.compile(r'(<div class="qs-cmd"[^>]*>)npx @misaka-net/misakanet-setup(</div>)')
+    assert len(pattern.findall(text)) == 1, "the homepage install command moved — update this test with it"
+    index.write_text(pattern.sub(r"\1npx @misaka-net/misakanet-setuq\2", text, count=1), encoding="utf-8")
 
     problems = ssf.stale_command_entries(root=root)
     assert problems, "a one-character corruption of the homepage command passed the check"
@@ -147,11 +150,9 @@ def test_sync_rewrites_the_mirror_from_the_source(tmp_path):
     root = _mini_tree(tmp_path)
     index = root / "docs" / "index.html"
     text = index.read_text(encoding="utf-8")
-    old = '<div class="qs-cmd">npx @misaka-net/misakanet-setup</div>'
+    pattern = re.compile(r'(<div class="qs-cmd"[^>]*>)npx @misaka-net/misakanet-setup(</div>)')
     index.write_text(
-        text.replace(old, '<div class="qs-cmd">npx @misaka-net/misakanet-setuq</div>', 1),
-        encoding="utf-8",
-    )
+        pattern.sub(r"\1npx @misaka-net/misakanet-setuq\2", text, count=1), encoding="utf-8")
 
     changes, errors = ssf.sync_command_facts(root=root)
     assert errors == [], errors

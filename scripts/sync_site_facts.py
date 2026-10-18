@@ -171,7 +171,7 @@ COMMAND_FACTS: tuple[CommandFact, ...] = (
             Surface(
                 "docs/index.html",
                 r"Install the endpoint into every assistant[^<]*</div>\s*"
-                r'<div class="qs-cmd">(?P<cmd>[^<]+)</div>',
+                r'(?:<div class="qs-cmd-row">\s*)?<div class="qs-cmd"[^>]*>(?P<cmd>[^<]+)</div>',
             ),
         ),
     ),
@@ -186,7 +186,7 @@ COMMAND_FACTS: tuple[CommandFact, ...] = (
             Surface(
                 "docs/index.html",
                 r"Close and reopen your assistant[^<]*</div>\s*"
-                r'<div class="qs-cmd">(?P<cmd>[^<]+)</div>',
+                r'(?:<div class="qs-cmd-row">\s*)?<div class="qs-cmd"[^>]*>(?P<cmd>[^<]+)</div>',
             ),
         ),
     ),
@@ -200,7 +200,7 @@ COMMAND_FACTS: tuple[CommandFact, ...] = (
         mirrors=(
             Surface(
                 "docs/index.html",
-                r'<div class="qs-cmd">(?P<cmd>curl -sS https://misakanet\.org/mcp.*?'
+                r'<div class="qs-cmd"[^>]*>(?P<cmd>curl -sS https://misakanet\.org/mcp.*?'
                 r"misakanet_search.*?)</div>",
             ),
         ),
