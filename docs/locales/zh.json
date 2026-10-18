@@ -104,6 +104,8 @@
   "qsBVerify": "未命中会返回 no_match 加一条可复制的 intake 调用 —— 有用，不是错误。",
   "qsMoreInstall": "完整安装说明",
   "qsMoreDoc": "所有使用方式",
+  "qsStartPair": "生成配对码",
+  "qsStartPairNote": "——去 Start 页，配对与 Misaka Voice 都在那边。",
   "navActivity": "网络活动",
   "activitySection": "网络活动",
   "activityNote": "自建聚合调用计数 · 非 Cloudflare 边缘指标 · 不含身份 · 阅读无需注册",

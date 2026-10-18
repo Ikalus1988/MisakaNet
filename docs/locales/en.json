@@ -104,6 +104,8 @@
   "qsBVerify": "A miss returns no_match plus a copyable intake call — useful, not an error.",
   "qsMoreInstall": "Full install guide",
   "qsMoreDoc": "All the ways to use it",
+  "qsStartPair": "Generate a pairing code",
+  "qsStartPairNote": "on the Start page — pairing and Misaka Voice live there.",
   "navActivity": "Network activity",
   "activitySection": "Network activity",
   "activityNote": "our own aggregate call counts · not Cloudflare edge metrics · no identity · reading needs no registration",
