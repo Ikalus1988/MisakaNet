@@ -38,7 +38,28 @@ queries:
 #
 # Editing the address to satisfy the scanner is the one thing not to do here: the address is what makes
 # the lesson checkable, and a mangled one would be a lesson that cannot be run.
+#
+# GENERATED ARTEFACTS (2026-10-18). Sixteen HARDCODED_SECRET alerts (#350-#365) opened against the
+# **files a lesson generates**, not against the lesson: `pytest-k-ma**sk-deselects**-more-tests-than-
+# intended.md` carries an `sk-` junction in its own path, every generated copy repeats that path, and the
+# query reads the junction as an OpenAI-style key. The lesson's body holds no credential — the match is
+# the filename.
+#
+# These paths are outputs, not sources: `build_lesson_pages.py`, `update_lessons_json.py`,
+# `export_okf.py` and `rebuild_lessons_index.py` rewrite them from `lessons/**` on every merge, so an
+# exclusion here cannot hide a credential that a lesson does not already contain — and the corpus itself
+# is scanned by `scripts/check_published_secrets.py`, which blocks every PR including docs-only ones.
+# Skipping them stops the same false positive being reported once per generated file, and keeps
+# `docs/index.html` (real inline JavaScript) inside the analysis.
 paths-ignore:
   - scripts/check_worker_secrets.py
   - packages/misakanet-setup/scripts/e2e-packaged-install.mjs
   - lessons/contrib/onchain-payout-preflight-checklist.md
+  - lessons/index.md
+  - data/lessons.json
+  - data/okf/lessons.jsonl
+  - docs/data/**
+  - docs/lessons/**
+  - docs/topics/**
+  - docs/sitemap.xml
+  - docs/.generated-pages.json
