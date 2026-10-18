@@ -163,7 +163,7 @@ def test_no_first_run_doc_demands_a_token_for_an_anonymous_tool() -> None:
         f"{len(offenders)} line(s) in the first-run docs still claim an anonymous tool needs a "
         "token. Measured 2026-10-06 with no Authorization header, a `misakanet_search` "
         "tools/call returns 200; reads have been anonymous since #1855 and are bounded by a "
-        "burst window (5 combined reads/day per IP), not by auth.\n\n"
+        "burst window (20 reads per 60 seconds per address), not by auth.\n\n"
         "The harmful form is the second pattern: telling a client to skip `initialize`. Several "
         "MCP clients refuse to send a tool call before the handshake, so that advice produces a "
         "client that looks broken rather than one that is anonymous.\n\n"

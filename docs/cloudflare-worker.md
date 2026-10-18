@@ -221,7 +221,7 @@ Monitor in:
 ### Prerequisites & limits (read before promising WebMCP to users)
 
 - **Developer Preview** — WebMCP currently requires a WebMCP-capable browser agent (Chrome beta; Cloudflare Browser Run lab sessions). Stable-Chrome support is not yet guaranteed.
-- **Anonymous quota** — browser agents call `/mcp` without a token, so they share the 5 free reads/day/IP quota (`misakanet_search` / `misakanet_get_lesson` / `misakanet_me_events`). Users who need more should register (`misakanet_register`) or use a token-authenticated client.
+- **Anonymous burst limit** — browser agents call `/mcp` without a token, so reads (`misakanet_search` / `misakanet_get_lesson` / `misakanet_me_events` / `misakanet_me_inbox`) share a per-address window of 20 reads per 60 seconds (`READ_BURST_LIMIT` / `READ_BURST_WINDOW_SECONDS`). It is a speed limit, not a daily quota and not a reason to register; registration lifts the ceiling and unlocks the write tools.
 - **Origin validation** — the worker rejects non-whitelisted `Origin` headers (DNS-rebinding protection). Same-origin page calls are fine; a cross-origin WebMCP setup would require `MCP_ALLOWED_ORIGINS` updates in `workers/register-proxy-sw.js`.
 
 ### Verify

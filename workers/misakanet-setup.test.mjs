@@ -1102,7 +1102,7 @@ test('a rate-limited search answer is not reported as an unreachable endpoint', 
       seen.push(payload.method);
       const result = payload.method === 'tools/list'
         ? { tools: [{ name: 'misakanet_search' }] }
-        : { error: 'Rate limit: 5 free reads per day (searches and lesson reads share one quota) exceeded', hint: 'misakanet_register' };
+        : { error: 'Too many requests: max 20 reads per 60s from one address.', hint: 'retry after up to 60s; no registration needed' };
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ jsonrpc: '2.0', id: 1, result: {
         content: [{ type: 'text', text: JSON.stringify(result) }], structuredContent: result } }));

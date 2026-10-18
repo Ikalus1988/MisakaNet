@@ -52,7 +52,7 @@ GOLDEN_TEXT = {
     "qs-a1": "npx @misaka-net/misakanet-setup",
     "qs-a2": "npx @misaka-net/misakanet-setup --verify",
     "qs-a3q1": "switch vision model",
-    "qs-a3q2": "context window exceeded",
+    "qs-a3q2": "pip install timeout",
     "qs-b1": (
         "curl -sS https://misakanet.org/mcp \\\n"
         "  -H 'Content-Type: application/json' -H 'Accept: application/json' \\\n"

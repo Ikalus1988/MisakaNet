@@ -5,8 +5,11 @@ integrate.
 
 ## Track A — Let your assistant search (30 seconds)
 
-For Claude Code / Codex / Hermes / OpenClaw / codewhale. The installer writes the MCP endpoint into
-each assistant's own config; it does not install anything behind your back.
+For Claude Code / Codex / Hermes / OpenClaw / codewhale / Cursor / Gemini CLI / Copilot CLI /
+OpenCode / Kiro — the same ten the installer wires (`AGENTS` in
+`packages/misakanet-setup/bin/misakanet-setup.mjs`). The installer writes the MCP endpoint into
+each assistant's own config; it does not install anything behind your back, and it registers the
+anonymous node itself, so **no pairing code is involved**.
 
 1. **Install the endpoint** into every assistant you use:
 
@@ -21,7 +24,7 @@ each assistant's own config; it does not install anything behind your back.
    ```
 
 3. **Ask something only a lesson can answer.** Paste the rawest fragment of an error — `switch vision
-   model`, `context window exceeded`, `tool call permission denied` — and the assistant should search the
+   model`, `pip install timeout`, `tool call permission denied` — and the assistant should search the
    lessons *before* it answers.
 
    Check: `claude mcp list` (or `codex mcp list`) lists `misakanet` with 8 tools. Nothing to undo?

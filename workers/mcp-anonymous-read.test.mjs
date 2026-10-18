@@ -1,6 +1,7 @@
 // PRD ④ tests: anonymous read access — misakanet_search and
-// misakanet_get_lesson must work WITHOUT auth (5 free reads/day per IP),
-// while authenticated callers are exempt from the quota.
+// misakanet_get_lesson must work WITHOUT auth, bounded only by the per-address burst window
+// (READ_BURST_LIMIT reads per READ_BURST_WINDOW_SECONDS, no daily quota), while authenticated
+// callers are exempt from that window.
 // Run: node --test workers/mcp-anonymous-read.test.mjs
 import assert from 'node:assert/strict';
 import test from 'node:test';
