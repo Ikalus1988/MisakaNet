@@ -1,9 +1,16 @@
 {
-  "generated_at": "2026-10-18T16:59:47.441203+00:00",
+  "generated_at": "2026-10-18T20:54:12.920359+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3502",
+      "timestamp": "2026-10-18T17:10:04Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "lessons: convert intake #3339 (proxy the shell never inherited) and #3470 (a disable nobody verified)",
@@ -23,20 +30,6 @@
       "title": "chore(data): sync lessons.json + refresh feed",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/3499",
       "timestamp": "2026-10-18T16:08:48Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "docs(triage): the intake backlog sweep, and why 26 issues sat open after being fixed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3498",
-      "timestamp": "2026-10-18T15:40:57Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "fix(mcp): the preflight schema says it needs a Bearer token, not just its error",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3497",
-      "timestamp": "2026-10-18T15:28:41Z",
       "source": "github"
     },
     {
@@ -78,6 +71,13 @@
       "timestamp": "2026-10-17",
       "domain": "video",
       "source": "lessons"
+    },
+    {
+      "type": "merged_pr",
+      "title": "fix(tombstone): handle non-object JSON with clean ValueError to prevent raw traceback (closes #1838)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1845",
+      "timestamp": "2026-09-25T00:46:55Z",
+      "source": "github"
     },
     {
       "type": "challenge",
