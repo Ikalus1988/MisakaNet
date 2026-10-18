@@ -18,6 +18,7 @@ import string
 import subprocess
 import sys
 import tempfile
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -28,6 +29,35 @@ LESSONS_DIR = REPO / "lessons"
 STAGES = ["newcomer", "active", "contributor"]
 STAGE_SEARCH_THRESHOLD = 3    # 3 次搜索 → active
 STAGE_LESSON_THRESHOLD = 1    # 1 条 lesson → contributor
+
+
+@contextmanager
+def _profile_lock():
+    """Exclusive lock for the read-modify-write of profile.json (#1775).
+
+    `_save`'s atomic rename only prevents *torn* writes — it does nothing for *lost updates*.
+    Two concurrent callers can both read `search_count: 0`, both compute `1`, and one increment
+    vanishes; the counters drive stage transitions and referral attribution, so that is a silent
+    correctness bug. A sidecar lock file is used rather than the profile itself because `_save`
+    replaces the inode on every write (`os.replace`), which would drop a lock held on the old one.
+    `flock` is auto-released if the process dies, so a crash cannot leave the profile wedged.
+    """
+    PROFILE_PATH.parent.mkdir(parents=True, exist_ok=True)
+    lock_path = PROFILE_PATH.parent / ".profile.lock"
+    fd = os.open(str(lock_path), os.O_CREAT | os.O_RDWR, 0o644)
+    try:
+        try:
+            import fcntl
+        except ImportError:  # non-POSIX: best-effort, still atomic-rename on save
+            yield
+            return
+        fcntl.flock(fd, fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            fcntl.flock(fd, fcntl.LOCK_UN)
+    finally:
+        os.close(fd)
 
 
 def _load() -> dict:
@@ -117,53 +147,56 @@ def get_lesson_count() -> int:
 
 def increment_search():
     """搜索计数+1，跨阈值时自动升阶段并持久化。"""
-    p = _load()
-    p["search_count"] = p.get("search_count", 0) + 1
-    p["last_active"] = datetime.now(timezone.utc).isoformat()
-    if p["stage"] == "newcomer" and p["search_count"] >= STAGE_SEARCH_THRESHOLD:
-        p["stage"] = "active"
-        # stderr, not stdout. `search_knowledge.py --json` writes its result to stdout and an
-        # agent parses that; these notices are human-facing chrome and belong beside the
-        # diagnostics, not inside the payload. Measured 2026-10-04: the upgrade fired in the
-        # middle of a `--json` run and the output stopped being JSON
-        # (`json.decoder.JSONDecodeError: Expecting value: line 1 column 3`), because
-        # `tests/test_search_quota.py` treats this as a real contract. That test only ever saw
-        # it by accident — the notice is one-shot, so it fires for whichever caller crosses the
-        # threshold, and a fresh profile reaches it partway through a suite run.
-        print("  🎉 升级: newcomer → active", file=sys.stderr)
-        print("  提示: 试试 python3 scripts/new_lesson.py 贡献第一条 lesson", file=sys.stderr)
-    _save(p)
+    with _profile_lock():
+        p = _load()
+        p["search_count"] = p.get("search_count", 0) + 1
+        p["last_active"] = datetime.now(timezone.utc).isoformat()
+        if p["stage"] == "newcomer" and p["search_count"] >= STAGE_SEARCH_THRESHOLD:
+            p["stage"] = "active"
+            # stderr, not stdout. `search_knowledge.py --json` writes its result to stdout and an
+            # agent parses that; these notices are human-facing chrome and belong beside the
+            # diagnostics, not inside the payload. Measured 2026-10-04: the upgrade fired in the
+            # middle of a `--json` run and the output stopped being JSON
+            # (`json.decoder.JSONDecodeError: Expecting value: line 1 column 3`), because
+            # `tests/test_search_quota.py` treats this as a real contract. That test only ever saw
+            # it by accident — the notice is one-shot, so it fires for whichever caller crosses the
+            # threshold, and a fresh profile reaches it partway through a suite run.
+            print("  🎉 升级: newcomer → active", file=sys.stderr)
+            print("  提示: 试试 python3 scripts/new_lesson.py 贡献第一条 lesson", file=sys.stderr)
+        _save(p)
 
 
 def increment_lesson():
     """lesson 计数+1，跨阈值时自动升阶段。"""
-    p = _load()
-    p["lesson_count"] = p.get("lesson_count", 0) + 1
-    p["last_active"] = datetime.now(timezone.utc).isoformat()
-    n = p["lesson_count"]
-    if p["stage"] == "active" and n >= STAGE_LESSON_THRESHOLD:
-        p["stage"] = "contributor"
-        print("  升级: active -> contributor", file=sys.stderr)
-        print("  提示: 你的 lesson 已进入共享池，影响范围扩大", file=sys.stderr)
-    elif n > 0 and n % 5 == 0:
-        print(f"  累计 {n} 条 lesson，节点权重提升", file=sys.stderr)
-    _save(p)
-    # 这里曾经调用 reset_quota() 并打印"搜索额度已重置（感谢贡献！）"。读路径在 2026-09-18 起
-    # 不限次数，本地检索更是纯本地计算，没有配额可重置 —— 那句话是假的（#1986）。感谢留下，
-    # 假话不留。
-    print("  🙏 感谢贡献！", file=sys.stderr)
+    with _profile_lock():
+        p = _load()
+        p["lesson_count"] = p.get("lesson_count", 0) + 1
+        p["last_active"] = datetime.now(timezone.utc).isoformat()
+        n = p["lesson_count"]
+        if p["stage"] == "active" and n >= STAGE_LESSON_THRESHOLD:
+            p["stage"] = "contributor"
+            print("  升级: active -> contributor", file=sys.stderr)
+            print("  提示: 你的 lesson 已进入共享池，影响范围扩大", file=sys.stderr)
+        elif n > 0 and n % 5 == 0:
+            print(f"  累计 {n} 条 lesson，节点权重提升", file=sys.stderr)
+        _save(p)
+        # 这里曾经调用 reset_quota() 并打印"搜索额度已重置（感谢贡献！）"。读路径在 2026-09-18 起
+        # 不限次数，本地检索更是纯本地计算，没有配额可重置 —— 那句话是假的（#1986）。感谢留下，
+        # 假话不留。
+        print("  🙏 感谢贡献！", file=sys.stderr)
 
 
 def apply_referral(code: str) -> bool:
     """首次注册时填写推荐码。"""
     if not code or len(code) < 4:
         return False
-    p = _load()
-    if p.get("referred_by"):
-        return False  # 已绑定，不可修改
-    p["referred_by"] = code.upper()
-    _save(p)
-    return True
+    with _profile_lock():
+        p = _load()
+        if p.get("referred_by"):
+            return False  # 已绑定，不可修改
+        p["referred_by"] = code.upper()
+        _save(p)
+        return True
 
 
 def get_credit_weight() -> float:

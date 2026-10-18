@@ -46,6 +46,24 @@ BOOST_VALUES = {
     "pinned": 100,        # reset to 100 (pinned)
 }
 
+# Scalars the YAML fallback is willing to un-string. Deliberately narrow (#1775): the old
+# `val.strip("\"'")` turned *every* non-boolean into a string, so `weight: 5` arrived as `"5"`
+# and consumers doing arithmetic silently coerced. Only plain integers and decimals convert —
+# `2026-10-01`, `0755`, `v1.2` and anything with letters keep their string form.
+_INT_RE = re.compile(r"-?[0-9]+$")
+_FLOAT_RE = re.compile(r"-?[0-9]+\.[0-9]+$")
+
+
+def _coerce_scalar(raw: str):
+    """Return the value `raw` looks like: int, float, or the stripped string."""
+    s = raw.strip().strip("\"'")
+    digits = s.lstrip("-")
+    if _INT_RE.match(s) and not (len(digits) > 1 and digits[0] == "0"):
+        return int(s)
+    if _FLOAT_RE.match(s):
+        return float(s)
+    return s
+
 
 def get_tier(score: float) -> dict:
     """Get freshness tier for a score."""
@@ -135,7 +153,17 @@ def compute_freshness(
     boost_events = lesson.get("freshness_boosts", [])
     if isinstance(boost_events, list):
         for event in boost_events:
-            event_type = event if isinstance(event, str) else event.get("type")
+            # Degrade, don't crash (#1775). The old `event if isinstance(event, str) else
+            # event.get("type")` raised AttributeError on an int/None and TypeError on an
+            # unhashable `type`, and one malformed entry then aborted freshness for the whole
+            # lesson. A boost list is advisory: skip what cannot be read, apply what can.
+            if isinstance(event, str):
+                event_type = event
+            elif isinstance(event, dict):
+                raw_type = event.get("type")
+                event_type = raw_type if isinstance(raw_type, str) else None
+            else:
+                continue
             if event_type in BOOST_VALUES:
                 boost_value = BOOST_VALUES[event_type]
                 score = min(100, score + boost_value)
@@ -248,7 +276,7 @@ def _extract_frontmatter(content: str) -> Optional[dict]:
                 nk, _, nv = stripped.partition(":")
                 nk, nv = nk.strip(), nv.strip()
                 if nv:
-                    current_nested[nk] = nv.strip("\"'")
+                    current_nested[nk] = _coerce_scalar(nv)
                 continue
             # Save nested if we're leaving it
             if current_nested and current_key:
@@ -275,7 +303,10 @@ def _extract_frontmatter(content: str) -> Optional[dict]:
                     fm[key] = val.lower() == "true"
                     current_key = None
                 else:
-                    fm[key] = val.strip("\"'")
+                    # Coerce to the type the text looks like (#1775). This used to be
+                    # `val.strip("\"'")` unconditionally, so every non-boolean arrived as a
+                    # string and `weight: 5` was `"5"`.
+                    fm[key] = _coerce_scalar(val)
                     current_key = None
         # Flush remaining
         if current_nested and current_key:

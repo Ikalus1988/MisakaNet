@@ -5,8 +5,9 @@ Extracted from search_knowledge.py (audit 2026-09-05, T1.1 stage 1) — the
 CLI entry keeps dispatching to :func:`heal` via a module-level import.
 
 `--heal` parses error logs, searches lessons and reports coverage. Fixtures
-for unmatched signatures are opt-in (``--write``) so raw logs — which may
-contain credentials/PII — are never auto-saved (audit QW5).
+for unmatched signatures are opt-in (``--write``) and carry only the matched
+signature — never the raw log body, which may hold credentials/PII and must
+not be auto-persisted (audit QW5, #1775).
 """
 import re
 import sys
@@ -112,8 +113,9 @@ def heal(raw_log: str, write_fixtures: bool = False):
     """Diagnose error log: extract signatures → search lessons → coverage report.
 
     Unmatched signatures are only written to tests/fixtures/openclaw when
-    ``write_fixtures=True`` (opt-in via ``--heal --write``) — audit 2026-09-05,
-    QW5: raw logs may contain credentials/PII and must never be auto-saved.
+    ``write_fixtures=True`` (opt-in via ``--heal --write``), and the fixture
+    holds the extracted signature only — the raw log body is never written,
+    because it may contain credentials/PII (audit 2026-09-05, QW5; #1775).
     """
     # Step 1: Extract all error signatures
     signatures = _extract_all_signatures(raw_log)
@@ -167,8 +169,13 @@ def heal(raw_log: str, write_fixtures: bool = False):
             if write_fixtures:
                 os.makedirs(fixture_dir, exist_ok=True)
                 fixture_path = os.path.join(fixture_dir, fixture_name)
+                # Only the signature reaches the fixture — never the raw log body. The module's
+                # own contract (audit QW5) is that raw logs may hold credentials/PII and must not
+                # be auto-persisted; a signature hash as the *filename* does not make the *content*
+                # safe. The signature is the extracted error line (what a lesson needs), and this
+                # file is one `git add` away from the repository (#1775).
                 with open(fixture_path, "w") as f:
-                    f.write(raw_log)
+                    f.write(sig + "\n")
                 print(f"      → fixture: {fixture_path}")
             else:
                 print(f"      → fixture (dry-run, not written): {fixture_dir}/{fixture_name}")

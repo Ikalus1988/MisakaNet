@@ -9,6 +9,7 @@ node_modules/
 # 2026-09-21 because .gitignore does not apply to files already in the index — so every search
 # dirtied the working tree and every `git add -A` committed someone's counters. See #1991.
 misakanet/profile.json
+misakanet/.profile.lock
 misakanet/.quota.json
 *.pyo
 venv/

@@ -35,14 +35,24 @@ def _load_remote_docs(timeout: int = 30) -> list:
         raise RuntimeError(f"Unexpected /api/lessons response: {str(data)[:200]}")
 
     docs = []
+    root_resolved = repo_root.resolve()
     for item in data:
         body = item.get("description") or item.get("problem") or ""
         # Use an absolute path under the repo root so _doc_cache_id's
         # relative_to(REPO) works for remote docs too.
         rel = item.get("path") or f"lessons/remote/{item.get('id', 'remote.md')}.md"
+        # Containment check (#1775). `pathlib` lets an absolute right-hand side replace the
+        # left (`repo_root / "/etc/passwd"` is `/etc/passwd`), and `../` walks out of the root.
+        # The remote `path` is untrusted server data, so resolve first and refuse anything that
+        # lands outside the repo; those items fall back to the synthetic lessons/remote/ path,
+        # which keeps them searchable without letting a hostile `path` mint an arbitrary filepath.
+        candidate = (repo_root / rel).resolve()
+        if not candidate.is_relative_to(root_resolved):
+            rel = f"lessons/remote/{item.get('id', 'remote.md')}.md"
+            candidate = (repo_root / rel).resolve()
         docs.append(CachedDoc(
             filename=item.get("id", ""),
-            filepath=repo_root / rel,
+            filepath=candidate,
             content=body,
             title=item.get("title", item.get("id", "")),
             domain=item.get("domain", ""),
@@ -54,14 +64,15 @@ def _load_remote_docs(timeout: int = 30) -> list:
     return docs
 
 
-def _load_docs_anywhere(
-    mode: str,
-    remote: bool,
-    domain: str | None = None,
-    status_filter: str | None = None,
-    tags_filter: list[str] | None = None,
-) -> list:
-    """Load docs from remote D1 (--remote) or local repo (default)."""
+def _load_docs_anywhere(remote: bool = False) -> list:
+    """Load docs from remote D1 (--remote) or local repo (default).
+
+    The former `mode` / `domain` / `status_filter` / `tags_filter` parameters are gone (#1775):
+    they were declared and never read, so callers passed filters and silently received an
+    unfiltered corpus. `search_knowledge.py` already applies domain/status/tags filtering after
+    the load, so deleting the dead parameters is the honest fix — wiring up a second, unexercised
+    filter path would be speculative code with a test burden and no caller.
+    """
     if remote:
         try:
             return _load_remote_docs()

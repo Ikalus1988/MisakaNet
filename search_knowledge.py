@@ -341,7 +341,7 @@ def main():
     # --suggest mode: list matching titles when query >= 2 chars
     if suggest and len(query) >= 2 and not json_output:
         q = query.lower()
-        lessons_docs = _load_docs_anywhere(mode, remote) if mode in ("all", "lessons") else []
+        lessons_docs = _load_docs_anywhere(remote) if mode in ("all", "lessons") else []
         ref_docs = _load_docs(REFERENCES, is_lesson=False) if mode in ("all", "ref") else []
         all_docs = lessons_docs + ref_docs
         matches = []
@@ -362,7 +362,7 @@ def main():
     # JSON mode so stdout remains directly pipeable to jq.
     output_context = contextlib.redirect_stdout(io.StringIO()) if json_output else contextlib.nullcontext()
     with output_context:
-        lessons_docs = _load_docs_anywhere(mode, remote) if mode in ("all", "lessons") else []
+        lessons_docs = _load_docs_anywhere(remote) if mode in ("all", "lessons") else []
         ref_docs = _load_docs(REFERENCES, is_lesson=False) if mode in ("all", "ref") else []
 
     # Language filter
