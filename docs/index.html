@@ -1998,17 +1998,17 @@
 
     </div>
     <div class="qs-links">
-      <a href="/install/" data-i18n="qsMoreInstall">Full install guide</a>
+      <a href="/install/" data-i18n="qsMoreInstall" data-qs-link="install-guide">Full install guide</a>
       &nbsp;·&nbsp;
-      <a href="https://ikalus1988.github.io/MisakaNet/quickstart/" target="_blank" rel="noopener" data-i18n="qsMoreDoc">All the ways to use it</a>
+      <a href="https://ikalus1988.github.io/MisakaNet/quickstart/" target="_blank" rel="noopener" data-i18n="qsMoreDoc" data-qs-link="all-ways-doc">All the ways to use it</a>
     </div>
     <!-- The exit for "it didn't work": one line, two doors. /start is the 30-second retry path;
          docs/troubleshooting.md is the error-scene index. -->
     <div class="qs-stuck">
       <span data-i18n="qsStuck">Not working?</span>
-      <a href="/start" data-i18n="qsStuckStart">Start again at /start</a>
+      <a href="/start" data-i18n="qsStuckStart" data-qs-link="start-again">Start again at /start</a>
       &nbsp;·&nbsp;
-      <a href="https://github.com/Ikalus1988/MisakaNet/blob/main/docs/troubleshooting.md" data-i18n="qsStuckGuide">Open docs/troubleshooting.md</a>
+      <a href="https://github.com/Ikalus1988/MisakaNet/blob/main/docs/troubleshooting.md" data-i18n="qsStuckGuide" data-qs-link="troubleshooting">Open docs/troubleshooting.md</a>
     </div>
   </div>
 
@@ -2484,11 +2484,78 @@ function copyQS(btn) {
     if (ok) {
       toast(t('qsCopyToast'));
       flashCopied(btn);
+      // #1897: report which step was copied. Fire and forget, and never throws into this
+      // path — the copy has already succeeded and must stay that way (验收: 上报失败时前端
+      // 静默降级，不弹错、不阻塞复制). The try/catch also keeps the clipboard harness in
+      // tests/test_quickstart_copy.py (which evals only the copy functions) green.
+      try { reportQsEvent('qs_copy', id); } catch (e) { /* silent */ }
     } else {
       toast(t('qsCopyFailToast'));
     }
     return ok;
   });
+}
+
+// ── Quickstart step events (#1897) ──
+// What is collected: a step id from a closed set (`qs-a1`, …) and a day-level count.
+// Not what was copied (the clipboard is never read), not who copied it, not from where —
+// the payload is `{event, step}` and the server allowlists both fields before storing.
+// Privacy note: /insights/quickstart-events/ and /privacy/.
+const QS_EVENT_ENDPOINT = '/api/qs-event';
+function reportQsEvent(event, step) {
+  try {
+    const payload = JSON.stringify({ event: event, step: step });
+    // sendBeacon first: it survives navigation (the qs_link case leaves the page) and
+    // never blocks the UI. fetch+keepalive is the fallback where beacon is missing or
+    // refuses the blob. Both are one-way; a failure is dropped, never surfaced.
+    if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
+      const blob = new Blob([payload], { type: 'application/json' });
+      if (navigator.sendBeacon(QS_EVENT_ENDPOINT, blob)) return;
+    }
+    fetch(QS_EVENT_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: payload,
+      keepalive: true,
+    }).catch(function () { /* silent */ });
+  } catch (e) { /* silent */ }
+}
+
+// qs_view (block entered viewport, once per page) and qs_link (which "next step" was
+// clicked). One delegated listener on the section — not a second listener on the copy
+// buttons, whose hook stays `onclick="copyQS(this)"` with the step id in data-copy-target.
+function initQsEvents() {
+  try {
+    const section = document.getElementById('quickstart-section');
+    if (!section) return;
+    if (typeof IntersectionObserver === 'function') {
+      const io = new IntersectionObserver(function (entries) {
+        for (let i = 0; i < entries.length; i++) {
+          if (entries[i].isIntersecting) {
+            reportQsEvent('qs_view', 'quickstart');
+            io.disconnect();
+            return;
+          }
+        }
+      }, { threshold: 0.15 });
+      io.observe(section);
+    }
+    section.addEventListener('click', function (ev) {
+      let el = ev.target;
+      while (el && el !== section && !(el.getAttribute && el.getAttribute('data-qs-link'))) {
+        el = el.parentNode;
+      }
+      if (el && el !== section && el.getAttribute) {
+        const link = el.getAttribute('data-qs-link');
+        if (link) reportQsEvent('qs_link', link);
+      }
+    });
+  } catch (e) { /* silent */ }
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initQsEvents, { once: true });
+} else {
+  initQsEvents();
 }
 
 // ── Onboarding modal ──

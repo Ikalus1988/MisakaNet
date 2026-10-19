@@ -39,6 +39,9 @@ def classify(ua: str, pathname: str) -> str:
         return "mcp"
     if pathname.startswith("/llms") or pathname == "/robots.txt":
         return "agent"
+    # The Quickstart reporter (#1897) describes a pageview it is not — buffered as no traffic.
+    if pathname == "/api/qs-event":
+        return ""  # JS returns null; "" is this mirror's "do not buffer"
     if CRAWLER_UA.search(ua):
         return "crawler"
     if AGENT_UA.search(ua):
@@ -108,6 +111,10 @@ class TestClassifyRequest:
     def test_agent_overrides_pageview_for_api(self):
         """Agent UA + API path = agent (not api)."""
         assert classify("curl/8.0", "/api/lessons") == "agent"
+
+    def test_quickstart_event_reports_are_not_traffic(self):
+        """#1897: the page's own reporter must not inflate pageview / funnel.visit."""
+        assert classify("Mozilla/5.0 (Macintosh)", "/api/qs-event") == ""
 
     def test_crawler_overrides_agent(self):
         """Crawler UA is checked before agent UA."""

@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MisakaNet — Quickstart Step Events</title>
+<meta name="description" content="How far readers get through the Quickstart: which steps were copied and which next-step links were clicked. Step ids and counts only.">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #0d1117; color: #c9d1d9; min-height: 100vh;
+    display: flex; flex-direction: column; align-items: center; padding: 2rem 1rem;
+  }
+  .container { max-width: 820px; width: 100%; }
+  h1 { font-size: 1.5rem; font-weight: 600; color: #58a6ff; margin-bottom: 0.25rem; }
+  h2 { font-size: 1.05rem; font-weight: 600; color: #e6edf3; margin: 2rem 0 0.75rem; }
+  .subtitle { color: #8b949e; font-size: 0.9rem; margin-bottom: 1.5rem; line-height: 1.6; }
+  .privacy {
+    border: 1px solid #30363d; border-left: 3px solid #3fb950; border-radius: 8px;
+    background: #161b22; padding: 0.9rem 1rem; font-size: 0.85rem; color: #8b949e; line-height: 1.7;
+  }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.75rem; margin: 1.25rem 0; }
+  .card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 0.85rem; }
+  .card-label { color: #8b949e; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.03em; }
+  .card-value { color: #e6edf3; font-size: 1.45rem; font-weight: 600; margin-top: 0.35rem; font-variant-numeric: tabular-nums; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+  th, td { text-align: left; padding: 0.6rem 0.75rem; border-bottom: 1px solid #21262d; }
+  th { color: #8b949e; font-weight: 600; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.03em; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  tbody tr:hover { background: #161b22; }
+  .step-id { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: #e6edf3; font-size: 0.85rem; }
+  .bar { height: 4px; background: #1f6feb; border-radius: 2px; margin-top: 4px; }
+  .state { color: #8b949e; font-size: 0.9rem; padding: 1.25rem 0; }
+  .state.error { color: #f85149; }
+  .table-wrap { overflow-x: auto; }
+  a { color: #58a6ff; }
+  footer { margin-top: 2.5rem; font-size: 0.8rem; color: #6e7681; line-height: 1.8; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>📊 Quickstart Step Events</h1>
+  <p class="subtitle">
+    How far readers get through the Quickstart on the homepage: which steps' Copy button was
+    pressed, and which "next step" link was clicked. One row per step, one count per day.
+  </p>
+
+  <div class="privacy">
+    <strong>Privacy — what is collected:</strong> a step id from a fixed list
+    (<code>qs-a1</code>, <code>qs-b3</code>, …) and a per-day count.
+    <strong>Not</strong> collected: what was copied (the clipboard is never read), query text,
+    IP addresses, user identifiers, or any free text. Aggregates only — there is no way to ask
+    about one visitor. The write path is D1 (<code>counters</code> rows), never Cloudflare KV.
+    See also <a href="/privacy/">the privacy policy</a>.
+  </div>
+
+  <div class="cards" id="summary-cards" hidden>
+    <div class="card"><div class="card-label">Block views</div><div class="card-value" id="card-views">—</div></div>
+    <div class="card"><div class="card-label">Copies</div><div class="card-value" id="card-copies">—</div></div>
+    <div class="card"><div class="card-label">Next-step clicks</div><div class="card-value" id="card-links">—</div></div>
+    <div class="card"><div class="card-label">Copy / view</div><div class="card-value" id="card-rate">—</div></div>
+  </div>
+
+  <h2>Conversion by step</h2>
+  <div class="table-wrap">
+    <table id="steps-table" hidden>
+      <thead>
+        <tr><th>Step</th><th>Kind</th><th class="num">Count</th><th class="num">Per block view</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+  <div class="state" id="steps-state">Loading…</div>
+
+  <h2>Daily series</h2>
+  <div class="table-wrap">
+    <table id="series-table" hidden>
+      <thead>
+        <tr><th>Day (UTC)</th><th class="num">Views</th><th class="num">Copies</th><th class="num">Links</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+  <div class="state" id="series-state">Loading…</div>
+
+  <footer>
+    Source: <code>GET /api/insights/quickstart-events</code> ·
+    <a href="https://github.com/Ikalus1988/MisakaNet/issues/1897">issue #1897</a> ·
+    Step ids match the copy buttons' <code>data-copy-target</code> and the links' <code>data-qs-link</code>.
+  </footer>
+</div>
+
+<script>
+const API = window.location.origin + '/api/insights/quickstart-events?days=7';
+
+function escapeHTML(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+function fmtRate(v) {
+  return (v === null || v === undefined) ? '—' : (Math.round(v * 1000) / 10).toFixed(1) + '%';
+}
+
+function render(data) {
+  const views = data.views || 0;
+  let copies = 0, links = 0;
+  for (const [k, v] of Object.entries(data.totals || {})) {
+    if (k.indexOf('qs_copy:') === 0) copies += v;
+    if (k.indexOf('qs_link:') === 0) links += v;
+  }
+  document.getElementById('card-views').textContent = String(views);
+  document.getElementById('card-copies').textContent = String(copies);
+  document.getElementById('card-links').textContent = String(links);
+  document.getElementById('card-rate').textContent = views > 0 ? fmtRate(copies / views) : '—';
+  document.getElementById('summary-cards').hidden = false;
+
+  const steps = data.steps || [];
+  const stepsTable = document.getElementById('steps-table');
+  const stepsState = document.getElementById('steps-state');
+  if (!steps.length) {
+    stepsState.textContent = 'No step events recorded yet.';
+  } else {
+    const max = Math.max(...steps.map(s => s.count), 1);
+    stepsTable.querySelector('tbody').innerHTML = steps.map(s =>
+      '<tr>' +
+        '<td><span class="step-id">' + escapeHTML(s.step) + '</span>' +
+          '<div class="bar" style="width:' + Math.round((s.count / max) * 100) + '%"></div></td>' +
+        '<td>' + escapeHTML(s.kind) + '</td>' +
+        '<td class="num">' + s.count + '</td>' +
+        '<td class="num">' + fmtRate(s.perView !== null && s.perView !== undefined ? s.perView : null) + '</td>' +
+      '</tr>'
+    ).join('');
+    stepsTable.hidden = false;
+    stepsState.hidden = true;
+  }
+
+  const series = data.series || [];
+  const seriesTable = document.getElementById('series-table');
+  const seriesState = document.getElementById('series-state');
+  if (!series.length) {
+    seriesState.textContent = 'No series to show.';
+  } else {
+    seriesTable.querySelector('tbody').innerHTML = series.map(day => {
+      let dCopies = 0, dLinks = 0;
+      for (const [k, v] of Object.entries(day)) {
+        if (k.indexOf('qs_copy:') === 0) dCopies += v;
+        if (k.indexOf('qs_link:') === 0) dLinks += v;
+      }
+      return '<tr>' +
+        '<td class="step-id">' + escapeHTML(day.date) + '</td>' +
+        '<td class="num">' + (day['qs_view:quickstart'] || 0) + '</td>' +
+        '<td class="num">' + dCopies + '</td>' +
+        '<td class="num">' + dLinks + '</td>' +
+      '</tr>';
+    }).join('');
+    seriesTable.hidden = false;
+    seriesState.hidden = true;
+  }
+}
+
+fetch(API, { cache: 'no-store' })
+  .then(r => r.json())
+  .then(render)
+  .catch(() => {
+    const s = document.getElementById('steps-state');
+    s.textContent = 'Could not load step events.';
+    s.classList.add('error');
+  });
+</script>
+</body>
+</html>
