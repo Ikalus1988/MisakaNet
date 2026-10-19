@@ -7053,9 +7053,45 @@ function mcpClientBucket(params, request) {
  *  3. the legacy `traffic:<class>:<day>` key — counts written before this switch, still needed on
  *     the day it ships and if it is ever rolled back.
  */
+/**
+ * After one counters read fails, stop asking D1 for a minute.
+ *
+ * Measured 2026-10-19: while the daily row-read quota was exhausted, every load of the homepage (and
+ * of `/api/funnel`, `/api/activity/history`) still issued its 35 counters queries into a database that
+ * was refusing them — a burst of doomed round trips per page load, on top of the traffic that had just
+ * spent the budget. The lessons path already had this (\`d1ReadCooldownUntil\`, 5 minutes); the
+ * counters path had none.
+ *
+ * 60s, not 5 minutes: counters are cheap to re-try once they work again, and a quota resets at a known
+ * instant rather than gradually.
+ */
+let countersReadCooldownUntil = 0;
+
+/**
+ * The cool-down window, in ms; 0 (or absent) disables it.
+ *
+ * Opt-in for the same reason the corpus memo is: module-scope state outlives a test and silently
+ * changes what the next caller sees, so production states the window in `wrangler.toml` and tests
+ * must opt in. It also keeps the default honest — "no cool-down" is what this code did until now.
+ */
+function countersCooldownMs(env) {
+  const raw = Number(env && env.MISAKANET_COUNTERS_COOLDOWN_MS);
+  return Number.isFinite(raw) && raw > 0 ? raw : 0;
+}
+
+/** True when a counters read may touch D1 right now. */
+const countersReadable = () => Date.now() >= countersReadCooldownUntil;
+
+/** Record a counters failure once, so the next minute of page loads does not repeat it. */
+function noteCountersReadFailure(error, env) {
+  const window = countersCooldownMs(env);
+  if (window > 0) countersReadCooldownUntil = Date.now() + window;
+  logInternal("counters read failed; not querying D1 for counters while cooling down", error);
+}
+
 async function readTrafficCount(env, cls, day) {
   const d1 = d1Binding(env);
-  if (d1) {
+  if (d1 && countersReadable()) {
     try {
       const { results } = await d1.prepare(
         `SELECT count FROM counters WHERE scope = ?1 AND bucket = ?2 AND period = ?3`,
@@ -7063,7 +7099,7 @@ async function readTrafficCount(env, cls, day) {
       const row = results && results[0];
       if (row) return Number(row.count) || 0;
     } catch (error) {
-      logInternal("traffic counter read failed, falling back to KV", error);
+      noteCountersReadFailure(error, env);
     }
   }
   if (!env.MISAKANET_KV) return 0;
@@ -7132,7 +7168,7 @@ const FUNNEL_EVENTS = Object.freeze(["visit", "register", "authorize", "pair", "
 async function readFunnelDay(env, day) {
   const d1 = d1Binding(env);
   const out = Object.fromEntries(FUNNEL_EVENTS.map(e => [e, 0]));
-  if (d1) {
+  if (d1 && countersReadable()) {
     try {
       const { results } = await d1.prepare(
         `SELECT bucket, count FROM counters WHERE scope = 'funnel' AND period = ?1`,
@@ -7141,7 +7177,7 @@ async function readFunnelDay(env, day) {
         if (row.bucket in out) out[row.bucket] = Number(row.count) || 0;
       }
     } catch (error) {
-      logInternal("funnel counter read failed, falling back to KV", error);
+      noteCountersReadFailure(error, env);
     }
   }
   if (env.MISAKANET_KV) {
@@ -7176,7 +7212,7 @@ async function readFunnelDay(env, day) {
  */
 async function readCountersWindow(env, scope, days) {
   const d1 = d1Binding(env);
-  if (!d1) return null;
+  if (!d1 || !countersReadable()) return null;
   const from = utcDayKey(days - 1);
   const to = utcDayKey(0);
   const { results } = await d1.prepare(
@@ -7208,7 +7244,7 @@ async function readFunnelSeries(env, days) {
       return series;
     }
   } catch (error) {
-    logInternal("funnel window read failed; falling back to one query per day", error);
+    noteCountersReadFailure(error, env);
   }
   const series = [];
   for (let i = days - 1; i >= 0; i--) {
@@ -7281,7 +7317,7 @@ async function readActivitySeries(env, days) {
       return series;
     }
   } catch (error) {
-    logInternal("traffic window read failed; falling back to one day at a time", error);
+    noteCountersReadFailure(error, env);
   }
   const series = [];
   for (let i = days - 1; i >= 0; i--) {
@@ -7364,7 +7400,7 @@ const readSearchBackendCounts = (env, day) =>
  */
 async function readCountersRow(env, scope, bucket, period) {
   const d1 = d1Binding(env);
-  if (!d1) return null;
+  if (!d1 || !countersReadable()) return null;
   try {
     const { results } = await d1.prepare(
       `SELECT count FROM counters WHERE scope = ?1 AND bucket = ?2 AND period = ?3`,
@@ -7372,7 +7408,7 @@ async function readCountersRow(env, scope, bucket, period) {
     const row = results && results[0];
     return row ? Number(row.count) || 0 : null;
   } catch (error) {
-    logInternal("counters row read failed", error);
+    noteCountersReadFailure(error, env);
     return null;
   }
 }
@@ -9414,6 +9450,9 @@ export {
   // "the index was missing" / "the corpus came from the snapshot", and the test asserts against the
   // same function the answer is assembled from rather than against a copied sentence.
   searchDegraded,
+  // Exported for workers/counters-read-cooldown.test.mjs.
+  resetCountersReadState,
+  countersReadable,
   MCP_TOOLS,
   buildVersionsPayload,
   healthStatus,
@@ -9603,3 +9642,6 @@ export {
   intakeSourceBucket,
   INTAKE_SOURCE_WHITELIST,
 };
+
+/** Test seam: forget the cooldown. */
+function resetCountersReadState() { countersReadCooldownUntil = 0; }

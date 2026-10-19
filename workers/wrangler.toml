@@ -25,6 +25,10 @@ COMMIT_SHA = "unknown"
 # 30s is deliberately below the durable cache's 300s TTL — the memo can only be fresher than what the
 # cache would have served, never staler than where it came from.
 MISAKANET_LESSONS_MEMO_MS = "30000"
+# After one counters read fails, stop asking D1 for counters for a minute. Measured 2026-10-19: with
+# the row quota spent, every page load still issued its 35 counters queries into a refusing database.
+# 60s covers a burst of page loads without hiding a recovery; a quota reset is a known instant.
+MISAKANET_COUNTERS_COOLDOWN_MS = "60000"
 
 # Workers Logs, on because this is the worker that carries the traffic and it was the only one
 # without them (2026-10-02). `wrangler.jsonc` (misakanet-web) has had observability enabled since it
