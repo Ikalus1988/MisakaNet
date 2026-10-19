@@ -935,8 +935,22 @@ async function ensureIdentity() {
     // Say what it costs, not what went wrong internally: "凭据形状不对" is jargon. Reading is not
     // what is lost here (it needs no token and is not metered) — the write path is, and saying so
     // plainly is the difference between a user retrying and a user concluding the tool is broken.
-    need('匿名注册没成功（多半是网络）→ 读课程不受影响，但写入类工具（write_lesson）现在用不了；'
-      + '网络恢复后重跑本命令就能拿到 token');
+    //
+    // And say *whose* problem it is. This branch used to say "多半是网络" unconditionally, which on
+    // 2026-10-18 was measurably wrong: the server answered
+    // `{"code":"storage_unavailable","storage":{"token":true},"hint":"Retry shortly."}` because D1's
+    // daily quota was spent, and the user was sent to inspect a network that was working. The
+    // server already names the cause and the wait; the fix is to read it instead of guessing.
+    const serverCode = typeof result?.code === 'string' ? result.code : '';
+    const serverHint = typeof result?.hint === 'string' ? result.hint.trim() : '';
+    const cause = serverCode === 'storage_unavailable'
+      ? '服务端暂时存不了 token（**不是你的网络**）'
+      : serverCode
+        ? `服务端拒绝了这次注册（${serverCode}）`
+        : `多半是网络（${lastRequestError || '没有收到响应'}）`;
+    need(`匿名注册没成功：${cause} → 读课程不受影响，但写入类工具（write_lesson）现在用不了；`
+      + '稍后重跑本命令就能拿到 token'
+      + (serverHint ? `（服务端提示：${serverHint}）` : ''));
     return '';
   }
   // Created with mode 0600 rather than written and then chmodded: the old order left a window in
