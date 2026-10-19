@@ -15,7 +15,7 @@ _LESSON_INTENT_RE = re.compile(
     re.IGNORECASE,
 )
 _EVIDENCE_INTENT_RE = re.compile(
-    r"(evidence|被用过|多少人|E4|验证|verification|引用次数|usage)",
+    r"(evidence|被用过|多少人|E4|验证|verification|引用次数|usage\s*(?:count|of|number|次数|数))",
     re.IGNORECASE,
 )
 
@@ -420,6 +420,10 @@ def handle_search(args: dict, search_state=None) -> dict:
         )
 
         docs = _load_docs_cached(LESSONS, is_lesson=True)
+        # Filter before ranking, as SAG and the fallback do. Filtering the ranked list would
+        # depend on its length, and a cache hit in `_search_cached` returns only the top 20.
+        if domain:
+            docs = [d for d in docs if (d.domain or "").lower() == str(domain).lower()]
         scored = _search_cached(query, docs, weights=weights or None, include_stale=include_stale)
         for score, doc in scored[:fetch_n]:
             result = {
@@ -427,6 +431,7 @@ def handle_search(args: dict, search_state=None) -> dict:
                 "path": str(doc.filepath),
                 "score": round(score, 3),
                 "domain": doc.domain,
+                "tags": list(doc.tags),
                 "status": doc.status,
             }
             if explain:
