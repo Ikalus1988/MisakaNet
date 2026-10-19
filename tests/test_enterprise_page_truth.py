@@ -150,7 +150,12 @@ def test_every_relative_link_resolves():
     assert internal, "expected the page to link the site's own pages"
     for href in sorted(internal):
         target = REPO / "docs" / href.strip("/")
-        candidates = [target / "index.html", target] if href.endswith("/") else [target]
+        if href.endswith("/"):
+            candidates = [target / "index.html", target]
+        else:
+            # `/start` is served from `docs/start.html`; checking only the extensionless path made a
+            # correctly linked page look broken.
+            candidates = [target, target.with_suffix(".html")]
         assert any(c.is_file() for c in candidates), f"{href} does not resolve to a file under docs/"
     # Named explicitly so that removing one is a failure with a readable message rather than a
     # silently shorter set.

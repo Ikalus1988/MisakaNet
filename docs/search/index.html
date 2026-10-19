@@ -663,7 +663,7 @@ function render(results, q, meta) {
     const ev = evidenceInfo(r.evidence_level);
     // `evidence_source` and `trust_score` are not in the lite projection the page loads (and widening
     // that gate is not free: +25.7 KB on a 228 KB file), so the card printed `trust: —` and called
-    // every level "inferred" — wrong for the 216 lessons whose level comes from frontmatter. Show what
+    // every level "inferred" — wrong for the lessons whose level comes from frontmatter. Show what
     // the payload actually carries.
     const signals = explainResult(r, q);
     const showTakeaway = takeaway !== title;
