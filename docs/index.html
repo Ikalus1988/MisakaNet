@@ -2484,10 +2484,8 @@ function copyQS(btn) {
     if (ok) {
       toast(t('qsCopyToast'));
       flashCopied(btn);
-      // #1897: report which step was copied. Fire and forget, and never throws into this
-      // path — the copy has already succeeded and must stay that way (验收: 上报失败时前端
-      // 静默降级，不弹错、不阻塞复制). The try/catch also keeps the clipboard harness in
-      // tests/test_quickstart_copy.py (which evals only the copy functions) green.
+      // #1897: report which step was copied. Fire and forget; the try/catch keeps a missing
+      // reporter from rejecting this promise (验收: 上报失败时前端静默降级，不阻塞复制).
       try { reportQsEvent('qs_copy', id); } catch (e) { /* silent */ }
     } else {
       toast(t('qsCopyFailToast'));
@@ -2497,33 +2495,27 @@ function copyQS(btn) {
 }
 
 // ── Quickstart step events (#1897) ──
-// What is collected: a step id from a closed set (`qs-a1`, …) and a day-level count.
-// Not what was copied (the clipboard is never read), not who copied it, not from where —
-// the payload is `{event, step}` and the server allowlists both fields before storing.
-// Privacy note: /insights/quickstart-events/ and /privacy/.
+// Collected: a step id from a closed set and a day-level count. Not collected: what was
+// copied (the clipboard is never read), query text, IP. Privacy note: /insights/quickstart-events/.
+// Transport is `navigator.sendBeacon` only — the right API for a fire-and-forget report that
+// must survive the qs_link navigation, and one the homepage's request-target budget can hold
+// (tests/test_site_request_fanout.py counts `fetch(…)` calls; a fetch fallback would push the
+// page past the 14-target list a reviewer is asked to keep in their head). If beacon is missing
+// or refuses the blob the event is dropped: silent, which is the 验收.
 const QS_EVENT_ENDPOINT = '/api/qs-event';
 function reportQsEvent(event, step) {
   try {
-    const payload = JSON.stringify({ event: event, step: step });
-    // sendBeacon first: it survives navigation (the qs_link case leaves the page) and
-    // never blocks the UI. fetch+keepalive is the fallback where beacon is missing or
-    // refuses the blob. Both are one-way; a failure is dropped, never surfaced.
     if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
-      const blob = new Blob([payload], { type: 'application/json' });
-      if (navigator.sendBeacon(QS_EVENT_ENDPOINT, blob)) return;
+      navigator.sendBeacon(QS_EVENT_ENDPOINT, new Blob(
+        [JSON.stringify({ event: event, step: step })],
+        { type: 'application/json' }
+      ));
     }
-    fetch(QS_EVENT_ENDPOINT, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: payload,
-      keepalive: true,
-    }).catch(function () { /* silent */ });
   } catch (e) { /* silent */ }
 }
 
-// qs_view (block entered viewport, once per page) and qs_link (which "next step" was
-// clicked). One delegated listener on the section — not a second listener on the copy
-// buttons, whose hook stays `onclick="copyQS(this)"` with the step id in data-copy-target.
+// qs_view (block entered viewport, once per page) and qs_link (which "next step" was clicked).
+// One delegated listener on the section — the copy buttons keep their existing hook.
 function initQsEvents() {
   try {
     const section = document.getElementById('quickstart-section');

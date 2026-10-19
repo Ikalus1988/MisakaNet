@@ -49,7 +49,7 @@ SCRIPT_TAG = re.compile(r"<script\b(?P<attrs>[^>]*)>", re.IGNORECASE | re.DOTALL
 # `application/ld+json` is data, not code: CSP's script-src does not govern it.
 NON_EXECUTABLE_TYPE = re.compile(r"""type\s*=\s*["']application/ld\+json""", re.IGNORECASE)
 
-# The eleven pages that do run script. Listed so a failure names them instead of
+# The twelve pages that do run script. Listed so a failure names them instead of
 # leaving the reader to rediscover the list; the tests derive membership from the
 # markup itself and use this only for the error text.
 KNOWN_SCRIPT_PAGES = {
@@ -57,6 +57,9 @@ KNOWN_SCRIPT_PAGES = {
     "index.html",
     "insights/lesson-coverage.html",
     "insights/pr-genius.html",
+    # #1897: reads GET /api/insights/quickstart-events and renders the step
+    # conversion table client-side — the same shape as the other /insights/ pages.
+    "insights/quickstart-events.html",
     "insights/reputation-leaderboard.html",
     "insights/unsolved-map.html",
     "journey/index.html",

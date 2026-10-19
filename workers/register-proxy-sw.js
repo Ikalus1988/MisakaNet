@@ -7129,24 +7129,16 @@ async function readFunnelSeries(env, days) {
 }
 
 // ── Quickstart step events (#1897): what gets REPORTED as an event ───────────────────────────────
+// Three event names and a closed set of step ids, stored as day-level integer counts. Payload is
+// `{event, step}` and nothing else; both fields pass the allowlists below before the bind, so no
+// IP text and no query text can reach a row (the connecting address is ignored here, unlike the
+// rate limits). Collected: a step id and a per-day count. Not collected: what was copied, who
+// copied it, from where.
 //
-// Three event names and a closed set of step ids, stored as day-level integer counts. That is the
-// whole payload contract: `POST /api/qs-event` accepts `{event, step}` and nothing else, both fields
-// must be on the allowlists below, and the store holds `counters` rows — never a request log, never
-// a free-text field. No IP text and no query text can reach a row, because neither is read on the
-// write path (the connecting address is ignored here, unlike the rate limits).
-//
-// Backend: **D1 only** — the `counters` table this worker already uses for the funnel and traffic.
-// Deliberately *not* `bumpCounter`, whose KV fallback would invent a `counters:qs:…` key in the free
-// tier's "distinct keys written per day" budget (#1890: that budget is already over). When D1 is
-// absent or refuses the write the event is dropped and the response says `recorded: false`; the
-// browser is expected to have already finished the copy by then (the frontend reporter is fire and
-// forget and swallows every failure).
-//
-// What is collected, for the privacy note on `/insights/quickstart-events/` and `/privacy/`:
-// a step id from a fixed list (`qs-a1`, …) and a per-day count. Not what was copied, not who copied
-// it, not from where. `tests/test_quickstart_events.py` and `workers/quickstart-events.test.mjs`
-// pin that claim the way `tests/test_unsolved_map.py` pins the failure map's.
+// Backend: **D1 only** — the `counters` table the funnel and traffic already use. Deliberately
+// *not* `bumpCounter`, whose KV fallback would invent `counters:qs:…` keys in #1890's exhausted
+// distinct-key budget. When D1 is absent the event is dropped (`recorded: false`); the frontend
+// reporter is fire-and-forget and swallows every failure.
 const QS_EVENTS = Object.freeze(["qs_view", "qs_copy", "qs_link"]);
 const QS_VIEW_STEP = "quickstart";
 const QS_COPY_STEPS = Object.freeze(["qs-a1", "qs-a2", "qs-a3q1", "qs-a3q2", "qs-b1", "qs-b2", "qs-b3"]);
@@ -7159,25 +7151,17 @@ function qsAllowedStep(event, step) {
   return false;
 }
 
-/**
- * One quickstart event, as a D1 `counters` row — D1 only, no KV fallback, no key created.
- *
- * `scope` is always the literal `'qs'`; `bucket` is `"<event>:<step>"` from the allowlists above and
- * `period` is the UTC day. A caller-supplied string can only reach the bind after `qsAllowedStep`
- * has accepted it, so the bound values are as closed as the funnel's.
- */
+/** One event as a D1 `counters` row. D1 only — no KV fallback, no key created. */
 async function bumpQsEvent(env, event, step) {
   const d1 = d1Binding(env);
   if (!d1) return false;
-  const bucket = `${event}:${step}`;
-  const period = utcDayKey(0);
   try {
     await d1.prepare(
       `INSERT INTO counters (scope, bucket, period, count, updated_at)
        VALUES ('qs', ?1, ?2, 1, datetime('now'))
        ON CONFLICT(scope, bucket, period)
        DO UPDATE SET count = count + 1, updated_at = datetime('now')`,
-    ).bind(bucket, period).run();
+    ).bind(`${event}:${step}`, utcDayKey(0)).run();
     return true;
   } catch (error) {
     logInternal("qs event write failed", error);
@@ -7185,13 +7169,7 @@ async function bumpQsEvent(env, event, step) {
   }
 }
 
-/**
- * POST /api/qs-event — record one quickstart step event (#1897).
- *
- * Anonymous by design: no credential, no cookie, no client id. The body is size-capped and its two
- * fields are allowlisted; anything else is a 400 and writes nothing. A 200 with `recorded: false`
- * is the "we heard you but stored nothing" answer when D1 is down — the frontend does not retry.
- */
+/** POST /api/qs-event — anonymous, size-capped, allowlisted. `recorded: false` when D1 is down. */
 async function handleQsEvent(request, env) {
   if (parseInt(request.headers.get("content-length") || "0", 10) > 512) {
     return jsonResponse({ error: "Request too large" }, 413);
@@ -7207,12 +7185,7 @@ async function handleQsEvent(request, env) {
   return jsonResponse({ recorded, backend: "d1" });
 }
 
-/**
- * One day of quickstart event counters — D1 only, for the same reason the write is.
- *
- * Returns every `(event, step)` pair of the closed set, zeros included, so a quiet day and an
- * outage look the same as a series of zeros rather than as missing keys.
- */
+/** One day of counters for the closed set, zeros included (a quiet day and an outage look alike). */
 async function readQsEventDay(env, day) {
   const out = {};
   for (const event of QS_EVENTS) {
@@ -7235,17 +7208,11 @@ async function readQsEventDay(env, day) {
   return out;
 }
 
-/**
- * GET /api/insights/quickstart-events?days=N — the read-only conversion view (#1897).
- *
- * Aggregate-only: day-level counts per (event, step), plus the derived per-step copy/view ratio.
- * `null` on a zero denominator, the same convention as `/api/funnel`. No identity, no request log,
- * no way to ask about one visitor — the rows were never there to ask about.
- */
+/** GET /api/insights/quickstart-events?days=N — aggregate-only conversion view. `perView` is
+ *  null on a zero denominator, the `/api/funnel` convention. No identity, no request log. */
 async function handleQuickstartInsights(request, env) {
   const url = new URL(request.url);
-  // `Number(null)` is 0, which would clamp to 1 instead of falling back to the default —
-  // the absent parameter has to be distinguished from an explicit `days=0`.
+  // `Number(null)` is 0 — the absent parameter must not clamp to 1 like an explicit `days=0`.
   const raw = url.searchParams.get("days");
   const rawDays = raw === null || raw === "" ? NaN : Number(raw);
   const days = Number.isFinite(rawDays) ? Math.min(Math.max(Math.trunc(rawDays), 1), 30) : 7;
