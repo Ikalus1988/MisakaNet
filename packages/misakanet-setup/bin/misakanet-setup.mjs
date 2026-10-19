@@ -666,6 +666,40 @@ function proxyProbeAdvice(proxy) {
 // empty-but-successful answer instead of collapsing all three into "unreachable".
 let lastRequestError = '';
 
+// The server's retry horizon on the last response, in seconds, when it sent one: the `Retry-After`
+// response header (seconds or an HTTP-date), the standard shape `docs/index.html` already reads on
+// 429s. Per-request, so a horizon from an earlier call can never leak into a later failure's words.
+let lastRetryAfterSeconds = null;
+
+/** `Retry-After` → seconds. Both forms the header allows; anything else is "no horizon", not 0. */
+function retryAfterSeconds(headerValue) {
+  const raw = String(headerValue || '').trim();
+  if (!raw) return null;
+  if (/^\d+$/.test(raw)) return Number(raw);
+  const at = Date.parse(raw);
+  if (Number.isNaN(at)) return null;
+  return Math.max(0, Math.round((at - Date.now()) / 1000));
+}
+
+/**
+ * How long the server says to wait before re-running, when it says. The failure body's `retry_after`
+ * (seconds, HTTP `Retry-After` semantics) wins over the header, and neither is guessed: a server that
+ * stays silent gets no horizon sentence at all.
+ */
+function retryHorizonOf(result) {
+  const fromBody = result && (result.retry_after ?? result.retry_after_seconds);
+  const n = Number(fromBody);
+  if (Number.isFinite(n) && n > 0) return Math.round(n);
+  return lastRetryAfterSeconds;
+}
+
+/** "45 秒" / "15 分钟" / "2 小时" — the horizon in the words a person reads a clock in. */
+function humanWait(seconds) {
+  if (seconds < 60) return `${seconds} 秒`;
+  if (seconds < 3600) return `${Math.round(seconds / 60)} 分钟`;
+  return `${Math.round(seconds / 3600)} 小时`;
+}
+
 async function mcpRequest(method, params, timeoutMs = 6000, urlOverride = '') {
   const headers = {
     'Content-Type': 'application/json',
@@ -676,6 +710,7 @@ async function mcpRequest(method, params, timeoutMs = 6000, urlOverride = '') {
   };
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
+  lastRetryAfterSeconds = null;
   try {
     const response = await fetch(urlOverride || ENDPOINT, {
       method: 'POST',
@@ -683,6 +718,9 @@ async function mcpRequest(method, params, timeoutMs = 6000, urlOverride = '') {
       signal: controller.signal,
       body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
     });
+    lastRetryAfterSeconds = retryAfterSeconds(
+      response.headers && typeof response.headers.get === 'function'
+        ? response.headers.get('Retry-After') : null);
     const payload = await response.json();
     const result = payload.result || {};
     // Three response shapes are in play: `structuredContent` (this worker's tools/call),
@@ -948,8 +986,15 @@ async function ensureIdentity() {
       : serverCode
         ? `服务端拒绝了这次注册（${serverCode}）`
         : `多半是网络（${lastRequestError || '没有收到响应'}）`;
+    // …and when the server says *how long* to wait, say that too instead of "稍后". The horizon is
+    // never guessed and never rounded into a promise: a server that sent none keeps the vague
+    // wording, because a made-up wait is the same lie as the network guess this replaced (issue
+    // #3511 — the retry-horizon half; the `code` half landed with #3512).
+    const horizon = retryHorizonOf(result);
     need(`匿名注册没成功：${cause} → 读课程不受影响，但写入类工具（write_lesson）现在用不了；`
-      + '稍后重跑本命令就能拿到 token'
+      + (horizon
+        ? `约 ${humanWait(horizon)}后重跑本命令就能拿到 token（服务端给出的重试窗口）`
+        : '稍后重跑本命令就能拿到 token')
       + (serverHint ? `（服务端提示：${serverHint}）` : ''));
     return '';
   }

@@ -126,6 +126,11 @@ const I18N = {
     resultsStats: '{count} searchable lessons · {total} total · E3+: {e3} · E4: {e4} · static JSON · GitHub-audited',
     noMatchPrefix: 'No exact match for',
     noMatchSuffix: 'Try a broader term.',
+    // A degraded backend is not a zero (issue #3511): the server's own `degraded_reasons` name what
+    // failed, and its `notice` is the one-line explanation — "not proof that no lesson exists".
+    degradedLabel: 'Results may be incomplete ({reason})',
+    degradedTag: 'degraded read',
+    degradedWhy: 'This read was degraded — it is not proof that no lesson exists.',
     installSkill: 'Install agent skill',
     submitLesson: 'Submit a lesson',
     readLesson: 'Read lesson',
@@ -160,6 +165,9 @@ const I18N = {
     resultsStats: '{count} 条可搜索 lessons · {total} 条总计 · E3+: {e3} · E4: {e4} · 静态 JSON · GitHub 审核',
     noMatchPrefix: '没有精确匹配',
     noMatchSuffix: '可以试试更宽泛的关键词。',
+    degradedLabel: '结果可能不完整（{reason}）',
+    degradedTag: '降级读取',
+    degradedWhy: '这是一次降级读取 —— 不代表真的没有这条课程。',
     installSkill: '安装 agent skill',
     submitLesson: '提交 lesson',
     readLesson: '阅读 lesson',
@@ -548,13 +556,22 @@ function render(results, q, meta) {
   const el = document.getElementById('results');
   _lastResults = results;
   reportUnsolvedSearch(q, results);
+  const degraded = (meta && meta.degraded) ? meta.degraded : null;
   if (!results.length) {
+    // A degraded backend does not get to print the confident zero (issue #3511): the headline is
+    // "结果可能不完整（原因）" and the one-line explanation, never "0 条结果" / "no exact match".
+    const headline = degraded
+      ? t('degradedLabel', { reason: degraded.reason })
+      : t('noMatchPrefix') + ' "' + escapeHTML(q) + '". ' + t('noMatchSuffix');
+    const why = degraded ? escapeHTML(degraded.notice || t('degradedWhy')) : null;
     el.innerHTML = '<div class="fallback">' +
-      '<div style="margin-bottom:8px;">' + t('noMatchPrefix') + ' "' + escapeHTML(q) + '". ' + t('noMatchSuffix') + '</div>' +
+      '<div style="margin-bottom:8px;">' + headline + '</div>' +
+      (why ? '<div style="font-size:13px;margin-bottom:12px;max-width:480px;margin-left:auto;margin-right:auto;">' + why + '</div>' : '') +
+      (degraded ? '' :
       '<div style="font-size:13px;margin-bottom:12px;max-width:480px;margin-left:auto;margin-right:auto;">' +
         'Try using fewer keywords, checking spelling, or browsing by <a href="/topics/" style="color:#58a6ff;">topic</a>. ' +
         'Popular queries: <code style="font-size:11px;">pip timeout</code>, <code style="font-size:11px;">database locked</code>, <code style="font-size:11px;">DCO sign-off</code>, <code style="font-size:11px;">git rebase</code>.' +
-      '</div>' +
+      '</div>') +
       '<div style="font-size:12px;"><a href="/skill.md">' + t('installSkill') + '</a> &middot; <a href="https://github.com/Ikalus1988/MisakaNet">' + t('submitLesson') + '</a> &middot; <a href="https://github.com/Ikalus1988/MisakaNet/issues/new?template=lesson-request.yml">Request a lesson</a></div></div>';
     return;
   }
@@ -562,6 +579,11 @@ function render(results, q, meta) {
   const total = _lessons ? _lessons.length : 0;
   if (meta && meta.source === 'server') {
     showServerNote(q, meta.relaxed ? serverNote('relaxed') : serverNote('ranked'));
+  }
+  if (degraded) {
+    // Partial hits from a degraded read are still labelled: "结果可能不完整（原因）" under the count.
+    showServerNote(q, t('degradedLabel', { reason: degraded.reason })
+      + ' ' + (degraded.notice || t('degradedWhy')));
   }
 
   // Classify and group results (resultType drives Top fixes / Related /
@@ -757,6 +779,24 @@ function runSearch(q) {
   return results;
 }
 
+/** What the answer is standing on. `searchDegraded`'s fields when the payload carries them
+ *  (`degraded` / `degraded_reasons` / `notice`, issue #3512), and the two degradations the HTTP
+ *  answer has always exposed on its own: no BM25 index (the naive matcher answered — the server
+ *  calls that `index_unavailable`) and an explicit `source: "unavailable"`. Returns null for a
+ *  healthy answer, so a normal search never wears the label. */
+function degradedState(payload) {
+  if (!payload || typeof payload !== 'object') return null;
+  const reasons = Array.isArray(payload.degraded_reasons) ? payload.degraded_reasons.slice() : [];
+  if (payload.degraded === true && !reasons.length) reasons.push(t('degradedTag'));
+  if (payload.source === 'worker-search' && !reasons.includes('index_unavailable')) reasons.push('index_unavailable');
+  if (payload.source === 'unavailable') reasons.unshift('unavailable');
+  if (!reasons.length && payload.degraded !== true) return null;
+  return {
+    reason: reasons.join(', ') || t('degradedTag'),
+    notice: typeof payload.notice === 'string' ? payload.notice : '',
+  };
+}
+
 /** The *committed* query goes to the Worker; typing stays local.
  *
  * WHY (2026-09-30, measured by `scripts/bench_search_parity.mjs`): the local scorer is a substring match
@@ -773,16 +813,26 @@ function runSearch(q) {
  */
 async function runServerSearch(q) {
   runSearch(q);
+  const localHits = _lastResults.length;
   try {
     const r = await fetch('/api/lessons?q=' + encodeURIComponent(q) + '&limit=20');
     if (!r.ok) throw new Error('HTTP ' + r.status);
     const payload = await r.json();
     const rows = Array.isArray(payload && payload.results) ? payload.results : [];
+    const degraded = degradedState(payload);
     if (!rows.length) {
-      if (payload && payload.no_match) showServerNote(q, serverNote('noMatch'));
+      if (degraded) {
+        // Zero from a degraded backend is labelled — and a page that already showed local hits keeps
+        // them, the same rule `no_match` below follows.
+        if (!localHits) render([], q, { degraded });
+        else showServerNote(q, t('degradedLabel', { reason: degraded.reason })
+          + ' ' + (degraded.notice || t('degradedWhy')));
+      } else if (payload && payload.no_match) {
+        showServerNote(q, serverNote('noMatch'));
+      }
       return;
     }
-    render(rows.map(toLocalShape), q, { source: 'server', relaxed: payload.relaxed === true });
+    render(rows.map(toLocalShape), q, { source: 'server', relaxed: payload.relaxed === true, degraded });
   } catch (err) {
     console.warn('MisakaNet search: server ranking unavailable — ' + err.message);
   }
