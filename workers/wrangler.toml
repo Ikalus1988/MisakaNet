@@ -19,6 +19,12 @@ compatibility_date = "2026-09-01"
 # rather than as fresh.
 [vars]
 COMMIT_SHA = "unknown"
+# Per-isolate memo for the unfiltered corpus, in ms; 0 (or absent) disables it. 2026-10-19 measured
+# 6.24M D1 rows read in one day against the free plan's 5M, and one search without a durable-cache
+# hit reads the whole corpus (516 rows): the cache is itself read through D1, so a hit bills rows too.
+# 30s is deliberately below the durable cache's 300s TTL — the memo can only be fresher than what the
+# cache would have served, never staler than where it came from.
+MISAKANET_LESSONS_MEMO_MS = "30000"
 
 # Workers Logs, on because this is the worker that carries the traffic and it was the only one
 # without them (2026-10-02). `wrangler.jsonc` (misakanet-web) has had observability enabled since it

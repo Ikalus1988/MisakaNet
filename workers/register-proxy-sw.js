@@ -5619,7 +5619,7 @@ function recordLessonsRead(fields) {
 
 /** Test seams for the isolate state above (exported below, next to the loaders). */
 const lastLessonsReadOf = () => lastLessonsRead;
-const resetLessonsReadState = () => { lastLessonsRead = null; d1ReadCooldownUntil = 0; };
+const resetLessonsReadState = () => { lastLessonsRead = null; d1ReadCooldownUntil = 0; lessonsMemo = null; };
 
 /** Classify a D1 failure for the health payload: `quota` clears at 00:00 UTC, the rest do not. */
 function d1ErrorKind(error) {
@@ -5737,6 +5737,39 @@ function filterSnapshot(lessons, filters) {
   return rows.slice(0, limit);
 }
 
+/**
+ * A per-isolate memo for the unfiltered corpus, and why it exists.
+ *
+ * Measured 2026-10-19 from the Cloudflare dashboard: **6.24M rows read in one day** against the free
+ * plan's 5M, while the site served ~9.4k MCP calls. One search without a durable-cache hit reads the
+ * whole corpus — `INTERNAL_LESSON_LIMIT` is 5000 and the corpus is 516 rows — and 9.4k × 516 ≈ 4.85M,
+ * i.e. the corpus read is the dominant term. The durable cache does not rescue it: its payload is
+ * read *through D1* (`getWithCache` → `readCachePayload`), so a cache hit still bills rows, and once
+ * the quota is gone every request re-reads all 516.
+ *
+ * A Worker isolate serves many requests before it is recycled, so keeping the rows for a few seconds
+ * removes that multiplication without changing what anyone sees: the durable cache's own TTL is 300s,
+ * so 30s of isolate memory cannot serve a corpus older than the cache already would.
+ */
+// Off by default: a cache in module scope outlives a test and hides a corpus change from the next
+// caller in the same process, so tests must opt in explicitly (they never set this). Production sets
+// it in `wrangler.toml` `[vars]`, next to COMMIT_SHA.
+let lessonsMemo = null; // { at: number, rows: Array }
+
+/** The configured memo window in ms; 0 disables the memo entirely. */
+function lessonsMemoTtlMs(env) {
+  const raw = Number(env && env.MISAKANET_LESSONS_MEMO_MS);
+  return Number.isFinite(raw) && raw > 0 ? raw : 0;
+}
+
+/** Remember the rows this isolate just read, and hand the same array back to the caller. */
+function rememberLessons(rows, env) {
+  if (lessonsMemoTtlMs(env) > 0 && Array.isArray(rows) && rows.length > 0) {
+    lessonsMemo = { at: Date.now(), rows };
+  }
+  return rows;
+}
+
 async function loadLessons(env, filters = {}) {
   // Filtered queries must go to D1 (GitHub proxy can't filter). Unfiltered
   // keeps the D1-first / GitHub fallback behavior, with a KV cache over the
@@ -5771,31 +5804,41 @@ async function loadLessons(env, filters = {}) {
   // that window were unfindable over MCP (a local search over the full corpus found
   // kubernetes-crashloopbackoff-debugging for "kubectl crashloopbackoff" while
   // production answered no_match). The KV cache below keeps this cheap.
+  //
+  // The isolate memo (`LESSONS_MEMO_TTL_MS`) sits in front of that cache, not instead of it: the
+  // cache is a D1 read, so a hit still costs rows, and the row budget is what this path spent 2026-10-19.
+  const memoWindow = lessonsMemoTtlMs(env);
+  const memo = memoWindow > 0 ? lessonsMemo : null;
+  if (memo && Date.now() - memo.at < memoWindow) {
+    recordLessonsRead({ ok: true, source: "memo" });
+    return memo.rows;
+  }
   if (d1Binding(env)) {
     if (Date.now() < d1ReadCooldownUntil) {
       recordLessonsRead({ ok: false, source: "snapshot-cooldown" });
-      return snapshotLessons(env);
+      return rememberLessons(await snapshotLessons(env), env);
     }
     try {
       const fromD1 = await getWithCache(env, "proxy:lessons:d1", () =>
         fetchLessonsFromD1(env, { limit: INTERNAL_LESSON_LIMIT, rich: true }));
       if (fromD1 && fromD1.length > 0) {
         recordLessonsRead({ ok: true, source: "d1" });
-        return fromD1;
+        return rememberLessons(fromD1, env);
       }
     } catch (error) {
       d1ReadCooldownUntil = Date.now() + D1_READ_COOLDOWN_MS;
       logInternal("D1 lesson read failed; serving the data-branch snapshot", error);
       recordLessonsRead({ ok: false, source: "snapshot", error_kind: d1ErrorKind(error) });
-      return snapshotLessons(env);
+      return rememberLessons(await snapshotLessons(env), env);
     }
     // D1 answered but empty — fall back to the GitHub snapshot.
     recordLessonsRead({ ok: true, source: "d1-empty" });
-    return snapshotLessons(env);
+    return rememberLessons(await snapshotLessons(env), env);
   }
   const fromD1 = await fetchLessonsFromD1(env, { limit: INTERNAL_LESSON_LIMIT, rich: true });
-  if (fromD1 && fromD1.length > 0) return fromD1;
-  return getWithCache(env, "proxy:lessons", () => fetchFromGitHub(env.REGISTER_TOKEN, "lessons.json", "data"));
+  if (fromD1 && fromD1.length > 0) return rememberLessons(fromD1, env);
+  return rememberLessons(await getWithCache(env, "proxy:lessons",
+    () => fetchFromGitHub(env.REGISTER_TOKEN, "lessons.json", "data")), env);
 }
 
 // ── D1 question service (PRD ⑤ §9: pull-based answer delivery) ──
