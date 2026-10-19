@@ -1,35 +1,35 @@
 {
-  "generated_at": "2026-10-19T04:58:36.064905+00:00",
+  "generated_at": "2026-10-19T13:37:30.036852+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3522",
+      "timestamp": "2026-10-19T05:06:00Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(deps-dev): bump wrangler from 4.149.0 to 4.151.0 in the npm group",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3504",
+      "timestamp": "2026-10-19T05:03:10Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(deps): update pymdown-extensions requirement from >=12.1 to >=12.3 in the pip group",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3505",
+      "timestamp": "2026-10-19T05:00:02Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
       "title": "docs(handoff): §111 — what the 00:00 UTC reset verified, and one correction",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/3513",
       "timestamp": "2026-10-19T01:20:44Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "fix: a degraded read must not be reported as an empty corpus",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3512",
-      "timestamp": "2026-10-19T01:08:55Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3507",
-      "timestamp": "2026-10-18T23:29:55Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3503",
-      "timestamp": "2026-10-18T21:00:17Z",
       "source": "github"
     },
     {
