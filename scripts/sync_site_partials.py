@@ -27,6 +27,13 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent
 INDEX = Path("docs") / "index.html"
 PARTIALS = {"nav": Path("docs") / "_partials" / "nav.html"}
+# The in-site link row (#2026-10-19): only the homepage carried the drawer, so every other hand-written
+# page had no route to /search/ at all. This is the second managed partial, and unlike the drawer it is
+# generated into *every* page that has a footer — which is what makes "one source, many copies" true
+# rather than an intention.
+SITE_LINKS = Path("docs") / "_partials" / "site-links.html"
+SITE_BLOCK = re.compile(r"<!-- site-links:start -->[\s\S]*?<!-- site-links:end -->")
+FOOTER_OPEN = re.compile(r"<footer\b[^>]*>")
 # The block the partial owns inside the page, matched by its element rather than by line numbers.
 NAV_BLOCK = re.compile(r'<nav class="drawer"[\s\S]*?</nav>')
 
@@ -42,6 +49,42 @@ def partial_body(path: Path) -> str:
     return re.sub(r"<!--[\s\S]*?-->\s*", "", text, count=1).strip()
 
 
+def site_block(root: Path = REPO) -> str:
+    """The marked row, markers included, as every page must carry it."""
+    text = (root / SITE_LINKS).read_text(encoding="utf-8")
+    match = SITE_BLOCK.search(text)
+    if not match:
+        raise SystemExit(f"{SITE_LINKS.as_posix()}: the site-links markers are gone")
+    return match.group(0)
+
+
+def site_pages(root: Path = REPO) -> list[Path]:
+    """Every hand-written page with a footer — discovered, so a new page is covered by default."""
+    pages = sorted((root / "docs").rglob("*.html"))
+    out = []
+    for page in pages:
+        rel = page.relative_to(root / "docs")
+        if "_partials" in rel.parts or "lessons" in rel.parts or "topics" in rel.parts:
+            continue
+        if "<footer" in page.read_text(encoding="utf-8"):
+            out.append(page)
+    return out
+
+
+def check_site_links(root: Path = REPO) -> list[str]:
+    want = site_block(root)
+    problems = []
+    for page in site_pages(root):
+        rel = page.relative_to(root).as_posix()
+        text = page.read_text(encoding="utf-8")
+        have = SITE_BLOCK.search(text)
+        if have is None:
+            problems.append(f"{rel}: no site-links row — run `python3 scripts/sync_site_partials.py`")
+        elif have.group(0).strip() != want.strip():
+            problems.append(f"{rel}: the site-links row differs from {SITE_LINKS.as_posix()}")
+    return problems
+
+
 def check(root: Path = REPO) -> list[str]:
     """Every place a page and its partial disagree."""
     problems: list[str] = []
@@ -55,6 +98,7 @@ def check(root: Path = REPO) -> list[str]:
             f"{INDEX.as_posix()}: the drawer nav differs from {PARTIALS['nav'].as_posix()} — run "
             "`python3 scripts/sync_site_partials.py` (a menu edited in one place only is how pages end up "
             "unlinked, #1892)")
+    problems.extend(check_site_links(root))
     return problems
 
 
@@ -75,10 +119,27 @@ def write(root: Path = REPO) -> list[str]:
     if extract_nav(page) is None:
         raise SystemExit(f"{INDEX.as_posix()}: no nav block to replace")
     updated = NAV_BLOCK.sub(lambda _: want, page, count=1)
-    if updated == page:
-        return []
-    path.write_text(updated, encoding="utf-8")
-    return [INDEX.as_posix()]
+    changed = []
+    if updated != page:
+        path.write_text(updated, encoding="utf-8")
+        changed.append(INDEX.as_posix())
+
+    want_row = site_block(root)
+    for site_page in site_pages(root):
+        rel = site_page.relative_to(root).as_posix()
+        text = site_page.read_text(encoding="utf-8")
+        if SITE_BLOCK.search(text):
+            new_text = SITE_BLOCK.sub(lambda _: want_row, text, count=1)
+        else:
+            footer = FOOTER_OPEN.search(text)
+            if footer is None:
+                continue
+            at = footer.end()
+            new_text = text[:at] + "\n" + want_row + text[at:]
+        if new_text != text:
+            site_page.write_text(new_text, encoding="utf-8")
+            changed.append(rel)
+    return changed
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -93,7 +154,7 @@ def main(argv: list[str] | None = None) -> int:
             for problem in problems:
                 print(f"❌ {problem}", file=sys.stderr)
             return 1
-        print(f"✅ {PARTIALS['nav'].as_posix()} and {INDEX.as_posix()} agree")
+        print(f"✅ {PARTIALS['nav'].as_posix()}, {SITE_LINKS.as_posix()} and their pages agree")
         return 0
     changed = write(args.root)
     print(f"✅ rewrote {changed}" if changed else "✅ already in sync")
