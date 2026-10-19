@@ -109,3 +109,31 @@ test('a batch that returns nothing is treated as unreadable, not as zero traffic
   assert.equal(empty.queries.filter(q => q === "point").length, 7 * 4,
     "an all-zero window from the batch must still consult the per-day path");
 });
+
+test('the batch keeps the KV half, so an outage day is not under-counted', async () => {
+  // `bumpCounter` writes its delta to KV when D1 refuses the write, so a day is split across two
+  // stores. The per-day readers add both halves; a batch that returned only the D1 half would
+  // silently drop the counts recorded during the very outage this series exists to explain.
+  const d1 = createBatchD1({ seed: TRAFFIC });
+  const kv = {
+    async get(key) {
+      // 5 extra mcp calls today, written to KV because D1 was refusing writes at the time. Only the
+      // `counters:` key carries it — the reader sums that key and the older `traffic:` one, so a
+      // stub that answered both would prove double-counting instead of the split day.
+      if (key === `counters:traffic:mcp:${utcDayKey(0)}`) return "5";
+      return null;
+    },
+    async put() {}, async delete() {},
+  };
+  const series = await readActivitySeries({ MISAKANET_D1: d1, MISAKANET_KV: kv, MCP_TOKEN: TOKEN }, 7);
+  const today = series[series.length - 1];
+  assert.equal(today.calls.mcp, 105, "D1's 100 plus the 5 KV delta");
+});
+
+test('the funnel batch adds the KV delta on every day, like its per-day reader', async () => {
+  const d1 = createBatchD1({ seed: FUNNEL });
+  const kv = { async get() { return "2"; }, async put() {}, async delete() {} };
+  const series = await readFunnelSeries({ MISAKANET_D1: d1, MISAKANET_KV: kv, MCP_TOKEN: TOKEN }, 7);
+  const today = series[series.length - 1];
+  assert.equal(today.visit, 7, "D1's 5 plus the KV delta of 2");
+});

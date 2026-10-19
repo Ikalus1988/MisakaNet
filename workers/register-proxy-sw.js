@@ -7091,17 +7091,31 @@ function noteCountersReadFailure(error, env) {
 
 async function readTrafficCount(env, cls, day) {
   const d1 = d1Binding(env);
+  let fromD1 = 0;
   if (d1 && countersReadable()) {
     try {
       const { results } = await d1.prepare(
         `SELECT count FROM counters WHERE scope = ?1 AND bucket = ?2 AND period = ?3`,
       ).bind("traffic", cls, day).all();
       const row = results && results[0];
-      if (row) return Number(row.count) || 0;
+      fromD1 = row ? Number(row.count) || 0 : 0;
     } catch (error) {
       noteCountersReadFailure(error, env);
     }
   }
+  // D1 **plus** KV, the rule `readFunnelDay` documents: `bumpCounter` sends its delta to KV when the
+  // D1 upsert fails, so a day can be split across the two stores. Returning on the first successful
+  // D1 row dropped exactly the counts written during an outage — and an outage is the day the panel
+  // is most likely to be read.
+  return fromD1 + await readTrafficKv(env, cls, day);
+}
+
+/**
+ * The KV half of a traffic counter. `bumpCounter` sends a delta to KV precisely when D1 refused the
+ * write, so a day can be split across the two stores; a reader that only asked D1 would drop exactly
+ * the counts recorded during an outage.
+ */
+async function readTrafficKv(env, cls, day) {
   if (!env.MISAKANET_KV) return 0;
   const [fallback, legacy] = await Promise.all([
     env.MISAKANET_KV.get(legacyCounterKey("traffic", cls, day), "text"),
@@ -7180,13 +7194,18 @@ async function readFunnelDay(env, day) {
       noteCountersReadFailure(error, env);
     }
   }
-  if (env.MISAKANET_KV) {
-    const fallback = await Promise.all(FUNNEL_EVENTS.map(event =>
-      env.MISAKANET_KV.get(legacyCounterKey("funnel", event, day), "text").catch(() => null)));
-    FUNNEL_EVENTS.forEach((event, i) => {
-      out[event] += parseInt(fallback[i] || "0", 10) || 0;
-    });
-  }
+  const kv = await readFunnelKv(env, day);
+  FUNNEL_EVENTS.forEach((event) => { out[event] += kv[event] || 0; });
+  return out;
+}
+
+/** The KV delta of one funnel day, keyed by event. Same rule as `readTrafficKv`. */
+async function readFunnelKv(env, day) {
+  const out = Object.fromEntries(FUNNEL_EVENTS.map(e => [e, 0]));
+  if (!env.MISAKANET_KV) return out;
+  const fallback = await Promise.all(FUNNEL_EVENTS.map(event =>
+    env.MISAKANET_KV.get(legacyCounterKey("funnel", event, day), "text").catch(() => null)));
+  FUNNEL_EVENTS.forEach((event, i) => { out[event] += parseInt(fallback[i] || "0", 10) || 0; });
   return out;
 }
 
@@ -7234,7 +7253,12 @@ async function readFunnelSeries(env, days) {
       for (let i = days - 1; i >= 0; i--) {
         const date = utcDayKey(i);
         const day = byDay.get(date);
-        const counts = Object.fromEntries(FUNNEL_EVENTS.map(e => [e, day ? (day.get(e) || 0) : 0]));
+        // D1 + KV, exactly like `readFunnelDay`: `bumpCounter` writes its delta to KV when D1
+        // refuses it, so a batch that returned only the D1 half would drop the counts recorded
+        // during an outage — the days this series exists to explain.
+        const kv = await readFunnelKv(env, date);
+        const counts = Object.fromEntries(FUNNEL_EVENTS.map(e =>
+          [e, (day ? (day.get(e) || 0) : 0) + (kv[e] || 0)]));
         series.push({ date, ...counts });
       }
       // An all-zero window from a batch that returned nothing is the same signal the route refuses
@@ -7310,7 +7334,12 @@ async function readActivitySeries(env, days) {
       for (let i = days - 1; i >= 0; i--) {
         const date = utcDayKey(i);
         const day = byDay.get(date) || new Map();
-        const calls = Object.fromEntries(TRAFFIC_TYPES.map(c => [c, day.get(c) || 0]));
+        // A cell D1 has no row for may still be in KV (the write fell back during an outage), and
+        // `readTrafficCount` answers exactly that way — D1 when the row exists, KV when it does not.
+        const calls = {};
+        await Promise.all(TRAFFIC_TYPES.map(async (c) => {
+          calls[c] = (day.get(c) || 0) + await readTrafficKv(env, c, date);
+        }));
         series.push({ date, total: TRAFFIC_TYPES.reduce((sum, c) => sum + calls[c], 0), calls });
       }
       if (series.every(day => day.total === 0)) throw new Error("empty window");
