@@ -117,7 +117,7 @@
   <div id="results" class="loading" role="region" aria-live="polite">Loading lessons...</div>
   <div id="feedback-summary" class="feedback-summary" hidden></div>
   <div style="text-align:center; margin-top:24px; font-size:12px; color:var(--text-muted);">
-    Did a lesson help you? <a href="https://github.com/Ikalus1988/MisakaNet/issues/new?template=lesson-feedback.yml" style="color:#58a6ff;">Share feedback</a> (5 lines, anonymous OK)
+    <span data-i18n="feedbackPrompt">Did a lesson help you?</span> <a href="https://github.com/Ikalus1988/MisakaNet/issues/new?template=lesson-feedback.yml" style="color:#58a6ff;" data-i18n="feedbackPromptLink">Share feedback</a> <span data-i18n="feedbackPromptSuffix">(5 lines, anonymous OK)</span>
   </div>
 </div>
 
@@ -156,6 +156,22 @@ const I18N = {
     badgeRuntime: 'Runtime Failure',
     badgeSetup: 'Setup Fix',
     badgeOther: 'General',
+    whyThisMatched: 'Why this matched',
+    matchedTerms: 'matched terms',
+    entityFields: 'entity fields',
+    keywordCoverage: 'keyword coverage',
+    sectionTopFixes: 'Top fixes',
+    sectionResults: 'Results',
+    sectionRelated: 'Related',
+    sectionCommon: 'Common references ({count})',
+    noMatchHelpPrefix: 'Try fewer keywords, check the spelling, or browse by ',
+    noMatchTopics: 'topic',
+    noMatchHelpSuffix: 'Popular queries: ',
+    requestLesson: 'Request a lesson',
+    feedbackCopied: 'Feedback copied to clipboard.',
+    feedbackPrompt: 'Did a lesson help you?',
+    feedbackPromptLink: 'Share feedback',
+    feedbackPromptSuffix: '(5 lines, anonymous OK)',
     githubAudited: 'GitHub-audited'
   },
   zh: {
@@ -191,6 +207,22 @@ const I18N = {
     badgeRuntime: '运行失败',
     badgeSetup: '配置修复',
     badgeOther: '通用',
+    whyThisMatched: '为什么匹配',
+    matchedTerms: '命中词',
+    entityFields: '实体字段',
+    keywordCoverage: '关键词覆盖',
+    sectionTopFixes: '直接可用的修复',
+    sectionResults: '结果',
+    sectionRelated: '相关',
+    sectionCommon: '常见参考（{count}）',
+    noMatchHelpPrefix: '可以少输几个词、检查拼写，或按',
+    noMatchTopics: '主题',
+    noMatchHelpSuffix: '浏览。常见查询：',
+    requestLesson: '请求一篇课程',
+    feedbackCopied: '反馈已复制到剪贴板。',
+    feedbackPrompt: '课程帮到你了吗？',
+    feedbackPromptLink: '分享反馈',
+    feedbackPromptSuffix: '（5 行以内，可匿名）',
     githubAudited: 'GitHub 审核'
   }
 };
@@ -545,7 +577,7 @@ function restoreAllFeedbackStates() {
 
 function copyFeedback() {
   const data = JSON.stringify(getFeedbackStore(), null, 2);
-  navigator.clipboard.writeText(data).then(() => alert('Feedback copied to clipboard.'));
+  navigator.clipboard.writeText(data).then(() => alert(t('feedbackCopied')));
 }
 
 function openFeedbackIssue() {
@@ -566,10 +598,10 @@ function render(results, q, meta) {
     el.innerHTML = '<div class="fallback">' +
       '<div style="margin-bottom:8px;">' + t('noMatchPrefix') + ' "' + escapeHTML(q) + '". ' + t('noMatchSuffix') + '</div>' +
       '<div style="font-size:13px;margin-bottom:12px;max-width:480px;margin-left:auto;margin-right:auto;">' +
-        'Try using fewer keywords, checking spelling, or browsing by <a href="/topics/" style="color:#58a6ff;">topic</a>. ' +
-        'Popular queries: <code style="font-size:11px;">pip timeout</code>, <code style="font-size:11px;">database locked</code>, <code style="font-size:11px;">DCO sign-off</code>, <code style="font-size:11px;">git rebase</code>.' +
+        t('noMatchHelpPrefix') + '<a href="/topics/" style="color:#58a6ff;">' + t('noMatchTopics') + '</a>. ' +
+        t('noMatchHelpSuffix') + '<code style="font-size:11px;">pip timeout</code>, <code style="font-size:11px;">database locked</code>, <code style="font-size:11px;">DCO sign-off</code>, <code style="font-size:11px;">git rebase</code>.' +
       '</div>' +
-      '<div style="font-size:12px;"><a href="/skill.md">' + t('installSkill') + '</a> &middot; <a href="https://github.com/Ikalus1988/MisakaNet">' + t('submitLesson') + '</a> &middot; <a href="https://github.com/Ikalus1988/MisakaNet/issues/new?template=lesson-request.yml">Request a lesson</a></div></div>';
+      '<div style="font-size:12px;"><a href="/skill.md">' + t('installSkill') + '</a> &middot; <a href="https://github.com/Ikalus1988/MisakaNet">' + t('submitLesson') + '</a> &middot; <a href="https://github.com/Ikalus1988/MisakaNet/issues/new?template=lesson-request.yml">' + t('requestLesson') + '</a></div></div>';
     return;
   }
   const searchable = _lessons ? _lessons.filter(isSearchable).length : 0;
@@ -618,10 +650,10 @@ function render(results, q, meta) {
       (showTakeaway ? '<div class="result-takeaway">' + takeaway + '</div>' : '') +
       '<div class="result-summary">' + summary + '</div>' +
       (tags ? '<div class="result-tags">' + tags + '</div>' : '') +
-      '<details class="score-explain"><summary>Why this matched</summary>' +
-        '<div>matched terms: <code>' + escapeHTML(signals.matched) + '</code></div>' +
-        '<div>entity fields: <code>' + escapeHTML(signals.entities) + '</code></div>' +
-        '<div>keyword coverage: <code>' + signals.coverage + '%</code> · score: <code>' + Number(r.score || 0).toFixed(3) + '</code></div>' +
+      '<details class="score-explain"><summary>' + t('whyThisMatched') + '</summary>' +
+        '<div>' + t('matchedTerms') + ': <code>' + escapeHTML(signals.matched) + '</code></div>' +
+        '<div>' + t('entityFields') + ': <code>' + escapeHTML(signals.entities) + '</code></div>' +
+        '<div>' + t('keywordCoverage') + ': <code>' + signals.coverage + '%</code> · score: <code>' + Number(r.score || 0).toFixed(3) + '</code></div>' +
         '<div>evidence: <code>' + ev.level + '</code> · ' + escapeHTML(ev.label) + '</div>' +
       '</details>' +
       '<div class="result-actions">' +
@@ -644,23 +676,23 @@ function render(results, q, meta) {
 
   // Top fixes
   if (topFixes.length) {
-    html += '<div class="section-label">Top fixes</div>';
+    html += '<div class="section-label">' + t('sectionTopFixes') + '</div>';
     html += topFixes.map(renderCard).join('');
   }
 
   // Related (if no top fixes, show related as primary)
   if (!topFixes.length && relatedRefs.length) {
-    html += '<div class="section-label">Results</div>';
+    html += '<div class="section-label">' + t('sectionResults') + '</div>';
     html += relatedRefs.map(renderCard).join('');
   } else if (relatedRefs.length) {
-    html += '<div class="section-label">Related</div>';
+    html += '<div class="section-label">' + t('sectionRelated') + '</div>';
     html += relatedRefs.map(renderCard).join('');
   }
 
   // Common references (folded)
   if (commonRefs.length) {
     html += '<button class="fold-toggle" type="button" onclick="this.classList.toggle(\'open\');this.nextElementSibling.hidden=!this.nextElementSibling.hidden">' +
-      '<span class="arrow">▸</span> Common references (' + commonRefs.length + ')' +
+      '<span class="arrow">▸</span> ' + t('sectionCommon', { count: commonRefs.length }) +
       '</button>';
     html += '<div hidden>' + commonRefs.map(renderCard).join('') + '</div>';
   }
