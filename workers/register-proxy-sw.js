@@ -7162,7 +7162,54 @@ async function readFunnelDay(env, day) {
  * the day would redraw the axis instead of reporting it. The route above refuses a series that is
  * *all* zeros — that shape is a store outage wearing a quiet week's clothes.
  */
+/**
+ * One query for the whole window, and the per-day loop only as the fallback.
+ *
+ * Measured 2026-10-19: `/api/activity/history?days=7` issued 7×4 = 28 counters queries and the
+ * funnel series 7 more, each a separate round trip. The window is a contiguous `period` range with a
+ * known `scope`, so it is one `BETWEEN` — the per-day shape is what a fallback should look like, not
+ * what the happy path should cost. `period` is `YYYY-MM-DD`, so lexicographic BETWEEN is date order.
+ *
+ * Any failure falls through to the per-day reader rather than to zeros: that path still has the KV
+ * fallback, and a batch that silently reported 0 for a day it could not read would be the same lie
+ * the whole activity surface is being fixed for.
+ */
+async function readCountersWindow(env, scope, days) {
+  const d1 = d1Binding(env);
+  if (!d1) return null;
+  const from = utcDayKey(days - 1);
+  const to = utcDayKey(0);
+  const { results } = await d1.prepare(
+    `SELECT bucket, period, count FROM counters WHERE scope = ?1 AND period BETWEEN ?2 AND ?3`,
+  ).bind(scope, from, to).all();
+  const byDay = new Map();
+  for (const row of results || []) {
+    if (!byDay.has(row.period)) byDay.set(row.period, new Map());
+    byDay.get(row.period).set(row.bucket, Number(row.count) || 0);
+  }
+  return byDay;
+}
+
 async function readFunnelSeries(env, days) {
+  try {
+    const byDay = await readCountersWindow(env, "funnel", days);
+    if (byDay) {
+      const series = [];
+      for (let i = days - 1; i >= 0; i--) {
+        const date = utcDayKey(i);
+        const day = byDay.get(date);
+        const counts = Object.fromEntries(FUNNEL_EVENTS.map(e => [e, day ? (day.get(e) || 0) : 0]));
+        series.push({ date, ...counts });
+      }
+      // An all-zero window from a batch that returned nothing is the same signal the route refuses
+      // to publish: a reader that cannot see the counters. Fall back to the per-day path (which has
+      // the KV fallback) instead of reporting a quiet week.
+      if (series.every(day => FUNNEL_EVENTS.every(e => day[e] === 0))) throw new Error("empty window");
+      return series;
+    }
+  } catch (error) {
+    logInternal("funnel window read failed; falling back to one query per day", error);
+  }
   const series = [];
   for (let i = days - 1; i >= 0; i--) {
     const date = utcDayKey(i);
@@ -7217,6 +7264,25 @@ function utcDayKey(offsetDays = 0) {
  * wearing a quiet week's clothes.
  */
 async function readActivitySeries(env, days) {
+  // Same batching as the funnel above: one range query instead of days×4 point reads. A day with no
+  // row is a real zero here (the counters are written per day, and a class that served nothing has no
+  // row), which is why the fallback — not this path — is the one that consults KV.
+  try {
+    const byDay = await readCountersWindow(env, "traffic", days);
+    if (byDay) {
+      const series = [];
+      for (let i = days - 1; i >= 0; i--) {
+        const date = utcDayKey(i);
+        const day = byDay.get(date) || new Map();
+        const calls = Object.fromEntries(TRAFFIC_TYPES.map(c => [c, day.get(c) || 0]));
+        series.push({ date, total: TRAFFIC_TYPES.reduce((sum, c) => sum + calls[c], 0), calls });
+      }
+      if (series.every(day => day.total === 0)) throw new Error("empty window");
+      return series;
+    }
+  } catch (error) {
+    logInternal("traffic window read failed; falling back to one day at a time", error);
+  }
   const series = [];
   for (let i = days - 1; i >= 0; i--) {
     const date = utcDayKey(i);
