@@ -93,6 +93,20 @@
   .loading { text-align: center; color: var(--text-muted); padding: 40px; }
   .footer { text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #21262d; }
   .footer a { color: #58a6ff; text-decoration: none; font-size: 13px; margin: 0 8px; }
+  /* Narrow screens (2026-10-19): this page had no media query at all, which is why pointing a phone at
+     /search/ was a dead end — a 720px layout on a 390px screen. Only what breaks is adjusted: the
+     container breathes less, the topbar stacks, and the code-heavy explain block wraps. */
+  @media (max-width: 640px) {
+    .container { padding: 24px 14px; }
+    .topbar { flex-direction: column; gap: 8px; }
+    .lang-switch { align-self: flex-end; margin-top: 0; }
+    h1 { font-size: 21px; }
+    .subtitle { font-size: 14px; margin-bottom: 18px; }
+    .result { padding: 13px; }
+    .score-explain code { word-break: break-word; }
+    .result-actions { flex-wrap: wrap; gap: 8px; }
+    .footer { margin-top: 28px; }
+  }
 </style>
 </head>
 <body>
