@@ -44,6 +44,9 @@ hr = _load_module()
 
 DAY = "2026-10-16"
 
+#: The 7-day vote window the digest reports: the `VOTE_WINDOW_DAYS` days ending on `DAY`.
+VOTE_DAYS = [f"2026-10-{day:02d}" for day in range(10, 17)]
+
 #: A prompt a caller actually left in a `gap` bucket. The worker stores `query.toLowerCase()`
 #: `.trim()` with no bound at all, which is why `/api/analytics` withholds the field.
 A_PROMPT = ("you are a helpful coding agent, please read the repository and tell me why the "
@@ -70,6 +73,13 @@ COUNTER_ROWS = [
     # yesterday: a different period must not be folded into today's numbers
     {"scope": "traffic", "bucket": "mcp", "period": "2026-10-15", "count": 999},
     {"scope": "gap", "bucket": "pip install timeout corporate proxy", "period": "2026-10-15", "count": 1},
+    # source-tagged helpful votes, as `POST /api/helpful` writes them since 2026-10-16:
+    # `scope='helpful-source'`, `bucket` = the vote's constant `source` label, `period` = UTC day.
+    # The panel's label is `dsh-web`; a vote with no usable source writes no row at all.
+    {"scope": "helpful-source", "bucket": "dsh-web", "period": DAY, "count": 3},
+    {"scope": "helpful-source", "bucket": "cli", "period": DAY, "count": 1},
+    {"scope": "helpful-source", "bucket": "dsh-web", "period": "2026-10-15", "count": 2},
+    # the rest of the window has no `helpful-source` rows at all — those days are zeros, not missing
 ]
 
 ANALYTICS = {
@@ -96,11 +106,22 @@ FUNNEL = {
                 "search": 59, "activation_per_register": 0.3907, "drop_off_rate": -2.28}],
 }
 
+#: Per-day retrievals — `lesson_usage` rows with `event='get_lesson'` — over the same window the
+#: vote table covers. Days absent here are days of zero retrievals, exactly as days absent from
+#: `helpful-source` are days of zero source-tagged votes.
+RETRIEVALS = {
+    "2026-10-10": 12,
+    "2026-10-12": 8,
+    "2026-10-14": 20,
+    "2026-10-15": 25,
+    "2026-10-16": 75,
+}
+
 
 def digest(**overrides) -> str:
     """The digest for the fixture day, with any source replaced — including by `None`."""
     arguments = {"day": DAY, "counters": COUNTER_ROWS, "analytics": ANALYTICS, "funnel": FUNNEL,
-                 "errors": {}}
+                 "retrievals": RETRIEVALS, "errors": {}}
     arguments.update(overrides)
     return hr.render_digest(**arguments)
 
@@ -186,6 +207,140 @@ def test_the_helped_panel_has_no_help_number():
     assert "retrievals (7d)" in panel
     for word in ("helped:", "help score", "success rate", "fixed:"):
         assert word not in panel.lower()
+
+
+# ── the vote reading (#3510): panel vs other, over retrievals, from the Counter table ─────────
+
+def test_a_day_with_panel_votes_shows_both_numbers_and_the_ratio():
+    """AC1, first half. `2026-10-16` carries three `dsh-web` votes and one other-source vote,
+    against 75 retrievals: both numbers and their ratio over the stated denominator."""
+    out = digest()
+    assert "| 2026-10-16 | 3 | 1 | 75 | 4/75 = 0.05 |" in out
+    assert "**2026-10-16 in one line:** panel votes **3** (`dsh-web`) · other votes **1** · " \
+           "votes / retrievals **4/75 = 0.05**." in out
+    # And the denominator is named as retrievals, never as helpfulness.
+    panel = out.split("## 3 · Whether it helped")[1].split("## Sources")[0]
+    assert "votes over retrievals" in panel
+    assert "not** a helpfulness rate" in panel or "not a helpfulness rate" in panel
+
+
+def test_a_day_with_zero_votes_shows_a_zero_row_rather_than_omitting_it():
+    """AC1, second half. Every day in the window keeps its row; a day the counter never wrote
+    a row for is `0`, because the worker writes one `helpful-source` row per source-tagged vote."""
+    out = digest()
+    section = out.split("**helpful votes by day")[1].split("**What the ratio is")[0]
+    for vote_day in VOTE_DAYS:
+        assert f"| {vote_day} |" in section, f"{vote_day} was dropped instead of shown as 0"
+    assert "| 2026-10-10 | 0 | 0 | 12 | 0/12 = 0.00 |" in section
+    assert "| 2026-10-11 | 0 | 0 | 0 | — |" in section
+    # The row is a measured zero of the counter, and the panel says why that is the one place
+    # where emptiness *is* a zero.
+    assert "A day with no row is `0`" in out
+
+
+def test_the_vote_numbers_re_derive_from_the_counter_rows_alone():
+    """AC2. The printed number is a sum a reader can redo from the Counter rows themselves —
+    two `dsh-web` rows for one day add up, a `traffic` row never leaks in, and the split is
+    exactly `bucket == 'dsh-web'` versus the rest of the scope."""
+    rows = [
+        {"scope": "helpful-source", "bucket": "dsh-web", "period": DAY, "count": 3},
+        {"scope": "helpful-source", "bucket": "dsh-web", "period": DAY, "count": 2},
+        {"scope": "helpful-source", "bucket": "cli", "period": DAY, "count": 1},
+        {"scope": "helpful-source", "bucket": "another-surface", "period": DAY, "count": 4},
+        {"scope": "traffic", "bucket": "mcp", "period": DAY, "count": 10},
+        {"scope": "gap", "bucket": "docker exit 137", "period": DAY, "count": 9},
+    ]
+    # The pure reading, over the rows alone: panel = 3+2, other = 1+4.
+    assert hr.helpful_vote_rows(rows, [DAY]) == [(DAY, 5, 5)]
+    out = digest(counters=rows, retrievals={DAY: 10})
+    assert "| 2026-10-16 | 5 | 5 | 10 | 10/10 = 1.00 |" in out
+    # The instructions for the reader who wants to redo it.
+    assert "How to re-derive the two vote columns" in out
+    assert "`counters` table alone" in out
+
+
+def test_the_vote_reading_names_the_source_and_introduces_no_finer_dimension():
+    """AC2's "names the source" and AC3 together: the label is constant, and nothing finer exists."""
+    out = digest()
+    section = out.split("**helpful votes by day")[1].split("**What the ratio is")[0]
+    assert "| day | panel votes (`dsh-web`) | other votes | retrievals | votes / retrievals |" \
+           in section
+    tail = out.split("**How to re-derive the two vote columns")[1].split("## A separate reading")[0]
+    assert "`dsh-web`" in tail
+    assert "constant label" in tail
+    assert "no per-person and no per-session dimension here" in tail
+    assert "source-tagged" in tail
+
+
+def test_the_ratio_denominator_is_retrievals_and_the_text_refuses_to_call_it_helpfulness():
+    out = digest()
+    panel = out.split("## 3 · Whether it helped")[1].split("## A separate reading")[0]
+    assert "Its denominator is **retrievals**" in panel
+    assert f"`event='{hr.RETRIEVAL_EVENT}'`" in panel
+    assert "does not say the lesson fixed anything" in panel
+    assert "says what it does show" in panel
+
+
+def test_an_unreadable_vote_counter_is_not_a_zero():
+    out = digest(counters=None, errors={"counters": "counters are down"})
+    panel = out.split("## 3 · Whether it helped")[1].split("## Sources")[0]
+    assert "helpful-source` vote rows could not be read" in panel
+    assert "counters are down" in panel
+    assert "Not a zero" in panel
+    # No vote table of numbers appears alongside the failed read.
+    assert "panel votes (`dsh-web`)" not in panel
+    assert "| 2026-10-" not in panel.split("helpful-source` vote rows")[0].split("top lessons")[-1]
+
+
+def test_an_unreadable_denominator_withholds_the_ratio_rather_than_zeroing_it():
+    out = digest(retrievals=None, errors={"retrievals": "lesson_usage is down"})
+    panel = out.split("## 3 · Whether it helped")[1].split("## Sources")[0]
+    assert "retrieval denominator could not be read" in panel
+    assert "lesson_usage is down" in panel
+    assert "the ratio is withheld, not zeroed" in panel
+    assert "4/75" not in panel
+    # The vote columns themselves still print — they come from the Counter table, not from this read.
+    assert "| 2026-10-16 | 3 | 1 | — | — |" in panel
+
+
+def test_the_panel_vote_source_mirror_matches_the_client():
+    """`dsh-web` is the panel's own constant. If the client renames it, this mirror has to follow,
+    or the digest would print a source name no vote is filed under."""
+    client = (REPO / "lib" / "client.js").read_text(encoding="utf-8")
+    match = re.search(r'var HELPFUL_SOURCE = "([^"]+)";', client)
+    assert match, "lib/client.js no longer declares HELPFUL_SOURCE where this test looks"
+    assert match.group(1) == hr.PANEL_VOTE_SOURCE
+
+
+def test_the_vote_scope_mirror_matches_the_worker():
+    worker = (REPO / "workers" / "register-proxy-sw.js").read_text(encoding="utf-8")
+    assert f'bumpCounter(env, "{hr.HELPFUL_SOURCE_SCOPE}"' in worker, (
+        "the worker no longer writes the scope this digest reads")
+    assert f"event='{hr.RETRIEVAL_EVENT}'" in (REPO / "scripts" / "heartbeat_report.py").read_text(
+        encoding="utf-8")
+
+
+def test_unreadable_vote_rows_are_none_and_a_read_empty_window_is_zeros():
+    assert hr.helpful_vote_rows(None, VOTE_DAYS) is None
+    zeros = hr.helpful_vote_rows([], VOTE_DAYS)
+    assert zeros == [(day, 0, 0) for day in VOTE_DAYS]
+    assert hr.retrieval_counts(None) is None
+    assert hr.retrieval_counts([]) == {}
+    assert hr.retrieval_counts([{"day": DAY, "count": 75}]) == {DAY: 75}
+    # The map form round-trips, so a saved payload can be replayed without the SQL shape.
+    assert hr.retrieval_counts({DAY: 75, "2026-10-15": 25}) == {DAY: 75, "2026-10-15": 25}
+
+
+def test_the_vote_rate_prints_the_fraction_and_neither_zero_nor_none_as_a_rate():
+    assert hr.vote_rate(4, 75) == "4/75 = 0.05"
+    assert hr.vote_rate(0, 12) == "0/12 = 0.00"
+    assert hr.vote_rate(0, 0) == "—"
+    assert hr.vote_rate(3, None) == "—"
+
+
+def test_the_vote_window_is_the_seven_days_ending_on_the_reported_day():
+    assert hr.window_days(DAY) == VOTE_DAYS
+    assert hr.window_days("2026-10-10", span=3) == ["2026-10-08", "2026-10-09", "2026-10-10"]
 
 
 # ── rule 4: a day with no data says so, and never prints 0 as a measurement ─────────────────
