@@ -1,75 +1,75 @@
 {
-  "generated_at": "2026-10-19T13:37:32Z",
+  "generated_at": "2026-10-19T16:17:50Z",
   "series": [
     {
       "calls": {
-        "agent": 0,
-        "crawler": 0,
-        "mcp": 0,
-        "pageview": 0
+        "agent": 89,
+        "crawler": 139,
+        "mcp": 4759,
+        "pageview": 117
       },
       "date": "2026-10-13",
-      "total": 0
+      "total": 5104
     },
     {
       "calls": {
-        "agent": 0,
-        "crawler": 0,
-        "mcp": 0,
-        "pageview": 0
+        "agent": 75,
+        "crawler": 49,
+        "mcp": 5877,
+        "pageview": 832
       },
       "date": "2026-10-14",
-      "total": 0
+      "total": 6833
     },
     {
       "calls": {
-        "agent": 0,
-        "crawler": 0,
-        "mcp": 0,
-        "pageview": 0
+        "agent": 111,
+        "crawler": 27,
+        "mcp": 4932,
+        "pageview": 154
       },
       "date": "2026-10-15",
-      "total": 0
+      "total": 5224
     },
     {
       "calls": {
-        "agent": 0,
-        "crawler": 0,
-        "mcp": 0,
-        "pageview": 0
+        "agent": 293,
+        "crawler": 65,
+        "mcp": 6068,
+        "pageview": 135
       },
       "date": "2026-10-16",
-      "total": 0
+      "total": 6561
     },
     {
       "calls": {
-        "agent": 0,
-        "crawler": 0,
-        "mcp": 0,
-        "pageview": 0
+        "agent": 79,
+        "crawler": 102,
+        "mcp": 9439,
+        "pageview": 43
       },
       "date": "2026-10-17",
-      "total": 0
+      "total": 9663
     },
     {
       "calls": {
-        "agent": 0,
-        "crawler": 0,
-        "mcp": 0,
-        "pageview": 0
+        "agent": 22,
+        "crawler": 147,
+        "mcp": 2692,
+        "pageview": 107
       },
       "date": "2026-10-18",
-      "total": 0
+      "total": 2968
     },
     {
       "calls": {
-        "agent": 5,
-        "crawler": 112,
-        "mcp": 691,
-        "pageview": 60
+        "agent": 21,
+        "crawler": 312,
+        "mcp": 2889,
+        "pageview": 238
       },
       "date": "2026-10-19",
-      "total": 868
+      "total": 3460
     }
   ],
   "source": "https://misakanet.org/api/activity/history",
