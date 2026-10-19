@@ -423,3 +423,33 @@ def test_the_bootstrap_output_passes_the_same_gate_as_the_endpoint_output(tmp_pa
     out = tmp_path / "activity-series.json"
     assert run_bootstrap(repo, out).returncode == 0
     sync_activity_series.validate(json.loads(out.read_text()), where=str(out))
+
+
+def test_a_day_the_store_refused_is_not_published_as_a_lower_bound():
+    """#3544: "unreadable" and "zero" must not reach the file as the same bytes.
+
+    A day whose read was refused still has a `total` (the lower bound the route could see). Mixing
+    that with quiet days is the same lie as the flat-zero week this writer already refuses, so the
+    check is per day, not per window.
+    """
+    import sync_activity_series
+
+    partial = payload([
+        day("2026-09-25", 100), day("2026-09-26", 0),
+        {**day("2026-09-27", 0), "unreadable": ["mcp", "crawler"]},
+        day("2026-09-28", 200), day("2026-09-29", 0),
+        day("2026-09-30", 0), day("2026-10-01", 0),
+    ])
+    try:
+        sync_activity_series.validate(partial)
+    except sync_activity_series.Refused as exc:
+        assert "unreadable" in str(exc), str(exc)
+    else:
+        raise AssertionError("a partially unreadable window must be refused, not published")
+
+    # …and the healthy shape stays byte-identical: `unreadable` is optional and absent when there is
+    # nothing to report, so an ordinary day's keys did not grow.
+    sync_activity_series.validate(payload([
+        day("2026-09-25", 100), day("2026-09-26", 0), day("2026-09-27", 0),
+        day("2026-09-28", 200), day("2026-09-29", 0), day("2026-09-30", 0), day("2026-10-01", 0),
+    ]))

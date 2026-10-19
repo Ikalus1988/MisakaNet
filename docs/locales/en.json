@@ -166,5 +166,7 @@
   "modalStartQuickstart": "Full install guide",
   "modalStartCli": "CLI reference",
   "modalStartNote": "Reading needs no registration and is not capped; registering only unlocks the write-side tools.",
-  "searchPanelLabel": "Search lessons"
+  "searchPanelLabel": "Search lessons",
+  "activityUnreadable": "unavailable",
+  "activityUnreadableNote": "the counters store did not answer for some days — those bars are missing, not zero"
 }

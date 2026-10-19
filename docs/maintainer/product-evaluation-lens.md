@@ -104,6 +104,29 @@ print(f"{len(hit)} of {len(paths[:24])} lessons carry votes; {total} votes in to
 PY
 ```
 
+## The surface has one job: keep the person on it
+
+A frontend's job is to keep someone here — in this product, doing the thing it is for. So an element
+whose **only** action moves the person off this surface is a leak, unless the task it leads to cannot
+be done here at all. The test is one sentence:
+
+> **If the same job can be done on this page, an outbound affordance is a leak; if it cannot, it is a
+> bridge — and it should say which job it bridges.**
+
+*Worked example — the homepage QR code (removed 2026-10-19).* It encoded the GitHub repository while
+its `alt` said "QR Code for Mobile Registration". Every candidate target failed the test:
+
+| target | why it failed |
+|---|---|
+| the repository | a phone user who wants to search gets a source tree |
+| `/start` (pairing) | the flow is a human handing a code to an agent **on the same machine**; a phone adds a device hop |
+| `/search/` | it had **0 `@media` rules** — the phone got a desktop layout, i.e. a different dead end |
+
+A QR code is for a person with a camera (an agent curls), so its only honest use is an **off-site**
+surface (README, slide, card) pointing at a page that works one-handed. On the page the person is
+already reading, the same job is done better by a link — and the QR's most prominent placement in the
+header made it the loudest element on the first screen while answering "where can I go instead?".
+
 ## Dated record
 
 - **2026-10-16** — written after a review of the DSH panel's vote affordance (6 votes across 24 lessons;
@@ -111,3 +134,6 @@ PY
   search is an edge case), and the panel's session-report framing (a perception surface, not a
   capability one). The parallel change is `fix/e4-is-observable-not-voted`; the panel's hottest-lessons
   read (`feat/panel-top-lessons`) is the first feature scoped through this lens.
+- **2026-10-19** — added the "keep the person on the surface" rule after the homepage QR code was
+  removed: it encoded the repository, its `alt` claimed registration, and every plausible target failed
+  the test (repo = wrong artifact, `/start` = wrong device hop, `/search/` = no media queries at all).

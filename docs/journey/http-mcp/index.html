@@ -123,7 +123,7 @@ req = urllib.request.Request(
     data=json.dumps(payload).encode("utf-8"),
     headers={
         "Content-Type": "application/json",
-        "Accept": "application/json, text/event-stream",
+        "Accept": "application/json",
         "Origin": "https://claude.ai",
         "User-Agent": "MisakaNet-Remote-Agent/1.0",
         "MCP-Protocol-Version": "2025-06-18",
@@ -156,7 +156,7 @@ const res = await fetch("https://misakanet.org/mcp", {
   method: "POST",
   headers: {
     "Content-Type": "application/json",
-    "Accept": "application/json, text/event-stream",
+    "Accept": "application/json",
     "Origin": "https://claude.ai",
     "User-Agent": "MisakaNet-Remote-Agent/1.0",
     "MCP-Protocol-Version": "2025-06-18"

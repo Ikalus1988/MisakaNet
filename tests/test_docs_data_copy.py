@@ -371,9 +371,18 @@ SEARCH = "docs/search/index.html"
 
 
 def fields_the_page_reads(root: Path | None = None, rel: str = HOME) -> set[str]:
-    """Corpus-object fields a page reads, as `l.<field>` (the projection's job is to carry these)."""
+    """Corpus-object fields a page reads, as `<var>.<field>` (the projection's job is to carry these).
+
+    Both variable names are matched: the homepage iterates `l` and the search page iterates `r`. The
+    older `\bl\.`-only pattern is why `r.evidence_source` / `r.trust_score` could be read while
+    absent from the projection — every card printed `trust: —` and called a frontmatter-sourced level
+    "inferred", and this gate stayed green (found 2026-10-19, #3539).
+    """
     base = Path(root) if root is not None else REPO
-    return set(re.findall(r"\bl\.([a-z_]+)", (base / rel).read_text(encoding="utf-8")))
+    fields = set(re.findall(r"\b[lr]\.([a-z_]+)", (base / rel).read_text(encoding="utf-8")))
+    # `r.status` is a fetch Response on both pages, not a corpus field. The allowlist is explicit so
+    # widening the variable names above cannot quietly re-open the hole it was widened for.
+    return fields - {"status"}
 
 
 def test_the_projection_carries_every_field_the_pages_read():

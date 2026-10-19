@@ -203,10 +203,6 @@
     text-align: right;
   }
 
-  .header-qr {
-    text-align: right;
-  }
-
   .logo-title {
     font-family: 'Orbitron', sans-serif;
     font-size: 52px;
@@ -361,19 +357,6 @@
     font-family: 'JetBrains Mono', monospace;
   }
 
-  /* QR code glow — subdued by default, bright on hover */
-  .header-qr img {
-    border-radius: 8px;
-    border: 1px solid rgba(0, 229, 255, 0.15);
-    box-shadow: 0 0 15px rgba(0, 229, 255, 0.05);
-    opacity: 0.6;
-    transition: all 0.4s ease;
-  }
-  .header-qr img:hover {
-    opacity: 1;
-    box-shadow: 0 0 40px rgba(0, 229, 255, 0.2);
-  }
-
   /* Avatar with tech corners */
   .avatar-tech {
     border-radius: 50%;
@@ -515,6 +498,14 @@
     width: 100%;
     border-radius: 4px 4px 0 0;
     background: linear-gradient(180deg, var(--cyan), rgba(0, 229, 255, 0.28));
+  }
+  /* A day whose counters could not be read (#3544). Empty with a dashed outline, because a
+     zero-height solid bar is exactly what "no calls that day" draws — and the point is that those
+     are different statements. */
+  .activity-history-bar.is-unreadable {
+    background: transparent;
+    border: 1px dashed rgba(148, 163, 184, 0.65);
+    min-height: 10px;
   }
   /* The newest bar is the day in progress, so its height is a floor and not a total. Hatched,
      because a colour difference alone is not a claim a reader can act on. */
@@ -821,7 +812,7 @@
     border-color: var(--cyan);
     box-shadow: 0 0 12px rgba(0, 229, 255, 0.08), inset 0 0 12px rgba(0, 229, 255, 0.02);
   }
-  .register-input::placeholder { color: #64748b; }
+  .register-input::placeholder { color: var(--text-dim); }
 
   /* Agent type selector — card grid */
   .agent-selector {
@@ -1433,14 +1424,6 @@
     .header-text-block {
       text-align: center;
     }
-    .header-qr {
-      text-align: center;
-      margin-top: 20px;
-    }
-    .header-qr img {
-      width: 140px;
-      height: 140px;
-    }
     .logo-title {
       font-size: 36px;
       letter-spacing: 3px;
@@ -1556,8 +1539,6 @@
     .header-content { text-align: center; min-height: auto; }
     .header-content .lang-btn-row { justify-content: center; }
     .header-text-block { text-align: center; }
-    .header-qr { text-align: center; }
-    .header-qr img { width: 140px; height: 140px; }
     .logo-title { font-size: 32px; letter-spacing: 2px; }
     .logo-cn { font-size: 32px; letter-spacing: 6px; }
     .stat-card { padding: 16px 20px; }
@@ -1820,9 +1801,6 @@
           <svg viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
           Ikalus1988/MisakaNet
         </a>
-      </div>
-      <div class="header-qr">
-        <img src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=https://github.com/Ikalus1988/MisakaNet&bgcolor=070b15&color=00e5ff" alt="QR Code for Mobile Registration" style="width:160px;height:160px;">
       </div>
     </div>
     </div>
@@ -2348,6 +2326,14 @@
 
   <!-- Footer -->
   <footer class="footer">
+<!-- site-links:start -->
+<nav class="site-links" aria-label="Site links" style="text-align:center;font-size:13px;margin:10px 0;">
+  <a href="/">Home</a> ·
+  <a href="/search/">Search lessons</a> ·
+  <a href="/install/">Install</a> ·
+  <a href="/start">Start</a>
+</nav>
+<!-- site-links:end -->
     <div class="footer-links">
       <a href="https://github.com/Ikalus1988/MisakaNet" target="_blank">GitHub</a>
       <a href="https://github.com/Ikalus1988/MisakaNet/discussions" target="_blank">Discussions</a>
@@ -3581,13 +3567,15 @@ function activityHistoryMarkup(series, generatedAt, live, source) {
     // as such, because a partial bar drawn like a finished one is the chart equivalent of calling a
     // snapshot "today".
     const partial = day.date === today;
+    const unreadable = Array.isArray(day.unreadable) && day.unreadable.length > 0;
     const height = total > 0 ? `max(2px, ${Math.round((total / max) * 100)}%)` : '0';
-    const label = `${day.date} · ${formatCount(total)}` +
-                  (partial ? ` · ${t('activityTrendPartial')}` : '');
+    const label = unreadable
+      ? `${day.date} · ${t('activityUnreadable')} (${day.unreadable.join(', ')})`
+      : `${day.date} · ${formatCount(total)}` + (partial ? ` · ${t('activityTrendPartial')}` : '');
     return `
         <div class="activity-history-slot">
-          <div class="activity-history-bar${partial ? ' is-partial' : ''}" style="height:${height}"
-               title="${escapeHTML(label)}"></div>
+          <div class="activity-history-bar${partial ? ' is-partial' : ''}${unreadable ? ' is-unreadable' : ''}"
+               style="height:${unreadable ? '0' : height}" title="${escapeHTML(label)}"></div>
           <div class="activity-history-day">${escapeHTML(day.date.slice(5))}</div>
         </div>`;
   }).join("");
@@ -3599,11 +3587,14 @@ function activityHistoryMarkup(series, generatedAt, live, source) {
   // of each day, taken before the day ended), and a chart that does not say so overstates the trend's
   // precision. The route's own series is a full day total per day and says what it is not.
   const bounds = String(source || '').startsWith('git-history:');
-  const note = t(bounds ? 'activityTrendBounds' : 'activityTrendNote');
+  const anyUnreadable = series.some(day => Array.isArray(day.unreadable) && day.unreadable.length);
+  const note = anyUnreadable
+    ? t('activityUnreadableNote')
+    : t(bounds ? 'activityTrendBounds' : 'activityTrendNote');
   return `
       <div class="activity-history-head">
         <span class="activity-history-title">${formatText(t('activityTrendTitle'), { days: series.length })}</span>
-        <span class="activity-history-note" data-i18n="${bounds ? 'activityTrendBounds' : 'activityTrendNote'}">${note}</span>
+        <span class="activity-history-note" data-i18n="${anyUnreadable ? 'activityUnreadableNote' : (bounds ? 'activityTrendBounds' : 'activityTrendNote')}">${note}</span>
       </div>
       <div class="activity-history-bars">${slots}</div>
       <div class="activity-footnote">${escapeHTML(series[0].date)} – ${escapeHTML(series[series.length - 1].date)}${how ? ' · ' + how : ''}</div>`;

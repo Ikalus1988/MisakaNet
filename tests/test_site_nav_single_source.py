@@ -25,7 +25,8 @@ from scripts import sync_site_partials as ssp  # noqa: E402
 def _copy_tree(tmp_path: Path) -> Path:
     (tmp_path / "docs" / "_partials").mkdir(parents=True, exist_ok=True)
     shutil.copy(REPO / "docs" / "index.html", tmp_path / "docs" / "index.html")
-    shutil.copy(REPO / "docs" / "_partials" / "nav.html", tmp_path / "docs" / "_partials" / "nav.html")
+    for partial in ("nav.html", "site-links.html"):
+        shutil.copy(REPO / "docs" / "_partials" / partial, tmp_path / "docs" / "_partials" / partial)
     return tmp_path
 
 
@@ -72,3 +73,13 @@ def test_a_missing_nav_block_is_reported_rather_than_ignored(tmp_path):
     page.write_text(page.read_text(encoding="utf-8").replace('<nav class="drawer"', '<nav class="gone"'),
                     encoding="utf-8")
     assert ssp.check(root), "a page with no nav block must be reported"
+
+
+def test_a_site_links_row_edited_in_one_place_is_caught(tmp_path):
+    """The second managed partial: the row that makes /search/ reachable from every page with a footer."""
+    root = _copy_tree(tmp_path)
+    page = root / "docs" / "index.html"
+    page.write_text(page.read_text(encoding="utf-8").replace('href="/search/"', 'href="/search/?x=1"'),
+                    encoding="utf-8")
+    problems = ssp.check(root)
+    assert problems and any("site-links" in p for p in problems), problems

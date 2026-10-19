@@ -53,7 +53,6 @@ NON_EXECUTABLE_TYPE = re.compile(r"""type\s*=\s*["']application/ld\+json""", re.
 # leaving the reader to rediscover the list; the tests derive membership from the
 # markup itself and use this only for the error text.
 KNOWN_SCRIPT_PAGES = {
-    "connect.html",
     "index.html",
     "insights/lesson-coverage.html",
     "insights/pr-genius.html",

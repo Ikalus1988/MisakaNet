@@ -1,0 +1,14 @@
+<!-- Single source for the in-site link row every page's footer carries.
+
+     Why (2026-10-19): only docs/index.html had the drawer nav, so the product's own destinations —
+     /search/ above all — were unreachable from the other hand-written pages except through a browser
+     back button. A per-page copy of this row is how that happens again, so the copies are generated
+     from this file by scripts/sync_site_partials.py, and `--check` fails when one drifts. -->
+<!-- site-links:start -->
+<nav class="site-links" aria-label="Site links" style="text-align:center;font-size:13px;margin:10px 0;">
+  <a href="/">Home</a> ·
+  <a href="/search/">Search lessons</a> ·
+  <a href="/install/">Install</a> ·
+  <a href="/start">Start</a>
+</nav>
+<!-- site-links:end -->

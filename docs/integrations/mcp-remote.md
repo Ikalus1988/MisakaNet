@@ -71,7 +71,7 @@ req = urllib.request.Request(
     data=data,
     headers={
         "Content-Type": "application/json",
-        "Accept": "application/json, text/event-stream",
+        "Accept": "application/json",
         "Origin": "https://claude.ai",
         "User-Agent": "MisakaNet-Remote-Agent/1.0",
         "MCP-Protocol-Version": "2025-06-18",
@@ -110,7 +110,7 @@ const response = await fetch("https://misakanet.org/mcp", {
   method: "POST",
   headers: {
     "Content-Type": "application/json",
-    "Accept": "application/json, text/event-stream",
+    "Accept": "application/json",
     "Origin": "https://claude.ai",
     "User-Agent": "MisakaNet-Remote-Agent/1.0",
     "MCP-Protocol-Version": "2025-06-18"
@@ -121,6 +121,15 @@ const response = await fetch("https://misakanet.org/mcp", {
 const result = await response.json();
 console.log("Response:", result);
 ```
+
+> **Two frames, one payload — decode the frame you get (#3548).** The endpoint answers plain JSON when
+> `Accept` is `application/json`, and **SSE** (`event: message` / `data: {…}`) when `Accept` mentions
+> `text/event-stream`. The payload inside is byte-identical. A snippet that asks for SSE and then calls
+> `json.loads(response.read())` / `response.json()` dies on the `e` of `event:` — which is why the two
+> snippets above ask for JSON. If you do want streaming, use the repo's one reader
+> (`misakanet/mcp_reply.py::parse_mcp_reply`) instead of re-deriving it; the same reader also unwraps
+> `structuredContent` versus the text block, which differ between the hosted worker and the local
+> stdio server.
 
 > **Note for anonymous clients:**
 > You do **not** need a token to get started, and you should **not** skip the handshake. Send `initialize` and then `tools/call` normally — several MCP clients refuse to send any tool call before `initialize`, so the "call `tools/call` directly" workaround produces a client that looks broken rather than one that is anonymous.

@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-10-19T04:58:36.064905+00:00",
+  "generated_at": "2026-10-19T20:37:49.534083+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "docs(handoff): §111 — what the 00:00 UTC reset verified, and one correction",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3513",
-      "timestamp": "2026-10-19T01:20:44Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "fix: a degraded read must not be reported as an empty corpus",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3512",
-      "timestamp": "2026-10-19T01:08:55Z",
+      "title": "site + mcp: the audit batch (six PRs that turned out to be one stack)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3560",
+      "timestamp": "2026-10-19T17:49:26Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
       "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3507",
-      "timestamp": "2026-10-18T23:29:55Z",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3556",
+      "timestamp": "2026-10-19T16:41:40Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3503",
-      "timestamp": "2026-10-18T21:00:17Z",
+      "title": "fix(activity): a day the store refused is drawn as missing, not as zero",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3551",
+      "timestamp": "2026-10-19T16:17:34Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3499",
-      "timestamp": "2026-10-18T16:08:48Z",
+      "title": "fix(worker): a traffic counter is D1 plus KV, not D1 or KV",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3549",
+      "timestamp": "2026-10-19T15:21:50Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "perf(worker): mem the corpus per isolate (opt-in), and decide the D1 question",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3545",
+      "timestamp": "2026-10-19T14:29:32Z",
       "source": "github"
     },
     {

@@ -132,7 +132,8 @@ def tdz_hazards(source: str) -> list[str]:
 
 def test_no_script_uses_a_corpus_constant_before_declaring_it():
     scripts = site_scripts()
-    assert len(scripts) >= 13, f"expected the site's scripts, found {len(scripts)}: {sorted(scripts)[:5]}"
+    # 13 until 2026-10-19, when docs/connect.html was deleted (nothing served it).
+    assert len(scripts) >= 12, f"expected the site's scripts, found {len(scripts)}: {sorted(scripts)[:5]}"
     for known in ("index.html#script0", "search/index.html#script0", "js/core.js"):
         assert known in scripts, f"{known} is no longer scanned — the rule would silently miss it"
     problems = {name: tdz_hazards(body) for name, body in scripts.items()}

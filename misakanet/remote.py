@@ -14,6 +14,8 @@ import os
 import urllib.error
 import urllib.request
 
+from .mcp_reply import McpReplyUnreadable, McpRpcError, parse_mcp_reply
+
 DEFAULT_ENDPOINT = "https://misakanet.org/mcp"
 PROTOCOL_VERSION = "2025-06-18"
 # Anthropic's clients (and ours) send `Origin`; the endpoint only rejects a *wrong* value, but sending
@@ -59,7 +61,8 @@ def call(tool: str, arguments: dict, *, token: str = "", timeout: float = 30.0,
     request = urllib.request.Request(endpoint_url or endpoint(), data=body, headers=headers, method="POST")
     try:
         with urllib.request.urlopen(request, timeout=timeout) as response:
-            payload = json.loads(response.read().decode("utf-8"))
+            raw = response.read()
+            status = getattr(response, "status", None)
     except urllib.error.HTTPError as exc:                       # 4xx/5xx with a body worth reading
         detail = ""
         try:
@@ -70,20 +73,12 @@ def call(tool: str, arguments: dict, *, token: str = "", timeout: float = 30.0,
     except (urllib.error.URLError, TimeoutError, OSError) as exc:
         raise RemoteError(f"{endpoint()} unreachable ({exc})") from exc
 
-    if "error" in payload:
-        raise RemoteError(str(payload["error"]))
-    result = payload.get("result") or {}
-    if isinstance(result.get("structuredContent"), (dict, list)):
-        return result["structuredContent"]
-    content = result.get("content")
-    if isinstance(content, list) and content and isinstance(content[0], dict):
-        text = content[0].get("text")
-        if isinstance(text, str):
-            try:
-                return json.loads(text)
-            except ValueError:
-                return {"text": text}
-    return result
+    # One decoder for both frames (#3548). `Accept` here is JSON-only, but a caller may override it
+    # and get SSE; decoding is not something each call site should re-derive.
+    try:
+        return parse_mcp_reply(raw, status=status, endpoint=endpoint_url or endpoint())
+    except (McpReplyUnreadable, McpRpcError) as exc:
+        raise RemoteError(str(exc)) from exc
 
 
 def search(query: str, *, top: int = 5, token: str = "", client_id: str = "",

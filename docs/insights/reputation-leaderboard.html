@@ -26,7 +26,7 @@
     background: #161b22; color: #e6edf3; border: 1px solid #30363d; border-radius: 6px;
     padding: 0.45rem 0.6rem; font: inherit;
   }
-  .updated { color: #6e7681; font-size: 0.8rem; margin-left: auto; }
+  .updated { color: #8b949e; font-size: 0.8rem; margin-left: auto; }
   .table-wrap { overflow-x: auto; margin-top: 0.75rem; }
   table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
   th, td { text-align: left; padding: 0.65rem 0.75rem; border-bottom: 1px solid #21262d; }
@@ -39,7 +39,7 @@
   .state { color: #8b949e; font-size: 0.9rem; padding: 1.25rem 0; }
   .state.error { color: #f85149; }
   a { color: #58a6ff; }
-  footer { margin-top: 2.5rem; font-size: 0.8rem; color: #6e7681; line-height: 1.8; }
+  footer { margin-top: 2.5rem; font-size: 0.8rem; color: #8b949e; line-height: 1.8; }
   @media (max-width: 520px) {
     body { padding: 1.25rem 0.75rem; }
     .toolbar { align-items: flex-start; flex-wrap: wrap; }
@@ -81,6 +81,14 @@
   <div class="state" id="state">Loading…</div>
 
   <footer>
+<!-- site-links:start -->
+<nav class="site-links" aria-label="Site links" style="text-align:center;font-size:13px;margin:10px 0;">
+  <a href="/">Home</a> ·
+  <a href="/search/">Search lessons</a> ·
+  <a href="/install/">Install</a> ·
+  <a href="/start">Start</a>
+</nav>
+<!-- site-links:end -->
     Source: <code>GET /api/insights/reputation-leaderboard</code> ·
     <a href="https://github.com/Ikalus1988/MisakaNet/issues/908">issue #908</a> ·
     <a href="../reputation.md">scoring and anti-gaming rules</a>

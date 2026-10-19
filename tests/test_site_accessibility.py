@@ -304,3 +304,29 @@ def test_the_nav_partial_carries_the_closed_state_too():
     assert nav, "the partial no longer defines the drawer; this test needs updating"
     assert "inert" in nav.group(0), "the partial would regenerate a focusable closed drawer"
     assert 'aria-hidden="true"' in nav.group(0), "the partial exposes the closed drawer to assistive tech"
+
+
+# ── the search page, which this file used to skip ──────────────────────────────────────────────
+# `PAGE` is the homepage, so every rule above certified a page while the *other* one — the one a
+# search-driven visit lands on — was outside the gate. These three are the properties that apply to
+# both; the drawer/nav rules above stay homepage-only because the search page has no drawer.
+
+SEARCH = (REPO / "docs" / "search" / "index.html").read_text(encoding="utf-8")
+
+
+def test_the_search_page_has_one_h1():
+    assert len(re.findall(r"<h1\b[^>]*>", SEARCH)) == 1
+
+
+def test_the_search_field_is_labelled():
+    """A placeholder is not a label: it disappears on first keystroke and is not announced reliably."""
+    assert re.search(r"<label[^>]*\bfor=\"q\"", SEARCH), "no <label for=\"q\"> on the search input"
+    assert re.search(r"<label[^>]*class=\"sr-only\"", SEARCH), "the label must be visually hidden, not absent"
+
+
+def test_results_are_a_live_region():
+    """The results container is rewritten by script; without a live region a screen reader is told nothing."""
+    results = re.search(r"<div[^>]*id=\"results\"[^>]*>", SEARCH)
+    assert results, "no #results container"
+    tag = results.group(0)
+    assert "aria-live=" in tag, tag

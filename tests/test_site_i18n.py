@@ -267,3 +267,57 @@ def test_the_detector_still_finds_a_real_call():
 
 if __name__ == "__main__":  # pragma: no cover
     sys.exit(pytest.main([__file__, "-q"]))
+
+
+# ── the search page's own dictionary ──────────────────────────────────────────────────────────────
+# It carries an inline `I18N` object rather than `docs/locales/*.json` (a single page's strings), so
+# the homepage gate above cannot see it. Before this, the page's *results area* was English in both
+# languages: "Why this matched", the section labels, the fold toggle, the no-match help, the feedback
+# alert. A zh visitor got a translated heading over an English body.
+
+SEARCH = REPO / "docs" / "search" / "index.html"
+HARDCODED_BEFORE = (
+    "Why this matched", "Common references (", "Try using fewer keywords",
+    "Feedback copied to clipboard.",
+)
+
+
+@pytest.fixture(scope="module")
+def search_page() -> str:
+    return SEARCH.read_text(encoding="utf-8")
+
+
+def search_dictionary(page: str) -> dict[str, set[str]]:
+    """The page's two inline maps, as key sets: the `en:` / `zh:` blocks, keys four spaces in."""
+    block = re.search(r"const I18N = \{(.*?)\n\};", page, re.S)
+    assert block, "the inline I18N object is gone"
+    out: dict[str, set[str]] = {}
+    for lang, body in re.findall(r"(\w+):\s*\{(.*?)\n  \}", block.group(1), re.S):
+        out[lang] = set(re.findall(r"^    (\w+):", body, re.M))
+    return out
+
+
+def test_the_search_page_translates_both_languages_identically(search_page):
+    maps = search_dictionary(search_page)
+    assert set(maps) == {"en", "zh"}, sorted(maps)
+    assert maps["en"] == maps["zh"], sorted(maps["en"] ^ maps["zh"])
+
+
+def test_every_key_the_search_page_uses_exists_in_its_dictionary(search_page):
+    keys = search_dictionary(search_page)["en"]
+    used = set(T_CALL.findall(search_page)) | set(ATTR.findall(search_page))
+    unknown = sorted(used - keys)
+    assert not unknown, f"these keys are used but not defined (the page would render the raw key): {unknown}"
+
+
+def test_the_results_area_is_not_hardcoded_english(search_page):
+    """The strings that were English in both languages, checked as absent from the render code.
+
+    Comments are stripped first: the code explains *why* each string moved, and quoting the old text
+    in that explanation is the point, not a leak.
+    """
+    body = re.sub(r"const I18N = \{.*?\n\};", "", search_page, flags=re.S)
+    body = re.sub(r"^\s*//.*$", "", body, flags=re.M)
+    body = re.sub(r"/\*.*?\*/", "", body, flags=re.S)
+    leaked = [s for s in HARDCODED_BEFORE if s in body]
+    assert not leaked, f"still hardcoded in the render path: {leaked}"

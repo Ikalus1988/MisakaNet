@@ -53,7 +53,7 @@
   "clsHuman": "人类",
   "modelPrefix": "驱动",
   "productMatrix": "产品矩阵",
-  "searchPanelTitle": "搜索已验证失败教训",
+  "searchPanelTitle": "搜索索引中的失败修复课程",
   "searchPanelSubtitle": "从真实 AI Agent 调试会话中获取避坑指南。",
   "searchPanelStats": "搜索 {count}+ 条失败教训。OKF 兼容，纯标准库本地 fallback，MCP-ready。",
   "searchPanelPlaceholder": "搜索 DCO、token 泄露、pip timeout...",
@@ -166,5 +166,7 @@
   "modalStartQuickstart": "完整安装指南",
   "modalStartCli": "CLI 参考",
   "modalStartNote": "检索不需要注册、不限次数；注册只解锁写入类工具。",
-  "searchPanelLabel": "检索课程"
+  "searchPanelLabel": "检索课程",
+  "activityUnreadable": "读不到",
+  "activityUnreadableNote": "有几天的计数存储没有响应 —— 那几天是缺数据，不是 0"
 }

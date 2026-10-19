@@ -39,6 +39,9 @@ import sys
 import time
 import urllib.parse
 import urllib.request
+
+sys.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parents[1]))
+from misakanet.mcp_reply import McpReplyUnreadable, parse_mcp_reply  # noqa: E402
 from pathlib import Path
 
 REMOTE_LESSONS = "https://misakanet.org/api/lessons"          # ?search=<q>&limit=N 服务端检索
@@ -362,7 +365,20 @@ def submit_intake(payload: dict) -> str:
                  "MCP-Protocol-Version": "2025-06-18"},
     )
     with urllib.request.urlopen(req, timeout=30) as r:
-        return r.read().decode("utf-8")[:400]
+        raw = r.read()
+        status = getattr(r, "status", None)
+    # `read()[:400]` used to be returned as the "receipt": a truncated SSE frame, i.e. the #3548
+    # defect inside this repo. Decode the reply and keep the fields a person needs, so an
+    # undecodable body raises instead of printing like a submission failure.
+    try:
+        payload = parse_mcp_reply(raw, status=status, endpoint=INTAKE_URL)
+    except McpReplyUnreadable as exc:
+        raise SystemExit(f"intake reply unreadable — the submission may still have succeeded: {exc}")
+    if not isinstance(payload, dict):
+        return json.dumps(payload, ensure_ascii=False)[:300]
+    fields = ("intake_id", "status", "issue_url", "duplicate", "answered", "converted", "error")
+    parts = [f"{key}={payload[key]}" for key in fields if payload.get(key) not in (None, "", False)]
+    return " · ".join(parts) or json.dumps(payload, ensure_ascii=False)[:300]
 
 
 def decide(error: str, *, source: str, what_tried: str, auto_intake: bool,

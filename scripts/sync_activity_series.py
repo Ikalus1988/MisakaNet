@@ -91,6 +91,9 @@ CALL_CLASSES = ("mcp", "agent", "crawler", "pageview")
 # script cannot drift into reading a field the other does not write.
 SERIES_KEYS = ("generated_at", "source", "window", "series")
 DAY_KEYS = ("date", "total", "calls")
+# Optional per-day field (#3544): classes whose read was refused. Present only when non-empty, so a
+# healthy snapshot is byte-identical to what it has always been.
+DAY_OPTIONAL_KEYS = ("unreadable",)
 WINDOW_KEYS = ("from", "to", "days")
 
 
@@ -149,7 +152,7 @@ def validate(snapshot: object, where: str = "snapshot") -> dict:
         label = f"{where}: series[{index}]"
         if not isinstance(day, dict):
             raise Refused(f"{label}: not an object")
-        day_extra = sorted(set(day) - set(DAY_KEYS))
+        day_extra = sorted(set(day) - set(DAY_KEYS) - set(DAY_OPTIONAL_KEYS))
         day_missing = sorted(set(DAY_KEYS) - set(day))
         if day_missing or day_extra:
             raise Refused(f"{label}: keys are {sorted(day)} — expected {sorted(DAY_KEYS)}")
@@ -161,6 +164,19 @@ def validate(snapshot: object, where: str = "snapshot") -> dict:
         except ValueError as exc:
             raise Refused(f"{label}: date {date!r} is not ISO8601 — {exc}") from None
         seen.append(date)
+
+        unreadable = day.get("unreadable", [])
+        if not isinstance(unreadable, list):
+            raise Refused(f"{label}: unreadable is {unreadable!r}, not a list")
+        if unreadable:
+            # A day whose read was refused is not a quiet day. Publishing the lower bound as if it
+            # were a total is the lie this whole check exists to prevent, and a partial one is no
+            # better than the flat-zero week it already refuses.
+            raise Refused(
+                f"{label}: unreadable {sorted(unreadable)} — the counters store refused this day, so "
+                f"its total is a lower bound, not a count. Keep the previous snapshot and retry when "
+                f"the store answers."
+            )
 
         calls = day["calls"]
         if not isinstance(calls, dict) or not calls:

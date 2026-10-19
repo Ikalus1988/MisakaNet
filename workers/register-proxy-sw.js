@@ -5619,7 +5619,7 @@ function recordLessonsRead(fields) {
 
 /** Test seams for the isolate state above (exported below, next to the loaders). */
 const lastLessonsReadOf = () => lastLessonsRead;
-const resetLessonsReadState = () => { lastLessonsRead = null; d1ReadCooldownUntil = 0; };
+const resetLessonsReadState = () => { lastLessonsRead = null; d1ReadCooldownUntil = 0; lessonsMemo = null; };
 
 /** Classify a D1 failure for the health payload: `quota` clears at 00:00 UTC, the rest do not. */
 function d1ErrorKind(error) {
@@ -5737,6 +5737,39 @@ function filterSnapshot(lessons, filters) {
   return rows.slice(0, limit);
 }
 
+/**
+ * A per-isolate memo for the unfiltered corpus, and why it exists.
+ *
+ * Measured 2026-10-19 from the Cloudflare dashboard: **6.24M rows read in one day** against the free
+ * plan's 5M, while the site served ~9.4k MCP calls. One search without a durable-cache hit reads the
+ * whole corpus — `INTERNAL_LESSON_LIMIT` is 5000 and the corpus is 516 rows — and 9.4k × 516 ≈ 4.85M,
+ * i.e. the corpus read is the dominant term. The durable cache does not rescue it: its payload is
+ * read *through D1* (`getWithCache` → `readCachePayload`), so a cache hit still bills rows, and once
+ * the quota is gone every request re-reads all 516.
+ *
+ * A Worker isolate serves many requests before it is recycled, so keeping the rows for a few seconds
+ * removes that multiplication without changing what anyone sees: the durable cache's own TTL is 300s,
+ * so 30s of isolate memory cannot serve a corpus older than the cache already would.
+ */
+// Off by default: a cache in module scope outlives a test and hides a corpus change from the next
+// caller in the same process, so tests must opt in explicitly (they never set this). Production sets
+// it in `wrangler.toml` `[vars]`, next to COMMIT_SHA.
+let lessonsMemo = null; // { at: number, rows: Array }
+
+/** The configured memo window in ms; 0 disables the memo entirely. */
+function lessonsMemoTtlMs(env) {
+  const raw = Number(env && env.MISAKANET_LESSONS_MEMO_MS);
+  return Number.isFinite(raw) && raw > 0 ? raw : 0;
+}
+
+/** Remember the rows this isolate just read, and hand the same array back to the caller. */
+function rememberLessons(rows, env) {
+  if (lessonsMemoTtlMs(env) > 0 && Array.isArray(rows) && rows.length > 0) {
+    lessonsMemo = { at: Date.now(), rows };
+  }
+  return rows;
+}
+
 async function loadLessons(env, filters = {}) {
   // Filtered queries must go to D1 (GitHub proxy can't filter). Unfiltered
   // keeps the D1-first / GitHub fallback behavior, with a KV cache over the
@@ -5771,31 +5804,41 @@ async function loadLessons(env, filters = {}) {
   // that window were unfindable over MCP (a local search over the full corpus found
   // kubernetes-crashloopbackoff-debugging for "kubectl crashloopbackoff" while
   // production answered no_match). The KV cache below keeps this cheap.
+  //
+  // The isolate memo (`LESSONS_MEMO_TTL_MS`) sits in front of that cache, not instead of it: the
+  // cache is a D1 read, so a hit still costs rows, and the row budget is what this path spent 2026-10-19.
+  const memoWindow = lessonsMemoTtlMs(env);
+  const memo = memoWindow > 0 ? lessonsMemo : null;
+  if (memo && Date.now() - memo.at < memoWindow) {
+    recordLessonsRead({ ok: true, source: "memo" });
+    return memo.rows;
+  }
   if (d1Binding(env)) {
     if (Date.now() < d1ReadCooldownUntil) {
       recordLessonsRead({ ok: false, source: "snapshot-cooldown" });
-      return snapshotLessons(env);
+      return rememberLessons(await snapshotLessons(env), env);
     }
     try {
       const fromD1 = await getWithCache(env, "proxy:lessons:d1", () =>
         fetchLessonsFromD1(env, { limit: INTERNAL_LESSON_LIMIT, rich: true }));
       if (fromD1 && fromD1.length > 0) {
         recordLessonsRead({ ok: true, source: "d1" });
-        return fromD1;
+        return rememberLessons(fromD1, env);
       }
     } catch (error) {
       d1ReadCooldownUntil = Date.now() + D1_READ_COOLDOWN_MS;
       logInternal("D1 lesson read failed; serving the data-branch snapshot", error);
       recordLessonsRead({ ok: false, source: "snapshot", error_kind: d1ErrorKind(error) });
-      return snapshotLessons(env);
+      return rememberLessons(await snapshotLessons(env), env);
     }
     // D1 answered but empty — fall back to the GitHub snapshot.
     recordLessonsRead({ ok: true, source: "d1-empty" });
-    return snapshotLessons(env);
+    return rememberLessons(await snapshotLessons(env), env);
   }
   const fromD1 = await fetchLessonsFromD1(env, { limit: INTERNAL_LESSON_LIMIT, rich: true });
-  if (fromD1 && fromD1.length > 0) return fromD1;
-  return getWithCache(env, "proxy:lessons", () => fetchFromGitHub(env.REGISTER_TOKEN, "lessons.json", "data"));
+  if (fromD1 && fromD1.length > 0) return rememberLessons(fromD1, env);
+  return rememberLessons(await getWithCache(env, "proxy:lessons",
+    () => fetchFromGitHub(env.REGISTER_TOKEN, "lessons.json", "data")), env);
 }
 
 // ── D1 question service (PRD ⑤ §9: pull-based answer delivery) ──
@@ -7010,19 +7053,86 @@ function mcpClientBucket(params, request) {
  *  3. the legacy `traffic:<class>:<day>` key — counts written before this switch, still needed on
  *     the day it ships and if it is ever rolled back.
  */
-async function readTrafficCount(env, cls, day) {
+/**
+ * After one counters read fails, stop asking D1 for a minute.
+ *
+ * Measured 2026-10-19: while the daily row-read quota was exhausted, every load of the homepage (and
+ * of `/api/funnel`, `/api/activity/history`) still issued its 35 counters queries into a database that
+ * was refusing them — a burst of doomed round trips per page load, on top of the traffic that had just
+ * spent the budget. The lessons path already had this (\`d1ReadCooldownUntil\`, 5 minutes); the
+ * counters path had none.
+ *
+ * 60s, not 5 minutes: counters are cheap to re-try once they work again, and a quota resets at a known
+ * instant rather than gradually.
+ */
+let countersReadCooldownUntil = 0;
+
+/**
+ * The cool-down window, in ms; 0 (or absent) disables it.
+ *
+ * Opt-in for the same reason the corpus memo is: module-scope state outlives a test and silently
+ * changes what the next caller sees, so production states the window in `wrangler.toml` and tests
+ * must opt in. It also keeps the default honest — "no cool-down" is what this code did until now.
+ */
+function countersCooldownMs(env) {
+  const raw = Number(env && env.MISAKANET_COUNTERS_COOLDOWN_MS);
+  return Number.isFinite(raw) && raw > 0 ? raw : 0;
+}
+
+/** True when a counters read may touch D1 right now. */
+const countersReadable = () => Date.now() >= countersReadCooldownUntil;
+
+/** Record a counters failure once, so the next minute of page loads does not repeat it. */
+function noteCountersReadFailure(error, env) {
+  const window = countersCooldownMs(env);
+  if (window > 0) countersReadCooldownUntil = Date.now() + window;
+  logInternal("counters read failed; not querying D1 for counters while cooling down", error);
+}
+
+/**
+ * One traffic counter, plus whether its D1 half could be read at all.
+ *
+ * The distinction is the whole point of #3544: `0` means "no calls recorded", `known: false` means
+ * "the store would not answer", and the two must not render the same. KV is added either way —
+ * `bumpCounter` writes its delta there when the D1 upsert fails — so the value is a lower bound when
+ * D1 refused, never a guess.
+ */
+async function readTrafficCountState(env, cls, day) {
   const d1 = d1Binding(env);
-  if (d1) {
+  let fromD1 = 0;
+  let known = d1 ? false : false;
+  const canAsk = Boolean(d1) && countersReadable();
+  if (canAsk) {
     try {
       const { results } = await d1.prepare(
         `SELECT count FROM counters WHERE scope = ?1 AND bucket = ?2 AND period = ?3`,
       ).bind("traffic", cls, day).all();
       const row = results && results[0];
-      if (row) return Number(row.count) || 0;
+      fromD1 = row ? Number(row.count) || 0 : 0;
+      known = true;
     } catch (error) {
-      logInternal("traffic counter read failed, falling back to KV", error);
+      noteCountersReadFailure(error, env);
     }
   }
+  // D1 **plus** KV, the rule `readFunnelDay` documents: `bumpCounter` sends its delta to KV when the
+  // D1 upsert fails, so a day can be split across the two stores. Returning on the first successful
+  // D1 row dropped exactly the counts written during an outage — and an outage is the day the panel
+  // is most likely to be read.
+  const kv = await readTrafficKv(env, cls, day);
+  return { value: fromD1 + kv, known: known || kv > 0 };
+}
+
+/** The count alone, for callers that have nowhere to put "could not read". */
+async function readTrafficCount(env, cls, day) {
+  return (await readTrafficCountState(env, cls, day)).value;
+}
+
+/**
+ * The KV half of a traffic counter. `bumpCounter` sends a delta to KV precisely when D1 refused the
+ * write, so a day can be split across the two stores; a reader that only asked D1 would drop exactly
+ * the counts recorded during an outage.
+ */
+async function readTrafficKv(env, cls, day) {
   if (!env.MISAKANET_KV) return 0;
   const [fallback, legacy] = await Promise.all([
     env.MISAKANET_KV.get(legacyCounterKey("traffic", cls, day), "text"),
@@ -7040,12 +7150,17 @@ async function readTrafficCount(env, cls, day) {
  */
 async function readTrafficBreakdown(env, day) {
   const entries = await Promise.all(
-    TRAFFIC_TYPES.map(async cls => [cls, await readTrafficCount(env, cls, day)])
+    TRAFFIC_TYPES.map(async cls => [cls, await readTrafficCountState(env, cls, day)])
   );
+  const unreadable = entries.filter(([, state]) => !state.known).map(([cls]) => cls);
   return {
     date: day,
-    breakdown: Object.fromEntries(entries),
-    total: entries.reduce((sum, [, n]) => sum + n, 0),
+    breakdown: Object.fromEntries(entries.map(([cls, state]) => [cls, state.value])),
+    total: entries.reduce((sum, [, state]) => sum + state.value, 0),
+    // Named so a reader can tell "quiet day" from "the store refused": the panel draws the second
+    // one as missing, not as zero (#3544). Absent when everything answered — an empty array is not
+    // a fact worth carrying, and the snapshot's shape stays byte-identical on a healthy day.
+    ...(unreadable.length ? { unreadable } : {}),
   };
 }
 
@@ -7089,7 +7204,7 @@ const FUNNEL_EVENTS = Object.freeze(["visit", "register", "authorize", "pair", "
 async function readFunnelDay(env, day) {
   const d1 = d1Binding(env);
   const out = Object.fromEntries(FUNNEL_EVENTS.map(e => [e, 0]));
-  if (d1) {
+  if (d1 && countersReadable()) {
     try {
       const { results } = await d1.prepare(
         `SELECT bucket, count FROM counters WHERE scope = 'funnel' AND period = ?1`,
@@ -7098,16 +7213,21 @@ async function readFunnelDay(env, day) {
         if (row.bucket in out) out[row.bucket] = Number(row.count) || 0;
       }
     } catch (error) {
-      logInternal("funnel counter read failed, falling back to KV", error);
+      noteCountersReadFailure(error, env);
     }
   }
-  if (env.MISAKANET_KV) {
-    const fallback = await Promise.all(FUNNEL_EVENTS.map(event =>
-      env.MISAKANET_KV.get(legacyCounterKey("funnel", event, day), "text").catch(() => null)));
-    FUNNEL_EVENTS.forEach((event, i) => {
-      out[event] += parseInt(fallback[i] || "0", 10) || 0;
-    });
-  }
+  const kv = await readFunnelKv(env, day);
+  FUNNEL_EVENTS.forEach((event) => { out[event] += kv[event] || 0; });
+  return out;
+}
+
+/** The KV delta of one funnel day, keyed by event. Same rule as `readTrafficKv`. */
+async function readFunnelKv(env, day) {
+  const out = Object.fromEntries(FUNNEL_EVENTS.map(e => [e, 0]));
+  if (!env.MISAKANET_KV) return out;
+  const fallback = await Promise.all(FUNNEL_EVENTS.map(event =>
+    env.MISAKANET_KV.get(legacyCounterKey("funnel", event, day), "text").catch(() => null)));
+  FUNNEL_EVENTS.forEach((event, i) => { out[event] += parseInt(fallback[i] || "0", 10) || 0; });
   return out;
 }
 
@@ -7119,7 +7239,59 @@ async function readFunnelDay(env, day) {
  * the day would redraw the axis instead of reporting it. The route above refuses a series that is
  * *all* zeros — that shape is a store outage wearing a quiet week's clothes.
  */
+/**
+ * One query for the whole window, and the per-day loop only as the fallback.
+ *
+ * Measured 2026-10-19: `/api/activity/history?days=7` issued 7×4 = 28 counters queries and the
+ * funnel series 7 more, each a separate round trip. The window is a contiguous `period` range with a
+ * known `scope`, so it is one `BETWEEN` — the per-day shape is what a fallback should look like, not
+ * what the happy path should cost. `period` is `YYYY-MM-DD`, so lexicographic BETWEEN is date order.
+ *
+ * Any failure falls through to the per-day reader rather than to zeros: that path still has the KV
+ * fallback, and a batch that silently reported 0 for a day it could not read would be the same lie
+ * the whole activity surface is being fixed for.
+ */
+async function readCountersWindow(env, scope, days) {
+  const d1 = d1Binding(env);
+  if (!d1 || !countersReadable()) return null;
+  const from = utcDayKey(days - 1);
+  const to = utcDayKey(0);
+  const { results } = await d1.prepare(
+    `SELECT bucket, period, count FROM counters WHERE scope = ?1 AND period BETWEEN ?2 AND ?3`,
+  ).bind(scope, from, to).all();
+  const byDay = new Map();
+  for (const row of results || []) {
+    if (!byDay.has(row.period)) byDay.set(row.period, new Map());
+    byDay.get(row.period).set(row.bucket, Number(row.count) || 0);
+  }
+  return byDay;
+}
+
 async function readFunnelSeries(env, days) {
+  try {
+    const byDay = await readCountersWindow(env, "funnel", days);
+    if (byDay) {
+      const series = [];
+      for (let i = days - 1; i >= 0; i--) {
+        const date = utcDayKey(i);
+        const day = byDay.get(date);
+        // D1 + KV, exactly like `readFunnelDay`: `bumpCounter` writes its delta to KV when D1
+        // refuses it, so a batch that returned only the D1 half would drop the counts recorded
+        // during an outage — the days this series exists to explain.
+        const kv = await readFunnelKv(env, date);
+        const counts = Object.fromEntries(FUNNEL_EVENTS.map(e =>
+          [e, (day ? (day.get(e) || 0) : 0) + (kv[e] || 0)]));
+        series.push({ date, ...counts });
+      }
+      // An all-zero window from a batch that returned nothing is the same signal the route refuses
+      // to publish: a reader that cannot see the counters. Fall back to the per-day path (which has
+      // the KV fallback) instead of reporting a quiet week.
+      if (series.every(day => FUNNEL_EVENTS.every(e => day[e] === 0))) throw new Error("empty window");
+      return series;
+    }
+  } catch (error) {
+    noteCountersReadFailure(error, env);
+  }
   const series = [];
   for (let i = days - 1; i >= 0; i--) {
     const date = utcDayKey(i);
@@ -7174,11 +7346,39 @@ function utcDayKey(offsetDays = 0) {
  * wearing a quiet week's clothes.
  */
 async function readActivitySeries(env, days) {
+  // Same batching as the funnel above: one range query instead of days×4 point reads. A day with no
+  // row is a real zero here (the counters are written per day, and a class that served nothing has no
+  // row), which is why the fallback — not this path — is the one that consults KV.
+  try {
+    const byDay = await readCountersWindow(env, "traffic", days);
+    if (byDay) {
+      const series = [];
+      for (let i = days - 1; i >= 0; i--) {
+        const date = utcDayKey(i);
+        const day = byDay.get(date) || new Map();
+        // A cell D1 has no row for may still be in KV (the write fell back during an outage), and
+        // `readTrafficCount` answers exactly that way — D1 when the row exists, KV when it does not.
+        const calls = {};
+        await Promise.all(TRAFFIC_TYPES.map(async (c) => {
+          calls[c] = (day.get(c) || 0) + await readTrafficKv(env, c, date);
+        }));
+        series.push({ date, total: TRAFFIC_TYPES.reduce((sum, c) => sum + calls[c], 0), calls });
+      }
+      if (series.every(day => day.total === 0)) throw new Error("empty window");
+      return series;
+    }
+  } catch (error) {
+    noteCountersReadFailure(error, env);
+  }
   const series = [];
   for (let i = days - 1; i >= 0; i--) {
     const date = utcDayKey(i);
     const day = await readTrafficBreakdown(env, date);
-    series.push({ date, total: day.total, calls: day.breakdown });
+    series.push({
+      date, total: day.total, calls: day.breakdown,
+      // Only present when something refused to answer; an empty list is not a fact worth carrying.
+      ...(day.unreadable && day.unreadable.length ? { unreadable: day.unreadable } : {}),
+    });
   }
   return series;
 }
@@ -7255,7 +7455,7 @@ const readSearchBackendCounts = (env, day) =>
  */
 async function readCountersRow(env, scope, bucket, period) {
   const d1 = d1Binding(env);
-  if (!d1) return null;
+  if (!d1 || !countersReadable()) return null;
   try {
     const { results } = await d1.prepare(
       `SELECT count FROM counters WHERE scope = ?1 AND bucket = ?2 AND period = ?3`,
@@ -7263,7 +7463,7 @@ async function readCountersRow(env, scope, bucket, period) {
     const row = results && results[0];
     return row ? Number(row.count) || 0 : null;
   } catch (error) {
-    logInternal("counters row read failed", error);
+    noteCountersReadFailure(error, env);
     return null;
   }
 }
@@ -8289,6 +8489,11 @@ export default {
           date: traffic.date,
           total: traffic.total,
           calls: traffic.breakdown,
+          // #3544: "no calls recorded" and "the store refused" used to render identically. The
+          // count is still served — it is a lower bound — but a reader is told which classes it is
+          // missing, so a bar can be drawn as missing instead of as zero.
+          ...(traffic.unreadable && traffic.unreadable.length
+            ? { unreadable: traffic.unreadable, degraded: true } : {}),
         }, 200, { "Cache-Control": ACTIVITY_CACHE_CONTROL, "X-Robots-Tag": "noindex" });
         if (cache) {
           const putting = cache.put(cacheKey, response.clone()).catch(e =>
@@ -8332,7 +8537,8 @@ export default {
         // A series of zeros is not "a quiet week": this store is hit every time someone searches, so
         // seven zero days is a reader that cannot see the counters. Refusing is the same rule
         // `scripts/sync_site_activity.py` applies to `total: 0` — a failure must not render as data.
-        if (!series.some(day => day.total > 0)) {
+        const anyUnreadable = series.some(day => Array.isArray(day.unreadable) && day.unreadable.length);
+        if (!series.some(day => day.total > 0) && !anyUnreadable) {
           return jsonResponse({
             error: "the counters read as zero for every day in the window",
             code: "counters_unreadable",
@@ -9305,6 +9511,9 @@ export {
   // "the index was missing" / "the corpus came from the snapshot", and the test asserts against the
   // same function the answer is assembled from rather than against a copied sentence.
   searchDegraded,
+  // Exported for workers/counters-read-cooldown.test.mjs.
+  resetCountersReadState,
+  countersReadable,
   MCP_TOOLS,
   buildVersionsPayload,
   healthStatus,
@@ -9494,3 +9703,6 @@ export {
   intakeSourceBucket,
   INTAKE_SOURCE_WHITELIST,
 };
+
+/** Test seam: forget the cooldown. */
+function resetCountersReadState() { countersReadCooldownUntil = 0; }
