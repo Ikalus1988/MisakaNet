@@ -1,9 +1,23 @@
 {
-  "generated_at": "2026-10-19T16:17:48.286946+00:00",
+  "generated_at": "2026-10-19T20:37:49.534083+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "site + mcp: the audit batch (six PRs that turned out to be one stack)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3560",
+      "timestamp": "2026-10-19T17:49:26Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3556",
+      "timestamp": "2026-10-19T16:41:40Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "fix(activity): a day the store refused is drawn as missing, not as zero",
@@ -20,23 +34,9 @@
     },
     {
       "type": "merged_pr",
-      "title": "perf(worker): stop querying D1 for counters for a minute after one failure",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3547",
-      "timestamp": "2026-10-19T14:55:38Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
       "title": "perf(worker): mem the corpus per isolate (opt-in), and decide the D1 question",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/3545",
       "timestamp": "2026-10-19T14:29:32Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "docs(handoff): 2026-10-19 volume — queue state and what the red checks mean",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3542",
-      "timestamp": "2026-10-19T14:00:59Z",
       "source": "github"
     },
     {
