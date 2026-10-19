@@ -343,7 +343,7 @@ const MCP_TOOLS = [
   },
   {
     name: "misakanet_search",
-    description: "[RETRIEVAL / READ] Search MisakaNet's public failure-lesson index by error text, keyword, or topic. This is the primary read path — run it first when you hit an error, before deciding to submit anything. For a known lesson ID or path, prefer misakanet_get_lesson — it skips ranking and returns the full content. detail controls progressive disclosure: compact (default, ~80 tok/lesson) for broad scans, summary (~200 tok) adds domain/tags/fix, full returns complete lesson data.\nFAQ: results may also include answered questions (type=\"faq\", issue_url + answer) — if a maintainer already answered the same question, the answer surfaces here.\nReturns: object {results: [compact: {id, title, problem, freshness, evidence_level, score} | summary: + {domain, tags, fix} | full: the record], source, detail, query}; `score` is the ranker's relevance for that result and is omitted on the unranked fallback path. On no match: {no_match: true, suggestion, intake}.\nExample: misakanet_search(query='pip install timeout', domain='python', top=3)",
+    description: "[RETRIEVAL / READ] Search MisakaNet's public failure-lesson index by error text, keyword, or topic. This is the primary read path — run it first when you hit an error, before deciding to submit anything. For a known lesson ID or path, prefer misakanet_get_lesson — it skips ranking and returns the full content. detail controls progressive disclosure: compact (default, ~80 tok/lesson) for broad scans, summary (~200 tok) adds domain/tags/fix, full returns complete lesson data.\nFAQ: results may also include answered questions (type=\"faq\", issue_url + answer) — if a maintainer already answered the same question, the answer surfaces here.\nReturns: object {results: [compact: {id, title, problem, freshness, evidence_level, score} | summary: + {domain, tags, fix} | full: the record], source, detail, query}; `score` is the ranker's relevance for that result and is omitted on the unranked fallback path. On no match: {no_match: true, suggestion, intake}. When the answer is degraded — no index loaded, or the live store refused the read and the corpus came from the snapshot — the response also carries `degraded: true`, `degraded_reasons` and a one-sentence `notice`; read it before concluding that no lesson exists.\nExample: misakanet_search(query='pip install timeout', domain='python', top=3)",
     inputSchema: {
       type: "object",
       properties: {
@@ -4101,6 +4101,7 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
                 source: "mcp",
               },
         },
+        ...searchDegraded(source),
         identity: aura,
         trust_notice: TRUST_NOTICE,
       };
@@ -4124,7 +4125,8 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
     // stdio server has always sent it, the rate-limit refusal below sends it, and the
     // streamable-http endpoint now does too so the opt-in PostToolUse hook works from an
     // npm/plugin install rather than only from a clone.
-    return { results, source, detail, kind, query: args.query, identity: aura, trust_notice: TRUST_NOTICE,
+    return { results, source, detail, kind, query: args.query, ...searchDegraded(source),
+             identity: aura, trust_notice: TRUST_NOTICE,
              voice: results.length ? "lesson-found" : "failure-warning" };
   }
 
@@ -5643,6 +5645,43 @@ async function probeLessonsRead(env) {
   } catch (error) {
     return { ok: false, source: "d1", error_kind: d1ErrorKind(error) };
   }
+}
+
+/**
+ * What this search answer is standing on — so "no lesson matched" cannot quietly mean "the corpus
+ * was stale" or "the index was missing".
+ *
+ * Measured 2026-10-18: two lessons merged into `main` were absent from `misakanet_search` because
+ * the BM25 index is rebuilt from D1 and D1's daily row-read quota was exhausted. The caller got
+ * `no_match` with a suggestion to file a gap — the product's most confident sentence, "this is a
+ * knowledge gap", printed while the corpus was frozen. Nothing downstream could tell that apart
+ * from a real miss; it is the same false zero `lessons/core/search-quota-exhaustion-false-zero.md`
+ * warns about on another path.
+ *
+ * Two degradations matter and both are observable without a new request: the index being
+ * unavailable (the naive matcher answered) and the corpus having come from the snapshot copy. They
+ * are separate reasons because they have separate fixes, and the field names stay stable so a
+ * client can branch on them instead of parsing an English sentence.
+ */
+function searchDegraded(source) {
+  const reasons = [];
+  if (source !== "worker-bm25") reasons.push("index_unavailable");
+  const read = lastLessonsRead;
+  if (read && read.ok === false && String(read.source || "").startsWith("snapshot")) {
+    reasons.push("corpus_snapshot");
+  }
+  if (!reasons.length) return { degraded: false };
+  const notes = [];
+  if (reasons.includes("index_unavailable")) {
+    notes.push("The search index is not loaded, so this answer used the simpler matcher and recall"
+      + " is lower than usual — weigh a miss accordingly.");
+  }
+  if (reasons.includes("corpus_snapshot")) {
+    notes.push("Lesson rows came from the snapshot copy because the live store refused the read"
+      + " (quota or outage), so lessons merged very recently may be missing. This is a degraded"
+      + " read, not proof that no lesson exists.");
+  }
+  return { degraded: true, degraded_reasons: reasons, notice: notes.join(" ") };
 }
 
 /**
@@ -9262,6 +9301,10 @@ export {
   fetchLessonContent,
   lastLessonsReadOf,
   resetLessonsReadState,
+  // Exported for workers/search-degraded-notice.test.mjs: "no_match" must be distinguishable from
+  // "the index was missing" / "the corpus came from the snapshot", and the test asserts against the
+  // same function the answer is assembled from rather than against a copied sentence.
+  searchDegraded,
   MCP_TOOLS,
   buildVersionsPayload,
   healthStatus,
