@@ -1,9 +1,30 @@
 {
-  "generated_at": "2026-10-18T23:22:22.566970+00:00",
+  "generated_at": "2026-10-19T04:58:36.064905+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "docs(handoff): §111 — what the 00:00 UTC reset verified, and one correction",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3513",
+      "timestamp": "2026-10-19T01:20:44Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "fix: a degraded read must not be reported as an empty corpus",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3512",
+      "timestamp": "2026-10-19T01:08:55Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3507",
+      "timestamp": "2026-10-18T23:29:55Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "chore(data): sync lessons.json + refresh feed",
@@ -14,22 +35,8 @@
     {
       "type": "merged_pr",
       "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3502",
-      "timestamp": "2026-10-18T17:10:04Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "lessons: convert intake #3339 (proxy the shell never inherited) and #3470 (a disable nobody verified)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3501",
-      "timestamp": "2026-10-18T16:59:36Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "fix(docs,worker): align the intro's claims with the installer, the worker and the fields",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3500",
-      "timestamp": "2026-10-18T16:10:33Z",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3499",
+      "timestamp": "2026-10-18T16:08:48Z",
       "source": "github"
     },
     {
@@ -71,13 +78,6 @@
       "timestamp": "2026-10-17",
       "domain": "video",
       "source": "lessons"
-    },
-    {
-      "type": "merged_pr",
-      "title": "fix(tombstone): handle non-object JSON with clean ValueError to prevent raw traceback (closes #1838)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1845",
-      "timestamp": "2026-09-25T00:46:55Z",
-      "source": "github"
     },
     {
       "type": "challenge",
