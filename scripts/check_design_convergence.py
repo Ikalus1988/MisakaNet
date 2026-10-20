@@ -366,9 +366,10 @@ def emoji_in_page(page: Path) -> set[str]:
     worse than no count: the Y batch would have had nothing to do and nothing to prove.
     """
     text = page.read_text(encoding="utf-8", errors="replace")
-    # The flag is not decoration: an HTML tag is case-insensitive, so a `<SCRIPT>` would otherwise
-    # survive the filter and its body would be counted as page text.
-    text = re.sub(r"<style\b[^>]*>[\s\S]*?</style>|<script\b[^>]*>[\s\S]*?</script>"
+    # Neither part of this filter is decoration. An HTML tag is case-insensitive, so a `<SCRIPT>`
+    # would otherwise survive it; and its closing tag may be written `</script >`, so the end of the
+    # block is matched loosely. Either slip would let a script body be counted as page text.
+    text = re.sub(r"<style\b[^>]*>[\s\S]*?</style\s*>|<script\b[^>]*>[\s\S]*?</script\s*>"
                   r"|<!--[\s\S]*?-->", "", text, flags=re.IGNORECASE)
     return {c for c in EMOJI.findall(text) if c not in TEXT_SYMBOLS}
 
