@@ -1,4 +1,4 @@
-```markdown
+```python
 # Intake Text Cap Adjustment
 
 ## Domain
@@ -15,9 +15,11 @@ The cap was increased to 60000 to allow more text to be included.
 
 ## Verification
 Run the command to confirm the cap is now 60000:
-```
+```python
 python3 -c "from misaki import config; print(config.get('intake_text_cap'))"
 # Expected output: 60000
 ```
 
 ```
+
+The code above is placed in the appropriate lesson file, such as `lessons/core/intake_text_cap.py`, ensuring it's indexed correctly for the search function.
