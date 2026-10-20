@@ -33,6 +33,13 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent
 TOKENS = Path("docs") / "_partials" / "design-tokens.html"
 
+# The icon set, so the gate can tell a Lucide shape from a hand-drawn one. `scripts/` is on the
+# path when this runs as `python3 scripts/check_design_convergence.py`, and the sibling import is
+# the same one `scripts/arm_auto_merge_lesson_prs.py` already does.
+if str(Path(__file__).resolve().parent) not in sys.path:
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+from site_icons import ICONS as SITE_ICONS  # noqa: E402
+
 # ── the vocabulary this script checks against ──────────────────────────────────────────────────────
 RADIUS_TOKENS = {"--r-sm", "--r-md", "--r-lg", "--r-pill"}
 MOTION_TOKENS = {"--t-fast", "--t-base"}
@@ -77,12 +84,47 @@ BRAND_GLOW_ALLOWLIST = {
 # The one accent the vocabulary does not own. It was a purple badge ramp on the homepage, and two
 # thirds of it was dead CSS; what was live moved to `--accent-2`.
 PURPLE = "#a855f7"
+# The rest of the purples on the site. `#a855f7` is the one #3541 names, so it is the one the gate
+# enforces — but a report that says "0 处" while two pages still carry a violet is a report that
+# lies, and the lie is what made this row look finished before it was. Batch Z is where the
+# cross-page colour converges; until then the number is shown, not enforced.
+PURPLE_FAMILY = ("#a855f7", "#a371f7", "#7c3aed", "#8b5cf6", "#9d5cff", "#c084fc", "#d8b4fe")
 
 # A pictograph, not a symbol: the box-drawing characters the comments use, the arrows, the
 # keyboard glyphs and the text dingbats are typography, and counting them would make the number
 # the Y batch has to bring to zero a number nobody could act on.
 EMOJI = re.compile("[\U0001F300-\U0001FAFF\U00002600-\u27BF\U00002B00-\u2BFF]")
 TEXT_SYMBOLS = set("✓✗✘★☆⚠☰✕✦✧※⌘⌨")
+
+# ── what batch Y owns ───────────────────────────────────────────────────────────────────────────
+# An emoji is a colour bitmap chosen by the platform: the same markup renders three different
+# icons in three browsers, and none of them is the page's accent colour. The site's icons are
+# Lucide SVGs (scripts/site_icons.py), and this gate keeps it that way.
+#
+# The exceptions are written down, one line each, *with the reason* — a rule nobody can see is a
+# rule nobody can follow, and an exception without a reason is a hole nobody is watching. Each is
+# content rather than decoration:
+EMOJI_ALLOWLIST = {
+    "docs/index.html": [
+        ("## \U0001F9E0 通过公开通道加入御坂网络",
+         "the body of the GitHub issue the registration creates: the page and "
+         "workers/register-proxy-sw.js are two writers of the same line and "
+         "tests/test_registration_copy.py pins the shell, so the mark is a contract with the "
+         "worker, and GitHub is what renders it"),
+    ],
+    "docs/journey/index.html": [
+        ("\U0001F4CB lessons/",
+         "the page mocks a terminal and the mock has to be true: misakanet/search/engine.py "
+         "prints the clipboard mark before the result count"),
+        ("\U0001F7E2 high/actionable",
+         "the confidence mark the same script prints next to a high-confidence result"),
+        ("/✅|pass|Success|成功|ok/i",
+         "a classifier that matches the tool's own output, so the mark it looks for is the mark "
+         "the tool prints"),
+        ("/❌|fail|Error|error|missing|blocked/i",
+         "the same classifier, for the line that failed"),
+    ],
+}
 
 # ── the pages ────────────────────────────────────────────────────────────────────────────────────
 STYLE_BLOCK = re.compile(r"<style\b[^>]*>([\s\S]*?)</style>", re.IGNORECASE)
@@ -106,6 +148,24 @@ def hand_written_pages(root: Path = REPO) -> list[Path]:
         if "_partials" in rel.parts or "lessons" in rel.parts or "topics" in rel.parts:
             continue
         out.append(page)
+    return out
+
+
+def site_assets(root: Path = REPO) -> list[Path]:
+    """Everything the site's own visible text is made of.
+
+    The pages, the locale files and the site's own script. The last two are part of what the
+    reader sees: `switchLang` writes a locale string into the page, and `buildErrorHTML` writes a
+    panel into it. A gate that read only the pages would have called the site emoji-free on the
+    day the locale files still carried four.
+    """
+    out = list(hand_written_pages(root))
+    locales = root / "docs" / "locales"
+    if locales.is_dir():
+        out.extend(sorted(locales.glob("*.json")))
+    scripts = root / "docs" / "js"
+    if scripts.is_dir():
+        out.extend(sorted(scripts.glob("*.js")))
     return out
 
 
@@ -355,28 +415,108 @@ def check(root: Path = REPO) -> list[str]:
         if re.search(rf"{re.escape(PURPLE)}\b", css, re.IGNORECASE):
             problems.append(f"{rel}: the purple {PURPLE} is back — it is not a token")
 
+    # 13 — the icons are SVG, not emoji. The exceptions are content, and each is written down in
+    # EMOJI_ALLOWLIST with the reason it is not an icon.
+    for asset in site_assets(root):
+        rel = asset.relative_to(root).as_posix()
+        allowed = [snippet for snippet, _reason in EMOJI_ALLOWLIST.get(rel, [])]
+        for lineno, line, char in emoji_occurrences(asset):
+            if any(snippet in line for snippet in allowed):
+                continue
+            problems.append(
+                f"{rel}:{lineno}: {char} is a pictograph, not an icon — the site's icons are Lucide "
+                "SVG (scripts/site_icons.py)")
+
+    # 14 — every inline icon is one of ours. A hand-drawn path is a path nobody can review.
+    for asset in site_assets(root):
+        rel = asset.relative_to(root).as_posix()
+        for body in unknown_icons(asset.read_text(encoding="utf-8", errors="replace")):
+            problems.append(
+                f"{rel}: an inline icon is not in scripts/site_icons.py — {body[:60]}")
+
     return problems
 
 
-def emoji_in_page(page: Path) -> set[str]:
-    """The pictographs a page shows, read from the markup.
+def _blank(match: re.Match) -> str:
+    """Replace a matched span with spaces, keeping its newlines.
+
+    Keeping the line count is the point: the report names a line, and a report that names the
+    wrong line is worse than no report.
+    """
+    return re.sub(r"[^\n]", " ", match.group(0))
+
+
+SCRIPT_BLOCK = re.compile(r"<script\b[^>]*>[\s\S]*?</script\s*>", re.IGNORECASE)
+JS_BLOCK_COMMENT = re.compile(r"/\*[\s\S]*?\*/")
+# A *whole-line* `//` comment. A `//` in the middle of a line is left alone: in this codebase it
+# is a URL inside a string ("https://…") far more often than it is a comment.
+JS_LINE_COMMENT = re.compile(r"^[ \t]*//[^\n]*$", re.MULTILINE)
+
+
+def _strip_js_comments(block: str) -> str:
+    """Blank out the comments of a `<script>` body.
+
+    A comment is not on the page, and a comment that quotes an icon ("⏳ → ✅") would otherwise be
+    counted as one. The limit of this is stated rather than hidden: a line of a *template literal*
+    that begins with `//` is also blanked, because the scanner does not parse JavaScript. No such
+    line exists today, and `tests/test_site_design_convergence.py` pins the count that would
+    change if one appeared.
+    """
+    head_end = block.find(">")
+    if head_end < 0:
+        return block
+    body = block[head_end + 1:]
+    body = JS_BLOCK_COMMENT.sub(_blank, body)
+    body = JS_LINE_COMMENT.sub(_blank, body)
+    return block[:head_end + 1] + body
+
+
+def visible_text(path: Path) -> str:
+    """The text of a page or asset that a reader can actually see.
+
+    Removed: `<style>` blocks (CSS is not prose), HTML comments, and the *comments* of a
+    `<script>`. Kept: the string literals inside a script, because a script that writes
+    `<b>${t("regWait")}</b>` puts that string on the page.
 
     The first version of this report read the *CSS*, and it found nothing — because the emoji are
     in the text, not in the stylesheet. A count that says "0" when the page is full of emoji is
     worse than no count: the Y batch would have had nothing to do and nothing to prove.
-
-    Two things are filtered out and one deliberately is not:
-
-      * `<style>` blocks — CSS is not text a reader sees, and its comments carry decorative marks;
-      * HTML comments — the same;
-      * **`<script>` blocks are kept.** A script that writes `<div class="icon">💡</div>` puts an
-        emoji on the page, and the journey page's five step icons are exactly that. Counting the
-        markup alone would have under-counted the visible emoji by a third.
     """
-    text = page.read_text(encoding="utf-8", errors="replace")
-    text = re.sub(r"<style\b[^>]*>[\s\S]*?</style\s*>", "", text, flags=re.IGNORECASE)
-    text = re.sub(r"<!--[\s\S]*?-->", "", text)
-    return {c for c in EMOJI.findall(text) if c not in TEXT_SYMBOLS}
+    text = path.read_text(encoding="utf-8", errors="replace")
+    text = re.sub(r"<style\b[^>]*>[\s\S]*?</style\s*>", _blank, text, flags=re.IGNORECASE)
+    text = re.sub(r"<!--[\s\S]*?-->", _blank, text)
+    text = SCRIPT_BLOCK.sub(lambda m: _strip_js_comments(m.group(0)), text)
+    return text
+
+
+def emoji_occurrences(path: Path) -> list[tuple[int, str, str]]:
+    """(line number, the line, the pictograph) for every emoji a reader can see.
+
+    Occurrences rather than distinct characters: "42 different emoji" and "86 emoji" are different
+    numbers for different jobs, and the gate's job is to say "there is none of these left".
+    """
+    out = []
+    for lineno, line in enumerate(visible_text(path).splitlines(), 1):
+        for char in EMOJI.findall(line):
+            if char in TEXT_SYMBOLS:
+                continue
+            out.append((lineno, line.strip(), char))
+    return out
+
+
+def icon_bodies(text: str) -> list[str]:
+    """The shapes of every inline icon in this markup."""
+    return re.findall(r'<svg\b[^>]*\bclass="ico"[^>]*>(.*?)</svg>', text, re.DOTALL)
+
+
+def unknown_icons(text: str) -> list[str]:
+    """The inline icons whose shape is not in the icon set.
+
+    A hand-drawn path is a path nobody can review, and the whole point of the Y batch is that the
+    icons are a *system* with one source. So the gate asks the shape to be one of ours.
+    """
+    known = set(SITE_ICONS.values())
+    return [body for body in icon_bodies(text) if body not in known]
 
 
 def report(root: Path = REPO) -> list[tuple[str, str, str, bool]]:
@@ -411,13 +551,20 @@ def report(root: Path = REPO) -> list[tuple[str, str, str, bool]]:
     glows = brand_glows = 0
     side_bars = 0
     purples = 0
-    emoji: set[str] = set()
+    other_purples = 0
+    emoji_icons = emoji_content = 0
     for page in pages:
         rel = page.relative_to(root).as_posix()
         brand = BRAND_GLOW_ALLOWLIST.get(rel, {})
         page_css = css_of(page)
         purples += len(re.findall(rf"{re.escape(PURPLE)}\b", page_css, re.IGNORECASE))
-        emoji |= emoji_in_page(page)
+        # The *page* rather than its CSS: one of the survivors is a colour a script writes into a
+        # badge (`docs/index.html`'s per-domain palette), and a report that only read the
+        # stylesheet would have missed it.
+        page_text = page.read_text(encoding="utf-8", errors="replace")
+        other_purples += sum(
+            len(re.findall(rf"{re.escape(value)}\b", page_text, re.IGNORECASE))
+            for value in PURPLE_FAMILY) - len(re.findall(rf"{re.escape(PURPLE)}\b", page_text, re.IGNORECASE))
         for scope, selector, body in scoped_rules(page_css):
             selectors = [s.strip() for s in selector.split(",")]
             for value in declarations_in(body, "border-left"):
@@ -444,8 +591,15 @@ def report(root: Path = REPO) -> list[tuple[str, str, str, bool]]:
 
     # The nav partial is a source of its own: the pages carry a copy of it.
     nav = root / "docs" / "_partials" / "nav.html"
-    if nav.exists():
-        emoji |= emoji_in_page(nav)
+    assets = site_assets(root) + ([nav] if nav.exists() else [])
+    for asset in assets:
+        rel = asset.relative_to(root).as_posix()
+        allowed = [snippet for snippet, _reason in EMOJI_ALLOWLIST.get(rel, [])]
+        for _lineno, line, _char in emoji_occurrences(asset):
+            if any(snippet in line for snippet in allowed):
+                emoji_content += 1
+            else:
+                emoji_icons += 1
 
     return [
         ("2 圆角档位", f"{len(radii)} 种", "≤ 3 (+胶囊)", True),
@@ -461,7 +615,8 @@ def report(root: Path = REPO) -> list[tuple[str, str, str, bool]]:
         ("10 手写页面共用 token 头", "14 / 14", "14 / 14", True),
         ("11 各页底色统一", "待 Z 批", "--bg-0", False),
         ("12 紫色强调色", f"{purples} 处", "0", True),
-        ("7 Y 批：emoji 图标", f"{len(emoji)} 个", "0", False),
+        ("12b 其余紫色阶（Z 批）", f"{other_purples} 处", "0", False),
+        ("13 Y 批：emoji 图标", f"{emoji_icons} 处（内容 {emoji_content} 处）", "0 处", True),
     ]
 
 
