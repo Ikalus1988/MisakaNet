@@ -1,9 +1,23 @@
 {
-  "generated_at": "2026-10-20T08:42:03.152824+00:00",
+  "generated_at": "2026-10-20T14:22:20.823276+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "fix: the stdio receipt must say where the report went, and the preview button was dead",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3585",
+      "timestamp": "2026-10-20T13:31:08Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3578",
+      "timestamp": "2026-10-20T08:49:00Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "docs(handoff): 116 — the audit batch, what the subagents overturned, and what is still a decision",
@@ -23,20 +37,6 @@
       "title": "chore(data): sync lessons.json + refresh feed",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/3561",
       "timestamp": "2026-10-19T20:48:54Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "site + mcp: the audit batch (six PRs that turned out to be one stack)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3560",
-      "timestamp": "2026-10-19T17:49:26Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3556",
-      "timestamp": "2026-10-19T16:41:40Z",
       "source": "github"
     },
     {
