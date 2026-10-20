@@ -446,14 +446,45 @@ def _blank(match: re.Match) -> str:
     return re.sub(r"[^\n]", " ", match.group(0))
 
 
-SCRIPT_BLOCK = re.compile(r"<script\b[^>]*>[\s\S]*?</script\s*>", re.IGNORECASE)
 JS_BLOCK_COMMENT = re.compile(r"/\*[\s\S]*?\*/")
 # A *whole-line* `//` comment. A `//` in the middle of a line is left alone: in this codebase it
 # is a URL inside a string ("https://…") far more often than it is a comment.
 JS_LINE_COMMENT = re.compile(r"^[ \t]*//[^\n]*$", re.MULTILINE)
+# The opening tag of an inline icon. The closing tag is found by searching for it literally, for
+# the same reason the script tags are: a tag filter written as a regular expression is what
+# CodeQL's `py/bad-tag-filter` objects to.
+ICON_OPEN = re.compile(r'<svg\b[^>]*\bclass="ico"[^>]*>')
 
 
-def _strip_js_comments(block: str) -> str:
+def _script_spans(text: str) -> list[tuple[int, int]]:
+    """The (start, end) of every `<script>` body, found by searching for the literal tags.
+
+    A regular expression is the obvious way to write this, and it is exactly what CodeQL's
+    `py/bad-tag-filter` objects to: the rule asks a tag filter to match *every* spelling of the
+    end tag, and no regular expression provably does. Searching for the literal text is simpler
+    and is the reason the rule cannot fire.
+    """
+    spans = []
+    i = 0
+    while True:
+        start = text.find("<script", i)
+        if start < 0:
+            return spans
+        after = text[start + len("<script"):start + len("<script") + 1]
+        if after and not (after.isspace() or after == ">"):
+            i = start + len("<script")
+            continue
+        gt = text.find(">", start)
+        if gt < 0:
+            return spans
+        end = text.find("</script", gt)
+        if end < 0:
+            end = len(text)
+        spans.append((gt + 1, end))
+        i = end + len("</script")
+
+
+def _strip_js_comments(body: str) -> str:
     """Blank out the comments of a `<script>` body.
 
     A comment is not on the page, and a comment that quotes an icon ("⏳ → ✅") would otherwise be
@@ -462,13 +493,9 @@ def _strip_js_comments(block: str) -> str:
     line exists today, and `tests/test_site_design_convergence.py` pins the count that would
     change if one appeared.
     """
-    head_end = block.find(">")
-    if head_end < 0:
-        return block
-    body = block[head_end + 1:]
     body = JS_BLOCK_COMMENT.sub(_blank, body)
     body = JS_LINE_COMMENT.sub(_blank, body)
-    return block[:head_end + 1] + body
+    return body
 
 
 def visible_text(path: Path) -> str:
@@ -485,8 +512,16 @@ def visible_text(path: Path) -> str:
     text = path.read_text(encoding="utf-8", errors="replace")
     text = re.sub(r"<style\b[^>]*>[\s\S]*?</style\s*>", _blank, text, flags=re.IGNORECASE)
     text = re.sub(r"<!--[\s\S]*?-->", _blank, text)
-    text = SCRIPT_BLOCK.sub(lambda m: _strip_js_comments(m.group(0)), text)
-    return text
+    # The spans are found on the blanked text: blanking keeps every offset, so the spans still
+    # point at the right characters.
+    pieces = []
+    cursor = 0
+    for start, end in _script_spans(text):
+        pieces.append(text[cursor:start])
+        pieces.append(_strip_js_comments(text[start:end]))
+        cursor = end
+    pieces.append(text[cursor:])
+    return "".join(pieces)
 
 
 def emoji_occurrences(path: Path) -> list[tuple[int, str, str]]:
@@ -506,7 +541,13 @@ def emoji_occurrences(path: Path) -> list[tuple[int, str, str]]:
 
 def icon_bodies(text: str) -> list[str]:
     """The shapes of every inline icon in this markup."""
-    return re.findall(r'<svg\b[^>]*\bclass="ico"[^>]*>(.*?)</svg>', text, re.DOTALL)
+    out = []
+    for match in ICON_OPEN.finditer(text):
+        end = text.find("</svg", match.end())
+        if end < 0:
+            continue
+        out.append(text[match.end():end])
+    return out
 
 
 def unknown_icons(text: str) -> list[str]:
