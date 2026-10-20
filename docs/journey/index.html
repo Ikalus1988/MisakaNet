@@ -92,6 +92,36 @@
   --sh-1:0 1px 2px rgba(0,0,0,.35);
   --sh-2:0 12px 32px rgba(0,0,0,.45);
 }
+
+/* ── 图标：一套 Lucide 线性图标（Y 批）── */
+/* The icon set is Lucide, inlined as SVG; the *shapes* live in `scripts/site_icons.py` and the
+   *style* lives here, for the same reason the tokens live here and not in each page: one source,
+   copied into every page, gated by a script. An emoji could not do this job — it is a coloured
+   bitmap chosen by the platform, so the same markup renders three different icons in three
+   browsers and none of them is `--accent`.
+
+   `1em` makes an icon the size of the text it sits in, which is exactly what an emoji was.
+   `non-scaling-stroke` keeps the line one hairline wide at every size instead of letting it
+   thicken as the icon grows — a scaled-up drawing looks like a scaled-up drawing, and this is a
+   set of UI glyphs, not artwork. Lucide draws at 24px with a 2px stroke; at the 14px of a drawer
+   row that would be 1.17px, and at the 30px of the register panel 2.5px, so the stroke is set
+   once, here, at 1.5px, and every icon inherits it.
+
+   The markup carries no width/height/stroke attributes at all: the attributes would be forty
+   copies of a decision this block already makes. */
+.ico {
+  width: 1em;
+  height: 1em;
+  display: inline-block;
+  vertical-align: -0.125em;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
 </style>
 <!-- design-tokens:end -->
 <style>
@@ -349,7 +379,7 @@
 </head>
 <body>
 <div class="container">
-  <h1>⚡ MisakaNet Newcomer Journey</h1>
+  <h1><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg> MisakaNet Newcomer Journey</h1>
   <p class="subtitle" style="margin-bottom:0.5rem;">Understand → Search → Use → Feedback → Optional Contribution</p>
   <div style="text-align:center;margin-bottom:0.75rem;">
     <span style="display:inline-block;padding:0.2rem 0.8rem;border:1px solid #30363d;border-radius:var(--r-md);font-size:var(--fs-3xs);color:#8b949e;background:#0d1117;">No GitHub account needed. No PR required.</span>
@@ -363,11 +393,11 @@
 
 <script>
 const STEPS = [
-  { id: 'understand', label: 'Understand', icon: '💡' },
-  { id: 'search', label: 'Search', icon: '🔍' },
-  { id: 'use', label: 'Use', icon: '📖' },
-  { id: 'feedback', label: 'Feedback', icon: '💬' },
-  { id: 'contribute', label: 'Contribute', icon: '📤' },
+  { id: 'understand', label: 'Understand', icon: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>' },
+  { id: 'search', label: 'Search', icon: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>' },
+  { id: 'use', label: 'Use', icon: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg>' },
+  { id: 'feedback', label: 'Feedback', icon: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>' },
+  { id: 'contribute', label: 'Contribute', icon: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"/><path d="m21.854 2.147-10.94 10.939"/></svg>' },
 ];
 
 let currentStep = -1;
@@ -434,7 +464,7 @@ function renderUnderstand(card) {
   setTimeout(() => addLog('Lesson ≠ Skill — lessons are failure memories for agents'), 600);
   card.innerHTML = `
     <div class="card-header">
-      <div class="icon">💡</div>
+      <div class="icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg></div>
       <div class="name">Understand MisakaNet</div>
       <span class="tag">Step 1</span>
     </div>
@@ -443,14 +473,14 @@ function renderUnderstand(card) {
       <div style="background:#0d1117;border:1px solid #30363d;border-radius:var(--r-sm);padding:1rem;margin:0.75rem 0;">
         <div style="display:flex;gap:1rem;flex-wrap:wrap;">
           <div style="flex:1;min-width:200px;">
-            <div style="font-weight:600;color:#58a6ff;margin-bottom:0.5rem;">📖 Lesson</div>
+            <div style="font-weight:600;color:#58a6ff;margin-bottom:0.5rem;"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg> Lesson</div>
             <div style="color:#8b949e;font-size:var(--fs-sm);">
               Failure experience / debugging knowledge<br>
               <span style="color:#3fb950;">Helps agents avoid repeating known failures</span>
             </div>
           </div>
           <div style="flex:1;min-width:200px;">
-            <div style="font-weight:600;color:#d29922;margin-bottom:0.5rem;">🔧 Skill</div>
+            <div style="font-weight:600;color:#d29922;margin-bottom:0.5rem;"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg> Skill</div>
             <div style="color:#8b949e;font-size:var(--fs-sm);">
               Executable capability / workflow / tool<br>
               <span style="color:#8b949e;">Helps agents complete tasks</span>
@@ -469,7 +499,7 @@ function renderSearch(card) {
   setTimeout(() => addLog('Found: github-401-credential-lookup (score: 0.89)'), 800);
   card.innerHTML = `
     <div class="card-header">
-      <div class="icon">🔍</div>
+      <div class="icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></div>
       <div class="name">Search for a Lesson</div>
       <span class="tag">Step 2</span>
     </div>
@@ -490,10 +520,10 @@ function renderSearch(card) {
       <p style="color:#8b949e;font-size:var(--fs-xs);margin:0.5rem 0;">Or locally: <code>python3 search_knowledge.py "GitHub token 401"</code> · Or on the web: <a href="https://misakanet.org/search/?q=GitHub%20token%20401" style="color:#58a6ff;">misakanet.org/search</a></p>
       <div style="margin-top:0.75rem;display:flex;gap:0.5rem;flex-wrap:wrap;">
         <a href="https://misakanet.org/search/?q=GitHub%20token%20401" target="_blank" style="display:inline-flex;align-items:center;gap:0.3rem;padding:0.4rem 0.8rem;border:1px solid #238636;border-radius:var(--r-sm);color:#3fb950;text-decoration:none;font-size:var(--fs-sm);background:#0d1117;">
-          🔍 Open Search Page →
+          <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg> Open Search Page →
         </a>
         <a href="http-mcp/" style="display:inline-flex;align-items:center;gap:0.3rem;padding:0.4rem 0.8rem;border:1px solid #30363d;border-radius:var(--r-sm);color:#c9d1d9;text-decoration:none;font-size:var(--fs-sm);background:#0d1117;">
-          🔌 HTTP MCP Journey →
+          <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22v-5"/><path d="M9 8V2"/><path d="M15 8V2"/><path d="M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8Z"/></svg> HTTP MCP Journey →
         </a>
       </div>
     </div>
@@ -506,7 +536,7 @@ function renderUse(card) {
   setTimeout(() => addLog('Problem resolved without opening an issue'), 700);
   card.innerHTML = `
     <div class="card-header">
-      <div class="icon">📖</div>
+      <div class="icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg></div>
       <div class="name">Use the Lesson</div>
       <span class="tag">Step 3</span>
     </div>
@@ -533,7 +563,7 @@ function renderFeedback(card) {
   setTimeout(() => addLog('Best: submit via HTTP MCP intake — no account needed'), 400);
   card.innerHTML = `
     <div class="card-header">
-      <div class="icon">💬</div>
+      <div class="icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
       <div class="name">Send Feedback / Report a Bug</div>
       <span class="tag">Step 4</span>
     </div>
@@ -548,15 +578,15 @@ function renderFeedback(card) {
       <p style="color:#8b949e;font-size:var(--fs-xs);margin:0.5rem 0;">Anonymous clients do not need <code>initialize</code> or a Bearer token. Server redacts secrets and guards against spam/duplicates.</p>
       <div style="display:flex;gap:0.75rem;flex-wrap:wrap;margin:0.75rem 0;">
         <a href="mailto:bot@misakanet.org" style="flex:1;min-width:150px;display:flex;flex-direction:column;gap:0.3rem;padding:0.75rem;border:1px solid #30363d;border-radius:var(--r-sm);color:#c9d1d9;text-decoration:none;background:#0d1117;">
-          <span style="font-weight:600;">📧 Email</span>
+          <span style="font-weight:600;"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg> Email</span>
           <span style="color:#8b949e;font-size:var(--fs-2xs);">bot@misakanet.org</span>
         </a>
         <a href="https://github.com/Ikalus1988/MisakaNet/issues/510" target="_blank" style="flex:1;min-width:150px;display:flex;flex-direction:column;gap:0.3rem;padding:0.75rem;border:1px solid #30363d;border-radius:var(--r-sm);color:#c9d1d9;text-decoration:none;background:#0d1117;">
-          <span style="font-weight:600;">🚶 Journey Report</span>
+          <span style="font-weight:600;"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 16v-2.38C4 11.5 2.97 10.5 3 8c.03-2.72 1.49-6 4.5-6C9.37 2 10 3.8 10 5.5c0 3.11-2 5.66-2 8.68V16a2 2 0 1 1-4 0Z"/><path d="M20 20v-2.38c0-2.12 1.03-3.12 1-5.62-.03-2.72-1.49-6-4.5-6C14.63 6 14 7.8 14 9.5c0 3.11 2 5.66 2 8.68V20a2 2 0 1 0 4 0Z"/><path d="M16 17h4"/><path d="M4 13h4"/></svg> Journey Report</span>
           <span style="color:#8b949e;font-size:var(--fs-2xs);">#510</span>
         </a>
         <a href="http-mcp/" style="flex:1;min-width:150px;display:flex;flex-direction:column;gap:0.3rem;padding:0.75rem;border:1px solid #238636;border-radius:var(--r-sm);color:#3fb950;text-decoration:none;background:#0d1117;">
-          <span style="font-weight:600;">🔌 HTTP MCP Journey</span>
+          <span style="font-weight:600;"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22v-5"/><path d="M9 8V2"/><path d="M15 8V2"/><path d="M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8Z"/></svg> HTTP MCP Journey</span>
           <span style="color:#8b949e;font-size:var(--fs-2xs);">Full search/read/intake guide</span>
         </a>
       </div>
@@ -572,7 +602,7 @@ function renderContribute(card) {
   setTimeout(() => addLog('Many ways to contribute — PR is just one of them'), 400);
   card.innerHTML = `
     <div class="card-header">
-      <div class="icon">📤</div>
+      <div class="icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"/><path d="m21.854 2.147-10.94 10.939"/></svg></div>
       <div class="name">Contribute (Optional)</div>
       <span class="tag">Step 5</span>
     </div>
@@ -590,16 +620,16 @@ function renderContribute(card) {
       </div>
       <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.75rem;">
         <a href="http-mcp/" style="display:inline-flex;align-items:center;gap:0.3rem;padding:0.4rem 0.8rem;border:1px solid #30363d;border-radius:var(--r-sm);color:#c9d1d9;text-decoration:none;font-size:var(--fs-sm);background:#0d1117;">
-          🔌 HTTP MCP Journey
+          <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22v-5"/><path d="M9 8V2"/><path d="M15 8V2"/><path d="M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8Z"/></svg> HTTP MCP Journey
         </a>
         <a href="https://github.com/Ikalus1988/MisakaNet/labels/good%20first%20issue" target="_blank" style="display:inline-flex;align-items:center;gap:0.3rem;padding:0.4rem 0.8rem;border:1px solid #30363d;border-radius:var(--r-sm);color:#c9d1d9;text-decoration:none;font-size:var(--fs-sm);background:#0d1117;">
-          🏷️ Good First Issues
+          <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/></svg> Good First Issues
         </a>
         <a href="https://github.com/Ikalus1988/MisakaNet/labels/bounty" target="_blank" style="display:inline-flex;align-items:center;gap:0.3rem;padding:0.4rem 0.8rem;border:1px solid #30363d;border-radius:var(--r-sm);color:#c9d1d9;text-decoration:none;font-size:var(--fs-sm);background:#0d1117;">
-          💰 Bounties
+          <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M18.09 10.37A6 6 0 1 1 10.34 18"/><path d="M7 6h1v4"/><path d="m16.71 13.88.7.71-2.82 2.82"/></svg> Bounties
         </a>
         <a href="../label-system.md" style="display:inline-flex;align-items:center;gap:0.3rem;padding:0.4rem 0.8rem;border:1px solid #30363d;border-radius:var(--r-sm);color:#c9d1d9;text-decoration:none;font-size:var(--fs-sm);background:#0d1117;">
-          📋 Label System
+          <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg> Label System
         </a>
       </div>
     </div>
@@ -617,7 +647,7 @@ function updateControls() {
       `<button class="btn btn-primary" onclick="toggleAuto()">⏸ Pause</button>`
     }
     <button class="btn btn-primary" onclick="goStep(1)" ${isLast ? 'disabled style="opacity:0.5"' : ''}>Next →</button>
-    ${isLast ? '<button class="btn" onclick="resetJourney()">🔄 Restart</button>' : ''}
+    ${isLast ? '<button class="btn" onclick="resetJourney()"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg> Restart</button>' : ''}
   `;
 }
 

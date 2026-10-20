@@ -35,6 +35,11 @@ export async function safeFetchLessons(url, errorUI) {
   }
 }
 
+// The alert mark, drawn rather than typed. The emoji was a colour bitmap chosen by the
+// platform, and the rest of the site's icons are SVG (scripts/site_icons.py, #3541 batch Y) — one
+// icon system means one way to be wrong, and one place to be right.
+const ALERT_ICON = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>';
+
 /**
  * 构建降级 UI HTML
  * @param {string} message
@@ -43,7 +48,7 @@ export async function safeFetchLessons(url, errorUI) {
 export function buildErrorHTML(message) {
   var safeMsg = encodeURIComponent(String(message));
   return '<div style="border:1px solid #ff4d4f;padding:12px;margin:8px;background:rgba(255,77,79,0.08);border-radius:8px;">' +
-    '<div style="color:#ff4d4f;font-weight:600;font-size:13px;">\u26a0\ufe0f Frontend Shield: Data Parse Blocked</div>' +
+    '<div style="color:#ff4d4f;font-weight:600;font-size:13px;">' + ALERT_ICON + ' Frontend Shield: Data Parse Blocked</div>' +
     '<div style="color:#8b949e;font-size:11px;margin-top:4px;">The intelligence feed contains anomalies or failed to load.</div>' +
     '<code style="color:#ff4d4f;font-size:10px;">' + safeMsg + '</code></div>';
 }
