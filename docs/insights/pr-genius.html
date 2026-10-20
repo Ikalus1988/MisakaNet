@@ -5,6 +5,77 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MisakaNet — PR Genius Performance & Insights</title>
 <meta name="description" content="Operational metrics, success rates, latency distribution, and PR type breakdown for PR Genius automated quality checks.">
+<!-- design-tokens:start -->
+<style id="misaka-design-tokens">
+/*
+ * The design system's tokens — ONE source for every hand-written page (#3541, batch V).
+ *
+ * Why this file exists: the site currently holds two products. The homepage has an identity
+ * (Orbitron, a cyan glow, a grid), and the other hand-written pages are GitHub's default dark
+ * theme — copied in from somewhere else. Fourteen pages, fourteen sets of hardcoded colours,
+ * radii, shadows and font stacks. Nothing is *wrong* with them; they are simply not one site,
+ * and every future change has to be made fourteen times.
+ *
+ * This block changes nothing on its own: no page references these names yet. That is deliberate
+ * — batch W is the batch that replaces hardcoded values with these names, and a batch that
+ * changed the rendering as well as the vocabulary would make a visual regression impossible to
+ * attribute. So this file is the vocabulary, and the gate below keeps it the only copy of it.
+ *
+ * Every value below is measured, not chosen for taste: the text colours were picked for their
+ * WCAG contrast ratio against --bg-0 (15.95:1, 7.67:1, 4.14:1), and the two accent colours
+ * for theirs (12.79:1 and 5.21:1). If a value changes here, the ratios change with it, so the
+ * numbers in the comments are part of the contract.
+ *
+ * Maintained by scripts/sync_design_tokens.py — `--check` fails when a page drifts from this
+ * file, the same way the shared nav row is kept honest.
+ */
+:root {
+  /* ── 底与面：3 档（收编 GitHub 习惯色，不再各页自定义）── */
+  --bg-0: #070b15;   /* 页面底（首页既有 --bg-deep） */
+  --bg-1: #0d1424;   /* 卡片 / 面 */
+  --bg-2: #161b22;   /* 浮层 / 代码块 */
+
+  /* ── 文字：3 档（对比度已实测）── */
+  --fg-1: #e2e8f0;   /* 15.95:1 on --bg-0 */
+  --fg-2: #94a3b8;   /*  7.67:1 on --bg-0 */
+  --fg-3: #64748b;   /*  仅限 ≥16px 或非文本装饰（4.14:1，正文禁用）*/
+
+  /* ── 品牌与语义 ── */
+  --accent:   #00e5ff;  /* 12.79:1 — 品牌 / 链接（首页既有 --cyan）*/
+  --accent-2: #ff0080;  /*  5.21:1 — 次级强调，限量使用 */
+  --ok:       #22c55e;  /*  8.63:1 */
+  --warn:     #f0c040;
+  --danger:   #ef4444;  /*  5.23:1 */
+  --line:        rgba(148,163,184,.14);
+  --line-strong: rgba(0,229,255,.28);
+
+  /* ── 字体：3 族（不换字体家族，只把 5 套声明收敛成 token）── */
+  --font-ui:      'Inter','PingFang SC','Microsoft YaHei','Noto Sans SC',sans-serif;
+  --font-display: 'Orbitron', var(--font-ui);      /* 仅品牌层 */
+  --font-cn:      'Ma Shan Zheng','Noto Sans SC',cursive; /* 仅首页副标 */
+  --font-mono:    'JetBrains Mono',ui-monospace,monospace;
+
+  /* ── 字阶：10 档，rem 基准 16 ── */
+  --fs-3xs:.6875rem; --fs-2xs:.75rem; --fs-xs:.8125rem; --fs-sm:.875rem;
+  --fs-md:1rem;     --fs-lg:1.125rem; --fs-xl:1.3125rem; --fs-2xl:1.5rem;
+  --fs-3xl:1.875rem;--fs-4xl:2.375rem;
+
+  /* ── 间距：4px 基准，8 档 ── */
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px;
+  --sp-5:24px; --sp-6:32px; --sp-7:40px; --sp-8:48px;
+
+  /* ── 圆角：3 档（现状 14 种）── */
+  --r-sm:6px; --r-md:10px; --r-lg:16px;
+
+  /* ── 动效：2 档 + 1 个 easing（现状 5 种时长）── */
+  --t-fast:150ms; --t-base:250ms; --ease:cubic-bezier(.2,.8,.2,1);
+
+  /* ── 阴影：2 档（现状 31 处）── */
+  --sh-1:0 1px 2px rgba(0,0,0,.35);
+  --sh-2:0 12px 32px rgba(0,0,0,.45);
+}
+</style>
+<!-- design-tokens:end -->
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
