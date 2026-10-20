@@ -12,12 +12,11 @@ The cap of 40000 limited the amount of text that could be processed during intak
 
 ## Fix
 The cap was increased to 60000 to allow more text to be included.
+misaki.config.intake_text_cap = 60000
 
 ## Verification
 Run the command to confirm the cap is now 60000:
 ```python
 python3 -c "from misaki import config; print(config.get('intake_text_cap'))"
 # Expected output: 60000
-```
-
 ```
