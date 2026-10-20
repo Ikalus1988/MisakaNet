@@ -359,7 +359,6 @@
   .github-btn:hover {
     background: rgba(0, 229, 255, 0.12);
     border-color: rgba(0, 229, 255, 0.4);
-    box-shadow: 0 0 20px rgba(0, 229, 255, 0.1);
     transform: translateY(-2px);
   }
 
@@ -394,7 +393,7 @@
 
   .stat-card:hover {
     border-color: rgba(0, 229, 255, 0.4);
-    box-shadow: 0 0 30px rgba(0, 229, 255, 0.08), 0 4px 32px rgba(0, 0, 0, 0.4);
+    box-shadow: var(--sh-2);
     transform: translateX(4px);
   }
 
@@ -422,16 +421,9 @@
     color: var(--cyan);
     line-height: 1;
     margin-bottom: 4px;
-    text-shadow: 0 0 20px rgba(0, 229, 255, 0.3);
-    animation: pulseGlow 2s ease-in-out infinite;
   }
 
-  .stat-number.loading { color: #1e3a4a; animation: none; text-shadow: none; }
-
-  @keyframes pulseGlow {
-    0%, 100% { text-shadow: 0 0 10px rgba(0, 229, 255, 0.2); }
-    50% { text-shadow: 0 0 25px rgba(0, 229, 255, 0.5); }
-  }
+  .stat-number.loading { color: #1e3a4a; }
 
   .stat-label {
     font-size: var(--fs-sm);
@@ -457,24 +449,6 @@
       calc(100% - 4px) 100%, 4px 100%, 0 calc(100% - 4px), 0 4px
     );
   }
-
-  /* Capsule badges for levels */
-  .badge-capsule {
-    display: inline-block;
-    padding: 1px 10px;
-    border-radius: var(--r-lg);
-    font-size: var(--fs-3xs);
-    font-weight: 700;
-    font-family: var(--font-mono);
-    letter-spacing: 0.5px;
-  }
-  .badge-capsule.lv0 { background: rgba(100,116,139,0.15); color: var(--fg-3); border: 1px solid rgba(100,116,139,0.2); }
-  .badge-capsule.lv1 { background: rgba(56,189,248,0.12); color: #38bdf8; border: 1px solid rgba(56,189,248,0.2); }
-  .badge-capsule.lv2 { background: rgba(168,85,247,0.12); color: #a855f7; border: 1px solid rgba(168,85,247,0.2); }
-  .badge-capsule.lv3 { background: rgba(250,204,21,0.12); color: #facc15; border: 1px solid rgba(250,204,21,0.2); }
-  .badge-capsule.lv4 { background: rgba(34,197,94,0.12); color: var(--ok); border: 1px solid rgba(34,197,94,0.2); }
-  .badge-capsule.lv5 { background: rgba(255,0,128,0.12); color: var(--magenta); border: 1px solid rgba(255,0,128,0.2); }
-  .badge-capsule.lv6 { background: rgba(0,229,255,0.12); color: var(--cyan); border: 1px solid rgba(0,229,255,0.25); }
 
   /* ── Section Title ── */
   .section-title {
@@ -652,7 +626,7 @@
     display: inline-block;
     position: relative;
   }
-  .status-dot.online { background: var(--green); box-shadow: 0 0 8px rgba(34, 197, 94, 0.6); }
+  .status-dot.online { background: var(--green); }
   .status-dot.offline { background: var(--gray); }
   .status-dot.online::after {
     content: '';
@@ -751,7 +725,7 @@
 
   .contrib-badge-none  { background: rgba(100,116,139,0.15); color: var(--fg-3); border: 1px solid rgba(100,116,139,0.2); }
   .contrib-badge-bronze { background: rgba(56,189,248,0.12); color: #38bdf8; border: 1px solid rgba(56,189,248,0.2); }
-  .contrib-badge-silver { background: rgba(168,85,247,0.12); color: #a855f7; border: 1px solid rgba(168,85,247,0.2); }
+  .contrib-badge-silver { background: rgba(255,0,128,0.12); color: var(--accent-2); border: 1px solid rgba(255,0,128,0.2); }
   .contrib-badge-gold   { background: rgba(250,204,21,0.12); color: #facc15; border: 1px solid rgba(250,204,21,0.2); }
   .contrib-badge-platinum { background: rgba(0,229,255,0.12); color: var(--cyan); border: 1px solid rgba(0,229,255,0.25); }
 
@@ -768,7 +742,7 @@
     line-height: 18px;
   }
   .contrib-class-autonomous { background: rgba(0,229,255,0.15); color: var(--accent); border: 1px solid rgba(0,229,255,0.3); }
-  .contrib-class-copilot { background: rgba(168,85,247,0.15); color: #a855f7; border: 1px solid rgba(168,85,247,0.3); }
+  .contrib-class-copilot { background: rgba(255,0,128,0.15); color: var(--accent-2); border: 1px solid rgba(255,0,128,0.3); }
   .contrib-class-human { background: rgba(34,197,94,0.15); color: var(--ok); border: 1px solid rgba(34,197,94,0.3); }
 
   .contrib-model-badge {
@@ -856,7 +830,6 @@
     padding: 12px 14px;
     background: rgba(15, 23, 42, 0.78);
     border: 1px solid rgba(0, 229, 255, 0.18);
-    border-left: 3px solid rgba(0, 229, 255, 0.45);
     border-radius: var(--r-md);
   }
 
@@ -900,7 +873,8 @@
 
   .register-input:focus {
     border-color: var(--cyan);
-    box-shadow: 0 0 12px rgba(0, 229, 255, 0.08), inset 0 0 12px rgba(0, 229, 255, 0.02);
+    outline: 2px solid var(--cyan);
+    outline-offset: 1px;
   }
   .register-input::placeholder { color: var(--text-dim); }
 
@@ -930,13 +904,13 @@
     gap: 6px;
   }
 
-  .agent-option:hover { border-color: var(--cyan); color: var(--text-primary); box-shadow: 0 0 16px rgba(0, 229, 255, 0.06); }
+  .agent-option:hover { border-color: var(--cyan); color: var(--text-primary); }
   .agent-option:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
   .agent-option.selected {
     border-color: var(--cyan);
     background: rgba(0, 229, 255, 0.85);
     color: var(--bg-0);
-    box-shadow: 0 0 30px rgba(0, 229, 255, 0.3), inset 0 0 20px rgba(0, 229, 255, 0.05);
+    box-shadow: var(--sh-1);
     position: relative;
   }
   .agent-option.selected::before {
@@ -982,14 +956,12 @@
     opacity: 0.5;
     transition: all var(--t-base);
     font-family: var(--font-brand);
-    text-shadow: 0 0 8px rgba(255, 0, 128, 0.2);
   }
 
   .register-btn:not(:disabled) { opacity: 1; cursor: pointer; }
   .register-btn:not(:disabled):hover {
     background: rgba(255, 0, 128, 0.25);
     border-color: rgba(255, 0, 128, 0.5);
-    box-shadow: 0 0 24px rgba(255, 0, 128, 0.15);
   }
 
   .register-result {
@@ -1057,7 +1029,6 @@
   }
   .agent-register-bar code:hover {
     border-color: var(--cyan);
-    box-shadow: 0 0 12px rgba(0, 229, 255, 0.08);
   }
 
   .safety-notice {
@@ -1122,7 +1093,7 @@
     border: 1px solid rgba(0, 229, 255, 0.2);
     border-radius: var(--r-lg);
     padding: 32px 28px;
-    box-shadow: 0 0 60px rgba(0, 229, 255, 0.08), 0 8px 40px rgba(0, 0, 0, 0.5);
+    box-shadow: var(--sh-2);
     position: relative;
   }
 
@@ -1189,12 +1160,13 @@
     transition: all var(--t-fast);
     font-family: var(--font-mono);
   }
-  .help-btn:hover { border-color: var(--cyan); color: var(--cyan); box-shadow: 0 0 12px rgba(0, 229, 255, 0.1); }
+  .help-btn:hover { border-color: var(--cyan); color: var(--cyan); }
 
   /* ── Home search panel ── */
   .home-search-box:focus-within {
     border-color: rgba(0,229,255,0.72) !important;
-    box-shadow: 0 0 0 3px rgba(0,229,255,0.08), 0 0 24px rgba(0,229,255,0.13) !important;
+    outline: 2px solid var(--cyan) !important;
+    outline-offset: 0 !important;
   }
 
   /* ── Keyboard shortcut hint ── */
@@ -1307,12 +1279,16 @@
   }
 
   /* ── Status notification — cyan system ── */
+  /* It used to breathe a halo — a zero-offset cyan shadow that pulsed on every
+     error row. A halo on every row is the "everything glows" look this batch is
+     removing, and the signal it carried ("this is live") is carried just as
+     well by the row brightening and dimming. */
   .error-item {
     animation: breatheCyan 3s ease-in-out infinite;
   }
   @keyframes breatheCyan {
-    0%, 100% { box-shadow: 0 0 8px rgba(0, 229, 255, 0.05); }
-    50% { box-shadow: 0 0 20px rgba(0, 229, 255, 0.12); }
+    0%, 100% { opacity: 0.82; }
+    50% { opacity: 1; }
   }
 
   /* ── Toast notification ── */
@@ -1330,7 +1306,7 @@
     font-family: var(--font-mono);
     font-size: var(--fs-2xs);
     color: var(--cyan);
-    box-shadow: 0 0 30px rgba(0, 229, 255, 0.08);
+    box-shadow: var(--sh-2);
     transform: translateY(-20px);
     opacity: 0;
     transition: all var(--t-base) ease;
@@ -1438,7 +1414,8 @@
   }
   .terminal-input-wrap:focus-within {
     border-color: var(--cyan);
-    box-shadow: 0 0 12px rgba(0, 229, 255, 0.08), inset 0 0 12px rgba(0, 229, 255, 0.02);
+    outline: 2px solid var(--cyan);
+    outline-offset: 0;
     background: rgba(0, 229, 255, 0.03);
   }
   .terminal-input-prefix {
@@ -1685,7 +1662,6 @@
   }
   .nav-toggle:hover {
     border-color: rgba(0, 229, 255, 0.4);
-    box-shadow: 0 0 16px rgba(0, 229, 255, 0.1);
   }
   .nav-toggle .hamburger {
     font-size: var(--fs-md);
@@ -1900,18 +1876,18 @@
   <div class="content-glass">
 
   <!-- Search Section -->
-  <div class="home-search-panel" style="max-width:720px;margin:20px auto 0;padding:18px;border:1px solid rgba(0,229,255,0.18);border-radius:var(--r-lg);background:linear-gradient(180deg, rgba(0,229,255,0.055), rgba(255,255,255,0.025));box-shadow:var(--sh-2);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);transition:border-color var(--t-base) ease,box-shadow var(--t-base) ease;">
+  <div class="home-search-panel" style="max-width:720px;margin:20px auto 0;padding:18px;border:1px solid rgba(0,229,255,0.18);border-radius:var(--r-lg);background:linear-gradient(180deg, rgba(0,229,255,0.055), rgba(255,255,255,0.025));box-shadow:var(--sh-2);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);transition:border-color var(--t-base) ease;">
     <div style="text-align:center;margin-bottom:12px;">
       <div style="font-size:var(--fs-lg);font-weight:700;color:var(--text-main);margin-bottom:4px;" data-i18n="searchPanelTitle">Search indexed failure-recovery lessons</div>
       <div style="font-size:var(--fs-xs);color:#cbd5e1;line-height:1.55;" data-i18n="searchPanelSubtitle">Find fixes from real AI agent debugging sessions.</div>
       <div id="lesson-count-search" style="font-size:var(--fs-2xs);color:var(--fg-2);margin-top:5px;line-height:1.5;">indexed failure-recovery lessons · GitHub-audited · no database</div>
     </div>
     <div style="position:relative;max-width:720px;margin:0 auto;">
-      <div class="home-search-box" style="position:relative;background:rgba(4,10,24,0.86);border:1px solid rgba(0,229,255,0.30);border-radius:var(--r-lg);transition:border-color var(--t-base) ease,box-shadow var(--t-base) ease;">
+      <div class="home-search-box" style="position:relative;background:rgba(4,10,24,0.86);border:1px solid rgba(0,229,255,0.30);border-radius:var(--r-lg);transition:border-color var(--t-base) ease;">
         <label class="sr-only" for="search-input" data-i18n="searchPanelLabel">Search lessons</label>
-        <input id="search-input" type="text" data-i18n-placeholder="searchPanelPlaceholder" placeholder="Search DCO, token leak, pip timeout..." style="width:100%;padding:15px 142px 15px 16px;background:transparent;border:0;color:var(--text-main);font-size:var(--fs-md);font-family:var(--font-brand);outline:none;" oninput="debounceSearch()" onkeydown="handleSearchKeydown(event)" onfocus="this.parentElement.style.borderColor='rgba(0,229,255,0.72)';this.parentElement.style.boxShadow='0 0 0 3px rgba(0,229,255,0.08),0 0 24px rgba(0,229,255,0.13)'" onblur="this.parentElement.style.borderColor='rgba(0,229,255,0.30)';this.parentElement.style.boxShadow='none';setTimeout(()=>{document.getElementById('search-results').style.display='none';document.getElementById('search-status').textContent='';},200)"/>
+        <input id="search-input" type="text" data-i18n-placeholder="searchPanelPlaceholder" placeholder="Search DCO, token leak, pip timeout..." style="width:100%;padding:15px 142px 15px 16px;background:transparent;border:0;color:var(--text-main);font-size:var(--fs-md);font-family:var(--font-brand);outline:none;" oninput="debounceSearch()" onkeydown="handleSearchKeydown(event)" onfocus="this.parentElement.style.borderColor='rgba(0,229,255,0.72)'" onblur="this.parentElement.style.borderColor='rgba(0,229,255,0.30)';setTimeout(()=>{document.getElementById('search-results').style.display='none';document.getElementById('search-status').textContent='';},200)"/>
         <span class="search-hint" style="position:absolute;right:88px;top:50%;transform:translateY(-50%);color:rgba(226,232,240,0.78);background:rgba(255,255,255,0.075);border:1px solid rgba(255,255,255,0.14);border-radius:var(--r-md);padding:3px 7px;font-size:var(--fs-3xs);">⌘K</span>
-        <button type="button" onclick="goSearchPage()" data-i18n="searchPanelButton" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:var(--cyan);color:#07101f;border:0;border-radius:var(--r-md);padding:8px 13px;font-size:var(--fs-2xs);font-weight:700;font-family:var(--font-brand);cursor:pointer;box-shadow:0 0 14px rgba(0,229,255,0.16);">Search</button>
+        <button type="button" onclick="goSearchPage()" data-i18n="searchPanelButton" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:var(--cyan);color:#07101f;border:0;border-radius:var(--r-md);padding:8px 13px;font-size:var(--fs-2xs);font-weight:700;font-family:var(--font-brand);cursor:pointer;">Search</button>
       </div>
       <div id="search-status" class="sr-only" role="status" aria-live="polite"></div>
       <div id="search-results" style="display:none;margin-top:6px;max-height:400px;overflow-y:auto;background:var(--bg-card);border:1px solid rgba(0,229,255,0.1);border-radius:var(--r-md);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);"></div>
@@ -2494,13 +2470,11 @@ function flashCopied(btn) {
   btn.textContent = 'COPIED ✓';
   btn.style.borderColor = 'var(--ok)';
   btn.style.color = 'var(--ok)';
-  btn.style.boxShadow = '0 0 12px rgba(34,197,94,0.3)';
   clearTimeout(copyBtnTimer);
   copyBtnTimer = setTimeout(() => {
     btn.textContent = orig;
     btn.style.borderColor = 'rgba(0,229,255,0.28)';
     btn.style.color = 'var(--cyan)';
-    btn.style.boxShadow = 'none';
   }, 1800);
 }
 
@@ -2605,11 +2579,11 @@ document.addEventListener('keydown', (e) => {
     const input = document.getElementById('search-input');
     input.focus();
     input.select();
-    // Highlight flash: brief glow then fade
-    input.style.boxShadow = '0 0 40px rgba(0,229,255,0.3), inset 0 0 20px rgba(0,229,255,0.05)';
+    // The cue is the focus ring the stylesheet draws on `:focus-within` — a hard
+    // outline, not a halo. It says "the keyboard went here" for as long as the
+    // field has the focus, which is what a 800ms flash could not.
     input.style.borderColor = 'rgba(0,229,255,0.6)';
     setTimeout(() => {
-      input.style.boxShadow = 'none';
       input.style.borderColor = 'rgba(0,229,255,0.4)';
     }, 800);
   }
@@ -2962,9 +2936,9 @@ function renderVoices() {
     const safeSource = safeHref(v.source_url);
     const sourceLabel = DOMPurify.sanitize(getVoiceSourceLabel(v.source_type));
     return `
-      <div style="background:rgba(15,23,42,0.82);border:1px solid rgba(0,229,255,0.22);border-radius:var(--r-lg);padding:20px 22px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);transition:border-color 0.2s,box-shadow var(--t-fast);"
-           onmouseover="this.style.borderColor='rgba(0,229,255,0.42)';this.style.boxShadow='0 0 20px rgba(0,229,255,0.08)'"
-           onmouseout="this.style.borderColor='rgba(0,229,255,0.22)';this.style.boxShadow='none'">
+      <div style="background:rgba(15,23,42,0.82);border:1px solid rgba(0,229,255,0.22);border-radius:var(--r-lg);padding:20px 22px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);transition:border-color var(--t-fast);"
+           onmouseover="this.style.borderColor='rgba(0,229,255,0.42)'"
+           onmouseout="this.style.borderColor='rgba(0,229,255,0.22)'">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
           <span style="font-family:var(--font-mono);font-size:var(--fs-xs);font-weight:700;color:var(--text-primary);">${safeAuthor}</span>
           <span style="font-size:var(--fs-3xs);color:var(--cyan);background:rgba(0,229,255,0.12);border:1px solid rgba(0,229,255,0.24);padding:2px 8px;border-radius:var(--r-md);font-family:var(--font-mono);">${safeRole}</span>

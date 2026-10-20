@@ -49,6 +49,41 @@ TOKEN_VALUES = {
 }
 CONTAINER_WIDTHS = {"960px", "720px"}
 
+# ── what batch X owns ─────────────────────────────────────────────────────────────────────────
+# A colour bar down the left edge of a card is the shape #3541 calls out: an edge that carries
+# meaning the box itself does not. One exception is written down rather than left to taste — the
+# journey page draws an ordered list with a 2px hairline spine, which is a connector between the
+# steps, not an accent.
+SIDE_BAR_ALLOWLIST = {
+    ("docs/journey/http-mcp/index.html", ".steps li"),
+}
+
+# The homepage's glows are the brand: #3541 says the cyber signature is an asset, not a problem to
+# fix. Every other halo is gone. The allowlist says which ones survive and by selector, so a new
+# one has to be written down to survive — and the reason is in the name.
+# The allowance is per *property*, not per selector: the logo may carry a text halo, but a box
+# shadow on the same rule is not the brand layer and has to be written down separately.
+BRAND_GLOW_ALLOWLIST = {
+    "docs/index.html": {
+        ".header-avatar": {"filter"},            # the logo's drop halo
+        ".logo-title": {"text-shadow"},          # the Orbitron title
+        ".logo-cn": {"text-shadow"},             # the Chinese calligraphy subtitle
+        ".logo-tagline": {"text-shadow"},
+        ".content-glass": {"box-shadow"},        # the hero glass panel
+        "@keyframes energyFlow": {"box-shadow"},  # the panel's border energy flow
+    },
+}
+
+# The one accent the vocabulary does not own. It was a purple badge ramp on the homepage, and two
+# thirds of it was dead CSS; what was live moved to `--accent-2`.
+PURPLE = "#a855f7"
+
+# A pictograph, not a symbol: the box-drawing characters the comments use, the arrows, the
+# keyboard glyphs and the text dingbats are typography, and counting them would make the number
+# the Y batch has to bring to zero a number nobody could act on.
+EMOJI = re.compile("[\U0001F300-\U0001FAFF\U00002600-\u27BF\U00002B00-\u2BFF]")
+TEXT_SYMBOLS = set("✓✗✘★☆⚠☰✕✦✧※⌘⌨")
+
 # ── the pages ────────────────────────────────────────────────────────────────────────────────────
 STYLE_BLOCK = re.compile(r"<style\b[^>]*>([\s\S]*?)</style>", re.IGNORECASE)
 # The managed token block is copied verbatim into every page (batch V). It is the vocabulary, not
@@ -130,6 +165,66 @@ def compound_ok(value: str, token_pattern: str) -> bool:
             continue
         return False
     return True
+
+
+# ── reading a rule with its selector ───────────────────────────────────────────────────────────
+COMMENT = re.compile(r"/\*[\s\S]*?\*/")
+# A layer whose x and y offsets are both zero is a halo, not an elevation: it casts no shadow in
+# any direction, it only bleeds colour. `inset 0 0 60px rgba(...)` is the same thing drawn inside.
+GLOW_LAYER = re.compile(r"(?:inset\s+)?\b0\s+0\s+(?:\d*\.?\d+px|\d*\.?\d+)")
+
+
+def scoped_rules(css: str) -> list[tuple[str | None, str, str]]:
+    """(scope, selector, body) for every rule in this CSS.
+
+    `scope` is the `@keyframes` name when the rule is a frame of an animation, and `None` for the
+    page's own CSS. The distinction matters because #3541 keeps the homepage's animations — a
+    frame of the border energy flow is brand, while the same shadow written on a button is the
+    "everything glows" look the batch removes.
+    """
+    css = COMMENT.sub("", css)
+    frames: list[tuple[str, str]] = []
+    page_css = css
+    for match in re.finditer(r"@keyframes\s+([\w-]+)\s*\{", css):
+        name = match.group(1)
+        depth, end = 0, match.end() - 1
+        while end < len(css):
+            if css[end] == "{":
+                depth += 1
+            elif css[end] == "}":
+                depth -= 1
+                if depth == 0:
+                    break
+            end += 1
+        frames.append((name, css[match.end():end]))
+        # The frames are read on their own; leaving them in the page CSS would count them twice.
+        page_css = page_css.replace(css[match.start():end + 1], " ")
+
+    out: list[tuple[str | None, str, str]] = []
+    for name, inner in frames:
+        for match in re.finditer(r"([^{}]+)\{([^{}]*)\}", inner):
+            out.append((name, " ".join(match.group(1).split()), match.group(2)))
+    for match in re.finditer(r"([^{}]+)\{([^{}]*)\}", page_css):
+        out.append((None, " ".join(match.group(1).split()), match.group(2)))
+    return out
+
+
+def declarations_in(body: str, prop: str) -> list[str]:
+    """The values of `prop` inside one rule body."""
+    return [m.group(1).strip()
+            for m in re.finditer(rf"(?<![(\w-]){re.escape(prop)}\s*:\s*([^;{{}}]+)", body, re.IGNORECASE)]
+
+
+def inline_style_blocks(page: Path) -> list[str]:
+    """Every `style="…"` attribute on the page, as its own declaration block.
+
+    An inline style has no selector, so it cannot be the brand layer — the brand layer is written
+    as rules. That makes a halo in one of these a violation with nowhere to hide, and it is how the
+    homepage's search button kept a glow the stylesheet no longer had.
+    """
+    text = page.read_text(encoding="utf-8", errors="replace")
+    text = TOKEN_BLOCK.sub("", text)
+    return [m.group(1) for m in INLINE_STYLE.finditer(text)]
 
 
 TOKEN_REF = r"var\(--[a-z0-9-]+\)"
@@ -223,14 +318,64 @@ def check(root: Path = REPO) -> list[str]:
         if dupes:
             problems.append(f"{rel}: hardcodes a colour the vocabulary already has — {dupes}")
 
+        # ── batch X: the three things it owns ─────────────────────────────────────────────────
+        brand = BRAND_GLOW_ALLOWLIST.get(rel, {})
+        for scope, selector, body in scoped_rules(css):
+            selectors = [s.strip() for s in selector.split(",")]
+
+            # 9 — a colour bar down the left edge of a card.
+            for value in declarations_in(body, "border-left"):
+                if value.startswith("0"):
+                    continue
+                if (rel, selector.strip()) in SIDE_BAR_ALLOWLIST:
+                    continue
+                problems.append(f"{rel}: border-left side colour bar — {selector.strip()} ({value})")
+
+            # 4 — a zero-offset halo. The brand layer keeps its own; nothing else may have one.
+            for prop in ("box-shadow", "text-shadow", "filter"):
+                for value in declarations_in(body, prop):
+                    if not GLOW_LAYER.search(value):
+                        continue
+                    if scope is not None:
+                        if prop in brand.get(f"@keyframes {scope}", set()):
+                            continue
+                    elif any(prop in brand.get(s, set()) for s in selectors):
+                        continue
+                    problems.append(f"{rel}: zero-offset glow outside the brand layer — "
+                                    f"{selector.strip()}: {value}")
+
+        # An inline style cannot be the brand layer: it has no selector to be one of.
+        for block in inline_style_blocks(page):
+            for prop in ("box-shadow", "text-shadow", "filter"):
+                for value in declarations_in(block, prop):
+                    if GLOW_LAYER.search(value):
+                        problems.append(f"{rel}: zero-offset glow in an inline style — {value}")
+
+        # The purple: the one accent the vocabulary does not own.
+        if re.search(rf"{re.escape(PURPLE)}\b", css, re.IGNORECASE):
+            problems.append(f"{rel}: the purple {PURPLE} is back — it is not a token")
+
     return problems
+
+
+def emoji_in_page(page: Path) -> set[str]:
+    """The pictographs a page shows, read from the markup.
+
+    The first version of this report read the *CSS*, and it found nothing — because the emoji are
+    in the text, not in the stylesheet. A count that says "0" when the page is full of emoji is
+    worse than no count: the Y batch would have had nothing to do and nothing to prove.
+    """
+    text = page.read_text(encoding="utf-8", errors="replace")
+    text = re.sub(r"<style\b[^>]*>[\s\S]*?</style>|<script\b[^>]*>[\s\S]*?</script>"
+                  r"|<!--[\s\S]*?-->", "", text)
+    return {c for c in EMOJI.findall(text) if c not in TEXT_SYMBOLS}
 
 
 def report(root: Path = REPO) -> list[tuple[str, str, str, bool]]:
     """The acceptance table from #3541, with the current number for each row.
 
     Returns (criterion, current, target, enforced?) rows — enforced rows are the ones `check()`
-    fails on; the rest are X's and Y's, printed so the next batch can see what it owes.
+    fails on; the rest are printed so the next batch can see what it owes.
     """
     pages = hand_written_pages(root)
     css = "\n".join(css_of(page) for page in pages)
@@ -246,7 +391,6 @@ def report(root: Path = REPO) -> list[tuple[str, str, str, bool]]:
             if re.fullmatch(r"\d*\.?\d+s", part):
                 durations.add(part)
     shadows = [v for v in values_of(css, "box-shadow") if v != "none"]
-    glows = [v for v in shadows if re.search(r"0 0 \d+px", v)]
     px_sizes = {v for v in values_of(css, "font-size") if re.search(r"\d\s*px", v)}
     rem_sizes = {v for v in values_of(css, "font-size") if re.fullmatch(r"[\d.]+rem", v)}
     # A `var(--font-…)` reference *is* the vocabulary being used, not a literal stack — counting
@@ -255,21 +399,60 @@ def report(root: Path = REPO) -> list[tuple[str, str, str, bool]]:
                 if v != "inherit" and not v.startswith("var(")}
     widths = {v for v in values_of(css, "max-width")
               if re.fullmatch(r"\d+px", v) and int(v[:-2]) >= 500}
-    emoji = re.findall(r"[\U0001F300-\U0001FAFF☀-➿]", css)
-    side_bars = [v for v in values_of(css, "border-left") if not v.startswith("0")]
+    # The glows, split by where they are: the brand layer's and everybody else's.
+    glows = brand_glows = 0
+    side_bars = 0
+    purples = 0
+    emoji: set[str] = set()
+    for page in pages:
+        rel = page.relative_to(root).as_posix()
+        brand = BRAND_GLOW_ALLOWLIST.get(rel, {})
+        page_css = css_of(page)
+        purples += len(re.findall(rf"{re.escape(PURPLE)}\b", page_css, re.IGNORECASE))
+        emoji |= emoji_in_page(page)
+        for scope, selector, body in scoped_rules(page_css):
+            selectors = [s.strip() for s in selector.split(",")]
+            for value in declarations_in(body, "border-left"):
+                if value.startswith("0"):
+                    continue
+                if (rel, selector.strip()) in SIDE_BAR_ALLOWLIST:
+                    continue
+                side_bars += 1
+            for prop in ("box-shadow", "text-shadow", "filter"):
+                for value in declarations_in(body, prop):
+                    if not GLOW_LAYER.search(value):
+                        continue
+                    glows += 1
+                    if scope is not None:
+                        if prop in brand.get(f"@keyframes {scope}", set()):
+                            brand_glows += 1
+                    elif any(prop in brand.get(s, set()) for s in selectors):
+                        brand_glows += 1
+        for block in inline_style_blocks(page):
+            for prop in ("box-shadow", "text-shadow", "filter"):
+                for value in declarations_in(block, prop):
+                    if GLOW_LAYER.search(value):
+                        glows += 1
+
+    # The nav partial is a source of its own: the pages carry a copy of it.
+    nav = root / "docs" / "_partials" / "nav.html"
+    if nav.exists():
+        emoji |= emoji_in_page(nav)
 
     return [
         ("2 圆角档位", f"{len(radii)} 种", "≤ 3 (+胶囊)", True),
         ("3 动效时长", f"{len(durations)} 种", "≤ 2", True),
-        ("4 阴影档位 / 零偏移辉光", f"{len(shadows)} 处 / {len(glows)} 处", "≤ 2 档 / 仅 logo+hero", True),
+        ("4 阴影档位 / 零偏移辉光",
+         f"{len(shadows)} 处 / {glows} 处（品牌层 {brand_glows}）", "≤ 2 档 / 仅 logo+hero", True),
         ("5 字号：px 种数 / rem 种数", f"{len(px_sizes)} / {len(rem_sizes)}", "0 / ≤ 10(+2 展示)", True),
         ("6 font-family 字面栈", f"{len(families)} 种", "全部走 token", True),
         ("7 容器宽", f"{len(widths)} 种", "2 档", True),
-        ("1 跨页主色 / 强调色", "待 X 批收敛", "1 + 1", False),
-        ("8 卡片套卡片", "待 X 批", "0", False),
-        ("9 border-left 侧边色条", f"{len(side_bars)} 处", "0", False),
-        ("10 手写页面共用 token 头", "14 / 14", "14 / 14", False),
-        ("11 各页底色统一", "待 X 批", "--bg-0", False),
+        ("1 跨页主色 / 强调色", "待 Z 批收敛", "1 + 1", False),
+        ("8 卡片套卡片", "0（按视觉判据）", "0", False),
+        ("9 border-left 侧边色条", f"{side_bars} 处", "0", True),
+        ("10 手写页面共用 token 头", "14 / 14", "14 / 14", True),
+        ("11 各页底色统一", "待 Z 批", "--bg-0", False),
+        ("12 紫色强调色", f"{purples} 处", "0", True),
         ("7 Y 批：emoji 图标", f"{len(emoji)} 个", "0", False),
     ]
 

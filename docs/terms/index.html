@@ -109,7 +109,9 @@
   ul { margin: .4rem 0 .4rem 1.2rem; }
   code { background: var(--bg-2); padding: .1rem .35rem; border-radius: var(--r-sm); font-size: var(--fs-sm); }
   a { color: #58a6ff; }
-  .note { background: var(--bg-2); border-left: 3px solid #d29922; padding: .7rem .9rem; margin: .9rem 0; font-size: var(--fs-sm); }
+  /* The colour used to be a 3px bar down the left edge; it is the border now.
+     See docs/enterprise/index.html for why a bar is the shape to avoid. */
+  .note { background: var(--bg-2); border: 1px solid color-mix(in srgb, var(--warn) 35%, transparent); padding: .7rem .9rem; margin: .9rem 0; font-size: var(--fs-sm); }
   footer { margin-top: 2.5rem; color: #8b949e; font-size: var(--fs-xs); }
 </style>
 </head>

@@ -123,3 +123,88 @@ def test_a_page_that_uses_the_vocabulary_produces_no_offenders():
     assert cdc.offenders(css, "font-size", set(), cdc.SIZE_REF + r"|[\d.]+rem") == []
     assert cdc.offenders(css, "font-family", {"inherit"}, r"var\(--font-[a-z-]+\)") == []
     assert cdc.offenders(css, "max-width", cdc.CONTAINER_WIDTHS, r"100%|none|fit-content|\d+vw") == []
+
+
+# ── batch X: the three things it owns ─────────────────────────────────────────────────────────
+# Each of these is a gate that must be able to fail. A gate that cannot fail is a comment.
+
+
+def _page_with(tmp_path, css: str, name: str = "example.html"):
+    """A one-page tree the gate can be run against."""
+    page = tmp_path / "docs" / name
+    page.parent.mkdir(parents=True, exist_ok=True)
+    page.write_text(f"<style>\n{css}\n</style>\n", encoding="utf-8")
+    return tmp_path
+
+
+def test_a_side_colour_bar_is_a_violation(tmp_path):
+    root = _page_with(tmp_path, "  .card { border-left: 3px solid #d29922; }")
+    problems = cdc.check(root)
+    assert any("side colour bar" in p for p in problems), problems
+
+
+def test_a_zero_offset_glow_outside_the_brand_layer_is_a_violation(tmp_path):
+    root = _page_with(tmp_path, "  .card { box-shadow: 0 0 20px rgba(0,229,255,0.4); }")
+    problems = cdc.check(root)
+    assert any("zero-offset glow" in p for p in problems), problems
+
+
+def test_a_text_halo_outside_the_brand_layer_is_a_violation(tmp_path):
+    root = _page_with(tmp_path, "  .title { text-shadow: 0 0 12px rgba(0,229,255,0.3); }")
+    problems = cdc.check(root)
+    assert any("zero-offset glow" in p for p in problems), problems
+
+
+def test_the_purple_is_a_violation(tmp_path):
+    root = _page_with(tmp_path, "  .badge { color: #a855f7; }")
+    problems = cdc.check(root)
+    assert any("purple" in p for p in problems), problems
+
+
+def test_a_glow_in_an_inline_style_is_a_violation(tmp_path):
+    """An inline style has no selector, so it cannot be the brand layer.
+
+    The homepage's search button carried its halo in a `style="…"` attribute — the stylesheet
+    had already given it up, and the page went on glowing. The gate reads the attributes too.
+    """
+    page = tmp_path / "docs" / "example.html"
+    page.parent.mkdir(parents=True, exist_ok=True)
+    page.write_text(
+        '<button style="box-shadow:0 0 14px rgba(0,229,255,0.16);">Search</button>\n',
+        encoding="utf-8",
+    )
+    problems = cdc.check(tmp_path)
+    assert any("inline style" in p for p in problems), problems
+
+
+def test_the_journey_timeline_spine_is_not_a_side_bar():
+    """The one written-down exception: a connector between steps, not an accent."""
+    assert ("docs/journey/http-mcp/index.html", ".steps li") in cdc.SIDE_BAR_ALLOWLIST
+    problems = cdc.check(REPO)
+    assert not [p for p in problems if "side colour bar" in p], problems
+
+
+def test_the_brand_layer_keeps_its_glow():
+    """#3541 says the cyber signature is an asset. The gate must not make the homepage fail."""
+    problems = cdc.check(REPO)
+    assert not [p for p in problems if "zero-offset glow" in p], problems
+    assert ".logo-title" in cdc.BRAND_GLOW_ALLOWLIST["docs/index.html"]
+
+
+def test_the_brand_allowance_is_per_property_not_a_passport(tmp_path):
+    """A logo may carry a text halo; a box shadow on the same rule is not the brand layer."""
+    assert cdc.BRAND_GLOW_ALLOWLIST["docs/index.html"][".logo-title"] == {"text-shadow"}
+    root = _page_with(tmp_path, "  .logo-title { box-shadow: 0 0 30px rgba(0,229,255,0.4); }",
+                      name="index.html")
+    problems = cdc.check(root)
+    assert any("zero-offset glow" in p for p in problems), problems
+
+
+def test_the_emoji_count_reads_the_markup_not_the_stylesheet():
+    """The first version of the report counted the CSS and found none — because the emoji are
+    in the text. A count that says "0" on a page full of emoji is worse than no count."""
+    homepage = REPO / "docs" / "index.html"
+    found = cdc.emoji_in_page(homepage)
+    assert found, "the homepage's emoji should be found in the markup"
+    assert all(c not in cdc.TEXT_SYMBOLS for c in found)
+

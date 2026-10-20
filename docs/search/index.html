@@ -115,8 +115,8 @@
   .lang-switch button.active { color: #58a6ff; border-color: rgba(88,166,255,0.42); background: rgba(88,166,255,0.08); }
   .home-link { display: inline-block; color: var(--text-muted); font-size: var(--fs-xs); text-decoration: none; margin-bottom: 8px; transition: color var(--t-fast); }
   .home-link:hover { color: #58a6ff; }
-  .search-box { position: relative; margin-bottom: 16px; background: rgba(255,255,255,0.035); border: 1px solid rgba(88,166,255,0.24); border-radius: var(--r-lg); box-shadow: 0 0 0 1px rgba(88,166,255,0.04); transition: border-color 0.2s, box-shadow var(--t-fast); }
-  .search-box:focus-within { border-color: rgba(88,166,255,0.62); background: rgba(88,166,255,0.06); box-shadow: 0 0 18px rgba(88,166,255,0.12); }
+  .search-box { position: relative; margin-bottom: 16px; background: rgba(255,255,255,0.035); border: 1px solid rgba(88,166,255,0.24); border-radius: var(--r-lg); transition: border-color var(--t-fast), box-shadow var(--t-fast); }
+  .search-box:focus-within { border-color: rgba(88,166,255,0.62); background: rgba(88,166,255,0.06); outline: 2px solid rgba(88,166,255,0.62); outline-offset: 0; }
   .search-box input { width: 100%; padding: 15px 16px; background: transparent; border: 0; color: var(--text-main); font-size: var(--fs-md); font-family: var(--font-ui); outline: none; }
   .search-box input::placeholder { color: rgba(255,255,255,0.56); }
   .stats { font-size: var(--fs-xs); color: var(--text-muted); margin-bottom: 20px; }

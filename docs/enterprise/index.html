@@ -112,8 +112,12 @@
   table { width: 100%; border-collapse: collapse; margin: .6rem 0; }
   th, td { text-align: left; vertical-align: top; padding: .45rem .6rem; border-bottom: 1px solid #21262d; }
   th { color: #8b949e; font-weight: 600; font-size: var(--fs-xs); }
-  .note { background: var(--bg-2); border-left: 3px solid #d29922; padding: .7rem .9rem; margin: .9rem 0; font-size: var(--fs-sm); }
-  .gap { background: var(--bg-2); border-left: 3px solid #f85149; padding: .7rem .9rem; margin: .9rem 0; font-size: var(--fs-sm); }
+  /* The colour used to be a 3px bar down the left edge. A bar is the AI-shaped
+     callout: it is an edge that carries meaning the box does not. The note
+     and the gap now differ by the whole border — same hue, same weight — and
+     the hue comes from the vocabulary instead of a literal. */
+  .note { background: var(--bg-2); border: 1px solid color-mix(in srgb, var(--warn) 35%, transparent); padding: .7rem .9rem; margin: .9rem 0; font-size: var(--fs-sm); }
+  .gap { background: var(--bg-2); border: 1px solid color-mix(in srgb, var(--danger) 35%, transparent); padding: .7rem .9rem; margin: .9rem 0; font-size: var(--fs-sm); }
   footer { margin-top: 2.5rem; color: #8b949e; font-size: var(--fs-xs); }
 </style>
 </head>
