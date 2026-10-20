@@ -673,7 +673,7 @@ function render(results, q, meta) {
         '<span class="badge badge-domain">' + domain + '</span>' +
         '<span class="badge badge-evidence ev-' + ev.level.toLowerCase() + '" title="' + escapeHTML(ev.label) + '">' + ev.level + '</span>' +
       '</div>' +
-      '<div class="result-title">' + title + '</div>' +
+      '<h2 class="result-title">' + title + '</h2>' +
       (showTakeaway ? '<div class="result-takeaway">' + takeaway + '</div>' : '') +
       '<div class="result-summary">' + summary + '</div>' +
       (tags ? '<div class="result-tags">' + tags + '</div>' : '') +
@@ -684,7 +684,8 @@ function render(results, q, meta) {
         '<div>evidence: <code>' + ev.level + '</code> · ' + escapeHTML(ev.label) + '</div>' +
       '</details>' +
       '<div class="result-actions">' +
-        '<button class="btn-primary" type="button" data-action="preview">' + t('readLesson') + '</button>' +
+        '<button class="btn-primary" type="button" data-action="preview" aria-expanded="false"' +
+        ' aria-controls="preview-' + r._index + '">' + t('readLesson') + '</button>' +
         '<a class="btn-secondary" href="' + escapeHTML(url) + '" target="_blank" rel="noopener">' + t('openGitHub') + '</a>' +
       '</div>' +
       '<div class="feedback-bar" data-feedback-id="' + id + '">' +
@@ -692,7 +693,7 @@ function render(results, q, meta) {
         '<button class="feedback-btn" data-type="too_basic">' + t('feedbackTooBasic') + '</button>' +
         '<button class="feedback-btn" data-type="helpful">' + t('feedbackHelpful') + '</button>' +
       '</div>' +
-      '<div class="lesson-preview" hidden></div>' +
+      '<div class="lesson-preview" id="preview-' + r._index + '" hidden></div>' +
     '</div>';
   }
 
@@ -728,17 +729,19 @@ function render(results, q, meta) {
   restoreAllFeedbackStates();
 }
 
-function renderMarkdown(text) {
-  // Minimal markdown renderer: h2, h3, code blocks, inline code, paragraphs
+function renderMarkdown(text, headingLevel = 2) {
+  // Minimal markdown renderer: h2, h3, code blocks, inline code, paragraphs.
+  // `headingLevel` is the level the lesson's own `##` maps to — the preview lives inside a result
+  // card whose title is an h2, so the body's headings have to start one level deeper (2026-10-20).
   let html = escapeHTML(text);
   // Code blocks: ```...```
   html = html.replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>');
   // Inline code: `...`
   html = html.replace(/`([^`\n]+)`/g, '<code>$1</code>');
   // H2: ## ...
-  html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+  html = html.replace(/^## (.+)$/gm, '<h' + headingLevel + '>$1</h' + headingLevel + '>');
   // H3: ### ...
-  html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+  html = html.replace(/^### (.+)$/gm, '<h' + (headingLevel + 1) + '>$1</h' + (headingLevel + 1) + '>');
   // Paragraphs: double newline
   html = html.replace(/\n\n/g, '</p><p>');
   // Single newline within paragraphs
@@ -793,14 +796,20 @@ async function togglePreview(index) {
     if (p !== panel) {
       p.hidden = true;
       const otherBtn = p.closest('.result').querySelector('[data-action="preview"]');
-      if (otherBtn) otherBtn.textContent = t('readLesson');
+      if (otherBtn) {
+        otherBtn.textContent = t('readLesson');
+        otherBtn.setAttribute('aria-expanded', 'false');
+      }
     }
   });
 
   if (panel.dataset.loaded === 'true') {
     panel.hidden = !panel.hidden;
     const btn = card.querySelector('[data-action="preview"]');
-    if (btn) btn.textContent = panel.hidden ? t('readLesson') : t('collapse');
+    if (btn) {
+      btn.textContent = panel.hidden ? t('readLesson') : t('collapse');
+      btn.setAttribute('aria-expanded', panel.hidden ? 'false' : 'true');
+    }
     updateUrl(document.getElementById('q').value.trim(), panel.hidden ? null : (lesson.id || ''));
     return;
   }
@@ -808,7 +817,10 @@ async function togglePreview(index) {
   panel.hidden = false;
   panel.innerHTML = '<div class="preview-status">' + t('loadingPreview') + '</div>';
   const btn = card.querySelector('[data-action="preview"]');
-  if (btn) btn.textContent = t('collapse');
+  if (btn) {
+    btn.textContent = t('collapse');
+    btn.setAttribute('aria-expanded', 'true');
+  }
   try {
     // The lesson body is fetched on demand (2026-09-30). It used to ride along in the corpus as
     // `preview` (~2.1 KB per lesson, 1.09 MB of the 1.32 MB file) because this panel wanted *one* of
@@ -818,7 +830,7 @@ async function togglePreview(index) {
     const body = await fetchLessonBody(lesson);
     const clipped = body.length > 2400 ? body.slice(0, 2400) + '\n\n' + t('clipped') : body;
     panel.dataset.loaded = 'true';
-    panel.innerHTML = renderMarkdown(clipped || t('noPreview'));
+    panel.innerHTML = renderMarkdown(clipped || t('noPreview'), 3);
     updateUrl(document.getElementById('q').value.trim(), lesson.id || '');
   } catch (e) {
     panel.innerHTML = '<div class="preview-status">' + t('previewUnavailable') + '</div>';
@@ -949,9 +961,15 @@ document.getElementById('q').addEventListener('keydown', function(event) {
 document.getElementById('results').addEventListener('click', function(event) {
   if (event.target.closest('a')) return;
   if (event.target.closest('.lesson-preview')) return;
-  // A feedback button lives inside the card; without this the same click also opens the preview and
-  // fetches the body, i.e. it costs one of the 20 anonymous reads per minute (#3539 C5).
-  if (event.target.closest('.feedback-btn, summary, details, button')) return;
+  // A feedback button and the "Why this matched" disclosure live inside the card; without this the
+  // same click also opens the preview and fetches the body, i.e. it costs one of the 20 anonymous
+  // reads per minute (#3539 C5).
+  //
+  // `button` must NOT be in this list (2026-10-20): it also swallowed the preview's own button,
+  // which is the control that opens the preview — on the live site "Read lesson" did nothing at all
+  // and the body could only be reached by clicking the card around it. `.feedback-btn` already
+  // covers the buttons that must not expand the card.
+  if (event.target.closest('.feedback-btn, summary, details')) return;
   const card = event.target.closest('.result');
   if (!card) return;
   togglePreview(Number(card.dataset.index));
