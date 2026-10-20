@@ -92,6 +92,36 @@
   --sh-1:0 1px 2px rgba(0,0,0,.35);
   --sh-2:0 12px 32px rgba(0,0,0,.45);
 }
+
+/* ── 图标：一套 Lucide 线性图标（Y 批）── */
+/* The icon set is Lucide, inlined as SVG; the *shapes* live in `scripts/site_icons.py` and the
+   *style* lives here, for the same reason the tokens live here and not in each page: one source,
+   copied into every page, gated by a script. An emoji could not do this job — it is a coloured
+   bitmap chosen by the platform, so the same markup renders three different icons in three
+   browsers and none of them is `--accent`.
+
+   `1em` makes an icon the size of the text it sits in, which is exactly what an emoji was.
+   `non-scaling-stroke` keeps the line one hairline wide at every size instead of letting it
+   thicken as the icon grows — a scaled-up drawing looks like a scaled-up drawing, and this is a
+   set of UI glyphs, not artwork. Lucide draws at 24px with a 2px stroke; at the 14px of a drawer
+   row that would be 1.17px, and at the 30px of the register panel 2.5px, so the stroke is set
+   once, here, at 1.5px, and every icon inherits it.
+
+   The markup carries no width/height/stroke attributes at all: the attributes would be forty
+   copies of a decision this block already makes. */
+.ico {
+  width: 1em;
+  height: 1em;
+  display: inline-block;
+  vertical-align: -0.125em;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
 </style>
 <!-- design-tokens:end -->
 <style>
@@ -109,7 +139,9 @@
   ul { margin: .4rem 0 .4rem 1.2rem; }
   code { background: var(--bg-2); padding: .1rem .35rem; border-radius: var(--r-sm); font-size: var(--fs-sm); }
   a { color: #58a6ff; }
-  .note { background: var(--bg-2); border-left: 3px solid #d29922; padding: .7rem .9rem; margin: .9rem 0; font-size: var(--fs-sm); }
+  /* The colour used to be a 3px bar down the left edge; it is the border now.
+     See docs/enterprise/index.html for why a bar is the shape to avoid. */
+  .note { background: var(--bg-2); border: 1px solid color-mix(in srgb, var(--warn) 35%, transparent); padding: .7rem .9rem; margin: .9rem 0; font-size: var(--fs-sm); }
   footer { margin-top: 2.5rem; color: #8b949e; font-size: var(--fs-xs); }
 </style>
 </head>

@@ -97,6 +97,36 @@
   --sh-1:0 1px 2px rgba(0,0,0,.35);
   --sh-2:0 12px 32px rgba(0,0,0,.45);
 }
+
+/* ── 图标：一套 Lucide 线性图标（Y 批）── */
+/* The icon set is Lucide, inlined as SVG; the *shapes* live in `scripts/site_icons.py` and the
+   *style* lives here, for the same reason the tokens live here and not in each page: one source,
+   copied into every page, gated by a script. An emoji could not do this job — it is a coloured
+   bitmap chosen by the platform, so the same markup renders three different icons in three
+   browsers and none of them is `--accent`.
+
+   `1em` makes an icon the size of the text it sits in, which is exactly what an emoji was.
+   `non-scaling-stroke` keeps the line one hairline wide at every size instead of letting it
+   thicken as the icon grows — a scaled-up drawing looks like a scaled-up drawing, and this is a
+   set of UI glyphs, not artwork. Lucide draws at 24px with a 2px stroke; at the 14px of a drawer
+   row that would be 1.17px, and at the 30px of the register panel 2.5px, so the stroke is set
+   once, here, at 1.5px, and every icon inherits it.
+
+   The markup carries no width/height/stroke attributes at all: the attributes would be forty
+   copies of a decision this block already makes. */
+.ico {
+  width: 1em;
+  height: 1em;
+  display: inline-block;
+  vertical-align: -0.125em;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
 </style>
 <!-- design-tokens:end -->
 <style>
@@ -115,8 +145,8 @@
   .lang-switch button.active { color: #58a6ff; border-color: rgba(88,166,255,0.42); background: rgba(88,166,255,0.08); }
   .home-link { display: inline-block; color: var(--text-muted); font-size: var(--fs-xs); text-decoration: none; margin-bottom: 8px; transition: color var(--t-fast); }
   .home-link:hover { color: #58a6ff; }
-  .search-box { position: relative; margin-bottom: 16px; background: rgba(255,255,255,0.035); border: 1px solid rgba(88,166,255,0.24); border-radius: var(--r-lg); box-shadow: 0 0 0 1px rgba(88,166,255,0.04); transition: border-color 0.2s, box-shadow var(--t-fast); }
-  .search-box:focus-within { border-color: rgba(88,166,255,0.62); background: rgba(88,166,255,0.06); box-shadow: 0 0 18px rgba(88,166,255,0.12); }
+  .search-box { position: relative; margin-bottom: 16px; background: rgba(255,255,255,0.035); border: 1px solid rgba(88,166,255,0.24); border-radius: var(--r-lg); transition: border-color var(--t-fast), box-shadow var(--t-fast); }
+  .search-box:focus-within { border-color: rgba(88,166,255,0.62); background: rgba(88,166,255,0.06); outline: 2px solid rgba(88,166,255,0.62); outline-offset: 0; }
   .search-box input { width: 100%; padding: 15px 16px; background: transparent; border: 0; color: var(--text-main); font-size: var(--fs-md); font-family: var(--font-ui); outline: none; }
   .search-box input::placeholder { color: rgba(255,255,255,0.56); }
   .stats { font-size: var(--fs-xs); color: var(--text-muted); margin-bottom: 20px; }

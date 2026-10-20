@@ -123,3 +123,169 @@ def test_a_page_that_uses_the_vocabulary_produces_no_offenders():
     assert cdc.offenders(css, "font-size", set(), cdc.SIZE_REF + r"|[\d.]+rem") == []
     assert cdc.offenders(css, "font-family", {"inherit"}, r"var\(--font-[a-z-]+\)") == []
     assert cdc.offenders(css, "max-width", cdc.CONTAINER_WIDTHS, r"100%|none|fit-content|\d+vw") == []
+
+
+# ── batch X: the three things it owns ─────────────────────────────────────────────────────────
+# Each of these is a gate that must be able to fail. A gate that cannot fail is a comment.
+
+
+def _page_with(tmp_path, css: str, name: str = "example.html"):
+    """A one-page tree the gate can be run against."""
+    page = tmp_path / "docs" / name
+    page.parent.mkdir(parents=True, exist_ok=True)
+    page.write_text(f"<style>\n{css}\n</style>\n", encoding="utf-8")
+    return tmp_path
+
+
+def test_a_side_colour_bar_is_a_violation(tmp_path):
+    root = _page_with(tmp_path, "  .card { border-left: 3px solid #d29922; }")
+    problems = cdc.check(root)
+    assert any("side colour bar" in p for p in problems), problems
+
+
+def test_a_zero_offset_glow_outside_the_brand_layer_is_a_violation(tmp_path):
+    root = _page_with(tmp_path, "  .card { box-shadow: 0 0 20px rgba(0,229,255,0.4); }")
+    problems = cdc.check(root)
+    assert any("zero-offset glow" in p for p in problems), problems
+
+
+def test_a_text_halo_outside_the_brand_layer_is_a_violation(tmp_path):
+    root = _page_with(tmp_path, "  .title { text-shadow: 0 0 12px rgba(0,229,255,0.3); }")
+    problems = cdc.check(root)
+    assert any("zero-offset glow" in p for p in problems), problems
+
+
+def test_the_purple_is_a_violation(tmp_path):
+    root = _page_with(tmp_path, "  .badge { color: #a855f7; }")
+    problems = cdc.check(root)
+    assert any("purple" in p for p in problems), problems
+
+
+def test_a_glow_in_an_inline_style_is_a_violation(tmp_path):
+    """An inline style has no selector, so it cannot be the brand layer.
+
+    The homepage's search button carried its halo in a `style="…"` attribute — the stylesheet
+    had already given it up, and the page went on glowing. The gate reads the attributes too.
+    """
+    page = tmp_path / "docs" / "example.html"
+    page.parent.mkdir(parents=True, exist_ok=True)
+    page.write_text(
+        '<button style="box-shadow:0 0 14px rgba(0,229,255,0.16);">Search</button>\n',
+        encoding="utf-8",
+    )
+    problems = cdc.check(tmp_path)
+    assert any("inline style" in p for p in problems), problems
+
+
+def test_the_journey_timeline_spine_is_not_a_side_bar():
+    """The one written-down exception: a connector between steps, not an accent."""
+    assert ("docs/journey/http-mcp/index.html", ".steps li") in cdc.SIDE_BAR_ALLOWLIST
+    problems = cdc.check(REPO)
+    assert not [p for p in problems if "side colour bar" in p], problems
+
+
+def test_the_brand_layer_keeps_its_glow():
+    """#3541 says the cyber signature is an asset. The gate must not make the homepage fail."""
+    problems = cdc.check(REPO)
+    assert not [p for p in problems if "zero-offset glow" in p], problems
+    assert ".logo-title" in cdc.BRAND_GLOW_ALLOWLIST["docs/index.html"]
+
+
+def test_the_brand_allowance_is_per_property_not_a_passport(tmp_path):
+    """A logo may carry a text halo; a box shadow on the same rule is not the brand layer."""
+    assert cdc.BRAND_GLOW_ALLOWLIST["docs/index.html"][".logo-title"] == {"text-shadow"}
+    root = _page_with(tmp_path, "  .logo-title { box-shadow: 0 0 30px rgba(0,229,255,0.4); }",
+                      name="index.html")
+    problems = cdc.check(root)
+    assert any("zero-offset glow" in p for p in problems), problems
+
+
+def _markup_page(tmp_path, markup: str):
+    """A one-page tree whose *body* is this markup (not CSS: `_page_with` puts its argument in a
+    `<style>` block, which is the opposite of what these three tests need)."""
+    page = tmp_path / "docs" / "index.html"
+    page.parent.mkdir(parents=True, exist_ok=True)
+    page.write_text(markup, encoding="utf-8")
+    return page
+
+
+def test_the_emoji_count_reads_the_markup_not_the_stylesheet(tmp_path):
+    """The first version of the report counted the CSS and found none — because the emoji are
+    in the text. A count that says "0" on a page full of emoji is worse than no count."""
+    page = _markup_page(tmp_path, "<p>hello</p>")
+    assert cdc.emoji_occurrences(page) == []
+    page = _markup_page(tmp_path, "<p>hello 🚀</p>")
+    found = cdc.emoji_occurrences(page)
+    assert [char for _line, _text, char in found] == ["🚀"]
+    assert all(char not in cdc.TEXT_SYMBOLS for _line, _text, char in found)
+
+
+def test_an_emoji_written_by_a_script_is_counted(tmp_path):
+    """A script that writes `<div class="icon">💡</div>` puts an emoji on the page.
+
+    The string literal inside a `<script>` is kept, because it is what the script writes into the
+    document; only the script's *comments* are dropped.
+    """
+    page = _markup_page(tmp_path, "<script>card.innerHTML = '<div class=\"icon\">💡</div>';</script>")
+    found = cdc.emoji_occurrences(page)
+    assert "💡" in [char for _line, _text, char in found]
+
+
+def test_an_emoji_in_a_javascript_comment_is_not_counted(tmp_path):
+    """A comment is not on the page. The homepage's own comment quotes the old icon change
+    ("⏳ → ✅"), and counting it would keep a pictograph in the codebase for no reason."""
+    page = _markup_page(tmp_path, "<script>\n// Update UI: ⏳ → ✅\n</script>")
+    assert cdc.emoji_occurrences(page) == []
+
+
+def test_the_site_has_no_emoji_icons():
+    """Batch Y: the site's icons are Lucide SVG, and the gate says so."""
+    problems = [p for p in cdc.check(REPO) if "pictograph" in p]
+    assert problems == [], "\n".join(problems)
+
+
+def test_a_pictograph_in_a_page_fails_the_gate(tmp_path):
+    """The control: a gate that cannot go red is a gate that proves nothing."""
+    root = tmp_path
+    (root / "docs").mkdir()
+    (root / "docs" / "index.html").write_text("<p>🚀</p>", encoding="utf-8")
+    problems = cdc.check(root)
+    assert any("pictograph" in p for p in problems), problems
+
+
+def test_every_inline_icon_is_one_of_the_ours():
+    """A hand-drawn path is a path nobody can review — the icon set is the reviewable thing."""
+    for asset in cdc.site_assets(REPO):
+        rel = asset.relative_to(REPO).as_posix()
+        unknown = cdc.unknown_icons(asset.read_text(encoding="utf-8", errors="replace"))
+        assert not unknown, f"{rel}: an icon is not in scripts/site_icons.py — {unknown[:1]}"
+
+
+def test_a_hand_drawn_icon_fails_the_gate(tmp_path):
+    """The control for the icon check."""
+    root = tmp_path
+    (root / "docs").mkdir()
+    (root / "docs" / "index.html").write_text(
+        '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M1 2 L3 4 Z"/></svg>',
+        encoding="utf-8")
+    problems = cdc.check(root)
+    assert any("not in scripts/site_icons.py" in p for p in problems), problems
+
+
+def test_every_allowlisted_pictograph_says_why():
+    """An exception without a reason is a hole nobody is watching."""
+    for rel, entries in cdc.EMOJI_ALLOWLIST.items():
+        for snippet, reason in entries:
+            assert reason.strip(), f"{rel}: {snippet!r} has no reason"
+            assert len(reason) > 40, f"{rel}: {snippet!r} has a token reason, not a reason"
+
+
+def test_an_allowlist_entry_that_matches_nothing_is_a_hole():
+    """An allowance nobody uses is a permission nobody granted: it would let the *next* pictograph
+    of that shape in, silently."""
+    for rel, entries in cdc.EMOJI_ALLOWLIST.items():
+        asset = REPO / rel
+        text = cdc.visible_text(asset)
+        for snippet, _reason in entries:
+            assert snippet in text, f"{rel}: the allowance {snippet!r} matches nothing any more"
+

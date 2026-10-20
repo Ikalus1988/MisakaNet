@@ -91,6 +91,36 @@
   --sh-1:0 1px 2px rgba(0,0,0,.35);
   --sh-2:0 12px 32px rgba(0,0,0,.45);
 }
+
+/* ── 图标：一套 Lucide 线性图标（Y 批）── */
+/* The icon set is Lucide, inlined as SVG; the *shapes* live in `scripts/site_icons.py` and the
+   *style* lives here, for the same reason the tokens live here and not in each page: one source,
+   copied into every page, gated by a script. An emoji could not do this job — it is a coloured
+   bitmap chosen by the platform, so the same markup renders three different icons in three
+   browsers and none of them is `--accent`.
+
+   `1em` makes an icon the size of the text it sits in, which is exactly what an emoji was.
+   `non-scaling-stroke` keeps the line one hairline wide at every size instead of letting it
+   thicken as the icon grows — a scaled-up drawing looks like a scaled-up drawing, and this is a
+   set of UI glyphs, not artwork. Lucide draws at 24px with a 2px stroke; at the 14px of a drawer
+   row that would be 1.17px, and at the 30px of the register panel 2.5px, so the stroke is set
+   once, here, at 1.5px, and every icon inherits it.
+
+   The markup carries no width/height/stroke attributes at all: the attributes would be forty
+   copies of a decision this block already makes. */
+.ico {
+  width: 1em;
+  height: 1em;
+  display: inline-block;
+  vertical-align: -0.125em;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
 </style>
 <!-- design-tokens:end -->
 <style>
@@ -132,7 +162,7 @@
   <div style="text-align:left;margin-bottom:12px;font-size:var(--fs-xs);">
     <a href="/#quickstart" style="color:#58a6ff;text-decoration:none;">← Back to Quickstart / 回到 Quickstart</a>
   </div>
-  <h1>⚡ MisakaNet Start</h1>
+  <h1><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg> MisakaNet Start</h1>
   <div class="tagline">你只做两件事——授权，看结果</div>
   <p>You only do two things — authorize, then see results.</p>
   <p style="font-size:var(--fs-xs);color:#8b949e;max-width:720px;margin:8px auto 0;">
@@ -162,7 +192,7 @@
       </ol>
     </div>
     <div style="margin-top:16px;padding:12px;background:rgba(163,113,247,0.1);border:1px solid rgba(163,113,247,0.3);border-radius:var(--r-md);font-size:var(--fs-xs);color:#a371f7;">
-      <strong>🧠 Upgrade to Shared Vision Mode</strong><br>
+      <strong><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z"/><path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z"/><path d="M15 13a4.5 4.5 0 0 1-3-4 4.5 4.5 0 0 1-3 4"/><path d="M17.599 6.5a3 3 0 0 0 .399-1.375"/><path d="M6.003 5.125A3 3 0 0 0 6.401 6.5"/><path d="M3.477 10.896a4 4 0 0 1 .585-.396"/><path d="M19.938 10.5a4 4 0 0 1 .585.396"/><path d="M6 18a4 4 0 0 1-1.967-.516"/><path d="M19.967 17.484A4 4 0 0 1 18 18"/></svg> Upgrade to Shared Vision Mode</strong><br>
       Register a node to unlock the shared-knowledge mode (an anonymous id, no account).<br>
       <span style="color:#8b949e;font-size:var(--fs-2xs);">御坂ネットワークの共有視界モードにアップグレードできます。</span>
     </div>

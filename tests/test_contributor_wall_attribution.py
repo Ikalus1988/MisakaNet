@@ -207,7 +207,7 @@ def test_the_wall_admits_merged_pull_requests_only():
 #
 #   pr.title        -> the display name       "<div class=\"contrib-name\">${node}"
 #   Supported-by:   -> data.agentModel        "<span class=\"contrib-model-badge\">…${data.agentModel}"
-#   a "- " body line-> the lesson label       "<a href=\"${l.url}\">📘 ${l.name…}"
+#   a "- " body line-> the lesson label       "<a href=\"${l.url}\">${ICON.book} ${l.name…}"
 #
 # and the lesson id also landed inside the `href`, so the attribute could be broken out of as well.
 # The page already owns both primitives — `escapeHTML` (escapes & < > " ') and `safeHref` (http(s) only)
