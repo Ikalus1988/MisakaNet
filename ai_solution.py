@@ -20,5 +20,4 @@ Run the command to confirm the cap is now 60000:
 python3 -c "from misaki import config; print(config.get('intake_text_cap'))"
 # Expected output: 60000
 ```
-
 ```
