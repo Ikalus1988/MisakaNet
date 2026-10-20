@@ -208,3 +208,14 @@ def test_the_emoji_count_reads_the_markup_not_the_stylesheet():
     assert found, "the homepage's emoji should be found in the markup"
     assert all(c not in cdc.TEXT_SYMBOLS for c in found)
 
+
+def test_an_emoji_written_by_a_script_is_counted():
+    """A script that writes `<div class="icon">💡</div>` puts an emoji on the page.
+
+    The journey page's five step icons are exactly that, so counting the markup alone would
+    have under-counted the visible emoji by a third.
+    """
+    journey = REPO / "docs" / "journey" / "index.html"
+    found = cdc.emoji_in_page(journey)
+    assert "💡" in found, "the journey page's step icon is written by a script"
+

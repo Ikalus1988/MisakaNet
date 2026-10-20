@@ -364,13 +364,18 @@ def emoji_in_page(page: Path) -> set[str]:
     The first version of this report read the *CSS*, and it found nothing — because the emoji are
     in the text, not in the stylesheet. A count that says "0" when the page is full of emoji is
     worse than no count: the Y batch would have had nothing to do and nothing to prove.
+
+    Two things are filtered out and one deliberately is not:
+
+      * `<style>` blocks — CSS is not text a reader sees, and its comments carry decorative marks;
+      * HTML comments — the same;
+      * **`<script>` blocks are kept.** A script that writes `<div class="icon">💡</div>` puts an
+        emoji on the page, and the journey page's five step icons are exactly that. Counting the
+        markup alone would have under-counted the visible emoji by a third.
     """
     text = page.read_text(encoding="utf-8", errors="replace")
-    # Neither part of this filter is decoration. An HTML tag is case-insensitive, so a `<SCRIPT>`
-    # would otherwise survive it; and its closing tag may be written `</script >`, so the end of the
-    # block is matched loosely. Either slip would let a script body be counted as page text.
-    text = re.sub(r"<style\b[^>]*>[\s\S]*?</style\s*>|<script\b[^>]*>[\s\S]*?</script\s*>"
-                  r"|<!--[\s\S]*?-->", "", text, flags=re.IGNORECASE)
+    text = re.sub(r"<style\b[^>]*>[\s\S]*?</style\s*>", "", text, flags=re.IGNORECASE)
+    text = re.sub(r"<!--[\s\S]*?-->", "", text)
     return {c for c in EMOJI.findall(text) if c not in TEXT_SYMBOLS}
 
 
