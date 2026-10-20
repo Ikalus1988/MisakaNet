@@ -22,6 +22,7 @@ What each test pins:
 from __future__ import annotations
 
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -333,6 +334,56 @@ def test_format_result_names_what_happened():
     assert "ready-to-close" in format_result({"intake": 1, "action": "created", "comment_id": 5,
                                               "lessons": ["a"], "evidence_level": "E1",
                                               "labels": [READY_TO_CLOSE]})
+
+
+# ── the comment read must see every page (the AC1 guarantee depends on it) ───────────────────────
+def test_list_comments_paginates_so_a_receipt_past_the_first_page_is_still_found():
+    """GitHub returns comments oldest-first, so one `per_page=100` page is the OLDEST 100 and the
+    receipt — typically the newest — is the one that goes missing past the cliff. A missed marker
+    means a re-run posts a second receipt, which is exactly what AC1 forbids. (Regression: the
+    `test_github_list_reads_paginate` gate caught the original one-page read.)"""
+    from scripts.post_intake_receipts import GitHub
+
+    pages = {
+        1: [{"id": i, "body": f"noise {i}"} for i in range(1, 101)],
+        2: [{"id": 200, "body": f"{RECEIPT_MARKER}\nold receipt"}],
+    }
+    seen = []
+
+    def fake_request(method, path, payload=None):
+        seen.append(path)
+        # NB: `per_page=100` *contains* `page=100`, and `page=1` is a prefix of that — a naive
+        # substring match hands back page 1 forever (the trap the paginate gate was written for).
+        match = re.search(r"(?<!per_)page=(\d+)", path)
+        return pages.get(int(match.group(1)), []) if match else []
+
+    gh = GitHub(token="t", repo="o/r", request=fake_request)
+    comments = gh.list_comments(7)
+
+    assert len(comments) == 101, "page 1 (100) + page 2 (1) must all come back"
+    assert any(RECEIPT_MARKER in c["body"] for c in comments), (
+        "a receipt comment on page 2 must be visible — otherwise the re-run duplicates it"
+    )
+    assert len(seen) == 2 and "page=1" in seen[0] and "page=2" in seen[1], seen
+
+    # And the marker on page 2 is what the poster keys on — found via `GitHub.list_comments`.
+    assert next(c for c in comments if RECEIPT_MARKER in c["body"])["id"] == 200
+
+
+def test_list_comments_stops_at_the_page_cap():
+    """A proxy that strips `page` must not make the read loop forever."""
+    import scripts.post_intake_receipts as mod
+    from scripts.post_intake_receipts import GitHub
+
+    calls = []
+
+    def always_a_full_page(method, path, payload=None):
+        calls.append(path)
+        return [{"id": i, "body": "x"} for i in range(100)]
+
+    gh = GitHub(token="t", repo="o/r", request=always_a_full_page)
+    assert len(gh.list_comments(7)) == 100 * mod.MAX_LIST_PAGES
+    assert len(calls) == mod.MAX_LIST_PAGES
 
 
 if __name__ == "__main__":

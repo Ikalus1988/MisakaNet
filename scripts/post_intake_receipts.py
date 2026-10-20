@@ -55,6 +55,9 @@ from scripts.intake_receipt import compose, lessons_citing, render  # noqa: E402
 
 RECEIPT_MARKER = "<!-- misakanet-receipt -->"
 READY_TO_CLOSE = "ready-to-close"
+#: Page cap for list reads — a proxy that strips `page` must not make us loop forever. Same bound
+#: as `workers_builds_watch.MAX_LIST_PAGES`, for the same reason.
+MAX_LIST_PAGES = 10
 LABEL_COLOR = "0e8a16"
 LABEL_DESCRIPTION = ("Lesson is on main and the reporter has been receipted; "
                      "a human can close this.")
@@ -95,8 +98,24 @@ class GitHub:
             raise ApiError(exc.code, f"{method} {path}: {exc.code} {detail}") from exc
 
     def list_comments(self, issue: int) -> list:
-        found = self._request("GET", f"/repos/{self.repo}/issues/{int(issue)}/comments?per_page=100")
-        return found or []
+        """Every comment on the issue, not just the first page.
+
+        GitHub returns comments **oldest first**, so one `per_page=100` page is the oldest 100 and
+        the receipt comment — typically the newest — is exactly the one that goes missing past the
+        cliff, which would make a re-run post a second receipt and break AC1 in the one case it is
+        meant to cover. Measured in this repository: #2020 carries 249 comments. Bounded by
+        `MAX_LIST_PAGES` so a proxy that strips `page` cannot loop forever (same reason as
+        `workers_builds_watch.all_issue_comments`).
+        """
+        collected: list = []
+        for page in range(1, MAX_LIST_PAGES + 1):
+            batch = self._request(
+                "GET", f"/repos/{self.repo}/issues/{int(issue)}/comments?per_page=100&page={page}")
+            batch = batch or []
+            collected.extend(batch)
+            if len(batch) < 100:
+                break
+        return collected
 
     def create_comment(self, issue: int, body: str) -> dict:
         return self._request("POST", f"/repos/{self.repo}/issues/{int(issue)}/comments", {"body": body})
