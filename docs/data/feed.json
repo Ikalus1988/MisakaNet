@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-10-20T14:22:20.823276+00:00",
+  "generated_at": "2026-10-20T19:22:56.168045+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "fix: the stdio receipt must say where the report went, and the preview button was dead",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3585",
-      "timestamp": "2026-10-20T13:31:08Z",
+      "title": "feat(site): the halos, the colour bars and the purple (#3541, batch X)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3593",
+      "timestamp": "2026-10-20T18:35:52Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3578",
-      "timestamp": "2026-10-20T08:49:00Z",
+      "title": "docs(worker): the CDN serves a cached entry to a request that carries credentials",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3594",
+      "timestamp": "2026-10-20T18:24:27Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "docs(handoff): 116 — the audit batch, what the subagents overturned, and what is still a decision",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3570",
-      "timestamp": "2026-10-20T04:37:44Z",
+      "title": "fix(worker): the account was spending 8x its free-tier row-read budget on two public endpoints",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3590",
+      "timestamp": "2026-10-20T16:58:23Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3562",
-      "timestamp": "2026-10-20T00:33:02Z",
+      "title": "feat(site): the hand-written pages use the vocabulary (#3541, batch W)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3592",
+      "timestamp": "2026-10-20T16:18:51Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3561",
-      "timestamp": "2026-10-19T20:48:54Z",
+      "title": "feat(site): one source for the design tokens (#3541, batch V)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3591",
+      "timestamp": "2026-10-20T15:13:18Z",
       "source": "github"
     },
     {
