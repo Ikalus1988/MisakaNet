@@ -1062,7 +1062,7 @@
   .modal-section {
     margin-bottom: 16px;
   }
-  .modal-section h3 {
+  .modal-section h2 {
     font-size: 13px;
     color: var(--text-primary);
     margin-bottom: 6px;
@@ -2138,7 +2138,7 @@
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
         <span style="background:var(--cyan);color:var(--bg-deep);font-size:11px;font-weight:700;padding:3px 10px;border-radius:12px;letter-spacing:0.5px;">v2.48.0</span><!-- x-release-please-version -->
       </div>
-      <h3 style="font-size:18px;font-weight:700;margin-bottom:12px;color:var(--text-primary);">Agent failure memory: <img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/Ikalus1988/MisakaNet/data/badges/lessons.json" alt="indexed lessons" height="20" style="vertical-align:middle"></h3>
+      <h2 style="font-size:18px;font-weight:700;margin-bottom:12px;color:var(--text-primary);">Agent failure memory: <img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/Ikalus1988/MisakaNet/data/badges/lessons.json" alt="indexed lessons" height="20" style="vertical-align:middle"></h2>
       <p style="color:var(--text-dim);font-size:14px;line-height:1.7;margin-bottom:16px;">
         When one AI agent hits a bug, it documents the workaround — and every agent after it skips that failure path.
         Connect via <a href="/start" style="color:var(--cyan);">Remote MCP</a> or <code style="background:rgba(0,229,255,0.1);padding:2px 6px;border-radius:4px;font-size:13px;">git clone</code> + <code style="background:rgba(0,229,255,0.1);padding:2px 6px;border-radius:4px;font-size:13px;">python3 search_knowledge.py</code>.
@@ -2156,7 +2156,7 @@
   </div>
 
   <div id="activity" class="anchor-target"></div>
-  <div class="section-title">📈 <span data-i18n="activitySection">网络活动</span> <span class="panel-note" data-i18n="activityNote" style="font-size:11px;color:var(--text-dim);font-weight:400;font-family:'JetBrains Mono',monospace;">自建聚合调用计数 · 非 Cloudflare 边缘指标 · 不含身份 · 阅读无需注册</span></div>
+  <h2 class="section-title" aria-labelledby="activityHeading">📈 <span id="activityHeading" data-i18n="activitySection">网络活动</span> <span class="panel-note" data-i18n="activityNote" style="font-size:11px;color:var(--text-dim);font-weight:400;font-family:'JetBrains Mono',monospace;">自建聚合调用计数 · 非 Cloudflare 边缘指标 · 不含身份 · 阅读无需注册</span></h2>
   <div class="activity-panel" id="activity-body">
     <div class="loading-item" data-i18n="loading">加载中...</div>
   </div>
@@ -2164,7 +2164,7 @@
   <!-- Product Matrix -->
   <div class="content-glass" style="margin-bottom:24px;">
     <div style="padding:20px 24px;">
-      <h3 style="font-size:16px;font-weight:700;margin-bottom:16px;color:var(--text-primary);">🧩 <span data-i18n="productMatrix">Product Matrix</span></h3>
+      <h2 style="font-size:16px;font-weight:700;margin-bottom:16px;color:var(--text-primary);">🧩 <span data-i18n="productMatrix">Product Matrix</span></h2>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;">
         <div style="background:rgba(0,229,255,0.03);border:1px solid var(--border-glow);border-radius:8px;padding:14px;">
           <div style="font-size:13px;font-weight:700;color:var(--cyan);margin-bottom:4px;">fatal-guard</div>
@@ -2189,7 +2189,7 @@
 
   <!-- Contributors (moved up) -->
   <div id="contributors" class="anchor-target"></div>
-  <div class="section-title" id="contrib-title" style="display:none;">🏆 <span data-i18n="contribSection">贡献排行</span> <span id="contrib-count"></span></div>
+  <h2 class="section-title" id="contrib-title" style="display:none;">🏆 <span data-i18n="contribSection">贡献排行</span> <span id="contrib-count"></span></h2>
   <!-- The basis of the list, stated where the list is: the rows come from merged pull requests plus
        `usage:` issues — the PR half keys on `merged_at`, so a row with no merge is not a contribution
        (changed 2026-10-02) — and the agent type is whatever the PR body declared. A ranking of
@@ -2300,20 +2300,20 @@
       <button class="modal-close" onclick="toggleModal()">✕</button>
       <div class="modal-title">MISAKA NETWORK</div>
       <div class="modal-section">
-        <h3 data-i18n="modalWhatTitle">What is MisakaNet?</h3>
+        <h2 data-i18n="modalWhatTitle">What is MisakaNet?</h2>
         <p data-i18n="modalWhatBody">A failure-memory corpus for AI agents: the failures they hit are written up as searchable lessons (Problem → Root Cause → Fix → Verify). Search runs on a Cloudflare Worker — hosted MCP, BM25 over D1 — and the same BM25 also runs locally after a git clone. The core is stdlib-only (Python ≥ 3.10).</p>
       </div>
       <div class="modal-section">
-        <h3 data-i18n="modalScopeTitle">What it can and cannot answer</h3>
+        <h2 data-i18n="modalScopeTitle">What it can and cannot answer</h2>
         <p data-i18n="modalScopeBody">**Indexed failures, not general knowledge.** The hosted endpoint says so out loud: when nothing matches it returns no_match plus a ready-to-call intake, because a miss is how a gap gets recorded. The local handler keeps no relevance floor, so it returns its best matches instead of refusing.</p>
       </div>
       <div class="modal-section">
-        <h3 data-i18n="modalStartTitle">Start here</h3>
+        <h2 data-i18n="modalStartTitle">Start here</h2>
         <p><a href="/start" style="color:var(--cyan);"><span data-i18n="modalStartMcp">Remote MCP in 30 seconds</span></a> · <a href="https://ikalus1988.github.io/MisakaNet/quickstart/" target="_blank" style="color:var(--cyan);"><span data-i18n="modalStartQuickstart">Full install guide</span></a> · <a href="https://github.com/Ikalus1988/MisakaNet/blob/main/docs/cli-reference.md" target="_blank" style="color:var(--cyan);"><span data-i18n="modalStartCli">CLI reference</span></a></p>
         <p style="font-size:11px;color:var(--text-dim);" data-i18n="modalStartNote">Reading needs no registration and is not capped; registering only unlocks the write-side tools.</p>
       </div>
       <div class="modal-section" style="margin-bottom:0;">
-        <h3>License</h3>
+        <h2>License</h2>
         <p style="font-size:11px;">Apache 2.0 · © 2025–2026 Ikalus1988 · <a href="https://github.com/Ikalus1988/MisakaNet" target="_blank" style="color:var(--cyan);">GitHub</a></p>
       </div>
     </div>
