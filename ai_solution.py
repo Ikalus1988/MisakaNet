@@ -20,16 +20,3 @@ Run the command to confirm the cap is now 60000:
 python3 -c "from misaki import config; print(config.get('intake_text_cap'))"
 # Expected output: 60000
 ```
-
-```json
-{{
-  "kind": "missing_lesson",
-  "problem": "2026-10-20T08:56:35.4342664Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {{0}}\n2026-10-20T08:56:35.4451647Z ##[error]Tests failed — see test_output.txt\n2026-10-20T08:56:35.4461023Z ##[error]Process completed with exit code 1.\n2026-10-20T08:56:35.4507600Z \u001b[36;1m# value w",
-  "error": "2026-10-20T08:56:35.4342664Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {{0}}\n2026-10-20T08:56:35.4451647Z ##[error]Tests failed — see test_output.txt\n2026-10-20T08:56:35.4461023Z ##[error]Process completed with exit code 1.\n2026-10-20T08:56:35.4507600Z \u001b[36;1m# value w",
-  "what_tried": "",
-  "source": "github-action",
-  "matched_lesson_id": "",
-  "fix": "",
-  "verification": ""
-}}
-```
