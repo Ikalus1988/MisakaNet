@@ -2650,6 +2650,25 @@ const IDENTITY_AURA = {
  * Used by the analytics endpoints to decide how much of the usage record to publish. Those endpoints are
  * anonymous reads on purpose (the site's activity panel and the badges read them), and the maintainer needs
  * the full picture; the two are different questions, so the answer is one flag rather than two endpoints.
+ *
+ * **Read this before setting `MCP_TOKEN` on this worker.** Production does not set it today
+ * (`/api/health` reports `hasMcpToken: false`), so this returns false for every request and the
+ * maintainer branch of `/api/analytics` is unreachable — the route answers the anonymous payload and
+ * withholds `knowledge_gaps`.
+ *
+ * The moment the token *is* set, one thing outside this file has to change with it. Cloudflare's CDN
+ * keys its cache on the URL and not on `Authorization`, and it does serve a cached entry to a request
+ * that carries credentials: measured on 2026-10-21, a request to `/api/analytics` with an
+ * `Authorization` header came back `cf-cache-status: HIT` with the **anonymous** body. So a maintainer
+ * who asks for the bare `/api/analytics` would be answered from the anonymous edge entry and would
+ * never see `knowledge_gaps` — a silent loss of function, not a leak (a `private` response is never
+ * stored by the CDN).
+ *
+ * The fix is on the caller's side and it is one URL: the maintainer must request
+ * `/api/analytics?audience=maintainer`. That query is what the cache key below already carries, so
+ * the request misses the anonymous edge entry, reaches the worker, and is answered from the
+ * maintainer's own `caches.default` entry. The alternative is a zone cache rule that bypasses the
+ * CDN cache for this path when `Authorization` is present.
  */
 function isMaintainerRequest(request, env) {
   const header = String((request && request.headers && request.headers.get("Authorization")) || "");
@@ -8342,6 +8361,12 @@ export default {
         // not on `Authorization` — the reason `/api/funnel` exists as a route of its own. One entry
         // here would hand the maintainer's `knowledge_gaps` (verbatim failed queries) to every
         // anonymous caller that hit the route in that window.
+        //
+        // The reverse also holds, and it is the one that bites: Cloudflare's CDN serves a cached
+        // entry to a request that carries credentials, so a maintainer asking for the bare
+        // `/api/analytics` can be answered from the *anonymous* edge entry. The maintainer therefore
+        // has to ask for `/api/analytics?audience=maintainer` — the query this key already carries.
+        // See `isMaintainerRequest` for the whole story.
         const analyticsCache = (typeof caches !== "undefined" && caches.default) ? caches.default : null;
         const analyticsCacheKey = new Request(
           `${url.origin}/api/analytics${maintainer ? "?audience=maintainer" : ""}`, { method: "GET" });
