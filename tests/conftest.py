@@ -51,6 +51,15 @@ os.environ.setdefault("MISAKANET_CONTRIBUTION_QUEUE", str(TEST_DATA_DIR / "contr
 # lesson. Redirected at *import* time, before any test module can import the generator.
 os.environ.setdefault("MISAKANET_LESSONS_INDEX", str(TEST_DATA_DIR / "lessons.json"))
 
+# The intake path went remote-first on 2026-10-20: `misakanet_submit_intake` files the report on
+# MisakaNet, because the hosted worker is the only place an intake becomes a GitHub issue (the local
+# queue is a staging area nothing drains). That made every test that calls the handler **file a real
+# issue** — `tests/test_me_inbox.py` created #3580 on the network while running this suite. The same
+# redirection as above, one level up: no test may reach the network to submit a report.
+# `MISAKANET_INTAKE_DISABLE_REMOTE=1` is the same shape as `MISAKANET_USAGE_DISABLE_REMOTE`, and a
+# test that wants the remote path deletes it (see `tests/test_intake_receipt_truthfulness.py`).
+os.environ.setdefault("MISAKANET_INTAKE_DISABLE_REMOTE", "1")
+
 # ── the checkout is not a fixture ───────────────────────────────────────────────────────────────
 # The redirection above is a fix; this is the *gate* that keeps it a fix. A future test that reaches a
 # real writer gets named here, in one line, instead of surfacing as drift in whatever test happens to
