@@ -55,6 +55,10 @@ STYLE_BLOCK = re.compile(r"<style\b[^>]*>([\s\S]*?)</style>", re.IGNORECASE)
 # the page's own CSS — counting its colours as "a page hardcoding a token colour" would have the
 # gate fail on the very file that defines the palette.
 TOKEN_BLOCK = re.compile(r"<!-- design-tokens:start -->[\s\S]*?<!-- design-tokens:end -->")
+# A shadow inside `@keyframes` is an animation frame, not a declaration the scale governs — the
+# same reasoning that keeps keyframe durations literal. The homepage's corner pulse animates its
+# shadow between four hand-written values; none of them is an elevation tier.
+KEYFRAMES = re.compile(r"@keyframes\b[^\{]*\{[\s\S]*?\n\s*\}", re.IGNORECASE)
 INLINE_STYLE = re.compile(r"\bstyle\s*=\s*\"([^\"]*)\"", re.IGNORECASE)
 
 
@@ -109,7 +113,27 @@ def offenders(css: str, prop: str, allowed: set[str], token_pattern: str) -> lis
     return bad
 
 
+def compound_ok(value: str, token_pattern: str) -> bool:
+    """A compound value is fine when every part is a token or a zero.
+
+    `border-radius: 4px 4px 0 0` is one shape, and half of it being a token makes the whole thing
+    a token — so the check has to look at the parts, not at the whole string. (A radius of
+    `var(--r-sm) 0 0 0` is a different corner from `var(--r-sm)`; the shape survives the swap.)
+    """
+    parts = value.split()
+    if not parts:
+        return False
+    for part in parts:
+        if part in ("0", "0px"):
+            continue
+        if re.fullmatch(token_pattern, part):
+            continue
+        return False
+    return True
+
+
 TOKEN_REF = r"var\(--[a-z0-9-]+\)"
+DURATION = re.compile(r"\d*\.?\d+s")
 RADIUS_REF = r"var\(--r-(?:sm|md|lg|pill)\)"
 MOTION_REF = r"var\(--t-(?:fast|base)\)"
 SHADOW_REF = r"var\(--sh-[12]\)"
@@ -126,7 +150,8 @@ def check(root: Path = REPO) -> list[str]:
         css = css_of(page)
 
         # 2 — radius: three tiers (plus the pill shape).
-        bad = offenders(css, "border-radius", {"0", "0px"}, RADIUS_REF)
+        bad = [v for v in offenders(css, "border-radius", {"0", "0px"}, RADIUS_REF)
+               if not compound_ok(v, RADIUS_REF)]
         if bad:
             problems.append(f"{rel}: border-radius still literal — {sorted(set(bad))[:6]}")
 
@@ -135,16 +160,36 @@ def check(root: Path = REPO) -> list[str]:
         # `0.01ms !important` is the `prefers-reduced-motion` block, and #3541's risk section says
         # that block must be preserved — a gate that demands it be tokenised would be asking for
         # the accessibility fix to be undone.
-        bad = offenders(css, "transition-duration", {"0s", "0.01ms !important"}, MOTION_REF)
-        bad += offenders(css, "transition", set(), MOTION_REF + r"|0s|var\(--ease\)")
+        # A transition shorthand is `property duration easing`, so the duration is one *part* of
+        # the value: `transition: all var(--t-base) ease` is as valid as `transition: var(--t-base)`.
+        # Matching the whole value (as the first version of this check did) rejected the former.
+        bad = []
+        for value in values_of(css, "transition-duration"):
+            if value in ("0s", "0.01ms !important"):
+                continue
+            if not re.fullmatch(MOTION_REF, value):
+                bad.append(value)
+        for value in values_of(css, "transition"):
+            for part in value.split():
+                if not DURATION.fullmatch(part):
+                    continue
+                if not re.fullmatch(MOTION_REF, part):
+                    bad.append(value)
+                    break
         if bad:
             problems.append(f"{rel}: transition duration still literal — {sorted(set(bad))[:6]}")
 
         # 4 — shadows: two tiers. A zero-offset glow is not an elevation shadow: it is the
         # homepage's brand layer, and #3541 keeps it for the logo and the hero — so it is counted
         # (that count is X's job to drive to zero) rather than failed here.
-        bad = [v for v in offenders(css, "box-shadow", {"none"}, SHADOW_REF)
-               if not re.search(r"0 0 \d+px", v)]
+        static_css = KEYFRAMES.sub("", css)
+        bad = []
+        for value in offenders(static_css, "box-shadow", {"none", "none !important"}, SHADOW_REF):
+            # A zero-offset layer is a glow, and a glow is the brand layer (X's job), not an
+            # elevation tier. `0 0 0 0 rgba(…)` is a no-op layer that marks the same thing.
+            if re.search(r"0 0 (?:\d+px|0 0)", value):
+                continue
+            bad.append(value)
         if bad:
             problems.append(f"{rel}: box-shadow still literal — {sorted(set(bad))[:6]}")
 
@@ -204,7 +249,10 @@ def report(root: Path = REPO) -> list[tuple[str, str, str, bool]]:
     glows = [v for v in shadows if re.search(r"0 0 \d+px", v)]
     px_sizes = {v for v in values_of(css, "font-size") if re.search(r"\d\s*px", v)}
     rem_sizes = {v for v in values_of(css, "font-size") if re.fullmatch(r"[\d.]+rem", v)}
-    families = {v for v in values_of(css, "font-family") if v != "inherit"}
+    # A `var(--font-…)` reference *is* the vocabulary being used, not a literal stack — counting
+    # the references as stacks would report "5 种字面栈" on a page that has none.
+    families = {v for v in values_of(css, "font-family")
+                if v != "inherit" and not v.startswith("var(")}
     widths = {v for v in values_of(css, "max-width")
               if re.fullmatch(r"\d+px", v) and int(v[:-2]) >= 500}
     emoji = re.findall(r"[\U0001F300-\U0001FAFF☀-➿]", css)
