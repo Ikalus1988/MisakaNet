@@ -3444,18 +3444,66 @@ function escapeLike(text) {
  *
  * Expired rows are filtered out here as well, so a listed key is one `storeGet` would actually return.
  */
+/**
+ * The half-open key range that covers exactly the keys starting with `prefix`.
+ *
+ * Why not `LIKE`: measured 2026-10-20 on production D1, `WHERE key LIKE 'prefix%' ESCAPE '\'`
+ * has no usable plan and reads **every row of `kv_store`** — 68,892 rows for one prefix
+ * listing, against a free-plan budget of 5,000,000 rows read/day. `wrangler d1 insights`
+ * for the six hours to 14:20Z counted 259 such calls and 17,800,700 rows read: 87% of the
+ * account's entire row-read spend, for a listing whose answer is six keys.
+ *
+ * The range (`key >= lo AND key < hi`) uses the primary-key index instead: the same call
+ * reads 6 rows. Two semantics change with it, and both are stated rather than assumed:
+ *
+ *   * `LIKE` is case-insensitive for ASCII; the range is exact. Every key this codebase
+ *     writes is lowercase (`unsolved:lesson:`, `proxy:…`, `keepalive:…`), so the two agree —
+ *     but a key that differed only in case would now be invisible to a listing, which is
+ *     why `storeList`'s contract is "keys that start with this exact prefix", not "keys
+ *     that match this prefix case-insensitively".
+ *   * `LIKE` treats `%` and `_` as wildcards, which `escapeLike` neutralised. The range
+ *     form has no wildcards, so the escaping goes with them — a prefix containing `_` is
+ *     now matched literally, which is what the escaping was for anyway.
+ */
+function prefixRange(prefix) {
+  const lo = String(prefix);
+  const chars = Array.from(lo);
+  // The upper bound is the prefix with its last code point incremented, so every key that
+  // starts with the prefix is below it and every key that does not is above it. A prefix
+  // ending in the maximum code point carries: drop it and increment the one before it.
+  while (chars.length) {
+    const cp = chars[chars.length - 1].codePointAt(0);
+    if (cp < 0x10ffff) {
+      chars[chars.length - 1] = String.fromCodePoint(cp + 1);
+      return { lo, hi: chars.join("") };
+    }
+    chars.pop();
+  }
+  // The prefix was nothing but maximum code points: there is no finite upper bound, so the
+  // caller falls back to the scan rather than to a range that would quietly truncate.
+  return null;
+}
+
 async function storeList(env, prefix, { limit = 1000 } = {}) {
   const names = new Set();
   const d1 = d1Binding(env);
   if (d1) {
     try {
       await ensureKvStoreTable(d1);
-      const { results } = await d1.prepare(
-        `SELECT key FROM kv_store
-          WHERE key LIKE ?1 ESCAPE '\\'
-            AND (expires_at IS NULL OR expires_at > datetime('now'))
-          LIMIT ?2`,
-      ).bind(`${escapeLike(prefix)}%`, limit).all();
+      const range = prefixRange(prefix);
+      const { results } = range
+        ? await d1.prepare(
+          `SELECT key FROM kv_store
+            WHERE key >= ?1 AND key < ?2
+              AND (expires_at IS NULL OR expires_at > datetime('now'))
+            LIMIT ?3`,
+        ).bind(range.lo, range.hi, limit).all()
+        : await d1.prepare(
+          `SELECT key FROM kv_store
+            WHERE key LIKE ?1 ESCAPE '\\'
+              AND (expires_at IS NULL OR expires_at > datetime('now'))
+            LIMIT ?2`,
+        ).bind(`${escapeLike(prefix)}%`, limit).all();
       for (const row of results || []) names.add(String(row.key));
     } catch (error) {
       // Deduplication, not consistency: a failed D1 list still leaves the KV list below.
@@ -7420,6 +7468,13 @@ const LESSONS_TTL_SECONDS = 120;
 const LESSONS_CACHE_CONTROL =
   `public, max-age=${LESSONS_TTL_SECONDS}, s-maxage=${LESSONS_TTL_SECONDS}`;
 
+// `/api/analytics` — the rolling aggregates over `lesson_usage` (2026-10-20).
+//
+// Two minutes, for the same reason `/api/lessons` has two: the window behind the numbers is seven
+// days, so what the TTL can hide is one search landing in the last two minutes — and the route is
+// hit by crawlers, which is the whole point of caching it.
+const ANALYTICS_TTL_SECONDS = 120;
+
 /**
  * Calls today, per self-declared MCP client (`mcpclient:<name>` buckets). D1 only: the KV fallback
  * cannot enumerate keys, and inventing that here would cost more than the missing number is worth.
@@ -8255,6 +8310,46 @@ export default {
       const d1 = d1Binding(env);
       if (!d1) return jsonResponse({ error: "D1 not configured" }, 503);
       try {
+        // Two audiences, one endpoint (2026-09-29). Anonymous callers get the *aggregate* activity —
+        // which is what the site panel and the badges are for — and not the two fields that carry other
+        // people's words or names:
+        //
+        //   * `knowledge_gaps` is the `no_match` column, i.e. **verbatim failed queries**. A failed query
+        //     is whatever the caller sent, and callers send prompts: measured live 2026-09-29, the top
+        //     entry was a complete multi-sentence agent prompt, published world-readable and crawlable.
+        //     There is no length or content bound on that column, so it cannot be sanitised into safety —
+        //     it is withheld.
+        //   * `mcpClients` (on `/api/analytics/traffic`) is per-client call counts keyed on a
+        //     self-declared name. That is third-party tooling, not our own telemetry.
+        //
+        // The maintainer keeps both by presenting the static token, which is the same credential that
+        // already unlocks the write tools. `top_searches`/`intents` stay public but are now bounded to the
+        // length of a query rather than of a prompt.
+        const maintainer = isMaintainerRequest(request, env);
+
+        // Edge cache, for the budget it protects (2026-10-20). This endpoint is public and it is one
+        // of the two places where the account's row-read budget actually goes: measured with
+        // `wrangler d1 insights` over six hours, the five `lesson_usage` GROUP BY queries below read
+        // 2,391,000 rows across 973 calls — about 2,500 rows per call, because `lesson_usage` holds
+        // every search, every lesson read and every failed query of the last seven days (7,094 rows),
+        // and each of the five queries scans the rows of its own `event`.
+        //
+        // So the fix is not a faster query but fewer queries: the payload is a rolling aggregate, and
+        // `caches.default` lets a colo compute it once per TTL instead of once per caller (the same
+        // reasoning as `/api/lessons` and `/api/activity`).
+        //
+        // The two audiences get **separate cache entries**, because an edge cache keys on the URL and
+        // not on `Authorization` — the reason `/api/funnel` exists as a route of its own. One entry
+        // here would hand the maintainer's `knowledge_gaps` (verbatim failed queries) to every
+        // anonymous caller that hit the route in that window.
+        const analyticsCache = (typeof caches !== "undefined" && caches.default) ? caches.default : null;
+        const analyticsCacheKey = new Request(
+          `${url.origin}/api/analytics${maintainer ? "?audience=maintainer" : ""}`, { method: "GET" });
+        if (analyticsCache) {
+          const hit = await analyticsCache.match(analyticsCacheKey);
+          if (hit) return hit;
+        }
+
         const [topQueries, topLessons, topGaps, topIntents, daily] = await Promise.all([
           d1.prepare(
             `SELECT query, COUNT(*) AS n FROM lesson_usage
@@ -8284,22 +8379,6 @@ export default {
              GROUP BY day ORDER BY day`
           ).all(),
         ]);
-        // Two audiences, one endpoint (2026-09-29). Anonymous callers get the *aggregate* activity —
-        // which is what the site panel and the badges are for — and not the two fields that carry other
-        // people's words or names:
-        //
-        //   * `knowledge_gaps` is the `no_match` column, i.e. **verbatim failed queries**. A failed query
-        //     is whatever the caller sent, and callers send prompts: measured live 2026-09-29, the top
-        //     entry was a complete multi-sentence agent prompt, published world-readable and crawlable.
-        //     There is no length or content bound on that column, so it cannot be sanitised into safety —
-        //     it is withheld.
-        //   * `mcpClients` (on `/api/analytics/traffic`) is per-client call counts keyed on a
-        //     self-declared name. That is third-party tooling, not our own telemetry.
-        //
-        // The maintainer keeps both by presenting the static token, which is the same credential that
-        // already unlocks the write tools. `top_searches`/`intents` stay public but are now bounded to the
-        // length of a query rather than of a prompt.
-        const maintainer = isMaintainerRequest(request, env);
         const payload = {
           top_searches: (topQueries.results || []).map(r => ({ query: boundText(r.query), count: r.n })),
           top_lessons: (topLessons.results || []).map(r => ({ lesson_id: r.lesson_id, count: r.n })),
@@ -8315,7 +8394,28 @@ export default {
           payload.note = "Aggregate activity only: failed-query text and per-client counts are withheld. "
                        + "Present the maintainer token for the full breakdown.";
         }
-        return jsonResponse(payload, 200, { "X-Robots-Tag": "noindex" });
+        const response = jsonResponse(payload, 200, {
+          "X-Robots-Tag": "noindex",
+          // The TTL the edge entry lives for. Without it the Cache API entry has no expiry of its
+          // own and the aggregate would freeze at whatever it was when it was first written — so
+          // the TTL is stated here rather than left to a default.
+          "Cache-Control": maintainer
+            ? `private, max-age=${ANALYTICS_TTL_SECONDS}, s-maxage=${ANALYTICS_TTL_SECONDS}`
+            : `public, max-age=${ANALYTICS_TTL_SECONDS}, s-maxage=${ANALYTICS_TTL_SECONDS}`,
+        });
+        if (analyticsCache) {
+          // `cache.put` rejects (413) when the response says it must not be cached, and the
+          // maintainer's entry says exactly that — so the put is guarded rather than assumed: a
+          // refused cache write must never turn a working route into a 500.
+          try {
+            const putting = analyticsCache.put(analyticsCacheKey, response.clone()).catch(e =>
+              console.error("[analytics] cache put failed", e && e.message));
+            if (ctx && typeof ctx.waitUntil === "function") ctx.waitUntil(putting); else await putting;
+          } catch (e) {
+            console.error("[analytics] cache put failed", e && e.message);
+          }
+        }
+        return response;
       } catch (e) { return errorResponse("api handler failed", "internal_error", 502, e); }
     }
 

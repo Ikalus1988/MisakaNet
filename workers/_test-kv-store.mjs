@@ -82,21 +82,34 @@ export function withKvStore(d1 = null, { now = () => new Date().toISOString() } 
       }
 
       // The prefix list (#2119): `SELECT key … WHERE key LIKE ?1 ESCAPE '\\' …`.
+      //
+      // Since 2026-10-20 the worker asks for a *range* instead of a LIKE pattern — `key >= ?1 AND
+      // key < ?2` — because the LIKE form reads every row of `kv_store` on D1 (68,892 rows for one
+      // prefix listing; 87% of the account's daily row-read budget). The stub answers both forms
+      // and reads the predicate out of the SQL, so it keeps answering "the list is filtered by the
+      // prefix" after the form changes — and a test that asserted the *form* would have failed
+      // against a stub that quietly kept the old semantics.
       if (/SELECT key FROM kv_store/i.test(text)) {
         const filtersExpiry = /expires_at\s+IS\s+NULL\s+OR\s+expires_at\s*>\s*datetime\('now'\)/i.test(text);
+        const isRange = /key\s*>=\s*\?1\s+AND\s+key\s*<\s*\?2/i.test(text);
         return {
-          bind: (pattern, limit = 1000) => ({
+          bind: (...args) => ({
             all: async () => {
-              // The stub reads the *pattern* the worker bound rather than assuming a prefix, the same
-              // way the value read reads its own predicate: a stub that decides on its own would keep
-              // answering "the list is filtered" after the filter was deleted.
-              // Strip the LIKE wildcard, then undo the ESCAPE: the worker binds `escapeLike(prefix) + '%'`.
-              const raw = String(pattern);
-              const prefix = (raw.endsWith("%") ? raw.slice(0, -1) : raw).replace(/\\([%_\\])/g, "$1");
               const results = [];
               for (const [key, row] of rows.entries()) {
-                if (results.length >= limit) break;
-                if (!key.startsWith(prefix)) continue;
+                if (results.length >= (args.length > 2 ? args[2] : args[1])) break;
+                if (isRange) {
+                  // The half-open range: `key >= lo AND key < hi`.
+                  const lo = String(args[0]);
+                  const hi = String(args[1]);
+                  if (!(key >= lo && key < hi)) continue;
+                } else {
+                  // The LIKE form: strip the wildcard, then undo the ESCAPE — the worker binds
+                  // `escapeLike(prefix) + '%'`.
+                  const raw = String(args[0]);
+                  const prefix = (raw.endsWith("%") ? raw.slice(0, -1) : raw).replace(/\\([%_\\])/g, "$1");
+                  if (!key.startsWith(prefix)) continue;
+                }
                 if (filtersExpiry && row.expires_at && row.expires_at <= now()) continue;
                 results.push({ key });
               }

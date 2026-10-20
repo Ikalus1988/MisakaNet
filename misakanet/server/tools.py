@@ -237,10 +237,13 @@ TOOLS = [
             " and matched_lesson_id are optional. Output schema:"
             " JSON with submitted (boolean), intake_id, status"
             " (pending_review), redactions_applied, quality_score,"
-            " and receipt. Error cases: missing problem, duplicate"
-            " submission. Side effects: writes to"
-            " data/contribution_queue.jsonl. Auth: none. Rate"
-            " limits: local stdio process only."
+            " dedup_key, poll_hint, and receipt. Error cases:"
+            " missing problem, duplicate submission. Side effects:"
+            " files the report on MisakaNet (it becomes a GitHub"
+            " issue); when the network is unreachable it is kept in"
+            " the local queue only, and the receipt says so via"
+            " delivery=local_queue. Auth: none. Rate limits: the"
+            " hosted endpoint's."
         ),
         "inputSchema": {
             "type": "object",
@@ -700,7 +703,9 @@ TOOLS = [
             " Output schema: JSON with events[], count, status,"
             " and poll_hint. Each event has a type (answered,"
             " converted, accepted, lesson_published) and"
-            " type-specific fields."
+            " type-specific fields. An intake still sitting in the"
+            " local queue is answered from there (delivery="
+            " local_queue) — the hosted endpoint has never seen it."
             " Error cases: missing both intake_id and dedup_key"
             " returns {error, hint}."
             " Side effects: none — this is a read-only call."

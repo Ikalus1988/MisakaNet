@@ -137,8 +137,13 @@ def test_the_modal_text_is_localized():
     scope.
     """
     prose = modal()
-    prose = prose[prose.index("<h3"):]            # the brand title and the close button
-    prose = prose.split("<h3>License</h3>")[0]    # the boilerplate footer
+    # The section headings moved from h3 to h2 (2026-10-20, the page's heading outline), so this
+    # no longer slices on a heading level: it slices on the *sections*, which is what it was after
+    # all — the brand title and the close button come before the first section, and the License
+    # boilerplate is the last one.
+    prose = prose[prose.index('<div class="modal-section"'):]
+    sections = list(re.finditer(r'<div class="modal-section"[^>]*>', prose))
+    prose = prose[:sections[-1].start()]           # the boilerplate footer
     assert prose.strip(), "the split left nothing to check, so this rule would pass vacuously"
     parser = _VisibleProse()
     parser.feed(prose)

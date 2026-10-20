@@ -9,11 +9,98 @@
 <meta property="og:description" content="Search the indexed failure-recovery lessons from real AI agent debugging sessions.">
 <meta property="og:url" content="https://misakanet.org/search/">
 <title>Search Indexed Failure Lessons — MisakaNet</title>
+<!-- design-tokens:start -->
+<style id="misaka-design-tokens">
+/*
+ * The design system's tokens — ONE source for every hand-written page (#3541, batch V).
+ *
+ * Why this file exists: the site currently holds two products. The homepage has an identity
+ * (Orbitron, a cyan glow, a grid), and the other hand-written pages are GitHub's default dark
+ * theme — copied in from somewhere else. Fourteen pages, fourteen sets of hardcoded colours,
+ * radii, shadows and font stacks. Nothing is *wrong* with them; they are simply not one site,
+ * and every future change has to be made fourteen times.
+ *
+ * This block changes nothing on its own: no page references these names yet. That is deliberate
+ * — batch W is the batch that replaces hardcoded values with these names, and a batch that
+ * changed the rendering as well as the vocabulary would make a visual regression impossible to
+ * attribute. So this file is the vocabulary, and the gate below keeps it the only copy of it.
+ *
+ * Every value below is measured, not chosen for taste: the text colours were picked for their
+ * WCAG contrast ratio against --bg-0 (15.95:1, 7.67:1, 4.14:1), and the two accent colours
+ * for theirs (12.79:1 and 5.21:1). If a value changes here, the ratios change with it, so the
+ * numbers in the comments are part of the contract.
+ *
+ * Maintained by scripts/sync_design_tokens.py — `--check` fails when a page drifts from this
+ * file, the same way the shared nav row is kept honest.
+ */
+:root {
+  /* ── 底与面：3 档（收编 GitHub 习惯色，不再各页自定义）── */
+  --bg-0: #070b15;   /* 页面底（首页既有 --bg-deep） */
+  --bg-1: #0d1424;   /* 卡片 / 面 */
+  --bg-2: #161b22;   /* 浮层 / 代码块 */
+
+  /* ── 文字：3 档（对比度已实测）── */
+  --fg-1: #e2e8f0;   /* 15.95:1 on --bg-0 */
+  --fg-2: #94a3b8;   /*  7.67:1 on --bg-0 */
+  --fg-3: #64748b;   /*  仅限 ≥16px 或非文本装饰（4.14:1，正文禁用）*/
+
+  /* ── 品牌与语义 ── */
+  --accent:   #00e5ff;  /* 12.79:1 — 品牌 / 链接（首页既有 --cyan）*/
+  --accent-2: #ff0080;  /*  5.21:1 — 次级强调，限量使用 */
+  --ok:       #22c55e;  /*  8.63:1 */
+  --warn:     #f0c040;
+  --danger:   #ef4444;  /*  5.23:1 */
+  --line:        rgba(148,163,184,.14);
+  --line-strong: rgba(0,229,255,.28);
+
+  /* ── 字体：4 族（不换字体家族，只把 5 套声明收敛成 token）── */
+  /* `--font-ui` 是**系统栈**，不是 Inter：十三个手写页面今天用的是
+     `-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`，而 Inter 只在首页被
+     加载。#3541 的风险第 1 条写着"若 onload 不触发会静默回退……只有像素对比能抓到"，所以
+     **本单不换字体家族**：把 `--font-ui` 写成 Inter 开头，等于让这十三个页面在没加载 Inter
+     的情况下用 CJK 字体渲染拉丁字母——那是一次静默的排版退化。
+     首页的 Inter 因此单列为 `--font-brand`：两个族都是"不动"的，只是各归其位。── */
+  --font-ui:      -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', sans-serif;
+  --font-brand:   'Inter','PingFang SC','Microsoft YaHei','Noto Sans SC',sans-serif;
+  --font-display: 'Orbitron', var(--font-brand);      /* 仅品牌层 */
+  --font-cn:      'Ma Shan Zheng','Noto Sans SC',cursive; /* 仅首页副标 */
+  --font-mono:    'JetBrains Mono',ui-monospace,monospace;
+
+  /* ── 字阶：10 档，rem 基准 16 ── */
+  --fs-3xs:.6875rem; --fs-2xs:.75rem; --fs-xs:.8125rem; --fs-sm:.875rem;
+  --fs-md:1rem;     --fs-lg:1.125rem; --fs-xl:1.3125rem; --fs-2xl:1.5rem;
+  --fs-3xl:1.875rem;--fs-4xl:2.375rem;
+  /* 品牌层的字号（首页的标识组合）。它们不属于 UI 字阶：按 #3541 的 px 规则向上取整，52px 和
+     48px 恰好不动，但 22px 会变成 24px、36px 会变成 38px——那会把首页的标识撑宽 41px，
+     而首页的头部本来就比视口宽（§118.9 的既有 bug），再撑就没有余地了。
+     #3541 说"首页那套签名不是要改掉的东西，它是资产"，所以这一层保留原尺寸，
+     并由像素对比守住：改这里的数会立刻在 header 的宽度上被看见。── */
+  --fs-display:3.25rem;      /* 52px — .logo-title */
+  --fs-display-sm:3rem;      /* 48px — .logo-cn */
+  --fs-display-md:2.25rem;   /* 36px — 窄屏下的 .logo-title / .logo-cn */
+  --fs-tagline:1.375rem;     /* 22px — .logo-tagline */
+
+  /* ── 间距：4px 基准，8 档 ── */
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px;
+  --sp-5:24px; --sp-6:32px; --sp-7:40px; --sp-8:48px;
+
+  /* ── 圆角：3 档（现状 14 种）── */
+  --r-sm:6px; --r-md:10px; --r-lg:16px;
+  /* 胶囊形不是"圆角档位"，是形状：现状的 50% 与 999px 是同一种东西的两种写法。
+     它单列一个 token，而不是混进三档里——把它塞进 --r-lg 会让胶囊变成圆角矩形。── */
+  --r-pill:999px;
+
+  /* ── 动效：2 档 + 1 个 easing（现状 5 种时长）── */
+  --t-fast:150ms; --t-base:250ms; --ease:cubic-bezier(.2,.8,.2,1);
+
+  /* ── 阴影：2 档（现状 31 处）── */
+  --sh-1:0 1px 2px rgba(0,0,0,.35);
+  --sh-2:0 12px 32px rgba(0,0,0,.45);
+}
+</style>
+<!-- design-tokens:end -->
 <style>
-  :root {
-    --font-ui: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", "Helvetica Neue", Arial, sans-serif;
-    --font-mono: "JetBrains Mono", "Fira Code", "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
-    --text-main: rgba(255,255,255,0.88);
+  :root {--text-main: rgba(255,255,255,0.88);
     --text-soft: rgba(255,255,255,0.72);
     --text-muted: rgba(255,255,255,0.64);
   }
@@ -21,27 +108,27 @@
   body { font-family: var(--font-ui); background: radial-gradient(circle at 50% -20%, rgba(88,166,255,0.09), transparent 38%), #0a0f1d; color: var(--text-main); min-height: 100vh; }
   .container { max-width: 720px; margin: 0 auto; padding: 40px 20px; }
   .topbar { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 4px; }
-  h1 { font-family: var(--font-ui); font-size: 24px; font-weight: 700; margin-bottom: 4px; }
-  .subtitle { color: var(--text-soft); font-size: 15px; line-height: 1.55; margin-bottom: 24px; }
+  h1 { font-family: var(--font-ui); font-size: var(--fs-2xl); font-weight: 700; margin-bottom: 4px; }
+  .subtitle { color: var(--text-soft); font-size: var(--fs-md); line-height: 1.55; margin-bottom: 24px; }
   .lang-switch { display: flex; gap: 6px; flex-shrink: 0; margin-top: 2px; }
-  .lang-switch button { background: transparent; color: var(--text-muted); border: 1px solid rgba(255,255,255,0.12); border-radius: 7px; padding: 4px 10px; cursor: pointer; font-size: 12px; font-family: var(--font-ui); }
+  .lang-switch button { background: transparent; color: var(--text-muted); border: 1px solid rgba(255,255,255,0.12); border-radius: var(--r-md); padding: 4px 10px; cursor: pointer; font-size: var(--fs-2xs); font-family: var(--font-ui); }
   .lang-switch button.active { color: #58a6ff; border-color: rgba(88,166,255,0.42); background: rgba(88,166,255,0.08); }
-  .home-link { display: inline-block; color: var(--text-muted); font-size: 13px; text-decoration: none; margin-bottom: 8px; transition: color 0.15s; }
+  .home-link { display: inline-block; color: var(--text-muted); font-size: var(--fs-xs); text-decoration: none; margin-bottom: 8px; transition: color var(--t-fast); }
   .home-link:hover { color: #58a6ff; }
-  .search-box { position: relative; margin-bottom: 16px; background: rgba(255,255,255,0.035); border: 1px solid rgba(88,166,255,0.24); border-radius: 14px; box-shadow: 0 0 0 1px rgba(88,166,255,0.04); transition: border-color 0.2s, box-shadow 0.2s; }
+  .search-box { position: relative; margin-bottom: 16px; background: rgba(255,255,255,0.035); border: 1px solid rgba(88,166,255,0.24); border-radius: var(--r-lg); box-shadow: 0 0 0 1px rgba(88,166,255,0.04); transition: border-color 0.2s, box-shadow var(--t-fast); }
   .search-box:focus-within { border-color: rgba(88,166,255,0.62); background: rgba(88,166,255,0.06); box-shadow: 0 0 18px rgba(88,166,255,0.12); }
-  .search-box input { width: 100%; padding: 15px 16px; background: transparent; border: 0; color: var(--text-main); font-size: 15px; font-family: var(--font-ui); outline: none; }
+  .search-box input { width: 100%; padding: 15px 16px; background: transparent; border: 0; color: var(--text-main); font-size: var(--fs-md); font-family: var(--font-ui); outline: none; }
   .search-box input::placeholder { color: rgba(255,255,255,0.56); }
-  .stats { font-size: 13px; color: var(--text-muted); margin-bottom: 20px; }
+  .stats { font-size: var(--fs-xs); color: var(--text-muted); margin-bottom: 20px; }
   .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
-  .results-header { font-size: 13px; color: var(--text-soft); margin-bottom: 12px; }
-  .result { padding: 16px; background: rgba(255,255,255,0.025); border: 1px solid rgba(88,166,255,0.12); border-radius: 10px; margin-bottom: 10px; cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s; box-shadow: 0 8px 28px rgba(0,0,0,0.22); }
+  .results-header { font-size: var(--fs-xs); color: var(--text-soft); margin-bottom: 12px; }
+  .result { padding: 16px; background: rgba(255,255,255,0.025); border: 1px solid rgba(88,166,255,0.12); border-radius: var(--r-md); margin-bottom: 10px; cursor: pointer; transition: border-color 0.15s, box-shadow var(--t-fast); box-shadow: var(--sh-1); }
   .result:hover { border-color: rgba(88,166,255,0.35); }
-  .result-title { font-family: var(--font-ui); font-size: 16px; line-height: 1.35; font-weight: 700; color: var(--text-main); margin-bottom: 4px; }
+  .result-title { font-family: var(--font-ui); font-size: var(--fs-md); line-height: 1.35; font-weight: 700; color: var(--text-main); margin-bottom: 4px; }
   .result-meta { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; flex-wrap: wrap; }
-  .badge { font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: 600; font-family: var(--font-ui); }
+  .badge { font-size: var(--fs-3xs); padding: 2px 6px; border-radius: var(--r-sm); font-weight: 600; font-family: var(--font-ui); }
   .badge-domain { background: rgba(88,166,255,0.1); color: #58a6ff; }
-  .badge-plain { background: rgba(148,163,184,0.15); color: #94a3b8; }
+  .badge-plain { background: rgba(148,163,184,0.15); color: var(--fg-2); }
   .badge-fatal { background: rgba(239,68,68,0.12); color: #f87171; }
   .badge-runtime { background: rgba(251,146,60,0.12); color: #fb923c; }
   .badge-setup { background: rgba(56,189,248,0.12); color: #38bdf8; }
@@ -54,45 +141,45 @@
   .badge-evidence.ev-e2 { background: rgba(63,185,80,0.14); color: #3fb950; }
   .badge-evidence.ev-e3 { background: rgba(210,153,34,0.14); color: #d29922; }
   .badge-evidence.ev-e4 { background: rgba(163,113,247,0.18); color: #d2a8ff; }
-  .result-takeaway { font-size: 12px; color: var(--text-muted); margin-top: 4px; line-height: 1.5; }
-  .section-label { font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin: 20px 0 8px; }
-  .fold-toggle { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; font-size: 13px; color: var(--text-muted); background: transparent; border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 6px 12px; margin: 8px 0; transition: color 0.15s, border-color 0.15s; }
+  .result-takeaway { font-size: var(--fs-2xs); color: var(--text-muted); margin-top: 4px; line-height: 1.5; }
+  .section-label { font-size: var(--fs-2xs); font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin: 20px 0 8px; }
+  .fold-toggle { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; font-size: var(--fs-xs); color: var(--text-muted); background: transparent; border: 1px solid rgba(255,255,255,0.08); border-radius: var(--r-sm); padding: 6px 12px; margin: 8px 0; transition: color 0.15s, border-color var(--t-fast); }
   .fold-toggle:hover { color: #58a6ff; border-color: rgba(88,166,255,0.3); }
-  .fold-toggle .arrow { transition: transform 0.2s; }
+  .fold-toggle .arrow { transition: transform var(--t-fast); }
   .fold-toggle.open .arrow { transform: rotate(90deg); }
-  .match-explain { font-size: 11px; color: var(--text-muted); margin-top: 4px; line-height: 1.5; }
-  .score-explain { font-size: 11px; color: var(--text-muted); margin-top: 8px; line-height: 1.55; }
+  .match-explain { font-size: var(--fs-3xs); color: var(--text-muted); margin-top: 4px; line-height: 1.5; }
+  .score-explain { font-size: var(--fs-3xs); color: var(--text-muted); margin-top: 8px; line-height: 1.55; }
   .score-explain summary { cursor: pointer; color: var(--text-soft); }
   .score-explain code { color: #8bd5ff; }
-  .result-id { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.02em; color: var(--text-muted); }
-  .result-summary { font-family: var(--font-ui); font-size: 13px; color: var(--text-soft); font-weight: 400; line-height: 1.65; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-  .result-tags { font-size: 11px; color: var(--text-muted); margin-top: 6px; }
+  .result-id { font-family: var(--font-mono); font-size: var(--fs-3xs); letter-spacing: 0.02em; color: var(--text-muted); }
+  .result-summary { font-family: var(--font-ui); font-size: var(--fs-xs); color: var(--text-soft); font-weight: 400; line-height: 1.65; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .result-tags { font-size: var(--fs-3xs); color: var(--text-muted); margin-top: 6px; }
   .result-actions { display: flex; gap: 12px; align-items: center; margin-top: 10px; }
-  .btn-primary { font-family: var(--font-ui); font-size: 12px; font-weight: 600; color: #0d1117; background: #58a6ff; border: none; border-radius: 6px; padding: 6px 14px; cursor: pointer; text-decoration: none; display: inline-block; }
+  .btn-primary { font-family: var(--font-ui); font-size: var(--fs-2xs); font-weight: 600; color: #0d1117; background: #58a6ff; border: none; border-radius: var(--r-sm); padding: 6px 14px; cursor: pointer; text-decoration: none; display: inline-block; }
   .btn-primary:hover { opacity: 0.9; }
-  .btn-secondary { font-family: var(--font-ui); font-size: 12px; color: var(--text-soft); background: transparent; border: 1px solid #30363d; border-radius: 6px; padding: 6px 14px; cursor: pointer; text-decoration: none; display: inline-block; }
+  .btn-secondary { font-family: var(--font-ui); font-size: var(--fs-2xs); color: var(--text-soft); background: transparent; border: 1px solid #30363d; border-radius: var(--r-sm); padding: 6px 14px; cursor: pointer; text-decoration: none; display: inline-block; }
   .btn-secondary:hover { border-color: #58a6ff; color: #58a6ff; }
   .feedback-bar { display: flex; gap: 6px; align-items: center; margin-top: 8px; }
-  .feedback-btn { font-family: var(--font-ui); font-size: 11px; color: var(--text-muted); background: transparent; border: 1px solid rgba(255,255,255,0.08); border-radius: 5px; padding: 3px 8px; cursor: pointer; transition: color 0.15s, border-color 0.15s, background 0.15s; }
+  .feedback-btn { font-family: var(--font-ui); font-size: var(--fs-3xs); color: var(--text-muted); background: transparent; border: 1px solid rgba(255,255,255,0.08); border-radius: var(--r-sm); padding: 3px 8px; cursor: pointer; transition: color 0.15s, border-color 0.15s, background var(--t-fast); }
   .feedback-btn:hover { color: #58a6ff; border-color: rgba(88,166,255,0.3); }
   .feedback-btn.selected { color: #3fb950; border-color: rgba(35,134,54,0.4); background: rgba(35,134,54,0.08); pointer-events: none; }
-  .feedback-summary { display: flex; gap: 12px; align-items: center; justify-content: center; padding: 12px; margin-top: 16px; border-top: 1px solid #21262d; font-size: 12px; color: var(--text-muted); }
+  .feedback-summary { display: flex; gap: 12px; align-items: center; justify-content: center; padding: 12px; margin-top: 16px; border-top: 1px solid #21262d; font-size: var(--fs-2xs); color: var(--text-muted); }
   .feedback-summary a { color: #58a6ff; text-decoration: none; }
   .feedback-summary a:hover { text-decoration: underline; }
-  .lesson-preview { margin-top: 12px; padding: 12px; border: 1px solid rgba(88,166,255,0.16); border-radius: 8px; background: #0b1020; cursor: default; }
-  .lesson-preview h2 { font-family: var(--font-ui); font-size: 15px; font-weight: 700; color: var(--text-main); margin: 18px 0 8px; }
-  .lesson-preview h3 { font-family: var(--font-ui); font-size: 13px; font-weight: 600; color: var(--text-main); margin: 14px 0 6px; }
-  .lesson-preview pre { background: #0b0f14; border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 12px; overflow-x: auto; white-space: pre-wrap; word-break: break-word; font-family: var(--font-mono); font-size: 12px; line-height: 1.65; color: #c9d1d9; }
+  .lesson-preview { margin-top: 12px; padding: 12px; border: 1px solid rgba(88,166,255,0.16); border-radius: var(--r-md); background: #0b1020; cursor: default; }
+  .lesson-preview h2 { font-family: var(--font-ui); font-size: var(--fs-md); font-weight: 700; color: var(--text-main); margin: 18px 0 8px; }
+  .lesson-preview h3 { font-family: var(--font-ui); font-size: var(--fs-xs); font-weight: 600; color: var(--text-main); margin: 14px 0 6px; }
+  .lesson-preview pre { background: #0b0f14; border: 1px solid rgba(255,255,255,0.08); border-radius: var(--r-md); padding: 12px; overflow-x: auto; white-space: pre-wrap; word-break: break-word; font-family: var(--font-mono); font-size: var(--fs-2xs); line-height: 1.65; color: #c9d1d9; }
   .lesson-preview code { font-family: var(--font-mono); }
-  .lesson-preview p code { background: rgba(255,255,255,0.08); padding: 2px 5px; border-radius: 4px; }
+  .lesson-preview p code { background: rgba(255,255,255,0.08); padding: 2px 5px; border-radius: var(--r-sm); }
   .lesson-preview p { margin: 6px 0; line-height: 1.65; }
-  .preview-status { font-size: 12px; color: var(--text-soft); }
+  .preview-status { font-size: var(--fs-2xs); color: var(--text-soft); }
   .fallback { padding: 24px; text-align: center; color: var(--text-soft); }
   .fallback a { color: #58a6ff; text-decoration: none; }
   .fallback a:hover { text-decoration: underline; }
   .loading { text-align: center; color: var(--text-muted); padding: 40px; }
   .footer { text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #21262d; }
-  .footer a { color: #58a6ff; text-decoration: none; font-size: 13px; margin: 0 8px; }
+  .footer a { color: #58a6ff; text-decoration: none; font-size: var(--fs-xs); margin: 0 8px; }
   /* Narrow screens (2026-10-19): this page had no media query at all, which is why pointing a phone at
      /search/ was a dead end — a 720px layout on a 390px screen. Only what breaks is adjusted: the
      container breathes less, the topbar stacks, and the code-heavy explain block wraps. */
@@ -100,8 +187,8 @@
     .container { padding: 24px 14px; }
     .topbar { flex-direction: column; gap: 8px; }
     .lang-switch { align-self: flex-end; margin-top: 0; }
-    h1 { font-size: 21px; }
-    .subtitle { font-size: 14px; margin-bottom: 18px; }
+    h1 { font-size: var(--fs-xl); }
+    .subtitle { font-size: var(--fs-sm); margin-bottom: 18px; }
     .result { padding: 13px; }
     .score-explain code { word-break: break-word; }
     .result-actions { flex-wrap: wrap; gap: 8px; }
@@ -131,7 +218,7 @@
   <div class="stats" id="stats"></div>
   <div id="results" class="loading" role="region" aria-live="polite">Loading lessons...</div>
   <div id="feedback-summary" class="feedback-summary" hidden></div>
-  <div style="text-align:center; margin-top:24px; font-size:12px; color:var(--text-muted);">
+  <div style="text-align:center; margin-top:24px; font-size:var(--fs-2xs); color:var(--text-muted);">
     <span data-i18n="feedbackPrompt">Did a lesson help you?</span> <a href="https://github.com/Ikalus1988/MisakaNet/issues/new?template=lesson-feedback.yml" style="color:#58a6ff;" data-i18n="feedbackPromptLink">Share feedback</a> <span data-i18n="feedbackPromptSuffix">(5 lines, anonymous OK)</span>
   </div>
   </main>
@@ -139,7 +226,7 @@
        this page had the .footer rules but no footer, so the last thing on it was a GitHub link. -->
   <footer class="footer">
 <!-- site-links:start -->
-<nav class="site-links" aria-label="Site links" style="text-align:center;font-size:13px;margin:10px 0;">
+<nav class="site-links" aria-label="Site links" style="text-align:center;font-size:var(--fs-xs);margin:10px 0;">
   <a href="/">Home</a> ·
   <a href="/search/">Search lessons</a> ·
   <a href="/install/">Install</a> ·
@@ -624,11 +711,11 @@ function render(results, q, meta) {
   if (!results.length) {
     el.innerHTML = '<div class="fallback">' +
       '<div style="margin-bottom:8px;">' + t('noMatchPrefix') + ' "' + escapeHTML(q) + '". ' + t('noMatchSuffix') + '</div>' +
-      '<div style="font-size:13px;margin-bottom:12px;max-width:480px;margin-left:auto;margin-right:auto;">' +
+      '<div style="font-size:var(--fs-xs);margin-bottom:12px;max-width:480px;margin-left:auto;margin-right:auto;">' +
         t('noMatchHelpPrefix') + '<a href="/topics/" style="color:#58a6ff;">' + t('noMatchTopics') + '</a>. ' +
-        t('noMatchHelpSuffix') + '<code style="font-size:11px;">pip timeout</code>, <code style="font-size:11px;">database locked</code>, <code style="font-size:11px;">DCO sign-off</code>, <code style="font-size:11px;">git rebase</code>.' +
+        t('noMatchHelpSuffix') + '<code style="font-size:var(--fs-3xs);">pip timeout</code>, <code style="font-size:var(--fs-3xs);">database locked</code>, <code style="font-size:var(--fs-3xs);">DCO sign-off</code>, <code style="font-size:var(--fs-3xs);">git rebase</code>.' +
       '</div>' +
-      '<div style="font-size:12px;"><a href="/skill.md">' + t('installSkill') + '</a> &middot; <a href="https://github.com/Ikalus1988/MisakaNet">' + t('submitLesson') + '</a> &middot; <a href="https://github.com/Ikalus1988/MisakaNet/issues/new?template=lesson-request.yml">' + t('requestLesson') + '</a></div></div>';
+      '<div style="font-size:var(--fs-2xs);"><a href="/skill.md">' + t('installSkill') + '</a> &middot; <a href="https://github.com/Ikalus1988/MisakaNet">' + t('submitLesson') + '</a> &middot; <a href="https://github.com/Ikalus1988/MisakaNet/issues/new?template=lesson-request.yml">' + t('requestLesson') + '</a></div></div>';
     return;
   }
   const searchable = _lessons ? _lessons.filter(isSearchable).length : 0;
@@ -673,7 +760,7 @@ function render(results, q, meta) {
         '<span class="badge badge-domain">' + domain + '</span>' +
         '<span class="badge badge-evidence ev-' + ev.level.toLowerCase() + '" title="' + escapeHTML(ev.label) + '">' + ev.level + '</span>' +
       '</div>' +
-      '<div class="result-title">' + title + '</div>' +
+      '<h2 class="result-title">' + title + '</h2>' +
       (showTakeaway ? '<div class="result-takeaway">' + takeaway + '</div>' : '') +
       '<div class="result-summary">' + summary + '</div>' +
       (tags ? '<div class="result-tags">' + tags + '</div>' : '') +
@@ -684,7 +771,8 @@ function render(results, q, meta) {
         '<div>evidence: <code>' + ev.level + '</code> · ' + escapeHTML(ev.label) + '</div>' +
       '</details>' +
       '<div class="result-actions">' +
-        '<button class="btn-primary" type="button" data-action="preview">' + t('readLesson') + '</button>' +
+        '<button class="btn-primary" type="button" data-action="preview" aria-expanded="false"' +
+        ' aria-controls="preview-' + r._index + '">' + t('readLesson') + '</button>' +
         '<a class="btn-secondary" href="' + escapeHTML(url) + '" target="_blank" rel="noopener">' + t('openGitHub') + '</a>' +
       '</div>' +
       '<div class="feedback-bar" data-feedback-id="' + id + '">' +
@@ -692,7 +780,7 @@ function render(results, q, meta) {
         '<button class="feedback-btn" data-type="too_basic">' + t('feedbackTooBasic') + '</button>' +
         '<button class="feedback-btn" data-type="helpful">' + t('feedbackHelpful') + '</button>' +
       '</div>' +
-      '<div class="lesson-preview" hidden></div>' +
+      '<div class="lesson-preview" id="preview-' + r._index + '" hidden></div>' +
     '</div>';
   }
 
@@ -728,17 +816,19 @@ function render(results, q, meta) {
   restoreAllFeedbackStates();
 }
 
-function renderMarkdown(text) {
-  // Minimal markdown renderer: h2, h3, code blocks, inline code, paragraphs
+function renderMarkdown(text, headingLevel = 2) {
+  // Minimal markdown renderer: h2, h3, code blocks, inline code, paragraphs.
+  // `headingLevel` is the level the lesson's own `##` maps to — the preview lives inside a result
+  // card whose title is an h2, so the body's headings have to start one level deeper (2026-10-20).
   let html = escapeHTML(text);
   // Code blocks: ```...```
   html = html.replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>');
   // Inline code: `...`
   html = html.replace(/`([^`\n]+)`/g, '<code>$1</code>');
   // H2: ## ...
-  html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+  html = html.replace(/^## (.+)$/gm, '<h' + headingLevel + '>$1</h' + headingLevel + '>');
   // H3: ### ...
-  html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+  html = html.replace(/^### (.+)$/gm, '<h' + (headingLevel + 1) + '>$1</h' + (headingLevel + 1) + '>');
   // Paragraphs: double newline
   html = html.replace(/\n\n/g, '</p><p>');
   // Single newline within paragraphs
@@ -793,14 +883,20 @@ async function togglePreview(index) {
     if (p !== panel) {
       p.hidden = true;
       const otherBtn = p.closest('.result').querySelector('[data-action="preview"]');
-      if (otherBtn) otherBtn.textContent = t('readLesson');
+      if (otherBtn) {
+        otherBtn.textContent = t('readLesson');
+        otherBtn.setAttribute('aria-expanded', 'false');
+      }
     }
   });
 
   if (panel.dataset.loaded === 'true') {
     panel.hidden = !panel.hidden;
     const btn = card.querySelector('[data-action="preview"]');
-    if (btn) btn.textContent = panel.hidden ? t('readLesson') : t('collapse');
+    if (btn) {
+      btn.textContent = panel.hidden ? t('readLesson') : t('collapse');
+      btn.setAttribute('aria-expanded', panel.hidden ? 'false' : 'true');
+    }
     updateUrl(document.getElementById('q').value.trim(), panel.hidden ? null : (lesson.id || ''));
     return;
   }
@@ -808,7 +904,10 @@ async function togglePreview(index) {
   panel.hidden = false;
   panel.innerHTML = '<div class="preview-status">' + t('loadingPreview') + '</div>';
   const btn = card.querySelector('[data-action="preview"]');
-  if (btn) btn.textContent = t('collapse');
+  if (btn) {
+    btn.textContent = t('collapse');
+    btn.setAttribute('aria-expanded', 'true');
+  }
   try {
     // The lesson body is fetched on demand (2026-09-30). It used to ride along in the corpus as
     // `preview` (~2.1 KB per lesson, 1.09 MB of the 1.32 MB file) because this panel wanted *one* of
@@ -818,7 +917,7 @@ async function togglePreview(index) {
     const body = await fetchLessonBody(lesson);
     const clipped = body.length > 2400 ? body.slice(0, 2400) + '\n\n' + t('clipped') : body;
     panel.dataset.loaded = 'true';
-    panel.innerHTML = renderMarkdown(clipped || t('noPreview'));
+    panel.innerHTML = renderMarkdown(clipped || t('noPreview'), 3);
     updateUrl(document.getElementById('q').value.trim(), lesson.id || '');
   } catch (e) {
     panel.innerHTML = '<div class="preview-status">' + t('previewUnavailable') + '</div>';
@@ -895,7 +994,7 @@ function showServerNote(q, text) {
   if (!el || !text) return;
   const note = document.createElement('div');
   note.className = 'result-source';
-  note.style.cssText = 'font-size:12px;color:#8b949e;margin:10px 0 0;';
+  note.style.cssText = 'font-size:var(--fs-2xs);color:#8b949e;margin:10px 0 0;';
   note.textContent = text;
   el.insertBefore(note, el.firstChild);
 }
@@ -949,9 +1048,15 @@ document.getElementById('q').addEventListener('keydown', function(event) {
 document.getElementById('results').addEventListener('click', function(event) {
   if (event.target.closest('a')) return;
   if (event.target.closest('.lesson-preview')) return;
-  // A feedback button lives inside the card; without this the same click also opens the preview and
-  // fetches the body, i.e. it costs one of the 20 anonymous reads per minute (#3539 C5).
-  if (event.target.closest('.feedback-btn, summary, details, button')) return;
+  // A feedback button and the "Why this matched" disclosure live inside the card; without this the
+  // same click also opens the preview and fetches the body, i.e. it costs one of the 20 anonymous
+  // reads per minute (#3539 C5).
+  //
+  // `button` must NOT be in this list (2026-10-20): it also swallowed the preview's own button,
+  // which is the control that opens the preview — on the live site "Read lesson" did nothing at all
+  // and the body could only be reached by clicking the card around it. `.feedback-btn` already
+  // covers the buttons that must not expand the card.
+  if (event.target.closest('.feedback-btn, summary, details')) return;
   const card = event.target.closest('.result');
   if (!card) return;
   togglePreview(Number(card.dataset.index));
