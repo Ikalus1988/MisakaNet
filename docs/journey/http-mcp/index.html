@@ -48,9 +48,16 @@
   --line:        rgba(148,163,184,.14);
   --line-strong: rgba(0,229,255,.28);
 
-  /* ── 字体：3 族（不换字体家族，只把 5 套声明收敛成 token）── */
-  --font-ui:      'Inter','PingFang SC','Microsoft YaHei','Noto Sans SC',sans-serif;
-  --font-display: 'Orbitron', var(--font-ui);      /* 仅品牌层 */
+  /* ── 字体：4 族（不换字体家族，只把 5 套声明收敛成 token）── */
+  /* `--font-ui` 是**系统栈**，不是 Inter：十三个手写页面今天用的是
+     `-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`，而 Inter 只在首页被
+     加载。#3541 的风险第 1 条写着"若 onload 不触发会静默回退……只有像素对比能抓到"，所以
+     **本单不换字体家族**：把 `--font-ui` 写成 Inter 开头，等于让这十三个页面在没加载 Inter
+     的情况下用 CJK 字体渲染拉丁字母——那是一次静默的排版退化。
+     首页的 Inter 因此单列为 `--font-brand`：两个族都是"不动"的，只是各归其位。── */
+  --font-ui:      -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', sans-serif;
+  --font-brand:   'Inter','PingFang SC','Microsoft YaHei','Noto Sans SC',sans-serif;
+  --font-display: 'Orbitron', var(--font-brand);      /* 仅品牌层 */
   --font-cn:      'Ma Shan Zheng','Noto Sans SC',cursive; /* 仅首页副标 */
   --font-mono:    'JetBrains Mono',ui-monospace,monospace;
 
@@ -58,6 +65,15 @@
   --fs-3xs:.6875rem; --fs-2xs:.75rem; --fs-xs:.8125rem; --fs-sm:.875rem;
   --fs-md:1rem;     --fs-lg:1.125rem; --fs-xl:1.3125rem; --fs-2xl:1.5rem;
   --fs-3xl:1.875rem;--fs-4xl:2.375rem;
+  /* 品牌层的字号（首页的标识组合）。它们不属于 UI 字阶：按 #3541 的 px 规则向上取整，52px 和
+     48px 恰好不动，但 22px 会变成 24px、36px 会变成 38px——那会把首页的标识撑宽 41px，
+     而首页的头部本来就比视口宽（§118.9 的既有 bug），再撑就没有余地了。
+     #3541 说"首页那套签名不是要改掉的东西，它是资产"，所以这一层保留原尺寸，
+     并由像素对比守住：改这里的数会立刻在 header 的宽度上被看见。── */
+  --fs-display:3.25rem;      /* 52px — .logo-title */
+  --fs-display-sm:3rem;      /* 48px — .logo-cn */
+  --fs-display-md:2.25rem;   /* 36px — 窄屏下的 .logo-title / .logo-cn */
+  --fs-tagline:1.375rem;     /* 22px — .logo-tagline */
 
   /* ── 间距：4px 基准，8 档 ── */
   --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px;
@@ -65,6 +81,9 @@
 
   /* ── 圆角：3 档（现状 14 种）── */
   --r-sm:6px; --r-md:10px; --r-lg:16px;
+  /* 胶囊形不是"圆角档位"，是形状：现状的 50% 与 999px 是同一种东西的两种写法。
+     它单列一个 token，而不是混进三档里——把它塞进 --r-lg 会让胶囊变成圆角矩形。── */
+  --r-pill:999px;
 
   /* ── 动效：2 档 + 1 个 easing（现状 5 种时长）── */
   --t-fast:150ms; --t-base:250ms; --ease:cubic-bezier(.2,.8,.2,1);
@@ -77,23 +96,23 @@
 <!-- design-tokens:end -->
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0d1117; color: #c9d1d9; min-height: 100vh; padding: 2rem 1rem; }
-  .container { max-width: 980px; margin: 0 auto; }
-  h1 { color: #58a6ff; font-size: 1.75rem; margin-bottom: 0.35rem; }
-  h2 { color: #f0c040; font-size: 1.05rem; margin-bottom: 0.55rem; display: flex; gap: 0.45rem; align-items: center; }
-  h3 { color: #58a6ff; font-size: 0.95rem; margin: 0.75rem 0 0.35rem; }
+  body { font-family: var(--font-ui); background: #0d1117; color: #c9d1d9; min-height: 100vh; padding: 2rem 1rem; }
+  .container { max-width: 960px; margin: 0 auto; }
+  h1 { color: #58a6ff; font-size: var(--fs-3xl); margin-bottom: 0.35rem; }
+  h2 { color: var(--warn); font-size: var(--fs-md); margin-bottom: 0.55rem; display: flex; gap: 0.45rem; align-items: center; }
+  h3 { color: #58a6ff; font-size: var(--fs-md); margin: 0.75rem 0 0.35rem; }
   .subtitle { color: #8b949e; margin-bottom: 1.4rem; line-height: 1.6; }
-  .hero, .card { background: #161b22; border: 1px solid #30363d; border-radius: 10px; padding: 1.1rem; }
+  .hero, .card { background: var(--bg-2); border: 1px solid #30363d; border-radius: var(--r-md); padding: 1.1rem; }
   .hero { margin-bottom: 1rem; }
   .hero strong { color: #3fb950; }
   .flow { display: grid; grid-template-columns: repeat(auto-fit, minmax(285px, 1fr)); gap: 0.85rem; margin: 1rem 0; }
-  .tag { display: inline-block; font-size: 0.72rem; color: #8b949e; border: 1px solid #30363d; border-radius: 999px; padding: 0.12rem 0.5rem; margin-left: auto; white-space: nowrap; }
-  p, li { font-size: 0.9rem; line-height: 1.6; color: #c9d1d9; }
+  .tag { display: inline-block; font-size: var(--fs-2xs); color: #8b949e; border: 1px solid #30363d; border-radius: var(--r-pill); padding: 0.12rem 0.5rem; margin-left: auto; white-space: nowrap; }
+  p, li { font-size: var(--fs-sm); line-height: 1.6; color: #c9d1d9; }
   ul, ol { padding-left: 1.1rem; margin: 0.5rem 0; }
-  code { background: #0d1117; color: #ffa657; padding: 0.1rem 0.28rem; border-radius: 4px; font-size: 0.82rem; }
-  pre { background: #0d1117; border: 1px solid #30363d; border-radius: 8px; padding: 0.85rem; overflow-x: auto; font-size: 0.76rem; line-height: 1.5; margin: 0.75rem 0; white-space: pre-wrap; }
+  code { background: #0d1117; color: #ffa657; padding: 0.1rem 0.28rem; border-radius: var(--r-sm); font-size: var(--fs-xs); }
+  pre { background: #0d1117; border: 1px solid #30363d; border-radius: var(--r-md); padding: 0.85rem; overflow-x: auto; font-size: var(--fs-2xs); line-height: 1.5; margin: 0.75rem 0; white-space: pre-wrap; }
   .ok { color: #3fb950; } .warn { color: #d29922; } .muted { color: #8b949e; }
-  .table { width: 100%; border-collapse: collapse; margin: 0.75rem 0; font-size: 0.88rem; }
+  .table { width: 100%; border-collapse: collapse; margin: 0.75rem 0; font-size: var(--fs-sm); }
   .table th, .table td { border: 1px solid #30363d; padding: 0.55rem; text-align: left; vertical-align: top; }
   .table th { color: #58a6ff; background: #111820; }
   a { color: #58a6ff; text-decoration: none; } a:hover { text-decoration: underline; }
@@ -101,7 +120,7 @@
   .steps li { border-left: 2px solid #30363d; padding: 0 0 0.55rem 0.75rem; margin-left: 0.25rem; }
   .steps li:last-child { padding-bottom: 0; }
   .badge { color: #3fb950; font-weight: 600; }
-  .footer { margin-top: 1.5rem; color: #8b949e; font-size: 0.85rem; }
+  .footer { margin-top: 1.5rem; color: #8b949e; font-size: var(--fs-sm); }
 </style>
 </head>
 <body>

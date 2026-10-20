@@ -59,9 +59,15 @@
   --fs-3xs:.6875rem; --fs-2xs:.75rem; --fs-xs:.8125rem; --fs-sm:.875rem;
   --fs-md:1rem;     --fs-lg:1.125rem; --fs-xl:1.3125rem; --fs-2xl:1.5rem;
   --fs-3xl:1.875rem;--fs-4xl:2.375rem;
-  /* 品牌层的两个展示字号（首页的 h1 52px / 48px）。它们不属于 UI 字阶：缩到 --fs-4xl
-     （38px）会把首页的签名改掉，而 #3541 说首页那套是资产，不是要改的东西。── */
-  --fs-display:3.25rem; --fs-display-sm:3rem;
+  /* 品牌层的字号（首页的标识组合）。它们不属于 UI 字阶：按 #3541 的 px 规则向上取整，52px 和
+     48px 恰好不动，但 22px 会变成 24px、36px 会变成 38px——那会把首页的标识撑宽 41px，
+     而首页的头部本来就比视口宽（§118.9 的既有 bug），再撑就没有余地了。
+     #3541 说"首页那套签名不是要改掉的东西，它是资产"，所以这一层保留原尺寸，
+     并由像素对比守住：改这里的数会立刻在 header 的宽度上被看见。── */
+  --fs-display:3.25rem;      /* 52px — .logo-title */
+  --fs-display-sm:3rem;      /* 48px — .logo-cn */
+  --fs-display-md:2.25rem;   /* 36px — 窄屏下的 .logo-title / .logo-cn */
+  --fs-tagline:1.375rem;     /* 22px — .logo-tagline */
 
   /* ── 间距：4px 基准，8 档 ── */
   --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px;
