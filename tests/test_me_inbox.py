@@ -117,53 +117,52 @@ class TestMeInbox:
         assert got["status"] == "unknown"
 
 class TestSubmitIntakePollHint:
-    """Test that submit_intake returns poll_hint and inbox_tool."""
+    """`submit_intake` returns a poll hint that can actually be followed.
+
+    The hint used to be a sentence naming `misakanet_me_inbox`, and the intake it pointed at was a
+    local queue id the hosted endpoint has never heard of — so the sentence promised a lookup that
+    could only answer "not found". The hint is now the same object shape the hosted endpoint
+    returns, and `me_inbox` answers locally queued intakes from the local queue.
+    """
 
     def test_submit_returns_poll_hint(self):
-        """submit_intake response includes poll_hint and inbox_tool."""
-        import os
+        """submit_intake response includes a poll hint naming the inbox tool."""
+        from unittest.mock import patch
 
-        # Use temp dir for contribution queue
-        test_dir = Path(tempfile.mkdtemp())
-        os.environ["MISAKANET_CONTRIBUTION_QUEUE"] = str(test_dir / "queue.jsonl")
+        import scripts.contribution_queue as contribution_queue
 
-        try:
+        queue = Path(tempfile.mkdtemp()) / "queue.jsonl"
+        with patch.object(contribution_queue, "QUEUE_FILE", queue):
             from misakanet.server.handlers.submit import handle_submit_intake
             result = handle_submit_intake({
                 "kind": "missing_lesson",
                 "problem": "test problem for poll hint",
                 "source": "test",
             })
-            assert result.get("submitted") is True
-            assert "poll_hint" in result
-            assert "misakanet_me_inbox" in result["poll_hint"]
-            assert result.get("inbox_tool") == "misakanet_me_inbox"
-            assert "dedup_key" in result
-            assert len(result["dedup_key"]) == 16  # SHA256 truncated to 16 chars
-        finally:
-            del os.environ["MISAKANET_CONTRIBUTION_QUEUE"]
-            import shutil
-            shutil.rmtree(test_dir, ignore_errors=True)
+        assert result.get("submitted") is True
+        assert result.get("delivery") == "local_queue"
+        assert "poll_hint" in result
+        assert result["poll_hint"]["tool"] == "misakanet_me_inbox"
+        assert result["intake_id"] in result["poll_hint"]["argument"]
+        assert "dedup_key" in result
+        assert len(result["dedup_key"]) == 16  # SHA256 truncated to 16 chars
 
-    def test_question_poll_hint_mentions_hours(self):
-        """Question kind → poll_hint mentions 24-48 hours."""
-        import os
+    def test_question_poll_hint_carries_the_recheck_clock(self):
+        """Question kind → the hosted endpoint's own advice: 21600s, not a sentence."""
+        from unittest.mock import patch
 
-        test_dir = Path(tempfile.mkdtemp())
-        os.environ["MISAKANET_CONTRIBUTION_QUEUE"] = str(test_dir / "queue.jsonl")
+        import scripts.contribution_queue as contribution_queue
 
-        try:
+        queue = Path(tempfile.mkdtemp()) / "queue.jsonl"
+        with patch.object(contribution_queue, "QUEUE_FILE", queue):
             from misakanet.server.handlers.submit import handle_submit_intake
             result = handle_submit_intake({
                 "kind": "question",
                 "problem": "how to configure X?",
                 "source": "test",
             })
-            assert "24-48 hours" in result["poll_hint"]
-        finally:
-            del os.environ["MISAKANET_CONTRIBUTION_QUEUE"]
-            import shutil
-            shutil.rmtree(test_dir, ignore_errors=True)
+        assert result["poll_hint"]["recheck_after_seconds"] == 21600
+        assert result["poll_hint"]["how"]
 
 
 class TestMeInboxToolDefinition:

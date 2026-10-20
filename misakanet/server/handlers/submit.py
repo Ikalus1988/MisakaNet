@@ -1,7 +1,6 @@
 """Submit usage and intake handlers for MisakaNet MCP server."""
 from __future__ import annotations
 
-import hashlib as _hashlib
 import json as _json
 import os as _os
 import urllib.error as _url_error
@@ -101,9 +100,60 @@ def handle_submit_usage(args: dict) -> dict:
     return report
 
 
-def handle_submit_intake(args: dict) -> dict:
-    """Submit a failure-case intake via the contribution queue."""
-    from scripts.contribution_queue import submit_contribution
+# The hosted endpoint's `misakanet_submit_intake` has a schema. Forwarding an unknown key is a
+# silent no-op at best, so the field list is explicit here.
+_INTAKE_FIELDS = (
+    "kind", "problem", "error", "what_tried", "fix", "verification",
+    "matched_lesson_id", "source",
+)
+
+# How long a caller should wait before re-checking, mirroring the hosted endpoint's own advice:
+# a question gets a maintainer answer in hours, a failure report waits for a review.
+_RECHECK_SECONDS = {"question": 21600}
+_RECHECK_SECONDS_DEFAULT = 86400
+
+
+def _submit_intake_remote(args: dict) -> tuple[dict | None, str]:
+    """File the intake on the network. Returns `(payload, "")` or `(None, reason)`.
+
+    The hosted worker is the only place an intake becomes a GitHub issue. The local queue is a
+    repo-checkout staging area and **nothing drains it into an issue** — the only reader is the
+    maintainer CLI `scripts/contribution_review.py` (verified 2026-10-20). So "submit" has to mean
+    the network, and the local path is the degraded one that has to say so.
+    """
+    if _os.environ.get("MISAKANET_INTAKE_DISABLE_REMOTE") == "1":
+        return None, "remote intake disabled by env"
+    try:
+        from ... import remote
+    except ImportError as exc:  # pragma: no cover - the package always ships remote.py
+        return None, f"remote client unavailable ({exc})"
+    payload = {k: args[k] for k in _INTAKE_FIELDS if args.get(k) not in (None, "")}
+    try:
+        result = remote.call("misakanet_submit_intake", payload)
+    except Exception as exc:  # RemoteError, McpReplyUnreadable, McpRpcError, OSError
+        return None, f"{type(exc).__name__}: {exc}"
+    if not isinstance(result, dict):
+        return None, "the endpoint answered with something that is not a tool payload"
+    return result, ""
+
+
+def _submit_intake_local(args: dict, reason: str) -> dict:
+    """Queue the intake locally, with a receipt that says exactly that.
+
+    The local queue is only reachable from a repo checkout (`scripts/` is not in the wheel —
+    `pyproject.toml` ships `misakanet*` only), so an installed client that is also offline has
+    nowhere to put the report and gets an error instead of a false success.
+    """
+    try:
+        from scripts.contribution_queue import submit_contribution
+    except ImportError as exc:
+        return {
+            "submitted": False,
+            "error": "MisakaNet is unreachable and this installation has no local contribution queue",
+            "detail": f"{reason}; local queue unavailable ({exc})",
+            "hint": "Retry when the network is up, or file the report on GitHub: "
+                    "https://github.com/Ikalus1988/MisakaNet/issues/new",
+        }
 
     kind = args.get("kind", "missing_lesson")
     problem = args.get("problem", "")
@@ -114,13 +164,6 @@ def handle_submit_intake(args: dict) -> dict:
     matched_lesson_id = args.get("matched_lesson_id", "")
     source = args.get("source", "other")
 
-    if not problem:
-        return {
-            "error": "problem is required",
-            "hint": "Describe the failure or gap you encountered.",
-        }
-
-    # Build message from available fields
     parts = [f"Kind: {kind}"]
     if error:
         parts.append(f"Error: {error}")
@@ -152,29 +195,54 @@ def handle_submit_intake(args: dict) -> dict:
             "existing_id": result.get("existing_id", ""),
         }
 
-    dedup_key = _hashlib.sha256(
-        f"{args.get('kind', '')}:{args.get('problem', '')}:{args.get('source', '')}".encode()
-    ).hexdigest()[:16]
-
-    poll_hint = (
-        f"Call misakanet_me_inbox with intake_id=\"{result['id']}\""
-        f" or dedup_key=\"{dedup_key}\" to check for maintainer answers"
-        " or lesson conversions."
-    )
-    if args.get("kind") == "question":
-        poll_hint += " Maintainer answers typically arrive within 24-48 hours."
-
+    intake_id = result["id"]
+    # The key the queue actually stored — not a second, unrelated hash. A dedup key that names
+    # nothing the queue holds cannot dedup anything.
+    dedup_key = result.get("dedup_key", "")
     return {
         "submitted": True,
-        "intake_id": result["id"],
-        "status": result["status"],
+        "delivery": "local_queue",
+        "intake_id": intake_id,
+        "status": result.get("status", "pending"),
         "redactions_applied": result.get("redactions_applied", 0),
         "quality_score": result.get("quality_score", 0),
         "dedup_key": dedup_key,
-        "poll_hint": poll_hint,
-        "inbox_tool": "misakanet_me_inbox",
+        "poll_hint": {
+            "tool": "misakanet_me_inbox",
+            "argument": f"intake_id=\"{intake_id}\"",
+            "how": "This intake is still in the local queue — it has not reached MisakaNet, so it "
+                   "has no GitHub issue yet. me_inbox reports its local state; re-send the same "
+                   "problem once the network is back.",
+            "recheck_after_seconds": _RECHECK_SECONDS.get(kind, _RECHECK_SECONDS_DEFAULT),
+        },
+        "note": f"Worker unreachable ({reason}) — recorded in the local queue only. Nothing was "
+                "filed on MisakaNet, and no maintainer will answer this one yet.",
         "receipt": (
-            f"Keep this ID ({result['id']});"
-            " no account or email is required."
+            f"Keep this ID ({intake_id});"
+            " it is a local queue id, not a GitHub issue number."
         ),
     }
+
+
+def handle_submit_intake(args: dict) -> dict:
+    """Submit a failure-case intake.
+
+    Remote-first, the same shape as `handle_submit_usage` above: the report goes to the network,
+    and only an unreachable network sends it to the local queue — with a receipt that says the
+    report did not reach MisakaNet. The hosted worker owns the intake contract, so its receipt
+    (`intake_id`, `dedup_key`, `poll_hint`) is passed through unchanged; the local path mirrors
+    its shape so one reader handles both.
+    """
+    if not args.get("problem", ""):
+        return {
+            "error": "problem is required",
+            "hint": "Describe the failure or gap you encountered.",
+        }
+
+    payload, reason = _submit_intake_remote(args)
+    if payload is not None:
+        result = dict(payload)
+        result["delivery"] = "remote"
+        return result
+    return _submit_intake_local(args, reason)
+
