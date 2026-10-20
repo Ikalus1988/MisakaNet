@@ -1,9 +1,16 @@
 {
-  "generated_at": "2026-10-19T20:37:49.534083+00:00",
+  "generated_at": "2026-10-20T00:26:43.471421+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3561",
+      "timestamp": "2026-10-19T20:48:54Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "site + mcp: the audit batch (six PRs that turned out to be one stack)",
@@ -30,13 +37,6 @@
       "title": "fix(worker): a traffic counter is D1 plus KV, not D1 or KV",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/3549",
       "timestamp": "2026-10-19T15:21:50Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "perf(worker): mem the corpus per isolate (opt-in), and decide the D1 question",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3545",
-      "timestamp": "2026-10-19T14:29:32Z",
       "source": "github"
     },
     {
