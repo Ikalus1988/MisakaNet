@@ -1,9 +1,30 @@
 {
-  "generated_at": "2026-10-20T19:22:56.168045+00:00",
+  "generated_at": "2026-10-20T23:58:00.085085+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "docs(handoff): record which PR carried each batch of #3541",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3598",
+      "timestamp": "2026-10-20T19:41:08Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3597",
+      "timestamp": "2026-10-20T19:32:08Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "feat(site): the icons are Lucide SVG, not emoji (#3541, batch Y)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3596",
+      "timestamp": "2026-10-20T19:26:42Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "feat(site): the halos, the colour bars and the purple (#3541, batch X)",
@@ -16,27 +37,6 @@
       "title": "docs(worker): the CDN serves a cached entry to a request that carries credentials",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/3594",
       "timestamp": "2026-10-20T18:24:27Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "fix(worker): the account was spending 8x its free-tier row-read budget on two public endpoints",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3590",
-      "timestamp": "2026-10-20T16:58:23Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat(site): the hand-written pages use the vocabulary (#3541, batch W)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3592",
-      "timestamp": "2026-10-20T16:18:51Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat(site): one source for the design tokens (#3541, batch V)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3591",
-      "timestamp": "2026-10-20T15:13:18Z",
       "source": "github"
     },
     {
