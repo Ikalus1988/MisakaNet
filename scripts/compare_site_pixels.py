@@ -106,28 +106,42 @@ LAYOUT_STRUCT_RATIO = 0.25
 
 # ── the page set ──────────────────────────────────────────────────────────────────────────────
 def hand_written_pages(docs_root: Path) -> list[Path]:
-    """The 14 hand-written pages, partitioned exactly as `check_design_convergence` does.
+    """The hand-written pages, partitioned by the one rule in `scripts/site_page_scope.py`.
 
-    The partition is imported rather than re-implemented: `hand_written_pages()` in
-    `scripts/check_design_convergence.py:142` is the same one `sync_site_partials.py` and
-    `sync_design_tokens.py` use, and a second copy of that rule is a second rule to keep in sync.
-    The import is optional — if the sibling script cannot be loaded (or the given root is not
-    named `docs`, which is the layout the function assumes), the partition is replicated here:
-    every `docs/**/*.html` except anything under `_partials/`, `lessons/` or `topics/`.
+    The partition is imported rather than re-implemented, and this file used to carry a fourth
+    copy of the rule as its fallback — "every `docs/**/*.html` except `_partials/`, `lessons/` or
+    `topics/`" — which is the same bug class the shared module exists to kill (handoff §122.3:
+    "都是同一种病：两个作者各写一份"). The fallback is gone with it: the rule now has one home.
+
+    The generated pages are *not* in this set, and that is deliberate: capturing all 585 pages at
+    three viewports is tens of minutes and hundreds of megabytes. `--pages` reaches them — see
+    `selectable_pages` — so the generated tree is verifiable on demand instead of invisible.
     """
     if docs_root.name == "docs":
         try:
-            from check_design_convergence import hand_written_pages as _partition
+            from site_page_scope import scoped_pages as _partition
 
             return _partition(docs_root.parent)
-        except Exception:  # pragma: no cover - the replicated partition below is the fallback
+        except Exception:  # pragma: no cover - the shared partition is the only rule
             pass
-    pages = sorted(docs_root.rglob("*.html"))
-    return [
-        page
-        for page in pages
-        if not ({"_partials", "lessons", "topics"} & set(page.relative_to(docs_root).parts))
-    ]
+    return sorted(docs_root.rglob("*.html"))
+
+
+def selectable_pages(docs_root: Path) -> list[Path]:
+    """Every page a reviewer may name with `--pages`: the hand-written ones and the generated ones.
+
+    The generated tree used to be unreachable from here: `--pages` filtered the hand-written
+    partition, so no lesson or topic page could ever be compared, even though the design gate
+    now reads all 585 of them (§122.6 item 2).
+    """
+    if docs_root.name == "docs":
+        try:
+            from site_page_scope import gated_pages as _partition
+
+            return _partition(docs_root.parent)
+        except Exception:  # pragma: no cover - the shared partition is the only rule
+            pass
+    return sorted(docs_root.rglob("*.html"))
 
 
 def page_id(rel: Path) -> str:
@@ -434,12 +448,12 @@ def capture(
     _no_proxy_env()
     docs_root = docs_root.resolve()
     out_dir.mkdir(parents=True, exist_ok=True)
-    pages = hand_written_pages(docs_root)
+    pages = selectable_pages(docs_root) if only else hand_written_pages(docs_root)
     if only:
         wanted = set(only)
         pages = [p for p in pages if page_id(p.relative_to(docs_root)) in wanted]
     if not pages:
-        raise SystemExit(f"no hand-written pages found under {docs_root}")
+        raise SystemExit(f"no pages found under {docs_root}")
 
     records: list[CaptureRecord] = []
     warnings: list[str] = []
