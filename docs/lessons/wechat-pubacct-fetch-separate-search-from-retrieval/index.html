@@ -9,20 +9,166 @@
 <meta property="og:title" content="wechat pubacct fetch separate search from retrieval">
 <meta property="og:description" content="微信公众号文章抓取时，把"找文章URL"和"抓取正文"混在一起，失败模式不清晰，难以诊断。当整个流程作为单一步骤运行时，无法判断是搜索阶段失败（没找到URL）还是抓取阶段失败（找到了URL但无法提取正文），导致调试耗时且容易走弯路。">
 <meta property="og:url" content="https://misakanet.org/lessons/wechat-pubacct-fetch-separate-search-from-retrieval/">
+<!-- design-tokens:start -->
+<style id="misaka-design-tokens">
+/*
+ * The design system's tokens — ONE source for every hand-written page (#3541, batch V).
+ *
+ * Why this file exists: the site currently holds two products. The homepage has an identity
+ * (Orbitron, a cyan glow, a grid), and the other hand-written pages are GitHub's default dark
+ * theme — copied in from somewhere else. Fourteen pages, fourteen sets of hardcoded colours,
+ * radii, shadows and font stacks. Nothing is *wrong* with them; they are simply not one site,
+ * and every future change has to be made fourteen times.
+ *
+ * This block changes nothing on its own: no page references these names yet. That is deliberate
+ * — batch W is the batch that replaces hardcoded values with these names, and a batch that
+ * changed the rendering as well as the vocabulary would make a visual regression impossible to
+ * attribute. So this file is the vocabulary, and the gate below keeps it the only copy of it.
+ *
+ * Every value below is measured, not chosen for taste: the text colours were picked for their
+ * WCAG contrast ratio against --bg-0 (15.95:1, 7.67:1, 4.14:1), and the two accent colours
+ * for theirs (12.79:1 and 5.21:1). If a value changes here, the ratios change with it, so the
+ * numbers in the comments are part of the contract.
+ *
+ * Maintained by scripts/sync_design_tokens.py — `--check` fails when a page drifts from this
+ * file, the same way the shared nav row is kept honest.
+ */
+:root {
+  /* ── 底与面：3 档（收编 GitHub 习惯色，不再各页自定义）── */
+  --bg-0: #070b15;   /* 页面底 */
+  --bg-1: #0d1424;   /* 卡片 / 面 */
+  --bg-2: #161b22;   /* 浮层 / 代码块 */
+
+  /* ── 文字：3 档（对比度已实测）── */
+  --fg-1: #e2e8f0;   /* 15.95:1 on --bg-0 */
+  --fg-2: #94a3b8;   /*  7.67:1 on --bg-0 */
+  --fg-3: #64748b;   /*  仅限 ≥16px 或非文本装饰（4.14:1，正文禁用）*/
+
+  /* ── 品牌与语义 ── */
+  --accent:   #00e5ff;  /* 12.79:1 — 品牌 / 链接（首页既有 --cyan）*/
+  --accent-2: #ff0080;  /*  5.21:1 — 次级强调，限量使用 */
+  --ok:       #22c55e;  /*  8.63:1 */
+  --warn:     #f0c040;
+  --danger:   #ef4444;  /*  5.23:1 */
+  --line:        rgba(148,163,184,.14);
+  --line-strong: rgba(0,229,255,.28);
+
+  /* ── 字体：4 族（不换字体家族，只把 5 套声明收敛成 token）── */
+  /* `--font-ui` 是**系统栈**，不是 Inter：十三个手写页面今天用的是
+     `-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`，而 Inter 只在首页被
+     加载。#3541 的风险第 1 条写着"若 onload 不触发会静默回退……只有像素对比能抓到"，所以
+     **本单不换字体家族**：把 `--font-ui` 写成 Inter 开头，等于让这十三个页面在没加载 Inter
+     的情况下用 CJK 字体渲染拉丁字母——那是一次静默的排版退化。
+     首页的 Inter 因此单列为 `--font-brand`：两个族都是"不动"的，只是各归其位。── */
+  --font-ui:      -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', sans-serif;
+  --font-brand:   'Inter','PingFang SC','Microsoft YaHei','Noto Sans SC',sans-serif;
+  --font-display: 'Orbitron', var(--font-brand);      /* 仅品牌层 */
+  --font-cn:      'Ma Shan Zheng','Noto Sans SC',cursive; /* 仅首页副标 */
+  --font-mono:    'JetBrains Mono',ui-monospace,monospace;
+
+  /* ── 字阶：10 档，rem 基准 16 ── */
+  --fs-3xs:.6875rem; --fs-2xs:.75rem; --fs-xs:.8125rem; --fs-sm:.875rem;
+  --fs-md:1rem;     --fs-lg:1.125rem; --fs-xl:1.3125rem; --fs-2xl:1.5rem;
+  --fs-3xl:1.875rem;--fs-4xl:2.375rem;
+  /* 品牌层的字号（首页的标识组合）。它们不属于 UI 字阶：按 #3541 的 px 规则向上取整，52px 和
+     48px 恰好不动，但 22px 会变成 24px、36px 会变成 38px——那会把首页的标识撑宽 41px，
+     而首页的头部本来就比视口宽（§118.9 的既有 bug），再撑就没有余地了。
+     #3541 说"首页那套签名不是要改掉的东西，它是资产"，所以这一层保留原尺寸，
+     并由像素对比守住：改这里的数会立刻在 header 的宽度上被看见。── */
+  --fs-display:3.25rem;      /* 52px — .logo-title */
+  --fs-display-sm:3rem;      /* 48px — .logo-cn */
+  --fs-display-md:2.25rem;   /* 36px — 窄屏下的 .logo-title / .logo-cn */
+  --fs-tagline:1.375rem;     /* 22px — .logo-tagline */
+
+  /* ── 间距：4px 基准，8 档 ── */
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px;
+  --sp-5:24px; --sp-6:32px; --sp-7:40px; --sp-8:48px;
+
+  /* ── 圆角：3 档（现状 14 种）── */
+  --r-sm:6px; --r-md:10px; --r-lg:16px;
+  /* 胶囊形不是"圆角档位"，是形状：现状的 50% 与 999px 是同一种东西的两种写法。
+     它单列一个 token，而不是混进三档里——把它塞进 --r-lg 会让胶囊变成圆角矩形。── */
+  --r-pill:999px;
+
+  /* ── 动效：2 档 + 1 个 easing（现状 5 种时长）── */
+  --t-fast:150ms; --t-base:250ms; --ease:cubic-bezier(.2,.8,.2,1);
+
+  /* ── 阴影：2 档（现状 31 处）── */
+  --sh-1:0 1px 2px rgba(0,0,0,.35);
+  --sh-2:0 12px 32px rgba(0,0,0,.45);
+}
+
+/* ── 图标：一套 Lucide 线性图标（Y 批）── */
+/* The icon set is Lucide, inlined as SVG; the *shapes* live in `scripts/site_icons.py` and the
+   *style* lives here, for the same reason the tokens live here and not in each page: one source,
+   copied into every page, gated by a script. An emoji could not do this job — it is a coloured
+   bitmap chosen by the platform, so the same markup renders three different icons in three
+   browsers and none of them is `--accent`.
+
+   `1em` makes an icon the size of the text it sits in, which is exactly what an emoji was.
+   `non-scaling-stroke` keeps the line one hairline wide at every size instead of letting it
+   thicken as the icon grows — a scaled-up drawing looks like a scaled-up drawing, and this is a
+   set of UI glyphs, not artwork. Lucide draws at 24px with a 2px stroke; at the 14px of a drawer
+   row that would be 1.17px, and at the 30px of the register panel 2.5px, so the stroke is set
+   once, here, at 1.5px, and every icon inherits it.
+
+   The markup carries no width/height/stroke attributes at all: the attributes would be forty
+   copies of a decision this block already makes. */
+.ico {
+  width: 1em;
+  height: 1em;
+  display: inline-block;
+  vertical-align: -0.125em;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+/* ── The footer shell（Z 批）────────────────────────────────────────────────
+   The footer is the one navigation every page shares, and until batch Z it was
+   six shells wearing six spellings: `footer {}` on some pages and `.footer {}`
+   on others, a cyan-tinted top border on the homepage and a grey one on the
+   rest, four different `margin-top` values, and six pages with no footer at all
+   — which meant six pages the reader could not leave except with the back
+   button.
+
+   So the shell lives here, beside the icons, for the same reason: one source,
+   copied into every page, and `scripts/sync_design_tokens.py --check` fails when
+   a page drifts from it. A page may still add its *own* footer content (the
+   homepage's link row and wordmark), but the shell around it is not the page's
+   to decide. */
+.footer {
+  margin-top: var(--sp-7);
+  padding: var(--sp-5) 0;
+  border-top: 1px solid var(--line);
+  text-align: center;
+  color: var(--fg-2);
+  font-size: var(--fs-xs);
+  line-height: 1.8;
+}
+.footer a { color: var(--accent); text-decoration: none; }
+.footer a:hover { text-decoration: underline; }
+.site-links { margin: 0 0 var(--sp-2); }
+</style>
+<!-- design-tokens:end -->
 <style>
-  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #070b15; color: #e2e8f0; max-width: 720px; margin: 0 auto; padding: 40px 20px; line-height: 1.6; }
-  a { color: #00e5ff; }
-  h1 { font-size: 24px; margin-bottom: 8px; }
-  .meta { color: #8b949e; font-size: 13px; margin-bottom: 24px; }
-  .evidence { background: rgba(0,229,255,0.14); color: #00e5ff; border-radius: 4px; padding: 2px 6px; font-size: 12px; cursor: help; }
+  body { font-family: var(--font-ui); background: var(--bg-0); color: var(--fg-1); max-width: 720px; margin: 0 auto; padding: 40px 20px; line-height: 1.6; }
+  a { color: var(--accent); }
+  h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
+  .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
-  .section h2 { font-size: 16px; color: #00e5ff; margin-bottom: 8px; }
-  .section p { color: #c9d1d9; font-size: 14px; }
+  .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
+  .section p { color: #c9d1d9; font-size: var(--fs-sm); }
   .tags { display: flex; gap: 8px; flex-wrap: wrap; margin: 16px 0; }
-  .tag { background: rgba(0,229,255,0.1); color: #00e5ff; padding: 2px 8px; border-radius: 4px; font-size: 12px; }
+  .tag { background: rgba(0,229,255,0.1); color: var(--accent); padding: 2px 8px; border-radius: var(--r-sm); font-size: var(--fs-2xs); }
   .related { margin-top: 32px; }
   .related a { display: block; padding: 8px 0; border-bottom: 1px solid rgba(0,229,255,0.1); }
-  .back { margin-top: 32px; font-size: 13px; }
+  .back { margin-top: 32px; font-size: var(--fs-xs); }
 </style>
 </head>
 <body>
@@ -36,5 +182,14 @@
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/wechat-pubacct-fetch-separate-search-from-retrieval.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=wechat pubacct fetch separate search from retrieval">Find related lessons →</a></p></div>
 <div class="back"><a href="/">← Back to MisakaNet</a> · <a href="/search/">Search lessons</a></div>
+<footer class="footer">
+<!-- site-links:start -->
+<nav class="site-links" aria-label="Site links">
+  <a href="/">Home</a> ·
+  <a href="/search/">Search lessons</a> ·
+  <a href="/install/">Install</a> ·
+  <a href="/start">Start</a>
+</nav>
+<!-- site-links:end --></footer>
 </body>
 </html>

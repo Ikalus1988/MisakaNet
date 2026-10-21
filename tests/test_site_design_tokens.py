@@ -102,12 +102,22 @@ def test_write_brings_the_page_back_to_the_source(tmp_path):
     assert sdt.check(root) == [], "write did not reconcile the copy"
 
 
-def test_the_generated_pages_are_not_carried_along():
-    """The mkdocs trees are generated from markdown; they are not hand-written pages."""
-    generated = [p for p in (REPO / "docs" / "lessons").rglob("*.html")]
+def test_the_generated_pages_carry_the_block_too():
+    """The generated pages are part of the site's design system (2026-10-21).
+
+    They used to be excluded — and the exclusion was written out three times, once per script —
+    so 571 pages carried their own hardcoded palette with nothing watching them (handoff §122.6
+    item 2: "生成的 571 个课程页**不在门禁范围内**"). The generator copies this very source into
+    them, so the copy is the same copy the hand-written pages carry.
+    """
+    generated = sorted((REPO / "docs" / "lessons").rglob("*.html"))
     assert generated, "the lesson tree is expected to exist"
+    want = sdt.token_block(REPO).strip()
     for page in generated[:20]:
-        assert "design-tokens" not in page.read_text(encoding="utf-8", errors="replace"), page
+        text = page.read_text(encoding="utf-8", errors="replace")
+        have = sdt.TOKEN_BLOCK.search(text)
+        assert have is not None, f"{page}: the generated page carries no design-tokens block"
+        assert have.group(0).strip() == want, f"{page}: the generated page carries a different block"
 
 
 def test_every_hand_written_page_carries_the_same_block():
