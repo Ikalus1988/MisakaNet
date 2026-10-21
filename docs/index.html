@@ -1925,7 +1925,7 @@
         <div class="lang-btn-row" style="margin-top:8px;display:flex;gap:6px;justify-content:center;">
           <button onclick="switchLang('zh')" style="background:none;border:1px solid #30363d;color:#8b949e;padding:4px 14px;border-radius:var(--r-sm);cursor:pointer;font-size:var(--fs-sm);font-family:inherit;">中</button>
           <button onclick="switchLang('en')" style="background:none;border:1px solid #30363d;color:#8b949e;padding:4px 14px;border-radius:var(--r-sm);cursor:pointer;font-size:var(--fs-sm);font-family:inherit;">EN</button>
-          <button class="help-btn" onclick="toggleModal()" title="What is MisakaNet?" aria-label="What is MisakaNet?" style="margin-left:4px;">?</button>
+          <button class="help-btn" onclick="toggleModal()" title="What is MisakaNet?" aria-label="What is MisakaNet?" aria-expanded="false" aria-controls="onboarding-modal" data-i18n-aria="modalWhatTitle" data-i18n-title="modalWhatTitle" style="margin-left:4px;">?</button>
           <a href="journey/" target="_blank" style="background:none;border:1px solid #238636;color:#3fb950;padding:4px 12px;border-radius:var(--r-sm);cursor:pointer;font-size:var(--fs-xs);font-family:inherit;text-decoration:none;margin-left:4px;"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><line x1="6" x2="10" y1="11" y2="11"/><line x1="8" x2="8" y1="9" y2="13"/><line x1="15" x2="15.01" y1="12" y2="12"/><line x1="18" x2="18.01" y1="10" y2="10"/><path d="M17.32 5H6.68a4 4 0 0 0-3.978 3.59c-.006.052-.01.101-.017.152C2.604 9.416 2 14.456 2 16a3 3 0 0 0 3 3c1 0 1.5-.5 2-1l1.414-1.414A2 2 0 0 1 9.828 16h4.344a2 2 0 0 1 1.414.586L17 18c.5.5 1 1 2 1a3 3 0 0 0 3-3c0-1.545-.604-6.584-.685-7.258-.007-.05-.011-.1-.017-.151A4 4 0 0 0 17.32 5z"/></svg> Journey</a>
         </div>
         <a class="github-btn" href="https://github.com/Ikalus1988/MisakaNet" target="_blank">
@@ -2421,7 +2421,7 @@
   <!-- Onboarding Modal -->
   <div class="modal-overlay" id="onboarding-modal" onclick="if(event.target===this)toggleModal()">
     <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="onboarding-modal-title">
-      <button class="modal-close" onclick="toggleModal()" aria-label="Close">✕</button>
+      <button class="modal-close" onclick="toggleModal()" aria-label="Close" data-i18n-aria="modalClose">✕</button>
       <div class="modal-title" id="onboarding-modal-title">MISAKA NETWORK</div>
       <div class="modal-section">
         <h2 data-i18n="modalWhatTitle">What is MisakaNet?</h2>
@@ -2625,9 +2625,104 @@ function copyQS(btn) {
 }
 
 // ── Onboarding modal ──
-function toggleModal() {
-  document.getElementById('onboarding-modal').classList.toggle('open');
+// The nav drawer below is the model, and it is the reason this one behaves like it: opening moves
+// focus into the panel, closing hands focus back to the control that opened it, and Escape does the
+// same. Without that, a keyboard user who opened the dialog was left focused on the button *behind*
+// it — the dialog said `aria-modal="true"` while the page behind it was still tabbable, and closing
+// it dropped them wherever the browser happened to be.
+let _modalReturnFocus = null;
+let _modalInerted = [];
+
+// Every element that is neither the dialog nor one of its ancestors goes inert while the dialog is
+// open: `aria-modal="true"` claims the rest of the page is not available to the reader, and the
+// only way that claim is true is to make it true.
+//
+// The walk goes *up* from the dialog, because the dialog is not a child of `<body>` — it sits inside
+// `<main>` inside `<div class="container">`, so "everything else" is the siblings at every level on
+// the way up, not the body's children. Only the elements that were *not* already inert are
+// recorded, so closing the dialog does not un-inert the closed drawer (which is inert on purpose).
+function setModalBackgroundInert(on) {
+  if (on) {
+    _modalInerted = [];
+    let node = document.getElementById('onboarding-modal');
+    while (node && node !== document.body) {
+      const parent = node.parentElement;
+      if (!parent) break;
+      for (const sibling of parent.children) {
+        if (sibling !== node && !sibling.inert) {
+          _modalInerted.push(sibling);
+          sibling.inert = true;
+        }
+      }
+      node = parent;
+    }
+  } else {
+    for (const el of _modalInerted) el.inert = false;
+    _modalInerted = [];
+  }
 }
+// The elements inside the dialog that the keyboard can reach, in the order it reaches them.
+function modalFocusables() {
+  const overlay = document.getElementById('onboarding-modal');
+  return [...overlay.querySelectorAll('a[href], button, [tabindex]:not([tabindex="-1"])')]
+    .filter(el => el.offsetParent !== null);
+}
+function setModal(open, restoreFocus) {
+  const overlay = document.getElementById('onboarding-modal');
+  const trigger = document.querySelector('.help-btn');
+  overlay.classList.toggle('open', open);
+  if (trigger) trigger.setAttribute('aria-expanded', open ? 'true' : 'false');
+  if (open) {
+    // Where the focus came from, before anything moves it.
+    _modalReturnFocus = document.activeElement;
+    // The focus goes *into* the dialog before the background goes inert: an element that has just
+    // been made inert loses the focus, and the browser puts it on the body — which is how the
+    // first version of this ended up with the focus nowhere at all.
+    const first = modalFocusables()[0];
+    if (first) first.focus();
+    setModalBackgroundInert(true);
+  } else {
+    // The background comes back before the focus does, or the focus has nowhere to land.
+    setModalBackgroundInert(false);
+    if (restoreFocus && _modalReturnFocus && _modalReturnFocus.focus) {
+      _modalReturnFocus.focus();
+      _modalReturnFocus = null;
+    }
+  }
+}
+function toggleModal() {
+  const overlay = document.getElementById('onboarding-modal');
+  setModal(!overlay.classList.contains('open'), true);
+}
+
+// Tab stays inside the dialog.
+//
+// `inert` already takes the background out of the tab order, so Tab cannot land on the page
+// behind — but it still walks off the end of the dialog into the browser's own chrome, where
+// `document.activeElement` becomes `<body>` (measured in Chromium: the focus left the dialog
+// after the last link and only came back on the next Tab). `aria-modal="true"` and the ARIA
+// Authoring Practices both say the focus does not leave the dialog while it is open, so the last
+// element hands it to the first and the first hands it back to the last.
+function handleModalTab(e) {
+  if (e.key !== 'Tab') return;
+  const overlay = document.getElementById('onboarding-modal');
+  if (!overlay.classList.contains('open')) return;
+  const items = modalFocusables();
+  if (!items.length) return;
+  const first = items[0];
+  const last = items[items.length - 1];
+  const active = document.activeElement;
+  // `!overlay.contains(active)` covers the focus that is on `<body>` already — the browser's
+  // chrome — which must come back into the dialog rather than stay out of it.
+  if (e.shiftKey && (active === first || !overlay.contains(active))) {
+    e.preventDefault();
+    last.focus();
+  } else if (!e.shiftKey && (active === last || !overlay.contains(active))) {
+    e.preventDefault();
+    first.focus();
+  }
+}
+document.addEventListener('keydown', handleModalTab);
 
 // ── Nav Drawer ──
 // `left: -300px` moves the drawer off-canvas but leaves its links in the tab order, so a keyboard
@@ -2663,8 +2758,13 @@ document.addEventListener('keydown', (e) => {
 });
 
 // ── Cmd+K / Ctrl+K to focus search ──
-document.addEventListener('keydown', (e) => {
+function handleGlobalKeys(e) {
   if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+    // While the onboarding dialog is open the search box is inert — it is behind the dialog,
+    // so it cannot take the focus — and `input.focus()` on an inert element does nothing at all.
+    // The shortcut would then flash the search field's border as if it had worked, while the
+    // focus never left the dialog. A modal dialog is not a place to jump to the search from.
+    if (document.getElementById('onboarding-modal').classList.contains('open')) return;
     e.preventDefault();
     const input = document.getElementById('search-input');
     input.focus();
@@ -2679,10 +2779,11 @@ document.addEventListener('keydown', (e) => {
   }
   // Escape to close modal and drawer
   if (e.key === 'Escape') {
-    document.getElementById('onboarding-modal').classList.remove('open');
+    if (document.getElementById('onboarding-modal').classList.contains('open')) setModal(false, true);
     closeDrawer();
   }
-});
+}
+document.addEventListener('keydown', handleGlobalKeys);
 
 // The last counter value this page actually *read* from /api/counter, or null when it never got one.
 // The registration success panel predicts the visitor's node id from it (`counter + 1`). It used to be
@@ -2788,6 +2889,22 @@ async function switchLang(lang) {
     const key = el.dataset.i18nPlaceholder;
     const value = locale[key] || enLocale[key];
     if (value !== undefined) el.placeholder = value;
+  });
+
+  // The accessible name and the tooltip are attributes, so `data-i18n` (which replaces textContent)
+  // cannot reach them — and a control whose name is a fixed English string is a control that reads
+  // in English to a Chinese-speaking screen-reader user. `data-i18n-placeholder` is the precedent;
+  // these two are its siblings.
+  document.querySelectorAll('[data-i18n-aria]').forEach(el => {
+    const key = el.dataset.i18nAria;
+    const value = locale[key] || enLocale[key];
+    if (value !== undefined) el.setAttribute('aria-label', value);
+  });
+
+  document.querySelectorAll('[data-i18n-title]').forEach(el => {
+    const key = el.dataset.i18nTitle;
+    const value = locale[key] || enLocale[key];
+    if (value !== undefined) el.setAttribute('title', value);
   });
 
   updateLessonCountSearch();

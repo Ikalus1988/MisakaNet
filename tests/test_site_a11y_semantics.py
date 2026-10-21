@@ -23,6 +23,7 @@ one `aria-expanded` write, or take the role off the card, and the matching test 
 """
 from __future__ import annotations
 
+import json
 import re
 from pathlib import Path
 
@@ -53,6 +54,28 @@ def _window(text: str, start: str, end: str) -> str:
     begin = text.index(start)
     finish = text.index(end, begin + len(start))
     return text[begin:finish]
+
+
+def _body(source: str, name: str) -> str:
+    """The body of `function <name>(…) { … }` — braces counted, so nested blocks are fine.
+
+    Scoping an assertion to one function is what makes it able to fail. The mutation audit
+    caught the difference: the line `if (first) first.focus();` exists **twice** in the page —
+    once in the onboarding dialog and once in the nav drawer — so an assertion that only said
+    "the page contains this line" was satisfied by the drawer's copy, and deleting the dialog's
+    own focus call left the gate green.
+    """
+    start = source.index(f"function {name}(")
+    brace = source.index("{", start)
+    depth = 0
+    for i in range(brace, len(source)):
+        if source[i] == "{":
+            depth += 1
+        elif source[i] == "}":
+            depth -= 1
+            if depth == 0:
+                return source[brace:i + 1]
+    raise AssertionError(f"function {name}() has no closing brace")
 
 
 def _function_body(name: str) -> str:
@@ -452,3 +475,172 @@ class TestTheOnboardingModalIsADialog:
         assert label and label.group(1).strip(), (
             "the opener is a `?` — without a name a screen reader reads the glyph"
         )
+
+
+class TestTheOnboardingDialogBehavesLikeOne:
+    """`role="dialog"` is the semantics; the behaviour is what a keyboard user actually meets.
+
+    The dialog said `aria-modal="true"` and behaved like a picture of one: the page behind it was
+    still tabbable, opening it left the focus on the `?` button *behind* the dialog, and closing it
+    dropped the focus wherever the browser happened to be. The nav drawer in the same file already
+    had the right pattern — focus in, focus back to the control that opened it, Escape does the
+    same — so this is that mechanism applied to the one panel that did not have it.
+
+    The close button's name was also a fixed English string on a page that translates everything
+    else, so a Chinese-speaking screen-reader user heard "Close".
+    """
+
+    def test_the_trigger_says_whether_the_dialog_is_open(self):
+        assert 'aria-expanded="false" aria-controls="onboarding-modal"' in HOMEPAGE, (
+            "the button that opens the dialog must say whether it is open and what it controls"
+        )
+
+    def test_opening_the_dialog_updates_the_state(self):
+        assert ("trigger.setAttribute('aria-expanded', open ? 'true' : 'false');"
+                in _body(HOMEPAGE, "setModal")), (
+            "the opener does not learn that the dialog is open"
+        )
+
+    def test_opening_the_dialog_moves_the_focus_into_it(self):
+        body = _body(HOMEPAGE, "setModal")
+        assert "_modalReturnFocus = document.activeElement;" in body, (
+            "the dialog does not remember where the focus came from, so it cannot give it back"
+        )
+        assert "function modalFocusables()" in HOMEPAGE, (
+            "the dialog does not look for something to focus"
+        )
+        assert "modalFocusables()[0]" in body, (
+            "opening the dialog leaves the focus on the button behind it"
+        )
+        assert "first.focus();" in body, (
+            "opening the dialog leaves the focus on the button behind it"
+        )
+
+    def test_closing_the_dialog_hands_the_focus_back(self):
+        assert "_modalReturnFocus.focus();" in _body(HOMEPAGE, "setModal"), (
+            "closing the dialog drops the focus instead of returning it to the opener"
+        )
+
+    def test_the_page_behind_the_dialog_is_inert_while_it_is_open(self):
+        body = _body(HOMEPAGE, "setModalBackgroundInert")
+        assert "sibling.inert = true;" in body, (
+            "the elements behind the dialog are never made inert"
+        )
+        assert "el.inert = false;" in body, (
+            "closing the dialog leaves the page behind it inert forever"
+        )
+        modal = _body(HOMEPAGE, "setModal")
+        assert "setModalBackgroundInert(true);" in modal and "setModalBackgroundInert(false);" in modal, (
+            "the background is never handed back"
+        )
+
+    def test_the_inert_walk_starts_at_the_dialog_and_climbs(self):
+        """The dialog is not a child of `<body>`; it lives inside `<main>` inside `.container`.
+
+        The first version of this made `body`'s children inert, which made the *container* inert,
+        and the container is an ancestor of the dialog — so the dialog was inert too and could not
+        take the focus. "Everything except the dialog" is the set of siblings on the way up, not
+        the set of `<body>`'s children.
+        """
+        body = _body(HOMEPAGE, "setModalBackgroundInert")
+        assert "body > *:not(#onboarding-modal)" not in body, (
+            "the dialog is not a child of `<body>`; inerting `<body>`'s children inerts the dialog "
+            "with them"
+        )
+        assert "const parent = node.parentElement;" in body and "node = parent;" in body, (
+            "the inert walk does not climb out of the dialog's ancestors"
+        )
+        assert "if (sibling !== node && !sibling.inert)" in body, (
+            "the walk must skip the dialog itself, and must not touch an element that is already "
+            "inert"
+        )
+
+    def test_closing_the_dialog_does_not_uninert_the_drawer(self):
+        """The drawer is inert on purpose when it is closed.
+
+        If the modal's bookkeeping records elements that were already inert, closing the modal
+        hands the drawer back to the keyboard — and the drawer has 17 links in it that are not on
+        screen. Only the elements the modal itself made inert get handed back.
+        """
+        body = _body(HOMEPAGE, "setModalBackgroundInert")
+        assert "_modalInerted.push(sibling);" in body, (
+            "the elements the dialog made inert are not recorded, so they cannot be handed back"
+        )
+        assert "for (const el of _modalInerted) el.inert = false;" in body, (
+            "closing the dialog re-enables elements it never touched"
+        )
+
+    def test_escape_closes_the_dialog_and_returns_the_focus(self):
+        assert ("if (document.getElementById('onboarding-modal').classList.contains('open')) "
+                "setModal(false, true);" in _body(HOMEPAGE, "handleGlobalKeys")), (
+            "Escape closes the dialog without handing the focus back"
+        )
+
+    def test_the_global_key_handler_is_registered(self):
+        """The Escape branch and the Cmd+K branch live in the same listener.
+
+        A handler that is defined but never registered is a comment, and both of those
+        behaviours would be gone while every other assertion stayed green.
+        """
+        assert "document.addEventListener('keydown', handleGlobalKeys);" in HOMEPAGE, (
+            "the global key handler is defined but never registered"
+        )
+
+    def test_the_focus_does_not_leave_the_dialog_while_it_is_open(self):
+        """`inert` takes the background out of the tab order, but the focus still walked off.
+
+        Measured in Chromium: tabbing past the last link in the dialog left it — `document
+        .activeElement` became `<body>` (the browser's own chrome) and only came back on the
+        next Tab. `aria-modal="true"` and the ARIA Authoring Practices both say the focus stays
+        inside the dialog while it is open, so the last element hands it to the first.
+        """
+        assert "document.addEventListener('keydown', handleModalTab);" in HOMEPAGE, (
+            "the Tab handler is defined but never registered — the focus still walks out"
+        )
+        body = _body(HOMEPAGE, "handleModalTab")
+        assert "if (e.key !== 'Tab') return;" in body, (
+            "nothing keeps Tab inside the dialog"
+        )
+        assert "if (!overlay.classList.contains('open')) return;" in body, (
+            "the dialog steals the Tab key even when it is closed"
+        )
+        assert "const last = items[items.length - 1];" in body, (
+            "the dialog does not know where its tab ring ends"
+        )
+        assert "e.preventDefault();" in body and "last.focus();" in body, (
+            "Tab past the last element is not wrapped back to the first"
+        )
+        assert "first.focus();" in body, (
+            "Tab past the last element is not wrapped back to the first"
+        )
+
+    def test_the_search_shortcut_does_not_fire_from_behind_the_dialog(self):
+        """The background is inert, so the search box cannot take the focus.
+
+        `input.focus()` on an inert element does nothing at all, so the shortcut used to flash
+        the search field's border as if it had worked while the focus never left the dialog.
+        """
+        assert ("if (document.getElementById('onboarding-modal').classList.contains('open')) "
+                "return;" in _body(HOMEPAGE, "handleGlobalKeys")), (
+            "Cmd+K still flashes the search box behind an open dialog, where it cannot be focused"
+        )
+
+    def test_the_close_button_is_named_in_the_readers_language(self):
+        assert 'aria-label="Close" data-i18n-aria="modalClose"' in HOMEPAGE
+        for locale in ("en", "zh"):
+            table = json.loads(
+                (REPO / "docs" / "locales" / f"{locale}.json").read_text(encoding="utf-8")
+            )
+            assert "modalClose" in table, f"{locale}.json has no modalClose label"
+            assert table["modalClose"].strip(), f"{locale}.json's modalClose is empty"
+
+    def test_the_opener_is_named_in_the_readers_language_too(self):
+        assert 'data-i18n-aria="modalWhatTitle"' in HOMEPAGE
+        assert 'data-i18n-title="modalWhatTitle"' in HOMEPAGE
+
+    def test_the_translator_can_reach_an_accessible_name(self):
+        """`data-i18n` replaces `textContent`, so it can never reach an attribute."""
+        assert "document.querySelectorAll('[data-i18n-aria]')" in HOMEPAGE
+        assert "el.setAttribute('aria-label', value);" in HOMEPAGE
+        assert "document.querySelectorAll('[data-i18n-title]')" in HOMEPAGE
+        assert "el.setAttribute('title', value);" in HOMEPAGE
