@@ -815,13 +815,20 @@ function render(results, q, meta) {
     // the payload actually carries.
     const signals = explainResult(r, q);
     const showTakeaway = takeaway !== title;
-    return '<div class="result" tabindex="0" data-index="' + r._index + '" data-id="' + id + '">' +
+    // The card is a control as well as a container: it is focusable, Enter/Space open it, and it
+    // toggles the preview panel below. Without a role it read as a focusable block of text, and
+    // without an expansion state nothing said whether the panel was open (#3539 R2). The name comes
+    // from the title — computed from the card's contents it would read the whole card, summary and
+    // all — and the state is written where the panel is opened and closed.
+    return '<div class="result" role="button" tabindex="0" aria-expanded="false"' +
+      ' aria-controls="preview-' + r._index + '" aria-labelledby="result-title-' + r._index + '"' +
+      ' data-index="' + r._index + '" data-id="' + id + '">' +
       '<div class="result-meta">' +
         '<span class="badge ' + badge.cls + '">' + t(badge.key) + '</span>' +
         '<span class="badge badge-domain">' + domain + '</span>' +
         '<span class="badge badge-evidence ev-' + ev.level.toLowerCase() + '" title="' + escapeHTML(ev.label) + '">' + ev.level + '</span>' +
       '</div>' +
-      '<h2 class="result-title">' + title + '</h2>' +
+      '<h2 class="result-title" id="result-title-' + r._index + '">' + title + '</h2>' +
       (showTakeaway ? '<div class="result-takeaway">' + takeaway + '</div>' : '') +
       '<div class="result-summary">' + summary + '</div>' +
       (tags ? '<div class="result-tags">' + tags + '</div>' : '') +
@@ -943,11 +950,14 @@ async function togglePreview(index) {
   openPanels.forEach(p => {
     if (p !== panel) {
       p.hidden = true;
-      const otherBtn = p.closest('.result').querySelector('[data-action="preview"]');
+      const otherCard = p.closest('.result');
+      const otherBtn = otherCard.querySelector('[data-action="preview"]');
       if (otherBtn) {
         otherBtn.textContent = t('readLesson');
         otherBtn.setAttribute('aria-expanded', 'false');
       }
+      // The card is a control too, so the card that just closed has to say it closed (#3539 R2).
+      otherCard.setAttribute('aria-expanded', 'false');
     }
   });
 
@@ -958,6 +968,8 @@ async function togglePreview(index) {
       btn.textContent = panel.hidden ? t('readLesson') : t('collapse');
       btn.setAttribute('aria-expanded', panel.hidden ? 'false' : 'true');
     }
+    // The card carries the same state, read off the panel it controls.
+    card.setAttribute('aria-expanded', panel.hidden ? 'false' : 'true');
     updateUrl(document.getElementById('q').value.trim(), panel.hidden ? null : (lesson.id || ''));
     return;
   }
@@ -969,6 +981,7 @@ async function togglePreview(index) {
     btn.textContent = t('collapse');
     btn.setAttribute('aria-expanded', 'true');
   }
+  card.setAttribute('aria-expanded', 'true');
   try {
     // The lesson body is fetched on demand (2026-09-30). It used to ride along in the corpus as
     // `preview` (~2.1 KB per lesson, 1.09 MB of the 1.32 MB file) because this panel wanted *one* of

@@ -14,8 +14,12 @@ lesson body inside a result card rendered `##` as an `<h2>` — so the document 
 a skip and an inversion at once. The "Read lesson" button also did not say whether it had expanded
 anything, so the state existed only as a change in the button's *text*.
 
-Each assertion below can go red: drop a heading level, put the caveat back inside the title, or
-remove one `aria-expanded` write, and the matching test fails.
+The result *card* had the same gap one level out: it is a `div[tabindex="0"]` that Enter and Space
+activate to toggle the preview panel, and it said neither that it was a control nor whether its
+panel was open (#3539 R2).
+
+Each assertion below can go red: drop a heading level, put the caveat back inside the title, remove
+one `aria-expanded` write, or take the role off the card, and the matching test fails.
 """
 from __future__ import annotations
 
@@ -38,6 +42,52 @@ def _assert_no_skip(levels: list[int], where: str) -> None:
         assert current <= previous + 1, (
             f"{where}: a heading jumps from h{previous} to h{current}; the outline skips a level"
         )
+
+
+def _window(text: str, start: str, end: str) -> str:
+    """The slice between two anchors — one branch of a function, roughly.
+
+    A branch is found by its own anchors rather than by a line range or a character window, so a
+    copy edit above it cannot slide a different branch into the slice.
+    """
+    begin = text.index(start)
+    finish = text.index(end, begin + len(start))
+    return text[begin:finish]
+
+
+def _function_body(name: str) -> str:
+    """One function's source, from its declaration to the next top-level `function`."""
+    tail = SEARCH.split(f"function {name}", 1)[1]
+    return tail.split("\nfunction ", 1)[0]
+
+
+def _canonical(fragment: str) -> str:
+    """A markup fragment reduced to what it says: the interpolated variables kept as `${…}`.
+
+    The page builds the card's tag from several string literals, so the interpolated JavaScript
+    becomes a `${…}` marker and the literals are joined. The marker keeps the interpolated
+    *variable*, so a card that pointed at a different id than the one its title carries still
+    fails — and the whitespace around a marker is dropped, so the two spellings of one id compare
+    equal.
+    """
+    fragment = re.sub(r"\+\s*([A-Za-z_$][\w.$]*)\s*\+", r"${\1}", fragment)
+    fragment = fragment.replace("'", "").replace("+", "")
+    fragment = re.sub(r"\s*\$\{", "${", fragment)
+    return re.sub(r"\}\s*", "}", fragment)
+
+
+def _card_attributes() -> str:
+    """The result card's attributes, as the page builds them."""
+    match = re.search(r"'<div class=\"result\"[\s\S]*?data-id=\"' \+ id \+ '\">'", SEARCH)
+    assert match, "the result card markup moved; this test reads its opening tag"
+    return _canonical(match.group(0))
+
+
+def _result_title_id() -> str:
+    """The id the result title carries, as the page builds it."""
+    match = re.search(r"'<h2 class=\"result-title\" id=\"(.*?)\"", SEARCH)
+    assert match, "the result title carries no id for the card to point at"
+    return _canonical(match.group(1))
 
 
 class TestHomepageOutline:
@@ -94,7 +144,7 @@ class TestSearchOutline:
         assert len(re.findall(r"<h1\b", SEARCH)) == 1
 
     def test_the_result_title_is_a_heading(self):
-        assert "'<h2 class=\"result-title\">'" in SEARCH, (
+        assert "'<h2 class=\"result-title\"" in SEARCH, (
             "the result title is not a heading — a result is a section of the results list"
         )
 
@@ -162,3 +212,100 @@ class TestTheDisclosureControl:
     def test_collapsing_another_card_puts_that_card_back(self):
         """Only one preview is open at a time, so the card that closes must say it closed."""
         assert "otherBtn.setAttribute('aria-expanded', 'false');" in SEARCH
+
+
+class TestTheResultCardIsAControl:
+    """The card is focusable, Enter/Space open it, and it toggles the panel below it.
+
+    It said none of that. With no `role` a screen reader read a focusable block of text that
+    behaved like a button, and with no expansion state nothing announced whether the panel was
+    open — the state existed only as a change in the *inner* button's text (#3539 R2).
+
+    The role is `button` because that is what the card is: it is in the tab order, Enter and
+    Space activate it, and it toggles a disclosure. `role="group"` was measured instead and
+    rejected: Chromium drops `aria-expanded` on a group, so the state the issue asks for would
+    not be announced at all. The name is pinned to the title with `aria-labelledby`, because a
+    `role="button"` takes its name from its contents — and the card's contents are the title, the
+    summary, the tags and every button label in it.
+    """
+
+    def test_the_card_declares_the_role_its_interaction_implies(self):
+        attributes = _card_attributes()
+        assert 'role="button"' in attributes, (
+            "the card is focusable and activated by Enter/Space, so it has to carry a role — "
+            "without one it reads as a focusable block of text"
+        )
+        assert "aria-controls=" in attributes, (
+            "the card has to name the panel it controls"
+        )
+
+    def test_the_card_starts_collapsed_like_the_panel_it_controls(self):
+        attributes = _card_attributes()
+        assert 'aria-expanded="false"' in attributes, (
+            "the card's panel starts hidden, so the card has to start collapsed"
+        )
+
+    def test_the_card_is_named_by_its_title(self):
+        """A `role="button"` names itself from its contents unless it is told otherwise.
+
+        Computed from the contents the name is the whole card — title, summary, tags and every
+        button label in it. The title names the card, and the title is the heading, so the
+        reference has to resolve to that heading and to that heading only.
+        """
+        attributes = _card_attributes()
+        assert "aria-labelledby=" in attributes, (
+            "the card's name would be computed from its contents, which is the whole card"
+        )
+        label = re.search(r'aria-labelledby="([^"]*)"', attributes).group(1)
+        assert label == _result_title_id(), (
+            "the card points at a title id that no title carries"
+        )
+
+    def test_opening_the_panel_expands_the_card(self):
+        """The path that opens a panel for the first time (the body is still being fetched)."""
+        opening = _window(_function_body("togglePreview"), "panel.hidden = false;", "try {")
+        assert "card.setAttribute('aria-expanded', 'true');" in opening, (
+            "the card opens its panel without saying that it is open"
+        )
+
+    def test_closing_and_reopening_the_panel_flips_the_card(self):
+        """The path that toggles a panel that was already loaded.
+
+        The state is read off the panel rather than written out by hand: a hard-coded `'true'`
+        here would leave the card claiming to be open after the panel was closed.
+        """
+        toggling = _window(
+            _function_body("togglePreview"),
+            "if (panel.dataset.loaded === 'true')",
+            "panel.hidden = false;",
+        )
+        assert "card.setAttribute('aria-expanded', panel.hidden ? 'false' : 'true');" in toggling, (
+            "the card's state has to follow the panel it controls"
+        )
+
+    def test_collapsing_another_card_puts_that_card_back(self):
+        """Opening a card closes the others, so the cards that close have to say they closed."""
+        auto_collapse = _window(
+            _function_body("togglePreview"),
+            "openPanels.forEach",
+            "if (panel.dataset.loaded === 'true')",
+        )
+        assert "otherCard.setAttribute('aria-expanded', 'false');" in auto_collapse, (
+            "the card that was auto-collapsed still claims to be expanded"
+        )
+
+    def test_the_card_is_still_reachable_and_activatable_by_keyboard(self):
+        """The role must not cost the card its keyboard path."""
+        attributes = _card_attributes()
+        assert 'tabindex="0"' in attributes, "the card fell out of the tab order"
+        handler = _window(
+            SEARCH,
+            "document.getElementById('results').addEventListener('keydown'",
+            "\n});",
+        )
+        assert "event.key !== 'Enter' && event.key !== ' '" in handler, (
+            "the card is activated by Enter and Space, so the handler has to keep listening for both"
+        )
+        assert "togglePreview(Number(card.dataset.index));" in handler, (
+            "the keyboard path no longer opens the card"
+        )
