@@ -13,7 +13,7 @@ python3 search_knowledge.py <query> [options]
 | `--ref` | Mode | Switch to reference search mode (not a path/id filter) | `--ref` |
 | `--top=<N>` | Pagination | Show top N results (default: 10) | `--top=3` |
 | `--titles` | Display | Show titles only | `--titles` |
-| `--json` | Display | Emit a JSON array with `title`, `domain`, `tags`, `score`, `path`, and `preview`; errors are JSON objects | `"pip timeout" --json \| jq '.[0]'` |
+| `--json` | Display | Emit a JSON array with `title`, `domain`, `tags`, `score`, `path`, and `preview`; each result also carries `freshness` (`{score, tier, badge}`) when the freshness computation succeeds; errors are JSON objects | `"pip timeout" --json \| jq '.[0]'` |
 | `--broad` | Matching | Broader keyword matching | `--broad` |
 | `--suggest` | Mode | List matching titles (≥2 chars) | `--suggest` |
 | `--semantic` | Mode | Use sentence-transformers _(optional dep)_ | `--semantic` |
@@ -28,6 +28,21 @@ python3 search_knowledge.py <query> [options]
 | `--harvest --from-file=<f>` | Mode | Parse log for errors → draft lesson | `--harvest --from-file=crash.log` |
 
 **Exit codes:** `0` = results found, `1` = no results or error.
+
+### `freshness` is not the same measure in both tools
+
+Two surfaces in this repository publish a field called `freshness`, and they do not mean the same
+thing — one is a **score** and one is an **age**:
+
+| surface | shape | how it is computed | values |
+|---|---|---|---|
+| this CLI (`--json`) | `{"score": 0-100, "tier": "fresh", "badge": "🟢"}` | `misakanet/freshness.py` — a score that decays daily, with boosts for usage, votes, edits and pins | `fresh` / `stable` / `aging` / `stale` / `outdated` |
+| the MCP tool (`misakanet_search`) | `"fresh"` — a plain string | `misakanet/server/handlers/search.py::_freshness` — days since the lesson was updated | `fresh` (<30d) / `recent` (<180d) / `aging` (<365d) / `stale` / `unknown` |
+
+Three of the names are shared and **their boundaries are not**: a lesson updated ten days ago can
+be `fresh` by age and `stable` by score. They are two independent implementations of one idea, so
+do not compare the two values — and note that the MCP one is a string while this one is an object.
+(Hand-off §124.9: unifying them is a product decision, not a documentation fix.)
 
 `--json` keeps standard output machine-readable, so it can be piped directly to
 tools such as `jq`:

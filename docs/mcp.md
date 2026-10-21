@@ -183,7 +183,9 @@ This tests:
 - `search` returns results with `path` and `status` at **every** detail level, plus `freshness`
   (`fresh` / `recent` / `aging` / `stale`) at `compact` and `summary`. **There is no `badge`
   field** — an earlier version of this line promised one, and the surface never sent it; the
-  freshness tier is a plain label.
+  freshness tier is a plain label. (The offline CLI's `search_knowledge.py --json` *does* emit a
+  `badge`, inside a `freshness` object — but that is a **score**, not this age bucket, so the two
+  `freshness` fields are not comparable: see `docs/cli-reference.md`.)
 - `get_lesson` returns lesson content
 - Default scope excludes drafts
 
