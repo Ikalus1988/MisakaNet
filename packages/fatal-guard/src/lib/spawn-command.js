@@ -18,6 +18,16 @@ const SHELL_METACHARS = /[;&|<>$`(){}]|\r|\n/;
 // even though they contain no metacharacters. Reject those too.
 const SHELL_INTERPRETERS = /^(?:cmd(?:\.exe)?|sh|bash|zsh|dash|ksh|powershell(?:\.exe)?|pwsh(?:\.exe)?|python|python3|node|perl|ruby)\b/i;
 
+/**
+ * How long a handler may run before it is killed.
+ *
+ * One budget for the whole package (#3645): the CLI wrapper used 1000 ms while
+ * the in-process path used 5000 ms, so the same handler was cut off on Windows
+ * depending on how the program was started. A handler that searches the network
+ * and writes a draft lesson needs seconds, not one.
+ */
+const HANDLER_TIMEOUT_MS = 5000;
+
 function quoteWindowsArg(value) {
   const text = String(value);
   if (!/[\s"&|<>^]/.test(text)) return text;
@@ -105,4 +115,4 @@ function buildSpawnSpec(command, args = []) {
   };
 }
 
-module.exports = { buildSpawnSpec, quoteWindowsArg, sanitizeCommand, splitCommand };
+module.exports = { buildSpawnSpec, quoteWindowsArg, sanitizeCommand, splitCommand, HANDLER_TIMEOUT_MS };

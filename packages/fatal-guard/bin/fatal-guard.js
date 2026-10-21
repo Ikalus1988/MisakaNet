@@ -18,14 +18,18 @@ const os = require('node:os');
 const path = require('node:path');
 const { buildPayload } = require('../index');
 const { redact } = require('../src/lib/redact');
-const { buildSpawnSpec, splitCommand } = require('../src/lib/spawn-command');
+const { buildSpawnSpec, splitCommand, HANDLER_TIMEOUT_MS } = require('../src/lib/spawn-command');
 
 const EXIT = Object.freeze({ OK: 0, ERROR: 1, USAGE: 2, TIMEOUT: 3 });
 const FATAL_SIGNALS = new Set([
   'SIGKILL', 'SIGSEGV', 'SIGABRT', 'SIGBUS',
   'SIGFPE', 'SIGILL', 'SIGTRAP', 'SIGSYS',
 ]);
-const HANDLER_TIMEOUT_MS = 1000;
+// Where the crash payload is written so an agent can read it after the fact.
+// The handler runs detached with `stdio: 'ignore'`, so whatever it prints never
+// reaches the terminal — the file is the delivery channel (#3645).
+const CRASH_FILE_ENV = 'FATAL_CRASH_OUT';
+const DEFAULT_CRASH_FILE = path.join('.misakanet', 'last-crash.json');
 
 function version() {
   try {
@@ -122,6 +126,10 @@ function handlerSpec() {
   ).trim();
 }
 
+// The handler command is tokenized by `splitCommand` (src/lib/spawn-command.js),
+// which supports the documented `/path/to/handler` form and simple quoted paths
+// while keeping payloads argv-safe.
+
 // The line that names the failure. Node prints it first ("Error: EACCES: ..."),
 // Python prints it last ("FileNotFoundError: [Errno 2] ...").
 // The name is optional so the bare "Error:" counts — that is the common case.
@@ -166,6 +174,42 @@ function extractErrorContext(stderrBuffer, maxLines = 16) {
   return lines.slice(index, index + maxLines).join('\n').trim();
 }
 
+/**
+ * Where the crash payload is written.
+ *
+ * `FATAL_CRASH_OUT` overrides the path; an empty value disables the file.
+ * @returns {string|null}
+ */
+function crashFilePath() {
+  const configured = process.env[CRASH_FILE_ENV];
+  if (configured === undefined) return path.resolve(process.cwd(), DEFAULT_CRASH_FILE);
+  if (configured === '') return null;
+  return path.resolve(configured);
+}
+
+/**
+ * Write the crash payload where an agent can read it.
+ *
+ * The handler is detached and its output is discarded, so the file is the only
+ * channel that survives the crash (#3645).
+ *
+ * @param {string} payload
+ * @returns {string|null} the path written, or null when nothing was written
+ */
+function writeCrashFile(payload) {
+  const target = crashFilePath();
+  if (!target) return null;
+  try {
+    fs.mkdirSync(path.dirname(target), { recursive: true });
+    fs.writeFileSync(target, `${payload}\n`, 'utf8');
+  } catch (error) {
+    process.stderr.write(`fatal-guard: could not write crash file ${target}: ${error.message}\n`);
+    return null;
+  }
+  process.stderr.write(`fatal-guard: crash payload written to ${target}\n`);
+  return target;
+}
+
 function reportCrash(reason, error, stderrBuffer, exitCode) {
   const handler = handlerSpec();
   const errorText = extractErrorText(stderrBuffer);
@@ -186,6 +230,8 @@ function reportCrash(reason, error, stderrBuffer, exitCode) {
     payloadObj.exit_code = exitCode;
   }
   const payload = JSON.stringify(payloadObj);
+
+  writeCrashFile(payload);
 
   if (!handler) {
     process.stderr.write('fatal-guard: FATAL_HANDLER is not set; crash report was not sent.\n');

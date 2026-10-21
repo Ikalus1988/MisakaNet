@@ -95,6 +95,9 @@ test('crash smoke captures a four-field tombstone and converts it to a draft', a
         FATAL_HANDLER: process.execPath,
         FATAL_HANDLER_ARGS: JSON.stringify([handler]),
         PAYLOAD_FILE: payloadFile,
+        // Keep the crash file out of the checkout: the delivery file is
+        // covered by tests/crash-payload.test.js.
+        FATAL_CRASH_OUT: path.join(tmp, 'last-crash.json'),
       },
     });
     assert.equal(result.code, 1, result.stderr);
