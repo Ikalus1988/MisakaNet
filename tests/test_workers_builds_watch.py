@@ -26,6 +26,7 @@ import subprocess
 import sys
 import threading
 import urllib.parse
+from datetime import datetime, timedelta, timezone
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 
@@ -86,6 +87,7 @@ class StubGitHub(BaseHTTPRequestHandler):
     comments: list = []        # comments on the tracker issue
     label_status = 201
     ignore_page = False   # model a proxy that strips `page`; see _check_runs_page
+    commit_date: str | None = None   # when the commit was made; None = the API does not say
     writes: list = []
     seen: list = []
 
@@ -111,6 +113,12 @@ class StubGitHub(BaseHTTPRequestHandler):
             return self._json(self._page(self.comments))
         if path.startswith(f"/repos/{OWNER_REPO}/branches/"):
             return self._json({"commit": {"sha": SHA}})
+        if path.startswith(f"/repos/{OWNER_REPO}/commits/"):
+            # The commit's own date, which is what the watcher's age rule reads. `None` models the
+            # API not saying, which the watcher has to treat as "not judged" rather than guessing.
+            if type(self).commit_date is None:
+                return self._json({})
+            return self._json({"commit": {"committer": {"date": type(self).commit_date}}})
         return self._json({})
 
     def _page(self, items: list) -> list:
@@ -157,6 +165,7 @@ def _reset():
     StubGitHub.comments = []
     StubGitHub.label_status = 201
     StubGitHub.ignore_page = False
+    StubGitHub.commit_date = None
     StubGitHub.writes = []
     StubGitHub.seen = []
     yield
@@ -643,3 +652,97 @@ def test_the_red_wording_does_not_claim_it_opened_an_issue(stub):
     body = StubGitHub.writes[0][2]["body"]
     assert "reported this" in body, body
     assert "opened this" not in body, body
+
+
+# ── the build that never started ─────────────────────────────────────────────────────────────────────
+#
+# Everything above reads a check-run. The failure this watcher exists to catch also has a shape with
+# *no* check-run at all: Cloudflare's Git integration stops listening — a rolled API token, the kind
+# the cutover document records on 2026-09-23, when the site was dark for a day — and the commit on
+# the deploying branch simply never gets a build. That was `unknown`, and `unknown` is silence: the
+# same silence #2136 was.
+#
+# So the branch tip is judged on its age too. The two halves matter equally: a tip that has sat for
+# hours with no build at all is a failure, and a tip that has sat for *minutes* with no build is the
+# measured normal (1m41s once, 13m25s and 13m58s twice on 2026-10-21) and must stay silent.
+
+
+def iso_ago(hours: float) -> str:
+    return (datetime.now(timezone.utc) - timedelta(hours=hours)).isoformat().replace("+00:00", "Z")
+
+
+def test_a_branch_tip_that_never_got_a_build_is_a_failure(stub):
+    """The shape a rolled Cloudflare token takes: the site keeps serving an old build, silently."""
+    StubGitHub.runs = []
+    StubGitHub.commit_date = iso_ago(3)
+    proc = run_watch(stub, "--branch", "dist")
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+    assert "site build: red" in proc.stdout, proc.stdout
+    creates = [b for m, p, b in StubGitHub.writes if p == f"/repos/{OWNER_REPO}/issues"]
+    assert len(creates) == 1, StubGitHub.writes
+    assert "no build ever started" in creates[0]["body"], creates[0]["body"]
+    assert LABEL in creates[0]["labels"], creates[0]
+
+
+def test_a_fresh_branch_tip_with_no_build_is_still_unknown(stub):
+    """The measured lag is minutes. A build that has not started yet is not a failure."""
+    StubGitHub.runs = []
+    StubGitHub.commit_date = iso_ago(0.2)  # 12 minutes
+    proc = run_watch(stub, "--branch", "dist")
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+    assert "site build: unknown" in proc.stdout, proc.stdout
+    assert StubGitHub.writes == [], StubGitHub.writes
+
+
+def test_an_old_branch_tip_with_a_green_build_is_green(stub):
+    """Old is not the criterion on its own: a build that succeeded is a build."""
+    StubGitHub.runs = [check_run("success")]
+    StubGitHub.commit_date = iso_ago(9)
+    proc = run_watch(stub, "--branch", "dist")
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+    assert "site build: green" in proc.stdout, proc.stdout
+    assert StubGitHub.writes == [], StubGitHub.writes
+
+
+def test_a_queued_build_on_an_old_commit_is_not_a_failure(stub):
+    """A queued build is not a failure, however long the commit has been there."""
+    StubGitHub.runs = [check_run("", status="queued")]
+    StubGitHub.commit_date = iso_ago(9)
+    proc = run_watch(stub, "--branch", "dist")
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+    assert "site build: unknown" in proc.stdout, proc.stdout
+    assert StubGitHub.writes == [], StubGitHub.writes
+
+
+def test_a_commit_of_unknown_age_is_not_judged(stub):
+    """If the API does not say when the commit was made, the watcher does not guess."""
+    StubGitHub.runs = []
+    StubGitHub.commit_date = None
+    proc = run_watch(stub, "--branch", "dist")
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+    assert "site build: unknown" in proc.stdout, proc.stdout
+    assert StubGitHub.writes == [], StubGitHub.writes
+
+
+def test_an_explicitly_named_old_commit_with_no_build_is_red(stub):
+    """A human asking about one commit gets the same answer the branch tip would give."""
+    StubGitHub.runs = []
+    StubGitHub.commit_date = iso_ago(4)
+    proc = run_watch(stub, "--sha", SHA)
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+    assert "site build: red" in proc.stdout, proc.stdout
+
+
+def test_the_event_path_is_not_judged_by_age(stub, tmp_path):
+    """The event fires exactly when Cloudflare publishes a suite.
+
+    An empty result there is an API hiccup, not a stalled deploy, and the event's own commit is
+    whatever was being built seconds ago — judging it by age would file an issue on every build.
+    """
+    StubGitHub.runs = []
+    StubGitHub.commit_date = iso_ago(9)
+    event = write_event(tmp_path, SHA, "dist")
+    proc = run_watch(stub, "--event", event)
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+    assert "site build: unknown" in proc.stdout, proc.stdout
+    assert StubGitHub.writes == [], StubGitHub.writes
