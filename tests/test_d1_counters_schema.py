@@ -65,6 +65,90 @@ def test_the_apply_workflow_is_dispatchable_and_does_not_deploy():
     assert "d1 execute" in workflow
 
 
+# ── the gap cleanup's read (2026-10-21) ──────────────────────────────────────────────────────────
+#
+# The cleanup enumerates the `gap` scope **ordered by `updated_at`**, and the index above cannot
+# serve that order: it is (scope, period), so the read visited every row of the scope and sorted
+# it — measured on production 2,505 rows read and 41ms for a `LIMIT 500` that only needs the 500
+# most recent. The index below is (scope, updated_at DESC) and covers the two columns the query
+# selects, so the read stops at the LIMIT: **500 rows, 2.3ms** on the same database.
+#
+# The plan is asserted in a real SQLite engine rather than by reading the DDL, because the whole
+# point of the index is what the *planner* does with it — a name in the file proves nothing.
+def _statement_after(source: str, marker: str) -> str:
+    """The SQL statement that starts at ``marker`` and ends at the next semicolon."""
+    start = source.find(marker)
+    assert start != -1, f"the file no longer contains {marker!r}"
+    end = source.find(";", start)
+    assert end != -1, f"the statement starting at {marker!r} has no semicolon"
+    return source[start:end + 1].strip()
+
+
+def _counters_db():
+    """The counters table from the schema file, with the production gap scope filled in.
+
+    Measured on production 2026-10-21: the `gap` scope held 2,410 rows.
+    """
+    import sqlite3
+
+    schema = SCHEMA.read_text(encoding="utf-8")
+    match = re.search(r"CREATE TABLE IF NOT EXISTS counters\s*\((.*?)\n\);", schema, re.DOTALL)
+    assert match, "workers/d1/schema.sql must declare the counters table"
+    db = sqlite3.connect(":memory:")
+    db.executescript("CREATE TABLE IF NOT EXISTS counters (" + match.group(1) + "\n);")
+    db.executemany(
+        "INSERT INTO counters (scope, bucket, period, count, updated_at) VALUES (?,?,?,?,?)",
+        [("gap", f"bucket-{i}", "2026-10-21", i, "2026-10-21 09:00:00") for i in range(2410)],
+    )
+    return db
+
+
+def test_the_gap_cleanup_read_is_served_by_the_updated_at_index():
+    schema = SCHEMA.read_text(encoding="utf-8")
+    worker = WORKER.read_text(encoding="utf-8")
+    db = _counters_db()
+    db.executescript(_statement_after(
+        schema, "CREATE INDEX IF NOT EXISTS idx_counters_scope_updated"))
+    db.executescript(_statement_after(
+        schema, "CREATE INDEX IF NOT EXISTS idx_counters_scope_period"))
+
+    query = re.search(
+        r"`SELECT bucket, period FROM counters WHERE scope = 'gap'[^`]+`", worker)
+    assert query, "the worker no longer reads the gap scope the way this test expects"
+    plan = "\n".join(
+        str(row[-1]) for row in db.execute("EXPLAIN QUERY PLAN " + query.group(0).strip("`")))
+    assert "idx_counters_scope_updated" in plan, (
+        f"the gap cleanup must read the scope through the updated_at index:\n{plan}")
+    assert "TEMP B-TREE" not in plan, (
+        f"the read still sorts the whole scope instead of stopping at the LIMIT:\n{plan}")
+
+
+def test_the_updated_at_index_is_declared_and_idempotent():
+    """``counters`` is not created by the worker — the schema file is the only way it gets there.
+
+    The file is applied to the live database by a workflow, so a statement that is not idempotent
+    fails that run.
+    """
+    schema = SCHEMA.read_text(encoding="utf-8")
+    ddl = _statement_after(schema, "CREATE INDEX IF NOT EXISTS idx_counters_scope_updated")
+    assert re.search(r"ON\s+counters\s*\(\s*scope\s*,\s*updated_at\s+DESC", ddl), (
+        f"the index must be ordered by updated_at, or the LIMIT cannot stop the read early: {ddl}")
+    assert "IF NOT EXISTS" in ddl.upper(), (
+        "the schema file is applied to the live database by a workflow; a statement that is not "
+        "idempotent fails that run")
+
+
+def test_every_schema_statement_stays_re_appliable():
+    """The apply workflow runs the whole file against the live database, a second time included."""
+    schema = SCHEMA.read_text(encoding="utf-8")
+    offenders = [
+        line for line in schema.splitlines()
+        if re.search(r"^\s*CREATE\s+(TABLE|INDEX)\b", line, re.IGNORECASE)
+        and "IF NOT EXISTS" not in line.upper()
+    ]
+    assert not offenders, f"these statements would fail on a second apply: {offenders}"
+
+
 # ── kv_store: the registration keys that used to be KV-only (2026-09-17) ──────────────
 #
 # Same drift risk as `counters`, and the same reason to pin it: the worker is deployed by

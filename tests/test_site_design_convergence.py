@@ -289,3 +289,199 @@ def test_an_allowlist_entry_that_matches_nothing_is_a_hole():
         for snippet, _reason in entries:
             assert snippet in text, f"{rel}: the allowance {snippet!r} matches nothing any more"
 
+
+
+# ── batch Z: the cross-page colour, the page background and the footer shell ────────────────────
+# Each of these is a gate that must be able to fail. The gate reads the *page*, not just its
+# stylesheets, because three of the colours it is after were written by scripts.
+
+
+def test_a_second_primary_colour_is_a_violation(tmp_path):
+    """GitHub's blue was the second product's own primary, and it was on thirteen pages."""
+    root = _page_with(tmp_path, "  .link { color: #58a6ff; }")
+    problems = cdc.check(root)
+    assert any("second primary colour" in p for p in problems), problems
+
+
+def test_a_violet_is_a_violation_even_when_no_list_names_it(tmp_path):
+    """The list of seven purples missed `#bc8cff` and `#d2a8ff`, and the report said "0 处" while
+    three violets were still on the site. The gate classifies by hue now, so a violet nobody wrote
+    down is still a violet."""
+    root = _page_with(tmp_path, "  .badge { color: #bc8cff; }")
+    problems = cdc.check(root)
+    assert any("is a violet" in p for p in problems), problems
+
+
+def test_a_light_lavender_is_a_violet(tmp_path):
+    """`#d2a8ff` was on two pages and the accent band's own saturation floor of 0.45 let it walk
+    past — a pale violet is still a violet, so the violet band has its own, lower floor."""
+    root = _page_with(tmp_path, "  .badge { color: #d2a8ff; }")
+    problems = cdc.check(root)
+    assert any("is a violet" in p for p in problems), problems
+
+
+def test_a_grey_that_happens_to_have_a_violet_hue_is_not_a_violet(tmp_path):
+    """The violet band's floor exists so that a grey with a violet hue is a grey."""
+    root = _page_with(tmp_path, "  .a { color: #9c9aa5; } .b { color: #b9b3c2; }")
+    problems = cdc.check(root)
+    assert not any("is a violet" in p for p in problems), problems
+
+
+def test_the_greys_are_not_primary_colours(tmp_path):
+    """The pages are full of near-greys with a blue hue. They are greys, and a gate that swept
+    them in would report a site that does not exist."""
+    root = _page_with(
+        tmp_path,
+        "  .a { color: #8b949e; } .b { color: #c9d1d9; } .c { border: 1px solid #30363d; }",
+    )
+    problems = cdc.check(root)
+    assert not any("second primary colour" in p for p in problems), problems
+    assert not any("is a violet" in p for p in problems), problems
+
+
+def test_the_dark_navy_surfaces_are_not_primary_colours(tmp_path):
+    """`#0f172a` and `#1f3a5f` are navy, not blue: they are dark enough that the value floor has
+    to keep them out of the band."""
+    root = _page_with(tmp_path, "  .a { background: #0f172a; } .b { background: #1f3a5f; }")
+    problems = cdc.check(root)
+    assert not any("second primary colour" in p for p in problems), problems
+
+
+def test_the_vocabulary_accents_are_not_in_the_band(tmp_path):
+    """The site's two accents are the vocabulary's cyan and magenta — they are what the band is
+    defined *around*."""
+    root = _page_with(tmp_path, "  .a { color: #00e5ff; } .b { color: #ff0080; }")
+    problems = cdc.check(root)
+    assert not any("second primary colour" in p for p in problems), problems
+    assert not any("is a violet" in p for p in problems), problems
+
+
+def test_a_page_background_that_is_not_the_vocabulary_is_a_violation(tmp_path):
+    root = _page_with(tmp_path, "  body { background: #0d1117; }")
+    problems = cdc.check(root)
+    assert any("page background" in p for p in problems), problems
+
+
+def test_a_glow_over_the_vocabulary_background_is_the_vocabulary_background(tmp_path):
+    """The search page paints a radial gradient over `--bg-0`; the base is still `--bg-0`, and
+    the base is the last layer of the shorthand."""
+    root = _page_with(
+        tmp_path,
+        "  body { background: radial-gradient(circle at 50% -20%, rgba(0,229,255,0.09),"
+        " transparent 38%), var(--bg-0); }",
+    )
+    problems = cdc.check(root)
+    assert not any("page background" in p for p in problems), problems
+
+
+def test_a_page_without_a_footer_is_a_violation(tmp_path):
+    """The footer is the only navigation every page shares; a page without one is a page the
+    reader cannot leave."""
+    root = _page_with(tmp_path, "  body { background: var(--bg-0); }")
+    problems = cdc.check(root)
+    assert any("no footer" in p for p in problems), problems
+
+
+def test_a_page_that_defines_its_own_footer_shell_is_a_violation(tmp_path):
+    """The shell lives in the shared token block. A page that spells its own is the second
+    spelling of the same shell, which is how six shells became fourteen."""
+    root = _page_with(
+        tmp_path,
+        "  body { background: var(--bg-0); }\n"
+        "  .footer { margin-top: 2.5rem; color: #8b949e; }",
+    )
+    problems = cdc.check(root)
+    assert any("footer shell" in p for p in problems), problems
+
+
+def test_the_shared_block_owns_the_footer_shell():
+    """If the rule is deleted from the block, every page loses the shell with it — and
+    `sync_design_tokens.py --check` stays green, because the pages still agree with the block.
+    They just agree on nothing."""
+    source = (REPO / "docs" / "_partials" / "design-tokens.html").read_text(encoding="utf-8")
+    assert re.search(r"^\s*\.footer\s*\{", source, re.MULTILINE), (
+        "the shared token block no longer owns the footer shell")
+
+
+def test_no_page_carries_its_own_footer_shell():
+    for page in cdc.hand_written_pages(REPO):
+        for scope, selector, _body in cdc.scoped_rules(cdc.css_of(page)):
+            if scope is not None:
+                continue
+            assert not any(part.strip() in (".footer", "footer") for part in selector.split(",")), (
+                f"{page.relative_to(REPO)}: the page defines its own footer shell")
+
+
+def test_every_hand_written_page_carries_the_footer_and_the_link_row():
+    for page in cdc.hand_written_pages(REPO):
+        rel = page.relative_to(REPO).as_posix()
+        if rel in cdc.NOT_A_PAGE:
+            continue
+        text = page.read_text(encoding="utf-8")
+        assert '<footer class="footer">' in text, f"{rel}: no footer shell"
+        assert "site-links:start" in text, f"{rel}: no site-links row"
+
+
+def test_every_accent_band_allowlist_entry_says_why():
+    """An exception without a reason is a hole nobody is watching."""
+    for (rel, colour), reason in cdc.ACCENT_BAND_ALLOWLIST.items():
+        assert reason.strip(), f"{rel}: {colour} has no reason"
+        assert len(reason) > 40, f"{rel}: {colour} has a token reason, not a reason"
+
+
+def test_an_accent_band_allowlist_entry_that_matches_nothing_is_a_hole():
+    """An allowance nobody uses is a permission nobody granted: it would let the *next* colour of
+    that shape in, silently."""
+    for (rel, colour) in cdc.ACCENT_BAND_ALLOWLIST:
+        page = REPO / rel
+        used = {cdc.colour_rgb(literal) for _lineno, literal in cdc.colour_occurrences(page)}
+        assert colour in used, f"{rel}: the allowance {colour} matches nothing any more"
+
+
+def test_the_allowlist_is_keyed_on_the_colour_and_not_on_the_spelling():
+    """`#3b82f6` and `rgba(59,130,246,0.14)` are one colour, and an allowlist keyed on the string
+    would allow the hex and silently forbid the rgba. The gate has to see the badge's own
+    background as the badge."""
+    assert cdc.accent_band_allowed("docs/search/index.html", "#3b82f6")
+    assert cdc.accent_band_allowed("docs/search/index.html", "rgba(59,130,246,0.14)")
+    assert cdc.accent_band_allowed("docs/search/index.html", "#3B82F6")
+
+
+def test_a_colour_with_an_alpha_channel_is_read():
+    """`rgba(163,113,247,0.1)` used to be unparseable, and a colour the gate cannot parse is a
+    colour the gate cannot forbid — which is how sixteen old GitHub blues and four violet tints
+    survived every run."""
+    assert cdc.colour_rgb("rgba(163,113,247,0.1)") == (163, 113, 247)
+    assert cdc.colour_rgb("rgb(88,166,255)") == (88, 166, 255)
+    hue, saturation, value = cdc.colour_hsv("rgba(163,113,247,0.1)")
+    assert 250 <= hue <= 290 and saturation >= 0.45 and value >= 0.5
+
+
+def test_a_transparent_violet_is_a_violation(tmp_path):
+    """The alpha channel is not a hiding place: this is the gate that was blind to it."""
+    root = _page_with(tmp_path, "  .badge { color: rgba(163,113,247,0.14); }")
+    problems = cdc.check(root)
+    assert any("is a violet" in p for p in problems), problems
+
+
+def test_a_transparent_second_primary_is_a_violation(tmp_path):
+    """GitHub's blue at 12% was on the pages all along, and the gate reported a clean tree."""
+    root = _page_with(tmp_path, "  .link { color: rgba(88,166,255,0.12); }")
+    problems = cdc.check(root)
+    assert any("second primary colour" in p for p in problems), problems
+
+
+def test_the_old_palette_is_all_caught_at_once(tmp_path):
+    """The control for the whole batch: one page carrying the palette the batch removed — GitHub's
+    blue, its transparent twin, a violet, a transparent violet — must produce four complaints, not
+    one. A gate that reports a clean tree here would have reported a clean tree on the real site."""
+    root = _page_with(
+        tmp_path,
+        "  .a { color: #58a6ff; }"
+        "  .b { color: rgba(88,166,255,0.12); }"
+        "  .c { color: #bc8cff; }"
+        "  .d { color: rgba(163,113,247,0.14); }",
+    )
+    problems = cdc.check(root)
+    assert sum("second primary colour" in p for p in problems) == 2, problems
+    assert sum("is a violet" in p for p in problems) == 2, problems

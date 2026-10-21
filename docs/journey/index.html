@@ -30,7 +30,7 @@
  */
 :root {
   /* ── 底与面：3 档（收编 GitHub 习惯色，不再各页自定义）── */
-  --bg-0: #070b15;   /* 页面底（首页既有 --bg-deep） */
+  --bg-0: #070b15;   /* 页面底 */
   --bg-1: #0d1424;   /* 卡片 / 面 */
   --bg-2: #161b22;   /* 浮层 / 代码块 */
 
@@ -122,13 +122,39 @@
   stroke-linejoin: round;
   vector-effect: non-scaling-stroke;
 }
+
+/* ── The footer shell（Z 批）────────────────────────────────────────────────
+   The footer is the one navigation every page shares, and until batch Z it was
+   six shells wearing six spellings: `footer {}` on some pages and `.footer {}`
+   on others, a cyan-tinted top border on the homepage and a grey one on the
+   rest, four different `margin-top` values, and six pages with no footer at all
+   — which meant six pages the reader could not leave except with the back
+   button.
+
+   So the shell lives here, beside the icons, for the same reason: one source,
+   copied into every page, and `scripts/sync_design_tokens.py --check` fails when
+   a page drifts from it. A page may still add its *own* footer content (the
+   homepage's link row and wordmark), but the shell around it is not the page's
+   to decide. */
+.footer {
+  margin-top: var(--sp-7);
+  padding: var(--sp-5) 0;
+  border-top: 1px solid var(--line);
+  text-align: center;
+  color: var(--fg-2);
+  font-size: var(--fs-xs);
+  line-height: 1.8;
+}
+.footer a { color: var(--accent); text-decoration: none; }
+.footer a:hover { text-decoration: underline; }
+.site-links { margin: 0 0 var(--sp-2); }
 </style>
 <!-- design-tokens:end -->
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
     font-family: var(--font-ui);
-    background: #0d1117;
+    background: var(--bg-0);
     color: #c9d1d9;
     min-height: 100vh;
     display: flex;
@@ -139,7 +165,7 @@
   h1 {
     font-size: var(--fs-2xl);
     font-weight: 600;
-    color: #58a6ff;
+    color: var(--accent);
     margin-bottom: 0.25rem;
   }
   .subtitle {
@@ -176,7 +202,7 @@
     z-index: 0;
   }
   .step-dot:last-child::after { display: none; }
-  .step-dot.active::after { background: #58a6ff; }
+  .step-dot.active::after { background: var(--accent); }
   .step-dot.done::after { background: #3fb950; }
   .dot {
     width: 24px; height: 24px;
@@ -190,7 +216,7 @@
     z-index: 1;
     transition: all var(--t-base);
   }
-  .step-dot.active .dot { border-color: #58a6ff; background: #1f3a5f; }
+  .step-dot.active .dot { border-color: var(--accent); background: #1f3a5f; }
   .step-dot.done .dot { border-color: #3fb950; background: #1a4a2a; }
   .dot-label {
     font-size: var(--fs-3xs);
@@ -198,7 +224,7 @@
     text-align: center;
     white-space: nowrap;
   }
-  .step-dot.active .dot-label { color: #58a6ff; }
+  .step-dot.active .dot-label { color: var(--accent); }
   .step-dot.done .dot-label { color: #3fb950; }
 
   .card {
@@ -241,19 +267,19 @@
     margin-left: auto;
   }
   .card-body { font-size: var(--fs-sm); line-height: 1.6; color: #c9d1d9; }
-  .card-body .highlight { color: #58a6ff; }
+  .card-body .highlight { color: var(--accent); }
   .card-body .success { color: #3fb950; }
   .card-body .warn { color: #d29922; }
   .card-body .error { color: #f85149; }
   .card-body code {
-    background: #0d1117;
+    background: var(--bg-0);
     padding: 0.1rem 0.3rem;
     border-radius: var(--r-sm);
     font-size: var(--fs-xs);
     color: #ffa657;
   }
   .card-body pre {
-    background: #0d1117;
+    background: var(--bg-0);
     padding: 0.75rem;
     border-radius: var(--r-sm);
     border: 1px solid #21262d;
@@ -300,7 +326,7 @@
     transition: all var(--t-fast);
     margin-top: 1rem;
   }
-  .btn:hover { background: #30363d; border-color: #58a6ff; }
+  .btn:hover { background: #30363d; border-color: var(--accent); }
   .btn-primary { background: #238636; border-color: #2ea043; color: #fff; }
   .btn-primary:hover { background: #2ea043; }
 
@@ -310,7 +336,7 @@
   @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 
   .log {
-    background: #0d1117;
+    background: var(--bg-0);
     border: 1px solid #21262d;
     border-radius: var(--r-sm);
     padding: 0.75rem;
@@ -321,12 +347,12 @@
     margin-top: 1rem;
   }
   .log .line { padding: 0.1rem 0; color: #8b949e; }
-  .log .line.info { color: #58a6ff; }
+  .log .line.info { color: var(--accent); }
   .log .line.ok { color: #3fb950; }
   .log .line.err { color: #f85149; }
   .log .line.warn { color: #d29922; }
   .log .line.audit { color: #79c0ff; }
-  .log .line.scan { color: #d2a8ff; }
+  .log .line.scan { color: var(--accent-2); }
   .log .line.merge { color: #ffa657; }
 
   .ring-badge {
@@ -339,9 +365,10 @@
     font-weight: 600;
     margin-left: 0.5rem;
   }
-  .ring-1 { background: rgba(88,166,255,0.15); color: #58a6ff; border: 1px solid rgba(88,166,255,0.3); }
-  .ring-2 { background: rgba(210,168,255,0.15); color: #d2a8ff; border: 1px solid rgba(210,168,255,0.3); }
-  .ring-3 { background: rgba(63,185,80,0.15); color: #3fb950; border: 1px solid rgba(63,185,80,0.3); }
+  /* The `.ring-1/2/3` trio used to live here. Nothing on the page carries those classes — the
+     journey diagram is drawn by the step dots — so two thirds of the ramp was dead CSS, and one
+     of the three was the site's last violet. Batch Z deleted it rather than recolouring it: a
+     rule no element can reach is not a colour scheme, it is a second copy of one. */
 
   .badge {
     display: inline-block;
@@ -352,7 +379,7 @@
   }
   .badge-green { background: #1a4a2a; color: #3fb950; }
   .badge-red { background: #4a1a1a; color: #f85149; }
-  .badge-blue { background: #1f3a5f; color: #58a6ff; }
+  .badge-blue { background: #1f3a5f; color: var(--accent); }
   .badge-yellow { background: #3a2a1a; color: #d29922; }
 
   .node-graph {
@@ -370,7 +397,7 @@
     padding: 0.5rem 0.75rem;
     border: 1px solid #30363d;
     border-radius: var(--r-sm);
-    background: #0d1117;
+    background: var(--bg-0);
     font-size: var(--fs-2xs);
   }
   .node-item .num { font-size: var(--fs-3xs); color: #8b949e; }
@@ -382,13 +409,24 @@
   <h1><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg> MisakaNet Newcomer Journey</h1>
   <p class="subtitle" style="margin-bottom:0.5rem;">Understand → Search → Use → Feedback → Optional Contribution</p>
   <div style="text-align:center;margin-bottom:0.75rem;">
-    <span style="display:inline-block;padding:0.2rem 0.8rem;border:1px solid #30363d;border-radius:var(--r-md);font-size:var(--fs-3xs);color:#8b949e;background:#0d1117;">No GitHub account needed. No PR required.</span>
+    <span style="display:inline-block;padding:0.2rem 0.8rem;border:1px solid #30363d;border-radius:var(--r-md);font-size:var(--fs-3xs);color:#8b949e;background:var(--bg-0);">No GitHub account needed. No PR required.</span>
   </div>
 
   <div class="progress-bar" id="progressBar"></div>
   <div id="cardArea" class="card fade-in"></div>
   <div id="logArea" class="log hidden"></div>
   <div class="controls" id="controls"></div>
+
+  <footer class="footer">
+<!-- site-links:start -->
+<nav class="site-links" aria-label="Site links">
+  <a href="/">Home</a> ·
+  <a href="/search/">Search lessons</a> ·
+  <a href="/install/">Install</a> ·
+  <a href="/start">Start</a>
+</nav>
+<!-- site-links:end -->
+  </footer>
 </div>
 
 <script>
@@ -470,10 +508,10 @@ function renderUnderstand(card) {
     </div>
     <div class="card-body">
       <p>MisakaNet is a <span class="highlight">shared failure-memory layer</span> for developers and agents.</p>
-      <div style="background:#0d1117;border:1px solid #30363d;border-radius:var(--r-sm);padding:1rem;margin:0.75rem 0;">
+      <div style="background:var(--bg-0);border:1px solid #30363d;border-radius:var(--r-sm);padding:1rem;margin:0.75rem 0;">
         <div style="display:flex;gap:1rem;flex-wrap:wrap;">
           <div style="flex:1;min-width:200px;">
-            <div style="font-weight:600;color:#58a6ff;margin-bottom:0.5rem;"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg> Lesson</div>
+            <div style="font-weight:600;color:var(--accent);margin-bottom:0.5rem;"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg> Lesson</div>
             <div style="color:#8b949e;font-size:var(--fs-sm);">
               Failure experience / debugging knowledge<br>
               <span style="color:#3fb950;">Helps agents avoid repeating known failures</span>
@@ -517,12 +555,12 @@ function renderSearch(card) {
 
 <span class="out">  [contrib] github-api-rate-limit-handling     0.71   🟢 high/actionable</span>
 <span class="out">            Fix: use conditional requests with ETag headers.</span></pre>
-      <p style="color:#8b949e;font-size:var(--fs-xs);margin:0.5rem 0;">Or locally: <code>python3 search_knowledge.py "GitHub token 401"</code> · Or on the web: <a href="https://misakanet.org/search/?q=GitHub%20token%20401" style="color:#58a6ff;">misakanet.org/search</a></p>
+      <p style="color:#8b949e;font-size:var(--fs-xs);margin:0.5rem 0;">Or locally: <code>python3 search_knowledge.py "GitHub token 401"</code> · Or on the web: <a href="https://misakanet.org/search/?q=GitHub%20token%20401" style="color:var(--accent);">misakanet.org/search</a></p>
       <div style="margin-top:0.75rem;display:flex;gap:0.5rem;flex-wrap:wrap;">
-        <a href="https://misakanet.org/search/?q=GitHub%20token%20401" target="_blank" style="display:inline-flex;align-items:center;gap:0.3rem;padding:0.4rem 0.8rem;border:1px solid #238636;border-radius:var(--r-sm);color:#3fb950;text-decoration:none;font-size:var(--fs-sm);background:#0d1117;">
+        <a href="https://misakanet.org/search/?q=GitHub%20token%20401" target="_blank" style="display:inline-flex;align-items:center;gap:0.3rem;padding:0.4rem 0.8rem;border:1px solid #238636;border-radius:var(--r-sm);color:#3fb950;text-decoration:none;font-size:var(--fs-sm);background:var(--bg-0);">
           <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg> Open Search Page →
         </a>
-        <a href="http-mcp/" style="display:inline-flex;align-items:center;gap:0.3rem;padding:0.4rem 0.8rem;border:1px solid #30363d;border-radius:var(--r-sm);color:#c9d1d9;text-decoration:none;font-size:var(--fs-sm);background:#0d1117;">
+        <a href="http-mcp/" style="display:inline-flex;align-items:center;gap:0.3rem;padding:0.4rem 0.8rem;border:1px solid #30363d;border-radius:var(--r-sm);color:#c9d1d9;text-decoration:none;font-size:var(--fs-sm);background:var(--bg-0);">
           <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22v-5"/><path d="M9 8V2"/><path d="M15 8V2"/><path d="M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8Z"/></svg> HTTP MCP Journey →
         </a>
       </div>
@@ -542,8 +580,8 @@ function renderUse(card) {
     </div>
     <div class="card-body">
       <p>You found a matching lesson. Read it and apply the fix:</p>
-      <div style="background:#0d1117;border:1px solid #30363d;border-radius:var(--r-sm);padding:1rem;margin:0.75rem 0;">
-        <div style="font-weight:600;color:#58a6ff;">github-401-credential-lookup</div>
+      <div style="background:var(--bg-0);border:1px solid #30363d;border-radius:var(--r-sm);padding:1rem;margin:0.75rem 0;">
+        <div style="font-weight:600;color:var(--accent);">github-401-credential-lookup</div>
         <div style="color:#8b949e;font-size:var(--fs-sm);margin-top:0.5rem;">
           <strong>Problem:</strong> GitHub API returns 401 Bad credentials<br>
           <strong>Root cause:</strong> Agent asks for new PAT instead of checking local credentials<br>
@@ -577,15 +615,15 @@ function renderFeedback(card) {
 <span class="out">✓ issue created: [Intake] ... (needs-ac)</span></pre>
       <p style="color:#8b949e;font-size:var(--fs-xs);margin:0.5rem 0;">Anonymous clients do not need <code>initialize</code> or a Bearer token. Server redacts secrets and guards against spam/duplicates.</p>
       <div style="display:flex;gap:0.75rem;flex-wrap:wrap;margin:0.75rem 0;">
-        <a href="mailto:bot@misakanet.org" style="flex:1;min-width:150px;display:flex;flex-direction:column;gap:0.3rem;padding:0.75rem;border:1px solid #30363d;border-radius:var(--r-sm);color:#c9d1d9;text-decoration:none;background:#0d1117;">
+        <a href="mailto:bot@misakanet.org" style="flex:1;min-width:150px;display:flex;flex-direction:column;gap:0.3rem;padding:0.75rem;border:1px solid #30363d;border-radius:var(--r-sm);color:#c9d1d9;text-decoration:none;background:var(--bg-0);">
           <span style="font-weight:600;"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg> Email</span>
           <span style="color:#8b949e;font-size:var(--fs-2xs);">bot@misakanet.org</span>
         </a>
-        <a href="https://github.com/Ikalus1988/MisakaNet/issues/510" target="_blank" style="flex:1;min-width:150px;display:flex;flex-direction:column;gap:0.3rem;padding:0.75rem;border:1px solid #30363d;border-radius:var(--r-sm);color:#c9d1d9;text-decoration:none;background:#0d1117;">
+        <a href="https://github.com/Ikalus1988/MisakaNet/issues/510" target="_blank" style="flex:1;min-width:150px;display:flex;flex-direction:column;gap:0.3rem;padding:0.75rem;border:1px solid #30363d;border-radius:var(--r-sm);color:#c9d1d9;text-decoration:none;background:var(--bg-0);">
           <span style="font-weight:600;"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 16v-2.38C4 11.5 2.97 10.5 3 8c.03-2.72 1.49-6 4.5-6C9.37 2 10 3.8 10 5.5c0 3.11-2 5.66-2 8.68V16a2 2 0 1 1-4 0Z"/><path d="M20 20v-2.38c0-2.12 1.03-3.12 1-5.62-.03-2.72-1.49-6-4.5-6C14.63 6 14 7.8 14 9.5c0 3.11 2 5.66 2 8.68V20a2 2 0 1 0 4 0Z"/><path d="M16 17h4"/><path d="M4 13h4"/></svg> Journey Report</span>
           <span style="color:#8b949e;font-size:var(--fs-2xs);">#510</span>
         </a>
-        <a href="http-mcp/" style="flex:1;min-width:150px;display:flex;flex-direction:column;gap:0.3rem;padding:0.75rem;border:1px solid #238636;border-radius:var(--r-sm);color:#3fb950;text-decoration:none;background:#0d1117;">
+        <a href="http-mcp/" style="flex:1;min-width:150px;display:flex;flex-direction:column;gap:0.3rem;padding:0.75rem;border:1px solid #238636;border-radius:var(--r-sm);color:#3fb950;text-decoration:none;background:var(--bg-0);">
           <span style="font-weight:600;"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22v-5"/><path d="M9 8V2"/><path d="M15 8V2"/><path d="M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8Z"/></svg> HTTP MCP Journey</span>
           <span style="color:#8b949e;font-size:var(--fs-2xs);">Full search/read/intake guide</span>
         </a>
@@ -608,27 +646,27 @@ function renderContribute(card) {
     </div>
     <div class="card-body">
       <p>PR is optional. There are many ways to contribute:</p>
-      <div style="background:#0d1117;border:1px solid #30363d;border-radius:var(--r-sm);padding:1rem;margin:0.75rem 0;">
+      <div style="background:var(--bg-0);border:1px solid #30363d;border-radius:var(--r-sm);padding:1rem;margin:0.75rem 0;">
         <div style="display:flex;flex-direction:column;gap:0.5rem;">
           <div><span style="color:#3fb950;">✓</span> Report friction via email</div>
           <div><span style="color:#3fb950;">✓</span> Write a journey report</div>
           <div><span style="color:#3fb950;">✓</span> Share a debugging story</div>
           <div><span style="color:#3fb950;">✓</span> Submit a lesson candidate via HTTP MCP intake</div>
           <div><span style="color:#3fb950;">✓</span> Fix a typo in docs</div>
-          <div><span style="color:#58a6ff;">○</span> Open a PR (only if you want to maintain a diff)</div>
+          <div><span style="color:var(--accent);">○</span> Open a PR (only if you want to maintain a diff)</div>
         </div>
       </div>
       <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.75rem;">
-        <a href="http-mcp/" style="display:inline-flex;align-items:center;gap:0.3rem;padding:0.4rem 0.8rem;border:1px solid #30363d;border-radius:var(--r-sm);color:#c9d1d9;text-decoration:none;font-size:var(--fs-sm);background:#0d1117;">
+        <a href="http-mcp/" style="display:inline-flex;align-items:center;gap:0.3rem;padding:0.4rem 0.8rem;border:1px solid #30363d;border-radius:var(--r-sm);color:#c9d1d9;text-decoration:none;font-size:var(--fs-sm);background:var(--bg-0);">
           <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22v-5"/><path d="M9 8V2"/><path d="M15 8V2"/><path d="M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8Z"/></svg> HTTP MCP Journey
         </a>
-        <a href="https://github.com/Ikalus1988/MisakaNet/labels/good%20first%20issue" target="_blank" style="display:inline-flex;align-items:center;gap:0.3rem;padding:0.4rem 0.8rem;border:1px solid #30363d;border-radius:var(--r-sm);color:#c9d1d9;text-decoration:none;font-size:var(--fs-sm);background:#0d1117;">
+        <a href="https://github.com/Ikalus1988/MisakaNet/labels/good%20first%20issue" target="_blank" style="display:inline-flex;align-items:center;gap:0.3rem;padding:0.4rem 0.8rem;border:1px solid #30363d;border-radius:var(--r-sm);color:#c9d1d9;text-decoration:none;font-size:var(--fs-sm);background:var(--bg-0);">
           <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/></svg> Good First Issues
         </a>
-        <a href="https://github.com/Ikalus1988/MisakaNet/labels/bounty" target="_blank" style="display:inline-flex;align-items:center;gap:0.3rem;padding:0.4rem 0.8rem;border:1px solid #30363d;border-radius:var(--r-sm);color:#c9d1d9;text-decoration:none;font-size:var(--fs-sm);background:#0d1117;">
+        <a href="https://github.com/Ikalus1988/MisakaNet/labels/bounty" target="_blank" style="display:inline-flex;align-items:center;gap:0.3rem;padding:0.4rem 0.8rem;border:1px solid #30363d;border-radius:var(--r-sm);color:#c9d1d9;text-decoration:none;font-size:var(--fs-sm);background:var(--bg-0);">
           <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M18.09 10.37A6 6 0 1 1 10.34 18"/><path d="M7 6h1v4"/><path d="m16.71 13.88.7.71-2.82 2.82"/></svg> Bounties
         </a>
-        <a href="../label-system.md" style="display:inline-flex;align-items:center;gap:0.3rem;padding:0.4rem 0.8rem;border:1px solid #30363d;border-radius:var(--r-sm);color:#c9d1d9;text-decoration:none;font-size:var(--fs-sm);background:#0d1117;">
+        <a href="../label-system.md" style="display:inline-flex;align-items:center;gap:0.3rem;padding:0.4rem 0.8rem;border:1px solid #30363d;border-radius:var(--r-sm);color:#c9d1d9;text-decoration:none;font-size:var(--fs-sm);background:var(--bg-0);">
           <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg> Label System
         </a>
       </div>

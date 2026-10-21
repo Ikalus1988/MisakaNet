@@ -30,7 +30,7 @@
  */
 :root {
   /* ── 底与面：3 档（收编 GitHub 习惯色，不再各页自定义）── */
-  --bg-0: #070b15;   /* 页面底（首页既有 --bg-deep） */
+  --bg-0: #070b15;   /* 页面底 */
   --bg-1: #0d1424;   /* 卡片 / 面 */
   --bg-2: #161b22;   /* 浮层 / 代码块 */
 
@@ -122,15 +122,41 @@
   stroke-linejoin: round;
   vector-effect: non-scaling-stroke;
 }
+
+/* ── The footer shell（Z 批）────────────────────────────────────────────────
+   The footer is the one navigation every page shares, and until batch Z it was
+   six shells wearing six spellings: `footer {}` on some pages and `.footer {}`
+   on others, a cyan-tinted top border on the homepage and a grey one on the
+   rest, four different `margin-top` values, and six pages with no footer at all
+   — which meant six pages the reader could not leave except with the back
+   button.
+
+   So the shell lives here, beside the icons, for the same reason: one source,
+   copied into every page, and `scripts/sync_design_tokens.py --check` fails when
+   a page drifts from it. A page may still add its *own* footer content (the
+   homepage's link row and wordmark), but the shell around it is not the page's
+   to decide. */
+.footer {
+  margin-top: var(--sp-7);
+  padding: var(--sp-5) 0;
+  border-top: 1px solid var(--line);
+  text-align: center;
+  color: var(--fg-2);
+  font-size: var(--fs-xs);
+  line-height: 1.8;
+}
+.footer a { color: var(--accent); text-decoration: none; }
+.footer a:hover { text-decoration: underline; }
+.site-links { margin: 0 0 var(--sp-2); }
 </style>
 <!-- design-tokens:end -->
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: var(--font-ui); background: #0d1117; color: #c9d1d9; min-height: 100vh; padding: 2rem 1rem; }
+  body { font-family: var(--font-ui); background: var(--bg-0); color: #c9d1d9; min-height: 100vh; padding: 2rem 1rem; }
   .container { max-width: 960px; margin: 0 auto; }
-  h1 { color: #58a6ff; font-size: var(--fs-3xl); margin-bottom: 0.35rem; }
+  h1 { color: var(--accent); font-size: var(--fs-3xl); margin-bottom: 0.35rem; }
   h2 { color: var(--warn); font-size: var(--fs-md); margin-bottom: 0.55rem; display: flex; gap: 0.45rem; align-items: center; }
-  h3 { color: #58a6ff; font-size: var(--fs-md); margin: 0.75rem 0 0.35rem; }
+  h3 { color: var(--accent); font-size: var(--fs-md); margin: 0.75rem 0 0.35rem; }
   .subtitle { color: #8b949e; margin-bottom: 1.4rem; line-height: 1.6; }
   .hero, .card { background: var(--bg-2); border: 1px solid #30363d; border-radius: var(--r-md); padding: 1.1rem; }
   .hero { margin-bottom: 1rem; }
@@ -139,18 +165,17 @@
   .tag { display: inline-block; font-size: var(--fs-2xs); color: #8b949e; border: 1px solid #30363d; border-radius: var(--r-pill); padding: 0.12rem 0.5rem; margin-left: auto; white-space: nowrap; }
   p, li { font-size: var(--fs-sm); line-height: 1.6; color: #c9d1d9; }
   ul, ol { padding-left: 1.1rem; margin: 0.5rem 0; }
-  code { background: #0d1117; color: #ffa657; padding: 0.1rem 0.28rem; border-radius: var(--r-sm); font-size: var(--fs-xs); }
-  pre { background: #0d1117; border: 1px solid #30363d; border-radius: var(--r-md); padding: 0.85rem; overflow-x: auto; font-size: var(--fs-2xs); line-height: 1.5; margin: 0.75rem 0; white-space: pre-wrap; }
+  code { background: var(--bg-0); color: #ffa657; padding: 0.1rem 0.28rem; border-radius: var(--r-sm); font-size: var(--fs-xs); }
+  pre { background: var(--bg-0); border: 1px solid #30363d; border-radius: var(--r-md); padding: 0.85rem; overflow-x: auto; font-size: var(--fs-2xs); line-height: 1.5; margin: 0.75rem 0; white-space: pre-wrap; }
   .ok { color: #3fb950; } .warn { color: #d29922; } .muted { color: #8b949e; }
   .table { width: 100%; border-collapse: collapse; margin: 0.75rem 0; font-size: var(--fs-sm); }
   .table th, .table td { border: 1px solid #30363d; padding: 0.55rem; text-align: left; vertical-align: top; }
-  .table th { color: #58a6ff; background: #111820; }
-  a { color: #58a6ff; text-decoration: none; } a:hover { text-decoration: underline; }
+  .table th { color: var(--accent); background: #111820; }
+  a { color: var(--accent); text-decoration: none; } a:hover { text-decoration: underline; }
   .steps { margin-top: 0.6rem; padding-left: 0; list-style: none; }
   .steps li { border-left: 2px solid #30363d; padding: 0 0 0.55rem 0.75rem; margin-left: 0.25rem; }
   .steps li:last-child { padding-bottom: 0; }
   .badge { color: #3fb950; font-weight: 600; }
-  .footer { margin-top: 1.5rem; color: #8b949e; font-size: var(--fs-sm); }
 </style>
 </head>
 <body>
@@ -298,11 +323,19 @@ console.log(await res.json());</pre>
     </ul>
   </div>
 
-  <div class="footer">
+  <footer class="footer">
+<!-- site-links:start -->
+<nav class="site-links" aria-label="Site links">
+  <a href="/">Home</a> ·
+  <a href="/search/">Search lessons</a> ·
+  <a href="/install/">Install</a> ·
+  <a href="/start">Start</a>
+</nav>
+<!-- site-links:end -->
     <a href="https://github.com/Ikalus1988/MisakaNet/blob/main/docs/integrations/mcp-remote.md">Remote MCP docs</a> ·
     <a href="https://github.com/Ikalus1988/MisakaNet#try-in-30-seconds">README quickstart</a> ·
     <a href="../">Newcomer Journey</a>
-  </div>
+  </footer>
 </div>
 </body>
 </html>

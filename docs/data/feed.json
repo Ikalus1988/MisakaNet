@@ -1,9 +1,16 @@
 {
-  "generated_at": "2026-10-20T23:58:00.085085+00:00",
+  "generated_at": "2026-10-21T05:00:51.554255+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3600",
+      "timestamp": "2026-10-21T00:08:29Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "docs(handoff): record which PR carried each batch of #3541",
@@ -30,13 +37,6 @@
       "title": "feat(site): the halos, the colour bars and the purple (#3541, batch X)",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/3593",
       "timestamp": "2026-10-20T18:35:52Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "docs(worker): the CDN serves a cached entry to a request that carries credentials",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3594",
-      "timestamp": "2026-10-20T18:24:27Z",
       "source": "github"
     },
     {
