@@ -144,6 +144,52 @@ def selectable_pages(docs_root: Path) -> list[Path]:
     return sorted(docs_root.rglob("*.html"))
 
 
+def generated_representatives(docs_root: Path) -> list[Path]:
+    """One page per **generator template** — the unit of change in the generated tree.
+
+    All 516 lesson pages come from one template (`HTML_TEMPLATE`), all 54 topic pages from
+    another (`TOPIC_TEMPLATE`), and the topic index from a third (`TOPICS_INDEX_TEMPLATE`). A
+    structural change to a template therefore lands on every page that template produces, so one
+    page per template is the whole tree's worth of coverage for a *rendering* comparison.
+
+    This set is what makes the generated tree visible to the tool at all: the default capture set
+    used to be the 14 hand-written pages, so a change to `scripts/build_lesson_pages.py` could not
+    be compared with it — the pages it writes were not in the set, and the 571 pages that the
+    design gate now reads (§122.6 item 2) had no rendering check behind them at all.
+
+    Capturing all 571 would be tens of minutes and hundreds of megabytes, so the default set stays
+    small: the hand-written pages plus these three representatives.
+    """
+    if docs_root.name != "docs":
+        return []
+    try:
+        from site_page_scope import generated_pages as _generated
+    except Exception:  # pragma: no cover - the shared partition is the only rule
+        return []
+
+    pages = _generated(docs_root.parent)
+    rel = lambda p: p.relative_to(docs_root).parts  # noqa: E731
+    lessons = sorted(p for p in pages if "lessons" in rel(p))
+    topics = sorted(p for p in pages if "topics" in rel(p))
+    index = docs_root / "topics" / "index.html"
+
+    representatives: list[Path] = []
+    if lessons:
+        representatives.append(lessons[0])
+    topic_pages = [p for p in topics if p != index]
+    if topic_pages:
+        representatives.append(topic_pages[0])
+    if index.exists():
+        representatives.append(index)
+    return representatives
+
+
+def default_pages(docs_root: Path) -> list[Path]:
+    """The pages a capture takes when nobody names any: the hand-written ones and the
+    generated tree's per-template representatives."""
+    return hand_written_pages(docs_root) + generated_representatives(docs_root)
+
+
 def page_id(rel: Path) -> str:
     """A filesystem-safe name for a page, used in the PNG file names."""
     stem = rel.with_suffix("").as_posix()
@@ -448,7 +494,7 @@ def capture(
     _no_proxy_env()
     docs_root = docs_root.resolve()
     out_dir.mkdir(parents=True, exist_ok=True)
-    pages = selectable_pages(docs_root) if only else hand_written_pages(docs_root)
+    pages = selectable_pages(docs_root) if only else default_pages(docs_root)
     if only:
         wanted = set(only)
         pages = [p for p in pages if page_id(p.relative_to(docs_root)) in wanted]
