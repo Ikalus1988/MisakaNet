@@ -26,6 +26,7 @@ inline `style="…"` attributes, because both carry the values the browser sees.
 from __future__ import annotations
 
 import argparse
+import colorsys
 import re
 import sys
 from pathlib import Path
@@ -89,6 +90,72 @@ PURPLE = "#a855f7"
 # lies, and the lie is what made this row look finished before it was. Batch Z is where the
 # cross-page colour converges; until then the number is shown, not enforced.
 PURPLE_FAMILY = ("#a855f7", "#a371f7", "#7c3aed", "#8b5cf6", "#9d5cff", "#c084fc", "#d8b4fe")
+
+# ── what batch Z owns: the cross-page colour ────────────────────────────────────────────────────
+# The site had two accents and two products at once: GitHub's blue (#58a6ff, hue 208°) and every
+# violet it shipped with (hue 262°–269°) sat *between* the vocabulary's own two accents — cyan
+# `--accent` at 186° and magenta `--accent-2` at 300°. So one band holds the colours that made
+# the site read as two products, and both of the vocabulary's accents sit outside it.
+#
+# The band is hue *and* saturation *and* value, and all three are needed. The pages are full of
+# near-greys with a blue hue (#8b949e, #c9d1d9, #30363d) and of dark saturated surfaces (#0f172a,
+# #1f3a5f) that are navy rather than blue; a hue-only test sweeps both in and reports a site that
+# is nothing like the one in the browser. A colour is in the band when it is bright, saturated
+# and blue-to-violet.
+#
+# Classifying by hue rather than by a list of hexes is the point: the previous list of seven
+# purples missed #bc8cff and #d2a8ff, and the report said "0 处" while three violets were still
+# on the site. A list of hexes is only as good as the day it was written.
+ACCENT_BAND = (195.0, 290.0)
+ACCENT_BAND_MIN_SATURATION = 0.45
+ACCENT_BAND_MIN_VALUE = 0.50
+# The violet inside it. Criterion 12b allows no exception at all: the site has one accent and
+# one secondary accent, and a violet is neither.
+VIOLET_BAND = (250.0, 290.0)
+# The violet band has its own floor, and it is lower than the accent band's 0.45. A light
+# lavender is still a violet — `#d2a8ff` sits at 0.34 and was on two pages — but a grey with a
+# violet hue is not. Measured over every page on the site, 0.30 is where the greys stop and the
+# violets begin: nothing in the 588 hand-written and generated pages is in the violet band at
+# 0.30 or above.
+VIOLET_BAND_MIN_SATURATION = 0.30
+
+# The colours left inside the band, each with the reason it is not the page's primary colour.
+# A rule nobody can see is a rule nobody can follow, so the reason is data, not a comment.
+#
+# The key is the colour, not the spelling: `#3b82f6` and `rgba(59,130,246,0.14)` are the same
+# colour, and an allowlist keyed on the string would allow the hex and silently forbid the
+# rgba — which is how the E3 badge's own background got flagged the moment the gate learned to
+# read an alpha channel. A colour's identity is its three channels; its alpha is not who it is.
+ACCENT_BAND_ALLOWLIST = {
+    ("docs/search/index.html", (59, 130, 246)): (
+        "the E3 evidence badge: `docs/evidence-badges.md` fixes E3 to blue and "
+        "`docs/assets/badges/evidence-e3.svg` is painted blue, so the chip and the badge have "
+        "to agree — and the vocabulary has no blue on purpose"),
+    ("docs/journey/index.html", (121, 192, 255)): (
+        "the terminal mock's audit line: the journey page simulates the tool's own output and "
+        "draws seven line types, and this is the one that needs a fourth hue — the same reason "
+        "the mock's clipboard mark is allowed to stay an emoji"),
+    ("docs/search/index.html", (56, 189, 248)): (
+        "the `setup` badge in the result ramp: fatal / runtime / setup / high / medium / low is a "
+        "category scale of its own, and its six colours are the scale's, not the page's accent"),
+    ("docs/index.html", (127, 109, 255)): (
+        "the homepage's ambient glow: #3541 calls the cyber signature an asset rather than a "
+        "problem, and the owner froze the hero's glow when the hero was re-stacked. Measured on "
+        "the rendered page this is a dark navy haze — the most violet pixel in the whole hero "
+        "is rgb(16,18,40) — not a second primary"),
+    ("docs/index.html", (126, 162, 255)): (
+        "the same homepage glow layer, one radial in: the hero paints three overlapping radials "
+        "and this is the wide, faint one that only tints the top of the panel"),
+}
+
+# The pages that are not pages. The drawer widget is a snippet a page embeds, not a page of the
+# site: it is `position: fixed`, it renders inside somebody else's layout, and a footer in it
+# would be a footer in the middle of another page. Its background is the host page's too.
+NOT_A_PAGE = {
+    "docs/search/danmaku-widget.html": (
+        "an embeddable widget, not a page: it is fixed-position and is included into other "
+        "pages' layouts, so it has no footer of its own and its background is the host page's"),
+}
 
 # A pictograph, not a symbol: the box-drawing characters the comments use, the arrows, the
 # keyboard glyphs and the text dingbats are typography, and counting them would make the number
@@ -287,6 +354,105 @@ def inline_style_blocks(page: Path) -> list[str]:
     return [m.group(1) for m in INLINE_STYLE.finditer(text)]
 
 
+# ── reading a colour ────────────────────────────────────────────────────────────────────────────
+def colour_rgb(literal: str) -> tuple[int, int, int] | None:
+    """(red, green, blue) for a CSS colour literal, or None when it is not one this gate reads.
+
+    The alpha is optional and the four-argument form is the one that hides. A `fullmatch` on the
+    three-argument prefix makes `rgba(163,113,247,0.1)` unparseable, and a colour the gate cannot
+    parse is a colour the gate cannot forbid — which is not hypothetical: it is how the old GitHub
+    blue `rgba(88,166,255,·)` and the violets `rgba(163,113,247,·)` survived every run of
+    criterion 1 and criterion 12b. Every `rgba(·,·,·,·)` on the site was invisible to the gate.
+    """
+    text = literal.strip().lower()
+    if text.startswith("#"):
+        digits = text[1:]
+        if len(digits) == 3:
+            digits = "".join(c * 2 for c in digits)
+        if len(digits) != 6:
+            return None
+        try:
+            return tuple(int(digits[i:i + 2], 16) for i in (0, 2, 4))
+        except ValueError:
+            return None
+    match = re.fullmatch(r"rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*[\d.]+\s*)?\)", text)
+    if not match:
+        return None
+    red, green, blue = (int(g) for g in match.groups())
+    if max(red, green, blue) > 255:
+        return None
+    return red, green, blue
+
+
+def colour_hsv(literal: str) -> tuple[float, float, float] | None:
+    """(hue° 0–360, saturation 0–1, value 0–1) for a CSS colour literal, or None.
+
+    `colorsys` is the standard library's own hue maths, so the classification does not depend on
+    a colour library that would have to be installed for a gate to run.
+    """
+    rgb = colour_rgb(literal)
+    if rgb is None:
+        return None
+    hue, saturation, value = colorsys.rgb_to_hsv(*(channel / 255 for channel in rgb))
+    return hue * 360, saturation, value
+
+
+def accent_band_allowed(rel: str, literal: str) -> bool:
+    """Whether this page's use of this colour is one of the written-down exceptions.
+
+    The exception is a colour, not a spelling: `#3b82f6` and `rgba(59,130,246,0.14)` are one
+    colour and one exception.
+    """
+    rgb = colour_rgb(literal)
+    if rgb is None:
+        return False
+    return (rel, rgb) in ACCENT_BAND_ALLOWLIST
+
+
+COLOUR_LITERAL = re.compile(
+    r"#[0-9a-fA-F]{6}\b|#[0-9a-fA-F]{3}\b|rgba?\(\s*\d+\s*,\s*\d+\s*,\s*\d+[^)]*\)")
+
+
+def colour_occurrences(page: Path) -> list[tuple[int, str]]:
+    """Every literal colour on the page, as (line number, the literal).
+
+    The whole page text, not just its stylesheets: a colour a script writes into a badge is
+    still a colour the reader sees, and that is how the homepage's per-domain palette kept a
+    violet through a stylesheet-only check. Comments are stripped — a hex in a comment is a note
+    about a colour, not a colour on the screen.
+    """
+    text = page.read_text(encoding="utf-8", errors="replace")
+    text = TOKEN_BLOCK.sub("", text)
+    text = COMMENT.sub("", text)
+    text = JS_LINE_COMMENT.sub("", text)
+    out = []
+    for lineno, line in enumerate(text.splitlines(), start=1):
+        for match in COLOUR_LITERAL.finditer(line):
+            literal = match.group(0)
+            if colour_hsv(literal) is not None:
+                out.append((lineno, literal))
+    return out
+
+
+def page_background(page: Path) -> str | None:
+    """The page's own background, as the CSS spells it.
+
+    The *base* colour is the last layer of the `background` shorthand, so a page that paints a
+    glow over it (`radial-gradient(…), var(--bg-0)`) is still a `--bg-0` page — while a page
+    that ends on a literal is not, however innocent the literal looks.
+    """
+    for scope, selector, body in scoped_rules(css_of(page)):
+        if scope is not None:
+            continue
+        if not any(part.strip() == "body" for part in selector.split(",")):
+            continue
+        for prop in ("background", "background-color"):
+            values = declarations_in(body, prop)
+            if values:
+                return values[0]
+    return None
+
+
 TOKEN_REF = r"var\(--[a-z0-9-]+\)"
 DURATION = re.compile(r"\d*\.?\d+s")
 RADIUS_REF = r"var\(--r-(?:sm|md|lg|pill)\)"
@@ -412,8 +578,75 @@ def check(root: Path = REPO) -> list[str]:
                         problems.append(f"{rel}: zero-offset glow in an inline style — {value}")
 
         # The purple: the one accent the vocabulary does not own.
-        if re.search(rf"{re.escape(PURPLE)}\b", css, re.IGNORECASE):
-            problems.append(f"{rel}: the purple {PURPLE} is back — it is not a token")
+        #
+        # ── batch Z: the cross-page colour ───────────────────────────────────────────────────
+        # 12 — the colour #3541 names, anywhere on the page (a script writes one of them into a
+        # badge, and a stylesheet-only check would not see it).
+        # 12b — every *other* violet, found by hue rather than by a list of hexes: the previous
+        # list of seven missed #bc8cff and #d2a8ff and the report said "0 处" while three violets
+        # were still on the site.
+        # 1 — the rest of the accent band: GitHub's blue was the second product's own primary,
+        # and the site's two accents are the vocabulary's cyan and magenta, which sit just
+        # outside the band.
+        for lineno, literal in colour_occurrences(page):
+            hsv = colour_hsv(literal)
+            if hsv is None:
+                continue
+            hue, saturation, value = hsv
+            if literal.lower() == PURPLE:
+                problems.append(f"{rel}:{lineno}: the purple {PURPLE} is back — it is not a token")
+                continue
+            # The violet band has its own saturation floor, and it is lower than the accent band's.
+            # A light lavender is still a violet — `#d2a8ff` sits at 0.34 and was on two pages — but
+            # a grey with a violet hue is not, and the accent band's 0.45 would have let the
+            # lavender through. The floor is set where the greys stop and the violets begin.
+            if VIOLET_BAND[0] <= hue <= VIOLET_BAND[1] and saturation >= VIOLET_BAND_MIN_SATURATION:
+                problems.append(
+                    f"{rel}:{lineno}: {literal} is a violet — the site has one accent and one "
+                    "secondary accent, and a violet is neither")
+                continue
+            if saturation < ACCENT_BAND_MIN_SATURATION or value < ACCENT_BAND_MIN_VALUE:
+                continue
+            if not ACCENT_BAND[0] <= hue <= ACCENT_BAND[1]:
+                continue
+            if accent_band_allowed(rel, literal):
+                continue
+            problems.append(
+                f"{rel}:{lineno}: {literal} is a second primary colour — the site's accents are "
+                "`--accent` and `--accent-2`, and a colour inside the band is a primary")
+
+        # 11 — one page background. The base colour is the last layer of the shorthand, so a
+        # page that paints a glow over `--bg-0` passes and a page that ends on a literal does not.
+        background = page_background(page)
+        if rel not in NOT_A_PAGE:
+            if background is None:
+                problems.append(
+                    f"{rel}: no page background — the base is the vocabulary's `--bg-0`")
+            elif not background.strip().endswith("var(--bg-0)"):
+                problems.append(
+                    f"{rel}: the page background is {background} — the base is the vocabulary's "
+                    "`--bg-0`")
+
+        # 15 — one footer shell. The shell lives in the shared token block, so a page may add its
+        # own footer *content* but not its own footer *rule*, and a page that has no footer at
+        # all is a page the reader cannot leave.
+        if rel not in NOT_A_PAGE:
+            text = page.read_text(encoding="utf-8", errors="replace")
+            if '<footer class="footer">' not in text:
+                problems.append(
+                    f"{rel}: no footer — the footer is the only navigation every page shares")
+            elif "site-links:start" not in text:
+                problems.append(
+                    f"{rel}: the footer carries no site-links row — run "
+                    "`python3 scripts/sync_site_partials.py`")
+            for scope, selector, body in scoped_rules(css):
+                if scope is not None:
+                    continue
+                if any(part.strip() in (".footer", "footer") for part in selector.split(",")):
+                    problems.append(
+                        f"{rel}: the page defines its own footer shell — the shared token block "
+                        "owns it, so all fourteen pages are the same shell")
+                    break
 
     # 13 — the icons are SVG, not emoji. The exceptions are content, and each is written down in
     # EMOJI_ALLOWLIST with the reason it is not an icon.
@@ -426,6 +659,17 @@ def check(root: Path = REPO) -> list[str]:
             problems.append(
                 f"{rel}:{lineno}: {char} is a pictograph, not an icon — the site's icons are Lucide "
                 "SVG (scripts/site_icons.py)")
+
+    # 16 — the shared block owns the footer shell. If the rule is deleted from the block, every
+    # page silently loses the shell with it, and `sync_design_tokens.py --check` stays green
+    # because the pages still agree with the block — they just agree on nothing.
+    tokens_path = root / TOKENS
+    tokens_text = (tokens_path.read_text(encoding="utf-8", errors="replace")
+                   if tokens_path.exists() else "")
+    if not re.search(r"^\s*\.footer\s*\{", tokens_text, re.MULTILINE):
+        problems.append(
+            f"{TOKENS.as_posix()}: the footer shell is gone — the shared block owns it, so all "
+            "fourteen pages are the same shell")
 
     # 14 — every inline icon is one of ours. A hand-drawn path is a path nobody can review.
     for asset in site_assets(root):
@@ -560,6 +804,11 @@ def unknown_icons(text: str) -> list[str]:
     return [body for body in icon_bodies(text) if body not in known]
 
 
+def _tokens_text(root: Path) -> str:
+    path = root / TOKENS
+    return path.read_text(encoding="utf-8", errors="replace") if path.exists() else ""
+
+
 def report(root: Path = REPO) -> list[tuple[str, str, str, bool]]:
     """The acceptance table from #3541, with the current number for each row.
 
@@ -593,19 +842,42 @@ def report(root: Path = REPO) -> list[tuple[str, str, str, bool]]:
     side_bars = 0
     purples = 0
     other_purples = 0
+    accent_band = 0
     emoji_icons = emoji_content = 0
+    backgrounds = 0
+    footers = 0
     for page in pages:
         rel = page.relative_to(root).as_posix()
         brand = BRAND_GLOW_ALLOWLIST.get(rel, {})
         page_css = css_of(page)
-        purples += len(re.findall(rf"{re.escape(PURPLE)}\b", page_css, re.IGNORECASE))
         # The *page* rather than its CSS: one of the survivors is a colour a script writes into a
         # badge (`docs/index.html`'s per-domain palette), and a report that only read the
         # stylesheet would have missed it.
-        page_text = page.read_text(encoding="utf-8", errors="replace")
-        other_purples += sum(
-            len(re.findall(rf"{re.escape(value)}\b", page_text, re.IGNORECASE))
-            for value in PURPLE_FAMILY) - len(re.findall(rf"{re.escape(PURPLE)}\b", page_text, re.IGNORECASE))
+        for _lineno, literal in colour_occurrences(page):
+            hsv = colour_hsv(literal)
+            if hsv is None:
+                continue
+            hue, saturation, value = hsv
+            if literal.lower() == PURPLE:
+                purples += 1
+                continue
+            if VIOLET_BAND[0] <= hue <= VIOLET_BAND[1] and saturation >= VIOLET_BAND_MIN_SATURATION:
+                other_purples += 1
+                continue
+            if saturation < ACCENT_BAND_MIN_SATURATION or value < ACCENT_BAND_MIN_VALUE:
+                continue
+            if not ACCENT_BAND[0] <= hue <= ACCENT_BAND[1]:
+                continue
+            if not accent_band_allowed(rel, literal):
+                accent_band += 1
+        background = page_background(page)
+        if rel not in NOT_A_PAGE and background is not None \
+                and background.strip().endswith("var(--bg-0)"):
+            backgrounds += 1
+        if rel in NOT_A_PAGE:
+            footers += 1
+        elif '<footer class="footer">' in page.read_text(encoding="utf-8", errors="replace"):
+            footers += 1
         for scope, selector, body in scoped_rules(page_css):
             selectors = [s.strip() for s in selector.split(",")]
             for value in declarations_in(body, "border-left"):
@@ -650,14 +922,18 @@ def report(root: Path = REPO) -> list[tuple[str, str, str, bool]]:
         ("5 字号：px 种数 / rem 种数", f"{len(px_sizes)} / {len(rem_sizes)}", "0 / ≤ 10(+2 展示)", True),
         ("6 font-family 字面栈", f"{len(families)} 种", "全部走 token", True),
         ("7 容器宽", f"{len(widths)} 种", "2 档", True),
-        ("1 跨页主色 / 强调色", "待 Z 批收敛", "1 + 1", False),
+        ("1 跨页主色 / 强调色", f"{accent_band} 处主色带", "0（只剩 token）", True),
         ("8 卡片套卡片", "0（按视觉判据）", "0", False),
         ("9 border-left 侧边色条", f"{side_bars} 处", "0", True),
         ("10 手写页面共用 token 头", "14 / 14", "14 / 14", True),
-        ("11 各页底色统一", "待 Z 批", "--bg-0", False),
+        ("11 各页底色统一", f"{backgrounds} / {len(pages) - len(NOT_A_PAGE)}", "--bg-0", True),
         ("12 紫色强调色", f"{purples} 处", "0", True),
-        ("12b 其余紫色阶（Z 批）", f"{other_purples} 处", "0", False),
+        ("12b 其余紫色阶", f"{other_purples} 处", "0", True),
         ("13 Y 批：emoji 图标", f"{emoji_icons} 处（内容 {emoji_content} 处）", "0 处", True),
+        ("15 页脚壳（Z 批）", f"{footers} / {len(pages)}", "共享 token 块", True),
+        ("16 页脚壳由共享 token 块拥有",
+         "1 / 1" if re.search(r"^\s*\.footer\s*\{", _tokens_text(root), re.MULTILINE) else "0 / 1",
+         "1", True),
     ]
 
 

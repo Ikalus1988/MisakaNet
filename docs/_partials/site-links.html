@@ -3,9 +3,13 @@
      Why (2026-10-19): only docs/index.html had the drawer nav, so the product's own destinations —
      /search/ above all — were unreachable from the other hand-written pages except through a browser
      back button. A per-page copy of this row is how that happens again, so the copies are generated
-     from this file by scripts/sync_site_partials.py, and `--check` fails when one drifts. -->
+     from this file by scripts/sync_site_partials.py, and `--check` fails when one drifts.
+
+     Batch Z: the row's own styling used to be an inline `style` attribute, which meant the
+     shell around it was still decided page by page. The shared token block owns `.site-links`
+     now, the same way it owns the icons — so this file carries the *links* and nothing else. -->
 <!-- site-links:start -->
-<nav class="site-links" aria-label="Site links" style="text-align:center;font-size:var(--fs-xs);margin:10px 0;">
+<nav class="site-links" aria-label="Site links">
   <a href="/">Home</a> ·
   <a href="/search/">Search lessons</a> ·
   <a href="/install/">Install</a> ·

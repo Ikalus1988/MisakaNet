@@ -1,11 +1,30 @@
 /* Custom styles for MisakaNet documentation */
 
-/* MisakaNet brand colors */
-:root {
-  --md-primary-fg-color: #7c3aed;
-  --md-primary-fg-color--light: #a78bfa;
-  --md-primary-fg-color--dark: #5b21b6;
-  --md-accent-fg-color: #8b5cf6;
+/* MisakaNet brand colors — the cyan accent of docs/_partials/design-tokens.html
+   (--accent: #00e5ff, 12.79:1 against --bg-0 #070b15).
+
+   Declared on <body> on purpose: Material puts the palette on the element that
+   carries [data-md-color-primary] (the body), so a bare :root declaration is
+   inherited away and never reaches the header. */
+body[data-md-color-primary][data-md-color-scheme] {
+  --md-primary-fg-color: #00e5ff;          /* header / primary surface */
+  --md-primary-fg-color--light: #33eaff;    /* tint (was a violet) */
+  --md-primary-fg-color--dark: #00c3d9;     /* shade (was a violet) */
+  --md-primary-bg-color: #070b15;           /* text on the cyan surface */
+  --md-primary-bg-color--light: #070b15b3;
+  --md-accent-fg-color: #00e5ff;            /* was a violet */
+  --md-accent-fg-color--transparent: #00e5ff1a;
+  --md-accent-bg-color: #070b15;            /* text on an accent surface */
+  --md-typeset-a-color: #00e5ff;            /* content links */
+}
+
+/* Cyan is a light accent: on the white (default) scheme it needs a darker
+   shade of the same hue to stay readable (4.72:1 on white). */
+body[data-md-color-scheme=default][data-md-color-primary] {
+  --md-accent-fg-color: #007f92;
+  --md-accent-fg-color--transparent: #007f921a;
+  --md-accent-bg-color: #fff;
+  --md-typeset-a-color: #007f92;
 }
 
 /* Improve code blocks */
@@ -54,7 +73,7 @@
 
 .md-typeset table:not([class]) th {
   background-color: var(--md-primary-fg-color--light);
-  color: white;
+  color: var(--md-primary-bg-color);
   font-weight: 600;
 }
 
@@ -65,7 +84,7 @@
 }
 
 .md-search-result__article:hover {
-  background-color: var(--md-accent-fg-color--light);
+  background-color: var(--md-accent-fg-color--transparent);
 }
 
 /* Mermaid diagrams */
@@ -91,7 +110,7 @@
   font-size: 0.75rem;
   font-weight: 600;
   background-color: var(--md-accent-fg-color);
-  color: white;
+  color: var(--md-accent-bg-color);
 }
 
 /* Improve footer */

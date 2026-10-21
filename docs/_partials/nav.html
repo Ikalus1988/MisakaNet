@@ -5,7 +5,15 @@
      from docs/ with no build step, which is what keeps every page greppable and testable by the suite. -->
 <nav class="drawer" id="drawer" inert aria-hidden="true">
   <div class="drawer-header">
-    <div class="drawer-brand">MISAKA NET</div>
+    <!-- The brand area, completed in batch Z. It used to hardcode "MISAKA NET" — a third
+         spelling of the wordmark, next to the header's "MISAKA NETWORK" — and it carried none of
+         the lockup the header has. Now it is the same lockup at the drawer's scale: the wordmark
+         from the locale file (`siteTitle`, so the two spellings can never drift again) and the
+         Chinese subtitle in the calligraphy face (`titleCn`). -->
+    <div class="drawer-brand">
+      <div class="drawer-brand-name" data-i18n="siteTitle">MISAKA NETWORK</div>
+      <div class="drawer-brand-cn" data-i18n="titleCn">御坂网络</div>
+    </div>
     <div class="drawer-tagline">Safe. Useful. Runs anywhere Python does.</div>
   </div>
 

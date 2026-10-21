@@ -35,7 +35,7 @@
  */
 :root {
   /* ── 底与面：3 档（收编 GitHub 习惯色，不再各页自定义）── */
-  --bg-0: #070b15;   /* 页面底（首页既有 --bg-deep） */
+  --bg-0: #070b15;   /* 页面底 */
   --bg-1: #0d1424;   /* 卡片 / 面 */
   --bg-2: #161b22;   /* 浮层 / 代码块 */
 
@@ -127,37 +127,63 @@
   stroke-linejoin: round;
   vector-effect: non-scaling-stroke;
 }
+
+/* ── The footer shell（Z 批）────────────────────────────────────────────────
+   The footer is the one navigation every page shares, and until batch Z it was
+   six shells wearing six spellings: `footer {}` on some pages and `.footer {}`
+   on others, a cyan-tinted top border on the homepage and a grey one on the
+   rest, four different `margin-top` values, and six pages with no footer at all
+   — which meant six pages the reader could not leave except with the back
+   button.
+
+   So the shell lives here, beside the icons, for the same reason: one source,
+   copied into every page, and `scripts/sync_design_tokens.py --check` fails when
+   a page drifts from it. A page may still add its *own* footer content (the
+   homepage's link row and wordmark), but the shell around it is not the page's
+   to decide. */
+.footer {
+  margin-top: var(--sp-7);
+  padding: var(--sp-5) 0;
+  border-top: 1px solid var(--line);
+  text-align: center;
+  color: var(--fg-2);
+  font-size: var(--fs-xs);
+  line-height: 1.8;
+}
+.footer a { color: var(--accent); text-decoration: none; }
+.footer a:hover { text-decoration: underline; }
+.site-links { margin: 0 0 var(--sp-2); }
 </style>
 <!-- design-tokens:end -->
 <style>
-  :root {--text-main: rgba(255,255,255,0.88);
+  :root {
     --text-soft: rgba(255,255,255,0.72);
     --text-muted: rgba(255,255,255,0.64);
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: var(--font-ui); background: radial-gradient(circle at 50% -20%, rgba(88,166,255,0.09), transparent 38%), #0a0f1d; color: var(--text-main); min-height: 100vh; }
+  body { font-family: var(--font-ui); background: radial-gradient(circle at 50% -20%, rgba(0,229,255,0.09), transparent 38%), var(--bg-0); color: var(--fg-1); min-height: 100vh; }
   .container { max-width: 720px; margin: 0 auto; padding: 40px 20px; }
   .topbar { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 4px; }
   h1 { font-family: var(--font-ui); font-size: var(--fs-2xl); font-weight: 700; margin-bottom: 4px; }
   .subtitle { color: var(--text-soft); font-size: var(--fs-md); line-height: 1.55; margin-bottom: 24px; }
   .lang-switch { display: flex; gap: 6px; flex-shrink: 0; margin-top: 2px; }
   .lang-switch button { background: transparent; color: var(--text-muted); border: 1px solid rgba(255,255,255,0.12); border-radius: var(--r-md); padding: 4px 10px; cursor: pointer; font-size: var(--fs-2xs); font-family: var(--font-ui); }
-  .lang-switch button.active { color: #58a6ff; border-color: rgba(88,166,255,0.42); background: rgba(88,166,255,0.08); }
+  .lang-switch button.active { color: var(--accent); border-color: rgba(0,229,255,0.42); background: rgba(0,229,255,0.08); }
   .home-link { display: inline-block; color: var(--text-muted); font-size: var(--fs-xs); text-decoration: none; margin-bottom: 8px; transition: color var(--t-fast); }
-  .home-link:hover { color: #58a6ff; }
-  .search-box { position: relative; margin-bottom: 16px; background: rgba(255,255,255,0.035); border: 1px solid rgba(88,166,255,0.24); border-radius: var(--r-lg); transition: border-color var(--t-fast), box-shadow var(--t-fast); }
-  .search-box:focus-within { border-color: rgba(88,166,255,0.62); background: rgba(88,166,255,0.06); outline: 2px solid rgba(88,166,255,0.62); outline-offset: 0; }
-  .search-box input { width: 100%; padding: 15px 16px; background: transparent; border: 0; color: var(--text-main); font-size: var(--fs-md); font-family: var(--font-ui); outline: none; }
+  .home-link:hover { color: var(--accent); }
+  .search-box { position: relative; margin-bottom: 16px; background: rgba(255,255,255,0.035); border: 1px solid rgba(0,229,255,0.24); border-radius: var(--r-lg); transition: border-color var(--t-fast), box-shadow var(--t-fast); }
+  .search-box:focus-within { border-color: rgba(0,229,255,0.62); background: rgba(0,229,255,0.06); outline: 2px solid rgba(0,229,255,0.62); outline-offset: 0; }
+  .search-box input { width: 100%; padding: 15px 16px; background: transparent; border: 0; color: var(--fg-1); font-size: var(--fs-md); font-family: var(--font-ui); outline: none; }
   .search-box input::placeholder { color: rgba(255,255,255,0.56); }
   .stats { font-size: var(--fs-xs); color: var(--text-muted); margin-bottom: 20px; }
   .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
   .results-header { font-size: var(--fs-xs); color: var(--text-soft); margin-bottom: 12px; }
-  .result { padding: 16px; background: rgba(255,255,255,0.025); border: 1px solid rgba(88,166,255,0.12); border-radius: var(--r-md); margin-bottom: 10px; cursor: pointer; transition: border-color 0.15s, box-shadow var(--t-fast); box-shadow: var(--sh-1); }
-  .result:hover { border-color: rgba(88,166,255,0.35); }
-  .result-title { font-family: var(--font-ui); font-size: var(--fs-md); line-height: 1.35; font-weight: 700; color: var(--text-main); margin-bottom: 4px; }
+  .result { padding: 16px; background: rgba(255,255,255,0.025); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-md); margin-bottom: 10px; cursor: pointer; transition: border-color 0.15s, box-shadow var(--t-fast); box-shadow: var(--sh-1); }
+  .result:hover { border-color: rgba(0,229,255,0.35); }
+  .result-title { font-family: var(--font-ui); font-size: var(--fs-md); line-height: 1.35; font-weight: 700; color: var(--fg-1); margin-bottom: 4px; }
   .result-meta { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; flex-wrap: wrap; }
   .badge { font-size: var(--fs-3xs); padding: 2px 6px; border-radius: var(--r-sm); font-weight: 600; font-family: var(--font-ui); }
-  .badge-domain { background: rgba(88,166,255,0.1); color: #58a6ff; }
+  .badge-domain { background: rgba(0,229,255,0.1); color: var(--accent); }
   .badge-plain { background: rgba(148,163,184,0.15); color: var(--fg-2); }
   .badge-fatal { background: rgba(239,68,68,0.12); color: #f87171; }
   .badge-runtime { background: rgba(251,146,60,0.12); color: #fb923c; }
@@ -165,51 +191,57 @@
   .badge-high { background: rgba(35,134,54,0.15); color: #3fb950; }
   .badge-medium { background: rgba(251,146,60,0.12); color: #fb923c; }
   .badge-low { background: rgba(139,148,158,0.12); color: #8b949e; }
-  .badge-evidence { background: rgba(163,113,247,0.14); color: #a371f7; cursor: help; }
+  /* The evidence scale, and it is a *scale*, not decoration: `docs/evidence-badges.md` is the
+     contract (E0 grey → E1 red → E2 orange → E3 blue → E4 green) and `docs/assets/badges/
+     evidence-e*.svg` is the artwork, which uses the same five colours. This ramp was shifted
+     by one — E1 rendered blue while the badge and the contract said red, and E4 rendered
+     violet — so a reader could not trust the colour to tell the levels apart. The colours
+     below are the artwork's, so the chip and the badge now agree.
+     The scale needs a blue that the vocabulary does not carry (it has no blue on purpose),
+     so E3's two values are literal and the rest come from the tokens that match exactly. */
+  .badge-evidence { background: rgba(0,229,255,0.14); color: var(--accent); cursor: help; }
   .badge-evidence.ev-e0 { background: rgba(139,148,158,0.14); color: #8b949e; }
-  .badge-evidence.ev-e1 { background: rgba(88,166,255,0.14); color: #58a6ff; }
-  .badge-evidence.ev-e2 { background: rgba(63,185,80,0.14); color: #3fb950; }
-  .badge-evidence.ev-e3 { background: rgba(210,153,34,0.14); color: #d29922; }
-  .badge-evidence.ev-e4 { background: rgba(163,113,247,0.18); color: #d2a8ff; }
+  .badge-evidence.ev-e1 { background: rgba(239,68,68,0.14); color: var(--danger); }
+  .badge-evidence.ev-e2 { background: rgba(245,158,11,0.14); color: #f59e0b; }
+  .badge-evidence.ev-e3 { background: rgba(59,130,246,0.14); color: #3b82f6; }
+  .badge-evidence.ev-e4 { background: rgba(16,185,129,0.14); color: #10b981; }
   .result-takeaway { font-size: var(--fs-2xs); color: var(--text-muted); margin-top: 4px; line-height: 1.5; }
   .section-label { font-size: var(--fs-2xs); font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin: 20px 0 8px; }
   .fold-toggle { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; font-size: var(--fs-xs); color: var(--text-muted); background: transparent; border: 1px solid rgba(255,255,255,0.08); border-radius: var(--r-sm); padding: 6px 12px; margin: 8px 0; transition: color 0.15s, border-color var(--t-fast); }
-  .fold-toggle:hover { color: #58a6ff; border-color: rgba(88,166,255,0.3); }
+  .fold-toggle:hover { color: var(--accent); border-color: rgba(0,229,255,0.3); }
   .fold-toggle .arrow { transition: transform var(--t-fast); }
   .fold-toggle.open .arrow { transform: rotate(90deg); }
   .match-explain { font-size: var(--fs-3xs); color: var(--text-muted); margin-top: 4px; line-height: 1.5; }
   .score-explain { font-size: var(--fs-3xs); color: var(--text-muted); margin-top: 8px; line-height: 1.55; }
   .score-explain summary { cursor: pointer; color: var(--text-soft); }
-  .score-explain code { color: #8bd5ff; }
+  .score-explain code { color: var(--accent); }
   .result-id { font-family: var(--font-mono); font-size: var(--fs-3xs); letter-spacing: 0.02em; color: var(--text-muted); }
   .result-summary { font-family: var(--font-ui); font-size: var(--fs-xs); color: var(--text-soft); font-weight: 400; line-height: 1.65; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
   .result-tags { font-size: var(--fs-3xs); color: var(--text-muted); margin-top: 6px; }
   .result-actions { display: flex; gap: 12px; align-items: center; margin-top: 10px; }
-  .btn-primary { font-family: var(--font-ui); font-size: var(--fs-2xs); font-weight: 600; color: #0d1117; background: #58a6ff; border: none; border-radius: var(--r-sm); padding: 6px 14px; cursor: pointer; text-decoration: none; display: inline-block; }
+  .btn-primary { font-family: var(--font-ui); font-size: var(--fs-2xs); font-weight: 600; color: var(--bg-0); background: var(--accent); border: none; border-radius: var(--r-sm); padding: 6px 14px; cursor: pointer; text-decoration: none; display: inline-block; }
   .btn-primary:hover { opacity: 0.9; }
   .btn-secondary { font-family: var(--font-ui); font-size: var(--fs-2xs); color: var(--text-soft); background: transparent; border: 1px solid #30363d; border-radius: var(--r-sm); padding: 6px 14px; cursor: pointer; text-decoration: none; display: inline-block; }
-  .btn-secondary:hover { border-color: #58a6ff; color: #58a6ff; }
+  .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
   .feedback-bar { display: flex; gap: 6px; align-items: center; margin-top: 8px; }
   .feedback-btn { font-family: var(--font-ui); font-size: var(--fs-3xs); color: var(--text-muted); background: transparent; border: 1px solid rgba(255,255,255,0.08); border-radius: var(--r-sm); padding: 3px 8px; cursor: pointer; transition: color 0.15s, border-color 0.15s, background var(--t-fast); }
-  .feedback-btn:hover { color: #58a6ff; border-color: rgba(88,166,255,0.3); }
+  .feedback-btn:hover { color: var(--accent); border-color: rgba(0,229,255,0.3); }
   .feedback-btn.selected { color: #3fb950; border-color: rgba(35,134,54,0.4); background: rgba(35,134,54,0.08); pointer-events: none; }
   .feedback-summary { display: flex; gap: 12px; align-items: center; justify-content: center; padding: 12px; margin-top: 16px; border-top: 1px solid #21262d; font-size: var(--fs-2xs); color: var(--text-muted); }
-  .feedback-summary a { color: #58a6ff; text-decoration: none; }
+  .feedback-summary a { color: var(--accent); text-decoration: none; }
   .feedback-summary a:hover { text-decoration: underline; }
-  .lesson-preview { margin-top: 12px; padding: 12px; border: 1px solid rgba(88,166,255,0.16); border-radius: var(--r-md); background: #0b1020; cursor: default; }
-  .lesson-preview h2 { font-family: var(--font-ui); font-size: var(--fs-md); font-weight: 700; color: var(--text-main); margin: 18px 0 8px; }
-  .lesson-preview h3 { font-family: var(--font-ui); font-size: var(--fs-xs); font-weight: 600; color: var(--text-main); margin: 14px 0 6px; }
+  .lesson-preview { margin-top: 12px; padding: 12px; border: 1px solid rgba(0,229,255,0.16); border-radius: var(--r-md); background: #0b1020; cursor: default; }
+  .lesson-preview h2 { font-family: var(--font-ui); font-size: var(--fs-md); font-weight: 700; color: var(--fg-1); margin: 18px 0 8px; }
+  .lesson-preview h3 { font-family: var(--font-ui); font-size: var(--fs-xs); font-weight: 600; color: var(--fg-1); margin: 14px 0 6px; }
   .lesson-preview pre { background: #0b0f14; border: 1px solid rgba(255,255,255,0.08); border-radius: var(--r-md); padding: 12px; overflow-x: auto; white-space: pre-wrap; word-break: break-word; font-family: var(--font-mono); font-size: var(--fs-2xs); line-height: 1.65; color: #c9d1d9; }
   .lesson-preview code { font-family: var(--font-mono); }
   .lesson-preview p code { background: rgba(255,255,255,0.08); padding: 2px 5px; border-radius: var(--r-sm); }
   .lesson-preview p { margin: 6px 0; line-height: 1.65; }
   .preview-status { font-size: var(--fs-2xs); color: var(--text-soft); }
   .fallback { padding: 24px; text-align: center; color: var(--text-soft); }
-  .fallback a { color: #58a6ff; text-decoration: none; }
+  .fallback a { color: var(--accent); text-decoration: none; }
   .fallback a:hover { text-decoration: underline; }
   .loading { text-align: center; color: var(--text-muted); padding: 40px; }
-  .footer { text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #21262d; }
-  .footer a { color: #58a6ff; text-decoration: none; font-size: var(--fs-xs); margin: 0 8px; }
   /* Narrow screens (2026-10-19): this page had no media query at all, which is why pointing a phone at
      /search/ was a dead end — a 720px layout on a 390px screen. Only what breaks is adjusted: the
      container breathes less, the topbar stacks, and the code-heavy explain block wraps. */
@@ -222,7 +254,6 @@
     .result { padding: 13px; }
     .score-explain code { word-break: break-word; }
     .result-actions { flex-wrap: wrap; gap: 8px; }
-    .footer { margin-top: 28px; }
   }
 </style>
 </head>
@@ -249,14 +280,14 @@
   <div id="results" class="loading" role="region" aria-live="polite">Loading lessons...</div>
   <div id="feedback-summary" class="feedback-summary" hidden></div>
   <div style="text-align:center; margin-top:24px; font-size:var(--fs-2xs); color:var(--text-muted);">
-    <span data-i18n="feedbackPrompt">Did a lesson help you?</span> <a href="https://github.com/Ikalus1988/MisakaNet/issues/new?template=lesson-feedback.yml" style="color:#58a6ff;" data-i18n="feedbackPromptLink">Share feedback</a> <span data-i18n="feedbackPromptSuffix">(5 lines, anonymous OK)</span>
+    <span data-i18n="feedbackPrompt">Did a lesson help you?</span> <a href="https://github.com/Ikalus1988/MisakaNet/issues/new?template=lesson-feedback.yml" style="color:var(--accent);" data-i18n="feedbackPromptLink">Share feedback</a> <span data-i18n="feedbackPromptSuffix">(5 lines, anonymous OK)</span>
   </div>
   </main>
   <!-- The row is generated by scripts/sync_site_partials.py from docs/_partials/site-links.html;
        this page had the .footer rules but no footer, so the last thing on it was a GitHub link. -->
   <footer class="footer">
 <!-- site-links:start -->
-<nav class="site-links" aria-label="Site links" style="text-align:center;font-size:var(--fs-xs);margin:10px 0;">
+<nav class="site-links" aria-label="Site links">
   <a href="/">Home</a> ·
   <a href="/search/">Search lessons</a> ·
   <a href="/install/">Install</a> ·
@@ -742,7 +773,7 @@ function render(results, q, meta) {
     el.innerHTML = '<div class="fallback">' +
       '<div style="margin-bottom:8px;">' + t('noMatchPrefix') + ' "' + escapeHTML(q) + '". ' + t('noMatchSuffix') + '</div>' +
       '<div style="font-size:var(--fs-xs);margin-bottom:12px;max-width:480px;margin-left:auto;margin-right:auto;">' +
-        t('noMatchHelpPrefix') + '<a href="/topics/" style="color:#58a6ff;">' + t('noMatchTopics') + '</a>. ' +
+        t('noMatchHelpPrefix') + '<a href="/topics/" style="color:var(--accent);">' + t('noMatchTopics') + '</a>. ' +
         t('noMatchHelpSuffix') + '<code style="font-size:var(--fs-3xs);">pip timeout</code>, <code style="font-size:var(--fs-3xs);">database locked</code>, <code style="font-size:var(--fs-3xs);">DCO sign-off</code>, <code style="font-size:var(--fs-3xs);">git rebase</code>.' +
       '</div>' +
       '<div style="font-size:var(--fs-2xs);"><a href="/skill.md">' + t('installSkill') + '</a> &middot; <a href="https://github.com/Ikalus1988/MisakaNet">' + t('submitLesson') + '</a> &middot; <a href="https://github.com/Ikalus1988/MisakaNet/issues/new?template=lesson-request.yml">' + t('requestLesson') + '</a></div></div>';

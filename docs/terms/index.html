@@ -30,7 +30,7 @@
  */
 :root {
   /* ── 底与面：3 档（收编 GitHub 习惯色，不再各页自定义）── */
-  --bg-0: #070b15;   /* 页面底（首页既有 --bg-deep） */
+  --bg-0: #070b15;   /* 页面底 */
   --bg-1: #0d1424;   /* 卡片 / 面 */
   --bg-2: #161b22;   /* 浮层 / 代码块 */
 
@@ -122,27 +122,52 @@
   stroke-linejoin: round;
   vector-effect: non-scaling-stroke;
 }
+
+/* ── The footer shell（Z 批）────────────────────────────────────────────────
+   The footer is the one navigation every page shares, and until batch Z it was
+   six shells wearing six spellings: `footer {}` on some pages and `.footer {}`
+   on others, a cyan-tinted top border on the homepage and a grey one on the
+   rest, four different `margin-top` values, and six pages with no footer at all
+   — which meant six pages the reader could not leave except with the back
+   button.
+
+   So the shell lives here, beside the icons, for the same reason: one source,
+   copied into every page, and `scripts/sync_design_tokens.py --check` fails when
+   a page drifts from it. A page may still add its *own* footer content (the
+   homepage's link row and wordmark), but the shell around it is not the page's
+   to decide. */
+.footer {
+  margin-top: var(--sp-7);
+  padding: var(--sp-5) 0;
+  border-top: 1px solid var(--line);
+  text-align: center;
+  color: var(--fg-2);
+  font-size: var(--fs-xs);
+  line-height: 1.8;
+}
+.footer a { color: var(--accent); text-decoration: none; }
+.footer a:hover { text-decoration: underline; }
+.site-links { margin: 0 0 var(--sp-2); }
 </style>
 <!-- design-tokens:end -->
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
     font-family: var(--font-ui);
-    background: #0d1117; color: #c9d1d9; min-height: 100vh;
+    background: var(--bg-0); color: #c9d1d9; min-height: 100vh;
     display: flex; flex-direction: column; align-items: center; padding: 2rem 1rem;
   }
   main { max-width: 720px; width: 100%; }
-  h1 { font-size: var(--fs-2xl); font-weight: 600; color: #58a6ff; margin-bottom: .25rem; }
+  h1 { font-size: var(--fs-2xl); font-weight: 600; color: var(--accent); margin-bottom: .25rem; }
   .subtitle { color: #8b949e; font-size: var(--fs-sm); margin-bottom: 2rem; }
-  h2 { font-size: var(--fs-md); color: #58a6ff; margin: 1.75rem 0 .5rem; }
+  h2 { font-size: var(--fs-md); color: var(--accent); margin: 1.75rem 0 .5rem; }
   p, li { font-size: var(--fs-sm); line-height: 1.65; color: #c9d1d9; }
   ul { margin: .4rem 0 .4rem 1.2rem; }
   code { background: var(--bg-2); padding: .1rem .35rem; border-radius: var(--r-sm); font-size: var(--fs-sm); }
-  a { color: #58a6ff; }
+  a { color: var(--accent); }
   /* The colour used to be a 3px bar down the left edge; it is the border now.
      See docs/enterprise/index.html for why a bar is the shape to avoid. */
   .note { background: var(--bg-2); border: 1px solid color-mix(in srgb, var(--warn) 35%, transparent); padding: .7rem .9rem; margin: .9rem 0; font-size: var(--fs-sm); }
-  footer { margin-top: 2.5rem; color: #8b949e; font-size: var(--fs-xs); }
 </style>
 </head>
 <body>
@@ -201,9 +226,9 @@
   <h2>7. Contact</h2>
   <p>Questions: <a href="https://github.com/Ikalus1988/MisakaNet/issues">open an issue</a>.</p>
 
-  <footer>
+  <footer class="footer">
 <!-- site-links:start -->
-<nav class="site-links" aria-label="Site links" style="text-align:center;font-size:var(--fs-xs);margin:10px 0;">
+<nav class="site-links" aria-label="Site links">
   <a href="/">Home</a> ·
   <a href="/search/">Search lessons</a> ·
   <a href="/install/">Install</a> ·
