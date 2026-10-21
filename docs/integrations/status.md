@@ -1,6 +1,6 @@
 # Integration Status
 
-> Last updated: 2026-09-20
+> Last updated: 2026-10-22
 
 Two different questions hide behind "do you support X?", so this page answers them separately:
 
@@ -25,7 +25,7 @@ Two different questions hide behind "do you support X?", so this page answers th
 
 | Registry | Status | URL |
 |---|---|---|
-| Glama | ✅ Listed, MCP indexed | https://glama.ai/mcp/servers/Ikalus1988/MisakaNet |
+| Glama | ✅ Listed, MCP indexed | https://glama.ai/mcp/servers/Ikalus1988/MisakaNet — [listing playbook](glama-listing.md) (how to refresh it, and why a refresh will not change the tool set) |
 | MCP Registry | ✅ Listed | https://modelcontextprotocol.io |
 | MCP Toplist | ✅ Badge live | https://mcptoplist.com/server/io.github.Ikalus1988%2Fmisakanet |
 
