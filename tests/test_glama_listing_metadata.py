@@ -63,7 +63,11 @@ LISTING_URL = "https://glama.ai/mcp/servers/Ikalus1988/MisakaNet"
 
 #: The playbook's "when did somebody last look at this" line. A playbook without a date is a
 #: playbook whose facts decay silently.
-LAST_REVIEWED = re.compile(r"^>\s*Last reviewed:\s*(\d{4}-\d{2}-\d{2})\s*$", re.M)
+LAST_REVIEWED = re.compile(r"^>\s*Last reviewed:\s*(.+?)\s*$", re.M)
+
+#: The shape that line has to have. A line that is present but says "last Tuesday" is a
+#: different fault from a line that is missing, and the rule says which.
+ISO_DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 #: The heading that holds the trigger. The playbook is worthless if it does not say which step
 #: actually refreshes the listing, and worse than worthless if it says "it depends".
@@ -174,13 +178,20 @@ def playbook_problems(root: Path) -> list[str]:
             "reader cannot tell how old the measurements in it are"
         )
     else:
-        try:
-            date.fromisoformat(reviewed.group(1))
-        except ValueError:
+        stamp = reviewed.group(1)
+        if not ISO_DATE.match(stamp):
             problems.append(
-                f"docs/integrations/glama-listing.md says 'Last reviewed: "
-                f"{reviewed.group(1)}', which is not a date"
+                f"docs/integrations/glama-listing.md says 'Last reviewed: {stamp}', which is not "
+                f"a date"
             )
+        else:
+            try:
+                date.fromisoformat(stamp)
+            except ValueError:
+                problems.append(
+                    f"docs/integrations/glama-listing.md says 'Last reviewed: {stamp}', which is "
+                    f"not a date that exists"
+                )
 
     heading = TRIGGER_HEADING.search(text)
     if heading is None:
@@ -317,15 +328,27 @@ def test_the_playbook_rule_notices_a_review_date_that_is_not_a_date(tmp_path):
     assert playbook_problems(root) == [], "the copied tree must start clean"
 
     playbook = root / "docs" / "integrations" / "glama-listing.md"
+    text = playbook.read_text(encoding="utf-8")
     playbook.write_text(
-        playbook.read_text(encoding="utf-8").replace(
-            LAST_REVIEWED.search(playbook.read_text(encoding="utf-8")).group(1), "last Tuesday", 1
-        ),
-        encoding="utf-8",
+        text.replace(LAST_REVIEWED.search(text).group(1), "last Tuesday", 1), encoding="utf-8"
     )
     problems = playbook_problems(root)
     assert problems, "a review line that is not a date must be reported"
-    assert any("Last reviewed" in problem for problem in problems), problems
+    assert any("Last reviewed" in problem and "not a date" in problem for problem in problems), problems
+
+
+def test_the_playbook_rule_notices_a_review_line_that_is_missing(tmp_path):
+    root = _scratch_repo(tmp_path)
+    assert playbook_problems(root) == [], "the copied tree must start clean"
+
+    playbook = root / "docs" / "integrations" / "glama-listing.md"
+    text = playbook.read_text(encoding="utf-8")
+    playbook.write_text(
+        text.replace(LAST_REVIEWED.search(text).group(0), ""), encoding="utf-8"
+    )
+    problems = playbook_problems(root)
+    assert problems, "a playbook with no review line must be reported"
+    assert any("no '> Last reviewed" in problem for problem in problems), problems
 
 
 # ── the probe's three outcomes, decided offline ─────────────────────────────────────────────────
