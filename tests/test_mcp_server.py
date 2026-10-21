@@ -3,6 +3,10 @@
 
 Tests the JSON-RPC handlers directly (no subprocess needed).
 
+Every check below is a real gate: a false condition fails the pytest run and names the check
+(see `check()`). This file used to only *print* its verdict, so it passed whatever the checks
+said — a green run that proved nothing.
+
 Usage:
     python3 tests/test_mcp_server.py
 """
@@ -25,6 +29,12 @@ sys.path.insert(0, str(REPO_ROOT))
 _TEST_DATA_DIR = Path(tempfile.mkdtemp(prefix="misakanet-mcp-smoke-"))
 os.environ.setdefault("MISAKANET_GAP_LOG", str(_TEST_DATA_DIR / "search_gaps.jsonl"))
 os.environ.setdefault("MISAKANET_CONTRIBUTION_QUEUE", str(_TEST_DATA_DIR / "contribution_queue.jsonl"))
+# Same isolation problem, one level up: the intake path is remote-first, so it files the report on
+# MisakaNet — `tests/test_me_inbox.py` created #3580 on the network while running this suite.
+# `tests/conftest.py` sets the same switch for the pytest session; this script has no conftest, so
+# it sets it itself. A gate must not file a real issue, and a check whose answer depends on the
+# network is not a gate.
+os.environ.setdefault("MISAKANET_INTAKE_DISABLE_REMOTE", "1")
 
 from scripts.mcp_server import TOOLS, handle_request  # noqa: E402
 
@@ -43,13 +53,27 @@ def rpc(method: str, params: dict = None, req_id: int = 1) -> dict:
 
 
 def check(name: str, condition: bool, detail: str = ""):
+    """A check that can go red.
+
+    This used to only print. `PASS` and `FAIL` were module-level counters and nothing ever
+    asserted on `FAIL`, so the file passed whatever the checks said: measured 2026-10-21, 19
+    tests and 71 checks — 67 passed, 4 failed — and pytest still exited 0. A reader who saw the
+    green run had learned nothing about the MCP server.
+
+    Now a false condition raises `AssertionError` naming the check, which is this repository's
+    convention for a gate that can fail: `tests/test_site_design_convergence.py` asserts with the
+    failing problem in the message, and `tests/test_d1_counters_schema.py` asserts one property
+    at a time with the same shape of message. The counters stay because the directly-runnable
+    script prints a summary of them.
+    """
     global PASS, FAIL
     if condition:
         PASS += 1
         print(f"  PASS {name}")
-    else:
-        FAIL += 1
-        print(f"  FAIL {name}{': ' + detail if detail else ''}")
+        return
+    FAIL += 1
+    print(f"  FAIL {name}{': ' + detail if detail else ''}")
+    raise AssertionError(f"check failed: {name}{': ' + detail if detail else ''}")
 
 
 def test_initialize():
@@ -174,20 +198,40 @@ def test_submit_usage():
 
 def test_submit_intake():
     print("\n-- tools/call: misakanet_submit_intake --")
-    resp = rpc("tools/call", {
-        "name": "misakanet_submit_intake",
-        "arguments": {
-            "kind": "missing_lesson",
-            "problem": "pip install fails on WSL with SSL timeout",
-            "error": "SSL: CERTIFICATE_VERIFY_FAILED",
-            "source": "claude-code",
-        },
-    })
+    # The intake path is remote-first: it files the report on MisakaNet. This gate must not file a
+    # real issue, and the answer must not depend on the network, so the call is forced onto the
+    # local queue — the path this file can assert deterministically. The hosted worker's status
+    # vocabulary is "pending_review" (a GitHub issue awaiting review); the local queue's is
+    # "pending" (scripts/contribution_queue.py). The old check asserted the worker's word here and
+    # so failed against the path this file actually runs — see
+    # tests/test_intake_receipt_truthfulness.py for the hosted receipt.
+    previous = os.environ.get("MISAKANET_INTAKE_DISABLE_REMOTE")
+    os.environ["MISAKANET_INTAKE_DISABLE_REMOTE"] = "1"
+    try:
+        resp = rpc("tools/call", {
+            "name": "misakanet_submit_intake",
+            "arguments": {
+                "kind": "missing_lesson",
+                "problem": "pip install fails on WSL with SSL timeout",
+                "error": "SSL: CERTIFICATE_VERIFY_FAILED",
+                "source": "claude-code",
+            },
+        })
+    finally:
+        if previous is None:
+            os.environ.pop("MISAKANET_INTAKE_DISABLE_REMOTE", None)
+        else:
+            os.environ["MISAKANET_INTAKE_DISABLE_REMOTE"] = previous
     result_text = resp.get("result", {}).get("content", [{}])[0].get("text", "{}")
     result = json.loads(result_text)
     check("returns submitted", result.get("submitted") is True)
     check("returns intake_id", "intake_id" in result)
-    check("status is pending_review", result.get("status") == "pending_review")
+    check("delivery is local_queue (a gate must not file a real issue)",
+          result.get("delivery") == "local_queue",
+          f"delivery={result.get('delivery')!r}")
+    check("status is pending (awaiting review, not published)",
+          result.get("status") == "pending",
+          f"status={result.get('status')!r}")
     check("returns redactions_applied", "redactions_applied" in result)
     check("returns quality_score", "quality_score" in result)
     check("returns receipt", "receipt" in result)
@@ -247,21 +291,30 @@ def test_search_scope_and_drafts():
     """What this surface actually tells a caller about drafts — the old check here could never fail (#2270).
 
     It computed `draft_count = sum(1 for r in results if r.get("status") == "draft")` on a **default**
-    search. `status` is not in this surface's compact projection, nor in `summary` — only `detail=full`
-    carries it — so `r.get("status")` was `None` for every result whatever the search returned, and the
-    check passed unconditionally while claiming to police the search scope.
+    search. `status` was not in this surface's compact projection, nor in `summary` — only
+    `detail=full` carried it — so `r.get("status")` was `None` for every result whatever the search
+    returned, and the check passed unconditionally while claiming to police the search scope.
 
-    Measured here (2026-09-26), so the assertion is about this surface and not about a policy nobody has
-    implemented:
+    The surface has since moved (#1999), and these assertions follow it:
 
-        compact  keys: evidence_level, freshness, id, kind, problem, score, title
-        summary  keys: domain, evidence_level, freshness, id, kind, problem, tags, title
-        full     keys: description, domain, kind, path, score, source, status, tags, title
+    * `status` and `path` are carried at **every** detail level — `path` because
+      `misakanet_get_lesson` needs one of them to fetch, `status` because it is how a caller tells a
+      draft from a published lesson (`docs/mcp.md`: "search returns results with `path`, `status`
+      ... fields");
+    * drafts are **excluded** from the search surface (`docs/mcp.md`: "Drafts are excluded to avoid
+      surfacing unverified content"; `misakanet/server/handlers/search.py::_exclude_drafts`), so the
+      title of a draft does not bring that draft back. The old check asserted the opposite — that
+      the draft *is* among the hits — which is now a leak, not a contract.
 
-    A caller at the default level therefore cannot tell a draft from a published lesson — and at compact
-    the `id` comes back empty as well, so it cannot cross-reference one either. Whether drafts should be
-    searchable at all, and whether the default level should say so, are the open decisions in #2270;
-    this test reds if either changes.
+    Measured here (2026-10-21), so the assertions are about this surface and not about a policy
+    nobody has implemented:
+
+        compact  keys: evidence_level, freshness, id, kind, path, problem, score, status, title
+        summary  keys: domain, evidence_level, freshness, id, kind, path, problem, status, tags, title
+        full     keys: domain, kind, path, score, status, title
+
+    This test reds if the surface changes again, in either direction: a caller who cannot tell a
+    draft from a published lesson, or a draft that leaks into the results.
     """
     print("\n-- search scope: what this surface reveals about drafts --")
 
@@ -292,22 +345,37 @@ def test_search_scope_and_drafts():
 
     compact_hits = compact.get("results", [])
     check("the probe query returns a hit at compact", bool(compact_hits), f"got {compact_hits!r}")
-    if not compact_hits:
-        return
 
-    check("compact does not carry `status` (the field the old check read)",
-          "status" not in compact_hits[0], f"compact keys: {sorted(compact_hits[0])}")
-    check("summary does not carry it either",
-          all("status" not in r for r in summary.get("results", [])),
-          f"summary keys: {sorted(summary['results'][0]) if summary.get('results') else []}")
+    summary_hits = summary.get("results", [])
+    check("summary returns hits for the same probe", bool(summary_hits), f"got {summary_hits!r}")
 
     full_hits = full.get("results", [])
-    check("detail=full is where `status` appears",
-          bool(full_hits) and "status" in full_hits[0], f"full keys: {sorted(full_hits[0]) if full_hits else []}")
-    if full_hits:
-        check("and that lesson is a draft — so drafts are searchable here",
-              str(full_hits[0].get("status")) == "draft",
-              f"status={full_hits[0].get('status')!r} for {full_hits[0].get('title', '')[:40]!r}")
+    check("detail=full returns hits for the same probe", bool(full_hits), f"got {full_hits!r}")
+
+    # A caller must be able to act on a result and to tell what it is: `path` to fetch it, `status`
+    # to know whether it is a draft or a published lesson.
+    check("compact carries `status` (draft vs published is visible)",
+          bool(compact_hits) and "status" in compact_hits[0],
+          f"compact keys: {sorted(compact_hits[0]) if compact_hits else []}")
+    check("compact carries `path` (get_lesson can fetch it)",
+          bool(compact_hits) and "path" in compact_hits[0],
+          f"compact keys: {sorted(compact_hits[0]) if compact_hits else []}")
+    check("summary carries `status` too",
+          bool(summary_hits) and all("status" in r for r in summary_hits),
+          f"summary keys: {sorted(summary_hits[0]) if summary_hits else []}")
+    check("detail=full carries `status` as well",
+          bool(full_hits) and "status" in full_hits[0],
+          f"full keys: {sorted(full_hits[0]) if full_hits else []}")
+
+    # The other half of the contract, and the one a leak breaks: the default scope is
+    # published-only, so the draft the query was built from must not come back — at any level.
+    for level, hits in (("compact", compact_hits), ("summary", summary_hits), ("full", full_hits)):
+        check(f"{level} surfaces no draft (the default scope excludes drafts)",
+              all(r.get("status") != "draft" for r in hits),
+              f"{level} statuses: {[r.get('status') for r in hits]}")
+    check("the probed draft is not among the hits",
+          probe["id"] not in {r.get("id") for r in compact_hits},
+          f"probe id={probe['id']!r}, hit ids={[r.get('id') for r in compact_hits]}")
 
 
 def test_usage_status():
@@ -446,21 +514,34 @@ def test_preflight_missing_intent():
 
 if __name__ == "__main__":
     print("MisakaNet MCP Server smoke test")
-    test_initialize()
-    test_tools_list()
-    test_tool_descriptions_are_agent_friendly()
-    test_search()
-    test_get_lesson()
-    test_submit_usage()
-    test_unknown_tool()
-    test_search_scope_and_drafts()
-    test_usage_status()
-    test_write_lesson_missing_fields()
-    test_write_lesson_no_token()
-    test_write_lesson_anon_token()
-    test_write_lesson_low_quality()
-    test_write_lesson_success()
-    test_preflight_missing_intent()
+    for _test in (
+        test_initialize,
+        test_tools_list,
+        test_tool_descriptions_are_agent_friendly,
+        test_search,
+        test_get_lesson,
+        test_submit_usage,
+        test_submit_intake,
+        test_submit_intake_missing_problem,
+        test_submit_intake_dedup,
+        test_submit_intake_title_sanitization,
+        test_unknown_tool,
+        test_search_scope_and_drafts,
+        test_usage_status,
+        test_write_lesson_missing_fields,
+        test_write_lesson_no_token,
+        test_write_lesson_anon_token,
+        test_write_lesson_low_quality,
+        test_write_lesson_success,
+        test_preflight_missing_intent,
+    ):
+        # `check()` raises now, so the script catches it per test: one broken check must not
+        # hide the ones after it, and the summary below still has to be printed. The exit code
+        # stays the script's contract — non-zero when anything failed.
+        try:
+            _test()
+        except AssertionError as exc:
+            print(f"  ERROR {exc}")
 
     print(f"\n{'=' * 40}")
     print(f"Results: {PASS} passed, {FAIL} failed")
