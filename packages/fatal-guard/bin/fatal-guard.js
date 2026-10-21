@@ -157,16 +157,65 @@ function splitCommand(value) {
   return parts;
 }
 
+// The line that names the failure. Node prints it first ("Error: EACCES: ..."),
+// Python prints it last ("FileNotFoundError: [Errno 2] ...").
+// The name is optional so the bare "Error:" counts — that is the common case.
+const ERROR_NAME_RE = /^(?:[A-Za-z_][A-Za-z0-9_.]*)?(?:Error|Exception)\b\s*:/;
+const FATAL_LINE_RE = /^(?:Traceback \(most recent call last\)|fatal\b|panic\b)/i;
+const ERROR_KEYWORD_RE = /\b(?:error|exception|denied|refused|not found|cannot|unable|failed)\b/i;
+
+/**
+ * The error text a crash report should carry.
+ *
+ * The wrapper used to keep only the last four lines of stderr, which drops
+ * exactly the line that names the error, and it then put the generic
+ * "exit code: 1, signal: none" into `message`. A payload like that can only be
+ * searched for "exit code", which returns unrelated lessons (#3645).
+ *
+ * @param {string} stderrBuffer
+ * @returns {string} the error line, or '' when stderr names no failure
+ */
+function extractErrorText(stderrBuffer) {
+  if (!stderrBuffer) return '';
+  const lines = stderrBuffer.split('\n').map((line) => line.trim()).filter(Boolean);
+  const named = lines.find((line) => ERROR_NAME_RE.test(line));
+  if (named) return named;
+  const fatal = lines.find((line) => FATAL_LINE_RE.test(line));
+  if (fatal) return fatal;
+  const keyword = lines.find((line) => ERROR_KEYWORD_RE.test(line));
+  return keyword || '';
+}
+
+/**
+ * The crash site: the error line plus the lines that follow it.
+ *
+ * @param {string} stderrBuffer
+ * @param {number} [maxLines]
+ * @returns {string}
+ */
+function extractErrorContext(stderrBuffer, maxLines = 16) {
+  if (!stderrBuffer) return '';
+  const lines = stderrBuffer.split('\n').map((line) => line.trimEnd()).filter((line) => line.trim());
+  const index = lines.findIndex((line) => ERROR_NAME_RE.test(line) || FATAL_LINE_RE.test(line));
+  if (index === -1) return lines.slice(-4).join('\n').trim();
+  return lines.slice(index, index + maxLines).join('\n').trim();
+}
+
 function reportCrash(reason, error, stderrBuffer, exitCode) {
   const handler = handlerSpec();
+  const errorText = extractErrorText(stderrBuffer);
   const rawSnippet = stderrBuffer
     ? stderrBuffer.split('\n').filter(Boolean).slice(-4).join('\n').trim()
     : `[fatal-guard] process crashed (${reason})`;
   const payloadObj = {
     ...JSON.parse(buildPayload(reason, error)),
     errorName: error?.name || 'ProcessCrash',
-    message: redact(error?.message || reason).slice(0, 500),
+    // The error text itself, not "exit code: 1, signal: none" (#3645).
+    message: redact(errorText || error?.message || reason).slice(0, 500),
     stackSnippet: redact(rawSnippet).slice(0, 1000),
+    // New field: the error line and the crash site around it. `stackSnippet`
+    // keeps its old meaning (the tail of stderr).
+    snippet: redact(extractErrorContext(stderrBuffer)).slice(0, 1000),
   };
   if (exitCode !== undefined) {
     payloadObj.exit_code = exitCode;

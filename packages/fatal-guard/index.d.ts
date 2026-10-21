@@ -17,6 +17,12 @@ export interface FatalPayload {
   message?: string;
   /** Redacted stack trace snippet, max 1000 chars (v0.3+) */
   stackSnippet?: string;
+  /**
+   * The error line and the crash site around it, max 1000 chars (#3645).
+   * Written by the CLI wrapper; `stackSnippet` keeps its older meaning (the
+   * tail of stderr), this one keeps the head.
+   */
+  snippet?: string;
 }
 
 /**
