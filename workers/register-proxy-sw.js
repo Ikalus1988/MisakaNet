@@ -6758,6 +6758,32 @@ async function ensureSearchSignalsTable(d1) {
       await d1.prepare(ddl).run();
     } catch { /* already there */ }
   }
+  // The index the E4 producer rides (2026-10-21). Until now this table had **no index at all** —
+  // `sqlite_master` on the live database returned the table and nothing else — so the E4 count
+  // scanned every row of it on every call.
+  //
+  // Measured on production the same day: the table held 5,976 rows and **17** of them carried a
+  // non-empty `client_hint` (4 distinct hints). The other 5,959 rows cannot contribute to
+  // `COUNT(DISTINCT client_hint)` at all — they are rows the query rejects — but the scan paid
+  // for all of them: 5,842 rows read per call, 349 calls, 2,039,019 rows in 24 hours, on a table
+  // whose useful content is 17 rows.
+  //
+  // Two index shapes were tried against a replica of the production shape, and the obvious one
+  // is not enough. A plain `ON search_signals(client_hint)` is **planner-dependent**: on SQLite
+  // 3.45 (the version the system Python here ships) the plan stays `SCAN search_signals`,
+  // because `client_hint <> ''` is not an index-usable constraint; on 3.50+ the planner does use
+  // it. A shape that works on one SQLite and not on another is not a shape to ship.
+  //
+  // A **partial** index is not planner-dependent, and it is *covering* besides: with
+  // `(client_hint, top_id)` the `top_id` filter is answered from the index and the table is never
+  // touched, so the plan is `SEARCH search_signals USING COVERING INDEX ... (client_hint>?)` over
+  // 17 entries on every version measured. The partial predicate is also what keeps the index
+  // small: the table grows by one row per completed search, and only the 17 rows that carry a
+  // hint belong in this index.
+  //
+  // The query is deliberately left exactly as it was. The `top_id LIKE '%/<id>.md'` clause has a
+  // leading wildcard and no index can serve it, but the point of this index is not to serve that
+  // clause — it is to make the *scan* stop at the rows that can carry a hint at all.
   searchSignalsTableReady = true;
 }
 
@@ -7489,10 +7515,29 @@ const LESSONS_CACHE_CONTROL =
 
 // `/api/analytics` — the rolling aggregates over `lesson_usage` (2026-10-20).
 //
-// Two minutes, for the same reason `/api/lessons` has two: the window behind the numbers is seven
-// days, so what the TTL can hide is one search landing in the last two minutes — and the route is
-// hit by crawlers, which is the whole point of caching it.
-const ANALYTICS_TTL_SECONDS = 120;
+// Ten minutes, not two (2026-10-21). The window behind the numbers is seven days, so the question
+// is not "how fresh is the answer" but "how much of the window can the TTL hide" — and at two
+// minutes it hid 0.02% of the window while costing the account **95% of every row it read**.
+//
+// Measured on production the same day, with `wrangler d1 insights` over a two-hour window:
+//
+//   432,991 rows read in 2h, of which 412,372 (95.3%) were these five GROUP BY queries.
+//   5,219 + 1,969 + 3,008 + 720 + 4 = 10,920 rows per recompute, ~27 recomputes/hour.
+//
+// Twenty-seven recomputes an hour is the TTL's own slot count (120s → 30/hour), so the route was
+// recomputing exactly as often as the cache could possibly allow, and each recompute re-read the
+// whole seven-day window. Ten minutes is six slots an hour: the same seven-day aggregate, hidden by
+// at most ten minutes of a 10,080-minute window (0.1%), at a fifth of the reads.
+//
+// What this does *not* buy: a fresher answer for anyone waiting on a number. There is no consumer
+// that needs the count to move inside ten minutes — the panel that shows it is a seven-day rolling
+// view, and the daily heartbeat reads it once a day. What it does buy is a bill that is a fifth of
+// what it was, on a route that is public, unauthenticated and crawled.
+//
+// The two audiences keep separate entries (see the route), so the maintainer's body is not shared
+// with anonymous callers, and the maintainer's own recompute is the only one that pays for the
+// failed-query text.
+const ANALYTICS_TTL_SECONDS = 600;
 
 /**
  * Calls today, per self-declared MCP client (`mcpclient:<name>` buckets). D1 only: the KV fallback
@@ -8386,11 +8431,21 @@ export default {
              WHERE event='get_lesson' AND created_at >= datetime('now','-7 days')
              GROUP BY lesson_id ORDER BY n DESC LIMIT 10`
           ).all(),
-          d1.prepare(
-            `SELECT query, COUNT(*) AS n FROM lesson_usage
-             WHERE event='no_match' AND created_at >= datetime('now','-7 days')
-             GROUP BY query ORDER BY n DESC LIMIT 10`
-          ).all(),
+          // The failed-query aggregate belongs to the maintainer alone: `knowledge_gaps` carries
+          // other people's verbatim queries, and the anonymous payload never includes it (the
+          // `if (maintainer)` below is the only reader of this result). It used to be computed for
+          // every caller and then thrown away — 3,008 of the 10,920 rows a recompute read, on a
+          // route that is public and crawled, and in production the maintainer branch is
+          // unreachable (`MCP_TOKEN` is not set there), so **every one of those rows was
+          // spent on an answer nobody received**. Computing a result the response will not carry
+          // is paying for a number nobody sees.
+          maintainer
+            ? d1.prepare(
+                `SELECT query, COUNT(*) AS n FROM lesson_usage
+                 WHERE event='no_match' AND created_at >= datetime('now','-7 days')
+                 GROUP BY query ORDER BY n DESC LIMIT 10`
+              ).all()
+            : Promise.resolve({ results: [] }),
           // Coogen borrow (Phase 2): intent instrumentation (event='intent',
           // query=<normalized intent>) — what users come to do.
           d1.prepare(
