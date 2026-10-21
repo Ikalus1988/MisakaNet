@@ -115,13 +115,39 @@ def _profile_lock():
         os.close(fd)
 
 
+def _read_profile() -> dict | None:
+    """profile.json as it is on disk, or None when there is nothing usable to read.
+
+    `_save` swaps the file with `os.replace`, so a reader sees either the old file or the new
+    one, never a torn one — the plain read path needs no lock for that reason.
+    """
+    if not PROFILE_PATH.exists():
+        return None
+    try:
+        return json.loads(PROFILE_PATH.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return None
+
+
 def _load() -> dict:
-    """读取 profile.json，不存在时尝试倒推。"""
-    if PROFILE_PATH.exists():
-        try:
-            return json.loads(PROFILE_PATH.read_text(encoding="utf-8"))
-        except (json.JSONDecodeError, OSError):
-            pass
+    """读取 profile.json，不存在时尝试倒推。
+
+    The backfill *writes* a profile, and a write that lands on top of a count another caller
+    just wrote loses that count — so the missing-file path takes the lock and re-checks under
+    it, instead of writing next to a concurrent update.
+    """
+    profile = _read_profile()
+    if profile is not None:
+        return profile
+    with _profile_lock():
+        return _load_under_lock()
+
+
+def _load_under_lock() -> dict:
+    """`_load` for a caller that already holds the profile lock."""
+    profile = _read_profile()
+    if profile is not None:
+        return profile
     return _backfill()
 
 
@@ -203,7 +229,7 @@ def get_lesson_count() -> int:
 def increment_search():
     """搜索计数+1，跨阈值时自动升阶段并持久化。"""
     with _profile_lock():
-        p = _load()
+        p = _load_under_lock()
         p["search_count"] = p.get("search_count", 0) + 1
         p["last_active"] = datetime.now(timezone.utc).isoformat()
         if p["stage"] == "newcomer" and p["search_count"] >= STAGE_SEARCH_THRESHOLD:
@@ -224,7 +250,7 @@ def increment_search():
 def increment_lesson():
     """lesson 计数+1，跨阈值时自动升阶段。"""
     with _profile_lock():
-        p = _load()
+        p = _load_under_lock()
         p["lesson_count"] = p.get("lesson_count", 0) + 1
         p["last_active"] = datetime.now(timezone.utc).isoformat()
         n = p["lesson_count"]
@@ -246,7 +272,7 @@ def apply_referral(code: str) -> bool:
     if not code or len(code) < 4:
         return False
     with _profile_lock():
-        p = _load()
+        p = _load_under_lock()
         if p.get("referred_by"):
             return False  # 已绑定，不可修改
         p["referred_by"] = code.upper()
