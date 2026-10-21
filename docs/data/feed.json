@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-10-21T17:22:33.428997+00:00",
+  "generated_at": "2026-10-21T21:52:40.584316+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "docs: two surfaces publish `freshness`, and they are not the same measure",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3638",
-      "timestamp": "2026-10-21T16:59:58Z",
+      "title": "docs(handoff): §126-§127 — two issue lines, and a missing lock that a flaky label hid",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3649",
+      "timestamp": "2026-10-21T18:51:21Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(infra): a build that never started is a failure, not silence",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3637",
-      "timestamp": "2026-10-21T16:46:55Z",
+      "title": "docs(integrations): the connector's own page answers the ownership question, and it is not stale",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3648",
+      "timestamp": "2026-10-21T18:46:13Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(site): the records that were wrong, and a pixel check that can see the generated tree",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3636",
-      "timestamp": "2026-10-21T16:31:51Z",
+      "title": "fix(fatal-guard): the crash payload carries the error text, not the exit code",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3647",
+      "timestamp": "2026-10-21T18:44:43Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "docs(handoff): §124.10 — the site has two faces, and Cloudflare took 13 minutes",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3635",
-      "timestamp": "2026-10-21T15:49:47Z",
+      "title": "fix(site): the onboarding dialog behaves like a dialog, and says its name in the reader's language",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3646",
+      "timestamp": "2026-10-21T18:14:36Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(site): the generated pages join the design gate, and the search gate stops reading a stale local index",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3634",
-      "timestamp": "2026-10-21T15:26:36Z",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3643",
+      "timestamp": "2026-10-21T17:30:48Z",
       "source": "github"
     },
     {
