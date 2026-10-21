@@ -39,7 +39,8 @@ function runGuard(cmd, args, timeout = 5000) {
   return new Promise((resolve) => {
     const proc = spawn(process.execPath, [FATAL_GUARD, '--', cmd, ...args], {
       stdio: ['pipe', 'pipe', 'pipe'],
-      env: { ...process.env, FATAL_HANDLER: '' },  // no handler = no-op
+      // no handler = no-op; FATAL_CRASH_OUT='' keeps the crash file out of the checkout
+      env: { ...process.env, FATAL_HANDLER: '', FATAL_CRASH_OUT: '' },
     });
     let stderr = '';
     proc.stderr.on('data', (c) => { stderr += c; });

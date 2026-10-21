@@ -18,14 +18,18 @@ const os = require('node:os');
 const path = require('node:path');
 const { buildPayload } = require('../index');
 const { redact } = require('../src/lib/redact');
-const { buildSpawnSpec } = require('../src/lib/spawn-command');
+const { buildSpawnSpec, splitCommand, HANDLER_TIMEOUT_MS } = require('../src/lib/spawn-command');
 
 const EXIT = Object.freeze({ OK: 0, ERROR: 1, USAGE: 2, TIMEOUT: 3 });
 const FATAL_SIGNALS = new Set([
   'SIGKILL', 'SIGSEGV', 'SIGABRT', 'SIGBUS',
   'SIGFPE', 'SIGILL', 'SIGTRAP', 'SIGSYS',
 ]);
-const HANDLER_TIMEOUT_MS = 1000;
+// Where the crash payload is written so an agent can read it after the fact.
+// The handler runs detached with `stdio: 'ignore'`, so whatever it prints never
+// reaches the terminal — the file is the delivery channel (#3645).
+const CRASH_FILE_ENV = 'FATAL_CRASH_OUT';
+const DEFAULT_CRASH_FILE = path.join('.misakanet', 'last-crash.json');
 
 function version() {
   try {
@@ -122,56 +126,112 @@ function handlerSpec() {
   ).trim();
 }
 
-// Parse a handler command without invoking a shell. This supports the documented
-// `/path/to/handler` form and simple quoted paths while keeping payloads argv-safe.
-// On Windows, backslashes are path separators (not escape characters).
-function splitCommand(value) {
-  const isWindows = process.platform === 'win32';
-  const parts = [];
-  let part = '';
-  let quote = '';
-  let escaped = false;
-  for (const char of value) {
-    if (escaped) {
-      part += char;
-      escaped = false;
-    } else if (char === '\\' && !isWindows) {
-      escaped = true;
-    } else if (quote) {
-      if (char === quote) quote = '';
-      else part += char;
-    } else if (char === '"' || char === "'") {
-      quote = char;
-    } else if (/\s/.test(char)) {
-      if (part) {
-        parts.push(part);
-        part = '';
-      }
-    } else {
-      part += char;
-    }
+// The handler command is tokenized by `splitCommand` (src/lib/spawn-command.js),
+// which supports the documented `/path/to/handler` form and simple quoted paths
+// while keeping payloads argv-safe.
+
+// The line that names the failure. Node prints it first ("Error: EACCES: ..."),
+// Python prints it last ("FileNotFoundError: [Errno 2] ...").
+// The name is optional so the bare "Error:" counts — that is the common case.
+const ERROR_NAME_RE = /^(?:[A-Za-z_][A-Za-z0-9_.]*)?(?:Error|Exception)\b\s*:/;
+const FATAL_LINE_RE = /^(?:Traceback \(most recent call last\)|fatal\b|panic\b)/i;
+const ERROR_KEYWORD_RE = /\b(?:error|exception|denied|refused|not found|cannot|unable|failed)\b/i;
+
+/**
+ * The error text a crash report should carry.
+ *
+ * The wrapper used to keep only the last four lines of stderr, which drops
+ * exactly the line that names the error, and it then put the generic
+ * "exit code: 1, signal: none" into `message`. A payload like that can only be
+ * searched for "exit code", which returns unrelated lessons (#3645).
+ *
+ * @param {string} stderrBuffer
+ * @returns {string} the error line, or '' when stderr names no failure
+ */
+function extractErrorText(stderrBuffer) {
+  if (!stderrBuffer) return '';
+  const lines = stderrBuffer.split('\n').map((line) => line.trim()).filter(Boolean);
+  const named = lines.find((line) => ERROR_NAME_RE.test(line));
+  if (named) return named;
+  const fatal = lines.find((line) => FATAL_LINE_RE.test(line));
+  if (fatal) return fatal;
+  const keyword = lines.find((line) => ERROR_KEYWORD_RE.test(line));
+  return keyword || '';
+}
+
+/**
+ * The crash site: the error line plus the lines that follow it.
+ *
+ * @param {string} stderrBuffer
+ * @param {number} [maxLines]
+ * @returns {string}
+ */
+function extractErrorContext(stderrBuffer, maxLines = 16) {
+  if (!stderrBuffer) return '';
+  const lines = stderrBuffer.split('\n').map((line) => line.trimEnd()).filter((line) => line.trim());
+  const index = lines.findIndex((line) => ERROR_NAME_RE.test(line) || FATAL_LINE_RE.test(line));
+  if (index === -1) return lines.slice(-4).join('\n').trim();
+  return lines.slice(index, index + maxLines).join('\n').trim();
+}
+
+/**
+ * Where the crash payload is written.
+ *
+ * `FATAL_CRASH_OUT` overrides the path; an empty value disables the file.
+ * @returns {string|null}
+ */
+function crashFilePath() {
+  const configured = process.env[CRASH_FILE_ENV];
+  if (configured === undefined) return path.resolve(process.cwd(), DEFAULT_CRASH_FILE);
+  if (configured === '') return null;
+  return path.resolve(configured);
+}
+
+/**
+ * Write the crash payload where an agent can read it.
+ *
+ * The handler is detached and its output is discarded, so the file is the only
+ * channel that survives the crash (#3645).
+ *
+ * @param {string} payload
+ * @returns {string|null} the path written, or null when nothing was written
+ */
+function writeCrashFile(payload) {
+  const target = crashFilePath();
+  if (!target) return null;
+  try {
+    fs.mkdirSync(path.dirname(target), { recursive: true });
+    fs.writeFileSync(target, `${payload}\n`, 'utf8');
+  } catch (error) {
+    process.stderr.write(`fatal-guard: could not write crash file ${target}: ${error.message}\n`);
+    return null;
   }
-  if (escaped) part += '\\';
-  if (quote) throw new Error('unterminated quote in FATAL_HANDLER');
-  if (part) parts.push(part);
-  return parts;
+  process.stderr.write(`fatal-guard: crash payload written to ${target}\n`);
+  return target;
 }
 
 function reportCrash(reason, error, stderrBuffer, exitCode) {
   const handler = handlerSpec();
+  const errorText = extractErrorText(stderrBuffer);
   const rawSnippet = stderrBuffer
     ? stderrBuffer.split('\n').filter(Boolean).slice(-4).join('\n').trim()
     : `[fatal-guard] process crashed (${reason})`;
   const payloadObj = {
     ...JSON.parse(buildPayload(reason, error)),
     errorName: error?.name || 'ProcessCrash',
-    message: redact(error?.message || reason).slice(0, 500),
+    // The error text itself, not "exit code: 1, signal: none" (#3645).
+    message: redact(errorText || error?.message || reason).slice(0, 500),
     stackSnippet: redact(rawSnippet).slice(0, 1000),
+    // New field: the error line and the crash site around it. `stackSnippet`
+    // keeps its old meaning (the tail of stderr).
+    snippet: redact(extractErrorContext(stderrBuffer)).slice(0, 1000),
   };
   if (exitCode !== undefined) {
     payloadObj.exit_code = exitCode;
   }
   const payload = JSON.stringify(payloadObj);
+
+  writeCrashFile(payload);
 
   if (!handler) {
     process.stderr.write('fatal-guard: FATAL_HANDLER is not set; crash report was not sent.\n');

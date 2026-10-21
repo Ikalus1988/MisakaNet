@@ -68,9 +68,79 @@ def redact_snippet(text: str) -> str:
     return text
 DRAFTS_DIR = REPO / "lessons" / "drafts"
 
-# 4-field tombstone protocol fields
-REQUIRED_FIELDS = {"pid", "timestamp", "reason", "exit_code"}
-OPTIONAL_FIELDS = {"snippet", "signal", "host", "node_id"}
+# Tombstone protocol fields.
+#
+# The producers do not agree on one name for the error text: the Python
+# sidecar writes `snippet`, the Node fatal-guard payload writes `stackSnippet`
+# and `message` (#3645). Both are read, oldest name first, so the error text
+# survives the trip into the draft instead of being dropped at the last step.
+#
+# `exit_code` is optional: the in-process payload reports the error before the
+# process has exited, so there is no exit code to report yet.
+REQUIRED_FIELDS = {"pid", "timestamp", "reason"}
+OPTIONAL_FIELDS = {
+    "snippet", "stackSnippet", "message", "signal", "host", "node_id",
+    "exit_code", "exitCode", "errorName", "schemaVersion",
+}
+
+# Lesson `domain` must come from the canonical vocabulary (data/domains.json) —
+# `scripts/lesson_gate.py` rejects anything else, so the old "general" fallback
+# made every auto-generated draft fail the gate for a reason that had nothing to
+# do with the crash (#3645). First match wins, most specific keyword first.
+DOMAIN_RULES: tuple[tuple[str, str], ...] = (
+    ("eacces", "security"),
+    ("eperm", "security"),
+    ("permission denied", "security"),
+    ("permission", "security"),
+    ("denied", "security"),
+    ("forbidden", "security"),
+    ("unauthorized", "security"),
+    ("certificate", "security"),
+    ("wsl", "wsl"),
+    ("/mnt/c", "wsl"),
+    ("crossmnt", "wsl"),
+    ("ntfs", "wsl"),
+    ("cannot find module", "nodejs"),
+    ("node_modules", "nodejs"),
+    ("npm ", "nodejs"),
+    ("npx ", "nodejs"),
+    ("node:", "nodejs"),
+    ("modulenotfounderror", "python"),
+    ("importerror", "python"),
+    ("syntaxerror", "python"),
+    ("traceback", "python"),
+    ("django", "python"),
+    ("flask", "python"),
+    ("pip install", "python"),
+    ("docker", "docker"),
+    ("kubernetes", "kubernetes"),
+    ("k8s", "kubernetes"),
+    ("econnrefused", "network"),
+    ("connection refused", "network"),
+    ("enotfound", "network"),
+    ("getaddrinfo", "network"),
+    ("dns", "network"),
+    ("out of memory", "devops"),
+    ("heap out of memory", "devops"),
+    ("sigsegv", "devops"),
+    ("segfault", "devops"),
+    ("timeout", "devops"),
+    ("timed out", "devops"),
+    ("mcp", "mcp"),
+    ("ollama", "llm"),
+    ("sqlite", "database"),
+    ("cloudflare", "cloudflare-worker"),
+    ("pytest", "testing"),
+    ("openclaw", "openclaw"),
+    ("github", "github"),
+    ("git ", "git"),
+    ("windows", "windows"),
+    ("win32", "windows"),
+    ("python", "python"),
+)
+# A crash nobody can classify is still a runtime problem, and "devops" is a
+# canonical topic.
+DEFAULT_DOMAIN = "devops"
 
 
 def _slugify(text: str, max_len: int = 60) -> str:
@@ -81,6 +151,65 @@ def _slugify(text: str, max_len: int = 60) -> str:
     return slug[:max_len]
 
 
+def _canonical_domains() -> frozenset:
+    """课程 frontmatter `domain` 的规范词表 (data/domains.json)。"""
+    path = REPO / "data" / "domains.json"
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise RuntimeError(f"无法读取规范领域词表 {path}: {exc}") from exc
+    return frozenset(str(domain).lower() for domain in data["canonical"])
+
+
+def _first_text(data: dict, *keys: str) -> str:
+    """按顺序取第一个非空字符串字段。"""
+    for key in keys:
+        value = data.get(key)
+        if isinstance(value, str) and value.strip():
+            return value
+    return ""
+
+
+def _error_text(data: dict) -> str:
+    """墓碑里的错误正文。
+
+    `snippet` 是 Python sidecar 写的完整片段；Node 载荷把它拆成 `message`
+    （错误正文）和 `stackSnippet`（调用栈），两个都读，正文在前 (#3645)。
+    """
+    snippet = _first_text(data, "snippet")
+    if snippet:
+        return snippet
+    parts = [
+        text for text in (_first_text(data, "message"), _first_text(data, "stackSnippet"))
+        if text
+    ]
+    return "\n".join(parts)
+
+
+def _resolve_exit_code(data: dict) -> int:
+    """墓碑里的退出码。
+
+    `exit_code` (Python sidecar) 和 `exitCode` 都认；都没有时用信号推出的
+    128+N；再没有就按崩溃处理记 1 —— in-process 载荷是在进程退出前发出的，
+    那时还没有退出码。
+    """
+    for key in ("exit_code", "exitCode"):
+        value = data.get(key)
+        if value is None or value == "":
+            continue
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            continue
+    signal = data.get("signal")
+    if signal not in (None, ""):
+        try:
+            return 128 + int(signal)
+        except (TypeError, ValueError):
+            pass
+    return 1
+
+
 def _parse_tombstone(data: dict) -> dict:
     """验证并规范化墓碑 JSON。"""
     if not isinstance(data, dict):
@@ -89,46 +218,30 @@ def _parse_tombstone(data: dict) -> dict:
     if missing:
         raise ValueError(f"Missing required tombstone fields: {missing}")
 
+    snippet = _error_text(data)
     return {
         "pid": int(data["pid"]),
         "timestamp": str(data["timestamp"]),
         "reason": redact_snippet(str(data["reason"])),
-        "exit_code": int(data["exit_code"]),
-        "snippet": redact_snippet(str(data.get("snippet", ""))[:500]),
+        "exit_code": _resolve_exit_code(data),
+        "snippet": redact_snippet(snippet[:500]),
         "signal": str(data.get("signal", "")),
         "host": str(data.get("host", "")),
         "node_id": str(data.get("node_id", "unknown")),
     }
 
 
-def _infer_domain(reason: str) -> str:
-    """从崩溃原因推断领域标签。"""
-    reason_lower = reason.lower()
-    domain_map = {
-        "node": "javascript",
-        "npm": "javascript",
-        "vite": "devops",
-        "docker": "devops",
-        "pip": "python",
-        "python": "python",
-        "import": "python",
-        "module": "python",
-        "chromadb": "python",
-        "openclaw": "cli",
-        "e2b": "cli",
-        "git": "devops",
-        "permission": "security",
-        "denied": "security",
-        "timeout": "devops",
-        "oom": "devops",
-        "memory": "devops",
-        "segfault": "devops",
-        "signal": "devops",
-    }
-    for keyword, domain in domain_map.items():
-        if keyword in reason_lower:
-            return domain
-    return "general"
+def _infer_domain(reason: str, snippet: str = "") -> str:
+    """从崩溃原因和错误正文推断领域标签。
+
+    只返回 data/domains.json 规范词表里的值 —— 课程门禁只认这些 (#3645)。
+    """
+    haystack = f"{reason}\n{snippet}".lower()
+    canonical = _canonical_domains()
+    for keyword, domain in DOMAIN_RULES:
+        if keyword in haystack:
+            return domain if domain in canonical else DEFAULT_DOMAIN
+    return DEFAULT_DOMAIN
 
 
 def _generate_ai_hint(tombstone: dict) -> str:
@@ -140,7 +253,7 @@ def _generate_ai_hint(tombstone: dict) -> str:
     reason = tombstone["reason"]
     snippet = tombstone.get("snippet", "")
     exit_code = tombstone["exit_code"]
-    domain = _infer_domain(reason)
+    domain = _infer_domain(reason, snippet)
 
     # 尝试 Ollama（极低成本本地调用）
     ollama_url = os.environ.get("MISAKANET_OLLAMA_URL", "")
@@ -259,7 +372,7 @@ def _generate_draft(tombstone: dict, source_file: str = "", ai_hint: str = "") -
     reason = tombstone["reason"]
     exit_code = tombstone["exit_code"]
     snippet = tombstone["snippet"]
-    domain = _infer_domain(reason)
+    domain = _infer_domain(reason, snippet)
     node = tombstone.get("node_id", "unknown")
 
     # 生成唯一标识
@@ -279,6 +392,10 @@ def _generate_draft(tombstone: dict, source_file: str = "", ai_hint: str = "") -
         "domain": domain,
         "tags": ["draft", "auto-generated", "agent-task", f"exit-code-{exit_code}"],
         "status": "draft",
+        # A crash report is a report, not a verified fix: E0 says exactly that.
+        # The field is required by the lesson gate, and without it every
+        # auto-generated draft failed the gate before it was even read (#3645).
+        "evidence_level": "E0",
         "source": "fatal-guard",
         "node_id": node,
         "tombstone_hash": tombstone_hash,
@@ -306,7 +423,7 @@ def _generate_draft(tombstone: dict, source_file: str = "", ai_hint: str = "") -
 
 """
     if snippet:
-        body += f"""### 崩溃现场（最后 4 行 stderr）
+        body += f"""### 崩溃现场（错误正文）
 
 ```text
 {snippet}
@@ -413,7 +530,7 @@ def main():
     output_path = DRAFTS_DIR / filename
     output_path.write_text(body, encoding="utf-8")
     print(f"draft lesson: {filename}")
-    print(f"  domain: {_infer_domain(tombstone['reason'])}")
+    print(f"  domain: {_infer_domain(tombstone['reason'], tombstone['snippet'])}")
     print(f"  reason: {tombstone['reason'][:80]}")
     print(f"  tombstone_hash: {tombstone.get('node_id', '?')}")
     print(f"  -> {output_path}")

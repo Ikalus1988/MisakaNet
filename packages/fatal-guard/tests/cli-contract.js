@@ -10,7 +10,7 @@ const CLI = path.join(__dirname, '..', 'bin', 'fatal-guard.js');
 function run(args) {
   return spawnSync(process.execPath, [CLI, ...args], {
     encoding: 'utf8',
-    env: { ...process.env, FATAL_HANDLER: '' },
+    env: { ...process.env, FATAL_HANDLER: '', FATAL_CRASH_OUT: '' },
     timeout: 5000,
   });
 }
@@ -116,7 +116,7 @@ check('--timeout=50 inline syntax works', () => {
 check('fatal-guard with FATAL_HANDLER set on crash', () => {
   const result = spawnSync(process.execPath, [CLI, '--', process.execPath, '-e', 'process.exit(1)'], {
     encoding: 'utf8',
-    env: { ...process.env, FATAL_HANDLER: 'echo' },
+    env: { ...process.env, FATAL_HANDLER: 'echo', FATAL_CRASH_OUT: '' },
     timeout: 5000,
   });
   assert.equal(result.status, 1);
