@@ -6784,6 +6784,19 @@ async function ensureSearchSignalsTable(d1) {
   // The query is deliberately left exactly as it was. The `top_id LIKE '%/<id>.md'` clause has a
   // leading wildcard and no index can serve it, but the point of this index is not to serve that
   // clause — it is to make the *scan* stop at the rows that can carry a hint at all.
+  try {
+    await d1.prepare(
+      `CREATE INDEX IF NOT EXISTS idx_search_signals_hint_top
+         ON search_signals(client_hint, top_id)
+       WHERE client_hint IS NOT NULL AND client_hint <> ''`
+    ).run();
+  } catch (error) {
+    // Logged, not swallowed: a database that refuses this index still answers the E4 count, only
+    // slowly — and a slow count is a bill, so it must be visible rather than silent. The E4
+    // signal itself is a trust signal, and losing it because an index could not be created would
+    // be a worse outcome than reading a few thousand rows.
+    logInternal("[search-signals] the client_hint index could not be created", error);
+  }
   searchSignalsTableReady = true;
 }
 
