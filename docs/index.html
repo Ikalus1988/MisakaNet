@@ -1925,7 +1925,7 @@
         <div class="lang-btn-row" style="margin-top:8px;display:flex;gap:6px;justify-content:center;">
           <button onclick="switchLang('zh')" style="background:none;border:1px solid #30363d;color:#8b949e;padding:4px 14px;border-radius:var(--r-sm);cursor:pointer;font-size:var(--fs-sm);font-family:inherit;">中</button>
           <button onclick="switchLang('en')" style="background:none;border:1px solid #30363d;color:#8b949e;padding:4px 14px;border-radius:var(--r-sm);cursor:pointer;font-size:var(--fs-sm);font-family:inherit;">EN</button>
-          <button class="help-btn" onclick="toggleModal()" title="What is MisakaNet?" style="margin-left:4px;">?</button>
+          <button class="help-btn" onclick="toggleModal()" title="What is MisakaNet?" aria-label="What is MisakaNet?" style="margin-left:4px;">?</button>
           <a href="journey/" target="_blank" style="background:none;border:1px solid #238636;color:#3fb950;padding:4px 12px;border-radius:var(--r-sm);cursor:pointer;font-size:var(--fs-xs);font-family:inherit;text-decoration:none;margin-left:4px;"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><line x1="6" x2="10" y1="11" y2="11"/><line x1="8" x2="8" y1="9" y2="13"/><line x1="15" x2="15.01" y1="12" y2="12"/><line x1="18" x2="18.01" y1="10" y2="10"/><path d="M17.32 5H6.68a4 4 0 0 0-3.978 3.59c-.006.052-.01.101-.017.152C2.604 9.416 2 14.456 2 16a3 3 0 0 0 3 3c1 0 1.5-.5 2-1l1.414-1.414A2 2 0 0 1 9.828 16h4.344a2 2 0 0 1 1.414.586L17 18c.5.5 1 1 2 1a3 3 0 0 0 3-3c0-1.545-.604-6.584-.685-7.258-.007-.05-.011-.1-.017-.151A4 4 0 0 0 17.32 5z"/></svg> Journey</a>
         </div>
         <a class="github-btn" href="https://github.com/Ikalus1988/MisakaNet" target="_blank">
@@ -2420,9 +2420,9 @@
 
   <!-- Onboarding Modal -->
   <div class="modal-overlay" id="onboarding-modal" onclick="if(event.target===this)toggleModal()">
-    <div class="modal-content">
-      <button class="modal-close" onclick="toggleModal()">✕</button>
-      <div class="modal-title">MISAKA NETWORK</div>
+    <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="onboarding-modal-title">
+      <button class="modal-close" onclick="toggleModal()" aria-label="Close">✕</button>
+      <div class="modal-title" id="onboarding-modal-title">MISAKA NETWORK</div>
       <div class="modal-section">
         <h2 data-i18n="modalWhatTitle">What is MisakaNet?</h2>
         <p data-i18n="modalWhatBody">A failure-memory corpus for AI agents: the failures they hit are written up as searchable lessons (Problem → Root Cause → Fix → Verify). Search runs on a Cloudflare Worker — hosted MCP, BM25 over D1 — and the same BM25 also runs locally after a git clone. The core is stdlib-only (Python ≥ 3.10).</p>

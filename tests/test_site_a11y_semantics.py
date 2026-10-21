@@ -104,6 +104,20 @@ def _fold_toggle_tag() -> str:
     return _canonical(match.group(0))
 
 
+def _modal_content_tag() -> str:
+    """The onboarding modal's content element — the dialog."""
+    match = re.search(r"<div class=\"modal-content\"[^>]*>", HOMEPAGE)
+    assert match, "the onboarding modal's markup moved; this test reads its opening tag"
+    return match.group(0)
+
+
+def _modal_close_tag() -> str:
+    """The onboarding modal's close control."""
+    match = re.search(r"<button class=\"modal-close\"[^>]*>", HOMEPAGE)
+    assert match, "the modal's close button moved; this test reads its opening tag"
+    return match.group(0)
+
+
 class TestHomepageOutline:
     def test_the_outline_starts_at_the_only_h1(self):
         levels = _levels(HOMEPAGE)
@@ -377,4 +391,64 @@ class TestTheFoldedListIsADisclosure:
         )
         assert "t('sectionCommon'" in _fold_toggle_markup(), (
             "the button has to be named by its label, which is the localised one"
+        )
+
+
+class TestTheOnboardingModalIsADialog:
+    """The onboarding modal was a `<div>` that a screen reader read as a pile of text.
+
+    It had no `role="dialog"`, no `aria-modal`, and nothing named it — so a reader heard the
+    modal's four sections and the page behind it as one long run of text. The close control was a
+    `✕` with no accessible name at all, and the control that opens the modal was a `?`, whose
+    `title` the name computation never reached: a button's name comes from its content first, so
+    it read as the glyph.
+    """
+
+    def test_the_modal_is_a_dialog(self):
+        tag = _modal_content_tag()
+        assert 'role="dialog"' in tag, (
+            "the modal is a dialog — without the role a screen reader reads it as plain text"
+        )
+        assert 'aria-modal="true"' in tag, (
+            "the modal covers the page, so it has to say so — without aria-modal the content "
+            "behind it stays in the reading order"
+        )
+
+    def test_the_dialog_is_named_by_the_title_that_exists(self):
+        tag = _modal_content_tag()
+        labelled_by = re.search(r'aria-labelledby="([^"]+)"', tag)
+        assert labelled_by, (
+            "the dialog has no name — a screen reader announces an unnamed dialog as just "
+            '"dialog"'
+        )
+        target = labelled_by.group(1)
+        assert re.search(r'id="%s"' % re.escape(target), HOMEPAGE), (
+            "aria-labelledby points at an element that does not exist"
+        )
+        assert re.search(
+            r'<div class="modal-title"[^>]*id="%s"' % re.escape(target), HOMEPAGE
+        ), "the dialog has to be named by the title that is on screen"
+
+    def test_the_close_control_has_a_name_and_keeps_its_glyph(self):
+        tag = _modal_close_tag()
+        label = re.search(r'aria-label="([^"]*)"', tag)
+        assert label, (
+            "the close control is a `✕` — without a name a screen reader reads the glyph"
+        )
+        assert label.group(1).strip(), "the close control's accessible name is empty"
+        assert ">✕</button>" in HOMEPAGE, (
+            "the close control lost its glyph — the name was to be added, not the mark replaced"
+        )
+
+    def test_the_control_that_opens_the_modal_has_a_name(self):
+        """The opener's `title` was never its name.
+
+        A button's accessible name comes from its content before its `title`, and the content is
+        `?` — so the title was decoration and the button read as the glyph.
+        """
+        opener = re.search(r"<button class=\"help-btn\"[^>]*>", HOMEPAGE)
+        assert opener, "the modal's opener moved; this test reads its opening tag"
+        label = re.search(r'aria-label="([^"]*)"', opener.group(0))
+        assert label and label.group(1).strip(), (
+            "the opener is a `?` — without a name a screen reader reads the glyph"
         )
