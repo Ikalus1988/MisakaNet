@@ -180,7 +180,10 @@ python3 tests/test_mcp_server.py
 ```
 
 This tests:
-- `search` returns results with `path`, `status`, and `badge` fields
+- `search` returns results with `path` and `status` at **every** detail level, plus `freshness`
+  (`fresh` / `recent` / `aging` / `stale`) at `compact` and `summary`. **There is no `badge`
+  field** — an earlier version of this line promised one, and the surface never sent it; the
+  freshness tier is a plain label.
 - `get_lesson` returns lesson content
 - Default scope excludes drafts
 
