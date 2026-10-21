@@ -20,14 +20,18 @@ And the controls: a gate that returned [] unconditionally would pass everything 
 """
 from __future__ import annotations
 
+import json
 import re
 import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))
+sys.path.insert(0, str(REPO / "scripts"))
 
 from scripts import check_design_convergence as cdc  # noqa: E402
+from scripts import site_page_scope  # noqa: E402
+from scripts import sync_design_tokens as sdt  # noqa: E402
 
 TOKEN_NAMES = [
     "--bg-0", "--bg-1", "--bg-2", "--fg-1", "--fg-2", "--fg-3",
@@ -44,9 +48,37 @@ TOKEN_NAMES = [
 ]
 
 
-def test_the_hand_written_pages_are_converged_today():
+def test_every_page_is_converged_today():
+    """The whole site, not the fourteen hand-written pages.
+
+    The generated lesson and topic pages joined this gate on 2026-10-21. Before that they were
+    excluded (handoff §122.6 item 2), and the exclusion was written out three times — once per
+    script — so nothing watched 571 pages.
+    """
     problems = cdc.check(REPO)
     assert problems == [], "\n".join(problems)
+
+
+def test_the_generated_pages_are_inside_the_gate():
+    """The hole this batch closed: the gate read 14 pages and called the site converged."""
+    gated = cdc.gated_pages(REPO)
+    generated = site_page_scope.generated_pages(REPO)
+    assert len(generated) > 500, f"the generated tree is expected to exist ({len(generated)})"
+    assert set(generated) <= set(gated), "the generated pages are outside the gate"
+    assert len(cdc.hand_written_pages(REPO)) == 14, "the hand-written page set changed shape"
+
+
+def test_the_partition_rule_is_defined_in_exactly_one_place():
+    """"Two authors, one rule" is the bug class handoff §122.3 names, and the partition was
+    written out three times — once per script. One definition, imported by all three."""
+    for name in ("check_design_convergence.py", "sync_design_tokens.py", "sync_site_partials.py"):
+        text = (REPO / "scripts" / name).read_text(encoding="utf-8")
+        assert "site_page_scope" in text, f"{name} does not import the shared partition"
+        for fragment in ('"lessons" in rel.parts', '"_partials" in rel.parts',
+                         "'lessons' in rel.parts", "'_partials' in rel.parts"):
+            assert fragment not in text, (
+                f"{name} re-implements the partition ({fragment!r}) — the rule lives in "
+                "scripts/site_page_scope.py")
 
 
 def test_the_vocabulary_defines_every_name_the_pages_use():
@@ -56,7 +88,7 @@ def test_the_vocabulary_defines_every_name_the_pages_use():
     for name in TOKEN_NAMES:
         assert f"{name}:" in source, f"{name} is not defined in the token source"
         defined.add(name)
-    for page in cdc.hand_written_pages(REPO):
+    for page in cdc.gated_pages(REPO):
         text = page.read_text(encoding="utf-8")
         # A page may declare its own aliases in its own `:root` — those are page-local and fine.
         local = set()
@@ -404,7 +436,7 @@ def test_the_shared_block_owns_the_footer_shell():
 
 
 def test_no_page_carries_its_own_footer_shell():
-    for page in cdc.hand_written_pages(REPO):
+    for page in cdc.gated_pages(REPO):
         for scope, selector, _body in cdc.scoped_rules(cdc.css_of(page)):
             if scope is not None:
                 continue
@@ -412,8 +444,8 @@ def test_no_page_carries_its_own_footer_shell():
                 f"{page.relative_to(REPO)}: the page defines its own footer shell")
 
 
-def test_every_hand_written_page_carries_the_footer_and_the_link_row():
-    for page in cdc.hand_written_pages(REPO):
+def test_every_page_carries_the_footer_and_the_link_row():
+    for page in cdc.gated_pages(REPO):
         rel = page.relative_to(REPO).as_posix()
         if rel in cdc.NOT_A_PAGE:
             continue
@@ -485,3 +517,93 @@ def test_the_old_palette_is_all_caught_at_once(tmp_path):
     problems = cdc.check(root)
     assert sum("second primary colour" in p for p in problems) == 2, problems
     assert sum("is a violet" in p for p in problems) == 2, problems
+
+
+# ── the generated pages: inside the gate, and token-driven (2026-10-21) ────────────────────────────
+#
+# Handoff §122.6 item 2: "生成的 571 个课程页**不在门禁范围内**（判据 1 / 11 只查 14 个手写页面）".
+# The gate now reads them, and the generator — not a hand edit — is what makes them compliant.
+# Each assertion below is a control: it is written so that the *old* behaviour fails it.
+
+
+def test_the_gate_watches_the_generated_tree(tmp_path):
+    """The control for the whole batch: a generated page that hardcodes a colour the vocabulary
+    owns must be reported.
+
+    Before 2026-10-21 the gate read fourteen hand-written pages and said nothing about the 571
+    others, so this page produced no complaint at all.
+    """
+    page = tmp_path / "docs" / "lessons" / "probe" / "index.html"
+    page.parent.mkdir(parents=True, exist_ok=True)
+    page.write_text(
+        "<style>body { background: #070b15; color: #e2e8f0; }</style>",
+        encoding="utf-8",
+    )
+    problems = cdc.check(tmp_path)
+    assert any("hardcodes a colour the vocabulary already has" in p for p in problems), problems
+    assert any("page background" in p for p in problems), problems
+
+
+def test_every_generated_page_carries_the_token_block_and_the_footer():
+    """Criteria 10 and 15, over the whole site — the generated pages included."""
+    pages = site_page_scope.generated_pages(REPO)
+    assert len(pages) > 500, f"the generated tree is expected to exist ({len(pages)} pages)"
+    want = sdt.token_block(REPO).strip()
+    for page in pages:
+        rel = page.relative_to(REPO).as_posix()
+        text = page.read_text(encoding="utf-8", errors="replace")
+        have = cdc.TOKEN_BLOCK.search(text)
+        assert have is not None, f"{rel}: no design-tokens block"
+        assert have.group(0).strip() == want, f"{rel}: a different design-tokens block"
+        assert '<footer class="footer">' in text, f"{rel}: no footer shell"
+        assert "site-links:start" in text, f"{rel}: no site-links row"
+
+
+def test_the_generator_emits_token_driven_pages(tmp_path):
+    """The generator is what puts the vocabulary in the pages, so the generator is what is tested."""
+    from build_lesson_pages import build_lesson_page
+
+    html = build_lesson_page({
+        "id": "probe", "title": "Probe lesson", "domain": "ops", "summary": "A summary.",
+    })
+    page = tmp_path / "docs" / "lessons" / "probe" / "index.html"
+    page.parent.mkdir(parents=True, exist_ok=True)
+    page.write_text(html, encoding="utf-8")
+
+    css = cdc.css_of(page)
+    for literal in ("#070b15", "#e2e8f0", "#00e5ff"):
+        assert literal not in css, f"the page hardcodes {literal} instead of using the token"
+    for token in ("var(--bg-0)", "var(--fg-1)", "var(--accent)", "var(--font-ui)"):
+        assert token in css, f"the page does not use {token}"
+    assert "<!-- design-tokens:start -->" in html and "<!-- design-tokens:end -->" in html
+    assert '<footer class="footer">' in html
+    assert "site-links:start" in html
+
+
+def test_the_generated_pages_are_the_generator_s_own_output():
+    """The 571 pages are regenerated by the generator, not hand-edited.
+
+    `check()` compares the plan against the disk; a page that was edited by hand drifts from the
+    plan and this goes red.
+    """
+    from build_lesson_pages import check as generator_check
+    from build_lesson_pages import load_slug_map
+    from build_lesson_pages import plan_with_slugs
+
+    lessons = json.loads((REPO / "data" / "lessons.json").read_text(encoding="utf-8"))
+    files, _slugs = plan_with_slugs(lessons, load_slug_map(REPO), root=REPO)
+    problems = generator_check(files, root=REPO)
+    assert problems == [], "\n".join(problems[:20])
+
+
+def test_the_sticky_slug_map_is_not_changed_by_a_regeneration():
+    """`docs/.generated-pages.json` is *state*, not an artifact: a slug that moves is a live URL
+    that 404s, and the map is what keeps it from moving."""
+    from build_lesson_pages import load_slug_map
+    from build_lesson_pages import plan_with_slugs
+
+    recorded = load_slug_map(REPO)
+    assert recorded, "the manifest carries no slug map"
+    lessons = json.loads((REPO / "data" / "lessons.json").read_text(encoding="utf-8"))
+    _files, planned = plan_with_slugs(lessons, recorded, root=REPO)
+    assert planned == recorded, "a regeneration moved a slug — a live URL would 404"

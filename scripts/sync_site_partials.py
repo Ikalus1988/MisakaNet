@@ -25,6 +25,12 @@ import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
+if str(Path(__file__).resolve().parent) not in sys.path:
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+# The one definition of "which pages are in scope" — imported, not re-implemented (handoff
+# §122.3: "两个作者各写一份" is the bug class this file's third copy was).
+import site_page_scope  # noqa: E402
+
 INDEX = Path("docs") / "index.html"
 PARTIALS = {"nav": Path("docs") / "_partials" / "nav.html"}
 # The in-site link row (#2026-10-19): only the homepage carried the drawer, so every other hand-written
@@ -59,16 +65,21 @@ def site_block(root: Path = REPO) -> str:
 
 
 def site_pages(root: Path = REPO) -> list[Path]:
-    """Every hand-written page with a footer — discovered, so a new page is covered by default."""
-    pages = sorted((root / "docs").rglob("*.html"))
-    out = []
-    for page in pages:
-        rel = page.relative_to(root / "docs")
-        if "_partials" in rel.parts or "lessons" in rel.parts or "topics" in rel.parts:
-            continue
-        if "<footer" in page.read_text(encoding="utf-8"):
-            out.append(page)
-    return out
+    """Every page with a footer — the hand-written ones and the generated ones.
+
+    The generated lesson and topic pages carry the row too (they were excluded until 2026-10-21,
+    which is the hole handoff §122.6 item 2 records: 571 pages with no footer and no gate). Their
+    writer is `scripts/build_lesson_pages.py`, so `check_site_links()` watches them and `write()`
+    below leaves them alone.
+    """
+    return [page for page in site_page_scope.gated_pages(root)
+            if "<footer" in page.read_text(encoding="utf-8")]
+
+
+def writable_pages(root: Path = REPO) -> list[Path]:
+    """The hand-written pages with a footer — the only ones this script may rewrite."""
+    return [page for page in site_page_scope.scoped_pages(root)
+            if "<footer" in page.read_text(encoding="utf-8")]
 
 
 def check_site_links(root: Path = REPO) -> list[str]:
@@ -78,10 +89,13 @@ def check_site_links(root: Path = REPO) -> list[str]:
         rel = page.relative_to(root).as_posix()
         text = page.read_text(encoding="utf-8")
         have = SITE_BLOCK.search(text)
+        fix = ("run `python3 scripts/build_lesson_pages.py`"
+               if site_page_scope.is_generated(page.relative_to(root / "docs"))
+               else "run `python3 scripts/sync_site_partials.py`")
         if have is None:
-            problems.append(f"{rel}: no site-links row — run `python3 scripts/sync_site_partials.py`")
+            problems.append(f"{rel}: no site-links row — {fix}")
         elif have.group(0).strip() != want.strip():
-            problems.append(f"{rel}: the site-links row differs from {SITE_LINKS.as_posix()}")
+            problems.append(f"{rel}: the site-links row differs from {SITE_LINKS.as_posix()} — {fix}")
     return problems
 
 
@@ -125,7 +139,7 @@ def write(root: Path = REPO) -> list[str]:
         changed.append(INDEX.as_posix())
 
     want_row = site_block(root)
-    for site_page in site_pages(root):
+    for site_page in writable_pages(root):
         rel = site_page.relative_to(root).as_posix()
         text = site_page.read_text(encoding="utf-8")
         if SITE_BLOCK.search(text):
@@ -158,6 +172,13 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     changed = write(args.root)
     print(f"✅ rewrote {changed}" if changed else "✅ already in sync")
+    # The generated pages carry the row too, and their writer is the generator — a report that
+    # says "already in sync" while they are stale is a report that lies.
+    stale = [page for page in site_page_scope.generated_pages(args.root)
+             if not SITE_BLOCK.search(page.read_text(encoding="utf-8", errors="replace"))]
+    if stale:
+        print(f"⚠️  {len(stale)} generated page(s) carry no site-links row — run "
+              f"`python3 scripts/build_lesson_pages.py`", file=sys.stderr)
     return 0
 
 

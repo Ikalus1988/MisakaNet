@@ -20,8 +20,16 @@ yet, and a red gate that is red on purpose is a gate people learn to ignore. So:
     side colour bars, the emoji — each printed with its current count so the next batch can see
     what it owes.
 
-Every check reads the *rendered* CSS of the hand-written pages: the `<style>` blocks and the
-inline `style="…"` attributes, because both carry the values the browser sees.
+Every check reads the *rendered* CSS of the pages: the `<style>` blocks and the inline
+`style="…"` attributes, because both carry the values the browser sees.
+
+**Which pages are in scope (2026-10-21).** The gate reads *every* page a reader can reach — the
+fourteen hand-written ones and the 571 generated lesson/topic pages. The generated tree used to be
+excluded, and the exclusion was written out three times (once per script), so nothing watched
+the colours, the background or the footer of 571 pages; handoff §122.6 item 2 records the hole
+("生成的 571 个课程页**不在门禁范围内**"). The rule now lives in one place —
+`scripts/site_page_scope.py` — and this script, `sync_design_tokens.py` and `sync_site_partials.py`
+all import it (the bug class handoff §122.3 names: "两个作者各写一份").
 """
 from __future__ import annotations
 
@@ -40,6 +48,9 @@ TOKENS = Path("docs") / "_partials" / "design-tokens.html"
 if str(Path(__file__).resolve().parent) not in sys.path:
     sys.path.insert(0, str(Path(__file__).resolve().parent))
 from site_icons import ICONS as SITE_ICONS  # noqa: E402
+# The one definition of "which pages are in scope". Imported, not re-implemented: a second copy of
+# the partition is a second rule to keep in sync (handoff §122.3).
+import site_page_scope  # noqa: E402
 
 # ── the vocabulary this script checks against ──────────────────────────────────────────────────────
 RADIUS_TOKENS = {"--r-sm", "--r-md", "--r-lg", "--r-pill"}
@@ -191,6 +202,19 @@ EMOJI_ALLOWLIST = {
         ("/❌|fail|Error|error|missing|blocked/i",
          "the same classifier, for the line that failed"),
     ],
+    # The generated pages carry the corpus verbatim, and one lesson's summary quotes a Feishu
+    # chat line. The mark is part of the quoted message, not an icon the page chose — the same
+    # reason the journey page's mocked terminal keeps its marks.
+    "docs/lessons/feishu-display-optimization-cc-connect/index.html": [
+        ("\U0001F527 工具 #5",
+         "the lesson's summary quotes the Feishu chat line the bug report is about: the "
+         "wrench is inside the quoted message, and rewriting it would falsify the report"),
+    ],
+    "docs/topics/feishu/index.html": [
+        ("\U0001F527 工具 #5",
+         "the same quoted Feishu chat line, carried by the topic page's summary of that "
+         "lesson; the topic page renders the corpus summary verbatim"),
+    ],
 }
 
 # ── the pages ────────────────────────────────────────────────────────────────────────────────────
@@ -207,15 +231,22 @@ INLINE_STYLE = re.compile(r"\bstyle\s*=\s*\"([^\"]*)\"", re.IGNORECASE)
 
 
 def hand_written_pages(root: Path = REPO) -> list[Path]:
-    """The same partition as `sync_site_partials.py` and `sync_design_tokens.py`."""
-    pages = sorted((root / "docs").rglob("*.html"))
-    out = []
-    for page in pages:
-        rel = page.relative_to(root / "docs")
-        if "_partials" in rel.parts or "lessons" in rel.parts or "topics" in rel.parts:
-            continue
-        out.append(page)
-    return out
+    """The hand-written pages — the ones a sync script may rewrite in place.
+
+    The rule itself lives in `scripts/site_page_scope.py`; this is the name the rest of the repo
+    (and `scripts/compare_site_pixels.py`) already imports.
+    """
+    return site_page_scope.scoped_pages(root)
+
+
+def gated_pages(root: Path = REPO) -> list[Path]:
+    """Every page the gate reads: the hand-written ones *and* the generated lesson/topic pages.
+
+    The generated tree used to be excluded here, which is the hole handoff §122.6 item 2 records:
+    571 pages carried their own hardcoded palette and no footer, and the gate said the site was
+    converged.
+    """
+    return site_page_scope.gated_pages(root)
 
 
 def site_assets(root: Path = REPO) -> list[Path]:
@@ -226,7 +257,7 @@ def site_assets(root: Path = REPO) -> list[Path]:
     panel into it. A gate that read only the pages would have called the site emoji-free on the
     day the locale files still carried four.
     """
-    out = list(hand_written_pages(root))
+    out = list(gated_pages(root))
     locales = root / "docs" / "locales"
     if locales.is_dir():
         out.extend(sorted(locales.glob("*.json")))
@@ -464,7 +495,7 @@ SIZE_REF = r"var\(--fs-[a-z0-9-]+\)"
 def check(root: Path = REPO) -> list[str]:
     """Every enforced criterion that is not met, as a list of problem strings."""
     problems: list[str] = []
-    pages = hand_written_pages(root)
+    pages = gated_pages(root)
 
     for page in pages:
         rel = page.relative_to(root).as_posix()
@@ -645,7 +676,7 @@ def check(root: Path = REPO) -> list[str]:
                 if any(part.strip() in (".footer", "footer") for part in selector.split(",")):
                     problems.append(
                         f"{rel}: the page defines its own footer shell — the shared token block "
-                        "owns it, so all fourteen pages are the same shell")
+                        "owns it, so every page is the same shell")
                     break
 
     # 13 — the icons are SVG, not emoji. The exceptions are content, and each is written down in
@@ -669,7 +700,7 @@ def check(root: Path = REPO) -> list[str]:
     if not re.search(r"^\s*\.footer\s*\{", tokens_text, re.MULTILINE):
         problems.append(
             f"{TOKENS.as_posix()}: the footer shell is gone — the shared block owns it, so all "
-            "fourteen pages are the same shell")
+            "every page is the same shell")
 
     # 14 — every inline icon is one of ours. A hand-drawn path is a path nobody can review.
     for asset in site_assets(root):
@@ -815,7 +846,7 @@ def report(root: Path = REPO) -> list[tuple[str, str, str, bool]]:
     Returns (criterion, current, target, enforced?) rows — enforced rows are the ones `check()`
     fails on; the rest are printed so the next batch can see what it owes.
     """
-    pages = hand_written_pages(root)
+    pages = gated_pages(root)
     css = "\n".join(css_of(page) for page in pages)
 
     radii = set()
@@ -914,6 +945,15 @@ def report(root: Path = REPO) -> list[tuple[str, str, str, bool]]:
             else:
                 emoji_icons += 1
 
+    # How many pages carry the shared token block. It used to be a hardcoded "14 / 14" — a number
+    # that stopped being true the moment a page was added, and that said nothing about the 571
+    # generated pages until they were brought in (handoff §122.6 item 2).
+    token_heads = sum(
+        1 for page in pages
+        if TOKEN_BLOCK.search(page.read_text(encoding="utf-8", errors="replace"))
+    )
+    total_pages = len(pages)
+
     return [
         ("2 圆角档位", f"{len(radii)} 种", "≤ 3 (+胶囊)", True),
         ("3 动效时长", f"{len(durations)} 种", "≤ 2", True),
@@ -925,12 +965,12 @@ def report(root: Path = REPO) -> list[tuple[str, str, str, bool]]:
         ("1 跨页主色 / 强调色", f"{accent_band} 处主色带", "0（只剩 token）", True),
         ("8 卡片套卡片", "0（按视觉判据）", "0", False),
         ("9 border-left 侧边色条", f"{side_bars} 处", "0", True),
-        ("10 手写页面共用 token 头", "14 / 14", "14 / 14", True),
-        ("11 各页底色统一", f"{backgrounds} / {len(pages) - len(NOT_A_PAGE)}", "--bg-0", True),
+        ("10 各页面共用 token 头", f"{token_heads} / {total_pages}", f"{total_pages} / {total_pages}", True),
+        ("11 各页底色统一", f"{backgrounds} / {total_pages - len(NOT_A_PAGE)}", "--bg-0", True),
         ("12 紫色强调色", f"{purples} 处", "0", True),
         ("12b 其余紫色阶", f"{other_purples} 处", "0", True),
         ("13 Y 批：emoji 图标", f"{emoji_icons} 处（内容 {emoji_content} 处）", "0 处", True),
-        ("15 页脚壳（Z 批）", f"{footers} / {len(pages)}", "共享 token 块", True),
+        ("15 页脚壳（Z 批）", f"{footers} / {total_pages}", "共享 token 块", True),
         ("16 页脚壳由共享 token 块拥有",
          "1 / 1" if re.search(r"^\s*\.footer\s*\{", _tokens_text(root), re.MULTILINE) else "0 / 1",
          "1", True),

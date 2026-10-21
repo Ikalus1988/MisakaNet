@@ -120,6 +120,33 @@ def test_the_generated_pages_carry_the_block_too():
         assert have.group(0).strip() == want, f"{page}: the generated page carries a different block"
 
 
+def test_a_drifted_generated_page_is_reported_with_the_generator_as_the_fix(tmp_path):
+    """The control: the checker must see the generated tree, and must name the writer that
+    actually owns those pages.
+
+    Their writer is `scripts/build_lesson_pages.py` — a second writer for the same file is how a
+    page ends up with two sources of truth (handoff §122.3) — so naming the wrong script would
+    send the reader to one that will not touch the file.
+    """
+    root = _copy_tree(tmp_path)
+    page = root / "docs" / "lessons" / "probe" / "index.html"
+    page.parent.mkdir(parents=True, exist_ok=True)
+    page.write_text("<html><body>no tokens here</body></html>", encoding="utf-8")
+    problems = sdt.check(root)
+    assert any("build_lesson_pages.py" in p for p in problems), problems
+
+
+def test_the_sync_script_does_not_rewrite_the_generated_pages(tmp_path):
+    """One writer per file: the generator owns the generated pages, this script owns the rest."""
+    root = _copy_tree(tmp_path)
+    page = root / "docs" / "lessons" / "probe" / "index.html"
+    page.parent.mkdir(parents=True, exist_ok=True)
+    page.write_text("<html><body>no tokens here</body></html>", encoding="utf-8")
+    sdt.write(root)
+    assert "design-tokens" not in page.read_text(encoding="utf-8"), (
+        "the sync script rewrote a generated page — the generator is its only writer")
+
+
 def test_every_hand_written_page_carries_the_same_block():
     """Issue #3541, criterion 10: the hand-written pages share one token header."""
     want = sdt.token_block(REPO).strip()
