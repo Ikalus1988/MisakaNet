@@ -41,6 +41,53 @@ function sanitizeCommand(command) {
   return command;
 }
 
+/**
+ * Split a handler command string into program + arguments without a shell.
+ *
+ * `FATAL_HANDLER` is documented in both forms — `/usr/bin/logger` and
+ * `node /opt/bin/handler.js` — so the string has to be tokenized before it is
+ * spawned. This mirrors what the CLI wrapper has always done; the in-process
+ * path passed the raw string to `sanitizeCommand`, which refused anything with
+ * a space (`node /opt/bin/handler.js` looks like a shell interpreter with
+ * arguments) and silently dropped the report (#3645).
+ *
+ * The tokens are still validated afterwards: `sanitizeCommand` sees the program
+ * only, and the spawn is always `shell: false`, so no token reaches a shell.
+ *
+ * On Windows, backslashes are path separators (not escape characters).
+ */
+function splitCommand(value) {
+  const isWindows = process.platform === 'win32';
+  const parts = [];
+  let part = '';
+  let quote = '';
+  let escaped = false;
+  for (const char of value) {
+    if (escaped) {
+      part += char;
+      escaped = false;
+    } else if (char === '\\' && !isWindows) {
+      escaped = true;
+    } else if (quote) {
+      if (char === quote) quote = '';
+      else part += char;
+    } else if (char === '"' || char === "'") {
+      quote = char;
+    } else if (/\s/.test(char)) {
+      if (part) {
+        parts.push(part);
+        part = '';
+      }
+    } else {
+      part += char;
+    }
+  }
+  if (escaped) part += '\\';
+  if (quote) throw new Error('unterminated quote in FATAL_HANDLER');
+  if (part) parts.push(part);
+  return parts;
+}
+
 function buildSpawnSpec(command, args = []) {
   const safe = sanitizeCommand(command);
   if (safe === null) {
@@ -58,4 +105,4 @@ function buildSpawnSpec(command, args = []) {
   };
 }
 
-module.exports = { buildSpawnSpec, quoteWindowsArg, sanitizeCommand };
+module.exports = { buildSpawnSpec, quoteWindowsArg, sanitizeCommand, splitCommand };

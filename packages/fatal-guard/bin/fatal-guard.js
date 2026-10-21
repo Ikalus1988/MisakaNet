@@ -18,7 +18,7 @@ const os = require('node:os');
 const path = require('node:path');
 const { buildPayload } = require('../index');
 const { redact } = require('../src/lib/redact');
-const { buildSpawnSpec } = require('../src/lib/spawn-command');
+const { buildSpawnSpec, splitCommand } = require('../src/lib/spawn-command');
 
 const EXIT = Object.freeze({ OK: 0, ERROR: 1, USAGE: 2, TIMEOUT: 3 });
 const FATAL_SIGNALS = new Set([
@@ -120,41 +120,6 @@ function handlerSpec() {
     process.env.OPENCLAW_ERROR_HANDLER ||
     ''
   ).trim();
-}
-
-// Parse a handler command without invoking a shell. This supports the documented
-// `/path/to/handler` form and simple quoted paths while keeping payloads argv-safe.
-// On Windows, backslashes are path separators (not escape characters).
-function splitCommand(value) {
-  const isWindows = process.platform === 'win32';
-  const parts = [];
-  let part = '';
-  let quote = '';
-  let escaped = false;
-  for (const char of value) {
-    if (escaped) {
-      part += char;
-      escaped = false;
-    } else if (char === '\\' && !isWindows) {
-      escaped = true;
-    } else if (quote) {
-      if (char === quote) quote = '';
-      else part += char;
-    } else if (char === '"' || char === "'") {
-      quote = char;
-    } else if (/\s/.test(char)) {
-      if (part) {
-        parts.push(part);
-        part = '';
-      }
-    } else {
-      part += char;
-    }
-  }
-  if (escaped) part += '\\';
-  if (quote) throw new Error('unterminated quote in FATAL_HANDLER');
-  if (part) parts.push(part);
-  return parts;
 }
 
 // The line that names the failure. Node prints it first ("Error: EACCES: ..."),

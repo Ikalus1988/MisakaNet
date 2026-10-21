@@ -17,6 +17,8 @@ export interface FatalPayload {
   message?: string;
   /** Redacted stack trace snippet, max 1000 chars (v0.3+) */
   stackSnippet?: string;
+  /** Process exit code, when the payload reports the process exiting (#3645) */
+  exit_code?: number;
   /**
    * The error line and the crash site around it, max 1000 chars (#3645).
    * Written by the CLI wrapper; `stackSnippet` keeps its older meaning (the
@@ -29,8 +31,13 @@ export interface FatalPayload {
  * Build a JSON payload string with diagnostic fields.
  * @param reason - The error reason type
  * @param error - Optional error object or message for diagnostic payload
+ * @param exitCode - Optional process exit code; adds `exit_code` to the payload
  */
-export function buildPayload(reason: FatalPayload['reason'], error?: Error | string): string;
+export function buildPayload(
+  reason: FatalPayload['reason'],
+  error?: Error | string,
+  exitCode?: number,
+): string;
 
 /**
  * Fire-and-forget external handler invocation.

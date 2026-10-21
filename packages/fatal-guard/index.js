@@ -22,9 +22,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { redact } = require('./src/lib/redact');
-const { buildSpawnSpec } = require('./src/lib/spawn-command');
-
-const HANDLER_TIMEOUT_MS = 5000;
+const { buildSpawnSpec, splitCommand, HANDLER_TIMEOUT_MS } = require('./src/lib/spawn-command');
 
 /**
  * @typedef {Object} FatalPayload
@@ -35,15 +33,17 @@ const HANDLER_TIMEOUT_MS = 5000;
  * @property {string} [errorName] — Error constructor name (v0.3+)
  * @property {string} [message] — Redacted error message (v0.3+)
  * @property {string} [stackSnippet] — Redacted stack trace snippet (v0.3+)
+ * @property {number} [exit_code] — Process exit code (#3645)
  */
 
 /**
  * Build a JSON payload string with diagnostic fields.
  * @param {string} reason
  * @param {Error|string} [error] — optional error object or message
+ * @param {number} [exitCode] — optional process exit code (adds `exit_code`)
  * @returns {string}
  */
-function buildPayload(reason, error) {
+function buildPayload(reason, error, exitCode) {
   const payload = {
     schemaVersion: 1,
     reason,
@@ -58,6 +58,10 @@ function buildPayload(reason, error) {
     if (err.stack) {
       payload.stackSnippet = redact(String(err.stack)).slice(0, 1000);
     }
+  }
+
+  if (exitCode !== undefined && exitCode !== null) {
+    payload.exit_code = exitCode;
   }
 
   return JSON.stringify(payload);
@@ -94,7 +98,14 @@ function runHandler(reason, error, customPayload) {
         }
       } catch (_) {}
     }
-    const invocation = buildSpawnSpec(handler, [...handlerArgs, payload]);
+    // `FATAL_HANDLER` may carry the program *and* its arguments
+    // ("node /opt/bin/handler.js"). Tokenizing it here — the way the CLI
+    // wrapper always has — is what keeps that form from being rejected as a
+    // shell interpreter with arguments, which dropped the report silently
+    // (#3645). The payload stays the last argv entry either way.
+    const [command, ...commandArgs] = splitCommand(handler);
+    if (!command) return;
+    const invocation = buildSpawnSpec(command, [...commandArgs, ...handlerArgs, payload]);
     // Default to non-blocking detached/unref on POSIX so handlers can finish
     // after process.exit(). On Windows the parent kills the job object on
     // exit, so we must block until the handler finishes via spawnSync (matches
