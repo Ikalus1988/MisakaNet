@@ -874,10 +874,13 @@ function render(results, q, meta) {
 
   // Common references (folded)
   if (commonRefs.length) {
-    html += '<button class="fold-toggle" type="button" onclick="this.classList.toggle(\'open\');this.nextElementSibling.hidden=!this.nextElementSibling.hidden">' +
-      '<span class="arrow">▸</span> ' + t('sectionCommon', { count: commonRefs.length }) +
+    // The arrow is decoration — it only rotates when the list is open — so it is hidden from the
+    // name and the button is named by its label ("Common references (3)").
+    html += '<button class="fold-toggle" type="button" aria-expanded="false"' +
+      ' aria-controls="fold-common" onclick="toggleFold(this)">' +
+      '<span class="arrow" aria-hidden="true">▸</span> ' + t('sectionCommon', { count: commonRefs.length }) +
       '</button>';
-    html += '<div hidden>' + commonRefs.map(renderCard).join('') + '</div>';
+    html += '<div id="fold-common" hidden>' + commonRefs.map(renderCard).join('') + '</div>';
   }
 
   el.innerHTML = html;
@@ -996,6 +999,20 @@ async function togglePreview(index) {
   } catch (e) {
     panel.innerHTML = '<div class="preview-status">' + t('previewUnavailable') + '</div>';
   }
+}
+
+/** The folded "common references" list is a disclosure, so the button says whether it is open.
+ *
+ * The state is read off the panel rather than toggled twice in a row: the panel's `hidden` is what
+ * the reader can see, and the arrow's rotation is only a picture of it. Toggling the class and the
+ * `hidden` attribute independently is what let the two drift apart (#3539 R2).
+ */
+function toggleFold(button) {
+  const panel = button.nextElementSibling;
+  if (!panel) return;
+  panel.hidden = !panel.hidden;
+  button.classList.toggle('open', !panel.hidden);
+  button.setAttribute('aria-expanded', panel.hidden ? 'false' : 'true');
 }
 
 function runSearch(q) {

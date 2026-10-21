@@ -90,6 +90,20 @@ def _result_title_id() -> str:
     return _canonical(match.group(1))
 
 
+def _fold_toggle_markup() -> str:
+    """The fold button's markup, as the page builds it."""
+    match = re.search(r"'<button class=\"fold-toggle\"[\s\S]*?'</button>'", SEARCH)
+    assert match, "the fold button markup moved; this test reads it"
+    return match.group(0)
+
+
+def _fold_toggle_tag() -> str:
+    """The fold button's opening tag, as the page builds it."""
+    match = re.search(r"'<button class=\"fold-toggle\"[\s\S]*?>'", _fold_toggle_markup())
+    assert match, "the fold button markup moved; this test reads its opening tag"
+    return _canonical(match.group(0))
+
+
 class TestHomepageOutline:
     def test_the_outline_starts_at_the_only_h1(self):
         levels = _levels(HOMEPAGE)
@@ -308,4 +322,59 @@ class TestTheResultCardIsAControl:
         )
         assert "togglePreview(Number(card.dataset.index));" in handler, (
             "the keyboard path no longer opens the card"
+        )
+
+
+class TestTheFoldedListIsADisclosure:
+    """The "common references" list is folded behind a button that said nothing about it.
+
+    The state lived in two places at once — the `.open` class, which only rotates the arrow, and
+    the panel's `hidden` — and neither of them is something a screen reader can hear. The reader
+    was told the list was there and not whether it was open, and the arrow was read out as part
+    of the button's name on top of that.
+    """
+
+    def test_the_button_declares_its_initial_state_and_its_target(self):
+        tag = _fold_toggle_tag()
+        assert 'aria-expanded="false"' in tag, (
+            "the list starts folded, so the button has to start collapsed"
+        )
+        assert 'aria-controls="fold-common"' in tag, (
+            "the button has to name the list it opens"
+        )
+
+    def test_the_list_the_button_names_exists_and_starts_hidden(self):
+        assert "'<div id=\"fold-common\" hidden>'" in SEARCH, (
+            "the panel the button names has to exist, and it starts hidden"
+        )
+
+    def test_the_button_uses_the_function_that_keeps_the_state(self):
+        assert 'onclick="toggleFold(this)"' in _fold_toggle_markup(), (
+            "the button has to call the function that writes the state, not toggle the class and "
+            "the `hidden` attribute on its own"
+        )
+
+    def test_the_state_is_read_off_the_panel(self):
+        """Not toggled twice in a row: the panel is what the reader sees, the arrow a picture of it.
+
+        Toggling the class and the `hidden` attribute independently is what let the two drift
+        apart — and it is the reason the state has to be read off the panel rather than flipped.
+        """
+        body = _function_body("toggleFold")
+        assert "panel.hidden = !panel.hidden;" in body, (
+            "the panel is the state — it has to be what the button flips"
+        )
+        assert "button.setAttribute('aria-expanded', panel.hidden ? 'false' : 'true');" in body, (
+            "the button's state has to be read off the panel, so the two cannot drift apart"
+        )
+        assert "button.classList.toggle('open', !panel.hidden);" in body, (
+            "the arrow's rotation has to follow the panel too"
+        )
+
+    def test_the_button_is_named_by_its_label_and_not_by_the_arrow(self):
+        assert '<span class="arrow" aria-hidden="true">' in SEARCH, (
+            "the arrow is decoration — without aria-hidden it is read out as part of the name"
+        )
+        assert "t('sectionCommon'" in _fold_toggle_markup(), (
+            "the button has to be named by its label, which is the localised one"
         )
