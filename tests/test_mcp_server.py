@@ -3,6 +3,10 @@
 
 Tests the JSON-RPC handlers directly (no subprocess needed).
 
+Every check below is a real gate: a false condition fails the pytest run and names the check
+(see `check()`). This file used to only *print* its verdict, so it passed whatever the checks
+said — a green run that proved nothing.
+
 Usage:
     python3 tests/test_mcp_server.py
 """
@@ -25,6 +29,12 @@ sys.path.insert(0, str(REPO_ROOT))
 _TEST_DATA_DIR = Path(tempfile.mkdtemp(prefix="misakanet-mcp-smoke-"))
 os.environ.setdefault("MISAKANET_GAP_LOG", str(_TEST_DATA_DIR / "search_gaps.jsonl"))
 os.environ.setdefault("MISAKANET_CONTRIBUTION_QUEUE", str(_TEST_DATA_DIR / "contribution_queue.jsonl"))
+# Same isolation problem, one level up: the intake path is remote-first, so it files the report on
+# MisakaNet — `tests/test_me_inbox.py` created #3580 on the network while running this suite.
+# `tests/conftest.py` sets the same switch for the pytest session; this script has no conftest, so
+# it sets it itself. A gate must not file a real issue, and a check whose answer depends on the
+# network is not a gate.
+os.environ.setdefault("MISAKANET_INTAKE_DISABLE_REMOTE", "1")
 
 from scripts.mcp_server import TOOLS, handle_request  # noqa: E402
 
@@ -43,13 +53,27 @@ def rpc(method: str, params: dict = None, req_id: int = 1) -> dict:
 
 
 def check(name: str, condition: bool, detail: str = ""):
+    """A check that can go red.
+
+    This used to only print. `PASS` and `FAIL` were module-level counters and nothing ever
+    asserted on `FAIL`, so the file passed whatever the checks said: measured 2026-10-21, 19
+    tests and 71 checks — 67 passed, 4 failed — and pytest still exited 0. A reader who saw the
+    green run had learned nothing about the MCP server.
+
+    Now a false condition raises `AssertionError` naming the check, which is this repository's
+    convention for a gate that can fail: `tests/test_site_design_convergence.py` asserts with the
+    failing problem in the message, and `tests/test_d1_counters_schema.py` asserts one property
+    at a time with the same shape of message. The counters stay because the directly-runnable
+    script prints a summary of them.
+    """
     global PASS, FAIL
     if condition:
         PASS += 1
         print(f"  PASS {name}")
-    else:
-        FAIL += 1
-        print(f"  FAIL {name}{': ' + detail if detail else ''}")
+        return
+    FAIL += 1
+    print(f"  FAIL {name}{': ' + detail if detail else ''}")
+    raise AssertionError(f"check failed: {name}{': ' + detail if detail else ''}")
 
 
 def test_initialize():
@@ -174,20 +198,40 @@ def test_submit_usage():
 
 def test_submit_intake():
     print("\n-- tools/call: misakanet_submit_intake --")
-    resp = rpc("tools/call", {
-        "name": "misakanet_submit_intake",
-        "arguments": {
-            "kind": "missing_lesson",
-            "problem": "pip install fails on WSL with SSL timeout",
-            "error": "SSL: CERTIFICATE_VERIFY_FAILED",
-            "source": "claude-code",
-        },
-    })
+    # The intake path is remote-first: it files the report on MisakaNet. This gate must not file a
+    # real issue, and the answer must not depend on the network, so the call is forced onto the
+    # local queue — the path this file can assert deterministically. The hosted worker's status
+    # vocabulary is "pending_review" (a GitHub issue awaiting review); the local queue's is
+    # "pending" (scripts/contribution_queue.py). The old check asserted the worker's word here and
+    # so failed against the path this file actually runs — see
+    # tests/test_intake_receipt_truthfulness.py for the hosted receipt.
+    previous = os.environ.get("MISAKANET_INTAKE_DISABLE_REMOTE")
+    os.environ["MISAKANET_INTAKE_DISABLE_REMOTE"] = "1"
+    try:
+        resp = rpc("tools/call", {
+            "name": "misakanet_submit_intake",
+            "arguments": {
+                "kind": "missing_lesson",
+                "problem": "pip install fails on WSL with SSL timeout",
+                "error": "SSL: CERTIFICATE_VERIFY_FAILED",
+                "source": "claude-code",
+            },
+        })
+    finally:
+        if previous is None:
+            os.environ.pop("MISAKANET_INTAKE_DISABLE_REMOTE", None)
+        else:
+            os.environ["MISAKANET_INTAKE_DISABLE_REMOTE"] = previous
     result_text = resp.get("result", {}).get("content", [{}])[0].get("text", "{}")
     result = json.loads(result_text)
     check("returns submitted", result.get("submitted") is True)
     check("returns intake_id", "intake_id" in result)
-    check("status is pending_review", result.get("status") == "pending_review")
+    check("delivery is local_queue (a gate must not file a real issue)",
+          result.get("delivery") == "local_queue",
+          f"delivery={result.get('delivery')!r}")
+    check("status is pending (awaiting review, not published)",
+          result.get("status") == "pending",
+          f"status={result.get('status')!r}")
     check("returns redactions_applied", "redactions_applied" in result)
     check("returns quality_score", "quality_score" in result)
     check("returns receipt", "receipt" in result)
@@ -243,71 +287,184 @@ def test_unknown_tool():
     check("error code is -32601", resp.get("error", {}).get("code") == -32601)
 
 
+def _okf_records():
+    """The tracked export the SAG index is built from (`data/okf/lessons.jsonl`)."""
+    path = REPO_ROOT / "data" / "okf" / "lessons.jsonl"
+    return [
+        json.loads(line)
+        for line in path.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+
+
+def _backend_matrix(tmp_root: Path):
+    """Yield `(name, search_state, corpus, retrieves)` for every search backend.
+
+    `search_state` is the tuple `handle_search` takes (`HAS_SAG, SAG_DB, HAS_BM25, sag_search`),
+    `corpus` is the records that backend can retrieve, and `retrieves(record)` answers whether a
+    retrieval over that corpus — *before* the surface's published-only filter — returns the record.
+
+    Every backend is built here, from tracked files, so the answer never depends on whatever
+    index the machine happens to carry. That mattered: `data/sag.db` is gitignored, and the copy
+    on this checkout was built on 2026-08-01 — measured 2026-10-21, 2.5 months before the corpus
+    it claims to describe. It held 1 of the 37 drafts, and the probe query answered 1 hit from it
+    and 9 from BM25. The same commit was therefore green in a fresh worktree and red in this
+    checkout: a gate whose answer depends on a file the developer last built by hand is not a
+    gate.
+
+    The three backends are the three the handler can take (`misakanet/server/handlers/search.py`).
+    `_exclude_drafts` exists precisely because SAG-Lite and the stdlib fallback do not filter
+    drafts themselves, so all three are held to the same contract here.
+    """
+    from misakanet.search.engine import LESSONS, _compute_bm25_scores, _load_docs_cached
+    from misakanet.server.handlers.search import _fallback_search
+    from scripts.build_sag_index import build_index
+    from scripts.build_sag_index import search as sag_search
+
+    # sag-lite — an index this test builds from the tracked export, never the one on disk.
+    db = tmp_root / "sag.db"
+    build_index(REPO_ROOT / "data" / "okf", db)
+    okf = _okf_records()
+    yield (
+        "sag-lite",
+        (True, db, True, sag_search),
+        [{"id": Path(r["path"]).stem, "title": r["title"], "status": r["status"],
+          "path": r["path"]} for r in okf],
+        lambda rec: any(h.get("path") == rec["path"]
+                        for h in sag_search(db, rec["title"], top=9)),
+    )
+
+    # bm25 — the `lessons/` corpus, read by the engine. BM25 drops drafts itself
+    # (`_rank_docs_impl`), so the pre-filter evidence is the score the draft would have earned.
+    docs = _load_docs_cached(LESSONS, is_lesson=True)
+
+    def bm25_retrieves(rec):
+        idx = [i for i, d in enumerate(docs) if d.is_draft and d.title == rec["title"]]
+        if not idx:
+            return False
+        return _compute_bm25_scores(rec["title"], docs)[idx[0]] > 0
+
+    yield (
+        "bm25",
+        (False, None, True, None),
+        [{"id": Path(d.filepath).stem, "title": d.title,
+          "status": "draft" if d.is_draft else "published"} for d in docs],
+        bm25_retrieves,
+    )
+
+    # fallback — `data/lessons.json`, stdlib only. It does not filter drafts either, so this is
+    # the backend where the surface's own filter is the only thing between a draft and a caller.
+    lessons = json.loads((REPO_ROOT / "data" / "lessons.json").read_text(encoding="utf-8"))
+    yield (
+        "fallback",
+        (False, None, False, None),
+        [{"id": e["id"], "title": e["title"], "status": e.get("status", ""),
+          "path": e.get("url", "")} for e in lessons],
+        lambda rec: any(h.get("path") == rec["path"]
+                        for h in _fallback_search(rec["title"], top=9)),
+    )
+
+
+def _search_pinned(state, query: str, detail: str) -> dict:
+    """Call `misakanet_search` over JSON-RPC with the backend pinned to `state`."""
+    import misakanet.server.handlers.search as search_module
+
+    previous = search_module._SEARCH_STATE
+    search_module._SEARCH_STATE = state
+    try:
+        resp = rpc("tools/call", {
+            "name": "misakanet_search",
+            "arguments": {"query": query, "top": 3, "detail": detail},
+        })
+    finally:
+        search_module._SEARCH_STATE = previous
+    text = resp.get("result", {}).get("content", [{}])[0].get("text", "{}")
+    return json.loads(text)
+
+
 def test_search_scope_and_drafts():
-    """What this surface actually tells a caller about drafts — the old check here could never fail (#2270).
+    """What this surface tells a caller about drafts — on every backend, reproducibly.
 
-    It computed `draft_count = sum(1 for r in results if r.get("status") == "draft")` on a **default**
-    search. `status` is not in this surface's compact projection, nor in `summary` — only `detail=full`
-    carries it — so `r.get("status")` was `None` for every result whatever the search returned, and the
-    check passed unconditionally while claiming to police the search scope.
+    The old check here could never fail (#2270): it counted `r.get("status") == "draft"` on a
+    default search, and `status` was not in the compact or summary projection, so the count was 0
+    whatever the search returned. The surface has since moved (#1999) and `check()` now raises,
+    which turned the assertions below live — and the first version of them turned out to assert
+    a *coincidence* rather than a contract: the probe was a draft's title, and the only lesson
+    that title matched was that draft, so "the probe query returns a hit" held only on a corpus
+    where something else happened to share the words. Measured 2026-10-21, the same commit was
+    green in a fresh worktree (BM25 answered) and red in this checkout (a `data/sag.db` built on
+    2026-08-01 answered instead).
 
-    Measured here (2026-09-26), so the assertion is about this surface and not about a policy nobody has
-    implemented:
+    So both halves are pinned now:
 
-        compact  keys: evidence_level, freshness, id, kind, problem, score, title
-        summary  keys: domain, evidence_level, freshness, id, kind, problem, tags, title
-        full     keys: description, domain, kind, path, score, source, status, tags, title
+    * **the backend** — `data/sag.db` is gitignored, and the copy on this checkout is 2.5 months
+      older than the corpus it claims to describe: it held 1 of the 37 drafts. The three
+      backends the handler can take are each built here, from tracked files, and each is held to
+      the same contract;
+    * **the probe** — derived from the corpus at run time, so it cannot drift from it.
 
-    A caller at the default level therefore cannot tell a draft from a published lesson — and at compact
-    the `id` comes back empty as well, so it cannot cross-reference one either. Whether drafts should be
-    searchable at all, and whether the default level should say so, are the open decisions in #2270;
-    this test reds if either changes.
+    The contract, from `docs/mcp.md` ("search returns results with `path`, `status` ... fields";
+    "Drafts are excluded to avoid surfacing unverified content"):
+
+    * `status` and `path` are carried at **every** detail level — `path` because
+      `misakanet_get_lesson` needs one of them to fetch, `status` because it is how a caller tells
+      a draft from a published lesson;
+    * drafts are **excluded** at every detail level, and the exclusion is *load-bearing*: the
+      probed draft is retrievable from the backend's corpus, so a leak would show.
+
+    Measured here (2026-10-21), so the assertions are about this surface and not about a policy
+    nobody has implemented:
+
+        compact  keys: evidence_level, freshness, id, kind, path, problem, score, status, title
+        summary  keys: domain, evidence_level, freshness, id, kind, path, problem, status, tags, title
+        full     keys: domain, kind, path, score, status, title
     """
     print("\n-- search scope: what this surface reveals about drafts --")
 
-    index = json.loads((REPO_ROOT / "data" / "lessons.json").read_text(encoding="utf-8"))
-    drafts = {e["id"] for e in index if e.get("status") == "draft"}
-    if not drafts:
-        check("corpus still carries drafts (probe is meaningful)", False,
-              "no draft lessons in data/lessons.json — this test would pass vacuously")
-        return
+    with tempfile.TemporaryDirectory(prefix="misakanet-mcp-backends-") as tmp:
+        for name, state, corpus, retrieves in _backend_matrix(Path(tmp)):
+            published = [r for r in corpus if r["status"] == "published"]
+            drafts = [r for r in corpus if r["status"] == "draft"]
+            check(f"{name}: the corpus carries published lessons", bool(published),
+                  f"{len(corpus)} records, none published")
+            check(f"{name}: the corpus carries drafts (the probe is meaningful)", bool(drafts),
+                  f"{len(corpus)} records, none draft")
 
-    # The query comes from the corpus, not from my typing: the first version of this test hardcoded the
-    # lesson title and misspelled one word, so the probe returned nothing and the assertions below never
-    # ran. Deriving it means the fixture cannot drift from the lesson it is about.
-    probe = next((e for e in index if e["id"] in drafts and len(e.get("title", "")) > 20), None)
-    assert probe is not None, "no draft with a usable title to probe with"
-    query = probe["title"]
+            # A published probe: the surface must answer with hits, and every hit must be
+            # actionable — `path` to fetch it, `status` to know what it is.
+            pub = published[0]
+            for detail in ("compact", "summary", "full"):
+                payload = _search_pinned(state, pub["title"], detail)
+                check(f"{name}: {detail} answers without an error", "error" not in payload,
+                      f"got {payload.get('error')!r}")
+                hits = payload.get("results", [])
+                check(f"{name}: {detail} returns hits for a published lesson", bool(hits),
+                      f"query={pub['title']!r}, got {hits!r}")
+                check(f"{name}: {detail} carries `status` on every hit",
+                      all("status" in h for h in hits),
+                      f"{detail} keys: {sorted(hits[0]) if hits else []}")
+                check(f"{name}: {detail} carries `path` on every hit",
+                      all("path" in h for h in hits),
+                      f"{detail} keys: {sorted(hits[0]) if hits else []}")
 
-    def search(detail):
-        resp = rpc("tools/call", {"name": "misakanet_search",
-                                  "arguments": {"query": query, "top": 3, "detail": detail}})
-        text = resp.get("result", {}).get("content", [{}])[0].get("text", "{}")
-        return json.loads(text)
-
-    compact, summary, full = search("compact"), search("summary"), search("full")
-    if "error" in compact:
-        print("  WARN Search unavailable, skipping the draft scope check")
-        return
-
-    compact_hits = compact.get("results", [])
-    check("the probe query returns a hit at compact", bool(compact_hits), f"got {compact_hits!r}")
-    if not compact_hits:
-        return
-
-    check("compact does not carry `status` (the field the old check read)",
-          "status" not in compact_hits[0], f"compact keys: {sorted(compact_hits[0])}")
-    check("summary does not carry it either",
-          all("status" not in r for r in summary.get("results", [])),
-          f"summary keys: {sorted(summary['results'][0]) if summary.get('results') else []}")
-
-    full_hits = full.get("results", [])
-    check("detail=full is where `status` appears",
-          bool(full_hits) and "status" in full_hits[0], f"full keys: {sorted(full_hits[0]) if full_hits else []}")
-    if full_hits:
-        check("and that lesson is a draft — so drafts are searchable here",
-              str(full_hits[0].get("status")) == "draft",
-              f"status={full_hits[0].get('status')!r} for {full_hits[0].get('title', '')[:40]!r}")
+            # The leak probe: a draft this backend *would* return if the surface stopped
+            # filtering. Picking it is setup — the assertion is that the surface drops it.
+            draft = next((r for r in drafts if retrieves(r)), None)
+            check(f"{name}: some draft in the corpus is retrievable by its own title "
+                  f"(so the exclusion can be observed)",
+                  draft is not None,
+                  f"{len(drafts)} drafts, none retrievable by title")
+            for detail in ("compact", "summary", "full"):
+                payload = _search_pinned(state, draft["title"], detail)
+                check(f"{name}: {detail} answers without an error", "error" not in payload,
+                      f"got {payload.get('error')!r}")
+                hits = payload.get("results", [])
+                check(f"{name}: {detail} surfaces no draft (the default scope excludes drafts)",
+                      all(h.get("status") != "draft" for h in hits),
+                      f"{detail} statuses: {[h.get('status') for h in hits]}")
+                check(f"{name}: {detail} does not carry the probed draft",
+                      draft["title"] not in {h.get("title") for h in hits},
+                      f"draft={draft['title']!r}, hit titles={[h.get('title') for h in hits]}")
 
 
 def test_usage_status():
@@ -446,21 +603,34 @@ def test_preflight_missing_intent():
 
 if __name__ == "__main__":
     print("MisakaNet MCP Server smoke test")
-    test_initialize()
-    test_tools_list()
-    test_tool_descriptions_are_agent_friendly()
-    test_search()
-    test_get_lesson()
-    test_submit_usage()
-    test_unknown_tool()
-    test_search_scope_and_drafts()
-    test_usage_status()
-    test_write_lesson_missing_fields()
-    test_write_lesson_no_token()
-    test_write_lesson_anon_token()
-    test_write_lesson_low_quality()
-    test_write_lesson_success()
-    test_preflight_missing_intent()
+    for _test in (
+        test_initialize,
+        test_tools_list,
+        test_tool_descriptions_are_agent_friendly,
+        test_search,
+        test_get_lesson,
+        test_submit_usage,
+        test_submit_intake,
+        test_submit_intake_missing_problem,
+        test_submit_intake_dedup,
+        test_submit_intake_title_sanitization,
+        test_unknown_tool,
+        test_search_scope_and_drafts,
+        test_usage_status,
+        test_write_lesson_missing_fields,
+        test_write_lesson_no_token,
+        test_write_lesson_anon_token,
+        test_write_lesson_low_quality,
+        test_write_lesson_success,
+        test_preflight_missing_intent,
+    ):
+        # `check()` raises now, so the script catches it per test: one broken check must not
+        # hide the ones after it, and the summary below still has to be printed. The exit code
+        # stays the script's contract — non-zero when anything failed.
+        try:
+            _test()
+        except AssertionError as exc:
+            print(f"  ERROR {exc}")
 
     print(f"\n{'=' * 40}")
     print(f"Results: {PASS} passed, {FAIL} failed")

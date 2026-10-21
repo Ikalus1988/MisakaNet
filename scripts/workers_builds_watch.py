@@ -29,6 +29,21 @@ every push is just a different kind of noise:
 
 **Transitions only** — the same reason a good alert fires on state change rather than on every sample.
 
+**And one thing that is not a state: a build that never started.** Everything above reads a
+check-run. But the failure this watcher exists to catch also has a shape with *no* check-run at
+all: Cloudflare's Git integration stops listening (a rolled API token — the cutover document
+records one on 2026-09-23, and the site was dark for a day) and the commit on the deploying
+branch simply never gets a build. The old code had one answer for that and for "the build has not
+started yet", which is `unknown`, which is silence — the same silence #2136 was. Measured
+2026-10-21, the window in which "not yet" is the honest answer is wide: the publisher's
+force-push went green in 1m41s once and in **13m25s and 13m58s** twice, and the site served the
+older build for all of it.
+
+So the branch tip is judged on its **age** as well: a tip that has sat for two hours with no
+Workers Builds check-run on it at all is not "not yet", it is "never", and that is `red` — the
+site is serving an older build and nothing says so. A build that is *queued* is still `unknown`,
+because a queued build is not a failure.
+
 The tracking issue is *whichever open issue carries the `site-build-red` label*. That is the whole
 contract with the maintainer: label an existing issue and the watcher comments there instead of opening
 a duplicate (as #2136 was), and unlabel or close it and the next red build opens a fresh one. The
@@ -52,6 +67,7 @@ import os
 import sys
 import urllib.error
 import urllib.request
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 DEFAULT_REPO = "Ikalus1988/MisakaNet"
@@ -63,6 +79,14 @@ LABEL_COLOR = "b60205"
 # one — a silently truncated sentence is a worse label than a short one.
 LABEL_DESCRIPTION = "Tracking issue for the Cloudflare Workers Builds site deploy (scripts/workers_builds_watch.py)"
 CHECK_PREFIX = "Workers Builds"
+
+#: How long a commit may sit on the deploying branch with **no** Workers Builds check-run at all
+#: before the watcher calls it a failure rather than "not yet".
+#:
+#: Measured 2026-10-21 on `dist`, the publisher's force-push to green: 1m41s (`5532d82e`),
+#: 13m25s (`f2d85f3a`), 13m58s (`d76c3a8b`). Two hours is a wide margin over every one of those
+#: and still well inside the "the site is dark for a day" the token rotation caused on 2026-09-23.
+NEVER_BUILT_AFTER = timedelta(hours=2)
 
 # The transition is recorded in a comment rather than in a file, so the state lives where the reader
 # is looking instead of in a snapshot nobody opens.
@@ -150,16 +174,25 @@ def all_check_runs(gh: GitHub, sha: str) -> list:
     return collected
 
 
-def site_build_state(gh: GitHub, sha: str) -> tuple[str, str]:
+def builds_for(gh: GitHub, sha: str) -> list:
+    """The Workers Builds check-runs on one commit — possibly none."""
+    return [r for r in all_check_runs(gh, sha)
+            if str(r.get("name") or "").startswith(CHECK_PREFIX)]
+
+
+def site_build_state(gh: GitHub, sha: str, builds: list | None = None) -> tuple[str, str]:
     """(state, evidence) for one commit's Workers Builds checks.
 
     `red` wins over `green` when both are present: a commit can carry more than one Workers Builds
     run (a preview trigger and the production one), and reporting the healthy half of a split pair is
     the exact mistake this watcher exists to prevent. Anything unfinished is `unknown`, which is not
     a state to act on — a queued build is not a failure.
+
+    `builds` is what `builds_for()` already read, passed in so the caller does not pay for the same
+    list twice.
     """
-    builds = [r for r in all_check_runs(gh, sha)
-              if str(r.get("name") or "").startswith(CHECK_PREFIX)]
+    if builds is None:
+        builds = builds_for(gh, sha)
     if not builds:
         return UNKNOWN, "no Workers Builds check-run on this commit"
     finished = [r for r in builds if r.get("status") == "completed"]
@@ -175,6 +208,56 @@ def site_build_state(gh: GitHub, sha: str) -> tuple[str, str]:
         return GREEN, f"all {len(finished)} succeeded — [build {run.get('external_id')}]({run.get('details_url')})"
     conclusions = ", ".join(sorted({str(r.get("conclusion")) for r in finished}))
     return UNKNOWN, f"inconclusive ({conclusions})"
+
+
+def commit_age(gh: GitHub, sha: str) -> timedelta | None:
+    """How long ago this commit was made — or None when the API does not say.
+
+    The commit's own date, not the push time: GitHub does not expose the latter, and the two differ
+    by however long the commit sat locally before it was pushed. That difference can only make the
+    age *larger*, so this can flag a little early in a case where a commit waited a long time before
+    being pushed — for `dist` the publisher commits and pushes in the same second.
+    """
+    payload = gh("GET", f"/commits/{sha}") or {}
+    stamp = ((payload.get("commit") or {}).get("committer") or {}).get("date")
+    if not stamp:
+        return None
+    try:
+        when = datetime.fromisoformat(str(stamp).replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if when.tzinfo is None:
+        when = when.replace(tzinfo=timezone.utc)
+    return datetime.now(timezone.utc) - when
+
+
+def human_age(age: timedelta) -> str:
+    """`3h12m` — the age the way a reader wants it, not the way a timedelta prints it."""
+    minutes = int(age.total_seconds() // 60)
+    hours, minutes = divmod(minutes, 60)
+    return f"{hours}h{minutes:02d}m"
+
+
+def never_built_state(gh: GitHub, sha: str, branch: str, builds: list, why: str) -> tuple[str, str]:
+    """RED when a commit on the deploying branch has had no build at all for too long.
+
+    This is the difference the old code could not draw: "the build has not started yet" and "the
+    build is never coming" had the same answer (`unknown`, which is silence), and the second one is
+    the shape a rolled Cloudflare API token takes — the site keeps serving the last good build
+    while nothing says so.
+
+    Only the branch tip and an explicitly named commit are judged this way. The event path fires
+    exactly when Cloudflare publishes a suite, so an empty result there is an API hiccup rather than
+    a stalled deploy, and it is not a reason to file anything.
+    """
+    if builds or why not in ("branch tip", "explicit --sha"):
+        return UNKNOWN, ""
+    age = commit_age(gh, sha)
+    if age is None or age < NEVER_BUILT_AFTER:
+        return UNKNOWN, ""
+    return RED, (f"no build ever started for this commit — it has been on {branch} for "
+                 f"{human_age(age)} with no Workers Builds check-run on it at all, so the site is "
+                 f"still serving an older build")
 
 
 def open_tracker(gh: GitHub) -> dict | None:
@@ -330,7 +413,14 @@ def main() -> int:
         return 0
     print(f"repo={repo} branch={branch} sha={sha[:9]} ({why})")
 
-    state, evidence = site_build_state(gh, sha)
+    builds = builds_for(gh, sha)
+    state, evidence = site_build_state(gh, sha, builds)
+    if state == UNKNOWN:
+        # `unknown` covers both "a build is queued" and "no build ever started". Only the second
+        # one is a failure, and only the age of the commit tells them apart.
+        state, never_built = never_built_state(gh, sha, branch, builds, why)
+        if never_built:
+            evidence = never_built
     print(f"site build: {state} — {evidence}")
 
     tracker = open_tracker(gh)

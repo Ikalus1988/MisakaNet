@@ -27,6 +27,35 @@ Output:
     docs/sitemap.xml                 — every generated URL + the static pages
     docs/.generated-pages.json       — manifest of what this generator owns
 
+Design tokens and the footer shell (2026-10-21)
+-----------------------------------------------
+The 571 generated pages used to be **outside** the design-convergence gate: the gate read the
+14 hand-written pages, and the generated ones carried their own hardcoded palette
+(`background: #070b15; color: #e2e8f0;`, accent `#00e5ff`, a literal font stack) with no token
+block and no footer. Handoff §122.6 item 2 records the hole: "生成的 571 个课程页**不在门禁范围内**
+（判据 1 / 11 只查 14 个手写页面）".
+
+So the pages this generator writes are now part of the site's one design system:
+
+* they carry the shared **token block**, copied from `docs/_partials/design-tokens.html` between the
+  `<!-- design-tokens:start -->` / `<!-- design-tokens:end -->` markers — the same convention the
+  hand-written pages use, so `scripts/sync_design_tokens.py --check` can watch them too;
+* their CSS names the tokens (`var(--bg-0)`, `var(--fg-1)`, `var(--accent)`, `var(--font-ui)`,
+  `var(--fs-*)`, `var(--r-sm)`) instead of the literals the vocabulary already owns — the token
+  values are the same hexes, so the rendering does not move;
+* they carry the shared **footer shell**, with the `site-links` row copied from
+  `docs/_partials/site-links.html`, so a reader can leave a lesson page the same way they leave
+  the homepage.
+
+Both blocks are *read* from their source here rather than written out in this file: a second copy
+of the markup is a second thing to keep in sync (the bug class handoff §122.3 names — "两个作者
+各写一份"), and this generator is the only writer of the pages that carry them.
+
+Two colours stay literal on purpose: `#8b949e` and `#c9d1d9` are GitHub greys the vocabulary
+does **not** own (no token carries them), and the fourteen hand-written pages still carry the same
+two literals. Mapping them to `--fg-2` / `--fg-1` would be a new design decision and a visible
+recolour, not a convergence.
+
 Why this file changed (2026-09-12, handoff-2026-09-12 §5.3)
 ----------------------------------------------------------
 The generator existed but **nothing ran it**: it had been executed once by hand,
@@ -71,7 +100,14 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 from misakanet.evidence import describe  # noqa: E402
+# The shared markup, read from its source rather than copied here. `token_block()` and
+# `site_block()` are the same extractors `scripts/sync_design_tokens.py` and
+# `scripts/sync_site_partials.py` use, so the marker convention has one spelling in the repo
+# instead of three.
+from sync_design_tokens import token_block  # noqa: E402
+from sync_site_partials import site_block  # noqa: E402
 
 LESSONS_JSON = Path("data") / "lessons.json"
 LESSONS_DIR = Path("docs") / "lessons"
@@ -124,25 +160,28 @@ HTML_TEMPLATE = """\
 <meta property="og:title" content="{title}">
 <meta property="og:description" content="{description}">
 <meta property="og:url" content="{canonical}">
+{tokens}
 <style>
-  body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #070b15; color: #e2e8f0; max-width: 720px; margin: 0 auto; padding: 40px 20px; line-height: 1.6; }}
-  a {{ color: #00e5ff; }}
-  h1 {{ font-size: 24px; margin-bottom: 8px; }}
-  .meta {{ color: #8b949e; font-size: 13px; margin-bottom: 24px; }}
-  .evidence {{ background: rgba(0,229,255,0.14); color: #00e5ff; border-radius: 4px; padding: 2px 6px; font-size: 12px; cursor: help; }}
+  body {{ font-family: var(--font-ui); background: var(--bg-0); color: var(--fg-1); max-width: 720px; margin: 0 auto; padding: 40px 20px; line-height: 1.6; }}
+  a {{ color: var(--accent); }}
+  h1 {{ font-size: var(--fs-2xl); margin-bottom: 8px; }}
+  .meta {{ color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }}
+  .evidence {{ background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }}
   .section {{ margin-bottom: 24px; }}
-  .section h2 {{ font-size: 16px; color: #00e5ff; margin-bottom: 8px; }}
-  .section p {{ color: #c9d1d9; font-size: 14px; }}
+  .section h2 {{ font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }}
+  .section p {{ color: #c9d1d9; font-size: var(--fs-sm); }}
   .tags {{ display: flex; gap: 8px; flex-wrap: wrap; margin: 16px 0; }}
-  .tag {{ background: rgba(0,229,255,0.1); color: #00e5ff; padding: 2px 8px; border-radius: 4px; font-size: 12px; }}
+  .tag {{ background: rgba(0,229,255,0.1); color: var(--accent); padding: 2px 8px; border-radius: var(--r-sm); font-size: var(--fs-2xs); }}
   .related {{ margin-top: 32px; }}
   .related a {{ display: block; padding: 8px 0; border-bottom: 1px solid rgba(0,229,255,0.1); }}
-  .back {{ margin-top: 32px; font-size: 13px; }}
+  .back {{ margin-top: 32px; font-size: var(--fs-xs); }}
 </style>
 </head>
 <body>
 {body}
 <div class="back"><a href="/">← Back to MisakaNet</a> · <a href="/search/">Search lessons</a></div>
+<footer class="footer">
+{site_links}</footer>
 </body>
 </html>"""
 
@@ -158,15 +197,16 @@ TOPIC_TEMPLATE = """\
 <meta property="og:title" content="{title}">
 <meta property="og:description" content="{description}">
 <meta property="og:url" content="{canonical}">
+{tokens}
 <style>
-  body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #070b15; color: #e2e8f0; max-width: 720px; margin: 0 auto; padding: 40px 20px; line-height: 1.6; }}
-  a {{ color: #00e5ff; }}
-  h1 {{ font-size: 24px; margin-bottom: 8px; }}
-  .count {{ color: #8b949e; font-size: 14px; margin-bottom: 24px; }}
+  body {{ font-family: var(--font-ui); background: var(--bg-0); color: var(--fg-1); max-width: 720px; margin: 0 auto; padding: 40px 20px; line-height: 1.6; }}
+  a {{ color: var(--accent); }}
+  h1 {{ font-size: var(--fs-2xl); margin-bottom: 8px; }}
+  .count {{ color: #8b949e; font-size: var(--fs-sm); margin-bottom: 24px; }}
   .lesson {{ padding: 12px 0; border-bottom: 1px solid rgba(0,229,255,0.1); }}
   .lesson a {{ font-weight: 600; }}
-  .lesson .summary {{ color: #8b949e; font-size: 13px; margin-top: 4px; }}
-  .back {{ margin-top: 32px; font-size: 13px; }}
+  .lesson .summary {{ color: #8b949e; font-size: var(--fs-xs); margin-top: 4px; }}
+  .back {{ margin-top: 32px; font-size: var(--fs-xs); }}
 </style>
 </head>
 <body>
@@ -174,6 +214,8 @@ TOPIC_TEMPLATE = """\
 <div class="count">{count} lessons in this domain</div>
 {lessons}
 <div class="back"><a href="/">← Back to MisakaNet</a> · <a href="/search/">Search lessons</a></div>
+<footer class="footer">
+{site_links}</footer>
 </body>
 </html>"""
 
@@ -189,15 +231,16 @@ TOPICS_INDEX_TEMPLATE = """\
 <meta property="og:title" content="Browse failure lessons by topic — MisakaNet">
 <meta property="og:description" content="Browse {total} indexed failure-recovery lessons by topic.">
 <meta property="og:url" content="{canonical}">
+{tokens}
 <style>
-  body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #070b15; color: #e2e8f0; max-width: 720px; margin: 0 auto; padding: 40px 20px; line-height: 1.6; }}
-  a {{ color: #00e5ff; }}
-  h1 {{ font-size: 24px; margin-bottom: 8px; }}
-  .count {{ color: #8b949e; font-size: 14px; margin-bottom: 24px; }}
+  body {{ font-family: var(--font-ui); background: var(--bg-0); color: var(--fg-1); max-width: 720px; margin: 0 auto; padding: 40px 20px; line-height: 1.6; }}
+  a {{ color: var(--accent); }}
+  h1 {{ font-size: var(--fs-2xl); margin-bottom: 8px; }}
+  .count {{ color: #8b949e; font-size: var(--fs-sm); margin-bottom: 24px; }}
   ul {{ list-style: none; padding: 0; }}
   li {{ padding: 8px 0; border-bottom: 1px solid rgba(0,229,255,0.1); display: flex; justify-content: space-between; gap: 12px; }}
-  li .n {{ color: #8b949e; font-size: 13px; white-space: nowrap; }}
-  .back {{ margin-top: 32px; font-size: 13px; }}
+  li .n {{ color: #8b949e; font-size: var(--fs-xs); white-space: nowrap; }}
+  .back {{ margin-top: 32px; font-size: var(--fs-xs); }}
 </style>
 </head>
 <body>
@@ -207,8 +250,36 @@ TOPICS_INDEX_TEMPLATE = """\
 {items}
 </ul>
 <div class="back"><a href="/">← Back to MisakaNet</a> · <a href="/search/">Search lessons</a></div>
+<footer class="footer">
+{site_links}</footer>
 </body>
 </html>"""
+
+
+def _partials_root(root: Path) -> Path:
+    """Where the shared markup is read from.
+
+    The scratch roots the generator's own tests use (`--root <tmp>`) carry no `docs/_partials/`,
+    so the repository that holds this script is the fallback. A root that *does* carry the
+    partials is read from itself — that is the site the pages are being written for.
+    """
+    if (root / "docs" / "_partials" / "design-tokens.html").is_file():
+        return root
+    return REPO
+
+
+def shared_markup(root: Path = REPO) -> dict[str, str]:
+    """The shared blocks every generated page carries, read from their source.
+
+    * `tokens` — the marked token block from `docs/_partials/design-tokens.html`, stripped, so it
+      is byte-identical to what `scripts/sync_design_tokens.py` writes into a hand-written page;
+    * `site_links` — the marked link row from `docs/_partials/site-links.html`, verbatim, so
+      `scripts/sync_site_partials.py --check` sees the same copy the hand-written pages carry.
+
+    Read once per run: 571 pages × two file reads would be 1,142 reads of the same two files.
+    """
+    source = _partials_root(root)
+    return {"tokens": token_block(source).strip(), "site_links": site_block(source)}
 
 
 def slugify(text: str) -> str:
@@ -259,8 +330,15 @@ def is_published_status(status: str | None) -> bool:
     return (status or PUBLISHED_STATUS).strip().lower() == PUBLISHED_STATUS
 
 
-def build_lesson_page(lesson: dict) -> str:
-    """Generate HTML for a single lesson."""
+def build_lesson_page(lesson: dict, root: Path = REPO,
+                      markup: dict[str, str] | None = None) -> str:
+    """Generate HTML for a single lesson.
+
+    `markup` is the shared token block and link row (see `shared_markup`). It is passed in so a
+    571-page run reads the two sources once instead of once per page; a caller that does not have
+    it reads them here.
+    """
+    blocks = markup if markup is not None else shared_markup(root)
     title = lesson.get("title", "Untitled")
     domain = lesson.get("domain", "general")
     summary = lesson.get("summary", "")
@@ -301,12 +379,16 @@ def build_lesson_page(lesson: dict) -> str:
         # would regenerate all 464 lesson pages for a change that only concerns 30 of them, and a
         # 464-file diff makes a one-line feature unreviewable. Inline keeps the diff to exactly the
         # pages that changed meaning.
+        #
+        # The sizes are tokens, not literals: the convergence gate reads inline styles as well as
+        # stylesheets (a halo in a `style="…"` attribute is a violation with nowhere to hide), so a
+        # literal `border-radius` here would be a violation on all 40 draft pages.
         '<div class="draft-banner" role="note" style="border:1px solid rgba(210,153,34,0.5);'
-        "background:rgba(210,153,34,0.12);color:#e3b341;border-radius:6px;padding:10px 14px;"
-        'margin-bottom:20px;font-size:13px;line-height:1.5;">'
+        "background:rgba(210,153,34,0.12);color:#e3b341;border-radius:var(--r-sm);padding:10px 14px;"
+        'margin-bottom:20px;font-size:var(--fs-xs);line-height:1.5;">'
         f"<strong>Draft — not published.</strong> "
         f"This lesson is <code style=\"background:rgba(210,153,34,0.15);padding:1px 5px;"
-        f'border-radius:3px;">{status}</code> and may be incomplete or wrong. '
+        f'border-radius:var(--r-sm);">{status}</code> and may be incomplete or wrong. '
         f'The MCP API returns it with <code>status: "{status}"</code> so callers can filter it.</div>'
     )
 
@@ -335,11 +417,14 @@ def build_lesson_page(lesson: dict) -> str:
 
     body += f'\n<div class="section"><h2>Search</h2><p><a href="/search/?q={title}">Find related lessons →</a></p></div>'
 
-    return HTML_TEMPLATE.format(title=title, description=description, canonical=canonical, body=body)
+    return HTML_TEMPLATE.format(title=title, description=description, canonical=canonical,
+                                 body=body, **blocks)
 
 
-def build_topic_page(domain: str, lessons: list, description: str = "") -> str:
+def build_topic_page(domain: str, lessons: list, description: str = "", root: Path = REPO,
+                     markup: dict[str, str] | None = None) -> str:
     """Generate HTML for a topic/domain page."""
+    blocks = markup if markup is not None else shared_markup(root)
     title = domain if " " in domain else f"{domain.title()} Lessons"
     if not description:
         # "indexed" (see build_lesson_page) — a scale claim, not a trust claim.
@@ -363,16 +448,19 @@ def build_topic_page(domain: str, lessons: list, description: str = "") -> str:
         description=description,
         canonical=canonical,
         count=len(lessons),
-        lessons=lessons_html
+        lessons=lessons_html,
+        **blocks,
     )
 
 
-def build_topics_index(entries: list[tuple[str, str, int]], total: int) -> str:
+def build_topics_index(entries: list[tuple[str, str, int]], total: int, root: Path = REPO,
+                       markup: dict[str, str] | None = None) -> str:
     """The topic directory the search page's "browse by topic" link points at.
 
     ``entries`` is a list of (slug, title, lesson_count). Before this existed
     /topics/ was a 404 that the search page linked to on every empty result set.
     """
+    blocks = markup if markup is not None else shared_markup(root)
     items = "\n".join(
         f'  <li><a href="/topics/{slug}/">{title}</a><span class="n">{count} lessons</span></li>'
         for slug, title, count in sorted(entries, key=lambda e: (-e[2], e[0]))
@@ -384,6 +472,7 @@ def build_topics_index(entries: list[tuple[str, str, int]], total: int) -> str:
         items=items,
         topics=topics,
         canonical=f"{SITE_URL}/topics/",
+        **blocks,
     )
 
 
@@ -425,8 +514,10 @@ def _haystack(lesson: dict) -> str:
             + " ".join(lesson.get("tags", []))).lower()
 
 
-def topic_plan(lessons: list) -> dict[str, tuple[str, int]]:
+def topic_plan(lessons: list, root: Path = REPO,
+               markup: dict[str, str] | None = None) -> dict[str, tuple[str, int]]:
     """Map topic slug -> (generated HTML, lesson count) for every topic page."""
+    blocks = markup if markup is not None else shared_markup(root)
     pages: dict[str, tuple[str, int]] = {}
 
     by_domain: dict[str, list] = {}
@@ -437,13 +528,14 @@ def topic_plan(lessons: list) -> dict[str, tuple[str, int]]:
         by_domain.setdefault(domain, []).append(lesson)
     for domain, group in by_domain.items():
         slug = domain.lower().replace(" ", "-").replace("/", "-")
-        pages[slug] = (build_topic_page(domain, group), len(group))
+        pages[slug] = (build_topic_page(domain, group, root=root, markup=blocks), len(group))
 
     for topic_slug, config in INTENT_TOPICS.items():
         matched = [l for l in lessons if any(kw in _haystack(l) for kw in config["keywords"])]
         if matched:
             pages[topic_slug] = (
-                build_topic_page(config["title"], matched, description=config["description"]),
+                build_topic_page(config["title"], matched, description=config["description"],
+                                 root=root, markup=blocks),
                 len(matched))
 
     for topic_slug, blurb in LEGACY_TOPICS.items():
@@ -453,7 +545,9 @@ def topic_plan(lessons: list) -> dict[str, tuple[str, int]]:
         matched = [l for l in lessons if any(w in _haystack(l) for w in tokens)]
         if matched:
             pages[topic_slug] = (
-                build_topic_page(topic_slug.title(), matched, description=blurb), len(matched))
+                build_topic_page(topic_slug.title(), matched, description=blurb, root=root,
+                                 markup=blocks),
+                len(matched))
 
     return pages
 
@@ -532,8 +626,8 @@ def read_redirect_sources(root: Path = REPO) -> dict[str, str]:
     return table
 
 
-def plan_with_slugs(lessons: list, known_slugs: dict[str, str] | None = None
-                    ) -> tuple[dict[str, dict], dict[str, str]]:
+def plan_with_slugs(lessons: list, known_slugs: dict[str, str] | None = None,
+                    root: Path = REPO) -> tuple[dict[str, dict], dict[str, str]]:
     """Plan every page, and return the lesson-id -> slug map that produced it.
 
     Slugs are **sticky**: a lesson keeps the URL it already has and only a new
@@ -544,6 +638,7 @@ def plan_with_slugs(lessons: list, known_slugs: dict[str, str] | None = None
     """
     known = dict(known_slugs or {})
     titles = {lesson.get("id", ""): lesson.get("title", "") for lesson in lessons}
+    blocks = shared_markup(root)
 
     seen_slugs: dict[str, str] = {}
     assigned: dict[str, str] = {}
@@ -587,9 +682,9 @@ def plan_with_slugs(lessons: list, known_slugs: dict[str, str] | None = None
         # lessons (score < 0.5) are not indexed." Maintainer decision, 2026-10-04.
         if is_published_status(lesson.get("status")):
             lesson_slugs.append(slug)
-        lesson_pages[slug] = build_lesson_page(lesson)
+        lesson_pages[slug] = build_lesson_page(lesson, root=root, markup=blocks)
 
-    topics = topic_plan(lessons)
+    topics = topic_plan(lessons, root=root, markup=blocks)
     index_entries = []
     for slug, (_html, count) in topics.items():
         title = INTENT_TOPICS[slug]["title"] if slug in INTENT_TOPICS else slug.title()
@@ -626,7 +721,8 @@ def plan_with_slugs(lessons: list, known_slugs: dict[str, str] | None = None
     files[REDIRECTS.as_posix()] = build_redirects_file(alias_rules)
     for slug, (html, _count) in topics.items():
         files[f"docs/topics/{slug}/index.html"] = html
-    files["docs/topics/index.html"] = build_topics_index(index_entries, len(lessons))
+    files["docs/topics/index.html"] = build_topics_index(index_entries, len(lessons), root=root,
+                                                          markup=blocks)
     # .as_posix(), never `str(SITEMAP)`: every key of `files` is a repo-relative POSIX path
     # (that is the form `docs/.generated-pages.json` is committed in and the form
     # discover_generated() reports), and `str(Path)` on Windows would make this one key
@@ -636,9 +732,10 @@ def plan_with_slugs(lessons: list, known_slugs: dict[str, str] | None = None
     return files, assigned
 
 
-def plan(lessons: list, known_slugs: dict[str, str] | None = None) -> dict[str, dict]:
+def plan(lessons: list, known_slugs: dict[str, str] | None = None,
+         root: Path = REPO) -> dict[str, dict]:
     """Everything this generator would write, as {relative path: text}."""
-    return plan_with_slugs(lessons, known_slugs)[0]
+    return plan_with_slugs(lessons, known_slugs, root=root)[0]
 
 
 def load_slug_map(root: Path = REPO) -> dict[str, str]:
@@ -875,7 +972,7 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     known_slugs = load_slug_map(args.root)
-    files, slug_map = plan_with_slugs(lessons, known_slugs)
+    files, slug_map = plan_with_slugs(lessons, known_slugs, root=args.root)
     if not args.quiet:
         print(f"Loaded {len(lessons)} lessons")
         print(f"Planned {sum(1 for p in files if p.startswith('docs/lessons/'))} lesson pages "

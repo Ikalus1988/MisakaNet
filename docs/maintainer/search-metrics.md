@@ -44,6 +44,12 @@
 （本 issue 的改动范围不含该文件）；想把它补进 schema 的话，在 `workers/d1/schema.sql` 里加同名 DDL 再手动跑
 `.github/workflows/apply-d1-schema.yml`（`workflow_dispatch`）即可，两边 DDL 必须一致。
 
+**索引也一样在 worker 侧**（2026-10-21 加的 `idx_search_signals_hint_top`，部分覆盖索引，
+给 E4 的 distinct-client 计数用——实测让那条查询从 5,992 行降到 17 行）。它跟着
+`ensureSearchSignalsTable` 走，所以**只推 worker 就能建**。
+注意别只把索引搬进 `workers/d1/schema.sql`：**那张表在那里不存在**，`CREATE INDEX` 会失败，
+整个 schema apply 会跟着挂（同理，先加表、再加索引，两边才一致）。
+
 **为什么不在 `lesson_usage` 上加一行**：旧路径其实**已经有**命中行（`event='search'`）和未命中行（`event='no_match'`），
 但那张表没有 `solved` / `result_count` 列，加列就要改 `workers/d1/schema.sql`（本 issue 文件范围外）；
 而且公开的 `/api/analytics` 只给按 query 的 top-10 分组计数，同一个 query 可能同时出现在 `top_searches` 和

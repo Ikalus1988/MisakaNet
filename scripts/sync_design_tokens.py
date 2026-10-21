@@ -38,6 +38,12 @@ import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
+if str(Path(__file__).resolve().parent) not in sys.path:
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+# The one definition of "which pages are in scope" — imported, not re-implemented (handoff
+# §122.3: "两个作者各写一份" is the bug class this file's third copy was).
+import site_page_scope  # noqa: E402
+
 TOKENS = Path("docs") / "_partials" / "design-tokens.html"
 TOKEN_BLOCK = re.compile(r"<!-- design-tokens:start -->[\s\S]*?<!-- design-tokens:end -->")
 # The anchor every hand-written page has, and the only one this script needs: each of them
@@ -57,20 +63,18 @@ def token_block(root: Path = REPO) -> str:
 
 
 def token_pages(root: Path = REPO) -> list[Path]:
-    """Every hand-written page, discovered — so a new page is covered by default.
+    """Every page that must carry the token block — discovered, so a new page is covered by default.
 
     Discovery, not a list: a list of sixteen paths is a list that goes stale, and the failure is
-    silent (the new page just misses the vocabulary). The generated pages — the mkdocs lesson and
-    topic trees — are excluded by path, the same way `sync_site_partials.py` excludes them.
+    silent (the new page just misses the vocabulary).
+
+    The generated lesson and topic pages are in this set too (they were excluded until
+    2026-10-21, which is the hole handoff §122.6 item 2 records: the 571 generated pages were
+    outside every gate). They *carry* the block — `scripts/build_lesson_pages.py` copies this
+    very source into them — so the checker watches them, and `write()` below leaves them alone:
+    the generator is their only writer.
     """
-    pages = sorted((root / "docs").rglob("*.html"))
-    out = []
-    for page in pages:
-        rel = page.relative_to(root / "docs")
-        if "_partials" in rel.parts or "lessons" in rel.parts or "topics" in rel.parts:
-            continue
-        out.append(page)
-    return out
+    return site_page_scope.gated_pages(root)
 
 
 def check(root: Path = REPO) -> list[str]:
@@ -81,18 +85,28 @@ def check(root: Path = REPO) -> list[str]:
         rel = page.relative_to(root).as_posix()
         text = page.read_text(encoding="utf-8")
         have = TOKEN_BLOCK.search(text)
+        # A generated page is rewritten by the generator, not by this script: the fix for it is a
+        # different command, and naming the wrong one sends the reader to a script that will not
+        # touch the file.
+        fix = ("run `python3 scripts/build_lesson_pages.py`"
+               if site_page_scope.is_generated(page.relative_to(root / "docs"))
+               else "run `python3 scripts/sync_design_tokens.py`")
         if have is None:
-            problems.append(f"{rel}: no design-tokens block — run `python3 scripts/sync_design_tokens.py`")
+            problems.append(f"{rel}: no design-tokens block — {fix}")
         elif have.group(0).strip() != want:
             problems.append(
-                f"{rel}: the design-tokens block differs from {TOKENS.as_posix()} — run "
-                "`python3 scripts/sync_design_tokens.py` (a token edited in one place only is how "
-                "two pages end up with two designs, #3541)")
+                f"{rel}: the design-tokens block differs from {TOKENS.as_posix()} — {fix} (a token "
+                "edited in one place only is how two pages end up with two designs, #3541)")
     return problems
 
 
 def write(root: Path = REPO) -> list[str]:
     """Rewrite the pages from the source. Returns the files changed, as POSIX relative paths.
+
+    Only the **hand-written** pages are rewritten here. The generated pages carry the same block,
+    copied in by `scripts/build_lesson_pages.py`; a second writer for the same file is how a page
+    ends up with two sources of truth (handoff §122.3), and the generator's own `--check` is what
+    says whether they are stale.
 
     ``as_posix()``, not ``str()``: callers compare these against literals like ``"docs/index.html"``,
     and on Windows ``str(Path("docs") / "index.html")`` is ``docs\\index.html``. That is what made
@@ -102,7 +116,7 @@ def write(root: Path = REPO) -> list[str]:
     """
     want = token_block(root).strip()
     changed: list[str] = []
-    for page in token_pages(root):
+    for page in site_page_scope.scoped_pages(root):
         rel = page.relative_to(root).as_posix()
         text = page.read_text(encoding="utf-8")
         if TOKEN_BLOCK.search(text):
@@ -135,6 +149,14 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     changed = write(args.root)
     print(f"✅ rewrote {changed}" if changed else "✅ already in sync")
+    # The generated pages carry this block too, and their writer is the generator. Saying
+    # "already in sync" while 571 generated pages are stale would be a report that lies — the
+    # same failure mode the gate exists to catch.
+    stale = [page for page in site_page_scope.generated_pages(args.root)
+             if not TOKEN_BLOCK.search(page.read_text(encoding="utf-8", errors="replace"))]
+    if stale:
+        print(f"⚠️  {len(stale)} generated page(s) carry no token block — run "
+              f"`python3 scripts/build_lesson_pages.py`", file=sys.stderr)
     return 0
 
 

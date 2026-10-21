@@ -102,12 +102,49 @@ def test_write_brings_the_page_back_to_the_source(tmp_path):
     assert sdt.check(root) == [], "write did not reconcile the copy"
 
 
-def test_the_generated_pages_are_not_carried_along():
-    """The mkdocs trees are generated from markdown; they are not hand-written pages."""
-    generated = [p for p in (REPO / "docs" / "lessons").rglob("*.html")]
+def test_the_generated_pages_carry_the_block_too():
+    """The generated pages are part of the site's design system (2026-10-21).
+
+    They used to be excluded — and the exclusion was written out three times, once per script —
+    so 571 pages carried their own hardcoded palette with nothing watching them (handoff §122.6
+    item 2: "生成的 571 个课程页**不在门禁范围内**"). The generator copies this very source into
+    them, so the copy is the same copy the hand-written pages carry.
+    """
+    generated = sorted((REPO / "docs" / "lessons").rglob("*.html"))
     assert generated, "the lesson tree is expected to exist"
+    want = sdt.token_block(REPO).strip()
     for page in generated[:20]:
-        assert "design-tokens" not in page.read_text(encoding="utf-8", errors="replace"), page
+        text = page.read_text(encoding="utf-8", errors="replace")
+        have = sdt.TOKEN_BLOCK.search(text)
+        assert have is not None, f"{page}: the generated page carries no design-tokens block"
+        assert have.group(0).strip() == want, f"{page}: the generated page carries a different block"
+
+
+def test_a_drifted_generated_page_is_reported_with_the_generator_as_the_fix(tmp_path):
+    """The control: the checker must see the generated tree, and must name the writer that
+    actually owns those pages.
+
+    Their writer is `scripts/build_lesson_pages.py` — a second writer for the same file is how a
+    page ends up with two sources of truth (handoff §122.3) — so naming the wrong script would
+    send the reader to one that will not touch the file.
+    """
+    root = _copy_tree(tmp_path)
+    page = root / "docs" / "lessons" / "probe" / "index.html"
+    page.parent.mkdir(parents=True, exist_ok=True)
+    page.write_text("<html><body>no tokens here</body></html>", encoding="utf-8")
+    problems = sdt.check(root)
+    assert any("build_lesson_pages.py" in p for p in problems), problems
+
+
+def test_the_sync_script_does_not_rewrite_the_generated_pages(tmp_path):
+    """One writer per file: the generator owns the generated pages, this script owns the rest."""
+    root = _copy_tree(tmp_path)
+    page = root / "docs" / "lessons" / "probe" / "index.html"
+    page.parent.mkdir(parents=True, exist_ok=True)
+    page.write_text("<html><body>no tokens here</body></html>", encoding="utf-8")
+    sdt.write(root)
+    assert "design-tokens" not in page.read_text(encoding="utf-8"), (
+        "the sync script rewrote a generated page — the generator is its only writer")
 
 
 def test_every_hand_written_page_carries_the_same_block():

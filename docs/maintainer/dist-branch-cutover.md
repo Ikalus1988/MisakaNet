@@ -10,6 +10,13 @@
 > 本文件 §4 的清单里带 🧑 的步骤**只能由有 Cloudflare 控制台权限的人做**（Workers Builds 是 Git
 > 集成，配置在 CF 控制台，不在本仓——见 `docs/agents/repo-operations.md` §3 的 `misakanet-web` 行）。
 >
+> **状态（2026-10-21 实测）**：**B3 的目的已由测量满足，控制台那条不需要再做**——发布器 force-push
+> `dist` 之后 Cloudflare 会自己接手：2026-10-21 两次实测，`f2d85f3a` 的构建 15:40:26Z 绿、
+> `d76c3a8b` 的 16:04:16Z 绿，且线上内容与 `dist` 的树逐字一致。**但要等**：上一版 dist 推送后
+> 1 分 41 秒就绿（13:45:44Z → 13:47:25Z），这两次都**用了约 13 分半**（15:27:01Z → 15:40:26Z、
+> 15:50:18Z → 16:04:16Z）；这段窗口里站点还在服务旧内容，而 `Site build watch` 只能报
+> `unknown`（没有 check-run ≠ 红了）。**这不是故障，别急着手动催**——见 §4 阶段 B 的 B3。
+>
 > **本文件代替不了规则集**：必需检查的权威列表是 `docs/ci-gates.md`（`scripts/check_documented_gates.py`
 > 会拿它和线上 ruleset `23826057` 对比）。
 
@@ -265,7 +272,12 @@ update_lessons_json.py → build_lesson_pages.py → export_okf.py
 - [ ] 🧑 B2. 确认 build token 仍有效（同页 Builds → API token）。**这不是可选步骤**：仓库侧见过
       「build token selected for this build has been deleted or rolled」（2026-09-23 轮换 API token
       时作废，站点停更一天）——`docs/agents/repo-operations.md` §4。
-- [ ] 🧑 B3. 在控制台对 `dist` 触发一次构建（或 push 一个空提交到 `dist`），等它绿。
+- [x] B3. ~~在控制台对 `dist` 触发一次构建（或 push 一个空提交到 `dist`），等它绿。~~
+      **2026-10-21 实测：这一条不需要做**——发布器 force-push `dist` 之后 Cloudflare 会自己接手
+      （`f2d85f3a` → 15:40:26Z 绿，`d76c3a8b` → 16:04:16Z 绿，线上内容与 `dist` 的树逐字一致）。
+      **但要等 1～14 分钟**（实测三档：1 分 41 秒、13 分 25 秒、13 分 58 秒），期间站点还是旧内容、
+      `Site build watch` 报 `unknown`。**超过半小时仍无 check-run** 才需要在这里手动触发
+      （或 push 一个空提交到 `dist`）。
 
 ### 阶段 C：验证（见 §5 的对照表；任何人可做）
 

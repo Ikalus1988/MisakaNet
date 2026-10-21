@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-10-21T05:00:51.554255+00:00",
+  "generated_at": "2026-10-21T12:02:38.309959+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
+      "title": "docs(handoff): the D1 row-read round, measured before and after",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3619",
+      "timestamp": "2026-10-21T11:44:22Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "fix(worker): the account was still paying 95% of its rows for one public aggregate",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3618",
+      "timestamp": "2026-10-21T10:57:02Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "docs(handoff): the four pitfalls that are already red on main (#3541)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3617",
+      "timestamp": "2026-10-21T08:51:39Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "feat(site): one accent, one background, one footer (#3541, batch Z)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3615",
+      "timestamp": "2026-10-21T08:09:31Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
       "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3600",
-      "timestamp": "2026-10-21T00:08:29Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "docs(handoff): record which PR carried each batch of #3541",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3598",
-      "timestamp": "2026-10-20T19:41:08Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3597",
-      "timestamp": "2026-10-20T19:32:08Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat(site): the icons are Lucide SVG, not emoji (#3541, batch Y)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3596",
-      "timestamp": "2026-10-20T19:26:42Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat(site): the halos, the colour bars and the purple (#3541, batch X)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3593",
-      "timestamp": "2026-10-20T18:35:52Z",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3606",
+      "timestamp": "2026-10-21T05:10:39Z",
       "source": "github"
     },
     {
