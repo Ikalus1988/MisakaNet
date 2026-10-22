@@ -260,13 +260,81 @@ def question_bounty_without_a_lesson(paths, issue_bodies: dict, pr_text: str = "
     ]
 
 
+# ── rules 4 and 5: the repository's own shape ──────────────────────────────────────────────────────
+#
+# Measured 2026-10-22 (#3748): the pull request added
+# `.ai_bounty_patches/bdcaa82152a267ce_edit_plan.patch` — a scratch patch the bounty tooling had
+# written, and in fact the patch *draft* for the test file the same pull request added — together
+# with a new top-level `hooks/` directory, and its body claimed #3697 without touching anything
+# #3697 is about.
+#
+# Two of those three are mechanical, and both are facts about the repository's shape rather than
+# judgements about the work:
+#
+#   - a file under a dot-directory the repository does not have is a tool's scratch;
+#   - a new top-level directory is a layout decision, and the layout is not a pull request's to make.
+#
+# The list of what the repository *has* comes from the trusted base checkout, so it cannot go stale:
+# the workflow reads it out of the tree it checked out, not out of a constant in this file.
+
+
+def internal_artifact(paths, repo_dirs: set[str] | None) -> list[str]:
+    """A file under a dot-directory this repository does not have."""
+    if not repo_dirs:
+        return []
+    hits = []
+    for path in paths:
+        head = path.split("/", 1)[0]
+        if "/" in path and head.startswith(".") and head not in repo_dirs:
+            hits.append(path)
+    if not hits:
+        return []
+    return [
+        "**This brings an internal artifact into the repository.** "
+        + ", ".join(f"`{h}`" for h in sorted(set(hits))[:4])
+        + " — a file under a dot-directory the repository does not have. That is where a tool's own "
+        "scratch lives (a patch draft, a work packet, an edit plan); it is not part of the project, "
+        "and nothing in the repository keeps it out except a reviewer's attention. Keep it in your "
+        "own tooling, or add the directory to `.gitignore` in a change that says why."
+    ]
+
+
+def new_top_level_directory(paths, repo_dirs: set[str] | None, pr_text: str = "") -> list[str]:
+    """A top-level directory the repository does not have."""
+    if not repo_dirs:
+        return []
+    if re.search(r"<!--\s*shape-guard:\s*allow-new-top-level-dir\s*-->", pr_text or "", re.I):
+        return []
+    hits = []
+    for path in paths:
+        head = path.split("/", 1)[0]
+        if "/" in path and head not in repo_dirs and not head.startswith("."):
+            hits.append(head)
+    if not hits:
+        return []
+    return [
+        "**This adds a new top-level directory ("
+        + ", ".join(f"`{h}/`" for h in sorted(set(hits))[:4])
+        + ").** The repository's layout is a decision that was already made, and a new directory at "
+        "the top level is the loudest way to make one by accident: what belongs to this project "
+        "already has homes (hooks and agent assets under `integrations/agent-autostart/`, lessons "
+        "under `lessons/`, worker code under `workers/`, installer code under "
+        "`packages/misakanet-setup/`). If this genuinely belongs at the top level, say so in the PR "
+        "body and why; otherwise put it where it belongs. A declared exception is one line: "
+        "`<!-- shape-guard: allow-new-top-level-dir -->`."
+    ]
+
+
 def findings(*, paths, pr_text: str = "", base_pyproject: str | None = None,
-             head_pyproject: str | None = None, issue_bodies: dict | None = None) -> list[str]:
+             head_pyproject: str | None = None, issue_bodies: dict | None = None,
+             repo_dirs: set[str] | None = None) -> list[str]:
     """Every finding for one pull request, in the order a reviewer should read them."""
     out: list[str] = []
     out += root_solution_dump(paths)
     out += packaging_damage(base_pyproject, head_pyproject)
     out += question_bounty_without_a_lesson(paths, issue_bodies or {}, pr_text)
+    out += internal_artifact(paths, repo_dirs)
+    out += new_top_level_directory(paths, repo_dirs, pr_text)
     return out
 
 
@@ -287,6 +355,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--base-pyproject", help="file holding the base branch's pyproject.toml")
     parser.add_argument("--head-pyproject", help="file holding the PR's pyproject.toml")
     parser.add_argument("--issue-bodies", help="JSON file: {\"<issue number>\": \"<body>\"}")
+    parser.add_argument("--repo-dirs",
+                        help="file holding the base branch's top-level directory names, one per line")
     args = parser.parse_args(argv)
 
     paths = [line.strip() for line in (_read(args.changed_files) or "").splitlines() if line.strip()]
@@ -296,9 +366,11 @@ def main(argv: list[str] | None = None) -> int:
             bodies = json.loads(_read(args.issue_bodies) or "{}")
         except json.JSONDecodeError:
             bodies = {}
+    repo_dirs = {line.strip() for line in (_read(args.repo_dirs) or "").splitlines() if line.strip()}
     result = findings(paths=paths, pr_text=_read(args.pr_body) or "",
                       base_pyproject=_read(args.base_pyproject),
-                      head_pyproject=_read(args.head_pyproject), issue_bodies=bodies)
+                      head_pyproject=_read(args.head_pyproject), issue_bodies=bodies,
+                      repo_dirs=repo_dirs or None)
     # stdout is the interface: the workflow reads it as JSON.
     print(json.dumps(result, ensure_ascii=False))
     return 0

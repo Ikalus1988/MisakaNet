@@ -23,12 +23,21 @@ sys.path.insert(0, str(REPO))
 from scripts.pr_shape_guard import (  # noqa: E402
     _mask_inner,
     findings,
+    internal_artifact,
     linked_issues,
     mentions_issues,
+    new_top_level_directory,
     packaging_damage,
     question_bounty_without_a_lesson,
     root_solution_dump,
 )
+
+# The base branch's top-level directories, as the workflow reads them out of the trusted base
+# checkout. A short list is enough for the fixtures; the real one comes from the tree.
+REPO_DIRS = {
+    ".claude-plugin", ".codex-plugin", ".cursor", ".github",
+    "data", "docs", "integrations", "lessons", "packages", "scripts", "tests", "workers",
+}
 
 HEALTHY_PYPROJECT = """[build-system]
 requires = ["setuptools>=68"]
@@ -304,3 +313,77 @@ def test_the_claim_forms_the_2026_09_26_prs_actually_used():
     ]
     for text in mentions_only:
         assert linked_issues(text) == [], (text, linked_issues(text))
+
+
+# ── rules 4 and 5: the repository's own shape ──────────────────────────────────────────────────────
+#
+# Measured 2026-10-22 (#3748): the pull request added
+# `.ai_bounty_patches/bdcaa82152a267ce_edit_plan.patch` and a new top-level `hooks/` directory.
+
+
+def test_an_internal_artifact_is_flagged():
+    """A file under a dot-directory the repository does not have is a tool's scratch."""
+    findings_out = internal_artifact(
+        [".ai_bounty_patches/bdcaa82152a267ce_edit_plan.patch"], REPO_DIRS)
+    assert len(findings_out) == 1
+    assert ".ai_bounty_patches/bdcaa82152a267ce_edit_plan.patch" in findings_out[0]
+    assert "internal artifact" in findings_out[0]
+
+
+def test_a_dot_directory_the_repository_has_is_left_alone():
+    """The negative half: `.github/` is the repository's own, so a workflow file is not an artifact."""
+    assert internal_artifact([".github/workflows/pr-shape-guard.yml"], REPO_DIRS) == []
+    assert internal_artifact([".claude-plugin/plugin.json"], REPO_DIRS) == []
+    # A dot-*file* at the root is not a directory and cannot hold scratch.
+    assert internal_artifact([".gitignore", ".gitleaks.toml"], REPO_DIRS) == []
+
+
+def test_a_new_top_level_directory_is_flagged():
+    """A new top-level directory is a layout decision, and the layout was already decided."""
+    findings_out = new_top_level_directory(["hooks/pre-tool-use.sh", "hooks/README.md"], REPO_DIRS)
+    assert len(findings_out) == 1
+    assert "`hooks/`" in findings_out[0]
+
+
+def test_an_existing_top_level_directory_is_left_alone():
+    """The negative half: work inside an area the repository already has is the normal case."""
+    assert new_top_level_directory(["docs/index.html", "workers/register-proxy-sw.js"], REPO_DIRS) == []
+    # A file at the root is not a directory.
+    assert new_top_level_directory(["README.md", "AGENTS.md"], REPO_DIRS) == []
+
+
+def test_a_declared_new_top_level_directory_is_allowed():
+    """One line in the body, the same way the README rewrite is declared."""
+    marker = "<!-- shape-guard: allow-new-top-level-dir -->"
+    assert new_top_level_directory(["hooks/pre-tool-use.sh"], REPO_DIRS, marker) == []
+    # The marker has to be in the body; the same words elsewhere do not count.
+    assert new_top_level_directory(["hooks/pre-tool-use.sh"], REPO_DIRS, "about hooks") != []
+
+
+def test_the_repository_own_shape_is_not_judged_without_the_base_list():
+    """No base list means no opinion: a guard that guesses is worse than one that abstains."""
+    assert internal_artifact([".ai_bounty_patches/x.patch"], None) == []
+    assert new_top_level_directory(["hooks/pre-tool-use.sh"], None) == []
+
+
+def test_the_3748_shape_is_caught_by_both_new_rules():
+    """The whole point: the shape that got a human's time on 2026-10-22 now costs no time."""
+    paths = [
+        ".ai_bounty_patches/bdcaa82152a267ce_edit_plan.patch",
+        "hooks/README.md",
+        "hooks/pre-tool-use.sh",
+        "packages/fatal-guard/tests/runhandler-regression.test.js",
+    ]
+    out = findings(paths=paths, pr_text="Add pre-tool-use hook blocking destructive bash.\n\nFixes #3697",
+                   repo_dirs=REPO_DIRS)
+    assert len(out) == 2
+    assert any("internal artifact" in f for f in out)
+    assert any("new top-level directory" in f for f in out)
+
+
+def test_a_normal_contribution_is_not_flagged_by_the_new_rules():
+    """The negative half, on the shape of a real contribution: lessons and worker code."""
+    paths = ["lessons/contrib/click-no-op-keyboard-works-pointer-vs-handler-triage.md",
+             "workers/register-proxy-sw.js", "tests/test_quickstart_events.py"]
+    out = findings(paths=paths, pr_text="feat: add a lesson", repo_dirs=REPO_DIRS)
+    assert out == []
