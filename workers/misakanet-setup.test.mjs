@@ -769,6 +769,94 @@ test('openclaw: verify reads the registry file and reports both states', () => {
   }
 });
 
+test('openclaw: verify says a file it cannot write is unwritable, and not "没装" (issue #3696)', () => {
+  const home = makeOpenclawHome();
+  const rules = join(home, '.openclaw', 'workspace', 'AGENTS.md');
+  try {
+    // The OpenClaw trialer's machine: the workspace is owned by root and read-only. The file is
+    // there, and this process may not write it.
+    writeFileSync(rules, '# owned by root\n');
+    chmodSync(rules, 0o400);
+    const verify = run(home, '--verify');
+    const line = verify.stdout.split('\n').find((l) => l.includes('AGENTS.md'));
+    assert.ok(line, `the rules line must be reported at all:\n${verify.stdout}`);
+    // "没装" and "装不了" are different facts with different fixes: a re-run writes exactly as
+    // much as the last one did, so telling this user to re-run is the one advice that cannot work.
+    assert.match(line, /装不了/, `a file we cannot write is "装不了", not "没装":\n${line}`);
+    assert.doesNotMatch(line, /没装/, `the wording must not claim the file is missing:\n${line}`);
+    assert.doesNotMatch(line, /重跑安装命令/, `re-running is the advice that cannot work here:\n${line}`);
+    assert.match(line, /只读|权限/, `the line must name the cause:\n${line}`);
+  } finally {
+    chmodSync(rules, 0o600);
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test('verify answers the two questions separately: the endpoint answered, the files did not (issue #3696)', async () => {
+  const { createServer } = await import('node:http');
+  const server = createServer((req, res) => {
+    let body = '';
+    req.on('data', (chunk) => { body += chunk; });
+    req.on('end', () => {
+      const result = { tools: [{ name: 'misakanet_search' }, { name: 'misakanet_get_lesson' }] };
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ jsonrpc: '2.0', id: 1, result: {
+        content: [{ type: 'text', text: JSON.stringify(result) }], structuredContent: result } }));
+    });
+  });
+  await new Promise((done) => server.listen(0, '127.0.0.1', done));
+  const url = `http://127.0.0.1:${server.address().port}/mcp`;
+
+  const home = makeOpenclawHome();
+  const rules = join(home, '.openclaw', 'workspace', 'AGENTS.md');
+  try {
+    writeFileSync(rules, '# owned by root\n');
+    chmodSync(rules, 0o400);
+
+    const verify = await runAsync(home, childEnv({ MISAKANET_ENDPOINT: url }), '--verify');
+    const out = verify.stdout;
+
+    // Two sections, because there are two questions.
+    assert.match(out, /端点\/可用性/, out);
+    assert.match(out, /安装完整性/, out);
+
+    // The endpoint answered: the endpoint segment says so, and the install complaint does not
+    // leak into it.
+    const endpointSection = out.split('── 端点/可用性 ──')[1].split('── 安装完整性 ──')[0];
+    assert.match(endpointSection, /端点可达/, endpointSection);
+    assert.doesNotMatch(endpointSection, /AGENTS\.md/, endpointSection);
+
+    // The files did not get written: the install segment says so, and the endpoint complaint
+    // does not leak into it.
+    const installSection = out.split('── 安装完整性 ──')[1];
+    assert.match(installSection, /AGENTS\.md/, installSection);
+
+    // And the two verdicts are stated separately, so "NOT READY" cannot be read as "MisakaNet
+    // does not work here" — the machine can search, it just cannot install our files.
+    assert.match(out, /可用性：就绪/, out);
+    assert.match(out, /安装完整性：不完整/, out);
+    // The exit code contract is unchanged: a machine that is missing our files is still not ready.
+    assert.equal(verify.status, 1, verify.stdout + verify.stderr);
+  } finally {
+    server.close();
+    chmodSync(rules, 0o600);
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test('verify says which token it is looking for, and that the read path is unaffected (issue #3696)', () => {
+  const home = makeHome();
+  try {
+    const verify = run(home, '--verify');
+    const line = verify.stdout.split('\n').find((l) => l.includes('写入通道'));
+    assert.ok(line, `the token line must be printed:\n${verify.stdout}`);
+    assert.match(line, /只检查本安装器状态目录/, `the line must say what it actually looks at:\n${line}`);
+    assert.match(line, /读路径完全不受影响/, `the line must say the read path is fine:\n${line}`);
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
 test('openclaw: uninstall removes both the entry we wrote and the rules block', () => {
   const home = makeOpenclawHome();
   try {

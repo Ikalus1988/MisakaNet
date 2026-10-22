@@ -78,6 +78,8 @@ echo "exit=$?"     # 0 READY / 1 NOT READY / 2 跑不起来
   "node": "v22.22.3",
   "detected-agents": ["claude", "codex"],
   "verify": "NOT READY",
+  "install-complete": "incomplete",
+  "endpoint-usable": "yes",
   "endpoint-reachable": false,
   "endpoint-tools": 0,
   "token": "absent",

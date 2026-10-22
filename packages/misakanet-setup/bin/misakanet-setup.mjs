@@ -1650,8 +1650,42 @@ async function installMcpOnly(agent, bearer) {
 // The last endpoint probe, recorded so `--report` can print it without probing twice.
 let lastProbe = { reachable: false, tools: 0, note: '' };
 
+/**
+ * The advice for a file we could not write.
+ *
+ * It has to be an advice that can work — and "re-run the install command" is not one: the file is
+ * read-only or the permissions do not allow it, so a re-run writes exactly as much as the last one
+ * did. Measured 2026-10-22 on an OpenClaw machine whose workspace was root-owned and read-only:
+ * `--verify` said "规则块没装 → 重跑安装命令", and the trialer went after the network, the
+ * permissions and the gateway while the installer had already named the real blocker.
+ *
+ * The question is asked the way the installer asks it before writing (`canCreateHere`): by
+ * attempting the access, never by `existsSync` first.
+ */
+function unwritableAdvice(manual = '') {
+  const fix = '改权限（或换到可写的目录）后再重跑';
+  return manual
+    ? `只读或权限不足，重跑也写不进去 → ${manual}（或${fix}）`
+    : `只读或权限不足，重跑也写不进去 → ${fix}`;
+}
+
 async function verify() {
   let allOk = true;
+  // The report answers two different questions, and one of them failing must not condemn the
+  // other (issue #3696): "can you use it" (the endpoint answers) and "are the files we prefer
+  // written" (our own footprint). A machine whose endpoint answers and whose workspace is
+  // read-only is **usable** — and the old verdict called it NOT READY.
+  let usable = true;
+  // The probe has three answers, not two: a probe that could not run is not a probe that failed.
+  // "unknown" is reported as unknown, and only `--strict` refuses to pass on it.
+  let probeState = 'ready';
+  // The install segment is judged on its own: a file we cannot write is a fact about our
+  // footprint, and it says nothing about the endpoint.
+  let installOk = true;
+  const installFailed = () => { installOk = false; allOk = false; };
+  // Where each segment starts, in the three line lists. The output prints the two segments as
+  // two sections, and this boundary is the only thing that has to be right about them.
+  const segmentStart = { done: done.length, manual: manual.length, skipped: skipped.length };
   // Handshake, not a search. `tools/list` proves the endpoint speaks MCP and answers, and it
   // consumes no anonymous read quota — so `--verify` can be run as often as the user likes. The
   // search used to be the probe, which spent one of the five free reads per run and, worse,
@@ -1671,12 +1705,17 @@ async function verify() {
       const missing = CLAUDE_ALLOWED_TOOLS.filter((tool) => !granted.includes(tool));
       if (detect('claude') && missing.length) {
         allOk = false;
+        // Not an install fact: the endpoint answers, and the search still fails. It belongs to
+        // the usability segment, so it belongs there in the output too.
+        usable = false;
         need(`Claude Code：只读 MCP 工具没有放行（${missing.length} 个）→ 第一次检索会被权限拦下；`
           + '重跑安装命令即可放行');
       }
     } catch { /* a settings file we cannot read is reported by the Claude checks below */ }
   } else if (probe && (probe.error || probe.protocolVersion || probe.serverInfo)) {
     allOk = false;
+    usable = false;
+    probeState = 'not-ready';
     need(`端点可达但握手异常：${JSON.stringify(probe).slice(0, 120)}`);
   } else {
     const proxy = proxyEnvironment();
@@ -1687,18 +1726,25 @@ async function verify() {
       // that cannot tell must not pass silently, and CI machines are the ones actually configured
       // to make the probe trustworthy.
       lastProbe = { reachable: false, tools: 0, note: 'inconclusive-proxy' };
+      probeState = 'unknown';
       if (STRICT) {
         allOk = false;
+        usable = false;
         need(`端点探测不可信，且 --strict 不接受"说不清"：${proxyProbeAdvice(proxy)}`);
       } else {
         need(`端点探测不可信（不是"不可达"）：${proxyProbeAdvice(proxy)}`);
       }
     } else {
       allOk = false;
+      usable = false;
+      probeState = 'not-ready';
       need(`端点不可达：${ENDPOINT}（网络受限？读课程会静默失败）`
         + (lastRequestError ? ` —— 最近一次失败原因：${lastRequestError}` : ''));
     }
   }
+  // The endpoint segment ends here. Everything below is about our own footprint: the files we
+  // write, the entries we register, the token we keep.
+  const segmentEnd = { done: done.length, manual: manual.length, skipped: skipped.length };
   const tokenFile = join(stateDir(), 'token');
   let tokenPresent = '';
   try {
@@ -1709,7 +1755,11 @@ async function verify() {
   if (tokenPresent) {
     ok('写入通道：token 已就绪（write_lesson / preflight 可用）');
   } else {
-    skip('写入通道：无 token（读不限次数、只读完全可用，写入类工具不可用）');
+    // Which token this is looking for, said out loud: it reads **our own** state directory, so a
+    // machine that got its token through another channel (mcporter, a gateway) shows "no token"
+    // here even though writes work. The trialer read that as "nothing is set up".
+    skip('写入通道：无 token（这一项只检查本安装器状态目录里的 token；如果 token 来自别的通道，'
+      + '读路径完全不受影响——读不限次数、只读完全可用，写入类工具不可用）');
   }
   // The hook is Claude Code's alone: it is the one target whose config carries it (Codex's
   // user-level hook shape is unconfirmed, OpenClaw's events are unverified), so a machine without
@@ -1726,8 +1776,10 @@ async function verify() {
       hookPresent = false;
     }
     if (!hookPresent) {
-      allOk = false;
-      need('自动沉淀钩子：缺失 → 重跑安装命令');
+      installFailed();
+      need(canCreateHere(hookPath)
+        ? '自动沉淀钩子：缺失 → 重跑安装命令'
+        : `自动沉淀钩子：装不了（${hookPath}）→ ${unwritableAdvice()}`);
     } else {
       const settingsPath = join(HOME, '.claude', 'settings.json');
       const settings = readJson(settingsPath, {}) || {};
@@ -1737,12 +1789,12 @@ async function verify() {
         .flatMap((entry) => (entry.hooks || []).map((h) => h.command))
         .filter((c) => typeof c === 'string');
       if (!commands.length) {
-        allOk = false;
+        installFailed();
         need('Claude Code：钩子没装（settings.json 里没有本安装器写入的命令）');
       } else {
         const exe = commands[0].startsWith('"') ? commands[0].split('"')[1] : commands[0].split(' ')[0];
         if (!existsSync(exe)) {
-          allOk = false;
+          installFailed();
           need(`Claude Code：钩子里的解释器不存在（${exe}）→ 钩子永远不会触发，重跑安装命令即可修`);
         } else {
           ok('Claude Code：钩子已装且解释器存在');
@@ -1751,8 +1803,12 @@ async function verify() {
       const cfg = join(HOME, '.claude.json');
       const data = readJson(cfg, {}) || {};
       const entry = data.mcpServers?.misakanet;
-      if (!entry) { allOk = false; need(`Claude Code：MCP 未注册（${cfg}）`); }
-      else ok(`Claude Code：MCP 已注册（${entry.url}）`);
+      if (!entry) {
+        installFailed();
+        need(canCreateHere(cfg)
+          ? `Claude Code：MCP 未注册（${cfg}）`
+          : `Claude Code：MCP 未注册（${cfg}）→ ${unwritableAdvice()}`);
+      } else ok(`Claude Code：MCP 已注册（${entry.url}）`);
     }
   }
   // OpenClaw is only reported when the user actually has it: telling a machine without
@@ -1762,17 +1818,23 @@ async function verify() {
   if (detect('openclaw')) {
     const rules = join(openclawWorkspaces()[0], 'AGENTS.md');
     if (!readText(rules).includes(`<!-- ${START} -->`)) {
-      allOk = false;
-      need(`OpenClaw：规则块没装（${rules}）→ 重跑安装命令`);
+      installFailed();
+      // "没装" and "装不了" are different facts with different fixes, and the difference is the
+      // whole point (issue #3696): a read-only workspace is not something a re-run installs.
+      need(canCreateHere(rules)
+        ? `OpenClaw：规则块没装（${rules}）→ 重跑安装命令`
+        : `OpenClaw：规则块装不了（${rules}）→ ${unwritableAdvice()}`);
     } else {
       ok('OpenClaw：规则块已装');
     }
     const cfg = join(HOME, '.openclaw', 'openclaw.json');
     const entry = (readJson(cfg, null) || {}).mcp?.servers?.misakanet;
     if (!entry) {
-      allOk = false;
-      need(`OpenClaw：MCP 未注册（${cfg}）→ 重跑安装命令，或手动执行 `
-        + `openclaw mcp add misakanet --url ${ENDPOINT} --transport streamable-http`);
+      installFailed();
+      const manual = `openclaw mcp add misakanet --url ${ENDPOINT} --transport streamable-http`;
+      need(canCreateHere(cfg)
+        ? `OpenClaw：MCP 未注册（${cfg}）→ 重跑安装命令，或手动执行 ${manual}`
+        : `OpenClaw：MCP 未注册（${cfg}）→ ${unwritableAdvice(manual)}`);
     } else {
       ok(`OpenClaw：MCP 已注册（${entry.url || '?'}）`);
     }
@@ -1783,17 +1845,21 @@ async function verify() {
   if (readText(join(HOME, '.hermes', 'config.yaml'))) {
     const rules = join(HOME, '.hermes', 'SOUL.md');
     if (!readText(rules).includes(`<!-- ${START} -->`)) {
-      allOk = false;
-      need(`Hermes：规则块没装（${rules}）→ 重跑安装命令`);
+      installFailed();
+      need(canCreateHere(rules)
+        ? `Hermes：规则块没装（${rules}）→ 重跑安装命令`
+        : `Hermes：规则块装不了（${rules}）→ ${unwritableAdvice()}`);
     } else {
       ok('Hermes：规则块已装');
     }
     const cfg = join(HOME, '.hermes', 'config.yaml');
     const text = readText(cfg);
     if (!HERMES_MARKED.test(text) && !HERMES_BARE.test(text)) {
-      allOk = false;
-      need(`Hermes：MCP 未注册（${cfg}）→ 重跑安装命令，或执行 `
-        + `hermes mcp add misakanet --url ${ENDPOINT} --auth header`);
+      installFailed();
+      const manual = `hermes mcp add misakanet --url ${ENDPOINT} --auth header`;
+      need(canCreateHere(cfg)
+        ? `Hermes：MCP 未注册（${cfg}）→ 重跑安装命令，或执行 ${manual}`
+        : `Hermes：MCP 未注册（${cfg}）→ ${unwritableAdvice(manual)}`);
     } else if (!new RegExp(`^${HERMES_ENV_KEY}=`, 'm').test(readText(join(HOME, '.hermes', '.env')))) {
       ok('Hermes：MCP 条目已写入配置（无 token → 读不限次数，写入类工具不可用）');
       skip(`Hermes：想让写入类工具可用（write_lesson），重跑安装命令即可写入 ${HERMES_ENV_KEY}`);
@@ -1810,10 +1876,12 @@ async function verify() {
     const cfg = spec.config(HOME);
     const entry = (readJson(cfg, null) || {})[spec.container]?.misakanet;
     if (!entry) {
-      allOk = false;
-      need(`${spec.label}：MCP 未注册（${cfg}）→ 重跑安装命令，然后${spec.verifyHint}`);
+      installFailed();
+      need(canCreateHere(cfg)
+        ? `${spec.label}：MCP 未注册（${cfg}）→ 重跑安装命令，然后${spec.verifyHint}`
+        : `${spec.label}：MCP 未注册（${cfg}）→ ${unwritableAdvice()}`);
     } else if (!entry[spec.urlField]) {
-      allOk = false;
+      installFailed();
       need(`${spec.label}：MCP 条目在，但没有 ${spec.urlField} 字段（${cfg}）→ 重跑安装命令；`
         + `这家用的是 ${spec.urlField}${spec.container === 'mcp' ? '（注意嵌套在 mcp 而不是 mcpServers 下）' : ''}`);
     } else {
@@ -1843,7 +1911,72 @@ async function verify() {
         + 'npx @misaka-net/misakanet-setup@latest');
     }
   }
-  return allOk;
+  return {
+    allOk,
+    usable,
+    probeState,
+    install: installOk ? 'complete' : 'incomplete',
+    // The install segment's open items, counted on their own: the report's `open-items` is every
+    // manual item, this is the ones that belong to our footprint.
+    openItems: manual.length - segmentEnd.manual,
+    segments: { start: segmentStart, end: segmentEnd },
+  };
+}
+
+/**
+ * The two verdicts, in words.
+ *
+ * They are two answers to two questions, and the point of #3696 is that they are printed as two:
+ * a machine whose endpoint answers perfectly and whose workspace is read-only is **usable**, and
+ * the old single verdict said NOT READY about it — the one word that sends the user to debug the
+ * wrong thing.
+ */
+function usabilityText(verdict) {
+  if (verdict.probeState === 'not-ready') return '不就绪 —— 端点不可达或握手异常';
+  if (verdict.probeState === 'unknown') {
+    return STRICT
+      ? '不就绪 —— 探测不可信，--strict 不接受"说不清"'
+      : '说不清 —— 探测不可信（不等于不可达）';
+  }
+  if (!verdict.usable) return '不就绪 —— 端点可达，但只读工具没放行，第一次检索会被拦下';
+  return '就绪 —— 端点可达，检索与读取可用';
+}
+
+function installText(verdict) {
+  if (verdict.install === 'complete') return '完整 —— 我们偏好的文件都写好了';
+  return `不完整 —— ${verdict.openItems} 项需要手动处理（上面每条 ! 都给了成因和做法）`;
+}
+
+/**
+ * The verify output: two sections, because the two questions have two answers.
+ *
+ * The old output was one list, and one list cannot say "the endpoint answered, the files did not
+ * get written" — it can only say NOT READY, which is the sentence the OpenClaw trialer read as
+ * "MisakaNet does not work here" (issue #3696).
+ */
+function renderVerify(verdict) {
+  const { start, end } = verdict.segments;
+  const tail = { done: done.length, manual: manual.length, skipped: skipped.length };
+  const section = (label, from, to) => {
+    const out = [];
+    const finished = done.slice(from.done, to.done);
+    const open = manual.slice(from.manual, to.manual);
+    const ignored = skipped.slice(from.skipped, to.skipped);
+    // `--silent` drops the narration, never the errors (the same contract `render()` keeps): the
+    // `!` lines are what a human has to act on, the `✓` and `·` lines are progress.
+    if (finished.length && !SILENT) out.push(...finished.map((l) => `  ✓ ${l}`));
+    if (open.length) out.push(...open.map((l) => `  ! ${l}`));
+    if (ignored.length && !SILENT) out.push(...ignored.map((l) => `  · ${l}`));
+    if (!out.length) return out;
+    return [`\n── ${label} ──`, ...out];
+  };
+  return [
+    ...section('端点/可用性', start, end),
+    ...section('安装完整性', end, tail),
+    '',
+    `可用性：${usabilityText(verdict)}`,
+    `安装完整性：${installText(verdict)}`,
+  ].join('\n');
 }
 
 /**
@@ -2133,7 +2266,8 @@ function distroName() {
  * scalars (`true`, `[claude, codex]`, `""`); the JSON keeps their real types (boolean, array,
  * string), which is the whole point of a machine-readable form.
  */
-function reportValues(allOk) {
+function reportValues(verdict) {
+  const allOk = verdict.allOk;
   const agents = AGENTS.filter((agent) => detect(agent));
   const token = existsSync(join(stateDir(), 'token'));
   const permissions = (() => {
@@ -2153,6 +2287,13 @@ function reportValues(allOk) {
     ['node', process.version],
     ['detected-agents', agents],
     ['verify', allOk ? 'READY' : 'NOT READY'],
+    // The verdict has two halves, and a machine that collects this report needs to be able to
+    // tell them apart: `verify: NOT READY` because our files could not be written is a
+    // different machine from `verify: NOT READY` because the endpoint does not answer
+    // (issue #3696). `endpoint-reachable` and `endpoint-probe` below already say the endpoint's
+    // half; this is ours.
+    ['install-complete', verdict.install],
+    ['endpoint-usable', verdict.usable ? 'yes' : 'no'],
     ['endpoint-reachable', lastProbe.reachable],
     ['endpoint-tools', lastProbe.tools],
     // `ok` = the probe ran and its answer is meaningful; `inconclusive-proxy` = the machine has a
@@ -2241,10 +2382,10 @@ function reportJson(values) {
  * encoding never changes the verdict.
  */
 async function report(asJson) {
-  const allOk = await verify();
-  const values = reportValues(allOk);
+  const verdict = await verify();
+  const values = reportValues(verdict);
   console.log(asJson ? reportJson(values) : reportYaml(values));
-  return { allOk, openItems: manual.length };
+  return { ...verdict, openItems: manual.length };
 }
 
 // ── main ─────────────────────────────────────────────────────────────
@@ -2344,13 +2485,13 @@ if (mode === 'report') {
 }
 
 if (mode === 'verify') {
-  const allOk = await verify();
-  say(render());
+  const verdict = await verify();
+  say(renderVerify(verdict));
   // Kept under `--silent`: this line is the verdict, not progress. (It is also the only thing a
   // silent `--verify` prints when the machine is healthy, which is what makes it usable in a
   // deployment log.)
-  console.log(`\n结论：${allOk ? `READY —— 打开一个新会话，问它「${ONBOARDING_QUERIES[0]}」这类带报错原文的片段` : 'NOT READY —— 上面每条 ! 都给了修复动作'}`);
-  process.exit(allOk ? 0 : 1);
+  console.log(`\n结论：${verdict.allOk ? `READY —— 打开一个新会话，问它「${ONBOARDING_QUERIES[0]}」这类带报错原文的片段` : 'NOT READY —— 上面每条 ! 都给了成因和做法'}`);
+  process.exit(verdict.allOk ? 0 : 1);
 }
 
 const targets = (only.length ? only : AGENTS).filter((a) => {

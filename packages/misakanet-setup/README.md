@@ -66,6 +66,11 @@ which is why ② is a separate, manual step. Full guide: `docs/integrations/dsh.
 ```bash
 npx @misaka-net/misakanet-setup --dry-run     # show what would change, write nothing
 npx @misaka-net/misakanet-setup --verify      # READY / NOT READY, installed version, and the fix for each gap
+                                             # two sections, two questions: 端点/可用性 (can you use it — the
+                                             #  endpoint answers) and 安装完整性 (are the files we prefer
+                                             #  written); one failing does not condemn the other, and a file
+                                             #  we cannot write says 装不了 with its cause — not 没装 with
+                                             #  the one fix that cannot work ("re-run the installer")
 npx @misaka-net/misakanet-setup --only claude # one agent only
 npx @misaka-net/misakanet-setup --no-register # read-only, no anonymous token
 npx @misaka-net/misakanet-setup --upgrade     # same as installing the latest (the command is idempotent)
