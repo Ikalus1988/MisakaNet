@@ -9,12 +9,15 @@ name: Setup Package CI
 # That is the same "a check nothing runs" defect the stress workflow's own comment describes,
 # one level up: the suite existed, the trigger never fired it.
 #
-# Two jobs, because they answer different questions:
+# Three kinds of job, because they answer different questions:
 #   unit — the source tree, on every OS and every Node version `engines` claims (>=18 had never
 #          been tested on any platform).
 #   e2e  — the *packaged artifact*: npm pack → upload → download → global install → full lifecycle,
 #          plus `--inject` runs that prove each assertion can actually go red. Benchmark: uv's
 #          `test-smoke.yml`, which tests a packaged artifact instead of the working tree.
+#   drift — the published installer against the repository: is the artifact on npm the one this
+#          repository produces? The other two ask "does it work?"; this one asks "is it the one
+#          people get?" (#3691 — npm sat at 0.5.6 while the source moved ten commits ahead).
 #
 # The installer's audience cannot debug anything and never sees a checkout, so "it works in the
 # repo" is not the claim that matters.
