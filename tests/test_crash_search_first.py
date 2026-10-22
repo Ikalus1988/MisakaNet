@@ -133,6 +133,20 @@ def test_no_hit_says_there_is_no_lesson_and_leaves_a_draft(tmp_path, capsys):
         assert section in body
 
 
+def test_the_draft_directory_is_created_when_it_is_not_there_yet(tmp_path):
+    """草稿目录不存在就建出来。
+
+    handler 是个子进程：它跑在一台机器上，那个机器上的 `lessons/drafts/`
+    很可能压根没有。假设它在那儿，等于把整条路押在这个假设上。
+    """
+    drafts = tmp_path / "not" / "there" / "yet"
+
+    fatal_guard_handler.main(
+        ["--offline", "--drafts-dir", str(drafts), json.dumps(NODE_PAYLOAD)])
+
+    assert len(list(drafts.glob("*.md"))) == 1, "the drafts directory was not created"
+
+
 def test_the_draft_carries_the_fields_the_lesson_gate_asks_for(tmp_path):
     """草稿要能被读：规范 domain、evidence_level、status。"""
     search = _search_returning(None)
@@ -231,6 +245,14 @@ def test_a_payload_that_is_not_an_object_is_an_explicit_error(capsys):
     assert "no crash payload" in capsys.readouterr().err
 
 
+def test_a_payload_that_is_missing_the_tombstone_fields_is_an_explicit_error(capsys):
+    """载荷是个对象，但缺了墓碑必填的字段（pid/timestamp/reason）：明说，不要崩在半路。"""
+    code = fatal_guard_handler.main([json.dumps({"message": "boom"})])
+
+    assert code == 2
+    assert "unusable crash payload" in capsys.readouterr().err
+
+
 @pytest.mark.parametrize("crash", [
     # Python 3.11 的脱字符行：   ~^^^^^^^^^^^^
     "  File \"/app/main.py\", line 12, in <module>\n"
@@ -297,11 +319,16 @@ def test_a_miss_decision_means_the_search_ran_and_found_nothing(monkeypatch):
 
     intake_bot 说 miss 的时候，检索是**跑成了**的——那比"没查成"要好，
     但那也不是"命中"。混成一句话，人就不知道该去查还是该等着。
+
+    注意用的是 `decide` **真实**的非命中形状：它带 `decision` 和 `payload`，
+    **没有 `lesson` 键**。所以 `search_lessons` 里那道 `!= "hit"` 的闸是承重的——
+    拿掉它，非命中就会去取一个不存在的键，崩在半路。
     """
     from scripts import intake_bot
 
     def fake_decide(error, **kwargs):
-        return {"decision": "miss", "lesson": None}
+        return {"decision": "intake", "fingerprint": "abc", "dry_run": True,
+                "payload": {"kind": "missing_lesson", "problem": error[:280]}}
 
     monkeypatch.setattr(intake_bot, "decide", fake_decide)
 
