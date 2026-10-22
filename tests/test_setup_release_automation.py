@@ -356,6 +356,37 @@ def _setup_extra_files() -> list[str]:
     return files
 
 
+def _release_please_add_path(package_path: str, file: str) -> str:
+    """release-please's `BaseStrategy.addPath` (src/strategies/base.ts), transcribed.
+
+    The rule that bit us, verbatim from upstream:
+
+        protected addPath(file: string) {
+          if (!this.path || this.path === ROOT_PROJECT_PATH || file.startsWith('/')) {
+            file = file.replace(/^\\/+/, '');
+          } else {
+            file = `${this.path.replace(/\\/+$/, '')}/${file}`;
+          }
+          ...
+        }
+
+    So a package **with a path** resolves its extra-files **relative to that path**, and only a
+    path that starts with `/` (or a package at the root) is taken as repository-relative.
+    """
+    if not package_path or package_path == "." or file.startswith("/"):
+        return file.lstrip("/")
+    return f"{package_path.rstrip('/')}/{file}"
+
+
+def _resolved_extra_files(package_path: str) -> set[str]:
+    entry = _read_json(CONFIG)["packages"][package_path]
+    files = []
+    for item in entry.get("extra-files", []):
+        path = item if isinstance(item, str) else item.get("path")
+        files.append(_release_please_add_path(package_path, path))
+    return set(files)
+
+
 def test_every_version_literal_is_released_with_the_version():
     """A release that bumps the manifest must move every literal that names it.
 
@@ -367,12 +398,46 @@ def test_every_version_literal_is_released_with_the_version():
     forgets, and it needs the file to be listed.
     """
     extra = _setup_extra_files()
+    resolved = _resolved_extra_files(SETUP_PATH)
     for path in VERSION_LITERAL_FILES:
-        assert path in extra, (
+        # The path release-please *resolves* is the one that matters: the config entry is
+        # resolved against the package's own path first (`addPath`), so a repository-relative
+        # entry in a package that has a path resolves to a file that does not exist — and the
+        # updater skips it without a word.
+        assert path in resolved, (
             f"{path} carries the package's version, but the release does not move it: the "
             f"release would ship the old version in --version and in the X-MisakaNet-Version "
-            f"header (extra-files: {extra})"
+            f"header (extra-files: {extra}, resolved: {sorted(resolved)})"
         )
+
+
+def test_every_extra_file_resolves_to_a_file_that_exists():
+    """The path release-please resolves is not the path the config writes.
+
+    Measured 2026-10-22, on the first automated release of this package: the config listed
+    `packages/misakanet-setup/bin/misakanet-setup.mjs` and `workers/misakanet-setup.test.mjs`,
+    but the setup package's strategy **has a path**, and release-please resolves a package's
+    extra-files relative to that path (`BaseStrategy.addPath`). Both entries therefore resolved
+    to files that do not exist, and the updater skipped them silently
+    (`createIfMissing: false`).
+
+    The result was the thing #3738 was about: the release bumped the manifest to 0.6.0 and left
+    the installer's literal at 0.5.6. The file was *listed*, and the marker rule was *right*, and
+    the release still did not move it — because the listing resolved to nowhere.
+
+    So this gate resolves every entry the way release-please does and asks whether a file is
+    there. A path that does not resolve is a release that silently does not move a version.
+    """
+    config = _read_json(CONFIG)
+    for package_path, entry in config["packages"].items():
+        for item in entry.get("extra-files", []):
+            path = item if isinstance(item, str) else item.get("path")
+            resolved = _release_please_add_path(package_path, path)
+            assert (REPO / resolved).is_file(), (
+                f"the extra-files entry {path!r} of the package {package_path!r} resolves to "
+                f"{resolved!r}, and that file does not exist — release-please skips a missing "
+                f"file silently, so the release would not move whatever version it carries"
+            )
 
 
 def test_the_release_moves_the_literals_it_lists():
