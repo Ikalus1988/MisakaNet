@@ -8,7 +8,7 @@
   },
   {
     "id": "github_token",
-    "pattern": "(?:ghp|gho|ghu|ghs|ghr|github_pat)_[a-zA-Z0-9]{10,}",
+    "pattern": "(?<![A-Za-z0-9])(?:ghp|gho|ghu|ghs|ghr|github_pat)_[A-Za-z0-9]{10,}",
     "flags": "g",
     "replacement": "[REDACTED:github_token]",
     "description": "GitHub Personal Access Token and other GitHub tokens"
@@ -29,14 +29,14 @@
   },
   {
     "id": "api_key",
-    "pattern": "(?:sk|pk|rk|ak)[_-][a-zA-Z0-9]{10,}",
+    "pattern": "(?<![A-Za-z0-9])(?:sk|pk|rk|ak)[_-][A-Za-z0-9]{10,}",
     "flags": "g",
     "replacement": "[REDACTED:api_key]",
     "description": "Generic API keys (OpenAI sk-*, etc.)"
   },
   {
     "id": "bearer_token",
-    "pattern": "(?:Bearer|Authorization)\\s+[a-zA-Z0-9\\-._~+/]+=*",
+    "pattern": "(?<![A-Za-z0-9])(?:Bearer|Authorization)\\s+[A-Za-z0-9\\-._~+/]{6,}=*",
     "flags": "gi",
     "replacement": "[REDACTED:bearer_token]",
     "description": "Bearer tokens in Authorization headers"
@@ -64,7 +64,7 @@
   },
   {
     "id": "abs_path",
-    "pattern": "(?<![A-Za-z0-9_:/~.\\-])(?:file://)?/(?:(?:(?:home|root|var|opt|etc|usr|tmp|mnt|srv|data|private|workspace|app|code|project|[Uu][Ss][Ee][Rr][Ss]|[Vv][Oo][Ll][Uu][Mm][Ee][Ss]))(?:/[^\\s/\\\\'\"<>,;:!?()\\[\\]{}]+)+|(?:[^\\s/\\\\'\"<>,;:!?()\\[\\]{}]+/)*[^\\s/\\\\'\"<>,;:!?()\\[\\]{}]*\\.[A-Za-z][A-Za-z0-9_\\-])",
+    "pattern": "(?<![A-Za-z0-9_:/~.\\-])(?:file://)?/(?:(?:home|root|var|opt|etc|usr|tmp|mnt|srv|data|private|workspace|app|code|project|[Uu][Ss][Ee][Rr][Ss]|[Vv][Oo][Ll][Uu][Mm][Ee][Ss])(?:/[^\\s/\\\\'\"<>,;:!?()\\[\\]{}]+)+|(?:[^\\s/\\\\'\"<>,;:!?()\\[\\]{}]+/)*[^\\s/\\\\'\"<>,;:!?()\\[\\]{}]*\\.[A-Za-z][A-Za-z0-9_\\-]*)",
     "flags": "g",
     "replacement": "<PATH>",
     "description": "Filesystem paths: a known root, or a path whose last segment has a file extension. API routes such as /api/v1/users are left alone — they are corpus text, not a leak"
