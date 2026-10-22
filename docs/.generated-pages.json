@@ -12,6 +12,7 @@
     "docs/lessons/a-file-dependency-on-a-directory-omitted-from-the-tarball-installs-a-dangling-no/index.html",
     "docs/lessons/a-fork-prs-workflow-run-is-created-as-action-required-the-suite-exists-and-never/index.html",
     "docs/lessons/a-github-token-push-cannot-trigger-workflows-so-a-branch-sync-freezes-ci/index.html",
+    "docs/lessons/a-green-test-suite-hid-a-module-that-a-bare-node-runtime-cannot-load-because-the/index.html",
     "docs/lessons/a-hit-is-not-evidence-of-relevance-the-boundary-queries-that-must-come-back-empt/index.html",
     "docs/lessons/a-lock-that-yields-on-importerror-is-a-silent-no-op-on-windows-lost-updates-in-c/index.html",
     "docs/lessons/a-nodesqlite-shim-for-better-sqlite3-must-filter-undeclared-named-parameters/index.html",
@@ -582,6 +583,7 @@
   "slugs": {
     "a-child-probe-failure-must-not-poison-the-parent-listing": "a-child-stat-failure-must-not-fail-the-whole-parent-directory-listing",
     "a-corpus-cached-in-one-row-has-a-ceiling": "a-corpus-cached-in-one-row-has-a-ceiling-and-the-diagnosis-cannot-live-in-that-r",
+    "a-green-test-suite-hid-a-module-a-bare-node-runtime-cannot-load": "a-green-test-suite-hid-a-module-that-a-bare-node-runtime-cannot-load-because-the",
     "a-hit-is-not-evidence-of-relevance": "a-hit-is-not-evidence-of-relevance-the-boundary-queries-that-must-come-back-empt",
     "a-pystray-menu-thread-crash-is-an-appkit-main-thread-violation": "a-pystray-menu-crash-on-macos-is-an-appkit-main-thread-violation-in-a-background",
     "a-security-fix-that-turns-tests-red-is-the-fix-working": "a-security-fix-that-turns-tests-red-is-the-fix-working-rewrite-the-test-that-enc",
