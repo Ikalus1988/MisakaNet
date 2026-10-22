@@ -32,6 +32,9 @@ import pytest
 
 REPO = Path(__file__).resolve().parent.parent
 INDEX = REPO / "docs" / "index.html"
+# #3641: the registration form (and the one bounded poll it makes) moved to /register/. The rule
+# below is about the site's request surface, so it reads both pages now.
+REGISTER = REPO / "docs" / "register" / "index.html"
 
 # The machinery of the removed section, by name. Any of these coming back means the per-issue request
 # budget came back with it.
@@ -124,6 +127,11 @@ def page() -> str:
     return uncommented(INDEX.read_text(encoding="utf-8"))
 
 
+@pytest.fixture(scope="module")
+def register_page() -> str:
+    return uncommented(REGISTER.read_text(encoding="utf-8"))
+
+
 # ── the live page ────────────────────────────────────────────────────────────────────────────────
 
 def test_the_page_makes_no_per_item_requests(page: str) -> None:
@@ -142,31 +150,41 @@ def request_targets(page: str) -> list[str]:
             re.findall(r"""(?<![A-Za-z])(?:fetchJSON|fetch)\(([^()]*(?:\([^()]*\))?[^()]*)\)""", page)]
 
 
-def test_every_request_target_is_same_origin_and_readable(page: str) -> None:
+def test_every_request_target_is_same_origin_and_readable(page: str, register_page: str) -> None:
     """Bounded is not the same as *legible*: what matters is that a person can read every network
     call this page makes, and that none of them leaves the origin on its own.
 
     `GET /mcp` is advertised as the interface; a homepage that quietly calls third parties would
     undercut that, and the page is small enough that the whole surface fits in one list.
+
+    #3641: the register page is part of the site's request surface too, so it is read here as
+    well — it fetches the locale, the counter, and (on submit) the Worker and the one poll.
     """
-    targets = request_targets(page)
-    assert targets, "no request targets found — did the loaders change shape?"
-    assert len(targets) <= 14, f"more targets than a reviewer can hold: {targets}"
-    off_origin = [t for t in targets if re.search(r"https?://", t)]
-    assert not off_origin, f"off-origin request(s): {off_origin}"
+    for name, text in (("the homepage", page), ("the register page", register_page)):
+        targets = request_targets(text)
+        assert targets, f"no request targets found on {name} — did the loaders change shape?"
+        assert len(targets) <= 14, f"more targets than a reviewer can hold on {name}: {targets}"
+        off_origin = [t for t in targets if re.search(r"https?://", t)]
+        assert not off_origin, f"off-origin request(s) on {name}: {off_origin}"
 
 
-def test_the_only_interpolated_github_path_is_the_single_registration_poll(page: str) -> None:
+def test_the_only_interpolated_github_path_is_the_single_registration_poll(
+    page: str, register_page: str
+) -> None:
     """A path that interpolates a *collection* is a fan-out waiting to happen.
 
     The one allowed interpolation is `issues/${data.issue_number}/comments` — the post-registration
     poll for the visitor's own new issue, bounded to 18 attempts over 3 minutes (`maxPolls`). The
     fan-out that produced ~2,700 504s interpolated a value taken from a list of up to 100 issues,
     which is the difference this rule holds.
+
+    #3641: the poll moved to /register/ with the form, so the rule reads both pages — the
+    homepage's half of the site and the page that now carries the poll.
     """
     interpolated = set()
-    for path in re.findall(r"\$\{GITHUB_PROXY\}[^`\n]*", page):
-        interpolated |= set(re.findall(r"\$\{([^}]+)\}", path))
+    for text in (page, register_page):
+        for path in re.findall(r"\$\{GITHUB_PROXY\}[^`\n]*", text):
+            interpolated |= set(re.findall(r"\$\{([^}]+)\}", path))
     interpolated -= {"GITHUB_PROXY"}  # the origin, not a path segment
     assert interpolated <= {"data.issue_number"}, (
         f"the GitHub proxy path interpolates {sorted(interpolated)}; only the single-registration poll "

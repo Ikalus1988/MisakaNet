@@ -49,6 +49,9 @@ import pytest
 
 REPO = pathlib.Path(__file__).resolve().parents[1]
 INDEX = REPO / "docs" / "index.html"
+# #3641: the registration success panel moved off the homepage to /register/ — the panel belongs to
+# the form, and the form moved. The rule it is pinned by did not change.
+REGISTER = REPO / "docs" / "register" / "index.html"
 LOCALES = {lang: REPO / "docs" / "locales" / f"{lang}.json" for lang in ("en", "zh")}
 SCRIPT = REPO / "scripts" / "sync_site_activity.py"
 
@@ -69,6 +72,11 @@ SUBTRACTION = re.compile(r"counter\.current\b[^;\n]*?[-+]\s*\d+")
 @pytest.fixture(scope="module")
 def page() -> str:
     return INDEX.read_text(encoding="utf-8")
+
+
+@pytest.fixture(scope="module")
+def register_page() -> str:
+    return REGISTER.read_text(encoding="utf-8")
 
 
 def locale(lang: str) -> dict[str, str]:
@@ -299,11 +307,11 @@ def test_the_agent_contributor_count_is_not_published_as_a_stat(page):
     )
 
 
-def test_the_registration_success_panel_still_gets_a_counter_to_estimate_from(page):
+def test_the_registration_success_panel_still_gets_a_counter_to_estimate_from(register_page):
     """Deleting the timeline nearly took this with it.
 
     The success panel predicts the visitor's node number from `CURRENT_COUNTER + 1` when the worker
-    returns none. `CURRENT_COUNTER` is assigned inside `loadStats()` for the panel's benefit only; a
+    returns none. `CURRENT_COUNTER` is assigned from the counter for the panel's benefit only; a
     deletion that removed the assignment as "dead" would freeze the prediction, and this is the one
     number a visitor reads back about *themselves*.
 
@@ -314,8 +322,11 @@ def test_the_registration_success_panel_still_gets_a_counter_to_estimate_from(pa
     as a state: `null`, and the panel prints no id at all rather than a wrong one. Both halves are
     pinned here, because either alone is a regression: a constant seed, or a `||` that turns
     `Number(null) === 0` back into a number.
+
+    #3641: the panel and the counter read that feeds it moved to /register/ together — the
+    homepage's copy of the counter fetch had no consumer left once the form left it.
     """
-    code = uncommented(page)
+    code = uncommented(register_page)
     assert "CURRENT_COUNTER + 1" in code, "the success panel's prediction moved"
     assert re.search(r"CURRENT_COUNTER = Number\.isFinite\(readCounter\)[^;]*\? readCounter : null", code), (
         "CURRENT_COUNTER is no longer refreshed from the counter, or no longer distinguishes "

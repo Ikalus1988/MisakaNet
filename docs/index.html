@@ -884,196 +884,6 @@
     flex-shrink: 0;
   }
 
-  /* ── Register Form ── */
-  .register-section {
-    text-align: center;
-    padding: 32px 0 48px;
-    border-top: 1px solid rgba(0, 229, 255, 0.08);
-    margin-top: 32px;
-  }
-
-  .register-title {
-    font-size: var(--fs-sm);
-    color: var(--text-dim);
-    margin-bottom: 8px;
-  }
-
-  .register-desc {
-    font-size: var(--fs-xs);
-    color: #cbd5e1;
-    line-height: 1.6;
-    margin-bottom: 16px;
-    padding: 12px 14px;
-    background: rgba(15, 23, 42, 0.78);
-    border: 1px solid rgba(0, 229, 255, 0.18);
-    border-radius: var(--r-md);
-  }
-
-  .register-form {
-    text-align: left;
-    background: var(--bg-card);
-    border: 1px solid var(--border-glow);
-    border-radius: var(--r-lg);
-    padding: 24px 28px;
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    box-shadow: var(--sh-1);
-  }
-
-  .register-label {
-    font-size: var(--fs-xs);
-    font-weight: 700;
-    color: var(--fg-1);
-    margin-bottom: 4px;
-  }
-
-  .register-hint {
-    font-size: var(--fs-3xs);
-    color: var(--text-dim);
-    margin-bottom: 8px;
-  }
-
-  .register-input {
-    width: 100%;
-    padding: 10px 12px;
-    background: rgba(0, 0, 0, 0.3);
-    border: 1px solid rgba(0, 229, 255, 0.15);
-    border-radius: var(--r-md);
-    color: var(--fg-1);
-    font-size: var(--fs-sm);
-    font-family: var(--font-brand);
-    box-sizing: border-box;
-    outline: none;
-    transition: all var(--t-base);
-  }
-
-  .register-input:focus {
-    border-color: var(--cyan);
-    outline: 2px solid var(--cyan);
-    outline-offset: 1px;
-  }
-  .register-input::placeholder { color: var(--text-dim); }
-
-  /* Agent type selector — card grid */
-  .agent-selector {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-    gap: 8px;
-    margin-top: 12px;
-  }
-
-  .agent-option {
-    text-align: center;
-    padding: 12px 8px;
-    background: rgba(0, 0, 0, 0.25);
-    border: 1px solid rgba(0, 229, 255, 0.1);
-    border-radius: var(--r-md);
-    cursor: pointer;
-    transition: all var(--t-base);
-    font-size: var(--fs-3xs);
-    font-weight: 600;
-    color: var(--text-dim);
-    font-family: var(--font-mono);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 6px;
-  }
-
-  .agent-option:hover { border-color: var(--cyan); color: var(--fg-1); }
-  .agent-option:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
-  .agent-option.selected {
-    border-color: var(--cyan);
-    background: rgba(0, 229, 255, 0.85);
-    color: var(--bg-0);
-    box-shadow: var(--sh-1);
-    position: relative;
-  }
-  .agent-option.selected::before {
-    content: '';
-    position: absolute;
-    top: 4px;
-    left: 4px;
-    bottom: 4px;
-    width: 2px;
-    background: var(--bg-0);
-    border-radius: var(--r-sm);
-    opacity: 0.5;
-  }
-  .agent-option:active { transform: scale(0.96); }
-
-  .register-checkbox-label {
-    display: flex;
-    align-items: flex-start;
-    gap: 8px;
-    margin-top: 14px;
-    cursor: pointer;
-  }
-
-  .register-checkbox-label input { margin-top: 2px; flex-shrink: 0; }
-
-  .register-checkbox-text {
-    font-size: var(--fs-2xs);
-    color: var(--fg-2);
-    line-height: 1.5;
-  }
-
-  .register-btn {
-    width: 100%;
-    margin-top: 14px;
-    padding: 12px 0;
-    background: rgba(255, 0, 128, 0.15);
-    color: var(--magenta);
-    border: 1px solid rgba(255, 0, 128, 0.3);
-    border-radius: var(--r-md);
-    font-weight: 700;
-    font-size: var(--fs-sm);
-    cursor: pointer;
-    opacity: 0.5;
-    transition: all var(--t-base);
-    font-family: var(--font-brand);
-  }
-
-  .register-btn:not(:disabled) { opacity: 1; cursor: pointer; }
-  .register-btn:not(:disabled):hover {
-    background: rgba(255, 0, 128, 0.25);
-    border-color: rgba(255, 0, 128, 0.5);
-  }
-
-  .register-result {
-    margin-top: 12px;
-    padding: 12px;
-    border-radius: var(--r-md);
-    font-size: var(--fs-xs);
-    line-height: 1.6;
-    display: none;
-  }
-
-  .register-result.success {
-    background: rgba(35, 134, 54, 0.15);
-    border: 1px solid #238636;
-    color: #7ee787;
-  }
-
-  .register-result.error {
-    background: rgba(218, 54, 51, 0.15);
-    border: 1px solid #da3633;
-    color: #ff7b72;
-  }
-
-  .register-result a { color: var(--accent); }
-
-  @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.4; }
-  }
-
-  .register-alt {
-    margin-top: 16px;
-    font-size: var(--fs-3xs);
-    color: var(--fg-2);
-  }
-
   /* Agent quick register bar — terminal style */
   .agent-register-bar {
     text-align: center;
@@ -1143,8 +953,6 @@
     color: var(--fg-2);
   }
 
-  .register-alt a { color: var(--accent); text-decoration: none; }
-  .register-alt a:hover { text-decoration: underline; }
 
   /* ── Onboarding Modal ── */
   .modal-overlay {
@@ -1430,85 +1238,6 @@
     animation: skeletonShimmer 1.5s ease-in-out infinite;
   }
 
-  /* ── Shimmer button effect ── */
-  .register-btn:not(:disabled) {
-    position: relative;
-    overflow: hidden;
-  }
-  .register-btn:not(:disabled)::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent);
-    animation: shimmer 2.5s ease-in-out infinite;
-  }
-  @keyframes shimmer {
-    0% { left: -100%; opacity: 0; }
-    20% { opacity: 0.5; }
-    60% { left: 100%; opacity: 0; }
-    100% { left: 100%; opacity: 0; }
-  }
-
-  /* ── Input bottom line animation ── */
-  .register-input {
-    position: relative;
-  }
-  .register-input:focus::after {
-    content: '';
-    position: absolute;
-    bottom: -1px;
-    left: 50%;
-    width: 0;
-    height: 1px;
-    background: var(--cyan);
-    transition: width var(--t-base) ease, left var(--t-base) ease;
-  }
-  .register-input:focus {
-    border-bottom: 1px solid var(--cyan);
-  }
-
-  /* ── Terminal-style input with $ prefix ── */
-  .terminal-input-wrap {
-    display: flex;
-    align-items: center;
-    max-width: 420px;
-    background: rgba(0, 0, 0, 0.3);
-    border: 1px solid rgba(0, 229, 255, 0.15);
-    border-radius: var(--r-md);
-    transition: all var(--t-base);
-    padding: 0;
-  }
-  .terminal-input-wrap:focus-within {
-    border-color: var(--cyan);
-    outline: 2px solid var(--cyan);
-    outline-offset: 0;
-    background: rgba(0, 229, 255, 0.03);
-  }
-  .terminal-input-prefix {
-    flex-shrink: 0;
-    width: 32px;
-    text-align: center;
-    color: var(--cyan);
-    font-family: var(--font-mono);
-    font-size: var(--fs-xs);
-    opacity: 0.6;
-    user-select: none;
-  }
-  .terminal-input-wrap .register-input {
-    flex: 1;
-    border: none !important;
-    background: transparent !important;
-    box-shadow: none !important;
-    min-width: 0;
-  }
-  .terminal-input-wrap .register-input:focus {
-    border: none !important;
-    box-shadow: none !important;
-  }
-
   /* ── Cached data label ── */
   .cached-label {
     display: inline-block;
@@ -1562,26 +1291,6 @@
     .stat-number {
       font-size: var(--fs-2xl);
     }
-    .register-section {
-      padding: 0 16px;
-    }
-    .register-form {
-      padding: 20px 16px;
-    }
-    .register-form input,
-    .register-form select {
-      width: 100%;
-      min-height: 44px;
-    }
-    .agent-selector {
-      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-    }
-    .agent-option {
-      min-height: 44px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
     /* Touch targets */
     button, a, .github-btn, .lang-btn-row button {
       min-height: 44px;
@@ -1614,14 +1323,6 @@
       font-size: var(--fs-md);
       letter-spacing: 3px;
     }
-    .agent-selector {
-      grid-template-columns: repeat(2, 1fr);
-      gap: 8px;
-    }
-    .agent-option {
-      min-height: 48px;
-      font-size: var(--fs-xs);
-    }
     .stat-card {
       padding: 14px 16px;
     }
@@ -1631,19 +1332,11 @@
     .stat-label {
       font-size: var(--fs-2xs);
     }
-    .register-form {
-      padding: 16px 12px;
-    }
-    .register-btn {
-      width: 100%;
-      min-height: 48px;
-      font-size: var(--fs-md);
-    }
     .search-hint {
       display: none;
     }
     /* Ensure all interactive elements have 44px touch targets */
-    button, a, input, select, .agent-option {
+    button, a, input, select {
       min-height: 44px;
     }
     .github-btn {
@@ -1660,8 +1353,6 @@
     .logo-cn { font-size: var(--fs-4xl); letter-spacing: 6px; }
     .stat-card { padding: 16px 20px; }
     .stat-number { font-size: var(--fs-2xl); }
-    .agent-selector { grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); }
-    .register-form { padding: 20px 16px; }
   }
 
   /* "This helped me" button */
@@ -1867,7 +1558,6 @@
          existed, the entry point did not). tests/test_site_pages_are_reachable.py now fails when a
          drawer link has no page behind it, or when one of these four loses its entry. -->
     <a class="drawer-link" href="/install/" onclick="closeDrawer()"><span class="link-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg></span><span data-i18n="navInstall">Install in 5 minutes</span></a>
-    <a class="drawer-link" href="#register" onclick="closeDrawer()"><span class="link-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg></span><span data-i18n="navRegister">Register node</span></a>
   </div>
 
   <div class="drawer-divider"></div>
@@ -2029,8 +1719,8 @@
             <button type="button" class="qs-copy" aria-label="Copy command to clipboard" data-copy-target="qs-a2" data-i18n="qsCopy" onclick="copyQS(this)">Copy</button>
           </div>
           <div style="margin-top:6px;font-size:var(--fs-2xs);color:var(--text-dim);line-height:1.5;">
-            <a href="/start" style="color:var(--cyan);text-decoration:none;border-bottom:1px solid rgba(0,229,255,0.35);" data-i18n="qsStartPair">Start page</a>
-            <span data-i18n="qsStartPairNote">— optional. Search needs no pairing code: the installer already registered your node. Writing tools and Misaka Voice live there.</span>
+            <a href="/start" style="color:var(--cyan);text-decoration:none;border-bottom:1px solid rgba(0,229,255,0.35);" data-i18n="qsStartPage">Start page</a>
+            <span data-i18n="qsStartNote">— optional. Search needs nothing else: the installer already set you up. Writing tools and Misaka Voice live there.</span>
           </div>
           <div class="qs-check" data-i18n="qsA2Check">Check: claude mcp list or codex mcp list lists misakanet and its tools.</div>
         </div></div>
@@ -2084,7 +1774,7 @@
         </div></div>
 
         <div class="qs-step"><span class="qs-num">3</span><div style="flex:1;min-width:0;">
-          <div style="font-size:var(--fs-xs);color:var(--fg-1);line-height:1.5;" data-i18n="qsB3">Need the write tools? Register once and keep the token:</div>
+          <div style="font-size:var(--fs-xs);color:var(--fg-1);line-height:1.5;" data-i18n="qsB3">Need the write tools? The call below issues a node and a token:</div>
           <div class="qs-cmd-row">
             <div class="qs-cmd" id="qs-b3">curl -sS https://misakanet.org/mcp \
   -H "Content-Type: application/json" \
@@ -2184,8 +1874,9 @@
              and cannot answer "how many nodes are active", whatever the label says. Two earlier rounds
              renamed the label ("registered nodes" / "Active Nodes" → "node IDs issued"), which only
              turned a false claim into a true number nobody needs.
-             The page still *reads* the counter below — the registration success panel estimates the
-             visitor's node number from it — it is simply no longer displayed as a stat. What is
+             The page does not read it at all any more: the registration success panel that estimated
+             the visitor's node number from it moved to /register/, and it is simply not displayed as a
+             stat here either. What is
              actually used is in the network-activity panel further down (MCP calls, split by MCP /
              agent / crawler / page view). The five surfaces that quoted the number are gone too:
              `scripts/sync_lesson_count.py` has no node metric any more, and
@@ -2347,74 +2038,15 @@
        for the case the route is unreachable. Both carry `generated_at`, and the footnote below
        renders the *age* of whichever it got: a stale number can never again read as current. -->
 
-  <!-- Register Form -->
+  <!-- Register — one line (#3641).
+       The form moved to /register/. Reading and searching never needed a registration, so it is no
+       longer one of the homepage's four navigation items and no longer a block at the bottom of the
+       page: what is left is one line saying what registering is *for* — writing — and where it
+       happens. The API, the token lifecycle and the registration logic did not change. -->
   <div id="register" class="anchor-target"></div>
-  <div class="register-section">
-    <div class="register-title"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg> <span data-i18n="registerTitle">读取无需注册 · 注册只解锁写入工具</span></div>
-    <div class="register-desc" data-i18n="registerDesc">注册只会创建一个稳定的化名 node，并解锁写入类工具（提交课程 / 风险检查）。读取、检索与接入 MCP 都无需注册。注册后请在 Agent 内完成准入测试（查看欢迎消息）。人类用户请让 Agent 代为注册。</div>
-    <div class="register-form">
-      <div class="register-label" data-i18n="agentTypeLabel">Agent 类型（可选 · 仅统计）</div>
-      <div class="register-hint" data-i18n="agentTypeHint">仅用于统计各类工具的使用比例；自声明、不验证身份</div>
-      <div class="agent-selector" role="radiogroup" aria-label="Agent type">
-        <div class="agent-option selected" data-agent="hermes" tabindex="0" role="radio" aria-checked="true" data-i18n="agentHermes">Hermes</div>
-        <div class="agent-option" data-agent="claude" tabindex="0" role="radio" aria-checked="false" data-i18n="agentCC">Claude</div>
-        <div class="agent-option" data-agent="codex" tabindex="0" role="radio" aria-checked="false" data-i18n="agentCodex">Codex</div>
-        <div class="agent-option" data-agent="openclaw" tabindex="0" role="radio" aria-checked="false" data-i18n="agentOpenClaw">OpenClaw</div>
-        <div class="agent-option" data-agent="opencode" tabindex="0" role="radio" aria-checked="false" data-i18n="agentOpenCode">OpenCode</div>
-        <div class="agent-option" data-agent="codewhale" tabindex="0" role="radio" aria-checked="false" data-i18n="agentCodewhale">codewhale</div>
-        <div class="agent-option" data-agent="cursor" tabindex="0" role="radio" aria-checked="false" data-i18n="agentCursor">Cursor</div>
-        <div class="agent-option" data-agent="gemini" tabindex="0" role="radio" aria-checked="false" data-i18n="agentGemini">Gemini CLI</div>
-        <div class="agent-option" data-agent="copilot" tabindex="0" role="radio" aria-checked="false" data-i18n="agentCopilot">Copilot CLI</div>
-        <div class="agent-option" data-agent="kiro" tabindex="0" role="radio" aria-checked="false" data-i18n="agentKiro">Kiro</div>
-        <div class="agent-option" data-agent="other" tabindex="0" role="radio" aria-checked="false" data-i18n="agentOther">其他</div>
-      </div>
-      <div id="agent-other-wrap" style="display:none;margin-top:10px;">
-        <input type="text" id="agent-other-input" class="register-input" maxlength="30"
-               data-i18n-placeholder="agentOtherPlaceholder"
-               placeholder="例如：my-client（字母、数字、- 和 _）">
-      </div>
-
-      <div style="margin-top:16px;">
-        <label for="node-name" class="register-label" data-i18n="nodeNameLabel">节点名称（可选）</label>
-        <div class="register-hint" data-i18n="nodeNameHint">留空则使用默认名称</div>
-        <div class="terminal-input-wrap">
-          <span class="terminal-input-prefix">$</span>
-          <input type="text" id="node-name" class="register-input"
-                 data-i18n-placeholder="nodeNamePlaceholder"
-                 placeholder="例如：太阳">
-        </div>
-      </div>
-
-      <div style="margin-top:12px;">
-        <label for="invite-code" class="register-label" data-i18n="inviteCodeLabel">邀请码（可选）</label>
-        <div class="register-hint" data-i18n="inviteCodeHint">填邀请人用户名可关联</div>
-        <div class="terminal-input-wrap">
-          <span class="terminal-input-prefix">$</span>
-          <input type="text" id="invite-code" class="register-input"
-                 data-i18n-placeholder="inviteCodePlaceholder"
-                 placeholder="例如：Ikalus1988">
-        </div>
-      </div>
-
-      <label class="register-checkbox-label">
-        <input type="checkbox" id="register-agree">
-        <span class="register-checkbox-text" data-i18n="agree">
-          我了解加入后我的节点经验可以选择性贡献给网络
-        </span>
-      </label>
-
-      <button id="register-btn" class="register-btn" disabled>
-        <span class="reg-btn-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg></span> <span data-i18n="registerBtn">注册节点</span>
-      </button>
-
-      <div id="register-result" class="register-result"></div>
-    </div>
-
-    <div class="register-alt">
-      <span data-i18n="or">或者</span>
-      <a href="https://github.com/Ikalus1988/MisakaNet/issues/new?template=register.yml&title=join" target="_blank" data-i18n="githubReg">通过 GitHub 注册</a>
-    </div>
-  </div>
+  <p style="text-align:center;font-size:var(--fs-2xs);color:var(--text-dim);margin:0;">
+    <span data-i18n="registerCta">写课程需要一个 node（读取不需要）</span> → <a href="/register/" style="color:var(--cyan);text-decoration:none;border-bottom:1px solid rgba(0,229,255,0.35);" data-i18n="registerCtaLink">注册</a>
+  </p>
 
   </div> <!-- /.content-glass -->
 
@@ -2503,15 +2135,6 @@ const ICON = {
   trophy: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>',
   zap: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg>',
 };
-
-// The register button carries an icon *and* a translated label, and `switchLang` writes
-// `textContent` — so the label lives in a <span> and the icon outside it. Writing the button's
-// textContent would take the icon with it, and with it the `data-i18n` the switcher needs.
-function setRegisterBtn(btn, icon, text) {
-  btn.querySelector('.reg-btn-icon').innerHTML = icon;
-  btn.querySelector('[data-i18n="registerBtn"]').textContent = text;
-}
-
 
 /** 返回数据源基础 URL：同域 /api */
 function getDataBase() {
@@ -2785,72 +2408,6 @@ function handleGlobalKeys(e) {
 }
 document.addEventListener('keydown', handleGlobalKeys);
 
-// The last counter value this page actually *read* from /api/counter, or null when it never got one.
-// The registration success panel predicts the visitor's node id from it (`counter + 1`). It used to be
-// seeded with a constant (10010) and refreshed with `Number(counter.current) || CURRENT_COUNTER`, so an
-// unavailable endpoint silently produced a prediction from a stale default — and the number it prints
-// is the visitor's own node id. The endpoint lost its file fallback on 2026-09-28 (a mirror with no
-// freshness guarantee was answering with a value months old, issue #1820), so "no value" is a state
-// this page handles rather than papers over: see the success panel, which omits the number.
-let CURRENT_COUNTER = null;
-
-// Agent type selection.
-//
-// Two variables on purpose: `selectedAgentChoice` is the highlighted card, `selectedAgent` is the
-// value the registration flow sends. They differ for "other", where the value is the visitor's own
-// client name — the statistics want the real tool, not the literal word "other".
-let selectedAgentChoice = 'hermes';
-let selectedAgent = 'hermes';
-
-// The worker keeps `agent_type` to 30 characters (MAX_AGENT_TYPE in workers/register-proxy-sw.js);
-// the input's maxlength and the slice below must stay equal to it.
-const AGENT_TEXT_MAX = 30;
-
-// Free text, cleaned the way the worker will clean it. `sanitizeIdentifier` (workers/lib/utils.js)
-// drops everything outside `\w`-plus-CJK-and-dash and truncates at MAX_AGENT_TYPE; the page applies
-// the stricter, documented `[A-Za-z0-9_-]` rule, so what the visitor typed is what the issue records
-// instead of a value the server silently rewrites.
-function cleanAgentText(raw) {
-  return String(raw || '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, AGENT_TEXT_MAX);
-}
-
-// Point `selectedAgent` at the highlighted card, and for "other" at its free text — empty free text
-// becomes `unknown`, never a default client: an absent answer must not be counted as Hermes.
-function syncSelectedAgent() {
-  const input = document.getElementById('agent-other-input');
-  const wrap = document.getElementById('agent-other-wrap');
-  const isOther = selectedAgentChoice === 'other';
-  if (wrap) wrap.style.display = isOther ? '' : 'none';
-  if (!isOther) {
-    selectedAgent = selectedAgentChoice;
-    return;
-  }
-  selectedAgent = cleanAgentText(input && input.value) || 'unknown';
-}
-
-const agentOtherInput = document.getElementById('agent-other-input');
-if (agentOtherInput) agentOtherInput.addEventListener('input', syncSelectedAgent);
-
-function selectAgent(el) {
-  document.querySelectorAll('.agent-option').forEach(opt => {
-    opt.classList.remove('selected');
-    opt.setAttribute('aria-checked', 'false');
-  });
-  el.classList.add('selected');
-  el.setAttribute('aria-checked', 'true');
-  selectedAgentChoice = el.dataset.agent;
-  syncSelectedAgent();
-  if (selectedAgentChoice === 'other' && agentOtherInput) agentOtherInput.focus();
-}
-
-// Keyboard support for agent selector
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' || e.key === ' ') {
-    const target = e.target.closest('.agent-option');
-    if (target) { e.preventDefault(); selectAgent(target); }
-  }
-});
-
 // ── i18n (external locale files) ──
 const _localeCache = {};
 let LANG = localStorage.getItem('misakanet-lang') || (navigator.language.startsWith('zh') ? 'zh' : 'en');
@@ -2933,41 +2490,6 @@ function updateLessonCountSearch() {
 
 // Initial load
 switchLang(LANG);
-
-// Client name (as recorded) → the locale key that renders it. The keys are the ones the timeline
-// badges have always used, plus the rest of the list the installers actually wire up:
-// `AGENTS` in packages/misakanet-setup/bin/misakanet-setup.mjs (and its bootstrap counterpart,
-// which adds `dsh` — Python-only, no npm target, see tests/test_installer_parity.py). A name that is
-// not in here is not a client we recognise, and it must render as unknown rather than be guessed:
-// `getAgentLabel` used to fall back to Hermes, which attributed every unreadable registration to the
-// wrong tool. tests/test_registration_copy.py keeps this map and the selector in step with the
-// installers.
-const AGENT_LABEL_KEYS = {
-  hermes: 'agentHermes',
-  claude: 'agentCC',
-  cc: 'agentCC',            // legacy entries: the pre-protocol keyword fallback wrote `cc`
-  codex: 'agentCodex',
-  openclaw: 'agentOpenClaw',
-  opencode: 'agentOpenCode',
-  codewhale: 'agentCodewhale',
-  cursor: 'agentCursor',
-  gemini: 'agentGemini',
-  copilot: 'agentCopilot',
-  kiro: 'agentKiro',
-};
-
-function getAgentLabel(agentType) {
-  const key = AGENT_LABEL_KEYS[agentType];
-  return key ? t(key) : t('agentUnknown');
-}
-
-// What the success panel echoes back for the value the flow is about to send: a known client renders
-// as its label, free text as itself (that is the point of "other"), and the `unknown` sentinel as the
-// translated unknown instead of a bare English word.
-function agentDisplayValue(value) {
-  if (AGENT_LABEL_KEYS[value]) return getAgentLabel(value);
-  return value === 'unknown' ? t('agentUnknown') : value;
-}
 
 function getClassificationLabel(cls) {
   switch(cls) {
@@ -3556,10 +3078,6 @@ function refreshStats() {
   loadStats();
 }
 
-/** 返回 counter 数据 URL：同域 /api/counter（WORKER_BASE 已切换为同域模式） */
-function getCounterUrl() {
-  return WORKER_BASE ? `${WORKER_BASE}/api/counter` : `/api/counter`;
-}
 /** 返回 lessons 数据 URL：静态浏览器投影（避开 Worker 污染数据源）。
  *
  * 2026-09-30：这里原本是整库 `data/lessons.json`（1.32 MB raw / 418 KB 传输），而这个页面的本地检索
@@ -3597,20 +3115,10 @@ function getHelpfulUrl() {
 const PANEL_DEFER_MS = 1200;
 
 async function loadStats() {
-  const counter = await fetchWithCache(getCounterUrl(), 'counter').catch(() => null);
-
-  // The counter is still fetched, and this assignment is the only reason: the registration success
-  // panel predicts the visitor's node number from it. It is deliberately **not displayed** any more
-  // (2026-09-26) — a monotonic allocation counter that anonymous callers advance by one per call is not
-  // a population, so no label makes it a stat worth showing.
+  // The node counter used to be fetched here, for one consumer: the registration success panel's
+  // predicted node id. That panel moved to /register/ (which reads the counter itself), so the
+  // homepage's request bought nothing — one less request on every visit.
   //
-  // `null` when the payload carries no usable number. The endpoint answers 503 with `current: null`
-  // when neither D1 nor KV answered (2026-09-28), and a prediction built from a value we never read is
-  // not a prediction. The check is explicit rather than `||`, because `Number(null)` is 0 and
-  // `Number(undefined)` is NaN — and a falsy-coalescing `||` is exactly how a stale default stays alive.
-  const readCounter = counter ? Number(counter.current) : NaN;
-  CURRENT_COUNTER = Number.isFinite(readCounter) && readCounter > 0 ? readCounter : null;
-
   // SSOT: use _allLessons (from safeFetchLessons) instead of /api/lessons
   if (!_allLessons) {
     await loadLessons();
@@ -4179,310 +3687,7 @@ function getTimeAgo(date) {
   return days + t('dayAgo');
 }
 
-// ── Registration ──
-// Registration proxied via Cloudflare Worker. Token is server-side only.
-const WORKER_URL = window.location.origin + "/api/register";
-
-// Client-side rate limit: max 1 registration per 30s
-let LAST_REGISTER_AT = 0;
-
-// ── Input validation ──
-function sanitizeInput(val, maxLen) {
-  if (!val) return val;
-  if (val.length > maxLen) val = val.slice(0, maxLen);
-  // Remove characters that could break markdown
-  val = val.replace(/[`\[\]()<>]/g, '');
-  return val.trim();
-}
-
-function escapeHTML(val) {
-  return String(val ?? '').replace(/[&<>"']/g, ch => ({
-    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-  }[ch]));
-}
-
-function validateName(name) {
-  if (!name) return '';
-  if (name.length > 50) return 'Node name must be 50 chars or less';
-  if (!/^[\u4e00-\u9fa5a-zA-Z0-9_\- ]+$/.test(name)) return 'Node name: Chinese/English/digits/underscore/hyphen only';
-  return '';
-}
-
-function validateInviteCode(code) {
-  if (!code) return '';
-  if (code.length > 50) return 'Invite code must be 50 chars or less';
-  if (!/^[a-zA-Z0-9_\-]+$/.test(code)) return 'Invite code: English/digits/underscore/hyphen only';
-}
-
-async function readJsonResponse(response) {
-  const text = await response.text();
-  const contentType = response.headers.get('content-type') || '';
-  const snippet = text.slice(0, 80);
-  if (!contentType.includes('application/json')) {
-    if (snippet.trimStart().startsWith('<')) {
-      throw new Error(`Proxy returned HTML (${response.status}). Refresh and try again, or use GitHub Issue registration.`);
-    }
-    throw new Error(`Non-JSON response (${response.status}): ${snippet}`);
-  }
-  try {
-    return JSON.parse(text);
-  } catch (err) {
-    throw new Error(`Invalid JSON response (${response.status}): ${snippet}`);
-  }
-}
-
-document.getElementById("register-agree").addEventListener("change", function() {
-  const btn = document.getElementById("register-btn");
-  btn.disabled = !this.checked;
-});
-
-async function registerNode() {
-  const btn = document.getElementById("register-btn");
-  const result = document.getElementById("register-result");
-  const nameInput = document.getElementById("node-name").value;
-  const inviteInput = document.getElementById("invite-code").value;
-
-  // ── Input validation ──
-  const nameErr = validateName(nameInput);
-  if (nameErr) {
-    result.style.display = "block";
-    result.className = "register-result error";
-    result.textContent = nameErr;
-    return;
-  }
-  const inviteErr = validateInviteCode(inviteInput);
-  if (inviteErr) {
-    result.style.display = "block";
-    result.className = "register-result error";
-    result.textContent = inviteErr;
-    return;
-  }
-
-  const name = sanitizeInput(nameInput, 50);
-  const inviteCode = sanitizeInput(inviteInput, 50);
-
-  // ── Rate limit (localStorage, survives refresh) ──
-  const now = Date.now();
-  const lastReg = parseInt(localStorage.getItem('misakanet-last-reg') || '0', 10);
-  if (now - lastReg < 30000) {
-    const remaining = Math.ceil((30000 - (now - lastReg)) / 1000);
-    result.style.display = "block";
-    result.className = "register-result error";
-    result.innerHTML = `${ICON.circleX}${escapeHTML(t('regFail'))}: ${escapeHTML(t('rateLimitWait').replace('{s}', remaining))}`;
-    return;
-  }
-  localStorage.setItem('misakanet-last-reg', String(now));
-  LAST_REGISTER_AT = now;
-
-  btn.disabled = true;
-  setRegisterBtn(btn, ICON.hourglass, t('registering'));
-  result.style.display = "none";
-
-  const nameLine = name ? `\n注册名称: **${name}**` : "";
-  const agentLine = `\nAgent 类型: **${selectedAgent.toUpperCase()}**`;
-  const inviteLine = inviteCode ? `\n邀请人: **@${inviteCode}**` : "";
-  const body = `## 🧠 通过公开通道加入御坂网络${nameLine}${agentLine}${inviteLine}\n\n已确认条款。`;
-
-  try {
-  // ── Terminal handshake animation ──
-  result.style.display = "block";
-  result.className = "register-result";
-  result.style.background = "rgba(15,23,42,0.82)";
-  result.style.border = "1px solid rgba(0,229,255,0.24)";
-  result.style.color = "var(--cyan)";
-  result.style.textAlign = "left";
-  result.style.fontFamily = "'JetBrains Mono', monospace";
-  result.style.fontSize = "12px";
-  result.style.padding = "14px 18px";
-  result.innerHTML = `<span style="color:var(--fg-2);">> </span><span>CONNECTING TO NETWORK...</span>`;
-  
-  await new Promise(r => setTimeout(r, 300));
-  result.innerHTML += `<br><span style="color:var(--fg-2);">> </span><span>AUTHENTICATING NODE...</span>`;
-  
-  await new Promise(r => setTimeout(r, 250));
-  result.innerHTML += `<br><span style="color:var(--fg-2);">> </span><span>REQUESTING PROXY TOKEN...</span>`;
-
-  const r = await fetch(WORKER_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Accept": "application/json" },
-      body: JSON.stringify({
-        agent_type: selectedAgent,
-        node_name: name,
-        invite_code: inviteCode,
-        body: body
-      })
-    });
-
-    const data = await readJsonResponse(r);
-    if (r.status === 429) {
-      const retryAfter = r.headers.get('Retry-After');
-      const wait = retryAfter ? parseInt(retryAfter) || 30 : 30;
-      throw new Error(t('rateLimitWait').replace('{s}', wait));
-    }
-    if (!r.ok) {
-      throw new Error(data.message || data.error || "HTTP " + r.status);
-    }
-    if (!data.success) {
-      throw new Error(data.error || "Registration failed");
-    }
-    result.style.display = "block";
-    result.className = "register-result success";
-    // Worker returns the issue URL directly
-    const issue = { html_url: data.issue_url };
-
-    // This path's worker response carries the issue URL, not a node number, so what is shown is a
-    // *prediction* from the counter read in `loadStats()`. When there is no counter value there is
-    // nothing to predict from, and this number is the visitor's own node id — so it is omitted
-    // entirely rather than filled in from a default (`regWait` already says the real one arrives in
-    // about 30 seconds, and the poll below replaces the panel with it).
-    const estimatedNode = Number(data.node_number)
-      || (CURRENT_COUNTER === null ? null : CURRENT_COUNTER + 1);
-    const estimatedName = estimatedNode === null
-      ? t("regAssigning")
-      : 'Misaka' + String(estimatedNode).padStart(5, '0');
-
-    const entryTestSteps = LANG === 'en' ? `
-      <b><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg> Next: Configure Your Agent</b><br>
-      1. Have your Agent download the knowledge index:<br>
-      <code style="font-size:var(--fs-2xs);word-break:break-all;">https://raw.githubusercontent.com/Ikalus1988/MisakaNet/main/data/lessons.json</code><br>
-      2. Ask your Agent to search for <b>"pip install timeout or SSL error"</b><br>
-      3. Your Agent returns the result and files a usage report<br>
-      <br>
-      <small>See the welcome message for full instructions.</small>` : `
-      <b><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg> 下一步：配置你的 Agent</b><br>
-      1. 在 Agent 内运行命令，下载知识索引：<br>
-      <code style="font-size:var(--fs-2xs);word-break:break-all;">https://raw.githubusercontent.com/Ikalus1988/MisakaNet/main/data/lessons.json</code><br>
-      2. 让 Agent 搜索 <b>"pip install 超时或 SSL 错误"</b> 相关知识<br>
-      3. Agent 输出检索结论并提交使用报告<br>
-      <br>
-      <small>完整指引见欢迎消息。</small>`;
-
-    // Terminal access granted — with the predicted id only when there is one to predict.
-    result.innerHTML += `<br><span style="color:var(--fg-2);">> </span><span style="color:var(--ok);">ACCESS GRANTED${estimatedNode === null ? '' : ': ' + estimatedName}</span>`;
-    await new Promise(r => setTimeout(r, 400));
-
-    // Build success UI
-    result.innerHTML = `
-      <div style="text-align:center;padding:8px 0;">
-        <div style="font-size:var(--fs-3xl);margin-bottom:4px;color:var(--ok);"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg></div>
-        <div style="font-weight:700;font-size:var(--fs-md);color:#7ee787;">${t("regSuccess")}</div>
-      </div>
-      <div style="margin:12px 0;padding:10px 14px;background:var(--bg-2);border-radius:var(--r-md);border:1px solid #30363d;">
-        <div style="display:flex;align-items:center;gap:10px;">
-          <span style="font-size:var(--fs-2xl);"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z"/><path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z"/><path d="M15 13a4.5 4.5 0 0 1-3-4 4.5 4.5 0 0 1-3 4"/><path d="M17.599 6.5a3 3 0 0 0 .399-1.375"/><path d="M6.003 5.125A3 3 0 0 0 6.401 6.5"/><path d="M3.477 10.896a4 4 0 0 1 .585-.396"/><path d="M19.938 10.5a4 4 0 0 1 .585.396"/><path d="M6 18a4 4 0 0 1-1.967-.516"/><path d="M19.967 17.484A4 4 0 0 1 18 18"/></svg></span>
-          <div>
-            <div class="reg-node-name" style="font-weight:700;font-size:var(--fs-sm);font-family:var(--font-mono);">${estimatedName}</div>
-            <div style="font-size:var(--fs-2xs);color:var(--fg-2);">${estimatedNode === null
-              ? formatText(t("regNodeLineNoNumber"), { agent: agentDisplayValue(selectedAgent) })
-              : formatText(t("regNodeLine"), { agent: agentDisplayValue(selectedAgent), node: estimatedNode })}${name ? `<br>${t("regNameLabel")}: ${escapeHTML(name)}` : ""}</div>
-          </div>
-          <span class="reg-status-icon" style="margin-left:auto;font-size:var(--fs-3xs);color:var(--cyan);animation:pulse 1.5s infinite;"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 22h14"/><path d="M5 2h14"/><path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22"/><path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"/></svg></span>
-          <span class="reg-status-text" style="font-size:var(--fs-3xs);color:var(--cyan);" data-i18n="regAssigning">${t("regAssigning")}</span>
-        </div>
-      </div>
-      <div style="margin:10px 0;padding:10px 12px;background:#0f172a;border-radius:var(--r-md);border:1px solid rgba(148,163,184,0.22);font-size:var(--fs-xs);color:#cbd5e1;line-height:1.7;">
-        ${entryTestSteps}
-      </div>
-      <div class="reg-wait-msg" style="text-align:center;margin-top:10px;font-size:var(--fs-xs);color:#cbd5e1;">
-        ${ICON.hourglass}${t("regWait")}<br>
-        <a href="${issue.html_url}" target="_blank" style="color:var(--accent);">${ICON.clipboard} ${t("viewIssue")}</a>
-      </div>`;
-
-    // ── Auto-poll: check Issue comments for welcome message ──
-    if (data.issue_number) {
-      const pollInterval = 10000;  // 10s
-      const maxPolls = 18;         // 3 minutes max
-      let polls = 0;
-      const pollTimer = setInterval(async () => {
-        polls++;
-        try {
-          const cr = await fetch(`${GITHUB_PROXY}/issues/${data.issue_number}/comments`, {
-            headers: { "Accept": "application/json" },
-          });
-          if (!cr.ok) return;
-          const comments = await readJsonResponse(cr);
-          for (const c of comments) {
-            // Look for welcome message with confirmed node ID
-            const match = c.body.match(/节点代号.*?[*]{2}(Misaka\d+)[*]{2}/);
-            if (match) {
-              const confirmedName = match[1];
-              const confirmedNum = parseInt(confirmedName.replace('Misaka', ''), 10);
-              // Update UI: ⏳ → ✅, "分配中" → "已分配"
-              const statusIcon = document.querySelector('.register-result .reg-status-icon');
-              const statusText = document.querySelector('.register-result .reg-status-text');
-              if (statusIcon) statusIcon.outerHTML = '<span class="reg-status-icon" style="margin-left:auto;font-size:var(--fs-sm);color:var(--ok);">' + ICON.check + '</span>';
-              if (statusText) statusText.textContent = '已分配';
-              // Update node name if different from estimate
-              const nameEl = document.querySelector('.register-result .reg-node-name');
-              if (nameEl) nameEl.textContent = confirmedName;
-              // Remove "wait for refresh" message
-              const waitMsg = document.querySelector('.register-result .reg-wait-msg');
-              if (waitMsg) waitMsg.remove();
-              clearInterval(pollTimer);
-              return;
-            }
-          }
-        } catch (e) {
-          // Silent fail — polling will continue
-        }
-        if (polls >= maxPolls) {
-          clearInterval(pollTimer);
-          // After timeout, show friendly message
-          const waitMsg = document.querySelector('.register-result .reg-wait-msg');
-          if (waitMsg) waitMsg.innerHTML = `${ICON.hourglass} 注册已提交，请刷新页面查看最终节点号`;
-        }
-      }, pollInterval);
-    }
-
-  } catch (err) {
-    result.style.display = "block";
-    // Worker 不通时（网络错误），降级到 Issue 注册
-    if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError') || err.message.includes('NetworkError')) {
-      result.className = "register-result";
-      result.style.background = "rgba(0,0,0,0.4)";
-      result.style.border = "1px solid rgba(255,179,0,0.2)";
-      result.style.color = "var(--warn)";
-      result.style.textAlign = "left";
-      result.style.fontFamily = "inherit";
-      result.style.fontSize = "13px";
-      result.style.padding = "20px";
-      result.innerHTML = `
-        <div style="text-align:center;">
-          <div style="font-size:var(--fs-2xl);margin-bottom:8px;"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg></div>
-          <div style="font-weight:600;margin-bottom:6px;">${t("regWorkerOffline") || "注册节点暂时不可达"}</div>
-          <div style="font-size:var(--fs-2xs);color:#8b949e;margin-bottom:12px;">${t("regWorkerOfflineHint") || "注册请使用下方入口"}</div>
-        </div>
-
-        <div style="margin-bottom:14px;padding:12px;background:#0d1117;border-radius:var(--r-md);border:1px solid #30363d;">
-          <div style="font-weight:600;margin-bottom:6px;color:var(--warn);">${ICON.clipboard} ${t("regOptionGithub") || "选项一：有 GitHub 账号"}</div>
-          <div style="font-size:var(--fs-2xs);color:#8b949e;margin-bottom:8px;">${t("regOptionGithubHint") || "通过 Issue 模板注册，30 秒自动完成"}</div>
-          <a href="https://github.com/Ikalus1988/MisakaNet/issues/new?template=register.yml" target="_blank"
-             style="display:inline-block;background:#238636;color:white;padding:8px 20px;border-radius:var(--r-sm);text-decoration:none;font-size:var(--fs-xs);">
-            ${ICON.clipboard} ${t("regViaIssue") || "通过 Issue 注册"}
-          </a>
-        </div>
-
-        <div style="padding:12px;background:#0d1117;border-radius:var(--r-md);border:1px solid #30363d;">
-          <div style="font-weight:600;margin-bottom:6px;color:var(--warn);">${ICON.mail} ${t("regOptionNoGithub") || "选项二：无 GitHub 账号"}</div>
-          <div style="font-size:var(--fs-2xs);color:#8b949e;">${t("regOptionNoGithubHint") || "暂不支持无 GitHub 账号注册，请先创建 GitHub 账号后使用选项一"}</div>
-        </div>`;
-    } else {
-      result.className = "register-result error";
-      const safeMessage = escapeHTML(err.message).slice(0, 300);
-      result.innerHTML = `${ICON.circleX}${escapeHTML(t("regFail"))}: ${safeMessage}<br><a href="https://github.com/Ikalus1988/MisakaNet/issues/new?template=register.yml" target="_blank" style="color:var(--accent);">Register via GitHub Issue</a>`;
-    }
-    btn.disabled = false;
-    setRegisterBtn(btn, ICON.zap, t('registerBtn'));
-  }
-}
-
 // Init
-
-// ── Converted from inline onclick to addEventListener ──
-document.querySelectorAll('.agent-option').forEach(el => {
-  el.addEventListener('click', function() { selectAgent(this); });
-});
-document.getElementById('register-btn').addEventListener('click', registerNode);
 
 (async () => {
   // `loadStats()` now starts every panel itself, deferred (see PANEL_DEFER_MS): the test-node list

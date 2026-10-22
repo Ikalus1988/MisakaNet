@@ -183,7 +183,10 @@ TEXT_SYMBOLS = set("✓✗✘★☆⚠☰✕✦✧※⌘⌨")
 # rule nobody can follow, and an exception without a reason is a hole nobody is watching. Each is
 # content rather than decoration:
 EMOJI_ALLOWLIST = {
-    "docs/index.html": [
+    # #3641: the registration form moved from the homepage to docs/register/index.html, and this
+    # line is part of the body of the GitHub issue the registration creates — so the allowlist
+    # entry moved with it.
+    "docs/register/index.html": [
         ("## \U0001F9E0 通过公开通道加入御坂网络",
          "the body of the GitHub issue the registration creates: the page and "
          "workers/register-proxy-sw.js are two writers of the same line and "

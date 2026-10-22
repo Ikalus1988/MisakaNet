@@ -45,7 +45,11 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
-INDEX = ROOT / "docs" / "index.html"
+# #3641: the registration form moved off the homepage to its own page. The gate follows the form:
+# every assertion below is about the form, its copy and its client list, and those did not change —
+# only where the form lives.
+INDEX = ROOT / "docs" / "register" / "index.html"
+HOME = ROOT / "docs" / "index.html"
 LOCALES = {lang: ROOT / "docs" / "locales" / f"{lang}.json" for lang in ("en", "zh")}
 NPM_INSTALLER = ROOT / "packages" / "misakanet-setup" / "bin" / "misakanet-setup.mjs"
 PY_INSTALLER = ROOT / "integrations" / "agent-autostart" / "install_misakanet_agent.py"
@@ -85,6 +89,12 @@ GLYPH = re.compile("[\U0001f000-\U0001faff\u2600-\u27bf\ufe0f]")
 @pytest.fixture(scope="module")
 def page() -> str:
     return INDEX.read_text(encoding="utf-8")
+
+
+@pytest.fixture(scope="module")
+def home() -> str:
+    """The homepage — for the assertions that are about the homepage, not the form."""
+    return HOME.read_text(encoding="utf-8")
 
 
 @pytest.fixture(scope="module")
@@ -174,10 +184,10 @@ def test_the_description_describes_registration_correctly() -> None:
     assert "access to the Misaka Network knowledge base" not in en
 
 
-def test_the_noise_tail_is_gone(page: str) -> None:
+def test_the_noise_tail_is_gone(home: str) -> None:
     """`· showing latest 6` duplicated the "view all" link in hardcoded English, with no key."""
-    assert "showing latest" not in page
-    assert "recent-showing" not in page
+    assert "showing latest" not in home
+    assert "recent-showing" not in home
 
 
 def test_the_agent_type_label_is_marked_optional_and_statistical(page: str) -> None:
@@ -367,15 +377,22 @@ def test_an_unreadable_agent_type_is_unknown_and_never_a_default_client(page: st
 # ── the i18n trap ─────────────────────────────────────────────────────────────
 
 
-def test_the_registration_protocol_strings_are_untouched(page: str, worker: str) -> None:
+def test_the_registration_protocol_strings_are_untouched(page: str, home: str, worker: str) -> None:
     """Both writers still stand, and the label they spell literally is unchanged.
 
     The page and the worker each build the same line into the issue body. Neither *reads* it back any
     more — the only reader was the timeline's parser — so what is pinned here is that the two writers
     keep producing the same record.
+
+    The protocol line has four writers, and #3641 moved one of them: the form's builder now lives on
+    the register page, while the example body an agent can POST by hand is still in the homepage's
+    agent-registration comment. All four are pinned, because a label that drifts in one of them
+    produces a registration record nobody else can read.
     """
     assert PROTOCOL_BUILDER.search(page), "the page's issue-body builder changed shape"
-    assert PROTOCOL_TEMPLATE in page, "the page lost the protocol line it renders as a placeholder"
+    assert PROTOCOL_TEMPLATE in home, (
+        "the homepage's agent-registration comment lost the protocol line it renders as a placeholder"
+    )
     assert WORKER_BUILDER.search(worker), (
         "the worker's issue-body builder changed shape — it writes the same line the page does, and "
         "the two must not drift"

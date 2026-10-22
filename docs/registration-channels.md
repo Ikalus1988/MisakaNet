@@ -6,7 +6,7 @@ MisakaNet 提供三条注册通道，面向不同用户群体。
 
 | 维度 | GitHub Issue | 邮件 | Web 表单 |
 |------|-------------|------|---------|
-| **入口** | `issues/new?title=join` | `bot@misakanet.org` | 浏览器打开注册页 |
+| **入口** | `issues/new?title=join` | `bot@misakanet.org` | 浏览器打开 https://misakanet.org/register/ |
 | **适用用户** | 有 GitHub 账号的技术用户 | AI Agent、无 GitHub 用户 | 人类新用户 |
 | **触发方式** | Issue created event | Email Routing → Worker email 事件 | HTTP POST /register |
 | **验证** | GitHub 账号背书 | 发件地址（无额外验证） | Turnstile + 邮箱限频 |
