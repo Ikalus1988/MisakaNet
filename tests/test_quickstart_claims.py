@@ -18,6 +18,14 @@ Three claims on the first-run surfaces had drifted, and none of them had a gate:
 The point of each assertion is that the fact lives in **one** place (the installer's `AGENTS`, the
 worker's constants, the flow's code paths) and every copy is compared to it — not that the copies
 agree with each other.
+
+**One assertion changed shape in #3641.** Claim 2 was checked on the homepage by pinning the
+English wording "Search needs no pairing code". The issue #3641 implemented here asked for the
+homepage's Quickstart block to be free of the words 注册/配对 — the same block the assertion read.
+The two cannot both hold, so the assertion now pins the *claim* ("searching needs nothing beyond
+the install, and the Start page is optional") in both languages and on both copies (the page's
+fallback text and the dictionary), and the detail surface `docs/quickstart.md` keeps the jargon
+where it explains it.
 """
 
 from __future__ import annotations
@@ -61,6 +69,17 @@ STALE_READ_CLAIM = re.compile(
     r"|per day per IP)",
     re.I,
 )
+
+# The claim the Start-page link has to carry next to it, in both languages. These are claims, not
+# fixed wordings: the homepage may phrase them its own way, but it may not stop making them. The
+# old wording ("Search needs no pairing code") still satisfies the English pattern — the gate lost
+# the *jargon* requirement, not the claim (see the test's docstring).
+SEARCH_CLAIM_EN = re.compile(r"search needs (no\b|nothing\b)", re.I)
+SEARCH_CLAIM_ZH = re.compile(r"检索不需要")
+OPTIONAL_EN = re.compile(r"\boptional\b", re.I)
+OPTIONAL_ZH = re.compile(r"可选")
+# A card element and the fallback copy inside it: <span data-i18n="qsStartNote">fallback</span>
+CARD_COPY = re.compile(r'data-i18n="([^"]+)"[^>]*>([^<]*)<', re.S)
 
 
 def installer_targets() -> list[str]:
@@ -120,16 +139,58 @@ def test_the_presentation_names_every_target_not_a_hand_picked_five() -> None:
 
 
 def test_the_quickstart_says_pairing_is_not_needed_for_search() -> None:
-    assert "no pairing code is involved" in QUICKSTART_MD.read_text(encoding="utf-8").lower() or \
-           "no pairing code" in QUICKSTART_MD.read_text(encoding="utf-8"), (
-        "the Quickstart no longer says the install path needs no pairing code. #3473 added a line "
-        "that read as a requirement; if the copy changed again, keep the qualifier next to the "
-        "Start-page link."
+    """The search path must not read as a step the reader still owes the installer.
+
+    **Two surfaces, two jobs.**
+
+    1. *The fact* lives in `docs/quickstart.md`: it explains what a pairing code is and says
+       the install path does not involve one. That file is the detail surface, so the jargon
+       stays there.
+    2. *The claim next to the link* lives on the homepage's Track A card. #3641 took the jargon
+       out of it — "Search needs no pairing code" became "Search needs nothing else" — because
+       the homepage is the entry surface and "pairing code" is a word a first-time reader has no
+       context for. The issue asked for exactly that ("首页快速开始区无注册/配对字样"), and this
+       assertion used to contradict it: it pinned one English wording inside the very block the
+       issue wanted free of the word.
+
+    So the gate now pins the **claim** instead of the wording. The card must still say that
+    searching needs nothing beyond the install, and the Start page must still be marked optional
+    — a copy that drops either, or that turns the claim into a requirement ("Search needs a
+    pairing code"), fails here.
+
+    Both copies are checked: the page's own fallback text **and** the dictionary the JavaScript
+    surface renders from. The dictionary is a separate copy that drifts on its own, and it is
+    the one a reader with JS actually sees.
+    """
+    quickstart = QUICKSTART_MD.read_text(encoding="utf-8")
+    assert "no pairing code" in quickstart.lower(), (
+        "docs/quickstart.md no longer says the install path needs no pairing code. It is the "
+        "surface that explains what a pairing code is, so the fact has to stay there."
     )
-    assert "Search needs no pairing code" in track_a_card(), (
-        "the Track A card must say search needs no pairing code — otherwise the Start-page link "
-        "reads as another step the reader owes the installer"
+
+    card = track_a_card()
+    notes = [(key, value) for key, value in CARD_COPY.findall(card) if SEARCH_CLAIM_EN.search(value)]
+    assert notes, (
+        "the Track A card no longer says that searching needs nothing beyond the install — the "
+        "Start-page link reads as another step the reader owes the installer"
     )
+    for key, fallback in notes:
+        assert OPTIONAL_EN.search(fallback), (
+            f"the Track A card's {key} says searching needs nothing else, but no longer marks the "
+            "Start page as optional"
+        )
+        for lang, claim, optional in (
+            ("en", SEARCH_CLAIM_EN, OPTIONAL_EN),
+            ("zh", SEARCH_CLAIM_ZH, OPTIONAL_ZH),
+        ):
+            value = json.loads(LOCALES[lang].read_text(encoding="utf-8")).get(key, "")
+            assert claim.search(value), (
+                f"the {lang} dictionary's {key} does not carry the claim the homepage's fallback "
+                f"copy carries: {value!r}"
+            )
+            assert optional.search(value), (
+                f"the {lang} dictionary's {key} no longer marks the Start page as optional: {value!r}"
+            )
 
 
 def test_the_docs_state_the_burst_limit_the_worker_enforces() -> None:
