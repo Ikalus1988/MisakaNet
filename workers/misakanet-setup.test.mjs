@@ -769,7 +769,14 @@ test('openclaw: verify reads the registry file and reports both states', () => {
   }
 });
 
-test('openclaw: verify says a file it cannot write is unwritable, and not "没装" (issue #3696)', () => {
+// Root ignores file permissions, so `chmod 0400` would leave the file writable and this test
+// would quietly exercise the *other* branch (the one that says "没装") — a passing test that
+// tested nothing. Skip instead of pretending.
+const RUNS_AS_ROOT = typeof process.getuid === 'function' && process.getuid() === 0;
+
+test('openclaw: verify says a file it cannot write is unwritable, and not "没装" (issue #3696)', {
+  skip: RUNS_AS_ROOT ? 'root ignores file permissions, so the unwritable branch is unreachable here' : false,
+}, () => {
   const home = makeOpenclawHome();
   const rules = join(home, '.openclaw', 'workspace', 'AGENTS.md');
   try {
@@ -792,7 +799,9 @@ test('openclaw: verify says a file it cannot write is unwritable, and not "没�
   }
 });
 
-test('verify answers the two questions separately: the endpoint answered, the files did not (issue #3696)', async () => {
+test('verify answers the two questions separately: the endpoint answered, the files did not (issue #3696)', {
+  skip: RUNS_AS_ROOT ? 'root ignores file permissions, so the unwritable branch is unreachable here' : false,
+}, async () => {
   const { createServer } = await import('node:http');
   const server = createServer((req, res) => {
     let body = '';
