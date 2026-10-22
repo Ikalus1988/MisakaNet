@@ -89,9 +89,10 @@ jobs:
 
       - name: Create the release tag
         if: steps.decide.outputs.needed == 'true'
-        # The version crosses through `env:`, not as script text: GitHub substitutes `${{ }}`
-        # before bash parses the script, and `tests/test_workflow_script_injection.py` is right
-        # to refuse a value that arrives that way.
+        # The version crosses through `env:`, not as script text: GitHub substitutes an
+        # expression before bash parses the script, and `tests/test_workflow_script_injection.py`
+        # is right to refuse a value that arrives that way. (A comment may not carry the
+        # expression token either — GitHub evaluates that too, and refuses the whole file.)
         env:
           VERSION: ${{ steps.decide.outputs.version }}
         run: |
