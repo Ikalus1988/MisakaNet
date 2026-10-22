@@ -1,6 +1,7 @@
 {
   "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
   "signoff": "misakanet-bot <bot@misakanet.dev>",
+  "bootstrap-sha": "4e3d15af7a68f35e0485e6cff26f9c0936a87b97",
   "packages": {
     ".": {
       "release-type": "python",
@@ -101,6 +102,44 @@
       ],
       "exclude-paths": [
         "docs/maintainer"
+      ]
+    },
+    "packages/misakanet-setup": {
+      "release-type": "node",
+      "package-name": "@misaka-net/misakanet-setup",
+      "component": "misakanet-setup",
+      "include-component-in-tag": true,
+      "tag-separator": "-",
+      "initial-version": "0.6.0",
+      "extra-files": [
+        "/packages/misakanet-setup/bin/misakanet-setup.mjs",
+        "/workers/misakanet-setup.test.mjs"
+      ],
+      "changelog-sections": [
+        {
+          "type": "feat",
+          "section": "Features"
+        },
+        {
+          "type": "fix",
+          "section": "Bug Fixes"
+        },
+        {
+          "type": "docs",
+          "section": "Documentation"
+        },
+        {
+          "type": "refactor",
+          "section": "Refactoring"
+        },
+        {
+          "type": "test",
+          "section": "Tests"
+        },
+        {
+          "type": "ci",
+          "section": "CI/CD"
+        }
       ]
     }
   }

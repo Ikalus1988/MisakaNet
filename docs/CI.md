@@ -32,7 +32,7 @@
 | `lesson-quality.yml` | Lesson Quality Score | PR |  |
 | `lesson-security.yml` | Lesson Security Scan | PR, push |  |
 | `mcp-stress.yml` | MCP Endpoint Stress Tests | PR, push, 手动 |  |
-| `misakanet-setup-ci.yml` | Setup Package CI（安装器：3 OS × Node 18/20/22 单测 + 打包产物 e2e）| PR, push, 手动 |  |
+| `misakanet-setup-ci.yml` | Setup Package CI（安装器：3 OS × Node 18/20/22 单测 + 打包产物 e2e + **drift**：npm 上已发布的安装器不许落后于本仓库）| PR, push, 手动, 定时 | `17 4 * * *` —— drift 巡检：漂移是**累积**的（发版被切了却没打 tag，或源码动了却没发版，都不会再产生任何 PR，只有下次有人碰这个包时才会被发现；npm 上的安装器因此停了 0.5.6 一个月，见 #3691）。定时触发只跑 drift 这一个 job，矩阵 job 在 schedule 下 `if:` 跳过 |
 | `pr-agent-review.yml` | PR-Agent Code Review | PR, 评论 |  |
 | `pr-checks.yml` | Misaka Network Agent Auditor | PR, 手动 |  |
 | `pr-genius-check.yml` | PR Genius Check | PR |  |

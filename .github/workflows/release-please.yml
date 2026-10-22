@@ -131,6 +131,37 @@ jobs:
             --remove-label "autorelease: pending" --add-label "autorelease: tagged"
           echo "release PR #$PR marked autorelease: tagged"
 
+      # `bootstrap-sha` in `release-please-config.json` bounds the commit scan, and that is
+      # what makes this step finish at all.
+      #
+      # The setup package (`packages/misakanet-setup`) joined this manifest in #3691 and has
+      # never been released by release-please, so it has **no entry in the release ledger**
+      # (`.release-please-manifest.json`). Without one, release-please cannot say where that
+      # package's history starts, so it falls back to "the beginning of the repository" — 1237
+      # commits back — and walks the whole thing through GitHub's GraphQL API.
+      #
+      # The walk fails, and it fails the same way every time (measured 2026-10-22, two runs,
+      # and reproduced by hand with the same query):
+      #
+      #   release-please failed: Request failed due to following response errors:
+      #    - Something went wrong while executing your query on 2026-10-22T14:27:06Z.
+      #
+      # That is GitHub's secondary-rate-limit answer to a burst of expensive GraphQL queries,
+      # not a release-please bug and not an exhausted point budget (the budget read 4974/5000
+      # at the moment of the failure). The scan dies at roughly the 29th page — 290 commits —
+      # every time.
+      #
+      # `bootstrap-sha` points at the commit the setup package's first release-please release
+      # starts from: `4e3d15af` is the parent of `c8c53aa0` ("docs(dsh): what the plugin
+      # actually gives", #3398), which is the oldest setup-package change the 0.6.0 notes
+      # already list. The scan is 143 commits instead of 1237 — under the wall — and the
+      # 0.6.0 notes are **the same six entries** they were before, not a shorter list.
+      #
+      # It becomes inert on its own: once the 0.6.0 release PR merges, release-please writes
+      # the setup path into the ledger, the path finds its release tag, and the scan stops at
+      # that tag instead. Remove this line in the PR that follows the 0.6.0 release — see
+      # the handoff note — because a bootstrap that outlives its purpose would silently
+      # truncate a future changelog instead of failing loudly.
       - uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7  # v5
         id: release
         with:

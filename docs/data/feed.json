@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-10-22T05:03:01.622099+00:00",
+  "generated_at": "2026-10-22T16:32:08.174026+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "fix(pixel-gate): the page was still on its way when the capture called it stable",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3681",
-      "timestamp": "2026-10-22T04:10:32Z",
+      "title": "fix(release): the extra-files of a package with a path are resolved against that path",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3744",
+      "timestamp": "2026-10-22T16:02:36Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(pixel-gate): a criterion for changes that are *meant* to move the page",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3680",
-      "timestamp": "2026-10-22T03:42:00Z",
+      "title": "fix(setup): --verify answers two questions, and stops calling a file it cannot write \"missing\"",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3743",
+      "timestamp": "2026-10-22T16:02:08Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "docs(handoff): §129 — the crash path, my own mutation audit, and the PR I merged with a red leg",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3679",
-      "timestamp": "2026-10-22T03:25:23Z",
+      "title": "fix(release): bound the commit scan, so the release PR can be rebuilt again",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3741",
+      "timestamp": "2026-10-22T15:28:39Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "test(fatal-guard): the Windows tokenizer test asserted a token count the machine decides (#3672 follow-up)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3678",
-      "timestamp": "2026-10-22T03:05:47Z",
+      "title": "fix(setup): the release moves the version literal, not just the manifest (#3691)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3738",
+      "timestamp": "2026-10-22T14:18:37Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(crash): a crash looks for an existing lesson before it leaves a draft (#3642)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3676",
-      "timestamp": "2026-10-22T02:56:44Z",
+      "title": "docs(handoff): §138 — the tool forgot, which is a different kind of drift",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3739",
+      "timestamp": "2026-10-22T14:14:20Z",
       "source": "github"
     },
     {

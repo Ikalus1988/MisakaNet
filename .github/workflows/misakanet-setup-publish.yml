@@ -2,6 +2,8 @@ name: Publish @misaka-net/misakanet-setup
 
 on:
   push:
+    branches:
+      - "main"           # the repository's release flow lands here; the `tag` job below reacts
     tags:
       - "misakanet-setup-v*"
   workflow_dispatch:      # allow a manual publish of the current version
@@ -15,15 +17,114 @@ on:
 #    entry exists the token keeps working: npm prefers OIDC when it is available, then falls back.
 permissions:
   contents: read
-  id-token: write      # npm trusted publishing (OIDC)
 
 jobs:
+  # The tag the publish below listens for. release-please owns the *version* — it bumps
+  # `packages/misakanet-setup/package.json` in the release PR — but nothing ever created the
+  # `misakanet-setup-v*` tag, so the publish path had nothing to fire on: npm stayed at 0.5.6
+  # while the package's source moved ten commits ahead, and `--verify` could not see it because
+  # it compares npm with npm (#3691).
+  #
+  # The tag is pushed with the built-in token on purpose. A GITHUB_TOKEN push never triggers
+  # another workflow, so the publish is dispatched explicitly below instead of firing behind our
+  # back — the same reason `release-please.yml` tags with GITHUB_TOKEN and then dispatches the
+  # PyPI, npm and MCP-registry publishes one by one.
+  tag:
+    name: Tag the setup package release
+    # Only the repository's release flow creates a tag. A tag push and a manual dispatch go
+    # straight to the publish job below.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # `automation`, not `release`: this job reads no credential, but every job in a workflow that
+    # reads one has to name an environment (`tests/test_secret_scoping.py`), and `release` puts
+    # a required reviewer in front of the job — an approval request on every push to main. The
+    # `automation` environment is the reviewer-free one, restricted to main, which is exactly
+    # what a job that may only ever tag a main commit wants.
+    environment: automation
+    permissions:
+      contents: write      # push the release tag
+      actions: write       # dispatch this workflow at that tag
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+        with:
+          fetch-depth: 0        # the release tags say what has already been released
+
+      - name: Decide whether a release tag is owed
+        id: decide
+        run: |
+          set -euo pipefail
+          PACKAGE=packages/misakanet-setup
+          VERSION=$(node -p "require('./$PACKAGE/package.json').version")
+          MANIFEST=$(node -p "require('./.release-please-manifest.json')['$PACKAGE'] || ''")
+          LATEST=$(git tag -l 'misakanet-setup-v*' | sed 's/^misakanet-setup-v//' | sort -V | tail -1)
+          {
+            echo "version=$VERSION"
+            echo "manifest=$MANIFEST"
+            echo "latest_tag=${LATEST:-none}"
+          } >> "$GITHUB_OUTPUT"
+          echo "package version : $VERSION"
+          echo "manifest version: ${MANIFEST:-none}"
+          echo "last release tag: ${LATEST:-none}"
+          if [ -z "$MANIFEST" ]; then
+            # release-please has not released this package yet: there is no manifest entry, so
+            # there is no version anybody asked for. The drift gate reports the debt; this job
+            # does not invent a version.
+            echo "release-please has not released this package yet — nothing to tag"
+            echo "needed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [ "$MANIFEST" != "$VERSION" ]; then
+            echo "::error::the manifest says $MANIFEST but the package says $VERSION — the release wiring is inconsistent"
+            exit 1
+          fi
+          if [ -n "$LATEST" ] && [ "$(printf '%s\n%s\n' "$LATEST" "$VERSION" | sort -V | tail -1)" = "$LATEST" ]; then
+            echo "the last release tag is already $LATEST — nothing to tag"
+            echo "needed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "a release tag is owed: misakanet-setup-v$VERSION"
+          echo "needed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Create the release tag
+        if: steps.decide.outputs.needed == 'true'
+        # The version crosses through `env:`, not as script text: GitHub substitutes an
+        # expression before bash parses the script, and `tests/test_workflow_script_injection.py`
+        # is right to refuse a value that arrives that way. (A comment may not carry the
+        # expression token either — GitHub evaluates that too, and refuses the whole file.)
+        env:
+          VERSION: ${{ steps.decide.outputs.version }}
+        run: |
+          set -euo pipefail
+          TAG="misakanet-setup-v$VERSION"
+          git tag "$TAG"
+          git push origin "$TAG"
+          echo "created $TAG"
+
+      - name: Publish the tagged version
+        if: steps.decide.outputs.needed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: misakanet-setup-v${{ steps.decide.outputs.version }}
+        run: |
+          set -euo pipefail
+          gh workflow run misakanet-setup-publish.yml --ref "$TAG"
+          echo "dispatched the publish at $TAG"
+
   publish:
     # Secrets live in the `release` environment, not at repository level: they are publish and
     # deploy credentials, and environment secrets can carry protection rules — a branch policy today,
     # and "required reviewers" as soon as it is switched on, which is what stops a workflow that has
     # been edited on a branch from using them without a person approving the run.
     environment: release
+    # The publish runs for a release tag and for a manual dispatch. A push to `main` only asks
+    # for the tag (the job above), which dispatches this workflow at that tag — publishing from
+    # two places at once would publish whatever `main` happened to hold.
+    if: github.event_name != 'push' || github.ref_type == 'tag'
+    permissions:
+      contents: read
+      id-token: write      # npm trusted publishing (OIDC)
     runs-on: ubuntu-latest
     timeout-minutes: 30
     defaults:

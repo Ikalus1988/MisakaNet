@@ -8,7 +8,7 @@
 ## 为什么需要它
 
 `--report` 早就输出一段脱敏 YAML（`schema: misakanet-setup-report/1`，含 `verify` / `permissions` /
-`endpoint-tools` / `open-items`），但它**永远退出 0** —— 这是**刻意的**：那份 YAML 是要贴进 issue、
+`endpoint-tools` / `install-complete` / `endpoint-usable` / `open-items`），但它**永远退出 0** —— 这是**刻意的**：那份 YAML 是要贴进 issue、
 贴进 CI 日志给人看的，退出码非 0 会把"收集证据"变成"红掉的步骤"。
 
 代价是 CI 用不了它：环境坏了和好了一样。
@@ -146,12 +146,19 @@ jobs:
 ### 为什么"没有 agent 目录 → skipped"而不是 failure
 
 `verify` 的判定标准是"**这台机器上的 agent 接线能不能用**"：端点可达、MCP 已注册、钩子会触发、
-只读工具已放行。一台干净 runner 上，标准答案就是 `NOT READY`（`open-items` 里会是
+只读工具已放行。
+
+**这个判定有两半，而报告把它们分开说**（#3696）：`endpoint-usable` 回答"能不能用"（端点答不答应），
+`install-complete` 回答"我们偏好的文件写没写"（`complete` / `incomplete`）。一台干净 runner 上，标准答案就是 `NOT READY`（`open-items` 里会是
 "端点不可达 / 钩子缺失"，如果连端点都出不去）。把它当成红，等于**每次 PR 都因为它自己制造的红而
 失声** —— 那样一周之内所有人都会开始无视这个检查。所以：
 
 - 没有可判对象 → 记 `skipped`（job 不能动态 skip，用 summary + 退 0 表达），**不红**；
 - 有可判对象 → 健康度由退出码说话，`1`/`2` 都红，且原因分开。
+
+> **两半分开，退出码没分开**：`verify: NOT READY` 仍然表示"两半里有问题"（退出码契约未变），
+> 但报告能告诉 CI 到底是哪一半 —— 只读 workspace 的机器 `endpoint-usable: yes`，
+> 端点挂了的机器 `endpoint-usable: no`。两半各自的证据在 `open-items-detail` 里。
 
 ### 让 runner 真的能判（可选）
 
