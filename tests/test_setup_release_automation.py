@@ -482,7 +482,79 @@ def test_the_markers_use_the_version_scope():
 # ── 2b. the commit scan's floor ────────────────────────────────────────────────────────────────
 
 
-def _release_please_needs_bootstrap(config: dict, ledger: dict) -> bool:
+def _package_tag(entry: dict, version: str) -> str:
+    """The tag release-please looks for when it backfills a release for a package.
+
+    Upstream `Manifest.backfillReleasesFromTags` (src/manifest.ts):
+
+        const component = await strategiesByPath[path].getComponent();
+        const expectedTag = new TagName(
+          expectedVersion,
+          component,
+          this.repositoryConfig[path].tagSeparator,
+          this.repositoryConfig[path].includeVInTag
+        );
+        const foundTag = allTags[expectedTag.toString()];
+
+    The component is the package's own (`misakanet-setup` for the setup package); the root has
+    none, which is why the root's tags are `v2.48.0` and the setup package's are
+    `misakanet-setup-v0.6.0`.
+    """
+    return _tag_name(
+        version,
+        entry.get("component"),
+        entry.get("tag-separator", "-"),
+        entry.get("include-v-in-tag", True),
+    )
+
+
+def _released_paths(config: dict, ledger: dict, repo: Path) -> set[str] | None:
+    """Upstream's `releasesFound`, transcribed.
+
+    A path counts as released only when it has a ledger entry **and** the tag that entry names
+    exists. Upstream, in `Manifest.buildPullRequests` (src/manifest.ts):
+
+        for (const path of paths) {
+          const expectedVersion = this.releasedVersions[path];
+          if (!expectedVersion) { continue; }
+          if (expectedVersion.toString() === tagName.version.toString()) { releasesFound += 1; }
+        }
+
+    and in the fallback it reaches for when that did not find enough:
+
+        const expectedVersion = this.releasedVersions[path];
+        if (!expectedVersion) {
+          this.logger.warn(`No version for path ${path}`);
+          continue;
+        }
+
+    Both need the **ledger entry**, so the tags alone do not count: the setup package has release
+    tags (`misakanet-setup-v0.5.6` and older) and is still not released as far as release-please
+    is concerned, because the ledger has no entry for it. That is the whole reason the log says
+    `No version for path packages/misakanet-setup` and the reason the scan had no floor.
+
+    The ledger entry alone does not count either: release-please writes the *next* version into
+    the ledger when it opens the release pull request, and the tag only exists once that pull
+    request merges. In between, `needsBootstrap` is still true and the floor is still needed —
+    which is exactly the state a release pull request branch is in.
+
+    Returns None when this checkout carries no tags at all: "cannot tell" must not be read as
+    "not released", and a shallow clone carries none.
+    """
+    tags = set(_git(repo, "tag", "--list").split())
+    if not tags:
+        return None
+    released = set()
+    for path, entry in config.get("packages", {}).items():
+        version = ledger.get(path)
+        if not version:
+            continue
+        if _package_tag(entry, str(version)) in tags:
+            released.add(path)
+    return released
+
+
+def _release_please_needs_bootstrap(config: dict, released: set[str]) -> bool:
     """release-please's `Manifest.buildPullRequests` (src/manifest.ts), transcribed.
 
     The rule that decides whether the commit scan has a floor at all:
@@ -502,16 +574,11 @@ def _release_please_needs_bootstrap(config: dict, ledger: dict) -> bool:
         }
 
     So `bootstrap-sha` is read **only while `needsBootstrap` is true** — and a package that
-    release-please has never released has no ledger entry, so the scan has no answer to "where
-    does this package's history start" and falls back to the beginning of the repository.
-
-    Upstream, `releasesFound` counts the paths that have a ledger entry *and* a matching release
-    tag. The ledger entry alone is what this gate can see, and the two agree except in the
-    window between a release merging and its tag being pushed.
+    release-please has never released is not counted in `releasesFound`, so the scan has no
+    answer to "where does this package's history start" and falls back to the beginning of the
+    repository.
     """
-    expected_releases = len(config.get("packages", {}))
-    releases_found = len(ledger)
-    return releases_found < expected_releases
+    return len(released) < len(config.get("packages", {}))
 
 
 def test_the_commit_scan_has_a_floor_while_a_package_is_unreleased():
@@ -534,27 +601,41 @@ def test_the_commit_scan_has_a_floor_while_a_package_is_unreleased():
     the way the first ones had, and the reason had to be read out of a failure log
     ("No version for path packages/misakanet-setup") rather than out of a gate.
 
-    The other direction is the same rule: once the ledger has an entry for every configured
-    package, the floor has outlived its purpose and has to go — a bootstrap that outlives its
-    purpose would silently truncate a future changelog instead of failing loudly.
+    The other direction is the same rule: once every configured package has been released — a
+    ledger entry **and** the tag that entry names — the floor has outlived its purpose and has to
+    go. A bootstrap that outlives its purpose would silently truncate a future changelog instead
+    of failing loudly: the day a new package joins the manifest without a ledger entry, the stale
+    sha would cut that package's history off at an arbitrary commit, and nobody would see it.
+
+    "Released" needs both halves on purpose. The ledger entry alone is not enough — release-please
+    writes the *next* version into the ledger when it opens the release pull request, and the tag
+    only exists once that pull request merges — so a release pull request branch still needs the
+    floor, and this gate must not be the thing that stops that branch from shipping.
     """
     config = _read_json(CONFIG)
     ledger = _read_json(MANIFEST)
     bootstrap_sha = config.get("bootstrap-sha")
 
-    if _release_please_needs_bootstrap(config, ledger):
-        missing = [path for path in config.get("packages", {}) if path not in ledger]
+    released = _released_paths(config, ledger, REPO)
+    if released is None:
+        pytest.skip(
+            "this checkout carries no release tags, so it cannot tell which packages have been "
+            "released — a shallow clone carries none, and \"cannot tell\" is not \"not released\""
+        )
+
+    if _release_please_needs_bootstrap(config, released):
+        missing = [path for path in config.get("packages", {}) if path not in released]
         assert bootstrap_sha, (
-            f"the release ledger has no entry for {missing} and the config carries no "
-            f"`bootstrap-sha`: release-please cannot say where that package's history starts, so "
-            f"it scans from the beginning of the repository and the release PR cannot be rebuilt "
-            f"at all (#3740)"
+            f"{missing} has not been released by release-please (no ledger entry, or no tag for "
+            f"it) and the config carries no `bootstrap-sha`: release-please cannot say where that "
+            f"package's history starts, so it scans from the beginning of the repository and the "
+            f"release PR cannot be rebuilt at all (#3740)"
         )
     else:
         assert not bootstrap_sha, (
-            f"the ledger has an entry for every configured package, so the scan no longer needs "
-            f"a floor — `bootstrap-sha` ({bootstrap_sha}) is inert now, and it would silently "
-            f"truncate a future changelog instead of failing loudly"
+            f"every configured package has been released, so the scan no longer needs a floor — "
+            f"`bootstrap-sha` ({bootstrap_sha}) is inert now, and it would silently truncate a "
+            f"future changelog instead of failing loudly"
         )
 
 
