@@ -14,10 +14,14 @@ So this gate pins the two things a description of this installer owes its reader
 1. **What it writes** — an MCP endpoint into each agent config, rules blocks for the clients that
    take one, and a local hook for Claude Code.
 2. **What leaves this machine** — at most one anonymous request while the installer runs (the
-   anonymous registration), and afterwards only what the agent itself sends.
+   anonymous registration); afterwards, only what the agent itself sends, *plus* the one opt-in
+   path on which the hook itself sends something (`MISAKANET_HOOK_FETCH=1`, off by default).
 
 Both layers must be present. A description that keeps only the first is as dishonest as the old
-one: it invites the reader to assume the worst about the second.
+one: it invites the reader to assume the worst about the second. And the second has to be
+complete: the hook's own opt-in lookup is the one thing that leaves the machine without the agent
+sending it, so a description that says "only what the agent sends" without naming the opt-in is
+*almost* true — and almost true is the failure mode this issue is about.
 
 The wording rules this gate enforces, and why each is a gate rather than a style preference:
 
@@ -25,8 +29,10 @@ The wording rules this gate enforces, and why each is a gate rather than a style
   future edit that reintroduces any of them has reintroduced the defect, so they are banned
   outright — a description that says "uploads the session" is wrong whatever else it says.
 * **No partial client roster.** The description used to name five of the ten supported clients,
-  which reads as "these five" and is a different lie from the same sentence. The roster is
-  checked against the installer's own `AGENTS` list, so it stays true as clients are added.
+  which reads as "these five" and is a different lie from the same sentence. It names none of
+  them now: the roster belongs to the README, which lists every client with a row of its own.
+  A description that names one client as part of a per-client claim ("a Claude Code hook") is
+  fine; one that names two to nine is a partial roster and fails.
 * **A length budget.** npm truncates long descriptions, and a truncated description loses its
   second half — which is the half that answers the reader's actual question.
 * **A hedged request count.** The installer sends one anonymous request on a first install, and
@@ -57,9 +63,10 @@ BANNED_WORDS = ("distil", "distill", "session")
 # layer that answers "what leaves this machine". The budget is generous for two sentences.
 MAX_LENGTH = 350
 
-# The clients the installer actually supports, in the words a reader would use. Kept in step
-# with the installer's own `AGENTS` array by the test below, so adding a client there without
-# naming it here fails the gate rather than silently producing a partial roster.
+# The clients the installer actually supports, in the words a reader would use. The README holds
+# the roster, and the test below keeps it in step with the installer's own `AGENTS` array, so
+# adding a client there without naming it in the README fails the gate rather than leaving a
+# roster that quietly stops being the whole one.
 CLIENT_NAMES = (
     "Claude Code",
     "Codex",
@@ -84,6 +91,13 @@ CLAIMS = (
     ("hook", (r"claude code",)),
     ("anonymous", (r"install",)),
     ("agent", ()),
+    # The one opt-in path by which the *hook* sends something. Both texts must name it and must
+    # say it is off by default, or the egress half of the description is "almost true" — which is
+    # the failure mode this issue exists to stop.
+    ("MISAKANET_HOOK_FETCH", (r"off by default",)),
+    # What that path sends: a fragment of the failed call's error text, or its command when the
+    # tool gave no error text. Both markers, or the sentence is a partial truth.
+    ("error text", (r"command",)),
 )
 
 # How far from the anchor a qualifier may sit and still count as part of the same claim. Wide
@@ -92,21 +106,27 @@ CLAIMS = (
 CLAIM_WINDOW = 160
 
 
-def claim_present(text: str, anchor: str, qualifiers: tuple[str, ...]) -> bool:
+def claim_present(text: str, anchor: str, qualifiers: tuple[str, ...], window: int = CLAIM_WINDOW) -> bool:
     """True when `anchor` appears and every qualifier sits close to one of its occurrences.
 
     Matching runs against a whitespace-normalised, lower-cased copy, so the README's line
     wrapping cannot hide a marker, and the window is searched on both sides of the anchor because
     the qualifier may sit before it ("a Claude Code hook") or after it ("the client takes one").
+
+    `window` is the distance in characters on *each* side of the anchor. A tight window is for
+    qualifiers that must sit next to their claim: "the hook sends nothing by default" only
+    qualifies the claim if "by default" is attached to it, not if the row happens to say "off by
+    default" somewhere else.
     """
     normalised = re.sub(r"\s+", " ", text.lower())
+    anchor = anchor.lower()
     start = 0
     while True:
         index = normalised.find(anchor, start)
         if index == -1:
             return False
-        window = normalised[max(0, index - CLAIM_WINDOW) : index + CLAIM_WINDOW]
-        if all(re.search(qualifier, window) for qualifier in qualifiers):
+        span = normalised[max(0, index - window) : index + window]
+        if all(re.search(qualifier, span) for qualifier in qualifiers):
             return True
         start = index + 1
 
@@ -212,18 +232,58 @@ def test_description_does_not_overstate_the_install_request_count():
     )
 
 
-def test_description_names_every_supported_client():
-    """No partial roster: either all ten clients are named, or the description names none."""
+def test_description_carries_the_opt_in_egress_clause():
+    """The description must name the one opt-in path on which the hook itself sends something.
+
+    Three things have to be visible in the description, or a reader auditing before install is
+    looking at a sentence that is *almost* true — and "almost true" is what this issue is about:
+    the path exists, the *hook* is what uses it (the agent does not send that fragment), and it
+    is off by default.
+    """
+    desc = description()
+    assert "MISAKANET_HOOK_FETCH" in desc, (
+        "the npm description does not mention MISAKANET_HOOK_FETCH; with it set, the hook itself "
+        "sends the failed tool call's error text as a search query. A description that omits it "
+        "is the 'almost true' sentence issue #3689 is about."
+    )
+    assert claim_present(desc, "MISAKANET_HOOK_FETCH", (r"off by default",)), (
+        "the npm description names MISAKANET_HOOK_FETCH without saying it is off by default; the "
+        "installer never sets it, so the default is the path that sends nothing (issue #3689)"
+    )
+    assert re.search(r"hook (itself )?sends", desc.lower()), (
+        "the npm description does not say that the *hook* is what sends; the agent does not send "
+        "that fragment, the hook does (issue #3689)"
+    )
+
+
+def test_description_has_no_partial_client_roster():
+    """No partial roster: the description names at most one client, or all ten.
+
+    A list of five of the ten supported clients reads as "these five" — the same defect as the
+    old sentence, wearing a different hat. The roster belongs to the README, which lists every
+    client with a row of its own; the description may name a single client only as part of a
+    per-client claim ("a Claude Code hook", because the hook really is Claude Code's).
+    """
     text = description()
+    named = [name for name in CLIENT_NAMES if name in text]
+    assert len(named) <= 1 or named == list(CLIENT_NAMES), (
+        f"the npm description names {named} — a partial roster reads as the full set, which is "
+        "the same lie the old sentence told (issue #3689). Name none, or all ten."
+    )
+
+
+def test_readme_roster_names_every_supported_client():
+    """The README holds the roster, and the roster is the whole one."""
     agents = installer_agents()
     assert len(agents) == len(CLIENT_NAMES), (
         f"the installer supports {agents} but this gate knows {CLIENT_NAMES}; update both when a "
-        "client is added, so the description's roster cannot silently go stale"
+        "client is added, so the roster cannot silently go stale"
     )
-    named = [name for name in CLIENT_NAMES if name in text]
-    assert named == list(CLIENT_NAMES), (
-        f"the npm description names {named} but not the rest of {list(CLIENT_NAMES)}; a partial "
-        "roster reads as the full set and is a different lie from the same sentence (issue #3689)"
+    readme = readme_install_section().lower()
+    missing = [name for name in CLIENT_NAMES if name.lower() not in readme]
+    assert not missing, (
+        f"the README's install section does not name {missing}; the README is where the client "
+        "roster lives, so it must be the whole roster (issue #3689)"
     )
 
 
@@ -255,11 +315,6 @@ def test_readme_install_section_agrees_with_the_description():
             f"the README's install section does not carry the {anchor!r} claim "
             f"(with its qualifiers {qualifiers}), so it disagrees with the npm description"
         )
-    for name in CLIENT_NAMES:
-        assert name.lower() in readme.lower(), (
-            f"the README's install section does not name {name!r}; it and the npm description "
-            "must agree on which clients are supported"
-        )
 
 
 def test_readme_checkpoint_row_does_not_call_the_reminder_a_distillation():
@@ -283,4 +338,15 @@ def test_readme_checkpoint_row_does_not_call_the_reminder_a_distillation():
     assert not missing, (
         f"the checkpoint row no longer says {missing}; the row must name the reminder it injects "
         "and state that the hook itself sends nothing (issue #3689)"
+    )
+    # "the hook sends nothing" is only true *by default*. Left unqualified, the row contradicts
+    # the npm description, which names the opt-in that changes it — so the qualifier and the
+    # opt-in both have to be in the row.
+    assert claim_present(row[0], "sends nothing", (r"by default",), window=40), (
+        "the checkpoint row says the hook sends nothing without qualifying it *there*; the hook "
+        "sends the failed call's error text when MISAKANET_HOOK_FETCH=1 is set (issue #3689)"
+    )
+    assert "MISAKANET_HOOK_FETCH" in row[0], (
+        "the checkpoint row does not name MISAKANET_HOOK_FETCH=1, the opt-in that makes the hook "
+        "send; the row must not leave that path undocumented (issue #3689)"
     )
