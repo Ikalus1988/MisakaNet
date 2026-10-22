@@ -177,3 +177,23 @@ jobs:
               --body-file /tmp/done_but_open.md \
               --label "salvage-digest,needs-human-review"
           fi
+
+      # The delivery half of the same promise (#3509). The step above *reports* the done-but-open
+      # intakes to the maintainers; this one puts the SOP §3 receipt on each issue so the reporter
+      # is told, and applies `ready-to-close` so a human knows the only thing left is clicking
+      # close. It never closes: closing stays a human act (SOP §2 — the auto-rejected-noise rule
+      # exists for the same reason), and it never touches `needs-human-review`.
+      #
+      # It reuses the findings JSON the step above already wrote — one listing pass of the open
+      # backlog per run, not two — and the citation is re-resolved against the current tree at
+      # post time by `intake_receipt`, so a reverted lesson gets no receipt. Idempotent via the
+      # `<!-- misakanet-receipt -->` marker in the comment body: a re-run edits rather than
+      # duplicates.
+      - name: Post conversion receipts and label ready-to-close (#3509)
+        run: |
+          set -euo pipefail
+
+          python3 scripts/post_intake_receipts.py --post --findings /tmp/done_but_open.json \
+            > /tmp/post_receipts.md
+          cat /tmp/post_receipts.md
+          cat /tmp/post_receipts.md >> "$GITHUB_STEP_SUMMARY"

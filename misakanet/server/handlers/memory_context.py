@@ -30,10 +30,11 @@ def handle_memory_context(args: dict) -> dict:
     if HAS_SAG:
         results = sag_search(SAG_DB, task, domain=domain, top=top_n)
     elif HAS_BM25:
-        from .._config import _load_docs_cached, _search_cached, LESSONS
-        from misakanet.search.engine import _score_breakdown
+        from misakanet.search.engine import LESSONS, _load_docs_cached, _search_cached
 
         docs = _load_docs_cached(LESSONS, is_lesson=True)
+        if domain:
+            docs = [d for d in docs if (d.domain or "").lower() == str(domain).lower()]
         scored = _search_cached(task, docs)
         results = []
         for score, doc in scored[:top_n]:

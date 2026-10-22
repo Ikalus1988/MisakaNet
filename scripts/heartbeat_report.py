@@ -14,8 +14,10 @@ shell around them:
    a fallback) — it answers "what name was claimed", never "who this is";
 2. our own probes, CI and monitors are a **reviewable list** here, labelled, excluded from the
    external count, and a day that is entirely ours says so in one sentence;
-3. the "helped" panel prints **retrievals**, says out loud that "did this help" is not measured
-   yet, and names failure recurrence as the intended next step;
+3. the "helped" panel prints **retrievals** and, beside them, the **panel votes vs other votes**
+   the worker records per day (`helpful-source`), rates those votes **over retrievals** and not as
+   "helpfulness", says out loud that "did this help" is not measured yet, and names failure
+   recurrence as the intended next step;
 4. a day with no rows says so — `None` (unreadable) and `[]` (genuinely empty) render as two
    different sentences and neither renders as `0`.
 
@@ -38,7 +40,7 @@ import subprocess
 import sys
 import urllib.error
 import urllib.request
-from datetime import datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -52,6 +54,29 @@ MCP_CLIENT_BUCKET_PREFIX = "mcpclient:"
 TRAFFIC_SCOPE = "traffic"
 GAP_SCOPE = "gap"
 TRAFFIC_TYPES = ("mcp", "agent", "crawler", "pageview")
+
+#: The worker's third scope this digest reads: one row per *source-tagged* helpful vote,
+#: `scope='helpful-source'`, `bucket` = the vote's `source` label, `period` = the UTC day, `count`
+#: = votes that day. Written since 2026-10-16 and, until this reading, read by nothing — which is
+#: what issue #3510 is about: a measurement nothing reads cannot answer the question it was added
+#: for, which is whether the panel raises the rate at which a human judgment gets recorded.
+HELPFUL_SOURCE_SCOPE = "helpful-source"
+
+#: The constant label the DSH panel posts with every vote (`lib/client.js`,
+#: `var HELPFUL_SOURCE = "dsh-web";`). It is a **surface name, not an identity**: the same string
+#: for every person, install and session. That is precisely why the digest may group by it, and
+#: precisely why it must not group by anything finer — a per-person or per-session cut would
+#: convert a privacy promise into a column.
+PANEL_VOTE_SOURCE = "dsh-web"
+
+#: The vote reading covers this many UTC days, ending on the reported day. Seven, because that is
+#: the window the retrieval counts beside it already use (`/api/analytics`), and a ratio whose
+#: numerator and denominator cover different spans is not a ratio.
+VOTE_WINDOW_DAYS = 7
+
+#: What panel 3 already calls a retrieval: a `lesson_usage` row with this event. Duplicated rather
+#: than imported for the same reason as the constants above — this script reads the *table*.
+RETRIEVAL_EVENT = "get_lesson"
 
 #: `boundText()` bounds an analytics *display* string to this; a `gap` bucket is a normalized
 #: query with no bound at all, which is why the redaction below is not decoration.
@@ -253,6 +278,76 @@ def gap_counts(rows, day: str) -> dict[str, int] | None:
         query = str(row.get("bucket") or "")
         counts[query] = counts.get(query, 0) + int(row.get("count") or 0)
     return counts if counts else {}
+
+
+def window_days(day: str, span: int = VOTE_WINDOW_DAYS) -> list[str]:
+    """The `span` UTC days ending on `day`, oldest first."""
+    end = date.fromisoformat(day)
+    return [(end - timedelta(days=offset)).isoformat() for offset in range(span - 1, -1, -1)]
+
+
+def helpful_vote_rows(rows, days) -> list[tuple[str, int, int]] | None:
+    """`(day, panel votes, other votes)` for each of `days`, oldest first.
+
+    Both numbers are a sum of `count` over `helpful-source` rows for that `period` — panel is the
+    `bucket` equal to `PANEL_VOTE_SOURCE`, other is every other `bucket` in the scope. **Every day
+    gets a row**, including one with no rows at all: the worker writes one counter row per
+    source-tagged vote, so a day with no `helpful-source` row is zero such votes, not a missing
+    measurement. That is the one place in this digest where an empty read *is* a zero — `traffic`
+    is bumped on every request so its emptiness means a broken store, while a vote happens rarely
+    and its absence means nobody voted. `None` in is still `None` out: an unreadable counter is
+    never a zero (rule 4).
+    """
+    if rows is None:
+        return None
+    by_day = {day: {} for day in days}
+    for row in rows or []:
+        if row.get("scope") != HELPFUL_SOURCE_SCOPE:
+            continue
+        period = str(row.get("period") or "")
+        if period not in by_day:
+            continue
+        source = str(row.get("bucket") or "")
+        by_day[period][source] = by_day[period].get(source, 0) + int(row.get("count") or 0)
+    out: list[tuple[str, int, int]] = []
+    for day in days:
+        sources = by_day[day]
+        panel = sources.get(PANEL_VOTE_SOURCE, 0)
+        other = sum(count for name, count in sources.items() if name != PANEL_VOTE_SOURCE)
+        out.append((day, panel, other))
+    return out
+
+
+def retrieval_counts(rows) -> dict[str, int] | None:
+    """`{day: retrievals}` from per-day `lesson_usage` rows, or `None` when they could not be read.
+
+    The denominator of the vote ratio. Every retrieval writes one `lesson_usage` row, so a day
+    missing from this map is a day of zero retrievals — the same reasoning that makes a missing
+    `helpful-source` row a zero — and is filled in as `0` by the caller. Accepts either the row
+    list the SQL returns (`[{day, count}]`) or the map this function itself produces, so a saved
+    payload round-trips.
+    """
+    if rows is None:
+        return None
+    if isinstance(rows, dict):
+        return {str(day): int(count or 0) for day, count in rows.items()}
+    counts: dict[str, int] = {}
+    for row in rows or []:
+        counts[str(row.get("day") or "")] = int(row.get("count") or 0)
+    return counts
+
+
+def vote_rate(votes: int, retrievals: int | None) -> str:
+    """The ratio cell: `n/d = rate`, or `—` when the denominator cannot carry one.
+
+    Printed as an explicit fraction so the two numbers and their quotient appear together: a rate
+    with its numerator and denominator erased is a rate nobody can re-derive. `retrievals is None`
+    means the denominator could not be read, and `0` means there was nothing to divide by — both
+    render as `—`, never as `0`, because neither is a measured rate of zero.
+    """
+    if not retrievals:
+        return "—"
+    return f"{votes}/{retrievals} = {votes / retrievals:.2f}"
 
 
 def e4_density(row: dict | None) -> dict | None:
@@ -490,34 +585,38 @@ def panel_what(counters, analytics: dict | None, day: str, errors: dict[str, str
     return lines
 
 
-def panel_helped(analytics: dict | None, day: str, errors: dict[str, str]) -> list[str]:
-    """Panel 3 — retrievals, and the plain statement that help is not measured yet."""
+def panel_helped(counters, analytics: dict | None, retrievals: dict[str, int] | None,
+                 day: str, errors: dict[str, str]) -> list[str]:
+    """Panel 3 — retrievals, the vote counts beside them, and the plain statement that help is
+    not measured yet."""
     lines = ["## 3 · Whether it helped", ""]
     lines += ["**This panel cannot answer that question yet, and it will not pretend otherwise.**",
               ""]
+
     if analytics is None:
         lines += [f"⚠️ **`/api/analytics` could not be read for {day}** "
-                  f"({errors.get('analytics', 'no reason recorded')}), so even the retrieval "
+                  f"({errors.get('analytics', 'no reason recorded')}), so the per-lesson retrieval "
                   f"counts are missing. Not a zero.", ""]
-        return lines
-
-    lessons = analytics.get("top_lessons") or []
-    if lessons:
-        lines += ["**top lessons — rolling 7 days** (`lesson_usage`, `event='get_lesson'`), i.e. "
-                  "**how often a lesson was retrieved**:", ""]
-        lines += _table(
-            ["lesson", "retrievals (7d)"],
-            [[str(row.get("lesson_id", "")), str(row.get("count", 0))] for row in lessons],
-        )
-        lines += [""]
     else:
-        lines += ["`/api/analytics` returned no `get_lesson` rows in its 7-day window — no "
-                  "retrieval was recorded, which is not the same as no lesson helping.", ""]
+        lessons = analytics.get("top_lessons") or []
+        if lessons:
+            lines += ["**top lessons — rolling 7 days** (`lesson_usage`, `event='get_lesson'`), i.e. "
+                      "**how often a lesson was retrieved**:", ""]
+            lines += _table(
+                ["lesson", "retrievals (7d)"],
+                [[str(row.get("lesson_id", "")), str(row.get("count", 0))] for row in lessons],
+            )
+            lines += [""]
+        else:
+            lines += ["`/api/analytics` returned no `get_lesson` rows in its 7-day window — no "
+                      "retrieval was recorded, which is not the same as no lesson helping.", ""]
+
+    lines += helpful_vote_lines(counters, retrievals, day, errors)
 
     lines += ["**Not measured: did this help?** A retrieval is a lesson that was *fetched*. "
               "Fetched is not fixed, and nothing here records whether the caller's problem went "
               "away — no vote, no follow-up, no identifier. There is no help number in this "
-              "digest, only retrieval counts.", "",
+              "digest, only retrieval counts and vote counts.", "",
               "The intended next step is **failure recurrence**: a normalized query that comes "
               "back on a later day is a signal the earlier answer did not stick. It is observable "
               "without any identifier — the `gap` counter already stores one row per normalized "
@@ -526,6 +625,75 @@ def panel_helped(analytics: dict | None, day: str, errors: dict[str, str]) -> li
               "implemented here: choosing which series is authoritative (unanswered `gap` rows or "
               "matched searches), the normalization, and the threshold are the open item. Until "
               "it lands, this panel is a retrieval count with this paragraph attached.", ""]
+    return lines
+
+
+def helpful_vote_lines(counters, retrievals: dict[str, int] | None, day: str,
+                       errors: dict[str, str]) -> list[str]:
+    """Panel 3's vote reading: panel votes vs other votes, per day, over retrievals (#3510).
+
+    The question the panel was built to move — *does the panel raise the rate at which a human
+    judgment gets recorded?* — is answered here from two rows the worker already writes: the
+    `helpful-source` counters (the numerator) and `lesson_usage` retrievals (the denominator). The
+    denominator is stated as what it is, and the rate is named as what it is.
+    """
+    days = window_days(day)
+    votes = helpful_vote_rows(counters, days)
+    if votes is None:
+        return [f"⚠️ **The `helpful-source` vote rows could not be read for {day}** "
+                f"({errors.get('counters', 'no reason recorded')}). Not a zero: an unreadable "
+                f"counter and a day with no votes are two different answers.", ""]
+
+    rows = []
+    for vote_day, panel, other in votes:
+        day_retrievals = None if retrievals is None else retrievals.get(vote_day, 0)
+        total = panel + other
+        rows.append([vote_day, str(panel), str(other),
+                     "—" if day_retrievals is None else str(day_retrievals),
+                     vote_rate(total, day_retrievals)])
+
+    lines = [f"**helpful votes by day — the {VOTE_WINDOW_DAYS} days ending on {day}** "
+             f"(`counters` scope `{HELPFUL_SOURCE_SCOPE}`):", ""]
+    lines += _table(
+        ["day", f"panel votes (`{PANEL_VOTE_SOURCE}`)", "other votes", "retrievals",
+         "votes / retrievals"],
+        rows,
+    )
+    lines += [""]
+
+    panel_total = sum(panel for _, panel, _ in votes)
+    other_total = sum(other for _, _, other in votes)
+    if retrievals is None:
+        lines += [f"⚠️ **The retrieval denominator could not be read for the window ending {day}** "
+                  f"({errors.get('retrievals', 'no reason recorded')}). The vote counts above are "
+                  f"still the counter rows; the ratio is withheld, not zeroed.", ""]
+    else:
+        lines += [f"**{day} in one line:** panel votes **{sum(panel for d, panel, _ in votes if d == day)}** "
+                  f"(`{PANEL_VOTE_SOURCE}`) · other votes "
+                  f"**{sum(other for d, _, other in votes if d == day)}** · votes / retrievals "
+                  f"**{vote_rate(sum(p + o for d, p, o in votes if d == day), retrievals.get(day, 0))}**. "
+                  f"Window totals: panel {panel_total} · other {other_total}.", ""]
+
+    lines += ["**What the ratio is, and what it is not.** Its denominator is **retrievals** — "
+              f"`lesson_usage` rows with `event='{RETRIEVAL_EVENT}'` — so this is **votes over "
+              "retrievals**: how often a retrieval ends with a human judgment being recorded. It "
+              "is **not** a helpfulness rate. A vote says somebody judged a lesson; it does not "
+              "say the lesson fixed anything, and nothing in this store can say that. A number "
+              "that cannot show it helped says what it does show: this one shows judgment "
+              "recording per retrieval.", ""]
+
+    lines += ["**How to re-derive the two vote columns, and what they leave out.** Both come "
+              f"from the `counters` table alone: `scope='{HELPFUL_SOURCE_SCOPE}'`, "
+              "`period=<day>`, `bucket` = the vote's `source` label, `count` = votes that day. "
+              f"Panel votes are the rows whose `bucket` is `{PANEL_VOTE_SOURCE}`; other votes are "
+              "every other `bucket` in that scope. A day with no row is `0` — the worker writes "
+              "one row per source-tagged vote — which is why a zero is printed here rather than "
+              "the row being dropped. `source` is a **constant label**: the same string for every "
+              "person, install and session, which is why this reading may group by it and by "
+              "nothing finer. There is no per-person and no per-session dimension here, and none "
+              "is being introduced. A vote that carried no `source` writes no row at all (the "
+              "behaviour before 2026-10-16), so these columns count **source-tagged** votes "
+              "only; that is what the Counter table holds, and it is all it holds.", ""]
     return lines
 
 
@@ -579,7 +747,7 @@ def panel_e4(e4: dict | None, day: str, errors: dict[str, str]) -> list[str]:
 
 
 def panel_sources(counters, analytics: dict | None, funnel: dict | None, e4: dict | None,
-                  day: str, errors: dict[str, str]) -> list[str]:
+                  retrievals: dict[str, int] | None, day: str, errors: dict[str, str]) -> list[str]:
     """The footer: what was read, what each number cannot say, and the errors, if any."""
     lines = ["---", "", "## Sources, and what each number cannot say", ""]
     counters_state = ("read" if counters is not None
@@ -590,12 +758,15 @@ def panel_sources(counters, analytics: dict | None, funnel: dict | None, e4: dic
                     else f"**could not be read** ({errors.get('funnel', 'no reason recorded')})")
     e4_state = ("read" if e4 is not None
                 else f"**could not be read** ({errors.get('search_signals', 'no reason recorded')})")
+    retrievals_state = (
+        "read" if retrievals is not None
+        else f"**could not be read** ({errors.get('retrievals', 'no reason recorded')})")
     lines += _table(
         ["source", "state", "what it is"],
         [
             ["`counters` (D1)", counters_state,
              "the worker's own rows: traffic classes, self-declared client names, unanswered "
-             "queries"],
+             f"queries, and the `{HELPFUL_SOURCE_SCOPE}` vote rows (panel vs other)"],
             ["`/api/analytics`", analytics_state,
              "rolling 7 days of `lesson_usage`; its `knowledge_gaps` and `mcpClients` are withheld "
              "there and read from D1 here instead"],
@@ -603,6 +774,10 @@ def panel_sources(counters, analytics: dict | None, funnel: dict | None, e4: dic
             ["`search_signals` (D1)", e4_state,
              "the E4 reading above: rows, hits, distinct lessons, and how many lessons sit at the "
              "top rung"],
+            ["`lesson_usage` (D1)", retrievals_state,
+             f"per-day retrievals (`event='{RETRIEVAL_EVENT}'`) — the denominator of the vote "
+             f"ratio, read here because the API's `top_lessons` is capped at ten lessons and is "
+             f"not a total"],
         ],
     )
     lines += [""]
@@ -646,12 +821,13 @@ def panel_sources(counters, analytics: dict | None, funnel: dict | None, e4: dic
 
 
 def render_digest(*, day: str, counters, analytics: dict | None, funnel: dict | None,
-                  e4: dict | None = None, errors: dict[str, str] | None = None) -> str:
+                  e4: dict | None = None, retrievals: dict[str, int] | None = None,
+                  errors: dict[str, str] | None = None) -> str:
     """The whole comment body for one UTC day.
 
-    `counters` / `analytics` / `funnel` / `e4` are plain data or `None` for "could not be read";
-    `errors` maps a source to the reason, so the digest can say what it could not see instead of
-    printing a number nobody can trust.
+    `counters` / `analytics` / `funnel` / `e4` / `retrievals` are plain data or `None` for
+    "could not be read"; `errors` maps a source to the reason, so the digest can say what it
+    could not see instead of printing a number nobody can trust.
     """
     errors = errors or {}
     lines = [
@@ -677,9 +853,9 @@ def render_digest(*, day: str, counters, analytics: dict | None, funnel: dict | 
     lines += ["---", ""]
     lines += panel_what(counters, analytics, day, errors)
     lines += ["---", ""]
-    lines += panel_helped(analytics, day, errors)
+    lines += panel_helped(counters, analytics, retrievals, day, errors)
     lines += panel_e4(e4, day, errors)
-    lines += panel_sources(counters, analytics, funnel, e4, day, errors)
+    lines += panel_sources(counters, analytics, funnel, e4, retrievals, day, errors)
     return "\n".join(lines).rstrip() + "\n"
 
 
@@ -704,13 +880,17 @@ def wrangler_failure(stdout: str, stderr: str) -> str:
 
 
 def fetch_counter_rows(day: str) -> list[dict]:
-    """Every `counters` row for one day, with the credential the counters report already uses.
+    """Every `counters` row this digest reads, with the credential the counters report already uses.
 
-    One query rather than three: `traffic` and `gap` are the only scopes this digest reads, and a
-    single statement keeps the failure mode simple (either the day's rows arrive or they do not).
+    One query rather than three: `traffic` and `gap` are the scopes this digest reads for the
+    reported day, and `helpful-source` for the whole vote window, so a single statement keeps the
+    failure mode simple (either the rows arrive or they do not). The traffic and gap panels filter
+    down to `day` themselves; the extra days in the result set are for the vote table only.
     """
+    days = window_days(day)
     sql = ("SELECT scope, bucket, period, count FROM counters "
-           f"WHERE period = '{day}' AND scope IN ('{TRAFFIC_SCOPE}', '{GAP_SCOPE}');")
+           f"WHERE period >= '{days[0]}' AND period <= '{days[-1]}' "
+           f"AND scope IN ('{TRAFFIC_SCOPE}', '{GAP_SCOPE}', '{HELPFUL_SOURCE_SCOPE}');")
     result = subprocess.run(
         ["wrangler", "d1", "execute", "misakanet-db", "--remote", "--json", "--command", sql],
         cwd=REPO_ROOT / "workers", capture_output=True, text=True, check=False,
@@ -718,6 +898,30 @@ def fetch_counter_rows(day: str) -> list[dict]:
     if result.returncode != 0:
         raise RuntimeError(wrangler_failure(result.stdout, result.stderr))
     return result_rows(result.stdout)
+
+
+def fetch_retrieval_counts(day: str) -> dict[str, int]:
+    """Per-day retrievals over the vote window, the ratio's denominator.
+
+    `lesson_usage` rather than a counter: a retrieval is one `event='get_lesson'` row, which is
+    what panel 3 has always meant by "retrieved", and the API's own `top_lessons` is capped at ten
+    lessons and so is not a total. Same D1 credential and same `wrangler` invocation as
+    `fetch_counter_rows` — this is a read of a table the worker already writes, not a new route
+    and not a write of any kind.
+    """
+    days = window_days(day)
+    sql = (f"SELECT date(created_at) AS day, COUNT(*) AS count FROM lesson_usage "
+           f"WHERE event = '{RETRIEVAL_EVENT}' "
+           f"AND created_at >= '{days[0]}' AND created_at < '{(date.fromisoformat(days[-1]) + timedelta(days=1)).isoformat()}' "
+           f"GROUP BY day ORDER BY day;")
+    result = subprocess.run(
+        ["wrangler", "d1", "execute", "misakanet-db", "--remote", "--json", "--command", sql],
+        cwd=REPO_ROOT / "workers", capture_output=True, text=True, check=False,
+    )
+    if result.returncode != 0:
+        raise RuntimeError(wrangler_failure(result.stdout, result.stderr))
+    rows = result_rows(result.stdout)
+    return retrieval_counts(rows) or {}
 
 
 def fetch_e4_density() -> dict | None:
@@ -746,7 +950,7 @@ def fetch_json(url: str) -> dict:
 
 
 def collect(day: str) -> tuple[list[dict] | None, dict | None, dict | None, dict | None,
-                               dict[str, str]]:
+                               dict[str, int] | None, dict[str, str]]:
     """Read every source, keeping each failure as a *reason* rather than as a zero."""
     errors: dict[str, str] = {}
     try:
@@ -758,6 +962,10 @@ def collect(day: str) -> tuple[list[dict] | None, dict | None, dict | None, dict
     except Exception as error:  # noqa: BLE001 — same reason: a failed read is reported, not fatal
         e4, errors["search_signals"] = None, reason_text(f"{type(error).__name__}: {error}")
     try:
+        retrievals: dict[str, int] | None = fetch_retrieval_counts(day)
+    except Exception as error:  # noqa: BLE001 — same reason: a failed read is reported, not fatal
+        retrievals, errors["retrievals"] = None, reason_text(f"{type(error).__name__}: {error}")
+    try:
         analytics: dict | None = fetch_json("https://misakanet.org/api/analytics")
     except (urllib.error.URLError, OSError, ValueError) as error:
         analytics, errors["analytics"] = None, reason_text(f"{type(error).__name__}: {error}")
@@ -765,7 +973,7 @@ def collect(day: str) -> tuple[list[dict] | None, dict | None, dict | None, dict
         funnel: dict | None = fetch_json("https://misakanet.org/api/funnel?days=7")
     except (urllib.error.URLError, OSError, ValueError) as error:
         funnel, errors["funnel"] = None, reason_text(f"{type(error).__name__}: {error}")
-    return counters, analytics, funnel, e4, errors
+    return counters, analytics, funnel, e4, retrievals, errors
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -777,6 +985,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--funnel", type=Path, help="a saved /api/funnel payload")
     parser.add_argument("--e4-json", type=Path,
                        help="a saved `E4_SQL` result (one row), or nothing to leave it unread")
+    parser.add_argument("--retrievals-json", type=Path,
+                       help="a saved per-day retrieval count ({day: count}), or nothing to leave "
+                            "the denominator unread")
     parser.add_argument("--fetch", action="store_true",
                        help="read all three sources live (needs the Cloudflare credential for D1)")
     parser.add_argument("--out", type=Path, help="write the digest here instead of stdout")
@@ -797,10 +1008,11 @@ def main(argv: list[str] | None = None) -> int:
     analytics: dict | None = None
     funnel: dict | None = None
     e4: dict | None = None
+    retrievals: dict[str, int] | None = None
     errors: dict[str, str] = {}
 
     if args.fetch:
-        counters, analytics, funnel, e4, errors = collect(day)
+        counters, analytics, funnel, e4, retrievals, errors = collect(day)
     if args.counters_json:
         counters = result_rows(args.counters_json.read_text(encoding="utf-8"))
     if args.analytics:
@@ -810,9 +1022,11 @@ def main(argv: list[str] | None = None) -> int:
     if args.e4_json:
         rows = result_rows(args.e4_json.read_text(encoding="utf-8"))
         e4 = e4_density(rows[0] if rows else None)
+    if args.retrievals_json:
+        retrievals = retrieval_counts(json.loads(args.retrievals_json.read_text(encoding="utf-8")))
 
     digest = render_digest(day=day, counters=counters, analytics=analytics, funnel=funnel, e4=e4,
-                           errors=errors)
+                           retrievals=retrievals, errors=errors)
     if args.out:
         args.out.write_text(digest, encoding="utf-8")
     else:

@@ -89,6 +89,30 @@ which series is authoritative (unanswered `gap` rows or matched searches), what 
 applied to compare two days, and what recurrence threshold is worth reporting. Until that lands,
 the panel stays a retrieval count with the paragraph attached.
 
+### Panel 3's vote reading — panel votes vs other votes (#3510)
+
+Beside the retrieval counts, the panel prints the `helpful-source` counters for the **7 UTC days
+ending on the reported day**: one table row per day with **panel votes** (the constant `dsh-web`
+label the DSH panel posts), **other votes** (every other `bucket` in the scope), **retrievals**,
+and **votes / retrievals**. A day with no counter row keeps its row and prints `0` — the worker
+writes one row per source-tagged vote, so an absent row *is* a zero, which is the one place in
+this digest where an empty read is a measurement rather than a broken store.
+
+The denominator is stated as **retrievals** and the rate is named **votes over retrievals**, never
+a "helpfulness" rate: a vote says a human judgment got recorded, not that the lesson fixed
+anything. Both vote columns re-derive from the `counters` table alone
+(`scope='helpful-source'`, `period=<day>`, `bucket` = the vote's `source` label), and the digest
+names the source (`dsh-web`) so a reader knows which surface the panel column counts. `source` is
+a **constant label** — the same string for every person, install and session — so the reading
+groups by day and label only; no per-person and no per-session dimension exists or is introduced.
+A vote that carried no `source` writes no row at all (the behaviour before 2026-10-16), so the
+columns count **source-tagged** votes only.
+
+The ratio's denominator comes from `lesson_usage` (`event='get_lesson'`, per day, over the same
+window) rather than from `/api/analytics`'s `top_lessons`, which is capped at ten lessons and is
+therefore not a total. That is one more D1 read with the credential this digest already holds — no
+public route, no counter write, and no change to the withhold policy.
+
 ## A separate reading — how dense the `E4` rung is
 
 `E4` is the top rung of the evidence ladder: a lesson retrieved by **two distinct clients**
@@ -154,9 +178,10 @@ answers", `workers/register-proxy-sw.js`), and the composer keeps the distinctio
 
 | source | what it is | its limit |
 |---|---|---|
-| `counters` (D1) | traffic classes, `mcpclient:` buckets, `gap` buckets | the client dimension exists only where a client sends `initialize`; `gap` text is caller-supplied |
+| `counters` (D1) | traffic classes, `mcpclient:` buckets, `gap` buckets, `helpful-source` vote buckets | the client dimension exists only where a client sends `initialize`; `gap` text is caller-supplied; a vote with no `source` writes no `helpful-source` row, so those columns are source-tagged votes only |
 | `GET /api/analytics` | rolling `lesson_usage` aggregates | `knowledge_gaps` and `mcpClients` are withheld there on purpose — read from D1 instead, without changing that policy |
 | `search_signals` (D1) | rows, hits, distinct lessons, and lessons at the `E4` rung | a lesson is counted only when **two distinct** `client_hint`s retrieved it, and `client_hint` exists only for a caller that sent a `client_id` — so the number is a floor by construction |
+| `lesson_usage` (D1) | per-day retrievals (`event='get_lesson'`) — the vote ratio's denominator | every retrieval writes one row, so an absent day is zero retrievals; the API's `top_lessons` is capped at ten and is not used as a total |
 | `GET /api/funnel` | `visit` / `register` / `authorize` / `pair` / `search` | `visit` counts only pageviews *this* worker serves (`/` and `/search/` come from `misakanet-web`); `register` counts **nodes**, and a client that omits `client_id` creates one per call, so it is neither people nor agents; `drop_off_rate` divides two different units and is deliberately unclamped, so the digest omits it and quotes its value rather than printing it as a rate |
 
 - **No new endpoint, no change to what any counter records, no change to the withhold policy.**

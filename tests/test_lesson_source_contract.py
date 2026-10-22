@@ -198,9 +198,18 @@ def _run(*argv: str, cwd: Path) -> subprocess.CompletedProcess:
                           text=True, timeout=600, env=_clean_env())
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 def sandbox(tmp_path_factory) -> Path:
-    """A copy of the repository the generator can safely rewrite.
+    """A fresh copy of the repository the generator can safely rewrite.
+
+    **Function-scoped on purpose (#2954).** This was `scope="module"`, so one clone was shared by
+    the three tests below. `test_a_lesson_without_regenerated_output_is_caught` writes a probe
+    lesson and runs the generators; when `test_the_generators_are_a_no_op_on_an_unchanged_corpus`
+    ran second it saw that residue and reported "the committed corpus does not match its own
+    generators" for a corpus that matched. Whether the baseline passed depended on pytest's
+    execution order, and `pytest-randomly` reshuffles every run — so the same commit went green and
+    red. Each test gets its own clone now, and `test_the_sandbox_is_not_shared_across_tests` runs
+    the order that used to fail so this cannot come back as another ordering accident.
 
     `git worktree add` would need this repository's own git metadata and a branch; a plain copy is
     enough because nothing in the test reads a commit, and it cannot reach the real checkout even if
@@ -279,10 +288,20 @@ def test_a_lesson_without_regenerated_output_is_caught(sandbox: Path) -> None:
 
 
 def test_regenerating_first_makes_the_tree_clean(sandbox: Path) -> None:
-    """The fix the failure message prints, verified in the same shape CI uses."""
+    """The fix the failure message prints, verified in the same shape CI uses.
+
+    Self-contained (#2954): creates its own probe lesson instead of depending on another test's
+    leftovers. The old `pytest.skip("depends on the previous test's probe")` wrote the ordering
+    dependency into the code — and, once the sandbox stopped being shared, would have turned this
+    test into a permanent skip that reports green while checking nothing.
+    """
     probe = sandbox / "lessons" / "contrib" / "zz-probe-drift.md"
-    if not probe.exists():
-        pytest.skip("depends on the previous test's probe")
+    probe.write_text(VALID_LESSON, encoding="utf-8")
+    subprocess.run(["git", "add", "lessons/contrib/zz-probe-drift.md"],
+                   cwd=sandbox, check=True, capture_output=True)
+    subprocess.run(["git", "-c", "user.email=t@example.invalid", "-c", "user.name=t",
+                    "commit", "--quiet", "-m", "add a lesson, forget the generators"],
+                   cwd=sandbox, check=True, capture_output=True)
     _run("scripts/update_lessons_json.py", cwd=sandbox)
     _run("scripts/build_lesson_pages.py", cwd=sandbox)
     subprocess.run(["git", "add", "-A"], cwd=sandbox, check=True, capture_output=True)
@@ -292,6 +311,39 @@ def test_regenerating_first_makes_the_tree_clean(sandbox: Path) -> None:
     changed = subprocess.run(["git", "status", "--porcelain"], cwd=sandbox,
                              capture_output=True, text=True).stdout.strip()
     assert changed == "", f"the commands the gate prints did not make the tree clean:\n{changed}"
+
+
+def test_the_sandbox_is_not_shared_across_tests() -> None:
+    """A regression guard for #2954: the three sandbox tests must not share one mutable clone.
+
+    The fixture was `scope="module"`, so `test_a_lesson_without_regenerated_output_is_caught` —
+    which writes a probe lesson and runs the generators — left its residue in the same clone that
+    `test_the_generators_are_a_no_op_on_an_unchanged_corpus` then inspected. The baseline reported
+    "the committed corpus does not match its own generators" for a corpus that matched, and whether
+    it did depended on pytest's execution order. `pytest-randomly` reshuffles every run, so the same
+    commit went green and red.
+
+    This runs the three tests in the order that used to fail, in a subprocess so the outer session's
+    fixtures are irrelevant. If the sandbox is ever shared again, the baseline sees the probe's
+    residue and this goes red. Asserting "3 passed" with no skips also catches the old
+    `pytest.skip("depends on the previous test's probe")` quietly not running — a skip that looks
+    green while checking nothing is the same failure mode one level up.
+    """
+    rel = Path(__file__).resolve().relative_to(REPO).as_posix()
+    result = subprocess.run(
+        [sys.executable, "-m", "pytest", "-p", "no:randomly", "-q",
+         f"{rel}::test_a_lesson_without_regenerated_output_is_caught",
+         f"{rel}::test_the_generators_are_a_no_op_on_an_unchanged_corpus",
+         f"{rel}::test_regenerating_first_makes_the_tree_clean"],
+        cwd=REPO, capture_output=True, text=True, timeout=600,
+        env={k: v for k, v in os.environ.items() if k != "PYTEST_ADDOPTS"},
+    )
+    assert result.returncode == 0, (
+        f"the order-dependent failure is back:\n{result.stdout}\n{result.stderr}"
+    )
+    assert "3 passed" in result.stdout and "skipped" not in result.stdout, (
+        f"expected three tests to pass with no skips:\n{result.stdout}"
+    )
 
 
 # ── the rule is actually wired up ────────────────────────────────────────────────────────────────

@@ -857,6 +857,41 @@
     "contributor": ""
   },
   {
+    "id": "a-green-test-suite-hid-a-module-a-bare-node-runtime-cannot-load",
+    "title": "A green test suite hid a module that a bare Node runtime cannot load, because the bundler rewrites the JSON import",
+    "domain": "nodejs",
+    "tags": [
+      "nodejs",
+      "esm",
+      "json",
+      "import-attributes",
+      "vitest",
+      "bundler",
+      "ci_gates",
+      "verification"
+    ],
+    "summary": "A verification script was listed in the project's \"verification tool index\" and therefore counted as a",
+    "preview": "## Problem\n\nA verification script was listed in the project's \"verification tool index\" and therefore counted as a\nrelease gate. It had never once run. A module it imports could not be loaded by the runtime the\nscript itself is started with:\n\n```\nTypeError [ERR_IMPORT_ATTRIBUTE_MISSING]: Module \".../table1_robots.json\" needs an import\nattribute of \"type: json\"\n```\n\nThe failure was at **load time**, before any of the script's logic ran, so the script had no output\nto produce and no exit status to speak of.\n\nThe reason it stayed invisible is the shape of the checks around it. The unit tests for the same\nmodule were **12/12 green**, and the test runner is the reason: vitest (like Vite) transforms JSON\nimports itself, so `import data from \"./x.json\"` resolves inside the test run. The script, started\ndirectly by `node`, has no transform layer in front of it, and Node's ESM loader requires the\nimport attribute:\n\n```js\nimport data from './x.json' with { type: 'json' }\n```\n\nSo the test suite was answering a different question from the one the release gate was asking. It\ncertified that the module loads *under the test toolchain*. The gate needed an answer about the\nmodule loading *under the runtime that will actually execute it*.\n\n## Root Cause\n\n**The transform layer is a second runtime, and it is a quieter one.** A bundler or a test runner\nrewrites the import before Node sees it, so the source text that reaches the loader is not the\nsource text in the repository. Every compatibility rule the loader enforces — import attributes,\nextension resolution, `type` fields, top-level-await constraints — is a rule the transform layer\nmay have already satisfied on the code's behalf. The code that the tests exercised is the code\n*after* the transform; the code the script loads is the code *before* it.\n\nThat direction of error is the dangerous one. A missing import attribute is not a wrong answer, it\nis a crash before the first line of logic — and a green suite in front of it reads as\nconfirmation.\n\n**Three runtimes, one gate.** The project had a test runner, a bundler for the application, and a\nbare `node` invocation for the standalone script. The gate list named the script; the checks named\nthe test runner. Nothing in the pipeline said \"run the third one\", so the third one was never\nexercised, and \"the tests are green\" stood in for a gate that had never reported.\n\n**The listing\n\n[clipped]",
+    "summary_plain": "Tests were green, the standalone script could not start: the test toolchain rewrites JSON imports, the runtime does not.",
+    "trigger": "ERR_IMPORT_ATTRIBUTE_MISSING; needs an import attribute of type json; vitest green but a bare node script crashes on load",
+    "verify": "Run the script under bare node and the test suite as two separate commands; each must report its own exit 0, not inherit one from a chained script.",
+    "url": "lessons/contrib/a-green-test-suite-hid-a-module-a-bare-node-runtime-cannot-load.md",
+    "created": "2026-10-22",
+    "updated": "2026-10-22",
+    "triggers": null,
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "published",
+    "evidence_refs": [],
+    "supersedes": "",
+    "verified": true,
+    "evidence_level": "E0",
+    "evidence_source": "frontmatter",
+    "trust_score": 0.35,
+    "contributor": ""
+  },
+  {
     "id": "a-hit-is-not-evidence-of-relevance",
     "title": "A hit is not evidence of relevance — the boundary queries that must come back empty",
     "domain": "search",
@@ -2585,6 +2620,41 @@
     "evidence_level": "E1",
     "evidence_source": "frontmatter",
     "trust_score": 0.387,
+    "contributor": ""
+  },
+  {
+    "id": "click-no-op-keyboard-works-pointer-vs-handler-triage",
+    "title": "Click does not activate but keyboard Enter works: probes separating pointer-delivery from handler failure",
+    "domain": "automation",
+    "tags": [
+      "playwright",
+      "browser-automation",
+      "click",
+      "accessibility",
+      "triage",
+      "pointer-events"
+    ],
+    "summary": "Reported shape (issue #3380, Codex in-app browser, local HTML page): a semantic Playwright",
+    "preview": "# Click does not activate but keyboard Enter works: probes separating pointer-delivery from handler failure\n\n## Problem\n\nReported shape (issue #3380, Codex in-app browser, local HTML page): a semantic Playwright\nclick and an accessibility click on a **visible** button both return without activating the\nhandler. Keyboard Enter on the **same locator** activates it correctly. Supporting\nobservations from the report: the search input on the same page works via typing; the\naccessibility tree and screenshot look fresh; no page console errors.\n\nThat combination — keyboard works, pointer click does not — is a strong signal, but it does\nnot by itself name the cause. Two very different failures produce it:\n\n- **pointer-delivery failure**: the event never reaches the button (an overlay eats it,\n  `pointer-events` suppresses it, the click is dispatched at the wrong coordinates);\n- **page-handler failure**: the event reaches the element but the page does not act on it\n  (the handler is bound to `keydown` only, the click listener is attached to a child, the\n  handler throws before it mutates state).\n\nThe question is what distinguishes them.\n\n## Root Cause\n\nThere is no single root cause here — that is the point of the lesson. The two families\nfail at different layers of the event path:\n\n```\npointer input → hit-testing (what is at those coordinates?) → event dispatch\n             → listener on the element → handler runs → visible state changes\n```\n\nA pointer-delivery failure breaks the path **before** the listener. A page-handler failure\nbreaks it **at or after** the listener. Keyboard Enter succeeding proves the handler side\ncan work when the event arrives through a different entry point (`keydown`/`click`\nsynthesized from the keyboard), which is why it is such a useful control: it isolates the\npointer arm of the path.\n\nWhat the report already rules out: a globally dead page (the search input works) and an\nobvious crash (no console errors). What it does not rule out: an overlay or\n`pointer-events`/hit-target problem on that one button, or a handler that listens for a\ndifferent event than the one the click path fires.\n\n## Solution\n\nRun three probes against the same locator, in this order. Each one answers a narrower\nquestion, and together the three readings pick the family. The probe snippets below are\n**methodology** (issue #3380 asked for the discrimination method); they \n\n[clipped]",
+    "summary_plain": "自动点击没反应但键盘回车有反应时，用事件探针和命中点测试就能分清是点击没送达还是页面自己没处理。",
+    "trigger": "Playwright click returns without activating but keyboard Enter activates the handler",
+    "verify": "对同一 locator 跑事件探针 + elementFromPoint 命中点检查；两者输出区分『事件未送达』和『送达但未激活』",
+    "url": "lessons/contrib/click-no-op-keyboard-works-pointer-vs-handler-triage.md",
+    "created": "2026-10-22",
+    "updated": "2026-10-22",
+    "triggers": null,
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "draft",
+    "evidence_refs": [
+      "issue:#3380"
+    ],
+    "supersedes": "",
+    "verified": true,
+    "evidence_level": "E0",
+    "evidence_source": "frontmatter",
+    "trust_score": 0.35,
     "contributor": ""
   },
   {
@@ -7218,6 +7288,41 @@
     "contributor": ""
   },
   {
+    "id": "handoff-review-stale-snapshot-three-way-merge",
+    "title": "Applying a review computed from an old snapshot as a blind overwrite silently drops concurrent edits",
+    "domain": "git",
+    "tags": [
+      "git",
+      "merge",
+      "concurrent-edits",
+      "handoff",
+      "code-review",
+      "three-way"
+    ],
+    "summary": "A delegated reviewer returns a proposal for a shared Markdown handoff file. The reviewer",
+    "preview": "# Applying a review computed from an old snapshot as a blind overwrite silently drops concurrent edits\n\n## Problem\n\nA delegated reviewer returns a proposal for a shared Markdown handoff file. The reviewer\ncomputed it from an **older snapshot** of the file, and in the meantime someone else\nconcurrent-edited the same file on the main line. The question (issue #3301): what is the\nrecommended way to apply that proposal without losing the newer edits?\n\nThe failure shape is specific: if the proposal is applied as a **whole-file overwrite** of\nthe current tip (`git show reviewer-snapshot:file > file`, or copy-paste of the reviewer's\nversion), every edit made after the snapshot is silently discarded. Nothing conflicts,\nnothing warns — the file simply reverts those regions to the old snapshot's content.\n\n## Root Cause\n\nA full-file replacement has no notion of *which* lines the reviewer actually changed. It\ntreats the reviewer's entire file as the new truth, including the regions the reviewer\nmerely inherited from the stale snapshot. The concurrent editor's changes live in those\ninherited regions and are overwritten without any signal.\n\nGit already has the right primitive: a **three-way** application. The base of the three\nsides is the snapshot the proposal was computed from. Applying a change *as a patch\nagainst its own base* — rather than as a replacement of the tip — lets the merge machinery\nkeep both sides' edits, and raise an explicit conflict only where they genuinely overlap.\n\n## Solution\n\nNever write the reviewer's file over the tip. Treat the proposal as a change **from its\nbase to its head** and merge that change into the current line.\n\n### Step 1 — identify the snapshot base the proposal was computed from\n\nIn the repro below that is commit `0f8cf7a` (\"base\"); in real work it is whatever SHA the\nreviewer was handed.\n\n### Step 2 — apply three-way, not overwrite\n\nEither merge the reviewer's branch:\n\n```bash\ngit merge --no-edit reviewer-snapshot\n```\n\nor apply just that file's change as a three-way patch, using the same base:\n\n```bash\ngit diff <base>..reviewer-snapshot -- handoff.md | git apply -3 -\n```\n\n(`git checkout -m` / `git merge-file` are equivalent formulations of the same idea.)\n\n### Step 3 — resolve real conflicts explicitly\n\nWhen the two edits touch adjacent or identical lines, three-way application stops and\nleaves conflict markers with **both** side\n\n[clipped]",
+    "summary_plain": "别人基于旧版本改的文档提案，若整文件覆盖回来，会把这段时间里别人新改的内容悄悄抹掉。",
+    "trigger": "preserve concurrent edits to shared Markdown handoff files delegated reviewer older snapshot",
+    "verify": "git merge reviewer-snapshot 后 grep 'edited by main' 与 'reviewer proposal' 各命中 1 行",
+    "url": "lessons/contrib/handoff-review-stale-snapshot-three-way-merge.md",
+    "created": "2026-10-22",
+    "updated": "2026-10-22",
+    "triggers": null,
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "draft",
+    "evidence_refs": [
+      "issue:#3301"
+    ],
+    "supersedes": "",
+    "verified": true,
+    "evidence_level": "E2",
+    "evidence_source": "frontmatter",
+    "trust_score": 0.425,
+    "contributor": ""
+  },
+  {
     "id": "heartbeat-scan-improvement",
     "title": "GitHub Contribution Heartbeat Scan",
     "domain": "devops",
@@ -8644,6 +8749,43 @@
     "contributor": ""
   },
   {
+    "id": "lock-yield-on-importerror-silent-noop-loses-updates",
+    "title": "A lock that yields on ImportError is a silent no-op on Windows: lost updates in concurrent writes",
+    "domain": "python",
+    "tags": [
+      "concurrency",
+      "locking",
+      "windows",
+      "msvcrt",
+      "fcntl",
+      "silent-fallback",
+      "pytest"
+    ],
+    "summary": "A shared counter's read-modify-write was guarded with a lock that gives up when the",
+    "preview": "# A lock that yields on ImportError is a silent no-op on Windows: lost updates in concurrent writes\n\n## Problem\n\nA shared counter's read-modify-write was guarded with a lock that gives up when the\nplatform primitive cannot be imported:\n\n```python\ntry:\n    import fcntl\nexcept ImportError:   # non-POSIX: best-effort, still atomic-rename on save\n    yield\n    return\n```\n\nOn a platform without `fcntl` (Windows) the lock **does nothing at all**. Of 40 concurrent\nincrements, 39 survived — one update vanished. CI showed it as an intermittent red on\n`windows-latest`:\n\n```\nAssertionError: lost updates: expected 40 concurrent increments to survive, got 39\n```\n\nIt passed on macOS (where `fcntl` exists and the lock is real) and flapped with the\nschedule on Windows, which made it very hard to attribute.\n\nThe same test's verification stand-in had a second trap: the stub `msvcrt` only **recorded**\n`locking()` calls and never excluded anyone. Under that stub both a correct lock envelope\nand a bare `yield` lost updates (40 → 2), so the stub could not tell them apart.\n\n## Root Cause\n\nTwo independent mistakes meet here:\n\n1. **`os.replace` does not prevent lost updates.** The comment justified the silent skip\n   with \"still atomic-rename on save\". An atomic rename prevents a *torn* write; it does\n   nothing for two callers that both read `count: 0`, both compute `1`, and drop one\n   increment. Preventing exactly that is the lock's only job.\n2. **A silent no-op lock is worse than no lock.** With no lock, the race is an obvious\n   suspect. With a lock that *looks* present but never excludes, nobody goes looking for\n   the race again — the failure gets blamed on scheduling or flakiness.\n\nThe stand-in trap is the test-side version of the same mistake: a stub that records calls\nbut does not enforce the contract (`mutual exclusion`) cannot distinguish the correct\nimplementation from the bug, so it produces false greens and false reds that prove nothing.\n\n## Solution\n\nThe fix that landed (PR #3538, `misakanet/profile.py`) uses the **real primitive of the\nplatform** and fails loudly when neither exists. The lock body only — the surrounding\nstructure is untouched:\n\n```python\n# How long `_acquire_fd` waits for the lock before giving up. `flock` blocks\n# indefinitely; `msvcrt.locking` does not, so the Windows side gets an explicit\n# ceiling rather than an unbounded loop.\n_LOCK_TIMEOUT_SEC\n\n[clipped]",
+    "summary_plain": "Windows 上没有 fcntl 时锁被降级成空操作，40 个并发写只剩 39 个，更新被悄悄弄丢。",
+    "trigger": "expected 40 concurrent increments to survive, got 39",
+    "verify": "pytest tests/test_profile_lock_backend.py tests/test_issue_1775_severe.py → 17 passed",
+    "url": "lessons/contrib/lock-yield-on-importerror-silent-noop-loses-updates.md",
+    "created": "2026-10-22",
+    "updated": "2026-10-22",
+    "triggers": null,
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "draft",
+    "evidence_refs": [
+      "issue:#3564",
+      "commit:42d748e5aca23f991ef63c21c71ea810dec783a2"
+    ],
+    "supersedes": "",
+    "verified": true,
+    "evidence_level": "E2",
+    "evidence_source": "frontmatter",
+    "trust_score": 0.425,
+    "contributor": ""
+  },
+  {
     "id": "log-sanitizer-must-live-in-the-formatter",
     "title": "Sanitizing every interpolated value is not enough — exc_info=True appends the raw traceback",
     "domain": "security",
@@ -9783,6 +9925,41 @@
     "evidence_level": "E1",
     "evidence_source": "frontmatter",
     "trust_score": 0.387,
+    "contributor": ""
+  },
+  {
+    "id": "npm-file-dep-omitted-dir-dangling-symlink",
+    "title": "A file: dependency on a directory omitted from the tarball installs a dangling node_modules symlink",
+    "domain": "nodejs",
+    "tags": [
+      "npm",
+      "arborist",
+      "packaging",
+      "tarball",
+      "symlink",
+      "file-protocol"
+    ],
+    "summary": "A published package declares a dependency on a directory that is **not** in its own",
+    "preview": "# A file: dependency on a directory omitted from the tarball installs a dangling node_modules symlink\n\n## Problem\n\nA published package declares a dependency on a directory that is **not** in its own\ntarball:\n\n```json\n{\n  \"name\": \"repro-parent\",\n  \"dependencies\": { \"native-addon\": \"file:./packages/native-addon\" },\n  \"files\": [\"index.js\", \"package.json\"]\n}\n```\n\nThe report (issue #3299, npm 11.20.0) was: read-only inspection found a **dangling\n`node_modules` symlink** to the omitted directory, and the question is whether this layout\nis a known trigger for Arborist `rebuild.js` `#addToBuildSet` failing with\n\n```\nCannot destructure property 'package' of 'node.target' as it is null.\n```\n\n**Evidence status of that crash, stated up front:** the dangling symlink is reproduced\nbelow; **the crash itself is not**. On both npm 11.12.1 and the exact reported npm 11.20.0,\n`install` / `rebuild` / `ci` complete successfully over this layout. Treat the crash\nattribution as **unconfirmed**, and the dangling-link part as measured.\n\n## Root Cause\n\nWhat is confirmed by reproduction:\n\n1. **`npm pack` only ships what `files` (or the default rules) allow.** With\n   `files: [\"index.js\", \"package.json\"]`, `packages/native-addon` never enters the tarball,\n   while the `file:` dependency declaration does (it lives in `package.json`).\n2. **On install, npm materializes the `file:` dependency as a relative symlink.** The\n   consumer's `node_modules` ends up with:\n\n   ```\n   native-addon -> repro-parent/packages/native-addon\n   ```\n\n   The target directory is not inside the installed `repro-parent` (the tarball omitted\n   it), so the symlink dangles. The lockfile simultaneously records the link and a target\n   entry with no package data: `\"node_modules/repro-parent/packages/native-addon\": {}`.\n\nWhere the reported crash *would* come from, in Arborist's source\n(`@npmcli/arborist/lib/arborist/rebuild.js`, `#addToBuildSet`):\n\n```js\nconst { package: pkg, hasInstallScript } = node.target\n```\n\nIf a link node with `target === null` ever reaches the build set, that destructure throws\nexactly the reported message. In the repro here, that shape does **not** occur: the\ndangling link is not represented as a null-target node during install/rebuild, and a\nlockfile that references a link whose target entry is missing is rejected earlier with a\nclean `EMISSINGTARGET` error (see Verification). Which npm/arbo\n\n[clipped]",
+    "summary_plain": "发布 npm 包时用 file: 依赖指向一个没打进包里的目录，装完后 node_modules 里会留一个断掉的软链接。",
+    "trigger": "Cannot destructure property 'package' of 'node.target' as it is null",
+    "verify": "npm pack 列表缺 packages/native-addon，安装后 ls -la node_modules/ 显示断链；补进 files 后 require('native-addon') 返回 42",
+    "url": "lessons/contrib/npm-file-dep-omitted-dir-dangling-symlink.md",
+    "created": "2026-10-22",
+    "updated": "2026-10-22",
+    "triggers": null,
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "draft",
+    "evidence_refs": [
+      "issue:#3299"
+    ],
+    "supersedes": "",
+    "verified": true,
+    "evidence_level": "E2",
+    "evidence_source": "frontmatter",
+    "trust_score": 0.425,
     "contributor": ""
   },
   {

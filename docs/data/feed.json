@@ -1,82 +1,82 @@
 {
-  "generated_at": "2026-10-22T16:32:08.174026+00:00",
+  "generated_at": "2026-10-22T20:19:00.783372+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "fix(release): the extra-files of a package with a path are resolved against that path",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3744",
-      "timestamp": "2026-10-22T16:02:36Z",
+      "title": "lessons(contrib): a green suite hid a module that a bare Node runtime cannot load",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3757",
+      "timestamp": "2026-10-22T20:18:50Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(setup): --verify answers two questions, and stops calling a file it cannot write \"missing\"",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3743",
-      "timestamp": "2026-10-22T16:02:08Z",
+      "title": "chore(release): the bootstrap floor has outlived its purpose, so it goes",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3756",
+      "timestamp": "2026-10-22T19:25:15Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(release): bound the commit scan, so the release PR can be rebuilt again",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3741",
-      "timestamp": "2026-10-22T15:28:39Z",
+      "title": "chore: release main",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3451",
+      "timestamp": "2026-10-22T19:01:41Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(setup): the release moves the version literal, not just the manifest (#3691)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3738",
-      "timestamp": "2026-10-22T14:18:37Z",
+      "title": "fix(release): the scan's floor is judged by the release tag, not by the ledger",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3752",
+      "timestamp": "2026-10-22T18:41:10Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "docs(handoff): §138 — the tool forgot, which is a different kind of drift",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3739",
-      "timestamp": "2026-10-22T14:14:20Z",
+      "title": "feat(guard): two more mechanical shapes — an internal artifact, a new top-level directory",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3754",
+      "timestamp": "2026-10-22T18:26:49Z",
       "source": "github"
     },
     {
       "type": "lesson",
-      "title": "JS regex: escape a literal dollar sign, never escape the end-of-line anchor",
-      "url": "lessons/core/js-regex-literal-dollar-vs-end-of-line-anchor.md",
-      "timestamp": "2026-10-17",
+      "title": "A green test suite hid a module that a bare Node runtime cannot load, because the bundler rewrites the JSON import",
+      "url": "lessons/contrib/a-green-test-suite-hid-a-module-a-bare-node-runtime-cannot-load.md",
+      "timestamp": "2026-10-22",
       "domain": "nodejs",
       "source": "lessons"
     },
     {
       "type": "lesson",
-      "title": "A node:sqlite shim for better-sqlite3 must filter undeclared named parameters",
-      "url": "lessons/core/node-sqlite-shim-undeclared-named-parameters.md",
-      "timestamp": "2026-10-17",
+      "title": "Click does not activate but keyboard Enter works: probes separating pointer-delivery from handler failure",
+      "url": "lessons/contrib/click-no-op-keyboard-works-pointer-vs-handler-triage.md",
+      "timestamp": "2026-10-22",
+      "domain": "automation",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "Applying a review computed from an old snapshot as a blind overwrite silently drops concurrent edits",
+      "url": "lessons/contrib/handoff-review-stale-snapshot-three-way-merge.md",
+      "timestamp": "2026-10-22",
+      "domain": "git",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "A lock that yields on ImportError is a silent no-op on Windows: lost updates in concurrent writes",
+      "url": "lessons/contrib/lock-yield-on-importerror-silent-noop-loses-updates.md",
+      "timestamp": "2026-10-22",
+      "domain": "python",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "A file: dependency on a directory omitted from the tarball installs a dangling node_modules symlink",
+      "url": "lessons/contrib/npm-file-dep-omitted-dir-dangling-symlink.md",
+      "timestamp": "2026-10-22",
       "domain": "nodejs",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "FANUC ROBOGUIDE FRVRC auto backup fails on every restart — FILE-077 / FILE-079 / FILE-031",
-      "url": "lessons/contrib/fanuc-frvrc-auto-backup-illegal-path.md",
-      "timestamp": "2026-10-17",
-      "domain": "fanuc",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "FANUC 虚拟控制器诊断纪律：对回环端口的 TCP 探测会亲手把控制器弄崩",
-      "url": "lessons/contrib/fanuc-rgcore-diagnostic-probe-triggers-controller-crash.md",
-      "timestamp": "2026-10-17",
-      "domain": "fanuc",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "Frame-grid validation when a replacement shot is shorter than its montage slot",
-      "url": "lessons/contrib/frame-grid-validation-replacement-shorter-than-slot.md",
-      "timestamp": "2026-10-17",
-      "domain": "video",
       "source": "lessons"
     },
     {

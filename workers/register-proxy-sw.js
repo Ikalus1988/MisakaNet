@@ -687,7 +687,7 @@ function getMcpServerInfo(env) {
     // this constant drifts from it (rule R7, added 2026-09-18). Before that rule existed the value
     // was a hand-kept string that no script, workflow or var injection ever touched — it sat at
     // 2.27.1 through six releases, and it is the *only* version every MCP client reads.
-    version: env.MCP_VERSION || "2.48.0", // x-release-please-version
+    version: env.MCP_VERSION || "2.49.0", // x-release-please-version
   };
 }
 
@@ -7443,6 +7443,138 @@ async function readFunnelSeries(env, days) {
   return series;
 }
 
+// ── Quickstart step events (#1897): what gets REPORTED as an event ───────────────────────────────
+// Three event names and a closed set of step ids, stored as day-level integer counts. Payload is
+// `{event, step}` and nothing else; both fields pass the allowlists below before the bind, so no
+// IP text and no query text can reach a row (the connecting address is ignored here, unlike the
+// rate limits). Collected: a step id and a per-day count. Not collected: what was copied, who
+// copied it, from where.
+//
+// Backend: **D1 only** — the `counters` table the funnel and traffic already use. Deliberately
+// *not* `bumpCounter`, whose KV fallback would invent `counters:qs:…` keys in #1890's exhausted
+// distinct-key budget. When D1 is absent the event is dropped (`recorded: false`); the frontend
+// reporter is fire-and-forget and swallows every failure.
+const QS_EVENTS = Object.freeze(["qs_view", "qs_copy", "qs_link"]);
+const QS_VIEW_STEP = "quickstart";
+const QS_COPY_STEPS = Object.freeze(["qs-a1", "qs-a2", "qs-a3q1", "qs-a3q2", "qs-b1", "qs-b2", "qs-b3"]);
+const QS_LINK_STEPS = Object.freeze(["install-guide", "all-ways-doc", "start-again", "troubleshooting"]);
+
+function qsAllowedStep(event, step) {
+  if (event === "qs_view") return step === QS_VIEW_STEP;
+  if (event === "qs_copy") return QS_COPY_STEPS.includes(step);
+  if (event === "qs_link") return QS_LINK_STEPS.includes(step);
+  return false;
+}
+
+/** One event as a D1 `counters` row. D1 only — no KV fallback, no key created. */
+async function bumpQsEvent(env, event, step) {
+  const d1 = d1Binding(env);
+  if (!d1) return false;
+  try {
+    await d1.prepare(
+      `INSERT INTO counters (scope, bucket, period, count, updated_at)
+       VALUES ('qs', ?1, ?2, 1, datetime('now'))
+       ON CONFLICT(scope, bucket, period)
+       DO UPDATE SET count = count + 1, updated_at = datetime('now')`,
+    ).bind(`${event}:${step}`, utcDayKey(0)).run();
+    return true;
+  } catch (error) {
+    logInternal("qs event write failed", error);
+    return false;
+  }
+}
+
+/** POST /api/qs-event — anonymous, size-capped, allowlisted. `recorded: false` when D1 is down. */
+async function handleQsEvent(request, env) {
+  if (parseInt(request.headers.get("content-length") || "0", 10) > 512) {
+    return jsonResponse({ error: "Request too large" }, 413);
+  }
+  let body;
+  try { body = await request.json(); } catch { return jsonResponse({ error: "Invalid JSON" }, 400); }
+  const event = body && typeof body.event === "string" ? body.event : "";
+  const step = body && typeof body.step === "string" ? body.step : "";
+  if (!QS_EVENTS.includes(event) || !qsAllowedStep(event, step)) {
+    return jsonResponse({ error: "Unknown event or step" }, 400);
+  }
+  const recorded = await bumpQsEvent(env, event, step);
+  return jsonResponse({ recorded, backend: "d1" });
+}
+
+/** One day of counters for the closed set, zeros included (a quiet day and an outage look alike). */
+async function readQsEventDay(env, day) {
+  const out = {};
+  for (const event of QS_EVENTS) {
+    const steps = event === "qs_view" ? [QS_VIEW_STEP]
+      : event === "qs_copy" ? QS_COPY_STEPS : QS_LINK_STEPS;
+    for (const step of steps) out[`${event}:${step}`] = 0;
+  }
+  const d1 = d1Binding(env);
+  if (!d1) return out;
+  try {
+    const { results } = await d1.prepare(
+      `SELECT bucket, count FROM counters WHERE scope = 'qs' AND period = ?1`,
+    ).bind(day).all();
+    for (const row of results || []) {
+      if (row.bucket in out) out[row.bucket] = Number(row.count) || 0;
+    }
+  } catch (error) {
+    logInternal("qs event read failed", error);
+  }
+  return out;
+}
+
+/** GET /api/insights/quickstart-events?days=N — aggregate-only conversion view. `perView` is
+ *  null on a zero denominator, the `/api/funnel` convention. No identity, no request log. */
+async function handleQuickstartInsights(request, env) {
+  const url = new URL(request.url);
+  // `Number(null)` is 0 — the absent parameter must not clamp to 1 like an explicit `days=0`.
+  const raw = url.searchParams.get("days");
+  const rawDays = raw === null || raw === "" ? NaN : Number(raw);
+  const days = Number.isFinite(rawDays) ? Math.min(Math.max(Math.trunc(rawDays), 1), 30) : 7;
+  const series = [];
+  for (let i = days - 1; i >= 0; i--) {
+    series.push({ date: utcDayKey(i), ...(await readQsEventDay(env, utcDayKey(i))) });
+  }
+  const totals = {};
+  for (const day of series) {
+    for (const [key, value] of Object.entries(day)) {
+      if (key === "date") continue;
+      totals[key] = (totals[key] || 0) + (Number(value) || 0);
+    }
+  }
+  const views = Number(totals[`qs_view:${QS_VIEW_STEP}`]) || 0;
+  const steps = [
+    ...QS_COPY_STEPS.map((step) => ({ step, kind: "copy", count: totals[`qs_copy:${step}`] || 0 })),
+    ...QS_LINK_STEPS.map((step) => ({ step, kind: "link", count: totals[`qs_link:${step}`] || 0 })),
+  ].map((row) => ({
+    ...row,
+    perView: views > 0 ? Math.round((row.count / views) * 1000) / 1000 : null,
+  }));
+  return jsonResponse({
+    success: true,
+    available: !!d1Binding(env),
+    windowDays: days,
+    events: QS_EVENTS,
+    copySteps: QS_COPY_STEPS,
+    linkSteps: QS_LINK_STEPS,
+    series,
+    totals,
+    views,
+    steps,
+    meta: {
+      privacy: "aggregate-only",
+      collected: "step id + per-day count",
+      raw_query: false,
+      ip: false,
+      clipboard: false,
+      prompts: false,
+      logs: false,
+      paths: false,
+      pii: false,
+    },
+  });
+}
+
 // ── The activity trend: our own counters, read back as a series (issue #2521, option A) ───────────
 //
 // The homepage's "Network activity" panel has always shown *one* day — the counters of whatever
@@ -7905,6 +8037,12 @@ function classifyRequest(request, url) {
   // LLMs.txt and related are agent-facing docs
   if (pathname.startsWith("/llms") || pathname === "/robots.txt") return "agent";
 
+  // The Quickstart reporter (#1897) is the page describing its own visit. Counting it as a
+  // pageview would make one real visit worth two or more (`qs_view` alone doubles it), and
+  // `funnel.visit` rides this same flush — so it is not traffic at all. `null` means "do not
+  // buffer"; the four classes below stay exactly what they were.
+  if (pathname === "/api/qs-event") return null;
+
   // Crawler detection (check before agent — bots often have generic UAs)
   if (CRAWLER_UA.test(ua)) return "crawler";
 
@@ -8134,7 +8272,11 @@ export default {
     // every write path started failing (register, /mcp/connect, /api/search-signal
     // all answered 1101). Traffic analytics tolerate lag, so they now accumulate
     // in memory and flush in batches; the counters are approximate by design.
-    bufferTraffic(env, typeof ctx !== "undefined" ? ctx : null, _cls);
+    //
+    // `null` is a request that is not traffic — currently only the Quickstart reporter
+    // (#1897), which would otherwise count its own report as a second pageview of the
+    // page it is reporting about.
+    if (_cls) bufferTraffic(env, typeof ctx !== "undefined" ? ctx : null, _cls);
 
     if (request.method === "GET" && url.pathname === "/api/health") {
       const kvGlobal = await readKvHealth(env);
@@ -8901,6 +9043,11 @@ export default {
       return handleSearchSignal(request, env);
     }
 
+    // POST /api/qs-event — one quickstart step event (#1897). Allowlisted body, D1-only write.
+    if (request.method === "POST" && url.pathname === "/api/qs-event") {
+      return handleQsEvent(request, env);
+    }
+
     // GET /api/search-signals/stats — read-only hit/miss rows for the hit rate (#1779)
     if (request.method === "GET" && url.pathname === "/api/search-signals/stats") {
       return handleSearchSignalStats(env, url);
@@ -9059,6 +9206,11 @@ export default {
     // GET /api/insights/unsolved-map — public aggregate failure map (#788)
     if (request.method === "GET" && url.pathname === "/api/insights/unsolved-map") {
       return handleUnsolvedMap(env);
+    }
+
+    // GET /api/insights/quickstart-events — aggregate quickstart step events (#1897)
+    if (request.method === "GET" && url.pathname === "/api/insights/quickstart-events") {
+      return handleQuickstartInsights(request, env);
     }
 
     // GET /api/insights/pr-genius — PR Genius metrics & workflow statistics (#1035)
@@ -9901,6 +10053,15 @@ export {
   FUNNEL_EVENTS,
   readFunnelDay,
   readFunnelSeries,
+  // Exported for workers/quickstart-events.test.mjs: the closed event/step allowlists are the
+  // payload contract (#1897), and the D1-only writer is the "no new KV write path" seam — a test
+  // that can only see the route cannot tell a D1 upsert from `bumpCounter`'s KV fallback.
+  QS_EVENTS,
+  QS_VIEW_STEP,
+  QS_COPY_STEPS,
+  QS_LINK_STEPS,
+  bumpQsEvent,
+  readQsEventDay,
   ACTIVITY_TTL_SECONDS,
   ACTIVITY_CACHE_CONTROL,
   ACTIVITY_SOURCE,

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="MisakaNet — Git-backed, stdlib-only failure lesson network for AI agents. 516 indexed failure-recovery lessons, GitHub-audited, searchable.">
+<meta name="description" content="MisakaNet — Git-backed, stdlib-only failure lesson network for AI agents. 521 indexed failure-recovery lessons, GitHub-audited, searchable.">
 <meta name="keywords" content="AI Agent, MisakaNet, failure lessons, debugging, knowledge base, stdlib-only, GitHub-audited">
 <!-- Browsers request `/favicon.ico` on **every** page load when no page declares an icon, and until
      2026-09-25 that path answered 404 (~360 self-inflicted 404s a day, the only 404 in the zone's own
@@ -15,7 +15,7 @@
 <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32.png">
 <link rel="canonical" href="https://misakanet.org/">
 <meta property="og:title" content="MisakaNet — Failure Lesson Network for AI Agents">
-<meta property="og:description" content="Git-backed, stdlib-only failure lesson network. 516 indexed failure-recovery lessons from real AI agent debugging sessions.">
+<meta property="og:description" content="Git-backed, stdlib-only failure lesson network. 521 indexed failure-recovery lessons from real AI agent debugging sessions.">
 <meta property="og:image" content="https://raw.githubusercontent.com/Ikalus1988/MisakaNet/main/promotional/og-card.png">
 <meta property="og:url" content="https://misakanet.org/">
 <meta name="twitter:card" content="summary_large_image">
@@ -26,7 +26,7 @@
   "@type": "WebSite",
   "name": "MisakaNet",
   "url": "https://misakanet.org",
-  "description": "Git-backed, stdlib-only failure lesson network for AI agents. 516 indexed failure-recovery lessons from real debugging sessions.",
+  "description": "Git-backed, stdlib-only failure lesson network for AI agents. 521 indexed failure-recovery lessons from real debugging sessions.",
   "potentialAction": {
     "@type": "SearchAction",
     "target": "https://misakanet.org/search/?q={search_term_string}",
@@ -1790,17 +1790,17 @@
 
     </div>
     <div class="qs-links">
-      <a href="/install/" data-i18n="qsMoreInstall">Full install guide</a>
+      <a href="/install/" data-i18n="qsMoreInstall" data-qs-link="install-guide">Full install guide</a>
       &nbsp;·&nbsp;
-      <a href="https://ikalus1988.github.io/MisakaNet/quickstart/" target="_blank" rel="noopener" data-i18n="qsMoreDoc">All the ways to use it</a>
+      <a href="https://ikalus1988.github.io/MisakaNet/quickstart/" target="_blank" rel="noopener" data-i18n="qsMoreDoc" data-qs-link="all-ways-doc">All the ways to use it</a>
     </div>
     <!-- The exit for "it didn't work": one line, two doors. /start is the 30-second retry path;
          docs/troubleshooting.md is the error-scene index. -->
     <div class="qs-stuck">
       <span data-i18n="qsStuck">Not working?</span>
-      <a href="/start" data-i18n="qsStuckStart">Start again at /start</a>
+      <a href="/start" data-i18n="qsStuckStart" data-qs-link="start-again">Start again at /start</a>
       &nbsp;·&nbsp;
-      <a href="https://github.com/Ikalus1988/MisakaNet/blob/main/docs/troubleshooting.md" data-i18n="qsStuckGuide">Open docs/troubleshooting.md</a>
+      <a href="https://github.com/Ikalus1988/MisakaNet/blob/main/docs/troubleshooting.md" data-i18n="qsStuckGuide" data-qs-link="troubleshooting">Open docs/troubleshooting.md</a>
     </div>
   </div>
 
@@ -1951,7 +1951,7 @@
   <div class="content-glass" style="margin-bottom:24px;">
     <div style="padding:20px 24px;">
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
-        <span style="background:var(--cyan);color:var(--bg-0);font-size:var(--fs-3xs);font-weight:700;padding:3px 10px;border-radius:var(--r-md);letter-spacing:0.5px;">v2.48.0</span><!-- x-release-please-version -->
+        <span style="background:var(--cyan);color:var(--bg-0);font-size:var(--fs-3xs);font-weight:700;padding:3px 10px;border-radius:var(--r-md);letter-spacing:0.5px;">v2.49.0</span><!-- x-release-please-version -->
       </div>
       <h2 style="font-size:var(--fs-lg);font-weight:700;margin-bottom:12px;color:var(--fg-1);">Agent failure memory: <img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/Ikalus1988/MisakaNet/data/badges/lessons.json" alt="indexed lessons" height="20" style="vertical-align:middle"></h2>
       <p style="color:var(--text-dim);font-size:var(--fs-sm);line-height:1.7;margin-bottom:16px;">
@@ -2240,11 +2240,70 @@ function copyQS(btn) {
     if (ok) {
       toast(t('qsCopyToast'));
       flashCopied(btn);
+      // #1897: report which step was copied. Fire and forget; the try/catch keeps a missing
+      // reporter from rejecting this promise (验收: 上报失败时前端静默降级，不阻塞复制).
+      try { reportQsEvent('qs_copy', id); } catch (e) { /* silent */ }
     } else {
       toast(t('qsCopyFailToast'));
     }
     return ok;
   });
+}
+
+// ── Quickstart step events (#1897) ──
+// Collected: a step id from a closed set and a day-level count. Not collected: what was
+// copied (the clipboard is never read), query text, IP. Privacy note: /insights/quickstart-events/.
+// Transport is `navigator.sendBeacon` only — the right API for a fire-and-forget report that
+// must survive the qs_link navigation, and one the homepage's request-target budget can hold
+// (tests/test_site_request_fanout.py counts `fetch(…)` calls; a fetch fallback would push the
+// page past the 14-target list a reviewer is asked to keep in their head). If beacon is missing
+// or refuses the blob the event is dropped: silent, which is the 验收.
+const QS_EVENT_ENDPOINT = '/api/qs-event';
+function reportQsEvent(event, step) {
+  try {
+    if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
+      navigator.sendBeacon(QS_EVENT_ENDPOINT, new Blob(
+        [JSON.stringify({ event: event, step: step })],
+        { type: 'application/json' }
+      ));
+    }
+  } catch (e) { /* silent */ }
+}
+
+// qs_view (block entered viewport, once per page) and qs_link (which "next step" was clicked).
+// One delegated listener on the section — the copy buttons keep their existing hook.
+function initQsEvents() {
+  try {
+    const section = document.getElementById('quickstart-section');
+    if (!section) return;
+    if (typeof IntersectionObserver === 'function') {
+      const io = new IntersectionObserver(function (entries) {
+        for (let i = 0; i < entries.length; i++) {
+          if (entries[i].isIntersecting) {
+            reportQsEvent('qs_view', 'quickstart');
+            io.disconnect();
+            return;
+          }
+        }
+      }, { threshold: 0.15 });
+      io.observe(section);
+    }
+    section.addEventListener('click', function (ev) {
+      let el = ev.target;
+      while (el && el !== section && !(el.getAttribute && el.getAttribute('data-qs-link'))) {
+        el = el.parentNode;
+      }
+      if (el && el !== section && el.getAttribute) {
+        const link = el.getAttribute('data-qs-link');
+        if (link) reportQsEvent('qs_link', link);
+      }
+    });
+  } catch (e) { /* silent */ }
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initQsEvents, { once: true });
+} else {
+  initQsEvents();
 }
 
 // ── Onboarding modal ──

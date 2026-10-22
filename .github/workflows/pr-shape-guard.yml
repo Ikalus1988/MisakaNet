@@ -58,6 +58,10 @@ jobs:
           git show "${BASE_SHA}:pyproject.toml" > /tmp/base-pyproject.toml 2>/dev/null || true
           git fetch --no-tags origin "pull/${PR_NUMBER}/head:refs/remotes/origin/pr-${PR_NUMBER}" >/dev/null 2>&1 || true
           git show "refs/remotes/origin/pr-${PR_NUMBER}:pyproject.toml" > /tmp/head-pyproject.toml 2>/dev/null || true
+          # The base branch's top-level directories. Read out of the trusted base checkout that is
+          # already on disk, so the list of what the repository has cannot go stale — a constant in
+          # the guard would be a list that rots the first time the repository gains a directory.
+          git ls-tree -d --name-only HEAD > /tmp/repo-dirs.txt || : > /tmp/repo-dirs.txt
           # Bodies of the issues this PR claims, so "a question bounty with no lesson" is decidable.
           python3 - <<'PYEOF' > /tmp/issue-bodies.json
           import json, os, re, subprocess
@@ -79,6 +83,7 @@ jobs:
           python3 scripts/pr_shape_guard.py --changed-files /tmp/changed-files.txt \
             --pr-body /tmp/pr-text.txt --base-pyproject /tmp/base-pyproject.toml \
             --head-pyproject /tmp/head-pyproject.toml --issue-bodies /tmp/issue-bodies.json \
+            --repo-dirs /tmp/repo-dirs.txt \
             > findings.json || echo '[]' > findings.json
 
       - name: Shape guard + auto-label
