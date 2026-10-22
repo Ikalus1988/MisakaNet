@@ -26,6 +26,7 @@ on:
       - "workers/misakanet-setup.test.mjs"
       - "workers/_test-token.mjs"
       - "integrations/agent-autostart/**"
+      - "docs/assets/voice/**"
       - ".github/workflows/misakanet-setup-ci.yml"
   push:
     branches: [main]
@@ -34,7 +35,16 @@ on:
       - "workers/misakanet-setup.test.mjs"
       - "workers/_test-token.mjs"
       - "integrations/agent-autostart/**"
+      - "docs/assets/voice/**"
       - ".github/workflows/misakanet-setup-ci.yml"
+  schedule:
+    # Daily at 04:17 UTC: the drift sweep. The matrix jobs below are skipped on this trigger
+    # (their `if:` says so), so the schedule costs one cheap job — it exists because the drift
+    # this job measures *accumulates*: a release that was cut and never published, or a source
+    # that moved and was never released, produces no further pull request and would otherwise
+    # only be noticed when somebody next touched the package. That is how npm sat at 0.5.6 for
+    # a month (#3691). The slot is unused elsewhere in .github/workflows/.
+    - cron: '17 4 * * *'
   workflow_dispatch:
 
 permissions:
@@ -53,6 +63,9 @@ concurrency:
 jobs:
   unit:
     name: unit (${{ matrix.os }}, node ${{ matrix.node }})
+    # The daily schedule is the drift sweep's, not this job's: a scheduled run would install
+    # and exercise the packaged installer nine times a day for nothing.
+    if: github.event_name != 'schedule'
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
     strategy:
@@ -84,6 +97,9 @@ jobs:
 
   pack:
     name: pack the tarball
+    # The daily schedule is the drift sweep's, not this job's: a scheduled run would install
+    # and exercise the packaged installer nine times a day for nothing.
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -133,6 +149,9 @@ jobs:
 
   e2e:
     name: e2e (${{ matrix.os }}, node ${{ matrix.node }})
+    # The daily schedule is the drift sweep's, not this job's: a scheduled run would install
+    # and exercise the packaged installer nine times a day for nothing.
+    if: github.event_name != 'schedule'
     needs: pack
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
@@ -210,3 +229,37 @@ jobs:
             grep -h 'SETUP_E2E_METRIC' "$RUNNER_TEMP"/live.log 2>/dev/null || echo "(no metric line in this leg)"
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
+
+  # The published installer against the repository. The other jobs in this file ask "does the
+  # installer work?"; this one asks "is the installer on npm the one this repository produces?".
+  #
+  # It is here, in the package's own CI, because the package's own pull requests are exactly
+  # when the answer matters: a change to the installer that is never released is a change
+  # nobody receives. npm had `@misaka-net/misakanet-setup` at 0.5.6 while the source moved ten
+  # commits ahead, and `--verify` could not see it — it compares npm with npm (#3691).
+  #
+  # The decision logic is `scripts/setup_release_drift.py` (stdlib only, like the rest of
+  # `scripts/`), and `tests/test_setup_release_automation.py` runs *that* module against
+  # synthetic repositories — the test and this job share one implementation, so the gate that
+  # CI runs and the gate the test proves are the same gate.
+  drift:
+    name: drift (the published package must not lag the repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+        with:
+          # The release tags are the comparison base, so the history has to be there.
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7
+        with:
+          python-version: '3.12'
+
+      - name: Compare the published package with the repository
+        # 0 = no drift, 1 = drift (the run is red and says what is late), 2 = npm could not be
+        # asked — which is *not* evidence that the listing is wrong, so the run is red for a
+        # different reason and says so.
+        run: python3 scripts/setup_release_drift.py --repo .
