@@ -50,6 +50,23 @@ KIND_HOOK = "钩子"
 RULES_FILES = ("CLAUDE.md", "AGENTS.md", "SOUL.md")
 
 
+def as_posix(path: str) -> str:
+    """The preview prints the path with the separators of the machine it ran on.
+
+    Windows prints `~\\.claude\\settings.json`, POSIX prints `~/.claude/settings.json`. Both are
+    what the user will actually see, so neither is wrong — the assertions below speak one dialect
+    so that a red test means *the path is wrong*, not *the CI runner happens to be Windows*.
+    """
+    return path.replace("\\", "/")
+
+
+def resolve(home: Path, shown: str) -> Path:
+    """The preview shows the home directory as `~`; put it back so the path can be checked on disk."""
+    rest = as_posix(shown)
+    assert rest.startswith("~"), f"the preview should show the home directory as `~`: {shown!r}"
+    return home / rest[1:].lstrip("/")
+
+
 @pytest.fixture(scope="module")
 def node() -> str:
     found = shutil.which("node")
@@ -126,11 +143,18 @@ def test_the_default_run_says_what_it_is_about_to_write(node, tmp_path):
     rules = [path for path, kinds in preview["files"] if KIND_RULES in kinds]
     assert rules and rules[0].endswith(RULES_FILES), (
         f"the rules block must name the file it is appended to: {rules}")
-    hook = [path for path, kinds in preview["files"] if KIND_HOOK in kinds]
+    hook = [as_posix(path) for path, kinds in preview["files"] if KIND_HOOK in kinds]
     assert hook == ["~/.claude/settings.json"], (
         f"the hook entry belongs in the agent's settings file: {hook}")
-    mcp = [path for path, kinds in preview["files"] if KIND_MCP in kinds]
+    mcp = [as_posix(path) for path, kinds in preview["files"] if KIND_MCP in kinds]
     assert mcp == ["~/.claude.json"], f"the MCP endpoint entry belongs in the agent's config: {mcp}"
+
+    # The preview is a promise about the disk: every path it names is a file the run really
+    # writes. Resolved rather than string-matched, because the separator is the platform's.
+    for path, _kinds in preview["files"]:
+        target = resolve(home, path)
+        assert target.exists(), (
+            f"the preview names {path!r}, which is not a file the run wrote: {target}")
 
     for way in WAYS_OUT:
         assert way in preview["footer"], f"{way} is not offered: {preview['footer']!r}"
