@@ -147,8 +147,17 @@ function readText(path) {
  * (the value goes into the User-Agent header): js/file-access-to-http #268. The drift it was
  * meant to prevent is now caught in CI instead, by a test that binds this literal to the
  * manifest — a failing test is a better place for that than a request header.
+ *
+ * **Who moves it:** the release tooling, not a person. The `x-release-please-version` marker on
+ * this line is what release-please's generic updater looks for, and the file is listed in the
+ * setup package's `extra-files`, so the release pull request bumps this literal together with
+ * the manifest. That marker is not decoration: release-please replaces a version **only on a
+ * line that carries the marker** — an unmarked line is copied verbatim, so a release would ship
+ * a stale `--version` and a stale `X-MisakaNet-Version` header while every gate stayed green
+ * except the two that name the version (measured 2026-10-22: the 0.6.0 release pull request
+ * failed 9 e2e legs on exactly that).
  */
-const VERSION = '0.5.6'
+const VERSION = '0.5.6'  // x-release-please-version
 
 /**
  * The shape of a client id, in one place.

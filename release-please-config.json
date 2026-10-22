@@ -110,6 +110,10 @@
       "include-component-in-tag": true,
       "tag-separator": "-",
       "initial-version": "0.6.0",
+      "extra-files": [
+        "packages/misakanet-setup/bin/misakanet-setup.mjs",
+        "workers/misakanet-setup.test.mjs"
+      ],
       "changelog-sections": [
         {
           "type": "feat",

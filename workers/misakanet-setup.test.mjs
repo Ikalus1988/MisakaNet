@@ -809,7 +809,12 @@ test('the User-Agent version is bound to the manifest by a test, not by a file r
   // file into a request header, which is CodeQL js/file-access-to-http #268 all over again.
   const declared = JSON.parse(
     readFileSync(join(CLI, '..', '..', 'package.json'), 'utf8')).version;
-  assert.equal(declared, '0.5.6', 'bump this test when the package version moves');
+  // This pin is moved by the release tooling, not by a person: the file is listed in the setup
+  // package's `extra-files` and this line carries the `x-release-please-version` marker, so the
+  // release pull request bumps it together with the manifest. It is still a tripwire — a version
+  // edited **by hand** leaves this line behind and goes red — and without the marker the pin
+  // would stay at the old version and every release would be red here instead.
+  assert.equal(declared, '0.5.6', 'the release tooling moves this pin with the version');  // x-release-please-version
   // A plain substring, not a RegExp: building a pattern from a value with `.replace(/\./g…)`
   // left backslashes unescaped, which CodeQL correctly reported as incomplete sanitization
   // (js/incomplete-sanitization, high) on the first version of this test.

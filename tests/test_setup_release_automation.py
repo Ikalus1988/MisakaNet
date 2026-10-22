@@ -305,6 +305,115 @@ def test_the_publish_workflow_creates_the_tag_before_it_publishes():
     )
 
 
+# ── 2.1 the version literals the release has to move ──────────────────────────────────────────────
+
+# release-please's generic updater, transcribed. src/updaters/generic.ts. release-please is not
+# installed here, so the rule that decides whether a plain-text file moves with the release is
+# transcribed, and the transcription is applied to the real files below.
+#
+# The rule, in full:
+#   * a line that carries `x-release-please-<scope>` has a version replaced **on that line**;
+#   * a line that carries no marker is copied **verbatim**.
+#
+# The second half is the whole trap: a plain-text extra-file **without** the marker is not
+# updated at all — and the release then ships a stale `--version` and a stale
+# `X-MisakaNet-Version` header while the release pull request looks perfectly healthy.
+_MARKER = re.compile(r"x-release-please-(?P<scope>major|minor|patch|version-date|version|date)")
+_VERSION_ON_LINE = re.compile(
+    r"(?P<major>\d+)\.(?P<minor>\d+)\.(?P<patch>\d+)(-(?P<pre>[\w.]+))?(\+(?P<build>[-\w.]+))?")
+
+
+def _apply_release_please_generic(content: str, new_version: str) -> str:
+    """release-please's `Generic.updateContent` (src/updaters/generic.ts), version scope.
+
+    The marker decides the scope; only the `version` scope is used by the files this repository
+    governs, and `test_the_markers_use_the_version_scope` says so out loud.
+    """
+    lines = []
+    for line in content.split("\n"):
+        match = _MARKER.search(line)
+        if match and match.group("scope") == "version":
+            # `String.replace` with a non-global regex replaces the **first** match on the line.
+            line = _VERSION_ON_LINE.sub(new_version, line, count=1)
+        lines.append(line)
+    return "\n".join(lines)
+
+
+# The files that carry the setup package's version. Each of them has to move with the release:
+# the installer's literal is what `--version` prints and what goes into the X-MisakaNet-Version
+# header, and the pin in the test is the tripwire that says "the version moved".
+VERSION_LITERAL_FILES = {
+    "packages/misakanet-setup/bin/misakanet-setup.mjs": "const VERSION = '{}'",
+    "workers/misakanet-setup.test.mjs": "assert.equal(declared, '{}'",
+}
+
+
+def _setup_extra_files() -> list[str]:
+    entry = _read_json(CONFIG)["packages"][SETUP_PATH]
+    files = []
+    for item in entry.get("extra-files", []):
+        files.append(item if isinstance(item, str) else item.get("path"))
+    return files
+
+
+def test_every_version_literal_is_released_with_the_version():
+    """A release that bumps the manifest must move every literal that names it.
+
+    Measured 2026-10-22: the first automated release of this package bumped the manifest to
+    0.6.0 and left the installer's literal at 0.5.6, because nothing told the release tooling
+    about that file. Nine e2e legs went red on exactly that (`--version printed 0.5.6 but the
+    installed package.json says 0.6.0`) — the safety net worked, but the release could not go
+    out. The net is for the case where a person forgets; this is the case where the *tooling*
+    forgets, and it needs the file to be listed.
+    """
+    extra = _setup_extra_files()
+    for path in VERSION_LITERAL_FILES:
+        assert path in extra, (
+            f"{path} carries the package's version, but the release does not move it: the "
+            f"release would ship the old version in --version and in the X-MisakaNet-Version "
+            f"header (extra-files: {extra})"
+        )
+
+
+def test_the_release_moves_the_literals_it_lists():
+    """release-please's own rule, applied to the real files: the literal must follow the manifest."""
+    current = _read_json(REPO / SETUP_PATH / "package.json")["version"]
+    nxt = "9.9.9"          # a version that cannot already be in the repository
+    for path, template in VERSION_LITERAL_FILES.items():
+        source = (REPO / path).read_text(encoding="utf-8")
+        updated = _apply_release_please_generic(source, nxt)
+        assert template.format(nxt) in updated, (
+            f"release-please would not move the literal in {path}: the marker is missing, or it "
+            f"is not on the line that carries the version — and an unmarked line is copied "
+            f"verbatim, so the release ships the old version"
+        )
+        assert template.format(current) not in updated, (
+            f"the old version is still in {path} after the release moved it"
+        )
+        # Exactly one line may move. A line that *mentions* the marker also counts as a version
+        # line, so a comment that quotes the marker next to a version would have that version
+        # rewritten by the release — which is why the comment in these files never does.
+        changed = [i for i, (before, after) in enumerate(zip(source.split("\n"), updated.split("\n")))
+                   if before != after]
+        assert len(changed) == 1, (
+            f"the release would change {len(changed)} lines in {path}, not one: a line that "
+            f"mentions the marker is treated as a version line, so a version next to the marker "
+            f"text would be rewritten too"
+        )
+
+
+def test_the_markers_use_the_version_scope():
+    """The transcription above only implements the `version` scope — so that is what is used."""
+    for path in VERSION_LITERAL_FILES:
+        for line in (REPO / path).read_text(encoding="utf-8").split("\n"):
+            match = _MARKER.search(line)
+            if match:
+                assert match.group("scope") == "version", (
+                    f"{path} uses the `x-release-please-{match.group('scope')}` marker, and the "
+                    f"transcribed rule in this file only implements the `version` scope"
+                )
+
+
 # ── 3. the drift gate ───────────────────────────────────────────────────────────────────────────
 
 
