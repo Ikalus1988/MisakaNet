@@ -515,6 +515,49 @@ def _now(raw: str) -> datetime:
     return datetime.fromisoformat(raw)
 
 
+def _bump_the_version(repo: Path, version: str, when: str) -> None:
+    """The commit release-please makes: the package declares a version that has no tag yet."""
+    package = repo / SETUP_PATH / "package.json"
+    data = json.loads(package.read_text(encoding="utf-8"))
+    data["version"] = version
+    package.write_text(json.dumps(data) + "\n", encoding="utf-8")
+    _git(repo, "add", "-A")
+    _git(
+        repo,
+        "commit",
+        "-qm",
+        "chore(setup): release 0.5.7",
+        env={"GIT_AUTHOR_DATE": when, "GIT_COMMITTER_DATE": when},
+    )
+
+
+def test_the_gate_waits_for_a_release_that_is_in_flight(tmp_path):
+    """A declared version with no tag yet is a release on its way, not drift.
+
+    release-please bumps the version in a release pull request, and the tag and the publish
+    follow the merge. A gate that called that state drift would be red on the release pull
+    request itself — the very pull request that fixes the drift.
+    """
+    repo = _synthetic_repo(tmp_path)
+    _move_the_source(repo, "2026-09-20T00:00:00+00:00")
+    _bump_the_version(repo, "0.5.7", "2026-10-22T00:00:00+00:00")
+    report = assess(repo, published=["0.5.6"], now=_now("2026-10-22T06:00:00+00:00"))
+    assert report.status == "ok", f"the gate called a release in flight drift:\n{report.lines}"
+    assert any("a release is cut" in line for line in report.lines), report.lines
+
+
+def test_the_gate_is_red_when_a_cut_release_never_got_a_tag(tmp_path):
+    """A release cut days ago and still untagged is the publish path being broken."""
+    repo = _synthetic_repo(tmp_path)
+    _move_the_source(repo, "2026-09-20T00:00:00+00:00")
+    _bump_the_version(repo, "0.5.7", "2026-09-20T00:00:00+00:00")
+    report = assess(repo, published=["0.5.6"], now=_now("2026-10-22T00:00:00+00:00"))
+    assert report.status == "drift", (
+        f"the gate did not go red on a release that was cut and never published:\n{report.lines}"
+    )
+    assert any("publish path is broken" in problem for problem in report.problems), report.problems
+
+
 def test_the_gate_reads_the_repository_it_is_pointed_at(tmp_path):
     """The gate measures a repository, not a hard-coded story about one.
 

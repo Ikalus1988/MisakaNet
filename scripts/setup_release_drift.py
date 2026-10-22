@@ -29,6 +29,12 @@ The two questions
   pack time. If those files moved after the tag, the installer on npm is older than the
   repository.
 
+One distinction keeps the second question honest. release-please bumps the version in a release
+pull request, so a version that is declared but not tagged yet is a release **in flight**, not
+drift — the release pull request must not be blocked by the gate that watches it. It becomes drift
+when the release was cut days ago and still has no tag: then the publish path is broken, not the
+release flow.
+
 The grace period
 ----------------
 The second question carries one on purpose. A release-please flow bumps the version *after* the
@@ -160,6 +166,33 @@ def shipped_drift(repo: Path, tag: str) -> tuple[list[str], datetime | None]:
     return sorted(changed), moment
 
 
+def declared_version(repo: Path) -> str | None:
+    """The version `packages/misakanet-setup/package.json` declares.
+
+    release-please owns that file: the version in it is the one that is *about* to be released,
+    which is what tells a release in flight from a release that was never cut.
+    """
+    path = repo / "packages" / "misakanet-setup" / "package.json"
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))["version"]
+    except (OSError, ValueError, KeyError):
+        return None
+
+
+def version_bumped_at(repo: Path, tag: str) -> datetime | None:
+    """When the package's version was last bumped after `tag`."""
+    log = git(
+        repo, "log", "--format=%cI", "-1", f"{tag}..HEAD", "--",
+        "packages/misakanet-setup/package.json",
+    ).splitlines()
+    if not log:
+        return None
+    moment = datetime.fromisoformat(log[0])
+    if moment.tzinfo is None:
+        moment = moment.replace(tzinfo=timezone.utc)
+    return moment
+
+
 def assess(
     repo: Path,
     *,
@@ -195,19 +228,46 @@ def assess(
             "the registry"
         )
 
+    moment = now or datetime.now(timezone.utc)
+    declared = declared_version(repo)
+    in_flight = bool(
+        declared and version_key(declared) and version_key(declared) > version_key(version)
+    )
+    if in_flight:
+        report.lines.append(
+            f"  a release is cut  : {declared} (the package declares it; the tag has not been "
+            "created yet)"
+        )
+
     changed, oldest = shipped_drift(repo, tag)
     if changed:
         report.lines.append(f"  shipped source    : {len(changed)} file(s) moved after {tag}")
         for path in changed:
             report.lines.append(f"      {path}")
-        moment = now or datetime.now(timezone.utc)
         if oldest is None:
             report.problems.append(
                 f"the shipped source moved after {tag} and the age of the change could not be read"
             )
         else:
             age = (moment - oldest).total_seconds() / 86400.0
-            if age > grace_days:
+            bumped_at = version_bumped_at(repo, tag) if in_flight else None
+            if in_flight and bumped_at is not None:
+                # A release that has been cut and is on its way is not drift: the version was
+                # bumped, the tag and the publish follow. It becomes drift when the release was
+                # cut long enough ago that it should have been published by now — that is the
+                # publish path being broken rather than the release flow.
+                waiting = (moment - bumped_at).total_seconds() / 86400.0
+                if waiting > grace_days:
+                    report.problems.append(
+                        f"the release {declared} was cut {waiting:.0f} days ago and still has no "
+                        f"{TAG_PREFIX}{declared} tag — the publish path is broken"
+                    )
+                else:
+                    report.lines.append(
+                        f"  a release is due  : {declared} was cut {waiting:.0f} day(s) ago — "
+                        "publish it"
+                    )
+            elif age > grace_days:
                 report.problems.append(
                     f"the shipped source has been ahead of {tag} for {age:.0f} days "
                     f"(grace: {grace_days:.0f}) — a release is overdue"
