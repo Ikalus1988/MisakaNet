@@ -1,7 +1,7 @@
 {
   "name": "@misaka-net/misakanet-setup",
   "version": "0.5.6",
-  "description": "One-command setup: teach your Claude Code / Codex / Hermes / OpenClaw / codewhale to search MisakaNet failure lessons before repeating a mistake, and to distil the session at a checkpoint.",
+  "description": "MisakaNet failure lessons for Claude Code, Codex, Hermes, OpenClaw, codewhale, Cursor, Gemini CLI, Copilot CLI, OpenCode, Kiro: writes an MCP endpoint into each agent config, rules blocks where the client takes one, and a Claude Code hook. At most one anonymous request leaves this machine at install; afterwards only what the agent sends.",
   "bin": {
     "misakanet-setup": "bin/misakanet-setup.mjs"
   },
