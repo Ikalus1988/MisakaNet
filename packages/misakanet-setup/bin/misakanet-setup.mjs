@@ -772,7 +772,7 @@ const PROMPT_BLOCK = `调用规则（按顺序照做）：
 5) 查不到就 misakanet_submit_intake(kind="question")。
 6) 约 20 轮后、或刚解决一个非平凡问题时：把本次「失败→根因→修复→验证」里可泛化、有判据、且搜过没有重复的部分，
    脱敏后 misakanet_submit_intake(kind="missing_lesson") 提交；不够价值就不提交。
-脱敏：密钥/凭据→<REDACTED>，人名/邮箱/真实域名/绝对家目录→泛化。全程不要打断用户任务。`;
+脱敏：已由代码自动完成——本地钩子发出的查询在离开本机前、服务端入库前，都会把密钥/绝对路径/邮箱换成占位符；你不必手动改写，但仍不要粘整段会话转录或与故障无关的业务机密。全程不要打断用户任务。`;
 
 // ── the hook file: shipped in the package, downloaded only if missing ─
 /**
