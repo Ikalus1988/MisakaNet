@@ -8,7 +8,7 @@
   },
   {
     "id": "github_token",
-    "pattern": "(?<![A-Za-z0-9])(?:ghp|gho|ghu|ghs|ghr|github_pat)_[A-Za-z0-9]{10,}",
+    "pattern": "(?:ghp|gho|ghu|ghs|ghr|github_pat)_[a-zA-Z0-9]{10,}",
     "flags": "g",
     "replacement": "[REDACTED:github_token]",
     "description": "GitHub Personal Access Token and other GitHub tokens"
@@ -29,14 +29,14 @@
   },
   {
     "id": "api_key",
-    "pattern": "(?<![A-Za-z0-9])(?:sk|pk|rk|ak)[_-][A-Za-z0-9]{10,}",
+    "pattern": "(?:sk|pk|rk|ak)[_-][a-zA-Z0-9]{10,}",
     "flags": "g",
     "replacement": "[REDACTED:api_key]",
     "description": "Generic API keys (OpenAI sk-*, etc.)"
   },
   {
     "id": "bearer_token",
-    "pattern": "(?<![A-Za-z0-9])(?:Bearer|Authorization)\\s+[A-Za-z0-9\\-._~+/]{6,}=*",
+    "pattern": "(?:Bearer|Authorization)\\s+[a-zA-Z0-9\\-._~+/]+=*",
     "flags": "gi",
     "replacement": "[REDACTED:bearer_token]",
     "description": "Bearer tokens in Authorization headers"
@@ -74,7 +74,7 @@
     "pattern": "(?<![A-Za-z0-9_])[A-Za-z]:[\\\\/](?:[^\\s/\\\\'\"<>,;:!?()\\[\\]{}]+[\\\\/])*[^\\s/\\\\'\"<>,;:!?()\\[\\]{}]*",
     "flags": "g",
     "replacement": "<PATH>",
-    "description": "Windows drive paths, under the same two conditions as abs_path"
+    "description": "Windows drive paths, with either separator"
   },
   {
     "id": "email",

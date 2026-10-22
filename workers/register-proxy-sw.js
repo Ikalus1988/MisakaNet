@@ -144,7 +144,8 @@ const REDACT_PATTERNS = [
   // alone: the corpus is full of them, and eating them would cost the maintainer the detail they
   // triage with. The mail rule requires an alphabetic top-level domain, so an npm version spec
   // (foo@1.2.3) is not a mail address. The client-side hook applies the same three rules
-  // (integrations/agent-autostart/checkpoint_reminder.mjs); the ids are shared on purpose.
+  // (integrations/agent-autostart/checkpoint_reminder.mjs); the ids are shared on purpose, and the
+  // regex source is taken from there verbatim.
   [/(?<![A-Za-z0-9_:\/~.\-])(?:file:\/\/)?\/(?:(?:home|root|var|opt|etc|usr|tmp|mnt|srv|data|private|workspace|app|code|project|[Uu][Ss][Ee][Rr][Ss]|[Vv][Oo][Ll][Uu][Mm][Ee][Ss])(?:\/[^\s\/\\'"<>,;:!?()\[\]{}]+)+|(?:[^\s\/\\'"<>,;:!?()\[\]{}]+\/)*[^\s\/\\'"<>,;:!?()\[\]{}]*\.[A-Za-z][A-Za-z0-9_\-]*)/g, "<PATH>"],
   [/(?<![A-Za-z0-9_])[A-Za-z]:[\\\/](?:[^\s\/\\'"<>,;:!?()\[\]{}]+[\\\/])*[^\s\/\\'"<>,;:!?()\[\]{}]*/g, "<PATH>"],
   [/[A-Za-z0-9._%+\-]+@[A-Za-z0-9\-]+(?:\.[A-Za-z0-9\-]*)*\.[A-Za-z]{2,}/g, "<REDACTED:email>"],
