@@ -710,3 +710,274 @@ release-please 的 `x-release-please-version` 标记。
   **我没有把"扫全仓找版本串"做成门禁**：仓库里有大量**正当**的历史散文写着 0.5.6
   （现场报告、ROADMAP、注释、测试夹具 `pkg@0.5.6`），
   把它们一起管起来，门禁就变成了噪音——**而一个会喊狼来了的门禁，比没有门禁更糟**。
+
+## 139. 工具让路的那一半：release-please 扫不动提交历史（2026-10-22）
+
+### 现场
+
+§138 收尾时留了一笔："真正的 0.6.0 要等它合入后 release-please 重建发版 PR，
+而那个 PR 必须自己变绿才能合。"
+
+**它没有变绿，而且变不了绿。** 发版 PR #3451 上 18 条腿全红（9 unit + 9 e2e），
+说的是同一件事：
+
+```
+FAIL version-matches-expectation — --version printed 0.5.6 but the installed package.json says 0.6.0
+```
+
+而 #3738（让版本字面量跟着发版走的那个修复）**已经在 main 里了**。
+它进不去发版 PR 的分支——**因为没有任何东西去更新那个分支**。
+
+### 真正的原因：不是"重跑一下就好"
+
+`Release Please` 工作流在 main 上每次都失败：
+
+```
+release-please failed: Request failed due to following response errors:
+ - Something went wrong while executing your query on 2026-10-22T14:27:06Z.
+```
+
+两次运行（attempt 1 / attempt 2，手动重跑的那次也是同一个位置）停在同一处：
+**第 29 页左右、290 个提交**。
+
+### 根因：账本里没有这个包
+
+`packages/misakanet-setup` 是 #3691 才加进 manifest 的包，**从来没有被 release-please 发过版**，
+所以发版账本 `.release-please-manifest.json` 里**没有它的条目**。
+
+release-please 靠这个条目回答"这个包的历史从哪开始"（`src/manifest.ts`）：
+
+```ts
+const expectedVersion = this.releasedVersions[path];
+if (!expectedVersion) {
+  this.logger.warn(`No version for path ${path}`);
+  continue;
+}
+```
+
+没有条目 → 没有基线 → `needsBootstrap` → 提交扫描**不会提前 break**，
+只能从仓库开头一路走回来：HEAD → `misakanet-setup-v0.5.6` = **1237 个提交**。
+
+**而这条路径上唯一能收住扫描的，是 `bootstrap-sha`。**
+
+### 这不是配额耗尽
+
+两处实测：
+
+- 失败时刻查 `gh api rate_limit`：`graphql remaining 4974 / 5000` —— 点数配额**几乎没动**；
+- 手工用 release-please 原样的 GraphQL 查询重放（**新请求，不是重试**）：**第 9 页**就以同样的报错失败，
+  紧接着的下一次请求立刻失败。
+
+报错位置随节奏漂移（第 9 页 vs 第 29 页），这正是 GitHub 对"一串重查询"的**次级限制**的特征，
+不是配额、不是 release-please 的 bug。
+
+### 修法：一个顶层键
+
+`release-please-config.json` 的顶层加：
+
+```json
+"bootstrap-sha": "4e3d15af7a68f35e0485e6cff26f9c0936a87b97"
+```
+
+`4e3d15af` 是 `c8c53aa0`（"docs(dsh): what the plugin actually gives" #3398）的父提交，
+也就是 **0.6.0 备注里最旧的那条 setup 改动**之前。
+
+| | 之前 | 之后 |
+|---|---|---|
+| 扫描的提交数 | 1237 | **143**（约 15 页，在墙以内） |
+| 0.6.0 的 setup 备注 | 六条 | **还是那六条**（不是一份被截短的列表） |
+
+> action 的输入里**没有** `bootstrap-sha`，但**配置文件有**（顶层键，
+> `schemas/config.json` 认，`additionalProperties: false` 所以只能写这个键名）。
+> 这一点值得记住：**release-please 的"配置文件"比它的"action 输入"多几个旋钮**。
+
+### 两条必须一起记下来的边界
+
+1. **这个 bootstrap 会过期。**
+   0.6.0 合入后 release-please 自己会把 setup 路径写进账本，基线改由 tag 回填，
+   `bootstrap-sha` 自动失效——**但要在 0.6.0 发版之后把它删掉**。
+   一个活过用途的 bootstrap 会**静默截断**将来的 changelog，而不是响亮地失败。
+2. **0.6.0 的 setup 备注仍然少了一些东西，而且这一节没有修好它。**
+   真正未发布的 setup 改动有 **19 个**
+   （`git log misakanet-setup-v0.5.6..HEAD -- packages/misakanet-setup integrations/agent-autostart`），
+   而备注只列了 6 条——其余的在 `commit-search-depth` 默认的 500 提交之外
+   （`#3404`、`#3398` 之后还有 `#2245`、`#2197`、`#2144` 等）。
+   `bootstrap-sha` 把扫描收到 143，**没有补上这个缺口**，只是没有让它更糟。
+   诚实的说法是：**0.6.0 会带上这些改动，但备注里不列。**
+
+### 元教训
+
+> §138 说"一道门禁能抓住'人忘了'，不等于它能抓住'工具忘了'"。
+> 这一节是它的下半句：**一道门禁抓得住漂移，也不等于发版流程走得到终点。**
+>
+> #3738 让"字面量跟着发版走"这件事**对**了——但如果发版流程本身跑不完，
+> 这条正确性就没有任何机会生效。
+> **先证明流程能跑完，再证明流程跑出来的东西是对的。**
+
+## 140. `--verify` 把两件事判成了一件（#3696）
+
+### 现场
+
+OpenClaw 试用者的机器：workspace 是 root 拥有的、只读。`--verify` 给出的是
+
+```
+OpenClaw：规则块没装（/root/.openclaw/workspace/AGENTS.md）→ 重跑安装命令
+```
+
+**这条建议恰恰是唯一无效的那一条**：文件写不进去，重跑写进去的量和上一次一样。
+于是他去查网络、查权限、查网关——而真正的堵点安装器上一轮已经说过了。
+
+### 两个问题，不是一个
+
+- **建议和成因对不上**："没装"（不在）和"装不了"（写不进）是两个事实、两套修法，
+  而校验器只问了"文件在不在"，**从来没问过"能不能写"**。
+  它现在用安装器写之前用的那个问法（`canCreateHere`），写不进的文件说"装不了"并给出**能work的**修法。
+- **用一个问题的事实回答另一个问题**：输出只有一个 NOT READY，
+  而这台机器有两个互不相干的事实：**端点答不答应**（能不能用 MisakaNet）、
+  **我们偏好的文件写没写**（安装完整性）。端点完全正常、workspace 只读的机器是**能用的**，
+  而旧判定说它 NOT READY。
+
+所以输出改成两段，各自一条判定，一段不成立不判死另一段：
+
+```
+── 端点/可用性 ──
+  ✓ 端点可达：https://misakanet.org/mcp（MCP 握手成功，8 个工具）
+
+── 安装完整性 ──
+  ! OpenClaw：规则块装不了（…）→ 只读或权限不足，重跑也写不进去 → 改权限（或换到可写的目录）后再重跑
+
+可用性：就绪 —— 端点可达，检索与读取可用
+安装完整性：不完整 —— 2 项需要手动处理（上面每条 ! 都给了成因和做法）
+```
+
+报告里长出对应的两个字段（`endpoint-usable` / `install-complete`），
+**收集报告的机器不必去解析散文**就能分清"我们的文件写不进去"和"端点不应答"。
+
+### 没有变的：退出码契约
+
+`verify: NOT READY` 仍然表示"两半里有一半有问题"，`--strict` 仍然不放过它。
+变的是：**输出说了是哪一半，以及该做什么。**
+
+### 第三件事：token 那一行说的是哪个 token
+
+它读的是**本安装器自己的状态目录**，所以通过别的通道（mcporter、网关）拿到 token 的机器会显示"无 token"，
+而那句 `skip` 又让人读成"什么都没装"。现在这一行说清了两件事：
+**它只看得到自己的状态目录**，以及**读路径完全不受影响**。
+
+### 三条测试，断言的是措辞和建议，不是"有输出"
+
+- 只读的 `AGENTS.md` 是"装不了"、不是"没装"、且不带"重跑安装命令"；
+- 两段不互相污染，且安装失败时端点判定仍然是"就绪"；
+- token 那一行说清自己的范围。
+
+## 141. 文件被"列出来了"，和发版真的会动它，是两件事（2026-10-22）
+
+### 现场
+
+`bootstrap-sha` 合入之后，**Release Please 第一次跑通了**（attempt 3，2026-10-22T15:37Z）——
+提交扫描 143 个提交，够用，发版 PR 被重建。
+
+然后去看字面量：
+
+```
+$ gh api .../contents/packages/misakanet-setup/bin/misakanet-setup.mjs?ref=<发版 PR 的 head>
+160:const VERSION = '0.5.6'  // x-release-please-version
+```
+
+**标记在，值没动。** 而同一个分支上 `packages/misakanet-setup/package.json` 已经是 `0.6.0` ✓。
+
+### 两个事实拼在一起才是真相
+
+- `package.json`（**包自己的** manifest）由 node strategy 更新 → 动了 ✓；
+- 两个 `.mjs` 字面量在 `extra-files` 里 → 没动 ✗。
+
+差别不在"更新器会不会处理 .mjs"，而在**路径**。
+
+### release-please 怎么解析 extra-files
+
+`BaseStrategy.addPath`（`src/strategies/base.ts`）：
+
+```ts
+protected addPath(file: string) {
+  if (!this.path || this.path === ROOT_PROJECT_PATH || file.startsWith('/')) {
+    file = file.replace(/^\/+/, '');
+  } else {
+    file = `${this.path.replace(/\/+$/, '')}/${file}`;
+  }
+```
+
+**带 path 的包，extra-files 是相对那个 path 解析的**；只有以 `/` 开头的路径才是"相对仓库根"。
+
+setup 包的 path 是 `packages/misakanet-setup`，所以配置里这两条
+
+```
+packages/misakanet-setup/bin/misakanet-setup.mjs
+workers/misakanet-setup.test.mjs
+```
+
+解析成
+
+```
+packages/misakanet-setup/packages/misakanet-setup/bin/misakanet-setup.mjs   ← 不存在
+packages/misakanet-setup/workers/misakanet-setup.test.mjs                   ← 不存在
+```
+
+而更新器**对不存在的文件一声不吭**（`createIfMissing: false`）——**没有报错，没有警告，
+只是没动**。
+
+### 为什么 §138 的门禁没抓住
+
+§138 的门禁做了两件事：转写 release-please 的**标记规则**（`x-release-please-version`），
+断言每个版本字面量都**列在** extra-files 里。两件都成立，而且都正确。
+
+**缺的是第三条规则：路径怎么解析。**
+
+"文件被列出来了"和"发版真的会动它"之间隔着一次路径解析——而这一次解析把两处列表
+都指向了不存在的文件。根包的条目没事（根包的 path 就是根，按写的解析），
+所以门禁看到的一切都自洽。
+
+### 修法：一条路径规则 + 一条门禁
+
+配置改成以 `/` 开头（release-please 据此认为是"相对仓库根"）：
+
+```json
+"extra-files": [
+  "/packages/misakanet-setup/bin/misakanet-setup.mjs",
+  "/workers/misakanet-setup.test.mjs"
+]
+```
+
+门禁补上转写上游 `addPath` 的那一条，并断言**解析之后**确实存在文件——对**每一个包**，
+不只是这一个：
+
+```python
+def _release_please_add_path(package_path: str, file: str) -> str:
+    """release-please's `BaseStrategy.addPath` (src/strategies/base.ts), transcribed."""
+    if not package_path or package_path == "." or file.startswith("/"):
+        return file.lstrip("/")
+    return f"{package_path.rstrip('/')}/{file}"
+```
+
+它对**旧配置**如实变红：
+
+```
+AssertionError: the extra-files entry 'packages/misakanet-setup/bin/misakanet-setup.mjs' of
+the package 'packages/misakanet-setup' resolves to
+'packages/misakanet-setup/packages/misakanet-setup/bin/misakanet-setup.mjs', and that file does
+not exist — release-please skips a missing file silently, so the release would not move whatever
+version it carries
+```
+
+### 元教训（这一节最值钱的一句）
+
+> **§138 写的是"门禁的门禁"——转写并执行发版工具的规则，才能证明发版真的会动它。**
+> **而这条规则本身有三条：标记规则、列表规则、路径规则。**
+> 我转写了第一条、断言了第二条，**漏了第三条**，于是门禁在一份"看起来完全正确"的配置上通过了。
+>
+> 这不是"门禁写错了"，是**"我把规则数少了"**。
+> 一条规则有三条子规则的时候，"转写了规则"这句话本身就得再被检查一遍。
+>
+> 更一般的一句：**当一个门禁的对象是"别人的工具的行为"时，
+> 门禁的强度等于你转写的规则条数 ÷ 实际生效的规则条数。**
+> 这个比值没有人算过，所以必须**逐条**数——
+> 而逐数的唯一办法是去读上游源码，而不是读自己上一次的 handoff。
