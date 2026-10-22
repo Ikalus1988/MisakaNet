@@ -4,12 +4,19 @@ misakanet.guard — Python 标准库跨语言进程崩溃 Sidecar。
 纯标准库（Python 3.10+，无第三方包）。包装任何 CLI 进程，在崩溃时
 自动捕获 4-field 墓碑 JSON，可选直连 tombstone_to_draft.py。
 
+崩溃后先查 MisakaNet（#3642）：命中就把课程标题 + 链接打出来；没命中才
+留草稿（并明确说"没有现成课程"）。无网络时（--offline）跳过检索，行为与
+检索之前一致。
+
 用法:
     # 基础包装
     python3 -m misakanet.guard -- your-command --with --flags
 
     # 崩溃后自动生成 draft lesson
     python3 -m misakanet.guard --to-draft -- your-command
+
+    # 无网络：跳过课程检索
+    python3 -m misakanet.guard --offline -- your-command
 
     # 指定输出墓碑路径
     python3 -m misakanet.guard --tombstone-out crash.json -- your-command
@@ -32,8 +39,9 @@ import subprocess
 import sys
 import time
 from datetime import datetime, timezone
-import tempfile
 from pathlib import Path
+
+from .crash_lookup import format_hit, format_no_hit, lookup_crash, strip_stack_frames
 
 # ── 安全意识：检测到的 secret pattern 会从 snippet 中过滤 ──
 _SECRET_PATTERNS = [
@@ -111,7 +119,19 @@ def _forward_signals(child_pid: int):
     signal.signal(signal.SIGINT, handler)
 
 
-def main():
+def _write_draft(tombstone: dict, drafts_dir: Path) -> Path:
+    """把墓碑变成草稿文件，落在 `drafts_dir`。
+
+    转换器（scripts/tombstone_to_draft.py）的行为是冻结的（#3645）：这里只调用，
+    不改它。转换器不在 wheel 里（`packages.find` 只装 `misakanet*`），所以导入失败
+    是可能的——失败由调用方显式报出来，不静默跳过。
+    """
+    from scripts.fatal_guard_handler import write_draft
+
+    return write_draft(tombstone, drafts_dir)
+
+
+def main(argv: list[str] | None = None, *, search=None):
     parser = argparse.ArgumentParser(
         description="misakanet.guard — 跨语言进程崩溃 Sidecar（纯标准库）",
         epilog="示例: python3 -m misakanet.guard --to-draft -- node app.js",
@@ -122,11 +142,17 @@ def main():
                         help="墓碑 JSON 输出路径（默认 stdout）")
     parser.add_argument("--capture-lines", type=int, default=4,
                         help="捕获 stderr 最后 N 行（默认 4）")
+    parser.add_argument("--drafts-dir", metavar="PATH",
+                        help="草稿写到哪（默认 <本仓>/lessons/drafts）")
+    parser.add_argument("--offline", action="store_true",
+                        help="崩溃后跳过课程检索（无网络），行为与检索之前一致")
     parser.add_argument("cmd", nargs=argparse.REMAINDER, help="要包装的命令")
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
-    # argparse.REMAINDER 已自动处理 '--' 分隔符
-    if not args.cmd:
+    # argparse.REMAINDER 把 '--' 一起收进 cmd（它不是分隔符，是第一个元素）。
+    # 不摘掉的话 Popen 会去执行一个叫 "--" 的程序，报"权限不足: --"、退出码 126。
+    cmd = args.cmd[1:] if args.cmd and args.cmd[0] == "--" else args.cmd
+    if not cmd:
         parser.print_help(file=sys.stderr)
         sys.exit(1)
 
@@ -136,17 +162,17 @@ def main():
 
     try:
         proc = subprocess.Popen(
-            args.cmd,
+            cmd,
             stdout=sys.stdout,
             stderr=subprocess.PIPE,
             text=True,
             errors="replace",
         )
     except FileNotFoundError:
-        print(f"misakanet.guard: 命令未找到: {args.cmd[0]}", file=sys.stderr)
+        print(f"misakanet.guard: 命令未找到: {cmd[0]}", file=sys.stderr)
         sys.exit(127)
     except PermissionError:
-        print(f"misakanet.guard: 权限不足: {args.cmd[0]}", file=sys.stderr)
+        print(f"misakanet.guard: 权限不足: {cmd[0]}", file=sys.stderr)
         sys.exit(126)
 
     # 转发信号
@@ -185,32 +211,27 @@ def main():
     else:
         print(tombstone_json)
 
-    # 可选：自动转 draft lesson
-    if args.to_draft and exit_code != 0:
+    # 崩溃后先查 MisakaNet（#3642）：命中 → 把课程标题 + 链接打出来（当场可用）；
+    # 没命中 → 才留草稿，并明确说"没有现成课程"。检索失败/无网络 → 跳过检索，
+    # 行为与检索之前一致。
+    if exit_code != 0:
         repo = Path(__file__).resolve().parent.parent
-        draft_script = repo / "scripts" / "tombstone_to_draft.py"
-        if draft_script.exists():
-            fd, tmp_path = tempfile.mkstemp(prefix="misakanet-tombstone-", suffix=".json")
-            tmp = Path(tmp_path)
-            try:
-                os.write(fd, tombstone_json.encode("utf-8"))
-            finally:
-                os.close(fd)
-            try:
-                subprocess.run(
-                    [sys.executable, str(draft_script),
-                     "--from-file", str(tmp), "--ai-hint", "--create-bounty"],
-                    cwd=str(repo), timeout=30,
-                    stdout=subprocess.DEVNULL,
-                )
-                print(f"[misakanet.guard] draft lesson 已生成", file=sys.stderr)
-            except Exception as e:
-                print(f"[misakanet.guard] draft lesson 生成失败: {e}", file=sys.stderr)
-            finally:
+        drafts_dir = Path(args.drafts_dir) if args.drafts_dir else repo / "lessons" / "drafts"
+        lookup = lookup_crash(strip_stack_frames(tombstone["snippet"]),
+                               search=search, offline=args.offline)
+        if lookup.hit:
+            print(format_hit(lookup.lesson), file=sys.stderr)
+        else:
+            draft = None
+            failure = None
+            if args.to_draft:
                 try:
-                    tmp.unlink()
-                except OSError:
-                    pass
+                    draft = _write_draft(tombstone, drafts_dir)
+                except (OSError, ImportError, ValueError) as exc:
+                    failure = f"{type(exc).__name__}: {exc}"
+            print(format_no_hit(draft, search_note=lookup.skipped_reason), file=sys.stderr)
+            if failure:
+                print(f"[misakanet.guard] draft lesson 生成失败: {failure}", file=sys.stderr)
 
     # 透传退出码
     sys.exit(exit_code if exit_code >= 0 else 1)

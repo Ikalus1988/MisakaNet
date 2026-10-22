@@ -18,6 +18,7 @@ from pathlib import Path
 
 import pytest
 
+from misakanet import guard
 from misakanet.crash_lookup import CORPUS_TIMEOUT_S, lookup_crash, strip_stack_frames
 from scripts import fatal_guard_handler
 
@@ -299,3 +300,90 @@ def test_the_stack_frames_are_dropped_from_the_search_text(crash):
     assert "Traceback (most recent call last):" not in text
     # 失败本身必须还在
     assert "permission denied" in text.lower()
+
+
+# ── Python 边车（misakanet.guard）───────────────────────────────────
+
+def _crashing_command() -> list[str]:
+    return [sys.executable, "-c",
+            "import sys; sys.stderr.write('Error: EACCES: permission denied\\n'); sys.exit(3)"]
+
+
+def test_the_sidecar_runs_the_command_after_the_separator(tmp_path):
+    """`--` 之前 argparse.REMAINDER 会把它一起收进来，不摘掉就执行一个叫 "--" 的程序。"""
+    with pytest.raises(SystemExit) as exc:
+        guard.main(["--offline", "--", * _crashing_command()])
+
+    assert exc.value.code == 3, "the child's exit code is not passed through"
+
+
+def test_the_sidecar_keeps_its_exit_code_and_its_tombstone(tmp_path, capfd):
+    """退出码与墓碑字段是现有 CLI 语义，不能被这次改动动到。"""
+    with pytest.raises(SystemExit) as exc:
+        guard.main(["--offline", "--", *_crashing_command()])
+
+    assert exc.value.code == 3
+    tombstone = json.loads(capfd.readouterr().out)
+    for field in ("pid", "timestamp", "reason", "exit_code", "signal", "snippet", "host", "node_id"):
+        assert field in tombstone, f"the tombstone lost the field {field}"
+    assert tombstone["exit_code"] == 3
+
+
+def test_the_sidecar_prints_the_lesson_on_a_hit(tmp_path, capfd):
+    """边车也走同一条路：命中 → 标题 + 链接。"""
+    search = _search_returning(KNOWN_LESSON)
+
+    with pytest.raises(SystemExit):
+        guard.main(["--", *_crashing_command()], search=search)
+
+    err = capfd.readouterr().err
+    assert KNOWN_LESSON["title"] in err
+    assert KNOWN_LESSON["url"] in err
+
+
+def test_the_sidecar_leaves_a_draft_when_nothing_answers(tmp_path, capfd):
+    """边车的 --to-draft 今天是不工作的（--create-bounty 不是合法参数），现在它工作。"""
+    search = _search_returning(None)
+
+    with pytest.raises(SystemExit):
+        guard.main(["--to-draft", "--drafts-dir", str(tmp_path), "--", *_crashing_command()],
+                   search=search)
+
+    err = capfd.readouterr().err
+    assert "没有现成课程" in err
+    assert "已留草稿" in err
+    drafts = list(tmp_path.glob("*.md"))
+    assert len(drafts) == 1, "the sidecar did not leave a draft"
+    assert "EACCES: permission denied" in drafts[0].read_text(encoding="utf-8")
+
+
+def test_the_sidecar_does_not_claim_a_draft_it_did_not_write(tmp_path, capfd):
+    """没写成就别说写了——旧实现无条件打印"draft lesson 已生成"。"""
+    search = _search_returning(None)
+    # 一个写不下去的目录：它是普通文件下面的子路径，mkdir 必然失败。
+    blocker = tmp_path / "a-file"
+    blocker.write_text("not a directory", encoding="utf-8")
+
+    with pytest.raises(SystemExit):
+        guard.main(["--to-draft", "--drafts-dir", str(blocker / "drafts"),
+                    "--", *_crashing_command()], search=search)
+
+    err = capfd.readouterr().err
+    assert "已留草稿" not in err, "the sidecar claimed a draft it could not write"
+    assert "生成失败" in err, "the failure was not reported"
+
+
+# ── 作为进程跑（fatal-guard 真正会做的事）────────────────────────────
+
+def test_the_handler_runs_as_a_process(tmp_path):
+    """FATAL_HANDLER 就是一个进程：载荷在 argv 最后一项，输出在 stdout。"""
+    env = {k: v for k, v in os.environ.items() if k != "MISAKANET_OLLAMA_URL"}
+    result = subprocess.run(
+        [sys.executable, str(REPO / "scripts" / "fatal_guard_handler.py"),
+         "--offline", "--drafts-dir", str(tmp_path), json.dumps(NODE_PAYLOAD)],
+        capture_output=True, text=True, env=env, cwd=str(REPO), timeout=60)
+
+    assert result.returncode == 0, result.stderr
+    assert "检索未完成" in result.stdout
+    assert "已留草稿" in result.stdout
+    assert len(list(tmp_path.glob("*.md"))) == 1
