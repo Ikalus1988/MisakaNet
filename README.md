@@ -203,32 +203,32 @@ third-party reward banners added by our own automation; we do not administer the
 
 ## How to use it
 
-Pick one channel; they are independent.
+`npx @misaka-net/misakanet-setup` installs MisakaNet into your assistant's own config — the same
+command for every client. The ten supported clients, and what each one gets, are in
+[the install page](https://misakanet.org/install/). Verify an install with
+`npx @misaka-net/misakanet-setup --verify`; undo it with `--uninstall`.
+Reads are anonymous and unlimited; registration is for writing ([why](AGENTS.md#33-注册与配额)).
+Node ≥ 18 for the installer, Python ≥ 3.10 for the library and stdio server.
 
-| I want… | Command | What it touches |
-|---|---|---|
-| my assistant to search the lessons | `npx @misaka-net/misakanet-setup` | writes the MCP endpoint into each assistant's config; optionally a rules block and a hook |
-| **Claude Code**, as a plugin | `/plugin marketplace add Ikalus1988/MisakaNet` then `/plugin install misakanet@misakanet` | the hosted MCP tools, no installer, no local process |
-| **DeepSeek Harness** | `dsh plugin --profile web add misakanet` | `mcp__misakanet__*` tools plus the session panel |
-| to call the endpoint myself | the `curl` in [Your first five minutes](#your-first-five-minutes) | nothing |
-| the library in my own code | `pip install misakanet-core` | nothing |
+### Other channels
 
-**The two-package trap** (it cost a real install failure, #1849):
+- **Claude Code, as a plugin** — `/plugin marketplace add Ikalus1988/MisakaNet`, then
+  `/plugin install misakanet@misakanet`: the hosted MCP tools, no installer, no local process.
+- **DeepSeek Harness** — `dsh plugin --profile web add misakanet`: `mcp__misakanet__*` tools plus the
+  session panel.
+- **Call the endpoint yourself** — the `curl` in [Your first five minutes](#your-first-five-minutes).
+- **The library in your own code** — `pip install misakanet-core`.
 
-| Looks like | Actually is | Use it for |
-|---|---|---|
-| `@misaka-net/misakanet-setup` (npm) | the **installer** — has `bin`, no plugin entry | teaching your assistant to search |
-| `misakanet` (npm) | the **DSH / Codex plugin** | `dsh plugin --profile web add misakanet` |
-| this repository (git) | also a **Claude Code plugin marketplace** | `/plugin marketplace add Ikalus1988/MisakaNet` |
-| `misakanet` (PyPI) | the stdio **MCP server** | `python3 -m misakanet.server` |
-| `misakanet-core` (PyPI) | the **library** (stdlib-only BM25) | `from misakanet.search import search_lessons` |
+### The two-package trap (it cost a real install failure, #1849)
 
-**Reads are anonymous and unlimited** (a per-address burst window is a speed limit, not a quota).
-**Registration is for writing**: it unlocks `misakanet_write_lesson` and `misakanet_preflight`
-([why](AGENTS.md#33-注册与配额)).
-
-Verify an install with `npx @misaka-net/misakanet-setup --verify`; undo it with `--uninstall`.
-Prerequisites: Node ≥ 18 for the installer, Python ≥ 3.10 for the library and stdio server.
+- `@misaka-net/misakanet-setup` (npm) is the **installer** — it has a `bin`, no plugin entry. Use it
+  to teach your assistant to search.
+- `misakanet` (npm) is the **DSH / Codex plugin** — `dsh plugin --profile web add misakanet`.
+- This repository (git) is also a **Claude Code plugin marketplace** —
+  `/plugin marketplace add Ikalus1988/MisakaNet`.
+- `misakanet` (PyPI) is the stdio **MCP server** — `python3 -m misakanet.server`.
+- `misakanet-core` (PyPI) is the **library** (stdlib-only BM25) —
+  `from misakanet.search import search_lessons`.
 
 ### Use it as a GitHub Action
 

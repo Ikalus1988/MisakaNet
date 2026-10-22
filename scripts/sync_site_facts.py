@@ -162,16 +162,22 @@ class CommandFact:
 COMMAND_FACTS: tuple[CommandFact, ...] = (
     CommandFact(
         name="install-command",
-        note="the Quickstart install command must be the README installer row's command",
+        note="the Quickstart install command must be the README's install sentence's command",
         source=Surface(
             "README.md",
-            r"my assistant to search the lessons\s*\|\s*`(?P<cmd>[^`]+)`",
+            r"`(?P<cmd>[^`]+)`\s+installs MisakaNet into your assistant's own config",
         ),
         mirrors=(
             Surface(
                 "docs/index.html",
                 r"Install the endpoint into every assistant[^<]*</div>\s*"
                 r'(?:<div class="qs-cmd-row">\s*)?<div class="qs-cmd"[^>]*>(?P<cmd>[^<]+)</div>',
+            ),
+            # The install page's own command (#3640): the page that teaches the command must not
+            # be able to spell it differently from the README it points at.
+            Surface(
+                "docs/install/index.html",
+                r'<code id="cmd-install">(?P<cmd>[^<]+)</code>',
             ),
         ),
     ),
@@ -180,13 +186,19 @@ COMMAND_FACTS: tuple[CommandFact, ...] = (
         note="the Quickstart verify command must be the README verify sentence's command",
         source=Surface(
             "README.md",
-            r"Verify an install with `(?P<cmd>[^`]+)`",
+            # `\s+`, not a space: the sentence may be wrapped, and a pattern that depends on
+            # where the line breaks is a pattern that fails on a rewrap.
+            r"Verify an install with\s+`(?P<cmd>[^`]+)`",
         ),
         mirrors=(
             Surface(
                 "docs/index.html",
                 r"Close and reopen your assistant[^<]*</div>\s*"
                 r'(?:<div class="qs-cmd-row">\s*)?<div class="qs-cmd"[^>]*>(?P<cmd>[^<]+)</div>',
+            ),
+            Surface(
+                "docs/install/index.html",
+                r'<code id="cmd-verify">(?P<cmd>[^<]+)</code>',
             ),
         ),
     ),
