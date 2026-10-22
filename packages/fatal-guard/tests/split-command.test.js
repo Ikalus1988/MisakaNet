@@ -67,21 +67,31 @@ test('a quoted path is one token', async () => {
 test('the Windows tokenizer keeps a Windows path with spaces intact', () => {
   // The Windows rule of the tokenizer is that a backslash is a path separator,
   // not an escape character. That is a property of the tokenizer alone, so it
-  // is asserted without a filesystem: the path below does not exist, and must
-  // not be needed — on Windows a path like it cannot even be created, because
-  // its separators would have to be real directories.
+  // is asserted without a filesystem: the path below does not have to exist,
+  // and must not be needed — on Windows a path like it cannot even be created
+  // here, because its separators would have to be real directories.
   //
-  // The *merging* of a spaced path is asserted by the test above, which uses
-  // a file that really exists, in the platform's own path syntax.
+  // How many tokens come out depends on the machine: where the path exists,
+  // the merge joins it back into one program; where it does not, the tokens
+  // still have to reconstruct it. What must never happen is the path being
+  // cut — a token boundary inside it would send a program that does not exist
+  // to the spawn.
   const name = ['C:', 'Program Files', 'nodejs', 'node.exe'].join('\\');
   const parts = withPlatform('win32', () => splitCommand(name));
-  assert.equal(parts.length, 2, `expected two tokens, got ${JSON.stringify(parts)}`);
-  assert.ok(parts[0].endsWith('Program'), `the drive was lost: ${parts[0]}`);
-  assert.ok(parts[1].includes('nodejs'), `the path was cut: ${parts[1]}`);
-  assert.ok(
-    parts.join(' ').includes('Program Files'),
-    `the space was not where it was: ${JSON.stringify(parts)}`,
+  assert.equal(
+    parts.join(' '),
+    name,
+    `the path was cut: ${JSON.stringify(parts)}`,
   );
+  if (fs.existsSync(name)) {
+    // A Windows machine that has node installed there — most of them — has a
+    // path that really exists, and then it must be one program.
+    assert.deepEqual(
+      parts,
+      [name],
+      'a path that exists must be one program, not two tokens',
+    );
+  }
 });
 
 test('a command that names no file is still split on whitespace', () => {
