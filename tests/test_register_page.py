@@ -293,6 +293,26 @@ def test_the_form_still_works_in_a_browser() -> None:
                     "aria-checked"
                 ) == "false", "the previous selection was not cleared"
 
+                # The checkbox is the one input that must **not** be `width: 100%`: it is a
+                # flex item next to its label, so a full-width checkbox squeezes the text into
+                # a column one character wide and pushes the page sideways. The homepage's copy
+                # of this rule hit the checkbox too, and the homepage's `overflow-x: hidden`
+                # hid the overflow — but the terms line was still rendered vertically, one
+                # character per line. This page has no such clip, so the rule is fixed here.
+                for width in (320, 390, 640):
+                    narrow = browser.new_page(viewport={"width": width, "height": 844})
+                    narrow.goto(f"http://127.0.0.1:{port}/register/", wait_until="load")
+                    narrow.wait_for_timeout(300)
+                    measured = narrow.evaluate(
+                        "() => ({scroll: document.documentElement.scrollWidth,"
+                        " client: document.documentElement.clientWidth})"
+                    )
+                    assert measured["scroll"] == measured["client"], (
+                        f"the page overflows sideways at {width}px: "
+                        f"{measured['scroll']} > {measured['client']}"
+                    )
+                    narrow.close()
+
                 assert not errors, f"the page raised errors: {errors}"
             finally:
                 browser.close()
