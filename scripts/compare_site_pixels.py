@@ -44,8 +44,73 @@ never stops changing is reported as such rather than quietly written down as a b
 `community/voices.json`, and they link `/favicon.ico` and `/assets/...` absolutely; under
 `file://` those resolve to the filesystem and the page renders something the site never serves.
 
+**The default tolerance is a measured number, not a guess.** `--tolerance` used to default to `0`,
+which means "a page fails if a single pixel differs at all" — and Chromium's text antialiasing is
+not bit-identical between runs, so the gate could go red on a tree nobody had touched. The
+measurement below is what the default is built on.
+
+*What was measured* (commit `e799d0c2`, 2026-10-22): the page `insights/reputation-leaderboard`
+at viewport 1280×800, captured four times in a row from the same tree with `--proxy direct`, then
+compared pairwise at tolerance 0:
+
+| pair | differing pixels | max channel delta |
+|---|---|---|
+| run1 vs run2 | 20 | 1 |
+| run2 vs run3 | 20 | 1 |
+| run3 vs run4 | 0 | 0 |
+| run1 vs run4 | 0 | 0 |
+
+20 pixels out of 1,024,000 (0.0020%), classified *recolour*, in 8×8 patches, with **one-level**
+channel differences (`[30,35,43]` → `[31,36,44]`).
+
+*Two explanations were tested and both were wrong*, so the next reader does not have to test them
+again: the page does not fetch live data (the local server answers the API URL with 404,
+`response.json()` throws, the catch branch renders one fixed sentence and `render(data)` never
+runs), and the webfont is not the cause (with `--proxy direct` no external asset is fetched at
+all, and the same 20 pixels still move). What is left is Chromium's own text antialiasing: the
+two crops are identical to the eye, and the difference is a one-step channel shift on glyph edges.
+
+*So the floor on that page is one channel step*, and the default tolerance is **3**. The whole
+default page set, captured four times (six pairs per page/viewport), measures it higher: the
+largest *rendering-noise* step anywhere in the set is **3** — two pixels of the homepage's
+`768x1024` view — and at tolerance 3 every one of the 51 page/viewport combinations comes back
+with **0 differing pixels**. So the default sits exactly on the measured floor, not above it; a
+run that renders one step noisier would measure 4.
+
+*And the noise is orders of magnitude below a real change.* Recolouring one heading on
+`insights/reputation-leaderboard` moves **3,490** pixels — 174× the noise, and a ratio of 0.34%
+against a threshold of 0. The tolerance decides which pixels count as different; the threshold
+decides how many may, and that stays at 0.
+
+*The whole default page set, captured twice* (same commit, same tree, 17 pages × 3 viewports):
+15 of the 17 pages came back byte-identical, `insights/reputation-leaderboard` differed by the
+20 noise pixels above, and the **homepage** differed by 75–79 pixels with a channel step of up
+to *150*. That third one is not antialiasing. The crop shows `快照生成于52分钟前` in one capture
+and `快照生成于53分钟前` in the next: the homepage prints the age of `data/feed.json` against the
+wall clock (`getTimeAgo()` in `docs/index.html`), so the rendered text changes every minute for
+the first hour after the feed is rebuilt — and a full capture takes 1m42s, so a before/after
+pair is always more than a minute apart. Outside that hour the homepage is stable again, which is
+why the four-capture run above finds nothing there.
+
+**A tolerance cannot fix that, and must not be raised to cover it.** A 150-step difference is
+content, not noise; silencing it would silence every real change with it. It is a
+capture-determinism defect — the same class as the animation freeze above — and it is why
+`noise-floor` tells the two kinds of difference apart instead of reporting one number.
+
+*How to re-measure it* — one command, no browser change:
+
+    python3 scripts/compare_site_pixels.py noise-floor --docs-root docs --runs 4
+
+`noise-floor` captures the page set N times, compares every pair, and reports the worst pairwise
+difference, the largest single-channel step it saw, and — through the same foreground/background
+test the layout-shift verdict uses — whether that difference is *rendering noise* (the tolerance
+is the lever) or a *content change* (a tolerance must not touch it). It exits `1` when the default
+tolerance does not reproduce the page set, and the report says which of the two is at fault. Its
+`--pages` filter is hidden from `--help`, exactly as it is on `capture`.
+
 Exit codes: `0` pass, `1` the gate failed (a page over `--threshold`, or a layout shift), `2` a
-usage or environment error.
+usage or environment error. `noise-floor` exits `0` when the default tolerance reproduces every
+page of the set, and `1` when it does not.
 """
 from __future__ import annotations
 
@@ -58,6 +123,7 @@ import json
 import os
 import re
 import sys
+import tempfile
 import threading
 import time
 from dataclasses import dataclass
@@ -102,6 +168,18 @@ BG_TOLERANCE = 12
 # The share of the differing pixels whose foreground/background membership has to flip before the
 # page is called a layout shift rather than a recolour.
 LAYOUT_STRUCT_RATIO = 0.25
+
+# The per-channel difference the gate ignores by default.
+#
+# The number is measured, not chosen: capturing the same page four times in a row moves a handful
+# of pixels by **one** channel step (Chromium's text antialiasing is not bit-identical between
+# runs), and over the whole default page set the largest such step is **3**. The module docstring
+# carries the capture tables, the two wrong explanations that were ruled out, and the one
+# difference a tolerance must *not* cover. `3` reproduces every page of the set; the threshold
+# (the differing-pixel *ratio* a page may have) is untouched at 0, so a real edit still fails.
+#
+# Re-measure it with `compare_site_pixels.py noise-floor`, which prints the floor it observes.
+DEFAULT_TOLERANCE = 3
 
 
 # ── the page set ──────────────────────────────────────────────────────────────────────────────
@@ -188,6 +266,20 @@ def default_pages(docs_root: Path) -> list[Path]:
     """The pages a capture takes when nobody names any: the hand-written ones and the
     generated tree's per-template representatives."""
     return hand_written_pages(docs_root) + generated_representatives(docs_root)
+
+
+def capture_pages(docs_root: Path, only: list[str] | None) -> list[Path]:
+    """The pages a capture takes: the default set, or the named subset of it.
+
+    One rule, one home. `capture` and `noise-floor` both go through here, so the measurement the
+    noise floor is based on is taken over exactly the pages the gate checks — a noise floor
+    measured on a different page set is not the gate's noise floor.
+    """
+    pages = selectable_pages(docs_root) if only else default_pages(docs_root)
+    if only:
+        wanted = set(only)
+        pages = [p for p in pages if page_id(p.relative_to(docs_root)) in wanted]
+    return pages
 
 
 def page_id(rel: Path) -> str:
@@ -494,10 +586,7 @@ def capture(
     _no_proxy_env()
     docs_root = docs_root.resolve()
     out_dir.mkdir(parents=True, exist_ok=True)
-    pages = selectable_pages(docs_root) if only else default_pages(docs_root)
-    if only:
-        wanted = set(only)
-        pages = [p for p in pages if page_id(p.relative_to(docs_root)) in wanted]
+    pages = capture_pages(docs_root, only)
     if not pages:
         raise SystemExit(f"no pages found under {docs_root}")
 
@@ -732,27 +821,33 @@ def _region_verdict(
     return fractions, verdict
 
 
-def compare_pair(
-    before_path: Path,
-    after_path: Path,
+def compare_arrays(
+    before: Any,
+    after: Any,
     block: int = 8,
-    tolerance: int = 0,
+    tolerance: int = DEFAULT_TOLERANCE,
     max_regions: int = 12,
     layout_struct_ratio: float = LAYOUT_STRUCT_RATIO,
+    before_image: str = "",
+    after_image: str = "",
 ) -> dict[str, Any]:
-    """Diff two PNGs and say what moved."""
+    """Diff two images and say what moved.
+
+    This is the whole comparison, over image arrays: no file, no browser, no state. The file
+    based `compare_pair` is a thin wrapper around it, which is what lets the gate's verdict be
+    tested with fabricated pixel data.
+    """
     np = _np()
-    before = _load_rgb(before_path)
-    after = _load_rgb(after_path)
     result: dict[str, Any] = {
-        "before_image": before_path.name,
-        "after_image": after_path.name,
+        "before_image": before_image,
+        "after_image": after_image,
         "before_size": [int(before.shape[1]), int(before.shape[0])],
         "after_size": [int(after.shape[1]), int(after.shape[0])],
         "size_changed": False,
         "total_pixels": 0,
         "diff_pixels": 0,
         "diff_ratio": 0.0,
+        "tolerance": tolerance,
         "layout_shift": False,
         "layout_reasons": [],
         "regions": [],
@@ -816,8 +911,7 @@ def compare_pair(
 
     # The page-level version of the same question: over every differing pixel of the page, how
     # many changed their foreground/background membership?
-    before_bg = np.abs(before - bg_before.astype(np.int16)).max(axis=2) <= BG_TOLERANCE
-    after_bg = np.abs(after - bg_after.astype(np.int16)).max(axis=2) <= BG_TOLERANCE
+    before_bg, after_bg = content_membership(before, after)
     appeared = int(np.logical_and(mask, np.logical_and(before_bg, ~after_bg)).sum())
     vanished = int(np.logical_and(mask, np.logical_and(~before_bg, after_bg)).sum())
     recoloured = diff_pixels - appeared - vanished
@@ -858,11 +952,32 @@ def compare_pair(
     return result
 
 
+def compare_pair(
+    before_path: Path,
+    after_path: Path,
+    block: int = 8,
+    tolerance: int = DEFAULT_TOLERANCE,
+    max_regions: int = 12,
+    layout_struct_ratio: float = LAYOUT_STRUCT_RATIO,
+) -> dict[str, Any]:
+    """Diff two PNGs and say what moved."""
+    return compare_arrays(
+        _load_rgb(before_path),
+        _load_rgb(after_path),
+        block=block,
+        tolerance=tolerance,
+        max_regions=max_regions,
+        layout_struct_ratio=layout_struct_ratio,
+        before_image=before_path.name,
+        after_image=after_path.name,
+    )
+
+
 def compare(
     before_dir: Path,
     after_dir: Path,
     block: int = 8,
-    tolerance: int = 0,
+    tolerance: int = DEFAULT_TOLERANCE,
     max_regions: int = 12,
     only: list[str] | None = None,
 ) -> dict[str, Any]:
@@ -894,12 +1009,225 @@ def compare(
         )
         pages.setdefault(pid, {})[viewport] = pair
 
-    return {"pages": pages, "missing": missing}
+    # The tolerance travels with the report: a diff count without the tolerance that produced it
+    # is ambiguous, and the noise floor is the reason the tolerance exists.
+    return {"pages": pages, "missing": missing, "tolerance": tolerance}
+
+
+# ── the noise floor ───────────────────────────────────────────────────────────────────────────
+def channel_delta(before: Any, after: Any) -> Any:
+    """The largest absolute difference between two images, pixel by pixel.
+
+    The gate compares images channel by channel: a pixel counts as different when one of its
+    three channels moved by more than the tolerance. This array is that per-pixel number.
+    """
+    np = _np()
+    return np.abs(before - after).max(axis=2)
+
+
+def content_membership(before: Any, after: Any) -> tuple[Any, Any]:
+    """Which pixels are background on each side: (before_is_background, after_is_background).
+
+    Each side is measured against its own image's background, so a page-wide background recolour
+    stays a recolour: the background is background in both images.
+    """
+    np = _np()
+    bg_before = _modal_color(before)
+    bg_after = _modal_color(after)
+    before_bg = np.abs(before - bg_before.astype(np.int16)).max(axis=2) <= BG_TOLERANCE
+    after_bg = np.abs(after - bg_after.astype(np.int16)).max(axis=2) <= BG_TOLERANCE
+    return before_bg, after_bg
+
+
+def pairwise_noise(images: list[Any], tolerance: int = DEFAULT_TOLERANCE) -> dict[str, Any]:
+    """How much two captures of the same page differ from each other.
+
+    `images` are N RGB arrays of the same page, captured from the same tree. Every pair is
+    compared, because the gate has to survive the *worst* pair and not the average one.
+
+    The result answers four questions at once:
+
+      * `max_diff_pixels` — how many pixels move between two runs at tolerance 0, i.e. the raw
+        capture noise;
+      * `max_channel_delta` — the largest single-channel step anywhere in the runs, which is the
+        smallest tolerance that would silence all of it;
+      * `diff_pixels` — how many pixels still differ once `tolerance` is applied, which is what
+        the gate would actually see;
+      * `content_share` — the share of the differing pixels whose foreground/background
+        membership *flipped*.
+
+    That last number is what separates the two kinds of difference. A pixel that stayed the same
+    content in a slightly different shade is rendering noise, and the tolerance is the lever. A
+    pixel that was content and is now background — or the other way round — is the content itself
+    changing, and no tolerance may paper over it. The tool already draws that line for the
+    layout-shift verdict (`LAYOUT_STRUCT_RATIO`); here it is used to keep the noise floor honest.
+
+    This is a pure function over image arrays: no browser, no files, no state.
+    """
+    np = _np()
+    runs = len(images)
+    result: dict[str, Any] = {
+        "runs": runs,
+        "pairs": runs * (runs - 1) // 2,
+        "max_diff_pixels": 0,
+        "max_channel_delta": 0,
+        "diff_pixels": 0,
+        "content_share": 0.0,
+        "min_tolerance_to_silence": 0,
+        "verdict": "stable",
+    }
+    if runs < 2:
+        return result
+    for first in range(runs):
+        for second in range(first + 1, runs):
+            before = images[first]
+            after = images[second]
+            delta = channel_delta(before, after)
+            raw = int((delta > 0).sum())
+            tolerated = int((delta > tolerance).sum())
+            if raw > result["max_diff_pixels"]:
+                result["max_diff_pixels"] = raw
+            if tolerated > result["diff_pixels"]:
+                result["diff_pixels"] = tolerated
+            result["max_channel_delta"] = max(result["max_channel_delta"], int(delta.max()))
+            if not raw:
+                continue
+            before_bg, after_bg = content_membership(before, after)
+            differing = delta > 0
+            appeared = int(np.logical_and(differing, np.logical_and(before_bg, ~after_bg)).sum())
+            vanished = int(np.logical_and(differing, np.logical_and(~before_bg, after_bg)).sum())
+            share = (appeared + vanished) / raw
+            result["content_share"] = max(result["content_share"], share)
+    # A pixel differs when its channel step is *greater* than the tolerance, so the tolerance
+    # that silences the worst step is exactly that step.
+    result["min_tolerance_to_silence"] = result["max_channel_delta"]
+    if result["diff_pixels"] == 0:
+        result["verdict"] = "stable"
+    elif result["content_share"] >= LAYOUT_STRUCT_RATIO:
+        # The content itself moved: the difference is not rendering noise and must not be
+        # silenced by a tolerance.
+        result["verdict"] = "content change"
+    else:
+        result["verdict"] = "rendering noise"
+    return result
+
+
+def measure_noise_floor(
+    docs_root: Path,
+    runs: int = 4,
+    only: list[str] | None = None,
+    proxy: str = "env",
+    out_dir: Path | None = None,
+    tolerance: int = DEFAULT_TOLERANCE,
+) -> dict[str, Any]:
+    """Capture the page set `runs` times and report how much the captures differ from each other.
+
+    This is the measurement `DEFAULT_TOLERANCE` is built on, and the way to re-check it: it uses
+    the same `capture` the gate uses, over the same page set, so what it measures is what the gate
+    has to survive.
+    """
+    if runs < 2:
+        raise SystemExit("--runs must be at least 2: one capture has no pair to compare against")
+
+    temporary: tempfile.TemporaryDirectory[str] | None = None
+    if out_dir is None:
+        temporary = tempfile.TemporaryDirectory(prefix="misakanet-pixel-noise-")
+        root = Path(temporary.name)
+    else:
+        root = out_dir
+        root.mkdir(parents=True, exist_ok=True)
+
+    try:
+        run_dirs: list[Path] = []
+        for index in range(1, runs + 1):
+            run_dir = root / f"run{index}"
+            records, _warnings = capture(docs_root, run_dir, proxy=proxy, only=only)
+            failures = [r for r in records if r.error]
+            if failures:
+                detail = "; ".join(f"{r.page} @{r.viewport}: {r.error}" for r in failures[:3])
+                raise SystemExit(
+                    f"capture {index} of {runs} failed, the noise floor cannot be measured: "
+                    f"{detail}"
+                )
+            run_dirs.append(run_dir)
+
+        pages: dict[str, dict[str, Any]] = {}
+        for name in sorted({p.name for p in run_dirs[0].glob("*.png")}):
+            parsed = parse_image_name(name)
+            if parsed is None:
+                continue
+            pid, viewport = parsed
+            missing = [str(run_dir) for run_dir in run_dirs if not (run_dir / name).exists()]
+            if missing:
+                raise SystemExit(
+                    f"capture is missing {name} in {', '.join(missing)} — "
+                    "the runs are not comparable"
+                )
+            images = [_load_rgb(run_dir / name) for run_dir in run_dirs]
+            pages.setdefault(pid, {})[viewport] = pairwise_noise(images, tolerance=tolerance)
+
+        measured = [noise for viewports in pages.values() for noise in viewports.values()]
+        # The noise floor is the largest channel step among the differences that are *rendering
+        # noise*. A page whose content changes between captures contributes a huge step, and
+        # folding that into the floor would tell the reader to raise the tolerance high enough
+        # to hide real changes — the one thing this mode must never recommend.
+        noise_floor = max(
+            (
+                n["max_channel_delta"]
+                for n in measured
+                if n["verdict"] in ("stable", "rendering noise")
+            ),
+            default=0,
+        )
+        unstable = [
+            {"page": pid, "viewport": viewport, **noise}
+            for pid, viewports in pages.items()
+            for viewport, noise in viewports.items()
+            if noise["verdict"] != "stable"
+        ]
+        content_changes = [item for item in unstable if item["verdict"] == "content change"]
+        max_channel_delta = max((n["max_channel_delta"] for n in measured), default=0)
+        max_diff_pixels = max((n["max_diff_pixels"] for n in measured), default=0)
+        diff_pixels = max((n["diff_pixels"] for n in measured), default=0)
+        return {
+            "runs": runs,
+            "tolerance": tolerance,
+            "pages": pages,
+            "noise_floor": noise_floor,
+            "unstable": unstable,
+            "content_changes": content_changes,
+            "max_channel_delta": max_channel_delta,
+            "max_diff_pixels": max_diff_pixels,
+            "diff_pixels": diff_pixels,
+            "min_tolerance_to_silence": max_channel_delta,
+            "silent": diff_pixels == 0,
+        }
+    finally:
+        if temporary is not None:
+            temporary.cleanup()
 
 
 # ── reporting ──────────────────────────────────────────────────────────────────────────────────
 def _fmt_ratio(ratio: float) -> str:
     return f"{ratio * 100:.4f}%"
+
+
+def failed_pages(
+    report: dict[str, Any], threshold: float, ignore_layout_shift: bool = False
+) -> list[str]:
+    """The pages the gate fails on: over the threshold, or moved (unless that is ignored).
+
+    The threshold is the *ratio* a page may differ by, and it stays at 0: the tolerance decides
+    which pixels count as different, never how many may differ.
+    """
+    failed: list[str] = []
+    for pid, viewports in report["pages"].items():
+        worst = max((p["diff_ratio"] for p in viewports.values()), default=0.0)
+        shifted = any(p["layout_shift"] for p in viewports.values())
+        if worst > threshold or (shifted and not ignore_layout_shift):
+            failed.append(pid)
+    failed.extend(sorted({m["page"] for m in report["missing"]}))
+    return sorted(set(failed))
 
 
 def print_report(report: dict[str, Any], verbose: bool = False) -> None:
@@ -938,7 +1266,53 @@ def print_report(report: dict[str, Any], verbose: bool = False) -> None:
             print(f"  {item['page']} @{item['viewport']}: {item['problem']}")
 
 
-def main(argv: list[str] | None = None) -> int:
+def print_noise_floor(report: dict[str, Any]) -> None:
+    """Print the measured noise floor and whether the default tolerance covers it."""
+    pages = report["pages"]
+    print(f"{'page':<34} {'viewport':<10} {'pairs':>6} {'diff px @0':>12} {'max Δch':>8} "
+          f"{'content':>8} {'diff px @tol':>13}  verdict")
+    print("-" * 112)
+    for pid in sorted(pages):
+        for viewport in [v[0] for v in VIEWPORTS]:
+            noise = pages[pid].get(viewport)
+            if noise is None:
+                continue
+            print(
+                f"{pid:<34} {viewport:<10} {noise['pairs']:>6} {noise['max_diff_pixels']:>12,} "
+                f"{noise['max_channel_delta']:>8} {noise['content_share'] * 100:>7.1f}% "
+                f"{noise['diff_pixels']:>13,}  {noise['verdict']}"
+            )
+    tolerance = report["tolerance"]
+    floor = report["noise_floor"]
+    print(f"\nmeasured noise floor: {floor} channel step(s) — the largest step among the "
+          "differences that are rendering noise")
+    print(f"default tolerance: {tolerance} (headroom {tolerance - floor} step(s))")
+    if report["content_changes"]:
+        print("\npages that are not reproducible because their *content* changes between captures:")
+        for item in report["content_changes"]:
+            print(
+                f"  {item['page']} @{item['viewport']}: {item['max_diff_pixels']:,} px differ, "
+                f"{item['content_share'] * 100:.0f}% of them changed their foreground/background "
+                f"membership, largest step {item['max_channel_delta']}"
+            )
+        print("  A tolerance must not be raised to cover this: the page renders different content.")
+    if report["silent"]:
+        print(f"\nPASS: the default tolerance {tolerance} reproduces every page of the set")
+    elif report["content_changes"]:
+        print(
+            f"\nFAIL: the default tolerance {tolerance} reproduces the rendering noise, but "
+            f"{len(report['content_changes'])} page(s) render content that changes between "
+            "captures — that is a capture-determinism defect, not a tolerance problem"
+        )
+    else:
+        print(
+            f"\nFAIL: {report['diff_pixels']:,} px still differ at tolerance {tolerance} and the "
+            f"difference is rendering noise — the default has to rise to at least {floor}"
+        )
+
+
+def build_parser() -> argparse.ArgumentParser:
+    """The command line, built separately from `main` so the defaults can be pinned by a test."""
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     sub = parser.add_subparsers(dest="command", required=True)
 
@@ -986,11 +1360,13 @@ def main(argv: list[str] | None = None) -> int:
     cmp_.add_argument(
         "--tolerance",
         type=int,
-        default=0,
+        default=DEFAULT_TOLERANCE,
         help=(
-            "ignore channel differences of this many steps or fewer (default 0). "
-            "Chromium dithers gradients, which moves a handful of pixels by ±2 between runs; "
-            "--tolerance 3 leaves that noise out of the verdict"
+            "ignore channel differences of this many steps or fewer "
+            f"(default {DEFAULT_TOLERANCE}). "
+            "Chromium's text antialiasing is not bit-identical between runs: four captures of "
+            "the same page differ by ~20 pixels of one channel step. The default leaves that "
+            "noise out of the verdict; `noise-floor` re-measures it"
         ),
     )
     cmp_.add_argument("--max-regions", type=int, default=12, help=argparse.SUPPRESS)
@@ -1002,6 +1378,42 @@ def main(argv: list[str] | None = None) -> int:
     )
     cmp_.add_argument("--verbose", "-v", action="store_true", help="print every region")
 
+    floor = sub.add_parser(
+        "noise-floor",
+        help="capture the page set N times and measure the capture-to-capture noise floor",
+    )
+    floor.add_argument(
+        "--docs-root",
+        type=Path,
+        default=REPO / "docs",
+        help="the site root to serve (default: the repo's docs/)",
+    )
+    floor.add_argument(
+        "--runs",
+        type=int,
+        default=4,
+        help="how many times to capture the page set (default 4, so every pair is compared)",
+    )
+    floor.add_argument(
+        "--out",
+        type=Path,
+        default=None,
+        help="keep the captures in this directory (default: a temporary directory that is removed)",
+    )
+    floor.add_argument(
+        "--proxy",
+        choices=("env", "direct"),
+        default="env",
+        help="use the environment's upstream proxy for external assets (default) or not",
+    )
+    floor.add_argument("--pages", nargs="*", default=None, help=argparse.SUPPRESS)
+    floor.add_argument("--json", type=Path, default=None, help="write the measurement here")
+
+    return parser
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = build_parser()
     args = parser.parse_args(argv)
 
     if args.command == "capture":
@@ -1052,6 +1464,22 @@ def main(argv: list[str] | None = None) -> int:
             print(f"  warn  {warning}")
         return 1 if failures else 0
 
+    if args.command == "noise-floor":
+        measurement = measure_noise_floor(
+            args.docs_root,
+            runs=args.runs,
+            only=args.pages,
+            proxy=args.proxy,
+            out_dir=args.out,
+        )
+        print_noise_floor(measurement)
+        if args.json:
+            args.json.write_text(
+                json.dumps(measurement, indent=2, ensure_ascii=False), encoding="utf-8"
+            )
+            print(f"\njson: {args.json}")
+        return 0 if measurement["silent"] else 1
+
     report = compare(
         args.before,
         args.after,
@@ -1068,18 +1496,11 @@ def main(argv: list[str] | None = None) -> int:
         )
         print(f"\njson: {args.json}")
 
-    failed_pages: list[str] = []
-    for pid, viewports in report["pages"].items():
-        worst = max((p["diff_ratio"] for p in viewports.values()), default=0.0)
-        shifted = any(p["layout_shift"] for p in viewports.values())
-        if worst > args.threshold or (shifted and not args.ignore_layout_shift):
-            failed_pages.append(pid)
-    if report["missing"]:
-        failed_pages.extend(sorted({m["page"] for m in report["missing"]}))
-    if failed_pages:
+    failed = failed_pages(report, args.threshold, args.ignore_layout_shift)
+    if failed:
         print(
-            f"\nFAIL: {len(set(failed_pages))} page(s) over threshold {args.threshold}: "
-            f"{', '.join(sorted(set(failed_pages)))}"
+            f"\nFAIL: {len(failed)} page(s) over threshold {args.threshold}: "
+            f"{', '.join(failed)}"
         )
         return 1
     print(f"\nPASS: every page is within threshold {args.threshold}")
