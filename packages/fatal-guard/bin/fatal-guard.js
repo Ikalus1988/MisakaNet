@@ -277,7 +277,13 @@ function reportCrash(reason, error, stderrBuffer, exitCode) {
     } catch (_) {}
     // FATAL_HANDLER is developer-configured, not user input. shell: false prevents injection.
     // lgtm[js/shell-command-injection-from-environment]
-    const invocation = buildSpawnSpec(command[0], [...command.slice(1), ...handlerArgs]);
+    //
+    // The payload is the **last argv entry** here too, exactly as on POSIX.
+    // The Windows branch used to pass it through the environment only, so a
+    // handler that reads `process.argv.at(-1)` — the documented contract —
+    // saw its own path instead of the payload, and the two platforms
+    // disagreed about where the payload lives (PR #3647, Windows CI).
+    const invocation = buildSpawnSpec(command[0], [...command.slice(1), ...handlerArgs, payload]);
     const result = spawnSync(invocation.command, invocation.args, {
       timeout: HANDLER_TIMEOUT_MS,
       stdio: 'ignore',

@@ -18,6 +18,7 @@ import string
 import subprocess
 import sys
 import tempfile
+import time
 from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
@@ -31,42 +32,122 @@ STAGE_SEARCH_THRESHOLD = 3    # 3 次搜索 → active
 STAGE_LESSON_THRESHOLD = 1    # 1 条 lesson → contributor
 
 
+# How long `_acquire_fd` waits for the lock before giving up. `flock` blocks
+# indefinitely; `msvcrt.locking` does not, so the Windows side gets an explicit
+# ceiling rather than an unbounded loop. 60s is far past any real critical section
+# here (read a small JSON file, bump two counters, write it back).
+_LOCK_TIMEOUT_SECONDS = 60.0
+
+# Bound once at import. Read via the module so tests can force either backend
+# without rewriting `os.name`, which would make pathlib try to build a WindowsPath.
+_WINDOWS = os.name == "nt"
+
+
+def _acquire_fd(fd: int) -> None:
+    """Hold an exclusive lock on `fd` until `_release_fd`.
+
+    POSIX: `fcntl.flock`. Windows: `msvcrt.locking`. There is deliberately **no**
+    silent fallback — this used to `yield` unlocked whenever `fcntl` was missing,
+    which is exactly how concurrent increments lost updates on Windows while the
+    code looked healthy (#3536). A platform with neither primitive must fail
+    loudly, because an unenforced lock is worse than no lock: it removes the
+    reason to look for the race.
+    """
+    if _WINDOWS:
+        import msvcrt
+
+        # msvcrt.locking locks `nbytes` starting at the current file position.
+        os.lseek(fd, 0, os.SEEK_SET)
+        deadline = time.monotonic() + _LOCK_TIMEOUT_SECONDS
+        while True:
+            try:
+                msvcrt.locking(fd, msvcrt.LK_NBLCK, 1)
+                return
+            except OSError:
+                if time.monotonic() >= deadline:
+                    raise TimeoutError(
+                        f"could not lock the profile after {_LOCK_TIMEOUT_SECONDS:.0f}s "
+                        f"(fd={fd}); another process is holding it"
+                    ) from None
+                time.sleep(0.02)
+    else:
+        import fcntl
+
+        fcntl.flock(fd, fcntl.LOCK_EX)
+
+
+def _release_fd(fd: int) -> None:
+    if _WINDOWS:
+        import msvcrt
+
+        os.lseek(fd, 0, os.SEEK_SET)
+        msvcrt.locking(fd, msvcrt.LK_UNLCK, 1)
+    else:
+        import fcntl
+
+        fcntl.flock(fd, fcntl.LOCK_UN)
+
+
 @contextmanager
 def _profile_lock():
-    """Exclusive lock for the read-modify-write of profile.json (#1775).
+    """Exclusive lock for the read-modify-write of profile.json (#1775, #3536).
 
     `_save`'s atomic rename only prevents *torn* writes — it does nothing for *lost updates*.
     Two concurrent callers can both read `search_count: 0`, both compute `1`, and one increment
     vanishes; the counters drive stage transitions and referral attribution, so that is a silent
     correctness bug. A sidecar lock file is used rather than the profile itself because `_save`
     replaces the inode on every write (`os.replace`), which would drop a lock held on the old one.
-    `flock` is auto-released if the process dies, so a crash cannot leave the profile wedged.
+    The lock is auto-released if the process dies, so a crash cannot leave the profile wedged.
+
+    On Windows this now uses `msvcrt.locking`. It previously yielded with no lock at all
+    (see `_acquire_fd`).
     """
     PROFILE_PATH.parent.mkdir(parents=True, exist_ok=True)
     lock_path = PROFILE_PATH.parent / ".profile.lock"
     fd = os.open(str(lock_path), os.O_CREAT | os.O_RDWR, 0o600)
     try:
-        try:
-            import fcntl
-        except ImportError:  # non-POSIX: best-effort, still atomic-rename on save
-            yield
-            return
-        fcntl.flock(fd, fcntl.LOCK_EX)
+        _acquire_fd(fd)
         try:
             yield
         finally:
-            fcntl.flock(fd, fcntl.LOCK_UN)
+            _release_fd(fd)
     finally:
         os.close(fd)
 
 
+def _read_profile() -> dict | None:
+    """profile.json as it is on disk, or None when there is nothing usable to read.
+
+    `_save` swaps the file with `os.replace`, so a reader sees either the old file or the new
+    one, never a torn one — the plain read path needs no lock for that reason.
+    """
+    if not PROFILE_PATH.exists():
+        return None
+    try:
+        return json.loads(PROFILE_PATH.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return None
+
+
 def _load() -> dict:
-    """读取 profile.json，不存在时尝试倒推。"""
-    if PROFILE_PATH.exists():
-        try:
-            return json.loads(PROFILE_PATH.read_text(encoding="utf-8"))
-        except (json.JSONDecodeError, OSError):
-            pass
+    """读取 profile.json，不存在时尝试倒推。
+
+    The backfill *writes* a profile, and a write that lands on top of a count another caller
+    just wrote loses that count — so the missing-file path takes the lock and re-checks under
+    it, instead of writing next to a concurrent update.
+    """
+    profile = _read_profile()
+    if profile is not None:
+        return profile
+    with _profile_lock():
+        return _load_under_lock()
+
+
+def _load_under_lock() -> dict:
+    """`_load` for a caller that already holds the profile lock."""
+    profile = _read_profile()
+    if profile is not None:
+        return profile
     return _backfill()
 
 
@@ -148,7 +229,7 @@ def get_lesson_count() -> int:
 def increment_search():
     """搜索计数+1，跨阈值时自动升阶段并持久化。"""
     with _profile_lock():
-        p = _load()
+        p = _load_under_lock()
         p["search_count"] = p.get("search_count", 0) + 1
         p["last_active"] = datetime.now(timezone.utc).isoformat()
         if p["stage"] == "newcomer" and p["search_count"] >= STAGE_SEARCH_THRESHOLD:
@@ -169,7 +250,7 @@ def increment_search():
 def increment_lesson():
     """lesson 计数+1，跨阈值时自动升阶段。"""
     with _profile_lock():
-        p = _load()
+        p = _load_under_lock()
         p["lesson_count"] = p.get("lesson_count", 0) + 1
         p["last_active"] = datetime.now(timezone.utc).isoformat()
         n = p["lesson_count"]
@@ -191,7 +272,7 @@ def apply_referral(code: str) -> bool:
     if not code or len(code) < 4:
         return False
     with _profile_lock():
-        p = _load()
+        p = _load_under_lock()
         if p.get("referred_by"):
             return False  # 已绑定，不可修改
         p["referred_by"] = code.upper()

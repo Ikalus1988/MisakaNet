@@ -12,6 +12,8 @@
  * interpreter, so the env-derived value is never an "uncontrolled command".
  */
 
+const fs = require('node:fs');
+
 const SHELL_METACHARS = /[;&|<>$`(){}]|\r|\n/;
 // A shell interpreter invoked with arguments (spaces) is itself a shell sink:
 // `cmd /c evil`, `sh -c evil`, `bash -c evil` would execute arbitrary commands
@@ -52,21 +54,26 @@ function sanitizeCommand(command) {
 }
 
 /**
- * Split a handler command string into program + arguments without a shell.
+ * Is this an existing regular file?
  *
- * `FATAL_HANDLER` is documented in both forms — `/usr/bin/logger` and
- * `node /opt/bin/handler.js` — so the string has to be tokenized before it is
- * spawned. This mirrors what the CLI wrapper has always done; the in-process
- * path passed the raw string to `sanitizeCommand`, which refused anything with
- * a space (`node /opt/bin/handler.js` looks like a shell interpreter with
- * arguments) and silently dropped the report (#3645).
- *
- * The tokens are still validated afterwards: `sanitizeCommand` sees the program
- * only, and the spawn is always `shell: false`, so no token reaches a shell.
- *
- * On Windows, backslashes are path separators (not escape characters).
+ * @param {string} value
+ * @returns {boolean}
  */
-function splitCommand(value) {
+function isExistingFile(value) {
+  try {
+    return fs.statSync(value).isFile();
+  } catch (_) {
+    return false;
+  }
+}
+
+/**
+ * Split a string into tokens, honouring quotes and backslash escapes.
+ *
+ * @param {string} value
+ * @returns {string[]}
+ */
+function tokenize(value) {
   const isWindows = process.platform === 'win32';
   const parts = [];
   let part = '';
@@ -95,6 +102,46 @@ function splitCommand(value) {
   if (escaped) part += '\\';
   if (quote) throw new Error('unterminated quote in FATAL_HANDLER');
   if (part) parts.push(part);
+  return parts;
+}
+
+/**
+ * Split a handler command string into program + arguments without a shell.
+ *
+ * `FATAL_HANDLER` is documented in both forms — `/usr/bin/logger` and
+ * `node /opt/bin/handler.js` — so the string has to be tokenized before it is
+ * spawned. This mirrors what the CLI wrapper has always done; the in-process
+ * path passed the raw string to `sanitizeCommand`, which refused anything with
+ * a space (`node /opt/bin/handler.js` looks like a shell interpreter with
+ * arguments) and silently dropped the report (#3645).
+ *
+ * A program path that contains spaces is one program, not two tokens:
+ * `C:\Program Files\nodejs\node.exe` is the ordinary Windows node path, and
+ * splitting it produced a program that does not exist — a failure with no
+ * error message at all. So when the first token is not a file, the longest
+ * prefix whose joined path *is* a file becomes the program. Quoting works
+ * too (`"C:\Program Files\nodejs\node.exe"` is one token already).
+ *
+ * The tokens are still validated afterwards: `sanitizeCommand` sees the program
+ * only, and the spawn is always `shell: false`, so no token reaches a shell.
+ * The file check cannot loosen that — a program that is not an existing file
+ * is never merged, and a merged program is still handed to `sanitizeCommand`.
+ *
+ * On Windows, backslashes are path separators (not escape characters).
+ *
+ * @param {string} value
+ * @returns {string[]}
+ */
+function splitCommand(value) {
+  const parts = tokenize(value);
+  if (parts.length < 2) return parts;
+  if (isExistingFile(parts[0])) return parts;
+  for (let end = parts.length; end > 1; end -= 1) {
+    const candidate = parts.slice(0, end).join(' ');
+    if (isExistingFile(candidate)) {
+      return [candidate, ...parts.slice(end)];
+    }
+  }
   return parts;
 }
 

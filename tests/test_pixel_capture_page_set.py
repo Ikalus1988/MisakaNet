@@ -103,3 +103,18 @@ def test_naming_a_page_still_reaches_any_page_in_the_tree():
     assert len(generated) > 500, f"only {len(generated)} generated pages are selectable"
     lessons = [p for p in generated if "lessons" in _parts(p)]
     assert lessons, "no lesson page is selectable by name"
+
+
+def test_the_noise_floor_measures_the_pages_the_gate_captures():
+    """A noise floor measured on a different page set is not the gate's noise floor.
+
+    `capture` and `noise-floor` go through one rule — `capture_pages` — so the measurement
+    cannot quietly drift onto a page set the gate never checks.
+    """
+    assert cpx.capture_pages(DOCS, None) == cpx.default_pages(DOCS)
+
+
+def test_naming_a_page_narrows_the_measurement_to_that_page():
+    """And the escape hatch still narrows it, so a measurement can be taken page by page."""
+    pages = cpx.capture_pages(DOCS, ["insights__reputation-leaderboard"])
+    assert [p.name for p in pages] == ["reputation-leaderboard.html"]

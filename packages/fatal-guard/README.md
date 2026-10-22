@@ -108,6 +108,33 @@ twice — once for the exception and once for the `process.exit(1)` that follows
 it — and the second, empty report overwrote the first in any handler that
 writes every payload to one file.
 
+### Where the handler finds the payload
+
+**The payload is the last argv entry, on every platform.** That is the
+contract:
+
+```js
+const payload = JSON.parse(process.argv.at(-1));
+```
+
+The Windows branch used to deliver the payload through the environment only,
+so a handler written against the documented contract saw its own path instead
+of the payload there — one contract, two platforms (PR #3647). The Windows
+branch still needs the environment as well: a `.cmd`/`.bat` handler is started
+through `cmd.exe`, which does not pass a JSON payload through unharmed, so
+the same bytes are offered there as a string and as a file.
+
+| Channel | Where | Value |
+|---------|-------|-------|
+| argv | **every platform** | the payload JSON, as the **last** argument — *the contract* |
+| `FATAL_PAYLOAD` | Windows only | the payload JSON |
+| `FATAL_PAYLOAD_FILE` | Windows only | a path to a temp file holding the payload JSON |
+
+The environment channels carry **byte-identical** content — the same string
+that is passed in argv — so they cannot disagree with it; if they ever did,
+argv is the contract. A handler that has to work on every platform should
+read argv: the environment channels do not exist on POSIX.
+
 ### Where the crash lands: `FATAL_CRASH_OUT`
 
 The handler is started detached with `stdio: 'ignore'`, so **whatever it
@@ -227,6 +254,23 @@ The `spawn-command.js` module routes only `.cmd`/`.bat` files through `ComSpec` 
 first (`splitCommand`), and the **program** is then checked by
 `sanitizeCommand`, which refuses shell metacharacters and shell interpreters.
 No token ever reaches a shell — every spawn is `shell: false`.
+
+A program path that contains spaces is **one** program, not two tokens:
+`C:\Program Files\nodejs\node.exe` is the ordinary Windows node path, and
+splitting it produced a program that does not exist — a failure with no error
+message at all. So when the first token is not an existing file, the longest
+prefix whose joined path *is* one becomes the program. Quoting works too:
+
+```bash
+FATAL_HANDLER='C:\Program Files\nodejs\node.exe'      # one token, the file exists
+FATAL_HANDLER='"C:\Program Files\nodejs\node.exe"'    # one token, quotes understood
+```
+
+The rule cannot loosen `sanitizeCommand`: tokens are only ever joined into a
+path that exists, and whatever comes out is still handed to the sanitizer —
+a quoted `"node -e evil"` stays one token and is still refused. Arguments
+that contain spaces need quoting (or `FATAL_HANDLER_ARGS`, which is a JSON
+array and is never tokenized).
 
 ---
 
