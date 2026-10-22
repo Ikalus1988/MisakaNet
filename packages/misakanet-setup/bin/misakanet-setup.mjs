@@ -210,9 +210,6 @@ if (has('--version')) {
   process.exit(0);
 }
 
-/** What we would write, and how to take it back — printed by --list-writes, and used by the report. */
-const WRITE_MANIFEST = [];
-
 const KNOWN = new Set(FLAGS.flatMap(([flag]) => flag.split(/[,\s]/).filter((f) => f.startsWith('-'))));
 {
   const unknown = args.filter((a) => a.startsWith('-') && !KNOWN.has(a));
@@ -425,6 +422,104 @@ const AGENT_WRITE_PATHS = {
     .map(([id, spec]) => [id, (home) => [spec.config(home)]])),
   openclaw: () => openclawWorkspaces().map((workspace) => join(workspace, 'AGENTS.md')),
 };
+
+/**
+ * The write manifest: every file this run would touch, with the kind of write and the tier it
+ * belongs to.
+ *
+ * One builder, two readers: `--list-writes` prints it for an operator who has to approve it, and
+ * the install preview prints it for the user who is about to say yes (#3690). They cannot drift,
+ * because there is only one list — a preview that disagrees with the manifest is worse than no
+ * preview at all.
+ *
+ * The tiers are the permission tiers from the top of this file: ① registers an MCP endpoint,
+ * ② writes a rules block (that changes how the agent behaves), ③ installs hooks and state (that
+ * run on every turn). Under `--mcp-only` only ① is in scope, so the other two are not listed —
+ * the same rule the install itself follows.
+ */
+function buildWriteManifest(agents) {
+  // Compare base names, not separators: a `/settings.json$` regex silently classifies nothing on
+  // Windows (all three windows legs went red on the first CI run of this change), and a manifest
+  // that hides a tier is worse than no manifest.
+  const classify = (path) => {
+    const base = basename(path);
+    if (base === 'CLAUDE.md' || base === 'AGENTS.md' || base === 'SOUL.md') return { tier: 2, kind: 'rules' };
+    if (path.includes('.misakanet-agent')) return { tier: 3, kind: 'state' };
+    // `settings.json` carries both the read-only grants (①) and the hooks (③); the hook row is
+    // added separately below, and only when the hooks are in scope.
+    if (base === 'settings.json' && path.includes('.claude')) return { tier: 1, kind: 'grants' };
+    return { tier: 1, kind: 'mcp' };
+  };
+  const rows = new Map();
+  const add = (path, action, tier, kind) => {
+    const key = `${tier}|${path}`;
+    if (!rows.has(key)) rows.set(key, { path: redact(path), action, tier, kind });
+  };
+  for (const agent of agents) {
+    if (!detect(agent)) continue;
+    for (const path of (AGENT_WRITE_PATHS[agent] || (() => []))(HOME)) {
+      const { tier, kind } = classify(path);
+      add(path, existsSync(path) ? 'append-or-update' : 'create', tier, kind);
+      if (!MCP_ONLY && basename(path) === 'settings.json' && path.includes('.claude')) {
+        add(path, 'append-or-update（钩子）', 3, 'hook');
+      }
+    }
+  }
+  // The state dir is ours, but it is still written to disk — and only when there is something to
+  // install: with no target detected the run writes nothing at all.
+  if (agents.length) {
+    // `--no-register` registers no anonymous node, so no token is written; listing it anyway would
+    // make the manifest — and the preview's file count — promise a file that stays absent.
+    if (!has('--no-register')) add(join(stateDir(), 'token'), 'create (0600)', 1, 'token');
+    if (!MCP_ONLY) {
+      add(join(stateDir(), 'hook.mjs'), 'create', 3, 'hookScript');
+      add(join(stateDir(), STATE_VERSION_FILE), 'create', 3, 'version');
+    }
+  }
+  return [...rows.values()]
+    .filter((row) => (MCP_ONLY ? row.tier === 1 : true))
+    .sort((a, b) => a.tier - b.tier || a.path.localeCompare(b.path));
+}
+
+/**
+ * The preview: what this run is about to write, said *before* it writes it (#3690).
+ *
+ * A user who never opens a checkout has no way to know that an installer also edits the agent's
+ * rules file — and that file is the one that changes how the agent behaves. So the summary names
+ * the files, the kind of change, and the three ways out: look first (`--list-writes`), ask for the
+ * endpoint only (`--mcp-only`), or take it back (`--uninstall`).
+ *
+ * One line per file, one line of ways out, and every path redacted to `~` — the person reading
+ * this may never see a checkout, so nothing here may assume one.
+ */
+function writePreview(rows) {
+  const files = new Map();
+  for (const row of rows) {
+    const file = files.get(row.path) || { path: row.path, tier: row.tier, kinds: [] };
+    file.tier = Math.min(file.tier, row.tier);
+    file.kinds.push(row.kind);
+    files.set(row.path, file);
+  }
+  const list = [...files.values()].sort((a, b) => a.tier - b.tier || a.path.localeCompare(b.path));
+  if (!list.length) return '';
+  const labels = {
+    mcp: 'MCP 端点',
+    grants: '只读工具放行',
+    rules: '规则块（会改变 agent 的行为）',
+    hook: '钩子',
+    token: 'MCP 凭据',
+    hookScript: '钩子脚本',
+    version: '版本戳',
+    state: '本机状态',
+  };
+  const width = Math.min(Math.max(...list.map((f) => f.path.length)) + 2, 32);
+  const pad = (text) => (text.length >= width ? `${text} ` : text.padEnd(width));
+  return [
+    `将修改 ${list.length} 个文件${DRY ? '（--dry-run：只是预览，不写任何东西）' : ''}：`,
+    ...list.map((f) => `  ${pad(f.path)}+ ${f.kinds.map((k) => labels[k]).join(' + ')}`),
+    '先看：--list-writes   不改行为：--mcp-only   撤销：--uninstall',
+  ].join('\n');
+}
 
 /**
  * Which of these paths this process may not write.
@@ -2293,38 +2388,12 @@ if (LIST_WRITES) {
   // Every row carries its **tier**, which is the point: an operator approving "add an MCP server"
   // (①) is not approving "change how the agent behaves" (② rules block, ③ automatic hooks). Files
   // already exist → we append or update keys; missing → we create them.
-  // Compare base names, not separators: a `/settings.json$` regex silently classifies nothing on
-  // Windows (all three windows legs went red on the first CI run of this change), and a manifest
-  // that hides a tier is worse than no manifest.
-  const tierOf = (path) => {
-    const base = basename(path);
-    if (base === 'CLAUDE.md' || base === 'AGENTS.md' || base === 'SOUL.md') return 2;
-    if (path.includes('.misakanet-agent')) return 3;               // our own state dir
-    // `settings.json` carries both the read-only grants (①) and the hooks (③); the caller adds the
-    // second row only when the hooks are in scope.
-    if (base === 'settings.json' && path.includes('.claude')) return 1;
-    return 1;                                                     // an MCP entry in the agent's config
-  };
-  const rows = new Map();
-  const add = (path, action, tier) => {
-    const key = `${tier}|${path}`;
-    if (!rows.has(key)) rows.set(key, { path: redact(path), action, tier });
-  };
-  for (const agent of AGENTS) {
-    if (!detect(agent)) continue;
-    for (const path of (AGENT_WRITE_PATHS[agent] || (() => []))(HOME)) {
-      add(path, existsSync(path) ? 'append-or-update' : 'create', tierOf(path));
-      if (!MCP_ONLY && basename(path) === 'settings.json' && path.includes('.claude')) {
-        add(path, 'append-or-update（钩子）', 3);
-      }
-    }
-  }
-  add(join(stateDir(), 'token'), 'create (0600)', 1);
-  if (!MCP_ONLY) add(join(stateDir(), 'hook.mjs'), 'create', 3);
-
+  //
+  // The rows come from the shared manifest builder, the same list the install preview prints: one
+  // source of truth, so the manifest an operator approves and the preview a user reads cannot
+  // disagree about what this command would write.
   const tiers = { 1: '① 注册 MCP 端点', 2: '② 写规则块（改行为）', 3: '③ 装钩子（每轮自动执行）' };
-  const list = [...rows.values()].filter((row) => (MCP_ONLY ? row.tier === 1 : true))
-    .sort((a, b) => a.tier - b.tier || a.path.localeCompare(b.path));
+  const list = buildWriteManifest(targets);
   for (const row of list) {
     console.log(`tier${row.tier}\t${tiers[row.tier]}\t${row.path}\t${row.action}`);
   }
@@ -2338,6 +2407,18 @@ if (LIST_WRITES) {
   }
   console.log('# 这次没有写任何东西。撤销：npx @misaka-net/misakanet-setup --uninstall');
   process.exit(0);
+}
+
+// The preview (#3690): the first thing a user sees about what this run is about to write, printed
+// **before** the first write — so a user who did not expect these files still sees them while
+// there is nothing to undo yet.
+//
+// `--silent` keeps its contract: a clean silent run is an empty log, and this summary is progress
+// narration, not an error line. `--list-writes` has already exited above with the machine-readable
+// version of the same list.
+if (!SILENT && targets.length) {
+  const preview = writePreview(buildWriteManifest(targets));
+  if (preview) console.log(preview);
 }
 
 try {
