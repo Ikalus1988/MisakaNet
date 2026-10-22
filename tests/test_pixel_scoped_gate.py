@@ -292,3 +292,156 @@ def test_an_untouched_tree_passes_the_scoped_gate_with_no_permissions(tmp_path):
     ])
 
     assert code == 0
+
+
+# ── 新增的页：没有"之前"可比，所以只能声明 ────────────────────────────
+#
+# A change that *adds* a page has no image on the "before" side. The tool used to answer
+# "missing in before", which the gate counts as a failure — so the change the author asked for
+# reported itself as a regression. The way out is a declaration: the author names the pages that
+# are new, and the gate says what it did with them. A declaration that does not hold is an error,
+# not a pass: the page existed before (so its change was never compared), or it is not there at all.
+
+def test_a_declared_new_page_is_reported_instead_of_compared(tmp_path):
+    """声明为新增的页：进"新增"名单，不进"缺页"名单。"""
+    before_dir = tmp_path / "before"
+    after_dir = tmp_path / "after"
+    before_dir.mkdir()
+    after_dir.mkdir()
+    _write_png(before_dir / cpx.image_name("index", "1280x800"), _canvas(100, 100))
+    _write_png(after_dir / cpx.image_name("index", "1280x800"), _canvas(100, 100))
+    _write_png(after_dir / cpx.image_name("register__index", "1280x800"), _canvas(100, 100))
+
+    report = cpx.scoped_compare(
+        before_dir,
+        after_dir,
+        allow=[],
+        new_pages=["register__index"],
+    )
+
+    assert report["new"] == ["register__index"], "the new page was not reported as new"
+    assert report["missing"] == [], "the new page was reported as a missing capture"
+    assert report["declaration_errors"] == []
+    assert "register__index" not in report["pages"], "a page with nothing to compare was compared"
+
+
+def test_an_undeclared_new_page_is_still_a_failure(tmp_path):
+    """没声明的新页照样红——不然"新增页"就成了绕过门禁的后门。"""
+    before_dir = tmp_path / "before"
+    after_dir = tmp_path / "after"
+    before_dir.mkdir()
+    after_dir.mkdir()
+    _write_png(before_dir / cpx.image_name("index", "1280x800"), _canvas(100, 100))
+    _write_png(after_dir / cpx.image_name("index", "1280x800"), _canvas(100, 100))
+    _write_png(after_dir / cpx.image_name("register__index", "1280x800"), _canvas(100, 100))
+
+    code = cpx.main([
+        "scoped",
+        "--before", str(before_dir),
+        "--after", str(after_dir),
+    ])
+
+    assert code == 1, "an undeclared new page passed the gate"
+
+
+def test_a_declared_new_page_lets_the_run_pass(tmp_path):
+    """整条命令：声明了就过，并且跑完是 0。"""
+    before_dir = tmp_path / "before"
+    after_dir = tmp_path / "after"
+    before_dir.mkdir()
+    after_dir.mkdir()
+    _write_png(before_dir / cpx.image_name("index", "1280x800"), _canvas(100, 100))
+    _write_png(after_dir / cpx.image_name("index", "1280x800"), _canvas(100, 100))
+    _write_png(after_dir / cpx.image_name("register__index", "1280x800"), _canvas(100, 100))
+
+    code = cpx.main([
+        "scoped",
+        "--before", str(before_dir),
+        "--after", str(after_dir),
+        "--allow-new", "register__index",
+    ])
+
+    assert code == 0, "a declared new page failed the gate"
+
+
+def test_a_declaration_for_a_page_that_existed_before_is_an_error(tmp_path):
+    """声明"新"、其实不新 → 这页的改动压根没被比较 → 门禁不能装作通过。"""
+    before_dir = tmp_path / "before"
+    after_dir = tmp_path / "after"
+    before_dir.mkdir()
+    after_dir.mkdir()
+    _write_png(before_dir / cpx.image_name("index", "1280x800"), _canvas(100, 100))
+    _write_png(after_dir / cpx.image_name("index", "1280x800"), _canvas(100, 100))
+
+    code = cpx.main([
+        "scoped",
+        "--before", str(before_dir),
+        "--after", str(after_dir),
+        "--allow-new", "index",
+    ])
+
+    assert code == 2, "a declaration that does not hold passed the gate"
+
+
+def test_a_declaration_for_a_page_that_is_in_neither_capture_is_an_error(tmp_path):
+    """声明了一页压根不存在的东西 → 也是声明不成立。"""
+    before_dir = tmp_path / "before"
+    after_dir = tmp_path / "after"
+    before_dir.mkdir()
+    after_dir.mkdir()
+    _write_png(before_dir / cpx.image_name("index", "1280x800"), _canvas(100, 100))
+    _write_png(after_dir / cpx.image_name("index", "1280x800"), _canvas(100, 100))
+
+    code = cpx.main([
+        "scoped",
+        "--before", str(before_dir),
+        "--after", str(after_dir),
+        "--allow-new", "nowhere",
+    ])
+
+    assert code == 2, "a declaration for a page that does not exist passed the gate"
+
+
+def test_the_plain_compare_command_knows_about_new_pages_too(tmp_path):
+    """两个命令同一套规则：新页在 compare 里也一样声明。"""
+    before_dir = tmp_path / "before"
+    after_dir = tmp_path / "after"
+    before_dir.mkdir()
+    after_dir.mkdir()
+    _write_png(before_dir / cpx.image_name("index", "1280x800"), _canvas(100, 100))
+    _write_png(after_dir / cpx.image_name("index", "1280x800"), _canvas(100, 100))
+    _write_png(after_dir / cpx.image_name("register__index", "1280x800"), _canvas(100, 100))
+
+    undeclared = cpx.main([
+        "compare",
+        "--before", str(before_dir),
+        "--after", str(after_dir),
+    ])
+    declared = cpx.main([
+        "compare",
+        "--before", str(before_dir),
+        "--after", str(after_dir),
+        "--allow-new", "register__index",
+    ])
+
+    assert undeclared == 1, "an undeclared new page passed the compare gate"
+    assert declared == 0, "a declared new page failed the compare gate"
+
+
+def test_the_plain_compare_command_refuses_a_declaration_that_does_not_hold(tmp_path):
+    """compare 命令也得守同一条规矩：声明不成立 → 退 2，不是退 0。"""
+    before_dir = tmp_path / "before"
+    after_dir = tmp_path / "after"
+    before_dir.mkdir()
+    after_dir.mkdir()
+    _write_png(before_dir / cpx.image_name("index", "1280x800"), _canvas(100, 100))
+    _write_png(after_dir / cpx.image_name("index", "1280x800"), _canvas(100, 100))
+
+    code = cpx.main([
+        "compare",
+        "--before", str(before_dir),
+        "--after", str(after_dir),
+        "--allow-new", "index",
+    ])
+
+    assert code == 2, "a declaration that does not hold passed the compare gate"

@@ -1129,6 +1129,58 @@ def compare_pair(
     )
 
 
+def _page_ids(files: dict[str, Path]) -> set[str]:
+    """The page ids a capture directory holds, from its file names."""
+    ids: set[str] = set()
+    for name in files:
+        parsed = parse_image_name(name)
+        if parsed is not None:
+            ids.add(parsed[0])
+    return ids
+
+
+def classify_new_pages(
+    before_files: dict[str, Path],
+    after_files: dict[str, Path],
+    declared: list[str] | None,
+) -> tuple[list[str], list[dict[str, str]]]:
+    """Which pages are new, and which declarations do not hold.
+
+    **The problem this solves.** A change that *adds* a page has no image on the "before" side, so
+    there is nothing to compare — and the tool's answer was "missing in before", which the gate
+    counts as a failure. So a change that was asked for reported itself as a regression, and the
+    only ways out were to add a fake "before" capture or to stop running the gate.
+
+    **The rule.** The author declares the pages that are new (`--allow-new`). A declared page that
+    really is new is *not compared* — there is nothing to compare — and it is reported, so the run
+    says what it did. A declaration that does not hold is an **error**, not a pass:
+
+    - the page existed before, so "new" was wrong and the change to it was never compared;
+    - the page is in neither capture, so the declaration names something that is not there.
+
+    Either way the gate cannot decide, and it says so instead of passing.
+    """
+    declared_list = list(declared or [])
+    before_ids = _page_ids(before_files)
+    after_ids = _page_ids(after_files)
+    new_pages: list[str] = []
+    errors: list[dict[str, str]] = []
+    for pid in declared_list:
+        if pid in before_ids:
+            errors.append({
+                "page": pid,
+                "problem": "declared new, but the page exists in the before capture",
+            })
+        elif pid not in after_ids:
+            errors.append({
+                "page": pid,
+                "problem": "declared new, but the page is in neither capture",
+            })
+        else:
+            new_pages.append(pid)
+    return new_pages, errors
+
+
 def compare(
     before_dir: Path,
     after_dir: Path,
@@ -1136,6 +1188,7 @@ def compare(
     tolerance: int = DEFAULT_TOLERANCE,
     max_regions: int = 12,
     only: list[str] | None = None,
+    new_pages: list[str] | None = None,
 ) -> dict[str, Any]:
     """Compare two capture directories, page by page and viewport by viewport."""
     before_files = {p.name: p for p in before_dir.glob("*.png")}
@@ -1145,6 +1198,8 @@ def compare(
     unsettled: list[dict[str, str]] = []
     before_unsettled = unsettled_captures(before_dir)
     after_unsettled = unsettled_captures(after_dir)
+    declared_new, declaration_errors = classify_new_pages(before_files, after_files, new_pages)
+    declared_new_set = set(declared_new)
 
     for name in sorted(set(before_files) | set(after_files)):
         parsed = parse_image_name(name)
@@ -1154,6 +1209,10 @@ def compare(
         if only and pid not in set(only):
             continue
         if name not in before_files:
+            if pid in declared_new_set:
+                # New page: there is no "before" image, so there is nothing to compare. It is
+                # reported as new rather than as a missing capture.
+                continue
             missing.append({"page": pid, "viewport": viewport, "problem": "missing in before"})
             continue
         if name not in after_files:
@@ -1180,6 +1239,8 @@ def compare(
         "pages": pages,
         "missing": missing,
         "unsettled": unsettled,
+        "new": declared_new,
+        "declaration_errors": declaration_errors,
         "tolerance": tolerance,
     }
 
@@ -1445,6 +1506,14 @@ def print_report(report: dict[str, Any], verbose: bool = False) -> None:
         print("\nmissing captures:")
         for item in report["missing"]:
             print(f"  {item['page']} @{item['viewport']}: {item['problem']}")
+    if report.get("new"):
+        print("\nnew pages (declared, so not compared):")
+        for pid in report["new"]:
+            print(f"  {pid}")
+    if report.get("declaration_errors"):
+        print("\ndeclarations that do not hold:")
+        for item in report["declaration_errors"]:
+            print(f"  {item['page']}: {item['problem']}")
     _print_unsettled(report)
 
 
@@ -1614,11 +1683,16 @@ def scoped_compare(
     tolerance: int = DEFAULT_TOLERANCE,
     only: list[str] | None = None,
     block: int = 8,
+    new_pages: list[str] | None = None,
 ) -> dict[str, Any]:
     """Compare two capture directories under the scoped criterion.
 
     `allow` is the list of declared regions: (page, viewport or None, box). A region declared
     without a viewport applies to every viewport of that page.
+
+    `new_pages` names the pages this change adds. They have no "before" image, so there is
+    nothing to compare — they are reported, not compared. See `classify_new_pages` for why the
+    declaration has to hold.
     """
     allow = list(allow or [])
     before_files = {p.name: p for p in before_dir.glob("*.png")}
@@ -1628,6 +1702,8 @@ def scoped_compare(
     unsettled: list[dict[str, str]] = []
     before_unsettled = unsettled_captures(before_dir)
     after_unsettled = unsettled_captures(after_dir)
+    declared_new, declaration_errors = classify_new_pages(before_files, after_files, new_pages)
+    declared_new_set = set(declared_new)
 
     for name in sorted(set(before_files) | set(after_files)):
         parsed = parse_image_name(name)
@@ -1637,6 +1713,9 @@ def scoped_compare(
         if only and pid not in set(only):
             continue
         if name not in before_files:
+            if pid in declared_new_set:
+                # New page: nothing on the "before" side to compare against.
+                continue
             missing.append({"page": pid, "viewport": viewport, "problem": "missing in before"})
             continue
         if name not in after_files:
@@ -1661,7 +1740,14 @@ def scoped_compare(
         )
         pages.setdefault(pid, {})[viewport] = pair
 
-    return {"pages": pages, "missing": missing, "unsettled": unsettled, "tolerance": tolerance}
+    return {
+        "pages": pages,
+        "missing": missing,
+        "unsettled": unsettled,
+        "new": declared_new,
+        "declaration_errors": declaration_errors,
+        "tolerance": tolerance,
+    }
 
 
 def failed_scoped_pages(report: dict[str, Any]) -> list[str]:
@@ -1711,6 +1797,14 @@ def print_scoped_report(report: dict[str, Any], verbose: bool = False) -> None:
         print("\nmissing captures:")
         for item in report["missing"]:
             print(f"  {item['page']} @{item['viewport']}: {item['problem']}")
+    if report.get("new"):
+        print("\nnew pages (declared, so not compared):")
+        for pid in report["new"]:
+            print(f"  {pid}")
+    if report.get("declaration_errors"):
+        print("\ndeclarations that do not hold:")
+        for item in report["declaration_errors"]:
+            print(f"  {item['page']}: {item['problem']}")
     _print_unsettled(report)
 
 
@@ -1780,6 +1874,16 @@ def build_parser() -> argparse.ArgumentParser:
         help="do not fail the gate on a layout shift, only on the ratio",
     )
     cmp_.add_argument("--verbose", "-v", action="store_true", help="print every region")
+    cmp_.add_argument(
+        "--allow-new",
+        action="append",
+        default=None,
+        metavar="PAGE",
+        help=(
+            "a page this change adds: it has no image to compare against, so it is reported "
+            "instead of compared (repeatable)"
+        ),
+    )
 
     floor = sub.add_parser(
         "noise-floor",
@@ -1838,6 +1942,16 @@ def build_parser() -> argparse.ArgumentParser:
     scoped.add_argument("--pages", nargs="*", default=None, help=argparse.SUPPRESS)
     scoped.add_argument("--json", type=Path, default=None, help="write the full report here")
     scoped.add_argument("--verbose", "-v", action="store_true", help="print every region")
+    scoped.add_argument(
+        "--allow-new",
+        action="append",
+        default=None,
+        metavar="PAGE",
+        help=(
+            "a page this change adds: it has no image to compare against, so it is reported "
+            "instead of compared (repeatable)"
+        ),
+    )
 
     return parser
 
@@ -1926,6 +2040,7 @@ def main(argv: list[str] | None = None) -> int:
             tolerance=args.tolerance,
             only=args.pages,
             block=args.block,
+            new_pages=args.allow_new,
         )
         print_scoped_report(report, verbose=args.verbose)
         if args.json:
@@ -1940,6 +2055,12 @@ def main(argv: list[str] | None = None) -> int:
                 f"{', '.join(failed)}"
             )
             return 1
+        if report.get("declaration_errors"):
+            print(
+                f"\nCANNOT DECIDE: {len(report['declaration_errors'])} declaration(s) do not "
+                "hold, so the pages they name were not compared the way the run assumed."
+            )
+            return 2
         if report.get("unsettled"):
             print(
                 f"\nCANNOT DECIDE: {len(report['unsettled'])} capture(s) never settled, so those "
@@ -1956,6 +2077,7 @@ def main(argv: list[str] | None = None) -> int:
         tolerance=args.tolerance,
         max_regions=args.max_regions,
         only=args.pages,
+        new_pages=args.allow_new,
     )
     print_report(report, verbose=args.verbose)
 
@@ -1977,6 +2099,12 @@ def main(argv: list[str] | None = None) -> int:
                 "not compared"
             )
         return 1
+    if report.get("declaration_errors"):
+        print(
+            f"\nCANNOT DECIDE: {len(report['declaration_errors'])} declaration(s) do not hold, "
+            "so the pages they name were not compared the way the run assumed."
+        )
+        return 2
     if report.get("unsettled"):
         print(
             f"\nCANNOT DECIDE: {len(report['unsettled'])} capture(s) never settled, so those "
