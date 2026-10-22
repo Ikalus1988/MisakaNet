@@ -137,6 +137,17 @@ const REDACT_PATTERNS = [
   [/(?:password|passwd|secret|token|api[_-]?key|apikey|database[_-]?url)\s*[:=]\s*\S+/gi, "[REDACTED:credential]"],
   [/:[^:]+:[^@]+@[^\s]+/g, "://[REDACTED:url_credential]@host"],
   [/\b(?:\d[ -]*?){13,19}\b/g, "[REDACTED:card_number]"],
+  // #3692: the three classes the server was missing. A filesystem path and a mail address are
+  // what an agent's error fragment carries out of the machine — the trial user named both
+  // ("内部表名、路径"). The path rule deliberately requires evidence of a FILESYSTEM path (a known
+  // root, or a last segment with a file extension), so an API route like /api/v1/users is left
+  // alone: the corpus is full of them, and eating them would cost the maintainer the detail they
+  // triage with. The mail rule requires an alphabetic top-level domain, so an npm version spec
+  // (foo@1.2.3) is not a mail address. The client-side hook applies the same three rules
+  // (integrations/agent-autostart/checkpoint_reminder.mjs); the ids are shared on purpose.
+  [/(?<![A-Za-z0-9_:\/~.\-])(?:file:\/\/)?\/(?:(?:(?:home|root|var|opt|etc|usr|tmp|mnt|srv|data|private|workspace|app|code|project|[Uu][Ss][Ee][Rr][Ss]|[Vv][Oo][Ll][Uu][Mm][Ee][Ss]))(?:\/[^\s\/\\'"<>,;:!?()\[\]{}]+)+|(?:[^\s\/\\'"<>,;:!?()\[\]{}]+\/)*[^\s\/\\'"<>,;:!?()\[\]{}]*\.[A-Za-z][A-Za-z0-9_\-])/g, "<PATH>"],
+  [/(?<![A-Za-z0-9_])[A-Za-z]:[\\\/](?:[^\s\/\\'"<>,;:!?()\[\]{}]+[\\\/])*[^\s\/\\'"<>,;:!?()\[\]{}]*/g, "<PATH>"],
+  [/[A-Za-z0-9._%+\-]+@[A-Za-z0-9\-]+(?:\.[A-Za-z0-9\-]*)*\.[A-Za-z]{2,}/g, "<REDACTED:email>"],
 ];
 function redactSecrets(text) {
   // Redact first, clip second. The old order sliced at 2,000 before redacting, so a credential
@@ -3707,6 +3718,14 @@ function redactIntake(text) {
     r = r.replace(/(?:password|passwd|secret|token|api[_-]?key|apikey|database[_-]?url)\s*[:=]\s*\S+/gi, "[REDACTED:credential]");
     r = r.replace(/:\/\/[^:]+:[^@]+@[^\s]+/g, "://[REDACTED:url_credential]@host");
     r = r.replace(/\b(?:\d[ -]*?){13,19}\b/g, "[REDACTED:card_number]");
+    // #3692: the same three classes as the /api/intake copy above — a filesystem path, a Windows
+    // path and a mail address. The server had nine secret rules and nothing else, so an internal
+    // path in a submitted problem text (which becomes a PUBLIC GitHub issue) survived. The regexes
+    // are the ones in workers/lib/redact-patterns.json; keep the three copies in step, the
+    // `tests/test_redaction_sync.py` gate checks that they carry the same replacements.
+    r = r.replace(/(?<![A-Za-z0-9_:\/~.\-])(?:file:\/\/)?\/(?:(?:(?:home|root|var|opt|etc|usr|tmp|mnt|srv|data|private|workspace|app|code|project|[Uu][Ss][Ee][Rr][Ss]|[Vv][Oo][Ll][Uu][Mm][Ee][Ss]))(?:\/[^\s\/\\'"<>,;:!?()\[\]{}]+)+|(?:[^\s\/\\'"<>,;:!?()\[\]{}]+\/)*[^\s\/\\'"<>,;:!?()\[\]{}]*\.[A-Za-z][A-Za-z0-9_\-])/g, "<PATH>");
+    r = r.replace(/(?<![A-Za-z0-9_])[A-Za-z]:[\\\/](?:[^\s\/\\'"<>,;:!?()\[\]{}]+[\\\/])*[^\s\/\\'"<>,;:!?()\[\]{}]*/g, "<PATH>");
+    r = r.replace(/[A-Za-z0-9._%+\-]+@[A-Za-z0-9\-]+(?:\.[A-Za-z0-9\-]*)*\.[A-Za-z]{2,}/g, "<REDACTED:email>");
     return clipSubmittedText(r, "an intake");
 }
 
@@ -3958,6 +3977,23 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
 
   if (toolName === "misakanet_search") {
     if (!args.query) return { error: "query is required" };
+
+    // #3692: the query is the one thing that carries the caller's machine into our storage.
+    // Today the raw text reached five places — `search_signals.query` (80 chars), `lesson_usage.query`
+    // (200 chars), the knowledge-gap KV entry, the gap counter's bucket key, and (through the same
+    // path) the analytics panel that publishes failed queries. The trial user's words were exact:
+    // "报错片段会作为查询关键词发到该服务器——这意味着内部表名、路径等可能随查询外发".
+    //
+    // So the query is redacted ONCE, here, before anything reads it. Everything downstream — the
+    // scoring, the gap log, the usage rows, the signal row — then works on the redacted text, and
+    // there is no second place to forget. The scoring input changes with it, and that is deliberate:
+    // a path or an address is not a search term, and the corpus is indexed by error text.
+    //
+    // The redaction is the same rule set the client hook applies (integrations/agent-autostart/
+    // checkpoint_reminder.mjs), so the text that reaches the server is already redacted on the
+    // hook's path — this is the half that covers the agent's OWN search call, which the client
+    // cannot intercept.
+    args = { ...args, query: redactIntake(String(args.query)) };
 
     // Rate limit: 5 free reads/day per IP for remote HTTP (shared across
     // search + get_lesson). Local stdio MCP is unlimited (user has the code).

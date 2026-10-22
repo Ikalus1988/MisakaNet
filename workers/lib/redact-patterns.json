@@ -61,5 +61,26 @@
     "flags": "g",
     "replacement": "[REDACTED:card_number]",
     "description": "Credit card numbers (13-19 digits)"
+  },
+  {
+    "id": "abs_path",
+    "pattern": "(?<![A-Za-z0-9_:/~.\\-])(?:file://)?/(?:(?:(?:home|root|var|opt|etc|usr|tmp|mnt|srv|data|private|workspace|app|code|project|[Uu][Ss][Ee][Rr][Ss]|[Vv][Oo][Ll][Uu][Mm][Ee][Ss]))(?:/[^\\s/\\\\'\"<>,;:!?()\\[\\]{}]+)+|(?:[^\\s/\\\\'\"<>,;:!?()\\[\\]{}]+/)*[^\\s/\\\\'\"<>,;:!?()\\[\\]{}]*\\.[A-Za-z][A-Za-z0-9_\\-])",
+    "flags": "g",
+    "replacement": "<PATH>",
+    "description": "Filesystem paths: a known root, or a path whose last segment has a file extension. API routes such as /api/v1/users are left alone — they are corpus text, not a leak"
+  },
+  {
+    "id": "windows_path",
+    "pattern": "(?<![A-Za-z0-9_])[A-Za-z]:[\\\\/](?:[^\\s/\\\\'\"<>,;:!?()\\[\\]{}]+[\\\\/])*[^\\s/\\\\'\"<>,;:!?()\\[\\]{}]*",
+    "flags": "g",
+    "replacement": "<PATH>",
+    "description": "Windows drive paths, under the same two conditions as abs_path"
+  },
+  {
+    "id": "email",
+    "pattern": "[A-Za-z0-9._%+\\-]+@[A-Za-z0-9\\-]+(?:\\.[A-Za-z0-9\\-]*)*\\.[A-Za-z]{2,}",
+    "flags": "g",
+    "replacement": "<REDACTED:email>",
+    "description": "E-mail addresses. The top-level domain must be alphabetic, so an npm version spec (foo@1.2.3) is not a mail address"
   }
 ]
