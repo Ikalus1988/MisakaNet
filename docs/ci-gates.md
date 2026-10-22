@@ -64,6 +64,7 @@ worth knowing before treating a green page as coverage.
 
 | Check | Workflow | Why it is advisory |
 |---|---|---|
+| **drift (the published package must not lag the repository)** | `misakanet-setup-ci.yml` | Advisory **by decision**, and the job says so: it compares the installer on npm against this repository and turns red when the published one is behind. It is **not** a required check, because a required check with a `paths:` filter blocks every PR that does not trigger it (#1920) — so a drift gate would have to be required *without* a filter, which is its own cost. It runs on the package's own pull requests, on pushes to `main`, and daily at 04:17 UTC; the drift it measures accumulates, so a daily sweep is what keeps the state from being reachable again. It is the answer to `--verify`, which cannot see this: `--verify` compares npm with npm, so it reports "up to date" for an installer that is a month old (#3691). |
 | **the other `test (…)` legs** | `ci-cross-platform.yml` | Only `ubuntu-latest, 3.11` is in the ruleset — the windows/macos legs exist to catch platform drift and merge red (measured twice on 2026-09-28 alone) |
 | **MCP Endpoint Stress Tests** | `mcp-stress.yml` | The worker suite, not in the required set — see the note above |
 | **CodeQL (python / javascript-typescript)** | GitHub default | Security queries; findings do not block |
