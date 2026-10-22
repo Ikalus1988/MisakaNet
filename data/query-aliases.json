@@ -1248,7 +1248,7 @@
         "canonical_df": 6,
         "alias_evidence": {
           "file": "misakanet/guard.py",
-          "quote": "print(f\"misakanet.guard: 权限不足: {args.cmd[0]}\", file=sys.stderr)"
+          "quote": "print(f\"misakanet.guard: 权限不足: {cmd[0]}\", file=sys.stderr)"
         },
         "canonical_evidence": {
           "file": "lessons/contrib/erreur-permission-docker-linux.md",
