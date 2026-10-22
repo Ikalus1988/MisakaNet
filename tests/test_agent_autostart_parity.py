@@ -26,6 +26,7 @@ it — the gap is recorded in `docs/maintainer/capability-inventory-new-user-202
 """
 from __future__ import annotations
 
+import json
 import os
 import re
 import subprocess
@@ -53,6 +54,12 @@ def _run_hook(interpreter: list[str], hook: Path, mode: str, payload: str, state
     env = {
         **os.environ,
         "MISAKANET_HOOK_STATE": str(state),
+        # Never read the developer's own ~/.misakanet-agent: a version stamp sitting there
+        # (this machine has one after installing) makes the Node hook's upgrade nudge appear
+        # in a test about something else, and the Python hook has no nudge at all — so the
+        # two would differ for a reason that has nothing to do with their contract. The Node
+        # suite isolates the same directory for the same reason.
+        "MISAKANET_AGENT_DIR": str(state.parent / "agent-dir"),
         "MISAKANET_CHECKPOINT_AT": "3",
         "MISAKANET_CHECKPOINT_EVERY": "2",
         "MISAKANET_HOOK_FETCH": "0",          # never reach the network from a test
@@ -111,6 +118,58 @@ def test_failure_reminder_is_byte_identical(tmp_path: Path):
     assert "requests" in py or py.strip() == "", (
         f"a failure reminder should quote the error fragment the corpus is searched by: {py!r}"
     )
+
+
+# ── the redaction itself (issue #3692) ────────────────────────────────────────────
+# The rules block used to *ask* the agent to redact. The hook now does it in code, and
+# the hook exists twice — the npm package ships the Node one, the Python installers ship
+# the Python one. Two rule tables that drift apart would mean one installer's users leak
+# what the other installer's users do not, so the parity gate has to compare the
+# redaction itself, not the narration around it.
+
+# The error text the issue names: a path, an address and a token in one string.
+REDACTION_SAMPLE = (
+    "Traceback (most recent call last): File /home/alice/project/secret.py, line 42 — "
+    "reporter alice@corp.com sent header Bearer abc123"
+)
+
+# A quote-free fragment, on purpose: the Python hook used to print Python's repr (single
+# quotes) where the Node hook printed JSON (double quotes), so the two installers told the
+# agent two different things — and the parity test below never saw it, because its own
+# payload happened to contain a quote.
+QUOTE_FREE_SAMPLE = "exit code 137"
+
+
+def test_the_two_hooks_redact_identically(tmp_path: Path):
+    payload = json.dumps({"session_id": "parity-redaction", "error": REDACTION_SAMPLE})
+    py, mjs = _both("failure", payload, tmp_path)
+    assert py == mjs, (
+        f"the two hooks redact differently, so one installer's users leak what the other's "
+        f"do not:\n--- python ---\n{py}\n--- node ---\n{mjs}"
+    )
+    for secret in ("/home/alice/project/secret.py", "alice@corp.com", "abc123"):
+        assert secret not in py, (
+            f"{secret!r} is still in the query — the redaction must happen before the "
+            f"fragment is printed into the agent's context:\n{py}"
+        )
+    for placeholder in ("<PATH>", "<REDACTED:email>", "[REDACTED:bearer_token]"):
+        assert placeholder in py, f"the query must carry {placeholder} instead:\n{py}"
+
+
+def test_a_quote_free_fragment_is_still_byte_identical(tmp_path: Path):
+    payload = json.dumps({"session_id": "parity-quotes", "error": QUOTE_FREE_SAMPLE})
+    py, mjs = _both("failure", payload, tmp_path)
+    assert py == mjs, (
+        f"the two hooks print the same query differently:\n--- python ---\n{py}\n--- node ---\n{mjs}"
+    )
+
+
+def test_the_two_hooks_agree_on_ordinary_text(tmp_path: Path):
+    """Over-redaction is a leak of a different kind: it eats the corpus's own words."""
+    payload = json.dumps({"session_id": "parity-ordinary", "error": "GET /api/v1/users returned 404"})
+    py, mjs = _both("failure", payload, tmp_path)
+    assert py == mjs, f"--- python ---\n{py}\n--- node ---\n{mjs}"
+    assert "/api/v1/users" in py, f"an API route was swallowed:\n{py}"
 
 
 def _npm_prompt_block() -> str:
