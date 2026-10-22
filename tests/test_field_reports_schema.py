@@ -60,9 +60,10 @@ COMPLIANT = """\
 > **Config**: `~/.codex/config.toml` (`streamable-http`)
 > **Endpoint**: https://misakanet.org/mcp
 
-`codex mcp list` shows the server enabled, and `tools/list` returned 7 tools:
+`codex mcp list` shows the server enabled, and `tools/list` returned 8 tools:
 `misakanet_register`, `misakanet_search`, `misakanet_get_lesson`, `misakanet_submit_intake`,
-`misakanet_write_lesson`, `misakanet_preflight`, `misakanet_me_events`.
+`misakanet_write_lesson`, `misakanet_preflight`, `misakanet_me_events`,
+`misakanet_me_inbox`.
 
 The search call came back as this envelope (query `pip install timeout`):
 
@@ -79,7 +80,7 @@ RED_CASES: dict[str, tuple[str, str]] = {
     ),
     "FR2-tool-count": (
         "`tools/list` is reported as returning 1 tool",
-        COMPLIANT.replace("returned 7 tools", "returned 1 tool"),
+        COMPLIANT.replace("returned 8 tools", "returned 1 tool"),
     ),
     "FR3-home-path": (
         "an unredacted home path is pasted in",
@@ -95,7 +96,7 @@ RED_CASES: dict[str, tuple[str, str]] = {
     ),
     "FR5-tools-list-count": (
         "`tools/list` is quoted but no count is stated",
-        COMPLIANT.replace("returned 7 tools", "returned the tool list"),
+        COMPLIANT.replace("returned 8 tools", "returned the tool list"),
     ),
     "FR6-client-version": (
         "the client/installer version is deleted",
@@ -189,7 +190,7 @@ def test_a_report_that_declines_a_surface_is_not_punished_for_honesty(tmp_path: 
     honest = """\
 # Field report: gemini CLI headless
 
-Endpoint https://misakanet.org/mcp answered `tools/list` with 7 tools.
+Endpoint https://misakanet.org/mcp answered `tools/list` with 8 tools.
 
 I could not run the client session: the `gemini` CLI is not installed on this host, so the
 `misakanet_search` live call is **未验证 (unverified)**. `~/.gemini/settings.json` parsing is
@@ -332,3 +333,33 @@ def test_rule_ids_are_unique_and_namespaced():
         assert rule.startswith("FR") and "-" in rule, rule
         assert severity in {"truth", "evidence", "info"}, rule
         assert purpose.strip(), f"{rule} has no documented purpose"
+
+
+def test_the_gate_knows_the_same_tools_the_server_serves():
+    """The gate's tool list must not be a hand-kept copy that can go stale.
+
+    It DID go stale. `misakanet_me_inbox` landed in #3259 (2026-09-21), and this gate kept
+    saying 7 — so it rejected a field report that quoted the live endpoint correctly ("8 tools")
+    and would have accepted one that said 7. A gate that enforces a falsehood is worse than no
+    gate: it teaches the next author to write 7, which is the wrong number.
+
+    So the list is pinned to the worker's own tool table. The next tool added to the server
+    turns this test red, and the fix is to add it to `LIVE_TOOLS` — not to argue with the test.
+    """
+    import re
+
+    worker = (REPO / "workers" / "register-proxy-sw.js").read_text(encoding="utf-8")
+    served = set(re.findall(r'name:\s*"(misakanet_[a-z_]+)"', worker))
+    assert served, "could not read the worker's tool table"
+
+    gate = set(CHECKER.LIVE_TOOLS)
+    assert gate == served, (
+        "the gate's tool list no longer matches the server:\n"
+        f"  only in the server: {sorted(served - gate)}\n"
+        f"  only in the gate: {sorted(gate - served)}\n"
+        "A report that quotes the endpoint truthfully must pass, and one that quotes it wrongly "
+        "must fail. That only works if the gate knows the same list the server serves."
+    )
+    assert CHECKER.EXPECTED_TOOL_COUNT == len(served), (
+        f"the gate expects {CHECKER.EXPECTED_TOOL_COUNT} tools but the server serves {len(served)}"
+    )
