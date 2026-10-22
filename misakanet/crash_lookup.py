@@ -60,13 +60,13 @@ class LookupUnavailable(Exception):
 # 堆栈帧行：它们命名的是函数和文件，不是失败本身。
 #   JS     "    at openSync (node:fs:498:26)"
 #   Python '  File "/app/main.py", line 12, in <module>'
-#   Python 3.11+ 的定位条 "    |" 与脱字符 "    ^"
+#   Python 3.11 的定位条 "    ~^^^^^^^^"、3.13 的帧条 "    |" 与脱字符 "    ^"
 _STACK_FRAME_RE = re.compile(
     r"^\s*(?:"
     r"at\s+\S"                              # JS 帧
     r"|File\s+\""                           # Python 帧头
-    r"|\^+"                                 # 指向出错表达式的脱字符
-    r"|\|+"                                 # Python 3.11+ 帧条
+    r"|[~^]+"                               # 指向出错表达式的脱字符（3.11: ~^~~，3.13: ^^^^）
+    r"|\|+"                                 # Python 3.13+ 的帧条竖线
     r"|Traceback \(most recent call last\):"  # Python traceback 头
     r"|During handling of the above exception"
     r"|The above exception was the direct cause"

@@ -12,6 +12,7 @@
 """
 import json
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -19,7 +20,13 @@ from pathlib import Path
 import pytest
 
 from misakanet import guard
-from misakanet.crash_lookup import CORPUS_TIMEOUT_S, lookup_crash, strip_stack_frames
+from misakanet.crash_lookup import (
+    CORPUS_TIMEOUT_S,
+    format_hit,
+    lookup_crash,
+    search_lessons,
+    strip_stack_frames,
+)
 from scripts import fatal_guard_handler
 
 REPO = Path(__file__).parent.parent
@@ -72,6 +79,14 @@ def test_a_hit_prints_the_lesson_title_and_link(tmp_path, capsys):
     assert code == 0
     assert KNOWN_LESSON["title"] in out, "the lesson title is not in the output"
     assert KNOWN_LESSON["url"] in out, "the lesson link is not in the output"
+
+
+def test_a_hit_without_a_title_or_a_link_still_says_something_usable():
+    """命中也给得出能看的东西：没有标题就说没有标题，没有链接就按 id 拼一个。"""
+    line = format_hit({"id": "abc-123"})
+
+    assert "(untitled lesson)" in line
+    assert "https://misakanet.org/lessons/abc-123/" in line
 
 
 def test_a_hit_leaves_no_draft(tmp_path):
@@ -208,6 +223,47 @@ def test_a_missing_payload_is_an_explicit_error(capsys):
     assert "no crash payload" in capsys.readouterr().err
 
 
+def test_a_payload_that_is_not_an_object_is_an_explicit_error(capsys):
+    """载荷必须是一个对象。不是对象就明说，不要崩在半路。"""
+    code = fatal_guard_handler.main([json.dumps(["not", "an", "object"])])
+
+    assert code == 2
+    assert "no crash payload" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("crash", [
+    # Python 3.11 的脱字符行：   ~^^^^^^^^^^^^
+    "  File \"/app/main.py\", line 12, in <module>\n"
+    "    data = open('/etc/shadow')\n"
+    "    ~~~~~~~~^^^^^^\n"
+    "PermissionError: [Errno 13] Permission denied: '/etc/shadow'",
+    # Python 3.13 的帧条 + 脱字符：   |   ^^^^^^
+    "  File \"/app/main.py\", line 12, in <module>\n"
+    "    |   data = open('/etc/shadow')\n"
+    "    |   ^^^^^^^^^^^^^^^^^^^^^\n"
+    "PermissionError: [Errno 13] Permission denied: '/etc/shadow'",
+    # 链式异常的两句
+    "During handling of the above exception, another exception occurred:\n"
+    "\n"
+    "The above exception was the direct cause of the following exception:\n"
+    "\n"
+    "Traceback (most recent call last):\n"
+    "  File \"/app/main.py\", line 20, in <module>\n"
+    "    run()\n"
+    "RuntimeError: boom",
+])
+def test_the_python_markers_are_dropped_from_the_search_text(crash):
+    """定位条、脱字符、链式异常的头——它们都是帧，不是失败本身。"""
+    text = strip_stack_frames(crash)
+
+    assert "~" not in text, "the 3.11 caret line survived"
+    assert "^" not in text, "the caret line survived"
+    assert "During handling of the above exception" not in text
+    assert "The above exception was the direct cause" not in text
+    # 失败本身必须还在
+    assert "PermissionError" in text or "RuntimeError" in text
+
+
 # ── 复用的是那把已经校准好的尺子 ──────────────────────────────────────
 
 def test_the_default_search_reuses_the_calibrated_hit_decision(monkeypatch):
@@ -226,11 +282,33 @@ def test_the_default_search_reuses_the_calibrated_hit_decision(monkeypatch):
     lookup = lookup_crash("EACCES: permission denied")
 
     assert lookup.hit, "the hit decision was not used"
+    assert lookup.searched is True, "a hit means the search ran"
     assert seen["error"] == "EACCES: permission denied"
     assert seen["auto_intake"] is False, "a crash handler must never submit an intake"
     assert seen["sim_threshold"] == intake_bot.DEFAULT_HIT_SIM, (
         "the crash path must use the calibrated bar, not a number of its own")
     assert seen["source"] == "fatal-guard"
+
+
+def test_a_miss_decision_means_the_search_ran_and_found_nothing(monkeypatch):
+    """"查了没有"和"没查成"必须能分开。
+
+    intake_bot 说 miss 的时候，检索是**跑成了**的——那比"没查成"要好，
+    但那也不是"命中"。混成一句话，人就不知道该去查还是该等着。
+    """
+    from scripts import intake_bot
+
+    def fake_decide(error, **kwargs):
+        return {"decision": "miss", "lesson": None}
+
+    monkeypatch.setattr(intake_bot, "decide", fake_decide)
+
+    assert search_lessons("a crash nobody has written about", corpus=[{"id": "x"}]) is None
+
+    lookup = lookup_crash("a crash nobody has written about", search=lambda text: None)
+    assert lookup.hit is False
+    assert lookup.searched is True, "a search that ran and found nothing is not a skipped search"
+    assert lookup.skipped_reason is None, "a search that ran must not be reported as skipped"
 
 
 def test_a_local_similarity_measure_is_not_used(monkeypatch):
@@ -266,6 +344,15 @@ def test_an_unreachable_corpus_is_reported_as_a_skipped_search(monkeypatch):
     assert lookup.skipped_reason and "corpus" in lookup.skipped_reason
 
 
+def _fatal_guard_handler_budget_ms() -> int:
+    """fatal-guard 杀 handler 的时限——从它的源码里读，不在这里抄一份数字。"""
+    source = (REPO / "packages" / "fatal-guard" / "src" / "lib" / "spawn-command.js").read_text(
+        encoding="utf-8")
+    match = re.search(r"HANDLER_TIMEOUT_MS\s*=\s*(\d+)", source)
+    assert match, "fatal-guard no longer declares HANDLER_TIMEOUT_MS"
+    return int(match.group(1))
+
+
 def test_the_corpus_fetch_is_bounded_by_the_handler_budget(monkeypatch):
     """fatal-guard 5 秒后杀掉 handler，所以拉语料必须有更短的预算。"""
     from scripts import intake_bot
@@ -281,7 +368,11 @@ def test_the_corpus_fetch_is_bounded_by_the_handler_budget(monkeypatch):
     lookup_crash("EACCES: permission denied")
 
     assert seen["timeout"] == CORPUS_TIMEOUT_S
-    assert seen["timeout"] < 5, "the corpus fetch must fit inside fatal-guard's 5s handler budget"
+    assert CORPUS_TIMEOUT_S == 3, (
+        "the corpus budget is a measured number (cold fetch of 516 lessons: 0.96s) — "
+        "re-measure before changing it")
+    assert seen["timeout"] < _fatal_guard_handler_budget_ms() / 1000, (
+        "the corpus fetch must fit inside fatal-guard's handler budget")
 
 
 # ── 检索文本：同一段错误，去掉堆栈帧 ──────────────────────────────────
@@ -373,6 +464,30 @@ def test_the_sidecar_does_not_claim_a_draft_it_did_not_write(tmp_path, capfd):
     assert "生成失败" in err, "the failure was not reported"
 
 
+def test_the_sidecar_writes_no_draft_when_it_was_not_asked_to(tmp_path, capfd):
+    """没有 --to-draft 就不写草稿，也不能说写了。
+
+    旧实现只认 `--to-draft` 这个开关；现在检索成了默认动作，别把"检索"和"写草稿"
+    混成一件事——没要草稿就不该有草稿。
+    """
+    with pytest.raises(SystemExit):
+        guard.main(["--offline", "--drafts-dir", str(tmp_path), "--", *_crashing_command()])
+
+    err = capfd.readouterr().err
+    assert "已留草稿" not in err, "the sidecar claimed a draft it was not asked to write"
+    assert "未留草稿" in err
+    assert list(tmp_path.glob("*.md")) == [], "a draft was written without --to-draft"
+
+
+def test_the_sidecar_without_a_command_prints_help_and_exits(capfd):
+    """没有命令就没有东西可包装：说清楚，而不是把空列表丢给 Popen。"""
+    with pytest.raises(SystemExit) as exc:
+        guard.main([])
+
+    assert exc.value.code == 1
+    assert "usage" in capfd.readouterr().err.lower()
+
+
 # ── 作为进程跑（fatal-guard 真正会做的事）────────────────────────────
 
 def test_the_handler_runs_as_a_process(tmp_path):
@@ -447,3 +562,43 @@ def test_an_empty_crash_file_setting_writes_no_resolution(tmp_path, monkeypatch)
         drafts_dir=tmp_path / "drafts")
 
     assert list(tmp_path.iterdir()) == [], "a resolution appeared although the crash file is off"
+
+
+def test_the_resolution_next_to_a_markdown_crash_file_uses_the_stem(tmp_path, monkeypatch):
+    """崩溃文件也可能是 .md；那时结论文件是 <stem>.resolution.md，不是 <name>.resolution.md。"""
+    crash_file = tmp_path / "last-crash.md"
+    monkeypatch.setenv("FATAL_CRASH_OUT", str(crash_file))
+    search = _search_returning(KNOWN_LESSON)
+
+    fatal_guard_handler.main(
+        [json.dumps(NODE_PAYLOAD)], search=search, drafts_dir=tmp_path / "drafts")
+
+    resolution = tmp_path / "last-crash.resolution.md"
+    assert resolution.exists(), (
+        f"the resolution was not written: {sorted(p.name for p in tmp_path.iterdir())}")
+    assert KNOWN_LESSON["url"] in resolution.read_text(encoding="utf-8")
+
+
+def test_a_resolution_that_cannot_be_written_does_not_break_the_crash_path(tmp_path, monkeypatch):
+    """结论文件是额外的一份，不是流程的一环：写不下去也要照常处理崩溃。"""
+    blocker = tmp_path / "a-file"
+    blocker.write_text("not a directory", encoding="utf-8")
+    monkeypatch.setenv("FATAL_CRASH_OUT", str(blocker / "crash.json"))
+    search = _search_returning(KNOWN_LESSON)
+
+    code = fatal_guard_handler.main(
+        [json.dumps(NODE_PAYLOAD)], search=search, drafts_dir=tmp_path / "drafts")
+
+    assert code == 0, "the crash path failed because the resolution could not be written"
+
+
+def test_a_draft_that_cannot_be_written_is_reported_as_such(tmp_path, capsys):
+    """草稿写不下去：明说，退出码也说清楚（3 = 草稿写不下去）。"""
+    blocker = tmp_path / "a-file"
+    blocker.write_text("not a directory", encoding="utf-8")
+
+    code = fatal_guard_handler.main(
+        ["--offline", "--drafts-dir", str(blocker / "drafts"), json.dumps(NODE_PAYLOAD)])
+
+    assert code == 3
+    assert "cannot write the draft" in capsys.readouterr().err
