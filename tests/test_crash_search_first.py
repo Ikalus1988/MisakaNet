@@ -285,6 +285,8 @@ def test_the_default_search_reuses_the_calibrated_hit_decision(monkeypatch):
     assert lookup.searched is True, "a hit means the search ran"
     assert seen["error"] == "EACCES: permission denied"
     assert seen["auto_intake"] is False, "a crash handler must never submit an intake"
+    assert seen["offline"] is False, (
+        "the crash path must let the hit decision look at the corpus")
     assert seen["sim_threshold"] == intake_bot.DEFAULT_HIT_SIM, (
         "the crash path must use the calibrated bar, not a number of its own")
     assert seen["source"] == "fatal-guard"
@@ -461,7 +463,23 @@ def test_the_sidecar_does_not_claim_a_draft_it_did_not_write(tmp_path, capfd):
 
     err = capfd.readouterr().err
     assert "已留草稿" not in err, "the sidecar claimed a draft it could not write"
+    assert "未留草稿" in err, "the sidecar did not say that there is no draft"
     assert "生成失败" in err, "the failure was not reported"
+
+
+def test_the_sidecar_searches_without_the_stack_frames(tmp_path, capfd):
+    """边车拿到的现场可能带帧（子进程打印的 traceback）；检索时那些帧要去掉。"""
+    search = _search_returning(KNOWN_LESSON)
+    traceback_cmd = [sys.executable, "-c",
+                     "import sys; sys.stderr.write('Traceback (most recent call last):\\n"
+                     "  File \"x.py\", line 1\\nPermissionError: [Errno 13]\\n'); sys.exit(3)"]
+
+    with pytest.raises(SystemExit):
+        guard.main(["--", *traceback_cmd], search=search)
+
+    assert search.asked, "the sidecar never searched"
+    assert 'File "x.py"' not in search.asked[0], "the stack frames reached the search"
+    assert "PermissionError" in search.asked[0], "the failure itself must stay"
 
 
 def test_the_sidecar_writes_no_draft_when_it_was_not_asked_to(tmp_path, capfd):
@@ -543,13 +561,18 @@ def test_the_resolution_says_where_the_draft_is(tmp_path, monkeypatch):
 
 
 def test_no_resolution_is_written_without_a_crash_file(tmp_path, monkeypatch):
-    """没有崩溃文件就没什么"旁边"，也就不该凭空造一个文件。"""
-    monkeypatch.delenv("FATAL_CRASH_OUT", raising=False)
+    """没有崩溃文件就没什么"旁边"，也就不该凭空造一个文件。
 
-    fatal_guard_handler.main(
+    `chdir` 到 tmp_path：一份"写在当前目录"的实现也跑不掉——它会落在 tmp_path 里。
+    """
+    monkeypatch.delenv("FATAL_CRASH_OUT", raising=False)
+    monkeypatch.chdir(tmp_path)
+
+    code = fatal_guard_handler.main(
         [json.dumps(NODE_PAYLOAD)], search=_search_returning(KNOWN_LESSON),
         drafts_dir=tmp_path / "drafts")
 
+    assert code == 0
     assert list(tmp_path.iterdir()) == [], "a resolution appeared without a crash file"
 
 
