@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-10-21T21:52:40.584316+00:00",
+  "generated_at": "2026-10-22T05:03:01.622099+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "docs(handoff): §126-§127 — two issue lines, and a missing lock that a flaky label hid",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3649",
-      "timestamp": "2026-10-21T18:51:21Z",
+      "title": "fix(pixel-gate): the page was still on its way when the capture called it stable",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3681",
+      "timestamp": "2026-10-22T04:10:32Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "docs(integrations): the connector's own page answers the ownership question, and it is not stale",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3648",
-      "timestamp": "2026-10-21T18:46:13Z",
+      "title": "feat(pixel-gate): a criterion for changes that are *meant* to move the page",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3680",
+      "timestamp": "2026-10-22T03:42:00Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(fatal-guard): the crash payload carries the error text, not the exit code",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3647",
-      "timestamp": "2026-10-21T18:44:43Z",
+      "title": "docs(handoff): §129 — the crash path, my own mutation audit, and the PR I merged with a red leg",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3679",
+      "timestamp": "2026-10-22T03:25:23Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(site): the onboarding dialog behaves like a dialog, and says its name in the reader's language",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3646",
-      "timestamp": "2026-10-21T18:14:36Z",
+      "title": "test(fatal-guard): the Windows tokenizer test asserted a token count the machine decides (#3672 follow-up)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3678",
+      "timestamp": "2026-10-22T03:05:47Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3643",
-      "timestamp": "2026-10-21T17:30:48Z",
+      "title": "feat(crash): a crash looks for an existing lesson before it leaves a draft (#3642)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3676",
+      "timestamp": "2026-10-22T02:56:44Z",
       "source": "github"
     },
     {

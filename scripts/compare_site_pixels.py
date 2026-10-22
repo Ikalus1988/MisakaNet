@@ -36,9 +36,20 @@ before. That gives one clean signal, and this file uses it three ways:
 through an injected stylesheet, the viewport and device scale factor are pinned, the fonts are
 awaited, the network is allowed to go quiet, and then the page is given a fixed settle delay.
 Without those five things the same tree renders differently twice and every diff is noise. A
-sixth thing is not a setting but a check: the page is shot again after a pause, and if the two
-shots are not byte-identical the page was still changing, so the shot is repeated. A page that
-never stops changing is reported as such rather than quietly written down as a baseline.
+sixth thing is not a setting but a check: the page is shot again after a pause, and it keeps
+shooting until **three shots in a row are byte-identical** — two are not enough, because two
+shots 400 ms apart can agree while the page is still on its way to its final state. A page that
+never stops changing is reported as such rather than quietly written down as a baseline, and a
+capture that never settled is **not compared**: the gate refuses to report the page's own
+rendering state as a change, and says which pages it could not decide.
+
+**Two more things had to be pinned, and both of them were found by measuring the homepage.**
+The browser's **clock** is pinned to a fixed instant (`CLOCK_FROZEN_MS`), because the homepage
+prints the age of the feed against the wall clock: two captures a minute apart showed "59 minutes
+ago" and "60 minutes ago", a change nobody made. And the **scroll position** is pinned to the top
+before the shot, because Chromium composites a layer at an integer position while its content keeps
+the fractional offset — the same page rasterised at a different scroll offset came out 1017 pixels
+apart, a sub-pixel shift of the whole page.
 
 **The site is served over HTTP, not `file://`.** The pages fetch `locales/*.json` and
 `community/voices.json`, and they link `/favicon.ico` and `/assets/...` absolutely; under
@@ -109,8 +120,10 @@ tolerance does not reproduce the page set, and the report says which of the two 
 `--pages` filter is hidden from `--help`, exactly as it is on `capture`.
 
 Exit codes: `0` pass, `1` the gate failed (a page over `--threshold`, or a layout shift), `2` a
-usage or environment error. `noise-floor` exits `0` when the default tolerance reproduces every
-page of the set, and `1` when it does not.
+usage or environment error — and also *the gate could not decide*: a capture that never settled
+is never compared, and the pages it covers are reported as "not compared" rather than as
+unchanged. `noise-floor` exits `0` when the default tolerance reproduces every page of the set,
+and `1` when it does not.
 """
 from __future__ import annotations
 
@@ -156,10 +169,40 @@ FREEZE_CSS = (
 )
 
 SETTLE_MS = 600
+#: The instant the browser's clock is pinned to, in milliseconds since the epoch.
+#:
+#: The gate compares two trees, and it takes them minutes apart. The homepage renders the age of
+#: the feed against the wall clock (`getTimeAgo()` in `docs/index.html`), so two captures taken a
+#: minute apart can show "59 minutes ago" and "60 minutes ago" — a change nobody made, on a page
+#: the gate would then blame the author for. The module docstring has carried that as a known
+#: defect since the first measurement.
+#:
+#: A pinned clock is what a visual-regression harness does anyway: the page is rendered in a
+#: frozen world, and both captures live in the same one. The instant is in the **past** on purpose
+#: — every relative timestamp on the site is then "just now", which is both deterministic and short
+#: enough not to reflow anything.
+CLOCK_FROZEN_MS = 1_577_836_800_000  # 2020-01-01T00:00:00Z
 # How long to wait between two shots of the same page while looking for a page that has stopped
 # changing, and how many shots to take before giving up on it.
 STABILITY_WAIT_MS = 400
-STABILITY_ATTEMPTS = 4
+#: How many shots the capture may take before it gives up on the page settling.
+#:
+#: The budget has to cover the *worst* convergence measured, not the usual one. On the homepage
+#: at 390×844 the first four shots each differ from the one before it — the same 36 pixels at the
+#: four rounded corners of the search box, each a couple of channel steps apart, while the box's
+#: own geometry does not move by a pixel (`getBoundingClientRect()` returns the same
+#: `top: 674.859375` on every shot) — and only from the fifth shot on is the page still.
+#:
+#: Four attempts were not enough: the rule needs `STABILITY_IDENTICAL_SHOTS` shots in a row, and
+#: the homepage needs six to have three. With four attempts the capture gave up, wrote down a
+#: page that was still moving, and the gate compared that against a settled one: **584 differing
+#: pixels** on 1280×800, all of them a rendering state and none of them a change anybody made.
+#: With eight, the same two trees differ by **0 pixels** on every viewport.
+#:
+#: A budget that is too small is worse than a budget that is too large: the extra shots cost
+#: time, while an unsettled capture costs the whole verdict. And when even eight shots do not
+#: settle the page, the capture says so and the gate refuses to decide — see `unsettled_captures`.
+STABILITY_ATTEMPTS = 8
 #: How many **consecutive identical** shots count as "the page has stopped changing".
 #:
 #: Two was not enough, and the symptom was invisible from inside one tree: the page *looked*
@@ -544,6 +587,10 @@ def _capture_one(
     )
     try:
         context.add_init_script(INIT_SCRIPT.replace("__FREEZE_CSS__", json.dumps(FREEZE_CSS)))
+        # The clock is pinned before the page exists, so every `Date.now()` and `new Date()` in the
+        # page reads the same instant in every capture. Timers keep running — only the clock is
+        # frozen — so the page still animates, and the settling rule below still has to wait for it.
+        context.clock.set_fixed_time(CLOCK_FROZEN_MS)
         page = context.new_page()
         response = page.goto(url, wait_until="load", timeout=PAGE_TIMEOUT_MS)
         if response is not None and not response.ok:
@@ -563,6 +610,13 @@ def _capture_one(
             # failure: the fonts have settled and the settle delay below still applies.
             pass
         page.wait_for_timeout(settle_ms)
+        # Chromium composites a layer at an integer position while its *content* keeps the
+        # fractional offset, so the same page rasterises differently depending on where the
+        # viewport was when the shot was taken. Two captures of one tree came out 1017 pixels
+        # apart that way — a sub-pixel shift of the whole page. The scroll position is the same
+        # every time here, so the raster is the same every time.
+        page.evaluate("() => window.scrollTo(0, 0)")
+        page.wait_for_timeout(stability_wait_ms)
         metrics = page.evaluate(
             """() => ({
                 scrollWidth: document.documentElement.scrollWidth,
@@ -684,7 +738,39 @@ def capture(
                         records.append(record)
             finally:
                 browser.close()
+    # The capture directory carries its own manifest: `compare` reads it to learn which captures
+    # never settled, and a capture whose manifest is somewhere else would leave the gate
+    # comparing a half-rendered page without ever saying so. It is written here, in `capture`,
+    # so that the Python API and the command line both leave the same record behind.
+    write_manifest(out_dir, records, docs_root)
     return records, warnings
+
+
+def write_manifest(out_dir: Path, records: list[CaptureRecord], docs_root: Path) -> Path:
+    """Write the capture manifest into the capture directory and return its path."""
+    manifest = {
+        "docs_root": str(docs_root.resolve()),
+        "generated_at": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+        "viewports": [{"name": n, "width": w, "height": h} for n, w, h in VIEWPORTS],
+        "captures": [
+            {
+                "page": r.page,
+                "viewport": r.viewport,
+                "image": r.image,
+                "viewport_width": r.width,
+                "viewport_height": r.height,
+                "scroll_width": r.scroll_width,
+                "scroll_height": r.scroll_height,
+                "fonts_loaded": r.fonts_loaded,
+                "stable": r.stable,
+                "error": r.error,
+            }
+            for r in records
+        ],
+    }
+    path = out_dir / "manifest.json"
+    path.write_text(json.dumps(manifest, indent=2, ensure_ascii=False), encoding="utf-8")
+    return path
 
 
 # ── compare ────────────────────────────────────────────────────────────────────────────────────
@@ -989,6 +1075,39 @@ def compare_arrays(
     return result
 
 
+def unsettled_captures(capture_dir: Path) -> dict[tuple[str, str], str]:
+    """Which captures in `capture_dir` never settled, read from the capture manifest.
+
+    A capture that never stopped changing is a picture of a page that was still on its way. The
+    gate must not compare such a picture with another one and report the difference as if it
+    were a change in the page: measured on the homepage, an unsettled capture differed from a
+    settled one by **584 pixels** over the default tolerance — every one of them a rendering
+    state, none of them a change anybody made.
+
+    Returns `{(page, viewport): reason}`. A directory without a manifest carries no verdict about
+    settling at all, so it is compared as before: the gate has nothing to say about it.
+    """
+    manifest_path = capture_dir / "manifest.json"
+    if not manifest_path.is_file():
+        return {}
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    unsettled: dict[tuple[str, str], str] = {}
+    for capture in manifest.get("captures") or []:
+        page = str(capture.get("page") or "")
+        viewport = str(capture.get("viewport") or "")
+        error = str(capture.get("error") or "")
+        if error:
+            unsettled[(page, viewport)] = f"the capture failed: {error}"
+        elif not capture.get("stable", True):
+            unsettled[(page, viewport)] = (
+                "the page never stopped changing — the capture may be mid-render"
+            )
+    return unsettled
+
+
 def compare_pair(
     before_path: Path,
     after_path: Path,
@@ -1010,6 +1129,58 @@ def compare_pair(
     )
 
 
+def _page_ids(files: dict[str, Path]) -> set[str]:
+    """The page ids a capture directory holds, from its file names."""
+    ids: set[str] = set()
+    for name in files:
+        parsed = parse_image_name(name)
+        if parsed is not None:
+            ids.add(parsed[0])
+    return ids
+
+
+def classify_new_pages(
+    before_files: dict[str, Path],
+    after_files: dict[str, Path],
+    declared: list[str] | None,
+) -> tuple[list[str], list[dict[str, str]]]:
+    """Which pages are new, and which declarations do not hold.
+
+    **The problem this solves.** A change that *adds* a page has no image on the "before" side, so
+    there is nothing to compare — and the tool's answer was "missing in before", which the gate
+    counts as a failure. So a change that was asked for reported itself as a regression, and the
+    only ways out were to add a fake "before" capture or to stop running the gate.
+
+    **The rule.** The author declares the pages that are new (`--allow-new`). A declared page that
+    really is new is *not compared* — there is nothing to compare — and it is reported, so the run
+    says what it did. A declaration that does not hold is an **error**, not a pass:
+
+    - the page existed before, so "new" was wrong and the change to it was never compared;
+    - the page is in neither capture, so the declaration names something that is not there.
+
+    Either way the gate cannot decide, and it says so instead of passing.
+    """
+    declared_list = list(declared or [])
+    before_ids = _page_ids(before_files)
+    after_ids = _page_ids(after_files)
+    new_pages: list[str] = []
+    errors: list[dict[str, str]] = []
+    for pid in declared_list:
+        if pid in before_ids:
+            errors.append({
+                "page": pid,
+                "problem": "declared new, but the page exists in the before capture",
+            })
+        elif pid not in after_ids:
+            errors.append({
+                "page": pid,
+                "problem": "declared new, but the page is in neither capture",
+            })
+        else:
+            new_pages.append(pid)
+    return new_pages, errors
+
+
 def compare(
     before_dir: Path,
     after_dir: Path,
@@ -1017,12 +1188,18 @@ def compare(
     tolerance: int = DEFAULT_TOLERANCE,
     max_regions: int = 12,
     only: list[str] | None = None,
+    new_pages: list[str] | None = None,
 ) -> dict[str, Any]:
     """Compare two capture directories, page by page and viewport by viewport."""
     before_files = {p.name: p for p in before_dir.glob("*.png")}
     after_files = {p.name: p for p in after_dir.glob("*.png")}
     pages: dict[str, dict[str, Any]] = {}
     missing: list[dict[str, str]] = []
+    unsettled: list[dict[str, str]] = []
+    before_unsettled = unsettled_captures(before_dir)
+    after_unsettled = unsettled_captures(after_dir)
+    declared_new, declaration_errors = classify_new_pages(before_files, after_files, new_pages)
+    declared_new_set = set(declared_new)
 
     for name in sorted(set(before_files) | set(after_files)):
         parsed = parse_image_name(name)
@@ -1032,10 +1209,20 @@ def compare(
         if only and pid not in set(only):
             continue
         if name not in before_files:
+            if pid in declared_new_set:
+                # New page: there is no "before" image, so there is nothing to compare. It is
+                # reported as new rather than as a missing capture.
+                continue
             missing.append({"page": pid, "viewport": viewport, "problem": "missing in before"})
             continue
         if name not in after_files:
             missing.append({"page": pid, "viewport": viewport, "problem": "missing in after"})
+            continue
+        # A capture that never settled cannot be compared: the difference would be the page's
+        # own rendering state, and reporting it as a change would blame the author for it.
+        reason = before_unsettled.get((pid, viewport)) or after_unsettled.get((pid, viewport))
+        if reason:
+            unsettled.append({"page": pid, "viewport": viewport, "problem": reason})
             continue
         pair = compare_pair(
             before_files[name],
@@ -1048,7 +1235,14 @@ def compare(
 
     # The tolerance travels with the report: a diff count without the tolerance that produced it
     # is ambiguous, and the noise floor is the reason the tolerance exists.
-    return {"pages": pages, "missing": missing, "tolerance": tolerance}
+    return {
+        "pages": pages,
+        "missing": missing,
+        "unsettled": unsettled,
+        "new": declared_new,
+        "declaration_errors": declaration_errors,
+        "tolerance": tolerance,
+    }
 
 
 # ── the noise floor ───────────────────────────────────────────────────────────────────────────
@@ -1186,6 +1380,17 @@ def measure_noise_floor(
                     f"capture {index} of {runs} failed, the noise floor cannot be measured: "
                     f"{detail}"
                 )
+            # A capture that never settled is a picture of a page that was still on its way.
+            # Measuring the noise floor on it would fold a rendering state into the floor and
+            # tell the reader to raise the tolerance high enough to hide real changes — the one
+            # thing this mode must never recommend.
+            unsettled = [r for r in records if not r.stable]
+            if unsettled:
+                detail = "; ".join(f"{r.page} @{r.viewport}" for r in unsettled[:3])
+                raise SystemExit(
+                    f"capture {index} of {runs} never settled, the noise floor cannot be "
+                    f"measured: {detail}. Capture again — the page needs more shots to settle."
+                )
             run_dirs.append(run_dir)
 
         pages: dict[str, dict[str, Any]] = {}
@@ -1301,6 +1506,27 @@ def print_report(report: dict[str, Any], verbose: bool = False) -> None:
         print("\nmissing captures:")
         for item in report["missing"]:
             print(f"  {item['page']} @{item['viewport']}: {item['problem']}")
+    if report.get("new"):
+        print("\nnew pages (declared, so not compared):")
+        for pid in report["new"]:
+            print(f"  {pid}")
+    if report.get("declaration_errors"):
+        print("\ndeclarations that do not hold:")
+        for item in report["declaration_errors"]:
+            print(f"  {item['page']}: {item['problem']}")
+    _print_unsettled(report)
+
+
+def _print_unsettled(report: dict[str, Any]) -> None:
+    """Say which captures were never compared, and why."""
+    unsettled = report.get("unsettled") or []
+    if not unsettled:
+        return
+    print("\nnot compared — these captures never settled:")
+    for item in unsettled:
+        print(f"  {item['page']} @{item['viewport']}: {item['problem']}")
+    print("  A capture that never stopped changing is a picture of a page that was still on its")
+    print("  way: comparing it would report the page's own rendering state as a change.")
 
 
 def print_noise_floor(report: dict[str, Any]) -> None:
@@ -1457,17 +1683,27 @@ def scoped_compare(
     tolerance: int = DEFAULT_TOLERANCE,
     only: list[str] | None = None,
     block: int = 8,
+    new_pages: list[str] | None = None,
 ) -> dict[str, Any]:
     """Compare two capture directories under the scoped criterion.
 
     `allow` is the list of declared regions: (page, viewport or None, box). A region declared
     without a viewport applies to every viewport of that page.
+
+    `new_pages` names the pages this change adds. They have no "before" image, so there is
+    nothing to compare — they are reported, not compared. See `classify_new_pages` for why the
+    declaration has to hold.
     """
     allow = list(allow or [])
     before_files = {p.name: p for p in before_dir.glob("*.png")}
     after_files = {p.name: p for p in after_dir.glob("*.png")}
     pages: dict[str, dict[str, Any]] = {}
     missing: list[dict[str, str]] = []
+    unsettled: list[dict[str, str]] = []
+    before_unsettled = unsettled_captures(before_dir)
+    after_unsettled = unsettled_captures(after_dir)
+    declared_new, declaration_errors = classify_new_pages(before_files, after_files, new_pages)
+    declared_new_set = set(declared_new)
 
     for name in sorted(set(before_files) | set(after_files)):
         parsed = parse_image_name(name)
@@ -1477,10 +1713,18 @@ def scoped_compare(
         if only and pid not in set(only):
             continue
         if name not in before_files:
+            if pid in declared_new_set:
+                # New page: nothing on the "before" side to compare against.
+                continue
             missing.append({"page": pid, "viewport": viewport, "problem": "missing in before"})
             continue
         if name not in after_files:
             missing.append({"page": pid, "viewport": viewport, "problem": "missing in after"})
+            continue
+        # The same rule as `compare`: a capture that never settled is not evidence.
+        reason = before_unsettled.get((pid, viewport)) or after_unsettled.get((pid, viewport))
+        if reason:
+            unsettled.append({"page": pid, "viewport": viewport, "problem": reason})
             continue
         boxes = [
             box
@@ -1496,7 +1740,14 @@ def scoped_compare(
         )
         pages.setdefault(pid, {})[viewport] = pair
 
-    return {"pages": pages, "missing": missing, "tolerance": tolerance}
+    return {
+        "pages": pages,
+        "missing": missing,
+        "unsettled": unsettled,
+        "new": declared_new,
+        "declaration_errors": declaration_errors,
+        "tolerance": tolerance,
+    }
 
 
 def failed_scoped_pages(report: dict[str, Any]) -> list[str]:
@@ -1546,6 +1797,15 @@ def print_scoped_report(report: dict[str, Any], verbose: bool = False) -> None:
         print("\nmissing captures:")
         for item in report["missing"]:
             print(f"  {item['page']} @{item['viewport']}: {item['problem']}")
+    if report.get("new"):
+        print("\nnew pages (declared, so not compared):")
+        for pid in report["new"]:
+            print(f"  {pid}")
+    if report.get("declaration_errors"):
+        print("\ndeclarations that do not hold:")
+        for item in report["declaration_errors"]:
+            print(f"  {item['page']}: {item['problem']}")
+    _print_unsettled(report)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -1614,6 +1874,16 @@ def build_parser() -> argparse.ArgumentParser:
         help="do not fail the gate on a layout shift, only on the ratio",
     )
     cmp_.add_argument("--verbose", "-v", action="store_true", help="print every region")
+    cmp_.add_argument(
+        "--allow-new",
+        action="append",
+        default=None,
+        metavar="PAGE",
+        help=(
+            "a page this change adds: it has no image to compare against, so it is reported "
+            "instead of compared (repeatable)"
+        ),
+    )
 
     floor = sub.add_parser(
         "noise-floor",
@@ -1672,6 +1942,16 @@ def build_parser() -> argparse.ArgumentParser:
     scoped.add_argument("--pages", nargs="*", default=None, help=argparse.SUPPRESS)
     scoped.add_argument("--json", type=Path, default=None, help="write the full report here")
     scoped.add_argument("--verbose", "-v", action="store_true", help="print every region")
+    scoped.add_argument(
+        "--allow-new",
+        action="append",
+        default=None,
+        metavar="PAGE",
+        help=(
+            "a page this change adds: it has no image to compare against, so it is reported "
+            "instead of compared (repeatable)"
+        ),
+    )
 
     return parser
 
@@ -1711,10 +1991,13 @@ def main(argv: list[str] | None = None) -> int:
                 for r in records
             ],
         }
+        # `capture` already wrote the manifest into the capture directory; `--json` is a copy of
+        # it somewhere else, not a move.
         manifest_path = args.json or (args.out / "manifest.json")
-        manifest_path.write_text(
-            json.dumps(manifest, indent=2, ensure_ascii=False), encoding="utf-8"
-        )
+        if args.json is not None:
+            manifest_path.write_text(
+                json.dumps(manifest, indent=2, ensure_ascii=False), encoding="utf-8"
+            )
         print(f"captured {len(records) - len(failures)}/{len(records)} into {args.out}")
         print(f"manifest: {manifest_path}")
         for record in records:
@@ -1757,6 +2040,7 @@ def main(argv: list[str] | None = None) -> int:
             tolerance=args.tolerance,
             only=args.pages,
             block=args.block,
+            new_pages=args.allow_new,
         )
         print_scoped_report(report, verbose=args.verbose)
         if args.json:
@@ -1771,6 +2055,18 @@ def main(argv: list[str] | None = None) -> int:
                 f"{', '.join(failed)}"
             )
             return 1
+        if report.get("declaration_errors"):
+            print(
+                f"\nCANNOT DECIDE: {len(report['declaration_errors'])} declaration(s) do not "
+                "hold, so the pages they name were not compared the way the run assumed."
+            )
+            return 2
+        if report.get("unsettled"):
+            print(
+                f"\nCANNOT DECIDE: {len(report['unsettled'])} capture(s) never settled, so those "
+                "pages were not compared. Capture them again."
+            )
+            return 2
         print("\nPASS: every change is inside a declared region")
         return 0
 
@@ -1781,6 +2077,7 @@ def main(argv: list[str] | None = None) -> int:
         tolerance=args.tolerance,
         max_regions=args.max_regions,
         only=args.pages,
+        new_pages=args.allow_new,
     )
     print_report(report, verbose=args.verbose)
 
@@ -1796,7 +2093,24 @@ def main(argv: list[str] | None = None) -> int:
             f"\nFAIL: {len(failed)} page(s) over threshold {args.threshold}: "
             f"{', '.join(failed)}"
         )
+        if report.get("unsettled"):
+            print(
+                f"and {len(report['unsettled'])} capture(s) never settled, so those pages were "
+                "not compared"
+            )
         return 1
+    if report.get("declaration_errors"):
+        print(
+            f"\nCANNOT DECIDE: {len(report['declaration_errors'])} declaration(s) do not hold, "
+            "so the pages they name were not compared the way the run assumed."
+        )
+        return 2
+    if report.get("unsettled"):
+        print(
+            f"\nCANNOT DECIDE: {len(report['unsettled'])} capture(s) never settled, so those "
+            "pages were not compared. Capture them again."
+        )
+        return 2
     print(f"\nPASS: every page is within threshold {args.threshold}")
     return 0
 

@@ -65,7 +65,10 @@ def test_the_generated_pages_are_inside_the_gate():
     generated = site_page_scope.generated_pages(REPO)
     assert len(generated) > 500, f"the generated tree is expected to exist ({len(generated)})"
     assert set(generated) <= set(gated), "the generated pages are outside the gate"
-    assert len(cdc.hand_written_pages(REPO)) == 14, "the hand-written page set changed shape"
+    # 15 since #3641: the registration form moved off the homepage onto a page of its own, and a
+    # page of its own is a page the gate has to read. The number is a ratchet — a page added or
+    # removed changes it, and that is the point.
+    assert len(cdc.hand_written_pages(REPO)) == 15, "the hand-written page set changed shape"
 
 
 def test_the_partition_rule_is_defined_in_exactly_one_place():

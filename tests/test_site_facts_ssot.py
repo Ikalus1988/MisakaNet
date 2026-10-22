@@ -109,14 +109,19 @@ def test_a_stale_locale_tool_count_names_its_file(tmp_path):
 # ── and it can go red, naming both files ─────────────────────────────────────────────────────────
 
 def _mini_tree(tmp_path: Path) -> Path:
-    """A root with just the two surfaces a command fact reads.
+    """A root with just the surfaces a command fact reads.
 
     Copying the real files keeps the patterns honest — a fixture that this file also wrote would
-    pass even if the patterns matched nothing in the repository.
+    pass even if the patterns matched nothing in the repository. The install page is one of those
+    surfaces since #3640: the page that teaches the command must not spell it differently from
+    the README it points at.
     """
-    (tmp_path / "docs").mkdir()
+    (tmp_path / "docs" / "install").mkdir(parents=True)
     shutil.copy(REPO / "README.md", tmp_path / "README.md")
     shutil.copy(REPO / "docs" / "index.html", tmp_path / "docs" / "index.html")
+    shutil.copy(
+        REPO / "docs" / "install" / "index.html", tmp_path / "docs" / "install" / "index.html"
+    )
     return tmp_path
 
 

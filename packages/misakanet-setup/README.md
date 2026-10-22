@@ -2,8 +2,14 @@
 
 One command to teach your **Claude Code**, **Codex**, **Hermes**, **OpenClaw**, **codewhale**,
 **Cursor**, **Gemini CLI**, **Copilot CLI**, **OpenCode** or **Kiro** to
-check MisakaNet's failure lessons before repeating a mistake — and to distil the session's reusable
-lessons at a checkpoint.
+check MisakaNet's failure lessons before repeating a mistake — and to write up the reusable lessons
+this session produced, at a checkpoint.
+
+**What it writes:** an MCP endpoint into each agent config, rules blocks for the clients that take
+one, and a local hook for Claude Code. **What leaves this machine:** at most one anonymous request
+while the installer runs; afterwards, only what the agent itself sends — with one opt-in exception:
+`MISAKANET_HOOK_FETCH=1` (off by default) makes the hook itself send the failed call's error text
+(or the command, when the tool gave no error text) as a search query.
 
 ```bash
 npx @misaka-net/misakanet-setup
@@ -30,7 +36,7 @@ knowledge base on its own instead of guessing.
 All of them are config files written file-to-file — no subprocess is spawned, so **no token ever appears in a command line**. For Claude Code only, the five **read-only** tools are also added to `permissions.allow` — "can call it" otherwise still means a permission prompt on the very first search, so `0.5.3` pre-allows them (`--verify` reports it, `--report` prints `permissions:`); `write_lesson` is deliberately **not** pre-allowed, because a tool that writes should ask |
 | 2 | the agent **knows when** | rules block appended to `~/.claude/CLAUDE.md` / `~/.codex/AGENTS.md` / `~/.hermes/SOUL.md` / `~/.openclaw/workspace/AGENTS.md`. **The five JSON-file clients are the exception: they get none**, because their rules are project-scoped (`.cursor/rules/*.mdc`, `GEMINI.md`, `.github/copilot-instructions.md`, `AGENTS.md`, `.kiro/steering/*.md`) and the installer cannot know where your projects live — the install output says so, with the project-side action for each client, instead of implying behaviour changed (issue, retry, risky-operation triggers; desensitisation rules). Wording is **imperative first** ("必须先调 misakanet_search") rather than descriptive, because a field test showed a weaker model reads a descriptive block as background and never calls the tool |
 | 4 | *(opt-in)* you **hear** it | `--voice` adds a `PostToolUse` hook that plays the cue the server asked for (`lesson-found` / `failure-warning` / `connect-success` / `pair-success`). Off by default; mute with `MISAKANET_VOICE=0`; see `docs/integrations/mcp-voice-hooks.md` |
-| 3 | the checkpoint **fires** | a hook that counts user turns: turn 1 announces the install to the user, turn 20 (and every 10 after) injects the "distil and submit" reminder; a failed tool call injects a "search before you retry" reminder built from the error text. Claude Code only today — Codex's user-level hook shape is unconfirmed and OpenClaw's events are unverified, so those two work from the rules block, and `--verify` says so per target instead of implying otherwise |
+| 3 | the checkpoint **fires** | a hook that counts user turns: turn 1 announces the install to the user, turn 20 (and every 10 after) injects the "write up the reusable lessons and submit them" reminder — the agent does that writing and that submitting, by hand, and the hook itself sends nothing by default; a failed tool call injects a "search before you retry" reminder built from the error text, and only with `MISAKANET_HOOK_FETCH=1` (off by default) does the hook itself send that error text as a search query. Claude Code only today — Codex's user-level hook shape is unconfirmed and OpenClaw's events are unverified, so those two work from the rules block, and `--verify` says so per target instead of implying otherwise |
 
 Without (3) a rule saying "summarise every 20 turns" never fires — agents do not keep
 counters. Without (1)/(2) the hook has nothing to call.

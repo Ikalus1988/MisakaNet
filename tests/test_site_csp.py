@@ -59,6 +59,10 @@ KNOWN_SCRIPT_PAGES = {
     "insights/reputation-leaderboard.html",
     "insights/unsolved-map.html",
     "journey/index.html",
+    # #3641: the registration form moved off the homepage onto its own page. The form needs
+    # script (it talks to the Worker), so the page is one of the pages that can execute script —
+    # and it is deliberately *not* under a CSP rule: the rule would block the form's own script.
+    "register/index.html",
     "search/danmaku-widget.html",
     "search/index.html",
     "start.html",

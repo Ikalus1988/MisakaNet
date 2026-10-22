@@ -1,16 +1,6 @@
 {
-  "generated_at": "2026-10-21T21:52:43Z",
+  "generated_at": "2026-10-22T05:03:03Z",
   "series": [
-    {
-      "calls": {
-        "agent": 111,
-        "crawler": 27,
-        "mcp": 4932,
-        "pageview": 154
-      },
-      "date": "2026-10-15",
-      "total": 5224
-    },
     {
       "calls": {
         "agent": 293,
@@ -63,19 +53,29 @@
     },
     {
       "calls": {
-        "agent": 122,
-        "crawler": 845,
-        "mcp": 7863,
-        "pageview": 233
+        "agent": 124,
+        "crawler": 854,
+        "mcp": 8140,
+        "pageview": 240
       },
       "date": "2026-10-21",
-      "total": 9063
+      "total": 9358
+    },
+    {
+      "calls": {
+        "agent": 24,
+        "crawler": 223,
+        "mcp": 2008,
+        "pageview": 4
+      },
+      "date": "2026-10-22",
+      "total": 2259
     }
   ],
   "source": "https://misakanet.org/api/activity/history",
   "window": {
     "days": 7,
-    "from": "2026-10-15",
-    "to": "2026-10-21"
+    "from": "2026-10-16",
+    "to": "2026-10-22"
   }
 }

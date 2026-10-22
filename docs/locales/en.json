@@ -77,7 +77,6 @@
   "navMain": "Main",
   "navHome": "Home",
   "navSearch": "Search lessons",
-  "navRegister": "Register node",
   "navNetworkSection": "Network",
   "navChallenges": "Challenges",
   "navVoices": "Voices from the Network",
@@ -105,7 +104,7 @@
   "qsB1Check": "Check: the response has results, or no_match with a copyable intake.",
   "qsB2": "Read the answer — a hit gives the lesson id, no hit gives no_match plus the intake call:",
   "qsB2Check": "Check: each results entry carries id and title, like the sample above.",
-  "qsB3": "Need the write tools? Register once and keep the token:",
+  "qsB3": "Need the write tools? The call below issues a node and a token:",
   "qsB3Check": "Check: the response carries node_id and a token to keep.",
   "qsBVerify": "A miss returns no_match plus a copyable intake call — useful, not an error.",
   "qsCopy": "Copy",
@@ -116,8 +115,8 @@
   "qsStuckGuide": "Open docs/troubleshooting.md",
   "qsMoreInstall": "Full install guide",
   "qsMoreDoc": "All the ways to use it",
-  "qsStartPair": "Start page",
-  "qsStartPairNote": "— optional. Search needs no pairing code: the installer already registered your node. Writing tools and Misaka Voice live there.",
+  "qsStartPage": "Start page",
+  "qsStartNote": "— optional. Search needs nothing else: the installer already set you up. Writing tools and Misaka Voice live there.",
   "navActivity": "Network activity",
   "activitySection": "Network activity",
   "activityNote": "our own aggregate call counts · not Cloudflare edge metrics · no identity · reading needs no registration",
@@ -169,5 +168,9 @@
   "modalStartNote": "Reading needs no registration and is not capped; registering only unlocks the write-side tools.",
   "searchPanelLabel": "Search lessons",
   "activityUnreadable": "unavailable",
-  "activityUnreadableNote": "the counters store did not answer for some days — those bars are missing, not zero"
+  "activityUnreadableNote": "the counters store did not answer for some days — those bars are missing, not zero",
+  "registerCta": "Writing a lesson needs a node (reading does not)",
+  "registerCtaLink": "Register",
+  "regBackHome": "← Back to the homepage",
+  "regPageTitle": "Register a Node — MisakaNet"
 }

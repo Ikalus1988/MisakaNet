@@ -22,7 +22,7 @@ FR1  endpoint host        every `misakanet.<tld>` host is `misakanet.org`; a URL
 FR2  tool count           every stated endpoint tool count is 7 (the live endpoint advertises
                           `misakanet_register`, `misakanet_search`, `misakanet_get_lesson`,
                           `misakanet_submit_intake`, `misakanet_write_lesson`, `misakanet_preflight`,
-                          `misakanet_me_events`). A report quoting "1 tool" is contradicted by the
+                          `misakanet_me_events`, `misakanet_me_inbox`). A report quoting "1 tool" is contradicted by the
                           endpoint it claims to have called.
 FR3  home path            no unredacted `C:\\Users\\<name>`, `/mnt/<d>/Users/<name>`, `/home/<name>`
                           or `/Users/<name>`, per the redaction rules in
@@ -90,7 +90,7 @@ SUFFIXES = (".md", ".yaml", ".yml", ".json")
 SHAPE_EXEMPT = {"README.md"}
 
 # The live endpoint's tool list (AGENTS.md §3.2).
-EXPECTED_TOOL_COUNT = 7
+EXPECTED_TOOL_COUNT = 8
 LIVE_TOOLS = (
     "misakanet_register",
     "misakanet_search",
@@ -99,6 +99,7 @@ LIVE_TOOLS = (
     "misakanet_write_lesson",
     "misakanet_preflight",
     "misakanet_me_events",
+    "misakanet_me_inbox",
 )
 
 # rule id -> (severity, one-line purpose). `truth` = factually wrong or a leak; `evidence` = a claim
@@ -227,7 +228,7 @@ _CONFIG_PATH_RE = re.compile(
 _LIVE_CLAIM_PATTERNS = (
     re.compile(r"https?://[^\s\)\]\"'`>]*/mcp(?:[/?#]|$)"),
     re.compile(r"\btools/list\b"),
-    re.compile(r"\bmisakanet_(?:register|search|get_lesson|submit_intake|write_lesson|preflight|me_events)\b"),
+    re.compile(r"\bmisakanet_(?:register|search|get_lesson|submit_intake|write_lesson|preflight|me_events|me_inbox)\b"),
     re.compile(r"\bmisakanet[-_]setup\b"),
     re.compile(r"misakanet-setup-report"),
 )

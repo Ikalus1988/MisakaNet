@@ -38,6 +38,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 import sys
 import tempfile
 import urllib.request
@@ -167,6 +168,122 @@ def _bump_turn(session: str) -> int:
 
 CANONICAL_ENDPOINT = "https://misakanet.org/mcp"
 
+# ── deterministic redaction (issue #3692) ────────────────────────────────────────────────────────
+# The rules block used to *ask* the agent to redact, and an instruction is only a request:
+# when the model did not comply, the internal table name, the home directory path or the
+# token left the machine inside a search query. This table is the mechanical version of
+# that rule — it runs on the error text before the fragment is printed into the agent's
+# context, and again before anything is sent over the network. Redacting only at the
+# network call would not be enough: the un-redacted text would still be in the agent's
+# context, and the agent's own `misakanet_search` call would carry it.
+#
+# The ids are the server's (`workers/lib/redact-patterns.json`), so both ends name the same
+# classes and the client never invents a rule the server does not know. Real domains and
+# personal names are deliberately NOT redacted: the corpus is indexed by error text, and
+# over-redaction would cost search quality for a leak that is not in scope.
+#
+# One path segment: anything but a space, a separator or punctuation that would end the
+# segment (so a trailing comma or bracket in prose stays outside the match).
+SEG = "[^\\s/\\\\'\"<>,;:!?()\\[\\]{}]"
+# A path only counts as a *filesystem* path when it starts at a known root, or when its
+# last segment carries a file extension. Without that, every API route in the corpus
+# ("/api/v1/users", "/oauth/token") would be swallowed — and the corpus is indexed by
+# error text, so a swallowed route destroys the lesson it belongs to. The roots are
+# case-sensitive, except "Users" and "Volumes", which are written in capitals by
+# convention but arrive in every casing.
+FS_ROOTS = ("(?:home|root|var|opt|etc|usr|tmp|mnt|srv|data|private|workspace|app|code|project"
+            "|[Uu][Ss][Ee][Rr][Ss]|[Vv][Oo][Ll][Uu][Mm][Ee][Ss])")
+FILE_EXT = "[A-Za-z][A-Za-z0-9_\\-]*"
+
+REDACT_RULES = (
+    # A Unix absolute path: either it starts at a known filesystem root, or its last
+    # segment has a file extension ("/opt/app/config.yaml"). The look-behind keeps it out
+    # of a URL ("https://host/a/b" — the slash follows a word character) and out of a
+    # relative path; "file://" is matched as a whole, because its inner path is a path.
+    {
+        "id": "abs_path",
+        "pattern": f"(?<![A-Za-z0-9_:/~.\\-])(?:file://)?/(?:{FS_ROOTS}(?:/{SEG}+)+|(?:{SEG}+/)*{SEG}*\\.{FILE_EXT})",
+        "flags": "g",
+        "replacement": "<PATH>",
+    },
+    # A Windows path, with either separator. The look-behind keeps the "s://" of a URL out.
+    {
+        "id": "windows_path",
+        "pattern": f"(?<![A-Za-z0-9_])[A-Za-z]:[\\\\/](?:{SEG}+[\\\\/])*{SEG}*",
+        "flags": "g",
+        "replacement": "<PATH>",
+    },
+    # The secret rules are the server's shapes with two additions its copy does not need: a
+    # word boundary (so "task_identifier" is not read as the key "sk_identifier") and a floor
+    # of six characters on the bearer value (so the phrase "Bearer token" in prose survives).
+    # A real credential is longer than that; a real key is not glued to the end of a word.
+    {
+        "id": "bearer_token",
+        "pattern": r"(?<![A-Za-z0-9])(?:Bearer|Authorization)\s+[A-Za-z0-9\-._~+/]{6,}=*",
+        "flags": "gi",
+        "replacement": "[REDACTED:bearer_token]",
+    },
+    {
+        "id": "github_token",
+        "pattern": r"(?<![A-Za-z0-9])(?:ghp|gho|ghu|ghs|ghr|github_pat)_[A-Za-z0-9]{10,}",
+        "flags": "g",
+        "replacement": "[REDACTED:github_token]",
+    },
+    {
+        "id": "api_key",
+        "pattern": r"(?<![A-Za-z0-9])(?:sk|pk|rk|ak)[_-][A-Za-z0-9]{10,}",
+        "flags": "g",
+        "replacement": "[REDACTED:api_key]",
+    },
+    # The top-level domain has to be alphabetic: "foo@1.2.3" is an npm version spec, and
+    # eating it would destroy the version the reporter was talking about.
+    {
+        "id": "email",
+        "pattern": r"[A-Za-z0-9._%+\-]+@[A-Za-z0-9\-]+(?:\.[A-Za-z0-9\-]*)*\.[A-Za-z]{2,}",
+        "flags": "g",
+        "replacement": "<REDACTED:email>",
+    },
+)
+
+_COMPILED_REDACT_RULES = tuple(
+    (
+        re.compile(rule["pattern"], re.IGNORECASE if "i" in rule["flags"] else 0),
+        rule["replacement"],
+    )
+    for rule in REDACT_RULES
+)
+
+
+def _redact(text: str) -> str:
+    """Replace every secret the table knows about.
+
+    Never raises: a broken rule must not become a failed hook (the hook's contract is that
+    it cannot break a session).
+    """
+    out = text
+    for regex, replacement in _COMPILED_REDACT_RULES:
+        try:
+            out = regex.sub(replacement, out)
+        except Exception as exc:
+            _debug(f"redaction rule failed: {exc}")
+    return out
+
+
+def _clip(text: str, limit: int) -> str:
+    """Cut the query to a length, without cutting a placeholder in half.
+
+    A truncated `<REDACTED:email` is noise the agent would carry into its own call. Counted
+    in code points, like the Node twin, so the two cut in the same place — the parity test
+    compares their stdout byte for byte.
+    """
+    if len(text) <= limit:
+        return text
+    cut = text[:limit]
+    open_at = cut.rfind("<")
+    if open_at != -1 and ">" not in cut[open_at:]:
+        cut = cut[:open_at]
+    return cut
+
 
 def _target() -> tuple[str, str]:
     """(url, token) for the optional lesson fetch - environment only, see the Node hook.
@@ -185,8 +302,10 @@ def _mcp_search(query: str, top: int = 1) -> dict:
     """Call misakanet_search over streamable HTTP. Returns {} on any failure."""
     body = json.dumps({
         "jsonrpc": "2.0", "id": 1, "method": "tools/call",
+        # Redacted again on the way out: the fragment is already redacted, but this is the
+        # only place where the text actually leaves the machine, so it gets its own gate.
         "params": {"name": "misakanet_search",
-                   "arguments": {"query": query[:300], "top": top, "detail": "summary"}},
+                   "arguments": {"query": _redact(query)[:300], "top": top, "detail": "summary"}},
     }).encode("utf-8")
     headers = {
         "Content-Type": "application/json",
@@ -266,11 +385,16 @@ def run_failure_mode(payload: dict) -> int:
         return 0
     # Keep the query to the most distinctive fragment: long natural-language probes
     # retrieve FAQ entries instead of lessons (measured 2026-09-13).
-    fragment = " ".join(text.split())[:120]
+    # Redact first, cut second: the query the agent is told to search with must not carry a
+    # path, an address or a token, and the agent may copy it into its own later call.
+    fragment = _clip(" ".join(_redact(text).split()), 120)
     lines = [
         "[MisakaNet] 刚刚有一次工具调用失败。在**重试或换修法之前**先查一次"
         "（第二次盲试就是『重复犯错』）：",
-        f"  misakanet_search(query={fragment!r})   # 查不到就用 kind=\"question\" 提 intake，别猜",
+        # json.dumps, not repr: the Node twin prints JSON.stringify's output, and the two
+        # hooks must produce byte-identical text (tests/test_agent_autostart_parity.py).
+        f"  misakanet_search(query={json.dumps(fragment, ensure_ascii=False)})"
+        "   # 查不到就用 kind=\"question\" 提 intake，别猜",
     ]
     if os.environ.get("MISAKANET_HOOK_FETCH") == "1":
         result = _mcp_search(fragment)

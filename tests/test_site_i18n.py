@@ -36,6 +36,10 @@ import pytest
 
 REPO = Path(__file__).resolve().parents[1]
 INDEX = REPO / "docs" / "index.html"
+# #3641: the registration form moved to its own page, and the page shares the site's one
+# dictionary. So the dictionary now has two surfaces, and the rules below are about the pair:
+# every key must be reachable from one of them, and every key either of them reaches must exist.
+REGISTER = REPO / "docs" / "register" / "index.html"
 LOCALES = {lang: REPO / "docs" / "locales" / f"{lang}.json" for lang in ("en", "zh")}
 
 # `t('key')` / `t("key")`, with a lookbehind so `.get('x')`, `.set('x')`, `createElement('span')` and
@@ -52,6 +56,11 @@ QUOTED = re.compile(r"""['"]([A-Za-z][A-Za-z0-9_]*)['"]""")
 @pytest.fixture(scope="module")
 def page() -> str:
     return INDEX.read_text(encoding="utf-8")
+
+
+@pytest.fixture(scope="module")
+def register_page() -> str:
+    return REGISTER.read_text(encoding="utf-8")
 
 
 def dictionary(lang: str) -> dict[str, str]:
@@ -97,12 +106,29 @@ def test_every_key_the_page_renders_exists_in_both_dictionaries(page):
     )
 
 
-def test_no_key_in_the_dictionaries_is_dead(page):
+def test_every_key_the_register_page_renders_exists_in_both_dictionaries(register_page):
+    """The register page reads the same dictionary, so its keys are held to the same rule."""
+    problems = {lang: missing(register_page, set(dictionary(lang))) for lang in ("en", "zh")}
+    problems = {lang: keys for lang, keys in problems.items() if keys}
+    assert not problems, (
+        f"these keys are rendered on the register page but absent, so the page shows the "
+        f"identifier instead of the copy: {problems}"
+    )
+
+
+def test_no_key_in_the_dictionaries_is_dead(page, register_page):
+    """A key is dead when *no* surface reaches it.
+
+    The dictionary is the site's, and the site has two pages that read it: the homepage and the
+    register page (#3641). The rule is still one rule — a dictionary entry nothing renders is the
+    correct wording sitting one line away from the wrong one being shipped — but the surfaces are
+    a pair, so the check is over the pair.
+    """
     keys = set(dictionary("en"))
-    dead = unused(page, keys)
+    dead = sorted(keys - (referenced(page, keys) | referenced(register_page, keys)))
     assert not dead, (
-        f"nothing on the page reaches {dead}. Either wire it up or delete it — an unused key is how "
-        f"the *correct* wording for a number sat in the dictionary while a wrong one shipped"
+        f"nothing on either page reaches {dead}. Either wire it up or delete it — an unused key is "
+        f"how the *correct* wording for a number sat in the dictionary while a wrong one shipped"
     )
 
 
@@ -226,20 +252,21 @@ def test_quickstart_zh_values_are_chinese_not_english_copies(page):
 
 # ── and it can go red ────────────────────────────────────────────────────────────────────────────
 
-def test_a_key_used_only_through_t_is_caught(page):
+def test_a_key_used_only_through_t_is_caught(register_page):
     """The exact regression: a `t()`-only key, which the attribute-only gate could not see."""
     dropped = "regOptionGithub"
     assert dropped in dictionary("en") and dropped in dictionary("zh")
     without = {k: v for k, v in dictionary("en").items() if k != dropped}
-    assert missing(page, set(without)) == [dropped]
+    assert missing(register_page, set(without)) == [dropped]
 
 
-def test_a_dead_key_is_caught(page):
+def test_a_dead_key_is_caught(page, register_page):
     keys = set(dictionary("en")) | {"aKeyNothingRenders"}
-    assert unused(page, keys) == ["aKeyNothingRenders"]
+    reached = referenced(page, keys) | referenced(register_page, keys)
+    assert sorted(keys - reached) == ["aKeyNothingRenders"]
 
 
-def test_the_old_attribute_only_gate_would_have_missed_this(page):
+def test_the_old_attribute_only_gate_would_have_missed_this(register_page):
     """Why the widened gate exists, demonstrated rather than asserted in prose.
 
     `referenced()` is the new rule; the old one is `ATTR.findall(page)` alone. On the page as it
@@ -247,11 +274,13 @@ def test_the_old_attribute_only_gate_would_have_missed_this(page):
     shown the only honest way: by removing one of them again and watching which rule notices.
     """
     keys = set(dictionary("en")) - {"regViaIssue"}
-    assert missing(page, keys) == ["regViaIssue"], "the widened rule notices"
+    assert missing(register_page, keys) == ["regViaIssue"], "the widened rule notices"
     # The attribute-only rule sees neither `t()` calls nor `${key}` placeholders, so it reports
     # nothing here — which is exactly why the previous gate passed while the panel shipped raw
     # identifiers.
-    assert "regViaIssue" not in ATTR.findall(page), "the attribute-only rule cannot see a t()-only key"
+    assert "regViaIssue" not in ATTR.findall(register_page), (
+        "the attribute-only rule cannot see a t()-only key"
+    )
 
 
 def test_the_detector_ignores_calls_that_are_not_translations():

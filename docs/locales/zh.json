@@ -77,7 +77,6 @@
   "navMain": "主页",
   "navHome": "首页",
   "navSearch": "搜索知识",
-  "navRegister": "注册节点",
   "navNetworkSection": "网络",
   "navChallenges": "挑战任务",
   "navVoices": "来自网络的声音",
@@ -105,7 +104,7 @@
   "qsB1Check": "自检：返回里有 results，或者 no_match 加一条可复制的 intake。",
   "qsB2": "读返回 —— 命中给课程 id，未命中给 no_match 和一条可直接复制的 intake 调用：",
   "qsB2Check": "自检：results 里每条都带 id 和 title，和上面的样例一致。",
-  "qsB3": "要用写入类工具？注册一次，把 token 留着：",
+  "qsB3": "要用写入类工具？下面这条调用会发放 node 与 token：",
   "qsB3Check": "自检：返回里带 node_id 和一个 token，把 token 收好。",
   "qsBVerify": "未命中会返回 no_match 加一条可复制的 intake 调用 —— 有用，不是错误。",
   "qsCopy": "复制",
@@ -116,8 +115,8 @@
   "qsStuckGuide": "打开 docs/troubleshooting.md",
   "qsMoreInstall": "完整安装说明",
   "qsMoreDoc": "所有使用方式",
-  "qsStartPair": "Start 页",
-  "qsStartPairNote": "—— 可选。检索不需要配对码：安装器已经替你注册了节点。写入类工具与 Misaka Voice 在那边。",
+  "qsStartPage": "Start 页",
+  "qsStartNote": "—— 可选。检索不需要额外步骤：安装器已经替你接好了。写入类工具与 Misaka Voice 在那边。",
   "navActivity": "网络活动",
   "activitySection": "网络活动",
   "activityNote": "自建聚合调用计数 · 非 Cloudflare 边缘指标 · 不含身份 · 阅读无需注册",
@@ -169,5 +168,9 @@
   "modalStartNote": "检索不需要注册、不限次数；注册只解锁写入类工具。",
   "searchPanelLabel": "检索课程",
   "activityUnreadable": "读不到",
-  "activityUnreadableNote": "有几天的计数存储没有响应 —— 那几天是缺数据，不是 0"
+  "activityUnreadableNote": "有几天的计数存储没有响应 —— 那几天是缺数据，不是 0",
+  "registerCta": "写课程需要一个 node（读取不需要）",
+  "registerCtaLink": "注册",
+  "regBackHome": "← 返回首页",
+  "regPageTitle": "注册节点 — MisakaNet"
 }
