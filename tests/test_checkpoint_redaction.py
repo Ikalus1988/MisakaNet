@@ -145,6 +145,49 @@ def endpoint_recorder():
         server.server_close()
 
 
+# How many times a hook may be asked to fetch before the test calls it broken.
+FETCH_ATTEMPTS = 3
+
+
+def run_until_a_request_leaves(hook: str, payload, *, tmp_path: Path,
+                               env_extra: dict | None = None):
+    """Run the hook until a request actually reaches the endpoint.
+
+    Why this is not just "run it once": the hook's network call is bounded by a **four-second
+    stall guard** — the product's rule, "a hook must never stall a session". On a loaded Windows
+    runner the *first* fetch in a fresh Node process can spend seconds loading the HTTP client,
+    and that load happens *inside* the guard. The hook then does exactly the right thing (it gives
+    up instead of stalling) and the request never leaves. Measured 2026-10-22 on
+    `windows-latest, 3.12`: the Node variant took **7.13s** and failed, while the Python twin,
+    running **0.76s** later against the same server, passed in under a second. The same test
+    passed on all three Windows legs of PR #3707's run — so this is the cold-start case, not a
+    broken fetch path.
+
+    So the test tells the two apart instead of racing the clock: the hook says on stderr
+    (`MISAKANET_HOOK_DEBUG=1`) that it *tried and gave up* — "search failed: ..." — and only that
+    case may be retried. A run that produced no request **and no attempt** is a broken fetch path
+    and goes red at once.
+
+    The assertion this protects keeps its full strength: if the opt-in fetch never reaches the
+    network, no attempt produces a request and the test fails.
+    """
+    result = None
+    bodies: list[str] = []
+    for _attempt in range(FETCH_ATTEMPTS):
+        with endpoint_recorder() as (url, recorded):
+            result = run_hook(hook, payload, tmp_path=tmp_path,
+                              env_extra={**env_extra, "MISAKANET_ENDPOINT": url,
+                                         "MISAKANET_HOOK_DEBUG": "1"})
+        assert result.returncode == 0, (
+            f"the hook must never break a session: {result.stderr[-400:]}")
+        bodies = recorded
+        if bodies:
+            break
+        if "search failed" not in result.stderr:
+            break       # the hook never tried to fetch: broken, not slow
+    return result, bodies
+
+
 @pytest.mark.parametrize("hook", sorted(HOOKS))
 @pytest.mark.parametrize("rule_id, secret, placeholder", RULE_CASES, ids=[c[0] for c in RULE_CASES])
 def test_each_rule_class_replaces_its_own_secret(hook, rule_id, secret, placeholder, tmp_path):
@@ -241,11 +284,13 @@ def test_with_the_networking_off_nothing_leaves_the_machine(hook, tmp_path):
 @pytest.mark.parametrize("hook", sorted(HOOKS))
 def test_the_query_that_leaves_the_machine_is_redacted(hook, tmp_path):
     """With the opt-in fetch on, what goes over the wire must be the redacted query."""
-    with endpoint_recorder() as (url, bodies):
-        result = run_hook(hook, {"error": THE_ISSUE_SAMPLE}, tmp_path=tmp_path,
-                          env_extra={"MISAKANET_ENDPOINT": url, "MISAKANET_HOOK_FETCH": "1"})
-    assert result.returncode == 0
-    assert bodies, "the fetch must have happened (MISAKANET_HOOK_FETCH=1)"
+    result, bodies = run_until_a_request_leaves(
+        hook, {"error": THE_ISSUE_SAMPLE}, tmp_path=tmp_path,
+        env_extra={"MISAKANET_HOOK_FETCH": "1"})
+    assert bodies, (
+        "the fetch must have happened (MISAKANET_HOOK_FETCH=1); the hook said:\n"
+        + (result.stderr[-600:] or "(nothing on stderr)")
+    )
     sent = bodies[-1]
     for secret in ("/home/alice/project/secret.py", "alice@corp.com", "abc123"):
         assert secret not in sent, f"{secret!r} was sent to the server:\n{sent}"
