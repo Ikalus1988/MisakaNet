@@ -7,6 +7,98 @@ All notable changes to the Misaka Network project are documented here.
 
 ---
 
+## [2.49.0](https://github.com/Ikalus1988/MisakaNet/compare/v2.48.0...v2.49.0) (2026-10-22)
+
+
+### Features
+
+* **crash:** a crash looks for an existing lesson before it leaves a draft ([#3642](https://github.com/Ikalus1988/MisakaNet/issues/3642)) ([#3676](https://github.com/Ikalus1988/MisakaNet/issues/3676)) ([5a5d0ed](https://github.com/Ikalus1988/MisakaNet/commit/5a5d0ed8e55a9bc774615b0c72cbbea0057f5902))
+* govern homepage Quickstart commands and tool count with a site-facts SSOT ([#3479](https://github.com/Ikalus1988/MisakaNet/issues/3479)) ([5096384](https://github.com/Ikalus1988/MisakaNet/commit/5096384d8975c2ea0ea454524b0136355b81e4db))
+* **guard:** two more mechanical shapes — an internal artifact, a new top-level directory ([#3754](https://github.com/Ikalus1988/MisakaNet/issues/3754)) ([fe6e2e0](https://github.com/Ikalus1988/MisakaNet/commit/fe6e2e0ab3a0b309e18742a0937af27796d55e64))
+* **heartbeat:** report helpful-source panel votes over retrievals ([#3534](https://github.com/Ikalus1988/MisakaNet/issues/3534)) ([14f9c59](https://github.com/Ikalus1988/MisakaNet/commit/14f9c59f42bce2bc95cd615c44dbae12eec899a6))
+* **install:** one generic command first, and a client table generated from data ([#3687](https://github.com/Ikalus1988/MisakaNet/issues/3687)) ([397ae0b](https://github.com/Ikalus1988/MisakaNet/commit/397ae0b7340606090853cdceb45a744978b1a6ee))
+* **intake:** post conversion receipts and label ready-to-close ([#3509](https://github.com/Ikalus1988/MisakaNet/issues/3509)) ([#3565](https://github.com/Ikalus1988/MisakaNet/issues/3565)) ([761143a](https://github.com/Ikalus1988/MisakaNet/commit/761143a681f7bcd079e1420d79e19cca970dde31))
+* **lessons:** adopt eleven bounty lessons, and add "video" to the domain vocabulary ([#3485](https://github.com/Ikalus1988/MisakaNet/issues/3485)) ([ec699e2](https://github.com/Ikalus1988/MisakaNet/commit/ec699e289ab7b56878bab3531b936336dac27ae0))
+* **pixel-gate:** a criterion for changes that are *meant* to move the page ([#3680](https://github.com/Ikalus1988/MisakaNet/issues/3680)) ([70a38de](https://github.com/Ikalus1988/MisakaNet/commit/70a38de03b116c4040f5228016c5d8cf7bb33e50))
+* **quickstart:** copy buttons per code block, per-step self-checks ([#3494](https://github.com/Ikalus1988/MisakaNet/issues/3494)) ([a0bb02a](https://github.com/Ikalus1988/MisakaNet/commit/a0bb02aabdcbd3b963eeb47467e6a5992d229fc4)), closes [#1893](https://github.com/Ikalus1988/MisakaNet/issues/1893)
+* **quickstart:** report qs_view/qs_copy/qs_link step events to D1 ([#3532](https://github.com/Ikalus1988/MisakaNet/issues/3532)) ([715608e](https://github.com/Ikalus1988/MisakaNet/commit/715608eaec10fff075b8d6988f0e5e75606c7482))
+* **setup:** the install says what it is about to write, before it writes it ([#3690](https://github.com/Ikalus1988/MisakaNet/issues/3690)) ([#3709](https://github.com/Ikalus1988/MisakaNet/issues/3709)) ([5647207](https://github.com/Ikalus1988/MisakaNet/commit/5647207dba3d224eb5ea431369049ec69cb8d68b))
+* **site:** one accent, one background, one footer ([#3541](https://github.com/Ikalus1988/MisakaNet/issues/3541), batch Z) ([#3615](https://github.com/Ikalus1988/MisakaNet/issues/3615)) ([eb26328](https://github.com/Ikalus1988/MisakaNet/commit/eb263288a8af72abbc58b15e81072ad82e37816e))
+* **site:** one source for the design tokens ([#3541](https://github.com/Ikalus1988/MisakaNet/issues/3541), batch V) ([#3591](https://github.com/Ikalus1988/MisakaNet/issues/3591)) ([8fc9bf9](https://github.com/Ikalus1988/MisakaNet/commit/8fc9bf9b96c0823b62129bdd8baa6ba5f21e7332))
+* **site:** the generated pages join the design gate, and the search gate stops reading a stale local index ([#3634](https://github.com/Ikalus1988/MisakaNet/issues/3634)) ([c7e2f9d](https://github.com/Ikalus1988/MisakaNet/commit/c7e2f9dfdf2ecd74ea57210cbcf0350d6085f78d))
+* **site:** the halos, the colour bars and the purple ([#3541](https://github.com/Ikalus1988/MisakaNet/issues/3541), batch X) ([#3593](https://github.com/Ikalus1988/MisakaNet/issues/3593)) ([d059b7d](https://github.com/Ikalus1988/MisakaNet/commit/d059b7d62215841dbfd7a17fcccf50adb1b46b6d))
+* **site:** the hand-written pages use the vocabulary ([#3541](https://github.com/Ikalus1988/MisakaNet/issues/3541), batch W) ([#3592](https://github.com/Ikalus1988/MisakaNet/issues/3592)) ([b89deee](https://github.com/Ikalus1988/MisakaNet/commit/b89deee01d545adbcc8b70dfa02ca7d3266cff24))
+* **site:** the icons are Lucide SVG, not emoji ([#3541](https://github.com/Ikalus1988/MisakaNet/issues/3541), batch Y) ([#3596](https://github.com/Ikalus1988/MisakaNet/issues/3596)) ([dedc9e5](https://github.com/Ikalus1988/MisakaNet/commit/dedc9e5a7701379962547a591cc1cc499e4f3b82))
+* **site:** the registration form moves to /register/, and the homepage says one line ([#3694](https://github.com/Ikalus1988/MisakaNet/issues/3694)) ([b108716](https://github.com/Ikalus1988/MisakaNet/commit/b108716ec408acfdf799dcb3a4a2eb9cffe494f8))
+
+
+### Bug Fixes
+
+* a degraded read must not be reported as an empty corpus ([#3512](https://github.com/Ikalus1988/MisakaNet/issues/3512)) ([898a63b](https://github.com/Ikalus1988/MisakaNet/commit/898a63b3f833bdbe3b6c1670bc5ceff4439fe441))
+* **activity:** a day the store refused is drawn as missing, not as zero ([#3551](https://github.com/Ikalus1988/MisakaNet/issues/3551)) ([b656f7f](https://github.com/Ikalus1988/MisakaNet/commit/b656f7f7c6798529b3392846404545c9a5482cac))
+* **automation:** three reds, one cause (D1's free tier) and one standing defect ([#3450](https://github.com/Ikalus1988/MisakaNet/issues/3450)) ([030b203](https://github.com/Ikalus1988/MisakaNet/commit/030b2031ea81a7998943c67a2ec4c809aeeade48))
+* **backup:** export table by table — `--no-schema` alone does not dodge the FTS5 refusal ([#3452](https://github.com/Ikalus1988/MisakaNet/issues/3452)) ([72aaa6c](https://github.com/Ikalus1988/MisakaNet/commit/72aaa6c3bd37ac48a2aaf6356048eb599b020f55))
+* **codeql:** keep generated lesson artefacts out of the secret query ([#3488](https://github.com/Ikalus1988/MisakaNet/issues/3488)) ([13446fc](https://github.com/Ikalus1988/MisakaNet/commit/13446fc50b98f47fd32ca4f9688b1a05d84d53a1))
+* **docs:** the quickstart-events page needs the site's own partials ([#3753](https://github.com/Ikalus1988/MisakaNet/issues/3753)) ([13943c7](https://github.com/Ikalus1988/MisakaNet/commit/13943c74467d6909b1acb8900a52a665906bd5fd))
+* **fatal-guard:** one payload contract on every platform, and a program path with spaces ([#3672](https://github.com/Ikalus1988/MisakaNet/issues/3672)) ([5117412](https://github.com/Ikalus1988/MisakaNet/commit/5117412918b4f3b45a2234fb0d8be485bddd8a0a))
+* **fatal-guard:** the crash payload carries the error text, not the exit code ([#3647](https://github.com/Ikalus1988/MisakaNet/issues/3647)) ([86bdc3e](https://github.com/Ikalus1988/MisakaNet/commit/86bdc3e48fa1e2e46934db434ccaad1ad1a7dbcf))
+* **field-reports:** the gate was rejecting a correct report ([#3703](https://github.com/Ikalus1988/MisakaNet/issues/3703)) ([#3705](https://github.com/Ikalus1988/MisakaNet/issues/3705)) ([ec647f4](https://github.com/Ikalus1988/MisakaNet/commit/ec647f4d16a4ca9df67e777f94ecd08a5ed0115f))
+* **heal:** refuse to write a fixture whose signature carries a credential ([#3493](https://github.com/Ikalus1988/MisakaNet/issues/3493)) ([a9c59fb](https://github.com/Ikalus1988/MisakaNet/commit/a9c59fb0ef0c92f89b5ccedb2d43fbe0c485e5e5))
+* **infra:** a build that never started is a failure, not silence ([#3637](https://github.com/Ikalus1988/MisakaNet/issues/3637)) ([1d9a28d](https://github.com/Ikalus1988/MisakaNet/commit/1d9a28de14aede2ab6959fca3fe4a29f4648ac73))
+* lock the profile on Windows instead of yielding unlocked ([#3538](https://github.com/Ikalus1988/MisakaNet/issues/3538)) ([8e28cd5](https://github.com/Ikalus1988/MisakaNet/commit/8e28cd50b3c1b23ca841145ece8cd9eb5361ff75)), closes [#3536](https://github.com/Ikalus1988/MisakaNet/issues/3536)
+* **mcp:** local stdio search: memory_context ImportError, domain filter, "usage" routing ([#3515](https://github.com/Ikalus1988/MisakaNet/issues/3515)) ([2bb468e](https://github.com/Ikalus1988/MisakaNet/commit/2bb468ee8ba34a6239b2dc8d94808930a018354b))
+* **mcp:** the preflight schema says it needs a Bearer token, not just its error ([#3497](https://github.com/Ikalus1988/MisakaNet/issues/3497)) ([b0ef5c7](https://github.com/Ikalus1988/MisakaNet/commit/b0ef5c7f020091c6eb469d0db47df3a495d3cb48))
+* **pixel-gate:** a capture that never settled is not evidence ([#3684](https://github.com/Ikalus1988/MisakaNet/issues/3684)) ([2ba0bc2](https://github.com/Ikalus1988/MisakaNet/commit/2ba0bc228153b8d3d0b987f61801c1819abc9f59))
+* **pixel-gate:** the default tolerance is a measured floor, and a command to re-measure it ([#3670](https://github.com/Ikalus1988/MisakaNet/issues/3670)) ([1bc785d](https://github.com/Ikalus1988/MisakaNet/commit/1bc785d9564590db812f34514f0ff254a04bfda0))
+* **pixel-gate:** the page was still on its way when the capture called it stable ([#3681](https://github.com/Ikalus1988/MisakaNet/issues/3681)) ([fdacf82](https://github.com/Ikalus1988/MisakaNet/commit/fdacf8290bc25ac4ae3627badf8447c322ae9f15))
+* **profile:** lock the backfill write too — the read path was writing unlocked ([#3671](https://github.com/Ikalus1988/MisakaNet/issues/3671)) ([ee125c4](https://github.com/Ikalus1988/MisakaNet/commit/ee125c461d3b2e1faf9c6cf2ea0fd175ee91d5ff))
+* **release:** bound the commit scan, so the release PR can be rebuilt again ([#3741](https://github.com/Ikalus1988/MisakaNet/issues/3741)) ([66b053a](https://github.com/Ikalus1988/MisakaNet/commit/66b053ace3146eeb2bd0b91133f7f348b0e75667))
+* **release:** restore the commit scan's floor, and gate it ([#3749](https://github.com/Ikalus1988/MisakaNet/issues/3749)) ([ecee4b4](https://github.com/Ikalus1988/MisakaNet/commit/ecee4b4b300127cbe5fd19722107887c6e399480))
+* **release:** the extra-files of a package with a path are resolved against that path ([#3744](https://github.com/Ikalus1988/MisakaNet/issues/3744)) ([c8034c2](https://github.com/Ikalus1988/MisakaNet/commit/c8034c28efb9a7e7aed7451f327b492043c2c1fa)), closes [#3740](https://github.com/Ikalus1988/MisakaNet/issues/3740)
+* **setup:** --verify answers two questions, and stops calling a file it cannot write "missing" ([#3743](https://github.com/Ikalus1988/MisakaNet/issues/3743)) ([e7bda00](https://github.com/Ikalus1988/MisakaNet/commit/e7bda00f9351b571ee08553d686bbb8a34829698))
+* **setup:** the hook redacts the query before it leaves the machine ([#3692](https://github.com/Ikalus1988/MisakaNet/issues/3692)) ([#3707](https://github.com/Ikalus1988/MisakaNet/issues/3707)) ([a8d23c5](https://github.com/Ikalus1988/MisakaNet/commit/a8d23c5dc58d75fc403b22c6c3bf5be190663918))
+* **setup:** the npm copy of the rule text says redaction is done by code ([#3692](https://github.com/Ikalus1988/MisakaNet/issues/3692)) ([#3708](https://github.com/Ikalus1988/MisakaNet/issues/3708)) ([389c004](https://github.com/Ikalus1988/MisakaNet/commit/389c004ed612009985521cc7dd371eae00fe703d))
+* **setup:** the npm description says what it writes, what leaves this machine, and the one opt-in exception ([#3689](https://github.com/Ikalus1988/MisakaNet/issues/3689)) ([#3710](https://github.com/Ikalus1988/MisakaNet/issues/3710)) ([ea2128a](https://github.com/Ikalus1988/MisakaNet/commit/ea2128a7a5ed1e7b890394c2aaf76a737af2b500))
+* **setup:** the release moves the version literal, not just the manifest ([#3691](https://github.com/Ikalus1988/MisakaNet/issues/3691)) ([#3738](https://github.com/Ikalus1988/MisakaNet/issues/3738)) ([ba0c813](https://github.com/Ikalus1988/MisakaNet/commit/ba0c813692f758e8ffc370a623be9238df260b6a))
+* **site:** the onboarding dialog behaves like a dialog, and says its name in the reader's language ([#3646](https://github.com/Ikalus1988/MisakaNet/issues/3646)) ([ad7e142](https://github.com/Ikalus1988/MisakaNet/commit/ad7e14224f105845384a856512488ce9606cb60e))
+* **site:** the records that were wrong, and a pixel check that can see the generated tree ([#3636](https://github.com/Ikalus1988/MisakaNet/issues/3636)) ([504433e](https://github.com/Ikalus1988/MisakaNet/commit/504433e1b5c6179d5cea642f845d6cc1af39febe))
+* **tests:** stop sharing one sandbox across lesson-contract tests ([#3530](https://github.com/Ikalus1988/MisakaNet/issues/3530)) ([ba917f6](https://github.com/Ikalus1988/MisakaNet/commit/ba917f62f6b80f47c41c7abaae8d911ed51700b2)), closes [#2954](https://github.com/Ikalus1988/MisakaNet/issues/2954)
+* the six verified severe defects from [#1775](https://github.com/Ikalus1988/MisakaNet/issues/1775) ([#3478](https://github.com/Ikalus1988/MisakaNet/issues/3478)) ([00befab](https://github.com/Ikalus1988/MisakaNet/commit/00befab068d9e9147fac95e9315b33f8c5b804a3))
+* the stdio receipt must say where the report went, and the preview button was dead ([#3585](https://github.com/Ikalus1988/MisakaNet/issues/3585)) ([6e382dd](https://github.com/Ikalus1988/MisakaNet/commit/6e382dd7b86abb952141200cc806ca284c7f0de5))
+* **worker:** a traffic counter is D1 plus KV, not D1 or KV ([#3549](https://github.com/Ikalus1988/MisakaNet/issues/3549)) ([be3e38a](https://github.com/Ikalus1988/MisakaNet/commit/be3e38a537a53d0664c9122278447f730a4aa2b7))
+* **worker:** the account was spending 8x its free-tier row-read budget on two public endpoints ([#3590](https://github.com/Ikalus1988/MisakaNet/issues/3590)) ([1225e9e](https://github.com/Ikalus1988/MisakaNet/commit/1225e9e62bc52d6eb2abc934878a033f10495445))
+* **worker:** the account was still paying 95% of its rows for one public aggregate ([#3618](https://github.com/Ikalus1988/MisakaNet/issues/3618)) ([0445e16](https://github.com/Ikalus1988/MisakaNet/commit/0445e160d20cc88dac291b2bea27329b4a120f07))
+* **worker:** the search query is redacted before it reaches storage ([#3692](https://github.com/Ikalus1988/MisakaNet/issues/3692)) ([#3702](https://github.com/Ikalus1988/MisakaNet/issues/3702)) ([9bfa0d7](https://github.com/Ikalus1988/MisakaNet/commit/9bfa0d7ae6bb32753c419f72c9716f7971192f4f))
+
+
+### Documentation
+
+* align the intro with what the installer, the worker and the fields actually say ([#3500](https://github.com/Ikalus1988/MisakaNet/issues/3500)) ([f781e30](https://github.com/Ikalus1988/MisakaNet/commit/f781e3041c4117565814fb11654c3f85fba56615))
+* **codeql:** correct which tool produced the sixteen secret alerts ([#3490](https://github.com/Ikalus1988/MisakaNet/issues/3490)) ([26154ef](https://github.com/Ikalus1988/MisakaNet/commit/26154efb866201c9f25fedafe0b591723043f70a))
+* **field-report:** the OpenClaw follow-up, and the three findings it turned into ([#3696](https://github.com/Ikalus1988/MisakaNet/issues/3696) [#3699](https://github.com/Ikalus1988/MisakaNet/issues/3699) [#3700](https://github.com/Ikalus1988/MisakaNet/issues/3700)) ([#3703](https://github.com/Ikalus1988/MisakaNet/issues/3703)) ([9a53602](https://github.com/Ikalus1988/MisakaNet/commit/9a536025f6f6f8c361edc0ca257dc625d3d3e101))
+* **integrations:** the connector's own page answers the ownership question, and it is not stale ([#3648](https://github.com/Ikalus1988/MisakaNet/issues/3648)) ([dc8b1d1](https://github.com/Ikalus1988/MisakaNet/commit/dc8b1d1a14ed00ab32fd84a6b04122cbc472a847))
+* **start:** wire Quickstart track A to /start and back-link to Quickstart (fix [#1896](https://github.com/Ikalus1988/MisakaNet/issues/1896)) ([#3473](https://github.com/Ikalus1988/MisakaNet/issues/3473)) ([6699a3b](https://github.com/Ikalus1988/MisakaNet/commit/6699a3b571d4b322da28ad1c181a2ddd98deb630))
+* two surfaces publish `freshness`, and they are not the same measure ([#3638](https://github.com/Ikalus1988/MisakaNet/issues/3638)) ([b05cffb](https://github.com/Ikalus1988/MisakaNet/commit/b05cffb9f5f530ed5809b2dcac45887267308903))
+* **worker:** the CDN serves a cached entry to a request that carries credentials ([#3594](https://github.com/Ikalus1988/MisakaNet/issues/3594)) ([13070e4](https://github.com/Ikalus1988/MisakaNet/commit/13070e42f3d0c317f639c03b99fb1fb9c9a957ad))
+
+
+### Tests
+
+* **fatal-guard:** the Windows tokenizer test asserted a token count the machine decides ([#3678](https://github.com/Ikalus1988/MisakaNet/issues/3678)) ([40dbc21](https://github.com/Ikalus1988/MisakaNet/commit/40dbc216152f6186f6a61a7bf5433f9b0a25ffa1))
+* **hook:** the fetch test races the hook's own four-second stall guard ([#3692](https://github.com/Ikalus1988/MisakaNet/issues/3692)) ([#3718](https://github.com/Ikalus1988/MisakaNet/issues/3718)) ([ba6dad3](https://github.com/Ikalus1988/MisakaNet/commit/ba6dad365d5a63d53de73443667f33313379c982))
+* **site:** lock Quickstart copy to data-i18n and keep zh from shipping English ([#3475](https://github.com/Ikalus1988/MisakaNet/issues/3475)) ([11887f1](https://github.com/Ikalus1988/MisakaNet/commit/11887f18ad3d930b514bf91e2d8e21ddf83821ae))
+
+
+### CI/CD
+
+* **setup:** the setup package is released with the repository, and drift is a red gate ([#3691](https://github.com/Ikalus1988/MisakaNet/issues/3691)) ([#3715](https://github.com/Ikalus1988/MisakaNet/issues/3715)) ([1d3c0ba](https://github.com/Ikalus1988/MisakaNet/commit/1d3c0ba6b1304541115aa462a27017204a041a6c))
+
+
+### Lessons
+
+* **contrib:** answer four claimed questions ([#3564](https://github.com/Ikalus1988/MisakaNet/issues/3564) [#3299](https://github.com/Ikalus1988/MisakaNet/issues/3299) [#3301](https://github.com/Ikalus1988/MisakaNet/issues/3301) [#3380](https://github.com/Ikalus1988/MisakaNet/issues/3380)) ([#3682](https://github.com/Ikalus1988/MisakaNet/issues/3682)) ([c4a01a8](https://github.com/Ikalus1988/MisakaNet/commit/c4a01a8040356723d263cf7ad3d8ddd1b4e69573))
+* convert intake [#3339](https://github.com/Ikalus1988/MisakaNet/issues/3339) (proxy the shell never inherited) and [#3470](https://github.com/Ikalus1988/MisakaNet/issues/3470) (a disable nobody verified) ([#3501](https://github.com/Ikalus1988/MisakaNet/issues/3501)) ([916650c](https://github.com/Ikalus1988/MisakaNet/commit/916650c1b43aba72c289b6691ce68470e30ebd12))
+
 ## [2.48.0](https://github.com/Ikalus1988/MisakaNet/compare/v2.47.0...v2.48.0) (2026-10-17)
 
 
