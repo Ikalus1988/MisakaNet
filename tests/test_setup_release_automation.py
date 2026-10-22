@@ -479,6 +479,117 @@ def test_the_markers_use_the_version_scope():
                 )
 
 
+# ── 2b. the commit scan's floor ────────────────────────────────────────────────────────────────
+
+
+def _release_please_needs_bootstrap(config: dict, ledger: dict) -> bool:
+    """release-please's `Manifest.buildPullRequests` (src/manifest.ts), transcribed.
+
+    The rule that decides whether the commit scan has a floor at all:
+
+        let releasesFound = 0;
+        const expectedReleases = Object.keys(strategiesByPath).length;
+        ...
+        const needsBootstrap = releasesFound < expectedReleases;
+
+    and the floor itself, inside the scan:
+
+        } else if (needsBootstrap && commit.sha === this.bootstrapSha) {
+          this.logger.info(
+            `Needed bootstrapping, found configured bootstrapSha ${this.bootstrapSha}`
+          );
+          break;
+        }
+
+    So `bootstrap-sha` is read **only while `needsBootstrap` is true** — and a package that
+    release-please has never released has no ledger entry, so the scan has no answer to "where
+    does this package's history start" and falls back to the beginning of the repository.
+
+    Upstream, `releasesFound` counts the paths that have a ledger entry *and* a matching release
+    tag. The ledger entry alone is what this gate can see, and the two agree except in the
+    window between a release merging and its tag being pushed.
+    """
+    expected_releases = len(config.get("packages", {}))
+    releases_found = len(ledger)
+    return releases_found < expected_releases
+
+
+def test_the_commit_scan_has_a_floor_while_a_package_is_unreleased():
+    """The scan needs a floor, or the release PR cannot be rebuilt at all.
+
+    Measured 2026-10-22: the setup package (`packages/misakanet-setup`) joined the manifest in
+    #3691 and has never been released by release-please, so it has no entry in the ledger
+    (`.release-please-manifest.json`). Without an entry, release-please cannot say where that
+    package's history starts and falls back to the beginning of the repository — 1237 commits —
+    and walks all of it through GitHub's GraphQL API. The walk dies at roughly the 29th page,
+    every time (#3740).
+
+    `bootstrap-sha` is the floor, and it is the *only* floor: the branch that reads it is guarded
+    by `needsBootstrap`, and without a configured sha the comparison can never be true, so the
+    scan runs to the beginning of the repository.
+
+    This gate exists because the floor was lost without anybody noticing. #3744 edited this same
+    file — to give the setup package's extra-files a leading `/` — and the edit took the whole
+    file with it, `bootstrap-sha` included. The next two release-please runs then failed exactly
+    the way the first ones had, and the reason had to be read out of a failure log
+    ("No version for path packages/misakanet-setup") rather than out of a gate.
+
+    The other direction is the same rule: once the ledger has an entry for every configured
+    package, the floor has outlived its purpose and has to go — a bootstrap that outlives its
+    purpose would silently truncate a future changelog instead of failing loudly.
+    """
+    config = _read_json(CONFIG)
+    ledger = _read_json(MANIFEST)
+    bootstrap_sha = config.get("bootstrap-sha")
+
+    if _release_please_needs_bootstrap(config, ledger):
+        missing = [path for path in config.get("packages", {}) if path not in ledger]
+        assert bootstrap_sha, (
+            f"the release ledger has no entry for {missing} and the config carries no "
+            f"`bootstrap-sha`: release-please cannot say where that package's history starts, so "
+            f"it scans from the beginning of the repository and the release PR cannot be rebuilt "
+            f"at all (#3740)"
+        )
+    else:
+        assert not bootstrap_sha, (
+            f"the ledger has an entry for every configured package, so the scan no longer needs "
+            f"a floor — `bootstrap-sha` ({bootstrap_sha}) is inert now, and it would silently "
+            f"truncate a future changelog instead of failing loudly"
+        )
+
+
+def test_the_bootstrap_sha_is_a_commit_that_exists():
+    """A floor that points at nothing is not a floor.
+
+    A sha that is not in the repository would never match a commit in the scan, and the scan
+    would walk to the beginning of the repository anyway — a failure that looks exactly like
+    "no floor configured", which is the harder one to see.
+    """
+    sha = _read_json(CONFIG).get("bootstrap-sha")
+    if not sha:
+        pytest.skip("no `bootstrap-sha` is configured — there is no floor to point at")
+
+    assert re.fullmatch(r"[0-9a-f]{40}", sha), (
+        f"bootstrap-sha {sha!r} is not a full commit sha"
+    )
+    kind = subprocess.run(
+        ["git", "-C", str(REPO), "cat-file", "-t", sha],
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    if kind == "commit":
+        return
+    # A shallow checkout (the CI matrix uses the default depth of 1) does not carry the history
+    # this needs. Not being able to check is not the same as the sha being wrong — and the
+    # full-history workflows (pr-checks, the publish workflow) do carry it.
+    if _git(REPO, "rev-parse", "--is-shallow-repository").strip() == "true":
+        pytest.skip("the checkout is shallow, so the commit is not here to check")
+    pytest.fail(
+        f"bootstrap-sha {sha} is not a commit in this repository, so the scan would never stop "
+        f"there — it would run to the beginning of the repository and fail the same way"
+    )
+
+
 # ── 3. the drift gate ───────────────────────────────────────────────────────────────────────────
 
 

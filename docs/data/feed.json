@@ -1,35 +1,42 @@
 {
-  "generated_at": "2026-10-22T12:07:16.326304+00:00",
+  "generated_at": "2026-10-22T16:32:08.174026+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "test(hook): the fetch test races the hook's own four-second stall guard (#3692)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3718",
-      "timestamp": "2026-10-22T11:43:17Z",
+      "title": "fix(release): the extra-files of a package with a path are resolved against that path",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3744",
+      "timestamp": "2026-10-22T16:02:36Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(setup): the install says what it is about to write, before it writes it (#3690)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3709",
-      "timestamp": "2026-10-22T11:36:48Z",
+      "title": "fix(setup): --verify answers two questions, and stops calling a file it cannot write \"missing\"",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3743",
+      "timestamp": "2026-10-22T16:02:08Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(setup): the npm description says what it writes, what leaves this machine, and the one opt-in exception (#3689)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3710",
-      "timestamp": "2026-10-22T11:05:04Z",
+      "title": "fix(release): bound the commit scan, so the release PR can be rebuilt again",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3741",
+      "timestamp": "2026-10-22T15:28:39Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(setup): the npm copy of the rule text says redaction is done by code (#3692)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3708",
-      "timestamp": "2026-10-22T10:48:59Z",
+      "title": "fix(setup): the release moves the version literal, not just the manifest (#3691)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3738",
+      "timestamp": "2026-10-22T14:18:37Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "docs(handoff): §138 — the tool forgot, which is a different kind of drift",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3739",
+      "timestamp": "2026-10-22T14:14:20Z",
       "source": "github"
     },
     {
@@ -71,13 +78,6 @@
       "timestamp": "2026-10-17",
       "domain": "video",
       "source": "lessons"
-    },
-    {
-      "type": "merged_pr",
-      "title": "fix(tombstone): handle non-object JSON with clean ValueError to prevent raw traceback (closes #1838)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1845",
-      "timestamp": "2026-09-25T00:46:55Z",
-      "source": "github"
     },
     {
       "type": "challenge",
