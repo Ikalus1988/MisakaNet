@@ -328,3 +328,74 @@ version it carries
 > 门禁的强度等于你转写的规则条数 ÷ 实际生效的规则条数。**
 > 这个比值没有人算过，所以必须**逐条**数——
 > 而逐数的唯一办法是去读上游源码，而不是读自己上一次的 handoff。
+
+## 142. 一行配置被静默删掉：整文件重写是"删除别人的键"的最短路径（2026-10-22）
+
+### 现场
+
+#3741 把 `bootstrap-sha` 加进了 `release-please-config.json`。两次提交之后，它不在 main 上了。
+
+不是被谁 revert 的——**#3744 的那一次提交自己删掉了它**。那个提交要改的是同一个文件的另一处
+（给 setup 包的 `extra-files` 加 `/` 前缀），但它的 diff 长这样：
+
+```diff
+@@ -1,7 +1,6 @@
+   "signoff": "misakanet-bot <bot@misakanet.dev>",
+-  "bootstrap-sha": "4e3d15af7a68f35e0485e6cff26f9c0936a87b97",
+   "packages": {
+```
+
+**那个分支的父提交就是 #3741**（`66b053ac`），所以这不是合并冲突、不是 rebase 丢的、也不是
+"忘了"——是那次编辑**把整个文件重写了一遍**，而重写用的那份内容来自一个更早的基线。
+于是上一轮刚合进去的键，跟着旧基线一起被写回。
+
+### 怎么发现的：不是靠门禁，是靠日志里一行字
+
+两次 release-please 跑挂掉的方式，和 #3741 之前一模一样：
+
+```
+⚠ Expected 2 releases, only found 1
+⚠ Missing 1 paths: packages/misakanet-setup
+⚠ No version for path packages/misakanet-setup
+```
+
+`No version for path` 这一行才是证据：它说的是"账本里没有这个包的条目"，
+所以扫描没有起点。而账本里**本来就不该有**那个条目——那个包从未被 release-please 发过版。
+真正的问题不是账本，是**地板没了**：没有 `bootstrap-sha`，扫描就没有下限，
+只能从仓库开头走（1237 个 commit），走不完。
+
+**这件事没有门禁能报**，因为当时没有任何一条门禁知道"地板应该存在"。
+所以补的不是一条"检查这个键在不在"的断言，而是**把上游判定抄下来**：
+
+```python
+expected_releases = len(config["packages"])       # upstream: Object.keys(strategiesByPath).length
+releases_found = len(ledger)                      # upstream: this.releasedVersions
+needs_bootstrap = releases_found < expected_releases
+```
+
+`needs_bootstrap` 为真时，配置**必须**带 `bootstrap-sha`；账本对每个包都有条目之后，
+配置**必须不再**带它——过期地板会静默截断未来的 changelog，而不是响亮地失败。
+两个方向都抄，因为这两个方向都是**会安静地错**的。
+
+### 元教训
+
+> **改一份共享配置文件时，"我改了哪几行"和"这个文件现在是什么样"是两件事。**
+>
+> 整文件重写会把**你没有打算改的键**一起带回旧基线——那些键是**别人**（上一轮的你、或者某个 PR）
+> 在同一份文件上刚加的，而它们的正确性对你正在做的那件事完全不可见。
+>
+> 定点编辑（只改目标行）不会犯这个错，代价是"要先把文件读一遍"。
+> 这笔账很划算：**多读一遍文件，比多跑一次发版流水线便宜**。
+
+第二条，来自 §141 的教训：
+
+> **门禁要覆盖"别人会怎么改这个文件"，而不只是"这个文件现在对不对"。**
+>
+> §141 的门禁问的是"配置现在对吗"，它对"配置从别人手里交回来之后还对吗"一无所知。
+> 这次丢键不是配置错了，是**配置对了但中间少了一步**——
+> 而那一步没有任何东西在看。
+
+**给下一轮的一句操作提醒**：
+改 `release-please-config.json`、`release-please-manifest.json`、任何 workflow YAML 这类
+**多方共享的文件**时，用定点编辑；合完之后看一眼 `git show <sha> -- <file>` 的 diff 行数——
+**一行只该有一行的 diff**。
