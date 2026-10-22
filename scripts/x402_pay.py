@@ -133,7 +133,10 @@ def parse_challenge(body: bytes, headers: Any = None) -> dict[str, Any]:
             detail=body[:300].decode("utf-8", errors="replace"),
         )
     if not payload.get("accepts"):
-        raise X402Error("402 response listed no acceptable payment option", detail=str(payload)[:300])
+        raise X402Error(
+            "402 response listed no acceptable payment option",
+            detail=str(payload)[:300],
+        )
     return payload
 
 
@@ -244,7 +247,8 @@ def sign_authorization(message: dict[str, Any], private_key: str) -> str:
 
 def encode_payment(payment: dict[str, Any]) -> str:
     """Base64-encode the payment envelope for the ``PAYMENT-SIGNATURE`` header."""
-    return base64.b64encode(json.dumps(payment, separators=(",", ":")).encode("utf-8")).decode("ascii")
+    blob = json.dumps(payment, separators=(",", ":")).encode("utf-8")
+    return base64.b64encode(blob).decode("ascii")
 
 
 def build_payment(
@@ -281,9 +285,15 @@ def build_payment(
             "refusing to sign"
         )
     if expected_pay_to and requirement.get("payTo", "").lower() != expected_pay_to.lower():
-        raise X402Error(f"server asked to be paid at {requirement.get('payTo')!r}, not the pinned address")
+        raise X402Error(
+            f"server asked to be paid at {requirement.get('payTo')!r}, "
+            "not the pinned address"
+        )
     if expected_asset and requirement.get("asset", "").lower() != expected_asset.lower():
-        raise X402Error(f"server asked for asset {requirement.get('asset')!r}, not the pinned asset")
+        raise X402Error(
+            f"server asked for asset {requirement.get('asset')!r}, "
+            "not the pinned asset"
+        )
 
     if payer is None:
         if address_of is None:
@@ -384,7 +394,11 @@ def _require_json(status: int, body: bytes, headers: Any = None) -> dict[str, An
     """Decode a success response, or explain what the server sent instead."""
     parsed = _decode_json(body)
     if status >= 400:
-        detail = (parsed or {}).get("error") if parsed else body[:300].decode("utf-8", errors="replace")
+        detail = (
+            (parsed or {}).get("error")
+            if parsed
+            else body[:300].decode("utf-8", errors="replace")
+        )
         raise X402Error(f"server returned HTTP {status}", detail=str(detail)[:400])
     if parsed is None:
         raise X402Error(f"server returned HTTP {status} with a non-JSON body")
