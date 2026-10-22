@@ -153,37 +153,42 @@
 <!-- design-tokens:end -->
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-         background: #0d1117; color: #c9d1d9; min-height: 100vh; display: flex; justify-content: center;
-         padding: 2rem 1rem; }
-  .c { max-width: 820px; width: 100%; }
-  h1 { font-size: 1.5rem; color: #58a6ff; margin-bottom: .25rem; }
-  h2 { font-size: 1.05rem; color: #e6edf3; margin: 1.75rem 0 .75rem; }
-  .sub, .pv, footer { color: #8b949e; font-size: .9rem; line-height: 1.65; }
-  .pv { border: 1px solid #30363d; border-left: 3px solid #3fb950; border-radius: 8px;
-        background: #161b22; padding: .9rem 1rem; margin: 1.25rem 0; font-size: .85rem; }
-  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: .75rem; margin: 1.25rem 0; }
-  .card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: .85rem; }
-  .lab { color: #8b949e; font-size: .72rem; text-transform: uppercase; letter-spacing: .03em; }
-  .val { color: #e6edf3; font-size: 1.4rem; font-weight: 600; margin-top: .35rem; font-variant-numeric: tabular-nums; }
-  table { width: 100%; border-collapse: collapse; font-size: .9rem; }
-  th, td { text-align: left; padding: .55rem .75rem; border-bottom: 1px solid #21262d; }
-  th { color: #8b949e; font-size: .75rem; text-transform: uppercase; letter-spacing: .03em; }
+  body {
+    font-family: var(--font-ui);
+    background: var(--bg-0); color: #c9d1d9; min-height: 100vh;
+    display: flex; flex-direction: column; align-items: center; padding: 2rem 1rem;
+  }
+  .container { max-width: 720px; width: 100%; }
+  h1 { font-size: var(--fs-2xl); font-weight: 600; color: var(--accent); margin-bottom: 0.25rem; }
+  h2 { font-size: var(--fs-md); font-weight: 600; color: #e6edf3; margin: 2rem 0 0.75rem; }
+  .subtitle { color: #8b949e; font-size: var(--fs-sm); margin-bottom: 1.5rem; line-height: 1.6; }
+  .privacy {
+    border: 1px solid #30363d; border-radius: var(--r-md);
+    background: var(--bg-2); padding: 0.9rem 1rem; margin: 1.25rem 0;
+    font-size: var(--fs-sm); color: #8b949e; line-height: 1.7;
+  }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.75rem; margin: 1.25rem 0; }
+  .card { background: var(--bg-2); border: 1px solid #30363d; border-radius: var(--r-md); padding: 0.85rem; }
+  .lab { color: #8b949e; font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: 0.03em; }
+  .val { color: #e6edf3; font-size: var(--fs-xl); font-weight: 600; margin-top: 0.35rem; font-variant-numeric: tabular-nums; }
+  table { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); }
+  th, td { text-align: left; padding: 0.6rem 0.75rem; border-bottom: 1px solid #21262d; }
+  th { color: #8b949e; font-weight: 600; font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: 0.03em; }
   td.num { text-align: right; font-variant-numeric: tabular-nums; }
-  code, .id { font-family: ui-monospace, Menlo, monospace; font-size: .82rem; color: #e6edf3; }
-  .bar { height: 4px; background: #1f6feb; border-radius: 2px; margin-top: 4px; }
-  .st { color: #8b949e; font-size: .9rem; padding: 1rem 0; }
+  tbody tr:hover { background: var(--bg-2); }
+  code, .id { font-family: var(--font-mono); font-size: var(--fs-xs); color: #e6edf3; }
+  .bar { height: 4px; background: var(--accent); border-radius: var(--r-sm); margin-top: 4px; }
+  .st { color: #8b949e; font-size: var(--fs-sm); padding: 1.25rem 0; }
   .st.error { color: #f85149; }
-  a { color: #58a6ff; }
-  footer { margin-top: 2.5rem; font-size: .8rem; }
+  a { color: var(--accent); }
 </style>
 </head>
 <body>
-<div class="c">
-  <h1>📊 Quickstart Step Events</h1>
-  <p class="sub">Which steps' Copy button was pressed, and which "next step" link was clicked. One row per step, one count per day.</p>
+<div class="container">
+  <h1><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg> Quickstart Step Events</h1>
+  <p class="subtitle">Which steps' Copy button was pressed, and which "next step" link was clicked. One row per step, one count per day.</p>
 
-  <div class="pv">
+  <div class="privacy">
     <strong>Privacy — what is collected:</strong> a step id from a fixed list
     (<code>qs-a1</code>, <code>qs-b3</code>, …) and a per-day count.
     <strong>Not</strong> collected: what was copied (the clipboard is never read), query text,
@@ -213,7 +218,7 @@
   </table>
   <div class="st" id="series-st">Loading…</div>
 
-  <footer>
+  <footer class="footer">
 <!-- site-links:start -->
 <nav class="site-links" aria-label="Site links">
   <a href="/">Home</a> ·
