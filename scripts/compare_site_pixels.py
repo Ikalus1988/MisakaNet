@@ -160,6 +160,21 @@ SETTLE_MS = 600
 # changing, and how many shots to take before giving up on it.
 STABILITY_WAIT_MS = 400
 STABILITY_ATTEMPTS = 4
+#: How many **consecutive identical** shots count as "the page has stopped changing".
+#:
+#: Two was not enough, and the symptom was invisible from inside one tree: the page *looked*
+#: settled — two consecutive shots were byte-identical, so the check said `stable=True` — while
+#: it was still on its way to its final state. Two shots 400 ms apart can agree and the page can
+#: still change afterwards. Measured on the homepage at 390×844, six captures of one tree:
+#:
+#:     two identical shots  → the worst pair differed by 4 pixels over the default tolerance
+#:     three identical shots → the worst pair differed by 0 pixels
+#:
+#: and the worst pair of the six differed by 70 pixels with a channel step of 158 — that is not
+#: antialiasing, it is a different state of the page. With three, all fifteen pairs across the
+#: three viewports came out bit-identical, and two trees that differ by one character render
+#: identically too.
+STABILITY_IDENTICAL_SHOTS = 3
 PAGE_TIMEOUT_MS = 60_000
 NETWORK_IDLE_TIMEOUT_MS = 8_000
 # A colour is "the background" if it is within this much of the image's modal colour. Loose enough
@@ -485,6 +500,29 @@ async () => {
 """
 
 
+class _IdenticalRun:
+    """How many consecutive shots have been identical — and is that enough?
+
+    The rule is `STABILITY_IDENTICAL_SHOTS` in a row, not two. Two shots 400 ms apart can
+    agree while the page is still on its way to its final state, and the capture then keeps
+    a state that the next capture will not reproduce. See the constant for the measurement.
+    """
+
+    def __init__(self, required: int = STABILITY_IDENTICAL_SHOTS) -> None:
+        self.required = required
+        self.previous: bytes | None = None
+        self.count = 0
+
+    def feed(self, shot: bytes) -> bool:
+        """Take one shot; return whether the page has stopped changing."""
+        if self.previous is not None and shot == self.previous:
+            self.count += 1
+        else:
+            self.count = 1
+        self.previous = shot
+        return self.count >= self.required
+
+
 def _capture_one(
     browser,
     url: str,
@@ -538,8 +576,8 @@ def _capture_one(
         # shot repeatedly until two consecutive shots are byte-identical; a page that never
         # settles is reported, not quietly accepted.
         shot = b""
-        previous: bytes | None = None
         stable = False
+        run = _IdenticalRun()
         for _attempt in range(stability_attempts):
             shot = page.screenshot(
                 full_page=True,
@@ -547,10 +585,9 @@ def _capture_one(
                 caret="hide",
                 scale="css",
             )
-            if previous is not None and shot == previous:
+            if run.feed(shot):
                 stable = True
                 break
-            previous = shot
             page.wait_for_timeout(stability_wait_ms)
         out_path.write_bytes(shot)
         return {
