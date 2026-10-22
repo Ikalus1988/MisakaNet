@@ -131,14 +131,15 @@ jobs:
             --remove-label "autorelease: pending" --add-label "autorelease: tagged"
           echo "release PR #$PR marked autorelease: tagged"
 
-      # `bootstrap-sha` in `release-please-config.json` bounds the commit scan, and that is
-      # what makes this step finish at all.
+      # The commit scan this action performs needs a floor, and it had one until the 0.6.0
+      # release: `bootstrap-sha` in `release-please-config.json` told release-please where the
+      # setup package's history starts.
       #
-      # The setup package (`packages/misakanet-setup`) joined this manifest in #3691 and has
-      # never been released by release-please, so it has **no entry in the release ledger**
+      # The setup package (`packages/misakanet-setup`) joined this manifest in #3691 and had
+      # never been released by release-please, so it had **no entry in the release ledger**
       # (`.release-please-manifest.json`). Without one, release-please cannot say where that
-      # package's history starts, so it falls back to "the beginning of the repository" — 1237
-      # commits back — and walks the whole thing through GitHub's GraphQL API.
+      # package's history starts, so it fell back to "the beginning of the repository" — 1237
+      # commits back — and walked the whole thing through GitHub's GraphQL API.
       #
       # The walk fails, and it fails the same way every time (measured 2026-10-22, two runs,
       # and reproduced by hand with the same query):
@@ -151,17 +152,19 @@ jobs:
       # at the moment of the failure). The scan dies at roughly the 29th page — 290 commits —
       # every time.
       #
-      # `bootstrap-sha` points at the commit the setup package's first release-please release
-      # starts from: `4e3d15af` is the parent of `c8c53aa0` ("docs(dsh): what the plugin
-      # actually gives", #3398), which is the oldest setup-package change the 0.6.0 notes
-      # already list. The scan is 143 commits instead of 1237 — under the wall — and the
-      # 0.6.0 notes are **the same six entries** they were before, not a shorter list.
+      # The floor is gone, and it is gone because it is no longer needed: since the 0.6.0
+      # release, **every configured package has a ledger entry and the tag that entry names**
+      # (`v2.49.0` for the root, `misakanet-setup-v0.6.0` for the setup package). That is
+      # exactly the condition release-please itself uses to decide whether a floor is needed
+      # (`Manifest.buildPullRequests`: `needsBootstrap = releasesFound < expectedReleases`), so
+      # the scan now stops at each package's own release tag, and `bootstrap-sha` would only be
+      # a second, silently wrong answer to a question release-please can already answer.
       #
-      # It becomes inert on its own: once the 0.6.0 release PR merges, release-please writes
-      # the setup path into the ledger, the path finds its release tag, and the scan stops at
-      # that tag instead. Remove this line in the PR that follows the 0.6.0 release — see
-      # the handoff note — because a bootstrap that outlives its purpose would silently
-      # truncate a future changelog instead of failing loudly.
+      # A floor that outlives its purpose is worse than no floor at all: the day a new package
+      # joins the manifest, a stale sha would cut that package's history off at an arbitrary
+      # commit — a shorter changelog, with nothing saying so. Without the floor, the same day
+      # makes release-please fail loudly instead, and `tests/test_setup_release_automation.py`
+      # says which half of the condition is missing.
       - uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7  # v5
         id: release
         with:
