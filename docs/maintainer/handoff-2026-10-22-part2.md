@@ -913,8 +913,9 @@ OpenClaw：规则块没装（/root/.openclaw/workspace/AGENTS.md）→ 重跑安
 
 ### 现场
 
-`bootstrap-sha` 合入之后，**Release Please 第一次跑通了**（attempt 3，2026-10-22T15:37Z）——
-提交扫描 143 个提交，够用，发版 PR 被重建。
+`bootstrap-sha` 合入之后，**Release Please 有一次跑通了**（attempt 3，2026-10-22T15:37Z）——
+提交扫描 143 个提交，发版 PR 被重建。
+（这一次发生在 GitHub 事故窗口内，**它不能证明 bootstrap-sha 修好了什么**，见 §139 的更正。）
 
 然后去看字面量：
 
@@ -924,6 +925,11 @@ $ gh api .../contents/packages/misakanet-setup/bin/misakanet-setup.mjs?ref=<发�
 ```
 
 **标记在，值没动。** 而同一个分支上 `packages/misakanet-setup/package.json` 已经是 `0.6.0` ✓。
+
+> **这一节的证据不受当晚那次 GitHub 事故影响**：它不是从"CI 红了"推出来的，
+> 而是直接读**发版分支上的文件内容**（`package.json` 已 0.6.0、字面量仍 0.5.6）
+> 加上**上游源码里 `addPath` 的实现**——两条都不依赖 GitHub 那晚是否在降级。
+> （§139 的失败归因受影响，这一节的**发现**不受影响：文件内容不会撒谎。）
 
 ### 两个事实拼在一起才是真相
 
