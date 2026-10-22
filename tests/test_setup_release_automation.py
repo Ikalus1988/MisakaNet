@@ -278,11 +278,25 @@ def test_the_publish_workflow_creates_the_tag_before_it_publishes():
         "the tag job must run on the repository's release flow landing on main, not on every push"
     )
     body = yaml.dump(tag_job)
-    assert "git tag" in body and "git push origin" in body, "the tag job never creates the tag"
     assert "gh workflow run misakanet-setup-publish.yml" in body, (
         "the tag job must dispatch the publish at the tag it created"
     )
     assert TAG_PREFIX in body, f"the tag job must create a {TAG_PREFIX}* tag"
+
+    # The step that *creates* the tag, not the one that lists the tags it already has: a
+    # read-only `git tag -l` in the deciding step must not be able to satisfy this.
+    creations = [
+        step
+        for step in tag_job.get("steps", [])
+        if re.search(r"^\s*git tag (?!-l)\S", str(step.get("run", "")), re.M)
+    ]
+    assert creations, (
+        "no step creates the release tag — the deciding step only reads the tags that exist"
+    )
+    for step in creations:
+        run = str(step.get("run", ""))
+        assert "git push origin" in run, "the step that creates the tag must push it"
+        assert TAG_PREFIX in run, f"the tag must be a {TAG_PREFIX}* tag"
 
     publish_if = workflow["jobs"]["publish"]["if"]
     assert "ref_type == 'tag'" in publish_if, (
