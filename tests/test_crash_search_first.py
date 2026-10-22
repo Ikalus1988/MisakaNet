@@ -387,3 +387,63 @@ def test_the_handler_runs_as_a_process(tmp_path):
     assert "检索未完成" in result.stdout
     assert "已留草稿" in result.stdout
     assert len(list(tmp_path.glob("*.md"))) == 1
+
+
+# ── 结论文件：Node 路径上那一行没人看得见，所以要落到文件里 ────────────────────────────
+
+
+def test_the_resolution_is_written_next_to_the_crash_file(tmp_path, monkeypatch):
+    """fatal-guard 把 handler 的 stdout 丢掉了（`stdio: 'ignore'`）。
+
+    所以"命中时输出课程标题 + 链接"在 Node 路径上必须还有一个落盘的地方：崩溃文件旁边。
+    `FATAL_CRASH_OUT` 是 fatal-guard 自己那个环境变量，handler 是它的子进程，拿得到同一个值。
+    """
+    crash_file = tmp_path / "last-crash.json"
+    monkeypatch.setenv("FATAL_CRASH_OUT", str(crash_file))
+    search = _search_returning(KNOWN_LESSON)
+
+    code = fatal_guard_handler.main(
+        [json.dumps(NODE_PAYLOAD)], search=search, drafts_dir=tmp_path / "drafts")
+
+    assert code == 0
+    resolution = tmp_path / "last-crash.json.resolution.md"
+    assert resolution.exists(), "the resolution was not written next to the crash file"
+    text = resolution.read_text(encoding="utf-8")
+    assert KNOWN_LESSON["title"] in text, "the lesson title is not in the resolution"
+    assert KNOWN_LESSON["url"] in text, "the lesson link is not in the resolution"
+
+
+def test_the_resolution_says_where_the_draft_is(tmp_path, monkeypatch):
+    """未命中时结论里要写清楚"没有现成课程"和草稿在哪——那一行在 Node 路径上也是看不见的。"""
+    crash_file = tmp_path / "last-crash.json"
+    monkeypatch.setenv("FATAL_CRASH_OUT", str(crash_file))
+    drafts = tmp_path / "drafts"
+
+    fatal_guard_handler.main(
+        [json.dumps(NODE_PAYLOAD)], search=_search_returning(None), drafts_dir=drafts)
+
+    text = (tmp_path / "last-crash.json.resolution.md").read_text(encoding="utf-8")
+    assert "没有现成课程" in text, "the resolution does not say that there is no lesson"
+    assert "draft" in text, f"the resolution does not point at the draft: {text}"
+
+
+def test_no_resolution_is_written_without_a_crash_file(tmp_path, monkeypatch):
+    """没有崩溃文件就没什么"旁边"，也就不该凭空造一个文件。"""
+    monkeypatch.delenv("FATAL_CRASH_OUT", raising=False)
+
+    fatal_guard_handler.main(
+        [json.dumps(NODE_PAYLOAD)], search=_search_returning(KNOWN_LESSON),
+        drafts_dir=tmp_path / "drafts")
+
+    assert list(tmp_path.iterdir()) == [], "a resolution appeared without a crash file"
+
+
+def test_an_empty_crash_file_setting_writes_no_resolution(tmp_path, monkeypatch):
+    """`FATAL_CRASH_OUT=''` 是 fatal-guard 那边"关掉崩溃文件"的说法，这时也不该写结论。"""
+    monkeypatch.setenv("FATAL_CRASH_OUT", "")
+
+    fatal_guard_handler.main(
+        [json.dumps(NODE_PAYLOAD)], search=_search_returning(KNOWN_LESSON),
+        drafts_dir=tmp_path / "drafts")
+
+    assert list(tmp_path.iterdir()) == [], "a resolution appeared although the crash file is off"

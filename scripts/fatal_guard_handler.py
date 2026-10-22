@@ -20,6 +20,15 @@ Windows 路径放在 `FATAL_PAYLOAD`，并把文件路径放在 `FATAL_PAYLOAD_F
   * 未命中 → 写草稿，并明确说"没有现成课程，已留草稿"
   * 无网络 → 跳过检索（`--offline`），行为与本 issue 之前一致
 
+**打印出来的那句话，在 Node 路径上没人看得见。** fatal-guard 把 handler 拉起来时用的是
+`stdio: 'ignore'`（packages/fatal-guard/index.js 与 bin/fatal-guard.js），所以 handler 的
+stdout 和 stderr 都被丢掉了——而 crash 文件是 fatal-guard 自己写的，那才是"崩溃后唯一活下来
+的通道"（#3645 的原话）。于是"命中时输出课程标题 + 链接"在 Node 路径上等于没说。
+
+所以这个 handler 还会写一份**结论文件**：放在 `FATAL_CRASH_OUT` 指的那个崩溃文件旁边，
+名字是 `<崩溃文件>.resolution.md`。命中写课程标题 + 链接，未命中写"没有现成课程"和草稿在哪。
+`FATAL_CRASH_OUT` 没设或设成空，就不写——那时候没有崩溃文件，也就无所谓旁边。
+
 退出码：0 = 处理完（命中，或草稿已留）；2 = 载荷读不到；3 = 草稿写不下去。
 """
 
@@ -118,6 +127,31 @@ def write_draft(tombstone: Mapping, drafts_dir: Path) -> Path:
     return path
 
 
+def write_resolution(text: str, env: Mapping[str, str]) -> Path | None:
+    """把结论写在崩溃文件旁边，让 Node 路径上的那一行不至于丢掉。
+
+    `FATAL_CRASH_OUT` 是 fatal-guard 自己的环境变量（#3645）：它指向崩溃载荷被写下的那个
+    文件。handler 是它的子进程，所以拿得到同一个值——**不需要改那个包**。
+
+    写不出来不算失败：结论文件是给人和 agent 看的额外一份，不是流程的一环。写不下去就
+    返回 None，调用方照常打印。
+    """
+    configured = env.get("FATAL_CRASH_OUT")
+    if not configured:
+        return None
+    target = Path(configured)
+    if target.suffix == ".md":
+        resolution = target.with_name(f"{target.stem}.resolution.md")
+    else:
+        resolution = target.with_name(f"{target.name}.resolution.md")
+    try:
+        resolution.parent.mkdir(parents=True, exist_ok=True)
+        resolution.write_text(text.rstrip() + "\n", encoding="utf-8")
+    except OSError:
+        return None
+    return resolution
+
+
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="fatal-guard handler: crash → search MisakaNet first, draft only if no hit"
@@ -153,7 +187,9 @@ def main(argv: Sequence[str] | None = None, *, search: SearchFn | None = None,
                            search=search, offline=args.offline)
 
     if lookup.hit:
-        print(format_hit(lookup.lesson))
+        line = format_hit(lookup.lesson)
+        print(line)
+        write_resolution(line, os.environ)
         return 0
 
     target_dir = Path(args.drafts_dir) if args.drafts_dir else (drafts_dir or DEFAULT_DRAFTS_DIR)
@@ -163,7 +199,9 @@ def main(argv: Sequence[str] | None = None, *, search: SearchFn | None = None,
         print(f"fatal-guard handler: cannot write the draft: {exc}", file=sys.stderr)
         return 3
 
-    print(format_no_hit(draft, search_note=lookup.skipped_reason))
+    line = format_no_hit(draft, search_note=lookup.skipped_reason)
+    print(line)
+    write_resolution(line, os.environ)
     return 0
 
 
