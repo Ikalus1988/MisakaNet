@@ -491,10 +491,11 @@ function buildWriteManifest(agents) {
     // `--no-register` registers no anonymous node, so no token is written; listing it anyway would
     // make the manifest — and the preview's file count — promise a file that stays absent.
     if (!has('--no-register')) add(join(stateDir(), 'token'), 'create (0600)', 1, 'token');
-    // The endpoint record is tier 1: it says *which* endpoint was registered, and `--mcp-only`
-    // registers the endpoint, so it has to be listed under `--mcp-only` too.
-    add(join(stateDir(), STATE_ENDPOINT_FILE), 'create', 1, 'endpoint');
     if (!MCP_ONLY) {
+      // The endpoint record lives in the state directory, so it is tier ③ like everything else in
+      // there: `--mcp-only` must not create that directory at all (the e2e checks the directory
+      // itself, not just the files). The record is therefore written only when tier ③ is in scope.
+      add(join(stateDir(), STATE_ENDPOINT_FILE), 'create', 3, 'endpoint');
       add(join(stateDir(), 'hook.mjs'), 'create', 3, 'hookScript');
       add(join(stateDir(), STATE_VERSION_FILE), 'create', 3, 'version');
     }
@@ -657,7 +658,11 @@ function hookWired() {
  */
 function blockRegions(text, block) {
   const regions = [];
-  const marked = new RegExp(`\\n?[ \\t]*<!--\\s*${START}\\s*-->[\\s\\S]*?<!--\\s*${END}\\s*-->\\n?`, 'g');
+  // The marked region is exactly what the old installer matched — and it must stay that narrow:
+  // a region that also swallowed the newline in front of the block made every re-install rewrite
+  // the file (the e2e caught it: "the rules file was rewritten by a run that had nothing to
+  // change"). Taking that newline is the *uninstaller's* job, and only the uninstaller's.
+  const marked = new RegExp(`[ \\t]*<!--\\s*${START}\\s*-->[\\s\\S]*?<!--\\s*${END}\\s*-->\\n?`, 'g');
   for (const m of text.matchAll(marked)) {
     regions.push({ start: m.index, end: m.index + m[0].length, text: m[0], marked: true });
   }
@@ -668,13 +673,7 @@ function blockRegions(text, block) {
     if (at < 0) break;
     const inside = regions.some((r) => at >= r.start && at < r.end);
     if (!inside) {
-      let start = at;
-      let end = at + body.length;
-      // The install writes a blank line before the block; take it with the block so an uninstall
-      // leaves the file exactly as it was (the same rule the marked path already follows).
-      if (text[start - 1] === '\n') start -= 1;
-      if (text[end] === '\n') end += 1;
-      regions.push({ start, end, text: text.slice(start, end), marked: false });
+      regions.push({ start: at, end: at + body.length, text: body, marked: false });
     }
     from = at + body.length;
   }
@@ -726,7 +725,12 @@ function stripBlock(path, block = PROMPT_BLOCK) {
   let out = '';
   let cursor = 0;
   for (const r of regions) {
-    out += text.slice(cursor, r.start);
+    // The install writes a blank line, then the block; consuming only the block left the file one
+    // newline longer than it started (uninstall claimed "已恢复原状" while `diff` showed an extra
+    // empty line). So the removal takes that newline with it.
+    let start = r.start;
+    if (start > 0 && text[start - 1] === '\n') start -= 1;
+    out += text.slice(cursor, start);
     cursor = r.end;
   }
   out += text.slice(cursor);
@@ -2844,8 +2848,14 @@ try {
     // Codex-only machine produced a file nothing would ever run, and made `--report` claim
     // `install-scope: full` for an install that registered an endpoint and nothing else.
     const hookPath = (MCP_ONLY || !targets.includes('claude')) ? null : await installHook();
-    if (!MCP_ONLY) stampVersion();
-    stampEndpoint();
+    // Tier ③ only: the record lives in the state directory, and `--mcp-only` must not create it.
+    // Without a record, `--verify` falls back to the env override and then to the canonical
+    // endpoint — which is the older behaviour, and the only place a mirrored install can be
+    // reported as broken (verify with the same MISAKANET_ENDPOINT it was installed with).
+    if (!MCP_ONLY) {
+      stampVersion();
+      stampEndpoint();
+    }
     const bearer = has('--no-register') ? '' : await ensureIdentity();
     for (const agent of targets) {
       // One target failing must not skip the rest: an uncaught throw used to abort the loop, so
