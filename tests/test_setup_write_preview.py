@@ -37,7 +37,15 @@ REPO = Path(__file__).resolve().parents[1]
 INSTALLER = REPO / "packages" / "misakanet-setup" / "bin" / "misakanet-setup.mjs"
 
 # The preview's first line: the file count. `--dry-run` adds a parenthetical to the same line.
-COUNT_LINE = re.compile(r"^将修改 (\d+) 个文件")
+#
+# "将涉及" and not "将修改": the list is a scope — the files this run *may* touch — and on an
+# already-installed machine every one of them comes back unchanged, so promising a change was
+# a promise the run could not keep (measured 2026-10-23). How many files were really written is
+# a different number, and the run now says it separately.
+COUNT_LINE = re.compile(r"^将涉及 (\d+) 个文件")
+
+# The line the install run prints after the work: how many files it really wrote.
+WROTE_LINE = re.compile(r"^本次实际写入 (\d+) 个文件", re.M)
 
 # The three ways out of a write, in one line.
 WAYS_OUT = ("--list-writes", "--mcp-only", "--uninstall")
@@ -245,7 +253,29 @@ def test_the_ci_form_is_still_exactly_one_json_document(node, tmp_path):
     assert result.returncode == 0, result.stdout + result.stderr
     payload = json.loads(result.stdout)
     assert payload["schema"] == "misakanet-setup-report/1", payload
-    assert "将修改" not in result.stdout, "the summary belongs to the install run, not to the report"
+    assert "将涉及" not in result.stdout, "the summary belongs to the install run, not to the report"
+
+
+def test_the_run_says_how_many_files_it_actually_wrote(node, tmp_path):
+    """The number a reader actually looks at has to be true.
+
+    The preview lists the files *in scope*. On an already-installed machine every one of them
+    came back unchanged while the header still said "将修改 17 个文件" — and that number was the
+    one the reader took away (measured 2026-10-23). So the run says both: the scope before the
+    work, and the truth after it.
+    """
+    home = make_home(tmp_path)
+    first = run_setup(node, home, "--only", "claude")
+    assert first.returncode == 0, first.stdout + first.stderr
+    wrote = WROTE_LINE.search(first.stdout)
+    assert wrote, f"the run must say what it wrote:\n{first.stdout}"
+    assert int(wrote.group(1)) > 0, first.stdout
+
+    # A second run changes nothing, so it must not claim it wrote anything.
+    second = run_setup(node, home, "--only", "claude")
+    assert second.returncode == 0, second.stdout + second.stderr
+    assert not WROTE_LINE.search(second.stdout), (
+        "nothing changed, so nothing may be claimed:\n" + second.stdout)
 
 
 def test_dry_run_prints_the_summary_and_writes_nothing(node, tmp_path):

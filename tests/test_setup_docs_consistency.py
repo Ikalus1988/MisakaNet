@@ -81,6 +81,21 @@ def test_the_installer_documents_its_own_landing_page_claims():
         assert promise in page, f"the landing page should tell people about {promise}"
 
 
+def test_the_flags_the_installer_recommends_are_documented():
+    """The tool tells the user which flags to run next; those flags have to be findable.
+
+    The install preview ends with `先看：--list-writes   不改行为：--mcp-only   撤销：--uninstall`
+    — and the README's Flags section listed neither `--list-writes` nor `--mcp-only` (measured
+    2026-10-23), so the tool pointed at two flags the documentation did not mention.
+    """
+    readme = (REPO / "packages" / "misakanet-setup" / "README.md").read_text(encoding="utf-8")
+    missing = [flag for flag in ("--list-writes", "--mcp-only", "--uninstall") if flag not in readme]
+    assert not missing, (
+        f"the installer recommends these flags in its own output, and the README does not list "
+        f"them: {missing}"
+    )
+
+
 def test_nothing_under_docs_recommends_the_python_library_as_the_install_path():
     """`pip install misakanet-core` is a library, not an install path (README says so itself)."""
     page = (REPO / "docs" / "install" / "index.html").read_text(encoding="utf-8")
