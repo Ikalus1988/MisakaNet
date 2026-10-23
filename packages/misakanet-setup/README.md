@@ -47,11 +47,14 @@ dsh takes its MCP servers from a **plugin bundle**, not from a JSON file. Its in
 chain: **`$DSH_HOME/AGENTS.md`** (user-global, default `~/.dsh/AGENTS.md`, applies to every session)
 first, then the project's `AGENTS.md`/`CLAUDE.md` from the project root down to the working directory
 (`@deepseek-ai/dsh-agent-instructions`, byte-budgeted at 65,536 by default). It has no Claude-Code-style
-hooks. So the two commands are:
+hooks.
+
+So dsh takes **two manual steps that do not know about each other**, and this installer does neither of
+them — it writes no file under `~/.dsh`:
 
 ```bash
-dsh plugin --profile web add misakanet   # ① the tools (mcp__misakanet__*)
-# ② put the rules block in ~/.dsh/AGENTS.md (global) or the project's AGENTS.md
+dsh plugin --profile web add misakanet   # ① the tools (mcp__misakanet__*) — dsh's own command
+# ② you paste the rules block into ~/.dsh/AGENTS.md (global) or the project's AGENTS.md
 ```
 
 Measured 2026-10-17: writing `~/.dsh/AGENTS.md` is picked up as `user-global` instructions on the next
@@ -59,13 +62,41 @@ message, with no restart.
 
 Measured 2026-10-17: installing the current `misakanet` takes ~1s into `~/.dsh/profiles/web`; the plugin's
 `index.js` mounts the MCP client and `lib/client.js` is the web panel — **neither injects a rule**,
-which is why ② is a separate, manual step. Full guide: `docs/integrations/dsh.md`.
+which is why ② is a separate, manual step.
+
+**Upgrading the installer does not refresh that block.** Nothing rewrites text you pasted, and the
+installer only refreshes the files it manages (for Claude Code, `~/.claude/CLAUDE.md`). Measured
+2026-10-23 (issue #3773): one machine's `~/.dsh/AGENTS.md` still carried the old block — its last line
+read `脱敏：密钥/凭据→<REDACTED>…` — while the same installer had just written the current one
+(`脱敏：已由代码自动完成…`) to `~/.claude/CLAUDE.md`. Re-paste after an upgrade, and check by comparing
+that line; the copy in `docs/integrations/dsh.md` can lag too.
+
+**Uninstalling takes two steps, and the second one is yours.** `dsh plugin --profile web remove misakanet`
+removes the tools; the rules block stays in `~/.dsh/AGENTS.md` (or the project's `AGENTS.md`), and there is
+no `misakanet:start` / `misakanet:end` marker to lift it — the installer never put one there, because it
+never wrote that file. Remove the block by hand, then check:
+
+```bash
+grep -c misakanet "${DSH_HOME:-$HOME/.dsh}/AGENTS.md"   # expected 0; a missing file errors, which is also clean
+```
+
+Until the block is removed, a new dsh session still follows it and calls `mcp__misakanet__*` tools that
+no longer exist.
+
+**Why it is not mechanised yet.** dsh's MCP servers come from the plugin bundle and its instructions come
+from the `AGENTS.md` chain — two entry points this installer has no path into: it only writes the files on
+its own target list, and dsh's files are not on it. A mechanical fix (a marker pair around the block, plus
+an uninstall branch) **is not implemented; it is follow-up work**. Until then,
+`dsh plugin --profile web remove misakanet` does not take the block with it.
+
+Full guide: `docs/integrations/dsh.md`.
 
 ## Flags
 
 ```bash
 npx @misaka-net/misakanet-setup --dry-run     # show what would change, write nothing
-npx @misaka-net/misakanet-setup --verify      # READY / NOT READY, installed version, and the fix for each gap
+npx @misaka-net/misakanet-setup --verify      # READY / NOT READY / could not verify, installed version,
+                                             #  and the fix for each gap (exit codes: 0 / 1 / 2)
                                              # two sections, two questions: 端点/可用性 (can you use it — the
                                              #  endpoint answers) and 安装完整性 (are the files we prefer
                                              #  written); one failing does not condemn the other, and a file
