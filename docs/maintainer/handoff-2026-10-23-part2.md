@@ -168,3 +168,9 @@ PR 记录的是"改了什么"，不会记录"没改什么"。
   同一天的第 14 卷 `handoff-2026-10-22.md` 就是这么指向它的 part2 的，那个先例说明这是既定做法。
 - 门禁：`tests/test_handoff_size_limit.py`（800 行上限，本卷 170 行）
   与 `tests/test_handoff_citations_resolve.py`（引用必须解析）——本卷引用的路径全部存在。
+- PR #3769 已合并（`e8b249b`），必需四项 context 全绿
+  （`DCO / Signed-off-by` · `test (ubuntu-latest, 3.11)` · `gate` · `audit`），最终 27 passed / 5 skipped / 0 failed。
+  **是仓库的 auto-merge 收的**（`.github/workflows/auto-merge-docs.yml`：`pull_request_target` +
+  `labeled`，拿到 `docs-only` 标签且 CI 全绿就自动合并），**不是**人工点合并——
+  这一点第六轮在 #3765 上已经吃过一次，这轮又盯了一遍 CI 才反应过来，是重复的浪费。
+  **docs-only 的 PR 不需要盯 CI 等合并**，改完推上去就行。
