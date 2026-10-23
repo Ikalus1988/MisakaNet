@@ -1,9 +1,16 @@
 {
-  "generated_at": "2026-10-23T11:50:11.548659+00:00",
+  "generated_at": "2026-10-23T17:18:34.766544+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3780",
+      "timestamp": "2026-10-23T11:59:24Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "docs(handoff): 交接件只记泛化性高的东西——第 18 卷按新标准重写",
@@ -30,13 +37,6 @@
       "title": "chore(data): sync lessons.json + refresh feed",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/3766",
       "timestamp": "2026-10-23T05:38:21Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "lessons(contrib): a hand-made PR stack is closed, not retargeted, when the upstream branch is deleted",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3763",
-      "timestamp": "2026-10-23T05:30:01Z",
       "source": "github"
     },
     {
