@@ -455,6 +455,131 @@ test('verify passes once installed, against a reachable endpoint', async () => {
   }
 });
 
+// ── the gaps a real machine found (2026-10-23) ───────────────────────────────
+//
+// `--verify` had no row for codex or codewhale at all: a machine whose Codex entry pointed at
+// `https://BROKEN.invalid/mcp` and whose rules block had lost its markers still reported READY
+// with exit code 0, while `--report`'s `detected-agents` listed both as present — so a machine
+// that was 100% unusable passed the CI gate. The gate was effective for every other target
+// (deleting Claude's entry made it NOT READY), so the hole was exactly these two.
+//
+// And "the entry exists" was the whole of the endpoint check: an entry pointing at a dead URL was
+// reported as `✓ MCP 已注册（https://BROKEN.invalid/mcp）` — a green tick next to a URL nobody can
+// reach, with the dead URL printed after it.
+
+test('verify: a codex pointing at a dead endpoint is NOT READY, even when the endpoint works', async () => {
+  const { createServer } = await import('node:http');
+  const server = createServer((req, res) => {
+    let body = '';
+    req.on('data', (chunk) => { body += chunk; });
+    req.on('end', () => {
+      const payload = JSON.parse(body || '{}');
+      const result = payload.method === 'tools/list'
+        ? { tools: [{ name: 'misakanet_search' }, { name: 'misakanet_get_lesson' }] }
+        : payload.params?.name === 'misakanet_register'
+          ? { node_id: 'MisakaTEST', token: TOKEN_SHAPE_OK }
+          : { results: [{ id: 'stub', type: 'lesson' }] };
+      const reply = JSON.stringify({ jsonrpc: '2.0', id: 1, result: {
+        content: [{ type: 'text', text: JSON.stringify(result) }], structuredContent: result } });
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(reply);
+    });
+  });
+  await new Promise((done) => server.listen(0, '127.0.0.1', done));
+  const url = `http://127.0.0.1:${server.address().port}/mcp`;
+  try {
+    const home = makeHome();
+    const install = await runAsync(home, childEnv({ MISAKANET_ENDPOINT: url }));
+    assert.equal(install.status, 0, install.stdout + install.stderr);
+
+    // The machine is installed and its endpoint answers. Break Codex — and only Codex.
+    const tomlPath = join(home, '.codex', 'config.toml');
+    writeFileSync(tomlPath, readFileSync(tomlPath, 'utf8')
+      .replace(`url = "${url}"`, 'url = "https://BROKEN.invalid/mcp"'));
+
+    const verify = await runAsync(home, childEnv({ MISAKANET_ENDPOINT: url }), '--verify');
+    assert.equal(verify.status, 1, 'a broken codex must not report READY:\n' + verify.stdout);
+    assert.match(verify.stdout, /端点不对/, 'the item must name the endpoint:\n' + verify.stdout);
+    assert.match(verify.stdout, /Codex/, 'and it must say whose entry it is:\n' + verify.stdout);
+
+    // The CI form must refuse to pass it too.
+    const strict = await runAsync(home, childEnv({ MISAKANET_ENDPOINT: url }), '--report', '--strict');
+    assert.equal(strict.status, 1, '--report --strict must fail a broken codex:\n' + strict.stdout);
+    assert.match(strict.stdout, /NOT READY/);
+  } finally {
+    server.close();
+  }
+});
+
+test('verify: a codex whose rules block lost its markers is NOT READY', () => {
+  const home = makeHome();
+  run(home, '--no-register');
+  const rules = join(home, '.codex', 'AGENTS.md');
+  const text = readFileSync(rules, 'utf8');
+  writeFileSync(rules, text.replace('<!-- misakanet:start -->\n', '').replace('<!-- misakanet:end -->\n', ''));
+
+  const verify = run(home, '--verify');
+  assert.match(verify.stdout, /Codex：规则块没装/,
+    'a rules block without its markers is not installed:\n' + verify.stdout);
+});
+
+test('verify: an entry pointing at a foreign URL is never a green tick', () => {
+  const home = makeHome();
+  mkdirSync(join(home, '.cursor'), { recursive: true });
+  writeFileSync(join(home, '.cursor', 'mcp.json'), JSON.stringify({
+    mcpServers: { misakanet: { url: 'https://BROKEN.invalid/mcp' } },
+  }));
+
+  const verify = run(home, '--verify');
+  assert.doesNotMatch(verify.stdout, /BROKEN\.invalid[\s\S]*?✓/,
+    'a dead URL must not be reported as registered:\n' + verify.stdout);
+  assert.match(verify.stdout, /端点不对/, 'and the reason must be named:\n' + verify.stdout);
+});
+
+test('install: a rules block that lost its markers is repaired, not duplicated', () => {
+  const home = makeHome();
+  run(home, '--no-register');
+  const rules = join(home, '.codex', 'AGENTS.md');
+  const text = readFileSync(rules, 'utf8');
+  writeFileSync(rules, text.replace('<!-- misakanet:start -->\n', '').replace('<!-- misakanet:end -->\n', ''));
+
+  run(home, '--no-register');
+  const after = readFileSync(rules, 'utf8');
+  const copies = (after.match(/调用规则（按顺序照做）/g) || []).length;
+  assert.equal(copies, 1, 'the rules must appear once, not twice:\n' + after);
+  assert.match(after, /<!-- misakanet:start -->/, 'and the markers must be back:\n' + after);
+});
+
+test('uninstall: takes back a rules block whose markers are gone', () => {
+  const home = makeHome();
+  run(home, '--no-register');
+  const rules = join(home, '.codex', 'AGENTS.md');
+  const text = readFileSync(rules, 'utf8');
+  writeFileSync(rules, text.replace('<!-- misakanet:start -->\n', '').replace('<!-- misakanet:end -->\n', ''));
+
+  run(home, '--uninstall');
+  const after = existsSync(rules) ? readFileSync(rules, 'utf8') : '';
+  assert.doesNotMatch(after, /调用规则（按顺序照做）/,
+    'an unmarked copy of our own block must not survive the uninstall:\n' + after);
+});
+
+test('uninstall: removes the codex config.toml when our blocks were all it had', () => {
+  const home = mkdtempSync(join(tmpdir(), 'mn-codex-only-'));
+  mkdirSync(join(home, '.codex'), { recursive: true });
+  try {
+    run(home, '--only', 'codex', '--no-register');
+    const toml = join(home, '.codex', 'config.toml');
+    assert.ok(existsSync(toml), 'the install must have written the entry');
+
+    run(home, '--uninstall');
+    assert.ok(!existsSync(toml),
+      'the entry must not survive the uninstall that removed it:\n'
+      + (existsSync(toml) ? readFileSync(toml, 'utf8') : ''));
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
 test('offline install still leaves a working read path and says so', () => {
   const home = makeHome();
   const result = run(home);

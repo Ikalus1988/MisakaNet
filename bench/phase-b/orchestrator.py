@@ -23,7 +23,7 @@ _REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
-from scripts.posix_shell import find_posix_shell  # noqa: E402
+from scripts.posix_shell import find_posix_shell, tried_summary  # noqa: E402
 
 FIXTURES_DIR = Path(__file__).resolve().parent.parent / "fixtures"
 REQUIRED_EXPECTED_FIELDS = {"scenario", "title", "failure", "expected_fix", "expected_outcome", "verifier"}
@@ -110,11 +110,17 @@ def verify_fixture(name: str) -> dict[str, Any]:
         shell = find_posix_shell()
         if shell is None:
             return {"fixture": name, "status": "SKIP",
-                    "reason": "no usable POSIX shell: the fixtures are shell scripts"}
+                    "reason": "no usable POSIX shell: the fixtures are shell scripts",
+                    "shell": None, "tried": tried_summary()}
         setup = subprocess.run([shell, str(path / "setup.sh"), str(workdir)], text=True,
                                capture_output=True, timeout=10, encoding="utf-8", errors="replace")
         if setup.returncode:
-            return {"fixture": name, "status": "FAIL", "reason": "setup failed", "output": setup.stderr}
+            # "setup failed" says the fixture did not even start. *Which* shell ran it is the
+            # part that matters: a Windows host with WSL installed resolves `bash` to the WSL
+            # launcher, that launcher runs fine, and then it cannot open a Windows path -- so
+            # every fixture fails the same way, for a reason the report used to hide.
+            return {"fixture": name, "status": "FAIL", "reason": "setup failed",
+                    "shell": shell, "output": setup.stderr}
 
         verifier = expected["verifier"]
         verifier_type = verifier["type"]
@@ -139,7 +145,8 @@ def verify_fixture(name: str) -> dict[str, Any]:
                 ok = True
                 detail = f"timed out at {verifier['timeout_seconds']}s as expected"
 
-        return {"fixture": name, "status": "PASS" if ok else "FAIL", "detail": detail}
+        return {"fixture": name, "status": "PASS" if ok else "FAIL", "detail": detail,
+                "shell": shell}
     finally:
         if shell is not None:
             subprocess.run([shell, str(path / "teardown.sh"), str(workdir)], text=True,

@@ -1,43 +1,51 @@
 {
-  "generated_at": "2026-10-22T21:45:04.596242+00:00",
+  "generated_at": "2026-10-23T05:30:15.477806+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
+      "title": "lessons(contrib): a hand-made PR stack is closed, not retargeted, when the upstream branch is deleted",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3763",
+      "timestamp": "2026-10-23T05:30:01Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "fix(bench): a red fixture leg must name the fixture that failed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3765",
+      "timestamp": "2026-10-23T05:26:48Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
       "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3751",
-      "timestamp": "2026-10-22T20:31:01Z",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3764",
+      "timestamp": "2026-10-23T05:16:50Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "lessons(contrib): a green suite hid a module that a bare Node runtime cannot load",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3757",
-      "timestamp": "2026-10-22T20:18:50Z",
+      "title": "docs(handoff): §1–§4 — 接口全绿、页面全废；没有 lint 的盲区；上线的是 dist 分支",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3761",
+      "timestamp": "2026-10-23T04:58:52Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(release): the bootstrap floor has outlived its purpose, so it goes",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3756",
-      "timestamp": "2026-10-22T19:25:15Z",
+      "title": "fix(site): the homepage called two helpers it no longer defined",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3760",
+      "timestamp": "2026-10-23T01:51:12Z",
       "source": "github"
     },
     {
-      "type": "merged_pr",
-      "title": "chore: release main",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3451",
-      "timestamp": "2026-10-22T19:01:41Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "fix(release): the scan's floor is judged by the release tag, not by the ledger",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3752",
-      "timestamp": "2026-10-22T18:41:10Z",
-      "source": "github"
+      "type": "lesson",
+      "title": "A manually stacked pull request is closed, not retargeted, when the upstream branch is deleted",
+      "url": "lessons/contrib/a-stacked-pr-downstream-is-closed-when-the-upstream-branch-is-deleted.md",
+      "timestamp": "2026-10-23",
+      "domain": "devops",
+      "source": "lessons"
     },
     {
       "type": "lesson",
@@ -69,14 +77,6 @@
       "url": "lessons/contrib/lock-yield-on-importerror-silent-noop-loses-updates.md",
       "timestamp": "2026-10-22",
       "domain": "python",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "A file: dependency on a directory omitted from the tarball installs a dangling node_modules symlink",
-      "url": "lessons/contrib/npm-file-dep-omitted-dir-dangling-symlink.md",
-      "timestamp": "2026-10-22",
-      "domain": "nodejs",
       "source": "lessons"
     },
     {

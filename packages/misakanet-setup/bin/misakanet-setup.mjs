@@ -281,6 +281,16 @@ function sameJson(a, b) {
  *     read-only file (it only needs write permission on the *directory*), so the previous EACCES
  *     behaviour is kept explicitly rather than silently lost.
  */
+/**
+ * Every file this run actually wrote.
+ *
+ * The preview says which files are *in scope*; this says which ones were really touched. The
+ * difference is the whole point of the count a user actually reads: on an already-installed
+ * machine the preview listed 7 files and every one of them came back "无改动", while the header
+ * still said "将修改 7 个文件" — a number nobody could trust (measured 2026-10-23).
+ */
+const writtenFiles = new Set();
+
 function writeText(path, text, { mode } = {}) {
   if (DRY) return;
   mkdirSync(dirname(path), { recursive: true });
@@ -326,6 +336,7 @@ function writeText(path, text, { mode } = {}) {
     try { rmSync(tmp, { force: true }); } catch { /* best effort */ }
     throw err;
   }
+  writtenFiles.add(path);
 }
 
 /**
@@ -481,6 +492,10 @@ function buildWriteManifest(agents) {
     // make the manifest — and the preview's file count — promise a file that stays absent.
     if (!has('--no-register')) add(join(stateDir(), 'token'), 'create (0600)', 1, 'token');
     if (!MCP_ONLY) {
+      // The endpoint record lives in the state directory, so it is tier ③ like everything else in
+      // there: `--mcp-only` must not create that directory at all (the e2e checks the directory
+      // itself, not just the files). The record is therefore written only when tier ③ is in scope.
+      add(join(stateDir(), STATE_ENDPOINT_FILE), 'create', 3, 'endpoint');
       add(join(stateDir(), 'hook.mjs'), 'create', 3, 'hookScript');
       add(join(stateDir(), STATE_VERSION_FILE), 'create', 3, 'version');
     }
@@ -517,6 +532,7 @@ function writePreview(rows) {
     rules: '规则块（会改变 agent 的行为）',
     hook: '钩子',
     token: 'MCP 凭据',
+    endpoint: '端点记录',
     hookScript: '钩子脚本',
     version: '版本戳',
     state: '本机状态',
@@ -524,7 +540,11 @@ function writePreview(rows) {
   const width = Math.min(Math.max(...list.map((f) => f.path.length)) + 2, 32);
   const pad = (text) => (text.length >= width ? `${text} ` : text.padEnd(width));
   return [
-    `将修改 ${list.length} 个文件${DRY ? '（--dry-run：只是预览，不写任何东西）' : ''}：`,
+    // "将修改" was a promise the run could not keep: on an already-installed machine every file
+    // in this list came back "无改动" while the header still said "将修改 7 个文件" — and that is
+    // the number the reader looks at. The list is a scope, so it says so; the count of files that
+    // were really touched is printed after the install (see writtenFiles).
+    `将涉及 ${list.length} 个文件${DRY ? '（--dry-run：只是预览，不写任何东西）' : ''}：`,
     ...list.map((f) => `  ${pad(f.path)}+ ${f.kinds.map((k) => labels[k]).join(' + ')}`),
     '先看：--list-writes   不改行为：--mcp-only   撤销：--uninstall',
   ].join('\n');
@@ -623,15 +643,63 @@ function hookWired() {
   return ourHookEntries(settings?.hooks).length > 0;
 }
 
+/**
+ * Our rules block in a file, with or without its markers.
+ *
+ * The markers can be lost — a hand-edit, a merge conflict — and then the block is still ours,
+ * sitting in the file as plain text. Two consequences, both measured on a real machine
+ * (2026-10-23): the installer looked for the markers, so it appended a *second* copy of a block
+ * that was already there (reporting "added", i.e. success); the uninstaller removed by marker,
+ * so it took only one of the two away and left the other for ever (also reporting success).
+ * Three rounds of install/uninstall left zero residue as long as the markers were intact, which
+ * is why this only ever showed up after the markers went missing.
+ *
+ * So both sides look for the same thing now: the marker pair, or the block's own text.
+ */
+function blockRegions(text, block) {
+  const regions = [];
+  // The marked region is exactly what the old installer matched — and it must stay that narrow:
+  // a region that also swallowed the newline in front of the block made every re-install rewrite
+  // the file (the e2e caught it: "the rules file was rewritten by a run that had nothing to
+  // change"). Taking that newline is the *uninstaller's* job, and only the uninstaller's.
+  const marked = new RegExp(`[ \\t]*<!--\\s*${START}\\s*-->[\\s\\S]*?<!--\\s*${END}\\s*-->\\n?`, 'g');
+  for (const m of text.matchAll(marked)) {
+    regions.push({ start: m.index, end: m.index + m[0].length, text: m[0], marked: true });
+  }
+  const body = block.trim();
+  let from = 0;
+  for (;;) {
+    const at = text.indexOf(body, from);
+    if (at < 0) break;
+    const inside = regions.some((r) => at >= r.start && at < r.end);
+    if (!inside) {
+      regions.push({ start: at, end: at + body.length, text: body, marked: false });
+    }
+    from = at + body.length;
+  }
+  return regions.sort((a, b) => a.start - b.start);
+}
+
 function injectBlock(path, block) {
   const existing = readText(path);
-  const pattern = new RegExp(`[ \\t]*<!--\\s*${START}\\s*-->[\\s\\S]*?<!--\\s*${END}\\s*-->\\n?`);
   const body = `<!-- ${START} -->\n${block.trim()}\n<!-- ${END} -->\n`;
-  if (pattern.test(existing)) {
-    const updated = existing.replace(pattern, () => body);
-    if (updated === existing) return 'unchanged';
+  const regions = blockRegions(existing, block);
+  if (regions.length) {
+    // Keep the first copy where it is, re-wrap it in its markers, and drop the others: a file
+    // that ended up with two copies of the rules gets one. This is the case that used to
+    // append a second copy every time the installer ran.
+    const first = regions[0];
+    let out = '';
+    let cursor = 0;
+    for (const r of regions) {
+      out += existing.slice(cursor, r.start);
+      if (r === first) out += body;
+      cursor = r.end;
+    }
+    out += existing.slice(cursor);
+    if (out === existing) return 'unchanged';
     backup(path);
-    writeText(path, updated);
+    writeText(path, out);
     return 'updated';
   }
   backup(path);
@@ -640,20 +708,36 @@ function injectBlock(path, block) {
   return 'added';
 }
 
-function stripBlock(path) {
+/**
+ * Take our rules block back out — marked or not.
+ *
+ * The unmarked case is the one that used to leave a permanent copy behind: the block was ours,
+ * but without its markers neither side recognised it, so the installer duplicated it and the
+ * uninstaller could not see it. `blockRegions()` finds both shapes, so removal matches what
+ * installation now recognises.
+ */
+function stripBlock(path, block = PROMPT_BLOCK) {
   const text = readText(path);
   if (!text) return false;
-  // `\n?` on both sides: install writes a blank line, then the block, so consuming only the
-  // block left the file one newline longer than it started (uninstall claimed "已恢复原状"
-  // while `diff` showed an extra empty line).
-  const pattern = new RegExp(`\\n?[ \\t]*<!--\\s*${START}\\s*-->[\\s\\S]*?<!--\\s*${END}\\s*-->\\n?`);
-  if (!pattern.test(text)) return false;
+  const regions = blockRegions(text, block);
+  if (!regions.length) return false;
   backup(path);
-  const stripped = text.replace(pattern, '');
-  if (!stripped.trim()) {
+  let out = '';
+  let cursor = 0;
+  for (const r of regions) {
+    // The install writes a blank line, then the block; consuming only the block left the file one
+    // newline longer than it started (uninstall claimed "已恢复原状" while `diff` showed an extra
+    // empty line). So the removal takes that newline with it.
+    let start = r.start;
+    if (start > 0 && text[start - 1] === '\n') start -= 1;
+    out += text.slice(cursor, start);
+    cursor = r.end;
+  }
+  out += text.slice(cursor);
+  if (!out.trim()) {
     if (!DRY) rmSync(path, { force: true });
   } else {
-    writeText(path, stripped);
+    writeText(path, out);
   }
   return true;
 }
@@ -724,6 +808,64 @@ const CANONICAL_ENDPOINT = 'https://misakanet.org/mcp';
  */
 function probeEndpoint() {
   return (process.env.MISAKANET_ENDPOINT || CANONICAL_ENDPOINT).trim();
+}
+
+/**
+ * The endpoint this machine's MCP entries are supposed to point at.
+ *
+ * The record comes first: it is the fact about *this machine* — what the installer wrote here.
+ * The env var only says what the operator has in mind right now, and the two can differ without
+ * anything being wrong (a mirror installed once, then verified without the variable exported).
+ * Comparing against the env var alone turned a healthy machine into a NOT READY one — the same
+ * shape as the false alarm the CLI already refuses to raise about the endpoint probe.
+ */
+function expectedEndpoint() {
+  const recorded = readText(join(stateDir(), STATE_ENDPOINT_FILE)).trim();
+  if (recorded) return recorded;
+  const fromEnv = (process.env.MISAKANET_ENDPOINT || '').trim();
+  if (fromEnv) return fromEnv;
+  return CANONICAL_ENDPOINT;
+}
+
+/**
+ * One verdict for every MCP entry this installer writes.
+ *
+ * "The entry exists" used to be the whole check, so an entry pointing at
+ * `https://BROKEN.invalid/mcp` was reported as `✓ MCP 已注册（https://BROKEN.invalid/mcp）` — a
+ * green tick next to a URL nobody can reach, and the broken URL printed verbatim after it. The
+ * entry has to point at *our* endpoint, not merely have a field with the right name in it.
+ */
+function mcpEntryState(entry, urlField) {
+  if (!entry) return { state: 'missing' };
+  const url = entry[urlField];
+  if (!url) return { state: 'no-url-field' };
+  const expected = expectedEndpoint();
+  if (url !== expected) return { state: 'wrong-url', url, expected };
+  return { state: 'ok', url };
+}
+
+/**
+ * The `[mcp_servers.misakanet]` table in a Codex config, if it is there.
+ *
+ * The table header is the anchor, not our comment markers: the markers can be lost (a hand-edit,
+ * a merge conflict) and the entry is still the entry.
+ */
+function codexMisakanetTable(text) {
+  const lines = text.split('\n');
+  let inTable = false;
+  let url = '';
+  for (const line of lines) {
+    const t = line.trim();
+    if (t.startsWith('[')) {
+      if (inTable) break;            // the next table starts: ours ended
+      inTable = t === '[mcp_servers.misakanet]';
+      continue;
+    }
+    if (!inTable) continue;
+    const m = t.match(/^url\s*=\s*"([^"]*)"/);
+    if (m) url = m[1];
+  }
+  return inTable ? { url } : null;
 }
 
 /**
@@ -1316,6 +1458,16 @@ async function installCodex(hookPath, bearer) {
 }
 
 const STATE_VERSION_FILE = 'version';
+/**
+ * The endpoint this machine was pointed at, written at install time.
+ *
+ * `--verify` has to answer "does this machine point at *our* endpoint?", and on a self-hosted or
+ * mirrored install that endpoint is not the canonical one. Without a record of what was written,
+ * verifying without re-exporting `MISAKANET_ENDPOINT` would compare the mirror URL against the
+ * canonical one and report a mismatch that is not there — so the record is what makes the check
+ * honest instead of merely strict.
+ */
+const STATE_ENDPOINT_FILE = 'endpoint';
 
 const REGISTRY_LATEST = process.env.MISAKANET_REGISTRY_URL
   || 'https://registry.npmjs.org/@misaka-net%2fmisakanet-setup/latest';
@@ -1330,6 +1482,24 @@ const REGISTRY_LATEST = process.env.MISAKANET_REGISTRY_URL
  * `installed_at` is only refreshed when the version actually changes, so a re-run of the same
  * version does not reset the 14-day timer the user is relying on for peace and quiet.
  */
+/**
+ * Record the endpoint this install wrote, so `--verify` can tell "our endpoint" from "a URL".
+ */
+function stampEndpoint() {
+  const file = join(stateDir(), STATE_ENDPOINT_FILE);
+  if (readText(file).trim() === ENDPOINT) {
+    ok(`端点记录已存在（${ENDPOINT}）`);
+    return;
+  }
+  if (DRY) {
+    ok(`会写入端点记录 → ${file}（${ENDPOINT}）`);
+    return;
+  }
+  mkdirSync(stateDir(), { recursive: true });
+  writeText(file, `${ENDPOINT}\n`);
+  ok(`端点记录 → ${file}（${ENDPOINT}）`);
+}
+
 function stampVersion() {
   const file = join(stateDir(), STATE_VERSION_FILE);
   const existing = readJson(file, null);
@@ -1808,7 +1978,18 @@ async function verify() {
         need(canCreateHere(cfg)
           ? `Claude Code：MCP 未注册（${cfg}）`
           : `Claude Code：MCP 未注册（${cfg}）→ ${unwritableAdvice()}`);
-      } else ok(`Claude Code：MCP 已注册（${entry.url}）`);
+      } else {
+        const verdict = mcpEntryState(entry, 'url');
+        if (verdict.state === 'wrong-url') {
+          installFailed();
+          need(`Claude Code：MCP 条目指向的端点不对（${verdict.url}，应为 ${verdict.expected}）（${cfg}）→ 重跑安装命令`);
+        } else if (verdict.state === 'no-url-field') {
+          installFailed();
+          need(`Claude Code：MCP 条目在，但没有 url 字段（${cfg}）→ 重跑安装命令`);
+        } else {
+          ok(`Claude Code：MCP 已注册（${verdict.url}）`);
+        }
+      }
     }
   }
   // OpenClaw is only reported when the user actually has it: telling a machine without
@@ -1868,6 +2049,76 @@ async function verify() {
       skip('Hermes：本进程只能确认"配置已写"，无法确认 Hermes 是否已加载 → 可用 hermes mcp list 复核');
     }
   }
+  // Codex and codewhale: reported only when the user has them, like every other target. They were
+  // the two gaps in the integrity check (measured 2026-10-23): `--verify` had no row for them at
+  // all, so a machine whose Codex entry pointed at `https://BROKEN.invalid/mcp` and whose rules
+  // block had lost its markers still reported READY with exit code 0 — while `--report`'s
+  // `detected-agents` listed codex and codewhale as present, and the gate let it through.
+  if (detect('codex')) {
+    const rules = join(HOME, '.codex', 'AGENTS.md');
+    if (!readText(rules).includes(`<!-- ${START} -->`)) {
+      installFailed();
+      need(canCreateHere(rules)
+        ? `Codex：规则块没装（${rules}）→ 重跑安装命令`
+        : `Codex：规则块装不了（${rules}）→ ${unwritableAdvice()}`);
+    } else {
+      ok('Codex：规则块已装');
+    }
+    const cfg = join(HOME, '.codex', 'config.toml');
+    const toml = readText(cfg);
+    const table = codexMisakanetTable(toml);
+    const verdict = mcpEntryState(table, 'url');
+    if (verdict.state === 'missing') {
+      installFailed();
+      need(canCreateHere(cfg)
+        ? `Codex：MCP 未注册（${cfg}）→ 重跑安装命令`
+        : `Codex：MCP 未注册（${cfg}）→ ${unwritableAdvice()}`);
+    } else if (verdict.state === 'wrong-url') {
+      installFailed();
+      need(`Codex：MCP 条目指向的端点不对（${verdict.url}，应为 ${verdict.expected}）（${cfg}）→ 重跑安装命令`);
+    } else if (verdict.state === 'no-url-field') {
+      installFailed();
+      need(`Codex：MCP 条目在，但没有 url 字段（${cfg}）→ 重跑安装命令`);
+    } else {
+      ok(`Codex：MCP 已注册（${verdict.url}）`);
+    }
+    // The top-level key is what makes Codex speak streamable-http at all: without it the entry
+    // above is present and still unusable.
+    if (!hasTopLevelKey(toml, 'experimental_use_rmcp_client')) {
+      installFailed();
+      need(`Codex：config.toml 里没有顶级键 experimental_use_rmcp_client（${cfg}）`
+        + '→ Codex 连不上 streamable-http，重跑安装命令即可补上');
+    }
+  }
+  if (detect('codewhale')) {
+    const cfg = join(HOME, '.codewhale', 'mcp.json');
+    const entry = (readJson(cfg, null) || {}).servers?.misakanet;
+    const verdict = mcpEntryState(entry, 'url');
+    if (verdict.state === 'missing') {
+      installFailed();
+      need(canCreateHere(cfg)
+        ? `codewhale：MCP 未注册（${cfg}）→ 重跑安装命令`
+        : `codewhale：MCP 未注册（${cfg}）→ ${unwritableAdvice()}`);
+    } else if (verdict.state === 'wrong-url') {
+      installFailed();
+      need(`codewhale：MCP 条目指向的端点不对（${verdict.url}，应为 ${verdict.expected}）（${cfg}）→ 重跑安装命令`);
+    } else if (verdict.state === 'no-url-field') {
+      installFailed();
+      need(`codewhale：MCP 条目在，但没有 url 字段（${cfg}）→ 重跑安装命令`);
+    } else {
+      ok(`codewhale：MCP 已注册（${verdict.url}）`);
+    }
+    // Its rules blocks live in the projects it trusts, so that is where they are checked.
+    for (const project of codewhaleProjects()) {
+      const rules = join(project, 'AGENTS.md');
+      if (!readText(rules).includes(`<!-- ${START} -->`)) {
+        installFailed();
+        need(`codewhale：规则块没装（${rules}）→ 重跑安装命令`);
+      } else {
+        ok(`codewhale：规则块已装（${rules}）`);
+      }
+    }
+  }
   // The MCP-only targets are reported only when the user actually has them, like OpenClaw and
   // Hermes. Their state is one JSON file, so it is readable without starting anything — but whether
   // the client has *loaded* that file cannot be confirmed from here, and the line says so.
@@ -1880,13 +2131,19 @@ async function verify() {
       need(canCreateHere(cfg)
         ? `${spec.label}：MCP 未注册（${cfg}）→ 重跑安装命令，然后${spec.verifyHint}`
         : `${spec.label}：MCP 未注册（${cfg}）→ ${unwritableAdvice()}`);
-    } else if (!entry[spec.urlField]) {
-      installFailed();
-      need(`${spec.label}：MCP 条目在，但没有 ${spec.urlField} 字段（${cfg}）→ 重跑安装命令；`
-        + `这家用的是 ${spec.urlField}${spec.container === 'mcp' ? '（注意嵌套在 mcp 而不是 mcpServers 下）' : ''}`);
     } else {
-      ok(`${spec.label}：MCP 已注册（${entry[spec.urlField]}）`);
-      skip(`${spec.label}：只能确认"配置已写"，无法确认它是否已加载 → ${spec.verifyHint}`);
+      const verdict = mcpEntryState(entry, spec.urlField);
+      if (verdict.state === 'no-url-field') {
+        installFailed();
+        need(`${spec.label}：MCP 条目在，但没有 ${spec.urlField} 字段（${cfg}）→ 重跑安装命令；`
+          + `这家用的是 ${spec.urlField}${spec.container === 'mcp' ? '（注意嵌套在 mcp 而不是 mcpServers 下）' : ''}`);
+      } else if (verdict.state === 'wrong-url') {
+        installFailed();
+        need(`${spec.label}：MCP 条目指向的端点不对（${verdict.url}，应为 ${verdict.expected}）（${cfg}）→ 重跑安装命令`);
+      } else {
+        ok(`${spec.label}：MCP 已注册（${verdict.url}）`);
+        skip(`${spec.label}：只能确认"配置已写"，无法确认它是否已加载 → ${spec.verifyHint}`);
+      }
     }
   }
   // Version: what is installed, and whether the registry has moved on. Read-only here — the
@@ -2151,14 +2408,25 @@ function uninstall() {
     for (const [s, e] of [[START, END], [TOP_START, TOP_END]]) {
       text = text.replace(new RegExp(`^[ \\t]*#\\s*${s}\\s*$\\n?[\\s\\S]*?^[ \\t]*#\\s*${e}\\s*$\\n?`, 'm'), '');
     }
-    if (text && text !== before) {
+    if (text !== before) {
+      // `text &&` used to guard this write, and that guard is the bug: when our blocks were the
+      // *only* thing in the file, removing them left an empty string, the guard said no, and the
+      // file was left exactly as it was — so the MCP entry survived the uninstall while the output
+      // said "已移除本安装器写入的内容（MCP 注册…）" (measured 2026-10-23). An empty file that is
+      // ours to remove goes away with the blocks; the rule the rules-block path already follows.
       backup(toml);
-      writeText(toml, text);
-      ok(`移除 MCP 表 → ${toml}`);
+      if (!text.trim()) {
+        if (!DRY) rmSync(toml, { force: true });
+        ok(`移除 MCP 表（文件里只剩我们的内容 → 一并删除）→ ${toml}`);
+      } else {
+        writeText(toml, text);
+        ok(`移除 MCP 表 → ${toml}`);
+      }
     }
   }
   if (readText(join(stateDir(), 'token')) || readText(join(stateDir(), 'hook.mjs'))
-    || readText(join(stateDir(), 'client_id')) || readText(join(stateDir(), STATE_VERSION_FILE))) {
+    || readText(join(stateDir(), 'client_id')) || readText(join(stateDir(), STATE_VERSION_FILE))
+    || readText(join(stateDir(), STATE_ENDPOINT_FILE))) {
     if (!DRY) rmSync(stateDir(), { recursive: true, force: true });
     ok(`删除状态目录 → ${stateDir()}`);
   }
@@ -2580,7 +2848,14 @@ try {
     // Codex-only machine produced a file nothing would ever run, and made `--report` claim
     // `install-scope: full` for an install that registered an endpoint and nothing else.
     const hookPath = (MCP_ONLY || !targets.includes('claude')) ? null : await installHook();
-    if (!MCP_ONLY) stampVersion();
+    // Tier ③ only: the record lives in the state directory, and `--mcp-only` must not create it.
+    // Without a record, `--verify` falls back to the env override and then to the canonical
+    // endpoint — which is the older behaviour, and the only place a mirrored install can be
+    // reported as broken (verify with the same MISAKANET_ENDPOINT it was installed with).
+    if (!MCP_ONLY) {
+      stampVersion();
+      stampEndpoint();
+    }
     const bearer = has('--no-register') ? '' : await ensureIdentity();
     for (const agent of targets) {
       // One target failing must not skip the rest: an uncaught throw used to abort the loop, so
@@ -2619,6 +2894,11 @@ try {
 // the exact failures in it on a dirty one — which is the point (#1784). The machine-readable form
 // of the same run is `--report-json`, not this text.
 say(render());
+if (!SILENT && writtenFiles.size) {
+  // The number the reader actually wants: not "how many files are in scope" but "how many did
+  // this run really change". On an already-installed machine that is 0, and now it says so.
+  console.log(`本次实际写入 ${writtenFiles.size} 个文件（上面的清单是"涉及哪些"，这一行是"真的动了哪些"）。`);
+}
 if (MCP_ONLY && !SILENT) {
   // The honest failure mode of tier ①, said where the user will read it: they are not installing a
   // behaviour. The rules block (②) and the first-turn announcement, which is injected by the hook

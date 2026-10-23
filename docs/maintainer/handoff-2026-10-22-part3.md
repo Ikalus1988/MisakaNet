@@ -1,6 +1,6 @@
 # Handoff — 2026-10-22（第 16 卷，承接 handoff-2026-10-22-part2.md §138）
 
-> 上一卷：`docs/maintainer/handoff-2026-10-22-part2.md`（§132–§138）　·　下一卷：（本文件为最新）
+> 上一卷：`docs/maintainer/handoff-2026-10-22-part2.md`（§132–§138）　·　下一卷：`docs/maintainer/handoff-2026-10-23.md`（§1–§4）
 > 本卷记三件事：**release-please 扫不动提交历史**（账本里没有这个包 → 没有基线 → 扇 1237 个 commit）、
 > **`--verify` 把两件事判成了一件**（端点/可用性与安装完整性，各自独立判），以及
 > **文件被"列出来了"和发版真的会动它是两件事**（`extra-files` 按包自身 path 解析，两条路径都被解析到不存在的文件）。

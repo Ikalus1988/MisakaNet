@@ -72,6 +72,12 @@ npx @misaka-net/misakanet-setup --verify      # READY / NOT READY, installed ver
                                              #  we cannot write says 装不了 with its cause — not 没装 with
                                              #  the one fix that cannot work ("re-run the installer")
 npx @misaka-net/misakanet-setup --only claude # one agent only
+npx @misaka-net/misakanet-setup --list-writes # only prints what it would write (file | action | how to undo), writes nothing
+                                             # (the install preview shows the same list; this one is for an operator who
+                                             #  has to approve it before it happens)
+npx @misaka-net/misakanet-setup --mcp-only    # register the endpoint only, change no agent behaviour — no rules block,
+                                             # no hook; for permission tiers, where tier ① is the endpoint and tiers ②/③
+                                             # are what change how the agent behaves
 npx @misaka-net/misakanet-setup --no-register # read-only, no anonymous token
 npx @misaka-net/misakanet-setup --upgrade     # same as installing the latest (the command is idempotent)
                                              # re-running also *refreshes* an older hook (the previous copy
