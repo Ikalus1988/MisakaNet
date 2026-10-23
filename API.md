@@ -72,7 +72,7 @@ Two transports are available: **stdio** (local) and **HTTP/SSE** (remote).
 python3 scripts/mcp_server.py
 ```
 
-Exposes 10 tools via MCP stdio protocol (underscore-separated names, same as the remote
+Exposes 11 tools via MCP stdio protocol (underscore-separated names, same as the remote
 endpoint; `python3 -c "from misakanet.server import TOOLS; print(len(TOOLS))"`):
 
 | Tool | Parameters | Returns |
@@ -87,6 +87,7 @@ endpoint; `python3 -c "from misakanet.server import TOOLS; print(len(TOOLS))"`):
 | `misakanet_register` | `agent_type?`, `client_id?` | `node_id` + token |
 | `misakanet_memory_context` | `task` (str), `domain?`, `top_n?` | Session memory context |
 | `misakanet_me_events` | `lesson_id` (str) **or** `lesson_path` (str) | Observed reuse (E4: two or more distinct `search_signals.client_hint` retrieved the lesson; E3 hints: benchmark citations, helpful votes, a declared `verified by:` line) — proxied to `https://misakanet.org/mcp` since 2026-09-30, needs the network |
+| `misakanet_me_inbox` | `intake_id` (str) **or** `dedup_key` (str) — exactly one | Status (`answered` / `pending` / `converted` / `not_found`), plus the maintainer's answer or the conversion receipt |
 
 #### Claude Code Configuration
 
