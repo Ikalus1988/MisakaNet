@@ -1,9 +1,30 @@
 {
-  "generated_at": "2026-10-23T05:05:35.412492+00:00",
+  "generated_at": "2026-10-23T05:30:15.477806+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "lessons(contrib): a hand-made PR stack is closed, not retargeted, when the upstream branch is deleted",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3763",
+      "timestamp": "2026-10-23T05:30:01Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "fix(bench): a red fixture leg must name the fixture that failed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3765",
+      "timestamp": "2026-10-23T05:26:48Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3764",
+      "timestamp": "2026-10-23T05:16:50Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "docs(handoff): §1–§4 — 接口全绿、页面全废；没有 lint 的盲区；上线的是 dist 分支",
@@ -19,25 +40,12 @@
       "source": "github"
     },
     {
-      "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3758",
-      "timestamp": "2026-10-22T21:56:04Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3751",
-      "timestamp": "2026-10-22T20:31:01Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "lessons(contrib): a green suite hid a module that a bare Node runtime cannot load",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3757",
-      "timestamp": "2026-10-22T20:18:50Z",
-      "source": "github"
+      "type": "lesson",
+      "title": "A manually stacked pull request is closed, not retargeted, when the upstream branch is deleted",
+      "url": "lessons/contrib/a-stacked-pr-downstream-is-closed-when-the-upstream-branch-is-deleted.md",
+      "timestamp": "2026-10-23",
+      "domain": "devops",
+      "source": "lessons"
     },
     {
       "type": "lesson",
@@ -69,14 +77,6 @@
       "url": "lessons/contrib/lock-yield-on-importerror-silent-noop-loses-updates.md",
       "timestamp": "2026-10-22",
       "domain": "python",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "A file: dependency on a directory omitted from the tarball installs a dangling node_modules symlink",
-      "url": "lessons/contrib/npm-file-dep-omitted-dir-dangling-symlink.md",
-      "timestamp": "2026-10-22",
-      "domain": "nodejs",
       "source": "lessons"
     },
     {
