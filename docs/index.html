@@ -2907,6 +2907,29 @@ function searchLessons() {
 // ── Request collapsing: reuse in-flight promise for same URL ──
 const _pendingPromises = new Map();
 
+// The JSON reader every fetch on this page goes through. #3694 moved the registration form to
+// /register/ and took this function with it, for the same reason it took `escapeHTML`: the form
+// was the only thing here that used it. The form was never the only thing that used it —
+// `fetchWithTimeout` and `fetchPOST` below both end in `readJsonResponse(r)`, so every JSON this
+// page fetched threw a ReferenceError, was swallowed by the panel's own `catch`, and was reported
+// to the reader as an out-of-date snapshot. The body is the same one /register/ still runs.
+async function readJsonResponse(response) {
+  const text = await response.text();
+  const contentType = response.headers.get('content-type') || '';
+  const snippet = text.slice(0, 80);
+  if (!contentType.includes('application/json')) {
+    if (snippet.trimStart().startsWith('<')) {
+      throw new Error(`Proxy returned HTML (${response.status}). Refresh and try again, or use GitHub Issue registration.`);
+    }
+    throw new Error(`Non-JSON response (${response.status}): ${snippet}`);
+  }
+  try {
+    return JSON.parse(text);
+  } catch (err) {
+    throw new Error(`Invalid JSON response (${response.status}): ${snippet}`);
+  }
+}
+
 async function fetchWithTimeout(url, timeoutMs = 8000) {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), timeoutMs);
@@ -3278,10 +3301,24 @@ function formatActivityAge(generatedAt) {
   return getTimeAgo(at);
 }
 
-// Both panels below build markup from JSON, so both escape it — with the page's existing
-// `escapeHTML`, not a second copy of it, and not `DOMPurify`, which is loaded from a CDN: a sanitizer
-// that fails to load would throw inside the render and take the panel with it, and these values need
-// escaping rather than sanitizing.
+// The escape every renderer below shares. #3694 moved the registration form to /register/ and
+// took this function with it — the form was the only thing on this page that used it — while the
+// panels below kept calling it. A page that calls a name it never defines fails at the call rather
+// than at the load, so the failure looked like a broken API: the panel fell back to the snapshot,
+// fell back again, and printed "活动快照暂不可用" while `/api/activity` was answering 200 the whole
+// time. Hence it is defined here, beside the panels that use it, and
+// `tests/test_site_shared_helpers.py` is the gate that says a page may not call a helper it does
+// not define.
+function escapeHTML(val) {
+  return String(val ?? '').replace(/[&<>"']/g, ch => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[ch]));
+}
+
+// Both panels below build markup from JSON, so both escape it — with the page's own
+// `escapeHTML` above, not a second copy of it, and not `DOMPurify`, which is loaded from a CDN: a
+// sanitizer that fails to load would throw inside the render and take the panel with it, and these
+// values need escaping rather than sanitizing.
 function safeHref(url) {
   return /^https?:\/\//i.test(String(url || '')) ? escapeHTML(url) : '#';
 }
