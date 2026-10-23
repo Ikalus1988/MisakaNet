@@ -330,9 +330,15 @@ def script_sources(html: str) -> list[str]:
 
     ``<script src=…>`` is skipped here (its contents are another file), and a ``type`` that is not
     JavaScript is skipped as well — JSON-LD blocks are data, and their braces are not code.
+
+    The end tag is matched as ``</script`` followed by optional whitespace and an optional solidus,
+    because that is what the HTML syntax allows: ``</script >`` and ``</script/>`` are both valid
+    end tags, and a pattern that stops at the literal ``</script>`` silently runs two script
+    bodies together when a page writes the spaced form. CodeQL says the same thing, and it is
+    right: the pattern was incomplete, not merely strict.
     """
     bodies: list[str] = []
-    for match in re.finditer(r"<script\b([^>]*)>(.*?)</script>", html, re.S | re.I):
+    for match in re.finditer(r"<script\b([^>]*)>(.*?)</script\s*/?>", html, re.S | re.I):
         attrs = match.group(1) or ""
         body = match.group(2) or ""
         if re.search(r"\bsrc\s*=", attrs, re.I):

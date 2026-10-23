@@ -141,6 +141,27 @@ def test_a_division_is_not_read_as_a_regular_expression():
     assert ("ident", "count") in tokens
 
 
+def test_a_script_end_tag_may_carry_whitespace(tmp_path):
+    """`</script >` is a valid end tag, and a pattern that misses it loses the whole script.
+
+    The HTML syntax allows whitespace — and a solidus — between the tag name and the `>`, so
+    `</script >` and `</script/>` are both well-formed. A pattern that stops at the literal
+    `</script>` does not merely reject them: with a single script on the page it matches
+    **nothing at all**, and a page whose script is invisible is a page whose calls are all
+    reported as missing. CodeQL flagged the same pattern, and it was right.
+    """
+    page = tmp_path / "index.html"
+    page.write_text(
+        "<html><body><script>\n"
+        "function panel() { return escapeHTML('x'); }\n"
+        "</script >\n"
+        "</body></html>\n",
+        encoding="utf-8",
+    )
+    found = checker.scan(tmp_path)
+    assert [f["name"] for f in found] == ["escapeHTML"], found
+
+
 def test_the_homepage_defines_the_helpers_its_panels_call():
     """The regression, stated in the plainest words available.
 
