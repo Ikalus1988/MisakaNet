@@ -257,12 +257,17 @@ def test_the_ci_form_is_still_exactly_one_json_document(node, tmp_path):
 
 
 def test_the_run_says_how_many_files_it_actually_wrote(node, tmp_path):
-    """The number a reader actually looks at has to be true.
+    """The number a reader actually looks at has to be true — including when it is zero.
 
     The preview lists the files *in scope*. On an already-installed machine every one of them
     came back unchanged while the header still said "将修改 17 个文件" — and that number was the
     one the reader took away (measured 2026-10-23). So the run says both: the scope before the
     work, and the truth after it.
+
+    Zero is part of the contract, not its absence (#3775): the line used to print only when a
+    file was written, so on the most common machine — already installed, nothing to do — the
+    reader had to infer "0" from a missing line, which looks exactly like a run that never got
+    that far. The second run below is the case that used to be silent and now answers.
     """
     home = make_home(tmp_path)
     first = run_setup(node, home, "--only", "claude")
@@ -271,11 +276,12 @@ def test_the_run_says_how_many_files_it_actually_wrote(node, tmp_path):
     assert wrote, f"the run must say what it wrote:\n{first.stdout}"
     assert int(wrote.group(1)) > 0, first.stdout
 
-    # A second run changes nothing, so it must not claim it wrote anything.
+    # A second run changes nothing — and says so with the number, not by going quiet.
     second = run_setup(node, home, "--only", "claude")
     assert second.returncode == 0, second.stdout + second.stderr
-    assert not WROTE_LINE.search(second.stdout), (
-        "nothing changed, so nothing may be claimed:\n" + second.stdout)
+    wrote = WROTE_LINE.search(second.stdout)
+    assert wrote, "a run that changed nothing must still report the count:\n" + second.stdout
+    assert int(wrote.group(1)) == 0, second.stdout
 
 
 def test_dry_run_prints_the_summary_and_writes_nothing(node, tmp_path):

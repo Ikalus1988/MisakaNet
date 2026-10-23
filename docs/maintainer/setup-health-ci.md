@@ -25,15 +25,23 @@
 
 ## 退出码
 
+`--verify` 与 `--report --strict`（`--ci`）用**同一套三档**退出码（#3778）：
+
 | 码 | 含义 | CI 该怎么处理 |
 |---|---|---|
-| `0` | **READY** —— 报告里 `verify: READY` 且 `open-items: 0` | 绿 |
-| `1` | **NOT READY** —— `verify: NOT READY`，**包括 `open-items > 0`** | 红：**机器**不健康。YAML 的 `open-items-detail` 里每条都带修法，照着修 |
-| `2` | **跑不起来** —— 报告**根本没生成**（stdout 里没有 YAML，stderr 一行原因） | 红：**工具**坏了（或它读不懂这份配置），**不要去修机器** |
+| `0` | **READY** —— 报告里 `verify: READY` 且 `open-items: 0`（端点握手成功、工具数 > 0） | 绿 |
+| `1` | **NOT READY** —— **机器**问题：`verify: NOT READY`，包括 `open-items > 0`、**一个受支持的助手都没检测到**（零目标 = 什么都没装）、文件没写/写不了、MCP 条目指错、端点真的 `unreachable` 或 `non-mcp` | 红：**机器**不健康。YAML 的 `open-items-detail` 里每条都带修法，照着修 |
+| `2` | **没能验证** —— 工具给不出机器判定。两种入口：① 报告**根本没生成**（工具崩了，stdout 里没有 YAML，stderr 一行原因）；② 探测**超时**或 `inconclusive-proxy`（配了代理而这台 Node 用不上它）—— 这时报告**照常打印**，`endpoint-probe` 写着是哪一种 | 红：**网络/代理**（`timeout` / `inconclusive-proxy`）或**工具**（没有 YAML）的问题，**不是机器不健康**。先看 `endpoint-probe`，再决定修代理还是修工具 |
 
 这与本仓既有的约定一致（`scripts/check_workflow_scripts.py` 的
-`0 = no findings, 1 = findings, 2 = cannot run`）。1 和 2 分开的意义就是这一句话：
-**"环境不健康"要修环境，"检查器跑不起来"要修检查器** —— 混成一个码，CI 只会告诉你"红了"。
+`0 = no findings, 1 = findings, 2 = cannot run`）。三档分开的意义就是这一句话：
+**"环境不健康"要修环境，"说不清"要修网络/代理，"检查器跑不起来"要修检查器** ——
+混成一个码，CI 只会告诉你"红了"。特别地：
+
+- `timeout` **不会**被折进 `inconclusive-proxy`（那是另一种疑问），也不会被折进 `unreachable`
+  （那是我们给不出的结论）；
+- `2` 只在**没有别的机器问题时**才算"没能验证"：如果安装完整性本身已经不完整，那就是机器判定，
+  仍然是 `1`（一台文件没装好的机器不会因为网络也超时就不算不健康）。
 
 ## 两个字段**永远**不参与判定
 
@@ -131,14 +139,14 @@ jobs:
             fi
           } >> "$GITHUB_STEP_SUMMARY"
 
-      # ③ 退出码就是判定。1 与 2 都让这一步红，但要说清是"修机器"还是"修工具"。
+      # ③ 退出码就是判定。1 与 2 都让这一步红，但要说清是"修机器"、"修网络/代理"还是"修工具"。
       - name: Gate on the exit code
         if: steps.agent.outputs.present == 'true'
         run: |
           case "${{ steps.report.outputs.code }}" in
             0) echo "✅ READY" ;;
-            1) echo "::error::NOT READY —— 环境不健康；见 job summary，里面每条 open item 都带修法"; exit 1 ;;
-            2) echo "::error::报告没生成（退出码 2）—— 是工具跑不起来，不是机器不健康；见 summary 里的 stderr"; exit 1 ;;
+            1) echo "::error::NOT READY —— 机器问题（零目标/文件/MCP 条目/端点不可达）；见 job summary，里面每条 open item 都带修法"; exit 1 ;;
+            2) echo "::error::没能验证（退出码 2）—— 先看 endpoint-probe：timeout / inconclusive-proxy 是网络/代理问题（试 NODE_USE_ENV_PROXY=1 重跑），不是机器不健康；stdout 里没有 YAML 才是工具崩了"; exit 1 ;;
             *) echo "::error::未知退出码：${{ steps.report.outputs.code }}"; exit 1 ;;
           esac
 ```
@@ -155,6 +163,12 @@ jobs:
 
 - 没有可判对象 → 记 `skipped`（job 不能动态 skip，用 summary + 退 0 表达），**不红**；
 - 有可判对象 → 健康度由退出码说话，`1`/`2` 都红，且原因分开。
+
+> **零目标也是 NOT READY（#3778）**：从 0.6.x 起，一个受支持的助手都没检测到时工具自己会说
+> `install-complete: incomplete` / `verify: NOT READY`，`--report --strict` 退 **1** —— 它不是
+> "判不了"，而是"什么都没装"。上面那个 `agent.outputs.present` 的预检是 **workflow 自己**的
+> 决定（干净 runner 上不跑卡口、记 skipped），工具不再替它假装 READY：不写预检就直接跑，会在
+> 干净 runner 上红，那是正确行为。
 
 > **两半分开，退出码没分开**：`verify: NOT READY` 仍然表示"两半里有问题"（退出码契约未变），
 > 但报告能告诉 CI 到底是哪一半 —— 只读 workspace 的机器 `endpoint-usable: yes`，
@@ -193,11 +207,20 @@ node packages/misakanet-setup/bin/misakanet-setup.mjs --home "$TMPHOME" --report
 node packages/misakanet-setup/bin/misakanet-setup.mjs --home "$TMPHOME" --report --strict; echo "exit=$?"
 # → exit=1   （stderr: --strict：NOT READY（…）→ 退出码 1）
 
-# 跑不起来 → 2：报告生成中途抛错，stdout 为空，stderr 一行原因
+# 没能验证 → 2：探测说不清（代理配了但这台 Node 用不上它），YAML 照常打印
+# 先给这个家目录装一个 agent，否则零目标本身就是 1（机器问题优先于"没能验证"）
 mkdir -p "$TMPHOME/.claude" "$TMPHOME/.codex"
 printf '{"mcpServers":{}}\n' > "$TMPHOME/.claude.json"
 printf '{}\n' > "$TMPHOME/.claude/settings.json"
 node packages/misakanet-setup/bin/misakanet-setup.mjs --home "$TMPHOME" --no-register >/dev/null
+HTTPS_PROXY=http://127.0.0.1:3128 node packages/misakanet-setup/bin/misakanet-setup.mjs \
+  --home "$TMPHOME" --verify; echo "exit=$?"
+# → exit=2   （! 端点探测不可信（inconclusive-proxy …）→ 网络/代理问题，不是修机器）
+HTTPS_PROXY=http://127.0.0.1:3128 node packages/misakanet-setup/bin/misakanet-setup.mjs \
+  --home "$TMPHOME" --report --strict; echo "exit=$?"
+# → exit=2   （YAML 照常打印，endpoint-probe: inconclusive-proxy；stderr 一行解释）
+
+# 跑不起来 → 2：报告生成中途抛错，stdout 为空，stderr 一行原因
 printf '{"hooks":{"Stop":[{"hooks":5}]}}\n' > "$TMPHOME/.claude/settings.json"   # 工具读不懂的形态
 node packages/misakanet-setup/bin/misakanet-setup.mjs --home "$TMPHOME" --report --strict; echo "exit=$?"
 # → exit=2
@@ -213,7 +236,9 @@ node packages/misakanet-setup/bin/misakanet-setup.mjs --home "$TMPHOME" --report
    （`docs/maintainer/handoff-2026-09-15.md`）。
 2. **别把 `--report` 默认模式的退出码改成跟判定走**：现有用户把它当"证据收集器"用（贴 issue、
    贴 CI 日志），改了就是破坏性变更。要卡口就显式 `--strict` / `--ci`。
-3. **别把 `2` 并入 `1`**：`2` 意味着"没判"，把它说成 NOT READY 会让维护者去修一台没问题的机器。
+3. **别把 `2` 并入 `1`**：`2` 意味着"没判"——报告根本没生成，或者探测超时 / `inconclusive-proxy`
+   （网络与代理的疑问）。把它说成 NOT READY 会让维护者去修一台没问题的机器；反过来把 `2` 改成
+   `0`（"说不清就放行"）会让卡口失去意义。两个方向都有测试钉着。
 
 ## 相关
 

@@ -104,18 +104,22 @@ npx @misaka-net/misakanet-setup --uninstall   # remove exactly what it added
 
 `--report` alone **always exits 0** when it prints a report, and that is deliberate: the report is
 evidence meant to be pasted into an issue or a CI log, and a nonzero exit there turns "collect the
-evidence" into a failing step. The gate is the opt-in `--strict` form (alias: `--ci`), which prints
-the *same* YAML and then judges it:
+evidence" into a failing step. The gates are the opt-in `--strict` form (alias: `--ci`) and
+`--verify`, which print the same evidence and then use the same three codes:
 
-| code | `--report --strict` (and `--report-json --strict`) | meaning |
+| code | `--verify` / `--report --strict` | meaning |
 |---|---|---|
-| `0` | READY | the report says `verify: READY` **and** `open-items: 0` |
-| `1` | NOT READY | `verify: NOT READY` — including when `open-items > 0`; the report lists one line per open item, each with its fix |
-| `2` | could not run | the report could not be produced at all (the tool failed instead of judging). This is **not** a verdict about your machine: on `2` there is no report at all (neither YAML nor JSON), only a one-line reason on stderr |
+| `0` | READY | the endpoint handshake succeeded (`endpoint-tools` > 0) **and** `open-items: 0` |
+| `1` | NOT READY | a **machine** problem: no supported assistant was detected at all (so nothing was installed), our files are missing or unwritable, an MCP entry points at the wrong URL, or the endpoint really is `unreachable` / `non-mcp` |
+| `2` | could not verify | the tool could **not give a machine verdict**: the probe was a `timeout` or `inconclusive-proxy` (a proxy is configured that this Node does not use), or the report could not be produced at all (the CLI crashed). With `--report --strict` the YAML/JSON is still printed first — `endpoint-probe` says which doubt it was — and only the exit code changes. A crash prints no report at all, only a one-line reason on stderr |
+
+`1` versus `2` is the difference between "fix the machine" and "fix the network/the tool": a
+timeout or an unusable proxy says nothing about whether this machine is installed correctly, so it
+must not be reported as `1` (that sends people to debug a working install) and must not be `0`
+either (a script reads `0` as READY). `--report` alone stays `0` in all three cases.
 
 The convention is the repository-wide one (`0 = fine, 1 = found problems, 2 = could not run`, same as
-`scripts/check_workflow_scripts.py`), so a CI step can tell "the environment is unhealthy" (fix the
-machine) from "the checker broke" (fix the checker).
+`scripts/check_workflow_scripts.py`).
 
 The last two fields of the report, `tools-visible` and `live-call-evidence`, are **blank fields a
 human fills in afterwards** — they are never read back by the tool and **never influence the exit
@@ -222,9 +226,11 @@ curl -sS https://misakanet.org/mcp -H 'Accept: application/json' \
 ```
 
 `endpoint-probe: inconclusive-proxy` in `--report` means exactly this: a proxy is configured, this
-process could not use it, so the `endpoint-reachable` boolean above it says nothing. `--strict` /
-`--ci` still fail in that case — a gate that cannot tell must not pass silently. If your proxy also
-intercepts TLS, add `NODE_USE_SYSTEM_CA=1`.
+process could not use it, so the `endpoint-reachable` boolean above it says nothing. `--verify` and
+`--strict` / `--ci` then exit **2** ("could not verify") — not `0` (a script reads that as READY)
+and not `1` (that would send you to fix a machine that may be perfectly fine; `--verify` itself
+still tells you whether the installed files are complete). If your proxy also intercepts TLS, add
+`NODE_USE_SYSTEM_CA=1`.
 
 The Python installer (`integrations/agent-autostart/install_misakanet_agent.py`) needs none of this:
 it uses `urllib`, which honours the proxy environment variables by default.

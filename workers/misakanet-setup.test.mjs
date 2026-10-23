@@ -44,6 +44,30 @@ function makeHome({ codex = true, claude = true } = {}) {
 }
 
 /**
+ * A home with every config the installer writes an `X-MisakaNet-Client` header into (#3772).
+ *
+ * One target per syntax the header has to survive: JSON (Claude, OpenClaw, Cursor), TOML (Codex —
+ * inside its one-line `http_headers` table, so the value is not at the start of a line) and YAML
+ * (Hermes). Codewhale is deliberately absent: its entry has no custom-header field, so it never
+ * carries this header and must not be part of the inheritance contract.
+ *
+ * The token is pre-seeded so a run that is *not* `--no-register` still skips the network — this is
+ * what lets the test run the same code path that mints/adopts an id without a stub server.
+ */
+function makeHeaderHome() {
+  const home = makeHome();
+  mkdirSync(join(home, '.hermes'), { recursive: true });
+  writeFileSync(join(home, '.hermes', 'config.yaml'), 'model: x\n');
+  mkdirSync(join(home, '.openclaw'), { recursive: true });
+  writeFileSync(join(home, '.openclaw', 'openclaw.json'), JSON.stringify({ mcp: { servers: {} } }));
+  mkdirSync(join(home, '.cursor'), { recursive: true });
+  writeFileSync(join(home, '.cursor', 'mcp.json'), JSON.stringify({ mcpServers: {} }));
+  mkdirSync(join(home, '.misakanet-agent'), { recursive: true });
+  writeFileSync(join(home, '.misakanet-agent', 'token'), `${TOKEN_SHAPE_OK}\n`);
+  return home;
+}
+
+/**
  * A child environment whose network posture is decided here, not inherited.
  *
  * The CLI reads HTTPS_PROXY / HTTP_PROXY / NO_PROXY and, when it finds any, deliberately stops
@@ -189,6 +213,11 @@ test('installs all three pieces for Claude Code and Codex', () => {
 });
 
 test('is idempotent: a second run changes nothing', () => {
+  // Scope, stated because this test was mistaken for full coverage (#3776): `runOffline` passes
+  // `--no-register`, so ensureIdentity() never runs, no client id is ever minted and no config ever
+  // receives `X-MisakaNet-Client`. It proves the rules blocks and the MCP entry are stable; it
+  // cannot see the header drift that made a *registering* re-run rewrite every file. The two tests
+  // below cover that path — offline with a seeded token, and the full registration chain.
   const home = makeHome();
   runOffline(home);
   const first = snapshot(home);
@@ -196,6 +225,97 @@ test('is idempotent: a second run changes nothing', () => {
   assert.equal(second.status, 0);
   assert.deepEqual(snapshot(home), first, 'second run must be a no-op');
   assert.match(second.stdout, /无改动|已存在/, second.stdout);
+});
+
+test('a re-run with no id keeps the header the configs already declare (issue #3772)', () => {
+  // The measured failure: run 1 mints/receives `setup-fixed-0001`, writes it into every config and
+  // does not persist it anywhere else; run 2 has no explicit id and no state file, so the old
+  // mcpHeaders() omitted the header, every entry compared unequal, and all five files were
+  // rewritten — the header silently deleted while run 2 still reported success.
+  const home = makeHeaderHome();
+  const first = run(home, '--only', 'claude,codex,hermes,openclaw,cursor', '--client-id', 'setup-fixed-0001');
+  assert.equal(first.status, 0, first.stdout + first.stderr);
+
+  // One target per syntax: JSON, TOML (inline table), YAML. A missed call site shows up as exactly
+  // one of these missing, which is why they are asserted one by one.
+  const files = {
+    claude: '.claude.json',
+    codex: '.codex/config.toml',
+    hermes: '.hermes/config.yaml',
+    openclaw: '.openclaw/openclaw.json',
+    cursor: '.cursor/mcp.json',
+  };
+  for (const [agent, rel] of Object.entries(files)) {
+    assert.match(readFileSync(join(home, rel), 'utf8'),
+      /X-MisakaNet-Client["']?\s*[:=]\s*["']?setup-fixed-0001/,
+      `${agent}: the first run must write the explicit id into ${rel}`);
+  }
+
+  const before = snapshot(home);
+  // No --client-id this time. The only remaining source is the header already in each file, and
+  // the first target to read one must hand it to the rest (one machine, one identity).
+  const second = run(home, '--only', 'claude,codex,hermes,openclaw,cursor');
+  assert.equal(second.status, 0, second.stdout + second.stderr);
+  assert.deepEqual(snapshot(home), before, 'a re-run with no id must be byte-identical');
+  assert.match(second.stdout, /本次实际写入 0 个文件/,
+    'the count line must be printed even when it is 0 (#3775)');
+  assert.ok(second.stdout.includes('这台机器的身份编号是 setup-fixed-0001'),
+    'the adopted id is reported instead of being buried in a config (#3772)');
+
+  // #3775's boundary: the line is install-mode progress, so `--dry-run` keeps saying "nothing
+  // written" in its own words rather than restating a 0 that was never attempted.
+  const dry = run(home, '--only', 'cursor', '--dry-run');
+  assert.doesNotMatch(dry.stdout, /本次实际写入/);
+});
+
+test('a registering re-run reuses the minted id and writes nothing (issues #3772, #3776)', async () => {
+  // The full chain: registration mints `setup-<uuid>` (the one source no offline test can reach),
+  // the id reaches all configs, and the second run — whose ensureIdentity() returns early because
+  // the token exists — must recover that id from the config it is about to rewrite instead of
+  // deleting the header and reporting every file as fresh.
+  const { createServer } = await import('node:http');
+  const server = createServer((req, res) => {
+    let body = '';
+    req.on('data', (chunk) => { body += chunk; });
+    req.on('end', () => {
+      const payload = JSON.parse(body || '{}');
+      const result = payload.method === 'tools/list'
+        ? { tools: [{ name: 'misakanet_search' }, { name: 'misakanet_get_lesson' }] }
+        : payload.params?.name === 'misakanet_register'
+          ? { node_id: 'MisakaTEST', token: TOKEN_SHAPE_OK }
+          : { results: [{ id: 'stub', type: 'lesson' }] };
+      const reply = JSON.stringify({ jsonrpc: '2.0', id: 1, result: {
+        content: [{ type: 'text', text: JSON.stringify(result) }], structuredContent: result } });
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(reply);
+    });
+  });
+  await new Promise((done) => server.listen(0, '127.0.0.1', done));
+  const url = `http://127.0.0.1:${server.address().port}/mcp`;
+  const env = childEnv({ MISAKANET_ENDPOINT: url });
+
+  try {
+    const home = makeHome();
+    const first = await runAsync(home, env);
+    assert.equal(first.status, 0, first.stdout + first.stderr);
+
+    const minted = JSON.parse(readFileSync(join(home, '.claude.json'), 'utf8'))
+      .mcpServers.misakanet.headers['X-MisakaNet-Client'];
+    assert.match(minted, /^setup-/, 'the first run mints the identity it declares');
+    assert.ok(readFileSync(join(home, '.codex', 'config.toml'), 'utf8')
+      .includes(`X-MisakaNet-Client = "${minted}"`), 'both targets start out agreeing');
+
+    const before = snapshot(home);
+    const second = await runAsync(home, env);
+    assert.equal(second.status, 0, second.stdout + second.stderr);
+    assert.deepEqual(snapshot(home), before,
+      'a registering re-run must not rewrite a single file');
+    assert.match(second.stdout, /本次实际写入 0 个文件/, second.stdout);
+    assert.ok(second.stdout.includes(`这台机器的身份编号是 ${minted}`),
+      'the reused identity is still reported to the user');
+  } finally {
+    server.close();
+  }
 });
 
 test('dry-run writes nothing at all', () => {
@@ -1736,6 +1856,173 @@ test('--report --strict exits 0 on a READY machine, and the human fields never g
     assert.match(fields['live-call-evidence'], /^""/, fields['live-call-evidence']);
   } finally {
     server.close();
+  }
+});
+
+// ── #3778: "nothing installed" and "could not verify" must not look like READY ────────────────
+//
+// Three self-contradictions, all reproduced on a home with no agent in it:
+//
+//   * `--verify` said READY / "安装完整性：完整" because every per-agent check was inside a
+//     `detect(...)` guard, so with zero targets not one line ran and `installOk` stayed true;
+//   * `--report` printed `detected-agents: []` next to `install-complete: complete`;
+//   * a probe that timed out, or a proxy this Node cannot use, exited 0 — a READY a script cannot
+//     tell from a healthy machine (the old code only hardened that case under `--strict`).
+//
+// The contract is three codes, and `--verify` and `--report --strict` share it: 0 READY,
+// 1 NOT READY (a machine problem), 2 the tool could not answer (timeout / unverifiable proxy).
+
+/** A home with none of the ten supported agents: the machine the issue was filed from. */
+function makeEmptyHome() {
+  return mkdtempSync(join(tmpdir(), 'mn-empty-'));
+}
+
+test('verify: a home with no supported agent is NOT READY, and says nothing was installed', () => {
+  const home = makeEmptyHome();
+  try {
+    const result = run(home, '--verify');
+    assert.equal(result.status, 1,
+      `an untouched home must not exit 0:\n${result.stdout}${result.stderr}`);
+    assert.match(result.stdout, /没有检测到任何受支持的助手 —— 因此什么都没装/, result.stdout);
+    assert.match(result.stdout, /结论：NOT READY/, result.stdout);
+    assert.doesNotMatch(result.stdout, /安装完整性：完整/,
+      'nothing was installed, so "complete" is the self-contradiction the issue is about');
+    assert.match(result.stdout, /安装完整性：不完整/, result.stdout);
+    // The sentence comes from `AGENTS`, not from a hand-written list: the old one named six of
+    // the ten targets, so Gemini/Copilot/OpenCode/Kiro users were told about a smaller product.
+    for (const label of ['Claude Code', 'Codex', 'Hermes', 'OpenClaw', 'Codewhale',
+                         'Cursor', 'Gemini CLI', 'Copilot CLI', 'OpenCode', 'Kiro']) {
+      assert.ok(result.stdout.includes(label),
+        `the zero-target sentence must name ${label} (generated from AGENTS):\n${result.stdout}`);
+    }
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test('report: zero targets is incomplete + NOT READY + scope none, and --strict exits 1', () => {
+  const home = makeEmptyHome();
+  try {
+    const report = run(home, '--report');
+    assert.equal(report.status, 0, '--report alone keeps exiting 0 (it is evidence, not a gate)');
+    const fields = reportLines(report.stdout);
+    assert.equal(fields['detected-agents'], '[]', report.stdout);
+    assert.equal(fields['install-complete'], 'incomplete',
+      `"detected-agents: []" next to "install-complete: complete" is the contradiction:\n${report.stdout}`);
+    assert.equal(fields.verify, 'NOT READY', report.stdout);
+    assert.equal(fields['install-scope'], 'none', report.stdout);
+    // The install line and the `!` line say the same thing now.
+    assert.match(report.stdout, /没有检测到任何受支持的助手/, report.stdout);
+
+    const strict = run(home, '--report', '--strict');
+    assert.equal(strict.status, 1,
+      `zero targets is a machine verdict, not "could not verify":\n${strict.stdout}${strict.stderr}`);
+    assert.match(strict.stderr, /退出码 1/, strict.stderr);
+
+    // Even when the probe *also* cannot answer, an incomplete install is still a machine verdict:
+    // "nothing was installed" does not become "we could not tell" because the network is unsure.
+    const proxiedEnv = childEnv({ MISAKANET_ENDPOINT: OFFLINE, MISAKANET_REGISTRY_URL: OFFLINE });
+    proxiedEnv.HTTPS_PROXY = 'http://127.0.0.1:3128';
+    proxiedEnv.NO_PROXY = '';
+    const proxied = spawnSync(process.execPath, [CLI, '--home', home, '--report', '--strict'],
+      { encoding: 'utf8', env: proxiedEnv });
+    assert.equal(proxied.status, 1,
+      `2 must not outrank a real machine problem:\n${proxied.stdout}${proxied.stderr}`);
+    assert.match(proxied.stdout, /^endpoint-probe: inconclusive-proxy$/m, proxied.stdout);
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test('verify: an endpoint that accepts but never answers is timeout + exit 2, deterministically', async () => {
+  const { createServer } = await import('node:http');
+  // Headers never sent, body never sent: the request is accepted and then nothing.
+  const server = createServer(() => { /* deliberately no response */ });
+  await new Promise((done) => server.listen(0, '127.0.0.1', done));
+  const url = `http://127.0.0.1:${server.address().port}/mcp`;
+  const home = makeHome();
+  // MISAKANET_PROBE_TIMEOUT_MS is test plumbing: the shipped default stays 6 s, and this proves
+  // the *classification* without spending 18 s inside one assertion.
+  const env = childEnv({ MISAKANET_ENDPOINT: url, MISAKANET_REGISTRY_URL: OFFLINE,
+                         MISAKANET_PROBE_TIMEOUT_MS: '250' });
+  try {
+    const install = await runAsync(home, env, '--no-register');
+    assert.equal(install.status, 0, install.stdout + install.stderr);
+
+    const verify = await runAsync(home, env, '--verify');
+    assert.equal(verify.status, 2,
+      `a timeout is not a machine verdict (0 or 1):\n${verify.stdout}${verify.stderr}`);
+    assert.match(verify.stdout, /端点探测超时/, verify.stdout);
+    assert.match(verify.stdout, /timeout after 250ms/,
+      `the real reason must be printed, not hidden:\n${verify.stdout}`);
+    assert.match(verify.stdout, /没能验证/, verify.stdout);
+    assert.doesNotMatch(verify.stdout, /结论：READY/);
+
+    // Same machine, same probe → same code. The retry pause is fixed on purpose (no random
+    // backoff), so a second run cannot land on a different verdict.
+    const again = await runAsync(home, env, '--verify');
+    assert.equal(again.status, 2, `the probe verdict must be deterministic:\n${again.stdout}`);
+
+    const report = await runAsync(home, env, '--report');
+    assert.equal(report.status, 0, '--report alone still exits 0 in the unverified case');
+    assert.equal(reportLines(report.stdout)['endpoint-probe'], 'timeout', report.stdout);
+    assert.equal(reportLines(report.stdout).verify, 'NOT READY', report.stdout);
+
+    const strict = await runAsync(home, env, '--report', '--strict');
+    assert.equal(strict.status, 2,
+      `--report --strict shares --verify's code, and the report is still printed first:\n${strict.stdout}${strict.stderr}`);
+    assert.match(strict.stdout, /^verify: NOT READY$/m, 'the YAML is printed before the verdict');
+    assert.match(strict.stderr, /退出码 2/, strict.stderr);
+    assert.match(strict.stderr, /endpoint-probe: timeout/, strict.stderr);
+  } finally {
+    server.closeAllConnections?.();
+    server.close();
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test('verify: a 200 that is not MCP is "non-mcp" + exit 1, not "unreachable"', async () => {
+  const { createServer } = await import('node:http');
+  const server = createServer((req, res) => {
+    req.resume();                              // drain the request; we answer regardless of it
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end('{"hello":"world"}');
+  });
+  await new Promise((done) => server.listen(0, '127.0.0.1', done));
+  const url = `http://127.0.0.1:${server.address().port}/mcp`;
+  const home = makeHome();
+  const env = childEnv({ MISAKANET_ENDPOINT: url, MISAKANET_REGISTRY_URL: OFFLINE });
+  try {
+    const install = await runAsync(home, env, '--no-register');
+    assert.equal(install.status, 0, install.stdout + install.stderr);
+
+    const verify = await runAsync(home, env, '--verify');
+    assert.equal(verify.status, 1,
+      `HTTP answered, so this is a machine/address verdict, not "could not verify":\n${verify.stdout}${verify.stderr}`);
+    assert.match(verify.stdout, /响应不是 MCP/, verify.stdout);
+    assert.match(verify.stdout, /hello/, 'the body it actually answered with must be printed');
+    assert.doesNotMatch(verify.stdout, /端点不可达/,
+      'the endpoint answered — reporting it as unreachable is the old lie');
+
+    const report = await runAsync(home, env, '--report');
+    assert.equal(reportLines(report.stdout)['endpoint-probe'], 'non-mcp', report.stdout);
+  } finally {
+    server.closeAllConnections?.();
+    server.close();
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test('--list-writes with no target says "none", not an empty parenthesis', () => {
+  const home = makeEmptyHome();
+  try {
+    const result = run(home, '--list-writes');
+    assert.equal(result.status, 0, result.stdout + result.stderr);
+    assert.match(result.stdout, /本次申请 0 级权限（无/,
+      `the tier sentence must have content: ${result.stdout}`);
+    assert.doesNotMatch(result.stdout, /权限（）/, 'an empty bracket is not an answer');
+  } finally {
+    rmSync(home, { recursive: true, force: true });
   }
 });
 
