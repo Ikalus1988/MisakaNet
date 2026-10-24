@@ -1,11 +1,12 @@
 # Integration Status
 
-> Last updated: 2026-10-22
+> Last updated: 2026-10-23
 
 Two different questions hide behind "do you support X?", so this page answers them separately:
 
-- **Does the installer wire it for you?** `npx @misaka-net/misakanet-setup` writes five agents'
-  configs and can re-check them (`--verify`). Everything else is a manual recipe.
+- **Does the installer wire it for you?** `npx @misaka-net/misakanet-setup` writes the supported
+  agents' configs (the Agents table below is the list, and it is derived from the installer's own
+  `AGENTS`) and can re-check them (`--verify`). Everything else is a manual recipe.
 - **Can it talk to us at all?** The endpoint is standard MCP over Streamable HTTP, so a client that
   supports MCP usually needs one config entry. That is per-vendor knowledge, and it is where the
   mistakes happen: the config *key* differs between products (`mcpServers`, `servers`, `mcp`,
@@ -46,6 +47,7 @@ Two different questions hide behind "do you support X?", so this page answers th
 | **GitHub Copilot** | ✅ **Copilot CLI only** — `~/.copilot/mcp-config.json` (MCP only). VS Code and the github.com coding agent are still manual | — | yes, in **three shapes**: VS Code uses **`servers`** in `.vscode/mcp.json` / profile `mcp.json` ([ref](https://code.visualstudio.com/docs/copilot/reference/mcp-configuration)); Copilot CLI uses `mcpServers` in `~/.copilot/mcp-config.json`; the github.com coding agent is configured in repo Settings, no file | 🔵 vendor-only |
 | **OpenCode** | ✅ `~/.config/opencode/opencode.json` (MCP only) | — | yes: `~/.config/opencode/opencode.json`, key **`mcp.<name>`** with `type: "remote"` ([docs](https://opencode.ai/docs/mcp-servers/)) | 🔵 vendor-only |
 | **Kiro** (AWS) | ✅ `~/.kiro/settings/mcp.json` (MCP only) | — | yes since launch (2025-07-14): `~/.kiro/settings/mcp.json` (`mcpServers`), project `.kiro/settings/mcp.json` ([docs](https://kiro.dev/docs/mcp/configuration/)) | 🔵 vendor-only |
+| **MiniMax Code** (`mcode`) | ✅ `~/.minimax/plugins/misakanet/.claude-plugin/plugin.json` (a **plugin manifest** — mcode has no user-level MCP config) and `~/.minimax/AGENTS.md` (global rules) | [mcode.md](mcode.md) | as a plugin directory (source `LOCAL_CLAUDE`); `~/.minimax/config.yaml`'s `mcpServers` is **ignored** | 🟡 recipe: both installers write it and this repository's tests cover them, but the live `mcode plugin list` check exists only in issue #3777 — no run is recorded here. On a proxy set `NODE_USE_ENV_PROXY=1` (~2000ms discovery budget) or the tools stay at 0 |
 | **Trae** (ByteDance; docs now call it TraeCode) | ❌ | — | yes since v1.3.1 (2025-04-22), **project scope only**: `.trae/mcp.json` (`mcpServers`), gated by "Enable Project MCP". No user/global path is documented ([docs](https://docs.trae.ai/ide/add-mcp-servers)) | 🔵 vendor-only |
 | **Google Antigravity** | ❌ | — | yes, one central file shared by the app, IDE and CLI: `~/.gemini/config/mcp_config.json`, key `mcpServers` with **`serverUrl`** ([codelab](https://codelabs.developers.google.com/google-workspace-mcp-antigravity)) | 🔵 vendor-only, incomplete: headers, project scope, rules file and hooks are *not found* in reachable Google sources, not confirmed absent |
 | **Oh-my-Pi** (`omp`) | ❌ | — | yes: project `.omp/mcp.json`, user `~/.omp/agent/mcp.json`, `type: "http"` ([docs](https://github.com/can1357/oh-my-pi/blob/main/docs/mcp-config.md)) | 🔵 vendor-only |

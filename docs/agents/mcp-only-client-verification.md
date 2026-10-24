@@ -119,12 +119,12 @@ A command that only you have run is worth more here than a polished guess from u
 
 Roughly, what you are looking for:
 
-- **`tools-visible`** — the client showing `misakanet_*` tools. Seven is the expected number
-  (`tools/list` on `https://misakanet.org/mcp` returns 7; `docs/integrations/status.md` records the
-  same). Note the Python stdio server exposes **10** — it has `misakanet_memory_context`,
-  `misakanet_submit_usage` and `misakanet_usage_status`, which the hosted endpoint does not. If you
-  installed the `pip install misakanet` stdio server rather than the hosted endpoint, say which,
-  because the number differs and we would otherwise read your 10 as a defect.
+- **`tools-visible`** — the client showing `misakanet_*` tools. 8 is the expected number
+  (`tools/list` on `https://misakanet.org/mcp` returns 8). Note the Python stdio server exposes
+  **11** — it serves those 8 plus `misakanet_memory_context`, `misakanet_submit_usage` and
+  `misakanet_usage_status`, which the hosted endpoint does not. If you installed the
+  `pip install misakanet` stdio server rather than the hosted endpoint, say which, because the
+  number differs and we would otherwise read your 11 as a defect.
 - **`live-call-evidence`** — one raw line out of the event stream showing
   `misakanet_search` (or another tool) actually being called. The issue's own suggestion works well
   as a probe: ask in natural language containing a literal error string, e.g.

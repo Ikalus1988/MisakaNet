@@ -81,6 +81,26 @@ HOSTED_COUNT_SURFACES: tuple[tuple[str, re.Pattern[str], str], ...] = (
      "the install check in Track A"),
     ("docs/agents/mcp-only-client-verification.md", re.compile(r"Does the client see\s+(\d+)\s+tools"),
      "the 'B' criterion row"),
+    # Added 2026-10-23 (#3779): the same file retypes the count a second time, in the bullet that
+    # tells a verifier what a good report looks like — and it said "Seven is the expected number"
+    # next to a `tools/list` line that returned 8.
+    ("docs/agents/mcp-only-client-verification.md", re.compile(r"(\d+)\s+is the expected number"),
+     "the tools-visible bullet"),
+    # Added 2026-10-23 (#3779): the integration page's tool table is what a user reads to learn the
+    # tool names, and it said "seven" while listing seven rows — dropping `misakanet_me_inbox`.
+    ("docs/integrations/README.md", re.compile(r"exposes\s+(\d+)\s*:"),
+     "the remote tool table's lead sentence"),
+)
+
+# Surfaces that retype the **local stdio** count. A different number from the hosted one on
+# purpose: the stdio server serves the hosted set plus three local-only tools (11 today). #3779
+# found `API.md` saying 10 and the verification template saying 10, both after the server had 11.
+STDIO_COUNT_SURFACES: tuple[tuple[str, re.Pattern[str], str], ...] = (
+    ("API.md", re.compile(r"Exposes\s+(\d+)\s+tools via MCP stdio"),
+     "the stdio transport heading"),
+    ("docs/agents/mcp-only-client-verification.md",
+     re.compile(r"Python stdio server exposes\s+\*\*(\d+)\*\*"),
+     "the tools-visible bullet"),
 )
 
 
@@ -111,8 +131,8 @@ def _mcp_doc_row(label: str, root: Path = REPO) -> str:
     return rows[0]
 
 
-def _retyped_hosted_count(text: str, pattern: re.Pattern[str], surface: str) -> int:
-    """The hosted tool count a surface retypes in prose, or a failure that says why it cannot answer.
+def _retyped_number(text: str, pattern: re.Pattern[str], surface: str, label: str) -> int:
+    """The tool count a surface retypes in prose, or a failure that says why it cannot answer.
 
     Two rules, both learned from this defect:
 
@@ -122,24 +142,31 @@ def _retyped_hosted_count(text: str, pattern: re.Pattern[str], surface: str) -> 
       tell which is the claim, so the gate names both numbers and their lines instead of picking one.
     """
     claims: dict[int, list[int]] = {}
-    for lineno, line in enumerate(text.splitlines(), 1):
-        for match in pattern.finditer(line):
-            claims.setdefault(int(match.group(1)), []).append(lineno)
+    # The whole text, not one line at a time: these sentences wrap, and `exposes\n**11**` is the
+    # same claim as `exposes **11**`. The line number is reported for the fix, not for the match.
+    for match in pattern.finditer(text):
+        lineno = text.count("\n", 0, match.start()) + 1
+        claims.setdefault(int(match.group(1)), []).append(lineno)
     if not claims:
         raise ValueError(
-            f"{surface} no longer contains the phrase this gate reads its hosted tool count from "
+            f"{surface} no longer contains the phrase this gate reads its {label} tool count from "
             f"({pattern.pattern!r}). Restore the count rather than dropping the gate: this surface "
-            f"was unpinned once and sat at 7 while the endpoint served 8."
+            f"was unpinned once and then drifted."
         )
     if len(claims) > 1:
         raise ValueError(
-            f"{surface} asserts {len(claims)} different hosted tool counts: "
+            f"{surface} asserts {len(claims)} different {label} tool counts: "
             + "; ".join(
                 f"{n} (line {', '.join(map(str, lines))})" for n, lines in sorted(claims.items())
             )
             + " — a reader cannot tell which one is the claim, so neither can this gate."
         )
     return next(iter(claims))
+
+
+def _retyped_hosted_count(text: str, pattern: re.Pattern[str], surface: str) -> int:
+    """The hosted count, with the message the older tests quote ("hosted tool counts")."""
+    return _retyped_number(text, pattern, surface, "hosted")
 
 
 def assert_hosted_count_surface(root: Path, relpath: str, pattern: re.Pattern[str], where: str) -> None:
@@ -151,6 +178,75 @@ def assert_hosted_count_surface(root: Path, relpath: str, pattern: re.Pattern[st
             f"{relpath} says the hosted MCP server has {count} tools ({where}) and the documented, "
             f"served set has {canonical}. This line retypes the count instead of deriving it, which "
             f"is why nothing noticed it sitting at 7 — update it, or stop quoting a second number."
+        )
+
+
+# A tool name at the start of a table row: the tables are the lists a reader copies names from.
+TABLE_ROW = re.compile(r"^\|\s*`(?P<name>misakanet_[a-z_]+)`", re.M)
+
+
+def _table_tools(path: Path) -> frozenset[str]:
+    """The tool names a Markdown table lists, one per row — not names mentioned in its prose."""
+    return frozenset(TABLE_ROW.findall(path.read_text(encoding="utf-8")))
+
+
+def _stdio_tools() -> frozenset[str]:
+    """The local stdio server's real tool set — the measurement leg for the 11-tool surfaces."""
+    from misakanet.server import TOOLS  # noqa: PLC0415 — the repo package, imported for one check
+
+    return frozenset(
+        tool["name"] if isinstance(tool, dict) else str(tool) for tool in TOOLS
+    )
+
+
+def assert_stdio_count_surface(root: Path, relpath: str, pattern: re.Pattern[str], where: str) -> None:
+    """A retyped stdio count must equal what `misakanet.server.TOOLS` actually registers.
+
+    The hosted number is a different one on purpose (its set is a subset of this one), so a line
+    that copies 8 into the stdio sentence is as wrong as the reverse — #3779 found both directions.
+    """
+    count = _retyped_number(
+        (root / relpath).read_text(encoding="utf-8"), pattern, relpath, "stdio"
+    )
+    actual = len(_stdio_tools())
+    if count != actual:
+        raise ValueError(
+            f"{relpath} says the local stdio server has {count} tools ({where}) and it registers "
+            f"{actual}. The hosted endpoint's count is a different number on purpose; do not copy "
+            f"one surface's number into the other."
+        )
+
+
+def assert_hosted_table_matches(root: Path = REPO) -> None:
+    """The integration page's tool table must list exactly the hosted set, name for name.
+
+    A count can be right while the table under it is short: `docs/integrations/README.md` said
+    "seven" *and* listed seven rows, so nothing compared the rows a reader copies tool names from
+    with the set the endpoint serves — `misakanet_me_inbox` was simply absent (#3779).
+    """
+    documented = _table_tools(root / "docs" / "integrations" / "README.md")
+    canonical = documented_hosted_tools(root)
+    missing = sorted(canonical - documented)
+    extra = sorted(documented - canonical)
+    if missing or extra:
+        raise ValueError(
+            "docs/integrations/README.md's tool table does not list the hosted set"
+            + (f"; missing: {missing}" if missing else "")
+            + (f"; not hosted: {extra}" if extra else "")
+        )
+
+
+def assert_stdio_table_matches(root: Path = REPO) -> None:
+    """`API.md`'s stdio table must list exactly what the local server registers (#3779)."""
+    documented = _table_tools(root / "API.md")
+    actual = _stdio_tools()
+    missing = sorted(actual - documented)
+    extra = sorted(documented - actual)
+    if missing or extra:
+        raise ValueError(
+            "API.md's stdio tool table does not list what the server registers"
+            + (f"; missing: {missing}" if missing else "")
+            + (f"; not registered: {extra}" if extra else "")
         )
 
 
@@ -216,6 +312,25 @@ def test_a_retyped_hosted_count_matches_the_canonical_one(relpath, pattern, wher
     assert_hosted_count_surface(REPO, relpath, pattern, where)
 
 
+@pytest.mark.parametrize(
+    "relpath,pattern,where", STDIO_COUNT_SURFACES,
+    ids=[f"{relpath}: {where}" for relpath, _pattern, where in STDIO_COUNT_SURFACES],
+)
+def test_a_retyped_stdio_count_matches_the_server(relpath, pattern, where):
+    """The 11-tool surface has its own number: copying the hosted 8 into it is the same defect."""
+    assert_stdio_count_surface(REPO, relpath, pattern, where)
+
+
+def test_the_integration_tool_table_lists_the_hosted_set():
+    """A count can be right while the table under it is short — that is how `me_inbox` vanished."""
+    assert_hosted_table_matches()
+
+
+def test_the_api_stdio_table_lists_the_stdio_set():
+    """`API.md` said 10 and listed 10 while the server registered 11 (#3779)."""
+    assert_stdio_table_matches()
+
+
 # ── the badge job must stop measuring itself ────────────────────────────────────────
 def _run_commands(path: Path) -> list[str]:
     """Every `run:` block in a workflow, with shell comments stripped.
@@ -271,8 +386,12 @@ def fake_root(tmp_path: Path) -> Path:
     shutil.copy(REPO / "AGENTS.md", tmp_path / "AGENTS.md")
     shutil.copy(REPO / "README.md", tmp_path / "README.md")
     shutil.copy(REPO / "SKILL.md", tmp_path / "SKILL.md")
+    shutil.copy(REPO / "API.md", tmp_path / "API.md")
     (tmp_path / "docs").mkdir()
     shutil.copy(REPO / "docs" / "mcp.md", tmp_path / "docs" / "mcp.md")
+    (tmp_path / "docs" / "integrations").mkdir()
+    shutil.copy(REPO / "docs" / "integrations" / "README.md",
+                tmp_path / "docs" / "integrations" / "README.md")
     (tmp_path / "skills" / "misakanet").mkdir(parents=True)
     shutil.copy(REPO / "skills" / "misakanet" / "SKILL.md",
                 tmp_path / "skills" / "misakanet" / "SKILL.md")
@@ -350,6 +469,56 @@ def test_a_skill_left_at_seven_is_reported(fake_root, relpath):
             fake_root, relpath, HOSTED_COUNT_CLAIM, "the surface note under Tools")
     message = str(excinfo.value)
     assert relpath in message and "7" in message and "8" in message, message
+
+
+def test_an_integration_count_left_at_seven_is_reported(fake_root):
+    """Red fixture for the new surface: the page really did say "seven" while the endpoint served 8."""
+    surface = next(entry for entry in HOSTED_COUNT_SURFACES
+                   if entry[0] == "docs/integrations/README.md")
+    _retype_to_seven(fake_root / surface[0], surface[1])
+    with pytest.raises(ValueError) as excinfo:
+        assert_hosted_count_surface(fake_root, *surface)
+    message = str(excinfo.value)
+    assert "docs/integrations/README.md" in message and "7" in message and "8" in message, message
+
+
+def test_an_integration_table_missing_a_tool_is_reported(fake_root):
+    """The row-level gate, not the count: a stale table can keep "8" while dropping a row."""
+    page = fake_root / "docs" / "integrations" / "README.md"
+    text = page.read_text(encoding="utf-8")
+    mutated = text.replace("| `misakanet_me_inbox` |", "| `misakanet_missing_inbox` |", 1)
+    assert mutated != text, "the fixture no longer finds the row it removes"
+    page.write_text(mutated, encoding="utf-8")
+    with pytest.raises(ValueError) as excinfo:
+        assert_hosted_table_matches(fake_root)
+    message = str(excinfo.value)
+    assert "misakanet_me_inbox" in message and "misakanet_missing_inbox" in message, message
+
+
+def test_an_api_count_left_at_ten_is_reported(fake_root):
+    """Red fixture for the stdio count: `API.md` said 10 after the server had 11 (#3779)."""
+    api = fake_root / "API.md"
+    text = api.read_text(encoding="utf-8")
+    mutated = text.replace("Exposes 11 tools", "Exposes 10 tools", 1)
+    assert mutated != text, "the fixture no longer finds the sentence it mutates"
+    api.write_text(mutated, encoding="utf-8")
+    with pytest.raises(ValueError) as excinfo:
+        assert_stdio_count_surface(fake_root, *STDIO_COUNT_SURFACES[0])
+    message = str(excinfo.value)
+    assert "10" in message and "11" in message, message
+
+
+def test_an_api_table_missing_a_tool_is_reported(fake_root):
+    """The table is the list a reader copies names from; the count alone cannot catch a gap."""
+    api = fake_root / "API.md"
+    text = api.read_text(encoding="utf-8")
+    mutated = text.replace("| `misakanet_me_inbox` |", "| `misakanet_missing_inbox` |", 1)
+    assert mutated != text, "the fixture no longer finds the row it removes"
+    api.write_text(mutated, encoding="utf-8")
+    with pytest.raises(ValueError) as excinfo:
+        assert_stdio_table_matches(fake_root)
+    message = str(excinfo.value)
+    assert "misakanet_me_inbox" in message and "misakanet_missing_inbox" in message, message
 
 
 def test_a_surface_asserting_two_hosted_counts_is_rejected():

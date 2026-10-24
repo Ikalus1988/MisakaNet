@@ -89,8 +89,9 @@ def test_the_register_page_exists_and_carries_the_form(register: str) -> None:
     ):
         assert f'id="{element_id}"' in register, f"the register page has no #{element_id}"
     assert 'class="agent-selector"' in register, "the agent selector is gone"
-    assert register.count('class="agent-option') == 11, (
-        "the selector no longer offers ten clients plus the free-text escape hatch"
+    # 11 wired clients (issue #3777 added mcode) plus the free-text escape hatch.
+    assert register.count('class="agent-option') == 12, (
+        "the selector no longer offers the installer's clients plus the free-text escape hatch"
     )
 
 

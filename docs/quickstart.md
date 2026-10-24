@@ -6,7 +6,7 @@ integrate.
 ## Track A — Let your assistant search (30 seconds)
 
 For Claude Code / Codex / Hermes / OpenClaw / codewhale / Cursor / Gemini CLI / Copilot CLI /
-OpenCode / Kiro — the same ten the installer wires (`AGENTS` in
+OpenCode / Kiro / MiniMax Code — the same eleven the installer wires (`AGENTS` in
 `packages/misakanet-setup/bin/misakanet-setup.mjs`). The installer writes the MCP endpoint into
 each assistant's own config; it does not install anything behind your back, and it registers the
 anonymous node itself, so **no pairing code is involved**.

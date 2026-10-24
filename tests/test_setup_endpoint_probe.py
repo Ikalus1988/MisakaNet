@@ -1,22 +1,26 @@
 #!/usr/bin/env python3
-"""A failed probe is not proof that the endpoint is down.
+"""A probe that cannot answer is not proof that the endpoint is down — and not a pass either.
 
 `--verify` probes the endpoint with Node's `fetch`, and Node's fetch ignores `HTTP_PROXY` /
 `HTTPS_PROXY` / `NO_PROXY` unless the runtime is told to honour them (`NODE_USE_ENV_PROXY=1` or
 `--use-env-proxy`; fetch support in Node v22.21.0 / v24.0.0+ —
 nodejs.org/learn/http/enterprise-network-configuration). In an enterprise-proxy environment that
-makes the probe unreliable in one direction: `curl` and the user's agent can both reach
-`https://misakanet.org/mcp` through a proxy this process never saw, while `--verify` reports
-"端点不可达（网络受限？）" and sends the user to debug a network that works.
+makes the probe unable to see the path the user's agent actually takes: `curl` and the agent reach
+`https://misakanet.org/mcp` through a proxy this process never used, while the probe fails on a
+direct connection that may well be blocked.
 
-The installer's audience includes exactly those users — this repository's own corpus carries corporate
-proxy lessons — so the fix is to say what is actually known:
+Calling that "端点不可达" sends the user to debug a network that works. Calling it a pass (exit 0)
+is the other lie: a script reads 0 as READY, and the old interactive `--verify` did exactly that
+while printing "the probe is untrustworthy". So the middle answer gets its own code:
 
-* a proxy is configured and this Node will not use it → **inconclusive**, warn, do not fail the
-  interactive verdict (the install itself is fine);
-* the same situation under `--strict` / `--ci` → fail, because a gate that cannot tell must not pass
-  silently;
-* no proxy, or a proxy this Node honours → a failed probe is a failed probe, unchanged.
+* a probe that cannot answer — a timeout, or a proxy this Node cannot use — is **exit 2**: "the
+  tool could not verify". `--report --strict` / `--ci` use the same code, with the report printed
+  first so CI keeps the evidence (`endpoint-probe: inconclusive-proxy` says which doubt it was);
+* no proxy, or a proxy this Node honours → a failed probe really is a failure → **exit 1**.
+
+"说不清 ≠ 通过" and "说不清 ≠ 机器不健康" are the two halves of that middle answer (#3778). The
+first version of this file asserted 0, then 1 under `--strict`; both were the same mistake from
+opposite sides, because a code that cannot distinguish "no answer" from "no" is not a verdict.
 
 Everything below runs against `http://127.0.0.1:9/mcp` (a refused connection, no network) with
 `--no-register`, so the outcome does not depend on the real endpoint being up.
@@ -69,11 +73,12 @@ def installed_home(tmp_path: Path) -> Path:
     return home
 
 
-def test_a_proxy_this_node_ignores_makes_the_probe_inconclusive_not_fatal(installed_home: Path):
+def test_a_proxy_this_node_ignores_makes_the_probe_unverifiable_not_a_pass(installed_home: Path):
     verify = run(installed_home, "--verify", env=_env(proxy=PROXY))
-    assert verify.returncode == 0, (
-        "an install whose endpoint is reachable through the user's proxy must not be reported as "
-        f"NOT READY:\n{verify.stdout}{verify.stderr}"
+    assert verify.returncode == 2, (
+        "an install whose endpoint may be reachable only through the user's proxy must not be "
+        "called READY (0), and must not be called NOT READY (1) either — the tool could not "
+        f"verify it, and 2 is that answer:\n{verify.stdout}{verify.stderr}"
     )
     assert "端点探测不可信" in verify.stdout, verify.stdout
     assert "NODE_USE_ENV_PROXY=1" in verify.stdout, (
@@ -84,15 +89,23 @@ def test_a_proxy_this_node_ignores_makes_the_probe_inconclusive_not_fatal(instal
     assert "网络受限？读课程会静默失败" not in verify.stdout, (
         "the endpoint was not shown to be unreachable, and saying so is the false negative"
     )
+    assert "结论：READY" not in verify.stdout, (
+        "the old interactive path exited 0 while saying the probe was untrustworthy — the "
+        "contradiction #3778 was filed for"
+    )
 
 
-def test_strict_keeps_a_hard_verdict_for_a_probe_that_cannot_be_trusted(installed_home: Path):
+def test_strict_uses_the_same_code_for_a_probe_that_cannot_be_trusted(installed_home: Path):
     strict = run(installed_home, "--report", "--strict", env=_env(proxy=PROXY))
-    assert strict.returncode == 1, (
-        "--strict is the CI gate: 'we cannot tell' must not pass silently\n"
+    assert strict.returncode == 2, (
+        "--strict is the CI gate: 'we cannot tell' must not pass silently, and it is not a "
+        "machine verdict either — code 2 is the one that says so:\n"
         + strict.stdout + strict.stderr
     )
     assert "endpoint-probe: inconclusive-proxy" in strict.stdout, strict.stdout
+    assert "endpoint-probe: inconclusive-proxy" in strict.stderr, (
+        "stderr must point at the field that explains the code:\n" + strict.stderr
+    )
 
 
 def test_the_report_says_why_the_boolean_is_not_meaningful(installed_home: Path):
@@ -126,5 +139,5 @@ def test_a_lowercase_proxy_variable_counts_too(installed_home: Path):
     env = _env()
     env["https_proxy"] = PROXY
     verify = run(installed_home, "--verify", env=env)
-    assert verify.returncode == 0, verify.stdout + verify.stderr
+    assert verify.returncode == 2, verify.stdout + verify.stderr
     assert "端点探测不可信" in verify.stdout, verify.stdout

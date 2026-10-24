@@ -123,7 +123,11 @@ jobs:
     # two places at once would publish whatever `main` happened to hold.
     if: github.event_name != 'push' || github.ref_type == 'tag'
     permissions:
-      contents: read
+      # The only writer in this job is the Release step at the end: it creates a release object on
+      # the tag the `tag` job already pushed, and never touches the tree — the `gh release`
+      # commands are the only writes, and the tree is not staged or committed anywhere. The npm
+      # publish itself needs no write access.
+      contents: write
       id-token: write      # npm trusted publishing (OIDC)
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -282,3 +286,42 @@ jobs:
           exit $RC
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      # The installer's version used to exist only on npm. Measured 2026-10-23: the last 100
+      # GitHub Releases contained **zero** `misakanet-setup-*` entries, and
+      # `gh release view misakanet-setup-v0.6.0` answered "release not found" — so the Releases
+      # page, the one page a reader opens to ask "what is the newest installer, and what
+      # changed", showed nothing. The release belongs **here**, after npm has the version:
+      # creating it in the `tag` job would advertise a version the registry does not have yet,
+      # which is exactly the drift #3774 is about.
+      #
+      # GITHUB_TOKEN, deliberately: a release created by a PAT fires `on: release: published` in
+      # `misakanet-publish.yml` (the *root* package's publisher) for a tag that package does not
+      # own, and that run would fail its version guard. The built-in token creates the release
+      # without starting a workflow from the event it caused.
+      #
+      # Idempotent: the tag job's dispatch and a human's manual dispatch can both get here for
+      # one version, and a run that finds the release already created stands down. `--verify-tag`
+      # means a missing tag is reported, never fabricated (the `tag` job owns tag creation).
+      - name: Create the GitHub Release for this version
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.pack.outputs.version }}
+        run: |
+          set -euo pipefail
+          TAG="misakanet-setup-v$VERSION"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "release $TAG already exists — nothing to do"
+            exit 0
+          fi
+          if ! gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG" >/dev/null 2>&1; then
+            echo "::warning::tag $TAG is not on the remote; skipping the Release (npm is unaffected)"
+            exit 0
+          fi
+          python3 ../../scripts/setup_release_notes.py --version "$VERSION" \
+            > "$RUNNER_TEMP/setup-release-notes.md"
+          # --latest=false: `gh release create` otherwise marks this release as the repository's
+          # "Latest", and a package under the root line would displace the product release
+          # (`v2.49.x`) on the one page that answers "what shipped most recently".
+          gh release create "$TAG" --title "$TAG" \
+            --notes-file "$RUNNER_TEMP/setup-release-notes.md" --verify-tag --latest=false

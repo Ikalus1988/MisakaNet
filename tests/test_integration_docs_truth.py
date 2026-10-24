@@ -46,6 +46,9 @@ AGENT_DISPLAY = {
     "copilot": "Copilot CLI",
     "opencode": "OpenCode",
     "kiro": "Kiro",
+    # Issue #3777: a plugin directory instead of a JSON config file, but still one of `AGENTS` —
+    # and the README's public row has to name it like every other target.
+    "mcode": "MiniMax Code",
 }
 
 

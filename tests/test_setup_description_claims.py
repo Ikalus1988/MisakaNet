@@ -78,6 +78,9 @@ CLIENT_NAMES = (
     "Copilot CLI",
     "OpenCode",
     "Kiro",
+    # Issue #3777: MiniMax Code reads a plugin directory rather than a user config file, but it is a
+    # target of the same `AGENTS` list — so the roster must name it too.
+    "MiniMax Code",
 )
 
 

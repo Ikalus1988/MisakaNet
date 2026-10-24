@@ -24,9 +24,15 @@ jobs:
     # job would either fail or push an untagged image. Package releases are `vX.Y.Z` here, so
     # "the tag contains a dot" is the cheap, general form of "this tag is a package version"
     # (release-pypi.yml narrows its tag trigger the same way).
+    #
+    # The installer's releases (`misakanet-setup-v<version>`) are the reason the prefix is part of
+    # the test as well: that tag contains dots, so the old test alone would build a container image
+    # from a release this repository's container does not ship. They are created with GITHUB_TOKEN
+    # (no event), but a human backfill or a UI "publish release" does fire the event.
     if: >-
       github.event_name == 'workflow_dispatch' ||
-      contains(github.event.release.tag_name, '.')
+      (startsWith(github.event.release.tag_name, 'v') &&
+       contains(github.event.release.tag_name, '.'))
     permissions:
       contents: read
       packages: write

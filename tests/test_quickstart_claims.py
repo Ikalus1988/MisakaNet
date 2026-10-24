@@ -56,6 +56,9 @@ DISPLAY = {
     "copilot": "Copilot CLI",
     "opencode": "OpenCode",
     "kiro": "Kiro",
+    # Issue #3777: MiniMax Code's MCP entry is a plugin manifest, but it is still one of the
+    # assistants the installer wires — so the intro has to name it like the rest.
+    "mcode": "MiniMax Code",
 }
 
 # Dated snapshots and benchmark payloads quote whatever was true when they were written; a file

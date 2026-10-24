@@ -63,7 +63,7 @@ account or a token.
 |---|---|
 | **DeepSeek Harness** | `dsh plugin --profile web add misakanet` — or type `misakanet` in **Add plugin** |
 | **Claude Code** | `/plugin marketplace add Ikalus1988/MisakaNet` then `/plugin install misakanet@misakanet` |
-| Installer-managed | Claude Code · Codex · Hermes · OpenClaw · codewhale · Cursor · Gemini CLI · Copilot CLI · OpenCode · Kiro |
+| Installer-managed | Claude Code · Codex · Hermes · OpenClaw · codewhale · Cursor · Gemini CLI · Copilot CLI · OpenCode · Kiro · MiniMax Code |
 | **Any other MCP client** | point it at `https://misakanet.org/mcp` — public endpoint, anonymous reads |
 | **Your own code** | `pip install misakanet-core` (library) · `pip install misakanet` (stdio server) |
 

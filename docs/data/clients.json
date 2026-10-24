@@ -92,6 +92,15 @@
       "reporting": "mcp-only",
       "account": "no",
       "docs": "/integrations/kiro.md"
+    },
+    {
+      "id": "mcode",
+      "name": "MiniMax Code",
+      "writes": "~/.minimax/plugins/misakanet/, ~/.minimax/AGENTS.md",
+      "scope": "full",
+      "reporting": "auto-with-consent",
+      "account": "write-only",
+      "docs": "/integrations/mcode.md"
     }
   ]
 }

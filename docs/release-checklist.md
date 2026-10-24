@@ -116,6 +116,27 @@ move together. Do **not** hand-edit `package.json` backwards: release-please own
 backwards move is what `npm_bundle_floor` in `scripts/align_versions.py` reports on (an advisory by the
 owner's decision of 2026-09-29 — a rollback and a typo look identical from the number alone).
 
+## npm installer (`@misaka-net/misakanet-setup`) — tag, Release, publish
+
+The installer has its own version line and its own tag (`misakanet-setup-v<version>`), cut by
+release-please in the same release PR.
+
+- `misakanet-setup-publish.yml` creates the tag in its `tag` job and dispatches the publish at it.
+- The **Release** (`misakanet-setup-v<version>`) is created by the `publish` job *after* npm has the
+  version, with the package's CHANGELOG section as its body
+  (`scripts/setup_release_notes.py`). It is deliberately not created in the `tag` job: that would
+  announce a version nobody can install yet — the drift the Releases page exists to expose. The
+  publish job's only writer is that step; it never stages or commits the tree.
+- Backfill a release whose tag predates this wiring (the tag must already exist):
+  ```bash
+  v=<version>
+  python3 scripts/setup_release_notes.py --version "$v" > "/tmp/setup-$v.md"
+  gh release create "misakanet-setup-v$v" --title "misakanet-setup-v$v" \
+    --notes-file "/tmp/setup-$v.md" --verify-tag --latest=false
+  ```
+  `--latest=false` matters: without it the installer's release becomes the repository's "Latest"
+  and displaces the product release (`v2.x`).
+
 ## Do NOT update for routine releases
 
 - **npm `@misaka-net/fatal-guard`** — only if fatal-guard code changed

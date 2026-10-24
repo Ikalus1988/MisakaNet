@@ -1,7 +1,7 @@
 # @misaka-net/misakanet-setup
 
 One command to teach your **Claude Code**, **Codex**, **Hermes**, **OpenClaw**, **codewhale**,
-**Cursor**, **Gemini CLI**, **Copilot CLI**, **OpenCode** or **Kiro** to
+**Cursor**, **Gemini CLI**, **Copilot CLI**, **OpenCode**, **Kiro** or **MiniMax Code** to
 check MisakaNet's failure lessons before repeating a mistake — and to write up the reusable lessons
 this session produced, at a checkpoint.
 
@@ -23,7 +23,7 @@ knowledge base on its own instead of guessing.
 
 | # | Goal | Mechanism |
 |---|---|---|
-| 1 | the agent **can** call it | MCP server `https://misakanet.org/mcp` (streamable HTTP) in `~/.claude.json`, `~/.codex/config.toml` and `~/.openclaw/openclaw.json` (`mcp.servers.misakanet`), with the Bearer token when registration succeeds — reads need no token (anonymous reads are unmetered since 2026-09-18); the token is what opens the **write** path. Every entry also carries the self-declared context hints `X-MisakaNet-Client` / `-Agent` / `-Os` / `-Version`, which the endpoint records on the read's analytics row and never treats as identity (`codewhale` is the one exception: its server entry has no custom-header field). Hermes is the same thing in its own files: `mcp_servers.misakanet` in `~/.hermes/config.yaml` plus the token in `~/.hermes/.env` under `MCP_MISAKANET_API_KEY`. Five clients take the same idea in one file each, and **each file uses its own key path and URL field** — they are not interchangeable, and a copied entry with the wrong key fails silently (no error, the server simply never appears):
+| 1 | the agent **can** call it | MCP server `https://misakanet.org/mcp` (streamable HTTP) in `~/.claude.json`, `~/.codex/config.toml` and `~/.openclaw/openclaw.json` (`mcp.servers.misakanet`), with the Bearer token when registration succeeds — reads need no token (anonymous reads are unmetered since 2026-09-18); the token is what opens the **write** path. Every entry also carries the self-declared context hints `X-MisakaNet-Client` / `-Agent` / `-Os` / `-Version`, which the endpoint records on the read's analytics row and never treats as identity (`codewhale` is the one exception: its server entry has no custom-header field). Hermes is the same thing in its own files: `mcp_servers.misakanet` in `~/.hermes/config.yaml` plus the token in `~/.hermes/.env` under `MCP_MISAKANET_API_KEY`. Six clients take the same idea in one file each, and **each file uses its own key path and URL field** — they are not interchangeable, and a copied entry with the wrong key fails silently (no error, the server simply never appears):
 
 | client | file | container | URL field |
 |---|---|---|---|
@@ -32,9 +32,16 @@ knowledge base on its own instead of guessing.
 | Copilot CLI | `~/.copilot/mcp-config.json` | `mcpServers` | `url`, with `type: "http"` |
 | OpenCode | `~/.config/opencode/opencode.json` | **`mcp`** | `url`, with `type: "remote"` |
 | Kiro | `~/.kiro/settings/mcp.json` | `mcpServers` | `url` |
+| MiniMax Code | `~/.minimax/plugins/misakanet/.claude-plugin/plugin.json` | `mcpServers` | `url`, with `type: "http"` (a **plugin manifest**, not a user config file) |
+
+There is one difference in kind in that last row: mcode ignores `~/.minimax/config.yaml`'s
+`mcpServers` entirely and reads **plugin directories** instead, so an entry written there would
+look installed and register nothing. Its manifest also comes with the rules block, in
+`~/.minimax/AGENTS.md`; the measured shape, the `mcode plugin list` check and the proxy caveat
+(`NODE_USE_ENV_PROXY=1`) are in `docs/integrations/mcode.md`.
 
 All of them are config files written file-to-file — no subprocess is spawned, so **no token ever appears in a command line**. For Claude Code only, the five **read-only** tools are also added to `permissions.allow` — "can call it" otherwise still means a permission prompt on the very first search, so `0.5.3` pre-allows them (`--verify` reports it, `--report` prints `permissions:`); `write_lesson` is deliberately **not** pre-allowed, because a tool that writes should ask |
-| 2 | the agent **knows when** | rules block appended to `~/.claude/CLAUDE.md` / `~/.codex/AGENTS.md` / `~/.hermes/SOUL.md` / `~/.openclaw/workspace/AGENTS.md`. **The five JSON-file clients are the exception: they get none**, because their rules are project-scoped (`.cursor/rules/*.mdc`, `GEMINI.md`, `.github/copilot-instructions.md`, `AGENTS.md`, `.kiro/steering/*.md`) and the installer cannot know where your projects live — the install output says so, with the project-side action for each client, instead of implying behaviour changed (issue, retry, risky-operation triggers; desensitisation rules). Wording is **imperative first** ("必须先调 misakanet_search") rather than descriptive, because a field test showed a weaker model reads a descriptive block as background and never calls the tool |
+| 2 | the agent **knows when** | rules block appended to `~/.claude/CLAUDE.md` / `~/.codex/AGENTS.md` / `~/.hermes/SOUL.md` / `~/.openclaw/workspace/AGENTS.md` / `~/.minimax/AGENTS.md` (mcode's global scope). **The five JSON-config clients are the exception: they get none**, because their rules are project-scoped (`.cursor/rules/*.mdc`, `GEMINI.md`, `.github/copilot-instructions.md`, `AGENTS.md`, `.kiro/steering/*.md`) and the installer cannot know where your projects live — the install output says so, with the project-side action for each client, instead of implying behaviour changed (issue, retry, risky-operation triggers; desensitisation rules). Wording is **imperative first** ("必须先调 misakanet_search") rather than descriptive, because a field test showed a weaker model reads a descriptive block as background and never calls the tool |
 | 4 | *(opt-in)* you **hear** it | `--voice` adds a `PostToolUse` hook that plays the cue the server asked for (`lesson-found` / `failure-warning` / `connect-success` / `pair-success`). Off by default; mute with `MISAKANET_VOICE=0`; see `docs/integrations/mcp-voice-hooks.md` |
 | 3 | the checkpoint **fires** | a hook that counts user turns: turn 1 announces the install to the user, turn 20 (and every 10 after) injects the "write up the reusable lessons and submit them" reminder — the agent does that writing and that submitting, by hand, and the hook itself sends nothing by default; a failed tool call injects a "search before you retry" reminder built from the error text, and only with `MISAKANET_HOOK_FETCH=1` (off by default) does the hook itself send that error text as a search query. Claude Code only today — Codex's user-level hook shape is unconfirmed and OpenClaw's events are unverified, so those two work from the rules block, and `--verify` says so per target instead of implying otherwise |
 
@@ -47,11 +54,14 @@ dsh takes its MCP servers from a **plugin bundle**, not from a JSON file. Its in
 chain: **`$DSH_HOME/AGENTS.md`** (user-global, default `~/.dsh/AGENTS.md`, applies to every session)
 first, then the project's `AGENTS.md`/`CLAUDE.md` from the project root down to the working directory
 (`@deepseek-ai/dsh-agent-instructions`, byte-budgeted at 65,536 by default). It has no Claude-Code-style
-hooks. So the two commands are:
+hooks.
+
+So dsh takes **two manual steps that do not know about each other**, and this installer does neither of
+them — it writes no file under `~/.dsh`:
 
 ```bash
-dsh plugin --profile web add misakanet   # ① the tools (mcp__misakanet__*)
-# ② put the rules block in ~/.dsh/AGENTS.md (global) or the project's AGENTS.md
+dsh plugin --profile web add misakanet   # ① the tools (mcp__misakanet__*) — dsh's own command
+# ② you paste the rules block into ~/.dsh/AGENTS.md (global) or the project's AGENTS.md
 ```
 
 Measured 2026-10-17: writing `~/.dsh/AGENTS.md` is picked up as `user-global` instructions on the next
@@ -59,13 +69,41 @@ message, with no restart.
 
 Measured 2026-10-17: installing the current `misakanet` takes ~1s into `~/.dsh/profiles/web`; the plugin's
 `index.js` mounts the MCP client and `lib/client.js` is the web panel — **neither injects a rule**,
-which is why ② is a separate, manual step. Full guide: `docs/integrations/dsh.md`.
+which is why ② is a separate, manual step.
+
+**Upgrading the installer does not refresh that block.** Nothing rewrites text you pasted, and the
+installer only refreshes the files it manages (for Claude Code, `~/.claude/CLAUDE.md`). Measured
+2026-10-23 (issue #3773): one machine's `~/.dsh/AGENTS.md` still carried the old block — its last line
+read `脱敏：密钥/凭据→<REDACTED>…` — while the same installer had just written the current one
+(`脱敏：已由代码自动完成…`) to `~/.claude/CLAUDE.md`. Re-paste after an upgrade, and check by comparing
+that line; the copy in `docs/integrations/dsh.md` can lag too.
+
+**Uninstalling takes two steps, and the second one is yours.** `dsh plugin --profile web remove misakanet`
+removes the tools; the rules block stays in `~/.dsh/AGENTS.md` (or the project's `AGENTS.md`), and there is
+no `misakanet:start` / `misakanet:end` marker to lift it — the installer never put one there, because it
+never wrote that file. Remove the block by hand, then check:
+
+```bash
+grep -c misakanet "${DSH_HOME:-$HOME/.dsh}/AGENTS.md"   # expected 0; a missing file errors, which is also clean
+```
+
+Until the block is removed, a new dsh session still follows it and calls `mcp__misakanet__*` tools that
+no longer exist.
+
+**Why it is not mechanised yet.** dsh's MCP servers come from the plugin bundle and its instructions come
+from the `AGENTS.md` chain — two entry points this installer has no path into: it only writes the files on
+its own target list, and dsh's files are not on it. A mechanical fix (a marker pair around the block, plus
+an uninstall branch) **is not implemented; it is follow-up work**. Until then,
+`dsh plugin --profile web remove misakanet` does not take the block with it.
+
+Full guide: `docs/integrations/dsh.md`.
 
 ## Flags
 
 ```bash
 npx @misaka-net/misakanet-setup --dry-run     # show what would change, write nothing
-npx @misaka-net/misakanet-setup --verify      # READY / NOT READY, installed version, and the fix for each gap
+npx @misaka-net/misakanet-setup --verify      # READY / NOT READY / could not verify, installed version,
+                                             #  and the fix for each gap (exit codes: 0 / 1 / 2)
                                              # two sections, two questions: 端点/可用性 (can you use it — the
                                              #  endpoint answers) and 安装完整性 (are the files we prefer
                                              #  written); one failing does not condemn the other, and a file
@@ -104,18 +142,22 @@ npx @misaka-net/misakanet-setup --uninstall   # remove exactly what it added
 
 `--report` alone **always exits 0** when it prints a report, and that is deliberate: the report is
 evidence meant to be pasted into an issue or a CI log, and a nonzero exit there turns "collect the
-evidence" into a failing step. The gate is the opt-in `--strict` form (alias: `--ci`), which prints
-the *same* YAML and then judges it:
+evidence" into a failing step. The gates are the opt-in `--strict` form (alias: `--ci`) and
+`--verify`, which print the same evidence and then use the same three codes:
 
-| code | `--report --strict` (and `--report-json --strict`) | meaning |
+| code | `--verify` / `--report --strict` | meaning |
 |---|---|---|
-| `0` | READY | the report says `verify: READY` **and** `open-items: 0` |
-| `1` | NOT READY | `verify: NOT READY` — including when `open-items > 0`; the report lists one line per open item, each with its fix |
-| `2` | could not run | the report could not be produced at all (the tool failed instead of judging). This is **not** a verdict about your machine: on `2` there is no report at all (neither YAML nor JSON), only a one-line reason on stderr |
+| `0` | READY | the endpoint handshake succeeded (`endpoint-tools` > 0) **and** `open-items: 0` |
+| `1` | NOT READY | a **machine** problem: no supported assistant was detected at all (so nothing was installed), our files are missing or unwritable, an MCP entry points at the wrong URL, or the endpoint really is `unreachable` / `non-mcp` |
+| `2` | could not verify | the tool could **not give a machine verdict**: the probe was a `timeout` or `inconclusive-proxy` (a proxy is configured that this Node does not use), or the report could not be produced at all (the CLI crashed). With `--report --strict` the YAML/JSON is still printed first — `endpoint-probe` says which doubt it was — and only the exit code changes. A crash prints no report at all, only a one-line reason on stderr |
+
+`1` versus `2` is the difference between "fix the machine" and "fix the network/the tool": a
+timeout or an unusable proxy says nothing about whether this machine is installed correctly, so it
+must not be reported as `1` (that sends people to debug a working install) and must not be `0`
+either (a script reads `0` as READY). `--report` alone stays `0` in all three cases.
 
 The convention is the repository-wide one (`0 = fine, 1 = found problems, 2 = could not run`, same as
-`scripts/check_workflow_scripts.py`), so a CI step can tell "the environment is unhealthy" (fix the
-machine) from "the checker broke" (fix the checker).
+`scripts/check_workflow_scripts.py`).
 
 The last two fields of the report, `tools-visible` and `live-call-evidence`, are **blank fields a
 human fills in afterwards** — they are never read back by the tool and **never influence the exit
@@ -222,9 +264,11 @@ curl -sS https://misakanet.org/mcp -H 'Accept: application/json' \
 ```
 
 `endpoint-probe: inconclusive-proxy` in `--report` means exactly this: a proxy is configured, this
-process could not use it, so the `endpoint-reachable` boolean above it says nothing. `--strict` /
-`--ci` still fail in that case — a gate that cannot tell must not pass silently. If your proxy also
-intercepts TLS, add `NODE_USE_SYSTEM_CA=1`.
+process could not use it, so the `endpoint-reachable` boolean above it says nothing. `--verify` and
+`--strict` / `--ci` then exit **2** ("could not verify") — not `0` (a script reads that as READY)
+and not `1` (that would send you to fix a machine that may be perfectly fine; `--verify` itself
+still tells you whether the installed files are complete). If your proxy also intercepts TLS, add
+`NODE_USE_SYSTEM_CA=1`.
 
 The Python installer (`integrations/agent-autostart/install_misakanet_agent.py`) needs none of this:
 it uses `urllib`, which honours the proxy environment variables by default.

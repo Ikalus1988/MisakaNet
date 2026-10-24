@@ -63,7 +63,7 @@ HOOK_FILE_MJS = HERE / "checkpoint_reminder.mjs"  # the Node implementation (pre
 # The agents this knows how to configure. `detect` is a path that only exists when the
 # agent is actually installed here; everything else hangs off HOME.
 AGENTS = ("claude", "codex", "hermes", "openclaw", "codewhale",
-          "cursor", "gemini", "copilot", "opencode", "kiro", "dsh")
+          "cursor", "gemini", "copilot", "opencode", "kiro", "mcode", "dsh")
 
 
 def _force_utf8_io() -> None:
@@ -462,6 +462,98 @@ def install_mcp_only(home: Path, dry: bool, rep: Report, agent: str) -> None:
     rep.needs_manual(f"{spec['label']}: {spec['manual']}")
 
 
+# ── MiniMax Code (mcode): a plugin directory, not a config file ────────────────────────────────
+#
+# Three facts from issue #3777 decide this target, and none is guessable from the clients above:
+#
+#   * mcode does not read a user-level MCP config — `~/.minimax/config.yaml`'s `mcpServers` is
+#     ignored, so an entry there would look installed and register nothing;
+#   * it *does* read a **plugin directory** whose manifest is a Claude Code plugin manifest
+#     (`~/.minimax/plugins/misakanet/.claude-plugin/plugin.json`, source `LOCAL_CLAUDE`), which is
+#     what makes `mcode plugin list` show `misakanet@local enabled`;
+#   * `mcode plugin add misakanet@local` answers `LOCAL_PLUGIN_INSTALL_UNSUPPORTED` — its refusal to
+#     *link* a local plugin, not evidence that the plugin is missing. This installer runs no CLI, so
+#     the directory itself is the whole install.
+#
+# Rules are ordinary `AGENTS.md`: `~/.minimax/AGENTS.md` is its global scope (every session). There
+# is no hook mechanism, so nothing here pretends a checkpoint exists. The proxy caveat cannot be
+# fixed from here: mcode budgets ~2000ms for HTTP MCP discovery and Node's fetch ignores proxy
+# variables unless NODE_USE_ENV_PROXY=1 — see docs/integrations/mcode.md.
+MCODE_PLUGIN_REL = (".minimax", "plugins", "misakanet", ".claude-plugin", "plugin.json")
+MCODE_RULES_REL = (".minimax", "AGENTS.md")
+MCODE_DESCRIPTION = ("MisakaNet failure memory: search evidence-rated failure lessons before "
+                     "re-debugging, and turn new failures into shared knowledge.")
+
+
+def mcode_plugin_path(home: Path) -> Path:
+    return home.joinpath(*MCODE_PLUGIN_REL)
+
+
+def mcode_plugin_doc(home: Path) -> dict:
+    """The manifest to write — same shape as the npm installer's, from this channel's own facts.
+
+    `version` is the *installer's* own version, which differs by channel on purpose (npm ships
+    `packages/misakanet-setup`'s version, this route ships the checkout's). mcode treats it as
+    informational and the two installers identify their manifest by `name` + `mcpServers`, so a
+    machine that switches channels rewrites this one field and nothing else. It is omitted — not
+    faked — when the bootstrap route runs outside a clone (`curl … | bash`), where
+    `_installer_version()` is empty; a number nothing maintains is the defect #1820 was about.
+    """
+    headers = _context_headers("mcode", home)
+    token = _read_token(home)
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    doc: dict = {"name": "misakanet", "description": MCODE_DESCRIPTION}
+    version = _installer_version()
+    if version:
+        doc["version"] = version
+    doc["mcpServers"] = {"misakanet": {"type": "http", "url": ENDPOINT, "headers": headers}}
+    return doc
+
+
+def install_mcode(home: Path, dry: bool, rep: Report) -> None:
+    """Write the plugin manifest, then the rules block in its global `AGENTS.md`.
+
+    The manifest may not be ours (a plugin directory is a user-owned space), so an existing file
+    with a different name — or one that is not JSON — is *preserved* and reported as a manual step.
+    Overwriting it would delete someone else's plugin to install ours. Idempotent by comparing the
+    parsed document, so an editor that reordered keys is not a change.
+    """
+    plugin = mcode_plugin_path(home)
+    wanted = mcode_plugin_doc(home)
+    if plugin.exists():
+        try:
+            current = json.loads(plugin.read_text(encoding="utf-8"))
+        except Exception as exc:
+            rep.needs_manual(f"MiniMax Code: {plugin} 不是合法 JSON（{exc}）→ 已原样保留；"
+                             "请手动修正或删掉它，再重跑本命令")
+            return
+        if not isinstance(current, dict) or current.get("name") != "misakanet":
+            name = current.get("name") if isinstance(current, dict) else None
+            rep.needs_manual(f"MiniMax Code: {plugin} 已存在且不是本安装器写的（name={name!r}）→ "
+                             "已原样保留；要装 MisakaNet 请先把这个插件目录移走，再重跑本命令")
+            return
+        if current == wanted:
+            rep.ok(f"MiniMax Code: 插件清单已是目标内容（无改动）→ {plugin}")
+        else:
+            backup(plugin, dry)
+            write_text(plugin, json.dumps(wanted, indent=2, ensure_ascii=False) + "\n", dry)
+            rep.ok(f"MiniMax Code: {'会更新插件清单' if dry else '更新插件清单'} → {plugin}")
+    else:
+        write_text(plugin, json.dumps(wanted, indent=2, ensure_ascii=False) + "\n", dry)
+        rep.ok(f"MiniMax Code: {'会写入插件清单' if dry else '写入插件清单'} → {plugin}")
+
+    rules = home.joinpath(*MCODE_RULES_REL)
+    status = inject_block(rules, prompt_block(), dry)
+    rep.ok(f"MiniMax Code: 规则块 {status} → {rules}")
+    rep.skip("MiniMax Code: 没有 Claude Code 那种钩子（mcode 没有 hook 机制）→ 规则块在 "
+             "~/.minimax/AGENTS.md（每个会话生效），自动沉淀那一步做不到")
+    rep.needs_manual("MiniMax Code: 重启后跑 `mcode plugin list` 复核（应显示 misakanet@local "
+                     "enabled）；公司代理下还要设 NODE_USE_ENV_PROXY=1 —— 它的 HTTP MCP 发现预算约 "
+                     "2000ms，不设会表现为\"装上了但 0 个工具\"（`mcode plugin add` 报 "
+                     "LOCAL_PLUGIN_INSTALL_UNSUPPORTED 不是失败，插件目录在位即为生效）")
+
+
 def detect(home: Path, agent: str) -> bool:
     checks = {
         # cc-haha / claude-haha is a Claude Code fork that reads ~/.claude (its adapters
@@ -473,6 +565,9 @@ def detect(home: Path, agent: str) -> bool:
         "openclaw": [home / ".openclaw"],
         "codewhale": [home / ".codewhale"],
         **{a: [home / s["detect"]] for a, s in MCP_ONLY_TARGETS.items()},
+        # Both names are in circulation: `~/.minimax` is the current directory, `~/.minimax-code`
+        # the older one some installs still have (issue #3777).
+        "mcode": [home / ".minimax", home / ".minimax-code"],
         "dsh": [home / ".dsh", home / ".agents"],
     }
     return any(p.exists() for p in checks[agent])
@@ -1020,7 +1115,23 @@ def verify(home: Path, endpoint: str, rep: Report) -> bool:
             ok &= bool(entry)
             (rep.ok if entry else rep.needs_manual)(
                 f"{spec['label']}: MCP 注册 {'✓' if entry else '✗ 缺失'}（{cfg}）")
+        if agent == "mcode":
+            # Two facts, not one: the manifest registers the endpoint, the rules block makes the
+            # agent use it. `mcode plugin add` refuses local plugins on purpose, so its exit code is
+            # evidence of nothing — the directory is what this reads.
+            plugin = mcode_plugin_path(home)
+            entry = None
+            if plugin.exists():
+                try:
+                    entry = (json.loads(plugin.read_text(encoding="utf-8")).get("mcpServers")
+                             or {}).get("misakanet")
+                except Exception:
+                    entry = None
+            ok &= bool(entry)
+            (rep.ok if entry else rep.needs_manual)(
+                f"MiniMax Code: 插件清单 {'✓' if entry else '✗ 缺失'}（{plugin}）")
         rules = {"codex": home / ".codex" / "AGENTS.md", "hermes": home / ".hermes" / "SOUL.md",
+                 "mcode": home.joinpath(*MCODE_RULES_REL),
                  "dsh": home / ".agents" / "skills" / "misakanet" / "SKILL.md"}.get(agent)
         if agent == "codewhale":
             whale_dirs = [d for d in codewhale_projects(home) if d.is_dir()]
@@ -1138,6 +1249,7 @@ INSTALLERS = {
     "openclaw": install_openclaw,
     "codewhale": install_codewhale,
     **{a: partial(install_mcp_only, agent=a) for a in MCP_ONLY_TARGETS},
+    "mcode": install_mcode,
     "dsh": install_dsh,
 }
 
@@ -1148,6 +1260,7 @@ def uninstall(home: Path, dry: bool, rep: Report) -> None:
         home / ".claude" / "CLAUDE.md",
         home / ".codex" / "AGENTS.md",
         home / ".hermes" / "SOUL.md",
+        home.joinpath(*MCODE_RULES_REL),
         home / ".agents" / "skills" / "misakanet" / "SKILL.md",
     ]
     for path in targets:
@@ -1158,6 +1271,14 @@ def uninstall(home: Path, dry: bool, rep: Report) -> None:
             if not dry:
                 path.unlink()
             rep.ok(f"删除只剩空白的规则文件 → {path}")
+    # MiniMax Code's plugin directory is ours outright (we create it), so uninstall takes the whole
+    # subtree back — only *our* directory: `~/.minimax/plugins/` is the user's namespace and stays
+    # even when it ends up empty, because their other plugins live there.
+    mcode_dir = home / ".minimax" / "plugins" / "misakanet"
+    if mcode_dir.is_dir():
+        if not dry:
+            shutil.rmtree(mcode_dir)
+        rep.ok(f"移除插件目录 → {mcode_dir}")
     whale_cfg = home / ".codewhale" / "mcp.json"
     if whale_cfg.exists():
         try:

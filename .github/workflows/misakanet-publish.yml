@@ -106,6 +106,15 @@ concurrency:
 
 jobs:
   publish:
+    # `on: release` fires for *every* release, including the installer's (`misakanet-setup-v*`).
+    # This job publishes the root `misakanet` package, and its version guard compares the release
+    # tag with the root `package.json` — so a setup Release would fail that guard and turn this
+    # pipeline red for a package it does not own. The automatic setup Release is created with
+    # GITHUB_TOKEN and fires no event; a human backfill (or a UI "publish release") uses a user
+    # token and does. Only the root line's `v*` tags are this job's business.
+    if: >-
+      github.event_name != 'release' ||
+      startsWith(github.event.release.tag_name, 'v')
     # Secrets live in the `release` environment, not at repository level: they are publish and
     # deploy credentials, and environment secrets can carry protection rules — a branch policy today,
     # and "required reviewers" as soon as it is switched on, which is what stops a workflow that has

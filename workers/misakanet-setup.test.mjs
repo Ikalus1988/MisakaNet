@@ -44,6 +44,32 @@ function makeHome({ codex = true, claude = true } = {}) {
 }
 
 /**
+ * A home with every config the installer writes an `X-MisakaNet-Client` header into (#3772).
+ *
+ * One target per syntax the header has to survive: JSON (Claude, OpenClaw, Cursor), TOML (Codex —
+ * inside its one-line `http_headers` table, so the value is not at the start of a line) and YAML
+ * (Hermes). Codewhale is deliberately absent: its entry has no custom-header field, so it never
+ * carries this header and must not be part of the inheritance contract.
+ *
+ * The token is pre-seeded so a run that is *not* `--no-register` still skips the network — this is
+ * what lets the test run the same code path that mints/adopts an id without a stub server.
+ */
+function makeHeaderHome() {
+  const home = makeHome();
+  mkdirSync(join(home, '.hermes'), { recursive: true });
+  writeFileSync(join(home, '.hermes', 'config.yaml'), 'model: x\n');
+  mkdirSync(join(home, '.openclaw'), { recursive: true });
+  writeFileSync(join(home, '.openclaw', 'openclaw.json'), JSON.stringify({ mcp: { servers: {} } }));
+  mkdirSync(join(home, '.cursor'), { recursive: true });
+  writeFileSync(join(home, '.cursor', 'mcp.json'), JSON.stringify({ mcpServers: {} }));
+  // mcode is a fourth shape (a plugin manifest) and the one target whose file is not a user config.
+  mkdirSync(join(home, '.minimax'), { recursive: true });
+  mkdirSync(join(home, '.misakanet-agent'), { recursive: true });
+  writeFileSync(join(home, '.misakanet-agent', 'token'), `${TOKEN_SHAPE_OK}\n`);
+  return home;
+}
+
+/**
  * A child environment whose network posture is decided here, not inherited.
  *
  * The CLI reads HTTPS_PROXY / HTTP_PROXY / NO_PROXY and, when it finds any, deliberately stops
@@ -189,6 +215,11 @@ test('installs all three pieces for Claude Code and Codex', () => {
 });
 
 test('is idempotent: a second run changes nothing', () => {
+  // Scope, stated because this test was mistaken for full coverage (#3776): `runOffline` passes
+  // `--no-register`, so ensureIdentity() never runs, no client id is ever minted and no config ever
+  // receives `X-MisakaNet-Client`. It proves the rules blocks and the MCP entry are stable; it
+  // cannot see the header drift that made a *registering* re-run rewrite every file. The two tests
+  // below cover that path — offline with a seeded token, and the full registration chain.
   const home = makeHome();
   runOffline(home);
   const first = snapshot(home);
@@ -196,6 +227,101 @@ test('is idempotent: a second run changes nothing', () => {
   assert.equal(second.status, 0);
   assert.deepEqual(snapshot(home), first, 'second run must be a no-op');
   assert.match(second.stdout, /无改动|已存在/, second.stdout);
+});
+
+test('a re-run with no id keeps the header the configs already declare (issue #3772)', () => {
+  // The measured failure: run 1 mints/receives `setup-fixed-0001`, writes it into every config and
+  // does not persist it anywhere else; run 2 has no explicit id and no state file, so the old
+  // mcpHeaders() omitted the header, every entry compared unequal, and all five files were
+  // rewritten — the header silently deleted while run 2 still reported success.
+  const home = makeHeaderHome();
+  const first = run(home, '--only', 'claude,codex,hermes,openclaw,cursor,mcode', '--client-id', 'setup-fixed-0001');
+  assert.equal(first.status, 0, first.stdout + first.stderr);
+
+  // One target per syntax: JSON, TOML (inline table), YAML, and a plugin manifest. A missed call
+  // site shows up as exactly one of these missing, which is why they are asserted one by one.
+  const files = {
+    claude: '.claude.json',
+    codex: '.codex/config.toml',
+    hermes: '.hermes/config.yaml',
+    openclaw: '.openclaw/openclaw.json',
+    cursor: '.cursor/mcp.json',
+    mcode: '.minimax/plugins/misakanet/.claude-plugin/plugin.json',
+  };
+  for (const [agent, rel] of Object.entries(files)) {
+    assert.match(readFileSync(join(home, rel), 'utf8'),
+      /X-MisakaNet-Client["']?\s*[:=]\s*["']?setup-fixed-0001/,
+      `${agent}: the first run must write the explicit id into ${rel}`);
+  }
+
+  const before = snapshot(home);
+  // No --client-id this time. The only remaining source is the header already in each file, and
+  // the first target to read one must hand it to the rest (one machine, one identity).
+  // mcode first this time: the adoption has to work from *its* manifest too, not only from
+  // whichever file happened to be read first. (A target that drops the header is caught either way,
+  // but only the order makes each one prove it can be the first reader.)
+  const second = run(home, '--only', 'mcode,claude,codex,hermes,openclaw,cursor');
+  assert.equal(second.status, 0, second.stdout + second.stderr);
+  assert.deepEqual(snapshot(home), before, 'a re-run with no id must be byte-identical');
+  assert.match(second.stdout, /本次实际写入 0 个文件/,
+    'the count line must be printed even when it is 0 (#3775)');
+  assert.ok(second.stdout.includes('这台机器的身份编号是 setup-fixed-0001'),
+    'the adopted id is reported instead of being buried in a config (#3772)');
+
+  // #3775's boundary: the line is install-mode progress, so `--dry-run` keeps saying "nothing
+  // written" in its own words rather than restating a 0 that was never attempted.
+  const dry = run(home, '--only', 'cursor', '--dry-run');
+  assert.doesNotMatch(dry.stdout, /本次实际写入/);
+});
+
+test('a registering re-run reuses the minted id and writes nothing (issues #3772, #3776)', async () => {
+  // The full chain: registration mints `setup-<uuid>` (the one source no offline test can reach),
+  // the id reaches all configs, and the second run — whose ensureIdentity() returns early because
+  // the token exists — must recover that id from the config it is about to rewrite instead of
+  // deleting the header and reporting every file as fresh.
+  const { createServer } = await import('node:http');
+  const server = createServer((req, res) => {
+    let body = '';
+    req.on('data', (chunk) => { body += chunk; });
+    req.on('end', () => {
+      const payload = JSON.parse(body || '{}');
+      const result = payload.method === 'tools/list'
+        ? { tools: [{ name: 'misakanet_search' }, { name: 'misakanet_get_lesson' }] }
+        : payload.params?.name === 'misakanet_register'
+          ? { node_id: 'MisakaTEST', token: TOKEN_SHAPE_OK }
+          : { results: [{ id: 'stub', type: 'lesson' }] };
+      const reply = JSON.stringify({ jsonrpc: '2.0', id: 1, result: {
+        content: [{ type: 'text', text: JSON.stringify(result) }], structuredContent: result } });
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(reply);
+    });
+  });
+  await new Promise((done) => server.listen(0, '127.0.0.1', done));
+  const url = `http://127.0.0.1:${server.address().port}/mcp`;
+  const env = childEnv({ MISAKANET_ENDPOINT: url });
+
+  try {
+    const home = makeHome();
+    const first = await runAsync(home, env);
+    assert.equal(first.status, 0, first.stdout + first.stderr);
+
+    const minted = JSON.parse(readFileSync(join(home, '.claude.json'), 'utf8'))
+      .mcpServers.misakanet.headers['X-MisakaNet-Client'];
+    assert.match(minted, /^setup-/, 'the first run mints the identity it declares');
+    assert.ok(readFileSync(join(home, '.codex', 'config.toml'), 'utf8')
+      .includes(`X-MisakaNet-Client = "${minted}"`), 'both targets start out agreeing');
+
+    const before = snapshot(home);
+    const second = await runAsync(home, env);
+    assert.equal(second.status, 0, second.stdout + second.stderr);
+    assert.deepEqual(snapshot(home), before,
+      'a registering re-run must not rewrite a single file');
+    assert.match(second.stdout, /本次实际写入 0 个文件/, second.stdout);
+    assert.ok(second.stdout.includes(`这台机器的身份编号是 ${minted}`),
+      'the reused identity is still reported to the user');
+  } finally {
+    server.close();
+  }
 });
 
 test('dry-run writes nothing at all', () => {
@@ -791,6 +917,198 @@ test('cursor: idempotent — a second run changes nothing', () => {
   }
 });
 
+// ── MiniMax Code (mcode): a plugin directory, not a config file (issue #3777) ──────────────────
+//
+// mcode is the one target whose "MCP config" is not a user config file: it reads plugin directories,
+// and `~/.minimax/config.yaml`'s `mcpServers` is ignored. So the assertions here are about a
+// *directory* (the manifest mcode reads as source `LOCAL_CLAUDE`) plus the one rules file that gives
+// it a behaviour layer — and about the two things that are absent on purpose: no hook, and no
+// overwrite of a manifest that is not ours.
+const MCODE_PLUGIN = '.minimax/plugins/misakanet/.claude-plugin/plugin.json';
+const MCODE_RULES = '.minimax/AGENTS.md';
+
+function makeMcodeHome() {
+  const home = mkdtempSync(join(tmpdir(), 'mn-mcode-'));
+  // Detection is "~/.minimax exists": the CLI's own directory, which the installer does not create
+  // on a machine that does not have mcode.
+  mkdirSync(join(home, '.minimax'), { recursive: true });
+  return home;
+}
+
+test('mcode: writes the plugin manifest and the global rules block', () => {
+  const home = makeMcodeHome();
+  try {
+    const result = runOffline(home, '--only', 'mcode');
+    assert.equal(result.status, 0, result.stdout + result.stderr);
+
+    const plugin = JSON.parse(readFileSync(join(home, MCODE_PLUGIN), 'utf8'));
+    // The manifest shape is what mcode reads; `name` is also the installer's ownership marker.
+    assert.equal(plugin.name, 'misakanet');
+    assert.equal(typeof plugin.version, 'string', 'the installer version is recorded on the manifest');
+    assert.equal(plugin.mcpServers.misakanet.type, 'http');
+    assert.equal(plugin.mcpServers.misakanet.url, 'https://misakanet.org/mcp');
+    assert.equal(plugin.mcpServers.misakanet.headers['X-MisakaNet-Agent'], 'mcode');
+
+    const rules = readFileSync(join(home, MCODE_RULES), 'utf8');
+    assert.match(rules, /<!-- misakanet:start -->/, 'the rules block must be marked for uninstall');
+    assert.match(rules, /misakanet_search/, 'the block is what makes the agent search on its own');
+
+    // The honesty half: mcode has no hook mechanism, and the run must say so instead of implying a
+    // checkpoint was installed.
+    assert.match(result.stdout, /没有 Claude Code 那种钩子/, result.stdout);
+    // The two runtime facts a file cannot carry: the plugin-list criterion and the proxy caveat.
+    assert.match(result.stdout, /mcode plugin list/, result.stdout);
+    assert.match(result.stdout, /NODE_USE_ENV_PROXY=1/, result.stdout);
+    assert.match(result.stdout, /LOCAL_PLUGIN_INSTALL_UNSUPPORTED/, result.stdout);
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test('mcode: idempotent — a second run changes nothing, byte for byte', () => {
+  const home = makeMcodeHome();
+  try {
+    assert.equal(runOffline(home, '--only', 'mcode').status, 0);
+    const plugin = readFileSync(join(home, MCODE_PLUGIN), 'utf8');
+    const rules = readFileSync(join(home, MCODE_RULES), 'utf8');
+
+    const second = runOffline(home, '--only', 'mcode');
+    assert.equal(second.status, 0, second.stdout + second.stderr);
+    assert.match(second.stdout, /插件清单已是目标内容（无改动）/, second.stdout);
+    assert.match(second.stdout, /规则块 unchanged/, second.stdout);
+    assert.match(second.stdout, /本次实际写入 0 个文件/, second.stdout);
+    assert.equal(readFileSync(join(home, MCODE_PLUGIN), 'utf8'), plugin);
+    assert.equal(readFileSync(join(home, MCODE_RULES), 'utf8'), rules);
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test('mcode: --mcp-only writes the manifest and no rules block', () => {
+  const home = makeMcodeHome();
+  try {
+    const result = runOffline(home, '--only', 'mcode', '--mcp-only');
+    assert.equal(result.status, 0, result.stdout + result.stderr);
+    assert.ok(existsSync(join(home, MCODE_PLUGIN)), 'tier ① is the plugin manifest');
+    assert.ok(!existsSync(join(home, MCODE_RULES)), '--mcp-only must not write the rules block');
+    assert.match(result.stdout, /规则块未写/, result.stdout);
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test('mcode: --list-writes names both files, with the tiers they belong to', () => {
+  const home = makeMcodeHome();
+  try {
+    const before = snapshot(home);
+    const result = runOffline(home, '--list-writes', '--only', 'mcode');
+    assert.equal(result.status, 0, result.stdout + result.stderr);
+    assert.deepEqual(snapshot(home), before, '--list-writes must be a pure read');
+
+    const rows = result.stdout.split('\n').filter((line) => line.startsWith('tier'));
+    // The manifest prints the platform's own separators (Windows: `~\.minimax\...`); compare in
+    // one dialect so a red test means "the path is wrong", not "the runner happens to be Windows".
+    const posix = (text) => text.replaceAll('\\', '/');
+    const pluginRow = rows.find((row) => posix(row).includes('.minimax/plugins/misakanet/.claude-plugin/plugin.json'));
+    const rulesRow = rows.find((row) => posix(row).includes('.minimax/AGENTS.md'));
+    assert.ok(pluginRow, `the plugin manifest is missing from the manifest:\n${result.stdout}`);
+    assert.ok(rulesRow, `the rules file is missing from the manifest:\n${result.stdout}`);
+    assert.ok(pluginRow.startsWith('tier1'), `the endpoint registration is tier ①: ${pluginRow}`);
+    assert.ok(rulesRow.startsWith('tier2'), `the rules block is tier ②: ${rulesRow}`);
+    // A permission to "add an MCP server" is not a permission to change behaviour, which is the
+    // whole point of separating the tiers.
+    assert.match(rulesRow, /规则块/, rulesRow);
+    // mcode has no hook mechanism: tier ③ is the state directory, so the approval line must not
+    // tell the operator they are approving hooks (#3777 follow-up).
+    assert.doesNotMatch(result.stdout, /③ 装钩子/);
+    assert.match(result.stdout, /③ 钩子\/状态目录/);
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test('mcode: --list-writes --mcp-only does not ask for the rules block', () => {
+  const home = makeMcodeHome();
+  try {
+    const result = runOffline(home, '--list-writes', '--mcp-only', '--only', 'mcode');
+    assert.equal(result.status, 0, result.stdout + result.stderr);
+    const rows = result.stdout.split('\n').filter((line) => line.startsWith('tier'));
+    assert.ok(rows.some((row) => row.includes('plugin.json')), result.stdout);
+    assert.ok(!rows.some((row) => row.includes('.minimax/AGENTS.md')),
+      `--mcp-only must not ask for tier ②:\n${result.stdout}`);
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test('mcode: uninstall takes back both files and leaves no shell of its own', () => {
+  const home = makeMcodeHome();
+  try {
+    const before = snapshot(home);
+    assert.equal(runOffline(home, '--only', 'mcode').status, 0);
+    const removed = runOffline(home, '--uninstall');
+    assert.equal(removed.status, 0, removed.stdout + removed.stderr);
+
+    // The documented backups are the only things allowed to survive.
+    assert.deepEqual(withoutBackups(snapshot(home)), before,
+      'uninstall must hand a bare home back exactly; left: ' + JSON.stringify(withoutBackups(snapshot(home))));
+    assert.ok(!existsSync(join(home, '.minimax', 'plugins', 'misakanet')),
+      'our plugin directory must be gone');
+    assert.ok(existsSync(join(home, '.minimax', 'plugins')),
+      'the user\'s plugins/ namespace is not ours to delete, even when it ends up empty');
+    assert.ok(existsSync(join(home, '.minimax')), '~/.minimax is the CLI\'s directory, not ours');
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test('mcode: verify reads the manifest and the rules block, and names a missing manifest', () => {
+  const home = makeMcodeHome();
+  try {
+    assert.equal(runOffline(home, '--only', 'mcode').status, 0);
+
+    const verify = run(home, '--verify');
+    assert.match(verify.stdout, /MiniMax Code：插件清单已注册/, verify.stdout);
+    assert.match(verify.stdout, /MiniMax Code：规则块已装/, verify.stdout);
+    assert.notEqual(verify.status, 0, 'a dead endpoint is still NOT READY');
+
+    // `--report` carries the same facts while the install is intact: mcode is detected, and its
+    // install scope is the endpoint (there is no hook to call it `full`). `install-scope` is judged
+    // from `mcpEntryPresent`, so this line proves the manifest is readable by that path too.
+    const report = run(home, '--report', '--only', 'mcode');
+    assert.match(report.stdout, /^detected-agents: \[mcode\]$/m, report.stdout);
+    assert.match(report.stdout, /^install-scope: mcp-only$/m, report.stdout);
+
+    // The integrity check has to be able to fail: remove the manifest and the same command must
+    // name it instead of reporting the install as complete.
+    rmSync(join(home, MCODE_PLUGIN), { force: true });
+    const broken = run(home, '--verify');
+    assert.match(broken.stdout, /MiniMax Code：插件清单缺失或不是合法 JSON/, broken.stdout);
+    assert.doesNotMatch(broken.stdout, /MiniMax Code：插件清单已注册/, broken.stdout);
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test('mcode: a manifest that is not ours is preserved, not overwritten', () => {
+  const home = makeMcodeHome();
+  const pluginPath = join(home, MCODE_PLUGIN);
+  try {
+    mkdirSync(dirname(pluginPath), { recursive: true });
+    const foreign = `${JSON.stringify({ name: 'someone-else', version: '1.0.0' }, null, 2)}\n`;
+    writeFileSync(pluginPath, foreign);
+
+    const result = runOffline(home, '--only', 'mcode');
+    // A plugin directory is a user-owned space: installing ours must not delete their plugin.
+    assert.equal(readFileSync(pluginPath, 'utf8'), foreign, 'their manifest must be untouched');
+    assert.match(result.stdout, /不是本安装器写的/, result.stdout);
+    assert.ok(!existsSync(join(home, MCODE_RULES)),
+      'no rules block for an install that could not register the endpoint');
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
 test('a machine without Claude Code is not told its hook is missing', () => {
   // The verify block used to run the Claude Code hook checks whenever the hook file existed, so a
   // Codex-only or Cursor-only install reported NOT READY with two complaints about a target that was
@@ -1036,7 +1354,7 @@ test('the User-Agent version is bound to the manifest by a test, not by a file r
   // release pull request bumps it together with the manifest. It is still a tripwire — a version
   // edited **by hand** leaves this line behind and goes red — and without the marker the pin
   // would stay at the old version and every release would be red here instead.
-  assert.equal(declared, '0.6.0', 'the release tooling moves this pin with the version');  // x-release-please-version
+  assert.equal(declared, '0.7.0', 'the release tooling moves this pin with the version');  // x-release-please-version
   // A plain substring, not a RegExp: building a pattern from a value with `.replace(/\./g…)`
   // left backslashes unescaped, which CodeQL correctly reported as incomplete sanitization
   // (js/incomplete-sanitization, high) on the first version of this test.
@@ -1736,6 +2054,173 @@ test('--report --strict exits 0 on a READY machine, and the human fields never g
     assert.match(fields['live-call-evidence'], /^""/, fields['live-call-evidence']);
   } finally {
     server.close();
+  }
+});
+
+// ── #3778: "nothing installed" and "could not verify" must not look like READY ────────────────
+//
+// Three self-contradictions, all reproduced on a home with no agent in it:
+//
+//   * `--verify` said READY / "安装完整性：完整" because every per-agent check was inside a
+//     `detect(...)` guard, so with zero targets not one line ran and `installOk` stayed true;
+//   * `--report` printed `detected-agents: []` next to `install-complete: complete`;
+//   * a probe that timed out, or a proxy this Node cannot use, exited 0 — a READY a script cannot
+//     tell from a healthy machine (the old code only hardened that case under `--strict`).
+//
+// The contract is three codes, and `--verify` and `--report --strict` share it: 0 READY,
+// 1 NOT READY (a machine problem), 2 the tool could not answer (timeout / unverifiable proxy).
+
+/** A home with none of the ten supported agents: the machine the issue was filed from. */
+function makeEmptyHome() {
+  return mkdtempSync(join(tmpdir(), 'mn-empty-'));
+}
+
+test('verify: a home with no supported agent is NOT READY, and says nothing was installed', () => {
+  const home = makeEmptyHome();
+  try {
+    const result = run(home, '--verify');
+    assert.equal(result.status, 1,
+      `an untouched home must not exit 0:\n${result.stdout}${result.stderr}`);
+    assert.match(result.stdout, /没有检测到任何受支持的助手 —— 因此什么都没装/, result.stdout);
+    assert.match(result.stdout, /结论：NOT READY/, result.stdout);
+    assert.doesNotMatch(result.stdout, /安装完整性：完整/,
+      'nothing was installed, so "complete" is the self-contradiction the issue is about');
+    assert.match(result.stdout, /安装完整性：不完整/, result.stdout);
+    // The sentence comes from `AGENTS`, not from a hand-written list: the old one named six of
+    // the ten targets, so Gemini/Copilot/OpenCode/Kiro users were told about a smaller product.
+    for (const label of ['Claude Code', 'Codex', 'Hermes', 'OpenClaw', 'Codewhale',
+                         'Cursor', 'Gemini CLI', 'Copilot CLI', 'OpenCode', 'Kiro']) {
+      assert.ok(result.stdout.includes(label),
+        `the zero-target sentence must name ${label} (generated from AGENTS):\n${result.stdout}`);
+    }
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test('report: zero targets is incomplete + NOT READY + scope none, and --strict exits 1', () => {
+  const home = makeEmptyHome();
+  try {
+    const report = run(home, '--report');
+    assert.equal(report.status, 0, '--report alone keeps exiting 0 (it is evidence, not a gate)');
+    const fields = reportLines(report.stdout);
+    assert.equal(fields['detected-agents'], '[]', report.stdout);
+    assert.equal(fields['install-complete'], 'incomplete',
+      `"detected-agents: []" next to "install-complete: complete" is the contradiction:\n${report.stdout}`);
+    assert.equal(fields.verify, 'NOT READY', report.stdout);
+    assert.equal(fields['install-scope'], 'none', report.stdout);
+    // The install line and the `!` line say the same thing now.
+    assert.match(report.stdout, /没有检测到任何受支持的助手/, report.stdout);
+
+    const strict = run(home, '--report', '--strict');
+    assert.equal(strict.status, 1,
+      `zero targets is a machine verdict, not "could not verify":\n${strict.stdout}${strict.stderr}`);
+    assert.match(strict.stderr, /退出码 1/, strict.stderr);
+
+    // Even when the probe *also* cannot answer, an incomplete install is still a machine verdict:
+    // "nothing was installed" does not become "we could not tell" because the network is unsure.
+    const proxiedEnv = childEnv({ MISAKANET_ENDPOINT: OFFLINE, MISAKANET_REGISTRY_URL: OFFLINE });
+    proxiedEnv.HTTPS_PROXY = 'http://127.0.0.1:3128';
+    proxiedEnv.NO_PROXY = '';
+    const proxied = spawnSync(process.execPath, [CLI, '--home', home, '--report', '--strict'],
+      { encoding: 'utf8', env: proxiedEnv });
+    assert.equal(proxied.status, 1,
+      `2 must not outrank a real machine problem:\n${proxied.stdout}${proxied.stderr}`);
+    assert.match(proxied.stdout, /^endpoint-probe: inconclusive-proxy$/m, proxied.stdout);
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test('verify: an endpoint that accepts but never answers is timeout + exit 2, deterministically', async () => {
+  const { createServer } = await import('node:http');
+  // Headers never sent, body never sent: the request is accepted and then nothing.
+  const server = createServer(() => { /* deliberately no response */ });
+  await new Promise((done) => server.listen(0, '127.0.0.1', done));
+  const url = `http://127.0.0.1:${server.address().port}/mcp`;
+  const home = makeHome();
+  // MISAKANET_PROBE_TIMEOUT_MS is test plumbing: the shipped default stays 6 s, and this proves
+  // the *classification* without spending 18 s inside one assertion.
+  const env = childEnv({ MISAKANET_ENDPOINT: url, MISAKANET_REGISTRY_URL: OFFLINE,
+                         MISAKANET_PROBE_TIMEOUT_MS: '250' });
+  try {
+    const install = await runAsync(home, env, '--no-register');
+    assert.equal(install.status, 0, install.stdout + install.stderr);
+
+    const verify = await runAsync(home, env, '--verify');
+    assert.equal(verify.status, 2,
+      `a timeout is not a machine verdict (0 or 1):\n${verify.stdout}${verify.stderr}`);
+    assert.match(verify.stdout, /端点探测超时/, verify.stdout);
+    assert.match(verify.stdout, /timeout after 250ms/,
+      `the real reason must be printed, not hidden:\n${verify.stdout}`);
+    assert.match(verify.stdout, /没能验证/, verify.stdout);
+    assert.doesNotMatch(verify.stdout, /结论：READY/);
+
+    // Same machine, same probe → same code. The retry pause is fixed on purpose (no random
+    // backoff), so a second run cannot land on a different verdict.
+    const again = await runAsync(home, env, '--verify');
+    assert.equal(again.status, 2, `the probe verdict must be deterministic:\n${again.stdout}`);
+
+    const report = await runAsync(home, env, '--report');
+    assert.equal(report.status, 0, '--report alone still exits 0 in the unverified case');
+    assert.equal(reportLines(report.stdout)['endpoint-probe'], 'timeout', report.stdout);
+    assert.equal(reportLines(report.stdout).verify, 'NOT READY', report.stdout);
+
+    const strict = await runAsync(home, env, '--report', '--strict');
+    assert.equal(strict.status, 2,
+      `--report --strict shares --verify's code, and the report is still printed first:\n${strict.stdout}${strict.stderr}`);
+    assert.match(strict.stdout, /^verify: NOT READY$/m, 'the YAML is printed before the verdict');
+    assert.match(strict.stderr, /退出码 2/, strict.stderr);
+    assert.match(strict.stderr, /endpoint-probe: timeout/, strict.stderr);
+  } finally {
+    server.closeAllConnections?.();
+    server.close();
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test('verify: a 200 that is not MCP is "non-mcp" + exit 1, not "unreachable"', async () => {
+  const { createServer } = await import('node:http');
+  const server = createServer((req, res) => {
+    req.resume();                              // drain the request; we answer regardless of it
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end('{"hello":"world"}');
+  });
+  await new Promise((done) => server.listen(0, '127.0.0.1', done));
+  const url = `http://127.0.0.1:${server.address().port}/mcp`;
+  const home = makeHome();
+  const env = childEnv({ MISAKANET_ENDPOINT: url, MISAKANET_REGISTRY_URL: OFFLINE });
+  try {
+    const install = await runAsync(home, env, '--no-register');
+    assert.equal(install.status, 0, install.stdout + install.stderr);
+
+    const verify = await runAsync(home, env, '--verify');
+    assert.equal(verify.status, 1,
+      `HTTP answered, so this is a machine/address verdict, not "could not verify":\n${verify.stdout}${verify.stderr}`);
+    assert.match(verify.stdout, /响应不是 MCP/, verify.stdout);
+    assert.match(verify.stdout, /hello/, 'the body it actually answered with must be printed');
+    assert.doesNotMatch(verify.stdout, /端点不可达/,
+      'the endpoint answered — reporting it as unreachable is the old lie');
+
+    const report = await runAsync(home, env, '--report');
+    assert.equal(reportLines(report.stdout)['endpoint-probe'], 'non-mcp', report.stdout);
+  } finally {
+    server.closeAllConnections?.();
+    server.close();
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test('--list-writes with no target says "none", not an empty parenthesis', () => {
+  const home = makeEmptyHome();
+  try {
+    const result = run(home, '--list-writes');
+    assert.equal(result.status, 0, result.stdout + result.stderr);
+    assert.match(result.stdout, /本次申请 0 级权限（无/,
+      `the tier sentence must have content: ${result.stdout}`);
+    assert.doesNotMatch(result.stdout, /权限（）/, 'an empty bracket is not an answer');
+  } finally {
+    rmSync(home, { recursive: true, force: true });
   }
 });
 

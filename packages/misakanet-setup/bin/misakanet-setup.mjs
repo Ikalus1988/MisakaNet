@@ -114,7 +114,7 @@ const SILENT = has('--silent');
 const REPORT_JSON = has('--report-json');
 const HOME = resolve(valueOf('--home', homedir()));
 const AGENTS = ['claude', 'codex', 'hermes', 'openclaw', 'codewhale',
-                'cursor', 'gemini', 'copilot', 'opencode', 'kiro'];
+                'cursor', 'gemini', 'copilot', 'opencode', 'kiro', 'mcode'];
 
 const done = [];
 const manual = [];
@@ -157,7 +157,7 @@ function readText(path) {
  * except the two that name the version (measured 2026-10-22: the 0.6.0 release pull request
  * failed 9 e2e legs on exactly that).
  */
-const VERSION = '0.6.0'  // x-release-please-version
+const VERSION = '0.7.0'  // x-release-please-version
 
 /**
  * The shape of a client id, in one place.
@@ -185,7 +185,7 @@ const FLAGS = [
   ['--silent', '只压掉进度叙述，绝不压掉 ! 行与报告（MDM/GPO 用）'],
   ['--report', '打印一段可公开粘贴的脱敏状态报告（人读 YAML）'],
   ['--report-json', '同一份报告的 JSON 编码'],
-  ['--strict', '配合 --report：NOT READY 时退出码 1（默认仍退 0）'],
+  ['--strict', '配合 --report：NOT READY 时退出码 1，没能验证（探测超时/代理）时 2（默认仍退 0）'],
   ['--ci', '= --report --strict'],
   ['--verify', '自检：端点可达、钩子、MCP 注册、版本新旧'],
   ['--uninstall', '移除本安装器写入的内容（保留 .misakanet.bak 备份）'],
@@ -206,8 +206,9 @@ function printHelp() {
 
 ${FLAGS.map(([flag, desc]) => `  ${flag.padEnd(16)} ${desc}`).join('\n')}
 
-退出码（安装模式）：0 至少装上了一个助手 / 1 什么都没装上 / 2 自己跑不起来。
-健康检查用 --verify 或 --report --strict，不要看安装模式的退出码。`);
+退出码（三档，--verify 与 --report --strict 相同）：0 READY / 1 NOT READY（机器问题）/
+  2 没能验证（工具给不出机器判定：探测超时、代理不可信，或报告没生成）。
+安装模式：0 至少装上了一个助手 / 1 什么都没装上 / 2 自己跑不起来。`);
 }
 
 if (has('--help') || has('-h')) {
@@ -425,6 +426,86 @@ const MCP_ONLY_TARGETS = {
 };
 
 /**
+ * Display names for every target, derived from the two lists that already define them.
+ *
+ * Why a table: the "no supported assistant was found" sentence used to spell out six names by
+ * hand (`Claude Code / Codex / Hermes / OpenClaw / Codewhale / Cursor`) while `AGENTS` had grown
+ * to ten — so a machine with none of the six was told about a smaller product than the one it was
+ * running, and Gemini/Copilot/OpenCode/Kiro users could not recognise themselves in it (#3778).
+ * The five MCP-only labels are read from `MCP_ONLY_TARGETS` rather than typed a second time, and
+ * `supportedAgentLabels()` falls back to the id if a future target is added without a label — an
+ * unlabelled target is then still named, instead of silently disappearing from the sentence.
+ */
+const AGENT_LABELS = {
+  claude: 'Claude Code',
+  codex: 'Codex',
+  hermes: 'Hermes',
+  openclaw: 'OpenClaw',
+  codewhale: 'Codewhale',
+  ...Object.fromEntries(Object.entries(MCP_ONLY_TARGETS).map(([id, spec]) => [id, spec.label])),
+  // Not an MCP-only target: it takes a rules block too (see `installMcode`), so its label cannot be
+  // read from that table.
+  mcode: 'MiniMax Code',
+};
+
+/**
+ * MiniMax Code (`mcode`) — a **plugin directory**, not a config file (issue #3777).
+ *
+ * Three facts decide this whole target, and none of them is guessable from the other clients:
+ *
+ *   * mcode does not read a user-level MCP config. `~/.minimax/config.yaml`'s `mcpServers` is
+ *     ignored (measured in #3777), so writing an entry there would look installed and register
+ *     nothing.
+ *   * It *does* read a **plugin directory** whose manifest is a Claude Code plugin manifest:
+ *     `~/.minimax/plugins/misakanet/.claude-plugin/plugin.json` (source `LOCAL_CLAUDE`) makes
+ *     `mcode plugin list` show `misakanet@local enabled`. Placing the directory is the install.
+ *   * `mcode plugin add misakanet@local` answers `LOCAL_PLUGIN_INSTALL_UNSUPPORTED` — that is its
+ *     refusal to *link* a local plugin, not evidence that the plugin is missing: the listing still
+ *     shows it enabled while the directory is in place. Nothing in this installer runs that command.
+ *
+ * The manifest cannot be copied from the repository's own `.claude-plugin/plugin.json`: the npm
+ * package's `files` list does not ship it (`bin/`, `hook/`, `voice/`, `README.md` only), so the
+ * expected shape is built here. Rules are ordinary `AGENTS.md`: `~/.minimax/AGENTS.md` is its
+ * global scope and applies to every session. There is no hook mechanism, so tier ③ does not exist
+ * for this target and the install says so instead of implying behaviour changed.
+ *
+ * What this target cannot fix: mcode budgets ~2000 ms for HTTP MCP discovery and Node's `fetch`
+ * ignores proxy variables unless `NODE_USE_ENV_PROXY=1`. On a proxied machine the result is
+ * "installed but 0 tools" — a runtime fact, documented in docs/integrations/mcode.md, not
+ * something an installer can write around.
+ */
+const MCODE_PLUGIN_REL = join('.minimax', 'plugins', 'misakanet', '.claude-plugin', 'plugin.json');
+const MCODE_RULES_REL = join('.minimax', 'AGENTS.md');
+const MCODE_DESCRIPTION = 'MisakaNet failure memory: search evidence-rated failure lessons before '
+  + 're-debugging, and turn new failures into shared knowledge.';
+
+const mcodePluginPath = (home) => join(home, MCODE_PLUGIN_REL);
+
+/** The manifest we write — the shape `mcode plugin list` reads. */
+function mcodePluginDoc(bearer) {
+  return {
+    name: 'misakanet',
+    version: VERSION,
+    description: MCODE_DESCRIPTION,
+    mcpServers: {
+      misakanet: { type: 'http', url: ENDPOINT, headers: mcpHeaders(bearer, 'mcode') },
+    },
+  };
+}
+
+/** The `misakanet` entry in that manifest, or null when the file is absent or not JSON. */
+function mcodePluginEntry() {
+  const doc = readJson(mcodePluginPath(HOME), null);
+  return doc && typeof doc === 'object' ? doc.mcpServers?.misakanet || null : null;
+}
+
+
+/** The supported assistants, named from `AGENTS` — never a hand-written second list. */
+function supportedAgentLabels() {
+  return AGENTS.map((agent) => AGENT_LABELS[agent] || agent).join(' / ');
+}
+
+/**
  * The files each assistant's install writes, so a permission problem can be reported *before*
  * anything is touched (and so `--dry-run` can say "I cannot change that" as well as "I would change
  * this"). It mirrors what the per-agent install functions write; those keep their own try/catch as
@@ -440,6 +521,10 @@ const AGENT_WRITE_PATHS = {
   // for the write manifest, the detection paths and the report's scope line.
   ...Object.fromEntries(Object.entries(MCP_ONLY_TARGETS)
     .map(([id, spec]) => [id, (home) => [spec.config(home)]])),
+  // Two files, two tiers: the plugin manifest registers the endpoint (①) and the global AGENTS.md
+  // carries the rules block (②). Listing both here is what makes the preview, `--list-writes` and
+  // the permission pre-check agree with `installMcode`.
+  mcode: (home) => [join(home, MCODE_PLUGIN_REL), join(home, MCODE_RULES_REL)],
   openclaw: () => openclawWorkspaces().map((workspace) => join(workspace, 'AGENTS.md')),
 };
 
@@ -796,6 +881,48 @@ function declaredClientId() {
   return CLIENT_ID_SHAPE.test(found) ? found : '';
 }
 
+/**
+ * An `X-MisakaNet-Client` value already written into a target's config.
+ *
+ * Three syntaxes, because three kinds of target carry this header: JSON (`"X-MisakaNet-Client": "…"`
+ * in `.claude.json`, `openclaw.json` and the `--mcp-only` configs), TOML (Codex writes it **inside**
+ * its one-line `http_headers = { … }` table, so it is not at the start of a line) and YAML (Hermes's
+ * `config.yaml`, where the key is followed by `:`). The leading `(?:^|[\s{,])` is what lets the TOML
+ * case match mid-line while still requiring a plausible delimiter before the key.
+ *
+ * The capture is limited to the id alphabet so a value that could close a quote or a mapping can
+ * never travel from this file into the next one; `CLIENT_ID_SHAPE` then rejects it on length too.
+ */
+const CLIENT_ID_IN_CONFIG = /(?:^|[\s{,])["']?X-MisakaNet-Client["']?\s*[:=]\s*["']?([A-Za-z0-9._-]+)/m;
+
+/**
+ * Adopt the client id a target's config already declares, so a re-run keeps writing the same header.
+ *
+ * What went wrong without it (#3772): the first run mints `setup-<uuid>`, writes it into every
+ * config and prints it — but deliberately does not persist it to `<stateDir>/client_id` (that is the
+ * "read a local file, send it in a request" shape #1688 removed). The second run therefore had no id
+ * to declare, `mcpHeaders()` dropped the header, every config compared unequal, and all of them were
+ * rewritten while the closing report said the same files had been installed again.
+ *
+ * The value is already in the file this run is about to rewrite, so inheriting it in place needs no
+ * new persistence and no file-to-network flow: it stays a file-to-file honouring of what this
+ * machine already told the service. The first target to adopt carries the id to the rest through
+ * `knownClientId`, which is what keeps every config on the machine pointing at one identity.
+ *
+ * Explicit intent and the state file win: `declaredClientId()` is checked first, the same precedence
+ * the register path applies. `clientIdHint` is set as well, because it only feeds the closing
+ * "这台机器的身份编号是 X" guidance — after this change the second run prints the identity instead
+ * of saying nothing, which is one of the consequences #3772 listed (the only remaining copy used to
+ * be buried inside a config file).
+ */
+function adoptExistingClientId(text) {
+  if (declaredClientId()) return;
+  const found = text.match(CLIENT_ID_IN_CONFIG)?.[1] || '';
+  if (!CLIENT_ID_SHAPE.test(found)) return;
+  knownClientId = found;
+  clientIdHint = found;
+}
+
 const CANONICAL_ENDPOINT = 'https://misakanet.org/mcp';
 
 /**
@@ -901,6 +1028,29 @@ function proxyProbeAdvice(proxy) {
 }
 
 /**
+ * How long one probe attempt may take.
+ *
+ * 6 s is the shipped value; `MISAKANET_PROBE_TIMEOUT_MS` exists so the test suite can prove the
+ * timeout *classification* in a few hundred milliseconds instead of six seconds per attempt. It is
+ * test plumbing, not a supported knob: a deployment that sets it is shortening the only honest
+ * signal it has, and the cap below keeps it from turning `--verify` into a hang.
+ */
+function probeTimeoutMs() {
+  const raw = Number(process.env.MISAKANET_PROBE_TIMEOUT_MS || '');
+  return Number.isFinite(raw) && raw > 0 ? Math.min(raw, 60000) : 6000;
+}
+
+/**
+ * The probe's retries and the pause between them.
+ *
+ * Fixed numbers, never random: the same machine with the same network must produce the same
+ * `endpoint-probe` value on two runs (#3778). A jittered backoff would make a timeout retry
+ * succeed on one run and fail on the next, which is how "flaky" gets filed against a health check.
+ */
+const PROBE_ATTEMPTS = 3;          // one attempt + at most two retries, per the issue
+const PROBE_RETRY_DELAY_MS = 300;
+
+/**
  * One unauthenticated MCP call.
  *
  * Deliberately has no credential parameter: this process writes tokens into the agent's config
@@ -911,6 +1061,16 @@ function proxyProbeAdvice(proxy) {
 // Records why the last request failed, so `--verify` can tell a timeout from a 404 from an
 // empty-but-successful answer instead of collapsing all three into "unreachable".
 let lastRequestError = '';
+// …and *which kind* of failure it was, which is what `endpoint-probe` reports: a timeout and a
+// refused connection deserve different verdicts (#3778). Reset per request, so a stale reason from
+// an earlier call (registration, a version lookup) can never be attributed to the probe.
+let lastRequestKind = '';
+// Whether HTTP answered at all. `200 {"hello":"world"}` parses fine and yields no `tools`, and the
+// old code called that "unreachable" — the endpoint did answer, it just does not speak MCP.
+let lastResponseOk = false;
+// The body it answered with, truncated: when the answer is not a handshake, the most useful thing
+// `--verify` can print is what actually came back (`{}` is not a diagnosis).
+let lastResponsePreview = '';
 
 async function mcpRequest(method, params, timeoutMs = 6000, urlOverride = '') {
   const headers = {
@@ -922,6 +1082,11 @@ async function mcpRequest(method, params, timeoutMs = 6000, urlOverride = '') {
   };
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
+  // Per request, not per process: the probe must not inherit the reason an earlier call failed.
+  lastRequestError = '';
+  lastRequestKind = '';
+  lastResponseOk = false;
+  lastResponsePreview = '';
   try {
     const response = await fetch(urlOverride || ENDPOINT, {
       method: 'POST',
@@ -929,7 +1094,18 @@ async function mcpRequest(method, params, timeoutMs = 6000, urlOverride = '') {
       signal: controller.signal,
       body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
     });
+    // The exchange reached an HTTP peer. Whether that peer speaks MCP is decided by the body
+    // below, not by this line — but "it answered with something that is not a handshake" and
+    // "nothing answered" are different facts (see probeOutcome()).
+    lastResponseOk = true;
     const payload = await response.json();
+    lastResponsePreview = JSON.stringify(payload).slice(0, 160);
+    if (payload && payload.error) {
+      // A JSON-RPC error is an answer from an MCP-speaking server, but the *call* failed. Record
+      // its message so `--verify` can print the server's own words instead of "unreachable".
+      lastRequestError = String(payload.error.message || JSON.stringify(payload.error)).slice(0, 200);
+      lastRequestKind = 'json-rpc-error';
+    }
     const result = payload.result || {};
     // Three response shapes are in play: `structuredContent` (this worker's tools/call),
     // `content[0].text` (the MCP spec's text block), and plain fields (initialize, tools/list).
@@ -949,9 +1125,22 @@ async function mcpRequest(method, params, timeoutMs = 6000, urlOverride = '') {
     // result indistinguishable to every caller — `--verify` then reported a working endpoint as
     // unreachable, which is the exact bug its own comment above describes. The shape of the return
     // value is unchanged (callers depend on it); the reason is now recorded for the report.
-    lastRequestError = (err && err.name === 'AbortError')
+    //
+    // The *kind* is recorded too, because it decides the verdict: `timeout` means "this machine
+    // could not answer", `unreachable` means "the connection really failed" (#3778). `ETIMEDOUT`
+    // is the socket-level spelling of the same thing, and undici wraps the real cause in
+    // `err.cause` (`fetch failed` alone names nothing: the interesting words are `bad port`,
+    // `connect ECONNREFUSED …`, `getaddrinfo EAI_AGAIN …`).
+    const cause = err && err.cause;
+    const code = String((cause && cause.code) || (err && err.code) || '');
+    const detail = String((cause && (cause.message || cause.code)) || (err && err.message) || err);
+    const timedOut = (err && (err.name === 'AbortError' || err.name === 'TimeoutError'))
+      || code === 'ETIMEDOUT'
+      || /timed? ?out|timeout|aborted/i.test(`${detail} ${(err && err.message) || ''}`);
+    lastRequestKind = timedOut ? 'timeout' : 'unreachable';
+    lastRequestError = timedOut
       ? `timeout after ${timeoutMs}ms`
-      : ((err && err.message) || String(err));
+      : (code && !detail.includes(code) ? `${detail}（${code}）` : detail);
     return {};
   } finally {
     clearTimeout(timer);
@@ -961,6 +1150,65 @@ async function mcpRequest(method, params, timeoutMs = 6000, urlOverride = '') {
 /** One tools/call. (Registration is the only one this process makes; it is not a read.) */
 function mcpCall(tool, toolArgs, timeoutMs = 6000, urlOverride = '') {
   return mcpRequest('tools/call', { name: tool, arguments: toolArgs }, timeoutMs, urlOverride);
+}
+
+/**
+ * The endpoint probe: up to `PROBE_ATTEMPTS` `tools/list` calls, retrying only on a timeout.
+ *
+ * Why retry at all: one stall on a slow link is not evidence about the endpoint, and a health
+ * check that flips on a single stall is not usable as a gate. Why *only* timeouts: a refused
+ * connection or a DNS failure is an answer, not a hiccup — retrying it just makes `--verify`
+ * slower. Why a fixed pause: see `PROBE_ATTEMPTS`.
+ */
+async function probeHandshake() {
+  const timeoutMs = probeTimeoutMs();
+  let payload = {};
+  let attempts = 0;
+  while (attempts < PROBE_ATTEMPTS) {
+    attempts += 1;
+    payload = await mcpRequest('tools/list', {}, timeoutMs, probeEndpoint());
+    if ((Array.isArray(payload?.tools) ? payload.tools : []).length) break;
+    if (lastRequestKind !== 'timeout') break;
+    if (attempts < PROBE_ATTEMPTS) {
+      await new Promise((resolve) => setTimeout(resolve, PROBE_RETRY_DELAY_MS));
+    }
+  }
+  return { payload, attempts, timeoutMs };
+}
+
+/**
+ * What the probe actually proved, as one of the values `endpoint-probe` reports.
+ *
+ * `ok`                  the handshake succeeded and the server listed tools
+ * `timeout`             no answer within the timeout, after retries — "could not verify", which is
+ *                       not the same claim as "the endpoint is down"
+ * `unreachable`         a real connection failure (ECONNREFUSED / ENOTFOUND / EAI_AGAIN / TLS …)
+ * `inconclusive-proxy`  a proxy is configured that this Node cannot use, and nothing better is
+ *                       known — the probe says nothing about the machine
+ * `non-mcp`             HTTP answered, but the exchange produced no MCP handshake (a non-MCP body,
+ *                       a wrong URL, a gateway, or an MCP error answer)
+ *
+ * The order is the contract, not an accident. `timeout` is checked before the proxy because a
+ * timeout is the better classification and must never be folded into the proxy story; the proxy is
+ * checked before `unreachable` because a refused *direct* connection does not prove the endpoint is
+ * down on a machine whose traffic is meant to go through a proxy this process cannot see. That
+ * precedence is what keeps the proxy case at "could not verify" (2) instead of sending the user to
+ * debug a network `curl` reaches fine (#3778).
+ */
+function probeOutcome(payload) {
+  const tools = Array.isArray(payload?.tools) ? payload.tools : [];
+  if (tools.length) return { state: 'ok', tools: tools.length };
+  // Before `lastResponseOk`: headers can arrive and the *body* can still hit the timeout (the
+  // same AbortController covers both), which leaves `lastResponseOk` true while the call is a
+  // timeout. Classifying that as `non-mcp` would name the wrong cause — measured on this repo's
+  // own endpoint, where a slow body occasionally produced exactly that pair.
+  if (lastRequestKind === 'timeout') return { state: 'timeout' };
+  if (lastResponseOk || payload?.error || payload?.protocolVersion || payload?.serverInfo) {
+    return { state: 'non-mcp' };
+  }
+  const proxy = proxyEnvironment();
+  if (proxy && !proxy.enabled) return { state: 'inconclusive-proxy', proxy };
+  return { state: 'unreachable' };
 }
 
 // Imperative first, and the trigger is line 1. Measured twice on real machines: the older
@@ -1225,6 +1473,11 @@ function mcpEntryPresent(agent) {
     codewhale: () => readText(join(HOME, '.codewhale', 'mcp.json')),
     ...Object.fromEntries(Object.entries(MCP_ONLY_TARGETS)
       .map(([id, spec]) => [id, () => readText(spec.config(HOME))])),
+    // The manifest *is* the registry here, and the URL is part of the answer: a plugin pointing at
+    // a dead mirror is not "registered" for the question this function asks (`install-scope`).
+    mcode: () => (mcpEntryState(mcodePluginEntry(), 'url').state === 'ok'
+      ? readText(mcodePluginPath(HOME))
+      : ''),
   }[agent]?.() || '';
   return text.includes('misakanet') && text !== 'null';
 }
@@ -1237,14 +1490,21 @@ function detect(agent) {
     openclaw: ['.openclaw'],
     codewhale: ['.codewhale'],
     ...Object.fromEntries(Object.entries(MCP_ONLY_TARGETS).map(([id, spec]) => [id, spec.detect])),
+    // Both names are in circulation: `~/.minimax` is the current one, `~/.minimax-code` the older
+    // directory some installs still have (issue #3777). Either is evidence the CLI was here.
+    mcode: ['.minimax', '.minimax-code'],
   }[agent] || [];
   return paths.some((p) => existsSync(join(HOME, p)));
 }
 
 async function installClaude(hookPath, bearer) {
   const cfg = join(HOME, '.claude.json');
+  const existing = readText(cfg);
+  // Before building the entry: a re-run must declare the id this file already carries, or the
+  // comparison below sees a different entry and "deletes" the header (#3772).
+  adoptExistingClientId(existing);
   const data = readJson(cfg, null);
-  if (data === null && readText(cfg)) {
+  if (data === null && existing) {
     need(`Claude Code：${cfg} 不是合法 JSON → 请手动加入 mcpServers.misakanet`);
     return;
   }
@@ -1409,6 +1669,8 @@ function hasTopLevelKey(text, key) {
 async function installCodex(hookPath, bearer) {
   const cfg = join(HOME, '.codex', 'config.toml');
   let text = readText(cfg);
+  // Inherit before `codexTable()` rebuilds the inline table from mcpHeaders() (#3772).
+  adoptExistingClientId(text);
   let changed = false;
 
   const topPattern = new RegExp(`^[ \\t]*#\\s*${TOP_START}\\s*$\\n?[\\s\\S]*?^[ \\t]*#\\s*${TOP_END}\\s*$\\n?`, 'm');
@@ -1594,6 +1856,9 @@ function openclawWorkspaces() {
 async function installHermes(hookPath, bearer) {
   const cfg = join(HOME, '.hermes', 'config.yaml');
   const text = readText(cfg);
+  // The YAML block below is rebuilt from mcpHeaders() every run, so the id has to come from this
+  // file first or re-running would drop the header (#3772).
+  adoptExistingClientId(text);
   const rules = join(HOME, '.hermes', 'SOUL.md');
   if (!text) {
     need('Hermes：找不到 ~/.hermes/config.yaml → 先运行一次 hermes 再回来装');
@@ -1765,6 +2030,9 @@ async function installOpenclaw(bearer) {
   }
 
   const cfg = join(HOME, '.openclaw', 'openclaw.json');
+  const raw = readText(cfg);
+  // Same inheritance as the other JSON targets: the entry is rebuilt from mcpHeaders() (#3772).
+  adoptExistingClientId(raw);
   const data = readJson(cfg, null);
   if (data === null) {
     need(`OpenClaw：读不到或解析不了 ${cfg} → 先运行一次 openclaw 生成配置，`
@@ -1796,8 +2064,11 @@ async function installOpenclaw(bearer) {
 async function installMcpOnly(agent, bearer) {
   const spec = MCP_ONLY_TARGETS[agent];
   const cfg = spec.config(HOME);
+  const raw = readText(cfg);
+  // All five MCP-only targets share this path; adopt before spec.entry() builds mcpHeaders() (#3772).
+  adoptExistingClientId(raw);
   const data = readJson(cfg, null);
-  if (data === null && readText(cfg)) {
+  if (data === null && raw) {
     need(`${spec.label}：${cfg} 不是合法 JSON${spec.parseNote ? `（${spec.parseNote}）` : ''}`
       + ` → 请手动加入 ${spec.container}.misakanet（形状见 https://misakanet.org/mcp 的客户端文档）`);
     return;
@@ -1815,6 +2086,65 @@ async function installMcpOnly(agent, bearer) {
   }
   skip(`${spec.label}：没有规则块与钩子（${spec.rules}）→ ${spec.ruleHint}`);
   need(`${spec.label}：${spec.manual}`);
+}
+
+/**
+ * MiniMax Code: write the plugin manifest, then the rules block in its global `AGENTS.md`.
+ *
+ * Two rules from the comment on `MCODE_PLUGIN_REL` drive the whole function:
+ *
+ *   * **the file may not be ours.** A plugin directory is a user-owned space, so an existing
+ *     manifest with a different `name` (or one that is not JSON) is *preserved* and reported as a
+ *     manual step — overwriting it would delete someone else's plugin to install ours.
+ *   * **`--mcp-only` is tier ①.** The manifest is the endpoint registration; `~/.minimax/AGENTS.md`
+ *     is a rules block (②), so it is skipped there — the same split every other target follows.
+ *
+ * Idempotent through `sameJson` (an editor that reorders keys is not a change) and through
+ * `adoptExistingClientId`, so a re-run without `--client-id` keeps the header the file already
+ * declares (#3772).
+ */
+async function installMcode(bearer) {
+  const plugin = mcodePluginPath(HOME);
+  const existing = readText(plugin);
+  // Before building the entry: a re-run must declare the id this manifest already carries.
+  if (existing) adoptExistingClientId(existing);
+  const wanted = mcodePluginDoc(bearer);
+
+  if (!existing) {
+    writeText(plugin, `${JSON.stringify(wanted, null, 2)}\n`);
+    ok(`MiniMax Code：写入插件清单 → ${plugin}`);
+  } else {
+    const current = readJson(plugin, null);
+    if (current === null) {
+      need(`MiniMax Code：${plugin} 不是合法 JSON → 已原样保留；请手动修正或删掉它，再重跑本命令`);
+      return;
+    }
+    if (current?.name !== 'misakanet') {
+      need(`MiniMax Code：${plugin} 已存在且不是本安装器写的（name=${JSON.stringify(current?.name ?? null)}）`
+        + ' → 已原样保留；要装 MisakaNet 请先把这个插件目录移走，再重跑本命令');
+      return;
+    }
+    if (sameJson(current, wanted)) {
+      ok('MiniMax Code：插件清单已是目标内容（无改动）');
+    } else {
+      backup(plugin);
+      writeText(plugin, `${JSON.stringify(wanted, null, 2)}\n`);
+      ok(`MiniMax Code：更新插件清单 → ${plugin}`);
+    }
+  }
+
+  const rules = join(HOME, MCODE_RULES_REL);
+  if (!MCP_ONLY) ok(`MiniMax Code：规则块 ${injectBlock(rules, PROMPT_BLOCK)} → ${rules}`);
+  else skip('MiniMax Code：规则块未写（--mcp-only：只放插件清单）');
+
+  // Said out loud for the same reason Cursor's and Gemini's layers are: an install that looks
+  // complete and has no behaviour layer is the failure this installer refuses to hide.
+  skip('MiniMax Code：没有 Claude Code 那种钩子（mcode 没有 hook 机制）'
+    + ' → 规则块在 ~/.minimax/AGENTS.md（每个会话生效），自动沉淀那一步做不到');
+  need('MiniMax Code：重启后跑 `mcode plugin list` 复核（应显示 misakanet@local enabled）；'
+    + '公司代理下还要设 NODE_USE_ENV_PROXY=1 —— 它的 HTTP MCP 发现预算约 2000ms，'
+    + '不设会表现为"装上了但 0 个工具"（`mcode plugin add` 报 LOCAL_PLUGIN_INSTALL_UNSUPPORTED '
+    + '不是失败，插件目录在位即为生效）');
 }
 
 // The last endpoint probe, recorded so `--report` can print it without probing twice.
@@ -1846,8 +2176,10 @@ async function verify() {
   // written" (our own footprint). A machine whose endpoint answers and whose workspace is
   // read-only is **usable** — and the old verdict called it NOT READY.
   let usable = true;
-  // The probe has three answers, not two: a probe that could not run is not a probe that failed.
-  // "unknown" is reported as unknown, and only `--strict` refuses to pass on it.
+  // The probe has three answers, not two: 'ready' (a handshake), 'unverified' (timeout, or a
+  // proxy this Node cannot use — the tool could not answer) and 'not-ready' (unreachable, or HTTP
+  // answered without MCP — a real problem with the machine or the address). `unverified` is the
+  // one #3778 added: it is not READY, and it is not a machine verdict either.
   let probeState = 'ready';
   // The install segment is judged on its own: a file we cannot write is a fact about our
   // footprint, and it says nothing about the endpoint.
@@ -1862,11 +2194,12 @@ async function verify() {
   // reported the rate-limit answer as "endpoint unreachable": the endpoint returns HTTP 200
   // with the error inside the JSON-RPC result, so a user who had used their quota was told their
   // network was broken (found 2026-09-15 by running the agent chain test on this machine).
-  const probe = await mcpRequest('tools/list', {}, 6000, probeEndpoint());
-  const tools = Array.isArray(probe?.tools) ? probe.tools : [];
-  lastProbe = { reachable: tools.length > 0, tools: tools.length };
-  if (tools.length) {
-    ok(`端点可达：${ENDPOINT}（MCP 握手成功，${tools.length} 个工具）`);
+  const { payload: probe, attempts, timeoutMs } = await probeHandshake();
+  const outcome = probeOutcome(probe);
+  const tools = outcome.state === 'ok' ? outcome.tools : 0;
+  lastProbe = { reachable: tools > 0, tools, note: outcome.state };
+  if (lastProbe.reachable) {
+    ok(`端点可达：${ENDPOINT}（MCP 握手成功，${tools} 个工具）`);
 
     // Surface the permission gap: an install that is otherwise perfect still fails the user's first
     // search if the host refuses the tool call, and that is invisible from the config files alone.
@@ -1882,39 +2215,58 @@ async function verify() {
           + '重跑安装命令即可放行');
       }
     } catch { /* a settings file we cannot read is reported by the Claude checks below */ }
-  } else if (probe && (probe.error || probe.protocolVersion || probe.serverInfo)) {
+  } else if (outcome.state === 'non-mcp') {
     allOk = false;
     usable = false;
     probeState = 'not-ready';
-    need(`端点可达但握手异常：${JSON.stringify(probe).slice(0, 120)}`);
+    // What came back, not `{}`: `200 {"hello":"world"}` is the shape that used to be reported as
+    // "unreachable" and send the reader after a network that was working the whole time.
+    need(`端点可达但响应不是 MCP（${lastResponsePreview || JSON.stringify(probe).slice(0, 160)}）`
+      + ' → 地址指错了，或中间有网关/门户在应答；读课程会静默失败'
+      + (lastRequestError ? `；最近一次失败原因：${lastRequestError}` : ''));
+  } else if (outcome.state === 'timeout') {
+    // Timeout is "could not verify", full stop. It is never folded into the proxy story (that is
+    // a different doubt) and never into "unreachable" (that is a claim we cannot make): the exit
+    // code for it is 2, and 2 is not a machine verdict (#3778).
+    allOk = false;
+    usable = false;
+    probeState = 'unverified';
+    need(`端点探测超时：${ENDPOINT}（${attempts} 次尝试，每次 ${timeoutMs}ms；`
+      + `最近一次失败原因：${lastRequestError || `timeout after ${timeoutMs}ms`}）`
+      + ' → 这不说明机器坏了，是工具没能拿到答案；先确认网络/代理'
+      + '（`curl -sS https://misakanet.org/mcp`），再重跑 --verify');
+  } else if (outcome.state === 'inconclusive-proxy') {
+    // Inconclusive rather than unreachable — and now a hard "could not verify" in every mode, not
+    // only under `--strict`: the old interactive path exited 0 while printing "the probe is
+    // untrustworthy", which is a READY a script cannot tell from a healthy machine (#3778).
+    allOk = false;
+    usable = false;
+    probeState = 'unverified';
+    need(`端点探测不可信（inconclusive-proxy —— 最近一次失败原因：`
+      + `${lastRequestError || '没有收到响应'}）：${proxyProbeAdvice(outcome.proxy)}`);
   } else {
-    const proxy = proxyEnvironment();
-    if (proxy && !proxy.enabled) {
-      // Inconclusive rather than unreachable. Interactive runs warn (a visible `!` that does not
-      // flip the verdict), because the install itself is fine and the user's agent may well be
-      // reaching the endpoint through that proxy. `--strict` / `--ci` keep a hard verdict: a gate
-      // that cannot tell must not pass silently, and CI machines are the ones actually configured
-      // to make the probe trustworthy.
-      lastProbe = { reachable: false, tools: 0, note: 'inconclusive-proxy' };
-      probeState = 'unknown';
-      if (STRICT) {
-        allOk = false;
-        usable = false;
-        need(`端点探测不可信，且 --strict 不接受"说不清"：${proxyProbeAdvice(proxy)}`);
-      } else {
-        need(`端点探测不可信（不是"不可达"）：${proxyProbeAdvice(proxy)}`);
-      }
-    } else {
-      allOk = false;
-      usable = false;
-      probeState = 'not-ready';
-      need(`端点不可达：${ENDPOINT}（网络受限？读课程会静默失败）`
-        + (lastRequestError ? ` —— 最近一次失败原因：${lastRequestError}` : ''));
-    }
+    allOk = false;
+    usable = false;
+    probeState = 'not-ready';
+    need(`端点不可达：${ENDPOINT}（网络受限？读课程会静默失败）`
+      + (lastRequestError ? ` —— 最近一次失败原因：${lastRequestError}` : ''));
   }
   // The endpoint segment ends here. Everything below is about our own footprint: the files we
   // write, the entries we register, the token we keep.
   const segmentEnd = { done: done.length, manual: manual.length, skipped: skipped.length };
+  // Zero targets (#3778). This is the honest answer to "is the install complete": there was
+  // nothing to install into, so nothing was installed. The old code only ever called
+  // `installFailed()` inside the per-agent checks, so with no agent at all not one line ran and
+  // `install: complete` / `verify: READY` were reported for an untouched home — the exact
+  // self-contradiction the issue was filed for (`detected-agents: []` next to
+  // `install-complete: complete`). Judged on "no target in AGENTS is detected", not on one
+  // hard-coded directory: any of the supported assistants in `AGENTS` counts.
+  const detectedAgents = AGENTS.filter((agent) => detect(agent));
+  if (!detectedAgents.length) {
+    installFailed();
+    need('没有检测到任何受支持的助手 —— 因此什么都没装'
+      + `（支持：${supportedAgentLabels()}）→ 先打开一次你要用的那个助手，再回来运行本命令`);
+  }
   const tokenFile = join(stateDir(), 'token');
   let tokenPresent = '';
   try {
@@ -2146,6 +2498,47 @@ async function verify() {
       }
     }
   }
+  // MiniMax Code: a plugin directory + a rules file, so "installed" is two facts and both are
+  // checked. The manifest has to be valid JSON with our entry at the right URL; a file that a
+  // hand-edit turned into `{}` is exactly the state a re-run fixes. `mcode plugin add` refuses
+  // local plugins on purpose (LOCAL_PLUGIN_INSTALL_UNSUPPORTED), so its exit code is not evidence
+  // either way — the directory is, and that is what this reads.
+  if (detect('mcode')) {
+    const rules = join(HOME, MCODE_RULES_REL);
+    if (!readText(rules).includes(`<!-- ${START} -->`)) {
+      installFailed();
+      need(canCreateHere(rules)
+        ? `MiniMax Code：规则块没装（${rules}）→ 重跑安装命令`
+        : `MiniMax Code：规则块装不了（${rules}）→ ${unwritableAdvice()}`);
+    } else {
+      ok('MiniMax Code：规则块已装');
+    }
+    const plugin = mcodePluginPath(HOME);
+    const doc = readJson(plugin, null);
+    if (doc === null) {
+      installFailed();
+      need(canCreateHere(plugin)
+        ? `MiniMax Code：插件清单缺失或不是合法 JSON（${plugin}）→ 重跑安装命令`
+        : `MiniMax Code：插件清单装不了（${plugin}）→ ${unwritableAdvice()}`);
+    } else {
+      const verdict = mcpEntryState(doc.mcpServers?.misakanet, 'url');
+      if (verdict.state === 'missing') {
+        installFailed();
+        need(`MiniMax Code：插件清单里没有 mcpServers.misakanet（${plugin}）→ 重跑安装命令`);
+      } else if (verdict.state === 'no-url-field') {
+        installFailed();
+        need(`MiniMax Code：插件清单里的条目没有 url 字段（${plugin}）→ 重跑安装命令`);
+      } else if (verdict.state === 'wrong-url') {
+        installFailed();
+        need(`MiniMax Code：插件清单指向的端点不对（${verdict.url}，应为 ${verdict.expected}）（${plugin}）`
+          + '→ 重跑安装命令');
+      } else {
+        ok(`MiniMax Code：插件清单已注册（${verdict.url}）`);
+        skip('MiniMax Code：只能确认"插件目录在位"，无法确认 mcode 是否已加载 → 跑 `mcode plugin list` 复核'
+          + '（`mcode plugin add` 报 LOCAL_PLUGIN_INSTALL_UNSUPPORTED 不是失败）');
+      }
+    }
+  }
   // Version: what is installed, and whether the registry has moved on. Read-only here — the
   // hook owns the periodic nudge (it cannot be a network call in this process's hot path), and
   // `--verify` is an explicit user action, so one lookup is both cheap and expected.
@@ -2172,6 +2565,12 @@ async function verify() {
     allOk,
     usable,
     probeState,
+    // `true` only for the probe answers that are not a verdict about the machine (timeout, and a
+    // proxy this Node cannot use). It is what turns the exit code from 1 into 2 (#3778).
+    unverified: probeState === 'unverified',
+    // A home with none of the supported targets: distinct from "detected, but our files are missing",
+    // and the only case where `install-scope` is forced to `none` in the report.
+    zeroTargets: !detectedAgents.length,
     install: installOk ? 'complete' : 'incomplete',
     // The install segment's open items, counted on their own: the report's `open-items` is every
     // manual item, this is the ones that belong to our footprint.
@@ -2189,19 +2588,47 @@ async function verify() {
  * wrong thing.
  */
 function usabilityText(verdict) {
-  if (verdict.probeState === 'not-ready') return '不就绪 —— 端点不可达或握手异常';
-  if (verdict.probeState === 'unknown') {
-    return STRICT
-      ? '不就绪 —— 探测不可信，--strict 不接受"说不清"'
-      : '说不清 —— 探测不可信（不等于不可达）';
+  if (verdict.probeState === 'unverified') {
+    // The third answer (#3778): neither READY nor a machine verdict. Saying "NOT READY" here is
+    // the false alarm the issue is about; saying "ready" is a lie a script cannot detect.
+    return '没能验证 —— 探测超时或代理不可信（不等于端点不可达，也不等于机器不健康）';
+  }
+  if (verdict.probeState === 'not-ready') {
+    // "unreachable" and "answered, but not MCP" are both not-ready and still different facts:
+    // the second one means the address or something in front of it is wrong, and telling the
+    // reader "端点不可达" about a host that just answered would send them to the wrong fix.
+    return lastProbe.note === 'non-mcp'
+      ? '不就绪 —— 端点有应答，但响应不是 MCP（地址指错，或中间有网关/门户）'
+      : '不就绪 —— 端点不可达或握手异常';
   }
   if (!verdict.usable) return '不就绪 —— 端点可达，但只读工具没放行，第一次检索会被拦下';
   return '就绪 —— 端点可达，检索与读取可用';
 }
 
 function installText(verdict) {
+  if (verdict.zeroTargets) {
+    return '不完整 —— 没有检测到任何受支持的助手，因此什么都没装';
+  }
   if (verdict.install === 'complete') return '完整 —— 我们偏好的文件都写好了';
   return `不完整 —— ${verdict.openItems} 项需要手动处理（上面每条 ! 都给了成因和做法）`;
+}
+
+/**
+ * The three-code contract, in one place so `--verify` and `--report --strict` cannot disagree.
+ *
+ *   0  READY
+ *   1  NOT READY — a machine problem (zero targets, our files missing, the endpoint really
+ *      unreachable, or an address that does not speak MCP)
+ *   2  could not verify — the tool could not produce a machine verdict (a probe timeout, a proxy
+ *      this Node cannot use, or the report/CLI crashing outright)
+ *
+ * `2` outranks `1` only when *nothing else* is wrong: if the install segment is incomplete, that
+ * is a real machine verdict regardless of what the probe managed to do, and it stays `1`. That is
+ * why the check is `install === 'complete'` rather than `!allOk`.
+ */
+function exitCodeFor(verdict) {
+  if (verdict.allOk && verdict.openItems === 0) return 0;
+  return (verdict.unverified && verdict.install === 'complete') ? 2 : 1;
 }
 
 /**
@@ -2328,7 +2755,7 @@ function restoreEmptiedFiles() {
 }
 
 function uninstall() {
-  for (const rel of ['.claude/CLAUDE.md', '.codex/AGENTS.md', '.hermes/SOUL.md']) {
+  for (const rel of ['.claude/CLAUDE.md', '.codex/AGENTS.md', '.hermes/SOUL.md', '.minimax/AGENTS.md']) {
     if (stripBlock(join(HOME, rel))) ok(`移除规则块 → ${rel}`);
   }
   // Both candidates: a block may have been written before the workspace was read from config.
@@ -2367,6 +2794,16 @@ function uninstall() {
       writeText(cfg, `${JSON.stringify(data, null, 2)}\n`);
       ok(`移除 MCP 注册 → ${cfg}`);
     }
+  }
+  // MiniMax Code's plugin directory is ours outright (the install creates it), so uninstall takes
+  // the whole subtree back. Only *our* directory: `~/.minimax/plugins/` is the user's namespace and
+  // stays even when it ends up empty — deleting it would remove a place their other plugins live.
+  const mcodeDir = join(HOME, '.minimax', 'plugins', 'misakanet');
+  if (existsSync(mcodeDir)) {
+    try {
+      if (!DRY) rmSync(mcodeDir, { recursive: true, force: true });
+      ok(`移除插件目录 → ${mcodeDir}`);
+    } catch { /* best effort */ }
   }
   const voiceDir = join(stateDir(), 'voice');
   if (existsSync(voiceDir)) {
@@ -2564,18 +3001,23 @@ function reportValues(verdict) {
     ['endpoint-usable', verdict.usable ? 'yes' : 'no'],
     ['endpoint-reachable', lastProbe.reachable],
     ['endpoint-tools', lastProbe.tools],
-    // `ok` = the probe ran and its answer is meaningful; `inconclusive-proxy` = the machine has a
-    // proxy this process cannot use, so the boolean above says nothing. Without this field the YAML
-    // a user pastes into a public issue cannot tell a real outage from a false negative.
+    // The classification of the probe, and the field that says whether the boolean above means
+    // anything (#3778). `ok` = handshake succeeded; `timeout` / `inconclusive-proxy` = the tool
+    // could not answer (exit 2 — network or proxy, not a verdict about this machine);
+    // `unreachable` / `non-mcp` = it did answer, and the answer is "this machine cannot read".
     ['endpoint-probe', lastProbe.note || 'ok'],
     ['token', token ? 'present' : 'absent'],
     ['permissions', permissions],
     ['hook', existsSync(join(stateDir(), 'hook.mjs')) ? 'present' : 'absent'],
     // `mcp-only` = the endpoint is registered but the hooks are not, which is a different machine
-    // from "nothing installed" and must not be counted as one (#1753's T1-lite rows).
-    ['install-scope', hookWired()
-      ? 'full'
-      : (AGENTS.some((agent) => detect(agent) && mcpEntryPresent(agent)) ? 'mcp-only' : 'none')],
+    // from "nothing installed" and must not be counted as one (#1753's T1-lite rows). Zero
+    // targets is always `none`, even if a stale state directory still holds a hook: with no agent
+    // to consume it, nothing is installed (#3778).
+    ['install-scope', agents.length === 0
+      ? 'none'
+      : (hookWired()
+        ? 'full'
+        : (agents.some((agent) => mcpEntryPresent(agent)) ? 'mcp-only' : 'none'))],
     ['voice', voiceStatus()],
     ['open-items', manual.length],
     // Redacted here, once, so neither encoder can print an unredacted message by accident.
@@ -2717,7 +3159,12 @@ if (mode === 'report') {
   //                               follow the verdict** — that breaks every existing use, and the
   //                               gated form below already exists for CI.
   //   --report --strict (--ci)  → 0 READY · 1 NOT READY (including `open-items > 0`) ·
-  //                               2 the report could not be produced at all.
+  //                               2 could not verify (a probe timeout / a proxy this Node cannot
+  //                               use) or the report could not be produced at all.
+  //
+  // The two meanings of 2 are one sentence: "the tool could not answer". The report still prints
+  // first in the probe case — `endpoint-probe` says `timeout` / `inconclusive-proxy` — so CI has
+  // the evidence and the code together (#3778). `--verify` uses the same three codes.
   //
   // `--report-json` is the same mode, same contracts, same codes, other encoding: the JSON is
   // printed even when the machine is NOT READY — that is precisely the state an MDM is collecting
@@ -2744,12 +3191,17 @@ if (mode === 'report') {
     process.exit(2);
   }
   if (!STRICT) process.exit(0);
-  const ready = verdict.allOk && verdict.openItems === 0;
-  if (!ready) {
+  const code = exitCodeFor(verdict);
+  if (code === 2) {
+    // The report is already on stdout. This line says what the code means, because "2" here is
+    // not "unhealthy" and not "the tool crashed": it is "the probe could not answer".
+    console.error(`--strict：没能验证（endpoint-probe: ${lastProbe.note}）→ 退出码 2；`
+      + `上面的 ${REPORT_JSON ? 'JSON' : 'YAML'} 已经照常打印，这个码说的是网络/代理，不是机器坏了。`);
+  } else if (code === 1) {
     console.error(`--strict：NOT READY（verify: ${verdict.allOk ? 'READY' : 'NOT READY'}，`
       + `open-items: ${verdict.openItems}）→ 退出码 1；上面的 ${REPORT_JSON ? 'JSON' : 'YAML'} 就是证据。`);
   }
-  process.exit(ready ? 0 : 1);
+  process.exit(code);
 }
 
 if (mode === 'verify') {
@@ -2758,8 +3210,19 @@ if (mode === 'verify') {
   // Kept under `--silent`: this line is the verdict, not progress. (It is also the only thing a
   // silent `--verify` prints when the machine is healthy, which is what makes it usable in a
   // deployment log.)
-  console.log(`\n结论：${verdict.allOk ? `READY —— 打开一个新会话，问它「${ONBOARDING_QUERIES[0]}」这类带报错原文的片段` : 'NOT READY —— 上面每条 ! 都给了成因和做法'}`);
-  process.exit(verdict.allOk ? 0 : 1);
+  //
+  // Three conclusions for three answers (#3778): READY, NOT READY (a machine problem), and
+  // "could not verify" — which used to exit 0 while saying the probe was untrustworthy, so a
+  // script could not tell it from a healthy machine.
+  const code = exitCodeFor(verdict);
+  const conclusion = code === 0
+    ? `READY —— 打开一个新会话，问它「${ONBOARDING_QUERIES[0]}」这类带报错原文的片段`
+    : code === 2
+      ? '没能验证 —— 端点探测超时或代理不可信（看 endpoint-probe）；这不是"机器不健康"，'
+        + '先解决网络/代理再重跑 --verify'
+      : 'NOT READY —— 上面每条 ! 都给了成因和做法';
+  console.log(`\n结论：${conclusion}`);
+  process.exit(code);
 }
 
 const targets = (only.length ? only : AGENTS).filter((a) => {
@@ -2810,7 +3273,11 @@ if (LIST_WRITES) {
   // The rows come from the shared manifest builder, the same list the install preview prints: one
   // source of truth, so the manifest an operator approves and the preview a user reads cannot
   // disagree about what this command would write.
-  const tiers = { 1: '① 注册 MCP 端点', 2: '② 写规则块（改行为）', 3: '③ 装钩子（每轮自动执行）' };
+  // Tier ③ is not always a hook: `hook.mjs`, the endpoint record and the version stamp live in the
+  // same state directory, and a target with no hook mechanism (Cursor, mcode, …) still gets that
+  // directory written. Calling the whole tier "装钩子" told those users they were approving a
+  // behaviour change they were not (#3777 follow-up).
+  const tiers = { 1: '① 注册 MCP 端点', 2: '② 写规则块（改行为）', 3: '③ 钩子/状态目录' };
   const list = buildWriteManifest(targets);
   for (const row of list) {
     console.log(`tier${row.tier}\t${tiers[row.tier]}\t${row.path}\t${row.action}`);
@@ -2820,8 +3287,12 @@ if (LIST_WRITES) {
     console.log('# --mcp-only：只申请 ①。规则块（②）与钩子（③）不会写入，'
       + '需要时由运营方另行批准后重跑不带 --mcp-only 的同一条命令。');
   } else {
-    console.log(`# 本次申请 ${shown.size} 级权限（${[...shown].sort().map((t) => tiers[t]).join(' · ')}）；`
-      + '只想批 ① 就加 --mcp-only。');
+    // With no target detected the manifest is empty, and the old line printed `0 级权限（）` — an
+    // empty parenthesis where the answer should be (#3778). Say "none" and why.
+    const asked = shown.size
+      ? `${shown.size} 级权限（${[...shown].sort().map((t) => tiers[t]).join(' · ')}）`
+      : '0 级权限（无 —— 没有检测到任何受支持的助手，这次不会写任何文件）';
+    console.log(`# 本次申请 ${asked}；只想批 ① 就加 --mcp-only。`);
   }
   console.log('# 这次没有写任何东西。撤销：npx @misaka-net/misakanet-setup --uninstall');
   process.exit(0);
@@ -2841,8 +3312,11 @@ if (!SILENT && targets.length) {
 
 try {
   if (!targets.length) {
-    need('没检测到任何受支持助手的配置目录（Claude Code / Codex / Hermes / OpenClaw / Codewhale / '
-      + 'Cursor）→ 请先打开一次你要用的那个助手，再回来运行本命令');
+    // The list comes from `AGENTS` (#3778): it used to name six assistants by hand while ten were
+    // supported, so a Gemini/Copilot/OpenCode/Kiro user was told about a smaller product than the
+    // one they had just run — and the `--verify` path said nothing at all.
+    need('没有检测到任何受支持的助手 —— 因此什么都没装'
+      + `（支持：${supportedAgentLabels()}）→ 先打开一次你要用的那个助手，再回来运行本命令`);
   } else {
     // Only install the hook when a target can actually consume it. Writing it for a Cursor-only or
     // Codex-only machine produced a file nothing would ever run, and made `--report` claim
@@ -2875,6 +3349,7 @@ try {
         else if (agent === 'hermes') await installHermes(hookPath, bearer);
         else if (agent === 'openclaw') await installOpenclaw(bearer);
         else if (agent === 'codewhale') await installCodewhale(bearer);
+        else if (agent === 'mcode') await installMcode(bearer);
         else if (MCP_ONLY_TARGETS[agent]) await installMcpOnly(agent, bearer);
         installed += 1;
       } catch (err) {
@@ -2894,9 +3369,13 @@ try {
 // the exact failures in it on a dirty one — which is the point (#1784). The machine-readable form
 // of the same run is `--report-json`, not this text.
 say(render());
-if (!SILENT && writtenFiles.size) {
+if (!SILENT && !DRY) {
   // The number the reader actually wants: not "how many files are in scope" but "how many did
-  // this run really change". On an already-installed machine that is 0, and now it says so.
+  // this run really change". Printed even when it is 0, which is the honest answer on an
+  // already-installed machine and the one #3775 was filed about: the line used to appear only
+  // when something was written, so "already installed" and "the installer never got this far"
+  // looked identical. `--dry-run` keeps its own contract — it already says it would write
+  // nothing, so a "0 files written" line under it would only restate the mode.
   console.log(`本次实际写入 ${writtenFiles.size} 个文件（上面的清单是"涉及哪些"，这一行是"真的动了哪些"）。`);
 }
 if (MCP_ONLY && !SILENT) {

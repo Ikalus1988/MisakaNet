@@ -305,6 +305,90 @@ def test_the_publish_workflow_creates_the_tag_before_it_publishes():
     )
 
 
+def test_the_publish_creates_a_release_after_npm_has_the_version():
+    """The installer's version has to exist on the Releases page, not only on npm.
+
+    Measured 2026-10-23: the last 100 GitHub Releases contained zero `misakanet-setup-*` entries,
+    and `gh release view misakanet-setup-v0.6.0` answered "release not found". The `tag` job only
+    creates the tag and dispatches the publish, so the package had no Release at all while the
+    root package had one per release — the one page a reader opens to ask "what is the newest
+    installer, and what changed" showed nothing.
+
+    The order is the contract, not an implementation detail: a release created in the `tag` job
+    would announce a version npm does not have yet, which is exactly the drift #3774 is about.
+    So the step lives after `npm publish`, stands down when the release already exists, and
+    refuses to invent a tag.
+    """
+    workflow = _read_yaml(PUBLISH_WORKFLOW)
+    publish = workflow["jobs"]["publish"]
+    steps = publish.get("steps") or []
+    publish_at = next(
+        (index for index, step in enumerate(steps) if step.get("name") == "Publish to npm"), None
+    )
+    release_at = next(
+        (
+            index
+            for index, step in enumerate(steps)
+            if "gh release create" in str(step.get("run", ""))
+        ),
+        None,
+    )
+    assert publish_at is not None, "the publish job lost its `Publish to npm` step"
+    assert release_at is not None, (
+        "no step creates a GitHub Release, so the installer's version is still invisible on the "
+        "Releases page"
+    )
+    assert release_at > publish_at, (
+        "the release is created before npm has the version; that advertises a version nobody can "
+        "install, which is the drift this is meant to expose"
+    )
+
+    step = steps[release_at]
+    run = str(step.get("run", ""))
+    assert "misakanet-setup-v" in run, "the release must use the package's own tag prefix"
+    assert "gh release view" in run, "a re-run must stand down instead of failing"
+    assert "--verify-tag" in run, (
+        "the step must not fabricate a tag — the `tag` job owns tag creation"
+    )
+    assert "--latest=false" in run, (
+        "without it the installer's release becomes the repository's Latest and displaces the "
+        "product release on the Releases page"
+    )
+    assert "setup_release_notes.py" in run, (
+        "the body must come from the package CHANGELOG, not from `--generate-notes`"
+    )
+    assert (REPO / "scripts" / "setup_release_notes.py").is_file(), (
+        "the step calls a script that does not exist"
+    )
+    env = step.get("env") or {}
+    assert str(env.get("GH_TOKEN", "")).endswith("secrets.GITHUB_TOKEN }}"), (
+        "a PAT-created release fires the root package's `on: release` publish for a tag it does "
+        "not own; the built-in token must create this release"
+    )
+    permissions = publish.get("permissions") or {}
+    assert permissions.get("contents") == "write", (
+        "`gh release create` needs `contents: write` on this job"
+    )
+
+
+def test_a_setup_release_cannot_start_the_root_pipeline():
+    """`on: release` fires for every release; the root package's workflows must ignore ours.
+
+    The automatic setup Release is created with GITHUB_TOKEN and starts no workflow. A human
+    backfill — or "publish release" in the UI — uses a user token and *does* fire
+    `on: release: published`. Two workflows listen: `misakanet-publish.yml` compares the release
+    tag with the root `package.json`, and `publish-container.yml` used to accept any tag that
+    contained a dot. A `misakanet-setup-v<version>` tag fails the first guard and passes the
+    second, so both now require the root line's `v*` prefix.
+    """
+    for name in ("misakanet-publish.yml", "publish-container.yml"):
+        workflow = _read_yaml(REPO / ".github" / "workflows" / name)
+        conditions = " ".join(str(job.get("if") or "") for job in workflow["jobs"].values())
+        assert "startsWith(github.event.release.tag_name, 'v')" in conditions, (
+            f"{name} still reacts to a `misakanet-setup-v*` release, which it does not publish"
+        )
+
+
 # ── 2.1 the version literals the release has to move ──────────────────────────────────────────────
 
 # release-please's generic updater, transcribed. src/updaters/generic.ts. release-please is not
@@ -535,8 +619,13 @@ def _released_paths(config: dict, ledger: dict, repo: Path) -> set[str] | None:
 
     The ledger entry alone does not count either: release-please writes the *next* version into
     the ledger when it opens the release pull request, and the tag only exists once that pull
-    request merges. In between, `needsBootstrap` is still true and the floor is still needed —
-    which is exactly the state a release pull request branch is in.
+    request merges. **Which ledger is being judged is the whole question**, and it has to be the
+    one release-please reads: the base branch of the pull request, never the proposal in the
+    working tree. Reading the proposal is what deadlocked release PRs (#3755, measured
+    2026-10-23): the PR carries 2.49.1/0.6.1 while the newest tags are 2.49.0/0.6.0, so the
+    proposal says *nothing has ever been released* and demands a `bootstrap-sha` that #3756 had
+    deliberately deleted. release-please itself did not need that floor — it kept updating #3755
+    after the deletion — because it evaluates the base, so the gate evaluates the base too.
 
     Returns None when this checkout carries no tags at all: "cannot tell" must not be read as
     "not released", and a shallow clone carries none.
@@ -552,6 +641,39 @@ def _released_paths(config: dict, ledger: dict, repo: Path) -> set[str] | None:
         if _package_tag(entry, str(version)) in tags:
             released.add(path)
     return released
+
+
+def _ledger_ref() -> str:
+    """The ref whose manifest release-please reads: a pull request's **base**, not its proposal.
+
+    Measured on #3755 (2026-10-23): the release PR carried 2.49.1/0.6.1 in its ledger while the
+    newest tags were still 2.49.0/0.6.0. Read from the working tree, that says neither package has
+    ever been released — so this gate demanded a `bootstrap-sha` that #3756 had deleted
+    twenty-two minutes after the PR opened, and `audit` could never go green again: the floor
+    could only come back in a merge that the check was refusing.
+
+    release-please never judges the proposal. It reads the manifest at the base of the branch, and
+    the record says so: it kept updating #3755 after the floor was deleted, without needing one.
+    So the gate reads what release-please reads. In Actions `GITHUB_BASE_REF` names the base;
+    locally the current branch's upstream is the same fact, and `origin/main` covers a detached
+    checkout. `HEAD` is the last resort so this never becomes an unreadable gate.
+    """
+    base = os.environ.get("GITHUB_BASE_REF", "").strip()
+    candidates = ([f"origin/{base}"] if base else []) + ["@{upstream}", "origin/main", "HEAD"]
+    for ref in candidates:
+        probe = subprocess.run(
+            ["git", "-C", str(REPO), "rev-parse", "--verify", "--quiet", f"{ref}^{{commit}}"],
+            capture_output=True,
+            text=True,
+        )
+        if probe.returncode == 0:
+            return ref
+    return "HEAD"
+
+
+def _ledger_from(ref: str) -> dict:
+    """The release ledger at `ref` — the input release-please would see for this branch."""
+    return json.loads(_git(REPO, "show", f"{ref}:.release-please-manifest.json"))
 
 
 def _release_please_needs_bootstrap(config: dict, released: set[str]) -> bool:
@@ -609,11 +731,17 @@ def test_the_commit_scan_has_a_floor_while_a_package_is_unreleased():
 
     "Released" needs both halves on purpose. The ledger entry alone is not enough — release-please
     writes the *next* version into the ledger when it opens the release pull request, and the tag
-    only exists once that pull request merges — so a release pull request branch still needs the
-    floor, and this gate must not be the thing that stops that branch from shipping.
+    only exists once that pull request merges. The ledger that decides whether the floor is
+    needed is therefore the **base** ledger — the one release-please reads. Judging the release
+    PR's proposal instead is what made every release PR demand a floor its own merge would
+    delete (#3755).
     """
     config = _read_json(CONFIG)
-    ledger = _read_json(MANIFEST)
+    try:
+        ledger = _ledger_from(_ledger_ref())
+    except (subprocess.CalledProcessError, json.JSONDecodeError):
+        # No readable git ref (an exported tarball, say): judge the file that is here.
+        ledger = _read_json(MANIFEST)
     bootstrap_sha = config.get("bootstrap-sha")
 
     released = _released_paths(config, ledger, REPO)
@@ -637,6 +765,36 @@ def test_the_commit_scan_has_a_floor_while_a_package_is_unreleased():
             f"`bootstrap-sha` ({bootstrap_sha}) is inert now, and it would silently truncate a "
             f"future changelog instead of failing loudly"
         )
+
+
+def test_a_release_pull_request_is_judged_on_the_base_ledger():
+    """A release PR must not be asked for a floor its own merge would delete (#3755).
+
+    Two readings of the same config, and only one of them can be right: the base branch's ledger
+    says every package is released (so no floor), while the PR's proposal — every version bumped
+    to a tag that does not exist yet — says nothing has ever been released (so a floor). The
+    first is what release-please reads; the second is the deadlock, because the floor can only
+    come back in a merge that the check keeps refusing.
+    """
+    config = _read_json(CONFIG)
+    base = _ledger_from(_ledger_ref())
+    released = _released_paths(config, base, REPO)
+    if released is None:
+        pytest.skip("this checkout carries no release tags, so it cannot tell")
+
+    assert not _release_please_needs_bootstrap(config, released), (
+        "the base ledger says every configured package is released, so a release PR must not be "
+        "the one that demands a bootstrap floor"
+    )
+
+    # The exact shape #3755 presents: the ledger proposes versions whose tags cannot exist yet.
+    proposed = {path: "99.0.0" for path in base}
+    assert _release_please_needs_bootstrap(
+        config, _released_paths(config, proposed, REPO) or set()
+    ), (
+        "judging the proposal is the #3755 deadlock this helper exists to avoid — if this ever "
+        "stops being true, the gate no longer distinguishes a release PR from an unreleased package"
+    )
 
 
 def test_the_bootstrap_sha_is_a_commit_that_exists():

@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.7.0](https://github.com/Ikalus1988/MisakaNet/compare/misakanet-setup-v0.6.0...misakanet-setup-v0.7.0) (2026-10-24)
+
+
+### Features
+
+* **setup:** add MiniMax Code (mcode) as a plugin target ([#3798](https://github.com/Ikalus1988/MisakaNet/issues/3798)) ([ad0bf8e](https://github.com/Ikalus1988/MisakaNet/commit/ad0bf8e3aabc2198fb38e69c3b92adc24343d28a)), closes [#3777](https://github.com/Ikalus1988/MisakaNet/issues/3777)
+
+
+### Bug Fixes
+
+* **setup:** a second run is idempotent, and --verify stops lying ([#3794](https://github.com/Ikalus1988/MisakaNet/issues/3794)) ([5af7c87](https://github.com/Ikalus1988/MisakaNet/commit/5af7c87d55651667ab659d52506d92d37f6abeba)), closes [#3772](https://github.com/Ikalus1988/MisakaNet/issues/3772) [#3775](https://github.com/Ikalus1988/MisakaNet/issues/3775) [#3776](https://github.com/Ikalus1988/MisakaNet/issues/3776) [#3778](https://github.com/Ikalus1988/MisakaNet/issues/3778)
+* **setup:** the gate let a 100%-unusable machine through, and the uninstall did not undo ([#3768](https://github.com/Ikalus1988/MisakaNet/issues/3768)) ([f0a62ad](https://github.com/Ikalus1988/MisakaNet/commit/f0a62ad30cec61e6864442b7dacb63c50b212f52))
+
+
+### Documentation
+
+* **setup:** dsh's rules block is manual — say how to upgrade and remove it ([#3796](https://github.com/Ikalus1988/MisakaNet/issues/3796)) ([e73b60e](https://github.com/Ikalus1988/MisakaNet/commit/e73b60e5333dc35880ce23cd6c17dd7bf3a0f2bb)), closes [#3773](https://github.com/Ikalus1988/MisakaNet/issues/3773)
+
 ## 0.6.0 (2026-10-22)
 
 

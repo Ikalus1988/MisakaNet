@@ -418,6 +418,7 @@
   <url><loc>https://misakanet.org/lessons/registration-chain-worker-fallback/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/relative-path-command-retry-loop-no-such-file-or-directory-means-the-shell-is-in/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/remote-search-rate-limiting/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/a-verification-script-that-only-writes-a-report-cannot-be-a-gate-step-however-gr/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/repository-traffic-is-not-lesson-use/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/rescue-cards-for-non-github-users/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/two-truncations-silently-became-the-soul-of-an-agent-facing-search-a-default-pag/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -426,6 +427,7 @@
   <url><loc>https://misakanet.org/lessons/a-cloned-confirmation-line-poisons-the-context-loop-detection-must-compare-dialo/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/roleplay-vocative-vs-mention-entity-disambiguation-failure-in-portuguese-turn-ro/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/sag-lite-data-quality-cleaning/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/a-sample-counter-incremented-before-the-lookup-check-certified-61-tests-that-nev/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-saturation-cap-with-slope-k-at-zero-amplifies-small-deviations-instead-of-comp/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/schema-coupled-cross-repo-ci/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-database-schema-newer-than-the-pinned-runtime-every-write-failed-silently-whil/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -493,6 +495,7 @@
   <url><loc>https://misakanet.org/lessons/wsl-pip-gbk-hub-poller-crash/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/wsl-proxy-huggingface-external/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/wsl-proxy-setup/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/wsl-status-fails-with-the-file-cannot-be-accessed-by-the-system-but-docker-itsel/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/wsl-terminal-underscore-corruption/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/wsl2-memory-leak-fix/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/wxauto-im-feedback-collection-jsonl-queue/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>

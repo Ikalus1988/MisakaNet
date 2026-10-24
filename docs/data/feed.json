@@ -1,43 +1,67 @@
 {
-  "generated_at": "2026-10-23T17:18:34.766544+00:00",
+  "generated_at": "2026-10-24T03:52:33.220377+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3780",
-      "timestamp": "2026-10-23T11:59:24Z",
+      "title": "lessons(contrib): three intake lessons — unexecuted samples, report-only gates, WSL/Docker readiness",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3805",
+      "timestamp": "2026-10-24T03:52:23Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "docs(handoff): 交接件只记泛化性高的东西——第 18 卷按新标准重写",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3771",
-      "timestamp": "2026-10-23T10:21:51Z",
+      "title": "fix(setup): tier ③ is the state directory, not always a hook",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3804",
+      "timestamp": "2026-10-24T03:18:25Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "docs(handoff): 第 18 卷——门禁放过了一台 100% 不可用的机器，和三笔跨卷悬账",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3769",
-      "timestamp": "2026-10-23T09:55:04Z",
+      "title": "fix(release): read the linked CHANGELOG headings release-please writes",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3803",
+      "timestamp": "2026-10-24T02:01:55Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(setup): the gate let a 100%-unusable machine through, and the uninstall did not undo",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3768",
-      "timestamp": "2026-10-23T09:17:38Z",
+      "title": "test(setup): compare the mcode manifest paths in one dialect",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3801",
+      "timestamp": "2026-10-24T01:48:48Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3766",
-      "timestamp": "2026-10-23T05:38:21Z",
+      "title": "chore: release main",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3755",
+      "timestamp": "2026-10-24T01:44:18Z",
       "source": "github"
+    },
+    {
+      "type": "lesson",
+      "title": "A verification script that only writes a report cannot be a gate step, however green the pipeline looks",
+      "url": "lessons/contrib/report-only-verification-script-cannot-be-a-gate-step.md",
+      "timestamp": "2026-10-24",
+      "domain": "ci",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "A sample counter incremented before the lookup check certified 61 tests that never ran",
+      "url": "lessons/contrib/sample-counter-incremented-before-the-lookup-check.md",
+      "timestamp": "2026-10-24",
+      "domain": "testing",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "`wsl --status` fails with \"The file cannot be accessed by the system\" but Docker itself still works",
+      "url": "lessons/contrib/wsl-status-fails-but-docker-desktop-works.md",
+      "timestamp": "2026-10-24",
+      "domain": "wsl",
+      "source": "lessons"
     },
     {
       "type": "lesson",
@@ -53,30 +77,6 @@
       "url": "lessons/contrib/a-green-test-suite-hid-a-module-a-bare-node-runtime-cannot-load.md",
       "timestamp": "2026-10-22",
       "domain": "nodejs",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "Click does not activate but keyboard Enter works: probes separating pointer-delivery from handler failure",
-      "url": "lessons/contrib/click-no-op-keyboard-works-pointer-vs-handler-triage.md",
-      "timestamp": "2026-10-22",
-      "domain": "automation",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "Applying a review computed from an old snapshot as a blind overwrite silently drops concurrent edits",
-      "url": "lessons/contrib/handoff-review-stale-snapshot-three-way-merge.md",
-      "timestamp": "2026-10-22",
-      "domain": "git",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "A lock that yields on ImportError is a silent no-op on Windows: lost updates in concurrent writes",
-      "url": "lessons/contrib/lock-yield-on-importerror-silent-noop-loses-updates.md",
-      "timestamp": "2026-10-22",
-      "domain": "python",
       "source": "lessons"
     },
     {
