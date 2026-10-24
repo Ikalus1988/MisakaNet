@@ -7,6 +7,24 @@ All notable changes to the Misaka Network project are documented here.
 
 ---
 
+## [2.50.1](https://github.com/Ikalus1988/MisakaNet/compare/v2.50.0...v2.50.1) (2026-10-24)
+
+
+### Bug Fixes
+
+* **release:** read the linked CHANGELOG headings release-please writes ([#3803](https://github.com/Ikalus1988/MisakaNet/issues/3803)) ([be21274](https://github.com/Ikalus1988/MisakaNet/commit/be2127426fc98e71b6df4a42e73b59c00420b9c0)), closes [#3774](https://github.com/Ikalus1988/MisakaNet/issues/3774)
+* **setup:** tier ③ is the state directory, not always a hook ([#3804](https://github.com/Ikalus1988/MisakaNet/issues/3804)) ([4aa0e38](https://github.com/Ikalus1988/MisakaNet/commit/4aa0e38d683fc882d00441271e21084982379422)), closes [#3777](https://github.com/Ikalus1988/MisakaNet/issues/3777)
+
+
+### Tests
+
+* **setup:** compare the mcode manifest paths in one dialect ([#3801](https://github.com/Ikalus1988/MisakaNet/issues/3801)) ([64adf68](https://github.com/Ikalus1988/MisakaNet/commit/64adf683cbca607eefe006f89daec1b739977368)), closes [#3777](https://github.com/Ikalus1988/MisakaNet/issues/3777)
+
+
+### Lessons
+
+* **contrib:** three intake lessons — unexecuted samples, report-only gates, WSL/Docker readiness ([#3805](https://github.com/Ikalus1988/MisakaNet/issues/3805)) ([bdf9fae](https://github.com/Ikalus1988/MisakaNet/commit/bdf9faed681b1bd49a7ea641dc46385693f766ca))
+
 ## [2.50.0](https://github.com/Ikalus1988/MisakaNet/compare/v2.49.0...v2.50.0) (2026-10-24)
 
 
