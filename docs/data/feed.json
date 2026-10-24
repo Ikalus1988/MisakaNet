@@ -1,9 +1,16 @@
 {
-  "generated_at": "2026-10-24T03:52:33.220377+00:00",
+  "generated_at": "2026-10-24T04:47:48.152830+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3806",
+      "timestamp": "2026-10-24T04:01:20Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "lessons(contrib): three intake lessons — unexecuted samples, report-only gates, WSL/Docker readiness",
@@ -30,13 +37,6 @@
       "title": "test(setup): compare the mcode manifest paths in one dialect",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/3801",
       "timestamp": "2026-10-24T01:48:48Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore: release main",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3755",
-      "timestamp": "2026-10-24T01:44:18Z",
       "source": "github"
     },
     {
