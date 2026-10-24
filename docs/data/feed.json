@@ -1,9 +1,16 @@
 {
-  "generated_at": "2026-10-24T04:47:48.152830+00:00",
+  "generated_at": "2026-10-24T11:16:49.886893+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3807",
+      "timestamp": "2026-10-24T04:54:12Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "chore(data): sync lessons.json + refresh feed",
@@ -30,13 +37,6 @@
       "title": "fix(release): read the linked CHANGELOG headings release-please writes",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/3803",
       "timestamp": "2026-10-24T02:01:55Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "test(setup): compare the mcode manifest paths in one dialect",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3801",
-      "timestamp": "2026-10-24T01:48:48Z",
       "source": "github"
     },
     {
