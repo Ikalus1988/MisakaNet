@@ -1006,8 +1006,11 @@ test('mcode: --list-writes names both files, with the tiers they belong to', () 
     assert.deepEqual(snapshot(home), before, '--list-writes must be a pure read');
 
     const rows = result.stdout.split('\n').filter((line) => line.startsWith('tier'));
-    const pluginRow = rows.find((row) => row.includes('.minimax/plugins/misakanet/.claude-plugin/plugin.json'));
-    const rulesRow = rows.find((row) => row.includes('.minimax/AGENTS.md'));
+    // The manifest prints the platform's own separators (Windows: `~\.minimax\...`); compare in
+    // one dialect so a red test means "the path is wrong", not "the runner happens to be Windows".
+    const posix = (text) => text.replaceAll('\\', '/');
+    const pluginRow = rows.find((row) => posix(row).includes('.minimax/plugins/misakanet/.claude-plugin/plugin.json'));
+    const rulesRow = rows.find((row) => posix(row).includes('.minimax/AGENTS.md'));
     assert.ok(pluginRow, `the plugin manifest is missing from the manifest:\n${result.stdout}`);
     assert.ok(rulesRow, `the rules file is missing from the manifest:\n${result.stdout}`);
     assert.ok(pluginRow.startsWith('tier1'), `the endpoint registration is tier ①: ${pluginRow}`);
