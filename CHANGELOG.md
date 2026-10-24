@@ -29,7 +29,6 @@ All notable changes to the Misaka Network project are documented here.
 
 * count the MCP tools correctly, and pin the tables that list them ([#3797](https://github.com/Ikalus1988/MisakaNet/issues/3797)) ([f00c527](https://github.com/Ikalus1988/MisakaNet/commit/f00c527414de60b62ee8aec39c8c52bbe9f86e18)), closes [#3779](https://github.com/Ikalus1988/MisakaNet/issues/3779)
 * **handoff:** §1–§4 — 接口全绿、页面全废；没有 lint 的盲区；上线的是 dist 分支 ([ca47488](https://github.com/Ikalus1988/MisakaNet/commit/ca47488ca27549973c93b38e9f5ec50d7a704dd4))
-* **handoff:** §1–§4 — 接口全绿、页面全废；没有 lint 的盲区；上线的是 dist 分支 ([9969684](https://github.com/Ikalus1988/MisakaNet/commit/99696840208cb22d2fa3fd5c08ae6213fabb10f2))
 * **setup:** dsh's rules block is manual — say how to upgrade and remove it ([#3796](https://github.com/Ikalus1988/MisakaNet/issues/3796)) ([e73b60e](https://github.com/Ikalus1988/MisakaNet/commit/e73b60e5333dc35880ce23cd6c17dd7bf3a0f2bb)), closes [#3773](https://github.com/Ikalus1988/MisakaNet/issues/3773)
 * **trust-semantics:** refresh the evidence distribution for the new E1 lesson ([350c9f3](https://github.com/Ikalus1988/MisakaNet/commit/350c9f30934df7c99430d59519bc803e1b6ee1f3))
 
