@@ -45,7 +45,7 @@ jobs:
       # (`contents/.github/actions/pr-genius-check/action.yml?ref=<sha>`) *and* at the root
       # (`contents/action.yml?ref=<sha>`), and repoint the path to wherever it lives. Do not ignore the bump —
       # a pinned action whose path is stale stops being updated at all.
-      - uses: zsxh1990/pr-genius@db0ff6ed2af9d24b9a82495ac27d22ff6e26d196  # v1.9.1
+      - uses: zsxh1990/pr-genius@3c257d3913cabc47b21c74bc7499ae89b5b23d5c  # v2.2.3
         id: pr-genius
         continue-on-error: true  # advisory only: never block merge on tool failure
         with:
