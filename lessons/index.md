@@ -375,6 +375,7 @@
 - [注册链路设计 — Worker 只创建 Issue，其余交给 Workflow](contrib/registration-chain-worker-fallback.md) | feishu | "registration", "worker", "register", "github-actions", "feishu", "fallback" | unknown
 - [Relative-path command retry loop — No such file or directory means the shell is in the wrong directory](contrib/relative-path-command-retry-loop-is-a-cwd-bug.md) | development | "cwd", "working-directory", "relative-path", "retry-loop", "bash-tool", "python", "lesson-gate" | intake-issue-2572
 - [Remote search rate limiting: 5 free/day, then registration](contrib/remote-search-rate-limiting.md) | mcp | "mcp", "rate-limit", "search", "registration", "abuse" | mcp-intake-fb741dcb9d
+- [A verification script that only writes a report cannot be a gate step, however green the pipeline looks](contrib/report-only-verification-script-cannot-be-a-gate-step.md) | ci | "ci", "gates", "exit-code", "verification", "false-green", "pipeline", "reporting" | intake-3725
 - [Repository Traffic Is Not Lesson Use](contrib/repository-traffic-is-not-lesson-use.md) | growth | "analytics", "growth", "feedback", "lessons", "metrics" | generalized repository traffic analysis
 - [When Lessons Are Too Heavy, Use Rescue Cards](contrib/rescue-cards-for-non-github-users.md) | ux | "ux", "support", "lessons", "rescue", "feedback" | generalized support-feedback analysis
 - [Two truncations silently became the soul of an agent-facing search: a default page size and a 400-char projection](contrib/retrieval-projection-truncation-caps-recall.md) | backend | "search", "bm25", "retrieval", "sql", "pagination", "agent-tooling", "observability", "verification" | misakanet-search-corpus-truncation-2026-09-12
@@ -383,6 +384,7 @@
 - [A cloned confirmation line poisons the context: loop detection must compare dialogue, not whole messages](contrib/roleplay-dialogue-loop-context-poisoning.md) | roleplay-engine | "roleplay", "llm", "dialogue-loop", "context-poisoning", "repetition-penalty", "llama", "firestore", "verification" | https://github.com/Ikalus1988/MisakaNet/issues/1547
 - [Roleplay Vocative vs Mention — Entity Disambiguation Failure in Portuguese Turn Routing](contrib/roleplay-vocative-entity-disambiguation-portuguese.md) | agent | "roleplay", "entity-disambiguation", "vocative", "turn-routing", "portuguese", "go", "dialogue-systems" | issue-1630
 - [SAG-Lite Data Quality: Clean Search Results](contrib/sag-lite-data-quality-cleaning.md) | devops | "search", "sqlite", "fts5", "data-quality", "misakanet" | agent_experience
+- [A sample counter incremented before the lookup check certified 61 tests that never ran](contrib/sample-counter-incremented-before-the-lookup-check.md) | testing | "testing", "verification", "false-negative", "sample-count", "denominator", "lookup", "test-harness" | intake-3759
 - [A saturation cap with slope k at zero amplifies small deviations instead of compressing them](contrib/saturation-cap-low-slope-amplifies-instead-of-compressing.md) | devops | "saturation", "cap-function", "nonlinear-dynamics", "fixed-point", "stability", "monitoring" | 
 - [Schemas coupled across repos break CI until the counterpart PR merges](contrib/schema-coupled-cross-repo-ci.md) | development | "schema", "ci", "pr", "validation", "maintenance" | 
 - [A database schema newer than the pinned runtime: every write failed silently while the API returned 200](contrib/schema-newer-than-pinned-runtime-writes-fail-silently.md) | devops | "postgres", "alembic", "schema-migration", "silent-failure", "pinned-version", "health-check", "async-write" | intake-3246
@@ -455,6 +457,7 @@
 - [wsl pip gbk hub poller crash](contrib/wsl-pip-gbk-hub-poller-crash.md) | wsl | "project:agent-medici", "severity:critical", "platform:wsl", "node:hermes_wsl" | bootstrap
 - [wsl proxy huggingface external](contrib/wsl-proxy-huggingface-external.md) | wsl | "wsl", "proxy", "huggingface", "external" | unknown
 - [WSL 代理Setup — 通过 Windows 梯子Access外网](contrib/wsl-proxy-setup.md) | wsl | "wsl", "proxy", "setup" | unknown
+- [`wsl --status` fails with "The file cannot be accessed by the system" but Docker itself still works](contrib/wsl-status-fails-but-docker-desktop-works.md) | wsl | "wsl", "docker-desktop", "windows", "readiness-probe", "ssh", "non-admin", "verification" | intake-3767
 - [WSL 终端编辑Setup危险 — TTy粘贴吞下划线](contrib/wsl-terminal-underscore-corruption.md) | wsl | "wsl", "terminal", "underscore", "corruption" | unknown
 - [WSL2 内存泄漏 / 内存占用过高](contrib/wsl2-memory-leak-fix.md) | wsl | "wsl", "memory", "leak", "performance" | unknown
 - [IM 机器人反馈收集与 JSONL 队列审核模式](contrib/wxauto-im-feedback-collection-jsonl-queue.md) | wechat | "rag", "feedback", "queue", "jsonl", "wechat", "wxauto", "workflow" | unknown
