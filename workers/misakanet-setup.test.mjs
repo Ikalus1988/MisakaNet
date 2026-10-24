@@ -1018,6 +1018,10 @@ test('mcode: --list-writes names both files, with the tiers they belong to', () 
     // A permission to "add an MCP server" is not a permission to change behaviour, which is the
     // whole point of separating the tiers.
     assert.match(rulesRow, /规则块/, rulesRow);
+    // mcode has no hook mechanism: tier ③ is the state directory, so the approval line must not
+    // tell the operator they are approving hooks (#3777 follow-up).
+    assert.doesNotMatch(result.stdout, /③ 装钩子/);
+    assert.match(result.stdout, /③ 钩子\/状态目录/);
   } finally {
     rmSync(home, { recursive: true, force: true });
   }

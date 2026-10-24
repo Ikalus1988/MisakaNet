@@ -3273,7 +3273,11 @@ if (LIST_WRITES) {
   // The rows come from the shared manifest builder, the same list the install preview prints: one
   // source of truth, so the manifest an operator approves and the preview a user reads cannot
   // disagree about what this command would write.
-  const tiers = { 1: '① 注册 MCP 端点', 2: '② 写规则块（改行为）', 3: '③ 装钩子（每轮自动执行）' };
+  // Tier ③ is not always a hook: `hook.mjs`, the endpoint record and the version stamp live in the
+  // same state directory, and a target with no hook mechanism (Cursor, mcode, …) still gets that
+  // directory written. Calling the whole tier "装钩子" told those users they were approving a
+  // behaviour change they were not (#3777 follow-up).
+  const tiers = { 1: '① 注册 MCP 端点', 2: '② 写规则块（改行为）', 3: '③ 钩子/状态目录' };
   const list = buildWriteManifest(targets);
   for (const row of list) {
     console.log(`tier${row.tier}\t${tiers[row.tier]}\t${row.path}\t${row.action}`);
