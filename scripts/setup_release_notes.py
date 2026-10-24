@@ -39,7 +39,13 @@ REPO = Path(__file__).resolve().parent.parent
 PACKAGE = "@misaka-net/misakanet-setup"
 DEFAULT_CHANGELOG = REPO / "packages" / "misakanet-setup" / "CHANGELOG.md"
 DEFAULT_REPOSITORY = "Ikalus1988/MisakaNet"
-HEADING = re.compile(r"^##\s+(?P<version>\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?)\s")
+# Two heading shapes, and the second is the one that bit the first real release after this
+# script shipped: release-please writes `## 0.6.0 (date)` until a previous tag exists to link,
+# then `## [0.7.0](compare-url) (date)`. The 0.7.0 Release body fell back to "no section"
+# because the bracket was not in this pattern.
+HEADING = re.compile(
+    r"^##\s+\[?(?P<version>\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?)\]?(?=[\s(])"
+)
 
 
 def section(text: str, version: str) -> str:

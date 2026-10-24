@@ -50,6 +50,26 @@ SYNTHETIC = """# Changelog
 * **setup:** the oldest thing
 """
 
+# release-please's other heading shape: once a previous tag exists to link against, it writes
+# `## [version](compare-url) (date)`. The first real release after `setup_release_notes.py`
+# shipped used exactly this, and the body fell back to "no section" (#0.7.0).
+BRACKETED = """# Changelog
+
+## [0.7.0](https://github.com/owner/repo/compare/misakanet-setup-v0.6.0...misakanet-setup-v0.7.0) (2026-10-24)
+
+
+### Features
+
+* **setup:** the newer linked thing
+
+## [0.6.0](https://github.com/owner/repo/compare/misakanet-setup-v0.5.6...misakanet-setup-v0.6.0) (2026-10-22)
+
+
+### Bug Fixes
+
+* **setup:** the older linked thing
+"""
+
 
 def test_the_section_stops_at_the_next_version():
     body = notes.section(SYNTHETIC, "0.6.0")
@@ -62,6 +82,21 @@ def test_the_section_stops_at_the_next_version():
 def test_a_missing_section_is_empty_not_the_whole_changelog():
     assert notes.section(SYNTHETIC, "9.9.9") == ""
     assert notes.section(SYNTHETIC, "0.6") == "", "a partial version must not match a heading"
+
+
+def test_a_linked_heading_from_release_please_is_read():
+    """The shape release-please switches to once a previous tag exists (the 0.7.0 Release)."""
+    body = notes.section(BRACKETED, "0.6.0")
+    assert body.startswith("## [0.6.0]")
+    assert "older linked thing" in body
+    assert "newer linked thing" not in body, "the section leaked the version above it"
+
+
+def test_the_real_070_release_section_is_read():
+    """The live changelog, because that is the file the first failing Release used."""
+    body = notes.section(CHANGELOG.read_text(encoding="utf-8"), "0.7.0")
+    assert body.startswith("## [0.7.0]"), body.splitlines()[0] if body else "MISSING"
+    assert "add MiniMax Code (mcode) as a plugin target" in body
 
 
 def test_the_real_060_section_is_the_one_that_shipped():
