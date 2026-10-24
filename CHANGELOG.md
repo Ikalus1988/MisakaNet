@@ -7,6 +7,38 @@ All notable changes to the Misaka Network project are documented here.
 
 ---
 
+## [2.50.0](https://github.com/Ikalus1988/MisakaNet/compare/v2.49.0...v2.50.0) (2026-10-24)
+
+
+### Features
+
+* **setup:** add MiniMax Code (mcode) as a plugin target ([#3798](https://github.com/Ikalus1988/MisakaNet/issues/3798)) ([ad0bf8e](https://github.com/Ikalus1988/MisakaNet/commit/ad0bf8e3aabc2198fb38e69c3b92adc24343d28a)), closes [#3777](https://github.com/Ikalus1988/MisakaNet/issues/3777)
+
+
+### Bug Fixes
+
+* **bench:** a red fixture leg must name the fixture that failed ([#3765](https://github.com/Ikalus1988/MisakaNet/issues/3765)) ([0fa6119](https://github.com/Ikalus1988/MisakaNet/commit/0fa6119b70b919dc9856e9fdfb316792714b6b6d))
+* **deps:** pin undici to 7.30.1, the patched version of three advisories ([#3799](https://github.com/Ikalus1988/MisakaNet/issues/3799)) ([c56fc68](https://github.com/Ikalus1988/MisakaNet/commit/c56fc6893528f5b8d31bce5d18be6b982e0d8ac2)), closes [#3755](https://github.com/Ikalus1988/MisakaNet/issues/3755)
+* **release:** the installer's version gets a Release, and release PRs stop deadlocking ([#3795](https://github.com/Ikalus1988/MisakaNet/issues/3795)) ([759877f](https://github.com/Ikalus1988/MisakaNet/commit/759877fe9b18ad0626f9cfbb523a686eca0aa57f)), closes [#3774](https://github.com/Ikalus1988/MisakaNet/issues/3774)
+* **setup:** a second run is idempotent, and --verify stops lying ([#3794](https://github.com/Ikalus1988/MisakaNet/issues/3794)) ([5af7c87](https://github.com/Ikalus1988/MisakaNet/commit/5af7c87d55651667ab659d52506d92d37f6abeba)), closes [#3772](https://github.com/Ikalus1988/MisakaNet/issues/3772) [#3775](https://github.com/Ikalus1988/MisakaNet/issues/3775) [#3776](https://github.com/Ikalus1988/MisakaNet/issues/3776) [#3778](https://github.com/Ikalus1988/MisakaNet/issues/3778)
+* **setup:** the gate let a 100%-unusable machine through, and the uninstall did not undo ([#3768](https://github.com/Ikalus1988/MisakaNet/issues/3768)) ([f0a62ad](https://github.com/Ikalus1988/MisakaNet/commit/f0a62ad30cec61e6864442b7dacb63c50b212f52))
+* **site:** the homepage called two helpers it no longer defined ([#3760](https://github.com/Ikalus1988/MisakaNet/issues/3760)) ([d0ee6cf](https://github.com/Ikalus1988/MisakaNet/commit/d0ee6cfba74926a92873861f244a82392fee9d98))
+
+
+### Documentation
+
+* count the MCP tools correctly, and pin the tables that list them ([#3797](https://github.com/Ikalus1988/MisakaNet/issues/3797)) ([f00c527](https://github.com/Ikalus1988/MisakaNet/commit/f00c527414de60b62ee8aec39c8c52bbe9f86e18)), closes [#3779](https://github.com/Ikalus1988/MisakaNet/issues/3779)
+* **handoff:** §1–§4 — 接口全绿、页面全废；没有 lint 的盲区；上线的是 dist 分支 ([ca47488](https://github.com/Ikalus1988/MisakaNet/commit/ca47488ca27549973c93b38e9f5ec50d7a704dd4))
+* **handoff:** §1–§4 — 接口全绿、页面全废；没有 lint 的盲区；上线的是 dist 分支 ([9969684](https://github.com/Ikalus1988/MisakaNet/commit/99696840208cb22d2fa3fd5c08ae6213fabb10f2))
+* **setup:** dsh's rules block is manual — say how to upgrade and remove it ([#3796](https://github.com/Ikalus1988/MisakaNet/issues/3796)) ([e73b60e](https://github.com/Ikalus1988/MisakaNet/commit/e73b60e5333dc35880ce23cd6c17dd7bf3a0f2bb)), closes [#3773](https://github.com/Ikalus1988/MisakaNet/issues/3773)
+* **trust-semantics:** refresh the evidence distribution for the new E1 lesson ([350c9f3](https://github.com/Ikalus1988/MisakaNet/commit/350c9f30934df7c99430d59519bc803e1b6ee1f3))
+
+
+### Lessons
+
+* **contrib:** a green suite hid a module that a bare Node runtime cannot load ([#3757](https://github.com/Ikalus1988/MisakaNet/issues/3757)) ([fc44983](https://github.com/Ikalus1988/MisakaNet/commit/fc449838377f4bc43dbcb07ee2adf060cc591131))
+* **contrib:** a hand-made PR stack is closed, not retargeted, when the upstream branch is deleted ([a997265](https://github.com/Ikalus1988/MisakaNet/commit/a997265e685f503afd1bdb1b8a68e9a18d2f8020))
+
 ## [2.49.0](https://github.com/Ikalus1988/MisakaNet/compare/v2.48.0...v2.49.0) (2026-10-22)
 
 
