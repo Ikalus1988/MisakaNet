@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.1](https://github.com/Ikalus1988/MisakaNet/compare/misakanet-setup-v0.7.0...misakanet-setup-v0.7.1) (2026-10-24)
+
+
+### Bug Fixes
+
+* **setup:** tier ③ is the state directory, not always a hook ([#3804](https://github.com/Ikalus1988/MisakaNet/issues/3804)) ([4aa0e38](https://github.com/Ikalus1988/MisakaNet/commit/4aa0e38d683fc882d00441271e21084982379422)), closes [#3777](https://github.com/Ikalus1988/MisakaNet/issues/3777)
+
 ## [0.7.0](https://github.com/Ikalus1988/MisakaNet/compare/misakanet-setup-v0.6.0...misakanet-setup-v0.7.0) (2026-10-24)
 
 
