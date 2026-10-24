@@ -28,3 +28,4 @@ pyyaml>=6.0
 # 需要以下可选功能时请安装对应依赖：
 # - 语义搜索（--semantic）: pip install sentence-transformers
 # - 飞书通知: pip install requests
+# - x402 支付客户端 (scripts/x402_pay.py): pip install eth-account
