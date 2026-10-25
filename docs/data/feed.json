@@ -1,9 +1,16 @@
 {
-  "generated_at": "2026-10-25T11:46:21.710097+00:00",
+  "generated_at": "2026-10-25T16:34:50.031178+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3845",
+      "timestamp": "2026-10-25T11:56:25Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "fix(setup): honour MISAKANET_AGENT_DIR so an unwritable HOME stops breaking install/--verify",
@@ -30,13 +37,6 @@
       "title": "fix(release): stand down on npm E409 when the version already exists",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/3826",
       "timestamp": "2026-10-25T04:37:21Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore: release main",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3802",
-      "timestamp": "2026-10-25T04:27:07Z",
       "source": "github"
     },
     {
