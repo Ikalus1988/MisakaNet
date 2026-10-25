@@ -1,9 +1,30 @@
 {
-  "generated_at": "2026-10-25T04:56:16.728211+00:00",
+  "generated_at": "2026-10-25T11:46:21.710097+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "fix(setup): honour MISAKANET_AGENT_DIR so an unwritable HOME stops breaking install/--verify",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3844",
+      "timestamp": "2026-10-25T11:29:03Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "docs(setup): the restart is not universal, and the tool list is how you confirm it",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3830",
+      "timestamp": "2026-10-25T08:17:28Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3829",
+      "timestamp": "2026-10-25T05:06:52Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "fix(release): stand down on npm E409 when the version already exists",
@@ -16,27 +37,6 @@
       "title": "chore: release main",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/3802",
       "timestamp": "2026-10-25T04:27:07Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "fix(deps): clear the filelock and setuptools Dependabot alerts",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3825",
-      "timestamp": "2026-10-25T04:14:47Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3824",
-      "timestamp": "2026-10-24T23:32:22Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3823",
-      "timestamp": "2026-10-24T21:10:18Z",
       "source": "github"
     },
     {
