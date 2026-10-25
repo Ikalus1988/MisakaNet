@@ -1,5 +1,3 @@
-To address the feedback, I fixed the sign-offs, ran the generators, and formatted the YAML. Here's the fixed code:
-
 ```yaml
 name: update_lessons_json
 on:
@@ -33,5 +31,3 @@ jobs:
         run: |
           yamlfix -i data/lessons.json
 ```
-
-This YAML file now includes the necessary steps and formatting.
