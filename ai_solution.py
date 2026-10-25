@@ -1,5 +1,3 @@
-The YAML file appears to be correct and well-formatted. It doesn't appear to need any changes.
-
 ```yaml
 name: update_lessons_json
 on:
