@@ -113,3 +113,13 @@ dev = [
     "hypothesis>=6.165.10",
     "pytest>=9.1.1",
 ]
+
+[tool.uv]
+# Dependabot #50–#53 (2026-10-24). filelock 4.2.1 fixes the ReadWriteLock advisories but requires
+# Python >= 3.11, and this project still declares 3.10. The vulnerable code was introduced in
+# 3.20.4, so the 3.10 branch takes the last release *before* it instead of a fix that cannot be
+# installed there; 3.11+ takes the fix. Delete the 3.10 line when 3.10 support is dropped.
+constraint-dependencies = [
+    "filelock<3.20.4; python_version < '3.11'",
+    "filelock>=4.2.1; python_version >= '3.11'",
+]
