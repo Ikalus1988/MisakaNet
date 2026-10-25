@@ -203,9 +203,11 @@
     <p>Writes MisakaNet into your assistant's own config. <strong>The command is the same for every
        client</strong> — which one you use decides what gets written, not what you type.</p>
     <pre><code id="cmd-install">npx @misaka-net/misakanet-setup</code></pre>
-    <p class="note">Then <strong>close and reopen the assistant window</strong> and ask it something
-      with a real error text (e.g. <code>switch vision model</code>). Read <code>--help</code> first if
-      you want to see what it will change. Uninstall: <code>--uninstall</code>.</p>
+    <p class="note">Then confirm it works: only clients that load MCP configuration at startup
+      (Claude Code, Codex, …) need a new session — dsh applies it on the next message, and per-call
+      channels such as <code>mcporter</code> need no restart. Card 2 below lists the checks; ask it
+      something with a real error text (e.g. <code>switch vision model</code>). Read <code>--help</code>
+      first if you want to see what it will change. Uninstall: <code>--uninstall</code>.</p>
   </div>
 
   <div class="card">

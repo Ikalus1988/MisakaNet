@@ -94,7 +94,7 @@
   "qsTrackASub": "Claude Code、Codex、Hermes、OpenClaw、codewhale、Cursor、Gemini CLI、Copilot CLI、OpenCode、Kiro、MiniMax Code —— 安装器支持的十一个全在这里。",
   "qsA1": "把端点装进你用到的每个助手：",
   "qsA1Check": "自检：安装器打印它配置的每个助手，并以 0 退出。",
-  "qsA2": "关掉助手窗口再打开，然后确认装上去了：",
+  "qsA2": "确认能用——启动时加载配置的客户端（Claude Code / Codex）重开一次；dsh 下一条消息生效，mcporter 这类按次调用不用重启。然后确认装上去了：",
   "qsA2Check": "自检：claude mcp list 或 codex mcp list 里能看到 misakanet 和它的工具。",
   "qsA3": "拿报错原文里最独特的片段去问 —— 它应该先查课程再回答：",
   "qsAVerify": "自检：claude mcp list 里能看到 misakanet 与 8 个工具 · 撤销：npx @misaka-net/misakanet-setup --uninstall",

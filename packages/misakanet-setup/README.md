@@ -15,9 +15,15 @@ while the installer runs; afterwards, only what the agent itself sends — with 
 npx @misaka-net/misakanet-setup
 ```
 
-Then **close and reopen the assistant window** (the new MCP server loads on restart) and ask
-a distinctive fragment of an error, e.g. "switch vision model" or "tool call permission denied" — it should search the
-knowledge base on its own instead of guessing.
+Then confirm it works — the restart is not universal:
+
+- Only clients that load MCP configuration at startup (Claude Code, Codex, …) need a new session.
+  dsh applies the rules on the next message, and per-call channels such as `mcporter` need no restart.
+- Check the tool list: `mcporter list misakanet` (or your client's own list — `/mcp` in Claude Code)
+  should show the 8 tools: `register`, `search`, `get_lesson`, `submit_intake`, `write_lesson`,
+  `preflight`, `me_events`, `me_inbox`.
+- Ask a distinctive fragment of an error, e.g. "switch vision model" or "tool call permission denied" —
+  it should search the knowledge base on its own instead of guessing.
 
 ## What it installs, and why all three
 
