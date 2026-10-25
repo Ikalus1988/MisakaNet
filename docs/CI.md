@@ -26,7 +26,7 @@
 | `dsh-client-e2e.yml` | DSH Client E2E（真宿主 + Chromium：`/misakanet` 浮层、全窗口 toast、设置行↔面板三条行为场景；库请求被拦截，不依赖公网。**2026-10-02 起跑 PR**：composer 起不来的根因是 seed 的 workspace 记录缺 `createdAt`/`updatedAt`，宿主会自己建首条会话）| PR, 手动, 定时 | `40 3 * * *` |
 | `field-report-schema.yml` | Field Report Schema（FR3 家目录规则另跑语料外的已发布面：`docs/**` 减去 `linguist-generated` 的路径，加上 `lessons/**`）| PR, push, 手动, 定时 | `23 6 * * 1` —— `--strict-all` 全量审计唯一的定时入口；#3011 之前它只在 `workflow_dispatch` 上，而那个入口的累计运行数是 **0**，于是"某个没人碰过的文件里有泄漏"在结构上不可能被报出来 |
 | `fix-dco.yml` | DCO Auto-Fix | 评论 |  |
-| `gate-mutation-audit.yml` | Gate Mutation Audit | 定时, 手动 | `43 6 * * 1` |
+| `gate-mutation-audit.yml` | Gate Mutation Audit（每个 PR 证明硬门「还能红」，见 `docs/ci-gates.md`）| PR, 定时, 手动 | `43 6 * * 1` |
 | `heartbeat.yml` | Daily Heartbeat（每天一条评论回答"谁在调用、问了什么、有没有帮上"；发在 `heartbeat` 标签的长寿 issue 上，正文里的 `<!-- heartbeat-day:YYYY-MM-DD -->` 标记让它**幂等** —— 重跑改当天那条评论，而不是再发一条。D1 里的 `mcpclient:` / `gap` 行用 `d1-counters-report.yml` 那套 Cloudflare 凭据读，`env.MCP_TOKEN` 不进入任何 workflow。口径与四条诚实规则见 `docs/maintainer/heartbeat.md`）| 定时, 手动 | `12 0 * * *` —— 00:12 UTC（北京时间 08:12）报**刚结束的**那个 UTC 日：日报在当天还没过完时出数，就是把部分计数当成全天 |
 | `lesson-gate.yml` | Lesson Quality Gate | PR |  |
 | `lesson-quality.yml` | Lesson Quality Score | PR |  |
@@ -133,7 +133,7 @@
 | `adopt-pr.yml` | 70 次运行 / 70 次 skipped；`/adopt` 真实使用 **0** 次 | 入口是维护者在 fork PR 上评论 `/adopt`；这条路径从没被用起过 | 有人真的评论 `/adopt`（`docs/maintainer/adopt-fork-pr.md`）。**删掉它是 owner 的选项**，不是维护者的默认动作 |
 | `stale.yml` | 97 次 success；`label:stale` 1 条；自动关闭评论 0 条 | 豁免面很大（`keep`/`registered`/`help wanted`/`bounty` + `exempt-all-milestones`），而本仓多数开放项都带其中至少一个 | 出现既不豁免、又 14 天（PR）/30 天（issue）无活动的项。**这是它的设计目的**：宁可空转，也不要在一堆 bounty 上乱贴 stale |
 | `lesson-notify.yml` | 2953 次运行：2946 skipped / 2 success / 5 failure | 只在 `new-lesson` 标签出现时才有意义，而该标签全仓只有 6 条 | 新建的 lesson PR 打上 `new-lesson`。投递成功与否**不可见**——这是它真正的短板，要改不是关 |
-| `intake-kind-audit.yml` | 3 次 clean；2026-09-25 手工重跑仍然 clean（37 条 open `mcp-intake`） | 语料里**确实**没有错分 | 出现"内容读起来是问题、却被当课程处理"的 intake。这条以前无法区分"真的干净"和"检测从不触发"，现在 `tests/test_intake_kind_audit.py` 用夹具证明检测能触发、且摘要句与 workflow 的 grep 是同一条 |
+| `intake-kind-audit.yml` | 3 次 clean；2026-09-25 手工重跑仍然 clean（37 条 open `mcp-intake`） | 语料里**确实**没有错分 | 出现"内容读起来是问题、却被当课程处理"的 intake。这条以前无法区分"真的干净"和"检测从不触发"，现在 `tests/test_intake_kind_audit.py` 用夹具证明检测能触发；2026-10-25（#3835）起 workflow 改按脚本退出码判定：翻转 / 0 行红，misfiles 仍绿并建 digest issue |
 | `automation_output_audit.py` | 2026-09-21 定时运行 **success**（job `automation-output-audit`） | push 触发时该 job 会被 skip，只有每周一 07:00 的窗口才跑 | 每周一。`#1826` 记的"这个 job 一次都没跑过"是因为当时窗口还没到——**已经跑过了** |
 
 **已修好的那几条**（同一次复核）：`pr-checks.yml` 的 Auto-Merge Gate（布尔比 `true` 而不是 GraphQL 的 `MERGEABLE` 枚举）、

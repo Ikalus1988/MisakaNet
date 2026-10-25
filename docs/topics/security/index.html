@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Security Lessons — MisakaNet</title>
-<meta name="description" content="14 indexed failure lessons about security. From MisakaNet — Git-backed failure lesson network.">
+<meta name="description" content="17 indexed failure lessons about security. From MisakaNet — Git-backed failure lesson network.">
 <link rel="canonical" href="https://misakanet.org/topics/security/">
 <meta property="og:title" content="Security Lessons">
-<meta property="og:description" content="14 indexed failure lessons about security. From MisakaNet — Git-backed failure lesson network.">
+<meta property="og:description" content="17 indexed failure lessons about security. From MisakaNet — Git-backed failure lesson network.">
 <meta property="og:url" content="https://misakanet.org/topics/security/">
 <!-- design-tokens:start -->
 <style id="misaka-design-tokens">
@@ -168,7 +168,7 @@
 </head>
 <body>
 <h1>Security Lessons</h1>
-<div class="count">14 lessons in this domain</div>
+<div class="count">17 lessons in this domain</div>
 
 <div class="lesson">
   <a href="/lessons/a-security-fix-that-turns-tests-red-is-the-fix-working-rewrite-the-test-that-enc/">A security fix that turns tests red is the fix working — rewrite the test that encoded the leak as the contract</a>
@@ -189,6 +189,10 @@
 <div class="lesson">
   <a href="/lessons/codeql-alert-dismissal-false-positive/">Dismiss CodeQL False Positive Alerts</a>
   <div class="summary">CodeQL security scanning flags code as vulnerable when it's actually safe (false positive). Need to dismiss the alert wi</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/codesign-verify-r-reads-a-bare-requirement-string-as-a-filename-prefix-it-with/">codesign --verify -R reads a bare requirement string as a filename - prefix it with '='</a>
+  <div class="summary">Verifying a macOS app against a literal requirement string failed before any signature check ran:</div>
 </div>
 <div class="lesson">
   <a href="/lessons/a-tray-icon-is-not-evidence-test-whether-security-software-still-injects-into-a/">A tray icon is not evidence: test whether security software still injects into a newly started process</a>
@@ -213,6 +217,14 @@
 <div class="lesson">
   <a href="/lessons/prompt-injection-what-s-the-worst-that-can-happen/">Prompt Injection: What's the Worst That Can Happen?</a>
   <div class="summary">LLM applications that combine carefully crafted system prompts with untrusted user input are vulnerable to prompt inject</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/three-signals-that-lie-about-whether-a-security-software-exclusion-was-applied-p/">Three signals that lie about whether a security-software exclusion was applied, plus the 8.3 short-name trap</a>
+  <div class="summary">向 IT 提交「给某软件加注入排除 / 白名单」的申请后，无法判断申请是否被执行。三种常见误判在本例同时出现，导致长期错误结论：</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/a-clean-target-process-does-not-prove-a-security-software-exclusion-worked-measu/">A clean target process does not prove a security-software exclusion worked: measure a control group</a>
+  <div class="summary">After an application directory was added to a security product's exclusion / allow list, the</div>
 </div>
 <div class="lesson">
   <a href="/lessons/slugify-path-traversal-deep-coverage/">slugify path traversal deep coverage</a>

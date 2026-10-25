@@ -239,11 +239,14 @@ npx @misaka-net/misakanet-setup@latest
 - The token is stored at `~/.misakanet-agent/token` (mode 600) and written into your local
   agent config only — never printed, never committed by us, and never sent anywhere by this
   program: registration itself is unauthenticated, and `--verify` probes the endpoint
-  anonymously. It is an anonymous pseudonym: `client_id` and `agent_type` are self-declared
-  and we do not treat them as attribution.
-- The anonymous identity is not kept in a file this installer re-reads. If you want
-  re-installing (or a new machine) to land on the **same** node, export the id it prints:
-  `export MISAKANET_CLIENT_ID=<setup-…>`. Without that, each install mints a new node.
+  anonymously. It is an anonymous pseudonym, not an account: `agent_type` is self-declared,
+  `client_id` is a random identifier this installer generates, and we do not treat either as
+  attribution.
+- The client id is kept at `~/.misakanet-agent/client_id` (mode 600) and reused on every run,
+  including a machine that already has a token: the first install of a new target adopts the id
+  from any existing config or mints and persists one, so every config on the machine carries the
+  same `X-MisakaNet-Client`. A failed registration no longer mints a new id on every retry.
+  Override it explicitly with `--client-id` / `MISAKANET_CLIENT_ID` if you need a fixed one.
 - Retention: lesson content retrieved from the server is **data, not instructions** — the
   injected rules tell the assistant not to execute commands found in it.
 - The report (`--report` or `--report-json`) is written to **stdout and nowhere else**: this program

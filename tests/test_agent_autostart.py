@@ -526,6 +526,146 @@ def test_no_register_skips_identity(tmp_path):
     assert not (home / ".misakanet-agent" / "token").exists()
 
 
+# ── the machine identity, aligned with the npm channel (issue #3832) ─────────────────────
+# The npm installer had two holes this channel is checked against: a token that already existed
+# meant no `X-MisakaNet-Client` was written at all, and a failed registration minted a new id on
+# every re-run. The bootstrap route already pinned the id in `<stateDir>/client_id`; these tests
+# hold both channels to the same contract.
+def make_mcode_home(tmp_path: Path) -> Path:
+    home = tmp_path / "home"
+    (home / ".minimax").mkdir(parents=True)
+    return home
+
+
+def mcode_headers(home: Path) -> dict:
+    doc = json.loads((home / ".minimax" / "plugins" / "misakanet" / ".claude-plugin"
+                      / "plugin.json").read_text(encoding="utf-8"))
+    return doc["mcpServers"]["misakanet"]["headers"]
+
+
+def test_a_failed_registration_keeps_one_identity_across_runs(tmp_path):
+    """The re-run the installer asks for ("重跑本命令就能拿到 token") must not mint a new id."""
+    home = make_mcode_home(tmp_path)
+    first = run_installer(home, "--only", "mcode")
+    assert first.returncode == 0, first.stdout + first.stderr
+    client_id = (home / ".misakanet-agent" / "client_id").read_text(encoding="utf-8").strip()
+    assert client_id.startswith("setup-"), client_id
+    assert mcode_headers(home)["X-MisakaNet-Client"] == client_id, (
+        "the config that was written declares the id the failed run pinned")
+
+    before = snapshot(home)
+    second = run_installer(home, "--only", "mcode")
+    assert second.returncode == 0, second.stdout + second.stderr
+    assert (home / ".misakanet-agent" / "client_id").read_text(encoding="utf-8").strip() == client_id
+    assert snapshot(home) == before, "a failed registration must not rewrite the user's config"
+
+
+def test_a_seeded_token_still_declares_the_machine_identity(tmp_path):
+    """Hole 1: a token that already exists used to leave the manifest with no client id at all."""
+    home = make_mcode_home(tmp_path)
+    (home / ".misakanet-agent").mkdir(parents=True)
+    (home / ".misakanet-agent" / "token").write_text(SYNTHETIC_TOKEN, encoding="utf-8")
+
+    result = run_installer(home, "--only", "mcode")
+    assert result.returncode == 0, result.stdout + result.stderr
+    client_id = (home / ".misakanet-agent" / "client_id")
+    assert client_id.exists(), "a seeded token must not leave the machine without an identity"
+    assert mcode_headers(home)["X-MisakaNet-Client"] == client_id.read_text(encoding="utf-8").strip()
+
+
+def test_the_machine_identity_is_adopted_from_another_agents_config(tmp_path):
+    """The id may already live in a config this run is not rewriting — adopting it beats minting."""
+    home = make_mcode_home(tmp_path)
+    (home / ".misakanet-agent").mkdir(parents=True)
+    (home / ".misakanet-agent" / "token").write_text(SYNTHETIC_TOKEN, encoding="utf-8")
+    claude = {"mcpServers": {"misakanet": {
+        "type": "http",
+        "url": "https://misakanet.org/mcp",
+        "headers": {"X-MisakaNet-Client": "setup-already-here-01", "X-MisakaNet-Agent": "claude-code"},
+    }}}
+    (home / ".claude.json").write_text(json.dumps(claude), encoding="utf-8")
+
+    result = run_installer(home, "--only", "mcode")
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert mcode_headers(home)["X-MisakaNet-Client"] == "setup-already-here-01", (
+        "the identity another config on this machine declares must be adopted, not replaced")
+    # This channel has no in-memory id to hand to `_context_headers()`, so the adopted value is
+    # pinned in the state file — that file is how every entry written later in the run sees it.
+    assert (home / ".misakanet-agent" / "client_id").read_text(encoding="utf-8").strip() \
+        == "setup-already-here-01"
+
+
+# ── uninstall only removes what it wrote (issue #3831) ───────────────────────────────────
+# A plugin directory is a user-owned space, and the install says so ("已原样保留"). Uninstall used
+# to `shutil.rmtree` the whole subtree regardless, which deleted the very plugin the install had
+# just promised to keep.
+MCODE_PLUGIN = (".minimax", "plugins", "misakanet", ".claude-plugin", "plugin.json")
+
+
+@pytest.mark.parametrize("manifest", [
+    {"name": "someone-elses-plugin", "version": "1.0.0"},
+    "not json at all",
+    None,                      # no manifest at all
+])
+def test_uninstall_preserves_a_plugin_directory_it_did_not_write(tmp_path, manifest):
+    home = tmp_path / "home"
+    plugin = home.joinpath(*MCODE_PLUGIN)
+    plugin.parent.mkdir(parents=True)
+    if manifest is not None:
+        plugin.write_text(manifest if isinstance(manifest, str) else json.dumps(manifest),
+                          encoding="utf-8")
+    before = snapshot(home)
+
+    result = run_installer(home, "--uninstall")
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert snapshot(home) == before, "uninstall deleted a plugin directory it did not write"
+    assert home.joinpath(".minimax", "plugins", "misakanet").is_dir(), "the directory must survive"
+    assert "已保留" in result.stdout, result.stdout
+    assert "移除插件目录" not in result.stdout, (
+        "the run must not claim to have removed a directory it kept:\n" + result.stdout)
+    assert "已保留" in result.stdout.split("需要你手动一步")[-1], (
+        "a skipped directory belongs in the manual section, not in the done list:\n" + result.stdout)
+
+
+def test_uninstall_removes_the_plugin_directory_it_wrote(tmp_path):
+    home = make_mcode_home(tmp_path)
+    run_installer(home, "--only", "mcode", "--no-register")
+    assert home.joinpath(*MCODE_PLUGIN).exists()
+
+    result = run_installer(home, "--uninstall")
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert not home.joinpath(".minimax", "plugins", "misakanet").exists(), (
+        "our own plugin directory is ours to take back")
+
+
+# ── uninstall tells the truth about Hermes (issue #3834) ────────────────────────────────
+# The advisory line about `hermes hooks doctor` used to print on every machine, including one that
+# had never installed Hermes — a report of something that never happened.
+def test_uninstall_does_not_mention_hermes_on_a_machine_without_it(tmp_path):
+    home = make_mcode_home(tmp_path)
+    run_installer(home, "--only", "mcode", "--no-register")
+    result = run_installer(home, "--uninstall")
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "hermes" not in result.stdout.lower(), (
+        "a machine without Hermes must not be told about it:\n" + result.stdout)
+
+
+def test_uninstall_says_whether_the_hermes_rules_block_was_there(tmp_path):
+    home = tmp_path / "home"
+    (home / ".hermes").mkdir(parents=True)
+    (home / ".hermes" / "config.yaml").write_text("name: hermes\n", encoding="utf-8")
+
+    # Hermes present, our block never written: say that instead of claiming a removal.
+    untouched = run_installer(home, "--uninstall")
+    assert "规则块本来就没装" in untouched.stdout, untouched.stdout
+
+    # Hermes present and the block written: the removal is real and the line says so.
+    run_installer(home, "--only", "hermes", "--no-register")
+    assert "misakanet:start" in (home / ".hermes" / "SOUL.md").read_text(encoding="utf-8")
+    removed = run_installer(home, "--uninstall")
+    assert "规则块已在 ~/.hermes/SOUL.md 移除" in removed.stdout, removed.stdout
+
+
 def test_verify_is_ready_only_when_the_wiring_and_endpoint_both_work(tmp_path):
     stub = _McpStub()
     try:

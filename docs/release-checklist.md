@@ -55,10 +55,31 @@ Standard release process. Do not skip steps.
    python -m twine upload dist/misakanet-X.Y.Z*
    ```
 
-8. **Create GitHub Release**
+8. **Create GitHub Release — the body is the CHANGELOG section, not a hand-written summary**
    ```bash
-   gh release create vX.Y.Z --title "vX.Y.Z — Title" --notes '...'
+   python3 scripts/release_notes.py --package root --version X.Y.Z > /tmp/root-notes.md
+   gh release create vX.Y.Z --title "vX.Y.Z — Title" --notes-file /tmp/root-notes.md
    ```
+
+   - **The CHANGELOG is the source of truth for the release notes** (以 CHANGELOG 为准). The body
+     is the section release-please wrote for that version in `CHANGELOG.md`, so its
+     categories (`### Features`, `### Bug Fixes`, `### Lessons`, …) reach the reader. Do **not**
+     pass `--generate-notes`: that builds the body from the commit range, and the page a reader
+     opens to decide whether to upgrade then shows a flat `## What's Changed` PR list with no
+     category heading — measured on v2.50.1 (#3836), where the Release page had zero and the
+     CHANGELOG section had four.
+   - Both release lines use the **same renderer**: `scripts/release_notes.py --package root` or
+     `--package setup`. `scripts/setup_release_notes.py` is the installer's entry point into it
+     (the publish workflow calls that path). One implementation, so a heading-shape fix reaches
+     both — release-please writes either a bare `## 0.7.0 (date)` heading, or one whose text is a
+     link to the compare view once a previous tag exists, and the linked shape is what #3803 fixed.
+   - **Historical tags are not backfilled** (历史 tag 不回填). Releases created before this wiring
+     keep the `--generate-notes` body they shipped with: re-creating or editing them would make
+     the Releases page disagree with what PyPI/npm actually published at that version. The record
+     for an older version is `CHANGELOG.md`, which has always been complete.
+   - The automatic path does all of this: `release-please.yml`'s tag job renders the body with the
+     same script and then reads the published body back, warning (never failing) if it carries no
+     `### <category>` heading.
 
 ## Post-release
 
@@ -124,8 +145,9 @@ release-please in the same release PR.
 - `misakanet-setup-publish.yml` creates the tag in its `tag` job and dispatches the publish at it.
 - The **Release** (`misakanet-setup-v<version>`) is created by the `publish` job *after* npm has the
   version, with the package's CHANGELOG section as its body
-  (`scripts/setup_release_notes.py`). It is deliberately not created in the `tag` job: that would
-  announce a version nobody can install yet — the drift the Releases page exists to expose. The
+  (`scripts/setup_release_notes.py`, the installer's pinned entry point into the shared renderer
+  `scripts/release_notes.py --package setup`). It is deliberately not created in the `tag` job: that
+  would announce a version nobody can install yet — the drift the Releases page exists to expose. The
   publish job's only writer is that step; it never stages or commits the tree.
 - Backfill a release whose tag predates this wiring (the tag must already exist):
   ```bash

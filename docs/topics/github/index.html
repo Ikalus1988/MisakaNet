@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Github Lessons — MisakaNet</title>
-<meta name="description" content="4 indexed failure lessons about github. From MisakaNet — Git-backed failure lesson network.">
+<meta name="description" content="7 indexed failure lessons about github. From MisakaNet — Git-backed failure lesson network.">
 <link rel="canonical" href="https://misakanet.org/topics/github/">
 <meta property="og:title" content="Github Lessons">
-<meta property="og:description" content="4 indexed failure lessons about github. From MisakaNet — Git-backed failure lesson network.">
+<meta property="og:description" content="7 indexed failure lessons about github. From MisakaNet — Git-backed failure lesson network.">
 <meta property="og:url" content="https://misakanet.org/topics/github/">
 <!-- design-tokens:start -->
 <style id="misaka-design-tokens">
@@ -168,15 +168,27 @@
 </head>
 <body>
 <h1>Github Lessons</h1>
-<div class="count">4 lessons in this domain</div>
+<div class="count">7 lessons in this domain</div>
 
 <div class="lesson">
   <a href="/lessons/gh-pr-edit-body-with-an-empty-variable-silently-wipes-the-pr-description/">gh pr edit --body with an empty variable silently wipes the PR description</a>
   <div class="summary">`gh pr edit --body "$NEW"` reported success, exited 0, and printed the PR URL — while</div>
 </div>
 <div class="lesson">
+  <a href="/lessons/a-one-page-github-comment-read-hides-the-newest-comment-and-turns-an-idempotent/">A one-page GitHub comment read hides the newest comment and turns an idempotent upsert into a duplicate</a>
+  <div class="summary">A new code path that de-duplicates its own comment on a GitHub issue read the comment list with a single</div>
+</div>
+<div class="lesson">
   <a href="/lessons/github-sudo-email-otp-wrong-input-field/">GitHub sudo email OTP fails when the wrong input is filled</a>
   <div class="summary">Automating GitHub **sudo mode** (sensitive actions like creating a classic PAT at `/settings/tokens/new`) via Playwright</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/a-pull-request-body-goes-stale-the-moment-you-force-push-a-fix-and-nothing-signa/">A pull request body goes stale the moment you force-push a fix, and nothing signals it</a>
+  <div class="summary">A pull request description goes stale the moment you force-push a fix, and nothing signals it.</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/before-reviving-a-stale-pr-check-each-half-against-current-upstream/">Before reviving a stale PR, check each half against current upstream</a>
+  <div class="summary">陈旧（数月未动）的 PR 被要求处理 CI/合并失败时，最容易犯的错是直接 rebase 到当前上游再 force push。实测两个 PR 同时踩到两种不同情形，硬 rebase 会把不该进主线的东西塞回去：</div>
 </div>
 <div class="lesson">
   <a href="/lessons/ci-dco-failures-on-fork-prs-sign-off-and-pythonpath-traps/">CI DCO failures on fork PRs — sign-off and PYTHONPATH traps</a>

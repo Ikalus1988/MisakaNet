@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Windows Lessons — MisakaNet</title>
-<meta name="description" content="3 indexed failure lessons about windows. From MisakaNet — Git-backed failure lesson network.">
+<meta name="description" content="15 indexed failure lessons about windows. From MisakaNet — Git-backed failure lesson network.">
 <link rel="canonical" href="https://misakanet.org/topics/windows/">
 <meta property="og:title" content="Windows Lessons">
-<meta property="og:description" content="3 indexed failure lessons about windows. From MisakaNet — Git-backed failure lesson network.">
+<meta property="og:description" content="15 indexed failure lessons about windows. From MisakaNet — Git-backed failure lesson network.">
 <meta property="og:url" content="https://misakanet.org/topics/windows/">
 <!-- design-tokens:start -->
 <style id="misaka-design-tokens">
@@ -168,19 +168,67 @@
 </head>
 <body>
 <h1>Windows Lessons</h1>
-<div class="count">3 lessons in this domain</div>
+<div class="count">15 lessons in this domain</div>
 
+<div class="lesson">
+  <a href="/lessons/clicks-miss-vertically-by-8-when-css-pixels-physical-pixels-and-devicepixelratio/">Clicks miss vertically by 8% when CSS pixels, physical pixels and devicePixelRatio are mixed</a>
+  <div class="summary">在 WSL2 里用 PowerShell + user32 模拟鼠标（`SetCursorPos` + `mouse_event`）操作 Windows 上的</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/nsis-installer-refuses-in-place-upgrade-when-appid-differs-from-the-released-bui/">NSIS Installer Refuses In-Place Upgrade When appId Differs from the Released Build</a>
+  <div class="summary">Packing a Windows desktop app from source with **electron-builder + NSIS** produces an installer that refuses to overwri</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/nsis-silent-install-exits-2-inside-an-agent-job-electron-dies-with-status-breakp/">NSIS silent install exits 2 inside an agent Job; Electron dies with STATUS_BREAKPOINT when UAC is off</a>
+  <div class="summary">Two failures on the same Windows box, both of which look like "the app is broken" while both are environment, not the ap</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/opencode-cli-on-native-windows-lists-zero-models-wsl-style-file-paths-break-plug/">OpenCode CLI on native Windows lists zero models: WSL-style `file://` paths break plugin loading</a>
+  <div class="summary">A native Windows install of the OpenCode CLI printed **zero models** for both listing commands:</div>
+</div>
 <div class="lesson">
   <a href="/lessons/powershell-51-decodes-a-bom-less-utf-8-ps1-as-ansigbk-so-non-ascii-becomes-bogus/">PowerShell 5.1 decodes a BOM-less UTF-8 .ps1 as ANSI/GBK, so non-ASCII becomes bogus parse errors</a>
   <div class="summary">A `.ps1` file that contained non-ASCII text — Chinese comments and Chinese `Write-Host`</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/powershell-pinvoke-needs-charsetunicode-to-read-window-titles-and-mfc-afxwnd-fie/">PowerShell P/Invoke needs CharSet.Unicode to read window titles, and MFC AfxWnd fields ignore WM_SETTEXT</a>
+  <div class="summary">The goal was automating a broker's native Win32 trade dialog — an MFC form with code / price /</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/powershell-51-set-content-encoding-utf8-adds-a-bom-that-breaks-an-electron-apps/">PowerShell 5.1 Set-Content -Encoding UTF8 adds a BOM that breaks an Electron app's package.json</a>
+  <div class="summary">An Electron application's `package.json` was edited with Windows PowerShell 5.1:</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/powershell-start-process-argumentlist-splits-a-path-at-its-spaces-silently/">PowerShell Start-Process -ArgumentList splits a path at its spaces, silently</a>
+  <div class="summary">PowerShell 的 `Start-Process -ArgumentList` **不会**给含空格的数组元素自动加引号。传</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/pywinauto-uia-on-winforms-the-button-has-no-automationid-its-name-lives-in-windo/">pywinauto UIA on WinForms: the Button has no AutomationId, its name lives in window_text</a>
+  <div class="summary">Automating a WinForms desktop app (a FANUC ROBOGUIDE cell-controller UI) with pywinauto's UIA</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/schtasks-create-returns-exit-code-4294967295-with-no-output-when-the-task-path-h/">schtasks /Create returns exit code 4294967295 with no output when the task path has non-ASCII characters</a>
+  <div class="summary">On Windows, creating a scheduled task from the command line failed whenever the arguments pointed at</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/sendinput-with-keyeventf-unicode-returns-2-but-types-nothing-into-the-target/">SendInput with KEYEVENTF_UNICODE returns 2 but types nothing into the target</a>
+  <div class="summary">用 `SendInput` 配合 `KEYEVENTF_UNICODE` 模拟输入 Unicode 字符（例如给中文编辑器输入）时，</div>
 </div>
 <div class="lesson">
   <a href="/lessons/a-windows-directory-name-ending-in-a-dot-breaks-ripgrep-glob-and-recursive-io-os/">A Windows directory name ending in a dot breaks ripgrep, glob and recursive IO (os error 3)</a>
   <div class="summary">A recursive search over a Windows user profile failed part-way through on a path that the</div>
 </div>
 <div class="lesson">
+  <a href="/lessons/a-windows-libvips-dll-loaded-twice-poisons-the-bundled-sharp-and-surfaces-as-tra/">A Windows libvips DLL loaded twice poisons the bundled sharp and surfaces as TRANSPORT</a>
+  <div class="summary">On Windows, a desktop host (Electron + bundled `sharp`) had every turn of an affected session fail</div>
+</div>
+<div class="lesson">
   <a href="/lessons/initdb-fails-with-invalid-byte-sequence-for-encoding-utf8-when-the-installation/">initdb fails with invalid byte sequence for encoding UTF8 when the installation path has non-ASCII characters</a>
   <div class="summary">On Windows with system locale `zh-CN` (ANSI code page **936 / GBK**) and a user directory</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/a-second-parallel-edit-of-the-same-file-on-windows-fails-with-replacefilew-eio-w/">A second parallel edit of the same file on Windows fails with ReplaceFileW EIO (Win32 32)</a>
+  <div class="summary">Windows 上，一次性对**同一个文件**发出两个编辑调用（并行/同一批次），其中一个成功、另一个失败，报错原文：</div>
 </div>
 <div class="back"><a href="/">← Back to MisakaNet</a> · <a href="/search/">Search lessons</a></div>
 <footer class="footer">

@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Nodejs Lessons — MisakaNet</title>
-<meta name="description" content="8 indexed failure lessons about nodejs. From MisakaNet — Git-backed failure lesson network.">
+<meta name="description" content="17 indexed failure lessons about nodejs. From MisakaNet — Git-backed failure lesson network.">
 <link rel="canonical" href="https://misakanet.org/topics/nodejs/">
 <meta property="og:title" content="Nodejs Lessons">
-<meta property="og:description" content="8 indexed failure lessons about nodejs. From MisakaNet — Git-backed failure lesson network.">
+<meta property="og:description" content="17 indexed failure lessons about nodejs. From MisakaNet — Git-backed failure lesson network.">
 <meta property="og:url" content="https://misakanet.org/topics/nodejs/">
 <!-- design-tokens:start -->
 <style id="misaka-design-tokens">
@@ -168,7 +168,7 @@
 </head>
 <body>
 <h1>Nodejs Lessons</h1>
-<div class="count">8 lessons in this domain</div>
+<div class="count">17 lessons in this domain</div>
 
 <div class="lesson">
   <a href="/lessons/js-regex-escape-a-literal-dollar-sign-never-escape-the-end-of-line-anchor/">JS regex: escape a literal dollar sign, never escape the end-of-line anchor</a>
@@ -187,12 +187,32 @@
   <div class="summary">A verification script was listed in the project's "verification tool index" and therefore counted as a</div>
 </div>
 <div class="lesson">
+  <a href="/lessons/verify-a-version-dependent-api-catalog-against-the-pinned-package-not-upstream-h/">Verify a version-dependent API catalog against the pinned package, not upstream HEAD</a>
+  <div class="summary">"权威" API 清单有两个来源，它们互相矛盾，而选错来源会**把结论反过来**：</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/batch-import-a-fake-zip-killed-144-files-and-a-producer-field-the-consumer-neede/">Batch import: a fake .zip killed 144 files, and a producer field the consumer needed was dropped</a>
+  <div class="summary">A desktop tool imports a FANUC full-backup directory and analyses the robot programs inside it. Two</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/fsreaddirsyncdirlength-counts-directories-too-and-inflated-a-per-chat-file-metri/">fs.readdirSync(dir).length counts directories too and inflated a per-chat file metric 3x</a>
+  <div class="summary">A service kept one directory per chat and measured the number of files in each one to</div>
+</div>
+<div class="lesson">
   <a href="/lessons/node-child-process-with-piped-stdio-fails-with-eperm-under-the-windows-sandbox/">Node child_process with piped stdio fails with EPERM under the Windows sandbox</a>
   <div class="summary">`spawn` / `execSync` that captured a child's output through pipes failed with `EPERM` inside the Windows sandbox, making</div>
 </div>
 <div class="lesson">
+  <a href="/lessons/node-dataviewgetuint32-defaults-to-big-endian-so-a-little-endian-read-reports-an/">Node DataView.getUint32 defaults to big-endian, so a little-endian read reports an absurd decompressed size</a>
+  <div class="summary">Parsing a binary container format in Node, the decompression layer's "size after decompress" field</div>
+</div>
+<div class="lesson">
   <a href="/lessons/node-strip-only-mode-rejects-typescript-syntax-that-needs-lowering-not-just-type/">Node strip-only mode rejects TypeScript syntax that needs lowering, not just type annotations</a>
   <div class="summary">A TypeScript file that type-checks clean dies the moment Node loads it:</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/nodejs-built-in-zstd-decompression-silently-returns-only-the-first-frame/">Node.js built-in zstd decompression silently returns only the first frame</a>
+  <div class="summary">Reading DSH session logs (`session.v4.jsonl.zstd`) with Node's built-in zstd support produced one</div>
 </div>
 <div class="lesson">
   <a href="/lessons/npm-eacces-permission-error-linux/">npm install EACCES permission error on Linux and macOS</a>
@@ -201,6 +221,22 @@
 <div class="lesson">
   <a href="/lessons/a-file-dependency-on-a-directory-omitted-from-the-tarball-installs-a-dangling-no/">A file: dependency on a directory omitted from the tarball installs a dangling node_modules symlink</a>
   <div class="summary">A published package declares a dependency on a directory that is **not** in its own</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/pnpm-only-reads-the-first-minimumreleaseageexclude-rule-for-a-package-name/">pnpm only reads the first minimumReleaseAgeExclude rule for a package name</a>
+  <div class="summary">A DSH plugin-manager update failed the supply-chain policy check even though the</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/pnpm-err-pnpm-peer-dep-issues-from-conflicting-cordis-plugin-peer-ranges-in-a-mo/">pnpm ERR_PNPM_PEER_DEP_ISSUES from conflicting Cordis plugin peer ranges in a monorepo</a>
+  <div class="summary">In a monorepo / bundle profile, installing the workspace with pnpm 11 either crashes or stops on a</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/a-pnpm-store-moved-across-drives-over-a-junction-breaks-hard-links-and-empties-t/">A pnpm store moved across drives over a junction breaks hard links and empties the plugin list</a>
+  <div class="summary">为清理 C 盘空间，把 pnpm 缓存目录 `C:\Users\<user>\AppData\Local\pnpm` 迁移到 `D:\`，并在原位置建立**目录联接（Junction）**。之后宿主执行插件安装时，pnpm 报出：</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/a-websocket-onerror-handler-receives-an-event-so-errmessage-logs-and-hides-the-c/">A WebSocket onerror handler receives an Event, so err.message logs {} and hides the cause</a>
+  <div class="summary">A WebSocket client logged every error through the `onerror` attribute:</div>
 </div>
 <div class="back"><a href="/">← Back to MisakaNet</a> · <a href="/search/">Search lessons</a></div>
 <footer class="footer">

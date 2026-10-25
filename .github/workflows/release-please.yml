@@ -79,7 +79,16 @@ jobs:
           if gh release view "$TAG" >/dev/null 2>&1; then
             echo "Release $TAG already exists"
           else
-            gh release create "$TAG" --generate-notes
+            # The body is the CHANGELOG section release-please wrote for this version, rendered by
+            # the *same* renderer the installer's Release uses (`scripts/release_notes.py`, #3836) —
+            # not `--generate-notes`: that flag builds the body from the commit range, so the page a
+            # reader opens to decide whether to upgrade shows a flat `## What's Changed` PR list and
+            # none of the categories this repository maintains. Measured on v2.50.1: zero
+            # `### <category>` headings on the Release page, four in `CHANGELOG.md`
+            # (`### Bug Fixes`, `### Tests`, `### Lessons`).
+            python3 scripts/release_notes.py --package root --version "$VERSION" \
+              > "$RUNNER_TEMP/release-notes.md"
+            gh release create "$TAG" --notes-file "$RUNNER_TEMP/release-notes.md"
           fi
           # Append the onboarding footer (install one-liner + the copy-paste sentence for
           # people who do not use a terminal + both download links). Release notes are the
@@ -88,15 +97,44 @@ jobs:
           FOOTER=".github/release-notes-footer.md"
           if [ -f "$FOOTER" ]; then
             BODY=$(gh release view "$TAG" --json body --jq .body 2>/dev/null || echo "")
-            if printf '%s' "$BODY" | grep -q "misakanet-setup"; then
+            # The marker is a line only the footer carries. It used to be `misakanet-setup`, which is
+            # exactly the string a CHANGELOG entry can contain (a note about the installer) — and
+            # since #3836 the CHANGELOG *is* the body, so a release whose notes mention the installer
+            # would silently lose its footer. Deriving the marker from the footer keeps it accurate
+            # when the footer's heading changes.
+            MARKER=$(grep -m1 '^## ' "$FOOTER" || true)
+            if [ -n "$MARKER" ] && grep -qF -- "$MARKER" <<< "$BODY"; then
               echo "footer already present on $TAG"
             else
-              { printf '%s\n\n' "$BODY"; cat "$FOOTER"; } > /tmp/release-notes.md
-              gh release edit "$TAG" --notes-file /tmp/release-notes.md
+              { printf '%s\n\n' "$BODY"; cat "$FOOTER"; } > "$RUNNER_TEMP/release-notes-footer.md"
+              gh release edit "$TAG" --notes-file "$RUNNER_TEMP/release-notes-footer.md"
               echo "footer appended to $TAG"
             fi
           fi
           echo "created=true" >> "$GITHUB_OUTPUT"
+
+      # The reader-facing check (#3836). The Release body must be the CHANGELOG section, and a
+      # CHANGELOG section carries category headings (`### Bug Fixes`, `### Features`, ...); the flat
+      # PR list `--generate-notes` produced has none. This reads the *published* artifact — the only
+      # thing a reader sees — rather than the file the body was rendered from.
+      #
+      # A warning, never a failure: the Release exists by now, and a red step here would skip the
+      # PyPI / npm / MCP-registry dispatches below, leaving a tagged version unpublished over a
+      # cosmetic defect. When the renderer did its job this line passes silently.
+      - name: Check the release body carries the CHANGELOG categories
+        if: steps.release_tag.outputs.created == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}          # reads only
+          VERSION: ${{ steps.release_tag.outputs.version }}
+        run: |
+          set -euo pipefail
+          BODY=$(gh release view "v$VERSION" --json body --jq .body)
+          if grep -qE '^### ' <<< "$BODY"; then
+            echo "v$VERSION: the body carries CHANGELOG category headings" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          echo "::warning::v$VERSION body has no '### <category>' heading; was the CHANGELOG section missing?"
+          echo "v$VERSION: no category heading in the body" >> "$GITHUB_STEP_SUMMARY"
 
       # release-please's own release-creation code is skipped in this workflow (see the note on the
       # action below: v5 refuses it for these tokens), and that code is also what moves the release PR

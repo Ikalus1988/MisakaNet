@@ -324,6 +324,104 @@ test('a registering re-run reuses the minted id and writes nothing (issues #3772
   }
 });
 
+// ── the machine identity on the *registering* path (issue #3832) ──────────────────────────
+// Both tests below deliberately avoid `runOffline()`: `--no-register` skips ensureIdentity()
+// entirely, so it can never reach either hole. A seeded token keeps them off the network while
+// still running the real code path (a token already on the machine is the case both holes start
+// from), and the dead endpoint covers the failed-registration half.
+const CLIENT_ID_FILE = '.misakanet-agent/client_id';
+
+test('a seeded token still gets a declared identity on a target installed for the first time (#3832)', () => {
+  // Hole 1: ensureIdentity() returned immediately when the token existed, so it never set
+  // `knownClientId`; the npm installer persists nothing; and adoptExistingClientId() only runs for
+  // the file it is about to rewrite. A machine that installed one target before therefore wrote
+  // its *next* target's config with no `X-MisakaNet-Client` at all — invisible in the statistics.
+  const home = makeHome();
+  // Claude was configured earlier by an installer that never persisted an id: the only declaration
+  // of this machine's identity is the header already inside its config.
+  const seeded = JSON.parse(readFileSync(join(home, '.claude.json'), 'utf8'));
+  seeded.mcpServers.misakanet = {
+    type: 'http',
+    url: 'https://misakanet.org/mcp',
+    headers: { 'X-MisakaNet-Client': 'setup-already-here-01', 'X-MisakaNet-Agent': 'claude-code' },
+  };
+  writeFileSync(join(home, '.claude.json'), `${JSON.stringify(seeded, null, 2)}\n`);
+  mkdirSync(join(home, '.minimax'), { recursive: true });
+  mkdirSync(join(home, '.misakanet-agent'), { recursive: true });
+  writeFileSync(join(home, '.misakanet-agent', 'token'), `${TOKEN_SHAPE_OK}\n`);
+
+  const result = run(home, '--only', 'mcode');
+  assert.equal(result.status, 0, result.stdout + result.stderr);
+  const plugin = JSON.parse(readFileSync(join(home, MCODE_PLUGIN), 'utf8'));
+  assert.equal(plugin.mcpServers.misakanet.headers['X-MisakaNet-Client'], 'setup-already-here-01',
+    'the identity another config on this machine already declares must be adopted, not dropped');
+  assert.ok(!existsSync(join(home, CLIENT_ID_FILE)),
+    'an adopted identity needs no new state file — the config it came from is the record');
+});
+
+test('a seeded token with no identity anywhere mints one and pins it (#3832)', () => {
+  // The other half of hole 1: nothing on the machine declares an id, so the run has to mint one.
+  // Minting it into the config *and* into `<stateDir>/client_id` is what makes the next run
+  // agree instead of minting again.
+  const home = makeMcodeHome();
+  try {
+    mkdirSync(join(home, '.misakanet-agent'), { recursive: true });
+    writeFileSync(join(home, '.misakanet-agent', 'token'), `${TOKEN_SHAPE_OK}\n`);
+
+    // The manifest must name the file this run is about to create — the preview is a promise.
+    const listed = run(home, '--only', 'mcode', '--list-writes');
+    assert.equal(listed.status, 0, listed.stdout + listed.stderr);
+    assert.ok(listed.stdout.replaceAll('\\', '/').includes('.misakanet-agent/client_id'),
+      `--list-writes must name the identity file it will create:\n${listed.stdout}`);
+
+    const first = run(home, '--only', 'mcode');
+    assert.equal(first.status, 0, first.stdout + first.stderr);
+    const minted = readFileSync(join(home, CLIENT_ID_FILE), 'utf8').trim();
+    assert.match(minted, /^setup-/, 'a minted pseudonym is what the identity file holds');
+    assert.equal(JSON.parse(readFileSync(join(home, MCODE_PLUGIN), 'utf8'))
+      .mcpServers.misakanet.headers['X-MisakaNet-Client'], minted,
+    'the manifest declares the id the state file pins');
+
+    const before = snapshot(home);
+    const second = run(home, '--only', 'mcode');
+    assert.equal(second.status, 0, second.stdout + second.stderr);
+    assert.deepEqual(snapshot(home), before, 'the pinned id makes the second run a no-op');
+    assert.match(second.stdout, /本次实际写入 0 个文件/, second.stdout);
+    assert.ok(second.stdout.includes(`这台机器的身份编号是 ${minted}`), second.stdout);
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test('a failed registration keeps one identity across re-runs (#3832)', () => {
+  // Hole 2: the minted id was held only in memory, so every re-run minted a new one, rewrote the
+  // user's config with it and left a backup behind. The failure path is exactly the path the
+  // installer tells the user to walk ("稍后重跑本命令就能拿到 token").
+  const home = makeMcodeHome();
+  try {
+    // run(): the endpoint is dead on purpose, so registration fails the way a blocked network does.
+    const first = run(home, '--only', 'mcode');
+    assert.match(first.stdout, /匿名注册没成功/, first.stdout);
+    const id = readFileSync(join(home, CLIENT_ID_FILE), 'utf8').trim();
+    assert.match(id, /^setup-/);
+    assert.equal(JSON.parse(readFileSync(join(home, MCODE_PLUGIN), 'utf8'))
+      .mcpServers.misakanet.headers['X-MisakaNet-Client'], id,
+    'the config that was written declares the id the failed run pinned');
+    assert.ok(first.stdout.includes(`这台机器的身份编号是 ${id}`),
+      'the id is shown, because the user is the one who will re-run');
+
+    const before = snapshot(home);
+    const second = run(home, '--only', 'mcode');
+    assert.equal(second.status, 0, second.stdout + second.stderr);
+    assert.equal(readFileSync(join(home, CLIENT_ID_FILE), 'utf8').trim(), id,
+      'a second failed registration must not mint a new identity');
+    assert.deepEqual(snapshot(home), before, 'and must not rewrite a single file');
+    assert.match(second.stdout, /本次实际写入 0 个文件/, second.stdout);
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
 test('dry-run writes nothing at all', () => {
   const home = makeHome();
   const before = snapshot(home);
@@ -1041,6 +1139,97 @@ test('mcode: --list-writes --mcp-only does not ask for the rules block', () => {
   }
 });
 
+// ── the write manifest vs. the disk (issue #3833) ─────────────────────────────────────────
+// Two numbers describe one run: the preview ("将涉及 N 个文件", the *scope*) and the closing count
+// ("本次实际写入 N 个文件", what was *touched*). Both have to be true of the disk — the preview named
+// `~/.misakanet-agent/hook.mjs` on every non-Claude target (where no hook can exist), and the count
+// was one short on every fresh install because `stampVersion()` wrote outside `writeText()`.
+function previewPaths(stdout) {
+  // One line per file, between the "将涉及 N 个文件" header and the ways-out footer.
+  const lines = stdout.split('\n');
+  const start = lines.findIndex((line) => /^将涉及 \d+ 个文件/.test(line));
+  if (start < 0) return null;
+  const paths = [];
+  for (const line of lines.slice(start + 1)) {
+    if (!line.startsWith('  ')) break;
+    paths.push(line.slice(2).split(/\s+\+ /)[0].trim());
+  }
+  return paths;
+}
+
+/** Resolve a `~`-redacted preview path onto the test home (either platform's separator). */
+function previewTarget(home, shown) {
+  return join(home, ...shown.replace(/^~[\\/]/, '').split(/[\\/]/).filter(Boolean));
+}
+
+test('mcode: the preview only names files this target really writes (#3833)', () => {
+  const home = makeMcodeHome();
+  try {
+    const result = runOffline(home, '--only', 'mcode');
+    assert.equal(result.status, 0, result.stdout + result.stderr);
+    const paths = previewPaths(result.stdout);
+    assert.ok(paths && paths.length, `no preview in the output:\n${result.stdout}`);
+    // mcode has no hook mechanism — the same run says so in its "跳过" section.
+    assert.ok(!paths.some((shown) => shown.endsWith('hook.mjs')),
+      `mcode has no hook, so hook.mjs must not be promised:\n${paths.join('\n')}`);
+    for (const shown of paths) {
+      assert.ok(existsSync(previewTarget(home, shown)),
+        `the preview named ${shown}, which the run never wrote`);
+    }
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test('"本次实际写入 N" counts exactly the files the run changed (#3833)', () => {
+  // mcode: the state directory + two config files, no hook. claude: hook and version stamp too —
+  // the case where the old raw `writeFileSync` calls made the count short by two.
+  for (const [label, build, flags] of [
+    ['mcode', () => makeMcodeHome(), ['--only', 'mcode']],
+    ['claude', () => makeHome(), ['--only', 'claude']],
+  ]) {
+    const home = build();
+    try {
+      const before = snapshot(home);
+      const result = runOffline(home, ...flags);
+      assert.equal(result.status, 0, `${label}: ${result.stdout}${result.stderr}`);
+      const after = snapshot(home);
+      const changed = Object.keys(after).filter((rel) => after[rel] !== before[rel]
+        && !rel.includes('.misakanet.bak'));
+      const reported = Number((result.stdout.match(/本次实际写入 (\d+) 个文件/) || [])[1]);
+      assert.equal(reported, changed.length,
+        `${label}: the count says ${reported}, ${changed.length} files changed (${changed.join(', ')})`);
+      // The other half of the same promise: every path the preview named exists now.
+      for (const shown of previewPaths(result.stdout) || []) {
+        assert.ok(existsSync(previewTarget(home, shown)),
+          `${label}: the preview named ${shown}, which the run never wrote`);
+      }
+    } finally {
+      rmSync(home, { recursive: true, force: true });
+    }
+  }
+});
+
+test('the token row says it depends on a successful registration (#3833)', () => {
+  // The token is a file the run *may* write — only when the network lets the anonymous registration
+  // through. Listing it as an unconditional write is the same false promise as the hook was.
+  const home = makeHome();
+  try {
+    const manifest = run(home, '--only', 'claude', '--list-writes');
+    assert.equal(manifest.status, 0, manifest.stdout + manifest.stderr);
+    const tokenRow = manifest.stdout.split('\n')
+      .find((row) => row.startsWith('tier') && /[\\/]token(\s|$)/.test(row.replaceAll('\\', '/')));
+    assert.ok(tokenRow, `the token is in scope for a registering run:\n${manifest.stdout}`);
+    assert.match(tokenRow, /取决于注册/, tokenRow);
+
+    // …and the preview, which is what a user actually reads, says it too.
+    const dry = run(home, '--only', 'claude', '--dry-run');
+    assert.match(dry.stdout, /[\\/]token\s+.*取决于注册/, dry.stdout);
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
 test('mcode: uninstall takes back both files and leaves no shell of its own', () => {
   const home = makeMcodeHome();
   try {
@@ -1061,6 +1250,54 @@ test('mcode: uninstall takes back both files and leaves no shell of its own', ()
     rmSync(home, { recursive: true, force: true });
   }
 });
+
+// ── mcode uninstall: the same ownership rule as the install (issue #3831) ─────────────────
+// The install side refuses a plugin directory whose manifest is not ours and says "已原样保留";
+// uninstall used to `rmSync` the whole subtree unconditionally, so it destroyed exactly the thing
+// the install had just promised to keep (measured 2026-10-25). A plugin directory is a user-owned
+// space, so uninstall has to answer the same question the install answers.
+const MCODE_DIR = '.minimax/plugins/misakanet';
+
+for (const [label, prepare] of [
+  ['manifest name is someone else\'s', (pluginPath) => ({ name: 'someone-elses-plugin', version: '1.0.0' })],
+  ['manifest is missing', null],
+  ['manifest is not valid JSON', 'not json at all'],
+]) {
+  test(`mcode: uninstall preserves a plugin directory it did not write — ${label} (#3831)`, () => {
+    const home = makeMcodeHome();
+    const pluginPath = join(home, MCODE_PLUGIN);
+    try {
+      mkdirSync(dirname(pluginPath), { recursive: true });
+      if (prepare === null) {
+        // a directory with no manifest at all: owned by nobody, so it is not ours to delete
+        writeFileSync(join(dirname(pluginPath), 'README.md'), 'my plugin\n');
+      } else if (typeof prepare === 'string') {
+        writeFileSync(pluginPath, prepare);
+      } else {
+        writeFileSync(pluginPath, `${JSON.stringify(prepare(pluginPath), null, 2)}\n`);
+      }
+      const before = snapshot(home);
+
+      const removed = runOffline(home, '--uninstall');
+      assert.equal(removed.status, 0, removed.stdout + removed.stderr);
+
+      // The data is still there, byte for byte.
+      assert.deepEqual(withoutBackups(snapshot(home)), before,
+        `uninstall deleted a plugin directory it did not write; left: ${JSON.stringify(withoutBackups(snapshot(home)))}`);
+      assert.ok(existsSync(join(home, MCODE_DIR)), 'the directory must survive');
+
+      // …and the run says so, as a step for a human — not as something it completed.
+      assert.match(removed.stdout, /已保留/, removed.stdout);
+      assert.doesNotMatch(removed.stdout, /移除插件目录/,
+        `"移除插件目录" is a claim the run must not make about a directory it kept:\n${removed.stdout}`);
+      const manualSection = (removed.stdout.split('需要你手动一步')[1] || '').split('跳过（')[0];
+      assert.match(manualSection, /已保留/,
+        `the skipped directory belongs in the manual section, not "已完成":\n${removed.stdout}`);
+    } finally {
+      rmSync(home, { recursive: true, force: true });
+    }
+  });
+}
 
 test('mcode: verify reads the manifest and the rules block, and names a missing manifest', () => {
   const home = makeMcodeHome();
@@ -1486,6 +1723,45 @@ test('hermes: verify reports the registration, and uninstall restores the file e
       'a .env that held only our token line must go with the entry');
   } finally {
     rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test('uninstall only talks about Hermes on a machine that has Hermes (issue #3834)', () => {
+  // The uninstall used to print "规则块已在 ~/.hermes/SOUL.md 移除" on *every* machine, including one
+  // that had never installed Hermes — a report of something that never happened, next to a command
+  // (`hermes hooks doctor`) that does not exist there. The `!` list is the only action list a user
+  // gets, so an item that does not apply is worse than a missing one.
+  const mcodeOnly = makeMcodeHome();
+  try {
+    runOffline(mcodeOnly, '--only', 'mcode');
+    const removed = runOffline(mcodeOnly, '--uninstall');
+    assert.equal(removed.status, 0, removed.stdout + removed.stderr);
+    assert.doesNotMatch(removed.stdout, /hermes/i,
+      `a machine without Hermes must not be told about it:\n${removed.stdout}`);
+  } finally {
+    rmSync(mcodeOnly, { recursive: true, force: true });
+  }
+
+  // Hermes installed *and* our block written: the line is true, and has to say "已移除".
+  const wroteBlock = makeHermesHome();
+  try {
+    runOffline(wroteBlock, '--only', 'hermes');
+    assert.match(readFileSync(join(wroteBlock, '.hermes', 'SOUL.md'), 'utf8'), /misakanet:start/,
+      'the install writes the block this test then removes');
+    const removed = runOffline(wroteBlock, '--uninstall');
+    assert.match(removed.stdout, /规则块已在 ~\/\.hermes\/SOUL\.md 移除/, removed.stdout);
+  } finally {
+    rmSync(wroteBlock, { recursive: true, force: true });
+  }
+
+  // Hermes installed, but the rules block was never there: say that, not "已移除".
+  const noBlock = makeHermesHome();
+  try {
+    const removed = runOffline(noBlock, '--uninstall');
+    assert.match(removed.stdout, /本来就没装/, removed.stdout);
+    assert.doesNotMatch(removed.stdout, /已在 ~\/\.hermes\/SOUL\.md 移除/, removed.stdout);
+  } finally {
+    rmSync(noBlock, { recursive: true, force: true });
   }
 });
 
@@ -2453,6 +2729,10 @@ test('--silent + --report-json + --only do not conflict (and --only does not nar
 
 test('--silent composes with --uninstall, which still removes everything', () => {
   const home = makeHome();
+  // A `!` line has to exist for this composition to be observable, and the only manual note an
+  // uninstall raises is Hermes' — which since #3834 appears on machines that have Hermes. Seed it.
+  mkdirSync(join(home, '.hermes'), { recursive: true });
+  writeFileSync(join(home, '.hermes', 'config.yaml'), 'model: x\n');
   runOffline(home);
   const result = runOffline(home, '--silent', '--uninstall');
   assert.equal(result.status, 0, result.stdout + result.stderr);

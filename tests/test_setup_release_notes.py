@@ -131,3 +131,20 @@ def test_a_missing_changelog_is_an_error_not_an_empty_release(tmp_path, capsys):
     assert code == 2
     assert captured.out == ""
     assert "FAIL" in captured.err
+
+
+def test_this_entry_point_is_the_shared_renderer_not_a_second_implementation():
+    """#3836: the installer and the product package render through one module.
+
+    `misakanet-setup-publish.yml` calls this script's path, so the entry point has to stay; what it
+    must not do is keep its own copy of the heading shapes and the body layout, because that is how
+    the two release lines came to ship two dialects in the first place.
+    """
+    import release_notes
+
+    text = CHANGELOG.read_text(encoding="utf-8")
+    assert notes.section is release_notes.section
+    assert notes.render(text, "0.6.0", "owner/repo") == release_notes.render(
+        release_notes.SETUP, text, "0.6.0", "owner/repo"
+    )
+    assert notes.main(["--version", "0.6.0", "--changelog", str(CHANGELOG)]) == 0

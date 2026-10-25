@@ -168,11 +168,15 @@
 </head>
 <body>
 <h1>Feishu / Lark API Issues</h1>
-<div class="count">20 lessons in this domain</div>
+<div class="count">21 lessons in this domain</div>
 
 <div class="lesson">
   <a href="/lessons/aily-feishu-mcp-pull-only/">aily feishu mcp pull only</a>
   <div class="summary">虫群架构设计时，误以为 aily 飞书侧支持 MCP Server 暴露给 Hub 调用。</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/a-feishu-bitable-attachment-field-rejects-a-doc-image-file-token-upload-needs-pa/">A Feishu bitable attachment field rejects a doc-image file token; upload needs parent_type=bitable_file</a>
+  <div class="summary">A Feishu (Lark) bitable **attachment field** could not be filled through the MCP document-image upload</div>
 </div>
 <div class="lesson">
   <a href="/lessons/feishu-block-api-false-success/">Feishu Block API returns code=0 but creates zero blocks under rate limiting</a>
@@ -245,10 +249,6 @@
 <div class="lesson">
   <a href="/lessons/registration-chain-worker-fallback/">注册链路设计 — Worker 只创建 Issue，其余交给 Workflow</a>
   <div class="summary">MisakaNet 节点注册需要一条对国内外用户都通畅的链路。最初 Worker 既创建 Issue 又读写 counter.json，导致 Worker 和 register.yml 双重自增、竞态、Worker 权限过大等问题。</div>
-</div>
-<div class="lesson">
-  <a href="/lessons/vertical-kb-question-bank-strategy/">Vertical KB Question Bank Strategy — FANUC Robot KB Case Study</a>
-  <div class="summary">在飞书云文档中维护一个 FANUC 机器人垂直知识库的题库，经历了从第一批到第三批的迭代，发现了一些关键管理策略。</div>
 </div>
 <div class="back"><a href="/">← Back to MisakaNet</a> · <a href="/search/">Search lessons</a></div>
 <footer class="footer">

@@ -168,7 +168,7 @@
 </head>
 <body>
 <h1>Windows-Encoding Lessons</h1>
-<div class="count">39 lessons in this domain</div>
+<div class="count">62 lessons in this domain</div>
 
 <div class="lesson">
   <a href="/lessons/roboguide-handlingpro-plugin-unavailable-a-missing-install-feature-not-com-regis/">ROBOGUIDE HandlingPRO 'plugin unavailable': a missing install feature, not COM registration</a>
@@ -183,8 +183,20 @@
   <div class="summary">Aider --show-repo-map crashes on Windows with UnicodeEncodeError (gbk codec) when repo contains unicode characters in fi</div>
 </div>
 <div class="lesson">
+  <a href="/lessons/clicks-miss-vertically-by-8-when-css-pixels-physical-pixels-and-devicepixelratio/">Clicks miss vertically by 8% when CSS pixels, physical pixels and devicePixelRatio are mixed</a>
+  <div class="summary">在 WSL2 里用 PowerShell + user32 模拟鼠标（`SetCursorPos` + `mouse_event`）操作 Windows 上的</div>
+</div>
+<div class="lesson">
   <a href="/lessons/codex-cli-mcp-handshake-succeeds-but-the-model-never-receives-the-tools/">Codex CLI: MCP handshake succeeds but the model never receives the tools</a>
   <div class="summary">An MCP server is registered and healthy by every check Codex offers, and the model still</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/docker-desktop-unable-to-start-on-windows-when-wslexe-is-broken-use-docker-engin/">Docker Desktop "unable to start" on Windows when wsl.exe is broken: use Docker Engine inside a WSL2 distro</a>
+  <div class="summary">On a Windows host, Docker Desktop refused to start:</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/dsh-desktop-will-not-start-web-authentication-failed-from-netfetch-plus-a-cookie/">DSH Desktop will not start: 'Web authentication failed' from net.fetch plus a cookie pile-up</a>
+  <div class="summary">环境：Windows 10/11，DSH Desktop 0.2.1-rc.2（exe 文件版本 0.2.1.0，Electron）。</div>
 </div>
 <div class="lesson">
   <a href="/lessons/migrating-dsh-home-with-robocopy-materializes-the-profile-node-modules-junctions/">Migrating DSH_HOME with robocopy materializes the profile node_modules junctions, and dsh refuses to boot</a>
@@ -193,6 +205,26 @@
 <div class="lesson">
   <a href="/lessons/dsh-plugin-installation-troubleshooting/">DSH Plugin Installation Troubleshooting — Common Failures and Fixes</a>
   <div class="summary">Users installing the MisakaNet DSH plugin encounter a variety of failures across npm, git, and manual installation metho</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/dsh-windows-job-runner-exits-1-because-the-profile-dependency-closure-is-incompl/">DSH Windows job runner exits 1 because the profile dependency closure is incomplete</a>
+  <div class="summary">On Windows the DSH (DeepSeek Harness) engine started normally and the GUI opened, but</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/dsh-shell-tools-on-windows-fail-in-two-stages-the-powershell-script-policy-then/">DSH shell tools on Windows fail in two stages: the PowerShell script policy, then a sandbox ACL temp grant</a>
+  <div class="summary">On Windows every DSH shell tool (`pwsh`, `ops_bash`) was blocked **before it could start**, and the</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/dsh-workspace-write-denies-writes-in-workspace-subdirectories-while-the-root-is/">DSH workspace-write denies writes in workspace subdirectories while the root is writable</a>
+  <div class="summary">In a DSH (DeepSeek Harness) session on Windows under the `workspace-write` file policy,</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/electron-builder-nsis-packaging-dies-on-a-tls-reset-while-downloading-its-binari/">electron-builder NSIS Packaging Dies on a TLS Reset While Downloading Its Binaries</a>
+  <div class="summary">Windows x64 host, building an unsigned NSIS installer from source. electron-builder fails **intermittently** while downl</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/browser-provider-unavailable-the-electron-package-is-installed-without-its-dist/">Browser provider unavailable: the electron package is installed without its dist/ binary</a>
+  <div class="summary">DSH Desktop 2.0.15（core 0.1.7-rc.2，profile `desktop`）对每一个 `browser_*` 工具都报</div>
 </div>
 <div class="lesson">
   <a href="/lessons/a-tray-icon-is-not-evidence-test-whether-security-software-still-injects-into-a/">A tray icon is not evidence: test whether security software still injects into a newly started process</a>
@@ -215,40 +247,8 @@
   <div class="summary">为 wcferry 开放 Windows 防火墙端口 10086 时，误以为这是"内网穿透"操作，担心安全性。</div>
 </div>
 <div class="lesson">
-  <a href="/lessons/an-im-bot-is-a-guest-on-someone-elses-stack-pin-the-client-the-os-and-the-instal/">An IM bot is a guest on someone else's stack: pin the client, the OS, and the install order</a>
-  <div class="summary">An IM bot (WeChat, Feishu, WeCom) runs entirely on infrastructure it does not own: the chat client is</div>
-</div>
-<div class="lesson">
-  <a href="/lessons/a-lock-that-yields-on-importerror-is-a-silent-no-op-on-windows-lost-updates-in-c/">A lock that yields on ImportError is a silent no-op on Windows: lost updates in concurrent writes</a>
-  <div class="summary">A shared counter's read-modify-write was guarded with a lock that gives up when the</div>
-</div>
-<div class="lesson">
-  <a href="/lessons/node-child-process-with-piped-stdio-fails-with-eperm-under-the-windows-sandbox/">Node child_process with piped stdio fails with EPERM under the Windows sandbox</a>
-  <div class="summary">`spawn` / `execSync` that captured a child's output through pipes failed with `EPERM` inside the Windows sandbox, making</div>
-</div>
-<div class="lesson">
-  <a href="/lessons/nodejs-missing-require-inside-try-catch/">Node.js missing require inside try/catch silently kills win32 code path</a>
-  <div class="summary">Missing `require("node:os")` inside a `try/catch(_){}` block silently kills the entire Windows code path. `os.tmpdir()` </div>
-</div>
-<div class="lesson">
-  <a href="/lessons/a-parked-license-gate-screen-is-not-tamper-detection-walk-the-ui-tree-first/">A parked license-gate screen is not tamper detection: walk the UI tree first</a>
-  <div class="summary">A packaged Windows desktop app (a Flutter shell) appeared to stop at one page and</div>
-</div>
-<div class="lesson">
-  <a href="/lessons/powershell-51-decodes-a-bom-less-utf-8-ps1-as-ansigbk-so-non-ascii-becomes-bogus/">PowerShell 5.1 decodes a BOM-less UTF-8 .ps1 as ANSI/GBK, so non-ASCII becomes bogus parse errors</a>
-  <div class="summary">A `.ps1` file that contained non-ASCII text — Chinese comments and Chinese `Write-Host`</div>
-</div>
-<div class="lesson">
-  <a href="/lessons/powershell-add-type-blocked-by-policy-call-the-win32-api-with-python-ctypes-inst/">PowerShell Add-Type blocked by policy: call the Win32 API with Python ctypes instead</a>
-  <div class="summary">On Windows, `Add-Type` was blocked by the machine's security policy, so PowerShell could no longer</div>
-</div>
-<div class="lesson">
-  <a href="/lessons/python-gbk-encoding-error/">Python GBK Encoding Error — Windows/WSL 跨平台</a>
-  <div class="summary">在 WSL 中运行 Python 脚本，读取或写入文件时报：</div>
-</div>
-<div class="lesson">
-  <a href="/lessons/rag-chinese-encoding-pymupdf/">RAG Chinese Encoding with PyMuPDF</a>
-  <div class="summary">When building a FANUC knowledge-base RAG system, retrieved Chinese alarm codes appeared garbled.</div>
+  <a href="/lessons/windows-github-dataset-download-stalls-until-a-mirror-prefix-is-prepended/">Windows GitHub Dataset Download Stalls Until a Mirror Prefix Is Prepended</a>
+  <div class="summary">On Windows, downloading a GitHub dataset directly does not fail fast — it stalls and then dies. Reported symptoms:</div>
 </div>
 <div class="back"><a href="/">← Back to MisakaNet</a> · <a href="/search/">Search lessons</a></div>
 <footer class="footer">

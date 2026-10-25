@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Data Lessons — MisakaNet</title>
-<meta name="description" content="7 indexed failure lessons about data. From MisakaNet — Git-backed failure lesson network.">
+<meta name="description" content="9 indexed failure lessons about data. From MisakaNet — Git-backed failure lesson network.">
 <link rel="canonical" href="https://misakanet.org/topics/data/">
 <meta property="og:title" content="Data Lessons">
-<meta property="og:description" content="7 indexed failure lessons about data. From MisakaNet — Git-backed failure lesson network.">
+<meta property="og:description" content="9 indexed failure lessons about data. From MisakaNet — Git-backed failure lesson network.">
 <meta property="og:url" content="https://misakanet.org/topics/data/">
 <!-- design-tokens:start -->
 <style id="misaka-design-tokens">
@@ -168,11 +168,15 @@
 </head>
 <body>
 <h1>Data Lessons</h1>
-<div class="count">7 lessons in this domain</div>
+<div class="count">9 lessons in this domain</div>
 
 <div class="lesson">
   <a href="/lessons/an-archive-container-name-is-not-an-entity-name-parse-the-entries-before-groupin/">An archive container name is not an entity name: parse the entries before grouping</a>
   <div class="summary">An uploaded `.rar`/`.7z` holding **several** robot backups — one per subdirectory — produced a single</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/a-weak-signal-sample-can-raise-a-factors-relative-contribution-while-its-auc-fal/">A weak-signal sample can raise a factor's relative contribution while its AUC falls</a>
+  <div class="summary">在相对贡献分解（log-AUC 增量法）里，新增一个弱信号样本后，某因素的**绝对 AUC 明显下降**，但它的**相对贡献占比反而上升**。</div>
 </div>
 <div class="lesson">
   <a href="/lessons/cross-sheet-name-merge-data-chaos/">跨 Sheet 同名合并导致数据混乱：机器人唯一标识必须带前缀</a>
@@ -189,6 +193,10 @@
 <div class="lesson">
   <a href="/lessons/data-quality-three-layer-fix-pattern/">Data Quality Fix: Always Keep Three Layers (DB + ETL + Query)</a>
   <div class="summary">ETL pipeline derives identifiers from source filenames (e.g., `robot_name` from Excel sheet names). Filenames are inhere</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/a-file-count-is-not-an-entity-count-three-layer-dedup-and-short-names-collide-ac/">A file count is not an entity count: three-layer dedup, and short names collide across lines</a>
+  <div class="summary">批量扫描一批导出数据后，汇报「共 278 台机器人的数据」。实际那是**文件数**，不是机器人数：</div>
 </div>
 <div class="lesson">
   <a href="/lessons/silent-data-loss-in-google-cloud-bigquery-schema-mismatch-and-firestore-overwrit/">Silent Data Loss in Google Cloud: BigQuery Schema Mismatch and Firestore Overwrite Failures</a>

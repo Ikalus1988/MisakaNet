@@ -57,6 +57,54 @@ Three notes that have each cost someone an afternoon:
   hand-written file list until 2026-09-29, so most of its test files did not run on the PRs that changed
   them.)
 
+## Proving a gate can still go red
+
+A gate that cannot fail is worse than no gate: it reports ✅ on broken input and retires the
+suspicion that would have found the bug. `scripts/gate_mutation_audit.py` (#2045, #3837) therefore
+proves each covered gate can still **reject** — it builds a valid artifact in a temporary directory,
+asserts the gate accepts it, then breaks exactly the thing the gate checks and asserts the gate exits
+non-zero.
+
+**The hard-gate table above is the single source of that list.** `hard_gates()` parses it on every
+run, each entry in the audit's `GATES` registry names the context it proves in `Gate.check`, and a
+full run fails when a context in the table has no mutation. Nothing else restates the list: a row
+added above turns the audit (and `tests/test_gate_mutation_audit.py`) red until a mutation for it
+lands in the same pull request. The weekly ratchet `scripts/check_documented_gates.py` is the second
+reader of the same table, and a test compares all three — the document, this audit's parser and the
+ratchet's — so a reader that drifts to the wrong table is caught instead of agreeing with itself.
+
+| Required context | Proven by | The mutation is |
+|---|---|---|
+| **DCO / Signed-off-by** | `dco` | **real** — the `Scan DCO` step of `.github/actions/dco-audit` runs against a real git history |
+| **test (ubuntu-latest, 3.11)** | `pytest-leg` | **real** — the leg's own `Run Tests` + `Verify test outcome` steps run against a scenario suite whose tests fail, fail to collect, or collect nothing |
+| **gate** | `lesson-gate` | **real** — `scripts/lesson_gate.py` runs against a mutated lesson |
+| **audit** | `audit-secret-scan` | **real** — the job's `Secret Scan` step runs both scanners over a scenario tree with a planted token |
+| | `audit-worker-suite` | **real** — the job's `node --test 'workers/**/*.test.mjs'` step runs over a scenario worker test that fails |
+| | `audit-coverage-floor` | **criterion-level** — the floor is read from `pr-checks.yml` and enforced by `pytest-cov` when it is installed; without the plugin the comparison is modelled, and the audit says so when it reports |
+
+`provenance-gate` is in the audit but **not** in the table above: it is not a required context, and
+the `gate` context does not read whether a cited source exists. It is kept because it is the only
+gate that checks that, and because a gate that cannot block a merge is exactly the kind that
+regresses unnoticed — proving it can still fail is the audit's whole job.
+
+Two limits worth knowing before trusting a green audit:
+
+* **The workflow-driven mutations execute the step bodies, not GitHub Actions.** The YAML is parsed
+  at run time, so deleting the `5) … exit 1` arm, the `Signed-off-by:` grep or the coverage floor
+  turns the mutation green — that is the intended detection. What it cannot see is the Actions
+  machinery *around* a step (its `if:`, its job's `continue-on-error`, ruleset membership); those are
+  pinned by `tests/test_ci_runs_what_it_claims.py`, `tests/test_workflow_pins.py` and the ratchet.
+* **The `audit` verdict block itself is not executed** — its `exit 1` chain is interleaved with the
+  report generation. The audit proves the criteria that feed it (the secret scan, the worker suite,
+  the coverage floor); that a red criterion reaches the job's verdict is pinned by
+  `tests/test_ci_runs_what_it_claims.py`.
+
+It runs on **every pull request**, weekly, and by manual dispatch
+(`.github/workflows/gate-mutation-audit.yml`). The pull request trigger is deliberate (#3837): the
+change that removes a gate's teeth *is* a pull request, and a weekly audit finds it after it merged.
+The job is a single runner with read-only permissions and no secrets, and superseded runs are
+cancelled; it is not in the ruleset, so it advises rather than blocks.
+
 ## Soft Gates (advisory, won't block)
 
 These report but cannot stop a merge. Some are advisory by design; two are advisory by accident, which is
