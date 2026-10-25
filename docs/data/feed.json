@@ -1,9 +1,16 @@
 {
-  "generated_at": "2026-10-25T17:31:17.958016+00:00",
+  "generated_at": "2026-10-25T20:58:36.305694+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3856",
+      "timestamp": "2026-10-25T17:41:09Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "fix(ci): prove all four hard gates can go red, on every PR",
@@ -23,13 +30,6 @@
       "title": "fix(audit): the intake-kind flip check now decides the exit code",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/3853",
       "timestamp": "2026-10-25T17:29:23Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "fix(release): render the root Release body from the CHANGELOG",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3854",
-      "timestamp": "2026-10-25T17:10:58Z",
       "source": "github"
     },
     {
