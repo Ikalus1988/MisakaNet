@@ -1,82 +1,82 @@
 {
-  "generated_at": "2026-10-25T16:34:50.031178+00:00",
+  "generated_at": "2026-10-25T17:31:17.958016+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3845",
-      "timestamp": "2026-10-25T11:56:25Z",
+      "title": "fix(ci): prove all four hard gates can go red, on every PR",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3855",
+      "timestamp": "2026-10-25T17:30:45Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(setup): honour MISAKANET_AGENT_DIR so an unwritable HOME stops breaking install/--verify",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3844",
-      "timestamp": "2026-10-25T11:29:03Z",
+      "title": "lessons(contrib): 125 intake lessons from the 2026-10-25 triage",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3851",
+      "timestamp": "2026-10-25T17:29:28Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "docs(setup): the restart is not universal, and the tool list is how you confirm it",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3830",
-      "timestamp": "2026-10-25T08:17:28Z",
+      "title": "fix(audit): the intake-kind flip check now decides the exit code",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3853",
+      "timestamp": "2026-10-25T17:29:23Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3829",
-      "timestamp": "2026-10-25T05:06:52Z",
+      "title": "fix(release): render the root Release body from the CHANGELOG",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3854",
+      "timestamp": "2026-10-25T17:10:58Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(release): stand down on npm E409 when the version already exists",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3826",
-      "timestamp": "2026-10-25T04:37:21Z",
+      "title": "fix(setup): uninstall ownership, stable client id, truthful manifest",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3852",
+      "timestamp": "2026-10-25T17:10:54Z",
       "source": "github"
     },
     {
       "type": "lesson",
-      "title": "A verification script that only writes a report cannot be a gate step, however green the pipeline looks",
-      "url": "lessons/contrib/report-only-verification-script-cannot-be-a-gate-step.md",
-      "timestamp": "2026-10-24",
-      "domain": "ci",
+      "title": "A migration that only renames when the destination is missing leaves orphan source files",
+      "url": "lessons/contrib/a-file-migration-whose-only-condition-is-if-exists-dest-rena.md",
+      "timestamp": "2026-10-25",
+      "domain": "development",
       "source": "lessons"
     },
     {
       "type": "lesson",
-      "title": "A sample counter incremented before the lookup check certified 61 tests that never ran",
-      "url": "lessons/contrib/sample-counter-incremented-before-the-lookup-check.md",
-      "timestamp": "2026-10-24",
-      "domain": "testing",
+      "title": "A permission classifier refused to run cloned repo code, so the minimal implementation was written from scratch",
+      "url": "lessons/contrib/agent-permission-classifier-blocks-cloned-repo-code.md",
+      "timestamp": "2026-10-25",
+      "domain": "agent",
       "source": "lessons"
     },
     {
       "type": "lesson",
-      "title": "`wsl --status` fails with \"The file cannot be accessed by the system\" but Docker itself still works",
-      "url": "lessons/contrib/wsl-status-fails-but-docker-desktop-works.md",
-      "timestamp": "2026-10-24",
-      "domain": "wsl",
+      "title": "Agent worktree isolation fails at spawn when the orchestrator's cwd is not a git repository",
+      "url": "lessons/contrib/agent-worktree-isolation-requires-git-cwd.md",
+      "timestamp": "2026-10-25",
+      "domain": "agent",
       "source": "lessons"
     },
     {
       "type": "lesson",
-      "title": "A manually stacked pull request is closed, not retargeted, when the upstream branch is deleted",
-      "url": "lessons/contrib/a-stacked-pr-downstream-is-closed-when-the-upstream-branch-is-deleted.md",
-      "timestamp": "2026-10-23",
-      "domain": "devops",
+      "title": "antd Upload fires onChange once per file per batch, so one drop becomes N business units",
+      "url": "lessons/contrib/antd-upload-onchange-per-file-not-per-batch.md",
+      "timestamp": "2026-10-25",
+      "domain": "frontend",
       "source": "lessons"
     },
     {
       "type": "lesson",
-      "title": "A green test suite hid a module that a bare Node runtime cannot load, because the bundler rewrites the JSON import",
-      "url": "lessons/contrib/a-green-test-suite-hid-a-module-a-bare-node-runtime-cannot-load.md",
-      "timestamp": "2026-10-22",
-      "domain": "nodejs",
+      "title": "anysearch_batch_search rejects tag academic with HTTP 400 Invalid tag: academic",
+      "url": "lessons/contrib/anysearch-batch-search-with-tag-academic-fails-with-http-400.md",
+      "timestamp": "2026-10-25",
+      "domain": "search",
       "source": "lessons"
     },
     {
