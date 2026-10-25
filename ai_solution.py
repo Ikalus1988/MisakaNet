@@ -1,3 +1,5 @@
+To address the reviewer's feedback, follow these steps:
+
 1. **Fix DCO:**
    - For the latest commit:
      ```bash
