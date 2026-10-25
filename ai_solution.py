@@ -1,5 +1,3 @@
-To address the reviewer's feedback, here's the step-by-step solution:
-
 1. **Fix DCO:**
    - For the latest commit:
      ```bash
