@@ -1,6 +1,6 @@
 name: Gate Mutation Audit
 
-# Can the gates still go RED? (issue #2045)
+# Can the gates still go RED? (issue #2045, #3837)
 #
 # On 2026-09-21 this repository found four gates that looked like gates and could never fail: the
 # cross-platform matrix ran zero tests on all 8 legs and printed ✅ (#2006/#2008), a tool-count badge
@@ -10,35 +10,57 @@ name: Gate Mutation Audit
 # covered gate it breaks the thing the gate checks — in a temporary copy, never in the repository —
 # and requires the gate to exit non-zero. A gate that stays green is reported as a FAILURE.
 #
-# Why this is NOT on `pull_request`: mutation runs are slow (several gate invocations per gate) and
-# carry no PR-specific signal — a mutation audit answers "is this gate still capable of failing",
-# which changes on the timescale of months, not commits. Running it on every PR would spend minutes
-# of CI to re-answer a question the previous PR already answered, and a slow advisory check is a
-# check that gets skipped. It is therefore a **periodic audit** (weekly) plus a manual trigger, which
-# is what the issue asks for ("变异很慢，它属于周期性审计").
+# The covered gates are checked against the hard-gate table in `docs/ci-gates.md` on every run
+# (`scripts/gate_mutation_audit.py::hard_gates()`): the document is the single source of the
+# required set, and a context in it with no mutation fails this job.
 #
-# Gates covered, how to add one, and who acts on a red result: docs/maintainer/gate-mutation-audit.md
+# Why this runs on `pull_request` (#3837)
+# ---------------------------------------
+# It used to be weekly + manual only, on the reasoning that mutation runs are slow and carry no
+# PR-specific signal. That was backwards for the one thing the audit is for: **the change that
+# removes a gate's teeth is a pull request**. The audit would find it up to a week later, after it
+# had merged and after a week of merges ran behind a gate that could not say no.
+#
+# The PR run is affordable and safe, which is what makes the frequency decision easy:
+#   * one job, no matrix, a couple of minutes — the same suite the required `test (ubuntu-latest,
+#     3.11)` leg already runs for this file, plus the mutation runs themselves;
+#   * `concurrency` cancels a superseded push, so a force-pushed PR does not queue a second run;
+#   * `permissions: contents: read` and no secrets, so it is safe under `pull_request` from a fork
+#     (nothing here needs a write token, and nothing is posted back to the PR);
+#   * it is **not** in the ruleset, so a red advises rather than blocks a merge. The blocking
+#     argument is the required set — this job's value is that the PR author and reviewer see the
+#     red on the PR that caused it, before it merges.
+# The weekly run stays: it catches drift on `main` that arrived through a merge commit nobody ran
+# the audit on, and it is the only run that exercises the network mutations (`--online`).
 on:
+  pull_request:
   schedule:
-    # Weekly, Monday 06:43 UTC — deliberately offset from provenance-gate.yml's 06:17 sweep so the
-    # two do not queue behind each other.
+    # Weekly, Monday 06:43 UTC — deliberately offset from provenance-gate.yml's 06:17 sweep and the
+    # documented-gates ratchet's 07:11 run so the weekly jobs do not queue behind each other.
     - cron: '43 6 * * 1'
   workflow_dispatch:
 
 permissions:
   contents: read
 
+# A superseded push does not need its own audit: the newer head is the one being judged. Unlike
+# `ci-cross-platform.yml`, this applies to every event — a queued scheduled run is replaced by a
+# newer one, which is the same question with the same answer.
+concurrency:
+  group: gate-mutation-audit-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   mutation-audit:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
         with:
-          # The audit copies its fixtures to a temp directory outside the checkout, so no history is
-          # needed — but a full history keeps the run reproducible if a future mutation is aimed at a
-          # path inside the repository (the lesson gate classifies such a path against the base branch).
+          # The audit builds its fixtures in a temp directory outside the checkout, so no history is
+          # needed for them — but the lesson gate classifies a path against the base branch when it
+          # is inside the repository, and a future mutation aimed there would need it.
           fetch-depth: 0
 
       - name: Setup Python
@@ -46,20 +68,34 @@ jobs:
         with:
           python-version: '3.12'
 
+      # The worker suite is one of the criteria inside the required `audit` job (the mutation for
+      # `audit-worker-suite` runs the workflow's own `node --test` step), so node has to be here,
+      # pinned to the version that job pins.
+      - name: Setup Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7
+        with:
+          node-version: "22"
+
       - name: Install dependencies
-        # PyYAML is not optional here: the audit runs `scripts/lesson_gate.py` for real, and without
-        # PyYAML that gate cannot read YAML frontmatter at all — it would fail for the wrong reason
+        # PyYAML is not optional here: the audit runs `scripts/lesson_gate.py` for real and extracts
+        # the workflow steps with `yaml.safe_load` — without it both would fail for the wrong reason
         # and the audit would report a red baseline instead of a green one.
-        run: python3 -m pip install -q pytest pyyaml
+        #
+        # pytest-cov is what makes the coverage-floor mutation a real one rather than the modelled
+        # comparison the audit falls back to on a machine without it (the `Run Test Suite` step in
+        # pr-checks.yml installs it for the same reason).
+        run: python3 -m pip install -q pytest pyyaml pytest-cov
 
       - name: Test the audit itself
         # Includes the case the audit exists for: a stub gate that always exits 0 must be reported
-        # as an audit failure. Without this, the audit would be the thing it exists to prevent.
+        # as an audit failure, and a hard gate with no mutation must fail the run. Without this, the
+        # audit would be the thing it exists to prevent.
         run: python3 -m pytest tests/test_gate_mutation_audit.py -q -p no:randomly
 
       - name: Run the mutation audit
-        # Exit 0 only when every covered gate went red under every mutation that ran. A green gate
-        # (or a mutation that no longer applies) fails this job and names the gate in the log.
+        # Exit 0 only when every hard gate in docs/ci-gates.md is covered and every covered gate
+        # went red under every mutation that ran. A green gate (or a mutation that no longer
+        # applies, or a step body that moved) fails this job and names the gate in the log.
         run: python3 scripts/gate_mutation_audit.py
 
       - name: Network mutations (report only)

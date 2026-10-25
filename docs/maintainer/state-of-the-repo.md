@@ -427,7 +427,7 @@ issue（#2040–#2046）并**全部落地**；main 的必需检查从 **0 条**�
 - `scripts/done_but_open.py` —— 找出"工作已在 main 上、issue 仍开着"的 intake。
 - `scripts/check_field_reports.py` —— field report 的 8 条结构规则（FR1/FR2 全语料，其余只门禁改动文件）。
 - `scripts/bounty_claim.py` —— 悬赏认领四个判定；`ok` **绝不评论**（`__post_init__` 不变量）。
-- `scripts/gate_mutation_audit.py` —— 每周变异抽查；**门禁在变异下仍绿 = 审计失败**。
+- `scripts/gate_mutation_audit.py` —— **每个 PR + 每周**变异抽查；**门禁在变异下仍绿 = 审计失败**。
 - 里程碑 `v2.36` / `v2.37` / `later`（无 due date，绑定 release-please 的既有节律）。
 
 **未决（需要 owner）**：`#1886`（Cloudflare token，已挂起）、`#2020`（release PR，`mergeable_state: blocked`）、
