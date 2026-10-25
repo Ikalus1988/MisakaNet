@@ -274,12 +274,22 @@ jobs:
           fi
           echo "::notice::publishing through npm trusted publishing (OIDC); no long-lived token is set"
           set +e
-          npm publish --access public
-          RC=$?
+          npm publish --access public 2>&1 | tee /tmp/npm-publish.log
+          RC=${PIPESTATUS[0]}
           if [ "$RC" -ne 0 ]; then
+            # The registry's read side can lag its write side: the "already on npm" step above may
+            # have found no 2.50.1 seconds before the *other* trigger of this release published
+            # exactly that version (measured 2026-10-25: release event + dispatch, both serialized
+            # by the concurrency group, second run died with E409). E409 "Cannot publish over
+            # previously staged version" is that same fact arriving late, and it is the desired end
+            # state — stand down instead of turning a successful release into a red run.
+            if grep -qE 'E409|previously staged|previously published|Cannot publish over' /tmp/npm-publish.log; then
+              echo "::notice::npm refused the publish because this version already exists on npm; treating it as the desired end state (an earlier or concurrent run published it)."
+              exit 0
+            fi
             echo "::error::npm publish failed (exit $RC)."
           fi
-          exit $RC
+          exit "$RC"
         # No NODE_AUTH_TOKEN: npm reads the OIDC exchange above and this job has no long-lived
         # secret to fall back on. Setting it here would also mask a broken OIDC path, because
         # npm prefers the token whenever one is present.
