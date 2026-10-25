@@ -1,4 +1,4 @@
-To address the reviewer's feedback, follow these steps:
+To address the reviewer's feedback, I'll follow the steps outlined.
 
 1. **Fix DCO:**
    For the latest commit:
