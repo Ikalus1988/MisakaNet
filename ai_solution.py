@@ -15,8 +15,9 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Run Python script
-        run: |
-          python3 scripts/update_lessons_json.py
-          python3 scripts/build_lesson_pages.py
-          yamlfix -i data/lessons.json
+        run: python3 scripts/update_lessons_json.py
+      - name: Build lesson pages
+        run: python3 scripts/build_lesson_pages.py
+      - name: Fix YAML
+        run: yamlfix -i data/lessons.json
 ```
