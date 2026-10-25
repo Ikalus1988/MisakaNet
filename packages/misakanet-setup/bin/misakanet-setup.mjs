@@ -827,7 +827,11 @@ function stripBlock(path, block = PROMPT_BLOCK) {
   return true;
 }
 
-const stateDir = () => join(HOME, '.misakanet-agent');
+// The hook already reads MISAKANET_AGENT_DIR (checkpoint_reminder.mjs), so honouring it here is
+// what lets an install work on a machine whose HOME is not writable for the runtime user (#3701):
+// writes and --verify then agree on the same directory instead of failing to mkdir under HOME.
+// Kept unresolved on purpose — the hook does not resolve it either, so both ends read one path.
+const stateDir = () => process.env.MISAKANET_AGENT_DIR || join(HOME, '.misakanet-agent');
 
 /**
  * The headers every MCP entry we write carries.
@@ -3388,13 +3392,14 @@ if (MCP_ONLY && !SILENT) {
 if (!SILENT) {
   console.log(`
 接下来：
-  1) **把这个助手窗口关掉再打开一次**（新功能要重开会话才生效）
-  2) 随便挑一句带报错原文的片段问它（例如「${ONBOARDING_QUERIES[0]}」「${ONBOARDING_QUERIES[1]}」「${ONBOARDING_QUERIES[2]}」）——它应该先去查经验库
-  3) 想确认状态：npx @misaka-net/misakanet-setup --verify
-  4) 想关掉：npx @misaka-net/misakanet-setup --uninstall`
+  1) 启动时加载 MCP 配置的客户端（Claude Code / Codex 等）重开一次会话；dsh 下一条消息就生效，mcporter 这类按次调用的通道不需要重启
+  2) 确认工具装上了：跑客户端的 MCP 列表命令（如 mcporter list misakanet，或 Claude Code 的 /mcp）——应看到 8 个工具
+  3) 随便挑一句带报错原文的片段问它（例如「${ONBOARDING_QUERIES[0]}」「${ONBOARDING_QUERIES[1]}」「${ONBOARDING_QUERIES[2]}」）——它应该先去查经验库
+  4) 想确认状态：npx @misaka-net/misakanet-setup --verify
+  5) 想关掉：npx @misaka-net/misakanet-setup --uninstall`
     + (clientIdHint
       ? `
-  5) 记不记都行：这台机器的身份编号是 ${clientIdHint}
+  6) 记不记都行：这台机器的身份编号是 ${clientIdHint}
      想让它以后重装/换机还算同一个身份，再跑安装时加：--client-id ${clientIdHint}`
       : ''));
 }

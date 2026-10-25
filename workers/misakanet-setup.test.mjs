@@ -3007,6 +3007,26 @@ test('--list-writes --mcp-only asks for tier ① only', () => {
   assert.ok(rows.every((r) => r.startsWith('tier1')), `only tier ① may be requested:\n${rows.join('\n')}`);
 });
 
+test('MISAKANET_AGENT_DIR moves the state directory the installer writes and --verify reads', () => {
+  const home = makeHome();
+  const override = join(home, 'writable-state');
+  try {
+    const result = spawnSync(process.execPath, [CLI, '--home', home, '--list-writes', '--only', 'claude'], {
+      encoding: 'utf8',
+      env: childEnv({ MISAKANET_AGENT_DIR: override }),
+    });
+    assert.equal(result.status, 0, result.stdout + result.stderr);
+    // The hook already honours this variable; the installer must agree with it, or an install on
+    // an unwritable HOME writes to one directory while --verify looks in another (#3701).
+    // The manifest redacts the home prefix to `~`, so the override shows up as `~/writable-state`.
+    assert.ok(result.stdout.includes('~/writable-state/token'), result.stdout);
+    assert.ok(result.stdout.includes('~/writable-state/hook.mjs'), result.stdout);
+    assert.ok(!result.stdout.includes('~/.misakanet-agent'), result.stdout);
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
 test('--mcp-only says out loud that the agent will not search by itself', () => {
   const home = makeHome();
   const result = runOffline(home, '--mcp-only', '--only', 'claude');
