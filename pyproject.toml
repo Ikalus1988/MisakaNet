@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "misakanet"
-version = "2.50.0"
+version = "2.50.1"
 description = "AI Agent 分布式经验知识共享系统 — 踩坑一次，全网受益"
 readme = "README.md"
 license = "Apache-2.0"
@@ -65,7 +65,13 @@ hub = [
     "keyring>=25",
 ]
 feishu = ["requests>=2.28"]
-semantic = ["sentence-transformers>=2.2"]
+semantic = [
+    "sentence-transformers>=2.2",
+    # filelock 4.2.1 (the fix for the ReadWriteLock advisories) requires Python >=3.11, and
+    # the vulnerable code arrived in 3.20.4 — on the still-declared 3.10 floor, pin the last
+    # release before it so pip users get a non-vulnerable lock, not the newest 3.10-compatible.
+    "filelock<3.20.4; python_version < '3.11'",
+]
 harvest = [
     "scrapling>=0.4.9",
     "scrapling[fetchers]",
@@ -112,4 +118,14 @@ disallow_untyped_defs = true
 dev = [
     "hypothesis>=6.165.10",
     "pytest>=9.1.1",
+]
+
+[tool.uv]
+# Dependabot #50–#53 (2026-10-24). filelock 4.2.1 fixes the ReadWriteLock advisories but requires
+# Python >= 3.11, and this project still declares 3.10. The vulnerable code was introduced in
+# 3.20.4, so the 3.10 branch takes the last release *before* it instead of a fix that cannot be
+# installed there; 3.11+ takes the fix. Delete the 3.10 line when 3.10 support is dropped.
+constraint-dependencies = [
+    "filelock<3.20.4; python_version < '3.11'",
+    "filelock>=4.2.1; python_version >= '3.11'",
 ]
