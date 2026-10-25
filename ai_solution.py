@@ -1,10 +1,10 @@
 ```yaml
 name: update_lessons_json
 on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+  - push:
+      branches: [ main ]
+  - pull_request:
+      branches: [ main ]
 
 jobs:
   build_lesson_pages:
