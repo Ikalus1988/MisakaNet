@@ -353,6 +353,68 @@ def _declared_client_id(home: Path) -> str:
     return found if CLIENT_ID_SHAPE.match(found) else ""
 
 
+# Three syntaxes, because three kinds of config carry the header: JSON (`"X-MisakaNet-Client": "…"`),
+# TOML (inside Codex's one-line `http_headers = { … }` table) and YAML (Hermes's config.yaml, where
+# the key is followed by `:`). The leading `(?:^|[\s{,])` lets the TOML case match mid-line while
+# still requiring a plausible delimiter. Same pattern as the npm installer's, on purpose: both
+# channels read and write the same configs (#3832).
+CLIENT_ID_IN_CONFIG = re.compile(
+    r"""(?:^|[\s{,])["']?X-MisakaNet-Client["']?\s*[:=]\s*["']?([A-Za-z0-9._-]+)""")
+
+
+def _config_surfaces(home: Path) -> list[Path]:
+    """Every config this installer writes a context header into — in `AGENTS` order.
+
+    The identity may already be declared by a target this run is not rewriting (the machine
+    installed Claude Code last week and mcode today), so the search cannot be limited to the file
+    about to be written (issue #3832, hole 1).
+    """
+    paths = [
+        home / ".claude.json",
+        home / ".codex" / "config.toml",
+        home / ".hermes" / "config.yaml",
+        home / ".openclaw" / "openclaw.json",
+        home / ".codewhale" / "mcp.json",
+    ]
+    paths += [_mcp_only_config(home, agent) for agent in MCP_ONLY_TARGETS]
+    paths.append(mcode_plugin_path(home))
+    return paths
+
+
+def _client_id_on_machine(home: Path) -> str:
+    """The pseudonym any config on this machine already declares, or ''."""
+    for path in _config_surfaces(home):
+        try:
+            text = path.read_text(encoding="utf-8")
+        except OSError:
+            continue
+        found = CLIENT_ID_IN_CONFIG.search(text)
+        if found and CLIENT_ID_SHAPE.match(found.group(1)):
+            return found.group(1)
+    return ""
+
+
+def _ensure_client_id(home: Path, dry: bool) -> str:
+    """Resolve and pin this machine's pseudonym (issue #3832).
+
+    Three sources, most explicit first: the state file, any config that already declares one, then
+    a freshly minted `setup-<uuid>`. The result is always written to `<stateDir>/client_id` — this
+    module has no in-memory `knownClientId` to hand to `_context_headers()`, so the file is how the
+    id reaches every entry written later in the same run. It also makes a failed registration's id
+    stable across the re-runs the installer asks the user for. The value is a pseudonym, never a
+    credential, and is shape-checked on read (`CLIENT_ID_SHAPE`), which is what makes storing it
+    acceptable where #1688 was about not turning a *credential* into request data.
+    """
+    declared = _declared_client_id(home)
+    if declared:
+        return declared
+    import uuid
+
+    client_id = _client_id_on_machine(home) or f"setup-{uuid.uuid4()}"
+    write_text(_state_dir(home) / "client_id", client_id, dry)
+    return client_id
+
+
 def _installer_version() -> str:
     """The version of the checkout this script ran from, or '' when it is not running from one.
 
@@ -993,25 +1055,21 @@ def ensure_identity(home: Path, endpoint: str, dry: bool, rep: Report) -> None:
     variable before the write path works - that is the step that turns "installed" into
     "never used". The client_id is generated locally and stored, so re-running returns the
     same node (identity drift was the defect fixed in e41e469eb).
+
+    An existing token must not end the story (#3832): this used to return immediately, leaving the
+    machine with no `client_id` file — and `_context_headers()` reads that file, so every target
+    installed *after* the token appeared got an MCP entry with no `X-MisakaNet-Client` at all.
     """
     token_path = _state_dir(home) / "token"
-    client_path = _state_dir(home) / "client_id"
     if token_path.exists() and token_path.read_text(encoding="utf-8").strip():
         rep.ok(f"匿名身份：已有 token（{token_path}）")
+        _ensure_client_id(home, dry)
         return
     if dry:
         rep.ok(f"匿名身份：会注册并把 token 写入 {token_path}")
         return
 
-    client_id = ""
-    if client_path.exists():
-        client_id = client_path.read_text(encoding="utf-8").strip()
-    if not client_id:
-        import uuid
-        client_id = f"setup-{uuid.uuid4()}"
-        client_path.parent.mkdir(parents=True, exist_ok=True)
-        client_path.write_text(client_id, encoding="utf-8")
-
+    client_id = _ensure_client_id(home, dry)
     payload = {"agent_type": "setup", "client_id": client_id}
     referral = _declared_referral(home)
     if referral:
@@ -1254,7 +1312,31 @@ INSTALLERS = {
 }
 
 
+def mcode_plugin_ownership(home: Path) -> tuple[bool, str]:
+    """Is `~/.minimax/plugins/misakanet/` ours to delete? (issue #3831)
+
+    The install side refuses to touch a directory whose manifest is not ours and reports
+    "已原样保留"; uninstall used to `shutil.rmtree` the subtree with no question at all, deleting
+    the very plugin the install had just promised to keep (measured 2026-10-25). A plugin directory
+    is a user-owned space, and `misakanet` is a name another plugin can legitimately have, so a
+    manifest that is absent or unparseable is not proof of ownership either: only
+    `name == "misakanet"` answers yes.
+    """
+    plugin = mcode_plugin_path(home)
+    if not plugin.exists():
+        return False, "里没有 .claude-plugin/plugin.json（无法确认归属）"
+    try:
+        current = json.loads(plugin.read_text(encoding="utf-8"))
+    except Exception:
+        return False, "的清单不是合法 JSON（无法确认归属）"
+    if not isinstance(current, dict) or current.get("name") != "misakanet":
+        name = current.get("name") if isinstance(current, dict) else None
+        return False, f"的清单不是本安装器写的（name={name!r}）"
+    return True, ""
+
+
 def uninstall(home: Path, dry: bool, rep: Report) -> None:
+    hermes_rules_removed = False
     targets = [
         *[d / "AGENTS.md" for d in codewhale_projects(home) if d.is_dir()],
         home / ".claude" / "CLAUDE.md",
@@ -1266,19 +1348,32 @@ def uninstall(home: Path, dry: bool, rep: Report) -> None:
     for path in targets:
         if strip_block(path, dry):
             rep.ok(f"移除规则块 → {path}")
+            # Remembered here because the block is gone by the time the Hermes summary is built;
+            # "已移除" must describe what this run did (issue #3834).
+            if path == home / ".hermes" / "SOUL.md":
+                hermes_rules_removed = True
         # A file we created purely for our block should not survive as an empty file.
         if path.exists() and not path.read_text(encoding="utf-8").strip():
             if not dry:
                 path.unlink()
             rep.ok(f"删除只剩空白的规则文件 → {path}")
     # MiniMax Code's plugin directory is ours outright (we create it), so uninstall takes the whole
-    # subtree back — only *our* directory: `~/.minimax/plugins/` is the user's namespace and stays
-    # even when it ends up empty, because their other plugins live there.
+    # subtree back — but only after asking the same ownership question the install asks. Deleting a
+    # directory the install said it had preserved is irreversible (issue #3831).
     mcode_dir = home / ".minimax" / "plugins" / "misakanet"
     if mcode_dir.is_dir():
-        if not dry:
-            shutil.rmtree(mcode_dir)
-        rep.ok(f"移除插件目录 → {mcode_dir}")
+        ours, why = mcode_plugin_ownership(home)
+        if not ours:
+            rep.needs_manual(f"MiniMax Code: {mcode_dir} {why} → 已保留（不删）；"
+                             "确认它是你的插件后手动删掉这个目录，本安装器不碰它")
+        else:
+            try:
+                if not dry:
+                    shutil.rmtree(mcode_dir)
+                rep.ok(f"移除插件目录 → {mcode_dir}")
+            except OSError as exc:
+                # A failed delete used to be invisible; now it is a step for a human.
+                rep.needs_manual(f"MiniMax Code: 删不掉 {mcode_dir}（{exc}）→ 手动删除它")
     whale_cfg = home / ".codewhale" / "mcp.json"
     if whale_cfg.exists():
         try:
@@ -1373,7 +1468,14 @@ def uninstall(home: Path, dry: bool, rep: Report) -> None:
                 rep.ok(f"移除 MCP 注册 → {oc_cfg}")
         except Exception:
             rep.needs_manual(f"{oc_cfg} 解析失败 → 手动删除 mcp.servers.misakanet")
-    rep.needs_manual("Hermes 的 MCP 条目由它自己管理 → 需要时执行 `hermes mcp remove misakanet`")
+    # Only on a machine that has Hermes: this used to print on *every* uninstall, so a machine that
+    # never installed it was sent to `hermes hooks doctor` — a command that does not exist there —
+    # and told a rules block had been removed from a file that was never written (issue #3834).
+    if (home / ".hermes").is_dir():
+        rep.needs_manual(
+            "Hermes 的 MCP 条目由它自己管理 → 需要时执行 `hermes mcp remove misakanet`；"
+            + ("规则块已在 ~/.hermes/SOUL.md 移除" if hermes_rules_removed
+               else "规则块本来就没装（~/.hermes/SOUL.md 里没有本安装器的标记块）"))
 
 
 def main(argv: list[str] | None = None) -> int:

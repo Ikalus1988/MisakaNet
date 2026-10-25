@@ -25,7 +25,7 @@
  * Everything is idempotent, every rewritten file is backed up to *.misakanet.bak, and
  * --uninstall removes exactly what was added (same markers), leaving user config intact.
  */
-import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync, copyFileSync, rmSync,
+import { existsSync, mkdirSync, readFileSync, readdirSync, copyFileSync, rmSync,
          chmodSync, statSync, renameSync, accessSync, constants,
          openSync, writeSync, fsyncSync, closeSync } from 'node:fs';
 // No child_process import on purpose: this installer must never hand a file-derived value to
@@ -574,16 +574,27 @@ function buildWriteManifest(agents) {
   // install: with no target detected the run writes nothing at all.
   if (agents.length) {
     // `--no-register` registers no anonymous node, so no token is written; listing it anyway would
-    // make the manifest — and the preview's file count — promise a file that stays absent.
-    if (!has('--no-register')) add(join(stateDir(), 'token'), 'create (0600)', 1, 'token');
+    // make the manifest — and the preview's file count — promise a file that stays absent. Even on
+    // a registering run it is only written *if the network lets the registration through*, so the
+    // row says so instead of presenting it as a file this run will certainly create (#3833).
+    if (!has('--no-register')) {
+      add(join(stateDir(), 'token'), 'create (0600，取决于注册是否成功)', 1, 'token');
+    }
     if (!MCP_ONLY) {
+      // `hook.mjs` is the *Claude Code* hook's body: `installHook()` runs only when `claude` is one
+      // of the targets. Listing it for mcode/codex/… promised a file those installs never write —
+      // in the same run that said "没有 Claude Code 那种钩子" (measured 2026-10-25, #3833).
+      if (agents.includes('claude')) add(join(stateDir(), 'hook.mjs'), 'create', 3, 'hookScript');
       // The endpoint record lives in the state directory, so it is tier ③ like everything else in
       // there: `--mcp-only` must not create that directory at all (the e2e checks the directory
       // itself, not just the files). The record is therefore written only when tier ③ is in scope.
       add(join(stateDir(), STATE_ENDPOINT_FILE), 'create', 3, 'endpoint');
-      add(join(stateDir(), 'hook.mjs'), 'create', 3, 'hookScript');
       add(join(stateDir(), STATE_VERSION_FILE), 'create', 3, 'version');
     }
+    // The pseudonym is persisted only on a run that has to mint one (#3832) — so the manifest
+    // names that file only then, keeping the "every path exists afterwards" rule. Tier ① like the
+    // token: `ensureIdentity()` writes both, and `--mcp-only` still registers.
+    if (willMintClientId()) add(join(stateDir(), CLIENT_ID_FILE), 'create', 1, 'clientId');
   }
   return [...rows.values()]
     .filter((row) => (MCP_ONLY ? row.tier === 1 : true))
@@ -616,10 +627,13 @@ function writePreview(rows) {
     grants: '只读工具放行',
     rules: '规则块（会改变 agent 的行为）',
     hook: '钩子',
-    token: 'MCP 凭据',
+    // The token is written only when the anonymous registration succeeds, so the preview says so
+    // rather than counting it as a file this run will certainly create (#3833).
+    token: 'MCP 凭据（取决于注册是否成功）',
     endpoint: '端点记录',
     hookScript: '钩子脚本',
     version: '版本戳',
+    clientId: '身份编号',
     state: '本机状态',
   };
   const width = Math.min(Math.max(...list.map((f) => f.path.length)) + 2, 32);
@@ -925,6 +939,91 @@ function adoptExistingClientId(text) {
   if (!CLIENT_ID_SHAPE.test(found)) return;
   knownClientId = found;
   clientIdHint = found;
+}
+
+/** The state file that pins this machine's pseudonym, so `--verify`-able identity survives a run. */
+const CLIENT_ID_FILE = 'client_id';
+
+/** The id `--client-id` / `MISAKANET_CLIENT_ID` asks for, shape-checked, or `''`. */
+function explicitClientId() {
+  const value = (valueOf('--client-id', '') || process.env.MISAKANET_CLIENT_ID || '').trim();
+  return CLIENT_ID_SHAPE.test(value) ? value : '';
+}
+
+/** The id `<stateDir>/client_id` pins, or `''` — shape-checked, because a file wrote it. */
+function storedClientId() {
+  const found = readText(join(stateDir(), CLIENT_ID_FILE)).trim();
+  return CLIENT_ID_SHAPE.test(found) ? found : '';
+}
+
+/**
+ * The pseudonym *any* config on this machine already declares, or `''`.
+ *
+ * "Which config" cannot be "the one this run is about to rewrite". A machine that installed one
+ * target and then installed a second wrote the second config with no `X-MisakaNet-Client` at all:
+ * `ensureIdentity()` returned early (the token existed), it never set `knownClientId`, and the
+ * per-target adopters only look at their own file (issue #3832, hole 1). Every surface this
+ * installer writes is a candidate, walked in `AGENTS` order so the answer is deterministic.
+ */
+function clientIdOnMachine() {
+  for (const agent of AGENTS) {
+    for (const path of (AGENT_WRITE_PATHS[agent] || (() => []))(HOME)) {
+      const found = readText(path).match(CLIENT_ID_IN_CONFIG)?.[1] || '';
+      if (CLIENT_ID_SHAPE.test(found)) return found;
+    }
+  }
+  return '';
+}
+
+/**
+ * Will this run have to mint the pseudonym, and therefore persist it?
+ *
+ * Asked by the write manifest so the preview names `<stateDir>/client_id` only when the run is
+ * really going to create it (#3832) — the same "every path must exist afterwards" rule the rest of
+ * the manifest follows. Mirrors `clientIdForThisRun()`: nothing explicit, nothing pinned, nothing
+ * to adopt → a mint (and a write).
+ */
+function willMintClientId() {
+  if (has('--no-register')) return false;
+  return !explicitClientId() && !storedClientId() && !clientIdOnMachine();
+}
+
+/** Remember the id and show it to the user: it is a number worth keeping for a reinstall. */
+function rememberClientId(id) {
+  knownClientId = id;
+  clientIdHint = id;
+  return id;
+}
+
+/**
+ * Resolve `X-MisakaNet-Client` for a run that is *not* given an explicit id (#3832).
+ *
+ * Three sources, in order of how much the machine means them:
+ *   1. `<stateDir>/client_id` — what a previous run pinned;
+ *   2. any config that already declares one — the file *is* the record (#3772's rule, widened from
+ *      "the file I am about to rewrite" to "the machine");
+ *   3. nothing — mint `setup-<uuid>` and **persist it**, so the next run has something to reuse.
+ *
+ * Persisting is the part #1688 deliberately removed, and the tradeoff is worth stating: #1688
+ * dropped it because "read a local file, put the value in an outbound request" is the shape CodeQL
+ * js/file-access-to-http (#268) flags, and the value is sent to a server. This file holds nothing
+ * secret — it is a pseudonym the installer itself minted, shape-checked on read (`CLIENT_ID_SHAPE`),
+ * and the server treats it as a hint, never as identity (AGENTS.md §3.3). Against that, *not*
+ * persisting it means every failed registration mints a new id, rewrites the user's agent config
+ * with it and leaves a backup behind — measurably wrong on the re-run path the installer tells the
+ * user to walk ("稍后重跑本命令就能拿到 token"). One pinned pseudonym beats five unregistered
+ * ones, so #3832 records the tradeoff here and keeps the file.
+ */
+function clientIdForThisRun() {
+  if (knownClientId) return knownClientId;
+  const stored = storedClientId();
+  if (stored) return rememberClientId(stored);
+  const adopted = clientIdOnMachine();
+  if (adopted) return rememberClientId(adopted);
+  const minted = `setup-${randomUUID()}`;
+  rememberClientId(minted);
+  writeText(join(stateDir(), CLIENT_ID_FILE), `${minted}\n`);
+  return minted;
 }
 
 const CANONICAL_ENDPOINT = 'https://misakanet.org/mcp';
@@ -1375,7 +1474,9 @@ async function installHook() {
   if (!DRY) {
     mkdirSync(stateDir(), { recursive: true });
     if (existing !== null) backup(hookPath);
-    writeFileSync(hookPath, bundled);
+    // `writeText`, not `writeFileSync`: the hook is a file this run wrote, so the closing count has
+    // to include it — and it must be replaced atomically like every other file here (#3833).
+    writeText(hookPath, bundled);
   }
   ok(isOurs
     ? `自动沉淀的钩子已更新（旧版备份为 ${hookPath}.misakanet.bak）→ ${hookPath}`
@@ -1403,22 +1504,23 @@ async function ensureIdentity() {
   }
   if (existing) {
     ok('已有匿名身份（token 已存在）');
+    // #3832 hole 1: this early return used to leave `knownClientId` empty, and the npm channel
+    // persisted nothing, so the *next* target's config was written with no `X-MisakaNet-Client` at
+    // all. Resolve the identity here too — nothing is registered this run, but the header still has
+    // to say who this machine is.
+    clientIdForThisRun();
     return existing;
   }
   if (DRY) {
     ok(`会注册匿名身份并把 token 写到 ${file}`);
     return '';
   }
-  // The client id is what makes a re-registration return the *same* node, so it has to come
-  // from somewhere the user owns rather than from a file this process found on disk: CodeQL
-  // js/file-access-to-http (#268) reads "read a local file, put it in an outbound request" as
-  // what it looks like, and it is right — the value may be ours, but the shape is the bug.
-  // An exported MISAKANET_CLIENT_ID is explicit intent (the same standard the hook applies to
-  // its token); otherwise this run mints one and prints it so the user can keep it.
-  // `--client-id` and `MISAKANET_CLIENT_ID` are the same explicit intent. The flag exists because
-  // the closing guidance told users to keep an identity and the only way to supply one was a shell
-  // export — an instruction a non-technical user cannot follow, and on Windows a different one.
-  const clientId = usable ? explicit : `setup-${randomUUID()}`;
+  // The client id is what makes a re-registration return the *same* node. It used to be minted
+  // fresh on every attempt that failed — held only in memory, so the re-run the installer asks for
+  // minted another, rewrote the user's config and left a backup (issue #3832, hole 2).
+  // `clientIdForThisRun()` pins the value in `<stateDir>/client_id`; its docstring records the
+  // #1688 vs CodeQL tradeoff that makes reading that file back acceptable.
+  const clientId = usable ? explicit : clientIdForThisRun();
   knownClientId = clientId;
   const referral = declaredReferral();
   const result = await mcpCall('misakanet_register', {
@@ -1590,10 +1692,14 @@ async function installClaude(hookPath, bearer) {
       const destDir = join(stateDir(), 'voice');
       if (!DRY) {
         mkdirSync(destDir, { recursive: true });
+        // `copyFileSync` writes a file too, so these join `writtenFiles`: without it a `--voice`
+        // install under-reports its count the same way the version stamp did (#3833).
         copyFileSync(voice.player, join(destDir, 'voice-hook.mjs'));
+        writtenFiles.add(join(destDir, 'voice-hook.mjs'));
         const cues = existsSync(voice.cues) ? readdirSync(voice.cues).filter((f) => f.endsWith('.mp3')) : [];
         for (const cue of cues) {
           copyFileSync(join(voice.cues, cue), join(destDir, cue));
+          writtenFiles.add(join(destDir, cue));
         }
         if (!cues.length) {
           need('语音钩子：找到了播放器但没有找到音频文件 → 重装一次 npx 包即可（其它功能不受影响）');
@@ -1783,7 +1889,11 @@ function stampVersion() {
     installed_at: new Date().toISOString(),
   };
   mkdirSync(stateDir(), { recursive: true });
-  writeFileSync(file, `${JSON.stringify(stamp, null, 2)}\n`);
+  // `writeFileSync` here bypassed `writeText()`'s atomic replace *and* its `writtenFiles`
+  // bookkeeping, so every fresh install reported one file fewer than it had written (#3833) — and
+  // this was the one write path left without the truncation protection the rest of the installer
+  // went through.
+  writeText(file, `${JSON.stringify(stamp, null, 2)}\n`);
   ok(`版本戳 → ${file}（${VERSION}${existing?.version ? `，原 ${existing.version}` : ''}）`);
 }
 
@@ -2758,9 +2868,49 @@ function restoreEmptiedFiles() {
   }
 }
 
+/**
+ * Is `~/.minimax/plugins/misakanet/` ours to delete?
+ *
+ * The install side answers this by reading the manifest and refusing to touch a directory whose
+ * `name` is not `misakanet` (`installMcode`), reporting "已原样保留". Uninstall used to `rmSync`
+ * the subtree with no question at all, so on a machine where the install had just promised to keep
+ * the user's plugin, the next `--uninstall` deleted it (issue #3831, measured 2026-10-25) — the
+ * installer's own wording turned into a lie by the command it recommends for undoing.
+ *
+ * A manifest that is absent or unparseable is not proof of ownership either: a plugin directory is
+ * a user-owned space, and `misakanet` is a name another plugin can legitimately have. Being wrong
+ * here costs irreversible data, so only a manifest that says `name: "misakanet"` answers "yes".
+ */
+function mcodePluginDirectoryOwnership() {
+  const plugin = mcodePluginPath(HOME);
+  const text = readText(plugin);
+  if (!text) {
+    return { ours: false, why: '里没有 .claude-plugin/plugin.json（无法确认归属）' };
+  }
+  let doc;
+  try {
+    doc = JSON.parse(text);
+  } catch {
+    return { ours: false, why: '的清单不是合法 JSON（无法确认归属）' };
+  }
+  if (doc?.name !== 'misakanet') {
+    return {
+      ours: false,
+      why: `的清单不是本安装器写的（name=${JSON.stringify(doc?.name ?? null)}）`,
+    };
+  }
+  return { ours: true, why: '' };
+}
+
 function uninstall() {
+  let hermesRulesRemoved = false;
   for (const rel of ['.claude/CLAUDE.md', '.codex/AGENTS.md', '.hermes/SOUL.md', '.minimax/AGENTS.md']) {
-    if (stripBlock(join(HOME, rel))) ok(`移除规则块 → ${rel}`);
+    if (stripBlock(join(HOME, rel))) {
+      ok(`移除规则块 → ${rel}`);
+      // Recorded here because the block is already gone by the time the Hermes summary is built —
+      // "已移除" must describe what this run did, not what a file says now (#3834).
+      if (rel === '.hermes/SOUL.md') hermesRulesRemoved = true;
+    }
   }
   // Both candidates: a block may have been written before the workspace was read from config.
   for (const workspace of openclawWorkspaces()) {
@@ -2800,14 +2950,29 @@ function uninstall() {
     }
   }
   // MiniMax Code's plugin directory is ours outright (the install creates it), so uninstall takes
-  // the whole subtree back. Only *our* directory: `~/.minimax/plugins/` is the user's namespace and
-  // stays even when it ends up empty — deleting it would remove a place their other plugins live.
+  // the whole subtree back. Only *our* directory, and only once its manifest says it is ours: see
+  // `mcodePluginDirectoryOwnership` for what asking the same question as the install costs (#3831).
+  // `~/.minimax/plugins/` is the user's namespace and stays even when it ends up empty — deleting
+  // it would remove a place their other plugins live.
   const mcodeDir = join(HOME, '.minimax', 'plugins', 'misakanet');
   if (existsSync(mcodeDir)) {
-    try {
-      if (!DRY) rmSync(mcodeDir, { recursive: true, force: true });
-      ok(`移除插件目录 → ${mcodeDir}`);
-    } catch { /* best effort */ }
+    const ownership = mcodePluginDirectoryOwnership();
+    if (!ownership.ours) {
+      // Deliberately a `need`, never an `ok`: the directory is still there, and only a human can
+      // decide whether it is theirs to remove. Putting it under "已完成" was the second half of the
+      // bug — the run claimed a removal it had skipped.
+      need(`MiniMax Code：${mcodeDir} ${ownership.why} → 已保留（不删）；`
+        + '确认它是你的插件后手动删掉这个目录，本安装器不碰它');
+    } else {
+      try {
+        if (!DRY) rmSync(mcodeDir, { recursive: true, force: true });
+        ok(`移除插件目录 → ${mcodeDir}`);
+      } catch (err) {
+        // A failed delete used to be swallowed by an empty `catch`, so the run said nothing while
+        // the directory survived. Now it is a manual step, which is what it is.
+        need(`MiniMax Code：删不掉 ${mcodeDir}（${redact((err && err.message) || err)}）→ 手动删除它`);
+      }
+    }
   }
   const voiceDir = join(stateDir(), 'voice');
   if (existsSync(voiceDir)) {
@@ -2894,8 +3059,18 @@ function uninstall() {
       ok(`移除 token 行 → ${hermesEnv}（${HERMES_ENV_KEY}）`);
     }
   }
-  need('Hermes 的钩子不归本安装器管 → 需要时看 hermes hooks doctor；'
-    + `规则块已在 ~/.hermes/SOUL.md 移除`);
+  // Hermes' advice, only on a machine that has Hermes. It was unconditional, so a machine that had
+  // never installed Hermes was told "规则块已在 ~/.hermes/SOUL.md 移除" and sent to a
+  // `hermes hooks doctor` that does not exist there (#3834, measured 2026-10-25). The `!` list is
+  // the user's only action list — an item that does not apply dilutes it.
+  if (existsSync(join(HOME, '.hermes'))) {
+    // And say what actually happened to the rules block: "已移除" only when this run removed one,
+    // "本来就没装" when the file was there without our markers.
+    need('Hermes 的钩子不归本安装器管 → 需要时看 hermes hooks doctor；'
+      + (hermesRulesRemoved
+        ? '规则块已在 ~/.hermes/SOUL.md 移除'
+        : '规则块本来就没装（~/.hermes/SOUL.md 里没有本安装器的标记块）'));
+  }
 
   // OpenClaw's MCP entry is one we wrote ourselves, so we can take it back ourselves.
   const ocCfg = join(HOME, '.openclaw', 'openclaw.json');
