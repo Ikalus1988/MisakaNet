@@ -27,7 +27,7 @@ provenance:
 
 ## Problem
 
-Measured 2026-10-06 with DSH `0.2.0-rc.2` and this repository's plugin `misakanet@2.42.0`,
+Measured 2026-10-06 with DSH `0.2.0-rc.2` and the shipped `misakanet` plugin,
 `profile=web`: while the host was running, the plugin's MCP row sat in `disconnected`, and the
 model side had **no `mcp__misakanet__*` tools at all**. The user-visible effect is "I installed
 the plugin and nothing happens"; the model's honest description is that the server is gone.

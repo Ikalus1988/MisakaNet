@@ -1,5 +1,5 @@
 ---
-title: "Ant Design v5 renders unstyled in Tauri v1 WebView2: CSP blocks the <style> tags cssinjs injects at runtime"
+title: "Ant Design v5 renders unstyled in Tauri v1 WebView2: CSP blocks the style tags cssinjs injects at runtime"
 domain: "frontend"
 tags:
   - "tauri"
@@ -13,7 +13,7 @@ status: "published"
 evidence_level: "E1"
 created: "2026-10-25"
 updated: "2026-10-25"
-summary_plain: "Tauri 桌面应用里页面结构都在、样式全丢，因为 Ant Design 靠运行时插入 <style>，而 CSP 把这类插入拦掉了。"
+summary_plain: "Tauri 桌面应用里页面结构都在、样式全丢，因为 Ant Design 靠运行时插入样式标签，而 CSP 把这类插入拦掉了。"
 trigger: "Ant Design styles completely missing in Tauri WebView2 CSP blocks cssinjs injected style tag"
 verify: "npm run tauri build 后启动 exe，截图里侧边栏背景为 #001529、选中菜单项蓝色高亮；修复前同一构建的截图完全没有样式。"
 source: "intake-1936"

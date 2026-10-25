@@ -158,6 +158,10 @@ def _fallback_search(query: str, domain: str = None, top: int = 5) -> list | Non
         {
             "title": entry.get("title", ""),
             "path": entry.get("url", entry.get("path", "")),
+            # The fallback ranks on title/summary/domain/tags, but the compact shape used to omit
+            # the summary — so a caller (and the relevance smoke test) saw a hit whose match was
+            # invisible. Return it, trimmed to the compact budget, for every fallback result.
+            "summary": (entry.get("summary") or "")[:280],
             "score": round(s, 3),
             "domain": entry.get("domain", ""),
             "status": entry.get("status", ""),
