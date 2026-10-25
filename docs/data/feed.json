@@ -1,9 +1,16 @@
 {
-  "generated_at": "2026-10-25T20:58:36.305694+00:00",
+  "generated_at": "2026-10-25T23:20:52.223130+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3860",
+      "timestamp": "2026-10-25T21:13:59Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "chore(data): sync lessons.json + refresh feed",
@@ -30,13 +37,6 @@
       "title": "fix(audit): the intake-kind flip check now decides the exit code",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/3853",
       "timestamp": "2026-10-25T17:29:23Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "fix(setup): uninstall ownership, stable client id, truthful manifest",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3852",
-      "timestamp": "2026-10-25T17:10:54Z",
       "source": "github"
     },
     {
