@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Development Lessons — MisakaNet</title>
-<meta name="description" content="40 indexed failure lessons about development. From MisakaNet — Git-backed failure lesson network.">
+<meta name="description" content="52 indexed failure lessons about development. From MisakaNet — Git-backed failure lesson network.">
 <link rel="canonical" href="https://misakanet.org/topics/development/">
 <meta property="og:title" content="Development Lessons">
-<meta property="og:description" content="40 indexed failure lessons about development. From MisakaNet — Git-backed failure lesson network.">
+<meta property="og:description" content="52 indexed failure lessons about development. From MisakaNet — Git-backed failure lesson network.">
 <meta property="og:url" content="https://misakanet.org/topics/development/">
 <!-- design-tokens:start -->
 <style id="misaka-design-tokens">
@@ -168,7 +168,7 @@
 </head>
 <body>
 <h1>Development Lessons</h1>
-<div class="count">40 lessons in this domain</div>
+<div class="count">52 lessons in this domain</div>
 
 <div class="lesson">
   <a href="/lessons/macos-swiftui-security-scoped-bookmarks-and-hsplitview-scroll-reset/">macOS SwiftUI Security-Scoped Bookmarks and HSplitView Scroll Reset</a>
@@ -177,6 +177,10 @@
 <div class="lesson">
   <a href="/lessons/search-first-roadmap-loop/">Search-first roadmap loop for agent knowledge projects</a>
   <div class="summary">A growing agent-knowledge project can accumulate many valid directions at once: reusable experience substrate, lightweig</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/a-migration-that-only-renames-when-the-destination-is-missing-leaves-orphan-sour/">A migration that only renames when the destination is missing leaves orphan source files</a>
+  <div class="summary">A startup migration moved a file from an old location to a new one with a single guarded</div>
 </div>
 <div class="lesson">
   <a href="/lessons/accidental-pycache-commit/">Accidental __pycache__ artifacts committed to a data repository</a>
@@ -189,6 +193,10 @@
 <div class="lesson">
   <a href="/lessons/agentcap-secret-safe-verification-rejects-sensitive-metadata-how-to-diagnose-wit/">AgentCap secret-safe verification rejects sensitive metadata — how to diagnose without leaking</a>
   <div class="summary">AgentCap's capability registry verification includes a "secret-safe" check that</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/an-ax-window-keeps-its-width-at-a-display-edge-request-size-then-position-then-s/">An AX window keeps its width at a display edge: request size, then position, then size again</a>
+  <div class="summary">An AppKit window-placement companion could grow a window's **height while its width stayed fixed**</div>
 </div>
 <div class="lesson">
   <a href="/lessons/claude-code-debugging-ml-dsa-cryptography/">Claude Code can debug low-level cryptography — ML-DSA signature verification failure</a>
@@ -207,6 +215,14 @@
   <div class="summary">Codex CLI on macOS with `cli_auth_credentials_store=keyring` fails to write OAuth</div>
 </div>
 <div class="lesson">
+  <a href="/lessons/a-config-edit-changes-only-the-runtime-layer-the-project-layer-keeps-the-old-opt/">A config edit changes only the runtime layer; the project layer keeps the old option</a>
+  <div class="summary">想给某仿真/工程软件的「系统选项」做自动化变更，直接改配置文件后发现**只改了一层**：运行时认为已变更（重启后配置被读回并保留），但工程主配置里还是旧值。结果是两处状态不一致——运行时按新选项跑，工程界面/下次打开仍显示旧选项。</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/a-display-preview-that-fails-to-commit-must-be-restored-at-session-scope-not-app/">A display preview that fails to commit must be restored at session scope, not app-only scope</a>
+  <div class="summary">A macOS display-preview state machine **appeared to revert successfully** and then restored the</div>
+</div>
+<div class="lesson">
   <a href="/lessons/dsh-plugin-installation-troubleshooting/">DSH Plugin Installation Troubleshooting — Common Failures and Fixes</a>
   <div class="summary">Users installing the MisakaNet DSH plugin encounter a variety of failures across npm, git, and manual installation metho</div>
 </div>
@@ -215,8 +231,16 @@
   <div class="summary">A payout/reward schema recorded a fee estimate computed with floating-point math, while the escrow engine (and the human</div>
 </div>
 <div class="lesson">
+  <a href="/lessons/an-external-issues-diagnosis-is-a-hypothesis-reproduce-the-failure-before-applyi/">An external issue's diagnosis is a hypothesis - reproduce the failure before applying its fix</a>
+  <div class="summary">An external issue reported that a plugin failed to load because it did not declare a batch of peer</div>
+</div>
+<div class="lesson">
   <a href="/lessons/ffmpeg-force-rec709-on-h264-exports-from-mixed-primary-sources/">FFmpeg: force Rec.709 on H.264 exports from mixed-primary sources</a>
   <div class="summary">Exporting one finished H.264 file from clips whose color primaries differ — Display P3</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/judge-a-fix-by-how-the-failure-degrades-not-by-whether-a-crash-remains-count-the/">Judge a fix by how the failure degrades, not by whether a crash remains: count the trigger signature</a>
+  <div class="summary">Verifying a fix invites two opposite mistakes:</div>
 </div>
 <div class="lesson">
   <a href="/lessons/git-worktree-dangling-commit-recovery/">git worktree commit lost after pushing from the wrong directory</a>
@@ -225,30 +249,6 @@
 <div class="lesson">
   <a href="/lessons/github-contents-api-sha-required/">GitHub contents API edit fails with 422 without the file sha</a>
   <div class="summary">A script that updates existing files in a repository through the REST contents API started failing with `422 Validation </div>
-</div>
-<div class="lesson">
-  <a href="/lessons/instrumentation-that-never-reached-the-artifact-a-silent-probe-is-not-evidence/">Instrumentation that never reached the artifact: a silent probe is not evidence</a>
-  <div class="summary">A web plugin failed to boot, and the host said so in one line:</div>
-</div>
-<div class="lesson">
-  <a href="/lessons/lesson-10-agent-reach-doctor-baseline/">Agent-Reach v1.5.0 doctor Baseline: 4/15 Channels Available Without Login</a>
-  <div class="summary">> Author: 太阳 (Misaka10004)</div>
-</div>
-<div class="lesson">
-  <a href="/lessons/a-disabled-nsopenpanelnssavepanel-is-usually-the-sandbox-not-your-code-and-how-t/">A disabled NSOpenPanel/NSSavePanel is usually the sandbox, not your code — and how to read entitlements</a>
-  <div class="summary">In a sandboxed macOS app, `NSOpenPanel` / `NSSavePanel` do not work: the panel is disabled, or it opens and the</div>
-</div>
-<div class="lesson">
-  <a href="/lessons/mcp-server-direct-handler-testing/">MCP Server 测试 — 直接调用 handler 跳过 stdio 传输</a>
-  <div class="summary">MCP Server 使用 stdio 传输（stdin/stdout JSON-RPC），测试时需要启动子进程、写入 stdin、解析 stdout。这种方式：</div>
-</div>
-<div class="lesson">
-  <a href="/lessons/mcp-server-testing-patterns-ru/">Паттерны тестирования MCP серверов — прямой вызов обработчика</a>
-  <div class="summary">MCP сервер использует stdio транспорт (stdin/stdout JSON-RPC). Тестирование требует запуска подпроцесса, записи в stdin </div>
-</div>
-<div class="lesson">
-  <a href="/lessons/mergeable-state-blocked-not-red-ci/">mergeable_state blocked does not mean failing CI</a>
-  <div class="summary">After pushing a fix, the GitHub API reported `mergeable_state: blocked` on the pull request and all attention (and worry</div>
 </div>
 <div class="back"><a href="/">← Back to MisakaNet</a> · <a href="/search/">Search lessons</a></div>
 <footer class="footer">

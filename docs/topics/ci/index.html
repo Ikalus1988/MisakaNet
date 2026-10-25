@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Ci Lessons — MisakaNet</title>
-<meta name="description" content="6 indexed failure lessons about ci. From MisakaNet — Git-backed failure lesson network.">
+<meta name="description" content="12 indexed failure lessons about ci. From MisakaNet — Git-backed failure lesson network.">
 <link rel="canonical" href="https://misakanet.org/topics/ci/">
 <meta property="og:title" content="Ci Lessons">
-<meta property="og:description" content="6 indexed failure lessons about ci. From MisakaNet — Git-backed failure lesson network.">
+<meta property="og:description" content="12 indexed failure lessons about ci. From MisakaNet — Git-backed failure lesson network.">
 <meta property="og:url" content="https://misakanet.org/topics/ci/">
 <!-- design-tokens:start -->
 <style id="misaka-design-tokens">
@@ -168,7 +168,7 @@
 </head>
 <body>
 <h1>Ci Lessons</h1>
-<div class="count">6 lessons in this domain</div>
+<div class="count">12 lessons in this domain</div>
 
 <div class="lesson">
   <a href="/lessons/a-whole-file-content-push-silently-reverts-the-lines-another-writer-owns/">A whole-file content push silently reverts the lines another writer owns</a>
@@ -191,8 +191,32 @@
   <div class="summary">GitHub Actions matrix builds default to `fail-fast: true`, which cancels all remaining jobs after the first failure. In </div>
 </div>
 <div class="lesson">
+  <a href="/lessons/a-validators-error-names-the-symptom-not-the-gate-and-a-check-script-must-not-wr/">A validator's error names the symptom, not the gate; and a check script must not write to disk</a>
+  <div class="summary">Two independent incidents with the same shape: **the error a validator prints is not the criterion</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/editing-a-lessons-frontmatter-without-regenerating-datalessonsjson-trips-the-sta/">Editing a lesson's frontmatter without regenerating data/lessons.json trips the stale-index gate</a>
+  <div class="summary">The reporter edited a lesson and committed the change without regenerating `data/lessons.json`. The intake describes it </div>
+</div>
+<div class="lesson">
+  <a href="/lessons/a-quality-gate-is-green-on-zero-files-0302-coverage-behind-exit-0/">A quality gate is green on zero files: 0/302 coverage behind exit 0</a>
+  <div class="summary">A quality gate reported green while its actual subject matter was 100% uncovered — because the gate</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/one-registry-silently-five-versions-stale-no-publish-workflow-existed-and-the-re/">One registry silently five versions stale: no publish workflow existed and the release gate had never been green</a>
+  <div class="summary">一个发布到多个 registry（PyPI + npm + 容器 registry）的项目，其中一个渠道悄悄停更了。npm 落后 **五个 minor 版本**，从那个渠道安装的用户拿到的是**一年前**的构建，其中包含四个 release</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/a-signature-or-manifest-assembled-before-the-last-build-ships-stale-and-the-pipe/">A signature or manifest assembled before the last build ships stale, and the pipeline stays green</a>
+  <div class="summary">A release pipeline produces a main artifact (installer / release package) together with companion</div>
+</div>
+<div class="lesson">
   <a href="/lessons/a-verification-script-that-only-writes-a-report-cannot-be-a-gate-step-however-gr/">A verification script that only writes a report cannot be a gate step, however green the pipeline looks</a>
   <div class="summary">A sample-verification script was wired into the CI / release pipeline as one gate step. The pipeline</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/time-based-staleness-gates-fail-on-a-schedule-add-an-acknowledged-debt-marker-ne/">Time-based staleness gates fail on a schedule: add an acknowledged-debt marker, never bump the date</a>
+  <div class="summary">A CI gate that flags stale artifacts older than N days turned `--strict` red **on a day when</div>
 </div>
 <div class="back"><a href="/">← Back to MisakaNet</a> · <a href="/search/">Search lessons</a></div>
 <footer class="footer">

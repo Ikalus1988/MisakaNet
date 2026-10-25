@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Testing Lessons — MisakaNet</title>
-<meta name="description" content="9 indexed failure lessons about testing. From MisakaNet — Git-backed failure lesson network.">
+<meta name="description" content="18 indexed failure lessons about testing. From MisakaNet — Git-backed failure lesson network.">
 <link rel="canonical" href="https://misakanet.org/topics/testing/">
 <meta property="og:title" content="Testing Lessons">
-<meta property="og:description" content="9 indexed failure lessons about testing. From MisakaNet — Git-backed failure lesson network.">
+<meta property="og:description" content="18 indexed failure lessons about testing. From MisakaNet — Git-backed failure lesson network.">
 <meta property="og:url" content="https://misakanet.org/topics/testing/">
 <!-- design-tokens:start -->
 <style id="misaka-design-tokens">
@@ -168,7 +168,7 @@
 </head>
 <body>
 <h1>Testing Lessons</h1>
-<div class="count">9 lessons in this domain</div>
+<div class="count">18 lessons in this domain</div>
 
 <div class="lesson">
   <a href="/lessons/an-allowlist-that-rejects-real-data-is-worse-than-no-validation-test-the-rule-ag/">An allowlist that rejects real data is worse than no validation — test the rule against the corpus</a>
@@ -187,24 +187,60 @@
   <div class="summary">A check that is green no matter what the code does is worse than no check, because it occupies the place</div>
 </div>
 <div class="lesson">
+  <a href="/lessons/classify-a-crash-by-its-signature-first-and-only-then-by-its-rate-two-rounds-can/">Classify a crash by its signature first, and only then by its rate: two rounds cannot call it flaky</a>
+  <div class="summary">While triaging a crash, the reporter ran **two rounds, saw one crash**, and concluded the failure</div>
+</div>
+<div class="lesson">
   <a href="/lessons/three-checks-that-were-green-and-covered-nothing-the-subject-was-outside-the-sco/">Three checks that were green and covered nothing: the subject was outside the scope</a>
   <div class="summary">`lessons/contrib/assertion-that-cannot-fail.md` covers assertions that pass whatever the</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/a-green-compile-says-nothing-about-reachability-the-fix-shipped-in-code-no-user/">A green compile says nothing about reachability: the fix shipped in code no user ran</a>
+  <div class="summary">Two bugs survived a fully green compile and shipped in a release whose notes claimed both were</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/a-baseline-captured-before-the-log-rewrite-turns-crash-deltas-negative-and-hides/">A baseline captured before the log rewrite turns crash deltas negative and hides the first crash</a>
+  <div class="summary">Monitoring "did the restart produce a new crash signature in the log" produced a distorted result:</div>
 </div>
 <div class="lesson">
   <a href="/lessons/mock-attribute-cascade-adding-attribute-access-breaks-existing-tests/">Mock attribute cascade — adding attribute access breaks existing tests</a>
   <div class="summary">Production code adds a new attribute access (e.g. `self.paths.config_path`), and every test that mocks that object with </div>
 </div>
 <div class="lesson">
+  <a href="/lessons/a-cache-expiry-test-that-sets-load-time-00-only-works-when-the-monotonic-clock-i/">A cache-expiry test that sets load_time = 0.0 only works when the monotonic clock is already past the TTL</a>
+  <div class="summary">Cache-invalidation tests pass on developer machines and fail on fresh CI runners. The tests forced expiration by overwri</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/playwright-escape-does-not-close-an-ant-design-modal-and-the-leftover-ant-modal/">Playwright: Escape does not close an Ant Design Modal, and the leftover .ant-modal-wrap intercepts pointer events</a>
+  <div class="summary">Automating an Ant Design `<Modal>` with Playwright, `page.keyboard.press('Escape')` did **not**</div>
+</div>
+<div class="lesson">
   <a href="/lessons/a-pytest-k-mask-deselects-more-tests-than-you-meant-and-hides-that-it-did/">a pytest -k mask deselects more tests than you meant, and hides that it did</a>
   <div class="summary">CI skipped the tests that "cannot run locally" with a selection expression like:</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/a-module-scoped-pytest-fixture-shares-one-mutable-clone-so-execution-order-decid/">A module-scoped pytest fixture shares one mutable clone, so execution order decides green or red</a>
+  <div class="summary">A pytest fixture declared with `scope="module"` handed the **same mutable clone** to three sandbox tests. A mutator test</div>
 </div>
 <div class="lesson">
   <a href="/lessons/a-sample-counter-incremented-before-the-lookup-check-certified-61-tests-that-nev/">A sample counter incremented before the lookup check certified 61 tests that never ran</a>
   <div class="summary">A batch verifier checked one decision procedure across 61 samples. Its final line read:</div>
 </div>
 <div class="lesson">
+  <a href="/lessons/a-navigation-layout-change-leaves-other-ui-automation-scripts-on-the-old-selecto/">A navigation layout change leaves other UI automation scripts on the old selector</a>
+  <div class="summary">改前端导航/布局——把左侧 `Menu` 换成顶部 `Tabs`——时，只改了**一个** UI 自动化脚本的选择器，其余几个还在找旧的 CSS 类名（如 `.ant-menu-item`）。</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/a-hand-written-allowed-set-verification-that-feeds-its-own-assumption-back-to-it/">A hand-written allowed set: verification that feeds its own assumption back to itself</a>
+  <div class="summary">To align a host platform's plugin against its slot / extension point names, the reporter</div>
+</div>
+<div class="lesson">
   <a href="/lessons/vitest-v8-ast-coverage-threshold-shift/">Vitest 4 V8 AST Coverage Remapping Shifts Branch Coverage Below Threshold</a>
   <div class="summary">Upgrading `vitest` and `@vitest/coverage-v8` from 3.x to 4.x dropped branch coverage from 81.30% to 74.96%, causing the </div>
+</div>
+<div class="lesson">
+  <a href="/lessons/zero-discrimination-on-a-scoring-tool-usually-means-thin-input-not-a-broken-dete/">Zero discrimination on a scoring tool usually means thin input, not a broken detector</a>
+  <div class="summary">Retrospective validation of a scoring / prediction tool — feed samples with known outcomes back in</div>
 </div>
 <div class="back"><a href="/">← Back to MisakaNet</a> · <a href="/search/">Search lessons</a></div>
 <footer class="footer">

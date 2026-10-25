@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Frontend Lessons — MisakaNet</title>
-<meta name="description" content="6 indexed failure lessons about frontend. From MisakaNet — Git-backed failure lesson network.">
+<meta name="description" content="14 indexed failure lessons about frontend. From MisakaNet — Git-backed failure lesson network.">
 <link rel="canonical" href="https://misakanet.org/topics/frontend/">
 <meta property="og:title" content="Frontend Lessons">
-<meta property="og:description" content="6 indexed failure lessons about frontend. From MisakaNet — Git-backed failure lesson network.">
+<meta property="og:description" content="14 indexed failure lessons about frontend. From MisakaNet — Git-backed failure lesson network.">
 <meta property="og:url" content="https://misakanet.org/topics/frontend/">
 <!-- design-tokens:start -->
 <style id="misaka-design-tokens">
@@ -168,8 +168,16 @@
 </head>
 <body>
 <h1>Frontend Lessons</h1>
-<div class="count">6 lessons in this domain</div>
+<div class="count">14 lessons in this domain</div>
 
+<div class="lesson">
+  <a href="/lessons/antd-upload-fires-onchange-once-per-file-per-batch-so-one-drop-becomes-n-busines/">antd Upload fires onChange once per file per batch, so one drop becomes N business units</a>
+  <div class="summary">A React application used antd `Upload` (also `Dragger`) and treated **one `onChange` call as one</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/astro-dev-serves-the-updated-css-but-the-page-screenshot-still-renders-the-old-s/">Astro dev serves the updated CSS but the page screenshot still renders the old style</a>
+  <div class="summary">修改 Astro 项目的 `src/styles/global.css` 之后，`astro dev` 的页面**截图**仍是旧样式。整个过程没有任何报错，失败形态是"纯视觉不一致"：</div>
+</div>
 <div class="lesson">
   <a href="/lessons/css-z-index-stacking-context-modal/">CSS z-index Not Working — Stacking Context Inversion in Modal Overlays</a>
   <div class="summary">A modal overlay with `z-index: 9999` was appearing **behind** an element with `z-index: 100`. Setting higher z-index val</div>
@@ -187,8 +195,32 @@
   <div class="summary">知识图谱可视化项目存在典型问题: 节点过多导致信息过载、关系缺乏上下文、无法聚焦局部视图。</div>
 </div>
 <div class="lesson">
+  <a href="/lessons/missing-react-dom-render-react-elements-to-static-html-with-a-hand-written-rende/">Missing react-dom: render React elements to static HTML with a hand-written renderer</a>
+  <div class="summary">The task was to verify a UI plugin by rendering its components to an image. The local DSH profile's</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/a-widget-font-looked-larger-after-f5-because-the-browser-served-a-stale-plugin-b/">A widget font looked larger after F5 because the browser served a stale plugin bundle</a>
+  <div class="summary">After editing a local DSH Web client plugin, a normal refresh (F5) made one small widget's text</div>
+</div>
+<div class="lesson">
   <a href="/lessons/static-page-width-consistency/">static page width consistency</a>
   <div class="summary">页面各个功能区块宽度不一致：搜索栏 `max-width: 800px`，内容卡片 `max-width: 600px`，表单 `display: inline-block; min-width: 360px`，而其他区块又是全宽。页面看起</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/translatenan-nan-is-silently-ignored-read-the-isometric-trig-values-from-the-cam/">translate(NaN NaN) is silently ignored: read the isometric trig values from the camera object, not the projection</a>
+  <div class="summary">做等距 SVG 交互图（anatomy kit 类）时，自写的屏幕位移函数直接从 projection 对象上取 `sinA` / `cosA` / `k` 来算 `translate`——但该 projection 只存 `scale` </div>
+</div>
+<div class="lesson">
+  <a href="/lessons/tauri-v1-reports-command-not-found-for-a-registered-command-when-the-js-invoke-n/">Tauri v1 reports command not found for a registered command when the JS invoke name uses the other convention</a>
+  <div class="summary">Tauri v1 应用里，前端 `invoke` 调用后端命令时报：</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/tauri-v1-expects-js-camelcase-argument-keys-so-an-invoke-with-snake-case-fails-a/">Tauri v1 expects JS camelCase argument keys, so an invoke with snake_case fails as missing required key</a>
+  <div class="summary">A Tauri v1 command never once succeeded in production. The Rust side declares a snake_case parameter:</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/ant-design-v5-renders-unstyled-in-tauri-v1-webview2-csp-blocks-the-style-tags-cs/">Ant Design v5 renders unstyled in Tauri v1 WebView2: CSP blocks the <style> tags cssinjs injects at runtime</a>
+  <div class="summary">A Tauri v1 desktop app (Windows, WebView2) built with Ant Design v5 opens and works, but **every Ant</div>
 </div>
 <div class="lesson">
   <a href="/lessons/fault-tolerance-for-static-pages-calling-external-apis/">Fault-tolerance for static pages calling external APIs</a>

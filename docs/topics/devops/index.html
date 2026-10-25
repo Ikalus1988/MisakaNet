@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Devops Lessons — MisakaNet</title>
-<meta name="description" content="150 indexed failure lessons about devops. From MisakaNet — Git-backed failure lesson network.">
+<meta name="description" content="154 indexed failure lessons about devops. From MisakaNet — Git-backed failure lesson network.">
 <link rel="canonical" href="https://misakanet.org/topics/devops/">
 <meta property="og:title" content="Devops Lessons">
-<meta property="og:description" content="150 indexed failure lessons about devops. From MisakaNet — Git-backed failure lesson network.">
+<meta property="og:description" content="154 indexed failure lessons about devops. From MisakaNet — Git-backed failure lesson network.">
 <meta property="og:url" content="https://misakanet.org/topics/devops/">
 <!-- design-tokens:start -->
 <style id="misaka-design-tokens">
@@ -168,7 +168,7 @@
 </head>
 <body>
 <h1>Devops Lessons</h1>
-<div class="count">150 lessons in this domain</div>
+<div class="count">154 lessons in this domain</div>
 
 <div class="lesson">
   <a href="/lessons/auto-merge-ci-pipeline/">Auto-Merge CI Pipeline — DCO, Quality Score, Shadow Branch, Dynamic Deps, Auto-Merge</a>
@@ -223,6 +223,10 @@
   <div class="summary">调用第三方 API 时返回 HTTP 429（Too Many Requests）或 403（被限流）。自动化脚本因未处理限流而中断。</div>
 </div>
 <div class="lesson">
+  <a href="/lessons/auto-recovery-hides-the-outage-report-effective-availability-not-the-recovery-su/">Auto-recovery hides the outage: report effective availability, not the recovery success rate</a>
+  <div class="summary">A service failed repeatedly, and a watchdog had been set up to bring it back automatically. When the</div>
+</div>
+<div class="lesson">
   <a href="/lessons/ci-dco-decouple-pythonpath-fork-pr/">GitHub Actions CI for AI Agent PRs — DCO decoupling & PYTHONPATH fix</a>
   <div class="summary">AI Agent 从 fork 仓库提交 PR 后，GitHub Actions CI 频繁报 `ModuleNotFoundError: No module named 'misakanet'`，且 DCO（Signed-off-by）门</div>
 </div>
@@ -245,10 +249,6 @@
 <div class="lesson">
   <a href="/lessons/ci-push-triggered-bot-races-generated-artifact/">Push-triggered bot workflow races itself: `|| true` hides rebase conflict and leaves detached HEAD</a>
   <div class="summary">A workflow that **runs on every push to main, generates a file, and commits it** fails</div>
-</div>
-<div class="lesson">
-  <a href="/lessons/ci-security-advisory-checks/">CI security checks: action pinning, permissions, README, code style</a>
-  <div class="summary">No automated checks for CI action pinning, overly broad permissions, README quality, or code style in PRs. Security issu</div>
 </div>
 <div class="back"><a href="/">← Back to MisakaNet</a> · <a href="/search/">Search lessons</a></div>
 <footer class="footer">

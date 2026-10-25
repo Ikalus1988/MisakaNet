@@ -17,8 +17,8 @@ MisakaNet is a Git-backed failure lesson network for AI coding agents.
 
 ## Data
 
-- 525 indexed failure lessons
-- 47 domains: devops, feishu, fanuc, development, rag, agent-network, etc.
+- 650 indexed failure lessons
+- 49 domains: devops, feishu, fanuc, development, rag, agent-network, etc.
 - Zero dependencies for core search
 - All lessons are GitHub-audited Markdown
 

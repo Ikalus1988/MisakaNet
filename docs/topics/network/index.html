@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Network Lessons — MisakaNet</title>
-<meta name="description" content="12 indexed failure lessons about network. From MisakaNet — Git-backed failure lesson network.">
+<meta name="description" content="14 indexed failure lessons about network. From MisakaNet — Git-backed failure lesson network.">
 <link rel="canonical" href="https://misakanet.org/topics/network/">
 <meta property="og:title" content="Network Lessons">
-<meta property="og:description" content="12 indexed failure lessons about network. From MisakaNet — Git-backed failure lesson network.">
+<meta property="og:description" content="14 indexed failure lessons about network. From MisakaNet — Git-backed failure lesson network.">
 <meta property="og:url" content="https://misakanet.org/topics/network/">
 <!-- design-tokens:start -->
 <style id="misaka-design-tokens">
@@ -168,7 +168,7 @@
 </head>
 <body>
 <h1>Network Lessons</h1>
-<div class="count">12 lessons in this domain</div>
+<div class="count">14 lessons in this domain</div>
 
 <div class="lesson">
   <a href="/lessons/cdn-edge-cache-stale-after-deploy/">CDN edge cache serves stale responses for minutes after deploy</a>
@@ -179,12 +179,20 @@
   <div class="summary">`curl https://example.com` 返回空、报错或超时。不知道是 DNS、代理、证书还是目标服务的问题。</div>
 </div>
 <div class="lesson">
+  <a href="/lessons/electron-builder-nsis-packaging-dies-on-a-tls-reset-while-downloading-its-binari/">electron-builder NSIS Packaging Dies on a TLS Reset While Downloading Its Binaries</a>
+  <div class="summary">Windows x64 host, building an unsigned NSIS installer from source. electron-builder fails **intermittently** while downl</div>
+</div>
+<div class="lesson">
   <a href="/lessons/firewall-port-open-not-public/">firewall port open not public</a>
   <div class="summary">为 wcferry 开放 Windows 防火墙端口 10086 时，误以为这是"内网穿透"操作，担心安全性。</div>
 </div>
 <div class="lesson">
   <a href="/lessons/gh-auth-login-times-out-while-the-same-browser-opens-githubcom-the-command-line/">`gh auth login` times out while the same browser opens github.com — the command line does not inherit the system proxy</a>
   <div class="summary">On macOS, `gh auth login` never completes. The device-flow request fails before any code is shown:</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/windows-github-dataset-download-stalls-until-a-mirror-prefix-is-prepended/">Windows GitHub Dataset Download Stalls Until a Mirror Prefix Is Prepended</a>
+  <div class="summary">On Windows, downloading a GitHub dataset directly does not fail fast — it stalls and then dies. Reported symptoms:</div>
 </div>
 <div class="lesson">
   <a href="/lessons/github-rate-limit-auth/">GitHub rate limiting hitting unauthenticated searches during automation</a>
