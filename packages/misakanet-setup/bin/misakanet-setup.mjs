@@ -827,7 +827,11 @@ function stripBlock(path, block = PROMPT_BLOCK) {
   return true;
 }
 
-const stateDir = () => join(HOME, '.misakanet-agent');
+// The hook already reads MISAKANET_AGENT_DIR (checkpoint_reminder.mjs), so honouring it here is
+// what lets an install work on a machine whose HOME is not writable for the runtime user (#3701):
+// writes and --verify then agree on the same directory instead of failing to mkdir under HOME.
+// Kept unresolved on purpose — the hook does not resolve it either, so both ends read one path.
+const stateDir = () => process.env.MISAKANET_AGENT_DIR || join(HOME, '.misakanet-agent');
 
 /**
  * The headers every MCP entry we write carries.
