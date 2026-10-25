@@ -65,7 +65,13 @@ hub = [
     "keyring>=25",
 ]
 feishu = ["requests>=2.28"]
-semantic = ["sentence-transformers>=2.2"]
+semantic = [
+    "sentence-transformers>=2.2",
+    # filelock 4.2.1 (the fix for the ReadWriteLock advisories) requires Python >=3.11, and
+    # the vulnerable code arrived in 3.20.4 — on the still-declared 3.10 floor, pin the last
+    # release before it so pip users get a non-vulnerable lock, not the newest 3.10-compatible.
+    "filelock<3.20.4; python_version < '3.11'",
+]
 harvest = [
     "scrapling>=0.4.9",
     "scrapling[fetchers]",

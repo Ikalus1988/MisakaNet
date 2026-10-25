@@ -1590,6 +1590,7 @@ hub = [
     { name = "websocket-client" },
 ]
 semantic = [
+    { name = "filelock", version = "3.20.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "sentence-transformers" },
 ]
 
@@ -1602,6 +1603,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "aiohttp", marker = "extra == 'hub'", specifier = ">=3.9" },
+    { name = "filelock", marker = "python_full_version < '3.11' and extra == 'semantic'", specifier = "<3.20.4" },
     { name = "keyring", marker = "extra == 'hub'", specifier = ">=25" },
     { name = "misakanet-core", specifier = ">=2.7.0" },
     { name = "networkx", marker = "extra == 'hub'", specifier = ">=3.2" },
