@@ -5,6 +5,33 @@ name: Intake Kind Audit
 # explicit-question-auto-rejected, explicit-question-unlabeled). Read-only —
 # creates/updates one digest issue per flagged week; it never edits the
 # flagged issues themselves (that is a maintainer decision, see #1396/#1397).
+#
+# **This job can fail, which is the point (#3835).** `scripts/audit_intake_kinds.py` used to return
+# 0 from every path, and its explicit-kind flip cross-check sat *after* the `--digest` early return,
+# so the one invocation this workflow makes never ran it and nothing consumed its warning. The gate
+# used to be a `grep` for the clean sentence — a text search standing in for an exit status.
+#
+# Three different claims come out of the run, and they are deliberately not one boolean:
+#
+#   clean        nothing to report at all
+#   post_digest  there is a digest worth showing a maintainer in an issue
+#   verdict      whether this job may be green
+#
+# Which gives:
+#
+#   status 0, clean digest       -> job green
+#   status 0, misfiles in digest -> digest issue posted, job **green** (maintainer work is not a
+#                                   build failure — the same call `dependency-vuln-audit.yml` makes)
+#   status 3, explicit kind flip -> digest issue posted, job **red** (a code regression in the kind
+#                                   detector, mirroring `workers/lib/utils.js`)
+#   status 4, zero issues read   -> digest issue posted, job **red** (0/0 is not a pass, #3759)
+#   anything else                -> job **red**, no issue (the run did not happen; there is no digest)
+#
+# A red here is not the "permanently red tab" that `dependency-vuln-audit.yml` warns about: it means
+# the detector stopped honouring an explicit `Kind:`, which has one owner and one fix, and the
+# finding still lands in the digest issue before the job goes red. The `grep` is kept as a second,
+# independent signal for what to *say*, never as the reason a job is red.
+#
 # Script: scripts/audit_intake_kinds.py
 
 on:
@@ -28,35 +55,116 @@ jobs:
         with:
           python-version: "3.10"
 
+      # This step never fails; it records what happened so the last step can decide. Splitting the
+      # reporting from the verdict keeps the digest issue postable on a run that fails.
       - name: Run intake kind audit
         id: audit
         run: |
+          AUDIT_DIGEST="${RUNNER_TEMP:-/tmp}/audit_digest.md"
+          AUDIT_STDERR="${RUNNER_TEMP:-/tmp}/audit_stderr.txt"
+
+          status=0
           python3 scripts/audit_intake_kinds.py \
-            --labels mcp-intake --state open --digest > /tmp/audit_digest.md
+            --labels mcp-intake --state open --digest \
+            > "$AUDIT_DIGEST" 2> "$AUDIT_STDERR" || status=$?
 
-          if grep -q "No flagged question/lesson misfiles found" /tmp/audit_digest.md; then
-            echo "Audit clean — no misfiled question intakes."
-            echo "clean=true" >> "$GITHUB_OUTPUT"
-            exit 0
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          echo "digest=$AUDIT_DIGEST" >> "$GITHUB_OUTPUT"
+
+          echo "--- audit stderr ---"
+          cat "$AUDIT_STDERR" >&2 || true
+
+          clean=true
+          post_digest=false
+          verdict=pass
+
+          if [ "$status" -eq 3 ] || [ "$status" -eq 4 ]; then
+            # 3: an explicit Kind was overridden. 4: zero issues read. Both are findings with a
+            # digest worth posting, and both are failures of the audit itself.
+            clean=false
+            verdict=fail
+            if [ -s "$AUDIT_DIGEST" ]; then
+              post_digest=true
+            fi
+          elif [ "$status" -ne 0 ]; then
+            # Could not run (auth/network/API). Unknown is not clean, and there is no digest to post.
+            clean=false
+            verdict=fail
+          elif [ ! -s "$AUDIT_DIGEST" ]; then
+            # Exit 0 with no artifact: the run produced nothing to vouch for.
+            clean=false
+            verdict=fail
+            echo "::error::the audit exited 0 but wrote no digest — a run that produced nothing is not a pass"
+          elif ! grep -q "No flagged question/lesson misfiles found" "$AUDIT_DIGEST"; then
+            # Misfiled question intakes: reconcile them as maintainer work, do not fail the build.
+            clean=false
+            post_digest=true
           fi
-          echo "clean=false" >> "$GITHUB_OUTPUT"
 
+          echo "clean=$clean" >> "$GITHUB_OUTPUT"
+          echo "post_digest=$post_digest" >> "$GITHUB_OUTPUT"
+          echo "verdict=$verdict" >> "$GITHUB_OUTPUT"
+
+          if [ "$clean" = "true" ]; then
+            echo "Audit clean — no misfiled question intakes and no flipped explicit kinds."
+          else
+            echo "Audit has something to report (status $status, verdict $verdict); the digest and the last step carry it."
+          fi
+
+      # Posting before the gate step is deliberate: a red job should still carry its evidence.
       - name: Post digest issue
-        if: steps.audit.outputs.clean == 'false'
+        id: digest-issue
+        if: steps.audit.outputs.post_digest == 'true'
         run: |
-          # Find-or-update the open audit digest issue (label intake-kind-audit).
-          DIGEST_ISSUE=$(gh issue list --repo ${{ github.repository }} \
-            --label "intake-kind-audit" \
-            --state open \
-            --json number \
-            --limit 1 2>/dev/null | python3 -c "import sys,json; print(json.load(sys.stdin)[0]['number'] if json.load(sys.stdin) else '')")
+          AUDIT_DIGEST="${RUNNER_TEMP:-/tmp}/audit_digest.md"
+
+          # Find-or-update the open audit digest issue (label intake-kind-audit), so a finding is one
+          # issue with a history rather than a new issue every week. `gh` resolves the repository from
+          # the checkout's `origin` remote, so no repository expression is interpolated here.
+          #
+          # The issue list is parsed once, into a variable. It used to be `json.load(sys.stdin)`
+          # twice in one conditional expression, which read EOF on the second call and failed the
+          # step every week after the first digest issue existed (#3835).
+          issues=$(gh issue list --label intake-kind-audit --state open --json number --limit 1)
+          DIGEST_ISSUE=$(printf '%s' "$issues" \
+            | python3 -c 'import json, sys; rows = json.load(sys.stdin); print(rows[0]["number"] if rows else "")')
 
           if [ -n "$DIGEST_ISSUE" ]; then
-            gh issue comment $DIGEST_ISSUE --repo ${{ github.repository }} \
-              --body-file /tmp/audit_digest.md
+            gh issue comment "$DIGEST_ISSUE" --body-file "$AUDIT_DIGEST"
           else
-            gh issue create --repo ${{ github.repository }} \
+            gh issue create \
               --title "🧭 Intake Kind Audit - $(date -u +%Y-%m-%d)" \
-              --body-file /tmp/audit_digest.md \
+              --body-file "$AUDIT_DIGEST" \
               --label "intake-kind-audit,needs-human-review"
           fi
+
+      # Last, so the digest issue above is posted even though this step turns the job red.
+      - name: Fail the job when the audit has a finding
+        id: gate
+        if: steps.audit.outputs.verdict != 'pass'
+        env:
+          AUDIT_STATUS: ${{ steps.audit.outputs.status }}
+          AUDIT_DIGEST: ${{ steps.audit.outputs.digest }}
+        run: |
+          AUDIT_STATUS="${AUDIT_STATUS:-}"
+          AUDIT_DIGEST="${AUDIT_DIGEST:-${RUNNER_TEMP:-/tmp}/audit_digest.md}"
+
+          case "$AUDIT_STATUS" in
+            3) why="an explicit intake Kind was auto-flipped; the detector no longer honours it (see the digest)" ;;
+            4) why="the audit read zero issues, so it vouched for nothing — 0/0 is not a pass" ;;
+            0) why="the audit exited 0 but wrote no digest — nothing was vouched for" ;;
+            *) why="the audit could not run (exit $AUDIT_STATUS); this is not a clean result" ;;
+          esac
+
+          {
+            echo "## ❌ Intake Kind Audit: $why"
+            echo ""
+            if [ -s "$AUDIT_DIGEST" ]; then
+              cat "$AUDIT_DIGEST"
+            else
+              echo "(no digest was written — the audit did not get far enough)"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          echo "::error title=Intake Kind Audit::$why"
+          exit 1
