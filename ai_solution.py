@@ -1,3 +1,5 @@
+The YAML file is correctly structured with the YAML formatting step included in the same job as the Python steps. Here is the complete fixed code:
+
 ```yaml
 name: update_lessons_json
 on:
