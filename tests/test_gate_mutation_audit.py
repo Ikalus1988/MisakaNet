@@ -386,7 +386,11 @@ def test_the_coverage_floor_uses_the_real_plugin_when_it_is_installed():
     assert report.ok, report.render()
     rendered = report.render()
     if importlib.util.find_spec("pytest_cov") is not None:
-        assert "Required test coverage of" in rendered, (
+        # pytest-cov has two versions of its verdict in the wild: the summary line ("Required test
+        # coverage of … not reached") and the error line ("ERROR: Coverage failure: …"). The report
+        # quotes the first error line, so accept either plugin wording — but never the model's
+        # "modelled comparison" line, which is what the real-vs-stub distinction is about.
+        assert "Required test coverage of" in rendered or "Coverage failure" in rendered, (
             "pytest-cov is installed, so the mutation must use the real floor, not the model:\n"
             + rendered)
     else:
