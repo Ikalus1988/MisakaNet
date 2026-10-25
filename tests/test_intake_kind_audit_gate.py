@@ -43,6 +43,7 @@ from pathlib import Path
 import pytest
 import yaml
 from subprocess_env import POSIX_PATH, child_env  # tests/subprocess_env.py
+from posix_shell import require_posix_shell
 
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))
@@ -214,7 +215,10 @@ def _step(step_id: str) -> dict:
 
 def _run_block(block: str, env: dict) -> subprocess.CompletedProcess[str]:
     """Run a step's `run:` the way GitHub does: bash -e (and pipefail)."""
-    return subprocess.run(["bash", "-eo", "pipefail", "-c", block], cwd=str(REPO), env=env,
+    # `require_posix_shell()` instead of a literal "bash": on Windows the literal resolves to
+    # System32\bash.exe (the WSL launcher) and fails with an environment error, and the portability
+    # test rightly bans it. The helper skips with a reason when no POSIX shell is available.
+    return subprocess.run([require_posix_shell(), "-eo", "pipefail", "-c", block], cwd=str(REPO), env=env,
                           capture_output=True, text=True, timeout=120)
 
 
