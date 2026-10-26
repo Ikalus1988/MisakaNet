@@ -16,4 +16,6 @@ const window = {
   x: Math.min(2048, desiredX),
   y: Math.min(2048, desiredY)
 };
+
+const matchedLessonId = "matched_lesson_id": "the value from the payload";
 ```
