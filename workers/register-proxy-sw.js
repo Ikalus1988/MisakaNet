@@ -2022,6 +2022,37 @@ function enrichSearchHits(results, lessons) {
   });
 }
 
+
+/** Semantic fallback: one embedding + one Vectorize query, only after BM25 returned nothing.
+ *
+ *  BM25's relevance floor is deliberate — it refuses weak lexical matches — but the pilot showed
+ *  the floor costs recall on paraphrases ("tests pass together but fail alone" does not contain
+ *  the error text). The fallback is bounded: it runs only on an empty BM25 result, topK <= 10,
+ *  and any failure falls back to the existing no_match answer. bge-m3 and the index are included
+ *  in Workers Paid; no external API is involved.
+ */
+async function semanticFallbackHits(env, query, top = 5) {
+  if (!env || !env.VECTORIZE || !env.AI) return [];
+  const text = String(query || "").trim();
+  if (!text) return [];
+  const model = env.SEMANTIC_MODEL || "@cf/baai/bge-m3";
+  const out = await env.AI.run(model, { text: [text] });
+  const vector = out && out.data && out.data[0];
+  if (!Array.isArray(vector) || vector.length !== 1024) return [];
+  const found = await env.VECTORIZE.query(vector, {
+    topK: Math.max(1, Math.min(Number(top) || 5, 10)),
+    returnMetadata: true,
+  });
+  // Score floor: cosine scores overlap between hits and near-misses on the pilot (hit mean 0.662,
+  // miss mean 0.601), so this is a precision/recall choice, not a clean separator. 0.62 keeps
+  // 23/29 top-1 hits and drops 15/21 top-1 misses; a lower floor returns more related lessons but
+  // also more wrong first hits. Configurable so a future embedding model can recalibrate.
+  const minScore = Number(env.SEMANTIC_MIN_SCORE || "0.62");
+  return ((found && found.matches) || [])
+    .map((m) => ({ id: m && m.metadata && m.metadata.lesson_id, score: Number(m && m.score) || 0 }))
+    .filter((h) => h.id && h.score >= minScore);
+}
+
 function detectTextMode(lessons) {
   return (Array.isArray(lessons) ? lessons : []).some((l) =>
     l?.textMode === "rich" || String(l?.preview || "").length > LEAN_DESCRIPTION_CAP)
@@ -4055,6 +4086,24 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
     // (issue #1675).
     results = enrichSearchHits(results, lessons);
 
+
+    // Semantic fallback (2026-10-26): BM25's floor returns no_match on paraphrases that name the
+    // symptom instead of the error text. Only an empty BM25 result reaches this branch; a hit is
+    // never re-ranked, so the lexical path keeps its behavior. Failure is swallowed into the
+    // existing no_match answer — the fallback must not turn a working search into an error.
+    if ((!results || results.length === 0) && env.MISAKANET_SEMANTIC !== "0") {
+      try {
+        const semanticHits = await semanticFallbackHits(env, args.query, args.top || 5);
+        if (semanticHits.length) {
+          results = enrichSearchHits(semanticHits, lessons);
+          source = bm25Index ? "worker-bm25+semantic" : "semantic";
+          noteSearchBackend(env, "semantic");
+        }
+      } catch (e) {
+        debugLog(env, 1, "semantic fallback failed", { error: String((e && e.message) || e) });
+      }
+    }
+
     // Gap analysis: log zero-result queries (Issue #1164)
     if ((!results || results.length === 0) && args.query) {
       // Track the gap write with the runtime instead of letting it float: a
@@ -5769,7 +5818,7 @@ async function probeLessonsRead(env) {
  */
 function searchDegraded(source) {
   const reasons = [];
-  if (source !== "worker-bm25") reasons.push("index_unavailable");
+  if (!["worker-bm25", "worker-bm25+semantic", "semantic"].includes(source)) reasons.push("index_unavailable");
   const read = lastLessonsRead;
   if (read && read.ok === false && String(read.source || "").startsWith("snapshot")) {
     reasons.push("corpus_snapshot");
