@@ -292,6 +292,8 @@ plan work around it. The only thing this repository has ever honoured is a merge
 2. Search before writing: `python3 search_knowledge.py "your error here"`
 3. Found nothing? [Share your failure lesson](https://github.com/Ikalus1988/MisakaNet/issues/new?template=lesson-feedback.yml) — five lines is enough
 
+**This month's good first issue (Oct 26 – Nov 26):** [Bring one real failure](https://github.com/Ikalus1988/MisakaNet/issues/3901) — no code; the MCP intake needs no account; we help with the format.
+
 → [CONTRIBUTING.md](CONTRIBUTING.md) · [good first issues](https://github.com/Ikalus1988/MisakaNet/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) · [code of conduct](CODE_OF_CONDUCT.md)
 
 ## Security
