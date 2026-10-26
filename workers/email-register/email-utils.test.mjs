@@ -1,10 +1,13 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
+  buildIntakeArguments,
   buildReplyText,
   detectIntakeType,
   extractLessonContent,
+  parseIntakeResponse,
   parseEmailBody,
+  intakeKindFor,
 } from './src/email-utils.mjs';
 
 test('parses a plain-text lesson and strips quoted replies', () => {
@@ -263,4 +266,33 @@ test('buildReplyText includes the audit issue link and the conversion-receipt pr
   assert.match(reply, /Track it: https:\/\/github\.com\/Ikalus1988\/MisakaNet\/issues\/9999/);
   assert.match(reply, /conversion receipt/);
   assert.match(reply, /queued for maintainer review/);
+});
+
+test('maps email intake types to the shared MCP intake kinds', () => {
+  assert.equal(intakeKindFor('question'), 'question');
+  assert.equal(intakeKindFor('lesson-submission'), 'new_lesson_candidate');
+  assert.equal(intakeKindFor('bug-report'), 'missing_lesson');
+  assert.equal(intakeKindFor('unknown'), 'missing_lesson');
+  assert.equal(intakeKindFor('registration'), null);
+  const args = buildIntakeArguments({
+    subject: 'pip install fails',
+    intakeType: 'bug-report',
+    lessonContent: 'pip install times out behind the proxy',
+  });
+  assert.equal(args.kind, 'missing_lesson');
+  assert.match(args.problem, /pip install fails/);
+  assert.equal(args.source, 'email');
+});
+
+test('parses an MCP intake response, including issue-id URL and answer', () => {
+  const parsed = parseIntakeResponse({
+    intake_id: 'issue-4242',
+    status: 'pending',
+    dedup_key: 'abc',
+  });
+  assert.equal(parsed.intakeId, 'issue-4242');
+  assert.equal(parsed.issueUrl, 'https://github.com/Ikalus1988/MisakaNet/issues/4242');
+  const answered = parseIntakeResponse({ answered: true, answer: 'Use a PAT.', intake_id: 'issue-1' });
+  assert.equal(answered.answered, true);
+  assert.equal(answered.answer, 'Use a PAT.');
 });

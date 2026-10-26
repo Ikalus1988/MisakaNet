@@ -11,9 +11,11 @@
 import { EmailMessage } from 'cloudflare:email';
 import protocol from '../../../misaka-protocol.json';
 import {
+  buildIntakeArguments,
   buildReplyText,
   detectIntakeType,
   extractLessonContent,
+  parseIntakeResponse,
   parseEmailBody,
 } from './email-utils.mjs';
 
@@ -116,17 +118,37 @@ export default {
     if (dedupKey) await env.MISAKANET_KV.put(dedupKey, intakeId, { expirationTtl: 2592000 });
     console.log(`Intake ${intakeId}: ${intakeType} from ${sender} — "${subject}"`);
 
-    if (env.GH_TOKEN) {
-      try {
-        intakeRecord.githubIssueUrl = await createAuditIssue(env, intakeRecord);
+    // Email is a fallback transport, not a second intake system: send actionable mail through the
+    // same misakanet_submit_intake path the HTTP MCP uses (dedup, question routing, labels), so no
+    // personal GH_TOKEN is required. Registration/join and sales-ish mail stay local.
+    try {
+      const mcp = await submitEmailIntake(env, intakeRecord);
+      if (mcp) {
+        intakeRecord.mcpIntakeId = mcp.intakeId;
+        intakeRecord.githubIssueUrl = mcp.issueUrl;
+        intakeRecord.mcpDuplicate = mcp.duplicate;
+        intakeRecord.mcpAnswer = mcp.answer;
         await env.MISAKANET_KV.put(
           `email-intake:${intakeId}`,
           JSON.stringify(intakeRecord),
           { expirationTtl: 2592000 },
         );
-        console.log(`Created audit issue: ${intakeRecord.githubIssueUrl}`);
-      } catch (error) {
-        console.error(`GitHub audit issue failed for ${intakeId}: ${error.message}`);
+        console.log(`MCP intake for ${intakeId}: ${mcp.intakeId || 'duplicate/answered'} ${mcp.issueUrl || ''}`);
+      }
+    } catch (error) {
+      console.error(`MCP intake failed for ${intakeId}: ${error.message}`);
+      // Optional compatibility path for a deployment that still has the old token.
+      if (env.GH_TOKEN) {
+        try {
+          intakeRecord.githubIssueUrl = await createAuditIssue(env, intakeRecord);
+          await env.MISAKANET_KV.put(
+            `email-intake:${intakeId}`,
+            JSON.stringify(intakeRecord),
+            { expirationTtl: 2592000 },
+          );
+        } catch (fallbackError) {
+          console.error(`GitHub fallback failed for ${intakeId}: ${fallbackError.message}`);
+        }
       }
     }
 
@@ -154,10 +176,11 @@ export default {
         `From: MisakaNet <${recipient}>`,
         `To: ${sender}`,
         `Subject: Re: ${subject || 'MisakaNet email intake'}`,
+        `Message-ID: <${crypto.randomUUID()}@misakanet.org>`,
         'Content-Type: text/plain; charset=UTF-8',
         ...(messageId ? [`In-Reply-To: ${messageId}`] : []),
         '',
-        buildReplyText({ intakeId, intakeType, nodeId, issueUrl: intakeRecord.githubIssueUrl }),
+        buildReplyText({ intakeId, intakeType, nodeId, issueUrl: intakeRecord.githubIssueUrl, answer: intakeRecord.mcpAnswer }),
       ].join('\r\n'),
     );
     try {
@@ -282,6 +305,42 @@ function escapeHtml(str) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+}
+
+async function submitEmailIntake(env, record) {
+  const args = buildIntakeArguments(record);
+  if (!args) return null;
+  const endpoint = env.MCP_URL || 'https://misakanet.org/mcp';
+  const init = {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'MCP-Protocol-Version': '2025-06-18',
+      'Origin': 'https://misakanet.org',
+      'User-Agent': 'MisakaNet-email-intake/1.0',
+    },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      id: 1,
+      method: 'tools/call',
+      params: { name: 'misakanet_submit_intake', arguments: args },
+    }),
+    signal: AbortSignal.timeout(20000),
+  };
+  // A service binding beats a same-zone HTTP fetch: no WAF/bot hop, no 404 from zone routing.
+  const response = env.MCP
+    ? await env.MCP.fetch(new Request('https://mcp.internal/mcp', init))
+    : await fetch(endpoint, init);
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  const data = await response.json();
+  if (data && data.error) throw new Error(data.error.message || 'JSON-RPC error');
+  const result = (data && data.result) || {};
+  let payload = result.structuredContent;
+  if (!payload && Array.isArray(result.content)) {
+    try { payload = JSON.parse(result.content[0] && result.content[0].text || '{}'); } catch { payload = {}; }
+  }
+  return parseIntakeResponse(payload || {});
 }
 
 async function createAuditIssue(env, intake) {
