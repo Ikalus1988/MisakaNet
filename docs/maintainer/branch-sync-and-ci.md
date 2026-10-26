@@ -66,3 +66,19 @@ The workflow now runs on `schedule: 17 */6 * * *` plus `workflow_dispatch`, and 
 `mergeable` is already `true`: a PR that can merge must not be pushed to at all, whatever the schedule
 says. Both properties are pinned by `tests/test_auto_sync_prs.py`, which takes a workflow source as an
 argument so the rule can be shown to fail.
+
+## 5. Before merging (or deleting) a branch: ask who is based on it
+
+A stacked PR records its base branch in the PR. When that base is merged and deleted — or just
+deleted — GitHub closes every PR whose base was it, silently: the downstream PRs go from open to
+closed, no check fails, and the author finds out later. This is a pre-merge check next to DCO and
+the required contexts, so it is a command rather than a note:
+
+```bash
+python3 scripts/check_downstream_prs.py <branch>          # or --repo owner/name
+```
+
+Exit **0** = no open PR is based on it; **1** = at least one is (merge the stack bottom-up, or
+retarget them first); **2** = could not check (gh missing/unauthenticated) — which must **not** be
+read as "none". The incident is in the corpus:
+`lessons/contrib/a-stacked-pr-downstream-is-closed-when-the-upstream-branch-is-deleted.md`.
