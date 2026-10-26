@@ -2283,6 +2283,11 @@ function unwritableAdvice(manual = '') {
     : `只读或权限不足，重跑也写不进去 → ${fix}`;
 }
 
+// Claude Code is in use when its user-level config file exists — a stale `~/.claude/` directory is
+// not evidence (#3699). The install still detects on either (it can offer to set Claude up); the
+// verification and the report must not blame a machine that merely left the directory behind.
+const claudeCodeInUse = () => existsSync(join(HOME, '.claude.json'));
+
 async function verify() {
   let allOk = true;
   // The report answers two different questions, and one of them failing must not condemn the
@@ -2320,7 +2325,7 @@ async function verify() {
     try {
       const granted = readJson(join(HOME, '.claude', 'settings.json'), null)?.permissions?.allow || [];
       const missing = CLAUDE_ALLOWED_TOOLS.filter((tool) => !granted.includes(tool));
-      if (detect('claude') && missing.length) {
+      if (claudeCodeInUse() && missing.length) {
         allOk = false;
         // Not an install fact: the endpoint answers, and the search still fails. It belongs to
         // the usability segment, so it belongs there in the output too.
@@ -2403,7 +2408,7 @@ async function verify() {
   // Cursor-only install reported NOT READY with two Claude Code complaints about a target that was
   // never selected — the same lie the OpenClaw and Hermes checks below already refuse to tell
   // (found while adding Cursor, which is mcp-only by construction).
-  if (detect('claude')) {
+  if (claudeCodeInUse()) {
     const hookPath = join(stateDir(), 'hook.mjs');
     let hookPresent = false;
     try {
@@ -3157,7 +3162,7 @@ function reportValues(verdict) {
   const permissions = (() => {
     // `n/a` when Claude Code is not a target on this machine: an absent settings file is not a
     // gap, and reporting one would send a Codex-only user chasing a fix they do not need.
-    if (!detect('claude')) return 'n/a';
+    if (!claudeCodeInUse()) return 'n/a';
     const granted = readJson(join(HOME, '.claude', 'settings.json'), null)?.permissions?.allow || [];
     const missing = CLAUDE_ALLOWED_TOOLS.filter((tool) => !granted.includes(tool));
     return missing.length ? 'incomplete' : 'ok';

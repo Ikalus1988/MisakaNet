@@ -620,6 +620,33 @@ test('verify fails clearly when nothing is installed, and says what to do', () =
   assert.match(result.stdout, /端点不可达|缺失|没装/);
 });
 
+test('verify: a stale ~/.claude directory is not a reason to report a missing hook (#3699)', () => {
+  const home = makeHome({ claude: false, codex: false });
+  try {
+    // A leftover directory from an earlier experiment; no ~/.claude.json, so Claude Code is not in
+    // use on this machine.
+    mkdirSync(join(home, '.claude'), { recursive: true });
+    writeFileSync(join(home, '.claude', 'settings.json'), '{}');
+    mkdirSync(join(home, '.openclaw'), { recursive: true });
+    writeFileSync(join(home, '.openclaw', 'openclaw.json'), JSON.stringify({ mcp: { servers: {} } }));
+    const result = run(home, '--verify');
+    assert.ok(!/自动沉淀钩子/.test(result.stdout), result.stdout);
+    assert.ok(!/只读 MCP 工具没有放行/.test(result.stdout), result.stdout);
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test('verify: a real ~/.claude.json still checks the hook (#3699)', () => {
+  const home = makeHome();
+  try {
+    const result = run(home, '--verify');
+    assert.match(result.stdout, /自动沉淀钩子：缺失/, result.stdout);
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
 test('verify passes once installed, against a reachable endpoint', async () => {
   const { createServer } = await import('node:http');
   const server = createServer((req, res) => {
