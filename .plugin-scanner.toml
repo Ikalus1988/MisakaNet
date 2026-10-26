@@ -1,0 +1,27 @@
+# What hol-guard's `plugin-scanner` should not report on this repository.
+#
+# The scanner reads the whole repository and uploads its findings as SARIF
+# (`.github/workflows/guarded-repository.yml`), so it reports on the *outputs* of the lesson
+# pipeline — the generated pages, the JSON projections, the redirect table — as if they were
+# source. Those outputs are rewritten from `lessons/**` on every merge, so a finding on them
+# is a finding that comes back under a new line number: that is the treadmill that opened
+# sixteen alerts on 2026-10-18 (#350–#365) and two more on 2026-10-25 (#371/#372, the slug
+# `di`sk-`full-from-agent-tmp-dirs-gc-pattern`).
+#
+# The list mirrors `.github/codeql/codeql-config.yml`'s `paths-ignore`, for the same reason
+# and with the same compensating control: the corpus stays in scope for the scanners that
+# understand prose, and `scripts/check_published_secrets.py` scans `docs/**` and `lessons/**`
+# for credentials as a blocking check on every PR. Nothing here hides a credential that this
+# repository does not already catch itself.
+#
+# What stays in scope, deliberately: `scripts/`, `workers/`, `lib/`, `packages/`,
+# `integrations/`, `.github/` — the code, where a credential-shaped literal is a defect.
+#
+# `tests/test_external_scanner_surface.py` reads this file: a path removed from here without
+# fixing the source turns that test red.
+[scanner]
+ignore_paths = [
+  "data/*",
+  "docs/*",
+  "lessons/*",
+]

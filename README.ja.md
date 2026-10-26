@@ -39,7 +39,7 @@ mcp-name: io.github.Ikalus1988/misakanet
 <p align="center">
   <em>Install</em>
   &nbsp;&nbsp;
-  <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.10+-blue" alt="Python"></a>
+  <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.11+-blue" alt="Python"></a>
   <a href="https://pypi.org/project/misakanet/"><img src="https://img.shields.io/pypi/v/misakanet" alt="PyPI"></a>
   <a href="https://www.npmjs.com/package/misakanet"><img src="https://img.shields.io/npm/v/misakanet" alt="npm"></a>
   <a href="https://github.com/marketplace/actions/misakanet-intake-bot"><img src="https://img.shields.io/badge/Marketplace-MisakaNet%20Intake%20Bot-blue?logo=github" alt="GitHub Marketplace"></a>
@@ -107,7 +107,7 @@ intake を返します——「この失敗はまだ知らない」というコ�
 |---|---|
 | ❌ 汎用メモリ | ✅ 失敗回復の知識レイヤー |
 | ❌ エージェントランタイム | ✅ 検索できるレッスンデータベース |
-| ❌ ベクトル DB / RAG スタック | ✅ BM25 キーワード検索、標準ライブラリのみ（Python ≥ 3.10 は必要） |
+| ❌ ベクトル DB / RAG スタック | ✅ BM25 キーワード検索、標準ライブラリのみ（Python ≥ 3.11 は必要） |
 | ❌ スキルマーケット | ✅ 実際のセッションから出たデバッグ知識 |
 | ❌ 検索ベンチマーク | ✅ 証拠で格付けされたコーパス。持っているベンチマークは停止済み |
 
@@ -222,7 +222,7 @@ with_lesson hit rate (per run date)
 （[理由](AGENTS.md#33-注册与配额)）。
 
 インストールの確認：`npx @misaka-net/misakanet-setup --verify`、取り消し：`--uninstall`。
-前提：インストーラーは Node ≥ 18、ライブラリと stdio サーバーは Python ≥ 3.10。
+前提：インストーラーは Node ≥ 18、ライブラリと stdio サーバーは Python ≥ 3.11。Python 3.10 は 2026-10-01 でサポート終了（EOL）になったため、このリリースには 3.11 以降が必要です——パッケージを更新する前にインタプリタを更新してください。
 
 ### GitHub Action として使う
 

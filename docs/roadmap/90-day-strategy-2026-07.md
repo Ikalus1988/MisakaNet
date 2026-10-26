@@ -25,7 +25,7 @@ Use real failure experience to test and improve Agent recovery capabilities.
 | Forks | 39+ | GitHub |
 | Merged PRs (external) | 10+ | GitHub |
 | Integrations | 3 active | Continue.dev, Claude Code, Shell |
-| Python version | 3.10+ | `pyproject.toml` |
+| Python version | 3.11+ | `pyproject.toml` |
 | Dependencies (core) | 0 | `misakanet-core` |
 
 ### Existing Assets

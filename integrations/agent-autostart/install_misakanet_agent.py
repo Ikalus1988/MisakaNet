@@ -934,6 +934,17 @@ def install_hermes(home: Path, dry: bool, rep: Report) -> None:
         "若钩子收不到 session_id，可用 MISAKANET_HOOK_DEBUG=1 看实际输入再适配）")
 
 
+def _dsh_skill_text(base: str, block: str) -> str:
+    """The DSH skill file: the skill text, then the autostart block between the markers.
+
+    The uninstall path removes what this installer wrote by locating the marker pair, so the
+    block has to carry the markers. Without them `strip_block()` finds nothing, the autostart
+    rules survive the uninstall, and the run reports nothing about it — an uninstall that did
+    not undo (the DSH uninstall marker, open since the 18th volume).
+    """
+    return f"{base}\n\n<!-- {START} -->\n{block}\n<!-- {END} -->\n"
+
+
 def install_dsh(home: Path, dry: bool, rep: Report) -> None:
     # DSH has no MCP client in its CLI (verified 2026-09-13: no `mcp` subcommand), so the
     # portable path is a skill + the HTTP endpoint over curl.
@@ -946,8 +957,9 @@ def install_dsh(home: Path, dry: bool, rep: Report) -> None:
         if dry:
             rep.ok(f"DSH: 会安装 skill → {skill_dst}（源 {skill_src}）")
         else:
-            writable = skill_src.read_text(encoding="utf-8") + (
-                f"\n\n---\n\n## 自启动规则（由 install_misakanet_agent.py 追加）\n\n{prompt_block()}\n"
+            writable = _dsh_skill_text(
+                skill_src.read_text(encoding="utf-8"),
+                f"\n---\n\n## 自启动规则（由 install_misakanet_agent.py 追加）\n\n{prompt_block()}\n",
             )
             current = skill_dst.read_text(encoding="utf-8") if skill_dst.exists() else ""
             if current == writable:
@@ -961,7 +973,8 @@ def install_dsh(home: Path, dry: bool, rep: Report) -> None:
         if downloaded:
             if not dry:
                 skill_dst_dir.mkdir(parents=True, exist_ok=True)
-                skill_dst.write_text(downloaded + f"\n\n---\n\n{prompt_block()}\n", encoding="utf-8")
+                skill_dst.write_text(
+                    _dsh_skill_text(downloaded, f"\n---\n\n{prompt_block()}\n"), encoding="utf-8")
             rep.ok(f"DSH: 从远端取回 skill 并安装 → {skill_dst}")
         else:
             rep.needs_manual("DSH: 既不在仓库内、也取不回 skill 源 → 手动复制 skills/misakanet/")

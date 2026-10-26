@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import hashlib
 import importlib.util
+import re
 import sys
 from pathlib import Path
 
@@ -169,6 +170,25 @@ def test_list_gates_names_the_contexts_and_exits_zero(capsys):
 
 
 # ── (b) it passes for the gates we actually have ──────────────────────
+# The planted token: the shape leaves this source, the payload does not.
+#
+# The third-party scanner reads whole files, so writing a quoted value assigned to a token-shaped
+# name in *this* source reports the repository against itself — alerts #381/#382, opened
+# 2026-10-25, on a file whose value is fake and only ever lands in a throwaway scenario. The
+# planted file has to keep carrying the shape: the audit's red path depends on it.
+def test_the_planted_token_is_assembled_at_run_time_and_the_plant_still_carries_it(tmp_path):
+    scenario = tmp_path / "scenario"
+    gma._mutate_audit_hardcoded_token(scenario)
+    planted = (scenario / "workers" / "leaky.mjs").read_text(encoding="utf-8")
+    assert 'token: "' in planted, planted
+    assert gma._fake_github_token() in planted, planted
+
+    source = (REPO / "scripts" / "gate_mutation_audit.py").read_text(encoding="utf-8")
+    assert not re.search(r"token\s*[=:]\s*[\"'][^\s\"']{8,}", source), (
+        "this source must not carry the shape the scanner reads — the planted line is assembled "
+        "at run time instead, so the repository is not reported against itself")
+
+
 def test_audit_passes_for_the_current_gates():
     """Every covered gate goes red under its (non-network) mutations, and nothing is touched."""
     if gma._find_bash() is None:

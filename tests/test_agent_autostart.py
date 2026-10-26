@@ -251,6 +251,34 @@ def test_uninstall_restores_the_original_state(tmp_path):
     assert not (home / ".claude" / "CLAUDE.md").exists(), "a file created only for our block should go"
 
 
+# ── DSH: the uninstall removes the autostart block it wrote ─────────────────────────────────────
+# Every rule block this installer writes is found again by its markers. The DSH block was written
+# without them, so `strip_block()` found nothing: the autostart rules survived the uninstall and
+# the run reported nothing about it — an uninstall that did not undo (the DSH uninstall marker,
+# open since the 18th volume).
+def test_dsh_uninstall_removes_the_autostart_block_it_wrote(tmp_path):
+    home = make_home(tmp_path)
+    install = run_installer(home, "--only", "dsh")
+    assert install.returncode == 0, install.stdout + install.stderr
+
+    skill = home / ".agents" / "skills" / "misakanet" / "SKILL.md"
+    written = skill.read_text(encoding="utf-8")
+    assert "misakanet:start" in written and "misakanet:end" in written, (
+        "the autostart block must carry the markers the uninstall looks for:\n" + written)
+    assert "自启动规则" in written, written
+
+    removed = run_installer(home, "--uninstall")
+    assert removed.returncode == 0, removed.stdout + removed.stderr
+    after = skill.read_text(encoding="utf-8")
+    assert "自启动规则" not in after, (
+        "the uninstall must remove the block it wrote:\n" + after)
+    assert "misakanet:start" not in after, after
+    # What the installer did not write must survive: the skill text is the source's, untouched.
+    source = (REPO / "skills" / "misakanet" / "SKILL.md").read_text(encoding="utf-8").strip()
+    assert after.strip() == source, (
+        "uninstall must leave the skill text it found:\n" + after)
+
+
 def test_dry_run_writes_nothing(tmp_path):
     home = make_home(tmp_path)
     before = snapshot(home)

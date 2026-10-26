@@ -233,3 +233,27 @@ def test_the_auditor_does_not_run_the_suite_on_an_untested_version(workflow):
         f"{workflow} runs the suite on a version the matrix never tests: {untested}. Either add the "
         f"version to {MATRIX_WORKFLOW.name} (so it is supported on purpose) or pin a tested one."
     )
+
+
+def test_the_library_floor_is_not_below_the_suite_floor():
+    """One floor, not two — the gap that let a user install the package and then run no test at all.
+
+    `requires-python` is the floor a user gets; the suite floor is derived from `tests/`'s own imports.
+    While the library floor was 3.10 and the suite floor 3.11, `pip install` succeeded on 3.10 and
+    `pytest` then exited during *collection* (`ModuleNotFoundError: tomllib`) — the two numbers had to
+    be maintained separately and nobody did. Python 3.10 reached end-of-life on 2026-10-01, so the
+    floor moved to 3.11 and the two became one.
+
+    If a future test imports something newer than the library declares, this rule says so: raise the
+    floor, or accept the gap on purpose — but do not discover it from a user's failed install.
+    """
+    text = (REPO / "pyproject.toml").read_text(encoding="utf-8")
+    match = re.search(r'^requires-python\s*=\s*">=(\d+)\.(\d+)"', text, re.M)
+    assert match, "cannot read the library floor out of pyproject.toml"
+    library = (int(match.group(1)), int(match.group(2)))
+    floor, why = suite_floor()
+    assert library >= floor, (
+        f"the library floor is {library[0]}.{library[1]} but the suite needs {floor[0]}.{floor[1]} "
+        f"({'; '.join(why)}): a user on the library floor could install the package and then run no "
+        f"test at all — that gap is what this rule exists to close"
+    )

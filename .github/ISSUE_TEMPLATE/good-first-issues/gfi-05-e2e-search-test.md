@@ -31,7 +31,7 @@ Currently there are 16 test files, but **none** test the main search pipeline en
 
 ## Skills Required
 
-- Python 3.10+
+- Python 3.11+
 - pytest
 - Understanding of `search_knowledge.py` API
 

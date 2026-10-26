@@ -22,7 +22,8 @@ Design notes
 ------------
 * **No third-party imports.** `tarfile`, `urllib` and `subprocess` are stdlib, so the probes run on a
   runner with nothing installed — the same **stdlib-only** claim the package makes (AGENTS.md §6). The
-  interpreter itself is still the prerequisite, which is why the git+ probe asserts `python3 >= 3.10`.
+  interpreter itself is still the prerequisite, which is why the git+ probe asserts the floor that
+  `pyproject.toml` declares.
 * **The probe always writes its JSON**, including when it fails. A crash that left no artifact would be
   indistinguishable from "the probe never ran", and `scripts/update_install_badge.py` refuses to publish
   from absent evidence. So every failure path funnels through ``_result``/``run`` and still writes `--out`.
@@ -91,7 +92,21 @@ ROW_URL_RE = re.compile(r"(?m)^\s*url:\s*[\"']?(https?://[^\s\"',]+)")
 # A local row would name a process to spawn. The bundle must not: the npm form has no server to spawn.
 ROW_COMMAND_RE = re.compile(r"(?m)^\s*command:\s*\S")
 PY_VERSION_RE = re.compile(r"Python\s+(\d+)\.(\d+)")
-MIN_PYTHON = (3, 10)
+FLOOR_RE = re.compile(r'^requires-python\s*=\s*">=(\d+)\.(\d+)"', re.M)
+
+
+def documented_floor(repo: Path) -> tuple[int, int]:
+    """The interpreter floor this repository declares, read out of `pyproject.toml`.
+
+    A copy of the number here would be one more place to forget when the floor moves — and the
+    probe's whole job is to compare the runner's interpreter against *that* number, so a stale
+    copy would make it report a green that means nothing.
+    """
+    text = (repo / "pyproject.toml").read_text(encoding="utf-8")
+    match = FLOOR_RE.search(text)
+    if not match:
+        raise ValueError(f"cannot read the interpreter floor out of {repo / 'pyproject.toml'}")
+    return int(match.group(1)), int(match.group(2))
 
 
 def _now() -> str:
@@ -496,11 +511,15 @@ def probe_git_stdio(repo: Path, *, timeout: int, dry_run: bool) -> dict:
         fails.append(f"cannot read a version out of `python3 --version` → {version_text!r}")
     else:
         found = (int(match.group(1)), int(match.group(2)))
-        if found < MIN_PYTHON:
+        try:
+            floor = documented_floor(repo)
+        except (OSError, ValueError) as error:
+            return _result("git", checks, fails + [str(error)], detail, tools_seen=[], result_count=0)
+        if found < floor:
             fails.append(f"`python3 --version` is {version_text}, below the documented prerequisite "
-                         f"{MIN_PYTHON[0]}.{MIN_PYTHON[1]} (docs/dsh-installation.md)")
+                         f"{floor[0]}.{floor[1]} (docs/dsh-installation.md)")
         else:
-            checks.append(f"interpreter prerequisite: {version_text} ≥ {MIN_PYTHON[0]}.{MIN_PYTHON[1]}")
+            checks.append(f"interpreter prerequisite: {version_text} ≥ {floor[0]}.{floor[1]}")
 
     guide = repo / "docs" / "mcp.md"
     try:

@@ -2,7 +2,7 @@
 """A retired slogan may survive only as history (intake #2486, owner decision D2).
 
 `zero-dependency` / 零依赖 was used for "no third-party packages" and read as "nothing to prepare" — while a
-**Python ≥ 3.10 interpreter** is a hard prerequisite and the optional `--semantic` path downloads a large
+**Python ≥ 3.11 interpreter** is a hard prerequisite and the optional `--semantic` path downloads a large
 model. A reader reported the misreading, so the term is **retired** in current copy in favour of
 `stdlib-only (no third-party packages)`, and this file is what keeps it retired.
 
@@ -11,7 +11,12 @@ Two rules, both mechanism-shaped:
 1. the retired phrases do not appear in current, user-facing copy — dated snapshots, the corpus and tests are
    history and may quote them;
 2. a surface that makes the claim must also state the prerequisite in the same file, because "no third-party
-   packages" is only honest next to "Python ≥ 3.10 required".
+   packages" is only honest next to "Python ≥ 3.11 required".
+
+The prerequisite is **read out of `pyproject.toml`**, not written here. It used to be a literal `3.10` in this
+file, and the floor moved to 3.11 (Python 3.10 reached end-of-life on 2026-10-01) — a hand-written copy of
+the number is exactly how this gate would have started failing for the wrong reason: it would have demanded
+that every claim surface keep advertising a version of Python that no longer exists.
 """
 from __future__ import annotations
 
@@ -58,7 +63,20 @@ CLAIM_SURFACES = ("README.md", "README.zh-CN.md", "docs/dsh-installation.md", "d
                   # otherwise drift unnoticed, since it is reachable from every page load.
                   "docs/index.html")
 CLAIM = re.compile(r"stdlib-only|纯标准库|standard library|标准库", re.IGNORECASE)
-PREREQUISITE = re.compile(r"3\.10")
+
+
+def declared_floor() -> str:
+    """The interpreter floor this repository declares, read out of `pyproject.toml`."""
+    text = (REPO / "pyproject.toml").read_text(encoding="utf-8")
+    match = re.search(r'^requires-python\s*=\s*">=(\d+)\.(\d+)"', text, re.M)
+    assert match, "cannot read the interpreter floor out of pyproject.toml"
+    return f"{match.group(1)}.{match.group(2)}"
+
+
+def prerequisite_pattern() -> re.Pattern[str]:
+    """The prerequisite as a pattern — the declared floor, not a number this file remembers."""
+    major, minor = declared_floor().split(".")
+    return re.compile(rf"{major}\.{minor}")
 
 
 def _tracked_files(repo: Path) -> list[Path]:
@@ -129,9 +147,10 @@ def main() -> int:
     offenders = retired_phrase_offenders()
     missing = [rel for rel in CLAIM_SURFACES
                if CLAIM.search((REPO / rel).read_text(encoding="utf-8"))
-               and not PREREQUISITE.search((REPO / rel).read_text(encoding="utf-8"))]
+               and not prerequisite_pattern().search((REPO / rel).read_text(encoding="utf-8"))]
     if not offenders and not missing:
-        print("OK no current copy uses the retired slogan, and every claim surface states Python >= 3.10")
+        print("OK no current copy uses the retired slogan, and every claim surface states Python >= "
+              f"{declared_floor()}")
         return 0
     for line in offenders:
         print(f"retired slogan in current copy: {line}")
@@ -184,10 +203,11 @@ def test_every_surface_that_claims_stdlib_only_states_the_prerequisite():
     missing = []
     for rel in CLAIM_SURFACES:
         text = (REPO / rel).read_text(encoding="utf-8")
-        if CLAIM.search(text) and not PREREQUISITE.search(text):
+        if CLAIM.search(text) and not prerequisite_pattern().search(text):
             missing.append(rel)
     assert not missing, (
-        "these files claim stdlib-only without saying that a Python >= 3.10 interpreter is still required, "
+        f"these files claim stdlib-only without saying that a Python >= {declared_floor()} interpreter is "
+        "still required, "
         "which is the misreading a reader reported: " + ", ".join(missing))
 
 

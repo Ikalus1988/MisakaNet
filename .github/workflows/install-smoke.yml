@@ -61,7 +61,7 @@ jobs:
 
       - name: assert the interpreter floor, handshake the server, and call search
         run: |
-          # No setup-python on purpose: the documented prerequisite is "python3 ≥ 3.10", so the probe
+          # No setup-python on purpose: the documented prerequisite is "python3 ≥ 3.11", so the probe
           # must read the interpreter the runner actually has (`python3 --version`) rather than the one
           # a setup step would install. The tool set is compared against docs/mcp.md's local-stdio row.
           python3 scripts/install_smoke.py git-stdio --repo . --out /tmp/install-git.json

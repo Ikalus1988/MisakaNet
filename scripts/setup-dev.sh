@@ -5,7 +5,7 @@
 #   ./scripts/setup-dev.sh
 #
 # Requires:
-#   - Python 3.10+
+#   - Python 3.11+
 #   - pip or uv
 set -euo pipefail
 
@@ -13,7 +13,7 @@ echo "🔧 Setting up MisakaNet development environment..."
 
 # Check Python
 if ! command -v python3 &>/dev/null; then
-  echo "❌ python3 not found. Install Python 3.10+ first."
+  echo "❌ python3 not found. Install Python 3.11+ first."
   exit 1
 fi
 

@@ -182,7 +182,7 @@ def test_the_install_guide_names_both_forms_and_the_interpreter_prerequisite():
     assert "dsh plugin --profile web add misakanet" in guide, "the npm form is not named"
     assert "dsh plugin --profile web add github:Ikalus1988/MisakaNet" in guide, (
         "the git+ form is not named")
-    assert "Python" in guide and "3.10" in guide, (
+    assert "Python" in guide and "3.11" in guide, (
         "the install guide must state the interpreter prerequisite: \"zero dependency\" means no "
         "third-party packages, not nothing to prepare (intake #2486)")
 

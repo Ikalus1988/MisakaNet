@@ -37,7 +37,7 @@ A2A（`.well-known/agent-card.json`）。
 <p align="center">
   <em>Install</em>
   &nbsp;&nbsp;
-  <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.10+-blue" alt="Python"></a>
+  <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.11+-blue" alt="Python"></a>
   <a href="https://pypi.org/project/misakanet/"><img src="https://img.shields.io/pypi/v/misakanet" alt="PyPI"></a>
   <a href="https://www.npmjs.com/package/misakanet"><img src="https://img.shields.io/npm/v/misakanet" alt="npm"></a>
   <a href="https://github.com/marketplace/actions/misakanet-intake-bot"><img src="https://img.shields.io/badge/Marketplace-MisakaNet%20Intake%20Bot-blue?logo=github" alt="GitHub Marketplace"></a>
@@ -104,7 +104,7 @@ curl -sS https://misakanet.org/mcp \
 |---|---|
 | ❌ 通用记忆系统 | ✅ 失败修复知识层 |
 | ❌ Agent 运行时 | ✅ 可检索的 lesson 数据库 |
-| ❌ 向量数据库 / RAG 栈 | ✅ BM25 关键词检索，纯标准库（仍需 Python ≥ 3.10） |
+| ❌ 向量数据库 / RAG 栈 | ✅ BM25 关键词检索，纯标准库（仍需 Python ≥ 3.11） |
 | ❌ 技能市场 | ✅ 来自真实会话的排错知识 |
 | ❌ 检索基准 | ✅ 按证据分级语料；我们有的那个基准已暂停 |
 
@@ -212,7 +212,7 @@ with_lesson hit rate (per run date)
 `misakanet_write_lesson` 与 `misakanet_preflight`（[原因](AGENTS.md#33-注册与配额)）。
 
 验证安装：`npx @misaka-net/misakanet-setup --verify`；卸载：`--uninstall`。
-前置：安装器要 Node ≥ 18，库与 stdio server 要 Python ≥ 3.10。
+前置：安装器要 Node ≥ 18，库与 stdio server 要 Python ≥ 3.11。Python 3.10 已于 2026-10-01 结束支持（EOL），所以本版本需要 3.11 或更新——升级本包之前先升级解释器。
 
 ### 作为 GitHub Action 使用
 

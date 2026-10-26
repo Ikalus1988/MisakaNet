@@ -4,7 +4,7 @@ MisakaNet is designed for a specific niche: **decentralized, git-backed failure-
 
 > **Update (2026-09):** MisakaNet now ships **two surfaces over one knowledge core** — a local stdio MCP / CLI (stdlib-only BM25 over the git checkout) and a remote HTTP MCP (`https://misakanet.org/mcp`, Cloudflare Worker + D1, anonymous search). Items below marked *"local"* apply to the local core; the remote surface mitigates some (not all) of them.
 >
-> **Prerequisite:** the local surfaces need a **Python ≥ 3.10** interpreter. "Stdlib-only" means no third-party *packages*, not "nothing to prepare".
+> **Prerequisite:** the local surfaces need a **Python ≥ 3.11** interpreter. "Stdlib-only" means no third-party *packages*, not "nothing to prepare". Python 3.10 reached end-of-life on 2026-10-01, so upgrade the interpreter before upgrading the package.
 
 ## Search
 

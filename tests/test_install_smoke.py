@@ -32,6 +32,7 @@ sys.path.insert(0, str(REPO))
 from scripts.install_smoke import (  # noqa: E402
     CLIENT_MARKERS,
     HOSTED_URL,
+    documented_floor,
     SETUP_ENDPOINT,
     SETUP_MIN_ENDPOINT_TOOLS,
     SETUP_REPORT_SCHEMA,
@@ -358,3 +359,18 @@ def test_the_client_markers_are_really_in_the_shipped_bundle():
     served = (REPO / "lib" / "client.js").read_text(encoding="utf-8")
     missing = [marker for marker in CLIENT_MARKERS if marker not in served]
     assert not missing, f"the probe looks for registrations the bundle no longer makes: {missing}"
+
+
+def test_the_probe_reads_the_floor_the_package_declares():
+    """The probe compares the runner's interpreter against the floor `pyproject.toml` declares.
+
+    It used to carry its own copy of that number. The floor moved from 3.10 to 3.11 (Python 3.10
+    reached end-of-life on 2026-10-01), and a copy left behind would have kept the probe judging
+    3.10 as acceptable — the probe would have reported a green that means nothing.
+    """
+    floor = documented_floor(REPO)
+    assert floor == (3, 11), f"the probe reads {floor}, which is not the floor this change declares"
+
+    text = (REPO / "pyproject.toml").read_text(encoding="utf-8")
+    assert f'requires-python = ">={floor[0]}.{floor[1]}"' in text, (
+        "the probe and the package must name the same floor, or one of them is stale")

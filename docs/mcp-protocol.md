@@ -136,6 +136,6 @@ claude mcp add misakanet python3 /path/to/MisakaNet/integrations/mcp-server/serv
 
 ## Requirements
 
-- Python 3.10+
+- Python 3.11+
 - `misakanet-core` package (`pip install misakanet-core`)
 - MisakaNet repo cloned locally

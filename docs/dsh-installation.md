@@ -194,7 +194,7 @@ the **hosted** endpoint exposes, not a local server.
 | Form | What it installs | MCP tools you get | Needs |
 |---|---|---|---|
 | `dsh plugin --profile web add misakanet` (**npm**) | `SKILL.md`, `index.js` (wires the MCP row), `cordis.patch.yml` | the **hosted** endpoint's tools at `https://misakanet.org/mcp` — **8**, declared in `.codex-plugin/plugin.json` (`mcp.tools`); `misakanet_me_events` and `misakanet_me_inbox` are two of them | network. **No Python, no local process** |
-| `dsh plugin --profile web add github:Ikalus1988/MisakaNet` (**git+**) | the above **plus the repository**, including `scripts/mcp_server.py` | the **local stdio** server (`python3 scripts/mcp_server.py`) — **11**: the same 8 hosted tools **plus** the 3 that only make sense on your machine, `misakanet_submit_usage`, `misakanet_usage_status`, `misakanet_memory_context` | **Python ≥ 3.10** and a checkout |
+| `dsh plugin --profile web add github:Ikalus1988/MisakaNet` (**git+**) | the above **plus the repository**, including `scripts/mcp_server.py` | the **local stdio** server (`python3 scripts/mcp_server.py`) — **11**: the same 8 hosted tools **plus** the 3 that only make sense on your machine, `misakanet_submit_usage`, `misakanet_usage_status`, `misakanet_memory_context` | **Python ≥ 3.11** and a checkout |
 | `cp -r skills/misakanet ~/.dsh/skills/` (**manual skill**) | the skill only | none until you wire an MCP row yourself | — |
 
 Why: the npm bundle deliberately has **no `bin`** and does not ship the local server — `scripts/mcp_server.py`
@@ -237,10 +237,10 @@ proxy or corpus subset works.
 
 * **Hosted MCP path** (the npm form): no local runtime at all — it is an HTTPS call.
 * **Local paths** — the library (`misakanet-core`), the stdio server (`python3 scripts/mcp_server.py`), the
-  CLI and `search_knowledge.py` — need **Python ≥ 3.10**.
+  CLI and `search_knowledge.py` — need **Python ≥ 3.11**.
 * **"Stdlib-only" means no third-party packages**, not "nothing to prepare": the default search path is pure
   Python standard library, which is why it runs anywhere a Python interpreter exists. Two things sit outside
-  that claim: the **interpreter itself** is a hard prerequisite (**Python ≥ 3.10**), and the optional
+  that claim: the **interpreter itself** is a hard prerequisite (**Python ≥ 3.11**), and the optional
   `--semantic` path needs `sentence-transformers` (or an external embedding service) — see
   `docs/LIMITATIONS.md` and `docs/cli-reference.md`.
 

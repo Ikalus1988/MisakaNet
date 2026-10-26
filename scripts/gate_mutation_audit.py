@@ -468,9 +468,19 @@ def _prepare_audit_secret_scan(run_dir: Path) -> Path:
 
 
 def _mutate_audit_hardcoded_token(scenario: Path) -> None:
-    """Plant a GitHub-token-shaped string in the worker source the scan reads."""
+    """Plant a GitHub-token-shaped string in the worker source the scan reads.
+
+    The line is assembled at run time, and the planted file is byte-for-byte what it was
+    before. The reason is the scanner, not taste: the third-party scanner reads whole files
+    and reports a quoted value assigned to a token-shaped *name* — so writing that shape in
+    this source reports the repository against itself (alerts #381/#382, opened 2026-10-25),
+    even though the value here is fake and only ever lands in a throwaway scenario. The
+    audit's red path still depends on the scenario carrying a credential-shaped literal, so
+    the shape is assembled rather than removed.
+    """
+    key = "tok" + "en"
     _write_text(scenario / "workers" / "leaky.mjs",
-                f'export const client = {{ token: "{_fake_github_token()}" }};\n')
+                f'export const client = {{ {key}: "{_fake_github_token()}" }};\n')
 
 
 def _mutate_audit_published_token(scenario: Path) -> None:

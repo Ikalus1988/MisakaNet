@@ -35,7 +35,7 @@ The `--explain` flag already exists in `search_knowledge.py` (line ~280) but the
 
 ## Skills Required
 
-- Python 3.10+
+- Python 3.11+
 - Understanding of the scoring formula in `misakanet/search/engine.py` lines 130-180
 
 ## Estimated Time

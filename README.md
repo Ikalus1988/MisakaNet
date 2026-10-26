@@ -39,7 +39,7 @@ A2A discovery via `.well-known/agent-card.json`.
 <p align="center">
   <em>Install</em>
   &nbsp;&nbsp;
-  <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.10+-blue" alt="Python"></a>
+  <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.11+-blue" alt="Python"></a>
   <a href="https://pypi.org/project/misakanet/"><img src="https://img.shields.io/pypi/v/misakanet" alt="PyPI"></a>
   <a href="https://www.npmjs.com/package/misakanet"><img src="https://img.shields.io/npm/v/misakanet" alt="npm"></a>
   <a href="https://github.com/marketplace/actions/misakanet-intake-bot"><img src="https://img.shields.io/badge/Marketplace-MisakaNet%20Intake%20Bot-blue?logo=github" alt="GitHub Marketplace"></a>
@@ -111,7 +111,7 @@ Python standard library. No vector database, no embedding model, no server unles
 |---|---|
 | ❌ a general memory system | ✅ a failure-recovery knowledge layer |
 | ❌ an agent runtime | ✅ a searchable lesson database |
-| ❌ a vector database / RAG stack | ✅ BM25 keyword search, stdlib only (Python ≥ 3.10 still required) |
+| ❌ a vector database / RAG stack | ✅ BM25 keyword search, stdlib only (Python ≥ 3.11 still required) |
 | ❌ a skill marketplace | ✅ debugging knowledge from real sessions |
 | ❌ a retrieval benchmark | ✅ a corpus graded by evidence; the benchmark we have is paused |
 
@@ -208,7 +208,7 @@ command for every client. The ten supported clients, and what each one gets, are
 [the install page](https://misakanet.org/install/). Verify an install with
 `npx @misaka-net/misakanet-setup --verify`; undo it with `--uninstall`.
 Reads are anonymous and unlimited; registration is for writing ([why](AGENTS.md#33-注册与配额)).
-Node ≥ 18 for the installer, Python ≥ 3.10 for the library and stdio server.
+Node ≥ 18 for the installer, Python ≥ 3.11 for the library and stdio server. Python 3.10 reached end-of-life on 2026-10-01, so this release needs 3.11 or newer — upgrade the interpreter before upgrading the package.
 
 ### Other channels
 

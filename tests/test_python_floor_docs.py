@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 """A document that tells you to run the test suite must state the version the *suite* needs.
 
-`pyproject.toml` declares `requires-python = ">=3.10"` and the ruff target is `py310` — both true of the
-**library**. The **suite** needs 3.11+, because `tests/` imports `tomllib`, which is stdlib only from 3.11. So
-a contributor on 3.10 could follow the environment line in `docs/agents/repo-operations.md` ("Python ≥ 3.10"),
-`pip install -r requirements.txt` successfully, and then watch `pytest tests/` exit during **collection** with
-`ModuleNotFoundError: No module named 'tomllib'` — a message that reads like a broken checkout rather than a
-version floor. That is the same failure `pr-checks.yml` had (measured 2026-09-25: the auditor pinned 3.10 and
-every PR carried a red auditor while blaming "the test suite").
+`pyproject.toml` declares `requires-python = ">=3.11"` and the ruff target is `py311` — one floor for the
+library *and* the suite. They used to be two numbers: the **library** allowed 3.10 while the **suite** needed
+3.11+, because `tests/` imports `tomllib`, which is stdlib only from 3.11. So a contributor on 3.10 could follow
+the environment line in `docs/agents/repo-operations.md` ("Python ≥ 3.10"), `pip install -r requirements.txt`
+successfully, and then watch `pytest tests/` exit during **collection** with `ModuleNotFoundError: No module
+named 'tomllib'` — a message that reads like a broken checkout rather than a version floor. That is the same
+failure `pr-checks.yml` had (measured 2026-09-25: the auditor pinned 3.10 and every PR carried a red auditor
+while blaming "the test suite"). Python 3.10 reached end-of-life on 2026-10-01, so the floor moved to 3.11 and
+the two numbers became one.
 
 Two rules, and they are about the *relation* rather than a number:
 
