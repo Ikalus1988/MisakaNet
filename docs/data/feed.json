@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-10-25T23:20:52.223130+00:00",
+  "generated_at": "2026-10-26T05:04:19.693983+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3860",
-      "timestamp": "2026-10-25T21:13:59Z",
+      "title": "docs(test): the floor-docs rule describes one floor, not two",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3877",
+      "timestamp": "2026-10-26T04:14:18Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3856",
-      "timestamp": "2026-10-25T17:41:09Z",
+      "title": "feat(packaging)!: the interpreter floor is 3.11 — Python 3.10 reached end-of-life on 2026-10-01",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3874",
+      "timestamp": "2026-10-26T03:49:46Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(ci): prove all four hard gates can go red, on every PR",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3855",
-      "timestamp": "2026-10-25T17:30:45Z",
+      "title": "fix(installer): the DSH uninstall removes the autostart block it wrote",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3871",
+      "timestamp": "2026-10-26T03:13:40Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "lessons(contrib): 125 intake lessons from the 2026-10-25 triage",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3851",
-      "timestamp": "2026-10-25T17:29:28Z",
+      "title": "fix(gate): decide the third-party scanner's verdict here, not on Monday",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3870",
+      "timestamp": "2026-10-26T03:11:19Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(audit): the intake-kind flip check now decides the exit code",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3853",
-      "timestamp": "2026-10-25T17:29:23Z",
+      "title": "fix(setup): verify and report key Claude Code on ~/.claude.json",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3868",
+      "timestamp": "2026-10-26T00:56:30Z",
       "source": "github"
     },
     {
