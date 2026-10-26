@@ -57,6 +57,18 @@ export default {
     }
     await env.MISAKANET_KV.put(`rate:email:${sender}`, String(currentCount + 1), { expirationTtl: 86400 });
 
+    // Idempotency: Email Routing can retry a delivery when a downstream action (forward/reply)
+    // throws. Without this, one message produced two intake rows 22s apart in the 2026-10-26
+    // self-test. The Message-ID is the only stable key the transport gives us; store it after the
+    // intake row so a retry that arrives *before* the first row exists still gets processed.
+    const dedupKey = messageId
+      ? `email-intake-seen:${encodeURIComponent(messageId).slice(0, 180)}`
+      : '';
+    if (dedupKey && (await env.MISAKANET_KV.get(dedupKey))) {
+      console.log(`Duplicate delivery ignored (${messageId})`);
+      return;
+    }
+
     // Consume the raw stream before forwarding and retain only bounded, plain text.
     const rawEmail = await new Response(message.raw).text();
     const emailBody = parseEmailBody(rawEmail);
@@ -101,6 +113,7 @@ export default {
       JSON.stringify(intakeRecord),
       { expirationTtl: 2592000 },
     );
+    if (dedupKey) await env.MISAKANET_KV.put(dedupKey, intakeId, { expirationTtl: 2592000 });
     console.log(`Intake ${intakeId}: ${intakeType} from ${sender} — "${subject}"`);
 
     if (env.GH_TOKEN) {
@@ -122,8 +135,14 @@ export default {
       'X-MisakaNet-Intake-Type': intakeType,
     });
     if (env.MAINTAINER_EMAIL) {
-      await message.forward(env.MAINTAINER_EMAIL, forwardHeaders);
-      console.log(`Forwarded ${intakeId} to ${env.MAINTAINER_EMAIL}`);
+      try {
+        await message.forward(env.MAINTAINER_EMAIL, forwardHeaders);
+        console.log(`Forwarded ${intakeId} to ${env.MAINTAINER_EMAIL}`);
+      } catch (error) {
+        // The intake is already stored; a forward failure must not make Email Routing retry the
+        // whole message and create a duplicate.
+        console.error(`Forward failed for ${intakeId}: ${error.message}`);
+      }
     } else {
       console.warn('MAINTAINER_EMAIL not configured — intake stored in KV only');
     }
@@ -141,8 +160,14 @@ export default {
         buildReplyText({ intakeId, intakeType, nodeId, issueUrl: intakeRecord.githubIssueUrl }),
       ].join('\r\n'),
     );
-    await message.reply(reply);
-    console.log(`Replied to ${sender} for intake ${intakeId}`);
+    try {
+      await message.reply(reply);
+      console.log(`Replied to ${sender} for intake ${intakeId}`);
+    } catch (error) {
+      // Same reasoning: the intake row is the durable side effect; a failed reply must not cause a
+      // retry that duplicates it. The sender can retry or use MCP.
+      console.error(`Reply failed for ${intakeId}: ${error.message}`);
+    }
   },
 
   async fetch(request, env) {
