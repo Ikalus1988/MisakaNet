@@ -216,7 +216,11 @@ export function detectIntakeType(subject, body) {
 }
 
 export function buildReplyText({ intakeId, intakeType, nodeId, issueUrl, answer }) {
-  const identifier = nodeId ? `Your node ID is ${nodeId}.` : `Your intake ID is ${intakeId}.`;
+  // A node ID is assigned to every sender, but only registration/join mail should get the node
+  // quickstart. A question or failure report that got a node ID still needs the intake ID + the
+  // review status; saying "clone and follow the node quickstart" there is the wrong next step.
+  const registration = intakeType === 'registration' || intakeType === 'join';
+  const identifier = registration && nodeId ? `Your node ID is ${nodeId}.` : `Your intake ID is ${intakeId}.`;
   return [
     'Thanks for contacting MisakaNet.',
     '',
@@ -225,7 +229,7 @@ export function buildReplyText({ intakeId, intakeType, nodeId, issueUrl, answer 
     ...(issueUrl ? [`Track it: ${issueUrl}`] : []),
     ...(answer ? ['', 'An existing answer:', String(answer).slice(0, 1000)] : []),
     '',
-    nodeId
+    registration && nodeId
       ? 'Next steps: clone https://github.com/Ikalus1988/MisakaNet and follow the node quickstart.'
       : 'Your submission is queued for maintainer review. Keep the intake ID for follow-up.',
     '',

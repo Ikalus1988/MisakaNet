@@ -249,11 +249,19 @@ test('buildReplyText with null nodeId returns intake ID instead of node ID', () 
   assert.match(reply, /queued for maintainer review/);
 });
 
-test('buildReplyText with registered nodeId includes node ID and quickstart link', () => {
-  const reply = buildReplyText({ intakeId: 'intake-42', intakeType: 'lesson-submission', nodeId: 'Misaka00001' });
+test('registration reply with a nodeId includes the node ID and quickstart link', () => {
+  const reply = buildReplyText({ intakeId: 'intake-42', intakeType: 'registration', nodeId: 'Misaka00001' });
   assert.match(reply, /Your node ID is Misaka00001/);
   assert.match(reply, /Next steps:/);
   assert.match(reply, /quickstart/);
+});
+
+test('a lesson submission that got a nodeId still uses the intake path', () => {
+  const reply = buildReplyText({ intakeId: 'intake-43', intakeType: 'lesson-submission', nodeId: 'Misaka00001' });
+  assert.match(reply, /Your intake ID is intake-43/);
+  assert.doesNotMatch(reply, /Your node ID/);
+  assert.doesNotMatch(reply, /quickstart/);
+  assert.match(reply, /queued for maintainer review/);
 });
 
 test('buildReplyText includes the audit issue link and the conversion-receipt promise', () => {
@@ -295,4 +303,18 @@ test('parses an MCP intake response, including issue-id URL and answer', () => {
   const answered = parseIntakeResponse({ answered: true, answer: 'Use a PAT.', intake_id: 'issue-1' });
   assert.equal(answered.answered, true);
   assert.equal(answered.answer, 'Use a PAT.');
+});
+
+test('a question that got a node ID still uses the intake path, not the node quickstart', () => {
+  const reply = buildReplyText({
+    intakeId: 'intake-q1',
+    intakeType: 'question',
+    nodeId: 'Misaka10503',
+    issueUrl: 'https://github.com/Ikalus1988/MisakaNet/issues/3909',
+  });
+  assert.match(reply, /Your intake ID is intake-q1/);
+  assert.doesNotMatch(reply, /Your node ID/);
+  assert.doesNotMatch(reply, /node quickstart/);
+  assert.match(reply, /queued for maintainer review/);
+  assert.match(reply, /issues\/3909/);
 });
