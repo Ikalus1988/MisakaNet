@@ -97,3 +97,8 @@ index_name = "misakanet-lessons-m3"
 
 [ai]
 binding = "AI"
+
+[[d1_databases]]
+binding = "MISAKANET_OPS_D1"
+database_name = "misakanet-ops"
+database_id = "f5133f9b-a310-4058-98df-499dfde24e9a"

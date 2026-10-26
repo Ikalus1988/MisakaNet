@@ -5525,6 +5525,12 @@ function d1Binding(env) {
   return env?.MISAKANET_D1 || null;
 }
 
+/** Ops/telemetry DB. Falls back to the serving DB when the binding is absent, so a deployment
+ *  that has not applied the new binding keeps the old behavior instead of losing rows. */
+function opsD1(env) {
+  return env?.MISAKANET_OPS_D1 || d1Binding(env);
+}
+
 // Fetch lesson rows from D1 as the same array shape used by the GitHub
 // proxy (id/title/domain/tags/description/path/status/...), so callers
 // (search, /api/lessons) behave identically either way. Supports optional
@@ -6918,7 +6924,7 @@ async function recordSearchSignal(env, {
     // redeploy (the search path itself is unaffected — see the rollback section
     // of docs/maintainer/search-metrics.md).
     if (String(env.MISAKANET_SEARCH_SIGNALS ?? "") === "0") return null;
-    const d1 = d1Binding(env);
+    const d1 = opsD1(env);
     // No D1 binding → no row store. Deliberately no KV fallback: a per-search KV
     // key is the failure mode #1647 documented, and the stats endpoint reads D1.
     if (!d1) return null;
@@ -6990,7 +6996,7 @@ function buildSignalBreakdown(groups) {
 }
 
 async function handleSearchSignalStats(env, url) {
-  const d1 = d1Binding(env);
+  const d1 = opsD1(env);
   if (!d1) return jsonResponse({ error: "D1 not configured" }, 503);
 
   const requested = parseInt(url.searchParams.get("days") || "", 10);
@@ -7081,7 +7087,7 @@ const E4_MIN_DISTINCT_CLIENTS = 2;
  * overcount.
  */
 async function countDistinctRetrievingClients(env, { lessonId, lessonPath } = {}) {
-  const d1 = d1Binding(env);
+  const d1 = opsD1(env);
   if (!d1) return null;
   // Same lazy `CREATE TABLE IF NOT EXISTS` the writer uses, so a cold isolate that has served no
   // search yet reads an empty table instead of throwing "no such table". A throw would be swallowed
