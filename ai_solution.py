@@ -8,7 +8,7 @@ on:
 
 jobs:
   tests:
-    runs-on: ${{{{ matrix.os }}}}
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ubuntu, windows]
@@ -19,7 +19,7 @@ jobs:
       - name: Run tests
         run: pytest tests/
   build_lesson_pages:
-    runs-on: ${{{{ matrix.os }}}}
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ubuntu, windows]
