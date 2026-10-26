@@ -1,9 +1,23 @@
 {
-  "generated_at": "2026-10-26T13:19:16.124850+00:00",
+  "generated_at": "2026-10-26T20:36:10.525925+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "fix(site): one copy of the escaper and the JSON reader",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3896",
+      "timestamp": "2026-10-26T14:15:24Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3895",
+      "timestamp": "2026-10-26T13:33:02Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "feat(setup): the verify verdict is per client, and one client can be judged on its own",
@@ -23,20 +37,6 @@
       "title": "feat(gate): a mechanism that runs by itself must be able to fail",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/3887",
       "timestamp": "2026-10-26T09:42:34Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "fix(ci): the same-repo test compared a field the context does not have",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3886",
-      "timestamp": "2026-10-26T08:19:03Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "fix(ci): the failure→lesson path must be able to see, and must say when it cannot",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3883",
-      "timestamp": "2026-10-26T07:40:27Z",
       "source": "github"
     },
     {
@@ -81,7 +81,7 @@
     },
     {
       "type": "challenge",
-      "title": "[Onboarding] Connect your agent & submit failures via MCP",
+      "title": "Start here: give your coding agent a failure memory (MCP, 60 seconds)",
       "url": "https://github.com/Ikalus1988/MisakaNet/issues/1258",
       "labels": [
         "enhancement",
