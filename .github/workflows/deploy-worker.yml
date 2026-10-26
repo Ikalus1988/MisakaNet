@@ -4,6 +4,11 @@ on:
   push:
     paths:
       - "workers/register-proxy-sw.js"
+      # The entry point is a separate file since 2026-10-26: workerd rejects an entry module whose
+      # named exports are not all functions, and the implementation module exports 44 constants for
+      # the tests. A change to the entry that merged without deploying would leave production
+      # running the old entry — so the entry is watched like the implementation is.
+      - "workers/register-proxy-entry.js"
       # The config is part of the deployed artifact. Without this entry a compatibility-date,
       # binding or cron change merged to main never reached production — measured 2026-09-24:
       # `workers/wrangler.toml` still said `compatibility_date = "2024-01-01"`, and fixing it alone

@@ -1,5 +1,20 @@
 name = "misakanet-register-proxy"
-main = "register-proxy-sw.js"
+# The entry point is `register-proxy-entry.js`, not `register-proxy-sw.js`, and the difference is
+# not cosmetic. workerd builds a map of the entry module's exports at startup and every entry in
+# it must be a function or an `ExportedHandler`:
+#
+#     Uncaught TypeError: Incorrect type for map entry 'ACTIVITY_CACHE_CONTROL':
+#     the provided value is not of type 'function or ExportedHandler'.
+#
+# `register-proxy-sw.js` exports 130 names for the worker tests, 44 of them constants, so naming
+# it as the entry made `wrangler dev` fail at startup every time — the Worker could not be run
+# locally at all, and no gate could see it, because Node has no such rule and the tests import the
+# implementation module directly. The entry file exports the default handler and nothing else; the
+# implementation keeps every export the tests need.
+#
+# `tests/test_worker_entry_exports.py` enforces the rule and reads this path, so moving the entry
+# moves the gate with it.
+main = "register-proxy-entry.js"
 # Pinned on purpose, bumped on purpose: this date chooses the runtime semantics the Worker is
 # compiled against, so letting it rot means production runs by rules nobody picked any more.
 # It sat at 2024-01-01 for 997 days (found 2026-09-24 by a zone audit) while the other three
