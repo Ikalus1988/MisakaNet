@@ -24,6 +24,7 @@ import { writeFileSync, mkdirSync, renameSync, readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { homedir } from 'node:os';
 import { join, dirname } from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 // NOTE: JavaScript does not concatenate adjacent string literals the way Python does.
 // Writing these as three consecutive strings silently keeps only the first one, so the
@@ -418,14 +419,22 @@ async function failureMode(payload) {
   process.stdout.write(`${lines.join('\n')}\n`);
 }
 
-const mode = process.argv[2] || 'prompt';
-try {
-  const payload = parsePayload(await readStdin());
-  if (!payload) debug('no usable payload - nothing to do');
-  else if (mode === 'prompt') promptMode(payload);
-  else if (mode === 'failure') await failureMode(payload);
-  else debug(`unknown mode ${mode}`);
-} catch (err) {
-  debug(`hook error: ${err}`);      // never break the user's session
+// Run only when this file is the entry point (`node checkpoint_reminder.mjs …`). Importing it must
+// not read stdin or exit the process: the inner `search()` is the gate that redacts the query on
+// the way out, and #3719 wants a test that can drive it with *raw* text and see the payload.
+const isEntry = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
+if (isEntry) {
+  const mode = process.argv[2] || 'prompt';
+  try {
+    const payload = parsePayload(await readStdin());
+    if (!payload) debug('no usable payload - nothing to do');
+    else if (mode === 'prompt') promptMode(payload);
+    else if (mode === 'failure') await failureMode(payload);
+    else debug(`unknown mode ${mode}`);
+  } catch (err) {
+    debug(`hook error: ${err}`);      // never break the user's session
+  }
+  process.exit(0);
 }
-process.exit(0);
+
+export { search };

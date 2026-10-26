@@ -297,6 +297,59 @@ def test_the_query_that_leaves_the_machine_is_redacted(hook, tmp_path):
     assert "<PATH>" in sent, f"the query that left the machine was not redacted:\n{sent}"
 
 
+def _import_python_hook():
+    """Import the twin so its `_mcp_search` can be driven with raw text (#3719)."""
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("checkpoint_reminder_py", PY_HOOK)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_the_python_inner_gate_redacts_raw_text():
+    """The inner gate is load-bearing even when the outer one never ran (#3719).
+
+    The fragment printed into the agent's context is already redacted, so the old test could not
+    tell "the inner gate redacted" from "the outer one did". Call `_mcp_search` with the raw text:
+    removing its `_redact(query)` makes the secret appear in the recorded body.
+    """
+    module = _import_python_hook()
+    with endpoint_recorder() as (url, bodies):
+        old = os.environ.get("MISAKANET_ENDPOINT")
+        os.environ["MISAKANET_ENDPOINT"] = url
+        try:
+            module._mcp_search(THE_ISSUE_SAMPLE)
+        finally:
+            if old is None:
+                os.environ.pop("MISAKANET_ENDPOINT", None)
+            else:
+                os.environ["MISAKANET_ENDPOINT"] = old
+    assert bodies, "the inner gate did not send a request"
+    sent = bodies[-1]
+    for secret in ("/home/alice/project/secret.py", "alice@corp.com", "abc123"):
+        assert secret not in sent, f"{secret!r} left through the inner gate:\n{sent}"
+    assert "<PATH>" in sent, f"the inner gate did not redact the raw text:\n{sent}"
+
+
+def test_the_node_inner_gate_redacts_raw_text():
+    """Same for the Node twin: import `search`, not the whole hook."""
+    script = (
+        f"import {{ search }} from {json.dumps(MJS_HOOK.as_uri())};"
+        "await search(process.env.THE_RAW_TEXT);"
+    )
+    with endpoint_recorder() as (url, bodies):
+        env = {**os.environ, "MISAKANET_ENDPOINT": url, "THE_RAW_TEXT": THE_ISSUE_SAMPLE}
+        proc = subprocess.run(["node", "--input-type=module", "-e", script],
+                              capture_output=True, text=True, env=env, timeout=60)
+    assert proc.returncode == 0, proc.stderr[-400:]
+    assert bodies, "the inner gate did not send a request"
+    sent = bodies[-1]
+    for secret in ("/home/alice/project/secret.py", "alice@corp.com", "abc123"):
+        assert secret not in sent, f"{secret!r} left through the inner gate:\n{sent}"
+    assert "<PATH>" in sent, f"the inner gate did not redact the raw text:\n{sent}"
+
+
 @pytest.mark.parametrize("hook", sorted(HOOKS))
 @pytest.mark.parametrize("payload", ["", "not json", "[]", '{"error": null}', '{"error": 42}'])
 def test_a_redaction_bug_may_not_turn_into_a_failed_hook(hook, payload, tmp_path):
