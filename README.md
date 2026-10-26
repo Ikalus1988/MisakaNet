@@ -50,6 +50,7 @@ A2A discovery via `.well-known/agent-card.json`.
   &nbsp;&nbsp;
   <a href="https://glama.ai/mcp/connectors/org.misakanet/misaka-net"><img src="https://glama.ai/mcp/connectors/org.misakanet/misaka-net/badges/score.svg" alt="MisakaNet MCP connector on Glama"></a>
   <a href="https://mcptoplist.com/server/io.github.Ikalus1988%2Fmisakanet"><img src="https://img.shields.io/badge/MCP-Toplist-blue" alt="MCP Toplist"></a>
+  <a href="https://dshfind.com/en/plugins/Ikalus1988/MisakaNet?ref=badge"><img src="https://dshfind.com/api/badge/Ikalus1988/MisakaNet?metric=downloads&amp;lang=en" alt="DSH plugin downloads on dshfind"></a>
 </p>
 
 ---
