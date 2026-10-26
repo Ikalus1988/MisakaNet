@@ -252,3 +252,15 @@ test('buildReplyText with registered nodeId includes node ID and quickstart link
   assert.match(reply, /Next steps:/);
   assert.match(reply, /quickstart/);
 });
+
+test('buildReplyText includes the audit issue link and the conversion-receipt promise', () => {
+  const reply = buildReplyText({
+    intakeId: 'intake-100',
+    intakeType: 'bug-report',
+    nodeId: null,
+    issueUrl: 'https://github.com/Ikalus1988/MisakaNet/issues/9999',
+  });
+  assert.match(reply, /Track it: https:\/\/github\.com\/Ikalus1988\/MisakaNet\/issues\/9999/);
+  assert.match(reply, /conversion receipt/);
+  assert.match(reply, /queued for maintainer review/);
+});

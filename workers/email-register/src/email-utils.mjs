@@ -215,16 +215,19 @@ export function detectIntakeType(subject, body) {
   return 'unknown';
 }
 
-export function buildReplyText({ intakeId, intakeType, nodeId }) {
+export function buildReplyText({ intakeId, intakeType, nodeId, issueUrl }) {
   const identifier = nodeId ? `Your node ID is ${nodeId}.` : `Your intake ID is ${intakeId}.`;
   return [
     'Thanks for contacting MisakaNet.',
     '',
     identifier,
     `Submission type: ${intakeType}`,
+    ...(issueUrl ? [`Track it: ${issueUrl}`] : []),
     '',
     nodeId
       ? 'Next steps: clone https://github.com/Ikalus1988/MisakaNet and follow the node quickstart.'
       : 'Your submission is queued for maintainer review. Keep the intake ID for follow-up.',
+    '',
+    'If it becomes a published lesson, you will get a conversion receipt with the lesson link. No action is needed.',
   ].join('\n');
 }

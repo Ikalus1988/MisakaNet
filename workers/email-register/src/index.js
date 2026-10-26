@@ -138,7 +138,7 @@ export default {
         'Content-Type: text/plain; charset=UTF-8',
         ...(messageId ? [`In-Reply-To: ${messageId}`] : []),
         '',
-        buildReplyText({ intakeId, intakeType, nodeId }),
+        buildReplyText({ intakeId, intakeType, nodeId, issueUrl: intakeRecord.githubIssueUrl }),
       ].join('\r\n'),
     );
     await message.reply(reply);
