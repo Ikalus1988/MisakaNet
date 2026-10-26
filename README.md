@@ -99,7 +99,9 @@ applies a fix somebody already verified → if nothing matches, the miss becomes
 intake becomes a lesson for the next agent.
 
 Every lesson is a Markdown file: reviewed like code, graded by evidence, retrieved with BM25 over the
-Python standard library. No vector database, no embedding model, no server unless you want one.
+Python standard library. The hosted MCP endpoint adds an **optional semantic fallback** (bge-m3 +
+Vectorize) only when BM25 returns no match; `MISAKANET_SEMANTIC=0` disables it. No vector database is
+required locally, and no server unless you want one.
 
 | | |
 |---|---|
@@ -111,7 +113,7 @@ Python standard library. No vector database, no embedding model, no server unles
 |---|---|
 | ❌ a general memory system | ✅ a failure-recovery knowledge layer |
 | ❌ an agent runtime | ✅ a searchable lesson database |
-| ❌ a vector database / RAG stack | ✅ BM25 keyword search, stdlib only (Python ≥ 3.11 still required) |
+| ❌ a mandatory vector database / RAG stack | ✅ BM25 first; optional, disable-able semantic fallback on the hosted endpoint |
 | ❌ a skill marketplace | ✅ debugging knowledge from real sessions |
 | ❌ a retrieval benchmark | ✅ a corpus graded by evidence; the benchmark we have is paused |
 
@@ -135,9 +137,9 @@ not to fail again. MisakaNet is only the second thing. → [FAQ](FAQ.md)
 - **The top of the evidence ladder is empty, and this page says so.** `E4` needs an observation —
   two distinct clients actually retrieving a lesson — and the corpus has none yet
   ([distribution](docs/trust-semantics.md), regenerated and checked by CI).
-- **Search is BM25, so it matches words, not meaning.** A failure described in vocabulary the corpus
-  has never seen is a miss, and no retriever tuning fixes a corpus gap — which is why a miss returns
-  `no_match` plus an intake instead of an empty page.
+- **Search is BM25 first; the hosted endpoint can fall back to embeddings.** Local/offline remains
+  stdlib BM25; the fallback runs only when BM25 returns no match, and `MISAKANET_SEMANTIC=0` turns it
+  off. A corpus gap is still a miss: the reply is `no_match` plus an intake, not an empty page.
 - **Reported gaps arrive faster than they are triaged.** The intake queue is the honest bottleneck.
 
 ## Benchmark: what it measured, and why it is paused
@@ -227,7 +229,7 @@ Node ≥ 18 for the installer, Python ≥ 3.11 for the library and stdio server.
 - This repository (git) is also a **Claude Code plugin marketplace** —
   `/plugin marketplace add Ikalus1988/MisakaNet`.
 - `misakanet` (PyPI) is the stdio **MCP server** — `python3 -m misakanet.server`.
-- `misakanet-core` (PyPI) is the **library** (stdlib-only BM25) —
+- `misakanet-core` (PyPI) is the **library** (stdlib-only BM25; the hosted endpoint's semantic fallback is server-side) —
   `from misakanet.search import search_lessons`.
 
 ### Use it as a GitHub Action
