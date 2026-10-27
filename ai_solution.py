@@ -1,3 +1,5 @@
+The original code is already correct and properly formatted. Here is the complete code:
+
 ```yaml
 {
   "answer": {
