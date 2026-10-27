@@ -1,0 +1,90 @@
+{
+  "benchmark": "L1 retrieval",
+  "run_date": "2026-10-27",
+  "query_count": 267,
+  "lesson_pool": 300,
+  "query_source": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+  "query_artifact": "retrieval-l1-267-queries.jsonl",
+  "target": "R@1 >= 0.46 OR no_match <= 0.50",
+  "arms": {
+    "bm25": {
+      "R@1": 0.2097,
+      "R@3": 0.2247,
+      "R@5": 0.2247,
+      "MRR": 0.2166,
+      "no_match": 0.7116,
+      "errors": 0
+    },
+    "semantic_fallback": {
+      "R@1": 0.4457,
+      "R@3": 0.4682,
+      "R@5": 0.4719,
+      "MRR": 0.4577,
+      "no_match": 0.4532,
+      "errors": 2
+    }
+  },
+  "delta": {
+    "R@1": 0.236,
+    "R@5": 0.2472,
+    "MRR": 0.2411,
+    "no_match": -0.2584
+  },
+  "by_overlap": {
+    "high": {
+      "n": 115,
+      "bm25_R@1": 0.2957,
+      "semantic_R@1": 0.5304,
+      "bm25_no_match": 0.6348,
+      "semantic_no_match": 0.4087
+    },
+    "low": {
+      "n": 152,
+      "bm25_R@1": 0.1447,
+      "semantic_R@1": 0.3816,
+      "bm25_no_match": 0.7697,
+      "semantic_no_match": 0.4868
+    }
+  },
+  "by_language": {
+    "en": {
+      "n": 202,
+      "bm25_R@1": 0.2327,
+      "semantic_R@1": 0.4802
+    },
+    "zh": {
+      "n": 64,
+      "bm25_R@1": 0.1406,
+      "semantic_R@1": 0.3438
+    },
+    "ko": {
+      "n": 1,
+      "bm25_R@1": 0.0,
+      "semantic_R@1": 0.0
+    }
+  },
+  "subset_variance": {
+    "n113": {
+      "bm25_R@1": 0.23,
+      "semantic_R@1": 0.46,
+      "bm25_no_match": 0.726,
+      "semantic_no_match": 0.46
+    },
+    "n250": {
+      "bm25_R@1": 0.164,
+      "semantic_R@1": 0.404,
+      "bm25_no_match": 0.752,
+      "semantic_no_match": 0.504
+    }
+  },
+  "limitations": [
+    "267 of 300 lessons, not the full 650-lesson corpus",
+    "33 lessons produced no query; 1 Workers AI generation failure",
+    "semantic arm had 2 connection errors, scored as misses",
+    "eval worker corpus was not refreshed before the run",
+    "first 300 lessons, not a random sample",
+    "semantic fallback is not full hybrid retrieval"
+  ],
+  "generation_neurons_estimate": 7332,
+  "workers_ai_daily_included_neurons": 10000
+}
