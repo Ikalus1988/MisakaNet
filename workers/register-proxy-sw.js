@@ -2022,6 +2022,37 @@ function enrichSearchHits(results, lessons) {
   });
 }
 
+
+/** Semantic fallback: one embedding + one Vectorize query, only after BM25 returned nothing.
+ *
+ *  BM25's relevance floor is deliberate — it refuses weak lexical matches — but the pilot showed
+ *  the floor costs recall on paraphrases ("tests pass together but fail alone" does not contain
+ *  the error text). The fallback is bounded: it runs only on an empty BM25 result, topK <= 10,
+ *  and any failure falls back to the existing no_match answer. bge-m3 and the index are included
+ *  in Workers Paid; no external API is involved.
+ */
+async function semanticFallbackHits(env, query, top = 5) {
+  if (!env || !env.VECTORIZE || !env.AI) return [];
+  const text = String(query || "").trim();
+  if (!text) return [];
+  const model = env.SEMANTIC_MODEL || "@cf/baai/bge-m3";
+  const out = await env.AI.run(model, { text: [text] });
+  const vector = out && out.data && out.data[0];
+  if (!Array.isArray(vector) || vector.length !== 1024) return [];
+  const found = await env.VECTORIZE.query(vector, {
+    topK: Math.max(1, Math.min(Number(top) || 5, 10)),
+    returnMetadata: true,
+  });
+  // Score floor: cosine scores overlap between hits and near-misses on the pilot (hit mean 0.662,
+  // miss mean 0.601), so this is a precision/recall choice, not a clean separator. 0.62 keeps
+  // 23/29 top-1 hits and drops 15/21 top-1 misses; a lower floor returns more related lessons but
+  // also more wrong first hits. Configurable so a future embedding model can recalibrate.
+  const minScore = Number(env.SEMANTIC_MIN_SCORE || "0.62");
+  return ((found && found.matches) || [])
+    .map((m) => ({ id: m && m.metadata && m.metadata.lesson_id, score: Number(m && m.score) || 0 }))
+    .filter((h) => h.id && h.score >= minScore);
+}
+
 function detectTextMode(lessons) {
   return (Array.isArray(lessons) ? lessons : []).some((l) =>
     l?.textMode === "rich" || String(l?.preview || "").length > LEAN_DESCRIPTION_CAP)
@@ -2959,7 +2990,7 @@ function noteKvWriteFamily(env, key) {
   const statement = String(key);
   if (seen.has(statement) || seen.size >= KV_FAMILY_SEEN_CAP) return;
   seen.add(statement);
-  const d1 = d1Binding(env);
+  const d1 = opsD1(env);
   if (!d1) return;
   d1.prepare(
     `INSERT INTO counters (scope, bucket, period, count, updated_at)
@@ -2973,7 +3004,7 @@ function noteKvWriteFamily(env, key) {
 const KV_FAMILY_REPORT_LIMIT = 8;
 
 async function readKvWriteFamilies(env) {
-  const d1 = d1Binding(env);
+  const d1 = opsD1(env);
   if (!d1) return null;
   try {
     const { results } = await d1.prepare(
@@ -3141,7 +3172,7 @@ function rateWindowTenMinutes(now = new Date()) {
 
 /** Increment a counter and return its new value (D1 atomic upsert, else KV). */
 async function bumpCounter(env, scope, bucket, period, delta = 1) {
-  const d1 = d1Binding(env);
+  const d1 = opsD1(env);
   if (d1) {
     try {
       const { results } = await d1.prepare(
@@ -3628,7 +3659,7 @@ async function storeDelete(env, key) {
  * colliding with ids that already exist.
  */
 async function nextNodeCounter(env) {
-  const d1 = d1Binding(env);
+  const d1 = opsD1(env);
   if (d1) {
     try {
       const seed = parseInt((await env.MISAKANET_KV.get("node_counter", "text")) || "0", 10) || 0;
@@ -4054,6 +4085,24 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
     // formatters get `problem`/`fix`/`tags`/`freshness` instead of empty strings
     // (issue #1675).
     results = enrichSearchHits(results, lessons);
+
+
+    // Semantic fallback (2026-10-26): BM25's floor returns no_match on paraphrases that name the
+    // symptom instead of the error text. Only an empty BM25 result reaches this branch; a hit is
+    // never re-ranked, so the lexical path keeps its behavior. Failure is swallowed into the
+    // existing no_match answer — the fallback must not turn a working search into an error.
+    if ((!results || results.length === 0) && env.MISAKANET_SEMANTIC !== "0") {
+      try {
+        const semanticHits = await semanticFallbackHits(env, args.query, args.top || 5);
+        if (semanticHits.length) {
+          results = enrichSearchHits(semanticHits, lessons);
+          source = bm25Index ? "worker-bm25+semantic" : "semantic";
+          noteSearchBackend(env, "semantic");
+        }
+      } catch (e) {
+        debugLog(env, 1, "semantic fallback failed", { error: String((e && e.message) || e) });
+      }
+    }
 
     // Gap analysis: log zero-result queries (Issue #1164)
     if ((!results || results.length === 0) && args.query) {
@@ -5476,6 +5525,12 @@ function d1Binding(env) {
   return env?.MISAKANET_D1 || null;
 }
 
+/** Ops/telemetry DB. Falls back to the serving DB when the binding is absent, so a deployment
+ *  that has not applied the new binding keeps the old behavior instead of losing rows. */
+function opsD1(env) {
+  return env?.MISAKANET_OPS_D1 || d1Binding(env);
+}
+
 // Fetch lesson rows from D1 as the same array shape used by the GitHub
 // proxy (id/title/domain/tags/description/path/status/...), so callers
 // (search, /api/lessons) behave identically either way. Supports optional
@@ -5769,7 +5824,7 @@ async function probeLessonsRead(env) {
  */
 function searchDegraded(source) {
   const reasons = [];
-  if (source !== "worker-bm25") reasons.push("index_unavailable");
+  if (!["worker-bm25", "worker-bm25+semantic", "semantic"].includes(source)) reasons.push("index_unavailable");
   const read = lastLessonsRead;
   if (read && read.ok === false && String(read.source || "").startsWith("snapshot")) {
     reasons.push("corpus_snapshot");
@@ -6869,7 +6924,7 @@ async function recordSearchSignal(env, {
     // redeploy (the search path itself is unaffected — see the rollback section
     // of docs/maintainer/search-metrics.md).
     if (String(env.MISAKANET_SEARCH_SIGNALS ?? "") === "0") return null;
-    const d1 = d1Binding(env);
+    const d1 = opsD1(env);
     // No D1 binding → no row store. Deliberately no KV fallback: a per-search KV
     // key is the failure mode #1647 documented, and the stats endpoint reads D1.
     if (!d1) return null;
@@ -6941,7 +6996,7 @@ function buildSignalBreakdown(groups) {
 }
 
 async function handleSearchSignalStats(env, url) {
-  const d1 = d1Binding(env);
+  const d1 = opsD1(env);
   if (!d1) return jsonResponse({ error: "D1 not configured" }, 503);
 
   const requested = parseInt(url.searchParams.get("days") || "", 10);
@@ -7032,7 +7087,7 @@ const E4_MIN_DISTINCT_CLIENTS = 2;
  * overcount.
  */
 async function countDistinctRetrievingClients(env, { lessonId, lessonPath } = {}) {
-  const d1 = d1Binding(env);
+  const d1 = opsD1(env);
   if (!d1) return null;
   // Same lazy `CREATE TABLE IF NOT EXISTS` the writer uses, so a cold isolate that has served no
   // search yet reads an empty table instead of throwing "no such table". A throw would be swallowed
@@ -7241,7 +7296,7 @@ function noteCountersReadFailure(error, env) {
  * D1 refused, never a guess.
  */
 async function readTrafficCountState(env, cls, day) {
-  const d1 = d1Binding(env);
+  const d1 = opsD1(env);
   let fromD1 = 0;
   let known = d1 ? false : false;
   const canAsk = Boolean(d1) && countersReadable();
@@ -7345,7 +7400,7 @@ const FUNNEL_EVENTS = Object.freeze(["visit", "register", "authorize", "pair", "
  * halves of it, and a reader that enumerated fewer would silently drop an event the writer records.
  */
 async function readFunnelDay(env, day) {
-  const d1 = d1Binding(env);
+  const d1 = opsD1(env);
   const out = Object.fromEntries(FUNNEL_EVENTS.map(e => [e, 0]));
   if (d1 && countersReadable()) {
     try {
@@ -7395,7 +7450,7 @@ async function readFunnelKv(env, day) {
  * the whole activity surface is being fixed for.
  */
 async function readCountersWindow(env, scope, days) {
-  const d1 = d1Binding(env);
+  const d1 = opsD1(env);
   if (!d1 || !countersReadable()) return null;
   const from = utcDayKey(days - 1);
   const to = utcDayKey(0);
@@ -7468,7 +7523,7 @@ function qsAllowedStep(event, step) {
 
 /** One event as a D1 `counters` row. D1 only — no KV fallback, no key created. */
 async function bumpQsEvent(env, event, step) {
-  const d1 = d1Binding(env);
+  const d1 = opsD1(env);
   if (!d1) return false;
   try {
     await d1.prepare(
@@ -7508,7 +7563,7 @@ async function readQsEventDay(env, day) {
       : event === "qs_copy" ? QS_COPY_STEPS : QS_LINK_STEPS;
     for (const step of steps) out[`${event}:${step}`] = 0;
   }
-  const d1 = d1Binding(env);
+  const d1 = opsD1(env);
   if (!d1) return out;
   try {
     const { results } = await d1.prepare(
@@ -7726,7 +7781,7 @@ const ANALYTICS_TTL_SECONDS = 600;
  * cannot enumerate keys, and inventing that here would cost more than the missing number is worth.
  */
 async function readCounterBuckets(env, day, prefix, label) {
-  const d1 = d1Binding(env);
+  const d1 = opsD1(env);
   if (!d1) return {};
   try {
     const { results } = await d1.prepare(
@@ -7755,7 +7810,7 @@ const readSearchBackendCounts = (env, day) =>
  * handed over from somewhere else (a missing row must be seeded, a zero row must not be re-seeded).
  */
 async function readCountersRow(env, scope, bucket, period) {
-  const d1 = d1Binding(env);
+  const d1 = opsD1(env);
   if (!d1 || !countersReadable()) return null;
   try {
     const { results } = await d1.prepare(
@@ -7889,7 +7944,7 @@ async function deleteCoveredGaps(d1, covered) {
 async function cleanupCoveredGaps(env) {
   // Gap rows live in D1 when it is bound (#1649); the KV list is the fallback. Both are
   // reduced to the same list of {query, delete} so the matching logic below is shared.
-  const d1 = d1Binding(env);
+  const d1 = opsD1(env);
   let gaps = [];
   let useD1 = false;
   if (d1) {
@@ -8347,7 +8402,7 @@ export default {
       if (!/^[A-Za-z0-9]{4,16}$/.test(code)) {
         return jsonResponse({ error: "code must be 4-16 characters of A-Z a-z 0-9", code: "invalid_code" }, 400);
       }
-      const d1 = d1Binding(env);
+      const d1 = opsD1(env);
       if (d1) {
         try {
           const { results } = await d1.prepare(
@@ -8379,7 +8434,7 @@ export default {
           // D1 first: registrations increment the counter there since 2026-09-17 (the KV counter
           // is only as reliable as the KV daily write budget, and it froze for 6.5 hours during
           // that day's outage). KV stays as the fallback.
-          const d1 = d1Binding(env);
+          const d1 = opsD1(env);
           if (d1) {
             try {
               const { results } = await d1.prepare(

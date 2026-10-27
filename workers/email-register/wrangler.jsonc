@@ -3,6 +3,12 @@
   "name": "email-register",
   "compatibility_date": "2026-06-01",
   "main": "src/index.js",
+  "services": [
+    {
+      "binding": "MCP",
+      "service": "misakanet-register-proxy"
+    }
+  ],
   "compatibility_flags": ["nodejs_compat"],
   "kv_namespaces": [
     {
@@ -12,6 +18,7 @@
   ],
   "vars": {
     "GH_REPO": "Ikalus1988/MisakaNet",
+    "MCP_URL": "https://misakanet.org/mcp",
     "MAINTAINER_EMAIL": "sheldonisspark@gmail.com"
   }
 }

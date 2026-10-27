@@ -1,5 +1,20 @@
 name = "misakanet-register-proxy"
-main = "register-proxy-sw.js"
+# The entry point is `register-proxy-entry.js`, not `register-proxy-sw.js`, and the difference is
+# not cosmetic. workerd builds a map of the entry module's exports at startup and every entry in
+# it must be a function or an `ExportedHandler`:
+#
+#     Uncaught TypeError: Incorrect type for map entry 'ACTIVITY_CACHE_CONTROL':
+#     the provided value is not of type 'function or ExportedHandler'.
+#
+# `register-proxy-sw.js` exports 130 names for the worker tests, 44 of them constants, so naming
+# it as the entry made `wrangler dev` fail at startup every time — the Worker could not be run
+# locally at all, and no gate could see it, because Node has no such rule and the tests import the
+# implementation module directly. The entry file exports the default handler and nothing else; the
+# implementation keeps every export the tests need.
+#
+# `tests/test_worker_entry_exports.py` enforces the rule and reads this path, so moving the entry
+# moves the gate with it.
+main = "register-proxy-entry.js"
 # Pinned on purpose, bumped on purpose: this date chooses the runtime semantics the Worker is
 # compiled against, so letting it rot means production runs by rules nobody picked any more.
 # It sat at 2024-01-01 for 997 days (found 2026-09-24 by a zone audit) while the other three
@@ -29,6 +44,11 @@ MISAKANET_LESSONS_MEMO_MS = "30000"
 # the row quota spent, every page load still issued its 35 counters queries into a refusing database.
 # 60s covers a burst of page loads without hiding a recovery; a quota reset is a known instant.
 MISAKANET_COUNTERS_COOLDOWN_MS = "60000"
+
+# Semantic fallback: only after BM25 returns nothing; score floor calibrated on the 50-query pilot.
+# Set MISAKANET_SEMANTIC=0 to disable without a deploy rollback.
+MISAKANET_SEMANTIC = "1"
+SEMANTIC_MIN_SCORE = "0.62"
 
 # Workers Logs, on because this is the worker that carries the traffic and it was the only one
 # without them (2026-10-02). `wrangler.jsonc` (misakanet-web) has had observability enabled since it
@@ -70,3 +90,15 @@ id = "d5fb6b0797b84d17b0586fb982231ffe"
 binding = "MISAKANET_D1"
 database_name = "misakanet-db"
 database_id = "b9adbe87-6bbf-4d2f-ae56-41c3487b2831"
+
+[[vectorize]]
+binding = "VECTORIZE"
+index_name = "misakanet-lessons-m3"
+
+[ai]
+binding = "AI"
+
+[[d1_databases]]
+binding = "MISAKANET_OPS_D1"
+database_name = "misakanet-ops"
+database_id = "f5133f9b-a310-4058-98df-499dfde24e9a"

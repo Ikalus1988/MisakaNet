@@ -30,9 +30,11 @@ Agent classifies locally (rescue / lesson / registration)
 If you consent, it becomes a public lesson or rescue card
 ```
 
-**Address:** `bot@misakanet.org` — all intake goes here.
+**Address:** `bot@misakanet.org` — all intake goes here. `rescue@`, `lessons@`, and `join@` route to the same worker.
 
-> **Note:** MCP intake is preferred because it provides instant feedback and a receipt ID. Email intake may have delays.
+> **What happens now (2026-10-26):** actionable mail calls `misakanet_submit_intake` through a service binding to the production worker. Questions become `[Question]` issues, failure reports become `[Intake]` issues, and dedup/quality labels are handled by the same MCP path. No personal `GH_TOKEN` is required; registration/join mail stays local.
+
+> **Note:** MCP intake is preferred because it provides instant feedback and a receipt ID. Email intake may have delays; the reply carries the intake ID and the issue URL when one was created.
 
 ## Three Intake Channels
 

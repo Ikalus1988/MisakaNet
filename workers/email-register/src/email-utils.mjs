@@ -215,16 +215,60 @@ export function detectIntakeType(subject, body) {
   return 'unknown';
 }
 
-export function buildReplyText({ intakeId, intakeType, nodeId }) {
-  const identifier = nodeId ? `Your node ID is ${nodeId}.` : `Your intake ID is ${intakeId}.`;
+export function buildReplyText({ intakeId, intakeType, nodeId, issueUrl, answer }) {
+  // A node ID is assigned to every sender, but only registration/join mail should get the node
+  // quickstart. A question or failure report that got a node ID still needs the intake ID + the
+  // review status; saying "clone and follow the node quickstart" there is the wrong next step.
+  const registration = intakeType === 'registration' || intakeType === 'join';
+  const identifier = registration && nodeId ? `Your node ID is ${nodeId}.` : `Your intake ID is ${intakeId}.`;
   return [
     'Thanks for contacting MisakaNet.',
     '',
     identifier,
     `Submission type: ${intakeType}`,
+    ...(issueUrl ? [`Track it: ${issueUrl}`] : []),
+    ...(answer ? ['', 'An existing answer:', String(answer).slice(0, 1000)] : []),
     '',
-    nodeId
+    registration && nodeId
       ? 'Next steps: clone https://github.com/Ikalus1988/MisakaNet and follow the node quickstart.'
       : 'Your submission is queued for maintainer review. Keep the intake ID for follow-up.',
+    '',
+    'If it becomes a published lesson, you will get a conversion receipt with the lesson link. No action is needed.',
   ].join('\n');
+}
+
+// ── Email → MCP intake mapping (2026-10-26) ─────────────────────────────────
+// Email is a fallback transport; the durable intake record should still enter the same
+// dedup/question queue as the HTTP MCP path. These helpers are pure so the mapping can be
+// tested without sending mail.
+
+export function intakeKindFor(intakeType) {
+  if (intakeType === 'question') return 'question';
+  if (intakeType === 'lesson-submission') return 'new_lesson_candidate';
+  if (intakeType === 'bug-report' || intakeType === 'unknown') return 'missing_lesson';
+  return null; // registration / join / pitch / recruitment / directory-claim: no failure intake
+}
+
+export function buildIntakeArguments({ subject, intakeType, lessonContent }) {
+  const kind = intakeKindFor(intakeType);
+  if (!kind) return null;
+  const problem = [subject, lessonContent].filter(Boolean).join('\n\n').trim().slice(0, 2000);
+  if (!problem) return null;
+  return { kind, problem, source: 'email' };
+}
+
+export function parseIntakeResponse(payload) {
+  if (!payload || typeof payload !== 'object') return null;
+  const intakeId = payload.intake_id || payload.intakeId || null;
+  const issueFromId = intakeId && /^issue-\d+$/.test(intakeId)
+    ? `https://github.com/Ikalus1988/MisakaNet/issues/${intakeId.slice('issue-'.length)}`
+    : null;
+  return {
+    intakeId,
+    issueUrl: payload.previous_issue || payload.issue_url || payload.follow_up?.issue_url || issueFromId,
+    duplicate: !!payload.duplicate,
+    answered: !!payload.answered,
+    answer: payload.answer || null,
+    status: payload.status || null,
+  };
 }

@@ -48,6 +48,7 @@ A2A（`.well-known/agent-card.json`）。
   &nbsp;&nbsp;
   <a href="https://glama.ai/mcp/connectors/org.misakanet/misaka-net"><img src="https://glama.ai/mcp/connectors/org.misakanet/misaka-net/badges/score.svg" alt="MisakaNet MCP connector on Glama"></a>
   <a href="https://mcptoplist.com/server/io.github.Ikalus1988%2Fmisakanet"><img src="https://img.shields.io/badge/MCP-Toplist-blue" alt="MCP Toplist"></a>
+  <a href="https://dshfind.com/en/plugins/Ikalus1988/MisakaNet?ref=badge"><img src="https://dshfind.com/api/badge/Ikalus1988/MisakaNet?metric=downloads&amp;lang=zh" alt="DSH 插件下载量（dshfind）"></a>
 </p>
 
 ---
@@ -106,7 +107,7 @@ curl -sS https://misakanet.org/mcp \
 | ❌ Agent 运行时 | ✅ 可检索的 lesson 数据库 |
 | ❌ 向量数据库 / RAG 栈 | ✅ BM25 关键词检索，纯标准库（仍需 Python ≥ 3.11） |
 | ❌ 技能市场 | ✅ 来自真实会话的排错知识 |
-| ❌ 检索基准 | ✅ 按证据分级语料；我们有的那个基准已暂停 |
+| ❌ 通用基准平台 | ✅ 按证据分级语料；公开了 267 条检索评测，旧的复述基准已暂停 |
 
 ### 它能回答什么、不能回答什么
 
@@ -130,7 +131,24 @@ MisakaNet 只回答它已经索引过的失败。没有命中时，返回的是 
   所以未命中返回 `no_match` 加 intake，而不是空白页。
 - **报料速度高于分诊速度**：intake 队列是诚实的瓶颈。
 
-## 基准：它测了什么，为什么暂停了
+## 检索评测：267 条，BM25 vs semantic fallback
+
+2026-10-27 在 hosted endpoint 上评测了 **267 条** query，每篇 lesson 一条，由 Workers AI 70B 生成。
+两个 arm 用同一个 eval worker 和 corpus，只切换 `MISAKANET_SEMANTIC`。
+
+| arm | R@1 | R@5 | no_match |
+|---|---|---|---|
+| BM25 | 0.210 | 0.225 | 0.712 |
+| semantic fallback | **0.446** | **0.472** | **0.453** |
+
+semantic fallback 把 R@1 提高 **23.6 个百分点**，把 `no_match` 降低 **25.9 个百分点**。但 R@1
+**0.446 < 0.46**，没有过 R@1 条件；`no_match` **0.453 ≤ 0.50**，过了 no_match 条件。113 条子集是
+0.460/0.460，250 条是 0.404/0.504——样本足以说明 fallback 有效，不足以宣布 R@1 已解决。
+
+这是 300 篇里的 267 条，不是完整 650；33 篇没有生成出 query，2 个 semantic 请求报错，eval corpus
+也没有刷新。→ [完整报告](docs/benchmarks/retrieval-l1-267-2026-10-27.md)
+
+## 复述基准：它测了什么，为什么暂停了
 
 只测了一个很窄的问题：**把一条 lesson 塞给模型，它会复述回多少？** 指标是 `lesson_hit_rate`——被注入
 lesson 里的命令有多大概率出现在回答里。读数字前先读设定：本基准的场景就是**每篇 lesson 自己的标题**，

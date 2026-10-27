@@ -50,6 +50,7 @@ mcp-name: io.github.Ikalus1988/misakanet
   &nbsp;&nbsp;
   <a href="https://glama.ai/mcp/connectors/org.misakanet/misaka-net"><img src="https://glama.ai/mcp/connectors/org.misakanet/misaka-net/badges/score.svg" alt="MisakaNet MCP connector on Glama"></a>
   <a href="https://mcptoplist.com/server/io.github.Ikalus1988%2Fmisakanet"><img src="https://img.shields.io/badge/MCP-Toplist-blue" alt="MCP Toplist"></a>
+  <a href="https://dshfind.com/en/plugins/Ikalus1988/MisakaNet?ref=badge"><img src="https://dshfind.com/api/badge/Ikalus1988/MisakaNet?metric=downloads&amp;lang=en" alt="dshfind の DSH プラグイン ダウンロード数"></a>
 </p>
 
 ---
@@ -109,7 +110,7 @@ intake を返します——「この失敗はまだ知らない」というコ�
 | ❌ エージェントランタイム | ✅ 検索できるレッスンデータベース |
 | ❌ ベクトル DB / RAG スタック | ✅ BM25 キーワード検索、標準ライブラリのみ（Python ≥ 3.11 は必要） |
 | ❌ スキルマーケット | ✅ 実際のセッションから出たデバッグ知識 |
-| ❌ 検索ベンチマーク | ✅ 証拠で格付けされたコーパス。持っているベンチマークは停止済み |
+| ❌ 汎用ベンチマーク基盤 | ✅ 証拠で格付けされたコーパス。267 クエリの検索評価を公開、旧復唱ベンチマークは停止中 |
 
 ### 何に答え、何に答えないか
 
@@ -135,7 +136,26 @@ MisakaNet は索引済みの失敗にだけ答えます。一致が無いとき�
   intake を返します。
 - **報告の速度がトリアージの速度を上回っています**：intake キューが正直なボトルネックです。
 
-## ベンチマーク：何を測り、なぜ停止したか
+## 検索ベンチマーク：267 クエリ、BM25 vs semantic fallback
+
+2026-10-27、hosted endpoint の検索経路を **267 クエリ**（レッスン 1 件につき 1 クエリ、Workers AI
+70B が生成）で評価しました。両 arm は同じ eval worker / corpus を使い、`MISAKANET_SEMANTIC` だけを
+切り替えています。
+
+| arm | R@1 | R@5 | no_match |
+|---|---|---|---|
+| BM25 | 0.210 | 0.225 | 0.712 |
+| semantic fallback | **0.446** | **0.472** | **0.453** |
+
+semantic fallback は R@1 を **23.6 ポイント**上げ、`no_match` を **25.9 ポイント**下げました。ただし
+R@1 は **0.446 < 0.46** で R@1 条件は未達、`no_match` は **0.453 ≤ 0.50** で no_match 条件は達成です。
+113 クエリの subset は 0.460/0.460、250 クエリは 0.404/0.504——fallback が効くことは示せますが、
+R@1 が解決したと宣言できるサンプルではありません。
+
+これは 300 レッスン中の 267 クエリで、650 全量ではありません。33 レッスンはクエリを生成できず、
+semantic 側は 2 件エラー、eval corpus も未更新です。→ [全文レポート](docs/benchmarks/retrieval-l1-267-2026-10-27.md)
+
+## 復唱ベンチマーク：何を測り、なぜ停止したか
 
 測ったのは 1 つの狭い問いだけです：**レッスンをモデルに渡したとき、そのレッスンのどれだけが返ってくるか。**
 指標は `lesson_hit_rate`——注入したレッスンのコマンドが回答に再現された割合です。数字の前に設定を読んで
