@@ -2990,7 +2990,7 @@ function noteKvWriteFamily(env, key) {
   const statement = String(key);
   if (seen.has(statement) || seen.size >= KV_FAMILY_SEEN_CAP) return;
   seen.add(statement);
-  const d1 = d1Binding(env);
+  const d1 = opsD1(env);
   if (!d1) return;
   d1.prepare(
     `INSERT INTO counters (scope, bucket, period, count, updated_at)
@@ -3004,7 +3004,7 @@ function noteKvWriteFamily(env, key) {
 const KV_FAMILY_REPORT_LIMIT = 8;
 
 async function readKvWriteFamilies(env) {
-  const d1 = d1Binding(env);
+  const d1 = opsD1(env);
   if (!d1) return null;
   try {
     const { results } = await d1.prepare(
@@ -3172,7 +3172,7 @@ function rateWindowTenMinutes(now = new Date()) {
 
 /** Increment a counter and return its new value (D1 atomic upsert, else KV). */
 async function bumpCounter(env, scope, bucket, period, delta = 1) {
-  const d1 = d1Binding(env);
+  const d1 = opsD1(env);
   if (d1) {
     try {
       const { results } = await d1.prepare(
@@ -3659,7 +3659,7 @@ async function storeDelete(env, key) {
  * colliding with ids that already exist.
  */
 async function nextNodeCounter(env) {
-  const d1 = d1Binding(env);
+  const d1 = opsD1(env);
   if (d1) {
     try {
       const seed = parseInt((await env.MISAKANET_KV.get("node_counter", "text")) || "0", 10) || 0;
@@ -7296,7 +7296,7 @@ function noteCountersReadFailure(error, env) {
  * D1 refused, never a guess.
  */
 async function readTrafficCountState(env, cls, day) {
-  const d1 = d1Binding(env);
+  const d1 = opsD1(env);
   let fromD1 = 0;
   let known = d1 ? false : false;
   const canAsk = Boolean(d1) && countersReadable();
@@ -7400,7 +7400,7 @@ const FUNNEL_EVENTS = Object.freeze(["visit", "register", "authorize", "pair", "
  * halves of it, and a reader that enumerated fewer would silently drop an event the writer records.
  */
 async function readFunnelDay(env, day) {
-  const d1 = d1Binding(env);
+  const d1 = opsD1(env);
   const out = Object.fromEntries(FUNNEL_EVENTS.map(e => [e, 0]));
   if (d1 && countersReadable()) {
     try {
@@ -7450,7 +7450,7 @@ async function readFunnelKv(env, day) {
  * the whole activity surface is being fixed for.
  */
 async function readCountersWindow(env, scope, days) {
-  const d1 = d1Binding(env);
+  const d1 = opsD1(env);
   if (!d1 || !countersReadable()) return null;
   const from = utcDayKey(days - 1);
   const to = utcDayKey(0);
@@ -7523,7 +7523,7 @@ function qsAllowedStep(event, step) {
 
 /** One event as a D1 `counters` row. D1 only — no KV fallback, no key created. */
 async function bumpQsEvent(env, event, step) {
-  const d1 = d1Binding(env);
+  const d1 = opsD1(env);
   if (!d1) return false;
   try {
     await d1.prepare(
@@ -7563,7 +7563,7 @@ async function readQsEventDay(env, day) {
       : event === "qs_copy" ? QS_COPY_STEPS : QS_LINK_STEPS;
     for (const step of steps) out[`${event}:${step}`] = 0;
   }
-  const d1 = d1Binding(env);
+  const d1 = opsD1(env);
   if (!d1) return out;
   try {
     const { results } = await d1.prepare(
@@ -7781,7 +7781,7 @@ const ANALYTICS_TTL_SECONDS = 600;
  * cannot enumerate keys, and inventing that here would cost more than the missing number is worth.
  */
 async function readCounterBuckets(env, day, prefix, label) {
-  const d1 = d1Binding(env);
+  const d1 = opsD1(env);
   if (!d1) return {};
   try {
     const { results } = await d1.prepare(
@@ -7810,7 +7810,7 @@ const readSearchBackendCounts = (env, day) =>
  * handed over from somewhere else (a missing row must be seeded, a zero row must not be re-seeded).
  */
 async function readCountersRow(env, scope, bucket, period) {
-  const d1 = d1Binding(env);
+  const d1 = opsD1(env);
   if (!d1 || !countersReadable()) return null;
   try {
     const { results } = await d1.prepare(
@@ -7944,7 +7944,7 @@ async function deleteCoveredGaps(d1, covered) {
 async function cleanupCoveredGaps(env) {
   // Gap rows live in D1 when it is bound (#1649); the KV list is the fallback. Both are
   // reduced to the same list of {query, delete} so the matching logic below is shared.
-  const d1 = d1Binding(env);
+  const d1 = opsD1(env);
   let gaps = [];
   let useD1 = false;
   if (d1) {
@@ -8402,7 +8402,7 @@ export default {
       if (!/^[A-Za-z0-9]{4,16}$/.test(code)) {
         return jsonResponse({ error: "code must be 4-16 characters of A-Z a-z 0-9", code: "invalid_code" }, 400);
       }
-      const d1 = d1Binding(env);
+      const d1 = opsD1(env);
       if (d1) {
         try {
           const { results } = await d1.prepare(
@@ -8434,7 +8434,7 @@ export default {
           // D1 first: registrations increment the counter there since 2026-09-17 (the KV counter
           // is only as reliable as the KV daily write budget, and it froze for 6.5 hours during
           // that day's outage). KV stays as the fallback.
-          const d1 = d1Binding(env);
+          const d1 = opsD1(env);
           if (d1) {
             try {
               const { results } = await d1.prepare(
