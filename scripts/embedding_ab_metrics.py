@@ -468,7 +468,8 @@ def evaluate(
 
     # 267 x 651 dot products of 3072 floats is ~10 s in plain Python (measured 2026-10-27), which is
     # fine for a one-off benchmark and keeps this script dependency-free — the repository's core is
-    # zero-dependency by design, and a numpy import here would have made the tests skip in CI.
+    # stdlib-only (no third-party packages) by design, and a numpy import here would have made the
+    # tests skip in CI.
     query_norm = _normalise(query_matrix)
     lesson_norm = _normalise(lessons)
     similarity = [[sum(map(operator.mul, q, lesson)) for lesson in lesson_norm] for q in query_norm]

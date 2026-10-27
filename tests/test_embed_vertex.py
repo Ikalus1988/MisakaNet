@@ -35,6 +35,7 @@ sys.path.insert(0, str(REPO))
 
 from scripts import embed_vertex as embed  # noqa: E402
 
+PLACEHOLDER_CREDENTIAL = "secret-token"
 DIMS = 256
 
 
@@ -434,7 +435,7 @@ def test_a_transient_failure_is_retried_and_the_next_attempt_wins(failure):
     sleeps: list[float] = []
     embeddings = embed.request_embeddings(
         ["one"],
-        token="secret-token",
+        token=PLACEHOLDER_CREDENTIAL,
         project="bench-project",
         region="us-central1",
         model="gemini-embedding-001",
@@ -467,7 +468,7 @@ def test_a_truncated_json_body_is_retried_instead_of_becoming_a_vector():
     sleeps: list[float] = []
     embeddings = embed.request_embeddings(
         ["one"],
-        token="secret-token",
+        token=PLACEHOLDER_CREDENTIAL,
         project="bench-project",
         region="us-central1",
         model="gemini-embedding-001",
@@ -493,7 +494,7 @@ def test_retries_stop_at_six_attempts():
     with pytest.raises(embed.PredictError, match="gave up after 6 attempts"):
         embed.request_embeddings(
             ["one"],
-            token="secret-token",
+            token=PLACEHOLDER_CREDENTIAL,
             project="bench-project",
             region="us-central1",
             model="gemini-embedding-001",
@@ -518,7 +519,7 @@ def test_a_bad_request_is_not_retried():
     with pytest.raises(embed.PredictError, match="HTTP 400"):
         embed.request_embeddings(
             ["one"],
-            token="secret-token",
+            token=PLACEHOLDER_CREDENTIAL,
             project="bench-project",
             region="us-central1",
             model="gemini-embedding-001",
@@ -545,7 +546,7 @@ def test_retry_logs_and_errors_never_carry_the_token():
     with pytest.raises(embed.PredictError) as excinfo:
         embed.request_embeddings(
             ["one"],
-            token="secret-token",
+            token=PLACEHOLDER_CREDENTIAL,
             project="bench-project",
             region="us-central1",
             model="gemini-embedding-001",
