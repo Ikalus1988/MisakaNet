@@ -404,6 +404,9 @@ test('matchAnsweredQuestions respects domain filtering (#1743)', () => {
   // No domain filter: both match
   const all = matchAnsweredQuestions(faqRows, 'how to handle GitHub rate limits on runners', 'compact', 10);
   assert.equal(all.length, 2);
+  // FAQ scores must stay in the lesson band; the 80-sample audit found FAQ
+  // values of 40-60 pushing real lessons out when a client sorted by score.
+  assert.ok(all.every((hit) => hit.score <= 20), JSON.stringify(all.map((hit) => hit.score)));
 
   // domain=faq: only the faq domain row matches
   const faqOnly = matchAnsweredQuestions(faqRows, 'how to handle GitHub rate limits on runners', 'compact', 10, 'faq');
