@@ -9,9 +9,9 @@ for new question intakes; this script closes the loop from GitHub:
   answer comment and upsert a ``status='answered'`` row (issue_number unique)
 
 The dedup_hash mirrors the worker's FNV-1a ``hashString(dedupSource)`` where
-``dedupSource = f"{kind}:{problem}:{error}"`` — same scheme, so a later
-same-question re-submission (worker dedup path) finds the row and returns the
-answer.
+``dedupSource = f"{kind}:{problem}:"`` — the error excerpt is deliberately
+excluded, so a later same-question re-submission with a different excerpt still
+finds the row and returns the answer.
 
 Usage:
     python3 scripts/sync_answered_questions.py            # full sync
@@ -245,7 +245,7 @@ def row_exists(issue_number: int) -> bool:
 def upsert_pending(issue: dict) -> bool:
     body = issue.get("body") or ""
     kind, problem, error = parse_kind_and_problem(body)
-    dedup = fnv1a_hex(f"{kind}:{problem}:{error}".strip())
+    dedup = fnv1a_hex(f"{kind}:{problem}:".strip())
     issue_url = issue.get("html_url") or ""
     if not row_exists(issue["number"]):
         d1_query(
@@ -263,7 +263,7 @@ def upsert_pending(issue: dict) -> bool:
 def upsert_answered(issue: dict) -> bool:
     body = issue.get("body") or ""
     kind, problem, error = parse_kind_and_problem(body)
-    dedup = fnv1a_hex(f"{kind}:{problem}:{error}".strip())
+    dedup = fnv1a_hex(f"{kind}:{problem}:".strip())
     answer, answered_at, comment_id = extract_answer(fetch_issue_comments(issue["number"]))
     if not answer:
         return False

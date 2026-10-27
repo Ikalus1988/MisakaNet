@@ -116,9 +116,9 @@ The three below are the ones with parameters people ask about; the full set is i
 | `misakanet_get_lesson` | Get a specific lesson | `path` or `id` (required) |
 | `misakanet_submit_usage` | Report lesson usage — outcome feeds live reuse signals (solved → helpful vote; partial/not-helpful → feedback) | `lesson_id` (required), `tool?`, `outcome?` |
 
-Reading and searching need no node. The **write** tools (`misakanet_write_lesson`,
-`misakanet_preflight`) need a node and a token — one registration gets both:
-https://misakanet.org/register/
+Reading and searching need no node. The **write** tool (`misakanet_write_lesson`) needs a node and a
+token — one registration gets both. `misakanet_preflight` is read-only and open, so an anonymous
+connector can call it (rate-limited): https://misakanet.org/register/
 
 ### Reading errors
 

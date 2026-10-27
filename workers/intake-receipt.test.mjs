@@ -116,9 +116,9 @@ function createEnv(d1 = null) {
   };
 }
 
-/** Mirror the worker: `hashString(`${kind}:${safeProblem}:${safeError}`)`. */
-function contentHashOf(kind, problem, error = '') {
-  return hashString(`${kind}:${problem}:${error}`);
+/** Mirror the worker: `hashString(`${kind}:${safeProblem}:`)`; the error is not part of the key. */
+function contentHashOf(kind, problem) {
+  return hashString(`${kind}:${problem}:`);
 }
 
 /** Seed the KV dedup value the first submit would have written (the issue URL). */

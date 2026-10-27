@@ -249,7 +249,7 @@ What can actually be done:
 | Redact the document | replace with `Bearer <redacted>` or `$MISAKANET_TOKEN`, so main is not a copy of a live credential |
 | Re-issue the node | re-register with the same `client_id` to get a fresh node and token; that is the only self-service lever, and it is the *right* one for the reporter |
 | Kill it now | delete the stored keys — `mcp_token:<token>` and `node:MisakaNNNN` in D1/KV (`workers/register-proxy-sw.js:2517-2545`, 30-day TTL). **There is no revocation endpoint**, so this is a manual ops action rather than an API call |
-| Assume the write path | until expiry, whoever holds the string can call the Bearer-only tools (`misakanet_write_lesson`, `misakanet_preflight`) as that node |
+| Assume the write path | until expiry, whoever holds the string can call the Bearer-only `misakanet_write_lesson` as that node |
 | **Invalidate the reason it merged** | if an auto-merge label or auto-merge was enabled on the PR, turn it off while the tokens are in the branch — otherwise the next passing check lands them |
 
 **Why nothing caught it**, because the reasons are worth more than the incident: the auditor's

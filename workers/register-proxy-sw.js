@@ -543,7 +543,7 @@ const MCP_TOOLS = [
   },
   {
     name: "misakanet_preflight",
-    description: "[GUARD / RISK CHECK] Check risk level before executing high-risk operations. Matches agent intent against lesson triggers to provide proactive warnings. Use before RAG builds, WSL/GPU tasks, bulk imports, or any operation that might fail. No side effects — safe to call multiple times before acting. **Requires a Bearer token** (`misakanet_register` first, and pass the same `client_id` to keep your node): an anonymous call is refused with JSON-RPC -32000 `Unauthorized` plus a `recovery` hint, which this sentence exists to keep you from discovering the hard way.\nReturns: object {risk_level: 'low'|'medium'|'high', intent, matched_lessons: [{id, title, domain, relevance}], guards: [string]}.\nExample: misakanet_preflight(intent='build RAG pipeline with ChromaDB')",
+    description: "[GUARD / RISK CHECK] Check risk level before executing high-risk operations. Matches agent intent against lesson triggers to provide proactive warnings. Use before RAG builds, WSL/GPU tasks, bulk imports, or any operation that might fail. No side effects — safe to call multiple times before acting. **Open, read-only:** anonymous calls are rate-limited; `misakanet_register` lifts the limit.\nReturns: object {risk_level: 'low'|'medium'|'high', intent, matched_lessons: [{id, title, domain, relevance}], guards: [string]}.\nExample: misakanet_preflight(intent='build RAG pipeline with ChromaDB')",
     inputSchema: {
       type: "object",
       properties: {
@@ -612,11 +612,11 @@ const MCP_TOOLS = [
   },
   {
     name: "misakanet_me_inbox",
-    description: "[AGENT READABLE INBOX] Check the status of a previously submitted intake (question, missing_lesson, etc.) without re-submitting. Accepts an intake_id (e.g. 'issue-1234' or '1234') from a prior misakanet_submit_intake response, or a dedup_key (the 16-char hash). Returns: {status: 'answered'|'pending'|'converted'|'not_found', ...} — 'answered' includes the maintainer's answer, 'converted' includes the lesson_id this intake became. Read-only, rate-limited, no auth required.\nReturns: object {intake_id, status, answer?, lesson_id?, issue_url?, note}.\nExample: misakanet_me_inbox(intake_id='issue-1528') or misakanet_me_inbox(dedup_key='a1b2c3d4e5f67890')",
+    description: "[AGENT READABLE INBOX] Check the status of a previously submitted intake (question, missing_lesson, etc.) without re-submitting. Accepts an intake_id (e.g. 'issue-1234' or '1234') for question intakes, or a dedup_key (the 16-char hash) for any intake. Returns: {status: 'answered'|'pending'|'converted'|'not_found', ...} — 'answered' includes the maintainer's answer, 'converted' includes the lesson_id this intake became. Read-only, rate-limited, no auth required.\nReturns: object {intake_id, status, answer?, lesson_id?, issue_url?, note}.\nExample: misakanet_me_inbox(intake_id='issue-1528') or misakanet_me_inbox(dedup_key='a1b2c3d4e5f67890')",
     inputSchema: {
       type: "object",
       properties: {
-        intake_id: { type: "string", description: "Intake ID from a prior submit_intake response, e.g. 'issue-1528' or '1528'. Either intake_id or dedup_key is required." },
+        intake_id: { type: "string", description: "Question intake ID from a prior submit_intake response, e.g. 'issue-1528' or '1528'; for non-question intakes use dedup_key. Either intake_id or dedup_key is required." },
         dedup_key: { type: "string", description: "The dedup_key (16-char hash) from a prior submit_intake response. Either intake_id or dedup_key is required." },
       },
       minProperties: 1,
@@ -4661,14 +4661,15 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
     const safeProblem = redactIntake(args.problem);
     const safeError = redactIntake(args.error);
     const safeFix = redactIntake(args.fix);
-    // Content-based dedup hash (not random) — same problem text submitted
+    // Content-based dedup hash (not random) — same kind + problem text submitted
     // twice maps to the same hash, so repeat submissions are caught (aider
-    // review P1-4). The short random tag is kept for issue-body traceability.
-    // Per-field trim keeps the hash identical to scripts/sync_answered_
-    // questions.py (which parses the issue body with .strip()) — otherwise a
-    // padded problem would hash differently after the answer sync rewrites
-    // the row's dedup_hash.
-    const dedupSource = `${kind}:${String(safeProblem).trim()}:${String(safeError || "").trim()}`;
+    // review P1-4). The trailing colon is kept so the hash of a submission with
+    // no error is unchanged from the old `kind:problem:error` shape; the error
+    // field is deliberately excluded because the same failure is often
+    // resubmitted with a shorter/different error excerpt (#3930/#3932). The
+    // short random tag is kept for issue-body traceability. Per-field trim keeps
+    // the hash identical to scripts/sync_answered_questions.py.
+    const dedupSource = `${kind}:${String(safeProblem).trim()}:`;
     const dedupHash = crypto.randomUUID().slice(0, 12);
     const dedupContentHash = hashString(dedupSource);
     const dedupKey = `intake_dedup:${dedupContentHash}`;
@@ -5115,14 +5116,17 @@ async function handleMcpRequest(request, env, useSse = false, ctx) {
   let isPublicMethod = false;
   try {
     const peekBody = await request.clone().json();
-    // Open tools: intake/register (write) + search/get_lesson/me_events (read,
-    // rate-limited). Anonymous users get 5 combined reads/day per IP (PR #1121);
-    // registration lifts the limit. initialize + tools/list stay open for MCP
-    // registry scans. me_events is open because trust evidence should be freely
-    // checkable by any agent before reusing a lesson (E4 reuse receipts).
+    // Open tools: intake/register (write) + search/get_lesson/me_events/me_inbox
+    // (read, rate-limited). Anonymous users get 5 combined reads/day per IP (PR
+    // #1121); registration lifts the limit. initialize + tools/list stay open for
+    // MCP registry scans. me_events is open because trust evidence should be
+    // freely checkable before reusing a lesson (E4 reuse receipts). preflight is
+    // read-only and stays open so a connector without an auth header can still
+    // run the guard; it has no side effects.
     const openTools = ["misakanet_submit_intake", "misakanet_register",
                        "misakanet_search", "misakanet_get_lesson",
-                       "misakanet_me_events", "misakanet_me_inbox"];
+                       "misakanet_me_events", "misakanet_me_inbox",
+                       "misakanet_preflight"];
     isIntakeCall = peekBody?.method === "tools/call" && openTools.includes(peekBody?.params?.name);
     // Notifications (notifications/initialized etc.) are lifecycle fire-and-forget
     // with no response and no business data — the MCP spec requires clients to
