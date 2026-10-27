@@ -51,8 +51,13 @@ jobs:
         id: bundle
         run: |
           set -euo pipefail
-          python3 scripts/build_dataset_bundle.py --out dist/dataset | tee /tmp/build.txt
-          VERSION=$(python3 -c "import json;print(json.load(open('dist/dataset/manifest.json'))['version'])")
+          # The version is the date PLUS the commit, not the date alone. Measured 2026-10-27: this
+          # workflow triggers on any change to the artifact paths, so two merges in a day published
+          # twice under `v2026-10-27/` and the second silently overwrote the first — while
+          # DATASET.md promises that a version's files never change. A path that can be rewritten
+          # under a citation is worth less than no path, so the commit is part of the label.
+          VERSION="$(date -u +%Y-%m-%d)-${GITHUB_SHA:0:7}"
+          python3 scripts/build_dataset_bundle.py --out dist/dataset --version "$VERSION" | tee /tmp/build.txt
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Ensure the bucket exists

@@ -4,7 +4,7 @@ The lesson corpus and the retrieval benchmarks, published as files you can cite,
 without cloning this repository.
 
 - **Latest:** `https://data.misakanet.org/latest.json` — points at the current version
-- **This version:** `https://data.misakanet.org/v<YYYY-MM-DD>/manifest.json`
+- **This version:** `https://data.misakanet.org/v<YYYY-MM-DD>-<short-sha>/manifest.json`
 - **What ships:** the lesson corpus, the benchmark query set, and every published run artifact
   (~2.9 MiB). The counts are in each version's `manifest.json` — they are generated there, not
   typed here.
@@ -48,11 +48,12 @@ benchmarks. https://misakanet.org/dataset
 ```
 
 Citing is requested, not required. If you build on the corpus, mention the version
-(`v2026-10-27`) — the files are immutable per version, so a citation stays verifiable.
+(`v2026-10-27-<short-sha>`) — the files are immutable per version, so a citation stays verifiable.
 
 ## Versioning
 
-- A version is a date, and a version's files never change. Corrections publish a new version.
+- A version is a date plus the commit it was built from (`v2026-10-27-a1b2c3d`), and a
+  version's files never change. Corrections publish a new version; nothing is rewritten in place.
 - `latest.json` is the only mutable object; everything under `v<date>/` is written once.
 - `manifest.json` carries a SHA-256 per file, so a consumer can verify a download without trusting
   this page.
