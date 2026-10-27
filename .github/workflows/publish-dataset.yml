@@ -149,13 +149,29 @@ jobs:
           FALLBACK: ${{ steps.host.outputs.fallback }}
         run: |
           set -euo pipefail
+          # A custom domain attached seconds ago is not serving yet — measured 2026-10-27: the first
+          # run uploaded all ten objects, attached data.misakanet.org, then failed this step with
+          # 403/401 on a bucket that was already correct. The certificate and the route take a
+          # minute, so this polls instead of asking once: a verification step that reports a
+          # transient as a failure is worse than no verification, because it trains the reader to
+          # ignore it.
+          fetch_manifest() {
+            local base="$1" attempt
+            for attempt in $(seq 1 12); do
+              if curl -sSf --max-time 30 "$base/v$VERSION/manifest.json" -o /tmp/remote.json 2>/dev/null; then
+                echo "manifest served by $base (attempt $attempt)"; return 0
+              fi
+              echo "attempt $attempt: $base not serving yet"; sleep 15
+            done
+            return 1
+          }
           BASE="https://$PUBLIC_HOST"
-          if ! curl -sSf --max-time 20 "$BASE/v$VERSION/manifest.json" -o /tmp/remote.json; then
-            if [ -n "$FALLBACK" ]; then
-              BASE="https://$FALLBACK"; echo "custom domain not serving yet, verifying via $BASE"
-              curl -sSf --max-time 20 "$BASE/v$VERSION/manifest.json" -o /tmp/remote.json
+          if ! fetch_manifest "$BASE"; then
+            if [ -n "$FALLBACK" ] && fetch_manifest "https://$FALLBACK"; then
+              BASE="https://$FALLBACK"
             else
-              echo "::error::nothing served the manifest"; exit 1
+              echo "::error::neither $PUBLIC_HOST nor the r2.dev host served the manifest after ~3 minutes"
+              exit 1
             fi
           fi
           python3 - <<'PY'
