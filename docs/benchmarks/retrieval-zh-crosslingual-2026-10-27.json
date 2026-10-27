@@ -1,0 +1,1054 @@
+{
+ "endpoint": "https://misakanet.org/mcp",
+ "top": 5,
+ "rows": [
+  {
+   "lesson_id": "contributor-engagement-retention",
+   "target_lang": "zh",
+   "overlap": "high",
+   "query": "每次合并请求后，没有收到任何积极的反馈，导致后续贡献者流失",
+   "ids": [
+    "contributor-engagement-retention"
+   ],
+   "rank": 1,
+   "no_match": false,
+   "source": "worker-bm25+semantic",
+   "tries": 1,
+   "ok": true
+  },
+  {
+   "lesson_id": "pull-request-welcome-trigger-trap",
+   "target_lang": "en",
+   "overlap": "high",
+   "query": "首次贡献者的 PR 提交后，状态显示为跳过，未发出欢迎评论",
+   "ids": [
+    "pull-request-welcome-trigger-trap",
+    "stale-pr-verify-each-half-before-rebasing",
+    "heartbeat-scan-improvement",
+    "github-actions-composite-pitfalls",
+    "github-actions-code-injection"
+   ],
+   "rank": 1,
+   "no_match": false,
+   "source": "worker-bm25",
+   "tries": 2,
+   "ok": true
+  },
+  {
+   "lesson_id": "ai-agent-project-outreach-guide",
+   "target_lang": "en",
+   "overlap": "high",
+   "query": "系统宣发引流后，实操流程和平台调研数据无法正常沉淀",
+   "ids": [
+    "ai-agent-project-outreach-guide"
+   ],
+   "rank": 1,
+   "no_match": false,
+   "source": "worker-bm25",
+   "tries": 3,
+   "ok": true
+  },
+  {
+   "lesson_id": "api-catalog-version-drift-pinned-vs-upstream-head",
+   "target_lang": "zh",
+   "overlap": "low",
+   "query": "开发者使用的 upstream master 与锁定的 npm 包中 key A 和 key B 的存在与否不一致",
+   "ids": [
+    "api-catalog-version-drift-pinned-vs-upstream-head",
+    "faq-issue-3613",
+    "faq-issue-3384"
+   ],
+   "rank": 1,
+   "no_match": false,
+   "source": "worker-bm25",
+   "tries": 1,
+   "ok": true
+  },
+  {
+   "lesson_id": "api-gateway-anthropic-incompatibility",
+   "target_lang": "en",
+   "overlap": "high",
+   "query": "Hermes Agent 的 Anthropic provider 配置出现问题，导致 API 请求失败",
+   "ids": [
+    "api-gateway-anthropic-incompatibility",
+    "hermes-model-switch-ccswitch",
+    "anthropic-proxy-internal-gateway",
+    "aider-litellm-model-name-rejection",
+    "freellmapi-session-context-mixing-cross-thread-delivery",
+    "faq-issue-3612",
+    "faq-issue-2774",
+    "faq-issue-1362"
+   ],
+   "rank": 1,
+   "no_match": false,
+   "source": "worker-bm25",
+   "tries": 3,
+   "ok": true
+  },
+  {
+   "lesson_id": "api-rate-limit-handling-best-practices",
+   "target_lang": "zh",
+   "overlap": "high",
+   "query": "某些批量任务在运行到一定数量后触发错误，无法继续执行",
+   "ids": [
+    "api-rate-limit-handling-best-practices",
+    "feishu-block-batch-limit",
+    "api-rate-limit-handling"
+   ],
+   "rank": 1,
+   "no_match": false,
+   "source": "worker-bm25+semantic",
+   "tries": 2,
+   "ok": true
+  },
+  {
+   "lesson_id": "api-rate-limit-handling",
+   "target_lang": "en",
+   "overlap": "low",
+   "query": "在调用外部接口时，程序遇到频率限制，导致请求被拒绝。",
+   "ids": [
+    "api-rate-limit-handling",
+    "api-rate-limit-handling-best-practices"
+   ],
+   "rank": 1,
+   "no_match": false,
+   "source": "worker-bm25+semantic",
+   "tries": 1,
+   "ok": true
+  },
+  {
+   "lesson_id": "audit-sampling-stratified-sampling-for-kb-inspection",
+   "target_lang": "en",
+   "overlap": "high",
+   "query": "每天自动测试的题目类型容易连续重复，导致某些分类的质量问题被忽略",
+   "ids": [
+    "audit-sampling-stratified-sampling-for-kb-inspection",
+    "session-lesson-1-content-quality-scoring"
+   ],
+   "rank": 1,
+   "no_match": false,
+   "source": "worker-bm25+semantic",
+   "tries": 1,
+   "ok": true
+  },
+  {
+   "lesson_id": "bm25-chinese-sliding-window-tuning",
+   "target_lang": "en",
+   "overlap": "high",
+   "query": "搜索结果中长查询的召回率非常低，影响了搜索的准确性",
+   "ids": [
+    "search-evaluation-rank-tracking-bias",
+    "bm25-chinese-sliding-window-tuning",
+    "rag-retrieval-six-layer-silent-degradation",
+    "rag-alarm-code-mandatory-recall",
+    "rag-chunk-params-800-100"
+   ],
+   "rank": 2,
+   "no_match": false,
+   "source": "worker-bm25",
+   "tries": 2,
+   "ok": true
+  },
+  {
+   "lesson_id": "browser-harness-cdp-browser-automation",
+   "target_lang": "en",
+   "overlap": "high",
+   "query": "浏览器控制层无法正常工作，导致 AI 无法正确控制浏览器",
+   "ids": [
+    "archive-open-failure",
+    "fanuc-backup-extract-guide",
+    "model-switch-script-pattern",
+    "agent-error-handling-hi",
+    "fanuc-eip-omron-plc-connection"
+   ],
+   "rank": null,
+   "no_match": false,
+   "source": "worker-bm25",
+   "tries": 2,
+   "ok": true
+  },
+  {
+   "lesson_id": "click-coordinates-miss-dpi-scaling-cdp",
+   "target_lang": "zh",
+   "overlap": "low",
+   "query": "在 1600 像素高的屏幕上，y 轴方向的偏差达到了 118 像素",
+   "ids": [
+    "click-coordinates-miss-dpi-scaling-cdp"
+   ],
+   "rank": 1,
+   "no_match": false,
+   "source": "worker-bm25",
+   "tries": 2,
+   "ok": true
+  },
+  {
+   "lesson_id": "config-change-hits-only-one-of-two-state-layers",
+   "target_lang": "zh",
+   "overlap": "high",
+   "query": "运行时选项已经更新，但工程主配置仍然显示旧值，导致两者状态不一致。",
+   "ids": [
+    "config-change-hits-only-one-of-two-state-layers"
+   ],
+   "rank": 1,
+   "no_match": false,
+   "source": "worker-bm25",
+   "tries": 2,
+   "ok": true
+  },
+  {
+   "lesson_id": "cron-job-not-running",
+   "target_lang": "en",
+   "overlap": "low",
+   "query": "设置的定时任务似乎没有被触发，无法看到任何相关输出或日志",
+   "ids": [
+    "python-gbk-encoding-error",
+    "cron-job-not-running",
+    "empty-board-idle-exit",
+    "restart-earn-loop-after-code-fix",
+    "stdout-stderr-split-cron"
+   ],
+   "rank": 2,
+   "no_match": false,
+   "source": "worker-bm25",
+   "tries": 2,
+   "ok": true
+  },
+  {
+   "lesson_id": "cross-sheet-name-merge-data-chaos",
+   "target_lang": "en",
+   "overlap": "high",
+   "query": "在汇总数据时，同名机器人被误判为同一台设备，导致生产流程出现混乱",
+   "ids": [
+    "cross-sheet-name-merge-data-chaos",
+    "file-count-is-not-entity-count-three-layers",
+    "two-artifacts-same-name-trigger-device-module",
+    "an-archive-container-name-is-not-an-entity-name"
+   ],
+   "rank": 1,
+   "no_match": false,
+   "source": "worker-bm25+semantic",
+   "tries": 1,
+   "ok": true
+  },
+  {
+   "lesson_id": "cubic-ai-vs-pr-genius",
+   "target_lang": "en",
+   "overlap": "low",
+   "query": "审查界面显示的状态与预期不符，无法确定当前审查的进度",
+   "ids": [],
+   "rank": null,
+   "no_match": true,
+   "source": "worker-bm25",
+   "tries": 2,
+   "ok": true
+  },
+  {
+   "lesson_id": "dco-auto-fix-workflow",
+   "target_lang": "zh",
+   "overlap": "low",
+   "query": "开发者提交的代码变更无法通过签署检查，导致无法继续处理",
+   "ids": [
+    "dco-signoff-force-push-pitfall"
+   ],
+   "rank": null,
+   "no_match": false,
+   "source": "worker-bm25+semantic",
+   "tries": 2,
+   "ok": true
+  },
+  {
+   "lesson_id": "pr-cleanup-sop",
+   "target_lang": "zh",
+   "overlap": "low",
+   "query": "维护者处理 PR 的效率受到影响，导致处理速度变慢",
+   "ids": [
+    "stale-pr-verify-each-half-before-rebasing",
+    "heartbeat-scan-improvement",
+    "github-actions-composite-pitfalls",
+    "oss-refactor-lessons",
+    "opire-bounty-hunting"
+   ],
+   "rank": null,
+   "no_match": false,
+   "source": "worker-bm25",
+   "tries": 1,
+   "ok": true
+  },
+  {
+   "lesson_id": "agent-manual-update-timeout",
+   "target_lang": "en",
+   "overlap": "low",
+   "query": "网络连接问题或镜像源不稳定，导致更新命令执行不成功",
+   "ids": [
+    "docker-compose-basics",
+    "n8n-nodejs-econnreset-connection-reset-fix"
+   ],
+   "rank": null,
+   "no_match": false,
+   "source": "worker-bm25",
+   "tries": 2,
+   "ok": true
+  },
+  {
+   "lesson_id": "astro-dev-stale-css-screenshot",
+   "target_lang": "zh",
+   "overlap": "high",
+   "query": "修改样式后，页面的哈希值保持不变，无法反映出最新的更改",
+   "ids": [],
+   "rank": null,
+   "no_match": true,
+   "source": "worker-bm25",
+   "tries": 2,
+   "ok": true
+  },
+  {
+   "lesson_id": "data-capping-equals-forging-data",
+   "target_lang": "zh",
+   "overlap": "low",
+   "query": "数据分析结果显示利用率始终为100%，但实际产能存在瓶颈",
+   "ids": [
+    "data-capping-equals-forging-data",
+    "fanuc-checker-misses-alternate-mi-implementation",
+    "static-page-width-consistency",
+    "oss-refactor-lessons",
+    "opire-bounty-hunting"
+   ],
+   "rank": 1,
+   "no_match": false,
+   "source": "worker-bm25",
+   "tries": 1,
+   "ok": true
+  },
+  {
+   "lesson_id": "data-pipeline-lessons-json-canonical-generator",
+   "target_lang": "en",
+   "overlap": "low",
+   "query": "数据更新后，搜索页的统计数据被重置，且数据结构不匹配",
+   "ids": [
+    "fanuc-kl-mm-module-h-no-routine",
+    "game-mcp-game-over-restart-flow",
+    "fanuc-alarm-code-reference",
+    "fanuc-vrc-exclusion-verified-still-crashes-three-layers",
+    "dco-signoff-force-push-pitfall"
+   ],
+   "rank": null,
+   "no_match": false,
+   "source": "worker-bm25",
+   "tries": 2,
+   "ok": true
+  },
+  {
+   "lesson_id": "disk-space-cleanup",
+   "target_lang": "en",
+   "overlap": "high",
+   "query": "写入文件时出现设备空间不足的错误提示，导致进程终止",
+   "ids": [
+    "disk-space-cleanup"
+   ],
+   "rank": 1,
+   "no_match": false,
+   "source": "worker-bm25+semantic",
+   "tries": 2,
+   "ok": true
+  },
+  {
+   "lesson_id": "documenting-auto-generated-artifacts-needs-the-trigger",
+   "target_lang": "zh",
+   "overlap": "high",
+   "query": "读者看完文档后仍然无法确定如何获取自动产出的报告文件",
+   "ids": [
+    "documenting-auto-generated-artifacts-needs-the-trigger"
+   ],
+   "rank": 1,
+   "no_match": false,
+   "source": "worker-bm25",
+   "tries": 2,
+   "ok": true
+  },
+  {
+   "lesson_id": "fanuc-alarm-code-reference",
+   "target_lang": "zh",
+   "overlap": "high",
+   "query": "现场维护人员需要一个快速查询报警代码和处理方法的参考资料",
+   "ids": [
+    "fanuc-alarm-code-reference",
+    "fanuc-kl-err-abort-vs-err-pause",
+    "rag-retrieval-six-layer-silent-degradation",
+    "game-mcp-end-turn-conflict-409",
+    "rag-chinese-encoding-pymupdf"
+   ],
+   "rank": 1,
+   "no_match": false,
+   "source": "worker-bm25",
+   "tries": 1,
+   "ok": true
+  },
+  {
+   "lesson_id": "fanuc-karel-core-utility-modules",
+   "target_lang": "en",
+   "overlap": "high",
+   "query": "每次新建项目，都要从头开始实现错误处理和字符串操作，非常耗时",
+   "ids": [],
+   "rank": null,
+   "no_match": true,
+   "source": "worker-bm25",
+   "tries": 2,
+   "ok": true
+  },
+  {
+   "lesson_id": "fanuc-karel-geometry-kinematics-layer",
+   "target_lang": "en",
+   "overlap": "high",
+   "query": "我尝试使用标准库进行机器人应用的3D几何计算，但发现它不支持这种功能。",
+   "ids": [
+    "fanuc-karel-geometry-kinematics-layer",
+    "fanuc-karel-ka-boost-architecture",
+    "fanuc-karel-uv-to-xyzwpr-pipeline",
+    "fanuc-karel-core-utility-modules",
+    "fanuc-mi-standard-software-instructions"
+   ],
+   "rank": 1,
+   "no_match": false,
+   "source": "worker-bm25",
+   "tries": 2,
+   "ok": true
+  },
+  {
+   "lesson_id": "fanuc-karel-intp-316-call-error-motion-lock",
+   "target_lang": "zh",
+   "overlap": "high",
+   "query": "TP程序的调用过程中出现了异常，导致动作锁定被激活",
+   "ids": [
+    "fanuc-karel-intp-316-call-error-motion-lock",
+    "fanuc-ls-parser-comment-and-segment-boundary",
+    "fanuc-rsr-program-select-logic",
+    "fanuc-alarm-code-reference",
+    "fanuc-vrc-exclusion-verified-still-crashes-three-layers"
+   ],
+   "rank": 1,
+   "no_match": false,
+   "source": "worker-bm25",
+   "tries": 1,
+   "ok": true
+  },
+  {
+   "lesson_id": "fanuc-kl-1086-is-line-number-not-error-code",
+   "target_lang": "zh",
+   "overlap": "high",
+   "query": "分析过程中出现了混淆，错误地将设备型号当作错误码进行追踪",
+   "ids": [
+    "fanuc-kl-1086-is-line-number-not-error-code",
+    "data-capping-equals-forging-data"
+   ],
+   "rank": 1,
+   "no_match": false,
+   "source": "worker-bm25+semantic",
+   "tries": 3,
+   "ok": true
+  },
+  {
+   "lesson_id": "fanuc-kl-bytes-ahead-is-builtin-procedure",
+   "target_lang": "zh",
+   "overlap": "high",
+   "query": "程序在运行时出现通信异常，无法正确判断通信缓冲区中的待读字节数",
+   "ids": [
+    "fanuc-kl-bytes-ahead-is-builtin-procedure"
+   ],
+   "rank": 1,
+   "no_match": false,
+   "source": "worker-bm25",
+   "tries": 3,
+   "ok": true
+  },
+  {
+   "lesson_id": "fanuc-r-2000ic-retrieval-fix",
+   "target_lang": "en",
+   "overlap": "high",
+   "query": "访问者询问特定品牌机器人的最大速度，但返回的结果却是其他品牌的机器人数据",
+   "ids": [
+    "fanuc-r-2000ic-retrieval-fix"
+   ],
+   "rank": 1,
+   "no_match": false,
+   "source": "worker-bm25+semantic",
+   "tries": 1,
+   "ok": true
+  },
+  {
+   "lesson_id": "fanuc-rgcore-hang-endpoint-security-injection",
+   "target_lang": "zh",
+   "overlap": "high",
+   "query": "界面看似正常，但实际上无法进行任何操作，虚拟控制器已经失效",
+   "ids": [
+    "fanuc-rgcore-hang-endpoint-security-injection",
+    "fanuc-rgcore-diagnostic-probe-triggers-controller-crash"
+   ],
+   "rank": 1,
+   "no_match": false,
+   "source": "worker-bm25+semantic",
+   "tries": 2,
+   "ok": true
+  },
+  {
+   "lesson_id": "fanuc-vrc-exclusion-verified-still-crashes-three-layers",
+   "target_lang": "zh",
+   "overlap": "low",
+   "query": "系统报错信息显示内存访问违规和连接中断，需要进一步排查",
+   "ids": [
+    "curl-request-troubleshoot",
+    "curl-exit-23-is-a-write-failure-not-a-network-failure"
+   ],
+   "rank": null,
+   "no_match": false,
+   "source": "worker-bm25",
+   "tries": 2,
+   "ok": true
+  },
+  {
+   "lesson_id": "fanuc-workcell-reopen-retriggers-pmon-reconnect-storm",
+   "target_lang": "zh",
+   "overlap": "low",
+   "query": "运行中执行特定操作会导致连接问题，但即使不执行这些操作，问题仍然存在",
+   "ids": [
+    "curl-request-troubleshoot",
+    "fanuc-eip-omron-plc-connection",
+    "git-tls-handshake-failure",
+    "pip-install-timeout-ssl",
+    "git-push-without-shell-agent"
+   ],
+   "rank": null,
+   "no_match": false,
+   "source": "worker-bm25",
+   "tries": 1,
+   "ok": true
+  },
+  {
+   "lesson_id": "fatal-guard-cli-hardening",
+   "target_lang": "en",
+   "overlap": "low",
+   "query": "命令行工具运行时无法显示帮助信息和版本号，导致用户无法快速了解工具的使用方法",
+   "ids": [
+    "fatal-guard-cli-hardening"
+   ],
+   "rank": 1,
+   "no_match": false,
+   "source": "worker-bm25+semantic",
+   "tries": 1,
+   "ok": true
+  },
+  {
+   "lesson_id": "feishu-block-batch-limit",
+   "target_lang": "en",
+   "overlap": "high",
+   "query": "批量创建块时超过一定数量的块会导致部分块未能成功写入",
+   "ids": [
+    "feishu-block-batch-limit"
+   ],
+   "rank": 1,
+   "no_match": false,
+   "source": "worker-bm25+semantic",
+   "tries": 2,
+   "ok": true
+  },
+  {
+   "lesson_id": "feishu-doc-delete-blocks-by-range-pitfall",
+   "target_lang": "zh",
+   "overlap": "low",
+   "query": "文档中的所有内容，包括标题和备份资料，都被意外删除",
+   "ids": [
+    "documenting-auto-generated-artifacts-needs-the-trigger",
+    "fanuc-checker-misses-alternate-mi-implementation",
+    "feishu-doc-delete-blocks-by-range-pitfall",
+    "disk-space-cleanup",
+    "fanuc-spot-wear-max-lookup"
+   ],
+   "rank": 3,
+   "no_match": false,
+   "source": "worker-bm25",
+   "tries": 2,
+   "ok": true
+  },
+  {
+   "lesson_id": "feishu-upload-file-type-opus",
+   "target_lang": "en",
+   "overlap": "low",
+   "query": "上传文件的请求没有成功，得到的错误信息是请求参数不正确",
+   "ids": [
+    "feishu-upload-file-type-opus"
+   ],
+   "rank": 1,
+   "no_match": false,
+   "source": "worker-bm25+semantic",
+   "tries": 2,
+   "ok": true
+  },
+  {
+   "lesson_id": "feishu-websocket-404-error-http-webhook-required",
+   "target_lang": "en",
+   "overlap": "low",
+   "query": "测试过程中，特定端点的返回状态码不正确，显示为 404",
+   "ids": [
+    "gfw-tls-sni-blocking-tool-layer-ineffective",
+    "lesson-20-api-design-principles",
+    "healthcheck-endpoint-pattern",
+    "feishu-websocket-404-error-http-webhook-required",
+    "feishu-mcp-server-deepseek-tui-setup"
+   ],
+   "rank": 4,
+   "no_match": false,
+   "source": "worker-bm25",
+   "tries": 3,
+   "ok": true
+  },
+  {
+   "lesson_id": "feishu-wiki-batch-download",
+   "target_lang": "zh",
+   "overlap": "high",
+   "query": "知识库文件下载功能存在问题，无法正确处理不同类型文件",
+   "ids": [
+    "path-parents-depth-wheel-venv-installed-layout",
+    "vertical-kb-question-bank-strategy",
+    "rag-chinese-encoding-pymupdf",
+    "rag-build-strategy-batch",
+    "lesson-quality-requirements"
+   ],
+   "rank": null,
+   "no_match": false,
+   "source": "worker-bm25",
+   "tries": 1,
+   "ok": true
+  },
+  {
+   "lesson_id": "file-count-is-not-entity-count-three-layers",
+   "target_lang": "zh",
+   "overlap": "high",
+   "query": "导出数据的统计结果显示机器人数量不准确，实际上是文件数量",
+   "ids": [
+    "file-count-is-not-entity-count-three-layers"
+   ],
+   "rank": 1,
+   "no_match": false,
+   "source": "worker-bm25+semantic",
+   "tries": 2,
+   "ok": true
+  },
+  {
+   "lesson_id": "firewall-port-open-not-public",
+   "target_lang": "zh",
+   "overlap": "low",
+   "query": "开发者在配置防火墙规则时遇到问题，无法成功开放指定端口",
+   "ids": [
+    "firewall-port-open-not-public",
+    "compatibility-gate-rejection-is-verdict-not-accept-risk",
+    "im-bot-environment-contracts"
+   ],
+   "rank": 1,
+   "no_match": false,
+   "source": "worker-bm25",
+   "tries": 1,
+   "ok": true
+  },
+  {
+   "lesson_id": "gfw-tls-sni-blocking-tool-layer-ineffective",
+   "target_lang": "en",
+   "overlap": "high",
+   "query": "从中国大陆访问某些网站时，所有工具都无法正常工作，导致请求超时失败",
+   "ids": [
+    "yaml-inline-comment-type-coercion",
+    "signal-timeout-wrapper",
+    "agent-manual-update-timeout",
+    "curl-fail-fast-flags",
+    "exponential-backoff-cap"
+   ],
+   "rank": null,
+   "no_match": false,
+   "source": "worker-bm25",
+   "tries": 1,
+   "ok": true
+  },
+  {
+   "lesson_id": "git-credentials-automation",
+   "target_lang": "en",
+   "overlap": "high",
+   "query": "自动化脚本执行过程中突然弹出需要输入用户名和密码的提示框，导致流程停滞不前",
+   "ids": [
+    "wxauto-windows-python-not-wsl",
+    "git-credentials-automation",
+    "github-401-credential-lookup",
+    "cubic-ai-vs-pr-genius",
+    "ui-automation-selector-contract-after-nav-change"
+   ],
+   "rank": 2,
+   "no_match": false,
+   "source": "worker-bm25",
+   "tries": 2,
+   "ok": true
+  },
+  {
+   "lesson_id": "git-merge-conflict-resolution",
+   "target_lang": "zh",
+   "overlap": "low",
+   "query": "合并代码时遇到内容冲突，文件中包含类似 <<<<<<< 的符号",
+   "ids": [
+    "git-merge-conflict-resolution"
+   ],
+   "rank": 1,
+   "no_match": false,
+   "source": "worker-bm25+semantic",
+   "tries": 3,
+   "ok": true
+  },
+  {
+   "lesson_id": "github-actions-composite-pitfalls",
+   "target_lang": "en",
+   "overlap": "low",
+   "query": "单个提交时，某个字段的值为空，导致后续任务无法执行",
+   "ids": [],
+   "rank": null,
+   "no_match": true,
+   "source": "worker-bm25",
+   "tries": 1,
+   "ok": true
+  },
+  {
+   "lesson_id": "github-contents-api-pr-pitfalls",
+   "target_lang": "en",
+   "overlap": "low",
+   "query": "提交代码时总是显示一个红色的检查标志，无法通过验证",
+   "ids": [],
+   "rank": null,
+   "no_match": true,
+   "source": "worker-bm25+semantic",
+   "tries": 1,
+   "ok": true
+  },
+  {
+   "lesson_id": "gpt-sovits-hubert-16khz",
+   "target_lang": "en",
+   "overlap": "high",
+   "query": "音频克隆的效果与预期不符，可能是由于特征提取错误引起的。",
+   "ids": [
+    "gpt-sovits-hubert-16khz"
+   ],
+   "rank": 1,
+   "no_match": false,
+   "source": "worker-bm25+semantic",
+   "tries": 2,
+   "ok": true
+  },
+  {
+   "lesson_id": "gpt-sovits-ref-free-bug",
+   "target_lang": "en",
+   "overlap": "high",
+   "query": "生成的音色与预期的女声样本不符，出现了男声或其他音色",
+   "ids": [
+    "gpt-sovits-ref-free-bug"
+   ],
+   "rank": 1,
+   "no_match": false,
+   "source": "worker-bm25+semantic",
+   "tries": 2,
+   "ok": true
+  },
+  {
+   "lesson_id": "ci-dco-decouple-pythonpath-fork-pr",
+   "target_lang": "en",
+   "overlap": "low",
+   "query": "CI流程中模块加载失败，且代码提交的签名验证导致整个测试管线卡住",
+   "ids": [
+    "yaml-inline-comment-type-coercion"
+   ],
+   "rank": null,
+   "no_match": false,
+   "source": "worker-bm25",
+   "tries": 1,
+   "ok": true
+  },
+  {
+   "lesson_id": "curl-request-troubleshoot",
+   "target_lang": "en",
+   "overlap": "low",
+   "query": "访问某个网址时，响应内容为空，或者出现错误提示，或者请求超时",
+   "ids": [
+    "yaml-inline-comment-type-coercion",
+    "signal-timeout-wrapper",
+    "agent-manual-update-timeout",
+    "curl-fail-fast-flags",
+    "exponential-backoff-cap"
+   ],
+   "rank": null,
+   "no_match": false,
+   "source": "worker-bm25",
+   "tries": 1,
+   "ok": true
+  },
+  {
+   "lesson_id": "dsh-desktop-web-authentication-failed",
+   "target_lang": "zh",
+   "overlap": "low",
+   "query": "启动应用程序后立即弹出错误窗口，显示认证失败信息，无法继续操作",
+   "ids": [
+    "dsh-desktop-web-authentication-failed"
+   ],
+   "rank": 1,
+   "no_match": false,
+   "source": "worker-bm25+semantic",
+   "tries": 1,
+   "ok": true
+  },
+  {
+   "lesson_id": "dsh-slot-prop-input-undefined-useinput-hook",
+   "target_lang": "zh",
+   "overlap": "low",
+   "query": "conversation.input.left 和 conversation.input.overlay 两个 slot 的草稿内容无法正确读取，总是返回空字符串",
+   "ids": [
+    "dsh-slot-prop-input-undefined-useinput-hook",
+    "dsh-plugin-sidebar-and-panel-registration-contracts",
+    "ffmpeg-rec709-filter-stage-color-conversion",
+    "faq-issue-3610",
+    "faq-issue-3613",
+    "faq-issue-3384"
+   ],
+   "rank": 1,
+   "no_match": false,
+   "source": "worker-bm25",
+   "tries": 1,
+   "ok": true
+  },
+  {
+   "lesson_id": "fanuc-handling-robot-auto-drop-diagnosis",
+   "target_lang": "zh",
+   "overlap": "high",
+   "query": "电气控制面板上的复位和启动按钮需要手动按下才能让机器人重新开始工作",
+   "ids": [
+    "fanuc-handling-robot-auto-drop-diagnosis"
+   ],
+   "rank": 1,
+   "no_match": false,
+   "source": "worker-bm25",
+   "tries": 1,
+   "ok": true
+  },
+  {
+   "lesson_id": "fanuc-karel-ka-boost-architecture",
+   "target_lang": "zh",
+   "overlap": "high",
+   "query": "开发大型项目时，代码无法有效复用，导致开发效率低下",
+   "ids": [
+    "fanuc-karel-ka-boost-architecture"
+   ],
+   "rank": 1,
+   "no_match": false,
+   "source": "worker-bm25",
+   "tries": 1,
+   "ok": true
+  },
+  {
+   "lesson_id": "fanuc-ls-parser-comment-and-segment-boundary",
+   "target_lang": "zh",
+   "overlap": "high",
+   "query": "检查器错误地识别注释行中的子程序调用，导致虚假报警",
+   "ids": [
+    "fanuc-kl-err-abort-vs-err-pause",
+    "rag-retrieval-six-layer-silent-degradation",
+    "game-mcp-end-turn-conflict-409",
+    "fanuc-alarm-code-reference",
+    "rag-chinese-encoding-pymupdf"
+   ],
+   "rank": null,
+   "no_match": false,
+   "source": "worker-bm25",
+   "tries": 1,
+   "ok": true
+  },
+  {
+   "lesson_id": "fanuc-patch-changelog-version-file-offset",
+   "target_lang": "zh",
+   "overlap": "high",
+   "query": "版本号与文件内容的对应关系在导入过程中出现错位，导致文件内容与版本号不匹配",
+   "ids": [
+    "fanuc-patch-changelog-version-file-offset"
+   ],
+   "rank": 1,
+   "no_match": false,
+   "source": "worker-bm25",
+   "tries": 1,
+   "ok": true
+  },
+  {
+   "lesson_id": "fanuc-profinet-io-software-config",
+   "target_lang": "zh",
+   "overlap": "high",
+   "query": "控制器无法与西门子S7-1200/1500进行有效的数据交换",
+   "ids": [
+    "fanuc-profinet-io-software-config",
+    "fanuc-profinet-s7-1200-external-startup"
+   ],
+   "rank": 1,
+   "no_match": false,
+   "source": "worker-bm25",
+   "tries": 1,
+   "ok": true
+  },
+  {
+   "lesson_id": "fanuc-rgcore-diagnostic-probe-triggers-controller-crash",
+   "target_lang": "zh",
+   "overlap": "low",
+   "query": "虚拟控制器在进行网络服务探测后出现崩溃，日志文件中显示内存访问违规和模块中止",
+   "ids": [
+    "wsl-pip-gbk-hub-poller-crash",
+    "openclaw-reinstall-lesson",
+    "json-schema-validate-input",
+    "rag-build-strategy-batch",
+    "fanuc-rgcore-diagnostic-probe-triggers-controller-crash"
+   ],
+   "rank": 5,
+   "no_match": false,
+   "source": "worker-bm25",
+   "tries": 2,
+   "ok": true
+  },
+  {
+   "lesson_id": "feishu-display-optimization-cc-connect",
+   "target_lang": "zh",
+   "overlap": "high",
+   "query": "用户在飞书聊天中看到工具调用信息和上下文占用提示，体验不佳",
+   "ids": [
+    "feishu-display-optimization-cc-connect",
+    "feishu-doc-url-use-api-return",
+    "feishu-upload-file-type-opus",
+    "feishu-block-batch-limit",
+    "aily-feishu-mcp-pull-only"
+   ],
+   "rank": 1,
+   "no_match": false,
+   "source": "worker-bm25",
+   "tries": 2,
+   "ok": true
+  },
+  {
+   "lesson_id": "feishu-doc-url-use-api-return",
+   "target_lang": "en",
+   "overlap": "low",
+   "query": "文档链接点击后，页面无法正常显示，用户无法访问文档内容",
+   "ids": [],
+   "rank": null,
+   "no_match": true,
+   "source": "worker-bm25",
+   "tries": 1,
+   "ok": true
+  },
+  {
+   "lesson_id": "github-401-credential-lookup",
+   "target_lang": "en",
+   "overlap": "low",
+   "query": "每次尝试访问特定端点时，都会返回有关授权失败的错误",
+   "ids": [
+    "erreur-permission-docker-linux"
+   ],
+   "rank": null,
+   "no_match": false,
+   "source": "worker-bm25+semantic",
+   "tries": 1,
+   "ok": true
+  },
+  {
+   "lesson_id": "github-actions-secrets-one-shot-workflow-pattern",
+   "target_lang": "en",
+   "overlap": "high",
+   "query": "无法通过 GitHub Actions secrets API 获取云端 API 凭据的值",
+   "ids": [
+    "github-pat-scopes-minimum",
+    "github-actions-secrets-one-shot-workflow-pattern",
+    "aider-api-key-leak",
+    "ci-fork-pr-no-comment-token",
+    "ci-dco-decouple-pythonpath-fork-pr",
+    "faq-issue-3612",
+    "faq-issue-2769",
+    "faq-issue-2961"
+   ],
+   "rank": 2,
+   "no_match": false,
+   "source": "worker-bm25",
+   "tries": 1,
+   "ok": true
+  },
+  {
+   "lesson_id": "github-connectivity-4-fallbacks",
+   "target_lang": "en",
+   "overlap": "high",
+   "query": "排序后的方案中，最后一个选项显示为最激进的选项，但其余选项未按照预期排序",
+   "ids": [],
+   "rank": null,
+   "no_match": true,
+   "source": "worker-bm25",
+   "tries": 2,
+   "ok": true
+  },
+  {
+   "lesson_id": "github-release-large-asset-download-cn",
+   "target_lang": "en",
+   "overlap": "high",
+   "query": "通过代理服务器下载文件后，文件大小会缩小，下载内容损坏",
+   "ids": [
+    "github-release-large-asset-download-cn",
+    "wsl-proxy-setup",
+    "wsl-proxy-huggingface-external",
+    "model-switch-script-pattern",
+    "anthropic-proxy-internal-gateway"
+   ],
+   "rank": 1,
+   "no_match": false,
+   "source": "worker-bm25",
+   "tries": 2,
+   "ok": true
+  }
+ ],
+ "summary": {
+  "n_total": 64,
+  "transport_failures": 0,
+  "buckets": {
+   "zh->zh": {
+    "n": 31,
+    "r@1": 0.71,
+    "r@3": 0.742,
+    "r@5": 0.774,
+    "no_match": 0.032,
+    "semantic_used": 0.258,
+    "miss_with_results": 6,
+    "miss_with_no_results": 1
+   },
+   "zh->en": {
+    "n": 33,
+    "r@1": 0.455,
+    "r@3": 0.576,
+    "r@5": 0.606,
+    "no_match": 0.182,
+    "semantic_used": 0.364,
+    "miss_with_results": 7,
+    "miss_with_no_results": 6
+   },
+   "zh->zh/high": {
+    "n": 18,
+    "r@1": 0.833,
+    "no_match": 0.056
+   },
+   "zh->zh/low": {
+    "n": 13,
+    "r@1": 0.538,
+    "no_match": 0.0
+   },
+   "zh->en/high": {
+    "n": 19,
+    "r@1": 0.632,
+    "no_match": 0.105
+   },
+   "zh->en/low": {
+    "n": 14,
+    "r@1": 0.214,
+    "no_match": 0.286
+   }
+  }
+ },
+ "generated_at": "2026-10-27T13:18:55Z"
+}
