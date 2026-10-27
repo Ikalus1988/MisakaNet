@@ -80,9 +80,10 @@ jobs:
           fi
 
       - name: Publish this version
+        env:
+          VERSION: ${{ steps.bundle.outputs.version }}
         run: |
           set -euo pipefail
-          VERSION='${{ steps.bundle.outputs.version }}'
           npx wrangler --version
           upload() {  # path-in-bundle, content-type
             local src="dist/dataset/$1" key="v$VERSION/$1"
@@ -99,9 +100,10 @@ jobs:
           done
 
       - name: Point `latest` at this version
+        env:
+          VERSION: ${{ steps.bundle.outputs.version }}
         run: |
           set -euo pipefail
-          VERSION='${{ steps.bundle.outputs.version }}'
           python3 - "$VERSION" <<'PY'
           import json, sys
           version = sys.argv[1]
@@ -142,10 +144,11 @@ jobs:
           echo "fallback=$FALLBACK" >> "$GITHUB_OUTPUT"
 
       - name: Verify the published bytes
+        env:
+          VERSION: ${{ steps.bundle.outputs.version }}
+          FALLBACK: ${{ steps.host.outputs.fallback }}
         run: |
           set -euo pipefail
-          VERSION='${{ steps.bundle.outputs.version }}'
-          FALLBACK='${{ steps.host.outputs.fallback }}'
           BASE="https://$PUBLIC_HOST"
           if ! curl -sSf --max-time 20 "$BASE/v$VERSION/manifest.json" -o /tmp/remote.json; then
             if [ -n "$FALLBACK" ]; then

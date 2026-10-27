@@ -70,7 +70,7 @@
 | `update-lessons.yml` | Update lessons.json（`lessons/**` 合并进来时也跑一遍，别让新课程等一天才有页面）| push, 定时, 手动 | `0 0 * * *` |
 | `nightly-mirror-consistency.yml` | Nightly Mirror Consistency（镜像一致性）| 定时 |  |
 
-## 发布/部署（13）
+## 发布/部署（14）
 
 | workflow | 用途 | 触发 | 定时 |
 |---|---|---|---|
@@ -87,6 +87,7 @@
 | `misakanet-publish.yml` | Publish misakanet（npm；`package.json`/`.codex-plugin/plugin.json` 自 2026-09-30 归 release-please，发布前用版本守卫拒绝对不上的树；release 事件 + release-please 派发 + 手动 tag 三条入口，已在 npm 上的版本直接跳过）| release, tag push, 手动 |  |
 | `misakanet-setup-publish.yml` | Publish @misaka-net/misakanet-setup | tag push, 手动 |  |
 | `publish-mcp-registry.yml` | Publish to MCP Registry（等 PyPI 落地后发布）| 手动 |  |
+| `publish-dataset.yml` | Publish dataset to R2（把 `data/okf/lessons.jsonl` + benchmark 产物打成带 manifest 的版本，推到 `misakanet-dataset`，`v<日期>/` 不可变、`latest.json` 可变；上传后回读远端 manifest 与本地比对才算成功。用 `release` 环境，因为写凭据只放在那里）| push, 手动 |  |
 
 ## 社区/机器人（14）
 

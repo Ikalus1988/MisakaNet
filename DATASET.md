@@ -5,7 +5,9 @@ without cloning this repository.
 
 - **Latest:** `https://data.misakanet.org/latest.json` — points at the current version
 - **This version:** `https://data.misakanet.org/v<YYYY-MM-DD>/manifest.json`
-- **What ships:** 651 lessons, 267 benchmark queries, four published run artifacts, ~2.9 MiB
+- **What ships:** the lesson corpus, the benchmark query set, and every published run artifact
+  (~2.9 MiB). The counts are in each version's `manifest.json` — they are generated there, not
+  typed here.
 - **Built by:** [`scripts/build_dataset_bundle.py`](scripts/build_dataset_bundle.py), published by
   [`.github/workflows/publish-dataset.yml`](.github/workflows/publish-dataset.yml)
 

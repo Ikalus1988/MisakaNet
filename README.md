@@ -143,8 +143,9 @@ not to fail again. MisakaNet is only the second thing. → [FAQ](FAQ.md)
   off. A corpus gap is still a miss: the reply is `no_match` plus an intake, not an empty page.
 - **Reported gaps arrive faster than they are triaged.** The intake queue is the honest bottleneck.
 - **The corpus is downloadable and citable.** `data.misakanet.org` publishes a versioned
-  bundle — 651 lessons, the 267-query benchmark set, and every run artifact — with a
-  per-file SHA-256 and an explicit license per file ([DATASET.md](DATASET.md)).
+  bundle — the full corpus, the benchmark query set, and every run artifact — with a
+  per-file SHA-256 and an explicit license per file ([DATASET.md](DATASET.md)). The counts
+  live in each version's `manifest.json`, not in prose.
 
 ## Retrieval benchmark: 267 queries, BM25 vs semantic fallback
 
