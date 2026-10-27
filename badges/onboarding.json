@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "label": "onboarding",
-  "message": "setup 0/wk · MCP 6.7k/day",
+  "message": "setup 0/wk · MCP 10.0k/day",
   "color": "blue",
-  "generated_at": "2026-10-27T15:27:04Z",
+  "generated_at": "2026-10-27T15:53:30Z",
   "window": {
     "downloads": "last-week",
     "activity": "2026-10-27",
@@ -15,12 +15,12 @@
   },
   "activity": {
     "date": "2026-10-27",
-    "total": 7743,
+    "total": 11621,
     "calls": {
-      "agent": 50,
-      "crawler": 886,
-      "mcp": 6654,
-      "pageview": 153
+      "agent": 64,
+      "crawler": 1282,
+      "mcp": 10037,
+      "pageview": 238
     }
   },
   "traffic": null
