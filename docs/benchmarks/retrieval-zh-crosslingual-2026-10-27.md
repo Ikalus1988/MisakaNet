@@ -101,7 +101,8 @@ floor of 16, so anything that touches the lexical path has to be checked against
 
 - [Machine-readable report](retrieval-zh-crosslingual-2026-10-27.json) — summary + every row
   (query, returned ids, rank, `no_match`, `source`, retries).
-- `scripts/bench_zh_crosslingual.py` — the probe; `tests/test_bench_zh_crosslingual.py` covers
+- [`scripts/bench_zh_crosslingual.py`](../../scripts/bench_zh_crosslingual.py) — the probe;
+  [`tests/test_bench_zh_crosslingual.py`](../../tests/test_bench_zh_crosslingual.py) covers
   everything except the network.
 
 ```bash
