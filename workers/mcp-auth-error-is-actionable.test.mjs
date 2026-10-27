@@ -37,8 +37,8 @@ function createEnv() {
   };
 }
 
-// A Bearer-gated tool: `misakanet_search` is public, so it would never reach the auth gate and the
-// test would pass while measuring nothing.
+// A Bearer-gated tool: `misakanet_search` and `misakanet_preflight` are open, so they would never
+// reach the auth gate and the test would pass while measuring nothing.
 function call(env, token) {
   const headers = {
     'Content-Type': 'application/json',
@@ -51,7 +51,9 @@ function call(env, token) {
     headers,
     body: JSON.stringify({
       jsonrpc: '2.0', id: 1, method: 'tools/call',
-      params: { name: 'misakanet_preflight', arguments: { intent: 'rm -rf build/' } },
+      params: { name: 'misakanet_write_lesson', arguments: {
+        title: 'x', domain: 'x', problem: 'x', root_cause: 'x', fix: 'x',
+      } },
     }),
   }), env);
 }
@@ -111,12 +113,12 @@ test('the token itself is never echoed back', async () => {
     'the rejected token must not be reflected, not even for debugging');
 });
 
-test('the schema states the Bearer requirement before the caller finds out the hard way', async () => {
+test('preflight is open, and the schema says so', async () => {
   // #3022: a caller read `tools/list`, saw "[GUARD / RISK CHECK] … No side effects", called
-  // `misakanet_preflight`, and got 401. The recovery hint added in #3234 only helps *after* the
-  // failure; the schema is the one thing a client reads before calling, so the requirement belongs
-  // there too. Asserted through `tools/list` rather than by reading the constant, because the
-  // constant is not what a client sees.
+  // `misakanet_preflight`, and got 401. A connector without an Authorization header then tried
+  // OAuth discovery and reported "Dynamic Client Registration rejected (HTTP 405)" — the tool
+  // never ran. Preflight is read-only, so it is now part of the anonymous read surface; the
+  // description must say that rather than imply a Bearer requirement.
   const response = await worker.fetch(new Request('https://misakanet.org/mcp', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'MCP-Protocol-Version': '2025-06-18' },
@@ -125,10 +127,21 @@ test('the schema states the Bearer requirement before the caller finds out the h
   const { result } = await response.json();
   const tool = (result.tools || []).find((t) => t.name === 'misakanet_preflight');
   assert.ok(tool, 'misakanet_preflight must be listed');
-  assert.match(tool.description, /Requires a Bearer token/,
-    'a caller that only reads the schema must learn this tool is not anonymous');
-  assert.match(tool.description, /misakanet_register/,
-    'and it must name the call that fixes the refusal, not just the requirement');
+  assert.doesNotMatch(tool.description, /Requires a Bearer token/,
+    'the schema must not tell a connector that preflight needs an auth header');
+  assert.match(tool.description, /Open, read-only/,
+    'the schema must state that preflight is open and read-only');
+
+  const anonymous = await worker.fetch(new Request('https://misakanet.org/mcp', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'MCP-Protocol-Version': '2025-06-18' },
+    body: JSON.stringify({
+      jsonrpc: '2.0', id: 2, method: 'tools/call',
+      params: { name: 'misakanet_preflight', arguments: { intent: 'rm -rf build/' } },
+    }),
+  }), createEnv());
+  assert.notEqual(anonymous.status, 401,
+    'preflight is read-only and must not trigger the OAuth/401 path for an anonymous connector');
 });
 
 test('a valid token is not sent down this path at all', async () => {

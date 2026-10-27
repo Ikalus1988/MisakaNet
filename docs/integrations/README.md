@@ -95,7 +95,7 @@ The **remote** endpoint (what every agent above talks to) exposes 8:
 | `misakanet_me_inbox` | Check a submitted intake's status (answer / conversion receipt) without re-submitting |
 | `misakanet_register` | Register a pseudonymous node; returns a node id + token |
 | `misakanet_write_lesson` | Submit a structured lesson (Bearer token) |
-| `misakanet_preflight` | Risk check before a destructive operation (Bearer token) |
+| `misakanet_preflight` | Risk check before a destructive operation (open, read-only) |
 | `misakanet_me_events` | Read the reuse evidence for this node |
 
 The **local stdio** server adds three that only make sense on your machine:

@@ -156,6 +156,30 @@ test('submit_intake rejects duplicate submissions by content hash', async () => 
   }
 });
 
+test('same problem with a different error excerpt is still a duplicate', async () => {
+  const env = createEnv();
+  let calls = 0;
+  const restore = captureGitHubFetch(env, () => { calls += 1; });
+  try {
+    const first = await submitIntake({
+      kind: 'missing_lesson', problem: 'same problem, different excerpt', error: 'first excerpt',
+    }, env);
+    const firstResult = JSON.parse((await first.json()).result.content[0].text);
+    assert.equal(firstResult.submitted, true);
+
+    const dup = await submitIntake({
+      kind: 'missing_lesson', problem: 'same problem, different excerpt', error: 'second excerpt',
+    }, env);
+    const dupResult = JSON.parse((await dup.json()).result.content[0].text);
+    assert.equal(dupResult.submitted, false);
+    assert.equal(dupResult.duplicate, true);
+    assert.equal(calls, 1, 'the second submission must not open a second GitHub issue');
+    assert.equal(dupResult.dedup_key, contentHashOf('missing_lesson', 'same problem, different excerpt'));
+  } finally {
+    restore();
+  }
+});
+
 test('sanitizeReasonKey strips unsafe chars for KV keys', async () => {
   const { sanitizeReasonKey, hashString } = await import('./register-proxy-sw.js');
   // __proto__-style pollution attempt must not become a bare __-prefixed key.
@@ -308,9 +332,10 @@ function createQuestionD1(seedRows = []) {
   };
 }
 
-function contentHashOf(kind, problem, error = '') {
-  // Mirror the worker: hashString(`${kind}:${safeProblem}:${safeError}`)
-  return hashString(`${kind}:${problem}:${error}`);
+function contentHashOf(kind, problem) {
+  // Mirror the worker: hashString(`${kind}:${safeProblem}:`). The error excerpt is deliberately
+  // excluded so the same failure submitted with a different excerpt is still a duplicate.
+  return hashString(`${kind}:${problem}:`);
 }
 
 test('question submit records a pending row in D1 when bound', async () => {

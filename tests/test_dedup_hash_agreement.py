@@ -95,23 +95,23 @@ def test_the_worker_source_still_contains_the_function_being_mirrored():
 
 # ── the whole path, from an issue body to the hash the worker would compute ──
 
-def _worker_dedup_hash(kind: str, problem: str, error: str) -> str:
-    # Exactly the expression at workers/register-proxy-sw.js:4156.
-    return _worker_hash(f"{kind}:{problem.strip()}:{error.strip()}")
+def _worker_dedup_hash(kind: str, problem: str) -> str:
+    # Exactly the expression at workers/register-proxy-sw.js: the error excerpt is not included.
+    return _worker_hash(f"{kind}:{problem.strip()}:")
 
 
 def test_an_overlong_intake_gets_a_hash_the_worker_can_reproduce():
     body = f"**Kind:** question\n\n## Problem\n{LONG_PROBLEM}\n\n## Error\n\n"
     kind, problem, error = parse_kind_and_problem(body)
     assert len(problem) > 2000, "fixture no longer crosses the old cap; it cannot catch the defect"
-    assert fnv1a_hex(f"{kind}:{problem}:{error}".strip()) == _worker_dedup_hash(kind, problem, error)
+    assert fnv1a_hex(f"{kind}:{problem}:") == _worker_dedup_hash(kind, problem)
 
 
 def test_an_emoji_in_a_reported_problem_gets_a_hash_the_worker_can_reproduce():
     body = f"**Kind:** question\n\n## Problem\n{ASTRAL}\n\n---\n_Submitted via remote MCP._\n"
     kind, problem, error = parse_kind_and_problem(body)
     assert any(ord(c) > 0xFFFF for c in problem), "fixture lost its astral character"
-    assert fnv1a_hex(f"{kind}:{problem}:{error}".strip()) == _worker_dedup_hash(kind, problem, error)
+    assert fnv1a_hex(f"{kind}:{problem}:") == _worker_dedup_hash(kind, problem)
 
 
 def test_the_real_reporter_text_round_trips():
@@ -151,7 +151,13 @@ def test_two_reports_sharing_a_long_prefix_do_not_collapse_to_one_hash():
     )
 
 
-def test_a_long_error_is_hashed_in_full_and_stays_distinct():
+def test_a_long_error_is_not_part_of_the_dedup_key():
+    """The error excerpt is deliberately excluded: same problem + different excerpt = duplicate.
+
+    #3930/#3932 measured the failure this replaces: the same problem was submitted twice with
+    different error/verbosity, and the old key opened a second issue. A long error must not make
+    the report distinct, and it must not collide with a different *problem* either.
+    """
     body_template = "**Kind:** question\n\n## Problem\nshort\n\n## Error\n{error}"
     first, second = body_template.format(error="E" * 2500 + "A"), body_template.format(error="E" * 2500 + "B")
 
@@ -160,8 +166,8 @@ def test_a_long_error_is_hashed_in_full_and_stays_distinct():
 
     assert len(first_error) > 1000, "fixture no longer crosses the old 1,000-char cap"
     assert first_error != second_error, "the two error fields came back identical"
-    assert fnv1a_hex(f"{kind}:{problem}:{first_error}".strip()) != \
-           fnv1a_hex(f"{kind}:{problem}:{second_error}".strip())
+    assert fnv1a_hex(f"{kind}:{problem}:") == fnv1a_hex(f"{kind}:{problem}:")
+    assert fnv1a_hex(f"{kind}:{problem}:") != fnv1a_hex(f"{kind}:short other:")
 
 
 def test_the_fallback_path_does_not_truncate_or_collide():
