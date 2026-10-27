@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-10-27T11:44:49.002039+00:00",
+  "generated_at": "2026-10-27T15:26:02.595008+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "feat(lessons): add the lesson_gate PyYAML false-missing-fields report",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3941",
-      "timestamp": "2026-10-27T11:44:37Z",
+      "title": "docs(bench): gemini-embedding reaches R@1 0.757 on the L1-267 set; the cross-lingual misses are not Latin tokens",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3953",
+      "timestamp": "2026-10-27T14:46:51Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "docs(bench): measure zh retrieval by target language on the live path",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3951",
+      "timestamp": "2026-10-27T13:44:25Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "docs(handoff): add the 2026-10-27 handoff",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3947",
+      "timestamp": "2026-10-27T12:16:34Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
       "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3944",
-      "timestamp": "2026-10-27T09:20:41Z",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3946",
+      "timestamp": "2026-10-27T11:57:52Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(search): keep FAQ scores in the lesson band",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3936",
-      "timestamp": "2026-10-27T07:13:46Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "fix(mcp): open read-only preflight and dedup intake by problem",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3934",
-      "timestamp": "2026-10-27T06:53:53Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore: sync local main (D1 counters split, email intake fix, L1-267 retrieval report)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3933",
-      "timestamp": "2026-10-27T06:29:03Z",
+      "title": "feat(lessons): add the lesson_gate PyYAML false-missing-fields report",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3941",
+      "timestamp": "2026-10-27T11:44:37Z",
       "source": "github"
     },
     {
