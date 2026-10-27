@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-10-27T00:35:14.305023+00:00",
+  "generated_at": "2026-10-27T09:09:44.688701+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
+      "title": "fix(search): keep FAQ scores in the lesson band",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3936",
+      "timestamp": "2026-10-27T07:13:46Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "fix(mcp): open read-only preflight and dedup intake by problem",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3934",
+      "timestamp": "2026-10-27T06:53:53Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore: sync local main (D1 counters split, email intake fix, L1-267 retrieval report)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3933",
+      "timestamp": "2026-10-27T06:29:03Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3920",
+      "timestamp": "2026-10-27T00:47:29Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
       "title": "chore(data): sync lessons.json + refresh feed",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/3919",
       "timestamp": "2026-10-26T20:50:04Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "fix(site): one copy of the escaper and the JSON reader",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3896",
-      "timestamp": "2026-10-26T14:15:24Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3895",
-      "timestamp": "2026-10-26T13:33:02Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat(setup): the verify verdict is per client, and one client can be judged on its own",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3892",
-      "timestamp": "2026-10-26T12:51:55Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "fix(installer): the uninstall takes back what we wrote and nothing else",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3888",
-      "timestamp": "2026-10-26T09:52:15Z",
       "source": "github"
     },
     {
@@ -86,7 +86,6 @@
       "labels": [
         "enhancement",
         "activation",
-        "status: competition",
         "registered",
         "roadmap",
         "ready",
