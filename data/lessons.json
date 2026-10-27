@@ -10398,6 +10398,38 @@
     "contributor": ""
   },
   {
+    "id": "lesson-gate-swallowed-missing-pyyaml-reports-missing-fields",
+    "title": "lesson_gate.py in a stdlib-only Python container reports missing fields when PyYAML is absent",
+    "domain": "ci",
+    "tags": [
+      "lesson-gate",
+      "pyyaml",
+      "frontmatter",
+      "false-failure",
+      "ci-diagnostics"
+    ],
+    "summary": "When validating a lesson locally in a fresh Python container before opening a pull request for Issue #3901, running `scripts/lesson_gate.py` against an existing…",
+    "preview": "# lesson_gate.py in a stdlib-only Python container reports missing fields when PyYAML is absent\n\n## Problem\n\nWhen validating a lesson locally in a fresh Python container before opening a pull request for Issue #3901, running `scripts/lesson_gate.py` against an existing valid lesson (`lessons/contrib/a-stubbed-success-is-not-a-sandbox.md`) failed with 6 errors:\n\n```text\n$ python3 scripts/lesson_gate.py lessons/contrib/a-stubbed-success-is-not-a-sandbox.md\nFAIL lessons/contrib/a-stubbed-success-is-not-a-sandbox.md\n  - frontmatter is not valid YAML: ModuleNotFoundError: No module named 'yaml' — the block is there but nothing can read it, which is why the fields below are reported missing. Check values that need quoting (a bare `#`, `:`, `[`, `{`, or a leading `*`), then re-run\nFAIL lessons/contrib/a-stubbed-success-is-not-a-sandbox.md\n  - missing required field: title\nFAIL lessons/contrib/a-stubbed-success-is-not-a-sandbox.md\n  - missing required field: domain\nFAIL lessons/contrib/a-stubbed-success-is-not-a-sandbox.md\n  - missing required field: tags\nFAIL lessons/contrib/a-stubbed-success-is-not-a-sandbox.md\n  - missing required field: status\nFAIL lessons/contrib/a-stubbed-success-is-not-a-sandbox.md\n  - missing required field: evidence_level (or provenance.evidence)\n```\n\n### Environment\n\n- **OS**: Linux (Debian bookworm container, x86_64)\n- **Runtime**: Python 3.13.5 (stdlib only, prior to `pip install pyyaml`)\n- **Tool**: `scripts/lesson_gate.py` on `main` (`Ikalus1988/MisakaNet`)\n\n## Root Cause\n\nTwo behaviors in `scripts/lesson_gate.py` combine to produce this failure:\n\n1. **`parse_frontmatter(text)` tries `json.JSONDecoder().raw_decode(raw)` first, then falls back to `import yaml` inside a broad `except Exception: pass` block.** When `PyYAML` is not installed in the contributor's Python environment, `import yaml` raises `ModuleNotFoundError: No module named 'yaml'`, which is swallowed and returns `{}` (an empty frontmatter dict).\n2. **`frontmatter_diagnostic(text)` formats `ModuleNotFoundError` using the same message template designed for YAML syntax errors** (`frontmatter is not valid YAML: ... Check values that need quoting`), and the gate continues running field presence checks against `{}`—emitting five cascading `missing required field` errors on a file whose YAML frontmatter is completely valid.\n\nBecause `json` is part of the Python standard library w\n\n[clipped]",
+    "summary_plain": "Missing PyYAML makes parse_frontmatter return {}, so lesson_gate.py reports all required YAML fields as missing.",
+    "trigger": "lesson_gate.py outputs ModuleNotFoundError: No module named 'yaml' followed by missing required field: title/domain/tags",
+    "verify": "Run `python3 scripts/lesson_gate.py lessons/contrib/lesson-gate-swallowed-missing-pyyaml-reports-missing-fields.md` (exits 0 without PyYAML).",
+    "url": "lessons/contrib/lesson-gate-swallowed-missing-pyyaml-reports-missing-fields.md",
+    "created": "2026-10-27",
+    "updated": "2026-10-27",
+    "triggers": null,
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "published",
+    "evidence_refs": [],
+    "supersedes": "",
+    "verified": true,
+    "evidence_level": "E1",
+    "evidence_source": "frontmatter",
+    "trust_score": 0.387,
+    "contributor": ""
+  },
+  {
     "id": "lesson-management-standardization",
     "title": "Lesson Management Standardization — Naming, Content Sanitization, and Automated Submission Pipeline",
     "domain": "devops",
