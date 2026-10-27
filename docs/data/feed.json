@@ -1,9 +1,23 @@
 {
-  "generated_at": "2026-10-27T09:09:44.688701+00:00",
+  "generated_at": "2026-10-27T11:44:49.002039+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "feat(lessons): add the lesson_gate PyYAML false-missing-fields report",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3941",
+      "timestamp": "2026-10-27T11:44:37Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3944",
+      "timestamp": "2026-10-27T09:20:41Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "fix(search): keep FAQ scores in the lesson band",
@@ -26,18 +40,12 @@
       "source": "github"
     },
     {
-      "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3920",
-      "timestamp": "2026-10-27T00:47:29Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3919",
-      "timestamp": "2026-10-26T20:50:04Z",
-      "source": "github"
+      "type": "lesson",
+      "title": "lesson_gate.py in a stdlib-only Python container reports missing fields when PyYAML is absent",
+      "url": "lessons/contrib/lesson-gate-swallowed-missing-pyyaml-reports-missing-fields.md",
+      "timestamp": "2026-10-27",
+      "domain": "ci",
+      "source": "lessons"
     },
     {
       "type": "lesson",
@@ -69,14 +77,6 @@
       "url": "lessons/contrib/antd-upload-onchange-per-file-not-per-batch.md",
       "timestamp": "2026-10-25",
       "domain": "frontend",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "anysearch_batch_search rejects tag academic with HTTP 400 Invalid tag: academic",
-      "url": "lessons/contrib/anysearch-batch-search-with-tag-academic-fails-with-http-400.md",
-      "timestamp": "2026-10-25",
-      "domain": "search",
       "source": "lessons"
     },
     {
