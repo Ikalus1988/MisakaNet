@@ -315,6 +315,7 @@
 - [API 设计原则 — 无抽象、一致性、幂等性](contrib/lesson-20-api-design-principles.md) | devops | "api", "design", "principles", "rest", "consistency" | increase.com/articles
 - [Redis → PostgreSQL 替换 — 缓存/PubSub/队列统一](contrib/lesson-9-redis-postgresql-replacement.md) | devops | "redis", "postgresql", "caching", "pubsub", "database", "performance" | dev.to
 - [Before — inspect raw first line](contrib/lesson-file-line-number-corruption.md) | meta | "terminal", "sed", "line-number", "file-corruption", "html", "debug" | codewhale
+- [lesson_gate.py in a stdlib-only Python container reports missing fields when PyYAML is absent](contrib/lesson-gate-swallowed-missing-pyyaml-reports-missing-fields.md) | ci | "lesson-gate", "pyyaml", "frontmatter", "false-failure", "ci-diagnostics" | 810paisen Linux container session (Python 3.13.5, Debian bookworm), 2026-10-27
 - [Lesson Management Standardization — Naming, Content Sanitization, and Automated Submission Pipeline](contrib/lesson-management-standardization.md) | devops | "lesson", "naming-convention", "content-sanitization", "automation", "ci", "standardization" | codewhale
 - [Lesson Provenance Tracking: author, PR, source, merge history](contrib/lesson-provenance-tracking.md) | devops | "provenance", "metadata", "audit", "tracking" | closed-pr-1031
 - [Lesson Quality Requirements: failure-memory protocol Format](contrib/lesson-quality-requirements.md) | devops | "lesson", "quality", "format", "skp", "misakanet" | agent_experience
