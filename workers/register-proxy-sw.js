@@ -6229,7 +6229,11 @@ function matchAnsweredQuestions(rows, query, detail = "compact", top = 3, domain
     tags: ["faq"],
     path: row.issue_url || "",
     description: desc,
-    score: Math.round(score * 100),
+    // FAQ scores are a 0..1 token-overlap ratio, while lesson scores are BM25
+    // scores in a much smaller range. Scaling by 100 made an FAQ (40-60) outrank
+    // every lesson on a client that sorts by score; the 80-sample audit measured
+    // exactly that. Keep FAQ visible but in the lesson band: 0..20.
+    score: Math.round(score * 20),
     type: "faq",
     answer: answerShown,
     issue_url: row.issue_url || "",
