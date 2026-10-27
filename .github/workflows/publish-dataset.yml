@@ -1,0 +1,165 @@
+name: Publish dataset to R2
+
+# The repository produces a citable dataset (651 lessons + 267 benchmark queries + four run
+# artifacts) and has never published it anywhere but inside a git checkout. `build_dataset_bundle.py`
+# assembles it; this workflow is what makes it a URL.
+#
+# Why CI and not a local script: publishing needs write credentials, and the only place this account
+# keeps a write token is the `release` environment. A maintainer's laptop holding a write-all
+# Cloudflare token to upload 3 MB of JSON would be a worse trade than a workflow.
+#
+# Why not on every lesson commit: `data/okf/lessons.jsonl` is regenerated daily by `update-lessons.yml`,
+# so a push trigger on that path publishes a new version every day even when nobody changed a lesson.
+# That is why the version label is the date: daily versions are the point (a citation can pin one),
+# and the upload is ~3 MB. If that ever becomes noise, switch the trigger to `workflow_dispatch` plus
+# release tags — the version label is the only thing that has to move with it.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "data/okf/lessons.jsonl"
+      - "data/lessons.json"
+      - "docs/benchmarks/**"
+      - "scripts/build_dataset_bundle.py"
+      - ".github/workflows/publish-dataset.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-dataset
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    # Write credentials live here, not at repository level — same rule as deploy-worker.yml.
+    environment: release
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+      ACCOUNT_ID: 6b92325b505f2b76aec49e9fe4195d31
+      BUCKET: misakanet-dataset
+      PUBLIC_HOST: data.misakanet.org
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+
+      - name: Build the bundle
+        id: bundle
+        run: |
+          set -euo pipefail
+          python3 scripts/build_dataset_bundle.py --out dist/dataset | tee /tmp/build.txt
+          VERSION=$(python3 -c "import json;print(json.load(open('dist/dataset/manifest.json'))['version'])")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Ensure the bucket exists
+        run: |
+          set -euo pipefail
+          # Idempotent: an existing bucket answers 10004 ("already exists"), which is the expected
+          # state on every run after the first, not a failure.
+          code=$(curl -sS -o /tmp/bucket.json -w '%{http_code}' -X POST \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -H 'Content-Type: application/json' \
+            "https://api.cloudflare.com/client/v4/accounts/$ACCOUNT_ID/r2/buckets" \
+            -d "{\"name\":\"$BUCKET\"}")
+          if [ "$code" = "200" ]; then
+            echo "created $BUCKET"
+          elif grep -q '"code":10004' /tmp/bucket.json; then
+            echo "$BUCKET already exists"
+          elif [ "$code" = "403" ]; then
+            # The likeliest first-run failure, named so nobody has to decode it: the deploy token
+            # carries Workers Scripts:Edit and may not carry Workers R2 Storage:Edit. The fix is a
+            # scope on the token, not a code change.
+            echo "::error::CF_API_TOKEN cannot write R2 (403). Add the \"Workers R2 Storage:Edit\" permission to the release environment's token, then re-run this workflow. Response: $(cat /tmp/bucket.json)"
+            exit 1
+          else
+            echo "::error::bucket create failed ($code): $(cat /tmp/bucket.json)"
+            exit 1
+          fi
+
+      - name: Publish this version
+        run: |
+          set -euo pipefail
+          VERSION='${{ steps.bundle.outputs.version }}'
+          npx wrangler --version
+          upload() {  # path-in-bundle, content-type
+            local src="dist/dataset/$1" key="v$VERSION/$1"
+            npx wrangler r2 object put "$BUCKET/$key" \
+              --file "$src" --content-type "$2" --remote
+          }
+          upload lessons.jsonl application/x-ndjson
+          upload lessons.json application/json
+          upload manifest.json application/json
+          upload LICENSE text/plain
+          upload LICENSE-CC0 text/plain
+          for f in dist/dataset/benchmarks/*; do
+            upload "benchmarks/$(basename "$f")" application/json
+          done
+
+      - name: Point `latest` at this version
+        run: |
+          set -euo pipefail
+          VERSION='${{ steps.bundle.outputs.version }}'
+          python3 - "$VERSION" <<'PY'
+          import json, sys
+          version = sys.argv[1]
+          manifest = json.load(open("dist/dataset/manifest.json", encoding="utf-8"))
+          manifest["latest"] = {
+              "version": version,
+              "base": f"v{version}/",
+              "manifest": f"v{version}/manifest.json",
+          }
+          open("dist/dataset/latest.json", "w", encoding="utf-8").write(
+              json.dumps(manifest, ensure_ascii=False, indent=1) + "\n")
+          PY
+          npx wrangler r2 object put "$BUCKET/latest.json" \
+            --file dist/dataset/latest.json --content-type application/json --remote
+
+      - name: Serve it on the public host
+        id: host
+        run: |
+          set -euo pipefail
+          # A custom domain is the production answer: r2.dev is rate-limited and Cloudflare documents
+          # it as development-only. Attaching the domain also creates the DNS record.
+          ZONE=$(curl -sS -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            "https://api.cloudflare.com/client/v4/zones?name=misakanet.org" \
+            | python3 -c "import json,sys;print((json.load(sys.stdin)['result'] or [{}])[0].get('id',''))")
+          if [ -n "$ZONE" ]; then
+            code=$(curl -sS -o /tmp/domain.json -w '%{http_code}' -X POST \
+              -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -H 'Content-Type: application/json' \
+              "https://api.cloudflare.com/client/v4/accounts/$ACCOUNT_ID/r2/buckets/$BUCKET/domains/custom" \
+              -d "{\"domain\":\"$PUBLIC_HOST\",\"zoneId\":\"$ZONE\",\"enabled\":true}")
+            echo "custom domain: HTTP $code $(head -c 300 /tmp/domain.json)"
+          fi
+          # r2.dev is enabled as well, as a fallback URL that works before the certificate is issued.
+          curl -sS -o /tmp/managed.json -X PUT \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -H 'Content-Type: application/json' \
+            "https://api.cloudflare.com/client/v4/accounts/$ACCOUNT_ID/r2/buckets/$BUCKET/domains/managed" \
+            -d '{"enabled":true}' || true
+          FALLBACK=$(python3 -c "import json;print(json.load(open('/tmp/managed.json')).get('result',{}).get('domain',''))" 2>/dev/null || true)
+          echo "fallback=$FALLBACK" >> "$GITHUB_OUTPUT"
+
+      - name: Verify the published bytes
+        run: |
+          set -euo pipefail
+          VERSION='${{ steps.bundle.outputs.version }}'
+          FALLBACK='${{ steps.host.outputs.fallback }}'
+          BASE="https://$PUBLIC_HOST"
+          if ! curl -sSf --max-time 20 "$BASE/v$VERSION/manifest.json" -o /tmp/remote.json; then
+            if [ -n "$FALLBACK" ]; then
+              BASE="https://$FALLBACK"; echo "custom domain not serving yet, verifying via $BASE"
+              curl -sSf --max-time 20 "$BASE/v$VERSION/manifest.json" -o /tmp/remote.json
+            else
+              echo "::error::nothing served the manifest"; exit 1
+            fi
+          fi
+          python3 - <<'PY'
+          import hashlib, json
+          local = json.load(open("dist/dataset/manifest.json", encoding="utf-8"))
+          remote = json.load(open("/tmp/remote.json", encoding="utf-8"))
+          assert local["files"] == remote["files"], "manifest file list differs from what was uploaded"
+          print(f"verified {len(remote['files'])} file entries against {remote['version']}")
+          PY
+          echo "dataset URL: $BASE/v$VERSION/manifest.json" >> "$GITHUB_STEP_SUMMARY"

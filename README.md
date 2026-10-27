@@ -142,6 +142,9 @@ not to fail again. MisakaNet is only the second thing. → [FAQ](FAQ.md)
   stdlib BM25; the fallback runs only when BM25 returns no match, and `MISAKANET_SEMANTIC=0` turns it
   off. A corpus gap is still a miss: the reply is `no_match` plus an intake, not an empty page.
 - **Reported gaps arrive faster than they are triaged.** The intake queue is the honest bottleneck.
+- **The corpus is downloadable and citable.** `data.misakanet.org` publishes a versioned
+  bundle — 651 lessons, the 267-query benchmark set, and every run artifact — with a
+  per-file SHA-256 and an explicit license per file ([DATASET.md](DATASET.md)).
 
 ## Retrieval benchmark: 267 queries, BM25 vs semantic fallback
 
@@ -293,6 +296,7 @@ jobs:
 | Troubleshooting | [docs/troubleshooting.md](docs/troubleshooting.md) |
 | Known limitations | [docs/LIMITATIONS.md](docs/LIMITATIONS.md) |
 | Benchmarks | [docs/benchmarks/](docs/benchmarks/) |
+| Dataset (corpus + query sets, downloadable) | [DATASET.md](DATASET.md) · <https://data.misakanet.org/latest.json> |
 | Roadmap / changelog | [ROADMAP.md](ROADMAP.md) · [CHANGELOG.md](CHANGELOG.md) |
 | Competitors, domains, crawler policy | [competitive](docs/competitive-analysis.md) · [domains](docs/domains/) · [robots](docs/cloudflare-robots-txt.md) |
 
