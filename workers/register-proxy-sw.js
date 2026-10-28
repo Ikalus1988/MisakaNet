@@ -4964,10 +4964,15 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
       debugLog(env, 1, "surface check skipped", { error: String((e && e.message) || e) });
     }
     if (surfaceUnknown && surfaceUnknown.length) {
+      // Built with concatenation, not a nested template literal: `tests/test_worker_entry_exports.py`
+      // reads this file with the page gate's tokenizer, and a `${...}` containing another template
+      // made it lose the export list entirely (the gate went red on a file whose exports had not
+      // changed). Keeping the shape simple is cheaper than teaching two parsers about nesting.
+      const names = surfaceUnknown.map((t) => "`" + t + "`").join(", ");
+      const verb = surfaceUnknown.length === 1 ? "does" : "do";
       bodyParts.unshift(
         "> [!NOTE]",
-        `> **Surface check:** ${surfaceUnknown.map((t) => `\`${t}\``).join(", ")} ${
-          surfaceUnknown.length === 1 ? "does" : "do"} not appear anywhere in the public corpus.`,
+        "> **Surface check:** " + names + " " + verb + " not appear anywhere in the public corpus.",
         "> That is not proof they are internal — a new public tool looks the same — but if any of them names a",
         "> private product or a company-internal command, replace it with a neutral description before this",
         "> becomes a lesson. The mechanism is the lesson; the tool name usually is not.",
