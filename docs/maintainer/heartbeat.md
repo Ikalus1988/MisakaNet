@@ -89,6 +89,50 @@ which series is authoritative (unanswered `gap` rows or matched searches), what 
 applied to compare two days, and what recurrence threshold is worth reporting. Until that lands,
 the panel stays a retrieval count with the paragraph attached.
 
+#### 2026-10-28 决定：复发率的三个决议，以及第一个数字
+
+上面那段把复发率写成"三个未决问题（哪个序列权威 / 什么归一化 / 什么阈值）"。三个都有答案了，
+依据是一次对着两张表实测（命令在下面）。
+
+**① 权威序列 = `lesson_usage`（匹配到的检索），不是 `gap`。**
+
+`gap`（未命中）看起来更贴题——"没答上来的查询又回来了"——但实测它算不出这个指标：
+
+| | `gap`（ops 库） | `lesson_usage`（serving 库） |
+|---|---|---|
+| 行 / 去重查询 | 1,911 / 1,666 | 9,801 / 4,604 |
+| 其中"查询形状"（12–120 字符、无换行） | 1,584 | 4,231 |
+| **≥3 天复发** | 57，但 **48 个是粘贴的整段 prompt** | **79（1.9%）** |
+| 复发里最典型的 | `"0"`（8 天 ×17 次）、`"x"`、`"[]"`、`"run"` | `pip install timeout`（**46 天**）、`database is locked`（28）、`npm run build`（22）、`Error response from daemon: exit code 137`（21） |
+
+两边一对比结论很硬：`gap` 被客户端当垃圾桶用（整段上下文、字面量 `0`、`x`），去掉 blob 后剩下的
+9 条里还有 6 条不是查询；`lesson_usage` 记的是**真的匹配到了课**的检索，正是"上一条答案没生效"能
+被定义的population。所以复发率读 `lesson_usage`，`gap` 留作"从未被覆盖"的另一个指标。
+
+**② 归一化 = 沿用 `toLowerCase().trim()`，外加一条形状谓词**：`12 ≤ length ≤ 120` 且不含换行。
+不再做词形归一（复数/时态）——那会把 `pip install timeout` 和 `pip install timeouts` 合并，而它们是
+两个不同症状的可能性大于同一个。
+
+**③ 阈值 = 30 天内出现 ≥3 个不同日期**。当前落在阈值上的是 **79 条 / 4,231 = 1.9%**，所以它现在
+应该是一张**可以逐条读完的清单**，不是一个百分比仪表盘。等它涨到读不完再谈告警。
+
+**这个 KPI 现在能回答什么**：`pip install timeout` 在 46 个不同日期被搜到，说明这条课存在、被匹配到，
+却仍然反复被问——要么答案没有前瞻性（只讲了镜像），要么用户在**预防**阶段就该拿到它而现在拿不到。
+这正是里程碑 2（先查再动手）要回答的问题，也说明里程碑 1 的最后一环不是加埋点，而是**读已经有的**。
+
+```bash
+# ① gap 侧的污染
+#    SELECT COUNT(*) FROM counters WHERE scope='gap' AND (LENGTH(bucket)>120 OR INSTR(bucket,char(10))>0)
+# ② 复发率（SSOT 查询）
+#    SELECT COUNT(*) FROM (SELECT query FROM lesson_usage
+#      WHERE LENGTH(query) BETWEEN 12 AND 120 AND INSTR(query,char(10))=0
+#      GROUP BY query HAVING COUNT(DISTINCT date(created_at))>=3)
+# ③ 清单
+#    SELECT query, COUNT(DISTINCT date(created_at)) d FROM lesson_usage
+#      WHERE LENGTH(query) BETWEEN 12 AND 120 AND INSTR(query,char(10))=0
+#      GROUP BY query ORDER BY d DESC
+```
+
 ### Panel 3's vote reading — panel votes vs other votes (#3510)
 
 Beside the retrieval counts, the panel prints the `helpful-source` counters for the **7 UTC days
