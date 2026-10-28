@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-10-28T05:55:52.095562+00:00",
+  "generated_at": "2026-10-28T13:13:44.268934+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "docs(roadmap): 2026-10-28 rulings — ADR-0002 closed, ③'s second half lost, three workstreams registered",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3975",
-      "timestamp": "2026-10-28T05:20:14Z",
+      "title": "test(crash): two tests reached the network, which is what \"flaky\" meant",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4005",
+      "timestamp": "2026-10-28T12:42:19Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(process): a weekly decision queue, and a notebook anyone can point at their own endpoint",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3973",
-      "timestamp": "2026-10-28T05:01:07Z",
+      "title": "docs(roadmap): the pointer and the workstream table were stale within the same day",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4004",
+      "timestamp": "2026-10-28T12:29:23Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(dataset): publish to BigQuery, and record where the advice was wrong",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3966",
-      "timestamp": "2026-10-28T03:52:30Z",
+      "title": "fix(intake): count a repeated command token everywhere it appears",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4001",
+      "timestamp": "2026-10-28T11:58:41Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "docs(adr): end the Coogen borrowing programme, keep two mechanisms",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3965",
-      "timestamp": "2026-10-28T03:24:21Z",
+      "title": "fix(intake): put surface_report on the intake response, not the lesson one",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3999",
+      "timestamp": "2026-10-28T11:19:10Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(bench): measure the bge-m3 arm — the lever is the gate, not the model",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3961",
-      "timestamp": "2026-10-28T01:10:43Z",
+      "title": "feat(intake): surface check for identifiers the public corpus has never seen",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3994",
+      "timestamp": "2026-10-28T10:50:45Z",
       "source": "github"
     },
     {
