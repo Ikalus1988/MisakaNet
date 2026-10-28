@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Cloudflare-Worker Lessons — MisakaNet</title>
-<meta name="description" content="2 indexed failure lessons about cloudflare-worker. From MisakaNet — Git-backed failure lesson network.">
+<meta name="description" content="3 indexed failure lessons about cloudflare-worker. From MisakaNet — Git-backed failure lesson network.">
 <link rel="canonical" href="https://misakanet.org/topics/cloudflare-worker/">
 <meta property="og:title" content="Cloudflare-Worker Lessons">
-<meta property="og:description" content="2 indexed failure lessons about cloudflare-worker. From MisakaNet — Git-backed failure lesson network.">
+<meta property="og:description" content="3 indexed failure lessons about cloudflare-worker. From MisakaNet — Git-backed failure lesson network.">
 <meta property="og:url" content="https://misakanet.org/topics/cloudflare-worker/">
 <!-- design-tokens:start -->
 <style id="misaka-design-tokens">
@@ -168,11 +168,15 @@
 </head>
 <body>
 <h1>Cloudflare-Worker Lessons</h1>
-<div class="count">2 lessons in this domain</div>
+<div class="count">3 lessons in this domain</div>
 
 <div class="lesson">
   <a href="/lessons/mcp-worker-silent-body-truncation-at-2000-and-8000-chars/">MCP Worker Silent Body Truncation at 2000 and 8000 Chars</a>
   <div class="summary">The Cloudflare Service Worker handling remote MCP intakes silently sheared incoming submission bodies at 2,000 character</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/cf-free-quota-is-per-account-not-per-service-a-second-worker-needs-its-own-gate/">CF free quota is per account, not per service — a second Worker needs its own gate, and the gate changes shape on Paid</a>
+  <div class="summary">Cloudflare's Free allowances are metered **per account**, but every Worker's dashboard and analytics</div>
 </div>
 <div class="lesson">
   <a href="/lessons/webcrypto-fallback-consistency-node-worker/">WebCrypto API Fallback Consistency in Dual Node and Cloudflare Worker Runtimes</a>

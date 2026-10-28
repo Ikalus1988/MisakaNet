@@ -3436,6 +3436,46 @@
     "contributor": ""
   },
   {
+    "id": "cloudflare-quota-is-per-account-so-the-second-service-needs-its-own-gate",
+    "title": "CF free quota is per account, not per service — a second Worker needs its own gate, and the gate changes shape on Paid",
+    "domain": "cloudflare-worker",
+    "tags": [
+      "cloudflare",
+      "workers",
+      "d1",
+      "quota",
+      "circuit-breaker",
+      "denial-of-wallet",
+      "cron",
+      "observability"
+    ],
+    "summary": "Cloudflare's Free allowances are metered **per account**, but every Worker's dashboard and analytics",
+    "preview": "# CF free quota is per account, not per service\n\n## Problem\n\nCloudflare's Free allowances are metered **per account**, but every Worker's dashboard and analytics\nview shows **only that Worker's slice**. Add a second service to the same account and the two of them\nsilently share one pool:\n\n| Meter | Free ceiling | Scope |\n|---|---|---|\n| Worker requests | 100k/day (resets 00:00 UTC) | account |\n| Cron Triggers | 5 | account |\n| D1 rows read | 5M/day | account total |\n| D1 rows written | 100k/day | account total |\n| D1 storage | 5GB | account total (500MB per database) |\n\nSo the second service can consume the first service's headroom and there is **no local signal** that it\nhappened — the first service just starts failing. Measured on one account: 3 Workers, 2 Cron Triggers,\n2 D1 databases already in place, and the config comments already recorded a D1 read-quota overrun and a\ncounters cooldown breaker. That is the state *before* the second service is even attached.\n\nThe real incident behind this lesson: a public knowledge-base service (Worker + D1) on Free measured\n**6.24M D1 rows read in one day against a 5M ceiling**. Nothing broke at the boundary in a visible way —\nthere was no breaker, so every page load still fired its **35 queries** into a database that was already\nanswering with rejections. The account was then upgraded to Workers Paid ($5/mo) and a desktop-app\ntelemetry receiver was planned on the same account.\n\nThat upgrade changes the *shape* of the guard, not just its numbers, because the two plans fail in\nopposite directions:\n\n* **Free — hard ceiling.** Hitting it is a wall: requests answer `1027`, D1 queries fail, the whole site\n  degrades at once. The guard must fire *before* the wall.\n* **Paid — no daily ceiling.** Nothing stops you; traffic goes straight onto the invoice. The failure\n  mode is **denial-of-wallet**, not outage. The guard must be a *cost* guard.\n\nTwo same-origin traps make the arithmetic worse than the headline numbers suggest:\n\n1. **Every D1 index adds a written row.** An `INSERT` into a table with 2 indexes costs **3 rows\n   written**, not 1. For event-shaped writes the Free 100k/day write budget is really ~33k events/day —\n   the budget shrinks to one third the moment you add indexes for query speed.\n2. **A dashboard that scans the detail table is read amplification.** `COUNT(DISTINCT …)` over 30 days\n   of raw rows, refreshe\n\n[clipped]",
+    "summary_plain": "Two Workers on one CF account share one quota pool, so the second can eat the first's headroom invisibly.",
+    "trigger": "adding a second Worker/D1/Cron service to an account that already runs one; a per service dashboard read as if it were a per service quota",
+    "verify": "Sum every Worker's requests, every D1 database's rows and storage, and all Cron Triggers against the plan ceiling; then confirm an over-budget receiver answers 204 and the client does not retry.",
+    "url": "lessons/contrib/cloudflare-quota-is-per-account-so-the-second-service-needs-its-own-gate.md",
+    "created": "2026-10-19",
+    "updated": "2026-10-19",
+    "triggers": null,
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "published",
+    "evidence_refs": [
+      "issue:#3992",
+      "repro:https://developers.cloudflare.com/workers/platform/limits/",
+      "repro:https://developers.cloudflare.com/d1/platform/limits/",
+      "repro:https://developers.cloudflare.com/workers/platform/pricing/"
+    ],
+    "supersedes": "",
+    "verified": true,
+    "evidence_level": "E1",
+    "evidence_source": "frontmatter",
+    "trust_score": 0.387,
+    "contributor": ""
+  },
+  {
     "id": "cloudflare-worker-deploy-three-pitfalls",
     "title": "Cloudflare Worker Programmatic Deploy: Three Pitfalls — Sandbox Egress, 32KB Limit, multipart Content-Type",
     "domain": "devops",
