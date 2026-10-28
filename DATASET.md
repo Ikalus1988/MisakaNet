@@ -10,6 +10,10 @@ without cloning this repository.
   typed here.
 - **Built by:** [`scripts/build_dataset_bundle.py`](scripts/build_dataset_bundle.py), published by
   [`.github/workflows/publish-dataset.yml`](.github/workflows/publish-dataset.yml)
+- **Queryable without a download:** BigQuery `project-2d6795e4-704d-4a4e-841.misakanet` —
+  tables `lessons` and `benchmark_queries`, public (`allAuthenticatedUsers: READER`),
+  published by [`scripts/publish_bigquery.py`](scripts/publish_bigquery.py). A view, not a
+  table, so a republish swaps the backing data without a window where the table is empty.
 
 ## Files
 
