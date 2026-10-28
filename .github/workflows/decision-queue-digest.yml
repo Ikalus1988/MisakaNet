@@ -1,0 +1,75 @@
+name: Decision Queue Digest
+
+# The intake queue has a daily digest (`intake-salvage-digest.yml`); the decision queue has nothing.
+# Measured 2026-10-27: 94 non-corpus issues open, 41 never commented on, and five `decision` issues
+# from 2026-09-30 sitting at zero comments for four weeks. The technical half of that backlog moves
+# on its own (30 closed in October, all P1/P2); the decision half waits for a person who is never
+# asked.
+#
+# Weekly, not daily: a decision that has waited 27 days is not more urgent at 04:00 tomorrow, and a
+# digest nobody can keep up with is a digest nobody reads.
+
+on:
+  schedule:
+    - cron: '23 9 * * 1'   # Mondays, 09:23 UTC — off the hour, like the other digests
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  contents: read
+
+concurrency:
+  group: decision-queue-digest
+  cancel-in-progress: true
+
+jobs:
+  digest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # GH_TOKEN is exported because `gh` exits 4 unauthenticated, and under `bash -e` that turns into
+    # a silent daily failure — the exact bug `intake-salvage-digest.yml` carried for weeks.
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7
+        with:
+          python-version: "3.11"
+
+      - name: Build the digest
+        id: build
+        run: |
+          set -euo pipefail
+          python3 scripts/decision_queue.py --repo "$REPO" > /tmp/digest.md
+          cat /tmp/digest.md
+          # An empty list does not speak. `intake-salvage-digest.yml` made the same choice for the
+          # same reason: a recurring "nothing to do" issue trains people to ignore the one that is
+          # not.
+          if head -1 /tmp/digest.md | grep -q "^No decision has been waiting"; then
+            echo "empty=yes" >> "$GITHUB_OUTPUT"
+          else
+            printf 'empty=no\n' >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Update the tracking issue
+        if: steps.build.outputs.empty == 'no'
+        run: |
+          set -euo pipefail
+          COUNT=$(grep -c '^| \[#' /tmp/digest.md || true)
+          TITLE="[Decision queue] ${COUNT} waiting"
+          EXISTING=$(gh issue list --repo "$REPO" --search "[Decision queue] in:title" \
+            --state open --json number --jq '.[0].number // empty')
+          if [ -n "$EXISTING" ]; then
+            # Edit, not comment: one issue per week would be 52 issues a year of the same list.
+            gh issue edit "$EXISTING" --repo "$REPO" --title "$TITLE" --body-file /tmp/digest.md
+            echo "updated #$EXISTING"
+          else
+            gh issue create --repo "$REPO" --title "$TITLE" --body-file /tmp/digest.md \
+              --label decision
+            echo "created a new tracking issue"
+          fi
+          echo "### Decision queue: ${COUNT} waiting" >> "$GITHUB_STEP_SUMMARY"
+          cat /tmp/digest.md >> "$GITHUB_STEP_SUMMARY"
