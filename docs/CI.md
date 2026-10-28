@@ -42,7 +42,7 @@
 | `approval-watch.yml` | Approval Watch | 定时, 手动 | `17,47 * * * *` —— 列出 `status: waiting` 的 run，维护一个跟踪 issue；**永不审批**（`tests/test_approval_watch.py` 断言它不含任何审批调用） |
 | `shadow-branch.yml` | Shadow Branch - External Agent Isolation | PR |  |
 
-## 数据/索引（23）
+## 数据/索引（24）
 
 | workflow | 用途 | 触发 | 定时 |
 |---|---|---|---|
@@ -55,6 +55,7 @@
 | `intake-auto-review.yml` | Intake Auto Review | issues, 手动 |  |
 | `intake-kind-audit.yml` | Intake Kind Audit | 定时, 手动 | `30 6 * * 1` |
 | `intake-pipeline-test.yml` | Intake Pipeline Test (PRD ③) | 手动 |  |
+| `decision-queue-digest.yml` | Decision Queue Digest（每週把「`decision`/`product-design` 标签 + 零评论 + ≥14 天」的 issue 列成一条跟踪 issue；**空清单不发言**，只报告、不关单、不自动决策）| 定时, 手动 | `23 9 * * 1` |
 | `intake-salvage-digest.yml` | Intake Salvage Digest（另跑 `scripts/done_but_open.py`：工作已在 `main`、issue 还开着的 intake，非空才写进 digest 议题；**只报告，不关单**）| 定时, 手动 | `0 8 * * *` |
 | `issue-intake-triage.yml` | MCP Intake Triage | issues, 手动 |  |
 | `sync-d1.yml` | Sync Lessons to D1 (PRD ④) | push, 定时, 手动 | `0 3 * * *` |

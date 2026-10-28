@@ -62,6 +62,12 @@ Citing is requested, not required. If you build on the corpus, mention the versi
 - `manifest.json` carries a SHA-256 per file, so a consumer can verify a download without trusting
   this page.
 
+## Measuring your own endpoint
+
+[`docs/notebooks/reproduce-retrieval.ipynb`](docs/notebooks/reproduce-retrieval.ipynb) runs the
+published 267-query set against **any** MCP search endpoint and prints R@1 / R@3 / R@5 by language
+and overlap. Open it in Colab, point `ENDPOINT` at your server, run. ~6 minutes, no credentials.
+
 ## Re-running the benchmarks
 
 The query set and the run artifacts are enough to replay the retrieval side against any endpoint; the
