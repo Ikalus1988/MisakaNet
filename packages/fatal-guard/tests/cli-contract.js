@@ -3,6 +3,7 @@
 
 const assert = require('node:assert/strict');
 const { spawnSync } = require('node:child_process');
+const fs = require('node:fs');
 const path = require('node:path');
 
 const CLI = path.join(__dirname, '..', 'bin', 'fatal-guard.js');
@@ -37,7 +38,13 @@ check('--help prints usage and exits 0', () => {
 check('--version prints package version and exits 0', () => {
   const result = run(['--version']);
   assert.equal(result.status, 0);
-  assert.match(result.stdout, /^0\.3\.0\n$/);
+  // Read from package.json, never written down here. A literal made this test the reason the release
+  // could not happen: release-please bumped 0.3.0 -> 0.3.1, this assertion kept demanding 0.3.0, and
+  // the release PR could never go green — the package's own test suite was the last blocker between
+  // two merged fixes and npm. (Measured 2026-10-28, release PR #3827.)
+  const declared = JSON.parse(
+    fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf8')).version;
+  assert.equal(result.stdout, declared + '\n');
 });
 
 check('missing command is a usage error (2)', () => {
