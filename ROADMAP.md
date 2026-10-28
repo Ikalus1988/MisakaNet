@@ -2,8 +2,12 @@
 
 Last updated: 2026-10-28（上一版：2026-10-17，原文保留在下方，未改写）
 
-> **要看当前计划，先看下一节 [`2026-10-17 定位与三个里程碑（owner 决定）`](#2026-10-17-定位与三个里程碑owner-决定)
-> ——它是 A/B 与里程碑 1/2/3 的唯一对外口径，README 的「Where it is going」写的就是它。**
+> **要看"今天是什么状态"，先看下一节 [`2026-10-28 裁定`](#2026-10-28-裁定--adr-0002-结项③-的验收第二半失守三条工作线入册)
+> ——它是这一轮对账后的现状：③ 的验收两半分别是什么结果、三条工作线、里程碑 1 的四个环节各完成到哪，
+> 以及 L2 为什么被降为"不做"。**
+>
+> **要看"计划本身"（A/B 与里程碑 1/2/3 的框架），看 [`2026-10-17 定位与三个里程碑（owner 决定）`](#2026-10-17-定位与三个里程碑owner-决定)
+> ——它是那套框架的唯一对外口径，README 的「Where it is going」写的就是它。10-28 的裁定不改框架，只改状态。**
 > 再往下 [`2026-10-16 增量 — 三条从未写进路线图的自动化工作线`](#2026-10-16-增量--三条从未写进路线图的自动化工作线)
 > 是那一轮的增量记录。`2026-10-02 更新 — 交付、在飞与 KV 迁移到 D1` 已降为上一轮的记录：那一轮把它的
 > "在飞 / 未验证"条目逐条实测改判（已完成项、版本与 tag、intake conversion receipt），并按它自己写的
@@ -74,7 +78,7 @@ MisakaNet should stay offline-first and Git-backed. External listings are useful
 
 | 工作线 | 在跑的证据 | 状态 |
 |---|---|---|
-| **embedding / 语义闸门** | 三臂同语料同查询：跨语言 zh→en，`bge-m3` 0.636 / `gemini` 0.727 / 线上 0.455（[`embedding-ab-2026-10-27.md`](docs/benchmarks/embedding-ab-2026-10-27.md)） | 测量已完成，**机制未改** |
+| **embedding / 语义闸门** | 三臂同语料同查询：跨语言 zh→en，`bge-m3` 0.636 / `gemini` 0.727 / 线上 0.455（[`embedding-ab-2026-10-27.md`](docs/benchmarks/embedding-ab-2026-10-27.md)）→ 融合上线后实测 0.697（[`cjk-fusion-2026-10-28.md`](docs/benchmarks/cjk-fusion-2026-10-28.md)） | 测量已完成，**机制已改**：CJK 查询改为 RRF 融合（同日 #3980，回滚 `MISAKANET_CJK_FUSE=0`）；**English 侧未动** |
 | **数据集发布** | `data.misakanet.org`（R2，版本化 `v<日期>-<sha>`，逐文件 SHA-256）+ BigQuery `misakanet`（651 lessons / 267 queries，公开可查） | 已上线 |
 | **Analytics Engine** | 未建：`GET /accounts/.../analytics_engine/datasets` → 404（2026-10-28） | **阻塞**，所以季度「state of agent failures」没有数据源 |
 
