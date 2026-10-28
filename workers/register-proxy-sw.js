@@ -2035,7 +2035,42 @@ function enrichSearchHits(results, lessons) {
  *  and any failure falls back to the existing no_match answer. bge-m3 and the index are included
  *  in Workers Paid; no external API is involved.
  */
-async function semanticFallbackHits(env, query, top = 5) {
+/** Reciprocal-rank fusion of a lexical list and a vector list, for CJK queries only.
+ *
+ *  Why this exists (2026-10-28): the semantic fallback runs **only when BM25 returns nothing**, and
+ *  "a hit is never re-ranked". Measured on 64 Chinese queries against the live endpoint: 13 of 20
+ *  misses had returned a *confident wrong* lesson, which is exactly the state in which the vector
+ *  path never runs. Simulated on the same queries with the same `bge-m3` vectors the worker already
+ *  holds, fusing instead of gating moves R@1 from 0.556 to 0.698 overall, and on the cross-lingual
+ *  bucket from 0.424 to 0.636 — 11 queries fixed, 2 broken. (The number that decided it: the gate is
+ *  worth ~18 points, a stronger embedding ~9.)
+ *
+ *  RRF rather than score blending because the two scores are not on one scale: BM25 is an unbounded
+ *  lexical sum and cosine is bounded, and a weight between them would have to be tuned per language
+ *  — which is the mistake #2250 recorded four times.
+ */
+function rrfFuse(primary, secondary, top = 5, k = 60) {
+  const score = new Map();
+  const byId = new Map();
+  const add = (list, weight) => {
+    const seen = new Set();
+    list.forEach((item, index) => {
+      const id = item && (item.id || item.path);
+      if (!id || seen.has(id)) return;   // one list can hold an id twice (FAQ + lesson)
+      seen.add(id);
+      score.set(id, (score.get(id) || 0) + weight / (k + index + 1));
+      if (!byId.has(id)) byId.set(id, item);
+    });
+  };
+  add(primary, 1);
+  add(secondary, 1);
+  return [...score.entries()]
+    .sort((a, b) => (b[1] - a[1]) || String(a[0]).localeCompare(String(b[0])))
+    .slice(0, top)
+    .map(([id]) => byId.get(id));
+}
+
+async function semanticFallbackHits(env, query, top = 5, floorOverride = null) {
   if (!env || !env.VECTORIZE || !env.AI) return [];
   const text = String(query || "").trim();
   if (!text) return [];
@@ -2051,7 +2086,11 @@ async function semanticFallbackHits(env, query, top = 5) {
   // miss mean 0.601), so this is a precision/recall choice, not a clean separator. 0.62 keeps
   // 23/29 top-1 hits and drops 15/21 top-1 misses; a lower floor returns more related lessons but
   // also more wrong first hits. Configurable so a future embedding model can recalibrate.
-  const minScore = Number(env.SEMANTIC_MIN_SCORE || "0.62");
+  // The 0.62 floor was calibrated for the *no_match* case, where a wrong hit is worse than no hit.
+  // Fusion is a different question — "is this candidate plausibly about the same thing" — and reusing
+  // 0.62 there drops most of the candidates worth fusing (the pilot's hit mean was 0.662, so the
+  // floor sits inside the hit distribution). CJK fusion passes its own floor for that reason.
+  const minScore = Number(floorOverride == null ? (env.SEMANTIC_MIN_SCORE || "0.62") : floorOverride);
   return ((found && found.matches) || [])
     .map((m) => ({ id: m && m.metadata && m.metadata.lesson_id, score: Number(m && m.score) || 0 }))
     .filter((h) => h.id && h.score >= minScore);
@@ -4105,6 +4144,32 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
         }
       } catch (e) {
         debugLog(env, 1, "semantic fallback failed", { error: String((e && e.message) || e) });
+      }
+    }
+
+    // CJK fusion (2026-10-28): the fallback above only fires on an EMPTY result, so a confident-but-
+    // wrong lexical hit suppresses the vector path entirely. For queries that carry CJK characters
+    // the vector path is fused in instead of gated. Scoped to CJK on purpose: English already clears
+    // its floor (measured 15/20 against 16) and this experiment measured no English arm; widening it
+    // would spend the whole gain on an unmeasured risk.
+    // `MISAKANET_CJK_FUSE=0` disables it without a code revert, the same switch shape as
+    // `MISAKANET_SEMANTIC=0`.
+    if (results && results.length > 0 && env.MISAKANET_CJK_FUSE !== "0" && CJK_CHAR.test(String(args.query || ""))) {
+      try {
+        // 0.45 rather than the 0.62 no_match floor: fusion asks "is this plausibly the same
+        // subject", where a near-miss is still useful as a second opinion, not "is this the answer".
+        const vectorHits = await semanticFallbackHits(env, args.query, Math.max(args.top || 5, 10), 0.45);
+        if (vectorHits.length) {
+          const fused = rrfFuse(results, enrichSearchHits(vectorHits, lessons), args.top || 5);
+          if (fused.length) {
+            results = fused;
+            source = "worker-bm25+cjk-fuse";
+            noteSearchBackend(env, "semantic");
+          }
+        }
+      } catch (e) {
+        // A fusion failure must leave the lexical answer alone — same rule as the fallback above.
+        debugLog(env, 1, "cjk fusion failed", { error: String((e && e.message) || e) });
       }
     }
 
@@ -10091,6 +10156,9 @@ export {
   INDEX_TEXT_VERSION,
   bm25Tokenize,
   cjkBigrams,
+  // Exported for workers/cjk-fusion.test.mjs: the whole experiment is "does a wrong lexical hit
+  // stop suppressing the vector path", and the fusion is the part that decides.
+  rrfFuse,
   CJK_CHAR,
   matchTokens,
   // Query alias expansion (#1780) — exported so workers/query-alias-expansion.test.mjs

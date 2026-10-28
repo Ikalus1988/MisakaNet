@@ -49,6 +49,15 @@ MISAKANET_COUNTERS_COOLDOWN_MS = "60000"
 # Set MISAKANET_SEMANTIC=0 to disable without a deploy rollback.
 MISAKANET_SEMANTIC = "1"
 SEMANTIC_MIN_SCORE = "0.62"
+# CJK fusion (2026-10-28): for queries carrying CJK characters, fuse the vector path with the lexical
+# one instead of only consulting it when BM25 returns nothing. Measured on 64 Chinese queries against
+# production, simulated with the same bge-m3 vectors the worker holds: R@1 0.556 -> 0.698 overall and
+# 0.424 -> 0.636 on the cross-lingual bucket (11 fixed, 2 broken).
+#
+# Scoped to CJK on purpose. English is already below its floor (15/20 against 16) and this experiment
+# measured no English arm; widening it would spend the whole gain on an unmeasured risk. Set to "0" to
+# disable without a code revert — same switch shape as MISAKANET_SEMANTIC.
+MISAKANET_CJK_FUSE = "1"
 
 # Workers Logs, on because this is the worker that carries the traffic and it was the only one
 # without them (2026-10-02). `wrangler.jsonc` (misakanet-web) has had observability enabled since it
