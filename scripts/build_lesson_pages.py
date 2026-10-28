@@ -491,6 +491,11 @@ def generate_sitemap(lesson_slugs: list, domains: list) -> str:
     static = [
         ("https://misakanet.org/", "weekly", "1.0"),
         ("https://misakanet.org/search/", "weekly", "0.9"),
+        # The dataset has been published since 2026-10-26 and had no entry point on the site: the files
+        # were reachable if you already knew the hostname, and `DATASET.md` was the only map, which is a
+        # repository document rather than a web page. A published artefact nobody can find is not
+        # published.
+        ("https://misakanet.org/dataset/", "weekly", "0.7"),
         ("https://misakanet.org/troubleshooting.md", "weekly", "0.8"),
     ]
     for url, freq, prio in static:
