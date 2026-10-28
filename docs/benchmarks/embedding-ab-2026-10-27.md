@@ -67,26 +67,41 @@ So the strong form of the hypothesis is **untested, not disproven**: this query 
 rare-technical-token Chinese queries. But it cannot explain the measured cross-lingual miss rate, and
 the fix it would suggest (a stoplist on Latin tokens) would not move these numbers.
 
-## 3. What the two results say together
+## 3. The third arm: `bge-m3`, the vectors production already has
 
-The cross-lingual gap is **not** a vocabulary problem the current tokenizer can reach, and it is
-**not** a ranking floor — a plain cosine over a multilingual embedding finds the right English
-lesson from a Chinese query 73% of the time, where the live path finds it 45% of the time. The
-ceiling is high; production is not near it.
+The first version of this report had a hole it could not fill: the `bge-m3` arm lived "inside the
+worker's binding", so the comparison was *a new model vs the system as delivered*, not *a new model
+vs the current one*. That premise was wrong. Workers AI exposes `bge-m3` over the REST API; the arm
+was run on 2026-10-27 (`scripts/embed_workers_ai.py`), on the same corpus, the same 267 queries and
+its native 1024 dimensions.
 
-What this does **not** establish is that `gemini-embedding-001` is the model to switch to. The only
-isolated arm measured here is that model. **`bge-m3`'s pure-vector arm was not measured** — it lives
-inside the worker's binding and there is no route to it from outside, so the honest comparison is
-"gemini-embedding vs the system as delivered", not "gemini-embedding vs bge-m3". If `bge-m3` is
-already this good on the same corpus, the lever is the *gate* (the fallback runs only on an empty
-BM25 result, and 13 of the 20 misses returned a confident wrong hit that suppressed it), not the
-model.
+| arm | R@1 all | R@3 all | zh → zh | zh → en |
+|---|---|---|---|---|
+| live production (BM25 + fallback) | — | — | 0.710 | **0.455** |
+| **`bge-m3` pure cosine, 1024d** | **0.689** | 0.798 | **0.839** | **0.636** |
+| `gemini-embedding-001` pure cosine, 1024d | 0.753 | 0.861 | 0.742 | 0.727 |
+| `gemini-embedding-001` pure cosine, 3072d | 0.757 | 0.865 | 0.774 | 0.727 |
 
-That is the next experiment, and it is cheap: score the same 267 queries with the vectors the worker
-already has, or with `bge-m3` called directly. Only if that arm lands near 0.45 while this one sits at
-0.76 is a model swap the answer.
+This changes the answer:
 
-## 4. What this does not show
+- **The vector path the worker already owns is worth ~18 points on the cross-lingual bucket**
+  (0.636 vs 0.455) — at the dimensions and with the model already paid for and already indexed.
+- **A stronger model is worth ~9 more** (0.727 vs 0.636).
+- **`bge-m3` is *better* at same-language Chinese** (0.839 vs 0.774), so a swap is not even a uniform
+  win. It trades same-language precision for cross-lingual recall.
+
+So the lever is the **gate**, not the model. The fallback runs only when BM25 returns nothing, and 13
+of the 20 misses returned a confident wrong hit that suppressed it. Letting the existing path
+participate on weak lexical hits captures the larger half of the gap without a new dependency, a new
+cost, or a re-embedding of the corpus.
+
+## 4. What the two results say together
+
+The cross-lingual gap is neither vocabulary nor a ranking floor. The ceiling is high, production is
+not near it, and the distance to the ceiling is mostly a *decision* the worker makes — whether a
+confident lexical hit is allowed to suppress the vector path — rather than a capability it lacks.
+
+## 5. What this does not show
 
 - **The queries were generated from the target lesson.** Absolute rates flatter any retriever; the
   arm-to-arm and arm-to-live deltas are the deliverable, not the level.
@@ -96,15 +111,17 @@ already has, or with `bge-m3` called directly. Only if that arm lands near 0.45 
   report it means "the endpoint returned nothing". They are different quantities.
 - **The published L1-267 arms ran on an eval corpus that was not refreshed**, so the comparison to
   them is directional; the live 64-zh comparison is the same-day one and is the one to lean on.
-- **8 of 651 lessons exceeded the model's 2048-token input limit** and were auto-truncated (e.g.
-  `github-connectivity-4-fallbacks`, `fanuc-karel-core-utility-modules`); their vectors cover the
-  first ~2048 tokens only.
+- **8 of 651 lessons exceeded `gemini-embedding-001`'s 2048-token input limit** and were
+  auto-truncated (e.g. `github-connectivity-4-fallbacks`, `fanuc-karel-core-utility-modules`); that
+  arm's vectors cover the first ~2048 tokens only. The `bge-m3` arm used the same 6000-character
+  truncation as the corpus, so the two arms see slightly different text — which can only understate
+  `bge-m3`, not flatter it.
 - **One query target (`proxy-corporativo-curl-timeout`) has no corpus row**, so it can only miss; it
   is scored against its `target_url` path.
 - **One query is Korean** (`ko`), kept in the denominator rather than silently dropped, which is why
   the table sums to 267 and not 266.
 
-## 5. Cost and reproduction
+## 6. Cost and reproduction
 
 The whole corpus plus the query set is **615,060 input tokens** of embeddings (reported by the API:
 610,548 for the 651 lessons, 4,512 for the 267 queries). No generative model was called and no other
@@ -135,10 +152,12 @@ and is why the corpus now joins on `url`.
 
 ## Artifacts
 
-- [Machine-readable results](embedding-ab-2026-10-27.json) — both arms with per-query rows, the
+- [Machine-readable results](embedding-ab-2026-10-27.json) — all three arms with per-query rows, the
   Latin-token headline, the reference arms, and the limitations above.
 - [`scripts/embed_vertex.py`](../../scripts/embed_vertex.py) — the resumable Vertex embedding
   client (stdlib only).
+- [`scripts/embed_workers_ai.py`](../../scripts/embed_workers_ai.py) — the same for Workers AI
+  `bge-m3`, the arm production already runs.
 - [`scripts/embedding_ab_metrics.py`](../../scripts/embedding_ab_metrics.py) — cosine top-k scoring
   and bucketing (stdlib only; the full 267×651×3072 matrix scores in ~11 s).
 - [`scripts/zh_latin_token_analysis.py`](../../scripts/zh_latin_token_analysis.py) — the miss-shape
