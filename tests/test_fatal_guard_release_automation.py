@@ -113,3 +113,27 @@ def test_the_version_is_not_duplicated_in_the_package():
     bin_text = (REPO / "packages" / "fatal-guard" / "bin" / "fatal-guard.js").read_text(encoding="utf-8")
     assert "package.json" in bin_text, "a hard-coded version would drift from the manifest"
     assert f"'{package_version()}'" not in bin_text and f'"{package_version()}"' not in bin_text
+
+
+def test_no_test_file_pins_the_version_it_asserts_on():
+    """A literal version in a test makes the release PR unmergeable, and the failure is circular.
+
+    Measured 2026-10-28 on release PR #3827: release-please bumped 0.3.0 -> 0.3.1, `tests/cli-contract.js`
+    kept asserting `/^0\\.3\\.0\\n$/`, and the package's own suite failed on its own release — the last
+    thing standing between two merged fixes and npm was the test that checks the version.
+
+    The comparison normalises `\\.` to `.` first: the literal appears escaped inside a regular expression
+    (`0\\.3\\.0`), and a naive search for `0.3.0` does not find it. That is not a detail — the first
+    version of this gate passed against the very file it was written for.
+    """
+    version = package_version()
+    offenders = []
+    for path in (REPO / "packages" / "fatal-guard" / "tests").rglob("*.js"):
+        # Comments are not assertions. The comment in `cli-contract.js` explains this very failure and
+        # names the versions it happened at; scanning it would make documenting the bug the bug.
+        text = re.sub(r"/\*[\s\S]*?\*/", "", path.read_text(encoding="utf-8"))
+        text = re.sub(r"//[^\n]*", "", text).replace("\\.", ".")
+        if re.search(r"(?<![0-9.])" + re.escape(version) + r"(?![0-9.])", text):
+            offenders.append(str(path.relative_to(REPO)))
+    assert not offenders, (
+        f"these tests pin the current version {version}; read it from package.json instead: {offenders}")
