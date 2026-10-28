@@ -60,6 +60,16 @@ MisakaNet should stay offline-first and Git-backed. External listings are useful
 `SEMANTIC_MIN_SCORE`——那会拿一个桶的收益换另一个桶的精度，而是**按语言分桶设闸门**，
 与下面「语义闸门改成可仲裁的重排」是同一件事。
 
+> **2026-10-28 当天补记（闸门已换，③ 的第一半向前走了一步）。** 语义路径原先只在 BM25 空结果时
+> 才跑（`if (!results.length)`），所以"自信但错误"的命中会把向量路径整个挡住——那正是 20 个 miss
+> 里的 13 个。现在 CJK 查询改为**RRF 融合**而不是门控，已上线（`08db81ec`，回滚变量
+> `MISAKANET_CJK_FUSE=0`）：zh→zh **0.774**、zh→en **0.455 → 0.697**、低重叠 zh→en **0.214 → 0.500**。
+> 证据与局限见 [`docs/benchmarks/cjk-fusion-2026-10-28.md`](docs/benchmarks/cjk-fusion-2026-10-28.md)。
+>
+> **English 那条不变，但数字终于可引用了**：融合只对含 CJK 的查询生效，**它没有动 English**——
+> English 在这次改动之前就是 15/20。此前 14/20、12/20 的读数不是测量：bench 把"重试用尽"算成了
+> miss，已修（#3984，现在会报"本次不可比 floor"）。所以第二半**仍未满足，且与本次改动无关**。
+
 ### 三、三条工作线从未入册（与 10-16 节记的同类问题）
 
 | 工作线 | 在跑的证据 | 状态 |
