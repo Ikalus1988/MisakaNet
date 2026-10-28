@@ -48,9 +48,12 @@ def test_every_static_sitemap_entry_is_backed_by_a_file():
     """The 404 this catches was in the generator's own hardcoded list, so read it from there."""
     sitemap = generate_sitemap([], [])
     urls = re.findall(r"<loc>([^<]+)</loc>", sitemap)
-    # The three hardcoded static pages come before the generated /topics/ and /lessons/ entries.
+    # The hardcoded static pages come before the generated /topics/ and /lessons/ entries. The count is
+    # pinned so that a page added to the generator without a file (or removed without dropping its
+    # entry) is a failure here rather than a 404 discovered by a reader: `/dataset/` was the fourth,
+    # added 2026-10-28 when the published files had no entry point on the site.
     static = [u for u in urls if "/topics" not in u and "/lessons/" not in u]
-    assert len(static) == 3, f"expected the 3 hardcoded static pages, got {static}"
+    assert len(static) == 4, f"expected the 4 hardcoded static pages, got {static}"
 
     missing = []
     for url in static:
