@@ -301,7 +301,13 @@ def test_the_default_search_reuses_the_calibrated_hit_decision(monkeypatch):
 
     monkeypatch.setattr(intake_bot, "decide", fake_decide)
 
-    lookup = lookup_crash("EACCES: permission denied")
+    # `corpus=` is what makes this test hermetic. Without it `search_lessons` calls
+    # `intake_bot._load_corpus`, which fetches `data/lessons.json` over HTTPS (300 s file cache) —
+    # so the assertion below depended on a live network and on whether an earlier test had already
+    # populated the cache. Measured 2026-10-28: this test failed on four different CI legs in one day
+    # and passed on re-run every time, each failure reading "the hit decision was not used" when the
+    # truth was "the corpus never arrived".
+    lookup = lookup_crash("EACCES: permission denied", corpus=[KNOWN_LESSON])
 
     assert lookup.hit, "the hit decision was not used"
     assert lookup.searched is True, "a hit means the search ran"
@@ -352,7 +358,9 @@ def test_a_local_similarity_measure_is_not_used(monkeypatch):
         intake_bot, "precheck",
         lambda *a, **k: pytest.fail("the crash path must not score the corpus itself"))
 
-    lookup = lookup_crash("EACCES: permission denied")
+    # Same reason as above: a non-empty corpus keeps `_load_corpus` (and its network fetch) out of
+    # the path, so this asserts the decision, not the internet.
+    lookup = lookup_crash("EACCES: permission denied", corpus=[KNOWN_LESSON])
 
     assert lookup.hit
 
