@@ -18,7 +18,14 @@
   "project": "project-2d6795e4-704d-4a4e-841",
   "region": "us-central1",
   "input_tokens": 615060,
-  "note": "embeddings only; no generative model was used or charged"
+  "note": "embeddings only; no generative model was used or charged",
+  "also_measured": {
+   "name": "bge-m3",
+   "provider": "Workers AI (@cf/baai/bge-m3)",
+   "dims": 1024,
+   "note": "the embedding production already indexes and serves; measured 2026-10-27 via the REST API, so the comparison is new-model vs current-model, not new-model vs the delivered system",
+   "input_tokens": null
+  }
  },
  "arms": {
   "3072": {
@@ -6562,6 +6569,3277 @@
      ]
     }
    ]
+  },
+  "bge-m3-1024": {
+   "n_queries": 267,
+   "n_lessons": 651,
+   "dims": 1024,
+   "threshold": 0.0,
+   "buckets": {
+    "en/high": {
+     "n": 78,
+     "r@1": 0.859,
+     "r@3": 0.91,
+     "r@5": 0.936,
+     "no_match": 0.064
+    },
+    "en/low": {
+     "n": 124,
+     "r@1": 0.565,
+     "r@3": 0.718,
+     "r@5": 0.806,
+     "no_match": 0.194
+    },
+    "ko/low": {
+     "n": 1,
+     "r@1": 0.0,
+     "r@3": 1.0,
+     "r@5": 1.0,
+     "no_match": 0.0
+    },
+    "zh/high": {
+     "n": 37,
+     "r@1": 0.784,
+     "r@3": 0.865,
+     "r@5": 0.865,
+     "no_match": 0.135
+    },
+    "zh/low": {
+     "n": 27,
+     "r@1": 0.667,
+     "r@3": 0.741,
+     "r@5": 0.852,
+     "no_match": 0.148
+    }
+   },
+   "cross_lingual": {
+    "en->zh": {
+     "n": 1,
+     "r@1": 1.0
+    },
+    "en->en": {
+     "n": 201,
+     "r@1": 0.677
+    },
+    "ko->en": {
+     "n": 1,
+     "r@1": 0.0
+    },
+    "zh->zh": {
+     "n": 31,
+     "r@1": 0.839
+    },
+    "zh->en": {
+     "n": 33,
+     "r@1": 0.636
+    }
+   },
+   "rows": [
+    {
+     "lesson_id": "a-security-fix-that-turns-tests-red-is-the-fix-working",
+     "rank": 5,
+     "best_cosine": 0.580525,
+     "top_ids": [
+      "fanuc-vrc-exclusion-verified-still-crashes-three-layers",
+      "api-rate-limit-handling-best-practices",
+      "taskbounty-payout-api-ok-readiness-still-fail",
+      "a-stubbed-success-is-not-a-sandbox",
+      "a-security-fix-that-turns-tests-red-is-the-fix-working"
+     ]
+    },
+    {
+     "lesson_id": "agentcap-registry-secret-safe-validation-failure-metadata",
+     "rank": 1,
+     "best_cosine": 0.696475,
+     "top_ids": [
+      "agentcap-registry-secret-safe-validation-failure-metadata",
+      "compatibility-gate-rejection-is-verdict-not-accept-risk",
+      "enum-error-was-the-symptom-not-the-gate",
+      "npmjs-registry-unreachable-pin-a-mirror-never-disable-tls",
+      "security-exclusion-applied-module-table-short-name-trap"
+     ]
+    },
+    {
+     "lesson_id": "an-error-code-that-says-retry-cannot-carry-a-not-found",
+     "rank": 1,
+     "best_cosine": 0.612334,
+     "top_ids": [
+      "an-error-code-that-says-retry-cannot-carry-a-not-found",
+      "snapshot-writer-reader-filename-grammar-mismatch",
+      "missing-source-must-not-resolve-to-a-default",
+      "text-block-after-tool-use-400-anthropic-compatible-endpoints",
+      "fanuc-checker-misses-alternate-mi-implementation"
+     ]
+    },
+    {
+     "lesson_id": "auto-merge-ci-pipeline",
+     "rank": 4,
+     "best_cosine": 0.571112,
+     "top_ids": [
+      "ci-github-token-push-does-not-trigger-workflows",
+      "git-merge-conflict-resolution",
+      "github-token-cannot-push-workflow-files",
+      "auto-merge-ci-pipeline",
+      "erro-push-git-rejeitado-divergente"
+     ]
+    },
+    {
+     "lesson_id": "contributor-engagement-retention",
+     "rank": 1,
+     "best_cosine": 0.667487,
+     "top_ids": [
+      "contributor-engagement-retention",
+      "bounty-contributors-are-not-always-users",
+      "pull-request-welcome-trigger-trap",
+      "git-merge-conflict-resolution",
+      "lesson-provenance-tracking"
+     ]
+    },
+    {
+     "lesson_id": "cronjob-one-shot-race-condition-duplicate-execution",
+     "rank": 3,
+     "best_cosine": 0.580584,
+     "top_ids": [
+      "roleplay-dialogue-loop-context-poisoning",
+      "repeated-precursor-not-fixed-delay-warning-window",
+      "cronjob-one-shot-race-condition-duplicate-execution",
+      "prompt-cache-prefix-invalidation-roleplay",
+      "event-count-is-not-a-health-signal"
+     ]
+    },
+    {
+     "lesson_id": "dsh-plugin-sidebar-and-panel-registration-contracts",
+     "rank": 1,
+     "best_cosine": 0.648846,
+     "top_ids": [
+      "dsh-plugin-sidebar-and-panel-registration-contracts",
+      "dsh-plugin-l5-web-smoke-cordis-duplicate-entry",
+      "windows-libvips-double-load-masquerades-as-transport",
+      "electron-dist-missing-browser-provider-unavailable",
+      "ui-automation-selector-contract-after-nav-change"
+     ]
+    },
+    {
+     "lesson_id": "fanuc-roboguide-handlingpro-plugin-unavailable",
+     "rank": 1,
+     "best_cosine": 0.62874,
+     "top_ids": [
+      "fanuc-roboguide-handlingpro-plugin-unavailable",
+      "dsh-required-plugin-missing-tools-service-hoisted-core-lib",
+      "fanuc-workcell-reopen-retriggers-pmon-reconnect-storm",
+      "dsh-blank-web-gui-optional-bundle-did-not-activate",
+      "dsh-mcp-row-disconnected-reconnect-budget-exhausted"
+     ]
+    },
+    {
+     "lesson_id": "freellmapi-session-context-mixing-cross-thread-delivery",
+     "rank": 1,
+     "best_cosine": 0.600563,
+     "top_ids": [
+      "freellmapi-session-context-mixing-cross-thread-delivery",
+      "roleplay-dialogue-loop-context-poisoning",
+      "owa-thread-view-historical-attachments-not-accessible",
+      "text-block-after-tool-use-400-anthropic-compatible-endpoints",
+      "github-comment-list-one-page-hides-newest-comment"
+     ]
+    },
+    {
+     "lesson_id": "hermes-state-database-lock-issues-cleanup-protocol",
+     "rank": 1,
+     "best_cosine": 0.780825,
+     "top_ids": [
+      "hermes-state-database-lock-issues-cleanup-protocol",
+      "api-gateway-anthropic-incompatibility",
+      "agent-state-database-lock-cleanup",
+      "gateway-hang-watchdog-recovery",
+      "anthropic-proxy-internal-gateway"
+     ]
+    },
+    {
+     "lesson_id": "intake-pipeline-cli-text-truncation-section-loss",
+     "rank": 1,
+     "best_cosine": 0.647389,
+     "top_ids": [
+      "intake-pipeline-cli-text-truncation-section-loss",
+      "github-comment-list-one-page-hides-newest-comment",
+      "intake-text-cap-body-assembly-truncation-fix",
+      "git-merge-conflict-resolution",
+      "github-api-pr-submission-pitfalls"
+     ]
+    },
+    {
+     "lesson_id": "intake-stress-testing-20k-60k-payload-boundaries",
+     "rank": 1,
+     "best_cosine": 0.612529,
+     "top_ids": [
+      "intake-stress-testing-20k-60k-payload-boundaries",
+      "mcp-intake-silent-truncation-family",
+      "agent-memory-extractor-timing",
+      "mcp-worker-silent-body-truncation-8000-chars",
+      "intake-text-cap-body-assembly-truncation-fix"
+     ]
+    },
+    {
+     "lesson_id": "intake-text-cap-body-assembly-truncation-fix",
+     "rank": 2,
+     "best_cosine": 0.615178,
+     "top_ids": [
+      "intake-pipeline-cli-text-truncation-section-loss",
+      "intake-text-cap-body-assembly-truncation-fix",
+      "rag-chunk-params-800-100",
+      "model-output-fix",
+      "unclosed-html-comment-hides-markdown-body"
+     ]
+    },
+    {
+     "lesson_id": "js-regex-literal-dollar-vs-end-of-line-anchor",
+     "rank": 4,
+     "best_cosine": 0.596202,
+     "top_ids": [
+      "search-evaluation-rank-tracking-bias",
+      "fanuc-payload-checker-ver-8-04-excel-4-1",
+      "gemini-safety-settings-multi-hop-passthrough",
+      "js-regex-literal-dollar-vs-end-of-line-anchor",
+      "an-archive-container-name-is-not-an-entity-name"
+     ]
+    },
+    {
+     "lesson_id": "macos-swiftui-security-scoped-bookmarks-and-hsplitview-scroll",
+     "rank": null,
+     "best_cosine": 0.59908,
+     "top_ids": [
+      "workspace-write-policy-denial-escalate-once-not-retry-apis",
+      "windows-acl-write-sandbox-grantwrite-win32-5",
+      "macos-app-tamper-protection-blocks-finder-copy-desktopserviceshelper",
+      "macos-sandbox-panel-needs-the-entitlement-in-the-signature",
+      "lesson-06-git-push-credential-helper-403"
+     ]
+    },
+    {
+     "lesson_id": "mcp-worker-silent-body-truncation-8000-chars",
+     "rank": 1,
+     "best_cosine": 0.60648,
+     "top_ids": [
+      "mcp-worker-silent-body-truncation-8000-chars",
+      "intake-text-cap-body-assembly-truncation-fix",
+      "intake-pipeline-cli-text-truncation-section-loss",
+      "mcp-intake-silent-truncation-family",
+      "github-comment-list-one-page-hides-newest-comment"
+     ]
+    },
+    {
+     "lesson_id": "node-sqlite-shim-undeclared-named-parameters",
+     "rank": 3,
+     "best_cosine": 0.653965,
+     "top_ids": [
+      "roboguide-dutyestimation-unknown-variable-name",
+      "openclaw-fatal-error-hook-protocol",
+      "node-sqlite-shim-undeclared-named-parameters",
+      "zygiskassistant-breaks-houdini-arm-translation-on-mumu",
+      "security-exclusion-applied-module-table-short-name-trap"
+     ]
+    },
+    {
+     "lesson_id": "pull-request-welcome-trigger-trap",
+     "rank": 1,
+     "best_cosine": 0.702448,
+     "top_ids": [
+      "pull-request-welcome-trigger-trap",
+      "ci-fork-pr-no-comment-token",
+      "heartbeat-scan-improvement",
+      "issue-comment-newbie-welcome",
+      "contributor-engagement-retention"
+     ]
+    },
+    {
+     "lesson_id": "ruby-require-relative-resolves-against-the-requiring-file",
+     "rank": null,
+     "best_cosine": 0.615939,
+     "top_ids": [
+      "powershell-start-process-argumentlist-space-split",
+      "daemon-start-failed-empty-detail-missing-credential",
+      "dsh-required-plugin-missing-tools-service-hoisted-core-lib",
+      "parked-license-gate-is-not-tamper-detection",
+      "dsh-desktop-web-authentication-failed"
+     ]
+    },
+    {
+     "lesson_id": "search-first-roadmap-loop",
+     "rank": null,
+     "best_cosine": 0.62479,
+     "top_ids": [
+      "search-smart-fallback-implementation",
+      "phase-0-output-gate",
+      "an-error-code-that-says-retry-cannot-carry-a-not-found",
+      "a-hit-is-not-evidence-of-relevance",
+      "session-lesson-3-lobsters-json-api"
+     ]
+    },
+    {
+     "lesson_id": "whole-file-content-push-reverts-managed-lines",
+     "rank": null,
+     "best_cosine": 0.628476,
+     "top_ids": [
+      "green-tests-hid-a-build-only-type-error",
+      "a-security-fix-that-turns-tests-red-is-the-fix-working",
+      "assertion-that-cannot-fail",
+      "a-green-test-suite-hid-a-module-a-bare-node-runtime-cannot-load",
+      "ci-manual-dispatch-whole-corpus-false-red"
+     ]
+    },
+    {
+     "lesson_id": "a-child-probe-failure-must-not-poison-the-parent-listing",
+     "rank": 1,
+     "best_cosine": 0.491727,
+     "top_ids": [
+      "a-child-probe-failure-must-not-poison-the-parent-listing",
+      "feishu-markdown-table-not-rendered",
+      "openclaw-gateway-dynamic-module-missing",
+      "readme-profile-name-verbatim-installs-into-unloaded-profile",
+      "dsh-blank-web-gui-optional-bundle-did-not-activate"
+     ]
+    },
+    {
+     "lesson_id": "a-corpus-cached-in-one-row-has-a-ceiling",
+     "rank": null,
+     "best_cosine": 0.596717,
+     "top_ids": [
+      "search-smart-fallback-implementation",
+      "search-evaluation-rank-tracking-bias",
+      "allowlist-must-be-tested-against-the-corpus",
+      "bm25-chinese-sliding-window-tuning",
+      "search-ssot-data-source-pollution-fix"
+     ]
+    },
+    {
+     "lesson_id": "a-file-migration-whose-only-condition-is-if-exists-dest-rena",
+     "rank": 1,
+     "best_cosine": 0.650294,
+     "top_ids": [
+      "a-file-migration-whose-only-condition-is-if-exists-dest-rena",
+      "dockerfile-copy-paths-and-shell-syntax",
+      "dsh-home-robocopy-junction-fallback-breakage",
+      "whole-file-content-push-reverts-managed-lines",
+      "github-download-stall-ghfast-top-proxy-prefix"
+     ]
+    },
+    {
+     "lesson_id": "a-green-test-suite-hid-a-module-a-bare-node-runtime-cannot-load",
+     "rank": 2,
+     "best_cosine": 0.653588,
+     "top_ids": [
+      "report-only-verification-script-cannot-be-a-gate-step",
+      "a-green-test-suite-hid-a-module-a-bare-node-runtime-cannot-load",
+      "fanuc-vrc-exclusion-verified-still-crashes-three-layers",
+      "fatal-guard-cli-hardening",
+      "enum-error-was-the-symptom-not-the-gate"
+     ]
+    },
+    {
+     "lesson_id": "a-hit-is-not-evidence-of-relevance",
+     "rank": 3,
+     "best_cosine": 0.614427,
+     "top_ids": [
+      "search-quota-exhaustion-false-zero",
+      "search-smart-fallback-implementation",
+      "a-hit-is-not-evidence-of-relevance",
+      "search-evaluation-rank-tracking-bias",
+      "benchmark-honesty-simulated-vs-real"
+     ]
+    },
+    {
+     "lesson_id": "a-pystray-menu-thread-crash-is-an-appkit-main-thread-violation",
+     "rank": 1,
+     "best_cosine": 0.632221,
+     "top_ids": [
+      "a-pystray-menu-thread-crash-is-an-appkit-main-thread-violation",
+      "python-command-not-found-only-python3",
+      "asyncio-cancellederror-swallows-resources",
+      "npm-file-dep-omitted-dir-dangling-symlink",
+      "dsh-market-watchdog-empty-output-false-failure"
+     ]
+    },
+    {
+     "lesson_id": "a-stacked-pr-downstream-is-closed-when-the-upstream-branch-is-deleted",
+     "rank": 1,
+     "best_cosine": 0.704256,
+     "top_ids": [
+      "a-stacked-pr-downstream-is-closed-when-the-upstream-branch-is-deleted",
+      "ci-github-token-push-does-not-trigger-workflows",
+      "stale-pr-verify-each-half-before-rebasing",
+      "pr-cleanup-sop",
+      "parallel-pr-scope-belongs-to-the-fact-not-the-path"
+     ]
+    },
+    {
+     "lesson_id": "a-stubbed-success-is-not-a-sandbox",
+     "rank": 5,
+     "best_cosine": 0.608123,
+     "top_ids": [
+      "allowlist-must-be-tested-against-the-corpus",
+      "external-issue-diagnosis-needs-own-reproduction",
+      "github-comment-list-one-page-hides-newest-comment",
+      "enum-error-was-the-symptom-not-the-gate",
+      "a-stubbed-success-is-not-a-sandbox"
+     ]
+    },
+    {
+     "lesson_id": "accidental-pycache-commit",
+     "rank": 1,
+     "best_cosine": 0.624042,
+     "top_ids": [
+      "accidental-pycache-commit",
+      "github-download-stall-ghfast-top-proxy-prefix",
+      "github-contents-api-pr-pitfalls",
+      "whole-file-content-push-reverts-managed-lines",
+      "intake-pipeline-cli-text-truncation-section-loss"
+     ]
+    },
+    {
+     "lesson_id": "agent-error-handling-hi",
+     "rank": null,
+     "best_cosine": 0.634356,
+     "top_ids": [
+      "an-error-code-that-says-retry-cannot-carry-a-not-found",
+      "curl-exit-23-is-a-write-failure-not-a-network-failure",
+      "static-page-github-api-fault-tolerance",
+      "external-issue-diagnosis-needs-own-reproduction",
+      "enum-error-was-the-symptom-not-the-gate"
+     ]
+    },
+    {
+     "lesson_id": "agent-first-node-registration-via-mcp",
+     "rank": 2,
+     "best_cosine": 0.569713,
+     "top_ids": [
+      "cdn-edge-cache-stale-after-deploy",
+      "agent-first-node-registration-via-mcp",
+      "llm-sdk-client-centralization-architecture",
+      "registration-chain-worker-fallback",
+      "ui-automation-selector-contract-after-nav-change"
+     ]
+    },
+    {
+     "lesson_id": "agent-memory-extractor-timing",
+     "rank": 1,
+     "best_cosine": 0.613695,
+     "top_ids": [
+      "agent-memory-extractor-timing",
+      "long-context-pollution-delegate-to-subagents-keep-only-decisions",
+      "roleplay-dialogue-loop-context-poisoning",
+      "phase-0-output-gate",
+      "llm-streaming-thought-tags-stripping"
+     ]
+    },
+    {
+     "lesson_id": "agent-memory-three-index-architecture",
+     "rank": 3,
+     "best_cosine": 0.591951,
+     "top_ids": [
+      "supabase-capacity-constraints-project-operations",
+      "private-agent-memory-fallacy",
+      "agent-memory-three-index-architecture",
+      "fanuc-payload-checker-ver-8-04-excel-4-1",
+      "lesson-review-7-cloudflare-saga-rollbacks"
+     ]
+    },
+    {
+     "lesson_id": "agent-permission-classifier-blocks-cloned-repo-code",
+     "rank": 1,
+     "best_cosine": 0.660544,
+     "top_ids": [
+      "agent-permission-classifier-blocks-cloned-repo-code",
+      "repository-traffic-is-not-lesson-use",
+      "cloudflare-worker-deploy-three-pitfalls",
+      "separate-scout-and-worker-modes",
+      "pytest-module-scope-fixture-shared-mutable-clone"
+     ]
+    },
+    {
+     "lesson_id": "agent-prompt-preset-template-governance",
+     "rank": 1,
+     "best_cosine": 0.639956,
+     "top_ids": [
+      "agent-prompt-preset-template-governance",
+      "platform-issue-template-commands-need-the-platform-installed",
+      "powershell-pinvoke-charset-unicode-window-titles-mfc-fields",
+      "ui-automation-selector-contract-after-nav-change",
+      "anthropic-proxy-internal-gateway"
+     ]
+    },
+    {
+     "lesson_id": "agent-reach-multi-platform-scraper",
+     "rank": null,
+     "best_cosine": 0.603596,
+     "top_ids": [
+      "cloudflare-observability-mcp-oauth-separate-domain",
+      "lesson-review-7-cloudflare-saga-rollbacks",
+      "agent-web-access-toolchain-selection",
+      "github-contents-api-pr-pitfalls",
+      "mcporter-cloudflare-oauth-endpoint-scope-wsl-callback"
+     ]
+    },
+    {
+     "lesson_id": "agent-readfile-silent-truncation",
+     "rank": 1,
+     "best_cosine": 0.677988,
+     "top_ids": [
+      "agent-readfile-silent-truncation",
+      "retrieval-projection-truncation-caps-recall",
+      "mcp-intake-silent-truncation-family",
+      "intake-pipeline-cli-text-truncation-section-loss",
+      "regex-rebuild-dropped-1580-lines-unnoticed"
+     ]
+    },
+    {
+     "lesson_id": "agent-roleplay-time-consistency-hallucination",
+     "rank": 1,
+     "best_cosine": 0.618152,
+     "top_ids": [
+      "agent-roleplay-time-consistency-hallucination",
+      "http-timeout-retry-pattern",
+      "npc-dispatch-speaker-dislocation",
+      "agent-memory-extractor-timing",
+      "welcome-bot-mcp-intake-path"
+     ]
+    },
+    {
+     "lesson_id": "agent-state-database-lock-cleanup",
+     "rank": 1,
+     "best_cosine": 0.617569,
+     "top_ids": [
+      "agent-state-database-lock-cleanup",
+      "api-gateway-anthropic-incompatibility",
+      "agent-error-handling-hi",
+      "windows-non-ascii-username-pg0-initdb-utf8",
+      "daemon-start-failed-empty-detail-missing-credential"
+     ]
+    },
+    {
+     "lesson_id": "agent-web-access-toolchain-selection",
+     "rank": null,
+     "best_cosine": 0.633922,
+     "top_ids": [
+      "http-timeout-retry-pattern",
+      "static-page-github-api-fault-tolerance",
+      "curl-exit-23-is-a-write-failure-not-a-network-failure",
+      "corporate-proxy-curl-timeout",
+      "dsh-web-fetch-typeerror-fetch-failed-cause"
+     ]
+    },
+    {
+     "lesson_id": "agent-worktree-isolation-requires-git-cwd",
+     "rank": 1,
+     "best_cosine": 0.609929,
+     "top_ids": [
+      "agent-worktree-isolation-requires-git-cwd",
+      "content-pack-ready-before-credits",
+      "ai-agent-project-outreach-guide",
+      "agent-error-handling-hi",
+      "catch-all-error-code-masks-prompt-admission-failure"
+     ]
+    },
+    {
+     "lesson_id": "agentcap-is-not-on-pypi",
+     "rank": null,
+     "best_cosine": 0.653086,
+     "top_ids": [
+      "python-command-not-found-only-python3",
+      "python-venv-tiktoken-module-not-found",
+      "fehler-python-modul-nicht-gefunden",
+      "roboguide-dutyestimation-unknown-variable-name",
+      "tauri-command-not-found-naming-convention"
+     ]
+    },
+    {
+     "lesson_id": "agentcap-secret-safe-verification-failure",
+     "rank": 1,
+     "best_cosine": 0.636707,
+     "top_ids": [
+      "agentcap-secret-safe-verification-failure",
+      "agentcap-registry-secret-safe-validation-failure-metadata",
+      "verification-oracle-from-own-assumption",
+      "report-only-verification-script-cannot-be-a-gate-step",
+      "curl-exit-23-is-a-write-failure-not-a-network-failure"
+     ]
+    },
+    {
+     "lesson_id": "ai-agent-project-outreach-guide",
+     "rank": null,
+     "best_cosine": 0.566291,
+     "top_ids": [
+      "bounty-contributors-are-not-always-users",
+      "wxauto-im-feedback-collection-jsonl-queue",
+      "rag-build-strategy-batch",
+      "oss-refactor-lessons",
+      "vertex-ai-embedding-qwen-go-migration"
+     ]
+    },
+    {
+     "lesson_id": "aider-api-key-leak",
+     "rank": 1,
+     "best_cosine": 0.6868,
+     "top_ids": [
+      "aider-api-key-leak",
+      "pipe-to-tail-reports-tails-exit-code-not-the-commands",
+      "a-security-fix-that-turns-tests-red-is-the-fix-working",
+      "kill-pid-by-llm-api-inference-terminates-own-turn",
+      "schema-newer-than-pinned-runtime-writes-fail-silently"
+     ]
+    },
+    {
+     "lesson_id": "aider-litellm-model-name-rejection",
+     "rank": 1,
+     "best_cosine": 0.624817,
+     "top_ids": [
+      "aider-litellm-model-name-rejection",
+      "vertex-gemini-model-id-naming",
+      "allowlist-must-be-tested-against-the-corpus",
+      "feishu-webhook-url-env-config",
+      "api-catalog-version-drift-pinned-vs-upstream-head"
+     ]
+    },
+    {
+     "lesson_id": "aider-windows-unicode-error",
+     "rank": 1,
+     "best_cosine": 0.719319,
+     "top_ids": [
+      "aider-windows-unicode-error",
+      "wsl-pip-gbk-hub-poller-crash",
+      "windows-non-ascii-username-pg0-initdb-utf8",
+      "github-download-stall-ghfast-top-proxy-prefix",
+      "bge-embedding-fallback-crash"
+     ]
+    },
+    {
+     "lesson_id": "alembic-upgrade-failure",
+     "rank": 1,
+     "best_cosine": 0.718886,
+     "top_ids": [
+      "alembic-upgrade-failure",
+      "alembic-upgrade-head-failed",
+      "schema-newer-than-pinned-runtime-writes-fail-silently",
+      "npm-file-dep-omitted-dir-dangling-symlink",
+      "rag-retrieval-six-layer-silent-degradation"
+     ]
+    },
+    {
+     "lesson_id": "alembic-upgrade-head-failed",
+     "rank": 1,
+     "best_cosine": 0.649322,
+     "top_ids": [
+      "alembic-upgrade-head-failed",
+      "alembic-upgrade-failure",
+      "fatal-guard-cli-hardening",
+      "fanuc-vrc-exclusion-verified-still-crashes-three-layers",
+      "compatibility-gate-rejection-is-verdict-not-accept-risk"
+     ]
+    },
+    {
+     "lesson_id": "an-archive-container-name-is-not-an-entity-name",
+     "rank": 1,
+     "best_cosine": 0.625119,
+     "top_ids": [
+      "an-archive-container-name-is-not-an-entity-name",
+      "cronjob-one-shot-race-condition-duplicate-execution",
+      "fanuc-backup-restore-guide",
+      "file-count-is-not-entity-count-three-layers",
+      "cross-sheet-name-merge-data-chaos"
+     ]
+    },
+    {
+     "lesson_id": "an-unlikely-database-migration",
+     "rank": 2,
+     "best_cosine": 0.582894,
+     "top_ids": [
+      "lesson-18-database-performance-indexing",
+      "an-unlikely-database-migration",
+      "wsl2-memory-leak-fix",
+      "wsl-ntfs-sqlite-update-100x-slower",
+      "retrieval-projection-truncation-caps-recall"
+     ]
+    },
+    {
+     "lesson_id": "antd-upload-onchange-per-file-not-per-batch",
+     "rank": 1,
+     "best_cosine": 0.668413,
+     "top_ids": [
+      "antd-upload-onchange-per-file-not-per-batch",
+      "file-count-is-not-entity-count-three-layers",
+      "two-artifacts-same-name-trigger-device-module",
+      "an-archive-container-name-is-not-an-entity-name",
+      "fanuc-backup-ls-tp-duplicate-stem-double-count"
+     ]
+    },
+    {
+     "lesson_id": "anysearch-batch-search-with-tag-academic-fails-with-http-400",
+     "rank": 1,
+     "best_cosine": 0.65382,
+     "top_ids": [
+      "anysearch-batch-search-with-tag-academic-fails-with-http-400",
+      "github-401-credential-lookup",
+      "rag-brand-contamination-detection-and-fix",
+      "text-block-after-tool-use-400-anthropic-compatible-endpoints",
+      "rag-brand-filter-three-pitfalls"
+     ]
+    },
+    {
+     "lesson_id": "api-catalog-version-drift-pinned-vs-upstream-head",
+     "rank": 1,
+     "best_cosine": 0.724543,
+     "top_ids": [
+      "api-catalog-version-drift-pinned-vs-upstream-head",
+      "pnpm-minimumreleaseageexclude-manifest-lockfile-divergence",
+      "npmjs-registry-unreachable-pin-a-mirror-never-disable-tls",
+      "registry-publish-gap-version-drift-never-green-workflow",
+      "npm-eresolve-peer-conflict"
+     ]
+    },
+    {
+     "lesson_id": "api-gateway-anthropic-incompatibility",
+     "rank": 1,
+     "best_cosine": 0.823919,
+     "top_ids": [
+      "api-gateway-anthropic-incompatibility",
+      "anthropic-proxy-internal-gateway",
+      "hermes-model-switch-ccswitch",
+      "aider-litellm-model-name-rejection",
+      "user-agent-identify-bots"
+     ]
+    },
+    {
+     "lesson_id": "api-rate-limit-handling-best-practices",
+     "rank": 1,
+     "best_cosine": 0.693463,
+     "top_ids": [
+      "api-rate-limit-handling-best-practices",
+      "feishu-block-batch-limit",
+      "api-rate-limit-handling",
+      "fanuc-workcell-reopen-retriggers-pmon-reconnect-storm",
+      "cronjob-one-shot-race-condition-duplicate-execution"
+     ]
+    },
+    {
+     "lesson_id": "api-rate-limit-handling",
+     "rank": 1,
+     "best_cosine": 0.685575,
+     "top_ids": [
+      "api-rate-limit-handling",
+      "static-page-github-api-fault-tolerance",
+      "static-page-github-api-403-rate-limit",
+      "api-rate-limit-handling-best-practices",
+      "github-rate-limit-auth"
+     ]
+    },
+    {
+     "lesson_id": "assertion-that-cannot-fail",
+     "rank": 1,
+     "best_cosine": 0.681889,
+     "top_ids": [
+      "assertion-that-cannot-fail",
+      "green-tests-hid-a-build-only-type-error",
+      "green-check-subject-outside-scope",
+      "a-green-test-suite-hid-a-module-a-bare-node-runtime-cannot-load",
+      "report-only-verification-script-cannot-be-a-gate-step"
+     ]
+    },
+    {
+     "lesson_id": "asyncio-cancellederror-swallows-resources",
+     "rank": 1,
+     "best_cosine": 0.686158,
+     "top_ids": [
+      "asyncio-cancellederror-swallows-resources",
+      "watchdog-incremental-only-misses-crashed-frozen-target",
+      "cdn-edge-cache-stale-after-deploy",
+      "long-context-pollution-delegate-to-subagents-keep-only-decisions",
+      "taskbounty-payout-api-ok-readiness-still-fail"
+     ]
+    },
+    {
+     "lesson_id": "audit-sampling-stratified-sampling-for-kb-inspection",
+     "rank": 1,
+     "best_cosine": 0.629313,
+     "top_ids": [
+      "audit-sampling-stratified-sampling-for-kb-inspection",
+      "session-lesson-1-content-quality-scoring",
+      "kb-4sigma-quality-audit-pipeline",
+      "search-evaluation-rank-tracking-bias",
+      "vertical-kb-question-bank-strategy"
+     ]
+    },
+    {
+     "lesson_id": "auth-header-bug",
+     "rank": 4,
+     "best_cosine": 0.631394,
+     "top_ids": [
+      "github-401-credential-lookup",
+      "api-gateway-anthropic-incompatibility",
+      "cloudflare-observability-mcp-oauth-separate-domain",
+      "auth-header-bug",
+      "agentcap-registry-secret-safe-validation-failure-metadata"
+     ]
+    },
+    {
+     "lesson_id": "auto-recovery-hides-downtime-effective-availability",
+     "rank": 2,
+     "best_cosine": 0.625417,
+     "top_ids": [
+      "supabase-capacity-constraints-project-operations",
+      "auto-recovery-hides-downtime-effective-availability",
+      "http-timeout-retry-pattern",
+      "lesson-review-7-cloudflare-saga-rollbacks",
+      "rag-three-channel-llm-disaster-recovery"
+     ]
+    },
+    {
+     "lesson_id": "ax-window-resize-clamps-at-edge-reorder-writes",
+     "rank": 1,
+     "best_cosine": 0.663015,
+     "top_ids": [
+      "ax-window-resize-clamps-at-edge-reorder-writes",
+      "static-page-width-consistency",
+      "click-coordinates-miss-dpi-scaling-cdp",
+      "stale-bundle-font-size-hard-refresh",
+      "libreoffice-pptx-rasterizer-scales-shapes-1-5x"
+     ]
+    },
+    {
+     "lesson_id": "batch-import-extension-trust-and-dropped-producer-field",
+     "rank": 1,
+     "best_cosine": 0.663727,
+     "top_ids": [
+      "batch-import-extension-trust-and-dropped-producer-field",
+      "github-download-stall-ghfast-top-proxy-prefix",
+      "security-exclusion-applied-module-table-short-name-trap",
+      "alembic-upgrade-head-failed",
+      "allowlist-must-be-tested-against-the-corpus"
+     ]
+    },
+    {
+     "lesson_id": "batch-pilot-sample-must-be-filtered-to-scope",
+     "rank": 1,
+     "best_cosine": 0.62006,
+     "top_ids": [
+      "batch-pilot-sample-must-be-filtered-to-scope",
+      "fanuc-payload-checker-ver-8-04-excel-4-1",
+      "file-count-is-not-entity-count-three-layers",
+      "long-context-pollution-delegate-to-subagents-keep-only-decisions",
+      "onchain-payout-preflight-checklist"
+     ]
+    },
+    {
+     "lesson_id": "benchmark-honesty-simulated-vs-real",
+     "rank": 1,
+     "best_cosine": 0.607958,
+     "top_ids": [
+      "benchmark-honesty-simulated-vs-real",
+      "bounty-contributors-are-not-always-users",
+      "maintainer-feedback-iteration",
+      "github-token-cannot-push-workflow-files",
+      "search-evaluation-rank-tracking-bias"
+     ]
+    },
+    {
+     "lesson_id": "bge-embedding-fallback-crash",
+     "rank": 1,
+     "best_cosine": 0.58952,
+     "top_ids": [
+      "bge-embedding-fallback-crash",
+      "daemon-start-failed-empty-detail-missing-credential",
+      "endpoint-security-disable-verify-by-fresh-process-injection",
+      "registration-chain-worker-fallback",
+      "roboguide-pendant-switch-reads-robot-before-connect-event"
+     ]
+    },
+    {
+     "lesson_id": "bm25-chinese-sliding-window-tuning",
+     "rank": 1,
+     "best_cosine": 0.626601,
+     "top_ids": [
+      "bm25-chinese-sliding-window-tuning",
+      "lesson-18-database-performance-indexing",
+      "search-evaluation-rank-tracking-bias",
+      "retrieval-projection-truncation-caps-recall",
+      "regex-greedy-matching"
+     ]
+    },
+    {
+     "lesson_id": "bm25-vector-hybrid-search-weights",
+     "rank": 5,
+     "best_cosine": 0.630189,
+     "top_ids": [
+      "search-evaluation-rank-tracking-bias",
+      "search-smart-fallback-implementation",
+      "a-hit-is-not-evidence-of-relevance",
+      "bm25-chinese-sliding-window-tuning",
+      "bm25-vector-hybrid-search-weights"
+     ]
+    },
+    {
+     "lesson_id": "bounty-contributors-are-not-always-users",
+     "rank": 1,
+     "best_cosine": 0.638094,
+     "top_ids": [
+      "bounty-contributors-are-not-always-users",
+      "pull-request-welcome-trigger-trap",
+      "a-stacked-pr-downstream-is-closed-when-the-upstream-branch-is-deleted",
+      "ci-github-token-push-does-not-trigger-workflows",
+      "contributor-engagement-retention"
+     ]
+    },
+    {
+     "lesson_id": "brochure-claim-not-in-operator-manual",
+     "rank": 1,
+     "best_cosine": 0.596387,
+     "top_ids": [
+      "brochure-claim-not-in-operator-manual",
+      "svg-transform-nan-from-wrong-projection-object",
+      "fanuc-karel-geometry-kinematics-layer",
+      "fanuc-karel-uv-to-xyzwpr-pipeline",
+      "fanuc-vrc-exclusion-verified-still-crashes-three-layers"
+     ]
+    },
+    {
+     "lesson_id": "browser-automation-csp-bypass",
+     "rank": 1,
+     "best_cosine": 0.635501,
+     "top_ids": [
+      "browser-automation-csp-bypass",
+      "js-dead-code-chain-break",
+      "phase-0-output-gate",
+      "static-page-github-api-fault-tolerance",
+      "github-comment-list-one-page-hides-newest-comment"
+     ]
+    },
+    {
+     "lesson_id": "browser-harness-cdp-browser-automation",
+     "rank": 2,
+     "best_cosine": 0.608703,
+     "top_ids": [
+      "chrome-relay-browser-automation",
+      "browser-harness-cdp-browser-automation",
+      "webmcp-chrome-ai-agent-protocol",
+      "cloudflare-ai-gateway-auth-pitfalls",
+      "agent-web-access-toolchain-selection"
+     ]
+    },
+    {
+     "lesson_id": "bundled-plugin-imports-react-needs-dependencies-not-peer",
+     "rank": null,
+     "best_cosine": 0.593763,
+     "top_ids": [
+      "dsh-required-plugin-missing-tools-service-hoisted-core-lib",
+      "fanuc-roboguide-handlingpro-plugin-unavailable",
+      "daemon-start-failed-empty-detail-missing-credential",
+      "dsh-blank-web-gui-optional-bundle-did-not-activate",
+      "fehler-python-modul-nicht-gefunden"
+     ]
+    },
+    {
+     "lesson_id": "catch-all-error-code-masks-prompt-admission-failure",
+     "rank": 1,
+     "best_cosine": 0.660889,
+     "top_ids": [
+      "catch-all-error-code-masks-prompt-admission-failure",
+      "display-preview-restore-session-scope-after-failed-readback",
+      "local-proxy-refusal-without-log-undiagnosable",
+      "permission-denial-removes-evidence-is-stop-signal",
+      "cordis-inject-nonready-service-disables-plugin"
+     ]
+    },
+    {
+     "lesson_id": "cdn-edge-cache-stale-after-deploy",
+     "rank": 1,
+     "best_cosine": 0.63206,
+     "top_ids": [
+      "cdn-edge-cache-stale-after-deploy",
+      "text-block-after-tool-use-400-anthropic-compatible-endpoints",
+      "patch-failed-hunk-already-changed-earlier-files",
+      "schema-newer-than-pinned-runtime-writes-fail-silently",
+      "whole-file-content-push-reverts-managed-lines"
+     ]
+    },
+    {
+     "lesson_id": "character-assistant-repetition-loop",
+     "rank": 1,
+     "best_cosine": 0.672898,
+     "top_ids": [
+      "character-assistant-repetition-loop",
+      "godmoding-model-acts-for-user",
+      "roleplay-dialogue-loop-context-poisoning",
+      "roleplay-vocative-entity-disambiguation-portuguese",
+      "snapshot-writer-reader-filename-grammar-mismatch"
+     ]
+    },
+    {
+     "lesson_id": "character-generation-502-gateway",
+     "rank": 1,
+     "best_cosine": 0.646191,
+     "top_ids": [
+      "character-generation-502-gateway",
+      "anthropic-proxy-internal-gateway",
+      "api-gateway-anthropic-incompatibility",
+      "cloudflare-ai-gateway-auth-pitfalls",
+      "llama-cpp-tools-plus-json-object-grammar-400"
+     ]
+    },
+    {
+     "lesson_id": "ci-fork-pr-no-comment-token",
+     "rank": 1,
+     "best_cosine": 0.678597,
+     "top_ids": [
+      "ci-fork-pr-no-comment-token",
+      "gh-pr-ready-checklist",
+      "ci-manual-dispatch-whole-corpus-false-red",
+      "ci-fork-pr-run-held-as-action-required",
+      "ci-dco-fork-pr-signoff"
+     ]
+    },
+    {
+     "lesson_id": "ci-fork-pr-run-held-as-action-required",
+     "rank": 1,
+     "best_cosine": 0.654261,
+     "top_ids": [
+      "ci-fork-pr-run-held-as-action-required",
+      "ci-fork-pr-no-comment-token",
+      "ci-github-token-push-does-not-trigger-workflows",
+      "bounty-contributors-are-not-always-users",
+      "github-token-cannot-push-workflow-files"
+     ]
+    },
+    {
+     "lesson_id": "ci-github-token-push-does-not-trigger-workflows",
+     "rank": 1,
+     "best_cosine": 0.628644,
+     "top_ids": [
+      "ci-github-token-push-does-not-trigger-workflows",
+      "a-stacked-pr-downstream-is-closed-when-the-upstream-branch-is-deleted",
+      "parallel-pr-scope-belongs-to-the-fact-not-the-path",
+      "auto-merge-ci-pipeline",
+      "schema-coupled-cross-repo-ci"
+     ]
+    },
+    {
+     "lesson_id": "ci-key-rotation-silent-failure",
+     "rank": 2,
+     "best_cosine": 0.620935,
+     "top_ids": [
+      "verification-oracle-from-own-assumption",
+      "ci-key-rotation-silent-failure",
+      "cloudflare-observability-mcp-oauth-separate-domain",
+      "github-rate-limit-auth",
+      "git-credentials-automation"
+     ]
+    },
+    {
+     "lesson_id": "ci-lambda-module-level-side-effects",
+     "rank": 4,
+     "best_cosine": 0.626124,
+     "top_ids": [
+      "python-venv-tiktoken-module-not-found",
+      "fehler-python-modul-nicht-gefunden",
+      "import-path-verification-after-refactor",
+      "ci-lambda-module-level-side-effects",
+      "ts2305-under-nodenext-is-usually-a-real-missing-export"
+     ]
+    },
+    {
+     "lesson_id": "ci-manual-dispatch-whole-corpus-false-red",
+     "rank": 1,
+     "best_cosine": 0.595121,
+     "top_ids": [
+      "ci-manual-dispatch-whole-corpus-false-red",
+      "a-security-fix-that-turns-tests-red-is-the-fix-working",
+      "report-only-verification-script-cannot-be-a-gate-step",
+      "a-corpus-cached-in-one-row-has-a-ceiling",
+      "a-green-test-suite-hid-a-module-a-bare-node-runtime-cannot-load"
+     ]
+    },
+    {
+     "lesson_id": "ci-push-triggered-bot-races-generated-artifact",
+     "rank": 1,
+     "best_cosine": 0.677507,
+     "top_ids": [
+      "ci-push-triggered-bot-races-generated-artifact",
+      "lesson-review-7-cloudflare-saga-rollbacks",
+      "git-merge-conflict-resolution",
+      "ci-github-token-push-does-not-trigger-workflows",
+      "github-token-cannot-push-workflow-files"
+     ]
+    },
+    {
+     "lesson_id": "ci-security-advisory-checks",
+     "rank": null,
+     "best_cosine": 0.599904,
+     "top_ids": [
+      "electron-builder-nsis-tls-reset-binary-mirror",
+      "ci-github-token-push-does-not-trigger-workflows",
+      "whole-file-content-push-reverts-managed-lines",
+      "github-contents-api-pr-pitfalls",
+      "gemini-safety-settings-multi-hop-passthrough"
+     ]
+    },
+    {
+     "lesson_id": "ci-test-coverage-gate",
+     "rank": 1,
+     "best_cosine": 0.743125,
+     "top_ids": [
+      "ci-test-coverage-gate",
+      "ci-security-advisory-checks",
+      "verify-the-commit-not-the-worktree",
+      "ci-github-token-push-does-not-trigger-workflows",
+      "ci-manual-dispatch-whole-corpus-false-red"
+     ]
+    },
+    {
+     "lesson_id": "ci-workflow-fail-fast-matrix",
+     "rank": 1,
+     "best_cosine": 0.567335,
+     "top_ids": [
+      "ci-workflow-fail-fast-matrix",
+      "auto-recovery-hides-downtime-effective-availability",
+      "event-count-is-not-a-health-signal",
+      "supabase-capacity-constraints-project-operations",
+      "repeated-precursor-not-fixed-delay-warning-window"
+     ]
+    },
+    {
+     "lesson_id": "claude-code-debugging-ml-dsa-cryptography",
+     "rank": 1,
+     "best_cosine": 0.617193,
+     "top_ids": [
+      "claude-code-debugging-ml-dsa-cryptography",
+      "enum-error-was-the-symptom-not-the-gate",
+      "agentcap-registry-secret-safe-validation-failure-metadata",
+      "agentcap-secret-safe-verification-failure",
+      "release-signature-assembled-before-last-build"
+     ]
+    },
+    {
+     "lesson_id": "claude-code-hook-silent-failure",
+     "rank": 3,
+     "best_cosine": 0.567737,
+     "top_ids": [
+      "sendinput-unicode-returns-success-no-text",
+      "snapshot-writer-reader-filename-grammar-mismatch",
+      "claude-code-hook-silent-failure",
+      "llama-cpp-tools-plus-json-object-grammar-400",
+      "gh-cli-empty-body-silently-wipes-pr-description"
+     ]
+    },
+    {
+     "lesson_id": "click-coordinates-miss-dpi-scaling-cdp",
+     "rank": 1,
+     "best_cosine": 0.633249,
+     "top_ids": [
+      "click-coordinates-miss-dpi-scaling-cdp",
+      "static-page-width-consistency",
+      "ax-window-resize-clamps-at-edge-reorder-writes",
+      "libreoffice-pptx-rasterizer-scales-shapes-1-5x",
+      "svg-transform-nan-from-wrong-projection-object"
+     ]
+    },
+    {
+     "lesson_id": "click-no-op-keyboard-works-pointer-vs-handler-triage",
+     "rank": 1,
+     "best_cosine": 0.687382,
+     "top_ids": [
+      "click-no-op-keyboard-works-pointer-vs-handler-triage",
+      "nsaccessibilityelement-children-report-disabled",
+      "parked-license-gate-is-not-tamper-detection",
+      "playwright-antd-modal-escape-intercepts-pointer-events",
+      "sendinput-unicode-returns-success-no-text"
+     ]
+    },
+    {
+     "lesson_id": "cloudflare-ai-gateway-auth-pitfalls",
+     "rank": 1,
+     "best_cosine": 0.623686,
+     "top_ids": [
+      "cloudflare-ai-gateway-auth-pitfalls",
+      "github-401-credential-lookup",
+      "auth-header-bug",
+      "api-gateway-anthropic-incompatibility",
+      "mcp-endpoint-404-zone-route-misconfig"
+     ]
+    },
+    {
+     "lesson_id": "cloudflare-observability-mcp-oauth-separate-domain",
+     "rank": 1,
+     "best_cosine": 0.615389,
+     "top_ids": [
+      "cloudflare-observability-mcp-oauth-separate-domain",
+      "cloudflare-ai-gateway-auth-pitfalls",
+      "mcporter-oauth-must-be-serial",
+      "permission-denial-removes-evidence-is-stop-signal",
+      "auth-header-bug"
+     ]
+    },
+    {
+     "lesson_id": "cloudflare-worker-deploy-three-pitfalls",
+     "rank": 1,
+     "best_cosine": 0.617838,
+     "top_ids": [
+      "cloudflare-worker-deploy-three-pitfalls",
+      "fanuc-vrc-exclusion-verified-still-crashes-three-layers",
+      "npm-e403-forbidden-three-layers",
+      "vertex-ai-embedding-qwen-go-migration",
+      "api-rate-limit-handling"
+     ]
+    },
+    {
+     "lesson_id": "codeql-alert-dismissal-false-positive",
+     "rank": 1,
+     "best_cosine": 0.670434,
+     "top_ids": [
+      "codeql-alert-dismissal-false-positive",
+      "agentcap-registry-secret-safe-validation-failure-metadata",
+      "agentcap-secret-safe-verification-failure",
+      "a-security-fix-that-turns-tests-red-is-the-fix-working",
+      "log-sanitizer-must-live-in-the-formatter"
+     ]
+    },
+    {
+     "lesson_id": "codesign-entitlements-needs-a-destination",
+     "rank": 1,
+     "best_cosine": 0.707711,
+     "top_ids": [
+      "codesign-entitlements-needs-a-destination",
+      "agentcap-inspect-subcommand-and-codesign-xml-output",
+      "macos-sandbox-panel-needs-the-entitlement-in-the-signature",
+      "ui-automation-selector-contract-after-nav-change",
+      "codesign-verify-requirement-string-needs-equals"
+     ]
+    },
+    {
+     "lesson_id": "codesign-verify-requirement-string-needs-equals",
+     "rank": 2,
+     "best_cosine": 0.6854,
+     "top_ids": [
+      "macos-app-tamper-protection-blocks-finder-copy-desktopserviceshelper",
+      "codesign-verify-requirement-string-needs-equals",
+      "allowlist-must-be-tested-against-the-corpus",
+      "compatibility-gate-rejection-is-verdict-not-accept-risk",
+      "display-preview-restore-session-scope-after-failed-readback"
+     ]
+    },
+    {
+     "lesson_id": "codex-desktop-mcp-config-reload",
+     "rank": 3,
+     "best_cosine": 0.563882,
+     "top_ids": [
+      "dsh-desktop-web-authentication-failed",
+      "nsis-installer-rejects-upgrade-appid-guid-mismatch",
+      "codex-desktop-mcp-config-reload",
+      "dsh-required-plugin-missing-tools-service-hoisted-core-lib",
+      "fanuc-vrc-exclusion-verified-still-crashes-three-layers"
+     ]
+    },
+    {
+     "lesson_id": "codex-keyring-user-interaction-not-allowed",
+     "rank": 1,
+     "best_cosine": 0.706413,
+     "top_ids": [
+      "codex-keyring-user-interaction-not-allowed",
+      "auth-header-bug",
+      "git-credentials-automation",
+      "cloudflare-observability-mcp-oauth-separate-domain",
+      "mcporter-oauth-must-be-serial"
+     ]
+    },
+    {
+     "lesson_id": "codex-mcp-tools-not-injected-despite-handshake",
+     "rank": 1,
+     "best_cosine": 0.65849,
+     "top_ids": [
+      "codex-mcp-tools-not-injected-despite-handshake",
+      "lesson-17-segmentfault-mcp-standardization",
+      "lesson-review-4-mcp-bedrock-integration",
+      "cloudflare-observability-mcp-oauth-separate-domain",
+      "mcp-server-direct-handler-testing"
+     ]
+    },
+    {
+     "lesson_id": "compatibility-gate-rejection-is-verdict-not-accept-risk",
+     "rank": 1,
+     "best_cosine": 0.631712,
+     "top_ids": [
+      "compatibility-gate-rejection-is-verdict-not-accept-risk",
+      "pnpm-minimumreleaseageexclude-manifest-lockfile-divergence",
+      "external-issue-diagnosis-needs-own-reproduction",
+      "bundled-plugin-imports-react-needs-dependencies-not-peer",
+      "local-proxy-refusal-without-log-undiagnosable"
+     ]
+    },
+    {
+     "lesson_id": "config-change-hits-only-one-of-two-state-layers",
+     "rank": 1,
+     "best_cosine": 0.737096,
+     "top_ids": [
+      "config-change-hits-only-one-of-two-state-layers",
+      "ui-automation-selector-contract-after-nav-change",
+      "astro-dev-stale-css-screenshot",
+      "python-pycache-stale",
+      "stale-pr-verify-each-half-before-rebasing"
+     ]
+    },
+    {
+     "lesson_id": "cordis-inject-nonready-service-disables-plugin",
+     "rank": 1,
+     "best_cosine": 0.624061,
+     "top_ids": [
+      "cordis-inject-nonready-service-disables-plugin",
+      "dsh-required-plugin-missing-tools-service-hoisted-core-lib",
+      "dsh-plugin-pi-ai-version-gate-drops-tools",
+      "pnpm-store-cross-volume-junction-breaks-hardlinks",
+      "dsh-plugin-sidebar-and-panel-registration-contracts"
+     ]
+    },
+    {
+     "lesson_id": "corporate-proxy-curl-timeout",
+     "rank": 1,
+     "best_cosine": 0.706418,
+     "top_ids": [
+      "corporate-proxy-curl-timeout",
+      "proxy-corporativo-curl-timeout",
+      "pip-install-proxy-timeout",
+      "pip-install-timeout-ssl",
+      "lesson-template-network"
+     ]
+    },
+    {
+     "lesson_id": "counting-files-with-fs-readdirsync-dir-length-counts-directo",
+     "rank": 1,
+     "best_cosine": 0.635438,
+     "top_ids": [
+      "counting-files-with-fs-readdirsync-dir-length-counts-directo",
+      "file-count-is-not-entity-count-three-layers",
+      "antd-upload-onchange-per-file-not-per-batch",
+      "a-child-probe-failure-must-not-poison-the-parent-listing",
+      "a-corpus-cached-in-one-row-has-a-ceiling"
+     ]
+    },
+    {
+     "lesson_id": "crash-reproducibility-signature-first-then-rate",
+     "rank": 1,
+     "best_cosine": 0.635349,
+     "top_ids": [
+      "crash-reproducibility-signature-first-then-rate",
+      "fix-acceptance-is-a-degradation-not-a-crash-count",
+      "repeated-precursor-not-fixed-delay-warning-window",
+      "watchdog-incremental-only-misses-crashed-frozen-target",
+      "frame-grid-validation-replacement-shorter-than-slot"
+     ]
+    },
+    {
+     "lesson_id": "cron-job-not-running",
+     "rank": 1,
+     "best_cosine": 0.606328,
+     "top_ids": [
+      "cron-job-not-running",
+      "hub-feishu-wsclient-start-never-called",
+      "openclaw-gateway-dynamic-module-missing",
+      "git-checkout-discards-uncommitted-work",
+      "cordis-inject-nonready-service-disables-plugin"
+     ]
+    },
+    {
+     "lesson_id": "cross-repo-contribution-strategy",
+     "rank": 1,
+     "best_cosine": 0.582201,
+     "top_ids": [
+      "cross-repo-contribution-strategy",
+      "bounty-contributors-are-not-always-users",
+      "registry-publish-gap-version-drift-never-green-workflow",
+      "feishu-bot-setup-complete",
+      "ci-github-token-push-does-not-trigger-workflows"
+     ]
+    },
+    {
+     "lesson_id": "cross-sheet-name-merge-data-chaos",
+     "rank": 1,
+     "best_cosine": 0.670326,
+     "top_ids": [
+      "cross-sheet-name-merge-data-chaos",
+      "file-count-is-not-entity-count-three-layers",
+      "two-artifacts-same-name-trigger-device-module",
+      "process-card-sequence-extraction-rules",
+      "an-archive-container-name-is-not-an-entity-name"
+     ]
+    },
+    {
+     "lesson_id": "css-z-index-stacking-context-modal",
+     "rank": 1,
+     "best_cosine": 0.692063,
+     "top_ids": [
+      "css-z-index-stacking-context-modal",
+      "playwright-antd-modal-escape-intercepts-pointer-events",
+      "ui-automation-selector-contract-after-nav-change",
+      "shared-tab-navigation-is-destructive",
+      "stale-injected-state-must-be-filtered-before-the-model-sees-it"
+     ]
+    },
+    {
+     "lesson_id": "cubic-ai-vs-pr-genius",
+     "rank": null,
+     "best_cosine": 0.595718,
+     "top_ids": [
+      "roboguide-dutyestimation-unknown-variable-name",
+      "ui-automation-selector-contract-after-nav-change",
+      "enum-error-was-the-symptom-not-the-gate",
+      "stale-issue-body-check-acceptance-items-against-the-tree",
+      "config-change-hits-only-one-of-two-state-layers"
+     ]
+    },
+    {
+     "lesson_id": "allowlist-must-be-tested-against-the-corpus",
+     "rank": 2,
+     "best_cosine": 0.618197,
+     "top_ids": [
+      "자바-버전-불일치-빌드-오류",
+      "allowlist-must-be-tested-against-the-corpus",
+      "misakanet-heal-ux-gap-queue-lesson-flag-mismatch",
+      "mcp-endpoint-404-zone-route-misconfig",
+      "lesson-gate-swallowed-missing-pyyaml-reports-missing-fields"
+     ]
+    },
+    {
+     "lesson_id": "dco-auto-fix-workflow",
+     "rank": 1,
+     "best_cosine": 0.634263,
+     "top_ids": [
+      "dco-auto-fix-workflow",
+      "lesson-11-github-commit-signing",
+      "enum-error-was-the-symptom-not-the-gate",
+      "feishu-webhook-url-env-config",
+      "dco-signoff-force-push-pitfall"
+     ]
+    },
+    {
+     "lesson_id": "pr-cleanup-sop",
+     "rank": 1,
+     "best_cosine": 0.664023,
+     "top_ids": [
+      "pr-cleanup-sop",
+      "github-api-pr-submission-pitfalls",
+      "maintainer-feedback-iteration",
+      "github-api-pr-issue-management",
+      "heartbeat-scan-improvement"
+     ]
+    },
+    {
+     "lesson_id": "agent-manual-update-timeout",
+     "rank": 2,
+     "best_cosine": 0.617816,
+     "top_ids": [
+      "pip-install-timeout-ssl",
+      "agent-manual-update-timeout",
+      "github-release-large-asset-download-cn",
+      "feishu-webhook-url-env-config",
+      "git-tls-handshake-failure"
+     ]
+    },
+    {
+     "lesson_id": "astro-dev-stale-css-screenshot",
+     "rank": 1,
+     "best_cosine": 0.601952,
+     "top_ids": [
+      "astro-dev-stale-css-screenshot",
+      "tauri-webview2-antd-css-in-js-blocked-by-csp",
+      "static-page-width-consistency",
+      "config-change-hits-only-one-of-two-state-layers",
+      "dsh-plugin-pi-ai-version-gate-drops-tools"
+     ]
+    },
+    {
+     "lesson_id": "curl-exit-23-is-a-write-failure-not-a-network-failure",
+     "rank": 3,
+     "best_cosine": 0.549523,
+     "top_ids": [
+      "a-green-test-suite-hid-a-module-a-bare-node-runtime-cannot-load",
+      "lesson-09-v2ex-api-show-endpoint-unstable",
+      "curl-exit-23-is-a-write-failure-not-a-network-failure",
+      "wayback-empty-availability-is-not-no-captures",
+      "static-page-github-api-403-rate-limit"
+     ]
+    },
+    {
+     "lesson_id": "daemon-start-failed-empty-detail-missing-credential",
+     "rank": 1,
+     "best_cosine": 0.701867,
+     "top_ids": [
+      "daemon-start-failed-empty-detail-missing-credential",
+      "dsh-required-plugin-missing-tools-service-hoisted-core-lib",
+      "dsh-plugin-pi-ai-version-gate-drops-tools",
+      "roboguide-dutyestimation-unknown-variable-name",
+      "dsh-market-watchdog-empty-output-false-failure"
+     ]
+    },
+    {
+     "lesson_id": "data-capping-equals-forging-data",
+     "rank": 1,
+     "best_cosine": 0.63021,
+     "top_ids": [
+      "data-capping-equals-forging-data",
+      "auto-recovery-hides-downtime-effective-availability",
+      "fanuc-payload-checker-ver-8-04-excel-4-1",
+      "api-rate-limit-handling-best-practices",
+      "vertex-ai-cost-attribution-bigquery-billing-gemma"
+     ]
+    },
+    {
+     "lesson_id": "data-pipeline-lessons-json-canonical-generator",
+     "rank": null,
+     "best_cosine": 0.60732,
+     "top_ids": [
+      "search-ssot-data-source-pollution-fix",
+      "search-evaluation-rank-tracking-bias",
+      "lesson-18-database-performance-indexing",
+      "a-corpus-cached-in-one-row-has-a-ceiling",
+      "retrieval-projection-truncation-caps-recall"
+     ]
+    },
+    {
+     "lesson_id": "data-quality-three-layer-fix-pattern",
+     "rank": 4,
+     "best_cosine": 0.602972,
+     "top_ids": [
+      "file-count-is-not-entity-count-three-layers",
+      "an-archive-container-name-is-not-an-entity-name",
+      "process-card-sequence-extraction-rules",
+      "data-quality-three-layer-fix-pattern",
+      "two-artifacts-same-name-trigger-device-module"
+     ]
+    },
+    {
+     "lesson_id": "dco-signoff-force-push-pitfall",
+     "rank": 1,
+     "best_cosine": 0.703749,
+     "top_ids": [
+      "dco-signoff-force-push-pitfall",
+      "error-dco-signoff-windows",
+      "dco-auto-fix-workflow",
+      "ci-dco-fork-pr-signoff",
+      "verify-the-commit-not-the-worktree"
+     ]
+    },
+    {
+     "lesson_id": "debugging-memory-leaks-in-ruby",
+     "rank": 3,
+     "best_cosine": 0.620365,
+     "top_ids": [
+      "wsl2-memory-leak-fix",
+      "finding-and-fixing-ghostty-s-largest-memory-leak",
+      "debugging-memory-leaks-in-ruby",
+      "counting-files-with-fs-readdirsync-dir-length-counts-directo",
+      "disk-space-cleanup"
+     ]
+    },
+    {
+     "lesson_id": "deepwiki-review-fair-hits-stale-misses-trajectory",
+     "rank": 3,
+     "best_cosine": 0.54923,
+     "top_ids": [
+      "agent-roleplay-time-consistency-hallucination",
+      "vertex-ai-cost-attribution-bigquery-billing-gemma",
+      "deepwiki-review-fair-hits-stale-misses-trajectory",
+      "ci-github-token-push-does-not-trigger-workflows",
+      "llm-sdk-client-centralization-architecture"
+     ]
+    },
+    {
+     "lesson_id": "disk-space-cleanup",
+     "rank": 1,
+     "best_cosine": 0.615491,
+     "top_ids": [
+      "disk-space-cleanup",
+      "feishu-upload-file-type-opus",
+      "powershell-start-process-argumentlist-space-split",
+      "rust-read-to-string-strict-utf8-vs-node-lossy",
+      "curl-exit-23-is-a-write-failure-not-a-network-failure"
+     ]
+    },
+    {
+     "lesson_id": "display-preview-restore-session-scope-after-failed-readback",
+     "rank": 1,
+     "best_cosine": 0.652766,
+     "top_ids": [
+      "display-preview-restore-session-scope-after-failed-readback",
+      "stale-injected-state-must-be-filtered-before-the-model-sees-it",
+      "catch-all-error-code-masks-prompt-admission-failure",
+      "enum-error-was-the-symptom-not-the-gate",
+      "config-change-hits-only-one-of-two-state-layers"
+     ]
+    },
+    {
+     "lesson_id": "docker-build-exit-137-multistage-oom",
+     "rank": 1,
+     "best_cosine": 0.60799,
+     "top_ids": [
+      "docker-build-exit-137-multistage-oom",
+      "fatal-guard-cli-hardening",
+      "electron-builder-nsis-tls-reset-binary-mirror",
+      "curl-exit-23-is-a-write-failure-not-a-network-failure",
+      "report-only-verification-script-cannot-be-a-gate-step"
+     ]
+    },
+    {
+     "lesson_id": "docker-compose-basics",
+     "rank": 1,
+     "best_cosine": 0.624677,
+     "top_ids": [
+      "docker-compose-basics",
+      "a-pystray-menu-thread-crash-is-an-appkit-main-thread-violation",
+      "kubernetes-crashloopbackoff-debugging",
+      "github-connectivity-4-fallbacks",
+      "zygiskassistant-breaks-houdini-arm-translation-on-mumu"
+     ]
+    },
+    {
+     "lesson_id": "docker-desktop-error-response-from-daemon-no-engine",
+     "rank": 1,
+     "best_cosine": 0.709232,
+     "top_ids": [
+      "docker-desktop-error-response-from-daemon-no-engine",
+      "wsl-status-fails-but-docker-desktop-works",
+      "erreur-permission-docker-linux",
+      "dsh-desktop-web-authentication-failed",
+      "docker-compose-basics"
+     ]
+    },
+    {
+     "lesson_id": "dockerfile-copy-paths-and-shell-syntax",
+     "rank": 1,
+     "best_cosine": 0.639854,
+     "top_ids": [
+      "dockerfile-copy-paths-and-shell-syntax",
+      "npm-native-build-arch-mismatch",
+      "electron-builder-nsis-tls-reset-binary-mirror",
+      "node-child-process-eperm-windows-sandbox-redirect-to-file",
+      "cloudflare-worker-deploy-three-pitfalls"
+     ]
+    },
+    {
+     "lesson_id": "documenting-auto-generated-artifacts-needs-the-trigger",
+     "rank": 1,
+     "best_cosine": 0.677521,
+     "top_ids": [
+      "documenting-auto-generated-artifacts-needs-the-trigger",
+      "phase-0-output-gate",
+      "two-artifacts-same-name-trigger-device-module",
+      "feishu-doc-url-use-api-return",
+      "self-referential-verification-link"
+     ]
+    },
+    {
+     "lesson_id": "dsh-blank-web-gui-optional-bundle-did-not-activate",
+     "rank": 1,
+     "best_cosine": 0.644844,
+     "top_ids": [
+      "dsh-blank-web-gui-optional-bundle-did-not-activate",
+      "dsh-required-plugin-missing-tools-service-hoisted-core-lib",
+      "daemon-start-failed-empty-detail-missing-credential",
+      "dsh-market-watchdog-empty-output-false-failure",
+      "readme-profile-name-verbatim-installs-into-unloaded-profile"
+     ]
+    },
+    {
+     "lesson_id": "dsh-compatibility-json-exemptions-wrapper-key",
+     "rank": 1,
+     "best_cosine": 0.708579,
+     "top_ids": [
+      "dsh-compatibility-json-exemptions-wrapper-key",
+      "pnpm-minimumreleaseageexclude-manifest-lockfile-divergence",
+      "external-issue-diagnosis-needs-own-reproduction",
+      "dsh-required-plugin-missing-tools-service-hoisted-core-lib",
+      "dsh-plugin-pi-ai-version-gate-drops-tools"
+     ]
+    },
+    {
+     "lesson_id": "dsh-home-robocopy-junction-fallback-breakage",
+     "rank": 1,
+     "best_cosine": 0.665794,
+     "top_ids": [
+      "dsh-home-robocopy-junction-fallback-breakage",
+      "dsh-required-plugin-missing-tools-service-hoisted-core-lib",
+      "dsh-desktop-web-authentication-failed",
+      "dsh-windows-job-runner-exit-1-missing-subprocess-dep",
+      "dsh-plugin-l5-web-smoke-cordis-duplicate-entry"
+     ]
+    },
+    {
+     "lesson_id": "dsh-market-watchdog-empty-output-false-failure",
+     "rank": 1,
+     "best_cosine": 0.628836,
+     "top_ids": [
+      "dsh-market-watchdog-empty-output-false-failure",
+      "external-issue-diagnosis-needs-own-reproduction",
+      "daemon-start-failed-empty-detail-missing-credential",
+      "dsh-plugin-l5-web-smoke-cordis-duplicate-entry",
+      "dsh-required-plugin-missing-tools-service-hoisted-core-lib"
+     ]
+    },
+    {
+     "lesson_id": "dsh-mcp-row-disconnected-reconnect-budget-exhausted",
+     "rank": 1,
+     "best_cosine": 0.706508,
+     "top_ids": [
+      "dsh-mcp-row-disconnected-reconnect-budget-exhausted",
+      "codex-mcp-tools-not-injected-despite-handshake",
+      "mcp-endpoint-404-zone-route-misconfig",
+      "lesson-17-segmentfault-mcp-standardization",
+      "dsh-required-plugin-missing-tools-service-hoisted-core-lib"
+     ]
+    },
+    {
+     "lesson_id": "dsh-plugin-blocked-build-script-breaks-startup",
+     "rank": 4,
+     "best_cosine": 0.623332,
+     "top_ids": [
+      "lesson-review-7-cloudflare-saga-rollbacks",
+      "supabase-capacity-constraints-project-operations",
+      "display-preview-restore-session-scope-after-failed-readback",
+      "dsh-plugin-blocked-build-script-breaks-startup",
+      "dsh-market-watchdog-empty-output-false-failure"
+     ]
+    },
+    {
+     "lesson_id": "dsh-plugin-install-github-codeload-timeout",
+     "rank": 1,
+     "best_cosine": 0.62476,
+     "top_ids": [
+      "dsh-plugin-install-github-codeload-timeout",
+      "pip-install-proxy-timeout",
+      "instalacao-pip-timeout-proxy",
+      "dsh-market-watchdog-empty-output-false-failure",
+      "pip-install-timeout-ssl"
+     ]
+    },
+    {
+     "lesson_id": "dsh-plugin-installation-troubleshooting",
+     "rank": 4,
+     "best_cosine": 0.613165,
+     "top_ids": [
+      "external-issue-diagnosis-needs-own-reproduction",
+      "dsh-required-plugin-missing-tools-service-hoisted-core-lib",
+      "dsh-market-watchdog-empty-output-false-failure",
+      "dsh-plugin-installation-troubleshooting",
+      "dsh-blank-web-gui-optional-bundle-did-not-activate"
+     ]
+    },
+    {
+     "lesson_id": "dsh-plugin-l5-web-smoke-cordis-duplicate-entry",
+     "rank": 1,
+     "best_cosine": 0.647348,
+     "top_ids": [
+      "dsh-plugin-l5-web-smoke-cordis-duplicate-entry",
+      "external-issue-diagnosis-needs-own-reproduction",
+      "dsh-blank-web-gui-optional-bundle-did-not-activate",
+      "dsh-required-plugin-missing-tools-service-hoisted-core-lib",
+      "fanuc-roboguide-handlingpro-plugin-unavailable"
+     ]
+    },
+    {
+     "lesson_id": "dsh-plugin-pi-ai-version-gate-drops-tools",
+     "rank": null,
+     "best_cosine": 0.60413,
+     "top_ids": [
+      "codex-mcp-tools-not-injected-despite-handshake",
+      "llama-cpp-tools-plus-json-object-grammar-400",
+      "roboguide-dutyestimation-unknown-variable-name",
+      "dsml-tool-call-marker-leaked-into-content",
+      "security-exclusion-applied-module-table-short-name-trap"
+     ]
+    },
+    {
+     "lesson_id": "dsh-plugin-tmux-watch-fails-with-background-jobs-unavailable",
+     "rank": 1,
+     "best_cosine": 0.716968,
+     "top_ids": [
+      "dsh-plugin-tmux-watch-fails-with-background-jobs-unavailable",
+      "typescript-solution-tsconfig-silent-nocheck",
+      "roboguide-dutyestimation-unknown-variable-name",
+      "github-token-cannot-push-workflow-files",
+      "tauri-v1-camelcase-vs-snakecase-command-args"
+     ]
+    },
+    {
+     "lesson_id": "dsh-required-plugin-missing-tools-service-hoisted-core-lib",
+     "rank": 1,
+     "best_cosine": 0.651024,
+     "top_ids": [
+      "dsh-required-plugin-missing-tools-service-hoisted-core-lib",
+      "dsh-plugin-blocked-build-script-breaks-startup",
+      "dsh-plugin-l5-web-smoke-cordis-duplicate-entry",
+      "dsh-market-watchdog-empty-output-false-failure",
+      "fanuc-roboguide-handlingpro-plugin-unavailable"
+     ]
+    },
+    {
+     "lesson_id": "dsh-turn-aborts-on-plugin-injected-event-kind",
+     "rank": null,
+     "best_cosine": 0.586858,
+     "top_ids": [
+      "catch-all-error-code-masks-prompt-admission-failure",
+      "an-error-code-that-says-retry-cannot-carry-a-not-found",
+      "agent-error-handling-hi",
+      "http-timeout-retry-pattern",
+      "llama-cpp-tools-plus-json-object-grammar-400"
+     ]
+    },
+    {
+     "lesson_id": "dsh-web-fetch-typeerror-fetch-failed-cause",
+     "rank": 1,
+     "best_cosine": 0.69133,
+     "top_ids": [
+      "dsh-web-fetch-typeerror-fetch-failed-cause",
+      "http-timeout-retry-pattern",
+      "static-page-github-api-fault-tolerance",
+      "agent-web-access-toolchain-selection",
+      "an-error-code-that-says-retry-cannot-carry-a-not-found"
+     ]
+    },
+    {
+     "lesson_id": "dsh-windows-job-runner-exit-1-missing-subprocess-dep",
+     "rank": 5,
+     "best_cosine": 0.56311,
+     "top_ids": [
+      "node-child-process-eperm-windows-sandbox-redirect-to-file",
+      "report-only-verification-script-cannot-be-a-gate-step",
+      "windows-ci-splitcommand-backslash-unicode-detached",
+      "process-supervisor-watchdog-loops-restarting-crashing-agent",
+      "dsh-windows-job-runner-exit-1-missing-subprocess-dep"
+     ]
+    },
+    {
+     "lesson_id": "dsh-windows-shell-tools-blocked-two-stages",
+     "rank": 1,
+     "best_cosine": 0.653595,
+     "top_ids": [
+      "dsh-windows-shell-tools-blocked-two-stages",
+      "workspace-write-policy-denial-escalate-once-not-retry-apis",
+      "powershell-start-process-argumentlist-space-split",
+      "windows-acl-write-sandbox-grantwrite-win32-5",
+      "powershell-add-type-blocked-use-python-ctypes-instead"
+     ]
+    },
+    {
+     "lesson_id": "dsh-workspace-write-denies-workspace-subdirectories",
+     "rank": 2,
+     "best_cosine": 0.60661,
+     "top_ids": [
+      "parked-license-gate-is-not-tamper-detection",
+      "dsh-workspace-write-denies-workspace-subdirectories",
+      "lock-yield-on-importerror-silent-noop-loses-updates",
+      "lesson-15-cloudflare-workflows-durable",
+      "fanuc-vrc-exclusion-verified-still-crashes-three-layers"
+     ]
+    },
+    {
+     "lesson_id": "dsml-tool-call-marker-leaked-into-content",
+     "rank": 1,
+     "best_cosine": 0.630616,
+     "top_ids": [
+      "dsml-tool-call-marker-leaked-into-content",
+      "ssot-marker-replacement-runs-once",
+      "fanuc-io-marker-m-instruction",
+      "ui-automation-selector-contract-after-nav-change",
+      "powershell-pinvoke-charset-unicode-window-titles-mfc-fields"
+     ]
+    },
+    {
+     "lesson_id": "electron-builder-nsis-tls-reset-binary-mirror",
+     "rank": 1,
+     "best_cosine": 0.67457,
+     "top_ids": [
+      "electron-builder-nsis-tls-reset-binary-mirror",
+      "go-toolchain-vuln-bump-wrong-arch",
+      "npm-native-build-arch-mismatch",
+      "electron-dist-missing-browser-provider-unavailable",
+      "github-release-large-asset-download-cn"
+     ]
+    },
+    {
+     "lesson_id": "endpoint-security-disable-verify-by-fresh-process-injection",
+     "rank": 1,
+     "best_cosine": 0.60732,
+     "top_ids": [
+      "endpoint-security-disable-verify-by-fresh-process-injection",
+      "text-block-after-tool-use-400-anthropic-compatible-endpoints",
+      "ui-automation-selector-contract-after-nav-change",
+      "stale-issue-body-check-acceptance-items-against-the-tree",
+      "a-pystray-menu-thread-crash-is-an-appkit-main-thread-violation"
+     ]
+    },
+    {
+     "lesson_id": "enum-error-was-the-symptom-not-the-gate",
+     "rank": 1,
+     "best_cosine": 0.631657,
+     "top_ids": [
+      "enum-error-was-the-symptom-not-the-gate",
+      "allowlist-must-be-tested-against-the-corpus",
+      "compatibility-gate-rejection-is-verdict-not-accept-risk",
+      "json-schema-boolean-subschema-means-any-value",
+      "text-block-after-tool-use-400-anthropic-compatible-endpoints"
+     ]
+    },
+    {
+     "lesson_id": "erreur-permission-docker-linux",
+     "rank": 1,
+     "best_cosine": 0.755157,
+     "top_ids": [
+      "erreur-permission-docker-linux",
+      "docker-desktop-error-response-from-daemon-no-engine",
+      "wsl-status-fails-but-docker-desktop-works",
+      "dsh-desktop-web-authentication-failed",
+      "permission-denial-removes-evidence-is-stop-signal"
+     ]
+    },
+    {
+     "lesson_id": "erro-push-git-rejeitado-divergente",
+     "rank": 1,
+     "best_cosine": 0.668063,
+     "top_ids": [
+      "erro-push-git-rejeitado-divergente",
+      "github-token-cannot-push-workflow-files",
+      "verify-the-commit-not-the-worktree",
+      "ci-push-triggered-bot-races-generated-artifact",
+      "ci-github-token-push-does-not-trigger-workflows"
+     ]
+    },
+    {
+     "lesson_id": "error-dco-signoff-windows",
+     "rank": 1,
+     "best_cosine": 0.690213,
+     "top_ids": [
+      "error-dco-signoff-windows",
+      "dco-signoff-force-push-pitfall",
+      "dco-auto-fix-workflow",
+      "ci-github-token-push-does-not-trigger-workflows",
+      "erro-push-git-rejeitado-divergente"
+     ]
+    },
+    {
+     "lesson_id": "proxy-corporativo-curl-timeout",
+     "rank": 2,
+     "best_cosine": 0.753133,
+     "top_ids": [
+      "corporate-proxy-curl-timeout",
+      "proxy-corporativo-curl-timeout",
+      "pip-install-proxy-timeout",
+      "lesson-template-network",
+      "static-page-github-api-fault-tolerance"
+     ]
+    },
+    {
+     "lesson_id": "escrow-fee-rounding-per-provider",
+     "rank": 1,
+     "best_cosine": 0.684579,
+     "top_ids": [
+      "escrow-fee-rounding-per-provider",
+      "onchain-payout-preflight-checklist",
+      "honest-zero-cash-reporting",
+      "vertex-ai-cost-attribution-bigquery-billing-gemma",
+      "lesson-review-7-cloudflare-saga-rollbacks"
+     ]
+    },
+    {
+     "lesson_id": "event-count-is-not-a-health-signal",
+     "rank": 1,
+     "best_cosine": 0.574081,
+     "top_ids": [
+      "event-count-is-not-a-health-signal",
+      "http-timeout-retry-pattern",
+      "auto-recovery-hides-downtime-effective-availability",
+      "rate-limit-jitter-sleep",
+      "onchain-payout-preflight-checklist"
+     ]
+    },
+    {
+     "lesson_id": "external-issue-diagnosis-needs-own-reproduction",
+     "rank": 1,
+     "best_cosine": 0.655773,
+     "top_ids": [
+      "external-issue-diagnosis-needs-own-reproduction",
+      "bundled-plugin-imports-react-needs-dependencies-not-peer",
+      "pnpm-minimumreleaseageexclude-manifest-lockfile-divergence",
+      "dsh-plugin-pi-ai-version-gate-drops-tools",
+      "dsh-compatibility-json-exemptions-wrapper-key"
+     ]
+    },
+    {
+     "lesson_id": "fanuc-alarm-code-reference",
+     "rank": 1,
+     "best_cosine": 0.676546,
+     "top_ids": [
+      "fanuc-alarm-code-reference",
+      "fanuc-alarm-severity-guide",
+      "fatal-guard-cli-hardening",
+      "fanuc-program-inspection-methodology",
+      "fanuc-backup-payload-extraction"
+     ]
+    },
+    {
+     "lesson_id": "fanuc-alarm-severity-guide",
+     "rank": 1,
+     "best_cosine": 0.628239,
+     "top_ids": [
+      "fanuc-alarm-severity-guide",
+      "roboguide-dutyestimation-unknown-variable-name",
+      "watchdog-incremental-only-misses-crashed-frozen-target",
+      "fanuc-vrc-exclusion-verified-still-crashes-three-layers",
+      "dsml-tool-call-marker-leaked-into-content"
+     ]
+    },
+    {
+     "lesson_id": "fanuc-auto-abort-on-fault-restart",
+     "rank": 1,
+     "best_cosine": 0.682152,
+     "top_ids": [
+      "fanuc-auto-abort-on-fault-restart",
+      "fanuc-handling-robot-auto-drop-diagnosis",
+      "roboguide-pendant-switch-reads-robot-before-connect-event",
+      "github-token-cannot-push-workflow-files",
+      "fanuc-kl-err-abort-vs-err-pause"
+     ]
+    },
+    {
+     "lesson_id": "fanuc-backup-ls-tp-duplicate-stem-double-count",
+     "rank": 1,
+     "best_cosine": 0.595655,
+     "top_ids": [
+      "fanuc-backup-ls-tp-duplicate-stem-double-count",
+      "event-count-is-not-a-health-signal",
+      "search-evaluation-rank-tracking-bias",
+      "counting-files-with-fs-readdirsync-dir-length-counts-directo",
+      "dsml-tool-call-marker-leaked-into-content"
+     ]
+    },
+    {
+     "lesson_id": "fanuc-backup-payload-extraction",
+     "rank": 1,
+     "best_cosine": 0.652338,
+     "top_ids": [
+      "fanuc-backup-payload-extraction",
+      "fanuc-payload-checker-ver-8-04-excel-4-1",
+      "kubernetes-crashloopbackoff-debugging",
+      "fanuc-frvrc-auto-backup-illegal-path",
+      "fanuc-backup-extract-guide"
+     ]
+    },
+    {
+     "lesson_id": "fanuc-backup-restore-guide",
+     "rank": null,
+     "best_cosine": 0.606108,
+     "top_ids": [
+      "fanuc-frvrc-auto-backup-illegal-path",
+      "fanuc-payload-checker-ver-8-04-excel-4-1",
+      "schema-newer-than-pinned-runtime-writes-fail-silently",
+      "lesson-review-7-cloudflare-saga-rollbacks",
+      "fanuc-patch-changelog-version-file-offset"
+     ]
+    },
+    {
+     "lesson_id": "fanuc-blank-tp-0xff-not-parse-failure",
+     "rank": 1,
+     "best_cosine": 0.616424,
+     "top_ids": [
+      "fanuc-blank-tp-0xff-not-parse-failure",
+      "file-count-is-not-entity-count-three-layers",
+      "vertex-ai-streaming-response-sse",
+      "node-dataview-getuint32-default-big-endian",
+      "batch-import-extension-trust-and-dropped-producer-field"
+     ]
+    },
+    {
+     "lesson_id": "fanuc-dcs-safety-configuration",
+     "rank": null,
+     "best_cosine": 0.566823,
+     "top_ids": [
+      "roleplay-dialogue-loop-context-poisoning",
+      "roboguide-pendant-switch-reads-robot-before-connect-event",
+      "fanuc-handling-robot-auto-drop-diagnosis",
+      "fanuc-auto-abort-on-fault-restart",
+      "fanuc-frvrc-auto-backup-illegal-path"
+     ]
+    },
+    {
+     "lesson_id": "fanuc-do-not-found-in-program-reference-position",
+     "rank": 1,
+     "best_cosine": 0.592969,
+     "top_ids": [
+      "fanuc-do-not-found-in-program-reference-position",
+      "electron-dist-missing-browser-provider-unavailable",
+      "registry-publish-gap-version-drift-never-green-workflow",
+      "recording-screen-with-ffmpeg-to-an-mp4-file-then-stopping-it",
+      "nsis-silent-install-exit-2-electron-status-breakpoint"
+     ]
+    },
+    {
+     "lesson_id": "fanuc-frvrc-auto-backup-illegal-path",
+     "rank": 1,
+     "best_cosine": 0.655892,
+     "top_ids": [
+      "fanuc-frvrc-auto-backup-illegal-path",
+      "kubernetes-crashloopbackoff-debugging",
+      "daemon-start-failed-empty-detail-missing-credential",
+      "fanuc-rgcore-hang-endpoint-security-injection",
+      "rag-kb-build-sop-anti-bsod"
+     ]
+    },
+    {
+     "lesson_id": "fanuc-intp-102-detect-joint-olp-whitespace",
+     "rank": 3,
+     "best_cosine": 0.586901,
+     "top_ids": [
+      "roboguide-dutyestimation-unknown-variable-name",
+      "enum-error-was-the-symptom-not-the-gate",
+      "fanuc-intp-102-detect-joint-olp-whitespace",
+      "powershell-set-content-utf8-bom-breaks-package-json",
+      "fanuc-kl-1086-is-line-number-not-error-code"
+     ]
+    },
+    {
+     "lesson_id": "fanuc-karel-core-utility-modules",
+     "rank": null,
+     "best_cosine": 0.594758,
+     "top_ids": [
+      "registration-chain-worker-fallback",
+      "oss-refactor-lessons",
+      "readme-seven-traps-fix-checklist",
+      "lesson-20-api-design-principles",
+      "lesson-9-redis-postgresql-replacement"
+     ]
+    },
+    {
+     "lesson_id": "fanuc-karel-geometry-kinematics-layer",
+     "rank": 1,
+     "best_cosine": 0.614002,
+     "top_ids": [
+      "fanuc-karel-geometry-kinematics-layer",
+      "cloudflare-worker-deploy-three-pitfalls",
+      "fanuc-payload-checker-ver-8-04-excel-4-1",
+      "roboguide-dutyestimation-unknown-variable-name",
+      "vertex-ai-embedding-qwen-go-migration"
+     ]
+    },
+    {
+     "lesson_id": "fanuc-karel-intp-316-call-error-motion-lock",
+     "rank": 1,
+     "best_cosine": 0.701669,
+     "top_ids": [
+      "fanuc-karel-intp-316-call-error-motion-lock",
+      "fanuc-workcell-reopen-retriggers-pmon-reconnect-storm",
+      "roboguide-pendant-switch-reads-robot-before-connect-event",
+      "fanuc-vrc-exclusion-verified-still-crashes-three-layers",
+      "security-exclusion-applied-module-table-short-name-trap"
+     ]
+    },
+    {
+     "lesson_id": "fanuc-kl-1086-is-line-number-not-error-code",
+     "rank": 3,
+     "best_cosine": 0.627388,
+     "top_ids": [
+      "file-count-is-not-entity-count-three-layers",
+      "data-capping-equals-forging-data",
+      "fanuc-kl-1086-is-line-number-not-error-code",
+      "fanuc-ls-parser-comment-and-segment-boundary",
+      "two-artifacts-same-name-trigger-device-module"
+     ]
+    },
+    {
+     "lesson_id": "fanuc-kl-bytes-ahead-is-builtin-procedure",
+     "rank": 1,
+     "best_cosine": 0.623116,
+     "top_ids": [
+      "fanuc-kl-bytes-ahead-is-builtin-procedure",
+      "vertex-ai-embedding-qwen-go-migration",
+      "rust-read-to-string-strict-utf8-vs-node-lossy",
+      "curl-exit-23-is-a-write-failure-not-a-network-failure",
+      "feishu-gateway-group-policy-silently-drops-messages"
+     ]
+    },
+    {
+     "lesson_id": "fanuc-mi-standard-software-instructions",
+     "rank": null,
+     "best_cosine": 0.529983,
+     "top_ids": [
+      "process-card-sequence-extraction-rules",
+      "rescue-cards-for-non-github-users",
+      "file-count-is-not-entity-count-three-layers",
+      "repository-traffic-is-not-lesson-use",
+      "brochure-claim-not-in-operator-manual"
+     ]
+    },
+    {
+     "lesson_id": "fanuc-payload-checker-ver-8-04-excel-4-1",
+     "rank": 1,
+     "best_cosine": 0.717538,
+     "top_ids": [
+      "fanuc-payload-checker-ver-8-04-excel-4-1",
+      "fanuc-payload-estimation",
+      "roboguide-dutyestimation-unknown-variable-name",
+      "fanuc-backup-payload-extraction",
+      "fanuc-karel-ik-fk-quaternion-guide"
+     ]
+    },
+    {
+     "lesson_id": "fanuc-payload-estimation",
+     "rank": null,
+     "best_cosine": 0.568769,
+     "top_ids": [
+      "roboguide-pendant-switch-reads-robot-before-connect-event",
+      "fanuc-karel-geometry-kinematics-layer",
+      "fanuc-program-inspection-methodology",
+      "process-card-sequence-extraction-rules",
+      "fanuc-handling-robot-auto-drop-diagnosis"
+     ]
+    },
+    {
+     "lesson_id": "fanuc-profinet-32bit-real-value-transfer",
+     "rank": 1,
+     "best_cosine": 0.573847,
+     "top_ids": [
+      "fanuc-profinet-32bit-real-value-transfer",
+      "fanuc-python-interface-fanucpy",
+      "roboguide-pendant-switch-reads-robot-before-connect-event",
+      "fanuc-karel-http-api-webcontrol",
+      "fanuc-alarm-code-reference"
+     ]
+    },
+    {
+     "lesson_id": "fanuc-program-inspection-methodology",
+     "rank": 1,
+     "best_cosine": 0.636587,
+     "top_ids": [
+      "fanuc-program-inspection-methodology",
+      "security-exclusion-needs-a-control-group",
+      "batch-pilot-sample-must-be-filtered-to-scope",
+      "process-card-sequence-extraction-rules",
+      "endpoint-security-disable-verify-by-fresh-process-injection"
+     ]
+    },
+    {
+     "lesson_id": "fanuc-r-2000ic-retrieval-fix",
+     "rank": 1,
+     "best_cosine": 0.633609,
+     "top_ids": [
+      "fanuc-r-2000ic-retrieval-fix",
+      "file-count-is-not-entity-count-three-layers",
+      "fanuc-karel-http-api-webcontrol",
+      "wxauto-im-feedback-collection-jsonl-queue",
+      "rag-brand-contamination-detection-and-fix"
+     ]
+    },
+    {
+     "lesson_id": "fanuc-rgcore-hang-endpoint-security-injection",
+     "rank": 2,
+     "best_cosine": 0.601605,
+     "top_ids": [
+      "fanuc-vrc-exclusion-verified-still-crashes-three-layers",
+      "fanuc-rgcore-hang-endpoint-security-injection",
+      "roboguide-pendant-switch-reads-robot-before-connect-event",
+      "fanuc-rgcore-diagnostic-probe-triggers-controller-crash",
+      "parked-license-gate-is-not-tamper-detection"
+     ]
+    },
+    {
+     "lesson_id": "fanuc-running-time-system-time-run-tot",
+     "rank": 1,
+     "best_cosine": 0.665258,
+     "top_ids": [
+      "fanuc-running-time-system-time-run-tot",
+      "fanuc-handling-robot-auto-drop-diagnosis",
+      "fanuc-karel-http-api-webcontrol",
+      "fanuc-python-interface-fanucpy",
+      "fanuc-alarm-code-reference"
+     ]
+    },
+    {
+     "lesson_id": "fanuc-spot-wear-max-lookup",
+     "rank": 1,
+     "best_cosine": 0.676911,
+     "top_ids": [
+      "fanuc-spot-wear-max-lookup",
+      "fanuc-payload-checker-ver-8-04-excel-4-1",
+      "intake-stress-testing-20k-60k-payload-boundaries",
+      "data-capping-equals-forging-data",
+      "saturation-cap-low-slope-amplifies-instead-of-compressing"
+     ]
+    },
+    {
+     "lesson_id": "fanuc-tcp-tool-configuration-standards",
+     "rank": null,
+     "best_cosine": 0.6198,
+     "top_ids": [
+      "fanuc-payload-checker-ver-8-04-excel-4-1",
+      "process-card-sequence-extraction-rules",
+      "roboguide-dutyestimation-unknown-variable-name",
+      "fanuc-intp-102-detect-joint-olp-whitespace",
+      "json-schema-boolean-subschema-means-any-value"
+     ]
+    },
+    {
+     "lesson_id": "fanuc-vrc-exclusion-verified-still-crashes-three-layers",
+     "rank": 1,
+     "best_cosine": 0.623482,
+     "top_ids": [
+      "fanuc-vrc-exclusion-verified-still-crashes-three-layers",
+      "wsl2-memory-leak-fix",
+      "fanuc-rgcore-hang-endpoint-security-injection",
+      "security-exclusion-applied-module-table-short-name-trap",
+      "dsh-desktop-web-authentication-failed"
+     ]
+    },
+    {
+     "lesson_id": "fanuc-workcell-reopen-retriggers-pmon-reconnect-storm",
+     "rank": 1,
+     "best_cosine": 0.59572,
+     "top_ids": [
+      "fanuc-workcell-reopen-retriggers-pmon-reconnect-storm",
+      "fanuc-vrc-exclusion-verified-still-crashes-three-layers",
+      "github-actions-composite-pitfalls",
+      "github-connectivity-4-fallbacks",
+      "fanuc-rgcore-hang-endpoint-security-injection"
+     ]
+    },
+    {
+     "lesson_id": "fatal-guard-cli-hardening",
+     "rank": 1,
+     "best_cosine": 0.604791,
+     "top_ids": [
+      "fatal-guard-cli-hardening",
+      "phase-0-output-gate",
+      "agentcap-inspect-subcommand-and-codesign-xml-output",
+      "aider-api-key-leak",
+      "agent-web-access-toolchain-selection"
+     ]
+    },
+    {
+     "lesson_id": "fehler-python-modul-nicht-gefunden",
+     "rank": null,
+     "best_cosine": 0.580891,
+     "top_ids": [
+      "a-green-test-suite-hid-a-module-a-bare-node-runtime-cannot-load",
+      "ci-lambda-module-level-side-effects",
+      "github-actions-code-injection",
+      "enum-error-was-the-symptom-not-the-gate",
+      "go-toolchain-vuln-bump-wrong-arch"
+     ]
+    },
+    {
+     "lesson_id": "feishu-bitable-attachment-parent-type-file-token",
+     "rank": 1,
+     "best_cosine": 0.79829,
+     "top_ids": [
+      "feishu-bitable-attachment-parent-type-file-token",
+      "feishu-upload-file-type-opus",
+      "feishu-mcp-server-deepseek-tui-setup",
+      "aily-feishu-mcp-pull-only",
+      "feishu-markdown-table-not-rendered"
+     ]
+    },
+    {
+     "lesson_id": "feishu-block-api-false-success",
+     "rank": null,
+     "best_cosine": 0.611249,
+     "top_ids": [
+      "report-only-verification-script-cannot-be-a-gate-step",
+      "snapshot-writer-reader-filename-grammar-mismatch",
+      "whole-file-content-push-reverts-managed-lines",
+      "release-signature-assembled-before-last-build",
+      "curl-exit-23-is-a-write-failure-not-a-network-failure"
+     ]
+    },
+    {
+     "lesson_id": "feishu-block-batch-limit",
+     "rank": 1,
+     "best_cosine": 0.623163,
+     "top_ids": [
+      "feishu-block-batch-limit",
+      "shared-json-needs-atomic-write",
+      "api-rate-limit-handling-best-practices",
+      "github-api-pr-submission-pitfalls",
+      "file-count-is-not-entity-count-three-layers"
+     ]
+    },
+    {
+     "lesson_id": "feishu-bot-setup-complete",
+     "rank": 1,
+     "best_cosine": 0.694352,
+     "top_ids": [
+      "feishu-bot-setup-complete",
+      "feishu-setup-complete-cc-connect",
+      "feishu-gateway-group-policy-silently-drops-messages",
+      "hub-credential-gateway-vs-hub",
+      "vertical-kb-question-bank-strategy"
+     ]
+    },
+    {
+     "lesson_id": "feishu-doc-delete-blocks-by-range-pitfall",
+     "rank": 3,
+     "best_cosine": 0.582689,
+     "top_ids": [
+      "whole-file-content-push-reverts-managed-lines",
+      "unclosed-html-comment-hides-markdown-body",
+      "feishu-doc-delete-blocks-by-range-pitfall",
+      "batch-import-extension-trust-and-dropped-producer-field",
+      "regex-rebuild-dropped-1580-lines-unnoticed"
+     ]
+    },
+    {
+     "lesson_id": "feishu-setup-complete-cc-connect",
+     "rank": null,
+     "best_cosine": 0.608219,
+     "top_ids": [
+      "external-issue-diagnosis-needs-own-reproduction",
+      "release-signature-assembled-before-last-build",
+      "electron-builder-nsis-tls-reset-binary-mirror",
+      "nsis-installer-rejects-upgrade-appid-guid-mismatch",
+      "nsis-silent-install-exit-2-electron-status-breakpoint"
+     ]
+    },
+    {
+     "lesson_id": "feishu-upload-file-type-opus",
+     "rank": 1,
+     "best_cosine": 0.680958,
+     "top_ids": [
+      "feishu-upload-file-type-opus",
+      "feishu-bitable-attachment-parent-type-file-token",
+      "feishu-webhook-url-env-config",
+      "curl-request-troubleshoot",
+      "feishu-doc-url-use-api-return"
+     ]
+    },
+    {
+     "lesson_id": "feishu-websocket-404-error-http-webhook-required",
+     "rank": null,
+     "best_cosine": 0.612484,
+     "top_ids": [
+      "mcp-endpoint-404-zone-route-misconfig",
+      "an-error-code-that-says-retry-cannot-carry-a-not-found",
+      "fanuc-checker-misses-alternate-mi-implementation",
+      "fanuc-ls-parser-comment-and-segment-boundary",
+      "enum-error-was-the-symptom-not-the-gate"
+     ]
+    },
+    {
+     "lesson_id": "feishu-wiki-batch-download",
+     "rank": 1,
+     "best_cosine": 0.679931,
+     "top_ids": [
+      "feishu-wiki-batch-download",
+      "github-release-large-asset-download-cn",
+      "rag-brand-contamination-detection-and-fix",
+      "github-download-stall-ghfast-top-proxy-prefix",
+      "feishu-bitable-attachment-parent-type-file-token"
+     ]
+    },
+    {
+     "lesson_id": "ffmpeg-rec709-filter-stage-color-conversion",
+     "rank": 1,
+     "best_cosine": 0.694672,
+     "top_ids": [
+      "ffmpeg-rec709-filter-stage-color-conversion",
+      "libreoffice-pptx-rasterizer-scales-shapes-1-5x",
+      "sag-lite-data-quality-cleaning",
+      "rag-chunk-params-800-100",
+      "voice-pipeline-silent-failures"
+     ]
+    },
+    {
+     "lesson_id": "file-count-is-not-entity-count-three-layers",
+     "rank": 1,
+     "best_cosine": 0.693495,
+     "top_ids": [
+      "file-count-is-not-entity-count-three-layers",
+      "fanuc-running-time-system-time-run-tot",
+      "fanuc-payload-checker-ver-8-04-excel-4-1",
+      "process-card-sequence-extraction-rules",
+      "cross-sheet-name-merge-data-chaos"
+     ]
+    },
+    {
+     "lesson_id": "finding-and-fixing-ghostty-s-largest-memory-leak",
+     "rank": 1,
+     "best_cosine": 0.630754,
+     "top_ids": [
+      "finding-and-fixing-ghostty-s-largest-memory-leak",
+      "wsl2-memory-leak-fix",
+      "disk-space-cleanup",
+      "debugging-memory-leaks-in-ruby",
+      "windows-libvips-double-load-masquerades-as-transport"
+     ]
+    },
+    {
+     "lesson_id": "firewall-port-open-not-public",
+     "rank": 1,
+     "best_cosine": 0.637573,
+     "top_ids": [
+      "firewall-port-open-not-public",
+      "feishu-webhook-url-env-config",
+      "anthropic-proxy-internal-gateway",
+      "feishu-websocket-404-error-http-webhook-required",
+      "npm-e403-forbidden-three-layers"
+     ]
+    },
+    {
+     "lesson_id": "fiverr-perimeterx-blocks-seller-automation",
+     "rank": null,
+     "best_cosine": 0.594425,
+     "top_ids": [
+      "platform-issue-template-commands-need-the-platform-installed",
+      "playwright-antd-modal-escape-intercepts-pointer-events",
+      "bounty-contributors-are-not-always-users",
+      "powershell-pinvoke-charset-unicode-window-titles-mfc-fields",
+      "registration-chain-worker-fallback"
+     ]
+    },
+    {
+     "lesson_id": "fix-acceptance-is-a-degradation-not-a-crash-count",
+     "rank": 4,
+     "best_cosine": 0.565756,
+     "top_ids": [
+      "agent-roleplay-time-consistency-hallucination",
+      "watchdog-incremental-only-misses-crashed-frozen-target",
+      "crash-reproducibility-signature-first-then-rate",
+      "fix-acceptance-is-a-degradation-not-a-crash-count",
+      "roleplay-dialogue-loop-context-poisoning"
+     ]
+    },
+    {
+     "lesson_id": "frame-grid-validation-replacement-shorter-than-slot",
+     "rank": 1,
+     "best_cosine": 0.666964,
+     "top_ids": [
+      "frame-grid-validation-replacement-shorter-than-slot",
+      "stale-baseline-worktree-misattributes-failure",
+      "ci-push-triggered-bot-races-generated-artifact",
+      "fanuc-payload-checker-ver-8-04-excel-4-1",
+      "mcp-tool-error-convention-inconsistency"
+     ]
+    },
+    {
+     "lesson_id": "frontmatter-parsing-edge-cases",
+     "rank": 1,
+     "best_cosine": 0.699107,
+     "top_ids": [
+      "frontmatter-parsing-edge-cases",
+      "lesson-gate-swallowed-missing-pyyaml-reports-missing-fields",
+      "lessons-json-stale-after-frontmatter-edit",
+      "allowlist-must-be-tested-against-the-corpus",
+      "data-pipeline-lessons-json-canonical-generator"
+     ]
+    },
+    {
+     "lesson_id": "game-mcp-end-turn-conflict-409",
+     "rank": 1,
+     "best_cosine": 0.79469,
+     "top_ids": [
+      "game-mcp-end-turn-conflict-409",
+      "text-block-after-tool-use-400-anthropic-compatible-endpoints",
+      "fanuc-workcell-reopen-retriggers-pmon-reconnect-storm",
+      "mcp-endpoint-404-zone-route-misconfig",
+      "game-mcp-game-over-restart-flow"
+     ]
+    },
+    {
+     "lesson_id": "game-mcp-game-over-restart-flow",
+     "rank": 1,
+     "best_cosine": 0.758038,
+     "top_ids": [
+      "game-mcp-game-over-restart-flow",
+      "game-mcp-end-turn-conflict-409",
+      "onchain-payout-preflight-checklist",
+      "fanuc-workcell-reopen-retriggers-pmon-reconnect-storm",
+      "process-supervisor-watchdog-loops-restarting-crashing-agent"
+     ]
+    },
+    {
+     "lesson_id": "game-mcp-rare-relic-freeze",
+     "rank": 1,
+     "best_cosine": 0.709391,
+     "top_ids": [
+      "game-mcp-rare-relic-freeze",
+      "local-proxy-refusal-without-log-undiagnosable",
+      "prompt-cache-prefix-invalidation-roleplay",
+      "http-timeout-retry-pattern",
+      "fanuc-workcell-reopen-retriggers-pmon-reconnect-storm"
+     ]
+    },
+    {
+     "lesson_id": "gemini-safety-settings-multi-hop-passthrough",
+     "rank": 1,
+     "best_cosine": 0.663141,
+     "top_ids": [
+      "gemini-safety-settings-multi-hop-passthrough",
+      "cloudflare-ai-gateway-auth-pitfalls",
+      "dsh-plugin-pi-ai-version-gate-drops-tools",
+      "ui-automation-selector-contract-after-nav-change",
+      "fanuc-payload-checker-ver-8-04-excel-4-1"
+     ]
+    },
+    {
+     "lesson_id": "gfw-tls-sni-block-pattern",
+     "rank": 2,
+     "best_cosine": 0.563861,
+     "top_ids": [
+      "curl-request-troubleshoot",
+      "gfw-tls-sni-block-pattern",
+      "http-timeout-retry-pattern",
+      "dsh-web-fetch-typeerror-fetch-failed-cause",
+      "agent-web-access-toolchain-selection"
+     ]
+    },
+    {
+     "lesson_id": "gfw-tls-sni-blocking-tool-layer-ineffective",
+     "rank": 1,
+     "best_cosine": 0.647859,
+     "top_ids": [
+      "gfw-tls-sni-blocking-tool-layer-ineffective",
+      "curl-request-troubleshoot",
+      "static-page-github-api-403-rate-limit",
+      "pip-install-timeout-ssl",
+      "github-dns-443-block-hosts-workaround"
+     ]
+    },
+    {
+     "lesson_id": "gh-auth-device-flow-times-out-command-line-does-not-inherit-system-proxy",
+     "rank": 1,
+     "best_cosine": 0.631205,
+     "top_ids": [
+      "gh-auth-device-flow-times-out-command-line-does-not-inherit-system-proxy",
+      "corporate-proxy-curl-timeout",
+      "agent-web-access-toolchain-selection",
+      "http-timeout-retry-pattern",
+      "static-page-github-api-fault-tolerance"
+     ]
+    },
+    {
+     "lesson_id": "gh-cli-empty-body-silently-wipes-pr-description",
+     "rank": 1,
+     "best_cosine": 0.63559,
+     "top_ids": [
+      "gh-cli-empty-body-silently-wipes-pr-description",
+      "pr-cleanup-sop",
+      "gh-pr-ready-checklist",
+      "pr-body-stale-after-force-push",
+      "ci-fork-pr-no-comment-token"
+     ]
+    },
+    {
+     "lesson_id": "ghidra-mcp-server-reverse-engineering",
+     "rank": null,
+     "best_cosine": 0.563777,
+     "top_ids": [
+      "batch-pilot-sample-must-be-filtered-to-scope",
+      "rag-kb-quality-flywheel-self-loop",
+      "two-artifacts-same-name-trigger-device-module",
+      "long-context-pollution-delegate-to-subagents-keep-only-decisions",
+      "roleplay-dialogue-loop-context-poisoning"
+     ]
+    },
+    {
+     "lesson_id": "git-checkout-discards-uncommitted-work",
+     "rank": 1,
+     "best_cosine": 0.61309,
+     "top_ids": [
+      "git-checkout-discards-uncommitted-work",
+      "gh-cli-empty-body-silently-wipes-pr-description",
+      "green-compile-fix-unreachable-from-entry-point",
+      "go-linter-cleanup-go-fix",
+      "sample-counter-incremented-before-the-lookup-check"
+     ]
+    },
+    {
+     "lesson_id": "git-clean-branch-after-merged-pr-ru",
+     "rank": 1,
+     "best_cosine": 0.592422,
+     "top_ids": [
+      "git-clean-branch-after-merged-pr-ru",
+      "misakanet-heal-ux-gap-queue-lesson-flag-mismatch",
+      "lesson-provenance-tracking",
+      "ui-automation-selector-contract-after-nav-change",
+      "git-force-with-lease-detached-head"
+     ]
+    },
+    {
+     "lesson_id": "git-credential-helper-gh-path-mismatch",
+     "rank": 2,
+     "best_cosine": 0.6963,
+     "top_ids": [
+      "git-push-without-shell-agent",
+      "git-credential-helper-gh-path-mismatch",
+      "github-automation-without-gh-cli-pt",
+      "git-credentials-automation",
+      "git-tls-handshake-failure"
+     ]
+    },
+    {
+     "lesson_id": "git-credentials-automation",
+     "rank": 1,
+     "best_cosine": 0.706462,
+     "top_ids": [
+      "git-credentials-automation",
+      "security-exclusion-applied-module-table-short-name-trap",
+      "ui-automation-selector-contract-after-nav-change",
+      "ci-dco-decouple-pythonpath-fork-pr",
+      "json-schema-boolean-subschema-means-any-value"
+     ]
+    },
+    {
+     "lesson_id": "git-diff-whitespace-verification-traps",
+     "rank": 1,
+     "best_cosine": 0.705424,
+     "top_ids": [
+      "git-diff-whitespace-verification-traps",
+      "stale-bundle-font-size-hard-refresh",
+      "astro-dev-stale-css-screenshot",
+      "git-merge-conflict-resolution",
+      "github-token-cannot-push-workflow-files"
+     ]
+    },
+    {
+     "lesson_id": "git-force-with-lease-detached-head",
+     "rank": 3,
+     "best_cosine": 0.657077,
+     "top_ids": [
+      "squash-rebase-force-push-lease",
+      "erro-push-git-rejeitado-divergente",
+      "git-force-with-lease-detached-head",
+      "schema-newer-than-pinned-runtime-writes-fail-silently",
+      "ci-push-triggered-bot-races-generated-artifact"
+     ]
+    },
+    {
+     "lesson_id": "git-merge-conflict-resolution",
+     "rank": 1,
+     "best_cosine": 0.690116,
+     "top_ids": [
+      "git-merge-conflict-resolution",
+      "regex-greedy-matching",
+      "whole-file-content-push-reverts-managed-lines",
+      "parallel-pr-scope-belongs-to-the-fact-not-the-path",
+      "cross-sheet-name-merge-data-chaos"
+     ]
+    },
+    {
+     "lesson_id": "git-stash-is-repository-wide",
+     "rank": 1,
+     "best_cosine": 0.639326,
+     "top_ids": [
+      "git-stash-is-repository-wide",
+      "patch-failed-hunk-already-changed-earlier-files",
+      "stale-injected-state-must-be-filtered-before-the-model-sees-it",
+      "stale-bundle-font-size-hard-refresh",
+      "verify-the-commit-not-the-worktree"
+     ]
+    },
+    {
+     "lesson_id": "git-tls-handshake-failure",
+     "rank": 1,
+     "best_cosine": 0.737854,
+     "top_ids": [
+      "git-tls-handshake-failure",
+      "github-dns-443-block-hosts-workaround",
+      "git-push-without-shell-agent",
+      "github-connectivity-4-fallbacks",
+      "git-credential-helper-gh-path-mismatch"
+     ]
+    },
+    {
+     "lesson_id": "git-worktree-dangling-commit-recovery",
+     "rank": 1,
+     "best_cosine": 0.611628,
+     "top_ids": [
+      "git-worktree-dangling-commit-recovery",
+      "git-checkout-discards-uncommitted-work",
+      "silent-data-loss-google-cloud",
+      "a-file-migration-whose-only-condition-is-if-exists-dest-rena",
+      "schema-newer-than-pinned-runtime-writes-fail-silently"
+     ]
+    },
+    {
+     "lesson_id": "github-actions-audit-scope-detection",
+     "rank": null,
+     "best_cosine": 0.604987,
+     "top_ids": [
+      "pr-body-stale-after-force-push",
+      "ci-manual-dispatch-whole-corpus-false-red",
+      "ci-fork-pr-run-held-as-action-required",
+      "a-stubbed-success-is-not-a-sandbox",
+      "a-security-fix-that-turns-tests-red-is-the-fix-working"
+     ]
+    },
+    {
+     "lesson_id": "github-actions-composite-pitfalls",
+     "rank": 5,
+     "best_cosine": 0.603581,
+     "top_ids": [
+      "github-actions-secrets-one-shot-workflow-pattern",
+      "powershell-start-process-argumentlist-space-split",
+      "phase-0-output-gate",
+      "shell-script-debugging",
+      "github-actions-composite-pitfalls"
+     ]
+    },
+    {
+     "lesson_id": "github-api-pr-issue-management",
+     "rank": 1,
+     "best_cosine": 0.710893,
+     "top_ids": [
+      "github-api-pr-issue-management",
+      "git-credentials-automation",
+      "github-automation-without-gh-cli-pt",
+      "git-tls-handshake-failure",
+      "github-dns-443-block-hosts-workaround"
+     ]
+    },
+    {
+     "lesson_id": "github-automation-without-gh-cli-pt",
+     "rank": null,
+     "best_cosine": 0.614052,
+     "top_ids": [
+      "schtasks-create-non-ascii-path-exit-code-4294967295",
+      "an-error-code-that-says-retry-cannot-carry-a-not-found",
+      "go-scheduler-deadlock-lock-order",
+      "cron-job-not-running",
+      "python-command-not-found-only-python3"
+     ]
+    },
+    {
+     "lesson_id": "github-comment-list-one-page-hides-newest-comment",
+     "rank": 1,
+     "best_cosine": 0.640125,
+     "top_ids": [
+      "github-comment-list-one-page-hides-newest-comment",
+      "intake-text-cap-body-assembly-truncation-fix",
+      "intake-pipeline-cli-text-truncation-section-loss",
+      "maintainer-feedback-iteration",
+      "retrieval-projection-truncation-caps-recall"
+     ]
+    },
+    {
+     "lesson_id": "github-contents-api-pr-pitfalls",
+     "rank": null,
+     "best_cosine": 0.633519,
+     "top_ids": [
+      "a-security-fix-that-turns-tests-red-is-the-fix-working",
+      "enum-error-was-the-symptom-not-the-gate",
+      "lesson-11-github-commit-signing",
+      "ui-automation-selector-contract-after-nav-change",
+      "security-exclusion-applied-module-table-short-name-trap"
+     ]
+    },
+    {
+     "lesson_id": "github-contents-api-sha-required",
+     "rank": null,
+     "best_cosine": 0.618807,
+     "top_ids": [
+      "text-block-after-tool-use-400-anthropic-compatible-endpoints",
+      "mcporter-cloudflare-oauth-endpoint-scope-wsl-callback",
+      "enum-error-was-the-symptom-not-the-gate",
+      "game-mcp-end-turn-conflict-409",
+      "allowlist-must-be-tested-against-the-corpus"
+     ]
+    },
+    {
+     "lesson_id": "github-dns-443-block-hosts-workaround",
+     "rank": null,
+     "best_cosine": 0.569127,
+     "top_ids": [
+      "ci-github-token-push-does-not-trigger-workflows",
+      "git-push-without-shell-agent",
+      "whole-file-content-push-reverts-managed-lines",
+      "ci-push-triggered-bot-races-generated-artifact",
+      "github-connectivity-4-fallbacks"
+     ]
+    },
+    {
+     "lesson_id": "github-download-stall-ghfast-top-proxy-prefix",
+     "rank": 1,
+     "best_cosine": 0.716345,
+     "top_ids": [
+      "github-download-stall-ghfast-top-proxy-prefix",
+      "github-release-large-asset-download-cn",
+      "ci-github-token-push-does-not-trigger-workflows",
+      "dsh-plugin-install-github-codeload-timeout",
+      "dsh-market-watchdog-empty-output-false-failure"
+     ]
+    },
+    {
+     "lesson_id": "github-rate-limit-auth",
+     "rank": 1,
+     "best_cosine": 0.725886,
+     "top_ids": [
+      "github-rate-limit-auth",
+      "api-rate-limit-handling",
+      "static-page-github-api-fault-tolerance",
+      "static-page-github-api-403-rate-limit",
+      "api-rate-limit-handling-best-practices"
+     ]
+    },
+    {
+     "lesson_id": "github-sudo-email-otp-wrong-input-field",
+     "rank": 1,
+     "best_cosine": 0.667328,
+     "top_ids": [
+      "github-sudo-email-otp-wrong-input-field",
+      "dco-auto-fix-workflow",
+      "dsh-desktop-web-authentication-failed",
+      "daemon-start-failed-empty-detail-missing-credential",
+      "error-dco-signoff-windows"
+     ]
+    },
+    {
+     "lesson_id": "github-token-cannot-push-workflow-files",
+     "rank": 1,
+     "best_cosine": 0.640626,
+     "top_ids": [
+      "github-token-cannot-push-workflow-files",
+      "dco-auto-fix-workflow",
+      "whole-file-content-push-reverts-managed-lines",
+      "cloudflare-observability-mcp-oauth-separate-domain",
+      "ci-github-token-push-does-not-trigger-workflows"
+     ]
+    },
+    {
+     "lesson_id": "glama-mcp-server-deploy-lessons",
+     "rank": null,
+     "best_cosine": 0.586459,
+     "top_ids": [
+      "llm-sdk-client-centralization-architecture",
+      "ci-github-token-push-does-not-trigger-workflows",
+      "agent-worktree-isolation-requires-git-cwd",
+      "vertex-ai-embedding-qwen-go-migration",
+      "rust-build-rs-rerun-if-changed-stale-git-hash"
+     ]
+    },
+    {
+     "lesson_id": "go-linter-cleanup-go-fix",
+     "rank": 1,
+     "best_cosine": 0.677551,
+     "top_ids": [
+      "go-linter-cleanup-go-fix",
+      "phase-0-output-gate",
+      "time-based-staleness-gate-acknowledged-debt",
+      "monotonic-clock-cache-expiry-test-fails-on-ci",
+      "fatal-guard-cli-hardening"
+     ]
+    },
+    {
+     "lesson_id": "go-scheduler-deadlock-lock-order",
+     "rank": 1,
+     "best_cosine": 0.6085,
+     "top_ids": [
+      "go-scheduler-deadlock-lock-order",
+      "js-dead-code-chain-break",
+      "watchdog-incremental-only-misses-crashed-frozen-target",
+      "asyncio-cancellederror-swallows-resources",
+      "process-supervisor-watchdog-loops-restarting-crashing-agent"
+     ]
+    },
+    {
+     "lesson_id": "go-strings-contains-case-sensitivity-pitfalls",
+     "rank": 4,
+     "best_cosine": 0.588034,
+     "top_ids": [
+      "gemini-safety-settings-multi-hop-passthrough",
+      "agent-web-access-toolchain-selection",
+      "agentcap-registry-secret-safe-validation-failure-metadata",
+      "go-strings-contains-case-sensitivity-pitfalls",
+      "allowlist-must-be-tested-against-the-corpus"
+     ]
+    },
+    {
+     "lesson_id": "go-toolchain-vuln-bump-wrong-arch",
+     "rank": null,
+     "best_cosine": 0.624601,
+     "top_ids": [
+      "verify-the-commit-not-the-worktree",
+      "lock-yield-on-importerror-silent-noop-loses-updates",
+      "green-check-subject-outside-scope",
+      "ci-manual-dispatch-whole-corpus-false-red",
+      "time-based-staleness-gate-acknowledged-debt"
+     ]
+    },
+    {
+     "lesson_id": "godmoding-model-acts-for-user",
+     "rank": 1,
+     "best_cosine": 0.619273,
+     "top_ids": [
+      "godmoding-model-acts-for-user",
+      "agent-roleplay-time-consistency-hallucination",
+      "stale-injected-state-must-be-filtered-before-the-model-sees-it",
+      "roleplay-dialogue-loop-context-poisoning",
+      "npc-dispatch-speaker-dislocation"
+     ]
+    },
+    {
+     "lesson_id": "gpt-sovits-hubert-16khz",
+     "rank": 1,
+     "best_cosine": 0.612334,
+     "top_ids": [
+      "gpt-sovits-hubert-16khz",
+      "json-parse-failure-handling",
+      "model-output-fix",
+      "fanuc-patch-changelog-version-file-offset",
+      "search-evaluation-rank-tracking-bias"
+     ]
+    },
+    {
+     "lesson_id": "gpt-sovits-ref-free-bug",
+     "rank": 1,
+     "best_cosine": 0.638615,
+     "top_ids": [
+      "gpt-sovits-ref-free-bug",
+      "voice-pipeline-silent-failures",
+      "whisper-chinese-homophone-replacement-table",
+      "tts-chinese-encoding-powershell",
+      "snapshot-writer-reader-filename-grammar-mismatch"
+     ]
+    },
+    {
+     "lesson_id": "green-check-subject-outside-scope",
+     "rank": 1,
+     "best_cosine": 0.589267,
+     "top_ids": [
+      "green-check-subject-outside-scope",
+      "report-only-verification-script-cannot-be-a-gate-step",
+      "sample-counter-incremented-before-the-lookup-check",
+      "enum-error-was-the-symptom-not-the-gate",
+      "fix-acceptance-is-a-degradation-not-a-crash-count"
+     ]
+    },
+    {
+     "lesson_id": "green-compile-fix-unreachable-from-entry-point",
+     "rank": 1,
+     "best_cosine": 0.555685,
+     "top_ids": [
+      "green-compile-fix-unreachable-from-entry-point",
+      "fanuc-vrc-exclusion-verified-still-crashes-three-layers",
+      "whole-file-content-push-reverts-managed-lines",
+      "registry-publish-gap-version-drift-never-green-workflow",
+      "curl-exit-23-is-a-write-failure-not-a-network-failure"
+     ]
+    },
+    {
+     "lesson_id": "green-tests-hid-a-build-only-type-error",
+     "rank": 1,
+     "best_cosine": 0.678067,
+     "top_ids": [
+      "green-tests-hid-a-build-only-type-error",
+      "external-issue-diagnosis-needs-own-reproduction",
+      "node-strip-types-rejects-syntax-that-needs-lowering",
+      "enum-error-was-the-symptom-not-the-gate",
+      "pytest-module-scope-fixture-shared-mutable-clone"
+     ]
+    },
+    {
+     "lesson_id": "ci-dco-decouple-pythonpath-fork-pr",
+     "rank": 4,
+     "best_cosine": 0.662214,
+     "top_ids": [
+      "ci-lambda-module-level-side-effects",
+      "go-toolchain-vuln-bump-wrong-arch",
+      "fanuc-vrc-exclusion-verified-still-crashes-three-layers",
+      "ci-dco-decouple-pythonpath-fork-pr",
+      "security-exclusion-applied-module-table-short-name-trap"
+     ]
+    },
+    {
+     "lesson_id": "curl-request-troubleshoot",
+     "rank": 1,
+     "best_cosine": 0.664018,
+     "top_ids": [
+      "curl-request-troubleshoot",
+      "static-page-github-api-403-rate-limit",
+      "static-page-github-api-fault-tolerance",
+      "phase-0-output-gate",
+      "lesson-10-microservices-latency-math"
+     ]
+    },
+    {
+     "lesson_id": "dsh-desktop-web-authentication-failed",
+     "rank": 1,
+     "best_cosine": 0.661397,
+     "top_ids": [
+      "dsh-desktop-web-authentication-failed",
+      "security-exclusion-applied-module-table-short-name-trap",
+      "fanuc-vrc-exclusion-verified-still-crashes-three-layers",
+      "git-credentials-automation",
+      "daemon-start-failed-empty-detail-missing-credential"
+     ]
+    },
+    {
+     "lesson_id": "dsh-slot-prop-input-undefined-useinput-hook",
+     "rank": 1,
+     "best_cosine": 0.607475,
+     "top_ids": [
+      "dsh-slot-prop-input-undefined-useinput-hook",
+      "llama-cpp-tools-plus-json-object-grammar-400",
+      "character-generation-502-gateway",
+      "gpt-sovits-ref-free-bug",
+      "sendinput-unicode-returns-success-no-text"
+     ]
+    },
+    {
+     "lesson_id": "fanuc-handling-robot-auto-drop-diagnosis",
+     "rank": 1,
+     "best_cosine": 0.597117,
+     "top_ids": [
+      "fanuc-handling-robot-auto-drop-diagnosis",
+      "fanuc-workcell-reopen-retriggers-pmon-reconnect-storm",
+      "process-card-sequence-extraction-rules",
+      "roboguide-pendant-switch-reads-robot-before-connect-event",
+      "fanuc-rgcore-hang-endpoint-security-injection"
+     ]
+    },
+    {
+     "lesson_id": "fanuc-io-marker-m-instruction",
+     "rank": 2,
+     "best_cosine": 0.612367,
+     "top_ids": [
+      "ui-automation-selector-contract-after-nav-change",
+      "fanuc-io-marker-m-instruction",
+      "a-security-fix-that-turns-tests-red-is-the-fix-working",
+      "config-change-hits-only-one-of-two-state-layers",
+      "fanuc-vrc-exclusion-verified-still-crashes-three-layers"
+     ]
+    },
+    {
+     "lesson_id": "fanuc-karel-ka-boost-architecture",
+     "rank": null,
+     "best_cosine": 0.597198,
+     "top_ids": [
+      "api-rate-limit-handling-best-practices",
+      "oss-refactor-lessons",
+      "supabase-capacity-constraints-project-operations",
+      "an-unlikely-database-migration",
+      "lesson-18-database-performance-indexing"
+     ]
+    },
+    {
+     "lesson_id": "fanuc-ls-parser-comment-and-segment-boundary",
+     "rank": 1,
+     "best_cosine": 0.638433,
+     "top_ids": [
+      "fanuc-ls-parser-comment-and-segment-boundary",
+      "fanuc-checker-misses-alternate-mi-implementation",
+      "fanuc-vrc-exclusion-verified-still-crashes-three-layers",
+      "security-exclusion-applied-module-table-short-name-trap",
+      "json-schema-boolean-subschema-means-any-value"
+     ]
+    },
+    {
+     "lesson_id": "fanuc-patch-changelog-version-file-offset",
+     "rank": 1,
+     "best_cosine": 0.669434,
+     "top_ids": [
+      "fanuc-patch-changelog-version-file-offset",
+      "pnpm-minimumreleaseageexclude-manifest-lockfile-divergence",
+      "version-management-multiple-files",
+      "pnpm-ignores-second-minimumreleaseageexclude-rule",
+      "자바-버전-불일치-빌드-오류"
+     ]
+    },
+    {
+     "lesson_id": "fanuc-profinet-io-software-config",
+     "rank": null,
+     "best_cosine": 0.547864,
+     "top_ids": [
+      "fanuc-profinet-s7-1200-external-startup",
+      "fanuc-karel-http-api-webcontrol",
+      "fanuc-profinet-32bit-real-value-transfer",
+      "fanuc-python-interface-fanucpy",
+      "fanuc-intp-102-detect-joint-olp-whitespace"
+     ]
+    },
+    {
+     "lesson_id": "fanuc-rgcore-diagnostic-probe-triggers-controller-crash",
+     "rank": 1,
+     "best_cosine": 0.665698,
+     "top_ids": [
+      "fanuc-rgcore-diagnostic-probe-triggers-controller-crash",
+      "fanuc-vrc-exclusion-verified-still-crashes-three-layers",
+      "fanuc-rgcore-hang-endpoint-security-injection",
+      "fanuc-workcell-reopen-retriggers-pmon-reconnect-storm",
+      "gateway-hang-watchdog-recovery"
+     ]
+    },
+    {
+     "lesson_id": "feishu-display-optimization-cc-connect",
+     "rank": 1,
+     "best_cosine": 0.731489,
+     "top_ids": [
+      "feishu-display-optimization-cc-connect",
+      "feishu-gateway-group-policy-silently-drops-messages",
+      "feishu-mcp-server-deepseek-tui-setup",
+      "feishu-markdown-table-not-rendered",
+      "aily-feishu-mcp-pull-only"
+     ]
+    },
+    {
+     "lesson_id": "feishu-doc-url-use-api-return",
+     "rank": 1,
+     "best_cosine": 0.629738,
+     "top_ids": [
+      "feishu-doc-url-use-api-return",
+      "codex-keyring-user-interaction-not-allowed",
+      "click-coordinates-miss-dpi-scaling-cdp",
+      "click-no-op-keyboard-works-pointer-vs-handler-triage",
+      "wsl-status-fails-but-docker-desktop-works"
+     ]
+    },
+    {
+     "lesson_id": "github-401-credential-lookup",
+     "rank": 4,
+     "best_cosine": 0.610193,
+     "top_ids": [
+      "erreur-permission-docker-linux",
+      "npm-e403-forbidden-three-layers",
+      "cloudflare-ai-gateway-auth-pitfalls",
+      "github-401-credential-lookup",
+      "cloudflare-observability-mcp-oauth-separate-domain"
+     ]
+    },
+    {
+     "lesson_id": "github-actions-secrets-one-shot-workflow-pattern",
+     "rank": 1,
+     "best_cosine": 0.697986,
+     "top_ids": [
+      "github-actions-secrets-one-shot-workflow-pattern",
+      "feishu-webhook-url-env-config",
+      "github-401-credential-lookup",
+      "github-contents-api-pr-pitfalls",
+      "feishu-doc-url-use-api-return"
+     ]
+    },
+    {
+     "lesson_id": "github-connectivity-4-fallbacks",
+     "rank": null,
+     "best_cosine": 0.53541,
+     "top_ids": [
+      "regex-greedy-matching",
+      "ui-automation-selector-contract-after-nav-change",
+      "search-evaluation-rank-tracking-bias",
+      "process-card-sequence-extraction-rules",
+      "knowledge-graph-ux-patterns-from-high-star-projects"
+     ]
+    },
+    {
+     "lesson_id": "github-release-large-asset-download-cn",
+     "rank": 1,
+     "best_cosine": 0.636021,
+     "top_ids": [
+      "github-release-large-asset-download-cn",
+      "github-download-stall-ghfast-top-proxy-prefix",
+      "node-dataview-getuint32-default-big-endian",
+      "feishu-wiki-batch-download",
+      "rust-read-to-string-strict-utf8-vs-node-lossy"
+     ]
+    }
+   ]
   }
  },
  "reference": {
@@ -6569,7 +9847,8 @@
    "bm25_R@1": 0.2097,
    "bm25_no_match": 0.7116,
    "bm25_plus_semantic_fallback_R@1": 0.4457,
-   "bm25_plus_semantic_fallback_no_match": 0.4532
+   "bm25_plus_semantic_fallback_no_match": 0.4532,
+   "bge_m3_pure_cosine_R@1_all": 0.689
   },
   "live_production_64_zh_2026-10-27": {
    "zh_to_zh_R@1": 0.71,
@@ -6607,7 +9886,7 @@
   "`no_match` means different things in the two arms (here: target not in top-5; live: the endpoint returned nothing) and must not be compared across them",
   "the published L1-267 arms ran on an eval-worker corpus that was not refreshed before that run, so the comparison to them is directional",
   "one query target (`proxy-corporativo-curl-timeout`) has no corpus row and is scored from target_url; it can only be a miss",
-  "bge-m3's isolated pure-vector arm was not measured (no route to it from outside the worker), so the 3072 arm is compared to the system as delivered, not to bge-m3 alone"
+  "the bge-m3 and gemini arms saw slightly different lesson text (bge-m3 got the same 6000-char truncation as the corpus; 8 gemini inputs hit its 2048-token cap), which can only understate bge-m3"
  ],
  "generated_at": "2026-10-27T14:15:07Z"
 }
