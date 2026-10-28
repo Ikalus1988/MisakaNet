@@ -90,3 +90,13 @@ test('a word that merely repeats across sentences is not a command surface', () 
   assert.ok(!ids.includes("platform") || ids.filter((t) => t === "platform").length === 1,
     `extractor should not promote prose repetition into a surface: ${ids.join(",")}`);
 });
+
+test('a repeated token separated by other words is counted every time', () => {
+  // The first live probe returned `surface_report: []` on this exact shape. The extractor used a
+  // consuming pattern (`token whitespace word`), so after "zetaqx login" it started scanning at
+  // "then zetaqx", consumed that `zetaqx` as the argument, and counted the tool once instead of
+  // three times — under the threshold, so nothing was reported.
+  const text = 'Surface probe: zetaqx login then zetaqx issue rerun then zetaqx wiki search all silent';
+  assert.ok(commandSurfaceIdentifiers(text).includes('zetaqx'),
+    `expected zetaqx, got ${commandSurfaceIdentifiers(text).join(',')}`);
+});
