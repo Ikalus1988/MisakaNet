@@ -393,6 +393,10 @@ const MCP_TOOLS = [
         },
         source: { type: "string" }, detail: { type: "string" }, query: { type: "string" },
         no_match: { type: "boolean" }, suggestion: { type: "string" },
+        // Present only when candidates existed and a filter removed them: without these two, a
+        // `no_match` carrying `source: worker-bm25+semantic` reads as "the vector path found
+        // nothing", which is a different fact (2026-10-27).
+        matched_before_filter: { type: "number" }, filtered_by_kind: { type: "string" },
         intake: { type: "object", properties: { tool: { type: "string" }, args: { type: "object" } } },
       },
     },
@@ -4157,6 +4161,14 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
 
     // Kind filtering (Issue #1441)
     const kind = detectKind(args.query, args.kind);
+    // Kept for the no_match reply below: `filterByKind` is the only step after `source` is set that
+    // can *remove* results, so when the set ends up empty the envelope has to say whether nothing
+    // was found or everything was filtered. Measured 2026-10-27: a query whose answer was a GitHub
+    // Actions lesson came back `{no_match: true, source: "worker-bm25+semantic"}` — the semantic
+    // path had produced hits, the kind filter removed them, and the reply still named the matcher.
+    // A caller cannot tell "the vector path found nothing" from "the vector path found something
+    // you filtered away", and the servedBy counter reads the same field.
+    const matchedBeforeKindFilter = results.length;
     if (results.length > 0 && kind !== "all") {
       results = filterByKind(results, kind);
     }
@@ -4241,6 +4253,12 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
         voice: "failure-warning",
         query: args.query,
         source,
+        // Empty *and* we had candidates: name the step that removed them. Without this the reply
+        // claims `source: worker-bm25+semantic` on a `no_match`, which reads as "the vector path was
+        // consulted and came back empty" — the opposite of what happened.
+        ...(matchedBeforeKindFilter > 0
+          ? { matched_before_filter: matchedBeforeKindFilter, filtered_by_kind: kind }
+          : {}),
         detail,
         suggestion,
         intake: {

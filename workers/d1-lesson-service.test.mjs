@@ -149,6 +149,28 @@ async function resultText(response) {
   return JSON.parse(body.result.content[0].text);
 }
 
+test('a no_match whose candidates were filtered away says so, instead of blaming the matcher', async () => {
+  // Measured 2026-10-27 on production: a query whose answer was a GitHub Actions lesson came back
+  // `{no_match: true, source: "worker-bm25+semantic"}`. The semantic path HAD produced hits — the
+  // kind filter removed them — and the reply still named the matcher, so a caller (and the
+  // servedBy counter) read it as "the vector path found nothing". The two facts are different and
+  // only one of them is true at a time.
+  const env = {
+    MCP_TOKEN: TOKEN,
+    MISAKANET_D1: createD1(D1_ROWS),
+    MISAKANET_KV: createKV(),
+  };
+  // "被用过" routes to kind=evidence (detectKind); the fixture lessons carry no evidence level, so
+  // every candidate is filtered out and the reply is a no_match with a known cause.
+  const resp = await mcpSearch('pip install timeout 被用过多少次', env);
+  assert.equal(resp.status, 200);
+  const result = await resultText(resp);
+  assert.equal(result.no_match, true);
+  assert.ok(result.matched_before_filter >= 1,
+    `expected the reply to report the candidates it dropped, got ${JSON.stringify(result)}`);
+  assert.equal(result.filtered_by_kind, 'evidence');
+});
+
 test('misakanet_search uses D1 rows when MISAKANET_D1 is bound', async () => {
   const env = {
     MCP_TOKEN: TOKEN,
