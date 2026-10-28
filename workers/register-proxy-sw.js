@@ -3794,7 +3794,11 @@ function assembleSubmittedBody(bodyParts) {
 // reviewer one line to read.
 const COMMAND_TOKEN = /^[a-z][a-z0-9._+-]{1,39}$/;
 // A bare token is command-shaped when it is followed by a word that could be a verb or a flag.
-const COMMAND_FOLLOW = /\b([a-z][a-z0-9._+-]{1,39})\s+(?:[a-z]{2,}|-{1,2}[a-z])/gi;
+// Lookahead, not `\s+word`: a consuming match eats the token after the command, so `a b a c a d`
+// counted `a` once instead of twice — the first live probe returned `surface_report: []` on a text
+// where the tool name appeared three times, because each later occurrence had been consumed as the
+// *argument* of the previous match.
+const COMMAND_FOLLOW = /\b([a-z][a-z0-9._+-]{1,39})(?=\s+(?:[a-z]{2,}|-{1,2}[a-z]))/gi;
 
 /** Command-surface identifiers: tokens this submission is using as a command, not mentioning once.
  *
