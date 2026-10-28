@@ -3778,6 +3778,85 @@ function assembleSubmittedBody(bodyParts) {
   return clipSubmittedText(bodyParts.join("\n"), "a submission");
 }
 
+// ── Surface gate (2026-10-28) ────────────────────────────────────────────────────────────────────
+// A submitted intake is a PUBLIC GitHub issue, and the agent writing it cannot know what is internal
+// about its own environment: measured on #3983, an agent described its employer's internal platform,
+// its private CLI (`mico issue rerun`, `mico wiki search`), its lifecycle model and an operating
+// timeline — without a single credential among them, so the redaction rules above passed it through
+// untouched. Asking the agent "is this internal?" cannot work for the same reason it failed here:
+// the agent has no reference for what "internal" means.
+//
+// So this does not ask. It checks one thing that is mechanical: **does the public corpus know this
+// word?** `index.terms` is that vocabulary — every token the 651 public lessons have ever indexed.
+// A command-shaped token the corpus has never seen is not proof of an internal tool (a brand-new
+// public CLI looks identical), which is why the result is a banner for the maintainer and a field in
+// the response, never a silent rewrite: mangling a legitimate submission is worse than showing a
+// reviewer one line to read.
+const COMMAND_TOKEN = /^[a-z][a-z0-9._+-]{1,39}$/;
+// A bare token is command-shaped when it is followed by a word that could be a verb or a flag.
+const COMMAND_FOLLOW = /\b([a-z][a-z0-9._+-]{1,39})\s+(?:[a-z]{2,}|-{1,2}[a-z])/gi;
+
+/** Command-surface identifiers: tokens this submission is using as a command, not mentioning once.
+ *
+ *  Two sources, and the second one exists because the first missed the case that motivated the gate:
+ *
+ *  1. **Quoted surfaces** — an inline code span, a fenced block, or a `$` prompt. Precise.
+ *  2. **Repeated bare tokens in command position** — #3983 wrote `mico login`, `mico issue rerun`,
+ *     `mico im message history`, `mico wiki search` with no backticks anywhere, so the quoted-surface
+ *     rule extracted nothing from the one submission it was built for. What distinguishes those from
+ *     prose is mechanical: the token repeats (8×) and is followed by a command-shaped word each time.
+ *     "The platform returns" repeats too, but `the` is in the corpus, so it never reaches the report.
+ *
+ *  A single unquoted mention is deliberately NOT a surface: every submission names tools in passing,
+ *  and a banner that fires on those is a banner readers learn to skip.
+ */
+function commandSurfaceIdentifiers(text) {
+  const found = new Set();
+  const body = String(text || "");
+  const add = (raw) => {
+    const head = String(raw || "").trim().replace(/^\$\s*/, "").split(/\s+/)[0].toLowerCase();
+    if (COMMAND_TOKEN.test(head)) found.add(head);
+  };
+  // 1. Quoted surfaces.
+  for (const match of body.matchAll(/`([^`\n]{1,160})`/g)) add(match[1]);
+  for (const block of body.matchAll(/```[\w-]*\n([\s\S]*?)```/g)) {
+    for (const line of block[1].split("\n")) if (line.trim()) add(line);
+  }
+  for (const line of body.split("\n")) {
+    const match = /^\s*\$\s+(\S+)/.exec(line);
+    if (match) add(match[1]);
+  }
+  // 2. Repeated bare tokens in command position.
+  const occurrences = new Map();
+  const followed = new Map();
+  for (const match of body.matchAll(COMMAND_FOLLOW)) {
+    const token = match[1].toLowerCase();
+    if (!COMMAND_TOKEN.test(token)) continue;
+    occurrences.set(token, (occurrences.get(token) || 0) + 1);
+    if (/-{1,2}[a-z]/.test(match[0]) || occurrences.get(token) >= 2) {
+      followed.set(token, (followed.get(token) || 0) + 1);
+    }
+  }
+  for (const [token, count] of occurrences) {
+    if (count >= 3 || (count >= 2 && (followed.get(token) || 0) >= 2)) found.add(token);
+  }
+  return [...found];
+}
+
+/** Which of those the public corpus has never indexed. `null` when there is no index to ask. */
+function unknownCommandSurface(text, index) {
+  const tokens = commandSurfaceIdentifiers(text);
+  const terms = index && index.terms;
+  if (!terms) return null;
+  const known = (token) => {
+    if (terms[token]) return true;
+    // `node.js` tokenizes to `node` + `js`; checking the head only would call a familiar tool unknown.
+    const head = token.split(/[._+-]/)[0];
+    return Boolean(head && terms[head]);
+  };
+  return tokens.filter((token) => !known(token));
+}
+
 function redactIntake(text) {
     if (!text) return "";
     // Redact the whole text first, then clip. Clipping first meant a credential past
@@ -4869,6 +4948,38 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
       [args.problem, args.error, args.what_tried, args.verification, args.fix]
         .filter(Boolean).join("\n"),
     );
+    // Surface gate: identifiers the public corpus has never seen, in command position. Advisory by
+    // design (see the note above `commandSurfaceIdentifiers`): the banner is for the maintainer who
+    // triages this, and the same list is in the tool response so the submitting agent can see what
+    // looked private without having had to know it in advance.
+    const surfaceText = [args.problem, args.error, args.what_tried, args.verification, args.fix]
+      .filter(Boolean).join("\n");
+    let surfaceUnknown = null;
+    try {
+      // `unknownCommandSurface` is synchronous; `.catch` on its result would throw on every intake.
+      // The index load is the only await, and it degrades to `null` ("could not check") rather than
+      // to an empty list, which would claim the submission was cleared.
+      surfaceUnknown = unknownCommandSurface(surfaceText, await loadBM25Index(env));
+    } catch (e) {
+      debugLog(env, 1, "surface check skipped", { error: String((e && e.message) || e) });
+    }
+    if (surfaceUnknown && surfaceUnknown.length) {
+      // Built with concatenation, not a nested template literal: `tests/test_worker_entry_exports.py`
+      // reads this file with the page gate's tokenizer, and a `${...}` containing another template
+      // made it lose the export list entirely (the gate went red on a file whose exports had not
+      // changed). Keeping the shape simple is cheaper than teaching two parsers about nesting.
+      const names = surfaceUnknown.map((t) => "`" + t + "`").join(", ");
+      const verb = surfaceUnknown.length === 1 ? "does" : "do";
+      bodyParts.unshift(
+        "> [!NOTE]",
+        "> **Surface check:** " + names + " " + verb + " not appear anywhere in the public corpus.",
+        "> That is not proof they are internal — a new public tool looks the same — but if any of them names a",
+        "> private product or a company-internal command, replace it with a neutral description before this",
+        "> becomes a lesson. The mechanism is the lesson; the tool name usually is not.",
+        "",
+      );
+    }
+
     if (injectionFlags.length) {
       bodyParts.unshift(
         "> [!WARNING]",
@@ -10156,6 +10267,12 @@ export {
   INDEX_TEXT_VERSION,
   bm25Tokenize,
   cjkBigrams,
+  // Exported for workers/intake-surface-gate.test.mjs: what counts as a command surface, and which
+  // of those identifiers the public corpus has never seen. The gate's value depends entirely on the
+  // extractor being conservative — a false positive here is a legitimate submission annotated as
+  // suspicious, which teaches readers to skip the banner.
+  commandSurfaceIdentifiers,
+  unknownCommandSurface,
   // Exported for workers/cjk-fusion.test.mjs: the whole experiment is "does a wrong lexical hit
   // stop suppressing the vector path", and the fusion is the part that decides.
   rrfFuse,
