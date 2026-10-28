@@ -16,6 +16,7 @@
 | `domains.json` | `scripts/normalize_domains.py` | `scripts/expand_query.py`、`scripts/lesson_gate.py`、计数门禁 | 手动 / 随语料变更 |
 | `synonyms.json` | 手写维护（`scripts/sync_lesson_count.py` 读）| 检索扩展 | 手动 |
 | `search-floor-queries.jsonl` | 手写维护（40+ 行查询，每条带它必须命中的课程 id）| `workers/search-dual-floor.test.mjs`（英中两个地板）、`workers/search-cjk-recall.test.mjs`（同一份查询集）、`tests/test_search_floor_queries_schema.py`（模式与"body-only"声明的真伪）| 手动（加分/改地板时）|
+| `public-vocabulary.json` | `scripts/export_public_vocabulary.py`（`data/lessons.json` + 全部 `lessons/**/*.md`）| **`scripts/lesson_gate.py`**（课程用了公开语料从未出现过的命令名 → 失败，除非加进本文件的 `allowlist` 或课程里声明 `public_analogue:`）、`tests/test_public_vocabulary.py`（漂移门禁：与重新生成的结果逐字节比对）| 手动 / 随语料变更（`--check` 在 pytest 里跑）|
 | `query-aliases.json` | `misakanet/search/engine.py`、`scripts/expand_query.py` | 检索扩展、`tests/test_query_alias_wiring.py` | 手动 |
 | `quality_scores.json` | **无现存生成者**（`scripts/check_lesson_quality.py` 已不再写它；引用它的只有 `archive/dead/` 与测试）| **无** | 快照停在 141 篇，远落后于当前语料（`scripts/sync_lesson_count.py --check`）——待判决：删掉或重建 |
 | `contributor-points.json` | `scripts/update_contributor_points.py` | `workers/register-proxy-sw.js`、`docs/contributor-points.md` | 手动 |
