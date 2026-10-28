@@ -1,6 +1,6 @@
 # MisakaNet 4-Month Roadmap
 
-Last updated: 2026-10-17（上一版：2026-10-16，原文保留在下方，未改写）
+Last updated: 2026-10-28（上一版：2026-10-17，原文保留在下方，未改写）
 
 > **要看当前计划，先看下一节 [`2026-10-17 定位与三个里程碑（owner 决定）`](#2026-10-17-定位与三个里程碑owner-决定)
 > ——它是 A/B 与里程碑 1/2/3 的唯一对外口径，README 的「Where it is going」写的就是它。**
@@ -27,6 +27,90 @@ private intake -> classification -> maintainer demand board -> curated lesson/re
 
 MisakaNet should stay offline-first and Git-backed. External listings are useful
 "amplifiers", not the product itself.
+
+## 2026-10-28 裁定 — ADR-0002 结项、③ 的验收第二半失守、三条工作线入册
+
+> 本节是**状态裁定**，不是新承诺。五条来自一次「路线图 vs 实测」的对账，每条附复现命令（文末）。
+> 按本仓惯例：**旧条目一字未改**，裁定集中写在这里。
+
+### 一、ADR-0002：Coogen 借鉴项目结项
+
+2026-08-29 提的 10 条借鉴，**5 条已落地**（#1–#5，落在两次直推 `main`：`dda8fce`、`c6a419f`——
+无 issue、无 PR），2 条部分落地，3 条从未落地。2026-10-27 复评（#3935），2026-10-28 **结项**，
+记录在 [`docs/adr/0002-end-coogen-borrowing.md`](docs/adr/0002-end-coogen-borrowing.md)。
+
+只保留两项，各成一个可追踪 issue（**一条未被追踪的建议，正是上次那 5 条消失的方式**）：
+硬约束「排除而非降权」→ **#3963**；采集边界页 + 可复制自检 → **#3964**。
+明确推迟：GitHub 侧复用通知，卡在 **#2939**（`E4` 的唯一生产者读的是无鉴权计数）。
+
+**为什么必须写进本文**：`README.md` / `README.zh-CN.md` / `README.ja.md` / `CONTRIBUTING.md`
+只链本文。裁定只躺在 `docs/adr/` 里，外部读者只会知道"有个 ADR"，不知道项目已经收口。
+
+### 二、③ 中文检索：验收第一半达标，第二半**正在失守**
+
+09-16 节给 ③ 的验收是两半：top1 从 0 抬到可引用数字，**且英文错误串检索不回退**。
+
+- 第一半 **达标**：64 条 zh 查询，zh→zh **R@1 0.710**、no_match 0.032
+  （[`docs/benchmarks/retrieval-zh-crosslingual-2026-10-27.md`](docs/benchmarks/retrieval-zh-crosslingual-2026-10-27.md)）。
+  CJK 分词（#2355–#2358）已上线，`index.cjk` 在索引里。
+- 第二半 **未满足**：同日 production 的 English floor bench 是 **15/20 hit@1，floor 16**——
+  hit@3 19/20 刚好压线（[`scripts/bench_production_recall.py`](scripts/bench_production_recall.py)）。
+
+**裁定：③ 不宣布完成。** 它停在一个可引用的数字上，但"不回退"这条没守住。补法**不是**降全局
+`SEMANTIC_MIN_SCORE`——那会拿一个桶的收益换另一个桶的精度，而是**按语言分桶设闸门**，
+与下面「语义闸门改成可仲裁的重排」是同一件事。
+
+### 三、三条工作线从未入册（与 10-16 节记的同类问题）
+
+| 工作线 | 在跑的证据 | 状态 |
+|---|---|---|
+| **embedding / 语义闸门** | 三臂同语料同查询：跨语言 zh→en，`bge-m3` 0.636 / `gemini` 0.727 / 线上 0.455（[`embedding-ab-2026-10-27.md`](docs/benchmarks/embedding-ab-2026-10-27.md)） | 测量已完成，**机制未改** |
+| **数据集发布** | `data.misakanet.org`（R2，版本化 `v<日期>-<sha>`，逐文件 SHA-256）+ BigQuery `misakanet`（651 lessons / 267 queries，公开可查） | 已上线 |
+| **Analytics Engine** | 未建：`GET /accounts/.../analytics_engine/datasets` → 404（2026-10-28） | **阻塞**，所以季度「state of agent failures」没有数据源 |
+
+### 四、里程碑 1 的四个环节：一个已交付（两面）、一个半个、一个没做
+
+里程碑 1 写的是四步。它们的完成度不一样，过去用一个"进行中"盖住了四种状态：
+
+| 环节 | 状态 |
+|---|---|
+| intake 归因完整性 + 报料者回执 | ✅ 已交付（#2491，是**同一条** receipt 机制的两面）：报料者用**同一段文本**重发即可回拉 `converted`。它们算一个环节，不重复计数 |
+| 心跳读 **client breakdown** | ⚠️ **半个**：只在 `scripts/heartbeat_report.py` 里算，**没有公开端点**——`GET /api/client-breakdown` → **404**（2026-10-28 实测）。这意味着里程碑 3 / B 的入口判据**目前不可观测**，"B 不出现"还不是一个能被验证的观测 |
+| **复发率**（A 的 KPI） | ❌ **未实现**。数据都在（gap 按天存归一化查询，`lesson_usage.query` 带 `created_at`），缺的是三个决策：哪个序列权威 / 什么归一化 / 什么阈值值得报。`docs/maintainer/heartbeat.md:82-89` 已写明这是决定，不是阻塞 |
+
+### 五、L2：定为**暂不做**
+
+- 2026-10-28 决定不买 $10 AI Studio 预付，理由见
+  [`docs/maintainer/resource-leverage-2026-10-28.md`](docs/maintainer/resource-leverage-2026-10-28.md)：
+  免费层足够做实验，付费层解决的不是当前的约束。
+- L2 agent benchmark **从未跑过，runner 也没写**。
+- **裁定**：L2 从"可选路线"降为**不做，直到 A 的 KPI（复发率）有数字**。L2 回答"agent 能不能用我们的记忆"，
+  复发率回答"这份记忆到底有没有用"——先答后者，否则 L2 是给一个还没被证明有用的东西做验收。
+
+### 附录：本节断言的复现命令
+
+```bash
+# 一、ADR-0002 与两个追踪 issue
+ls docs/adr/
+gh issue view 3963 --json state,title
+gh issue view 3964 --json state,title
+
+# 二、③ 的验收两半
+python3 scripts/bench_zh_crosslingual.py --attempts 5     # zh->zh R@1（第一半）
+python3 scripts/bench_production_recall.py                # English floor：floor 16 / 19
+
+# 三、三条工作线
+curl -s https://data.misakanet.org/latest.json | head -c 300
+#   BigQuery：SELECT COUNT(*) FROM `project-2d6795e4-704d-4a4e-841.misakanet.lessons`
+curl -s -o /dev/null -w '%{http_code}\n' \
+  -H "Authorization: Bearer $CF_TOKEN" \
+  https://api.cloudflare.com/client/v4/accounts/$ACCOUNT/analytics_engine/datasets   # 404 = 未建
+
+# 四、里程碑 1 的四个环节
+gh issue view 2491 --json state                            # receipt 已交付
+curl -s -o /dev/null -w '%{http_code}\n' https://misakanet.org/api/client-breakdown   # 404 = 无公开端点
+python3 scripts/misakanet_cli.py smoke                      # 复发率：无此命令，即未实现
+```
 
 ## 2026-10-17 定位与三个里程碑（owner 决定）
 
