@@ -17,6 +17,8 @@ provenance:
   source: "antigravity"
   contributor: "Community"
   evidence: "locally reproduced + unit tested"
+summary_plain: "We broke the loop by removing static name examples and adding catalog awareness to avoid repeats."
+trigger: "when character creator runs keep outputting the same name or trait across multiple generations."
 ---
 
 # Character Creator Assistants — Repetitive Name and Archetype Loop from Prompt Anchors

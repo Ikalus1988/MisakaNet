@@ -14,6 +14,7 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+trigger: "当 PR 来自 fork 且 CI 报 ModuleNotFoundError: No module named 'misakanet' 并且 DCO 检查失败时"
 ---
 
 ## Root Cause

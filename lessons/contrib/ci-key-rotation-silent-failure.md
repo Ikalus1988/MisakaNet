@@ -15,6 +15,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+trigger: "when a scheduled CI job or cron returns 401 Unauthorized / Bad credentials despite no code change"
+verify: "Run the scheduled job again; it completes without 401 errors, showing the new secret is used."
 ---
 
 # CI key rotation silently breaking scheduled automation without a code change

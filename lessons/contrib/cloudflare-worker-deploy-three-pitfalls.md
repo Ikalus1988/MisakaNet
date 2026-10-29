@@ -18,6 +18,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Deploy failed on 403 sandbox fetch, 32KB arg limit, wrong multipart type; fixed with KV chunks and correct Content-Type"
+trigger: "when a Cloudflare Worker deploy via MCP execute fails with 403 sandbox fetch, or “Argument list too long”, or a SyntaxError from multipart Content-Type"
 ---
 
 # Cloudflare Worker Programmatic Deploy: Three Pitfalls

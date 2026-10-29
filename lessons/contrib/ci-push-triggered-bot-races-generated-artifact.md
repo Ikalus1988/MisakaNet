@@ -20,6 +20,9 @@ provenance:
   contributor: "Ikalus1988"
   merged_at: "2026-09-11"
   evidence: "post-publication"
+summary_plain: "Push workflow raced itself, hiding a rebase conflict; abort on failure, add concurrency, and use -X theirs to fix."
+trigger: "when a push-triggered workflow that pulls with rebase fails with a merge conflict and ends in a detached HEAD error"
+verify: "Push two commits rapidly and see both workflow runs finish without the detached HEAD/rebase conflict error."
 ---
 
 # Push-triggered bot workflow races itself: `|| true` hides rebase conflict and leaves detached HEAD

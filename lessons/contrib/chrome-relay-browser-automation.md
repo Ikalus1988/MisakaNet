@@ -15,6 +15,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "浏览器自动化卡在需要下载 Chromium，改用 Chrome Relay 通过 WebSocket 直接控制已启动的 Chrome 解决。"
+trigger: "在 WSL2 或 Linux 环境下运行 AI Agent 时，使用 Puppeteer/Playwright 需要下载 Chromium 导致启动慢或失败。"
 ---
 
 ## Problem

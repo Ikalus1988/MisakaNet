@@ -17,6 +17,9 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "邮件路由到 Worker 时未解析节点 ID，导致注册失败；在 Worker 中分配 ID 并写入 KV 后恢复正常。"
+trigger: "当用户发送注册邮件后，Cloudflare Email Routing 未触发 Worker 或 KV 未写入节点 ID，导致注册接口返回错误。"
+verify: "在控制台查询 KV `node_id` 键是否已写入，或收到 Worker 回复的确认邮件。"
 ---
 
 ## Problem
