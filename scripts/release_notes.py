@@ -103,7 +103,19 @@ SETUP = Package(
     ),
 )
 
-PACKAGES = {package.key: package for package in (ROOT, SETUP)}
+FATAL_GUARD = Package(
+    key="fatal-guard",
+    distribution="@misaka-net/fatal-guard",
+    ecosystem="npm",
+    changelog=REPO / "packages" / "fatal-guard" / "CHANGELOG.md",
+    changelog_path="packages/fatal-guard/CHANGELOG.md",
+    release_url="https://www.npmjs.com/package/@misaka-net/fatal-guard/v/{version}",
+    install=(
+        "npx @misaka-net/fatal-guard -- <your-command>",
+    ),
+)
+
+PACKAGES = {package.key: package for package in (ROOT, SETUP, FATAL_GUARD)}
 
 
 def section(text: str, version: str) -> str:
