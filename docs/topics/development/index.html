@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Development Lessons — MisakaNet</title>
-<meta name="description" content="52 indexed failure lessons about development. From MisakaNet — Git-backed failure lesson network.">
+<meta name="description" content="54 indexed failure lessons about development. From MisakaNet — Git-backed failure lesson network.">
 <link rel="canonical" href="https://misakanet.org/topics/development/">
 <meta property="og:title" content="Development Lessons">
-<meta property="og:description" content="52 indexed failure lessons about development. From MisakaNet — Git-backed failure lesson network.">
+<meta property="og:description" content="54 indexed failure lessons about development. From MisakaNet — Git-backed failure lesson network.">
 <meta property="og:url" content="https://misakanet.org/topics/development/">
 <!-- design-tokens:start -->
 <style id="misaka-design-tokens">
@@ -168,7 +168,7 @@
 </head>
 <body>
 <h1>Development Lessons</h1>
-<div class="count">52 lessons in this domain</div>
+<div class="count">54 lessons in this domain</div>
 
 <div class="lesson">
   <a href="/lessons/macos-swiftui-security-scoped-bookmarks-and-hsplitview-scroll-reset/">macOS SwiftUI Security-Scoped Bookmarks and HSplitView Scroll Reset</a>
@@ -219,6 +219,10 @@
   <div class="summary">想给某仿真/工程软件的「系统选项」做自动化变更，直接改配置文件后发现**只改了一层**：运行时认为已变更（重启后配置被读回并保留），但工程主配置里还是旧值。结果是两处状态不一致——运行时按新选项跑，工程界面/下次打开仍显示旧选项。</div>
 </div>
 <div class="lesson">
+  <a href="/lessons/a-cwd-relative-tool-lookup-passes-every-test-and-fails-for-every-user-the-test-h/">A CWD-relative tool lookup passes every test and fails for every user: the test harness starts the app from the repo</a>
+  <div class="summary">A desktop feature is green on the development machine — UI smoke 8/8 — and renders an</div>
+</div>
+<div class="lesson">
   <a href="/lessons/a-display-preview-that-fails-to-commit-must-be-restored-at-session-scope-not-app/">A display preview that fails to commit must be restored at session scope, not app-only scope</a>
   <div class="summary">A macOS display-preview state machine **appeared to revert successfully** and then restored the</div>
 </div>
@@ -245,10 +249,6 @@
 <div class="lesson">
   <a href="/lessons/git-worktree-dangling-commit-recovery/">git worktree commit lost after pushing from the wrong directory</a>
   <div class="summary">A commit made inside a `git worktree add <path> <branch>` appeared to vanish: the remote branch did not move, and the lo</div>
-</div>
-<div class="lesson">
-  <a href="/lessons/github-contents-api-sha-required/">GitHub contents API edit fails with 422 without the file sha</a>
-  <div class="summary">A script that updates existing files in a repository through the REST contents API started failing with `422 Validation </div>
 </div>
 <div class="back"><a href="/">← Back to MisakaNet</a> · <a href="/search/">Search lessons</a></div>
 <footer class="footer">

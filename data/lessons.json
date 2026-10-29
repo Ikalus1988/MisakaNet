@@ -4066,6 +4066,41 @@
     "contributor": ""
   },
   {
+    "id": "cwd-relative-tool-lookup-passes-in-tests-fails-from-shortcut",
+    "title": "A CWD-relative tool lookup passes every test and fails for every user: the test harness starts the app from the repo",
+    "domain": "development",
+    "tags": [
+      "desktop",
+      "cwd",
+      "path-resolution",
+      "false-green",
+      "swallowed-exception",
+      "test-environment"
+    ],
+    "summary": "A desktop feature is green on the development machine — UI smoke 8/8 — and renders an",
+    "preview": "# A CWD-relative tool lookup passes every test and fails for every user: the test harness starts the app from the repo\n\n## Problem\n\nA desktop feature is green on the development machine — UI smoke 8/8 — and renders an\n**entire column of silent `N/A`** for real users, with zero errors. Tests pass. The engine\npasses. Golden-file comparison passes. Only the real launch form fails.\n\n## Root Cause\n\nThree things, and each alone would have been survivable:\n\n1. **The lookup is CWD-relative.** The app calls an external helper (a binary converter,\n   tens of KB) found at `./bin/tool.exe`, with a fallback to an install path that does not\n   exist on the machine.\n\n2. **The tests start the app from the repo directory.** `./bin/tool.exe` resolves against\n   the CWD, which in tests happens to be the repo root — where `bin/` lives. Every test\n   hits it. That is not coverage; that is an accident of the working directory.\n\n3. **The failure is swallowed.** `catch { return null }` turns \"could not find the tool\"\n   into `null`, and `null` renders as `N/A`. No log, no error, no distinction between\n   \"not applicable\" and \"could not run\".\n\nUsers launch from a desktop shortcut, where CWD is the desktop or a system directory.\nThe lookup misses, the exception is swallowed, and the column is empty. The same feature,\nthe same binary, two working directories, two outcomes — and the one where it works is\nthe only one anyone tested.\n\n## Solution\n\nThree fixes; the third is the one that stops the class.\n\n1. **Remove the CWD dependency.** Embed the helper in the binary (`include_bytes!`, tens of\n   KB is not a cost) and extract to a temp directory at runtime; keep an external copy\n   first on the search path for overrides. From then on the result does not depend on how\n   the app was launched.\n\n2. **Make `N/A` carry a reason.** Every `return null` becomes\n   `{ verdict: 'N/A', detail: <why> }`, and the reason is shown. A silent `N/A` is\n   indistinguishable from a genuine \"nothing to show\"; those are opposite facts and must\n   not share a rendering.\n\n3. **Start tests with a neutral CWD** (a system temp directory) — never the repo root.\n   This is the fix that generalises: any test that launches the process from the directory\n   containing its own fixtures is testing the fixtures, not the lookup.\n\n## Verification\n\n**Not reproduced** — no copy of the application was available. The root cause\n\n[clipped]",
+    "summary_plain": "小工具用 CWD 相对路径查找，测试从仓库目录拉起应用刚好命中，用户从桌面快捷方式启动就落空；加上 catch 返回 null，整列静默 N/A、零报错。",
+    "trigger": "开发机 UI 冒烟 8/8 全绿，真实用户启动后整列 N/A，无任何错误",
+    "verify": "把测试的启动 CWD 换成系统临时目录再跑——同一功能立刻红，即复现",
+    "url": "lessons/contrib/cwd-relative-tool-lookup-passes-in-tests-fails-from-shortcut.md",
+    "created": "2026-10-28",
+    "updated": "2026-10-28",
+    "triggers": null,
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "draft",
+    "evidence_refs": [
+      "issue:#3962"
+    ],
+    "supersedes": "",
+    "verified": true,
+    "evidence_level": "E1",
+    "evidence_source": "frontmatter",
+    "trust_score": 0.387,
+    "contributor": ""
+  },
+  {
     "id": "daemon-start-failed-empty-detail-missing-credential",
     "title": "Supervisor reports 'daemon start failed' with no detail: the child's own log holds the reason",
     "domain": "devops",
@@ -9071,6 +9106,41 @@
     "contributor": ""
   },
   {
+    "id": "gitlab-squash-merge-local-master-divergent-shas",
+    "title": "Squash-merge makes local master 'ahead N' with empty diff and fully diverged SHAs — reset --hard is the safe sync",
+    "domain": "git",
+    "tags": [
+      "git",
+      "gitlab",
+      "squash-merge",
+      "divergent-history",
+      "reflog",
+      "reset-hard"
+    ],
+    "summary": "After GitLab squashes an MR, local `master` reports itself ahead of `origin/master`:",
+    "preview": "# Squash-merge makes local master \"ahead N\" with empty diff and diverged SHAs — `reset --hard` is the safe sync\n\n## Problem\n\nAfter GitLab squashes an MR, local `master` reports itself ahead of `origin/master`:\n\n```\n$ git rev-list --left-right --count master...origin/master\n4       1\n$ git diff master origin/master\n(no output — the trees are identical)\n```\n\nFour commits locally, one on the remote, **zero difference in content**. The SHAs have\ncompletely diverged, so nothing can fast-forward, and `git status` keeps claiming there\nis work to push. The question is how to resync without losing the fine-grained history,\nleaving a double history, or turning the rebase into a fight.\n\n## Root Cause\n\nA squash-merge is not a merge of the branch's commits. GitLab takes the **tree** that the\nbranch produced and commits it as one new commit on `master`. The original commits are\nnever ancestors of `master`, so:\n\n- local `master` still carries them → *ahead N*\n- the remote has one unrelated commit → *behind 1*\n- both sides produced the same tree → *`git diff` is empty*\n\nAhead/behind is a statement about **commit ancestry**, not about content. A tree can be\nidentical while the histories share no ancestry at all, which is exactly the state that\nlooks alarming and is actually harmless.\n\n## Solution\n\n**`git fetch && git reset --hard origin/master`** — when the diff is empty.\n\nMeasured, all three candidates, on a repo in the exact state above:\n\n| 方案 | 结果 | 历史形状 |\n|---|---|---|\n| `git reset --hard origin/master` | ✅ 干净 | 2 个 commit（squashed + base） |\n| `git merge origin/master` | ✅ 能成，但污染 | 双历史并排：3 个细粒度 commit **和** squash commit 都在 |\n| `git rebase origin/master` | ❌ **冲突** | `Could not apply 0de52ff... # commit 1` |\n\n`merge` leaves both stories of the same change in the log. `rebase` tries to replay the\n3 commits on top of a tree that already contains their content, and conflicts (in some\nstates it silently produces empty commits instead — either way the rebase is not doing\nuseful work).\n\n### Why `reset --hard` is safe *here specifically*\n\n`reset --hard` throws away uncommitted work in general — but in this state there is\nnothing to throw away: the trees are identical, so the only thing being discarded is the\n**commit objects**, and those are not deleted. Verified in the same experiment:\n\n```\n$ git reset --hard origin/master\n$ git reflog | head -2\n1203214 HEAD@{0}: reset: moving\n\n[clipped]",
+    "summary_plain": "MR 被 squash 合并后本地 master 显示 ahead N、SHA 全分叉，但 git diff 为空。正确同步是 reset --hard origin/master——树一致时它不丢东西，旧提交还能从 reflog 取回。",
+    "trigger": "git rev-list --left-right --count master...origin/master → 4  1，而 git diff master origin/master 输出为空",
+    "verify": "本地建 3 个 commit 的分支 → 合进 master → 远端 --squash 合并 → 复现 ahead 4 / behind 1 / diff 空；三种同步法各跑一遍，reset --hard 后 git cat-file 能取回旧 HEAD",
+    "url": "lessons/contrib/gitlab-squash-merge-local-master-divergent-shas.md",
+    "created": "2026-10-28",
+    "updated": "2026-10-28",
+    "triggers": null,
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "draft",
+    "evidence_refs": [
+      "issue:#3924"
+    ],
+    "supersedes": "",
+    "verified": true,
+    "evidence_level": "E2",
+    "evidence_source": "frontmatter",
+    "trust_score": 0.425,
+    "contributor": ""
+  },
+  {
     "id": "glama-mcp-server-deploy-lessons",
     "title": "Glama MCP Server Deployment — 10 Build Failures and Fixes",
     "domain": "devops",
@@ -12184,6 +12254,41 @@
     "evidence_level": "E1",
     "evidence_source": "frontmatter",
     "trust_score": 0.387,
+    "contributor": ""
+  },
+  {
+    "id": "node-esm-drive-letter-path-parses-as-url-scheme",
+    "title": "A Windows drive-letter path parses as a URL scheme, so Node's ESM loader rejects it: ERR_UNSUPPORTED_ESM_URL_SCHEME",
+    "domain": "nodejs",
+    "tags": [
+      "nodejs",
+      "esm",
+      "windows",
+      "url-scheme",
+      "pathToFileURL",
+      "import"
+    ],
+    "summary": "```js",
+    "preview": "# A Windows drive-letter path parses as a URL scheme, so Node's ESM loader rejects it\n\n## Problem\n\n```js\nimport('C:\\\\Users\\\\me\\\\proj\\\\mod.mjs')\n// TypeError [ERR_UNSUPPORTED_ESM_URL_SCHEME]:\n//   The URL must be of scheme file\n```\n\nSame file, same Node (v22), works with `require()` and works when addressed relatively.\nOnly the drive-letter absolute form fails.\n\n## Root Cause\n\n`import()` is specified in terms of **URLs**, not filesystem paths. Node hands the string to\na URL parser before it ever looks at the filesystem. On Windows a drive-letter path looks\nlike a URL with a scheme:\n\n```\n$ node -e \"const u = new URL('C:\\\\Users\\\\me\\\\proj\\\\mod.mjs'); console.log(u.protocol, u.href)\"\nc: c:\\Users\\me\\proj\\mod.mjs\n```\n\n`C:` is read as the **protocol**, exactly as `https:` would be. Node's ESM loader accepts\nonly `file:`, `data:` and `node:` schemes and rejects everything else with\n`ERR_UNSUPPORTED_ESM_URL_SCHEME` — the message names the *scheme* problem, not a path\nproblem, which is why \"the file is right there\" is so confusing.\n\nRelative imports and POSIX paths work because they do not have a `:` before the first\nslash, so nothing is parsed as a scheme.\n\n## Solution\n\nConvert the path to a `file:` URL before importing:\n\n```js\nimport { pathToFileURL } from 'node:url'\n\nconst url = pathToFileURL('C:\\\\Users\\\\me\\\\proj\\\\mod.mjs').href\nconst mod = await import(url)\n```\n\n```\n$ node -e \"const {pathToFileURL}=require('node:url'); console.log(pathToFileURL('/x/b.mjs').href)\"\nfile:///x/b.mjs\n```\n\nAlternatives and why they are worse:\n\n- `await import('file:///' + p.replace(/\\\\/g,'/'))` — hand-rolled; mishandles spaces, `#`,\n  `%`, and non-ASCII unless you percent-encode yourself. `pathToFileURL` does that for you.\n- `require()` — CommonJS only; it accepts paths because it was specified before ESM\n  standardized on URLs. Not available in an ESM module without `createRequire`.\n\n## Verification\n\nMechanism reproduced on macOS, 2026-10-28, with `node -e`:\n\n| expression | result |\n|---|---|\n| `new URL('C:\\\\Users\\\\me\\\\proj\\\\mod.mjs').protocol` | `c:` |\n| `pathToFileURL('/tmp/x/mod.mjs').href` | `file:///tmp/x/mod.mjs` |\n\nThe URL-parsing rule is part of the WHATWG URL standard and is platform-independent, so\nthe mechanism is the same on Windows.\n\n**Honest boundary:** this was **not** run on a Windows host. The Windows-specific\n`import('C:\\\\…')` call itself was not executed; the reproduc\n\n[clipped]",
+    "summary_plain": "Windows 上用盘符绝对路径做 ESM import 会报 ERR_UNSUPPORTED_ESM_URL_SCHEME——盘符 C: 被 URL 解析当成协议名。改用 pathToFileURL() 转成 file: URL。",
+    "trigger": "import('C:\\\\path\\\\to\\\\mod.mjs') → TypeError [ERR_UNSUPPORTED_ESM_URL_SCHEME]: The URL must be of scheme file",
+    "verify": "node -e \"new URL('C:\\\\\\\\a\\\\\\\\b.mjs').protocol\" → c:；pathToFileURL('/x/b.mjs').href → file:///x/b.mjs",
+    "url": "lessons/contrib/node-esm-drive-letter-path-parses-as-url-scheme.md",
+    "created": "2026-10-28",
+    "updated": "2026-10-28",
+    "triggers": null,
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "draft",
+    "evidence_refs": [
+      "issue:#3925"
+    ],
+    "supersedes": "",
+    "verified": true,
+    "evidence_level": "E2",
+    "evidence_source": "frontmatter",
+    "trust_score": 0.425,
     "contributor": ""
   },
   {
@@ -17778,6 +17883,75 @@
     "confidence": 0.5,
     "status": "published",
     "evidence_refs": [],
+    "supersedes": "",
+    "verified": true,
+    "evidence_level": "E1",
+    "evidence_source": "frontmatter",
+    "trust_score": 0.387,
+    "contributor": ""
+  },
+  {
+    "id": "undocumented-vendor-validator-rules-determine-them-empirically",
+    "title": "An undocumented vendor validator rejects your payload: determine the rules empirically, do not guess the enum",
+    "domain": "mcp",
+    "tags": [
+      "integration",
+      "api-validation",
+      "undocumented-spec",
+      "enum-guessing",
+      "error-message"
+    ],
+    "summary": "Submitting a connector config to a third-party publisher returns:",
+    "preview": "# An undocumented vendor validator rejects your payload: determine the rules empirically, do not guess the enum\n\n## Problem\n\nSubmitting a connector config to a third-party publisher returns:\n\n> 连接器配置格式不正确，请检查后重试\n\nNo field name. No expected value. No path. The payload:\n\n```json\n{\"mcp_template\": {\"url\": \"https://…/mcp\", \"transport\": \"streamable_http\",\n \"header_inputs\": [{\"name\": \"Authorization\", \"label\": \"Authorization\", \"required\": true}]}}\n```\n\nThree questions follow naturally — what the field rules are, whether `transport` takes\n`streamable_http` or `streamable-http`, whether `url` must be an internal domain — and\n**none of them can be answered from the error message**.\n\n## Root Cause\n\nThe validator rejects without discriminating. A single opaque message covering every\nfailure mode means the caller has no gradient to descend: any change might fix it, or\nnone might. That turns a bounded problem (which field?) into an unbounded one (which of\nmy many choices?).\n\nThe secondary trap is **guessing the enum**. `streamable_http` vs `streamable-http` is\nexactly the kind of thing people resolve by trying one and, if it fails, silently\nswitching — which sometimes works and teaches nothing, because it may have been a\ndifferent field that flipped it.\n\n## Solution\n\n**Minimal-change probing.** Start from the smallest payload the platform will plausibly\naccept, then add exactly one thing at a time and record accepted/rejected.\n\n1. **Establish a baseline that passes.** Send the minimal config with every optional field\n   removed. If even that fails, the problem is structural (shape, nesting, required keys),\n   not a value.\n2. **Add one field per request.** Never vary two things. The point is to attribute the\n   flip to a single change.\n3. **When an enum is in doubt, probe both spellings in the same minimal context.** A\n   hyphen-vs-underscore question is answered by two adjacent requests that differ only in\n   that token — not by trying one, failing elsewhere, and changing your mind.\n4. **Record the accepted set as a table**, not prose:\n\n   | field | accepted | rejected | notes |\n   |---|---|---|---|\n   | `transport` | (probe both spellings) | | |\n\n5. **Feed the table back to the vendor** as a spec question, and — if you are the vendor —\n   make the error name the field and the expectation. \"格式不正确\" is a message that\n   cannot be acted on.\n\nThe method does not depend on know\n\n[clipped]",
+    "summary_plain": "对接方的配置校验规则没有文档，报错只说「格式不正确」。不要猜字段取值——用最小变更试探法逐项确定规则，并把确定下来的结果写成对方向可回读的规格。",
+    "trigger": "提交配置 → 只回「连接器配置格式不正确，请检查后重试」→ 无字段名、无期望值、无路径",
+    "verify": "每次只改一个字段的构造，记录接受/拒绝；把接受集写成表格，逐项可复现",
+    "url": "lessons/contrib/undocumented-vendor-validator-rules-determine-them-empirically.md",
+    "created": "2026-10-28",
+    "updated": "2026-10-28",
+    "triggers": null,
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "draft",
+    "evidence_refs": [
+      "issue:#3926"
+    ],
+    "supersedes": "",
+    "verified": true,
+    "evidence_level": "E0",
+    "evidence_source": "frontmatter",
+    "trust_score": 0.35,
+    "contributor": ""
+  },
+  {
+    "id": "updater-semantics-vs-distribution-form-silent-stale-exe",
+    "title": "An auto-updater that speaks installer semantics silently never updates the portable exe users actually run",
+    "domain": "development",
+    "tags": [
+      "desktop",
+      "updater",
+      "installer",
+      "portable",
+      "silent-stale",
+      "tauri"
+    ],
+    "summary": "The product ships **two distribution forms**:",
+    "preview": "# An auto-updater that speaks installer semantics silently never updates the portable exe users actually run\n\n## Problem\n\nThe product ships **two distribution forms**:\n\n- an **installer** (NSIS/MSI) — run once, launch from a shortcut\n- a **portable green build** — a single exe, copy it anywhere, double-click\n\nDocumentation says daily use is the portable exe. The application ships **auto-update**.\nUsers read \"has auto-update\" and conclude their copy stays current. It does not:\n\n> 提示「有新版」→ 点「立即更新」→ 进度条走完 → **桌面上那个 exe 还是旧的**\n\nThe failure is silent in both directions: the update reports success, and the stale exe\nbehaves exactly like the old version, so nothing looks wrong until a bug that was\nannounced as fixed is still present.\n\n## Root Cause\n\n**The updater's install semantics do not match the distribution form.**\n\nDesktop app updaters (Tauri, Electron-updater, Squirrel and friends) target a *location*\n— the install directory — and update the file they find there. That is correct for the\ninstaller form. For the portable exe, the file being run is not in the install directory;\nit is wherever the user copied it. The updater writes a new copy somewhere the user is not\nrunning from, reports success, and the running exe is untouched.\n\nCompounding it: the project documents \"daily use is the portable exe\", so the form the\nupdater *does* serve is precisely the one users are told not to use.\n\n## Solution\n\nTwo fixes, and the second matters as much as the first.\n\n1. **Match the update mechanism to the form.** Either make the portable form self-updating\n   in place (replace the running exe's file, with the usual Windows caveats about\n   renaming the running image rather than overwriting it), or **hide/disable auto-update\n   entirely in the portable build**. Shipping an updater that cannot reach the file the\n   user runs is worse than shipping none: it converts \"out of date\" from an observable\n   fact into a false reassurance.\n\n2. **Make the update report name what it updated.** \"Update complete\" should say *which\n   path* now holds the new version. Then the user can see it wrote somewhere else. A\n   progress bar that does not name its target cannot be checked.\n\n## Verification\n\n**Not reproduced.** The root cause above is the report's, and it is internally consistent —\nan updater keyed to an install location cannot modify a copy living elsewhere. But no\nWindows host and n\n\n[clipped]",
+    "summary_plain": "产品同时发安装包和绿色版，更新器只按安装器语义工作——用户日常跑的绿色 exe 从来不会被更新，而「有新版/已更新」照常提示。",
+    "trigger": "提示『有新版』→ 点更新 → 进度走完 → 桌面上那个 exe 仍旧版；直到某个『已修』的 bug 还在才发现",
+    "verify": "更新后对比桌面 exe 的哈希/文件版本与安装目录里那份；不一致即复现",
+    "url": "lessons/contrib/updater-semantics-vs-distribution-form-silent-stale-exe.md",
+    "created": "2026-10-28",
+    "updated": "2026-10-28",
+    "triggers": null,
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "draft",
+    "evidence_refs": [
+      "issue:#3923"
+    ],
     "supersedes": "",
     "verified": true,
     "evidence_level": "E1",
