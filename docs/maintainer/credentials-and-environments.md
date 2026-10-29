@@ -270,3 +270,28 @@ file's docstring).
 * `.github/workflows/stale.yml` exempts a `keep` label that did not exist until 2026-09-20, so the
   exemption was decorative — the four other exempt labels do exist, but a dated reminder would never
   carry them. The label now exists.
+
+## `release` 环境的 tag 白名单（2026-10-29 补记）
+
+`release` 环境开的是 **custom branch policies**，不是 "any branch"。所以除 `main` 之外，**每一个要
+触发 tag 发布的 tag 前缀都必须显式加进白名单**，否则那个 run 会以最误导人的方式失败：
+
+```
+run: completed / failure      1 秒、0 个 step、gh run view --log 返回 BlobNotFound
+```
+
+——看起来像 workflow 坏了，实际是环境在 job 启动前就拒了这个 ref。实测于 `fatal-guard-v0.3.1`
+（2026-10-29），补上 `fatal-guard-v*`（tag）后同一个 run 立刻变成正常的 `waiting`（等 required
+reviewer）。
+
+当前白名单：`main`（branch）、`misakanet-setup-v*`（tag）、`fatal-guard-v*`（tag）。**新增任何按包
+发布的 tag 前缀时，先加这里再加 tag**，顺序反了会得到一次"静默的失败"。
+
+查看：
+
+```bash
+gh api repos/Ikalus1988/MisakaNet/environments/release/deployment-branch-policies \
+  --jq '.branch_policies[] | "\(.name) (\(.type))"'
+```
+
+这属于 admin 操作（环境设置），不在仓库代码里，所以没有门禁能替它把关 —— 只能写在这里。
