@@ -169,16 +169,58 @@ jobs:
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
+      - name: Publish the verdict to the step summary
+        # verdict-channel: step-summary
+        #
+        # The verdict lives here, not in the PR comment (lesson ci-fork-pr-no-comment-token).
+        #
+        # A `pull_request`-triggered workflow running on a **fork** PR gets a read-only
+        # GITHUB_TOKEN no matter what `permissions:` says -- so the comment below cannot be
+        # the only channel. Measured on PR #3967: `Resource not accessible by integration`,
+        # status 403, and a contributor saw a red `provenance` check with no explanation.
+        #
+        # This step needs no write access at all. The comment is a bonus.
+        if: always() && github.event_name == 'pull_request' && steps.changed.outputs.any_changed == 'true'
+        run: |
+          {
+            echo "## Provenance gate"
+            echo ''
+            if [ -f provenance_report.txt ]; then
+              echo '```'
+              cat provenance_report.txt
+              echo '```'
+            else
+              echo "no report file was produced -- the checker did not run"
+            fi
+            echo ''
+            echo "<!-- verdict is published here because a fork PR token is read-only -->"
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Comment the result on the PR
         if: github.event_name == 'pull_request' && steps.changed.outputs.any_changed == 'true'
-        # No `continue-on-error` here, and no empty `catch`. Both were here from the first
-        # version of this file (PR #1768), and together they made this step unable to fail:
-        # `continue-on-error: true` swallowed a failed comment (a token without
-        # `pull-requests: write`, a rate limit, an API error) and turned it into a green run with
-        # no comment on the pull request, and the empty `catch` swallowed a failed *read* of the
-        # report and published "✅ Provenance gate passed" for a verdict nobody had established.
-        # That is the shape of `ci-lesson-search.yml` (measured 2026-10-26): a mechanism that
-        # can end green having produced nothing, with nothing to say it had failed.
+        # This step is a **bonus**, not the verdict. The verdict is written to the step
+        # summary by the step above, which needs no write access at all.
+        #
+        # History worth keeping, because the two failure modes are easy to confuse:
+        #
+        # 1. PR #1768 had `continue-on-error: true` **and** an empty `catch` *here*, with no
+        #    other verdict channel. A failed comment (no `pull-requests: write`, rate limit,
+        #    API error) left a green run with no comment at all, and the empty `catch`
+        #    swallowed a failed *report read* and published "✅ Provenance gate passed" for a
+        #    verdict nobody had established. That is the shape of `ci-lesson-search.yml`
+        #    (measured 2026-10-26): green having produced nothing, with nothing to say so.
+        #    The fix then was right *for a workflow whose only channel was this comment*.
+        #
+        # 2. With no `continue-on-error`, the opposite happened on PR #3967 (measured
+        #    2026-10-28): a fork PR's `pull_request` token is read-only regardless of the
+        #    `permissions:` block, so the comment 403'd (`Resource not accessible by
+        #    integration`) and a contributor saw a red `provenance` check carrying **no
+        #    explanation at all** — the verdict existed in the log but reached nobody.
+        #
+        # `continue-on-error: true` is therefore correct **now**, and only because the
+        # verdict moved to the step summary first. If that step is ever removed, this one
+        # must lose the `continue-on-error` again — otherwise the repo is back to case 1.
+        continue-on-error: true
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9
         env:
           # The same two lists the checker steps work from. A pull request that only *deleted* a

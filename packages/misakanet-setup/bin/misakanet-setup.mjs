@@ -197,7 +197,7 @@ function readText(path) {
  * except the two that name the version (measured 2026-10-22: the 0.6.0 release pull request
  * failed 9 e2e legs on exactly that).
  */
-const VERSION = '0.7.1'  // x-release-please-version
+const VERSION = '0.8.0'  // x-release-please-version
 
 /**
  * The shape of a client id, in one place.
@@ -3798,6 +3798,25 @@ if (!SILENT && !DRY) {
   // looked identical. `--dry-run` keeps its own contract — it already says it would write
   // nothing, so a "0 files written" line under it would only restate the mode.
   console.log(`本次实际写入 ${writtenFiles.size} 个文件（上面的清单是"涉及哪些"，这一行是"真的动了哪些"）。`);
+
+  if (installed > 0) {
+    // The tail is what a user reads, and until now it held only next steps: a real Windows run on
+    // 2026-10-29 ended on "5) 想关掉…" and the identity line, so the sole evidence that anything had
+    // worked was the absence of errors. Verified here rather than assumed: the version is this build's,
+    // and whether it is the published one is asked of the registry — the same two primitives `--verify`
+    // uses, so the closing line and the self-check cannot disagree about what "latest" means.
+    const latest = await latestPublishedVersion();
+    const delta = latest ? compareVersions(VERSION, latest) : null;
+    let versionNote = '；查不到 npm 上的最新版本（离线或 registry 不可达）';
+    if (delta === 0) versionNote = '（已是最新）';
+    else if (delta !== null && delta < 0) {
+      versionNote = `；npm 上已有 ${latest} → 重跑 npx @misaka-net/misakanet-setup@latest 可更新`;
+    } else if (delta !== null) {
+      versionNote = `；比 npm 上的 ${latest} 新（本地构建或预发布）`;
+    }
+    console.log(`\n✓ 安装成功 —— misakanet-setup ${VERSION}${versionNote}`
+      + `\n  已配置 ${installed} 个助手；撤销：npx @misaka-net/misakanet-setup --uninstall`);
+  }
 }
 if (MCP_ONLY && !SILENT) {
   // The honest failure mode of tier ①, said where the user will read it: they are not installing a

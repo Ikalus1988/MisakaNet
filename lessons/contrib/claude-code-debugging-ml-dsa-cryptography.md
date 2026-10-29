@@ -19,6 +19,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "w1Encode recomputed high bits causing verification to fail; refactoring it to accept pre‑computed high bits fixed it."
+trigger: "when ML-DSA verification returns 'invalid signature' for all test vectors"
 ---
 
 ## Problem

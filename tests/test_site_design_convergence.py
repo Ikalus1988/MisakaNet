@@ -72,7 +72,8 @@ def test_the_generated_pages_are_inside_the_gate():
     # 16 since #3532: `docs/insights/quickstart-events.html` (issue #1897) is the sixteenth
     # hand-written page. The PR that added it was green, because the ratchet read 15 while the
     # tree already held 16 — the check only fires on the merge, not on the pull request.
-    assert len(cdc.hand_written_pages(REPO)) == 16, "the hand-written page set changed shape"
+    assert len(cdc.hand_written_pages(REPO)) == 17, "the hand-written page set changed shape"
+    # 17 since 2026-10-28: /dataset/ — the published files had no entry point on the site.
 
 
 def test_the_partition_rule_is_defined_in_exactly_one_place():

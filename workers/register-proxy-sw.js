@@ -136,7 +136,13 @@ const REDACT_PATTERNS = [
   [/(?:Bearer|Authorization)\s+[a-zA-Z0-9\-._~+/]+=*/gi, "[REDACTED:bearer_token]"],
   [/(?:password|passwd|secret|token|api[_-]?key|apikey|database[_-]?url)\s*[:=]\s*\S+/gi, "[REDACTED:credential]"],
   [/:[^:]+:[^@]+@[^\s]+/g, "://[REDACTED:url_credential]@host"],
-  [/\b(?:\d[ -]*?){13,19}\b/g, "[REDACTED:card_number]"],
+  // #4060: the old rule counted *digits* and treated any run of spaces and hyphens between them
+  // as decoration, so `32767-20261029` (a PID and a date) reached thirteen digits and was redacted
+  // as a card. A card is grouped: 13-19 unseparated digits, four groups of four, 4-4-4-4-x for
+  // 17-19 digits, or the 4-6-5 / 4-6-4 layouts (Amex, Diners). Two numbers joined by a hyphen
+  // belong to neither shape. Mirrored in workers/lib/redact-patterns.json and `redactIntake` below;
+  // `tests/test_redaction_sync.py` now checks the three copies agree on this pattern.
+  [/\b(?:\d{13,19}|\d{4}(?:[ -]\d{4}){3}[ -]\d{1,3}|\d{4}(?:[ -]\d{4}){3}|\d{4}(?:[ -]\d{4}){2}[ -]\d{1,4}|\d{4}[ -]\d{6}[ -]\d{4,5})\b/g, "[REDACTED:card_number]"],
   // #3692: the three classes the server was missing. A filesystem path and a mail address are
   // what an agent's error fragment carries out of the machine — the trial user named both
   // ("内部表名、路径"). The path rule deliberately requires evidence of a FILESYSTEM path (a known
@@ -393,6 +399,10 @@ const MCP_TOOLS = [
         },
         source: { type: "string" }, detail: { type: "string" }, query: { type: "string" },
         no_match: { type: "boolean" }, suggestion: { type: "string" },
+        // Present only when candidates existed and a filter removed them: without these two, a
+        // `no_match` carrying `source: worker-bm25+semantic` reads as "the vector path found
+        // nothing", which is a different fact (2026-10-27).
+        matched_before_filter: { type: "number" }, filtered_by_kind: { type: "string" },
         intake: { type: "object", properties: { tool: { type: "string" }, args: { type: "object" } } },
       },
     },
@@ -437,7 +447,7 @@ const MCP_TOOLS = [
   },
   {
     name: "misakanet_submit_intake",
-    description: "[OPEN TRIAGE / INTAKE] Use misakanet_submit_intake when you only have a partial failure description or want to ask a question; use misakanet_write_lesson (Bearer required) once you already have structured title/domain/problem/root_cause/fix. submit_intake is open, rate-limited, no Bearer — output is a GitHub issue (intake,mcp-intake,pending-review) for maintainer triage, NOT a merged lesson.\nRouting: if you are ASKING a how-to / knowledge question (not reporting a failure), set kind=\"question\" — it opens a [Question] issue that maintainers answer/FAQ instead of scoring it as a lesson. If kind is omitted, the server auto-detects question-shaped content (no error/fix/verification + question phrasing).\nPull answers later: questions are answered asynchronously (hours to days). Re-call this tool with the SAME problem text later and follow the returned poll_hint — the dedup response returns the maintainer's answer once it exists ({answered:true, answer}), and once your report has become a lesson it returns a conversion receipt ({converted:true, receipt, events}) naming the lesson, its path and its evidence_level; or re-run misakanet_search on the topic for FAQ hits. Every response also carries dedup_key, and poll_hint.recheck_after_seconds says when re-checking is worth it (21600s for questions, 86400s for failure reports).\nReturns: object {submitted: boolean, intake_id, status, dedup_key, poll_hint, redactions_applied, quality_score, receipt, routing:{kind, auto_detected}, follow_up?}; duplicates: {submitted: false, duplicate: true, previous_issue, dedup_key} or {answered: true, answer, dedup_key} for answered questions, plus {converted: true, receipt, events} when a lesson now cites the intake.\nExample: misakanet_submit_intake(kind='missing_lesson', problem='pip install times out behind corporate proxy', source='claude-code'); misakanet_submit_intake(kind='question', problem='How do I configure MCP auth in production?', source='claude-code')",
+    description: "[OPEN TRIAGE / INTAKE] Use misakanet_submit_intake when you only have a partial failure description or want to ask a question; use misakanet_write_lesson (Bearer required) once you already have structured title/domain/problem/root_cause/fix. submit_intake is open, rate-limited, no Bearer — output is a GitHub issue (intake,mcp-intake,pending-review) for maintainer triage, NOT a merged lesson.\nRouting: if you are ASKING a how-to / knowledge question (not reporting a failure), set kind=\"question\" — it opens a [Question] issue that maintainers answer/FAQ instead of scoring it as a lesson. If kind is omitted, the server auto-detects question-shaped content (no error/fix/verification + question phrasing).\nPull answers later: questions are answered asynchronously (hours to days). Re-call this tool with the SAME problem text later and follow the returned poll_hint — the dedup response returns the maintainer's answer once it exists ({answered:true, answer}), and once your report has become a lesson it returns a conversion receipt ({converted:true, receipt, events}) naming the lesson, its path and its evidence_level; or re-run misakanet_search on the topic for FAQ hits. Every response also carries dedup_key, and poll_hint.recheck_after_seconds says when re-checking is worth it (21600s for questions, 86400s for failure reports).\nReturns: object {submitted: boolean, intake_id, status, dedup_key, poll_hint, redactions_applied, quality_score, receipt, routing:{kind, auto_detected}, follow_up?}; `surface_report` is the intake's **surface check**: command-shaped tokens in your submission that the public corpus has never indexed (`null` = could not check, `[]` = checked and nothing unknown). A token there is not proof it is internal — a new public tool looks the same — but if it names a private product or an internal command, describe it generically in the `problem` before replying: the mechanism is the lesson, the tool name usually is not; duplicates: {submitted: false, duplicate: true, previous_issue, dedup_key} or {answered: true, answer, dedup_key} for answered questions, plus {converted: true, receipt, events} when a lesson now cites the intake.\nExample: misakanet_submit_intake(kind='missing_lesson', problem='pip install times out behind corporate proxy', source='claude-code'); misakanet_submit_intake(kind='question', problem='How do I configure MCP auth in production?', source='claude-code')",
     inputSchema: {
       type: "object",
       properties: {
@@ -2031,7 +2041,42 @@ function enrichSearchHits(results, lessons) {
  *  and any failure falls back to the existing no_match answer. bge-m3 and the index are included
  *  in Workers Paid; no external API is involved.
  */
-async function semanticFallbackHits(env, query, top = 5) {
+/** Reciprocal-rank fusion of a lexical list and a vector list, for CJK queries only.
+ *
+ *  Why this exists (2026-10-28): the semantic fallback runs **only when BM25 returns nothing**, and
+ *  "a hit is never re-ranked". Measured on 64 Chinese queries against the live endpoint: 13 of 20
+ *  misses had returned a *confident wrong* lesson, which is exactly the state in which the vector
+ *  path never runs. Simulated on the same queries with the same `bge-m3` vectors the worker already
+ *  holds, fusing instead of gating moves R@1 from 0.556 to 0.698 overall, and on the cross-lingual
+ *  bucket from 0.424 to 0.636 — 11 queries fixed, 2 broken. (The number that decided it: the gate is
+ *  worth ~18 points, a stronger embedding ~9.)
+ *
+ *  RRF rather than score blending because the two scores are not on one scale: BM25 is an unbounded
+ *  lexical sum and cosine is bounded, and a weight between them would have to be tuned per language
+ *  — which is the mistake #2250 recorded four times.
+ */
+function rrfFuse(primary, secondary, top = 5, k = 60) {
+  const score = new Map();
+  const byId = new Map();
+  const add = (list, weight) => {
+    const seen = new Set();
+    list.forEach((item, index) => {
+      const id = item && (item.id || item.path);
+      if (!id || seen.has(id)) return;   // one list can hold an id twice (FAQ + lesson)
+      seen.add(id);
+      score.set(id, (score.get(id) || 0) + weight / (k + index + 1));
+      if (!byId.has(id)) byId.set(id, item);
+    });
+  };
+  add(primary, 1);
+  add(secondary, 1);
+  return [...score.entries()]
+    .sort((a, b) => (b[1] - a[1]) || String(a[0]).localeCompare(String(b[0])))
+    .slice(0, top)
+    .map(([id]) => byId.get(id));
+}
+
+async function semanticFallbackHits(env, query, top = 5, floorOverride = null) {
   if (!env || !env.VECTORIZE || !env.AI) return [];
   const text = String(query || "").trim();
   if (!text) return [];
@@ -2047,7 +2092,11 @@ async function semanticFallbackHits(env, query, top = 5) {
   // miss mean 0.601), so this is a precision/recall choice, not a clean separator. 0.62 keeps
   // 23/29 top-1 hits and drops 15/21 top-1 misses; a lower floor returns more related lessons but
   // also more wrong first hits. Configurable so a future embedding model can recalibrate.
-  const minScore = Number(env.SEMANTIC_MIN_SCORE || "0.62");
+  // The 0.62 floor was calibrated for the *no_match* case, where a wrong hit is worse than no hit.
+  // Fusion is a different question — "is this candidate plausibly about the same thing" — and reusing
+  // 0.62 there drops most of the candidates worth fusing (the pilot's hit mean was 0.662, so the
+  // floor sits inside the hit distribution). CJK fusion passes its own floor for that reason.
+  const minScore = Number(floorOverride == null ? (env.SEMANTIC_MIN_SCORE || "0.62") : floorOverride);
   return ((found && found.matches) || [])
     .map((m) => ({ id: m && m.metadata && m.metadata.lesson_id, score: Number(m && m.score) || 0 }))
     .filter((h) => h.id && h.score >= minScore);
@@ -2507,6 +2556,23 @@ let _bm25IndexExpiry = 0;
 function invalidateBM25Memo() {
   _bm25Index = null;
   _bm25IndexExpiry = 0;
+}
+
+/** The index **if this isolate already holds it**, without loading one.
+ *
+ *  Added 2026-10-29 for the intake surface check, which had called `loadBM25Index` on the write path.
+ *  On a cold isolate that load is the same 30-60 s the search path shows (measured: `initialize` 1.9 s,
+ *  `search` 1.3 s → 62 s across six calls), and the write it was delaying is the *issue creation*.
+ *  The client gave up first, reported `fetch failed`, and the issue was created anyway — a submission
+ *  that succeeded and a submission that failed rendered identically, which is the failure this
+ *  repository writes lessons about.
+ *
+ *  A check that is worth a 60 s wait is worth waiting for; an **advisory** one is not: `null` means
+ *  "could not check", which is the honest answer when the index is not in memory.
+ */
+function peekBM25Index() {
+  const now = Date.now();
+  return _bm25Index && now < _bm25IndexExpiry ? _bm25Index : null;
 }
 
 async function loadBM25Index(env) {
@@ -3735,6 +3801,89 @@ function assembleSubmittedBody(bodyParts) {
   return clipSubmittedText(bodyParts.join("\n"), "a submission");
 }
 
+// ── Surface gate (2026-10-28) ────────────────────────────────────────────────────────────────────
+// A submitted intake is a PUBLIC GitHub issue, and the agent writing it cannot know what is internal
+// about its own environment: measured on #3983, an agent described its employer's internal platform,
+// its private CLI (`mico issue rerun`, `mico wiki search`), its lifecycle model and an operating
+// timeline — without a single credential among them, so the redaction rules above passed it through
+// untouched. Asking the agent "is this internal?" cannot work for the same reason it failed here:
+// the agent has no reference for what "internal" means.
+//
+// So this does not ask. It checks one thing that is mechanical: **does the public corpus know this
+// word?** `index.terms` is that vocabulary — every token the 651 public lessons have ever indexed.
+// A command-shaped token the corpus has never seen is not proof of an internal tool (a brand-new
+// public CLI looks identical), which is why the result is a banner for the maintainer and a field in
+// the response, never a silent rewrite: mangling a legitimate submission is worse than showing a
+// reviewer one line to read.
+const COMMAND_TOKEN = /^[a-z][a-z0-9._+-]{1,39}$/;
+// A bare token is command-shaped when it is followed by a word that could be a verb or a flag.
+// Lookahead, not `\s+word`: a consuming match eats the token after the command, so `a b a c a d`
+// counted `a` once instead of twice — the first live probe returned `surface_report: []` on a text
+// where the tool name appeared three times, because each later occurrence had been consumed as the
+// *argument* of the previous match.
+const COMMAND_FOLLOW = /\b([a-z][a-z0-9._+-]{1,39})(?=\s+(?:[a-z]{2,}|-{1,2}[a-z]))/gi;
+
+/** Command-surface identifiers: tokens this submission is using as a command, not mentioning once.
+ *
+ *  Two sources, and the second one exists because the first missed the case that motivated the gate:
+ *
+ *  1. **Quoted surfaces** — an inline code span, a fenced block, or a `$` prompt. Precise.
+ *  2. **Repeated bare tokens in command position** — #3983 wrote `mico login`, `mico issue rerun`,
+ *     `mico im message history`, `mico wiki search` with no backticks anywhere, so the quoted-surface
+ *     rule extracted nothing from the one submission it was built for. What distinguishes those from
+ *     prose is mechanical: the token repeats (8×) and is followed by a command-shaped word each time.
+ *     "The platform returns" repeats too, but `the` is in the corpus, so it never reaches the report.
+ *
+ *  A single unquoted mention is deliberately NOT a surface: every submission names tools in passing,
+ *  and a banner that fires on those is a banner readers learn to skip.
+ */
+function commandSurfaceIdentifiers(text) {
+  const found = new Set();
+  const body = String(text || "");
+  const add = (raw) => {
+    const head = String(raw || "").trim().replace(/^\$\s*/, "").split(/\s+/)[0].toLowerCase();
+    if (COMMAND_TOKEN.test(head)) found.add(head);
+  };
+  // 1. Quoted surfaces.
+  for (const match of body.matchAll(/`([^`\n]{1,160})`/g)) add(match[1]);
+  for (const block of body.matchAll(/```[\w-]*\n([\s\S]*?)```/g)) {
+    for (const line of block[1].split("\n")) if (line.trim()) add(line);
+  }
+  for (const line of body.split("\n")) {
+    const match = /^\s*\$\s+(\S+)/.exec(line);
+    if (match) add(match[1]);
+  }
+  // 2. Repeated bare tokens in command position.
+  const occurrences = new Map();
+  const followed = new Map();
+  for (const match of body.matchAll(COMMAND_FOLLOW)) {
+    const token = match[1].toLowerCase();
+    if (!COMMAND_TOKEN.test(token)) continue;
+    occurrences.set(token, (occurrences.get(token) || 0) + 1);
+    if (/-{1,2}[a-z]/.test(match[0]) || occurrences.get(token) >= 2) {
+      followed.set(token, (followed.get(token) || 0) + 1);
+    }
+  }
+  for (const [token, count] of occurrences) {
+    if (count >= 3 || (count >= 2 && (followed.get(token) || 0) >= 2)) found.add(token);
+  }
+  return [...found];
+}
+
+/** Which of those the public corpus has never indexed. `null` when there is no index to ask. */
+function unknownCommandSurface(text, index) {
+  const tokens = commandSurfaceIdentifiers(text);
+  const terms = index && index.terms;
+  if (!terms) return null;
+  const known = (token) => {
+    if (terms[token]) return true;
+    // `node.js` tokenizes to `node` + `js`; checking the head only would call a familiar tool unknown.
+    const head = token.split(/[._+-]/)[0];
+    return Boolean(head && terms[head]);
+  };
+  return tokens.filter((token) => !known(token));
+}
+
 function redactIntake(text) {
     if (!text) return "";
     // Redact the whole text first, then clip. Clipping first meant a credential past
@@ -3749,7 +3898,9 @@ function redactIntake(text) {
     r = r.replace(/(?:Bearer|Authorization)\s+[a-zA-Z0-9\-._~+/]+=*/gi, "[REDACTED:bearer_token]");
     r = r.replace(/(?:password|passwd|secret|token|api[_-]?key|apikey|database[_-]?url)\s*[:=]\s*\S+/gi, "[REDACTED:credential]");
     r = r.replace(/:\/\/[^:]+:[^@]+@[^\s]+/g, "://[REDACTED:url_credential]@host");
-    r = r.replace(/\b(?:\d[ -]*?){13,19}\b/g, "[REDACTED:card_number]");
+    // #4060: grouped shapes only — see the /api/intake copy above for why the digit-counting form
+    // ate `32767-20261029`.
+    r = r.replace(/\b(?:\d{13,19}|\d{4}(?:[ -]\d{4}){3}[ -]\d{1,3}|\d{4}(?:[ -]\d{4}){3}|\d{4}(?:[ -]\d{4}){2}[ -]\d{1,4}|\d{4}[ -]\d{6}[ -]\d{4,5})\b/g, "[REDACTED:card_number]");
     // #3692: the same three classes as the /api/intake copy above — a filesystem path, a Windows
     // path and a mail address. The server had nine secret rules and nothing else, so an internal
     // path in a submitted problem text (which becomes a PUBLIC GitHub issue) survived. The regexes
@@ -4104,6 +4255,32 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
       }
     }
 
+    // CJK fusion (2026-10-28): the fallback above only fires on an EMPTY result, so a confident-but-
+    // wrong lexical hit suppresses the vector path entirely. For queries that carry CJK characters
+    // the vector path is fused in instead of gated. Scoped to CJK on purpose: English already clears
+    // its floor (measured 15/20 against 16) and this experiment measured no English arm; widening it
+    // would spend the whole gain on an unmeasured risk.
+    // `MISAKANET_CJK_FUSE=0` disables it without a code revert, the same switch shape as
+    // `MISAKANET_SEMANTIC=0`.
+    if (results && results.length > 0 && env.MISAKANET_CJK_FUSE !== "0" && CJK_CHAR.test(String(args.query || ""))) {
+      try {
+        // 0.45 rather than the 0.62 no_match floor: fusion asks "is this plausibly the same
+        // subject", where a near-miss is still useful as a second opinion, not "is this the answer".
+        const vectorHits = await semanticFallbackHits(env, args.query, Math.max(args.top || 5, 10), 0.45);
+        if (vectorHits.length) {
+          const fused = rrfFuse(results, enrichSearchHits(vectorHits, lessons), args.top || 5);
+          if (fused.length) {
+            results = fused;
+            source = "worker-bm25+cjk-fuse";
+            noteSearchBackend(env, "semantic");
+          }
+        }
+      } catch (e) {
+        // A fusion failure must leave the lexical answer alone — same rule as the fallback above.
+        debugLog(env, 1, "cjk fusion failed", { error: String((e && e.message) || e) });
+      }
+    }
+
     // Gap analysis: log zero-result queries (Issue #1164)
     if ((!results || results.length === 0) && args.query) {
       // Track the gap write with the runtime instead of letting it float: a
@@ -4157,6 +4334,14 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
 
     // Kind filtering (Issue #1441)
     const kind = detectKind(args.query, args.kind);
+    // Kept for the no_match reply below: `filterByKind` is the only step after `source` is set that
+    // can *remove* results, so when the set ends up empty the envelope has to say whether nothing
+    // was found or everything was filtered. Measured 2026-10-27: a query whose answer was a GitHub
+    // Actions lesson came back `{no_match: true, source: "worker-bm25+semantic"}` — the semantic
+    // path had produced hits, the kind filter removed them, and the reply still named the matcher.
+    // A caller cannot tell "the vector path found nothing" from "the vector path found something
+    // you filtered away", and the servedBy counter reads the same field.
+    const matchedBeforeKindFilter = results.length;
     if (results.length > 0 && kind !== "all") {
       results = filterByKind(results, kind);
     }
@@ -4241,6 +4426,12 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
         voice: "failure-warning",
         query: args.query,
         source,
+        // Empty *and* we had candidates: name the step that removed them. Without this the reply
+        // claims `source: worker-bm25+semantic` on a `no_match`, which reads as "the vector path was
+        // consulted and came back empty" — the opposite of what happened.
+        ...(matchedBeforeKindFilter > 0
+          ? { matched_before_filter: matchedBeforeKindFilter, filtered_by_kind: kind }
+          : {}),
         detail,
         suggestion,
         intake: {
@@ -4786,6 +4977,41 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
       [args.problem, args.error, args.what_tried, args.verification, args.fix]
         .filter(Boolean).join("\n"),
     );
+    // Surface gate: identifiers the public corpus has never seen, in command position. Advisory by
+    // design (see the note above `commandSurfaceIdentifiers`): the banner is for the maintainer who
+    // triages this, and the same list is in the tool response so the submitting agent can see what
+    // looked private without having had to know it in advance.
+    const surfaceText = [args.problem, args.error, args.what_tried, args.verification, args.fix]
+      .filter(Boolean).join("\n");
+    let surfaceUnknown = null;
+    try {
+      // `peekBM25Index`, not `loadBM25Index`: this runs inside the request that creates the public
+      // issue, and loading the index there can take 30-60 s on a cold isolate — longer than any MCP
+      // client waits. Measured 2026-10-29: the client timed out, reported `fetch failed`, and the
+      // issue was created anyway, so a submission that succeeded looked exactly like one that failed.
+      // A warm isolate still gets a real answer; a cold one gets `null` ("could not check"), which is
+      // the honest answer and never a substitute for one.
+      surfaceUnknown = unknownCommandSurface(surfaceText, peekBM25Index());
+    } catch (e) {
+      debugLog(env, 1, "surface check skipped", { error: String((e && e.message) || e) });
+    }
+    if (surfaceUnknown && surfaceUnknown.length) {
+      // Built with concatenation, not a nested template literal: `tests/test_worker_entry_exports.py`
+      // reads this file with the page gate's tokenizer, and a `${...}` containing another template
+      // made it lose the export list entirely (the gate went red on a file whose exports had not
+      // changed). Keeping the shape simple is cheaper than teaching two parsers about nesting.
+      const names = surfaceUnknown.map((t) => "`" + t + "`").join(", ");
+      const verb = surfaceUnknown.length === 1 ? "does" : "do";
+      bodyParts.unshift(
+        "> [!NOTE]",
+        "> **Surface check:** " + names + " " + verb + " not appear anywhere in the public corpus.",
+        "> That is not proof they are internal — a new public tool looks the same — but if any of them names a",
+        "> private product or a company-internal command, replace it with a neutral description before this",
+        "> becomes a lesson. The mechanism is the lesson; the tool name usually is not.",
+        "",
+      );
+    }
+
     if (injectionFlags.length) {
       bodyParts.unshift(
         "> [!WARNING]",
@@ -4874,6 +5100,10 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
         issue_url: data.html_url,
         dedup_hash: dedupHash,
         dedup_key: dedupContentHash,
+        // The surface check, in the reply as well as in the issue banner. `null` means "could not
+        // check" (no index) and `[]` means "checked, nothing unknown" — the two must not render the
+        // same, because an empty list is a clearance and a null is an absence of evidence.
+        surface_report: surfaceUnknown,
         routing: {
           kind,
           auto_detected: kindAutoDetected,
@@ -10073,6 +10303,15 @@ export {
   INDEX_TEXT_VERSION,
   bm25Tokenize,
   cjkBigrams,
+  // Exported for workers/intake-surface-gate.test.mjs: what counts as a command surface, and which
+  // of those identifiers the public corpus has never seen. The gate's value depends entirely on the
+  // extractor being conservative — a false positive here is a legitimate submission annotated as
+  // suspicious, which teaches readers to skip the banner.
+  commandSurfaceIdentifiers,
+  unknownCommandSurface,
+  // Exported for workers/cjk-fusion.test.mjs: the whole experiment is "does a wrong lexical hit
+  // stop suppressing the vector path", and the fusion is the part that decides.
+  rrfFuse,
   CJK_CHAR,
   matchTokens,
   // Query alias expansion (#1780) — exported so workers/query-alias-expansion.test.mjs

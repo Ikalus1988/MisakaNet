@@ -18,6 +18,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "导入 Lambda 模块导致 CI 失败，改为读取源码文本即可解决。"
+trigger: "当 CI 测试使用 importlib.import_module 导入 Lambda 模块时出现 ModuleNotFoundError 或 NoCredentialsError"
 ---
 
 ## Problem

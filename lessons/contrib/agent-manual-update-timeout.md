@@ -16,6 +16,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Agent 更新超时，手动执行 update 步骤解决了问题。"
+trigger: "当使用内置 update 命令时出现 timeout 错误，导致更新失败。"
 ---
 
 ## Verification

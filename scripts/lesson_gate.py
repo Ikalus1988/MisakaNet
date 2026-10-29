@@ -221,6 +221,198 @@ def validate_evidence_refs(refs) -> list[str]:
 # structural rule was a 100-character floor. New lessons must now carry the four
 # sections the corpus is built on; files that already exist on the base branch keep the
 # advisory path, since legacy gaps are not this PR's debt (see validate_file's docstring).
+# ── Public surface (2026-10-28) ─────────────────────────────────────────────
+# A lesson is public forever, and the agent that writes one cannot know what is internal about its
+# own environment: measured on intake #3983, an agent described its employer's internal platform and
+# its private CLI in plain prose, with no credential anywhere for the redaction rules to catch, and
+# no reference for what "internal" meant. So the gate does not ask. It checks the one mechanical
+# question available — **has the public corpus ever used this command name?** — against
+# `data/public-vocabulary.json`, which `scripts/export_public_vocabulary.py` derives from the corpus
+# and whose `allowlist` is the human-asserted escape hatch ("this new tool is public") in one line.
+#
+# Two accepted answers when a name is unknown:
+#   * add it to the allowlist — a reviewable diff that says "public";
+#   * declare `public_analogue:` in the frontmatter — "this thing is internal, here is the public
+#     equivalent a reader can actually use", which is what the lesson should teach instead.
+# An internal name belongs in neither: it belongs rewritten.
+COMMAND_TOKEN_RE = re.compile(r"[a-z][a-z0-9._+-]{1,39}")
+# A token ending in a file extension is a path, not a command. Without this the gate flagged
+# `dco-check.yml`, `conftest.py` and `test_push_preflight.py` — every lesson that writes a filename
+# in prose. Measured on the corpus after the flag rule was removed: this was the class that came
+# back, and it is separable by shape rather than by vocabulary.
+FILE_EXTENSION_RE = re.compile(
+    r"\.(?:ya?ml|py|md|js|mjs|cjs|ts|tsx|jsx|json|sh|bash|toml|ini|cfg|txt|log|lock|env|sql|html|css)$",
+    re.I,
+)
+SURFACE_TOKEN_RE = re.compile(r"^[a-z][a-z0-9._+-]{1,39}$")
+# Lookahead, not `\s+word`: a consuming match eats the token after the command, which is exactly how
+# the worker's first version counted `zetaqx` once in a text that used it three times.
+SURFACE_FOLLOW_RE = re.compile(r"\b([a-z][a-z0-9._+-]{1,39})(?=\s+(?:[a-z]{2,}|-{1,2}[a-z]))", re.I)
+SHELL_FENCE_RE = re.compile(r"```(?:bash|sh|shell|zsh|console|shell-session|powershell|ps1)\n([\s\S]*?)```", re.I)
+INLINE_RE = re.compile(r"`([^`\n]{1,160})`")
+PROMPT_RE = re.compile(r"^\s*\$\s+(\S+)", re.M)
+
+# **Measured, not guessed.** The first version of this check read every fenced block and every
+# inline span as a command; run over the 651-lesson corpus it flagged **182 lessons (28%)**, and the
+# hits were overwhelmingly *code*, not commands: `case1`, `normalizerow`, `sqlite_constraint_unique`,
+# `readstoredindex` (variables in a JS snippet), `conftest.py`, `dco-check.yml` (filenames), `e1`,
+# `e3`. A gate that red-lights a quarter of the corpus for writing code is a gate people learn to
+# route around, so the extractor now demands evidence that a span is a command:
+#
+#   * a fenced block counts only when it declares a shell dialect — ```bash / ```sh / ```console;
+#   * an inline span counts only when it has arguments (two words) or is a `$` invocation, because
+#     `\`e1\`` is an identifier and `\`pytest -q\`` is a command;
+#   * a bare mention counts only when the token is followed by a **flag** somewhere, which is the
+#     one shape prose does not accidentally produce.
+def _surface_head(raw: str) -> str | None:
+    head = str(raw or "").strip().removeprefix("$").strip().split(" ")[0].lower()
+    return head if SURFACE_TOKEN_RE.match(head) else None
+
+
+def _is_command_span(span: str) -> bool:
+    text = span.strip()
+    if text.startswith("$ "):
+        return True
+    return len(text.split()) >= 2
+
+
+def command_surface_identifiers(text: str) -> list[str]:
+    """The command names a text uses, with the evidence each one carries."""
+    found: set[str] = set()
+    body = str(text or "")
+    for match in INLINE_RE.finditer(body):
+        if _is_command_span(match.group(1)):
+            head = _surface_head(match.group(1))
+            if head:
+                found.add(head)
+    for block in SHELL_FENCE_RE.finditer(body):
+        for line in block.group(1).split("\n"):
+            if line.strip():
+                head = _surface_head(line)
+                if head:
+                    found.add(head)
+    for match in PROMPT_RE.finditer(body):
+        head = _surface_head(match.group(1))
+        if head:
+            found.add(head)
+
+    # A bare mention needs repetition before it counts. **Not a flag**: the motivating case,
+    # `mico issue rerun`, has no flag anywhere — requiring one would have been a rule that passes
+    # exactly the submission it was written for. Prose is filtered by the vocabulary instead, which
+    # is the right division of labour: `the` and `agent` repeat too, and both are corpus words.
+    occurrences: dict[str, int] = {}
+    for match in SURFACE_FOLLOW_RE.finditer(body):
+        token = match.group(1).lower()
+        if FILE_EXTENSION_RE.search(token):
+            continue
+        occurrences[token] = occurrences.get(token, 0) + 1
+    for token, count in occurrences.items():
+        if count >= 3:
+            found.add(token)
+    return sorted(found)
+
+
+_PUBLIC_VOCAB_CACHE: dict[tuple[str, bool], set[str] | None] = {}
+
+
+def load_public_vocabulary(repo: Path = REPO, base: bool = False) -> set[str] | None:
+    """The corpus vocabulary plus the allowlist. `None` means unavailable (cannot judge).
+
+    **Read from the base ref, not from the working tree**, whenever a base exists. The vocabulary is
+    derived from the corpus, so a PR that adds a lesson and regenerates the export would otherwise
+    have written its own words into the answer key: `mico` would be "known" because the lesson that
+    needed checking said it. Reading the base copy means the gate asks "did the corpus *already*
+    know this word", which is the only form of the question with teeth.
+    """
+    # Memoised: `--all` walks 651 lessons, and the base copy is read with `git show` — without this
+    # the gate spawned 651 subprocesses and took over ten minutes.
+    cache_key = (str(repo), base)
+    if cache_key in _PUBLIC_VOCAB_CACHE:
+        return _PUBLIC_VOCAB_CACHE[cache_key]
+    # The two halves are read from **different** places, and the asymmetry is the point:
+    #
+    #   `corpus`    — generated from the lessons, so it must come from the base ref. Reading it from
+    #                 the working tree would let a PR write its own words into the answer key.
+    #   `allowlist` — hand-edited by the author of *this* change ("this word is public"). Reading it
+    #                 from the base ref makes the escape hatch unusable: the assertion lands in the
+    #                 same diff that needs it, and the gate would refuse that diff forever. Measured
+    #                 2026-10-29 on the first lesson converted from an intake, where six public terms
+    #                 had to be allowlisted and the gate kept reading the old list.
+    working_allowlist: set[str] = set()
+    try:
+        working = json.loads((repo / "data" / "public-vocabulary.json").read_text(encoding="utf-8"))
+        working_allowlist = set(working.get("allowlist") or [])
+    except Exception:                                    # noqa: BLE001 — absent is an empty allowlist
+        working_allowlist = set()
+
+    data = None
+    if base:
+        ref = _base_ref(repo) if hasattr(sys.modules[__name__], "_base_ref") else None
+        if ref:
+            try:
+                import subprocess
+                blob = subprocess.run(
+                    ["git", "show", f"{ref}:data/public-vocabulary.json"],
+                    cwd=repo, capture_output=True, text=True, timeout=20,
+                )
+                if blob.returncode == 0:
+                    data = json.loads(blob.stdout)
+            except Exception:                            # noqa: BLE001 — fall back to the file
+                data = None
+    if data is None:
+        # The vocabulary is a property of the corpus, not of the directory a test built: fall back to
+        # this checkout's copy when `repo` is a fixture tree. Without the fallback, every test that
+        # assembles a lesson in `tmp_path` would get "cannot check" instead of a real verdict.
+        for candidate in (repo / "data" / "public-vocabulary.json",
+                          REPO / "data" / "public-vocabulary.json"):
+            try:
+                data = json.loads(candidate.read_text(encoding="utf-8"))
+                break
+            except Exception:                            # noqa: BLE001 — try the next location
+                continue
+        if data is None:
+            return None
+    vocab = set(data.get("corpus") or []) | set(data.get("allowlist") or []) | working_allowlist
+    resolved = vocab or None
+    _PUBLIC_VOCAB_CACHE[cache_key] = resolved
+    return resolved
+
+
+def unknown_surface_names(text: str, vocabulary: set[str] | None) -> list[str]:
+    if not vocabulary:
+        return []
+    unknown = []
+    for token in command_surface_identifiers(text):
+        if token in vocabulary or token.split(".")[0] in vocabulary:
+            continue
+        unknown.append(token)
+    return unknown
+
+
+def validate_public_surface(fm: dict, text: str, repo: Path = REPO) -> list[str]:
+    """Fail when a lesson teaches a command name the public corpus has never seen.
+
+    Silence is the failure mode: an unlisted internal CLI reads as ordinary documentation to every
+    later reader, and nothing in this repository would ever notice it again.
+    """
+    if str(fm.get("public_analogue") or "").strip():
+        return []
+    vocabulary = load_public_vocabulary(repo, base=True)
+    if vocabulary is None:
+        return ["[warn] public-vocabulary.json missing — cannot check command names for public surface"]
+    unknown = unknown_surface_names(text, vocabulary)
+    if not unknown:
+        return []
+    listed = ", ".join(f"`{token}`" for token in unknown[:6])
+    more = f" (+{len(unknown) - 6} more)" if len(unknown) > 6 else ""
+    return [
+        f"command name(s) the public corpus has never used: {listed}{more}. "
+        "If they are public tools, add them to the `allowlist` in data/public-vocabulary.json; "
+        "if any is a private or company-internal name, rewrite the lesson generically and declare "
+        "`public_analogue:` in the frontmatter naming the public equivalent a reader can use."
+    ]
+
+
 REQUIRED_SECTIONS = (
     ("Problem", ("problem", "问题", "描述")),
     ("Root Cause", ("root cause", "根因", "原因", "why")),
@@ -907,6 +1099,12 @@ def validate_file(path: Path, repo: Path = REPO, dirs: tuple[str, ...] | None = 
         fake = detect_fake_verification(text)
         if fake:
             errors.append(f"[warn] {fake}")
+
+    # Public surface (2026-10-28): a command name the corpus has never seen is either a new public
+    # tool (allowlist it) or something that should not be published (rewrite it, or declare
+    # `public_analogue:`). Checked on the body text, which is what a reader will actually follow.
+    if fm:
+        errors += validate_public_surface(fm, text, repo)
 
     # Evidence refs validation (Issue #1439)
     if fm and fm.get("evidence_refs"):

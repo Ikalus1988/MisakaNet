@@ -16,6 +16,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "All memory types were in one index; fix by using three Elasticsearch indices: episodic, semantic, procedural."
+trigger: "when the agent's unified memory index suffers high write latency, time‑decay errors, or contradictory updates"
 ---
 
 ## Problem

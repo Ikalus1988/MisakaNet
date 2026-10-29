@@ -135,6 +135,13 @@ def tally(rows: list[dict], results: dict[str, dict], top: int = 3) -> dict[str,
                 "got": ids[:top], "expected": row["expected"], "no_match": result.get("no_match", False)})
         if result.get("error"):
             bucket["errors"].append({"query": row["query"], "error": result["error"]})
+    # A row that exhausted its retries is NOT evidence that the lesson was not retrieved: it is
+    # evidence that the request did not happen. Counting it as a miss is how a flaky path becomes a
+    # fake recall regression — measured 2026-10-28: three runs of this bench on the same commit read
+    # English 15/20, 14/20, 12/20, and the difference tracked transport failures, not ranking.
+    # (Same shape as the 2026-10-27 zh probe: 20 of 64 empty bodies would have read as a 31% drop.)
+    for bucket in out.values():
+        bucket["scored"] = bucket["total"] - len(bucket["errors"])
     return out
 
 
@@ -150,14 +157,22 @@ def compare(tallies: dict[str, dict], floors: dict[str, dict]) -> dict[str, dict
     for language in LANGUAGES:
         live = tallies.get(language) or {}
         total = live.get("total", 0)
+        errors = len(live.get("errors", []))
+        # The floors are absolute counts over a fixed 20/22-row set, so a run that lost rows to
+        # transport cannot be compared to them at all: it is short by however many requests never
+        # completed. `scored` is what the hit counts are actually out of.
+        scored = total - errors
         hit1 = live.get("hit1", 0)
         hit3 = live.get("hit3", 0)
         floor = floors[language]
         out[language] = {
-            "total": total, "hit1": hit1, "hit3": hit3,
+            "total": total, "scored": scored, "errors": errors, "hit1": hit1, "hit3": hit3,
             "floor_hit1": floor["hit1"], "floor_hit3": floor["hit3"],
             "delta_hit1": hit1 - floor["hit1"], "delta_hit3": hit3 - floor["hit3"],
-            "below_floor": total == 0 or hit1 < floor["hit1"] or hit3 < floor["hit3"],
+            # A verdict requires every row to have been scored. Below-floor is reported as None
+            # ("not measurable this run") rather than False, because False claims the floor was met.
+            "below_floor": (None if errors else
+                            (scored == 0 or hit1 < floor["hit1"] or hit3 < floor["hit3"])),
         }
     return out
 
@@ -193,9 +208,14 @@ def render(comparison: dict[str, dict], tallies: dict[str, dict], index: dict, r
     lines.append(f"  {'language':9} {'rows':>4} {'live hit1':>9} {'floor':>6} {'live hit3':>9} {'floor':>6}")
     for language in LANGUAGES:
         row = comparison[language]
-        lines.append(f"  {language:9} {row['total']:>4} {row['hit1']:>4}/{row['total']:<4} "
-                     f"{row['floor_hit1']:>6} {row['hit3']:>4}/{row['total']:<4} {row['floor_hit3']:>6}"
-                     + ("   ← below the floor" if row["below_floor"] else ""))
+        verdict = ""
+        if row["below_floor"] is True:
+            verdict = "   ← below the floor"
+        elif row["below_floor"] is None:
+            verdict = f"   ← {row['errors']} row(s) errored: not comparable to a floor this run"
+        lines.append(f"  {language:9} {row['scored']:>4} {row['hit1']:>4}/{row['scored']:<4} "
+                     f"{row['floor_hit1']:>6} {row['hit3']:>4}/{row['scored']:<4} {row['floor_hit3']:>6}"
+                     + verdict)
     misses = [miss for language in LANGUAGES for miss in tallies.get(language, {}).get("misses", [])]
     if misses:
         lines.append("")
@@ -207,7 +227,7 @@ def render(comparison: dict[str, dict], tallies: dict[str, dict], index: dict, r
     errors = [error for language in LANGUAGES for error in tallies.get(language, {}).get("errors", [])]
     if errors:
         lines.append("")
-        lines.append(f"  transport errors ({len(errors)}) — these lower the numbers above:")
+        lines.append(f"  transport errors ({len(errors)}) — EXCLUDED: they are missing rows, not misses:")
         for error in errors:
             lines.append(f"    {error['query']}: {error['error']}")
     lines.append("")

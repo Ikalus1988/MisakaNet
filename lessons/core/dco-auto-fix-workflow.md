@@ -21,6 +21,9 @@ provenance:
   contributor: "MisakaNet Core"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "DCO 检查因缺少 Signed-off-by 失败，使用 /fix-dco 自动补签后通过。"
+trigger: "当 DCO 检查报错提示缺少 Signed-off-by 时"
+verify: "在 PR 页面看到 DCO 检查状态变为 Passed"
 ---
 
 ## Root Cause

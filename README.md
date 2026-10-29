@@ -166,6 +166,26 @@ large enough to show the fallback works, not large enough to call R@1 solved.
 This is 267 queries from the 300-entry pool, not the full 650; 33 pool entries yielded no query, 2 semantic requests
 errored, and the eval corpus was not refreshed. → [full report](docs/benchmarks/retrieval-l1-267-2026-10-27.md)
 
+### What changed since: the gate, not the model
+
+The table above measures a configuration production no longer uses. Until 2026-10-28 the semantic path
+ran **only when BM25 returned nothing**, so a confident-but-wrong lexical hit suppressed it — 13 of the
+20 recorded misses were exactly that. For queries containing CJK characters the two ranked lists are now
+**fused** (reciprocal-rank) instead of one gating the other.
+
+Measured on the live endpoint, 64 Chinese queries, 0 transport failures:
+
+| bucket | n | before | after |
+|---|---|---|---|
+| zh → zh | 31 | 0.710 | **0.774** |
+| **zh → en** | 33 | 0.455 | **0.697** |
+| zh → en, low overlap | 14 | 0.214 | **0.500** |
+
+For scale: `bge-m3` pure cosine already reached 0.636 on the cross-lingual bucket, and a `gemini`
+embedding 0.727 — so most of the gap was the decision to consult the vector path, not the model.
+English queries are untouched (the fuse is gated on CJK characters) and sit at 15/20 against a floor of
+16, which is where they were before this change. → [full report](docs/benchmarks/cjk-fusion-2026-10-28.md)
+
 ## Recitation benchmark: what it measured, and why it is paused
 
 One narrow question: **when you hand a model a lesson, how much of that lesson comes back?** The

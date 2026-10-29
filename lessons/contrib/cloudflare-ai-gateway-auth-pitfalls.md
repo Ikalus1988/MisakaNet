@@ -12,6 +12,8 @@ status: published
 created: 2026-09-05 00:00:00 UTC
 updated: 2026-09-05 00:00:00 UTC
 evidence_level: E2
+summary_plain: "Using account token or wrong path broke AI Gateway; using gateway token with /workers-ai/run/ URL fixed it."
+trigger: "when AI Gateway calls return 401 authentication error or 7003 routing error because an account token or wrong endpoint is used"
 ---
 
 ## Problem

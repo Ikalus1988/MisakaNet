@@ -61,6 +61,19 @@ jobs:
         with:
           python-version: "3.12"
 
+      # The label is the only entry point to the sync below, and nothing adds it when a question is
+      # closed with an answer in its thread. Measured 2026-10-28: 42 of 79 closed question issues had
+      # an answer and no label, i.e. were permanently unsearchable, and no mechanism would ever have
+      # noticed. Running the backfill first means the backlog cannot re-form; it uses the sync's own
+      # `extract_answer`, so the two cannot disagree about what an answer is.
+      - name: Backfill `answered` on closed questions that already have an answer
+        if: github.event_name != 'issues'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          python3 scripts/backfill_answered_labels.py --apply
+
       - name: Sync single question answer to D1
         if: github.event_name == 'issues' || (github.event_name == 'workflow_dispatch' && inputs.issue != '')
         run: |

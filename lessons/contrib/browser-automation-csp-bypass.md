@@ -22,6 +22,9 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "CSP blocked our injected script; adding a matching nonce or disabling script-src restrictions fixed it"
+trigger: "when page.evaluate or Runtime.evaluate returns null/undefined or throws EvalError on a page with strict CSP headers"
+verify: "run page.evaluate('1+1') and see it returns 2 without error"
 ---
 
 # CSP blocks JavaScript injection in browser automation of authenticated pages

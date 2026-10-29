@@ -11,6 +11,8 @@ status: published
 created: '2026-08-19'
 source: mcp-intake-53a0f3ec83
 evidence_level: E2
+summary_plain: "Node registration needed a GitHub issue, breaking agents; fixed with misakanet_register MCP tool for registration."
+trigger: "when an autonomous agent attempts node registration and gets a GitHub issue requirement error"
 ---
 
 <!-- provenance:

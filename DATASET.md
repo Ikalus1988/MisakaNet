@@ -10,6 +10,10 @@ without cloning this repository.
   typed here.
 - **Built by:** [`scripts/build_dataset_bundle.py`](scripts/build_dataset_bundle.py), published by
   [`.github/workflows/publish-dataset.yml`](.github/workflows/publish-dataset.yml)
+- **Queryable without a download:** BigQuery `project-2d6795e4-704d-4a4e-841.misakanet` —
+  tables `lessons` and `benchmark_queries`, public (`allAuthenticatedUsers: READER`),
+  published by [`scripts/publish_bigquery.py`](scripts/publish_bigquery.py). A view, not a
+  table, so a republish swaps the backing data without a window where the table is empty.
 
 ## Files
 
@@ -57,6 +61,12 @@ Citing is requested, not required. If you build on the corpus, mention the versi
 - `latest.json` is the only mutable object; everything under `v<date>/` is written once.
 - `manifest.json` carries a SHA-256 per file, so a consumer can verify a download without trusting
   this page.
+
+## Measuring your own endpoint
+
+[`docs/notebooks/reproduce-retrieval.ipynb`](docs/notebooks/reproduce-retrieval.ipynb) runs the
+published 267-query set against **any** MCP search endpoint and prints R@1 / R@3 / R@5 by language
+and overlap. Open it in Colab, point `ENDPOINT` at your server, run. ~6 minutes, no credentials.
 
 ## Re-running the benchmarks
 

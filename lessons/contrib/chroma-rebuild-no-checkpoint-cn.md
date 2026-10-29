@@ -17,6 +17,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Chroma 建库进程被网关重启中断导致库清空，改为分批写入解决。"
+trigger: "当使用 BGE-large-zh 全量写入 Chroma，Gateway 重启后向量库为空时"
 ---
 
 ---

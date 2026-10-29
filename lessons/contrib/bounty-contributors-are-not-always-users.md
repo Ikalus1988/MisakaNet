@@ -11,6 +11,8 @@ status: published
 created: '2026-07-17'
 source: generalized contributor funnel analysis
 confidence: 0.88
+summary_plain: "We stopped treating bounty‑only PRs as user adoption and now verify actual knowledge‑loop engagement."
+trigger: "when a merged bounty‑driven PR is used as evidence that the contributor became a product user"
 ---
 
 <!-- provenance:

@@ -110,9 +110,29 @@ CURL_FAIL = re.compile(r"(?:^|\s)(?:--fail|-f)(?:\s|$)")
 CATCH_HEAD = re.compile(r"catch\s*\(([^)]*)\)\s*\{")
 CATCH_RETHROWS = re.compile(r"throw\b|core\.setFailed")
 
+# A second delivery channel that needs no `pull-requests: write`: the job summary. GitHub renders
+# it for anyone who can open the run, fork PRs included, and it is written by the job itself.
+#
+# This exists because of #3977: `provenance-gate.yml` published its verdict *only* as a PR comment,
+# and a `pull_request`-triggered workflow on a **fork** PR gets a read-only token whatever
+# `permissions:` declares. The comment 403'd, the check went red, and the verdict reached nobody.
+# The fix moved the verdict to `$GITHUB_STEP_SUMMARY` and demoted the comment to a bonus — which
+# this gate flagged, correctly, because a silent producer is what it is built to find. The missing
+# piece is the distinction the fix introduced: a silent *bonus* channel is fine when the verdict
+# has a load-bearing channel of its own.
+#
+# Both halves are required, and deliberately:
+#   * a load-bearing step-summary writer — the channel has to exist and be able to fail;
+#   * the `# verdict-channel: step-summary` marker — so the exception is a declared decision a
+#     reviewer can see, not a shape the gate happens to accept. Workflows write summaries for all
+#     sorts of reasons (tables, counts, links) and none of those carry the verdict.
+STEP_SUMMARY = re.compile(r"\$\{?GITHUB_STEP_SUMMARY\}?")
+VERDICT_CHANNEL_MARKER = re.compile(r"#\s*verdict-channel:\s*step-summary\b")
+
 
 def _workflows() -> list[Path]:
     return sorted(WORKFLOWS.glob("*.yml"))
+
 
 
 def _triggers(doc: dict) -> set[str]:
@@ -310,10 +330,10 @@ def _feeder_swallows(step: dict) -> str:
     return ""
 
 
-def _mechanisms() -> list[tuple[str, list[dict]]]:
+def _mechanisms(directory: Path | None = None) -> list[tuple[str, list[dict]]]:
     """(workflow name, its steps) for the workflows that run by themselves."""
     out = []
-    for path in _workflows():
+    for path in sorted((directory or WORKFLOWS).glob("*.yml")):
         doc = yaml.safe_load(path.read_text(encoding="utf-8"))
         if not isinstance(doc, dict):
             continue
@@ -340,18 +360,73 @@ def _feeder_ids(producer: dict) -> list[str]:
     return seen
 
 
-def _violations() -> list[str]:
+def _step_summary_is_load_bearing(step: dict) -> bool:
+    """Does this step write to the job summary in a way that can fail?
+
+    "Can fail" is the same test the rest of this file applies to a producer: the step is not
+    `continue-on-error`, the unit that writes the summary does not swallow its exit code, and the
+    write is not inside a `set +e` region that never re-raises.
+    """
+    run = _step_shell(step)
+    if not STEP_SUMMARY.search(run) or step.get("continue-on-error") is True:
+        return False
+    for unit, unit_soft in _shell_units(run):
+        if not STEP_SUMMARY.search(unit):
+            continue
+        if unit_soft or SILENT_LINE.search(unit):
+            return False
+        if HANDLED.search(unit) and not RE_RAISED.search(unit):
+            return False
+        return True
+    return False
+
+
+def _declares_summary_verdict(path: Path, steps: list[dict]) -> bool:
+    """The declared second channel: the marker **and** a load-bearing writer.
+
+    Either half alone is not a channel. A marker with no writer names a channel that does not exist;
+    a writer with no marker is how a workflow writes an unrelated summary, and excusing a silent
+    producer on the strength of an unrelated table is exactly the kind of drift this file exists to
+    stop.
+    """
+    if not VERDICT_CHANNEL_MARKER.search(path.read_text(encoding="utf-8")):
+        return False
+    return any(_step_summary_is_load_bearing(step) for step in steps)
+
+
+def _silent_only_by_continue_on_error(step: dict) -> bool:
+    """Would this producer be loud if the step-level `continue-on-error` flag were removed?
+
+    The flag is the declared "this step is a bonus" spelling. `|| true` inside a multi-command
+    script is not the same declaration — it can hide a failure in the middle of the step — so a
+    declared second channel excuses only the flag, not every way of swallowing.
+    """
+    if step.get("continue-on-error") is not True:
+        return False
+    copy = dict(step)
+    copy.pop("continue-on-error", None)
+    return not _producer_is_silent(copy)
+
+
+def _violations(directory: Path | None = None) -> list[str]:
+    directory = directory or WORKFLOWS
     out: list[str] = []
-    for name, steps in _mechanisms():
+    for name, steps in _mechanisms(directory):
         by_id = {st.get("id"): st for st in steps if st.get("id")}
         producers = [st for st in steps if _is_producer(st)]
         if not producers:
             # Nothing here produces anything a human reads — it only reads, or only builds. A
             # mechanism with no producer cannot "produce nothing", so there is nothing to judge.
             continue
+        # The declared second channel (see STEP_SUMMARY above): present only when the workflow
+        # says so *and* the writer it names is load-bearing. Both halves, or the exception is a
+        # shape rather than a decision.
+        summary_verdict = _declares_summary_verdict(directory / name, steps)
         for producer in producers:
             label = producer.get("name", "?")
-            if _producer_is_silent(producer):
+            if _producer_is_silent(producer) and not (
+                summary_verdict and _silent_only_by_continue_on_error(producer)
+            ):
                 out.append(f"{name} — the producer can fail quietly: {label}")
             # The producer's feeders, and their feeders: a step whose outputs gate the producer
             # must be load-bearing too. A feeder that swallows its failure leaves the producer
@@ -554,4 +629,103 @@ def test_the_write_method_spelling_is_a_producer():
     step = {"run": 'gh api repos/o/r/git/refs --method POST --input f.json\n'}
     assert _is_producer(step), (
         "the long spelling of the method flag writes just as the short one does"
+    )
+
+
+# ── the declared second channel (#3977) ──
+#
+# `provenance-gate.yml` published its verdict only as a PR comment. A `pull_request`-triggered
+# workflow on a fork PR gets a read-only token, so the comment 403'd and the verdict reached
+# nobody; the fix writes the verdict to `$GITHUB_STEP_SUMMARY` first and marks the comment as a
+# bonus with `continue-on-error: true`. This gate has to be able to tell that shape — a silent
+# *bonus* beside a load-bearing verdict channel — from the shape it was built to catch.
+
+BASE_WORKFLOW = """\
+name: verifier
+on:
+  workflow_run:
+    workflows: ["x"]
+    types: [completed]
+permissions:
+  contents: read
+  pull-requests: write
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+"""
+
+SUMMARY_STEP = """\
+      - name: Publish the verdict to the step summary
+        run: |
+          {
+            echo "## Provenance gate"
+            cat report.txt
+          } >> "$GITHUB_STEP_SUMMARY"
+"""
+
+COMMENT_STEP = """\
+      - name: Comment the result on the PR
+        continue-on-error: true
+        run: gh pr comment "$PR" --body-file body.md
+"""
+
+
+def _gate(tmp_path, *steps: str, marker: bool = True) -> list[str]:
+    text = BASE_WORKFLOW + "".join(steps)
+    if marker:
+        text = text.replace("    steps:\n", "    steps:\n      # verdict-channel: step-summary\n")
+    (tmp_path / "verifier.yml").write_text(text, encoding="utf-8")
+    return _violations(tmp_path)
+
+
+def test_a_declared_step_summary_channel_excuses_a_bonus_comment(tmp_path):
+    """The #3977 shape: the verdict has a load-bearing channel, the comment is a bonus."""
+    assert _gate(tmp_path, SUMMARY_STEP, COMMENT_STEP) == [], (
+        "a comment step declared as a bonus, beside a load-bearing step-summary verdict, is not a "
+        "mechanism that can produce nothing"
+    )
+
+
+def test_without_the_marker_the_bonus_comment_is_still_a_violation(tmp_path):
+    """A summary is not a verdict channel unless the workflow says it is.
+
+    Many workflows write tables and counts to the summary; none of those carry the verdict, and
+    excusing a silent producer on the strength of one would open the gate for every workflow that
+    prints anything.
+    """
+    assert _gate(tmp_path, SUMMARY_STEP, COMMENT_STEP, marker=False), (
+        "the same shape without the declaration must stay a violation"
+    )
+
+
+def test_a_marker_without_a_writer_is_not_a_channel(tmp_path):
+    """The declaration cannot conjure a channel that does not exist."""
+    assert _gate(tmp_path, COMMENT_STEP), (
+        "a marker with no step-summary writer names a channel nothing writes to"
+    )
+
+
+def test_a_summary_writer_that_swallows_its_own_failure_is_not_a_channel(tmp_path):
+    """The substitute channel has to be able to fail, or it is the original defect moved."""
+    swallowed = SUMMARY_STEP.replace(
+        "      - name:", "      - continue-on-error: true\n        name:"
+    )
+    assert _gate(tmp_path, swallowed, COMMENT_STEP), (
+        "a step-summary writer that cannot fail is not a verdict channel"
+    )
+
+
+def test_the_declared_channel_only_excuses_the_step_level_flag(tmp_path):
+    """`|| true` inside the script is not the "this step is a bonus" declaration.
+
+    The step-level flag is visible in the workflow and scoped to the whole step; a `|| true` in a
+    multi-command script can hide one failure among commands that were meant to be load-bearing.
+    """
+    hidden = COMMENT_STEP.replace("continue-on-error: true\n        ", "").replace(
+        'run: gh pr comment "$PR" --body-file body.md',
+        'run: gh pr comment "$PR" --body-file body.md || true',
+    )
+    assert _gate(tmp_path, SUMMARY_STEP, hidden), (
+        "a producer whose failure is swallowed inside its own script is not excused by a summary"
     )

@@ -113,6 +113,59 @@ jobs:
           fi
           echo "created=true" >> "$GITHUB_OUTPUT"
 
+      # Tag merged **package** releases (#4031). The step above handles the root package only: it reads
+      # `manifest['.']`, tags `v<version>` and dispatches the PyPI workflow. Meanwhile the manifest has
+      # declared `packages/misakanet-setup` and `packages/fatal-guard`, so their tags were never created
+      # and the workflows listening for them never fired — shipping `fatal-guard@0.3.1` and 0.3.2 each
+      # needed a tag pushed by hand. While such a release sits untagged, release-please also reads it as
+      # outstanding and re-proposes the same commit range (that is where the duplicate 0.3.3 PR came from).
+      #
+      # `scripts/release_tags.py` owns the decision (which release is merged and untagged, and which
+      # workflow publishes it); this step only does the git and `gh` work for each line it prints.
+      - name: Tag merged package releases, and dispatch their publish
+        env:
+          GH_TOKEN: ${{ secrets.SHELDON_PAT || secrets.GITHUB_TOKEN }}
+          # A GITHUB_TOKEN push cannot trigger another workflow, which is why publishing is an explicit
+          # dispatch rather than a reaction to the tag — the same rule as the PyPI dispatch below.
+          GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          AUTH_HEADER="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GIT_TOKEN" | base64 -w0)"
+          git fetch --tags --quiet origin || true
+          python3 scripts/release_tags.py --lines > "$RUNNER_TEMP/package-releases.txt"
+          if [ ! -s "$RUNNER_TEMP/package-releases.txt" ]; then
+            echo "no merged package release is waiting for a tag"
+            exit 0
+          fi
+          while read -r TAG COMPONENT VERSION WORKFLOW; do
+            echo "::group::Tagging $TAG ($COMPONENT $VERSION)"
+            if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
+              echo "tag $TAG already exists — skipping"
+              continue
+            fi
+            # An annotated tag needs a committer identity, and a runner has none: measured on the
+            # first real use of this step (misakanet-setup 0.8.0), `git tag -a` exited 128 with
+            # "Committer identity unknown" and took the whole release step with it. The identity is
+            # the same one `release-please-config.json` signs releases as.
+            git -c user.name="misakanet-bot" -c user.email="bot@misakanet.dev" \
+              tag -a "$TAG" -m "$COMPONENT $VERSION"
+            git -c http.extraheader="$AUTH_HEADER" push origin "$TAG"
+            if ! gh release view "$TAG" >/dev/null 2>&1; then
+              python3 scripts/release_notes.py --package "$COMPONENT" --version "$VERSION" \
+                > "$RUNNER_TEMP/notes-$COMPONENT.md"
+              gh release create "$TAG" --notes-file "$RUNNER_TEMP/notes-$COMPONENT.md"
+            fi
+            if [ -n "$WORKFLOW" ]; then
+              # `gh workflow run` is one of the two events a GITHUB_TOKEN push can still create, so this
+              # is the single explicit publish path — the tag alone would publish nothing.
+              gh workflow run "$WORKFLOW" --ref main
+              echo "dispatched $WORKFLOW"
+            else
+              echo "::warning::$TAG has no publish workflow; the release exists but nothing will publish it"
+            fi
+            echo "::endgroup::"
+          done < "$RUNNER_TEMP/package-releases.txt"
+
       # The reader-facing check (#3836). The Release body must be the CHANGELOG section, and a
       # CHANGELOG section carries category headings (`### Bug Fixes`, `### Features`, ...); the flat
       # PR list `--generate-notes` produced has none. This reads the *published* artifact — the only

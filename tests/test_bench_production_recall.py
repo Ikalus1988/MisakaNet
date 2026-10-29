@@ -122,6 +122,40 @@ def test_a_transport_error_is_reported_and_not_silently_counted_as_a_miss():
     assert [error["error"] for error in tallies["en"]["errors"]] == ["HTTP 403", "HTTP 403"], tallies["en"]
 
 
+def test_a_row_that_errored_is_excluded_from_the_denominator():
+    """Measured 2026-10-28: three runs of this bench on one commit read English 15/20, 14/20, 12/20,
+    and the spread tracked transport failures rather than ranking. Counting a request that never
+    completed as a miss is how a flaky path becomes a fake recall regression."""
+    results = {"a": {"ids": ["hit"]}, "b": {"ids": [], "error": "URLError: reset"},
+               "c": {"ids": ["hit"]}, "d": {"ids": ["hit"]}, "e": {"ids": ["hit"]}}
+    tallies = bench.tally(FIXTURE_ROWS, results, top=3)
+    assert tallies["en"]["total"] == 4
+    assert tallies["en"]["scored"] == 3, tallies["en"]
+    assert len(tallies["en"]["errors"]) == 1
+
+
+def test_a_run_with_errors_does_not_get_a_floor_verdict():
+    """`None` rather than False: False would claim the floor was met, and the run cannot know."""
+    floors = {"en": {"hit1": 2, "hit3": 3}, "zh": {"hit1": 1, "hit3": 1}}
+    with_errors = {"en": {"total": 4, "scored": 3, "hit1": 3, "hit3": 3,
+                          "errors": [{"query": "q", "error": "reset"}]},
+                   "zh": {"total": 1, "scored": 1, "hit1": 1, "hit3": 1, "errors": []}}
+    comparison = bench.compare(with_errors, floors)
+    assert comparison["en"]["below_floor"] is None, comparison["en"]
+    assert comparison["en"]["scored"] == 3
+    assert comparison["zh"]["below_floor"] is False, "a language with no errors keeps its verdict"
+
+
+def test_the_render_says_why_a_run_is_not_comparable_instead_of_calling_it_below_floor():
+    floors = {"en": {"hit1": 2, "hit3": 3}, "zh": {"hit1": 1, "hit3": 1}}
+    tallies = {"en": {"total": 4, "scored": 3, "hit1": 3, "hit3": 3,
+                      "errors": [{"query": "q", "error": "reset"}], "misses": []},
+               "zh": {"total": 1, "scored": 1, "hit1": 1, "hit3": 1, "errors": [], "misses": []}}
+    text = bench.render(bench.compare(tallies, floors), tallies, {"error": "n/a"}, 651, floors, "2026-09-28")
+    assert "not comparable to a floor this run" in text
+    assert "← below the floor" not in text.split("transport errors")[0]
+
+
 def test_the_comparison_flags_a_below_floor_result_and_not_an_equal_one():
     floors = {"en": {"hit1": 2, "hit3": 3}, "zh": {"hit1": 1, "hit3": 1}}
     at_floor = {"en": {"total": 4, "hit1": 2, "hit3": 3}, "zh": {"total": 1, "hit1": 1, "hit3": 1}}

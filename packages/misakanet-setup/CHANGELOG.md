@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.8.0](https://github.com/Ikalus1988/MisakaNet/compare/misakanet-setup-v0.7.1...misakanet-setup-v0.8.0) (2026-10-29)
+
+
+### Features
+
+* **setup:** say the install worked, with the version and whether it is current ([#4035](https://github.com/Ikalus1988/MisakaNet/issues/4035)) ([85e4844](https://github.com/Ikalus1988/MisakaNet/commit/85e4844ceaf993562123a321ba5643b0850e1356))
+* **setup:** the verify verdict is per client, and one client can be judged on its own ([48879af](https://github.com/Ikalus1988/MisakaNet/commit/48879aff3db5f2b2c6624c928a45fabf5348d88c))
+* **setup:** the verify verdict is per client, and one client can be judged on its own ([3f7310d](https://github.com/Ikalus1988/MisakaNet/commit/3f7310d582c733597f1b5a46c60c225455bc488c))
+
+
+### Bug Fixes
+
+* **setup:** the installer honours MISAKANET_AGENT_DIR like the hook does ([#3844](https://github.com/Ikalus1988/MisakaNet/issues/3844)) ([a0cd165](https://github.com/Ikalus1988/MisakaNet/commit/a0cd16542b8085e6b52b1f9db55306756c659c90))
+* **setup:** uninstall ownership, stable client id, truthful manifest ([#3852](https://github.com/Ikalus1988/MisakaNet/issues/3852)) ([8e8b132](https://github.com/Ikalus1988/MisakaNet/commit/8e8b13292e7538131f7fddeaed05478e89875090)), closes [#3831](https://github.com/Ikalus1988/MisakaNet/issues/3831) [#3832](https://github.com/Ikalus1988/MisakaNet/issues/3832) [#3833](https://github.com/Ikalus1988/MisakaNet/issues/3833) [#3834](https://github.com/Ikalus1988/MisakaNet/issues/3834)
+* **setup:** verify and report key Claude Code on ~/.claude.json ([#3868](https://github.com/Ikalus1988/MisakaNet/issues/3868)) ([2cb53ca](https://github.com/Ikalus1988/MisakaNet/commit/2cb53caba95f093ab4e0011a89b54ba8e2820e4a))
+
+
+### Documentation
+
+* **setup:** the flags table has to know about --client ([48d42b0](https://github.com/Ikalus1988/MisakaNet/commit/48d42b0949d6a4368d1b98b4d3a9fa6fbf58b37f))
+* **setup:** the restart is not universal, and the tool list is how you confirm it ([#3830](https://github.com/Ikalus1988/MisakaNet/issues/3830)) ([7e74ec9](https://github.com/Ikalus1988/MisakaNet/commit/7e74ec9efd2c4c399cce7d369c40f7fef05415d1)), closes [#3700](https://github.com/Ikalus1988/MisakaNet/issues/3700)
+
 ## [0.7.1](https://github.com/Ikalus1988/MisakaNet/compare/misakanet-setup-v0.7.0...misakanet-setup-v0.7.1) (2026-10-25)
 
 
