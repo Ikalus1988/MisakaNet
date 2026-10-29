@@ -170,6 +170,8 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Publish the verdict to the step summary
+        # verdict-channel: step-summary
+        #
         # The verdict lives here, not in the PR comment (lesson ci-fork-pr-no-comment-token).
         #
         # A `pull_request`-triggered workflow running on a **fork** PR gets a read-only
