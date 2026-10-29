@@ -25121,12 +25121,16 @@
 "zyx"
 ],
 "allowlist": [
+"cwd-relative",
 "iq3_xxs",
 "moe",
 "prefill",
 "quant",
+"scheme",
+"shasum",
 "sm70",
 "sm_70",
-"strata"
+"strata",
+"url-parsing"
 ]
 }
