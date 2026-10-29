@@ -1,9 +1,23 @@
 {
-  "generated_at": "2026-10-29T05:42:55.922189+00:00",
+  "generated_at": "2026-10-29T08:29:42.365336+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "docs(lessons): backfill structured fields for 37 lessons (batch 1-2 of the 61% gap)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4041",
+      "timestamp": "2026-10-29T08:29:29Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4040",
+      "timestamp": "2026-10-29T05:56:48Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "lessons(contrib): convert intake #4021 — V100 Strata MoE serving, measured",
@@ -23,20 +37,6 @@
       "title": "chore(main): release misakanet-setup 0.8.0",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/4026",
       "timestamp": "2026-10-29T04:04:27Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat(setup): say the install worked, with the version and whether it is current",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4035",
-      "timestamp": "2026-10-29T03:43:56Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "fix(release): tag merged package releases, and dispatch their publish",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4032",
-      "timestamp": "2026-10-29T02:41:30Z",
       "source": "github"
     },
     {
