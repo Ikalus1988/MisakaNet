@@ -2566,6 +2566,36 @@ function yamlValue(raw) {
   return String(raw).replace(/\s+#.*$/, '').trim();
 }
 
+test('a finished install says it finished, with its version — the tail is what people read', () => {
+  // Asked for on 2026-10-29 after a real Windows run: the output ended on "5) 想关掉…" and the
+  // identity line, so the only evidence that anything had worked was the absence of errors. A user
+  // who scrolls to the bottom sees the last thing printed, and that was a list of next steps.
+  const home = makeHome();
+  const result = runOffline(home);
+  assert.equal(result.status, 0, result.stdout + result.stderr);
+  assert.match(result.stdout, /✓ 安装成功 —— misakanet-setup \d+\.\d+\.\d+/,
+    `the success line must name the build that was installed: ${result.stdout}`);
+
+  // The version is the one this build carries, not a literal that can drift from package.json.
+  const declared = JSON.parse(
+    readFileSync(new URL('../packages/misakanet-setup/package.json', import.meta.url), 'utf8')).version;
+  assert.ok(result.stdout.includes(`misakanet-setup ${declared}`),
+    `expected the installed version ${declared} in: ${result.stdout}`);
+});
+
+test('the success line appears once, and before the next-steps list', () => {
+  // Two success lines would read as two installs; a success line *after* the list is below the fold
+  // of a terminal that already scrolled.
+  const home = makeHome();
+  const result = runOffline(home);
+  const banner = result.stdout.indexOf('✓ 安装成功');
+  const guidance = result.stdout.indexOf('接下来：');
+  assert.ok(banner >= 0, result.stdout);
+  assert.ok(guidance < 0 || banner < guidance,
+    `the success line must precede "接下来：": ${result.stdout}`);
+  assert.equal(result.stdout.split('✓ 安装成功').length - 1, 1, result.stdout);
+});
+
 test('--silent drops the progress narration, and keeps the exit code working', () => {
   const home = makeHome();
   const loud = runOffline(home, '--dry-run');
