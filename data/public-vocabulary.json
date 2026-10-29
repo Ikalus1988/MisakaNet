@@ -6,7 +6,7 @@
 "exists to prevent — write the lesson generically instead."
 ],
 "generated_from": "data/lessons.json + lessons/**/*.md",
-"corpus_rows": 651,
+"corpus_rows": 652,
 "corpus": [
 "a+b+c",
 "a-",
@@ -10826,6 +10826,7 @@
 "ipv6",
 "iq2_xs",
 "iq3-xxs",
+"iq3-xxs.md",
 "iq3_xxs",
 "iq4_xs",
 "iq_pack.py",
@@ -23657,6 +23658,7 @@
 "v1.6.3+",
 "v1.x",
 "v100",
+"v100-strata-moe-sm70-kernels-cpu-prefill",
 "v100s",
 "v11",
 "v11.7.0",
