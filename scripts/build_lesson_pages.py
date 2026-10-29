@@ -497,6 +497,19 @@ def generate_sitemap(lesson_slugs: list, domains: list) -> str:
         # published.
         ("https://misakanet.org/dataset/", "weekly", "0.7"),
         ("https://misakanet.org/troubleshooting.md", "weekly", "0.8"),
+        # The machine-readable entry points were the last URLs the site served without ever naming:
+        # they are what an agent fetches *before* it reads a page (`llms.txt`), the protocol manual
+        # (`skill.md`), and the MCP discovery document (`/.well-known/mcp.json`) — all three were
+        # reachable only if someone already knew their names. They go in the sitemap for the same
+        # reason `/dataset/` did: an entry point nobody can discover is not an entry point.
+        #
+        # `skill.md` is lowercase on purpose. Static assets are case-sensitive and `docs/skill.md`
+        # is the tracked file; `https://misakanet.org/SKILL.md` answers 404 (measured 2026-10-29),
+        # while the lowercase URL answers 200. Advertising the uppercase spelling would be the
+        # `troubleshooting/` 404 again, one case up.
+        ("https://misakanet.org/llms.txt", "weekly", "0.6"),
+        ("https://misakanet.org/skill.md", "weekly", "0.6"),
+        ("https://misakanet.org/.well-known/mcp.json", "weekly", "0.6"),
     ]
     for url, freq, prio in static:
         lines.append(f"  <url><loc>{url}</loc><changefreq>{freq}</changefreq><priority>{prio}</priority></url>")
