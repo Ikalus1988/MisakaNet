@@ -1,9 +1,23 @@
 {
-  "generated_at": "2026-10-28T20:22:34.699828+00:00",
+  "generated_at": "2026-10-29T01:03:06.774048+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "chore(release): one release PR per package, so a patch can ship without a major",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4022",
+      "timestamp": "2026-10-29T01:02:00Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4016",
+      "timestamp": "2026-10-28T20:37:24Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "docs(handoff): volume 20 — what shipped today, and the five debts it leaves",
@@ -16,20 +30,6 @@
       "title": "fix(fatal-guard): the version test pinned the version it was testing",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/4014",
       "timestamp": "2026-10-28T17:12:31Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat(site): a /dataset/ page — published files nobody can find are not published",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4012",
-      "timestamp": "2026-10-28T16:41:36Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(release): declare fatal-guard in release-please so its fixes can ship",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4011",
-      "timestamp": "2026-10-28T16:05:29Z",
       "source": "github"
     },
     {
