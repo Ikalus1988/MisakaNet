@@ -137,3 +137,19 @@ def test_no_test_file_pins_the_version_it_asserts_on():
             offenders.append(str(path.relative_to(REPO)))
     assert not offenders, (
         f"these tests pin the current version {version}; read it from package.json instead: {offenders}")
+
+
+def test_the_fatal_guard_release_can_be_merged_without_the_root_release():
+    """`separate-pull-requests` is what makes "ship fatal-guard 0.3.1" possible on its own.
+
+    With it `false` (the default), release-please merges every component into **one** PR — the shape
+    #3827 had, where merging the fix this repository needed also pushed a root **major** (3.0.0,
+    Python >= 3.11) to PyPI. Shipping one package then required either publishing a breaking change
+    nobody had approved, or a manual tag that bypasses the ledger.
+
+    The setting is asserted here because the failure mode is silent: turning it off does not error, it
+    just goes back to bundling, and the next person discovers it while trying to release one package.
+    """
+    assert config().get("separate-pull-requests") is True, (
+        "without separate-pull-requests, every package release is bundled with the root package — "
+        "which is how a fatal-guard patch turned into a major PyPI release")
