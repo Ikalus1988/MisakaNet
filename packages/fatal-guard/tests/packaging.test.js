@@ -65,7 +65,7 @@ test('every file the entry points require is listed in package.files', () => {
   const missing = requireGraph(ENTRIES).filter((rel) => !shipped(rel));
   assert.deepEqual(missing, [],
     'these files are required at runtime but npm would not publish them — the package would fail '
-    + 'with MODULE_NOT_FOUND on install (this is exactly how 0.3.0 and 0.3.1 shipped broken)');
+    + 'with MODULE_NOT_FOUND on install — which is how the last two published versions shipped');
 });
 
 test('the CLI bin is shipped, and it is the one package.json points at', () => {
