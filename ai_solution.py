@@ -1,7 +1,5 @@
-Here's the complete fixed code addressing the reviewer's feedback:
-
-File: lessons/core/supercharge.md
 ```markdown
+File: lessons/core/supercharge.md
 ---
 title: How can I check if Supercharge is enabled?
 description: To check if Supercharge is enabled, navigate to the menu, select Supercharge, and verify its status in the activity view.
@@ -20,8 +18,8 @@ To check if Supercharge is enabled, follow these steps:
 3. Verify its status in the activity view.
 ```
 
-File: lessons/core/skycomputeruseservice.md
 ```markdown
+File: lessons/core/skycomputeruseservice.md
 ---
 title: How can I identify a SkyComputerUseService crash?
 description: To identify a SkyComputerUseService crash, check the activity for its status and recent changes.
@@ -38,4 +36,3 @@ To identify a SkyComputerUseService crash, follow these steps:
 1. Check the activity to see its status.
 2. Review any recent changes to confirm the status.
 ```
-The changes made the description more concise and structured the solution into clear steps, addressing the reviewer's feedback.
