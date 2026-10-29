@@ -329,6 +329,22 @@ def load_public_vocabulary(repo: Path = REPO, base: bool = False) -> set[str] | 
     cache_key = (str(repo), base)
     if cache_key in _PUBLIC_VOCAB_CACHE:
         return _PUBLIC_VOCAB_CACHE[cache_key]
+    # The two halves are read from **different** places, and the asymmetry is the point:
+    #
+    #   `corpus`    — generated from the lessons, so it must come from the base ref. Reading it from
+    #                 the working tree would let a PR write its own words into the answer key.
+    #   `allowlist` — hand-edited by the author of *this* change ("this word is public"). Reading it
+    #                 from the base ref makes the escape hatch unusable: the assertion lands in the
+    #                 same diff that needs it, and the gate would refuse that diff forever. Measured
+    #                 2026-10-29 on the first lesson converted from an intake, where six public terms
+    #                 had to be allowlisted and the gate kept reading the old list.
+    working_allowlist: set[str] = set()
+    try:
+        working = json.loads((repo / "data" / "public-vocabulary.json").read_text(encoding="utf-8"))
+        working_allowlist = set(working.get("allowlist") or [])
+    except Exception:                                    # noqa: BLE001 — absent is an empty allowlist
+        working_allowlist = set()
+
     data = None
     if base:
         ref = _base_ref(repo) if hasattr(sys.modules[__name__], "_base_ref") else None
@@ -356,7 +372,7 @@ def load_public_vocabulary(repo: Path = REPO, base: bool = False) -> set[str] | 
                 continue
         if data is None:
             return None
-    vocab = set(data.get("corpus") or []) | set(data.get("allowlist") or [])
+    vocab = set(data.get("corpus") or []) | set(data.get("allowlist") or []) | working_allowlist
     resolved = vocab or None
     _PUBLIC_VOCAB_CACHE[cache_key] = resolved
     return resolved
