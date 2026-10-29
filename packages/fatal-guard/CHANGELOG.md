@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.2](https://github.com/Ikalus1988/MisakaNet/compare/fatal-guard-v0.3.1...fatal-guard-v0.3.2) (2026-10-29)
+
+
+### Bug Fixes
+
+* **fatal-guard:** publish the files the package requires ([#4028](https://github.com/Ikalus1988/MisakaNet/issues/4028)) ([c094a22](https://github.com/Ikalus1988/MisakaNet/commit/c094a22676ad040a36ced19b8792e53132445db9))
+
 ## [0.3.1](https://github.com/Ikalus1988/MisakaNet/compare/fatal-guard-v0.3.0...fatal-guard-v0.3.1) (2026-10-29)
 
 
