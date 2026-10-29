@@ -2552,6 +2552,23 @@ function invalidateBM25Memo() {
   _bm25IndexExpiry = 0;
 }
 
+/** The index **if this isolate already holds it**, without loading one.
+ *
+ *  Added 2026-10-29 for the intake surface check, which had called `loadBM25Index` on the write path.
+ *  On a cold isolate that load is the same 30-60 s the search path shows (measured: `initialize` 1.9 s,
+ *  `search` 1.3 s → 62 s across six calls), and the write it was delaying is the *issue creation*.
+ *  The client gave up first, reported `fetch failed`, and the issue was created anyway — a submission
+ *  that succeeded and a submission that failed rendered identically, which is the failure this
+ *  repository writes lessons about.
+ *
+ *  A check that is worth a 60 s wait is worth waiting for; an **advisory** one is not: `null` means
+ *  "could not check", which is the honest answer when the index is not in memory.
+ */
+function peekBM25Index() {
+  const now = Date.now();
+  return _bm25Index && now < _bm25IndexExpiry ? _bm25Index : null;
+}
+
 async function loadBM25Index(env) {
   const now = Date.now();
   if (_bm25Index && now < _bm25IndexExpiry) return _bm25Index;
@@ -4960,10 +4977,13 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
       .filter(Boolean).join("\n");
     let surfaceUnknown = null;
     try {
-      // `unknownCommandSurface` is synchronous; `.catch` on its result would throw on every intake.
-      // The index load is the only await, and it degrades to `null` ("could not check") rather than
-      // to an empty list, which would claim the submission was cleared.
-      surfaceUnknown = unknownCommandSurface(surfaceText, await loadBM25Index(env));
+      // `peekBM25Index`, not `loadBM25Index`: this runs inside the request that creates the public
+      // issue, and loading the index there can take 30-60 s on a cold isolate — longer than any MCP
+      // client waits. Measured 2026-10-29: the client timed out, reported `fetch failed`, and the
+      // issue was created anyway, so a submission that succeeded looked exactly like one that failed.
+      // A warm isolate still gets a real answer; a cold one gets `null` ("could not check"), which is
+      // the honest answer and never a substitute for one.
+      surfaceUnknown = unknownCommandSurface(surfaceText, peekBM25Index());
     } catch (e) {
       debugLog(env, 1, "surface check skipped", { error: String((e && e.message) || e) });
     }
