@@ -70,7 +70,7 @@
       "category": "encoding",
       "query": "encoding bug Python",
       "expected_lessons": [
-        "lessons/contrib/agent-web-access-toolchain-selection.md"
+        "lessons/contrib/python-gbk-encoding-error.md"
       ],
       "min_results": 3,
       "description": "Windows console encoding and Unicode issues"
