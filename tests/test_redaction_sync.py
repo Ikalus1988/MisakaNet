@@ -93,3 +93,64 @@ def test_cross_implementation_consistency():
     for text, expected_id in test_cases:
         result = redact_text(text)
         assert "[REDACTED:" in result, f"Failed to redact {expected_id}: {text!r} -> {result!r}"
+
+
+# ── the three copies must agree on the *pattern*, not only on the replacement ──
+#
+# Before #4060 this module compared replacement strings only, so a pattern could differ between the
+# worker's two inline copies and the JSON the Python path loads while every check here stayed green.
+# The card rule is the one that has already been wrong in a way nobody noticed (two hyphen-joined
+# numbers rewritten into `[REDACTED:card_number]`), so it is the one pinned by its source text.
+
+CARD_FIXTURES_REDACTED = (
+    "card: 4111 1111 1111 1111",
+    "card: 4242-4242-4242-4242",
+    "card: 4111111111111111",
+    "card: 3782 822463 10005",
+    "card: 3056 9300 0900 04",
+)
+CARD_FIXTURES_KEPT = (
+    "Latency probe 32767-20261029",
+    "Latency probe 7684-20261029",
+    "range 1234-5678, then retry",
+)
+
+
+def _card_patterns_by_copy() -> dict[str, str]:
+    """The card pattern as each of the three copies spells it."""
+    from_json = next(
+        p["pattern"] for p in json.loads(PATTERN_FILE.read_text(encoding="utf-8"))
+        if p["id"] == "card_number"
+    )
+    source = WORKER_FILE.read_text(encoding="utf-8")
+    inline = re.findall(
+        r"/([^\n]*?)/g, \"\[REDACTED:card_number\]\"", source
+    )
+    assert len(inline) == 2, (
+        "expected the card rule in both worker copies (the /api/intake array and redactIntake), "
+        f"found {len(inline)}"
+    )
+    return {"json": from_json, "api_intake": inline[0], "redact_intake": inline[1]}
+
+
+def test_the_three_card_number_copies_are_the_same_pattern():
+    copies = _card_patterns_by_copy()
+    assert copies["json"] == copies["api_intake"] == copies["redact_intake"], (
+        "the card rule has drifted between workers/lib/redact-patterns.json and the worker's two "
+        f"inline copies: {copies}"
+    )
+
+
+def test_the_three_card_number_copies_agree_on_the_fixtures():
+    for pattern in _card_patterns_by_copy().values():
+        compiled = re.compile(pattern)
+        for text in CARD_FIXTURES_REDACTED:
+            assert "[REDACTED:card_number]" not in text
+            assert compiled.sub("[REDACTED:card_number]", text) != text, (
+                f"a real card was not redacted by {pattern!r}: {text!r}"
+            )
+        for text in CARD_FIXTURES_KEPT:
+            assert compiled.sub("[REDACTED:card_number]", text) == text, (
+                f"a non-card was rewritten by {pattern!r}: {text!r} -> "
+                f"{compiled.sub('[REDACTED:card_number]', text)!r}"
+            )
