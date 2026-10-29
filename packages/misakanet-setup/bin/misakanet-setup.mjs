@@ -197,7 +197,7 @@ function readText(path) {
  * except the two that name the version (measured 2026-10-22: the 0.6.0 release pull request
  * failed 9 e2e legs on exactly that).
  */
-const VERSION = '0.7.1'  // x-release-please-version
+const VERSION = '0.8.0'  // x-release-please-version
 
 /**
  * The shape of a client id, in one place.

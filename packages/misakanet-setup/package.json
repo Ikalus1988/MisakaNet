@@ -1,6 +1,6 @@
 {
   "name": "@misaka-net/misakanet-setup",
-  "version": "0.7.1",
+  "version": "0.8.0",
   "description": "MisakaNet failure lessons for your agents: writes an MCP endpoint into each agent config, rules blocks where the client takes one, and a Claude Code hook. At most one anonymous request leaves this machine at install; then only the agent's calls — unless MISAKANET_HOOK_FETCH=1 (off by default) the hook sends the failed call's error text or command.",
   "bin": {
     "misakanet-setup": "bin/misakanet-setup.mjs"
