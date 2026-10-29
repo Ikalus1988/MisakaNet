@@ -1,43 +1,51 @@
 {
-  "generated_at": "2026-10-29T01:03:06.774048+00:00",
+  "generated_at": "2026-10-29T05:42:55.922189+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "chore(release): one release PR per package, so a patch can ship without a major",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4022",
-      "timestamp": "2026-10-29T01:02:00Z",
+      "title": "lessons(contrib): convert intake #4021 — V100 Strata MoE serving, measured",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4039",
+      "timestamp": "2026-10-29T05:42:45Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4016",
-      "timestamp": "2026-10-28T20:37:24Z",
+      "title": "fix(release): give the package tag a committer identity",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4037",
+      "timestamp": "2026-10-29T04:30:13Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "docs(handoff): volume 20 — what shipped today, and the five debts it leaves",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4015",
-      "timestamp": "2026-10-28T17:32:57Z",
+      "title": "chore(main): release misakanet-setup 0.8.0",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4026",
+      "timestamp": "2026-10-29T04:04:27Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(fatal-guard): the version test pinned the version it was testing",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4014",
-      "timestamp": "2026-10-28T17:12:31Z",
+      "title": "feat(setup): say the install worked, with the version and whether it is current",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4035",
+      "timestamp": "2026-10-29T03:43:56Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(release): record fatal-guard 0.3.0 in the release-please ledger",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4009",
-      "timestamp": "2026-10-28T15:42:44Z",
+      "title": "fix(release): tag merged package releases, and dispatch their publish",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4032",
+      "timestamp": "2026-10-29T02:41:30Z",
       "source": "github"
+    },
+    {
+      "type": "lesson",
+      "title": "V100 Strata MoE serving: SM70 decode kernels, CPU prefill share, and IQ3_XXS quant switch",
+      "url": "lessons/contrib/v100-strata-moe-sm70-kernels-cpu-prefill-iq3-xxs.md",
+      "timestamp": "2026-10-29",
+      "domain": "llm",
+      "source": "lessons"
     },
     {
       "type": "lesson",
@@ -69,14 +77,6 @@
       "url": "lessons/contrib/agent-worktree-isolation-requires-git-cwd.md",
       "timestamp": "2026-10-25",
       "domain": "agent",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "antd Upload fires onChange once per file per batch, so one drop becomes N business units",
-      "url": "lessons/contrib/antd-upload-onchange-per-file-not-per-batch.md",
-      "timestamp": "2026-10-25",
-      "domain": "frontend",
       "source": "lessons"
     },
     {
