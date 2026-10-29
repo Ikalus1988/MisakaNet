@@ -10,6 +10,7 @@
 // Run: node --test workers/intake-surface-gate.test.mjs
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { readFileSync } from 'node:fs';
 import { commandSurfaceIdentifiers, unknownCommandSurface } from './register-proxy-sw.js';
 
 const INDEX = { terms: { docker: 12, npm: 30, pip: 40, node: 25, git: 60, pytest: 9, mico: 0 } };
@@ -99,4 +100,22 @@ test('a repeated token separated by other words is counted every time', () => {
   const text = 'Surface probe: zetaqx login then zetaqx issue rerun then zetaqx wiki search all silent';
   assert.ok(commandSurfaceIdentifiers(text).includes('zetaqx'),
     `expected zetaqx, got ${commandSurfaceIdentifiers(text).join(',')}`);
+});
+
+test('the intake path must not load the index — an advisory check cannot delay a write', () => {
+  // Measured 2026-10-29: the surface check called `loadBM25Index` inside the request that creates the
+  // public issue. On a cold isolate that is 30-60 s, longer than any MCP client waits, so the client
+  // reported `fetch failed` **and the issue was created anyway** — a submission that worked and one
+  // that did not were indistinguishable from the caller's side.
+  //
+  // The rule is structural, so the test is structural: the intake branch reads `peekBM25Index`, and
+  // `loadBM25Index` appears nowhere between the intake handler's guard and its GitHub call.
+  const source = readFileSync(new URL('./register-proxy-sw.js', import.meta.url), 'utf8');
+  const start = source.indexOf('const surfaceText = [args.problem');
+  const end = source.indexOf('const resp = await fetchWithTimeout(`${GITHUB_API}/repos/${REPO}/issues`', start);
+  assert.ok(start > 0 && end > start, 'the intake surface block moved — re-point this test');
+  const block = source.slice(start, end);
+  assert.ok(!block.includes('loadBM25Index('),
+    'the intake path loads the BM25 index; that is the 30-60 s the client times out on');
+  assert.ok(block.includes('peekBM25Index('), 'expected the warm-only peek');
 });
