@@ -113,6 +113,30 @@ def test_the_tally_counts_the_rank_window_it_was_given():
     wider = bench.tally(FIXTURE_ROWS, results, top=4)
     assert (wider["en"]["hit1"], wider["en"]["hit3"]) == (1, 3), wider["en"]
 
+def test_rank_one_and_rank_two_rows_are_named_even_though_the_floor_counts_them_as_hits():
+    """The gap this closes: a hit@1 score of 15/20 named only the rows that fell out of the top three.
+
+    The four or five rows that came back second were invisible in every run of the bench — so
+    "which query is one rank away" could not be answered from the output, and those rows were
+    never looked at. A rank-2 row is inside the floor and outside the first result; both facts
+    have to be readable.
+    """
+    results = {
+        "a": {"ids": ["hit", "other"]},                       # rank 0
+        "b": {"ids": ["other", "hit"]},                       # rank 1 → hit@1 miss
+        "c": {"ids": ["other", "other2", "hit"]},             # rank 2 → hit@1 miss
+        "d": {"ids": ["other", "other2", "other3", "hit"]},   # rank 3 → hit@3 miss too
+        "e": {"ids": ["hit"]},
+    }
+    tallies = bench.tally(FIXTURE_ROWS, results, top=3)
+    near = {miss["query"]: miss for miss in tallies["en"]["hit1_misses"]}
+    assert set(near) == {"second", "third"}, tallies["en"]["hit1_misses"]
+    assert near["second"]["rank"] == 1 and near["third"]["rank"] == 2
+    # The rank-2 row must carry enough of the answer to see *which* lesson won instead.
+    assert near["third"]["got"] == ["other", "other2", "hit"], near["third"]
+    # And the row outside the window is still reported as a miss, not duplicated into this list.
+    assert "fourth" not in near, near
+
 
 def test_a_transport_error_is_reported_and_not_silently_counted_as_a_miss():
     """The 403-on-every-row run of 2026-09-28 is why: it looked exactly like a recall collapse."""

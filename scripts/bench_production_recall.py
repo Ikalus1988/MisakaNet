@@ -120,13 +120,23 @@ def tally(rows: list[dict], results: dict[str, dict], top: int = 3) -> dict[str,
     """hit1 / hit3 / misses per language. A hit is "any expected lesson inside the rank window"."""
     out: dict[str, dict] = {}
     for row in rows:
-        bucket = out.setdefault(row["language"], {"total": 0, "hit1": 0, "hit3": 0, "misses": [], "errors": []})
+        bucket = out.setdefault(row["language"], {"total": 0, "hit1": 0, "hit3": 0, "misses": [],
+                                                    "hit1_misses": [], "errors": []})
         bucket["total"] += 1
         result = results.get(row["id"], {})
         ids = result.get("ids", [])
         rank = next((i for i, lesson_id in enumerate(ids) if lesson_id in row["expected"]), -1)
         if rank == 0:
             bucket["hit1"] += 1
+        elif 0 < rank < top:
+            # A rank-1 or rank-2 answer is a hit by the floor and still a *miss at rank 1*. The two
+            # are different failures: the floor tolerates one, a reader who follows the first result
+            # does not. Before this list existed, a run could say "15/20 hit@1" and name only the
+            # rows that fell out of the top three — the four or five rows that were merely second
+            # best were nowhere in the output, which is why they were never looked at.
+            bucket["hit1_misses"].append({
+                "query": row["query"], "language": row["language"], "rank": rank,
+                "got": ids[:max(top, rank + 1)], "expected": row["expected"]})
         if 0 <= rank < top:
             bucket["hit3"] += 1
         else:
@@ -222,6 +232,15 @@ def render(comparison: dict[str, dict], tallies: dict[str, dict], index: dict, r
         lines.append(f"  misses ({len(misses)}) — a production miss is not automatically a regression:")
         for miss in misses:
             lines.append(f"    [{'NONE' if miss['no_match'] else 'MISS'}] {miss['query']}")
+            lines.append(f"           got      {miss['got']}")
+            lines.append(f"           expected {miss['expected']}")
+    near_misses = [miss for language in LANGUAGES
+                   for miss in tallies.get(language, {}).get("hit1_misses", [])]
+    if near_misses:
+        lines.append("")
+        lines.append(f"  hit@1 misses ({len(near_misses)}) — inside the floor, outside the first result:")
+        for miss in near_misses:
+            lines.append(f"    [rank {miss['rank'] + 1}] {miss['query']}")
             lines.append(f"           got      {miss['got']}")
             lines.append(f"           expected {miss['expected']}")
     errors = [error for language in LANGUAGES for error in tallies.get(language, {}).get("errors", [])]
