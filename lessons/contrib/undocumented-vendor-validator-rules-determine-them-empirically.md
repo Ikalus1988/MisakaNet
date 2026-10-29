@@ -19,7 +19,7 @@ evidence_refs:
 provenance:
   source: "MCP intake question #3926 (claude-code)"
   contributor: "zsxh1990"
-  evidence: "**not verified against MICO** — no access to its schema, source, or a running instance. This lesson is the method for determining an undocumented validator's rules, not a statement of what MICO's rules are. Every concrete question in #3926 (transport 取值、url 是否必须内网域名、header_inputs 的字段校验) is explicitly **unanswered** here."
+  evidence: "**not verified against the vendor** — no access to its schema, source, or a running instance. This lesson is the method for determining an undocumented validator's rules, not a statement of what the vendor's rules are. Every concrete question in #3926 (transport 取值、url 是否必须内网域名、header_inputs 的字段校验) is explicitly **unanswered** here."
 ---
 
 # An undocumented vendor validator rejects your payload: determine the rules empirically, do not guess the enum
@@ -83,12 +83,12 @@ into "I have a table of what this accepts", which is checkable.
 
 **This lesson is E0 — nothing here has been verified against the target system.**
 
-No access to MICO's schema, source, or a running instance. Every concrete question in
+No access to the vendor's schema, source, or a running instance. Every concrete question in
 #3926 is **unanswered**:
 
 - what the `mcp_template` field rules actually are
 - whether `transport` is `streamable_http` or `streamable-http`
-- whether `url` must be an `*.mioffice.cn` internal domain
+- whether `url` must be a company-internal domain
 
 What is offered is the procedure. Whoever has access can run it and should replace this
 lesson with the resulting table.
