@@ -143,7 +143,12 @@ jobs:
               echo "tag $TAG already exists — skipping"
               continue
             fi
-            git tag -a "$TAG" -m "$COMPONENT $VERSION"
+            # An annotated tag needs a committer identity, and a runner has none: measured on the
+            # first real use of this step (misakanet-setup 0.8.0), `git tag -a` exited 128 with
+            # "Committer identity unknown" and took the whole release step with it. The identity is
+            # the same one `release-please-config.json` signs releases as.
+            git -c user.name="misakanet-bot" -c user.email="bot@misakanet.dev" \
+              tag -a "$TAG" -m "$COMPONENT $VERSION"
             git -c http.extraheader="$AUTH_HEADER" push origin "$TAG"
             if ! gh release view "$TAG" >/dev/null 2>&1; then
               python3 scripts/release_notes.py --package "$COMPONENT" --version "$VERSION" \
