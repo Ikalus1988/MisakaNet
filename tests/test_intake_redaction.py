@@ -67,6 +67,28 @@ class TestRedactText:
         result = redact_text("card: 4111 1111 1111 1111")
         assert "[REDACTED:card_number]" in result
 
+    @pytest.mark.parametrize("card", [
+        "4111 1111 1111 1111",      # 4-4-4-4, the fixture above
+        "4242-4242-4242-4242",      # hyphen-separated groups
+        "4111111111111111",          # unseparated 16
+        "3782 822463 10005",         # Amex 4-6-5
+        "3056 9300 0900 04",         # Diners 4-6-4
+        "6011 0000 0000 0004 123",   # 19 digits as 4-4-4-4-3
+    ])
+    def test_card_shapes_are_redacted(self, card):
+        assert "[REDACTED:card_number]" in redact_text(f"card: {card}")
+
+    @pytest.mark.parametrize("text", [
+        "Latency probe 32767-20261029",  # #4060: a PID and a date, not a card
+        "Latency probe 7684-20261029",   # four digits before the hyphen (the issue's control case)
+        "range 1234-5678, then retry",   # two numbers joined by one hyphen
+        "build-20261029 and pid 32767",
+    ])
+    def test_two_numbers_joined_by_a_hyphen_are_not_a_card(self, text):
+        # The old rule counted digits and treated `[ -]*?` as decoration, so 32767 + 20261029
+        # reached thirteen digits and the title was rewritten without telling anyone (#4060).
+        assert redact_text(text) == text
+
     def test_truncation(self):
         long_text = "a" * 5000
         result = redact_text(long_text, max_length=2000)

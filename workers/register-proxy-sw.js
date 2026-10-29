@@ -136,7 +136,13 @@ const REDACT_PATTERNS = [
   [/(?:Bearer|Authorization)\s+[a-zA-Z0-9\-._~+/]+=*/gi, "[REDACTED:bearer_token]"],
   [/(?:password|passwd|secret|token|api[_-]?key|apikey|database[_-]?url)\s*[:=]\s*\S+/gi, "[REDACTED:credential]"],
   [/:[^:]+:[^@]+@[^\s]+/g, "://[REDACTED:url_credential]@host"],
-  [/\b(?:\d[ -]*?){13,19}\b/g, "[REDACTED:card_number]"],
+  // #4060: the old rule counted *digits* and treated any run of spaces and hyphens between them
+  // as decoration, so `32767-20261029` (a PID and a date) reached thirteen digits and was redacted
+  // as a card. A card is grouped: 13-19 unseparated digits, four groups of four, 4-4-4-4-x for
+  // 17-19 digits, or the 4-6-5 / 4-6-4 layouts (Amex, Diners). Two numbers joined by a hyphen
+  // belong to neither shape. Mirrored in workers/lib/redact-patterns.json and `redactIntake` below;
+  // `tests/test_redaction_sync.py` now checks the three copies agree on this pattern.
+  [/\b(?:\d{13,19}|\d{4}(?:[ -]\d{4}){3}[ -]\d{1,3}|\d{4}(?:[ -]\d{4}){3}|\d{4}(?:[ -]\d{4}){2}[ -]\d{1,4}|\d{4}[ -]\d{6}[ -]\d{4,5})\b/g, "[REDACTED:card_number]"],
   // #3692: the three classes the server was missing. A filesystem path and a mail address are
   // what an agent's error fragment carries out of the machine — the trial user named both
   // ("内部表名、路径"). The path rule deliberately requires evidence of a FILESYSTEM path (a known
@@ -3892,7 +3898,9 @@ function redactIntake(text) {
     r = r.replace(/(?:Bearer|Authorization)\s+[a-zA-Z0-9\-._~+/]+=*/gi, "[REDACTED:bearer_token]");
     r = r.replace(/(?:password|passwd|secret|token|api[_-]?key|apikey|database[_-]?url)\s*[:=]\s*\S+/gi, "[REDACTED:credential]");
     r = r.replace(/:\/\/[^:]+:[^@]+@[^\s]+/g, "://[REDACTED:url_credential]@host");
-    r = r.replace(/\b(?:\d[ -]*?){13,19}\b/g, "[REDACTED:card_number]");
+    // #4060: grouped shapes only — see the /api/intake copy above for why the digit-counting form
+    // ate `32767-20261029`.
+    r = r.replace(/\b(?:\d{13,19}|\d{4}(?:[ -]\d{4}){3}[ -]\d{1,3}|\d{4}(?:[ -]\d{4}){3}|\d{4}(?:[ -]\d{4}){2}[ -]\d{1,4}|\d{4}[ -]\d{6}[ -]\d{4,5})\b/g, "[REDACTED:card_number]");
     // #3692: the same three classes as the /api/intake copy above — a filesystem path, a Windows
     // path and a mail address. The server had nine secret rules and nothing else, so an internal
     // path in a submitted problem text (which becomes a PUBLIC GitHub issue) survived. The regexes

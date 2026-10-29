@@ -57,10 +57,10 @@
   },
   {
     "id": "card_number",
-    "pattern": "\\b(?:\\d[ -]*?){13,19}\\b",
+    "pattern": "\\b(?:\\d{13,19}|\\d{4}(?:[ -]\\d{4}){3}[ -]\\d{1,3}|\\d{4}(?:[ -]\\d{4}){3}|\\d{4}(?:[ -]\\d{4}){2}[ -]\\d{1,4}|\\d{4}[ -]\\d{6}[ -]\\d{4,5})\\b",
     "flags": "g",
     "replacement": "[REDACTED:card_number]",
-    "description": "Credit card numbers (13-19 digits)"
+    "description": "Credit card numbers: 13-19 unseparated digits, or 4-digit groups (Amex 4-6-5, Diners 4-6-4). Two numbers joined by a hyphen are not a card (#4060)"
   },
   {
     "id": "abs_path",
