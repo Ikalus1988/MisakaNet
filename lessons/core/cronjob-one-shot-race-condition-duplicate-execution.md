@@ -16,6 +16,9 @@ provenance:
   contributor: "MisakaNet Core"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "One-shot cronjobs fired several times; adding a threading.Lock and dropping cron-tick.sh stopped duplicates."
+trigger: "when one-shot cronjobs (reminders, .BG, .S, .RS) execute 2-4 times instead of once"
+verify: "Run a one-shot cronjob and confirm it logs or reports execution only once"
 ---
 
 One-shot cronjobs (reminders, .BG, .S, .RS commands) firing 2-4x at once instead of once.

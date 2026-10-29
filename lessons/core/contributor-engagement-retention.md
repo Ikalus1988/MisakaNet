@@ -19,6 +19,9 @@ provenance:
   contributor: "MisakaNet Core"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "AI 代理合并 PR 后未收到正向反馈导致不再提交，添加反馈机制后恢复活跃。"
+trigger: "当 AI 代理的 PR 被合并后没有任何正向反馈，且日志显示“合并了但没反应”。"
+verify: "合并 PR 后检查日志或仪表盘，确认出现正向反馈（如点赞、评论或状态更新），并看到代理再次发起提交。"
 ---
 
 ## Root Cause

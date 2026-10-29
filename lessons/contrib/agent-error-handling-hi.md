@@ -17,6 +17,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "बाहरी API फेल हो रहा था, रीट्राई और फॉलबैक जोड़ने से एजेंट अब स्थिर चल रहा है।"
+trigger: "जब बाहरी सेवा (API, MCP, DB) टाइम‑आउट या त्रुटि लौटाती है"
 ---
 
 ## समस्या

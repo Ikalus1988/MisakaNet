@@ -20,6 +20,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "We fixed broken multi‑platform access by adding per‑platform auth (API keys, cookies, geo‑proxy) handling."
+trigger: "when a request to Twitter, Reddit, YouTube, or Bilibili returns auth error, missing cookie, or geo‑block response"
 ---
 
 ## Problem

@@ -18,6 +18,9 @@ provenance:
   contributor: "MisakaNet Core"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "因为GitHub不自动关闭已合入的PR，导致堆积的重复/过时PR，加入关闭关键字和bot规则后问题解决。"
+trigger: "当多个AI Agent提交的PR与同一Issue重复，或已合入的PR未被自动关闭时。"
+verify: "运行 `gh pr list --state open --search \"is:open\"`，确认无已合入或重复的PR仍显示为打开。"
 ---
 
 ## Root Cause

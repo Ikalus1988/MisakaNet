@@ -16,6 +16,9 @@ provenance:
   contributor: "MisakaNet Core"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Messages landed in the wrong Telegram thread; fixed by assigning each session to a healthy FreeLLMAPI instance."
+trigger: "when messages from one topic appear in another Telegram thread (e.g., Poker channel shows Main Chat content)"
+verify: "Run a test send to Poker; confirm it appears only in the Poker thread and not in Main Chat."
 ---
 
 Messages appearing in wrong Telegram threads (e.g., Poker topic receiving Main Chat content).

@@ -20,6 +20,7 @@ provenance:
   contributor: "MisakaNet Core"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+verify: "Observe that opening a PR triggers the pipeline and the PR is merged automatically with a thank‑you comment, and the linked issue is closed."
 ---
 
 ## Root Cause

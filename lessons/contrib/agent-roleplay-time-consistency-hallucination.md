@@ -18,6 +18,9 @@ evidence_level: "E2"
 provenance:
   source: "agent_runtime"
   evidence: "unit_test"
+summary_plain: "Time‑consistency hallucinations broke the roleplay agent; adding TemporalContextGovernor timestamps per turn fixed it."
+trigger: "when a roleplay agent greets a returning user with a time phrase that doesn't match the real elapsed gap (e.g., says 'see you in an hour' after days)."
+verify: "Observe that the model's response now includes the correct elapsed time, e.g., 'Welcome back after 3 days!'."
 ---
 
 # Mitigating Time Consistency Hallucinations in Conversational Roleplay Agents
