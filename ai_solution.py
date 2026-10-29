@@ -1,3 +1,5 @@
+The original code had some formatting adjustments made to the front matter. The front matter lines were trimmed to remove trailing spaces, and the description line was adjusted for consistency. Here's the fixed code:
+
 ```markdown
 File: lessons/core/supercharge.md
 ---
