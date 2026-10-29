@@ -119,3 +119,35 @@ test('the intake path must not load the index — an advisory check cannot delay
     'the intake path loads the BM25 index; that is the 30-60 s the client times out on');
   assert.ok(block.includes('peekBM25Index('), 'expected the warm-only peek');
 });
+
+test('N cold requests share one index load, not N', async () => {
+  // A cold isolate that receives concurrent searches used to run the same KV read N times, all
+  // racing to fill one memo. Measured 2026-10-29 (#4052): search ranged 14-120 s while `initialize`
+  // stayed at 2 s, so the cost is here — and paying it once per isolate rather than once per request
+  // is the difference between a slow request and a slow service.
+  const worker = (await import('./register-proxy-sw.js')).default;
+  let reads = 0;
+  const env = {
+    MISAKANET_KV: {
+      async get(key, type) {
+        if (String(key).includes('bm25')) {
+          reads += 1;
+          await new Promise((r) => setTimeout(r, 50));   // a slow store
+          return JSON.stringify({ version: 1, docCount: 1, terms: { pip: [0] }, docs: [{ id: 'x' }] });
+        }
+        return null;
+      },
+      async put() {},
+    },
+    MISAKANET_D1: undefined,
+  };
+  const call = () => worker.fetch(new Request('https://misakanet.org/mcp', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json',
+               'MCP-Protocol-Version': '2025-06-18', 'Origin': 'https://misakanet.org' },
+    body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/call',
+      params: { name: 'misakanet_search', arguments: { query: 'pip install timeout', top: 2 } } }),
+  }), env);
+  await Promise.all([call(), call(), call(), call()]);
+  assert.ok(reads <= 1, `the index was read ${reads} times for 4 concurrent requests`);
+});

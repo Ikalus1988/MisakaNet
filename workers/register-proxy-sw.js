@@ -2546,10 +2546,12 @@ async function refreshSearchIndex(env) {
 const _BM25_MEMO_TTL_MS = 300_000;
 let _bm25Index = null;
 let _bm25IndexExpiry = 0;
+let _bm25IndexInFlight = null;
 
 function invalidateBM25Memo() {
   _bm25Index = null;
   _bm25IndexExpiry = 0;
+  _bm25IndexInFlight = null;
 }
 
 /** The index **if this isolate already holds it**, without loading one.
@@ -2575,17 +2577,26 @@ async function loadBM25Index(env) {
 
   if (!hasDurableStore(env)) return null;
 
-  try {
-    const index = await readStoredIndex(env);
-    if (index && index.version === 1) {
-      _bm25Index = index;
-      _bm25IndexExpiry = now + _BM25_MEMO_TTL_MS;
-      return index;
+  // Single flight. A cold isolate that receives N search requests at once used to run N identical
+  // loads — the same KV read (and, on a miss, the same D1 rebuild) N times, all of them racing to
+  // fill one memo. Measured 2026-10-29 on production (#4052): search ranged 14-120 s while
+  // `initialize` stayed at 2 s, i.e. the cost lives in this function, and paying it N times per
+  // isolate is the difference between one slow request and a slow service.
+  if (_bm25IndexInFlight) return _bm25IndexInFlight;
+  _bm25IndexInFlight = (async () => {
+    try {
+      const index = await readStoredIndex(env);
+      if (index && index.version === 1) {
+        _bm25Index = index;
+        _bm25IndexExpiry = Date.now() + _BM25_MEMO_TTL_MS;
+        return index;
+      }
+    } catch (e) {
+      debugLog(env, 1, "Failed to load BM25 index", { error: e.message });
     }
-  } catch (e) {
-    debugLog(env, 1, "Failed to load BM25 index", { error: e.message });
-  }
-  return null;
+    return null;
+  })().finally(() => { _bm25IndexInFlight = null; });
+  return _bm25IndexInFlight;
 }
 
 // ── The lesson-reference guard (B35) ────────────────────────────────────────────────────────────────
