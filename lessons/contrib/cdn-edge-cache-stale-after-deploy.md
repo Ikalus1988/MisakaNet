@@ -16,6 +16,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Old worker script kept serving because edge cache still held stale copy; clearing or waiting for TTL fixed it."
+trigger: "when a recently deployed worker change appears unchanged in subsequent requests without a cache‑busting query"
 ---
 
 # CDN edge cache serves stale responses for minutes after deploy

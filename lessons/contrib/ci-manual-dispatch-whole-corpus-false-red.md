@@ -7,6 +7,8 @@ evidence_level: "E2"
 created: "2026-09-13"
 provenance:
   source: "MisakaNet maintainer run 34758013963, 2026-09-13"
+summary_plain: "The audit failed because it validated all lessons; fixing it to scope only the PR or given pr_number stopped the red."
+trigger: "when a manual PR‑audit run ends red with “lesson schema validation failed” even though the test suite reports all tests passed."
 ---
 
 # A manual CI run that sweeps the whole corpus always fails, so nobody trusts the red

@@ -16,6 +16,9 @@ provenance:
   contributor: "MisakaNet Core"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "The Hermes state.db got locked, causing cronjobs to stop, and restarting the gateway plus a WAL checkpoint cleared it."
+trigger: "when Hermes agent logs 'database is locked' and cronjobs stop firing"
+verify: "systemctl status hermes-gateway.service shows active and no 'database is locked' errors in logs"
 ---
 
 Hermes agent shows 'database is locked' error on SQLite state.db. Cronjobs stop firing.

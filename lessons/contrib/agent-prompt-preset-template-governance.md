@@ -18,6 +18,9 @@ evidence_level: "E2"
 provenance:
   source: "developer_workflow"
   evidence: "unit_test"
+summary_plain: "KeyError from missing placeholder broke us; immutable PromptPreset with validation fixed it."
+trigger: "when a system prompt template is updated with a new variable and a KeyError occurs at runtime"
+verify: "Render a prompt using the registered PromptPreset; it succeeds without KeyError and hyperparameters stay within bounds."
 ---
 
 # Prompt Preset Governance: Schema Validation and Immutable Versioning

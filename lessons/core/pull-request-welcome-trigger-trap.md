@@ -19,6 +19,7 @@ provenance:
   contributor: "MisakaNet Core"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+trigger: "当 pull_request_target 工作流在首次贡献者 PR 上显示 Skipped，日志提示 author_association 为 NONE 不在列表时。"
 ---
 
 ## Root Cause

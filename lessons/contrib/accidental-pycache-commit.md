@@ -10,6 +10,9 @@ status: published
 created: 2026-08-11 00:00:00 UTC
 updated: 2026-08-11 00:00:00 UTC
 evidence_level: E2
+summary_plain: "We accidentally committed __pycache__ .pyc files; removing them and adding .gitignore fixed the PR."
+trigger: "when a pull request adds __pycache__/*.pyc files and the CI/review blocks the merge due to repository bloat"
+verify: "git status shows no __pycache__/*.pyc files staged and .gitignore now lists __pycache__/"
 ---
 
 <!-- provenance:

@@ -14,6 +14,7 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+trigger: "when memory extractor runs on every user message and token usage spikes or extraction quality drops on long chats"
 ---
 
 ## Problem

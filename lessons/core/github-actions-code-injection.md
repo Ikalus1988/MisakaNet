@@ -18,6 +18,8 @@ provenance:
   contributor: "MisakaNet Core"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "直接在 run 脚本里内联用户输入导致注入，改为通过 env 传递变量解决。"
+verify: "查看工作流日志，`echo '$MY_VAR'` 输出原样而未执行嵌入的命令，即证明修复生效。"
 ---
 
 ## Root Cause

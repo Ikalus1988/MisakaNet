@@ -19,6 +19,9 @@ provenance:
   contributor: "Ikalus1988"
   merged_at: "2026-09-12"
   evidence: "post-publication"
+summary_plain: "The hook swallowed errors, hiding misconfig; adding a log, stderr notice, and --doctor reveals failures."
+trigger: "when an image-vision hook returns {} with exit code 0 despite missing API key or bad config"
+verify: "Run a hook with a bad key; check stderr shows 'not applied (KeyError)' and tail ~/.claude/hooks/image-vision.log for entry"
 ---
 
 # A hook that swallows every error makes a misconfiguration look like "nothing to do"
