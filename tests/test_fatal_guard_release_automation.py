@@ -122,6 +122,12 @@ def test_no_test_file_pins_the_version_it_asserts_on():
     kept asserting `/^0\\.3\\.0\\n$/`, and the package's own suite failed on its own release — the last
     thing standing between two merged fixes and npm was the test that checks the version.
 
+    The rule is deliberately blunt: a version string anywhere in the code is a finding, including in an
+    assertion *message*. The first draft of the packaging test learned that — its message said "this is
+    exactly how 0.3.0 and 0.3.1 shipped broken" and this gate refused it. Rewording a message is cheaper
+    than teaching the gate which string literals are comparisons, and the shape that broke the release
+    (`assert.match(stdout, /^0\\.3\\.0$/`) sits too close to a message to draw a safe line between them.
+
     The comparison normalises `\\.` to `.` first: the literal appears escaped inside a regular expression
     (`0\\.3\\.0`), and a naive search for `0.3.0` does not find it. That is not a detail — the first
     version of this gate passed against the very file it was written for.
