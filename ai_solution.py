@@ -6,6 +6,10 @@ categories: ["category"]
 tags: ["tag"]
 problem: "What is the problem here?"
 solution: "The solution is here."
+additional_notes: "This is an additional note."
+references:
+- [Reference 1](link)
+- [Reference 2](link)
 ---
 
 # A New Lesson
@@ -40,6 +44,10 @@ categories: ["category"]
 tags: ["tag"]
 problem: "What is the problem here?"
 solution: "The solution is here."
+additional_notes: "This is an additional note."
+references:
+- [Reference 1](link)
+- [Reference 2](link)
 ---
 
 # Another Lesson
