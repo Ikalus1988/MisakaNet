@@ -1630,7 +1630,7 @@ test('the User-Agent version is bound to the manifest by a test, not by a file r
   // release pull request bumps it together with the manifest. It is still a tripwire — a version
   // edited **by hand** leaves this line behind and goes red — and without the marker the pin
   // would stay at the old version and every release would be red here instead.
-  assert.equal(declared, '0.7.1', 'the release tooling moves this pin with the version');  // x-release-please-version
+  assert.equal(declared, '0.8.0', 'the release tooling moves this pin with the version');  // x-release-please-version
   // A plain substring, not a RegExp: building a pattern from a value with `.replace(/\./g…)`
   // left backslashes unescaped, which CodeQL correctly reported as incomplete sanitization
   // (js/incomplete-sanitization, high) on the first version of this test.
