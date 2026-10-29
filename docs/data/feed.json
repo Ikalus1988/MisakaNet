@@ -1,9 +1,23 @@
 {
-  "generated_at": "2026-10-29T08:29:42.365336+00:00",
+  "generated_at": "2026-10-29T10:11:42.992236+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "docs(handoff): volume 21 — the release path, the backfill run, and six rules learned the hard way",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4045",
+      "timestamp": "2026-10-29T08:51:11Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4044",
+      "timestamp": "2026-10-29T08:39:59Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "docs(lessons): backfill structured fields for 37 lessons (batch 1-2 of the 61% gap)",
@@ -23,20 +37,6 @@
       "title": "lessons(contrib): convert intake #4021 — V100 Strata MoE serving, measured",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/4039",
       "timestamp": "2026-10-29T05:42:45Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "fix(release): give the package tag a committer identity",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4037",
-      "timestamp": "2026-10-29T04:30:13Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(main): release misakanet-setup 0.8.0",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4026",
-      "timestamp": "2026-10-29T04:04:27Z",
       "source": "github"
     },
     {
