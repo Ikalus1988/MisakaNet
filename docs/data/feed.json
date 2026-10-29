@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-10-29T10:11:42.992236+00:00",
+  "generated_at": "2026-10-29T18:20:49.018389+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "docs(handoff): volume 21 — the release path, the backfill run, and six rules learned the hard way",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4045",
-      "timestamp": "2026-10-29T08:51:11Z",
+      "title": "lessons(contrib): answer five claimed questions (#3924 #3925 #3923 #3926 #3962)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3967",
+      "timestamp": "2026-10-29T18:20:27Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4044",
-      "timestamp": "2026-10-29T08:39:59Z",
+      "title": "bench: name the hit@1 misses, and fix one expectation that named an unrelated lesson",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4073",
+      "timestamp": "2026-10-29T18:04:40Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "docs(lessons): backfill structured fields for 37 lessons (batch 1-2 of the 61% gap)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4041",
-      "timestamp": "2026-10-29T08:29:29Z",
+      "title": "docs(handoff): correct volume 22's #3977 / #3967 state",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4070",
+      "timestamp": "2026-10-29T17:33:05Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4040",
-      "timestamp": "2026-10-29T05:56:48Z",
+      "title": "docs(handoff): volume 22 — the spike has two shapes, and one of them is the route",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4069",
+      "timestamp": "2026-10-29T17:13:25Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "lessons(contrib): convert intake #4021 — V100 Strata MoE serving, measured",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4039",
-      "timestamp": "2026-10-29T05:42:45Z",
+      "title": "ci(provenance): publish the verdict to the step summary — a fork PR's comment can never be the only channel",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3977",
+      "timestamp": "2026-10-29T17:12:03Z",
       "source": "github"
     },
     {
@@ -49,34 +49,34 @@
     },
     {
       "type": "lesson",
-      "title": "lesson_gate.py in a stdlib-only Python container reports missing fields when PyYAML is absent",
-      "url": "lessons/contrib/lesson-gate-swallowed-missing-pyyaml-reports-missing-fields.md",
-      "timestamp": "2026-10-27",
-      "domain": "ci",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "A migration that only renames when the destination is missing leaves orphan source files",
-      "url": "lessons/contrib/a-file-migration-whose-only-condition-is-if-exists-dest-rena.md",
-      "timestamp": "2026-10-25",
+      "title": "A CWD-relative tool lookup passes every test and fails for every user: the test harness starts the app from the repo",
+      "url": "lessons/contrib/cwd-relative-tool-lookup-passes-in-tests-fails-from-shortcut.md",
+      "timestamp": "2026-10-28",
       "domain": "development",
       "source": "lessons"
     },
     {
       "type": "lesson",
-      "title": "A permission classifier refused to run cloned repo code, so the minimal implementation was written from scratch",
-      "url": "lessons/contrib/agent-permission-classifier-blocks-cloned-repo-code.md",
-      "timestamp": "2026-10-25",
-      "domain": "agent",
+      "title": "Squash-merge makes local master 'ahead N' with empty diff and fully diverged SHAs — reset --hard is the safe sync",
+      "url": "lessons/contrib/gitlab-squash-merge-local-master-divergent-shas.md",
+      "timestamp": "2026-10-28",
+      "domain": "git",
       "source": "lessons"
     },
     {
       "type": "lesson",
-      "title": "Agent worktree isolation fails at spawn when the orchestrator's cwd is not a git repository",
-      "url": "lessons/contrib/agent-worktree-isolation-requires-git-cwd.md",
-      "timestamp": "2026-10-25",
-      "domain": "agent",
+      "title": "A Windows drive-letter path parses as a URL scheme, so Node's ESM loader rejects it: ERR_UNSUPPORTED_ESM_URL_SCHEME",
+      "url": "lessons/contrib/node-esm-drive-letter-path-parses-as-url-scheme.md",
+      "timestamp": "2026-10-28",
+      "domain": "nodejs",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "An undocumented vendor validator rejects your payload: determine the rules empirically, do not guess the enum",
+      "url": "lessons/contrib/undocumented-vendor-validator-rules-determine-them-empirically.md",
+      "timestamp": "2026-10-28",
+      "domain": "mcp",
       "source": "lessons"
     },
     {
