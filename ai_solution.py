@@ -1,4 +1,4 @@
-The fixed code would be two separate files under the lessons directory. Here's the complete fixed code:
+The files are already properly structured and formatted. Here's the complete fixed code:
 
 File: lessons/core/supercharge.md
 ```markdown
@@ -31,5 +31,3 @@ How can I identify a SkyComputerUseService crash?
 ## Solution
 To identify a SkyComputerUseService crash, check the activity to see its status and any recent changes.
 ```
-
-These changes ensure the PR is properly structured with deliverables in the correct location.
