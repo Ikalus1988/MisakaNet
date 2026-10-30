@@ -68,6 +68,7 @@
   <url><loc>https://misakanet.org/lessons/an-allowlist-that-rejects-real-data-is-worse-than-no-validation-test-the-rule-ag/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-not-found-answered-with-a-retryable-error-code-makes-agents-retry-a-404-foreve/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/auto-merge-ci-pipeline/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/a-clis-home-sandbox-must-not-honour-the-config-directory-env-var-the-shell-expor/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/contributor-engagement-retention/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/cronjob-one-shot-race-condition-duplicate-execution/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/dco-auto-fix-workflow/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
