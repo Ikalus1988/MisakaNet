@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import importlib.util
 import pathlib
+import re
 import sys
 
 REPO = pathlib.Path(__file__).resolve().parents[1]
@@ -368,3 +369,125 @@ def test_the_answer_path_needs_no_pull_request():
         assert command not in body, f"the task still asks for the lesson pipeline: {command}"
 
 
+
+
+# ── the backlog is read to the end, not to page 1 (2026-10-30) ──────────────
+#
+# Measured 2026-10-30: 355 open issues, 54 open questions, and the script saw 12 of them — one
+# `issues?state=open&per_page=100` request with no `page`. The 42 invisible questions could never get a
+# receipt, a cluster or a bounty, and the digest reported "12 open question(s)" as the backlog.
+
+def test_every_open_page_is_read(monkeypatch):
+    pages = {
+        1: [{"number": n, "title": f"[Question] q{n}", "labels": []} for n in range(1, 101)],
+        2: [{"number": n, "title": f"[Question] q{n}", "labels": []} for n in range(101, 155)],
+    }
+    seen = []
+
+    def fake_gh(path, payload=None, method=None):
+        assert "state=open" in path, path
+        # `[&?]page=` and not `page=`: the path also carries `per_page=100`, and splitting on the
+        # shorter string reads that 100 as the page number (the first version of this test did).
+        page = int(re.search(r"[&?]page=(\d+)", path).group(1))
+        seen.append(page)
+        return pages.get(page, [])
+
+    monkeypatch.setattr(qa, "gh", fake_gh)
+    assert len(qa.open_issues()) == 154
+    assert seen == [1, 2], "a short page must stop the loop, and page 1 must not be the whole read"
+    assert len(qa.open_questions()) == 154
+
+
+def test_a_pull_request_on_the_page_is_not_an_issue(monkeypatch):
+    def fake_gh(path, payload=None, method=None):
+        return [{"number": 1, "title": "[Question] real", "labels": []},
+                {"number": 2, "title": "a PR", "labels": [], "pull_request": {"url": "x"}}]
+
+    monkeypatch.setattr(qa, "gh", fake_gh)
+    assert [i["number"] for i in qa.open_issues()] == [1]
+
+
+# ── a dropped connection is retried before it is called "unmeasured" ────────
+#
+# Measured 2026-10-30: one attempt turned 7 of 12 questions into "not measured yet" because the live
+# endpoint drops slow requests (#4072). A read failure rendered as an absence is the one shape this
+# script is written to avoid, so the failure is retried before it is reported.
+
+def test_a_dropped_connection_is_retried(monkeypatch):
+    calls = {"n": 0}
+
+    def flaky(_query):
+        calls["n"] += 1
+        if calls["n"] < qa.COVERAGE_ATTEMPTS:
+            return {"ok": False, "no_match": None, "lessons": [], "faq": [],
+                    "error": "RemoteDisconnected"}
+        return {"ok": True, "no_match": True, "lessons": [], "faq": []}
+
+    monkeypatch.setattr(qa, "_corpus_answers_once", flaky)
+    monkeypatch.setattr(qa.time, "sleep", lambda _s: None)
+    got = qa.corpus_answers("anything")
+    assert got["ok"] is True
+    assert calls["n"] == qa.COVERAGE_ATTEMPTS
+
+
+def test_a_final_failure_stays_unmeasured_and_says_how_many_tries(monkeypatch):
+    def dead(_query):
+        return {"ok": False, "no_match": None, "lessons": [], "faq": [],
+                "error": "RemoteDisconnected"}
+
+    monkeypatch.setattr(qa, "_corpus_answers_once", dead)
+    monkeypatch.setattr(qa.time, "sleep", lambda _s: None)
+    got = qa.corpus_answers("anything")
+    assert got["ok"] is False, "a failed read must never become a coverage verdict"
+    assert got["no_match"] is None
+    assert got["attempts"] == qa.COVERAGE_ATTEMPTS
+    text = qa.receipt({"number": 1, "coverage": got, "cluster_with": []})
+    assert f"after {qa.COVERAGE_ATTEMPTS} attempts" in text, text
+
+
+# ── one living digest, not five copies ─────────────────────────────────────
+#
+# Five same-titled digests were open at once on 2026-10-30 (#2284/#2876/#3333/#3731/#4063): the
+# de-duplication used the same single-page fetch, so once the newest copy fell off page 1 every later
+# run opened another. A reader cannot tell which number is current, which makes five copies worse than
+# none.
+
+def test_the_oldest_digest_is_kept_and_the_copies_are_folded_into_it(monkeypatch):
+    digests = [
+        {"number": 4063, "title": qa.DIGEST_TITLE, "labels": []},
+        {"number": 2284, "title": qa.DIGEST_TITLE, "labels": []},
+        {"number": 3731, "title": qa.DIGEST_TITLE, "labels": []},
+    ]
+    calls: list[tuple] = []
+
+    def fake_gh(path, payload=None, method=None):
+        calls.append((path, payload, method))
+        if path.startswith("/issues?state=open"):
+            return digests if "page=1" in path else []
+        return {"number": 1}
+
+    monkeypatch.setattr(qa, "gh", fake_gh)
+    outcome = qa.write_digest("BODY")
+    assert outcome == "updated #2284; folded 2", outcome
+
+    body_patch = [c for c in calls if c[2] == "PATCH" and c[1] and c[1].get("body") == "BODY"]
+    assert [c[0] for c in body_patch] == ["/issues/2284"], "the oldest copy is the living one"
+    closed = sorted(c[0] for c in calls if c[2] == "PATCH" and c[1] and c[1].get("state") == "closed")
+    assert closed == ["/issues/3731", "/issues/4063"]
+    notes = [c for c in calls if c[0].endswith("/comments")]
+    assert len(notes) == 2 and all("#2284" in c[1]["body"] for c in notes), notes
+
+
+def test_a_run_with_no_digest_creates_exactly_one(monkeypatch):
+    calls: list[tuple] = []
+
+    def fake_gh(path, payload=None, method=None):
+        calls.append((path, payload, method))
+        if path.startswith("/issues?state=open"):
+            return []
+        return {"number": 77}
+
+    monkeypatch.setattr(qa, "gh", fake_gh)
+    assert qa.write_digest("BODY") == "created #77"
+    created = [c for c in calls if c[0] == "/issues" and c[2] is None]
+    assert len(created) == 1 and created[0][1]["labels"] == [qa.DIGEST_LABEL]

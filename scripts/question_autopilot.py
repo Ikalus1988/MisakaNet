@@ -55,6 +55,7 @@ import os
 import pathlib
 import re
 import sys
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -73,6 +74,22 @@ DIGEST_TITLE = "Question intake digest — unresolved clusters"
 # itself opened"). That gate exempts a fixed label list, so the digest carries one of its own and
 # the gate learns it — an agreement pinned by `tests/test_question_autopilot.py`.
 DIGEST_LABEL = "question-digest"
+
+# Pagination for every open-issue read. A single `per_page=100` request reads the newest 100 issues and
+# stops — with 355 open issues that is 22% of the questions, so the other 78% could never get a receipt,
+# a cluster or a bounty, and the digest reported "12 open question(s)" as if that were the backlog
+# (measured 2026-10-30: 54 open questions, 12 visible). The cap is a runaway guard, not a limit: at
+# 100/page it is 2,000 issues.
+ISSUE_PAGE_SIZE = 100
+ISSUE_PAGE_LIMIT = 20
+
+# Coverage is measured against the live endpoint, which drops slow requests (#4072: the response is fully
+# buffered, and a first byte later than ~3 s is cut by the link). One attempt turned 7 of 12 questions
+# into "not measured yet" on 2026-10-30 — a read failure rendered as an absence, which is the one shape
+# this script is written to avoid. Three attempts with a short backoff, and the count travels with the
+# error so a receipt can say how hard it tried.
+COVERAGE_ATTEMPTS = 3
+COVERAGE_BACKOFF_SECONDS = (2, 5)
 
 # Distinctive-token floor for calling two questions one cluster. Tuned low on purpose: an over-eager
 # cluster costs a merge suggestion a human can ignore, an under-eager one costs the duplication this
@@ -147,10 +164,27 @@ def gh(path: str, payload: dict | None = None, method: str | None = None):
                           {"Authorization": f"Bearer {token()}"})
 
 
+def open_issues() -> list[dict]:
+    """Every open issue, paginated, pull requests excluded.
+
+    See `ISSUE_PAGE_SIZE`: this used to be one request, and every reader of "the open backlog" below
+    inherited its blind spot — the question list, the digest's own de-duplication, and (before this
+    was fixed here) the salvage digest's view of what still needed triage.
+    """
+    out: list[dict] = []
+    for page in range(1, ISSUE_PAGE_LIMIT + 1):
+        batch = gh(f"/issues?state=open&per_page={ISSUE_PAGE_SIZE}&page={page}")
+        if not isinstance(batch, list):
+            break
+        out.extend(i for i in batch if "pull_request" not in i)
+        if len(batch) < ISSUE_PAGE_SIZE:
+            break
+    return out
+
+
 def open_questions() -> list[dict]:
-    issues = [i for i in gh("/issues?state=open&per_page=100") if "pull_request" not in i]
     out = []
-    for issue in issues:
+    for issue in open_issues():
         if "[Question]" not in issue["title"]:
             continue
         labels = {l["name"] for l in issue["labels"]}
@@ -158,6 +192,14 @@ def open_questions() -> list[dict]:
             continue
         out.append(issue)
     return out
+
+
+def digest_issues() -> list[dict]:
+    """Every open digest this script owns, oldest first (the number order is creation order)."""
+    return sorted(
+        (i for i in open_issues() if str(i.get("title", "")).startswith(DIGEST_TITLE)),
+        key=lambda i: i["number"],
+    )
 
 
 # ── the technical signature (same shape the triage report used) ─────────────
@@ -246,6 +288,26 @@ def cluster(items: list[dict]) -> list[dict]:
 # ── coverage, through the public endpoint ───────────────────────────────────
 
 def corpus_answers(query: str) -> dict:
+    """Ask production whether the corpus answers `query`, retrying a transport failure.
+
+    Three attempts (see `COVERAGE_ATTEMPTS`). The retry is here rather than in the caller because every
+    caller needs the same four keys back and none of them can tell a dropped connection from a real
+    `no_match` — so the one place that *can* tell is the one place that must retry. A final failure still
+    returns `ok: False` (never `no_match: True`), and now carries `attempts` so the receipt can say how
+    many tries it took before it gave up.
+    """
+    last: dict = {}
+    for attempt in range(COVERAGE_ATTEMPTS):
+        last = _corpus_answers_once(query)
+        if last.get("ok"):
+            return last
+        if attempt + 1 < COVERAGE_ATTEMPTS:
+            time.sleep(COVERAGE_BACKOFF_SECONDS[min(attempt, len(COVERAGE_BACKOFF_SECONDS) - 1)])
+    last["attempts"] = COVERAGE_ATTEMPTS
+    return last
+
+
+def _corpus_answers_once(query: str) -> dict:
     """Ask production whether the corpus answers `query`. Returns {no_match, lessons, faq, ok}."""
     payload = {"jsonrpc": "2.0", "id": 1, "method": "tools/call",
                "params": {"name": "misakanet_search", "arguments": {"query": query, "top": 5}}}
@@ -438,8 +500,10 @@ def receipt(item: dict) -> str:
     """One comment per question: the measured state, and the single next step."""
     cov = item["coverage"]
     if not cov["ok"]:
-        state = ("**State: not measured yet.** The retrieval endpoint did not answer this run, so nothing "
-                 "is claimed about coverage — a failed check is not a verdict.")
+        tries = cov.get("attempts")
+        state = (f"**State: not measured yet.** The retrieval endpoint did not answer "
+                 f"{'after ' + str(tries) + ' attempts' if tries else 'this run'}, so nothing is claimed "
+                 f"about coverage — a failed check is not a verdict.")
         nxt = "No action needed from you; this is re-checked daily."
     elif cov["lessons"]:
         tops = ", ".join(f'`{r.get("id") or r.get("title") or "?"}`' for r in cov["lessons"][:3])
@@ -638,16 +702,42 @@ def main(argv: list[str] | None = None) -> int:
                 created += 1
         print(f"bounties: {created} created, {updated} refreshed")
 
-    existing = [i for i in gh("/issues?state=open&per_page=100")
-                if "pull_request" not in i and i["title"].startswith(DIGEST_TITLE)]
     body = digest_body(plan["items"], plan["groups"], planned_bounties(plan))
-    if existing:
-        gh(f"/issues/{existing[0]['number']}", {"body": body}, method="PATCH")
-        print(f"digest updated: #{existing[0]['number']}")
-    else:
+    write_digest(body)
+    return 0
+
+
+DIGEST_SUPERSEDED = (
+    "Superseded by #{keep} — this digest is one of several that were created because the "
+    "de-duplication step could only see the newest 100 open issues (fixed 2026-10-30). "
+    "#{keep} is now the living digest: it is updated on every run, and this one is frozen at the day "
+    "it was written."
+)
+
+
+def write_digest(body: str) -> str:
+    """Update the living digest, folding any older duplicates into it. Returns what happened.
+
+    One digest, not five: the digest is the surface a human reads to decide what to answer, and five
+    open copies with the same title and different numbers is worse than none — a reader cannot tell
+    which is current. The de-duplication used to look for an existing digest with the same single-page
+    fetch as `open_questions`, so once the first one fell off page 1 every later run created another.
+    Now every copy is found (paginated), the **oldest** is kept (it already has the comments), and the
+    rest are closed with a pointer to it.
+    """
+    existing = digest_issues()
+    if not existing:
         created = gh("/issues", {"title": DIGEST_TITLE, "body": body, "labels": [DIGEST_LABEL]})
         print(f"digest created: #{created['number']}")
-    return 0
+        return f"created #{created['number']}"
+    keep, extras = existing[0], existing[1:]
+    gh(f"/issues/{keep['number']}", {"body": body}, method="PATCH")
+    print(f"digest updated: #{keep['number']}")
+    for extra in extras:
+        gh(f"/issues/{extra['number']}/comments", {"body": DIGEST_SUPERSEDED.format(keep=keep["number"])})
+        gh(f"/issues/{extra['number']}", {"state": "closed", "state_reason": "not_planned"}, method="PATCH")
+        print(f"digest folded into #{keep['number']} and closed: #{extra['number']}")
+    return f"updated #{keep['number']}" + (f"; folded {len(extras)}" if extras else "")
 
 
 if __name__ == "__main__":
