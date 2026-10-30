@@ -31,9 +31,11 @@ Two additions after that:
 * **The client list is not hand-maintained in three places.** The selector offered five clients, the
   npm installer wires ten, the bootstrap installer eleven — and `let agentType = 'hermes'` meant
   every registration whose type could not be read was *displayed as Hermes*. The selector is now
-  derived from the installers' own list (minus the bootstrap-only `dsh`, plus a free-text `other`),
-  an unreadable type renders as unknown, and the gate below compares the page against both
-  installers so the three lists cannot drift apart one commit at a time.
+  derived from the npm installer's own list (plus a free-text `other`), an unreadable type renders
+  as unknown, and the gate below compares the page against both installers so the three lists
+  cannot drift apart one commit at a time. (`dsh` used to be bootstrap-only and therefore excluded;
+  the npm installer writes its rules half since 2026-10-30, so it is offered like every other
+  client and `PY_ONLY` is empty.)
 """
 
 from __future__ import annotations
@@ -60,10 +62,14 @@ WORKER_AGENT_MAX = re.compile(r"^const MAX_AGENT_TYPE = (\d+);", re.M)
 
 # The selector's free-text escape hatch. Not a client, so it has no installer counterpart.
 SITE_ONLY = {"other"}
-# The bootstrap installer's extra target: a DSH `SKILL.md`, not an MCP config file, so the npm
-# installer has no counterpart — and neither has a browser visitor registering *through* the site.
-# `tests/test_installer_parity.py` owns the installer-vs-installer half of this contract.
-PY_ONLY = {"dsh"}
+# The bootstrap installer's extra targets — the clients it wires that the npm installer has no
+# counterpart for. **Empty since `dsh` moved to the npm installer as well** (2026-10-30): the npm
+# package writes dsh's rules half and prints the plugin command, while the bootstrap writes a
+# `SKILL.md`; both are now targets of both installers. The set stays because it is the escape
+# hatch: a *new* bootstrap-only client has to be decided here (and kept out of the selector)
+# instead of being silently dropped, and `tests/test_installer_parity.py` owns the rest of the
+# installer-vs-installer contract.
+PY_ONLY: set[str] = set()
 
 # The machine-readable surface of the registration flow: the line both writers build.
 PROTOCOL_BUILDER = re.compile(
@@ -225,9 +231,12 @@ def test_the_selector_offers_exactly_the_clients_the_installers_wire(page: str) 
 
 
 def test_the_installer_exception_this_gate_makes_is_still_the_real_one(page: str) -> None:
-    """`dsh` is excluded from the page on purpose — the bootstrap installer's SKILL.md channel has
-    no npm counterpart and no browser-visitor use. Recomputing that here means a *new*
-    bootstrap-only client fails loudly instead of being swallowed by a stale exception list.
+    """The two installers may not diverge on which clients exist, unless the difference is declared.
+
+    `dsh` was the one exception until 2026-10-30 — a bootstrap `SKILL.md` channel with no npm
+    counterpart, hence no browser-visitor use. The npm installer writes dsh's rules half now, so
+    the exception set is empty and this assertion is exact set equality: a *new* bootstrap-only
+    client fails loudly here instead of being swallowed by a stale exception list.
     """
     npm = set(npm_targets(NPM_INSTALLER.read_text(encoding="utf-8")))
     py = set(python_targets(PY_INSTALLER.read_text(encoding="utf-8")))
@@ -249,10 +258,10 @@ def test_adding_a_client_to_one_place_only_turns_this_gate_red(page: str) -> Non
     assert client_drift(offered, npm_targets(npm_src)) == ([], [])
 
     # 1) a client added to the installer only. The anchor is the *last* target in `AGENTS`
-    # (`mcode`, added after `kiro` with issue #3777): appending is what a new client looks like, so
+    # (`dsh`, appended after `mcode` in 2026-10-30): appending is what a new client looks like, so
     # the mutation has to append too.
     installer_drift = client_drift(
-        offered, npm_targets(npm_src.replace("'mcode']", "'mcode', 'zencoder']"))
+        offered, npm_targets(npm_src.replace("'dsh']", "'dsh', 'zencoder']"))
     )
     assert installer_drift == ([], ["zencoder"]), installer_drift
 
@@ -264,7 +273,7 @@ def test_adding_a_client_to_one_place_only_turns_this_gate_red(page: str) -> Non
     assert page_drift == (["zencoder"], ["kiro"]), page_drift
 
     # 3) and the mutation really is a mutation of what the gate reads.
-    assert npm_targets(npm_src.replace("'mcode']", "'mcode', 'zencoder']")) != npm_targets(npm_src)
+    assert npm_targets(npm_src.replace("'dsh']", "'dsh', 'zencoder']")) != npm_targets(npm_src)
     assert site_clients(page.replace('data-agent="kiro"', 'data-agent="zencoder"')) != site_clients(
         page
     )

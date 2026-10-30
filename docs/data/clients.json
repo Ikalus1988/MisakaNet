@@ -101,6 +101,15 @@
       "reporting": "auto-with-consent",
       "account": "write-only",
       "docs": "/integrations/mcode.md"
+    },
+    {
+      "id": "dsh",
+      "name": "DeepSeek Harness",
+      "writes": "$DSH_HOME/AGENTS.md (rules only; tools: dsh plugin --profile web add misakanet)",
+      "scope": "rules-only",
+      "reporting": "mcp-only",
+      "account": "no",
+      "docs": "/integrations/dsh.md"
     }
   ]
 }

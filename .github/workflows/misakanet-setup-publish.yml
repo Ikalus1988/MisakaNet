@@ -80,6 +80,19 @@ jobs:
             exit 1
           fi
           if [ -n "$LATEST" ] && [ "$(printf '%s\n%s\n' "$LATEST" "$VERSION" | sort -V | tail -1)" = "$LATEST" ]; then
+            if [ "$LATEST" = "$VERSION" ]; then
+              # release-please creates the tag when it lands its release PR, so by the time this
+              # job runs the tag usually *already exists* — that is the normal path, not "nothing
+              # to do". Measured 2026-10-30: release-please pushed `misakanet-setup-v0.8.1`, this
+              # job printed "nothing to tag", the dispatch never happened, and npm stayed at 0.8.0
+              # while the repository said 0.8.1 — a release that exists in the tag list and nowhere
+              # a user can install it. The publish job skips a version npm already has, so
+              # dispatching at an existing tag is idempotent and always the right reaction.
+              echo "the release tag misakanet-setup-v$LATEST already exists (release-please creates it) — dispatching the publish for it"
+              echo "needed=false" >> "$GITHUB_OUTPUT"
+              echo "dispatch_existing=true" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
             echo "the last release tag is already $LATEST — nothing to tag"
             echo "needed=false" >> "$GITHUB_OUTPUT"
             exit 0
@@ -103,7 +116,8 @@ jobs:
           echo "created $TAG"
 
       - name: Publish the tagged version
-        if: steps.decide.outputs.needed == 'true'
+        # `needed` = this job created the tag; `dispatch_existing` = release-please already did.
+        if: steps.decide.outputs.needed == 'true' || steps.decide.outputs.dispatch_existing == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: misakanet-setup-v${{ steps.decide.outputs.version }}

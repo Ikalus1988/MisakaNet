@@ -132,7 +132,7 @@ const SILENT = has('--silent');
 const REPORT_JSON = has('--report-json');
 const HOME = resolve(valueOf('--home', homedir()));
 const AGENTS = ['claude', 'codex', 'hermes', 'openclaw', 'codewhale',
-                'cursor', 'gemini', 'copilot', 'opencode', 'kiro', 'mcode'];
+                'cursor', 'gemini', 'copilot', 'opencode', 'kiro', 'mcode', 'dsh'];
 
 /**
  * The three line lists, and what every line knows about itself.
@@ -483,6 +483,8 @@ const AGENT_LABELS = {
   hermes: 'Hermes',
   openclaw: 'OpenClaw',
   codewhale: 'Codewhale',
+  // dsh is a plugin-bundle client: the installer writes only its rules half (see installDsh).
+  dsh: 'dsh',
   ...Object.fromEntries(Object.entries(MCP_ONLY_TARGETS).map(([id, spec]) => [id, spec.label])),
   // Not an MCP-only target: it takes a rules block too (see `installMcode`), so its label cannot be
   // read from that table.
@@ -566,6 +568,9 @@ const AGENT_WRITE_PATHS = {
   // carries the rules block (②). Listing both here is what makes the preview, `--list-writes` and
   // the permission pre-check agree with `installMcode`.
   mcode: (home) => [join(home, MCODE_PLUGIN_REL), join(home, MCODE_RULES_REL)],
+  // dsh reads its instructions from $DSH_HOME/AGENTS.md (default ~/.dsh). Its MCP servers
+  // come from a plugin bundle this installer cannot write, so one file is the whole manifest.
+  dsh: (home) => [join(dshHome(home), 'AGENTS.md')],
   openclaw: () => openclawWorkspaces().map((workspace) => join(workspace, 'AGENTS.md')),
 };
 
@@ -1704,6 +1709,9 @@ function mcpEntryPresent(agent) {
 }
 
 function detect(agent) {
+  // dsh may live outside $HOME (DSH_HOME), so it is answered by its own resolver rather
+  // than by the relative-path table below.
+  if (agent === 'dsh') return existsSync(dshHome());
   const paths = {
     claude: ['.claude.json', '.claude'],
     codex: ['.codex'],
@@ -2332,6 +2340,43 @@ async function installMcpOnly(agent, bearer) {
  * `adoptExistingClientId`, so a re-run without `--client-id` keeps the header the file already
  * declares (#3772).
  */
+/**
+ * Where dsh keeps its home: `DSH_HOME` wins, `<home>/.dsh` otherwise (#100.4 item 4).
+ *
+ * `DSH_HOME` is a *user* setting, so it may only apply when the install is addressing the real
+ * home. `--home <dir>` means "pretend this directory is the home" — the test suite and the e2e
+ * depend on every write staying inside it. Honouring `DSH_HOME` there wrote the user's real
+ * `~/.dsh/AGENTS.md` from inside a sandbox run (measured 2026-10-30: the suite truncated it to
+ * 35 bytes, and the next message reloaded the broken block).
+ */
+function dshHome(home = HOME) {
+  const real = homedir();
+  if (process.env.DSH_HOME && resolve(home) === resolve(real)) return process.env.DSH_HOME;
+  return join(home, '.dsh');
+}
+
+/**
+ * dsh is a plugin-bundle client, so only half of it is a file target.
+ *
+ * The tools (`mcp__misakanet__*`) come from the `misakanet` plugin bundle, which dsh installs with
+ * its own command — there is no JSON file this installer could write. The rules, however, live in
+ * `$DSH_HOME/AGENTS.md`, and writing them is exactly the manual step the README used to ask for.
+ * So the installer writes the half it can and prints the half it cannot, instead of doing neither
+ * and leaving the user with two steps that do not know about each other.
+ */
+async function installDsh() {
+  const rules = join(dshHome(), 'AGENTS.md');
+  const profile = process.env.DSH_PROFILE || 'web';
+  const manual = `dsh plugin --profile ${profile} add misakanet`;
+  if (!MCP_ONLY) {
+    ok(`dsh：规则块 ${injectBlock(rules, PROMPT_BLOCK)} → ${rules}`);
+  } else {
+    skip('dsh：规则块未写（--mcp-only）');
+  }
+  need(`dsh：工具在插件包里，安装器不写这个文件 → 跑 \`${manual}\``
+    + '（不跑就只有规则、没有 mcp__misakanet__* 工具）');
+}
+
 async function installMcode(bearer) {
   const plugin = mcodePluginPath(HOME);
   const existing = readText(plugin);
@@ -2826,6 +2871,23 @@ async function verify() {
       }
     }
   }
+  // dsh: one file, and only half of the client — so the report says which half it can see. The
+  // rules block is our footprint and is checked like every other target's; the tools live in the
+  // plugin's profile, which this process cannot read, and a "complete" that quietly skipped that
+  // would be the false green this whole report exists to avoid (measured 2026-10-30: with the
+  // block deleted, `--verify` still said 安装完整性：完整).
+  if (wantClient('dsh') && detect('dsh')) {
+    const rules = join(dshHome(), 'AGENTS.md');
+    if (!readText(rules).includes(`<!-- ${START} -->`)) {
+      needWrite('dsh', rules,
+        `dsh：规则块没装（${rules}）→ 重跑安装命令`,
+        `dsh：规则块装不了（${rules}）→ ${unwritableAdvice()}`);
+    } else {
+      ok('dsh：规则块已装', 'dsh');
+      skip(`dsh：工具在插件包里，--verify 看不到它 → 跑 \`dsh plugin --profile ${process.env.DSH_PROFILE || 'web'} list\` 复核`,
+        'dsh');
+    }
+  }
   // Version: what is installed, and whether the registry has moved on. Read-only here — the
   // hook owns the periodic nudge (it cannot be a network call in this process's hot path), and
   // `--verify` is an explicit user action, so one lookup is both cheap and expected.
@@ -3175,6 +3237,7 @@ function mcodePluginDirectoryOwnership() {
 
 function uninstall() {
   let hermesRulesRemoved = false;
+  if (stripBlock(join(dshHome(), 'AGENTS.md'))) ok(`移除规则块 → ${join(dshHome(), 'AGENTS.md')}`);
   for (const rel of ['.claude/CLAUDE.md', '.codex/AGENTS.md', '.hermes/SOUL.md', '.minimax/AGENTS.md']) {
     if (stripBlock(join(HOME, rel))) {
       ok(`移除规则块 → ${rel}`);
@@ -3816,6 +3879,7 @@ try {
         else if (agent === 'openclaw') await installOpenclaw(bearer);
         else if (agent === 'codewhale') await installCodewhale(bearer);
         else if (agent === 'mcode') await installMcode(bearer);
+        else if (agent === 'dsh') await installDsh();
         else if (MCP_ONLY_TARGETS[agent]) await installMcpOnly(agent, bearer);
         installed += 1;
       } catch (err) {

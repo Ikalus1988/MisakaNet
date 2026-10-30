@@ -1,6 +1,6 @@
 # Integration Status
 
-> Last updated: 2026-10-23
+> Last updated: 2026-10-30
 
 Two different questions hide behind "do you support X?", so this page answers them separately:
 
@@ -39,7 +39,7 @@ Two different questions hide behind "do you support X?", so this page answers th
 | **Hermes Agent** (Nous Research) | ✅ `~/.hermes/config.yaml` (`mcp_servers`), `~/.hermes/.env`, `~/.hermes/SOUL.md` | field report only | yes: `url`, Streamable HTTP by default | ✅ verified (7 tools registered; the one `no_match` was a corpus bug we then fixed) |
 | **OpenClaw** | ✅ `~/.openclaw/openclaw.json` (`mcp.servers`), `~/.openclaw/workspace/AGENTS.md` | field report only | yes: `transport: "streamable-http"` \| `"sse"` | ✅ verified (`toolSummary: {calls: 3, failures: 0}`) |
 | **Codewhale** | ✅ `~/.codewhale/mcp.json` | field report only | yes: Streamable HTTP, legacy SSE fallback | ✅ verified (`codewhale mcp tools` → 7; search → get_lesson) |
-| **DeepSeek Harness** | via the plugin channel, not the installer | [dsh.md](dsh.md) | yes (plugin bundle) | ✅ verified (`dsh --dump-config`, install) |
+| **DeepSeek Harness** | ✅ **split in two, on purpose**: the installer writes the rules half (`$DSH_HOME/AGENTS.md`, marked, `--uninstall` strips it); the tools come from the plugin channel (`dsh plugin --profile web add misakanet`), which the installer prints instead of pretending to install it | [dsh.md](dsh.md) | yes (plugin bundle) | ✅ verified (`dsh --dump-config`, install; 2026-10-30: hand-pasted block adopted into a marked one, next message reloaded it, uninstall restored the file) |
 | **Cursor** | ✅ `~/.cursor/mcp.json` (MCP only — no rules block, no hook) | [cursor.md](cursor.md), [failure-memory rule](cursor-failure-memory.md) | yes since 0.45: `~/.cursor/mcp.json` + `.cursor/mcp.json` | 🟡 recipe: the installer writes the entry (both installers, 2026-09-20), still nobody has run the live check — that is #1940 |
 | **Continue.dev** | ❌ | [continue.md](continue.md) | per vendor docs | 🟡 recipe |
 | **Gemini CLI** | ❌ | — (this page only) | yes: `~/.gemini/settings.json`, remote field **`httpUrl`** | 🔵 vendor-only ([mcp-server](https://geminicli.com/docs/tools/mcp-server/)) |

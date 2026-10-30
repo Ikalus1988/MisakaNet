@@ -305,6 +305,30 @@ def test_the_publish_workflow_creates_the_tag_before_it_publishes():
     )
 
 
+def test_a_tag_release_please_already_created_still_dispatches_the_publish():
+    """The normal path is "the tag already exists" — release-please pushes it with the release PR.
+
+    Measured 2026-10-30: release-please landed 0.8.1 and pushed `misakanet-setup-v0.8.1`; the tag
+    job read `git tag -l`, saw 0.8.1, printed "nothing to tag" and exited — so the dispatch never
+    ran and npm stayed at 0.8.0 while the repository said 0.8.1. A release that exists in the tag
+    list and nowhere a user can install it is the failure mode this asserts against.
+    """
+    workflow = _read_yaml(PUBLISH_WORKFLOW)
+    tag_job = workflow["jobs"]["tag"]
+    decide = next(step for step in tag_job["steps"] if step.get("id") == "decide")
+    run = str(decide["run"])
+    assert "dispatch_existing=true" in run, (
+        "when the release tag already exists at the package's version, the decide step must ask "
+        "the publish step to dispatch — the tag existing is release-please's doing, not 'nothing "
+        "to do'"
+    )
+    publish = next(step for step in tag_job["steps"] if step.get("name") == "Publish the tagged version")
+    assert "dispatch_existing" in str(publish.get("if")), (
+        "the dispatch step must run for an existing release tag too; otherwise the publish never "
+        "happens and npm silently lags the repository"
+    )
+
+
 def test_the_publish_creates_a_release_after_npm_has_the_version():
     """The installer's version has to exist on the Releases page, not only on npm.
 

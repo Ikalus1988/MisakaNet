@@ -64,11 +64,13 @@ account or a token.
 |---|---|
 | **DeepSeek Harness** | `dsh plugin --profile web add misakanet` — or type `misakanet` in **Add plugin** |
 | **Claude Code** | `/plugin marketplace add Ikalus1988/MisakaNet` then `/plugin install misakanet@misakanet` |
-| Installer-managed | Claude Code · Codex · Hermes · OpenClaw · codewhale · Cursor · Gemini CLI · Copilot CLI · OpenCode · Kiro · MiniMax Code |
+| Installer-managed | Claude Code · Codex · Hermes · OpenClaw · codewhale · Cursor · Gemini CLI · Copilot CLI · OpenCode · Kiro · MiniMax Code · DeepSeek Harness |
 | **Any other MCP client** | point it at `https://misakanet.org/mcp` — public endpoint, anonymous reads |
 | **Your own code** | `pip install misakanet-core` (library) · `pip install misakanet` (stdio server) |
 
 The installer-managed row is what `npx @misaka-net/misakanet-setup` writes into each host's config.
+For DeepSeek Harness that is the **rules half only** (`$DSH_HOME/AGENTS.md`): its tools come from the
+plugin in the row above, which the installer prints as the one manual step.
 
 Updates: `dsh plugin --profile web update misakanet@latest`.
 Installer updates: `npx @misaka-net/misakanet-setup@latest`.
@@ -261,7 +263,8 @@ Node ≥ 18 for the installer, Python ≥ 3.11 for the library and stdio server.
 - **Claude Code, as a plugin** — `/plugin marketplace add Ikalus1988/MisakaNet`, then
   `/plugin install misakanet@misakanet`: the hosted MCP tools, no installer, no local process.
 - **DeepSeek Harness** — `dsh plugin --profile web add misakanet`: `mcp__misakanet__*` tools plus the
-  session panel.
+  session panel. The rules half (the "search before you act" block) is written by the installer into
+  `$DSH_HOME/AGENTS.md`; dsh has no plugin extension point for it, so the two halves stay separate.
 - **Call the endpoint yourself** — the `curl` in [Your first five minutes](#your-first-five-minutes).
 - **The library in your own code** — `pip install misakanet-core`.
 

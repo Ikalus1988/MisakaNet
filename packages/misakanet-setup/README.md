@@ -1,9 +1,14 @@
 # @misaka-net/misakanet-setup
 
 One command to teach your **Claude Code**, **Codex**, **Hermes**, **OpenClaw**, **codewhale**,
-**Cursor**, **Gemini CLI**, **Copilot CLI**, **OpenCode**, **Kiro** or **MiniMax Code** to
-check MisakaNet's failure lessons before repeating a mistake — and to write up the reusable lessons
-this session produced, at a checkpoint.
+**Cursor**, **Gemini CLI**, **Copilot CLI**, **OpenCode**, **Kiro**, **MiniMax Code** or
+**DeepSeek Harness** to check MisakaNet's failure lessons before repeating a mistake — and to write
+up the reusable lessons this session produced, at a checkpoint.
+
+For **DeepSeek Harness (dsh)** that command writes the **rules half only** (`$DSH_HOME/AGENTS.md`)
+and prints the one command its tools need (`dsh plugin --profile web add misakanet`); everything
+else in this README applies to all twelve exactly as written. The split, and why dsh is the one
+target shaped that way, is in [dsh: the rules half, written](#dsh-the-rules-half-written--the-plugin-half-printed).
 
 **What it writes:** an MCP endpoint into each agent config, rules blocks for the clients that take
 one, and a local hook for Claude Code. **What leaves this machine:** at most one anonymous request
@@ -47,60 +52,66 @@ look installed and register nothing. Its manifest also comes with the rules bloc
 (`NODE_USE_ENV_PROXY=1`) are in `docs/integrations/mcode.md`.
 
 All of them are config files written file-to-file — no subprocess is spawned, so **no token ever appears in a command line**. For Claude Code only, the five **read-only** tools are also added to `permissions.allow` — "can call it" otherwise still means a permission prompt on the very first search, so `0.5.3` pre-allows them (`--verify` reports it, `--report` prints `permissions:`); `write_lesson` is deliberately **not** pre-allowed, because a tool that writes should ask |
-| 2 | the agent **knows when** | rules block appended to `~/.claude/CLAUDE.md` / `~/.codex/AGENTS.md` / `~/.hermes/SOUL.md` / `~/.openclaw/workspace/AGENTS.md` / `~/.minimax/AGENTS.md` (mcode's global scope). **The five JSON-config clients are the exception: they get none**, because their rules are project-scoped (`.cursor/rules/*.mdc`, `GEMINI.md`, `.github/copilot-instructions.md`, `AGENTS.md`, `.kiro/steering/*.md`) and the installer cannot know where your projects live — the install output says so, with the project-side action for each client, instead of implying behaviour changed (issue, retry, risky-operation triggers; desensitisation rules). Wording is **imperative first** ("必须先调 misakanet_search") rather than descriptive, because a field test showed a weaker model reads a descriptive block as background and never calls the tool |
+| 2 | the agent **knows when** | rules block appended to `~/.claude/CLAUDE.md` / `~/.codex/AGENTS.md` / `~/.hermes/SOUL.md` / `~/.openclaw/workspace/AGENTS.md` / `~/.minimax/AGENTS.md` (mcode's global scope) / `$DSH_HOME/AGENTS.md` (dsh, default `~/.dsh`). **The five JSON-config clients are the exception: they get none**, because their rules are project-scoped (`.cursor/rules/*.mdc`, `GEMINI.md`, `.github/copilot-instructions.md`, `AGENTS.md`, `.kiro/steering/*.md`) and the installer cannot know where your projects live — the install output says so, with the project-side action for each client, instead of implying behaviour changed (issue, retry, risky-operation triggers; desensitisation rules). Wording is **imperative first** ("必须先调 misakanet_search") rather than descriptive, because a field test showed a weaker model reads a descriptive block as background and never calls the tool |
 | 4 | *(opt-in)* you **hear** it | `--voice` adds a `PostToolUse` hook that plays the cue the server asked for (`lesson-found` / `failure-warning` / `connect-success` / `pair-success`). Off by default; mute with `MISAKANET_VOICE=0`; see `docs/integrations/mcp-voice-hooks.md` |
 | 3 | the checkpoint **fires** | a hook that counts user turns: turn 1 announces the install to the user, turn 20 (and every 10 after) injects the "write up the reusable lessons and submit them" reminder — the agent does that writing and that submitting, by hand, and the hook itself sends nothing by default; a failed tool call injects a "search before you retry" reminder built from the error text, and only with `MISAKANET_HOOK_FETCH=1` (off by default) does the hook itself send that error text as a search query. Claude Code only today — Codex's user-level hook shape is unconfirmed and OpenClaw's events are unverified, so those two work from the rules block, and `--verify` says so per target instead of implying otherwise |
 
 Without (3) a rule saying "summarise every 20 turns" never fires — agents do not keep
 counters. Without (1)/(2) the hook has nothing to call.
 
-### dsh is not a file target — it is a plugin
+### dsh: the rules half, written — the plugin half, printed
 
 dsh takes its MCP servers from a **plugin bundle**, not from a JSON file. Its instruction files are a
 chain: **`$DSH_HOME/AGENTS.md`** (user-global, default `~/.dsh/AGENTS.md`, applies to every session)
 first, then the project's `AGENTS.md`/`CLAUDE.md` from the project root down to the working directory
 (`@deepseek-ai/dsh-agent-instructions`, byte-budgeted at 65,536 by default). It has no Claude-Code-style
-hooks.
+hooks — and no plugin extension point that could inject a rule, which is why the rules are a **file**
+and the tools are a **plugin**, and why the two cannot be one write.
 
-So dsh takes **two manual steps that do not know about each other**, and this installer does neither of
-them — it writes no file under `~/.dsh`:
+So dsh is **one file target and one printed step**. The installer writes the half a file can hold and
+names the other half instead of doing neither:
 
 ```bash
-dsh plugin --profile web add misakanet   # ① the tools (mcp__misakanet__*) — dsh's own command
-# ② you paste the rules block into ~/.dsh/AGENTS.md (global) or the project's AGENTS.md
+npx @misaka-net/misakanet-setup --only dsh       # ① the rules block → $DSH_HOME/AGENTS.md
+dsh plugin --profile web add misakanet           # ② the tools (mcp__misakanet__*) — dsh's own command
 ```
+
+Order does not matter; skipping ② leaves rules without tools, and the run says so with the exact
+command (`! dsh：工具在插件包里，安装器不写这个文件 → 跑 \`dsh plugin --profile web add misakanet\``).
+`--list-writes --only dsh` names the file and its tier (`tier2 ② 写规则块 … ~/.dsh/AGENTS.md`), and
+`--mcp-only` skips it, like every other rules block.
 
 Measured 2026-10-17: writing `~/.dsh/AGENTS.md` is picked up as `user-global` instructions on the next
-message, with no restart.
+message, with no restart. Measured 2026-10-17: installing the plugin takes ~1s into
+`~/.dsh/profiles/web`, and neither `index.js` (the MCP client mount) nor `lib/client.js` (the web
+panel) injects a rule.
 
-Measured 2026-10-17: installing the current `misakanet` takes ~1s into `~/.dsh/profiles/web`; the plugin's
-`index.js` mounts the MCP client and `lib/client.js` is the web panel — **neither injects a rule**,
-which is why ② is a separate, manual step.
+Measured 2026-10-30, on a machine whose block had been pasted by hand: the unmarked text was adopted
+into a marked block (`<!-- misakanet:start -->` … `<!-- misakanet:end -->`, header preserved,
+1,474 bytes) and the next message reloaded it — so an older hand-pasted copy is upgraded in place
+rather than duplicated.
 
-**Upgrading the installer does not refresh that block.** Nothing rewrites text you pasted, and the
-installer only refreshes the files it manages (for Claude Code, `~/.claude/CLAUDE.md`). Measured
-2026-10-23 (issue #3773): one machine's `~/.dsh/AGENTS.md` still carried the old block — its last line
-read `脱敏：密钥/凭据→<REDACTED>…` — while the same installer had just written the current one
-(`脱敏：已由代码自动完成…`) to `~/.claude/CLAUDE.md`. Re-paste after an upgrade, and check by comparing
-that line; the copy in `docs/integrations/dsh.md` can lag too.
+**A sandbox home stays a sandbox.** `DSH_HOME` is a user setting, so it is honoured **only when the
+installer is addressing the real home**; with `--home <dir>` every write stays under `<dir>`. That is
+not a footnote: before 2026-10-30 the package's own test run wrote the *real* `~/.dsh/AGENTS.md`
+(truncated it to 35 bytes) because the suite inherits `DSH_HOME` from the shell.
 
-**Uninstalling takes two steps, and the second one is yours.** `dsh plugin --profile web remove misakanet`
-removes the tools; the rules block stays in `~/.dsh/AGENTS.md` (or the project's `AGENTS.md`), and there is
-no `misakanet:start` / `misakanet:end` marker to lift it — the installer never put one there, because it
-never wrote that file. Remove the block by hand, then check:
+**Uninstalling is two steps, and neither takes the other's half:**
 
 ```bash
-grep -c misakanet "${DSH_HOME:-$HOME/.dsh}/AGENTS.md"   # expected 0; a missing file errors, which is also clean
+npx @misaka-net/misakanet-setup --uninstall      # ① strips the marked block
+dsh plugin --profile web remove misakanet        # ② removes the tools
 ```
 
-Until the block is removed, a new dsh session still follows it and calls `mcp__misakanet__*` tools that
-no longer exist.
+Doing ① alone leaves a plugin nobody's rules mention; doing ② alone leaves a session following rules
+that call tools which no longer exist. `--uninstall` keeps `AGENTS.md.misakanet.bak` next to the file
+it emptied, and deletes the file outright when it held nothing but the block.
 
-**Why it is not mechanised yet.** dsh's MCP servers come from the plugin bundle and its instructions come
-from the `AGENTS.md` chain — two entry points this installer has no path into: it only writes the files on
-its own target list, and dsh's files are not on it. A mechanical fix (a marker pair around the block, plus
-an uninstall branch) **is not implemented; it is follow-up work**. Until then,
-`dsh plugin --profile web remove misakanet` does not take the block with it.
+**Upgrades now refresh the block**, which is the one thing the old hand-pasted flow could not do
+(measured 2026-10-23, issue #3773: a machine's block was still the old `脱敏：密钥/凭据→<REDACTED>…`
+wording while the same installer had just written the current one to `~/.claude/CLAUDE.md`). Re-running
+the installer updates it in place; the copy in `docs/integrations/dsh.md` can still lag, and the
+installer's output is the criterion.
 
 Full guide: `docs/integrations/dsh.md`.
 
