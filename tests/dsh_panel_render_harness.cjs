@@ -449,6 +449,67 @@ if (typeof mod.apply !== "function") throw new Error("the bundle exports no appl
 const locale = process.env.DSH_PANEL_LOCALE || "en";
 const env = createEnvironment(locale, mod);
 
+/**
+ * `DSH_PANEL_SEARCH_MODE=degraded` renders one degraded search instead of the miss-and-hit pair, and
+ * prints what the three surfaces the panel owns said about it (the tool row's head, the session row,
+ * the counter strip). The payload is verbatim the shape `searchDegraded()` publishes since issue #3512:
+ * `degraded: true`, the stable `degraded_reasons`, and a one-line `notice`. This mode is the red/green
+ * fixture for issue #3511 — "a degraded read must not render as zero/empty without a label".
+ */
+const SEARCH_MODE = process.env.DSH_PANEL_SEARCH_MODE || "standard";
+const DEGRADED_PAYLOAD = {
+	query: "pip install timeout behind proxy",
+	results: [],
+	no_match: true,
+	degraded: true,
+	degraded_reasons: ["index_unavailable", "corpus_snapshot"],
+	notice: "The search index is not loaded, so this answer used the simpler matcher and recall is lower "
+		+ "than usual. Lesson rows came from the snapshot copy because the live store refused the read, "
+		+ "so lessons merged very recently may be missing. This is a degraded read, not proof that no "
+		+ "lesson exists.",
+	voice: "failure-warning",
+};
+
+if (SEARCH_MODE === "degraded") {
+	const degradedLog = mod.__sessionLog("session-harness");
+	mod.__recordSearch(degradedLog, "call-degraded", {
+		payload: DEGRADED_PAYLOAD,
+		query: DEGRADED_PAYLOAD.query,
+		results: [],
+	});
+	env.setLocale(locale);
+	// The tool row the host mounts for the call — its head is where "0 lessons" used to be printed.
+	env.render("tool.call.toolview|mcp__misakanet__misakanet_search", {
+		phase: "result", callId: "call-degraded", sessionId: degradedLog.sessionId,
+		block: { content: [{ type: "text", text: JSON.stringify(DEGRADED_PAYLOAD) }] },
+	});
+	const toolRowText = env.text();
+	env.render("conversation.view|misakanet", { sessionId: degradedLog.sessionId });
+	const entry = degradedLog.searches[0];
+	const rowNode = env.find("qcall-degraded" + entry.at);
+	process.stdout.write(JSON.stringify({
+		mode: "degraded",
+		toolRow: toolRowText,
+		strip: text(env.find("strip")),
+		sessionRow: rowNode ? text(rowNode) : "",
+		panel: env.text(),
+		words: {
+			degradedTpl: env.word("panel.asked.degradedTpl"),
+			degradedTag: env.word("panel.asked.degradedTag"),
+			degradedWhy: env.word("panel.asked.degradedWhy"),
+			degradedStripTpl: env.word("panel.strip.degradedTpl"),
+			missTpl: env.word("panel.strip.missTpl"),
+			hitTpl: env.word("panel.strip.hitTpl"),
+			nothingFound: env.word("panel.asked.nothingFound"),
+			noMatchTag: env.word("panel.asked.noMatchTag"),
+			searchUnit: env.word("unit.search"),
+			searchUnits: env.word("unit.searches"),
+		},
+		payload: DEGRADED_PAYLOAD,
+	}, null, 0) + "\n");
+	process.exit(0);
+}
+
 // One session log, shaped exactly as `MisakanetSearchRow` records one: a miss and a hit.
 const sessionId = "session-harness";
 const log = mod.__sessionLog(sessionId);
@@ -548,6 +609,7 @@ setImmediate(() => {
 			conversionUnits: env.word("unit.conversions"),
 			hitTpl: env.word("panel.strip.hitTpl"),
 			missTpl: env.word("panel.strip.missTpl"),
+			degradedTpl: env.word("panel.strip.degradedTpl"),
 			surfacedTpl: env.word("panel.strip.surfacedTpl"),
 			helpfulTpl: env.word("panel.strip.helpfulTpl"),
 			convertedTpl: env.word("panel.strip.convertedTpl"),
@@ -557,12 +619,13 @@ setImmediate(() => {
 			openLabel: env.word("panel.hint.openLabel"),
 		},
 		// The strip as the dictionary says it must read, segment by segment, for this log's numbers
-		// (2 searches, 1 hit, 1 miss, 1 lesson, 0 votes, 0 reports). The gate compares this with `strip`:
-		// a call site that assembles its own words makes the two disagree, in any language.
+		// (2 searches, 1 hit, 1 miss, 0 degraded, 1 lesson, 0 votes, 0 reports). The gate compares this
+		// with `strip`: a call site that assembles its own words makes the two disagree, in any language.
 		expectedStrip: [
 			`2 ${env.word("unit.searches")}`,
 			fill(env.word("panel.strip.hitTpl"), { count: `1 ${env.word("unit.lesson")}`, n: 1, unit: env.word("unit.lessons") }),
 			fill(env.word("panel.strip.missTpl"), { count: `1 ${env.word("unit.lesson")}`, n: 1, unit: env.word("unit.lessons") }),
+			fill(env.word("panel.strip.degradedTpl"), { count: `0 ${env.word("unit.searches")}`, n: 0, unit: env.word("unit.searches") }),
 			fill(env.word("panel.strip.surfacedTpl"), { count: `1 ${env.word("unit.lesson")}`, n: 1, unit: env.word("unit.lessons") }),
 			`0 ${env.word("unit.votes")} ` + fill(env.word("panel.strip.helpfulTpl"), { count: `0 ${env.word("unit.votes")}`, n: 0, unit: env.word("unit.votes") }),
 			`0 ${env.word("unit.reports")} ` + fill(env.word("panel.strip.convertedTpl"), { count: `0 ${env.word("unit.reports")}`, n: 0, unit: env.word("unit.reports") }),
