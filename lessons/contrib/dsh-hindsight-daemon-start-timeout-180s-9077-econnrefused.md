@@ -27,13 +27,13 @@ provenance:
 
 ## Problem
 
-环境：DSH 桌面版 0.2.0-rc.2（`DSH_HOME=E://[REDACTED:url_credential]@host 0.8.1，装在 `E:\Deepseek\dsh-data\.dsh\profiles\desktop\node_modules\@vectorize-io\hindsight-coding-agents`；Hindsight 配置 `C:\Users\28481\.hindsight\coding-agent.json` 原本是 `{"serverMode":"daemon","apiPort":9077,"daemonProfile":"coding-agent"}`；profile 参数文件 `C:\Users\28481\.hindsight\profiles\coding-agent.env`；诊断日志 `C:\Users\28481\.hindsight\coding-agents-logs\diag.jsonl`。
+环境：DSH 桌面版 0.2.0-rc.2（`DSH_HOME=E://[REDACTED:url_credential]@host 0.8.1，装在 `E:\Deepseek\dsh-data\.dsh\profiles\desktop\node_modules\@vectorize-io\hindsight-coding-agents`；Hindsight 配置 `C:\Users\<user>\.hindsight\coding-agent.json` 原本是 `{"serverMode":"daemon","apiPort":9077,"daemonProfile":"coding-agent"}`；profile 参数文件 `C:\Users\<user>\.hindsight\profiles\coding-agent.env`；诊断日志 `C:\Users\<user>\.hindsight\coding-agents-logs\diag.jsonl`。
 
 症状：会话中 Hindsight 记忆工具全线不可用——`hindsight_sync_status` / `hindsight_list_knowledge_pages` 返回 `fetch failed: connect ECONNREFUSED 127.0.0.1:9077 (ECONNREFUSED)`，知识页永远是 “No knowledge pages yet”；`netstat -ano | Select-String ':9077'` 无任何监听行。
 
 日志里不是偶发，而是**固定五天的复现模式**：`diag.jsonl` 中反复出现 `daemon_start_failed` + `Hindsight daemon did not become ready in time (180s elapsed)`，**紧接着几分钟后又出现 `daemon_started`**。也就是说：第一次启动必然超时失败，重试那次却成功——因为第一次已经把包装好了。
 
-排障陷阱：`pwsh` 工具在 `workspace-write` 沙箱下会以 `[exit code: 3221225794]`（=0xC0000142）直接崩溃，连 `netstat` 都跑不了，只有 `danger-full-access` 才能执行取证命令；另外 `C:\Users\28481\.hindsight\profiles\coding-agent.log` 不是合法 UTF-8，`read` 工具会报 `invalid UTF-8 text` 拒读。
+排障陷阱：`pwsh` 工具在 `workspace-write` 沙箱下会以 `[exit code: 3221225794]`（=0xC0000142）直接崩溃，连 `netstat` 都跑不了，只有 `danger-full-access` 才能执行取证命令；另外 `C:\Users\<user>\.hindsight\profiles\coding-agent.log` 不是合法 UTF-8，`read` 工具会报 `invalid UTF-8 text` 拒读。
 
 ## Root Cause
 
@@ -59,4 +59,4 @@ provenance:
 ② 健康检查通过：`Invoke-WebRequest http://127.0.0.1:9077/health -UseBasicParsing` → `status=200`，body `{"status":"healthy","database":"connected","db_acquire_ms":0.0,"db_pool_waiting":0,"db_pool_in_use":0,"db_pool_max":100,"db_pool_idle":5}`；
 ③ 版本已钉死：`Invoke-WebRequest http://127.0.0.1:9077/version` → `{"api_version":"1.0.0","features":{"observations":true,"mcp":true,"worker":true,...}}`；
 ④ DSH 侧通道恢复：`hindsight_sync_status` 不再返回 `ECONNREFUSED`，能正常给出 bank/workspace 同步状态；
-⑤ 复发判据：`C:\Users\28481\.hindsight\coding-agents-logs\diag.jsonl` 中不再出现 `Hindsight daemon did not become ready in time (180s elapsed)`；uv 缓存中 `hindsight_embed-*.dist-info` 份数不再增长（修复前实测 0.10.3×6 + 1.0.0×2）。
+⑤ 复发判据：`C:\Users\<user>\.hindsight\coding-agents-logs\diag.jsonl` 中不再出现 `Hindsight daemon did not become ready in time (180s elapsed)`；uv 缓存中 `hindsight_embed-*.dist-info` 份数不再增长（修复前实测 0.10.3×6 + 1.0.0×2）。

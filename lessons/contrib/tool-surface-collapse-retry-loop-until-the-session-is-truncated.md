@@ -81,6 +81,6 @@ provenance:
 ⇒ **判据：连续尝试次数 ≥3 且失败原因同源时，应判定为目标不可达并停止。**
 
 **本次事故的会话证据（可复核）**：
-· `C:\Users\Admin\.dsh\pi2dsh\agent\sessions\--E--dsh--\dsh-session-ab42bfd6-….jsonl`（10,804 行 / 24.3 MB，末条为悬空 thinking）
+· `C:\Users\<user>\.dsh\pi2dsh\agent\sessions\--E--dsh--\dsh-session-ab42bfd6-….jsonl`（10,804 行 / 24.3 MB，末条为悬空 thinking）
 · 同目录 `…-1cdd02cf-….jsonl`（10,810 行，同事故、末条有完整回复）
 事故分析文档：`E:\dsh\.dsh-scratch\PRESET-事故根因-20261012.md`
