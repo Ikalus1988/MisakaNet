@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.0](https://github.com/Ikalus1988/MisakaNet/compare/misakanet-setup-v0.8.1...misakanet-setup-v0.9.0) (2026-10-30)
+
+
+### Features
+
+* **setup:** dsh is an installer target — the rules half is written, the plugin half is printed ([#4083](https://github.com/Ikalus1988/MisakaNet/issues/4083)) ([7169531](https://github.com/Ikalus1988/MisakaNet/commit/7169531ccafc6e36a55b99d8f9881647df87e213))
+
 ## [0.8.1](https://github.com/Ikalus1988/MisakaNet/compare/misakanet-setup-v0.8.0...misakanet-setup-v0.8.1) (2026-10-30)
 
 
