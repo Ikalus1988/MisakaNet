@@ -20,15 +20,22 @@ from scripts.site_health_check import (  # noqa: E402
 
 HOMEPAGE = """
 <html><body>
-  <form id="registerForm"><input name="agent_type"><input name="node_name"></form>
   <div class="search-box"><input id="searchInput"></div>
   <div id="onboardingModal" class="modal">onboarding</div>
   <a href="journey/">🎮 Journey</a>
 </body></html>
 """
 
+# The registration form lives on its own page since #3641, not in a homepage drawer.
+REGISTER = """
+<html><body>
+  <form id="registerForm"><input name="agent_type"><input name="node_name"></form>
+</body></html>
+"""
+
 BODIES = {
     "/": HOMEPAGE,
+    "/register/": REGISTER,
     "/api/health": json.dumps({"status": "ok", "hasKV": True}),
     "/api/counter": json.dumps({"current": 10061, "updated": "2026-08-05"}),
     "/api/lessons": json.dumps([{"id": "a"}, {"id": "b"}]),
@@ -100,18 +107,32 @@ def test_invalid_json_is_caught():
     assert any("invalid JSON" in w["notes"] for w in report["warnings"])
 
 
-def test_frontend_entry_points_are_checked_against_the_homepage():
-    ok = check_frontend(HOMEPAGE)
+def test_frontend_entry_points_are_checked_against_the_page_that_serves_them():
+    ok = check_frontend({"/": HOMEPAGE, "/register/": REGISTER})
     assert all(check["ok"] for check in ok)
 
-    degraded = check_frontend("<html><body>nothing here</body></html>")
+    degraded = check_frontend({"/": "<html><body>nothing here</body></html>", "/register/": ""})
     missing = {check["label"] for check in degraded if not check["ok"]}
-    assert missing == {label for label, _ in FRONTEND_CHECKS}
+    assert missing == {label for label, _path, _markers in FRONTEND_CHECKS}
+
+
+def test_the_registration_check_reads_the_register_page_not_the_homepage():
+    """The failure #4072 §六 recorded: the form moved to `/register/` in #3641, the check stayed on
+    the homepage, and the snapshot reported `missing marker(s): node_name` every day for a form that
+    was there the whole time. A warning that can never clear is a warning nobody reads."""
+    # The homepage carrying the old markers must not satisfy it…
+    checks = {c["label"]: c for c in check_frontend({"/": REGISTER, "/register/": HOMEPAGE})}
+    assert checks["Registration"]["ok"] is False
+    assert checks["Registration"]["path"] == "/register/"
+    # …and the form on its own page must.
+    checks = {c["label"]: c for c in check_frontend({"/": HOMEPAGE, "/register/": REGISTER})}
+    assert checks["Registration"]["ok"] is True
 
 
 def test_relative_journey_link_counts_as_present():
     """The homepage links journey/ relatively — an absolute-only match false-alarms."""
-    checks = {c["label"]: c for c in check_frontend('<a href="journey/">Journey</a>' + HOMEPAGE)}
+    checks = {c["label"]: c for c in check_frontend(
+        {"/": '<a href="journey/">Journey</a>' + HOMEPAGE, "/register/": REGISTER})}
     assert checks["Journey link"]["ok"] is True
 
 
@@ -125,6 +146,7 @@ def test_homepage_is_fetched_once_and_reused_for_frontend_checks():
 
     run_checks("https://example.test", fetch=counting_fetch)
     assert calls.count("https://example.test/") == 1
+    assert calls.count("https://example.test/register/") == 1
 
 
 def test_markdown_matches_the_issue_template():
