@@ -78,8 +78,15 @@ test('the live corpus really does put CJK tokens into the sample', () => {
   const cjkOnly = [...bodyOnly].filter((t) => bm25Tokenize(t).length === 0);
   assert.ok(cjkOnly.length > 100,
     `expected the live sample to carry a substantial CJK share, found ${cjkOnly.length}`);
-  assert.ok(cjkOnly.length / bodyOnly.size > 0.2,
-    `expected a CJK share above 20% of the sample, measured ${(cjkOnly.length / bodyOnly.size * 100).toFixed(1)}%`);
+  // The floor is "clearly not vacuous", not a target share. This sample is the first 60 documents of
+  // the corpus in index order, so *inserting one lesson anywhere before them* re-draws it: measured
+  // 2026-10-30, one new English lesson in `lessons/core/` moved the share from 20.6% to 19.5% and
+  // turned this guard red while the exclusion it stands for was exercised by hundreds of tokens.
+  // Pinning the percentage tightly would make every lesson PR a coin flip, and the number the guard
+  // would be policing (the corpus's language mix and its insertion order) is not the number the fix
+  // depends on. 10% leaves hundreds of CJK-only tokens in the sample.
+  assert.ok(cjkOnly.length / bodyOnly.size > 0.1,
+    `expected a CJK share above 10% of the sample, measured ${(cjkOnly.length / bodyOnly.size * 100).toFixed(1)}%`);
 });
 
 // A corpus whose *bodies* are mostly Chinese, indexed correctly. Each row gets five CJK runs that no
