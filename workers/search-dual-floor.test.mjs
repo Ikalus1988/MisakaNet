@@ -26,6 +26,19 @@
 // better, and pinning a floor to a corpus size would hand the gate to unrelated churn. The top-1 sits
 // exactly on its floor, so there is no headroom to record either way.
 //
+// Re-measured 2026-10-30 at 657 rows, after two changes that are deliberately counted differently:
+//
+//   * **a code fix moves the floor.** For a CJK query the tokenizer sees only the Latin fragment, and
+//     the per-term ordering score was built from that fragment: "公司代理导致 SSL 证书校验失败" arrived
+//     as the single term `ssl`, so a HuBERT lesson that merely says "SSL" ranked above the
+//     corporate-proxy lessons the alias table matched. Ranking now uses the expanded terms for a CJK
+//     query, which took the CJK top-3 from 16/22 to **18/22** with the old expectations and left both
+//     English numbers untouched. The floor moves 15 → 18 to record that.
+//   * **a corrected expectation does not.** Five rows were widened to name a second acceptable answer
+//     that already ranks first (the DCO pair, docker exit 137 ×2, and `pip install 卡住不动`); that
+//     takes the measured row to 20/22 while the floor stays at the 18 the *code* reached. A floor is a
+//     promise about what search does, not about how many answers a fixture will accept.
+//
 // The CJK set is `scripts/eval_query_aliases.py`'s twenty questions (the corpus's own measure of the
 // Chinese gap, and the set `workers/search-cjk-recall.test.mjs` already pins) plus two bare
 // two-character words, which #2357 asks for by name. "The corpus answers this query" is the property
@@ -66,9 +79,9 @@ import worker, { buildBM25Index, BM25_INDEX_KEY } from './register-proxy-sw.js';
 import { testToken } from './_test-token.mjs';
 
 // Exported so the schema test and this file cannot disagree about which corpus these numbers describe.
-export const MEASURED_ON = '2026-09-28, data/lessons.json at 418 rows';
+export const MEASURED_ON = '2026-10-30, data/lessons.json at 657 rows';
 export const EN_FLOOR = { hit1: 16, hit3: 19 };
-export const ZH_FLOOR = { hit1: 11, hit3: 15 };
+export const ZH_FLOOR = { hit1: 11, hit3: 18 };
 
 export const QUERIES = readFileSync(new URL('../data/search-floor-queries.jsonl', import.meta.url), 'utf8')
   .split('\n')
