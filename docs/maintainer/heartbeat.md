@@ -1,7 +1,9 @@
 # The daily heartbeat
 
 One comment per UTC day on the long-lived issue labelled **`heartbeat`**, answering exactly three
-questions: **who is calling, what they asked, and whether it helped.** The owner reads one
+questions about the traffic — **who is calling, what they asked, and whether it helped** — plus a
+fourth panel about the **intake pipeline**: issues in, lessons out, and where the backlog is oldest
+(see [Panel 4](#panel-4--the-pipeline-issues--lessons)). The owner reads one
 notification and does nothing — there is no vote, no button and no manual dispatch in the loop.
 The point is the frame the project is built on: MisakaNet earns its keep as the owner's own
 cross-agent failure memory, so the numbers that matter are calls, topics, and reuse.
@@ -200,6 +202,36 @@ came for a failure memory.
 `tests/test_heartbeat_report.py` runs this exact SQL text against `sqlite3`, with the table created
 from the worker's own `ensureSearchSignalsTable` DDL, so the selection semantics are pinned even
 though the production table itself is reachable only from CI.
+
+## Panel 4 — the pipeline (issues → lessons)
+
+Added 2026-10-30, after a one-off pass over the backlog (`pipeline-funnel-2026-10-30.md`) had to be
+computed **by hand** to answer a question the digest could not: is anything moving? The numbers that
+answer it are not labels — a "converted" issue is known only from a lesson's provenance, and "open for
+31 days" is a fact about a timestamp — so the panel is computed by `scripts/pipeline_status.py` and
+rendered as one table:
+
+| | created (7d) | converted | open now (oldest) |
+|---|---|---|---|
+| `[Question]` | new questions | how many are cited by a lesson | open + age, never-commented count |
+| `[Intake]` | new reports | how many became lessons | open + age, auto-rejected count |
+| `[Lesson]` | new submissions | how many became lessons | open + age |
+| our own issues | new | — (they are the repo's work, not the corpus's) | open + age, never-commented count |
+
+Plus four lines: **issue → lesson** median/p90 days (over lessons created in the last 30 days),
+**questions answered** (all-time, `answered` label), **auto-rejected salvage** (how many rejected
+reports still became lessons), and the window's own caveat.
+
+**What it refuses to claim.** `converted` is provenance — a lesson that names the issue through the
+shapes `scripts/intake_receipt.py` already owns (`#N`, `intake-N`, an issue URL) — and a number
+appearing in a lesson's prose is not a citation. `answered` is the label, not a claim that the answer
+helped. Both sentences are in the panel, and `tests/test_pipeline_status.py` fails if the caveat is
+removed.
+
+**The read is a network call to the GitHub issues API** (paginated, `GITHUB_TOKEN`/`GH_TOKEN`). It is
+part of `--fetch`, so the scheduled run reads it; an offline render (`--issues-json`) takes a saved
+payload instead. A failed read follows [Rule 4](#rule-4--a-day-with-no-data-says-so): the panel prints
+`Could not be read for this run — <reason>`, never four zeros.
 
 ## Rule 4 — a day with no data says so
 

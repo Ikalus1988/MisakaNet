@@ -35,6 +35,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import subprocess
 import sys
@@ -68,6 +69,19 @@ HELPFUL_SOURCE_SCOPE = "helpful-source"
 #: precisely why it must not group by anything finer — a per-person or per-session cut would
 #: convert a privacy promise into a column.
 PANEL_VOTE_SOURCE = "dsh-web"
+
+# The intake funnel is a fourth panel (2026-10-30). It reads issue state and lesson provenance rather
+# than the counters table, so it lives in its own module with its own tests, and a failure to import it
+# must degrade to one reported line instead of taking the digest down.
+try:
+    # `python3 scripts/heartbeat_report.py` puts `scripts/` on sys.path, not the repository root, and
+    # the import below is absolute (`scripts.pipeline_status`) — so the root has to be there first, or
+    # the panel silently degrades to "not compiled into this checkout" under the scheduled run.
+    if str(REPO_ROOT) not in sys.path:
+        sys.path.insert(0, str(REPO_ROOT))
+    from scripts import pipeline_status  # noqa: F401 — the module is optional for the other panels
+except Exception:  # pragma: no cover — a checkout without scripts/ still has three panels
+    pipeline_status = None  # type: ignore[assignment]
 
 #: The vote reading covers this many UTC days, ending on the reported day. Seven, because that is
 #: the window the retrieval counts beside it already use (`/api/analytics`), and a ratio whose
@@ -746,6 +760,23 @@ def panel_e4(e4: dict | None, day: str, errors: dict[str, str]) -> list[str]:
     return lines
 
 
+def panel_pipeline(pipeline: dict | None, error: str, day: str) -> list[str]:
+    """The intake funnel: issues in, lessons out, and where the backlog is oldest.
+
+    `pipeline` is `None` when the read failed, and the panel says so in one line — the same rule the
+    other panels follow, because a failed read rendered as a zero is the defect this whole digest was
+    written against.
+    """
+    if pipeline is None:
+        return ["---", "", "## 4 · The pipeline (issues → lessons)", "",
+                f"**Could not be read for this run** — {error or 'no reason recorded'}. This is a "
+                "failed read, not an empty backlog.", ""]
+    if pipeline_status is None:  # pragma: no cover — only when the module is missing
+        return ["---", "", "## 4 · The pipeline (issues → lessons)", "",
+                "**Not compiled into this checkout** — `scripts/pipeline_status.py` is missing.", ""]
+    return ["---", ""] + pipeline_status.render_lines(pipeline) + [""]
+
+
 def panel_sources(counters, analytics: dict | None, funnel: dict | None, e4: dict | None,
                   retrievals: dict[str, int] | None, day: str, errors: dict[str, str]) -> list[str]:
     """The footer: what was read, what each number cannot say, and the errors, if any."""
@@ -822,7 +853,8 @@ def panel_sources(counters, analytics: dict | None, funnel: dict | None, e4: dic
 
 def render_digest(*, day: str, counters, analytics: dict | None, funnel: dict | None,
                   e4: dict | None = None, retrievals: dict[str, int] | None = None,
-                  errors: dict[str, str] | None = None) -> str:
+                  errors: dict[str, str] | None = None, pipeline: dict | None = None,
+                  pipeline_error: str = "") -> str:
     """The whole comment body for one UTC day.
 
     `counters` / `analytics` / `funnel` / `e4` / `retrievals` are plain data or `None` for
@@ -840,7 +872,8 @@ def render_digest(*, day: str, counters, analytics: dict | None, funnel: dict | 
         "is still running is a partial count, and a heartbeat that quotes partial counts needs a "
         "caveat on every number. Re-running the workflow edits **this** comment rather than "
         "posting a second one. It answers three questions — who is calling, what they asked, "
-        "whether it helped — and it needs nothing from anyone. The caveats at the bottom are part "
+        "whether it helped — plus a fourth panel on whether the intake pipeline moved (issues in, "
+        "lessons out), and it needs nothing from anyone. The caveats at the bottom are part "
         "of the numbers, not small print._",
     ]
     lines += [""] + pulse_line(analytics, day, errors) + ["", "---", ""]
@@ -855,6 +888,7 @@ def render_digest(*, day: str, counters, analytics: dict | None, funnel: dict | 
     lines += ["---", ""]
     lines += panel_helped(counters, analytics, retrievals, day, errors)
     lines += panel_e4(e4, day, errors)
+    lines += panel_pipeline(pipeline, pipeline_error, day)
     lines += panel_sources(counters, analytics, funnel, e4, retrievals, day, errors)
     return "\n".join(lines).rstrip() + "\n"
 
@@ -976,6 +1010,17 @@ def collect(day: str) -> tuple[list[dict] | None, dict | None, dict | None, dict
     return counters, analytics, funnel, e4, retrievals, errors
 
 
+def collect_pipeline(day: str) -> tuple[dict | None, str]:
+    """The fourth panel's source: GitHub issues + lesson provenance, or the reason it failed."""
+    if pipeline_status is None:  # pragma: no cover — only when the module is missing
+        return None, "scripts/pipeline_status.py is missing"
+    token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN") or ""
+    try:
+        return pipeline_status.collect(token=token, today=date.fromisoformat(day))
+    except Exception as error:  # noqa: BLE001 — a failed read is reported, never fatal
+        return None, reason_text(f"{type(error).__name__}: {error}")
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--day", help="UTC day to report, YYYY-MM-DD (default: today UTC)")
@@ -988,8 +1033,14 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--retrievals-json", type=Path,
                        help="a saved per-day retrieval count ({day: count}), or nothing to leave "
                             "the denominator unread")
+    parser.add_argument("--issues-json", type=Path,
+                       help="a saved GitHub issue list for the pipeline panel; without it (and "
+                            "without --fetch) the panel reports that it could not be read")
+    parser.add_argument("--lessons-dir", type=Path,
+                       help="where to read lesson provenance from (default: lessons/)")
     parser.add_argument("--fetch", action="store_true",
-                       help="read all three sources live (needs the Cloudflare credential for D1)")
+                       help="read every source live (needs the Cloudflare credential for D1 and a "
+                            "GitHub token for the issues)")
     parser.add_argument("--out", type=Path, help="write the digest here instead of stdout")
     parser.add_argument("--find-comment", metavar="DAY",
                        help="print the id of the comment already carrying DAY's marker, else nothing")
@@ -1011,8 +1062,17 @@ def main(argv: list[str] | None = None) -> int:
     retrievals: dict[str, int] | None = None
     errors: dict[str, str] = {}
 
+    pipeline: dict | None = None
+    pipeline_error = ""
     if args.fetch:
         counters, analytics, funnel, e4, retrievals, errors = collect(day)
+        pipeline, pipeline_error = collect_pipeline(day)
+    if args.issues_json:
+        issues = json.loads(args.issues_json.read_text(encoding="utf-8"))
+        lessons_dir = args.lessons_dir or pipeline_status.LESSONS_DIR
+        pipeline = pipeline_status.summarize(issues, pipeline_status.lesson_records(lessons_dir),
+                                             date.fromisoformat(day))
+        pipeline_error = ""
     if args.counters_json:
         counters = result_rows(args.counters_json.read_text(encoding="utf-8"))
     if args.analytics:
@@ -1026,7 +1086,8 @@ def main(argv: list[str] | None = None) -> int:
         retrievals = retrieval_counts(json.loads(args.retrievals_json.read_text(encoding="utf-8")))
 
     digest = render_digest(day=day, counters=counters, analytics=analytics, funnel=funnel, e4=e4,
-                           retrievals=retrievals, errors=errors)
+                           retrievals=retrievals, errors=errors, pipeline=pipeline,
+                           pipeline_error=pipeline_error)
     if args.out:
         args.out.write_text(digest, encoding="utf-8")
     else:
