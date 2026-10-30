@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-10-29T18:20:49.018389+00:00",
+  "generated_at": "2026-10-30T01:12:23.190758+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "lessons(contrib): answer five claimed questions (#3924 #3925 #3923 #3926 #3962)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3967",
-      "timestamp": "2026-10-29T18:20:27Z",
+      "title": "fix: a degraded read renders as incomplete, never as zero",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3537",
+      "timestamp": "2026-10-30T01:05:43Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "bench: name the hit@1 misses, and fix one expectation that named an unrelated lesson",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4073",
-      "timestamp": "2026-10-29T18:04:40Z",
+      "title": "docs(handoff): volume 22 — the sitemap item is closed, and main moved",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4078",
+      "timestamp": "2026-10-29T18:57:10Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "docs(handoff): correct volume 22's #3977 / #3967 state",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4070",
-      "timestamp": "2026-10-29T17:33:05Z",
+      "title": "site(sitemap): list the machine-readable entry points, lowercased where the file is",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4076",
+      "timestamp": "2026-10-29T18:45:31Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "docs(handoff): volume 22 — the spike has two shapes, and one of them is the route",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4069",
-      "timestamp": "2026-10-29T17:13:25Z",
+      "title": "docs(handoff): volume 22 — close the day's accounts",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4075",
+      "timestamp": "2026-10-29T18:38:12Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "ci(provenance): publish the verdict to the step summary — a fork PR's comment can never be the only channel",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3977",
-      "timestamp": "2026-10-29T17:12:03Z",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4074",
+      "timestamp": "2026-10-29T18:34:59Z",
       "source": "github"
     },
     {
