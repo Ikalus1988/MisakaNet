@@ -273,7 +273,7 @@ test('a completed registration counts once, and a reused client_id does not coun
 
   const first = await toolResult(await worker.fetch(toolCall('misakanet_register', { agent_type: 'dsh' }), env, ctx));
   assert.ok(first.node_id, JSON.stringify(first));
-  assert.equal(first.reused, undefined, 'no client_id means a new node every call');
+  assert.equal(first.reused, false, 'no client_id means a new node every call — and it says so');
   assert.equal(funnel(d1, 'register'), 1, 'one new node, one registration');
 
   const second = await toolResult(await worker.fetch(toolCall('misakanet_register', { agent_type: 'dsh' }), env, ctx));

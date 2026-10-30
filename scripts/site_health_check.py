@@ -43,15 +43,20 @@ ENDPOINTS = [
     ("Journey page", "/journey/", "text/html", None),
 ]
 
-# Frontend entry points checked against the homepage HTML. Every marker of a
-# feature must be present, otherwise the feature is reported as a warning.
+# Frontend entry points, each with the page that serves it. Every marker of a feature must be
+# present, otherwise the feature is reported as a warning.
+#
+# The path is per entry, and not always the homepage (2026-10-30). The registration form moved off
+# the homepage to `/register/` in #3641, and this list kept looking for its markers on `/`, so the
+# snapshot reported `Registration ⚠️ missing marker(s): node_name` every single day while the form
+# was in fact present — a warning that can never clear is a warning nobody reads (#4072 §六).
 FRONTEND_CHECKS = [
-    ("Registration", ["agent_type", "node_name"]),
-    ("Search UI", ["search"]),
-    ("Onboarding modal", ["modal", "onboard"]),
+    ("Registration", "/register/", ["agent_type", "node_name"]),
+    ("Search UI", "/", ["search"]),
+    ("Onboarding modal", "/", ["modal", "onboard"]),
     # The homepage links the journey page relatively ("journey/"), so match the
     # suffix rather than an absolute path.
-    ("Journey link", ["journey/"]),
+    ("Journey link", "/", ["journey/"]),
 ]
 
 
@@ -151,20 +156,24 @@ def check_endpoint(label: str, path: str, expected_type, required_keys, base_url
             "elapsed_ms": response["elapsed_ms"], "notes": "; ".join(notes)}
 
 
-def check_frontend(html: str) -> list:
-    """Confirm the frontend entry points are still rendered on the homepage."""
+def check_frontend(bodies: dict) -> list:
+    """Confirm each frontend entry point is still rendered on the page that serves it.
+
+    `bodies` maps a path to that page's HTML (see `FRONTEND_CHECKS` for why a check can name a page
+    other than the homepage).
+    """
     results = []
-    lowered = (html or "").lower()
-    for label, markers in FRONTEND_CHECKS:
+    for label, path, markers in FRONTEND_CHECKS:
+        lowered = (bodies.get(path) or "").lower()
         missing = [m for m in markers if m.lower() not in lowered]
         results.append({
             "label": label,
-            "path": "/",
+            "path": path,
             "ok": not missing and bool(lowered),
             "status": None,
             "elapsed_ms": None,
-            "notes": "present in homepage HTML" if not missing and lowered
-                     else f"missing marker(s): {', '.join(missing) or 'empty homepage'}",
+            "notes": f"present in {path} HTML" if not missing and lowered
+                     else f"missing marker(s): {', '.join(missing) or f'empty {path}'}",
         })
     return results
 
@@ -188,7 +197,15 @@ def run_checks(base_url: str = DEFAULT_BASE_URL, fetch=http_get, timeout: int = 
             checks.append(check_endpoint(label, path, expected_type, required_keys,
                                          base_url, fetch=fetch, timeout=timeout))
 
-    checks.extend(check_frontend(homepage_html))
+    # One fetch per page a frontend check reads, each cached. The homepage body is already in hand
+    # from its endpoint probe; `/register/` has no endpoint of its own.
+    frontend_bodies = {"/": homepage_html}
+    for path in dict.fromkeys(path for _label, path, _markers in FRONTEND_CHECKS):
+        if path in frontend_bodies:
+            continue
+        response = fetch(f"{base_url.rstrip('/')}{path}", timeout)
+        frontend_bodies[path] = response.get("body") or ""
+    checks.extend(check_frontend(frontend_bodies))
     warnings = [c for c in checks if not c["ok"]]
 
     return {

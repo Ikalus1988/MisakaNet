@@ -329,7 +329,7 @@ function addDebugContext(env, errorObj, context) {
 const MCP_TOOLS = [
   {
     name: "misakanet_register",
-    description: "[ONBOARDING] Get a Bearer token for authenticated access (unlocks misakanet_write_lesson and higher rate limits). Reading needs no registration and has no daily cap: misakanet_search / misakanet_get_lesson work anonymously (a per-address burst limit protects the index; it is a speed limit, not a quota). No GitHub account or email needed, and no personal data is collected — the node is a pseudonym, not an account.\nToken lifetime: valid ~30 days. Pass client_id (a random UUID you generate once and keep private) to get the SAME node_id and token back on every later call and to renew them; without client_id every call creates a new node, which means your reuse evidence, receipts and history start over. Treat client_id as the node's key: presenting it returns that node's token, so don't publish it, commit it, or build it from something already public (a hostname or workspace id is guessable and usually visible) — generate a random UUID and store it like a token.\nReturns: object {node_id: string, token: string, registered_at: string, agent_type: string, reused?: boolean} — reused=true means an existing node was found for this client_id.\nExample: misakanet_register(agent_type='claude-code', client_id='8f14e45f-2b1c-4f3a-9d2e-7c6b5a4d3e2f')\nOptional referral_code: the code of the node that invited you (`misakanet` referral code, 4-16 letters/digits). Recorded against your node and counted for that code — the only place a referral has ever been recorded, since the invitation otherwise never leaves the inviting machine. Counted once per new node: calling register again with the same client_id renews the same node and does not add to the count.",
+    description: "[ONBOARDING] Get a Bearer token for authenticated access (unlocks misakanet_write_lesson and higher rate limits). Reading needs no registration and has no daily cap: misakanet_search / misakanet_get_lesson work anonymously (a per-address burst limit protects the index; it is a speed limit, not a quota). No GitHub account or email needed, and no personal data is collected — the node is a pseudonym, not an account.\nToken lifetime: valid ~30 days. Pass client_id (a random UUID you generate once and keep private) to get the SAME node_id and token back on every later call and to renew them; without client_id every call creates a new node, which means your reuse evidence, receipts and history start over. Treat client_id as the node's key: presenting it returns that node's token, so don't publish it, commit it, or build it from something already public (a hostname or workspace id is guessable and usually visible) — generate a random UUID and store it like a token.\nReturns: object {node_id: string, token: string, registered_at: string, agent_type: string, reused: boolean} — reused=true means an existing node was found for this client_id; reused=false means this call created a new node (so a client_id you expected to be recognised was not, and the identity you had is not attached to this token).\nExample: misakanet_register(agent_type='claude-code', client_id='8f14e45f-2b1c-4f3a-9d2e-7c6b5a4d3e2f')\nOptional referral_code: the code of the node that invited you (`misakanet` referral code, 4-16 letters/digits). Recorded against your node and counted for that code — the only place a referral has ever been recorded, since the invitation otherwise never leaves the inviting machine. Counted once per new node: calling register again with the same client_id renews the same node and does not add to the count.",
     inputSchema: {
       type: "object",
       properties: {
@@ -355,6 +355,10 @@ const MCP_TOOLS = [
         token: { type: "string" },
         registered_at: { type: "string" },
         agent_type: { type: "string" },
+        reused: {
+          type: "boolean",
+          description: "Always present on success: true when an existing node was found for this client_id (the renewal path), false when this call minted a new node. A false here means any earlier client_id you thought you were reusing was not recognised.",
+        },
         error: { type: "string" },
       },
     },
@@ -4100,6 +4104,11 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
       token: token,
       registered_at: new Date().toISOString(),
       agent_type: agentType,
+      // Always present, never omitted (2026-10-30, #4072): a caller holding an expired client_id
+      // used to get a *new* node with no `reused` field at all, so nothing in the response said its
+      // identity had changed. The field is the contract — `false` is a fact worth reading, and the
+      // absence of the key is indistinguishable from a server that never implemented it.
+      reused: false,
       ...(referralOk ? { referred_by: referralCode, referral_counted: referralCounted } : {}),
     };
   }

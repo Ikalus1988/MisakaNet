@@ -112,7 +112,25 @@ test('omitting client_id keeps the previous one-node-per-call behaviour', async 
   const two = await register(env, { agent_type: 'legacy-caller' });
   assert.notEqual(one.node_id, two.node_id,
     'callers that pass nothing must not change behaviour — this stays backward compatible');
-  assert.equal(one.reused, undefined);
+  // `reused` is present on both paths (2026-10-30, #4072): an omitted field reads exactly like a
+  // server that never implemented it, so a caller that expected to renew a node it no longer owns
+  // could not tell that it had just been handed a new identity.
+  assert.equal(one.reused, false);
+  assert.equal(two.reused, false);
+  assert.ok(Object.hasOwn(one, 'reused'), 'the key must be present, not merely falsy');
+});
+
+test('a fresh node says reused:false, an unrecognised client_id included', async () => {
+  const env = createEnv();
+  const fresh = await register(env, { agent_type: 'dsh', client_id: 'brand-new-client-0001' });
+  assert.equal(fresh.reused, false, JSON.stringify(fresh));
+  assert.ok(Object.hasOwn(fresh, 'reused'));
+
+  // What #4072 measured: the id a caller *thought* it owned is not recognised, so the server mints a
+  // new node — and the only signal is this field. Simulate the second half of that: a different id.
+  const other = await register(env, { agent_type: 'dsh', client_id: 'other-client-0002' });
+  assert.equal(other.reused, false);
+  assert.notEqual(other.node_id, fresh.node_id);
 });
 
 test('a malformed client_id is rejected before any key is written', async () => {
