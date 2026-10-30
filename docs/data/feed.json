@@ -1,9 +1,16 @@
 {
-  "generated_at": "2026-10-30T18:05:10.109033+00:00",
+  "generated_at": "2026-10-30T22:29:10.007729+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4186",
+      "timestamp": "2026-10-30T18:16:59Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "docs(handoff): the pipeline round — three defects fixed, one panel shipped, nine issues closed",
@@ -30,13 +37,6 @@
       "title": "docs(maintainer): the intake funnel, measured — 355 open, 5 needing us, and three defects",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/4128",
       "timestamp": "2026-10-30T16:16:32Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "docs(handoff): the issue round — three duplicates, one salvaged lesson, two #4072 items",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4120",
-      "timestamp": "2026-10-30T14:38:12Z",
       "source": "github"
     },
     {
