@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.1](https://github.com/Ikalus1988/MisakaNet/compare/misakanet-setup-v0.8.0...misakanet-setup-v0.8.1) (2026-10-30)
+
+
+### Bug Fixes
+
+* a degraded read renders as incomplete, never as zero ([#3537](https://github.com/Ikalus1988/MisakaNet/issues/3537)) ([c5335cc](https://github.com/Ikalus1988/MisakaNet/commit/c5335cc94d8aca1ba740d0520dae984125d7e861))
+
 ## [0.8.0](https://github.com/Ikalus1988/MisakaNet/compare/misakanet-setup-v0.7.1...misakanet-setup-v0.8.0) (2026-10-29)
 
 
