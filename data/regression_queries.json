@@ -18,8 +18,10 @@
       "category": "dco",
       "query": "DCO signoff",
       "expected_lessons": [
+        "lessons/core/dco-auto-fix-workflow.md",
         "lessons/contrib/error-dco-signoff-windows.md",
-        "lessons/core/dco-auto-fix-workflow.md"
+        "lessons/contrib/dco-signoff-force-push-pitfall.md",
+        "lessons/contrib/ci-dco-fork-pr-signoff.md"
       ],
       "min_results": 6,
       "description": "Developer Certificate of Origin sign-off issues on Windows"
@@ -29,7 +31,9 @@
       "category": "dco",
       "query": "git commit --signoff missing DCO",
       "expected_lessons": [
-        "lessons/core/dco-auto-fix-workflow.md"
+        "lessons/core/dco-auto-fix-workflow.md",
+        "lessons/contrib/dco-signoff-force-push-pitfall.md",
+        "lessons/contrib/ci-dco-fork-pr-signoff.md"
       ],
       "min_results": 2,
       "description": "Missing DCO sign-off in git commits"

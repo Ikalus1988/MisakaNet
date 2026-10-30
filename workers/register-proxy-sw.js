@@ -1710,7 +1710,24 @@ function searchLessonsBM25(index, query, domain, top = 5, floorQuery = null, sta
   // 7.93/7.48 (which match all four words, three of them in the title). The response contradicted
   // the score the code had just computed. With expansions demoted to a tie-breaker the order is
   // 7.93 · 7.48 · 6.51, which is what the formula always said.
-  const orderingTerms = new Set(floorTerms);
+  //
+  // A **CJK query is the exception that rule did not cover** (2026-10-30). The tokenizer drops the
+  // Chinese characters, so when a Latin token survives, `floorTerms` is just that fragment: "公司代理
+  // 导致 SSL 证书校验失败" arrives as the single term `ssl`. Ordering by it let a HuBERT lesson that
+  // merely says "SSL" take rank 1 (userScore 5.69, coverage 0.25) over the corporate-proxy lessons
+  // the alias table matched (userScore 3.95, full score 13.70, coverage 1.0). For a CJK query the
+  // alias table is not a guess — it is how the query is read — so there the expanded terms decide
+  // the order. The floor keeps judging the typed fragment where it can: this changes ranking only.
+  const orderingTerms = new Set(
+    CJK_CHAR.test(String(floorQuery || query || '')) ? queryTerms : floorTerms,
+  );
+  // The floor's own counters never follow the ordering decision (added 2026-10-30, and #2358's guard
+  // caught the first attempt at this change). They were incremented inside `if (decidesOrder)`, so
+  // making a CJK query order by its expanded terms silently fed the expansions back into the floor:
+  // `chrome-relay-browser-automation` was admitted to `wsl2 landlock 文件系统沙箱` again, which is the
+  // exact regression the floor was rewritten to stop. One set decides the order, the other judges
+  // relevance, and these must not be the same variable.
+  const floorTermSet = new Set(floorTerms);
 
   // Score each document using BM25. `queryTerms` is empty for a CJK-only query the alias table does not
   // know: every array below stays zero, `results` comes out empty, and the fused list is the bigram
@@ -1722,15 +1739,15 @@ function searchLessonsBM25(index, query, domain, top = 5, floorQuery = null, sta
     const { idf, docs: termDocs } = termData;
     termDf.set(term, termDocs.length);
     const decidesOrder = orderingTerms.has(term);
+    const inFloor = floorTermSet.has(term);
     for (const entry of termDocs) {
       const { doc, tf, len } = entry;
       // BM25 scoring formula
       const norm = 1 - b + b * (len / avgDocLen);
       const score = idf * ((tf * (k1 + 1)) / (tf + k1 * norm));
       scores[doc] += score;
-      if (decidesOrder) {
-        userScores[doc] += score;
-        // … and the floor's counters, which is the same set of terms (see the floor note below).
+      if (decidesOrder) userScores[doc] += score;
+      if (inFloor) {
         floorCoverage[doc] += 1;
         floorMatchedIdf[doc] += idf;
       }
