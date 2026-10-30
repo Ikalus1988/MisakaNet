@@ -38,7 +38,7 @@ HARNESS = REPO / "tests" / "dsh_panel_render_harness.cjs"
 
 
 def _render(client_file: Path = CLIENT, analytics: str = "full", locale: str = "en",
-            coverage: str = "full") -> dict:
+            coverage: str = "full", search_mode: str = "standard") -> dict:
     node = shutil.which("node")
     if node is None:
         pytest.skip("node renders the client half")
@@ -50,6 +50,8 @@ def _render(client_file: Path = CLIENT, analytics: str = "full", locale: str = "
     env["DSH_PANEL_ANALYTICS"] = analytics
     # The same three choices for section ⑦'s `/api/insights/lesson-coverage` body.
     env["DSH_PANEL_COVERAGE"] = coverage
+    # `standard` records a miss and a hit; `degraded` records one degraded search (issue #3511).
+    env["DSH_PANEL_SEARCH_MODE"] = search_mode
     done = subprocess.run([node, str(HARNESS), str(client_file)],
                           capture_output=True, text=True, timeout=120, env=env)
     assert done.returncode == 0, done.stderr[-800:]
@@ -681,3 +683,117 @@ def test_section_7_is_scheduled_and_asked_once(coverage_pre_fix_client, tmp_path
     assert broken["coverageGets"] > 1, (
         "the mutation was supposed to make the effect re-ask; it measured " + str(broken["coverageGets"]))
     assert _coverage_schedule_problems(unguarded, broken) != []
+
+
+# ── a degraded read is not a zero (issue #3511) ───────────────────────────────────────────────────
+#
+# Measured 2026-10-18, with D1's daily row-read quota spent: the corpus came from the snapshot copy,
+# `misakanet_search` answered `no_match`, and this panel printed "no lesson matched" / "found nothing"
+# and counted it under "found nothing" in the strip — the product's confident zero for a read the
+# server itself had marked `degraded: true`, with `degraded_reasons` and a one-line `notice` saying it
+# is "not proof that no lesson exists". The three places that read a search's outcome now say what the
+# read was standing on: the tool row's head, the session row, and the counter strip's own bucket.
+
+#: The pre-fix bytes, by commit and never by branch: the `main` tip this change was cut from (and the
+#: parent of the commit that adds the labels). A branch would *become* the fixed bytes the moment this
+#: lands; a commit cannot move — the same rule `PRE_FIX_SHA` above follows.
+DEGRADED_PRE_FIX_SHA = "4b4b21da6d9ed97b02f9908f160cc8948c7d4429"
+
+
+def _degraded_render(client_file: Path = CLIENT, locale: str = "en") -> dict:
+    return _render(client_file, locale=locale, search_mode="degraded")
+
+
+def _placeholder_free(template: str) -> str:
+    """The stable words of a template, so a needle does not depend on how a slot is filled."""
+    return re.sub(r"\{[^}]+\}", "", template or "").strip(" ·")
+
+
+def _segments(strip: str) -> list[str]:
+    return [piece.strip() for piece in (strip or "").split("·") if piece.strip()]
+
+
+def _degraded_label_problems(result: dict) -> list[str]:
+    """The rule: a degraded read renders its reason and its explanation — never a bare zero/miss."""
+    words = result["words"]
+    payload = result["payload"]
+    problems: list[str] = []
+    label_tpl = words.get("degradedTpl") or ""
+    if not label_tpl:
+        return ["the panel declares no degraded label, so a degraded read has nothing to be labelled with"]
+    reason = ", ".join(payload.get("degraded_reasons") or []) or (words.get("degradedTag") or "")
+    expected_label = label_tpl.replace("{reason}", reason)
+    notice = payload.get("notice") or words.get("degradedWhy") or ""
+
+    tool_row, session_row, strip = result["toolRow"], result["sessionRow"], result["strip"]
+    if expected_label not in tool_row:
+        problems.append("the tool row does not name the degradation (" + repr(expected_label) + "): "
+                        + repr(tool_row[:180]))
+    if notice and notice not in tool_row:
+        problems.append("the tool row drops the server's one-line explanation: " + repr(tool_row[:180]))
+
+    if expected_label not in session_row:
+        problems.append("the session row does not name the degradation: " + repr(session_row[:180]))
+    if notice and notice not in session_row:
+        problems.append("the session row drops the server's one-line explanation: " + repr(session_row[:180]))
+    found_nothing = _placeholder_free(words.get("nothingFound") or "")
+    if found_nothing and found_nothing in session_row:
+        problems.append("the session row claims " + repr(found_nothing)
+                        + " for a read the server said was degraded: " + repr(session_row[:180]))
+
+    # The strip must give the degraded search its own bucket, and must not also count it as a miss.
+    miss_needle = _placeholder_free(words.get("missTpl") or "")
+    degraded_needle = _placeholder_free(words.get("degradedStripTpl") or "")
+    if not degraded_needle:
+        problems.append("the counter strip declares no degraded bucket")
+    else:
+        bucketed = [seg for seg in _segments(strip) if degraded_needle in seg and seg.startswith("1 ")]
+        if not bucketed:
+            problems.append("the degraded search is not in the strip's degraded bucket: " + repr(strip))
+    if miss_needle:
+        counted_as_miss = [seg for seg in _segments(strip) if miss_needle in seg and not seg.startswith("0 ")]
+        if counted_as_miss:
+            problems.append("a degraded search is counted as a normal miss: " + repr(counted_as_miss))
+    return problems
+
+
+@pytest.mark.parametrize("locale", ["en", "zh"])
+def test_a_degraded_search_is_labelled_reason_and_explanation(locale, tmp_path):
+    """AC1's rule, rendered: reason + one-line explanation instead of only a result count, and the
+    strip's own bucket instead of a silent normal count. Red/green the way section ⑥ does it."""
+    result = _degraded_render(locale=locale)
+    assert result["mode"] == "degraded", "the harness must run the degraded fixture for this test"
+    assert _degraded_label_problems(result) == [], _degraded_label_problems(result)
+
+    # Red proof 1: the pinned pre-fix bytes render "no lesson matched" / "found nothing" and fold the
+    # search into the miss count — the unlabelled rendering this rule exists to fail.
+    showed = subprocess.run(["git", "show", f"{DEGRADED_PRE_FIX_SHA}:lib/client.js"],
+                            cwd=REPO, capture_output=True, text=True, timeout=60)
+    if showed.returncode != 0:
+        pytest.skip("the degraded pre-fix fixture did not run: this clone does not carry "
+                    + DEGRADED_PRE_FIX_SHA[:12] + ". Run `git fetch origin " + DEGRADED_PRE_FIX_SHA
+                    + "` to replay the red proof; the green half above ran.")
+    assert 'T("panel.asked.degradedTpl")' not in showed.stdout, (
+        f"{DEGRADED_PRE_FIX_SHA[:12]} already contains the degraded labels, so it cannot replay their "
+        "absence; pick the commit before the change and update DEGRADED_PRE_FIX_SHA")
+    pre_fix = tmp_path / "client-pre-fix.js"
+    pre_fix.write_text(showed.stdout, encoding="utf-8")
+    pre_fix_result = _degraded_render(pre_fix, locale=locale)
+    assert _degraded_label_problems(pre_fix_result) != [], (
+        "the pre-fix bytes pass this rule, so it does not test the change")
+
+    # Red proof 2: a copy that keeps the degraded fields on the entry but stops labelling the tool
+    # row — the specific "renders as zero/empty without a label" failure, one surface at a time.
+    source = CLIENT.read_text(encoding="utf-8")
+    unlabelled = source.replace(
+        '\t\t\t} else if (payload && payload.degraded) {\n'
+        '\t\t\t\t// A degraded read renders as the reason plus the server\'s one-line explanation — never as\n'
+        '\t\t\t\t// only a result count, and never as `no_match` ("no lesson matched"), which is the one\n'
+        '\t\t\t\t// sentence a frozen corpus cannot earn (issue #3511, measured 2026-10-18).\n',
+        '\t\t\t} else if (false) {\n')
+    assert unlabelled != source, "the tool-row mutation did not take — update it with the branch"
+    mutated = tmp_path / ("unlabelled-tool-" + locale + ".js")
+    mutated.write_text(unlabelled, encoding="utf-8")
+    broken = _degraded_render(mutated, locale=locale)
+    assert _degraded_label_problems(broken) != [], (
+        "dropping the tool row's degraded branch passed the rule, so the rule does not see the tool row")
