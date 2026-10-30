@@ -6,6 +6,17 @@
 dsh plugin --profile web add misakanet
 ```
 
+That command installs the **tools** (`mcp__misakanet__*`). The **rules** — the "search the lesson
+base before repeating a mistake" block — are not part of the plugin bundle: dsh has no prompt-injection
+extension point for it, so it lives in `$DSH_HOME/AGENTS.md` and is written by the installer:
+
+```bash
+npx @misaka-net/misakanet-setup --only dsh
+```
+
+Tools without rules leave the agent able to search and unlikely to; rules without tools leave it
+told to call tools that are not there. Run both. Full guide: [integrations/dsh.md](integrations/dsh.md).
+
 ## Alternative Installation Methods
 
 ### Git Install

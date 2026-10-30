@@ -2871,6 +2871,23 @@ async function verify() {
       }
     }
   }
+  // dsh: one file, and only half of the client — so the report says which half it can see. The
+  // rules block is our footprint and is checked like every other target's; the tools live in the
+  // plugin's profile, which this process cannot read, and a "complete" that quietly skipped that
+  // would be the false green this whole report exists to avoid (measured 2026-10-30: with the
+  // block deleted, `--verify` still said 安装完整性：完整).
+  if (wantClient('dsh') && detect('dsh')) {
+    const rules = join(dshHome(), 'AGENTS.md');
+    if (!readText(rules).includes(`<!-- ${START} -->`)) {
+      needWrite('dsh', rules,
+        `dsh：规则块没装（${rules}）→ 重跑安装命令`,
+        `dsh：规则块装不了（${rules}）→ ${unwritableAdvice()}`);
+    } else {
+      ok('dsh：规则块已装', 'dsh');
+      skip(`dsh：工具在插件包里，--verify 看不到它 → 跑 \`dsh plugin --profile ${process.env.DSH_PROFILE || 'web'} list\` 复核`,
+        'dsh');
+    }
+  }
   // Version: what is installed, and whether the registry has moved on. Read-only here — the
   // hook owns the periodic nudge (it cannot be a network call in this process's hot path), and
   // `--verify` is an explicit user action, so one lookup is both cheap and expected.

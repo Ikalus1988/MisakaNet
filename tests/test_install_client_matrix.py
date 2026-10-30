@@ -10,7 +10,7 @@
 1. 前两步是**同一条通用命令**，与客户端无关；
 2. 客户端表由数据生成，页面与数据漂移时 `--check` **退 1**；
 3. README 的接入段 **≤ 8 行、不含表格**；
-4. 十一个客户端在表里**各占一行**；
+4. 十二个客户端在表里**各占一行**；
 5. 表格在 **≤640px** 下不横向溢出（这一条靠 CSS 断言 + 真浏览器实测）。
 
 **不需要浏览器。** 全部用文件与纯函数驱动。
@@ -148,14 +148,14 @@ def test_the_readme_points_at_the_install_page():
     assert "https://misakanet.org/install/" in section
 
 
-# ── 4. 十一个客户端各占一行 ─────────────────────────────────────────────────────────────────────
+# ── 4. 十二个客户端各占一行 ─────────────────────────────────────────────────────────────────────
 def test_every_supported_client_has_a_row():
-    """十一个客户端，十一行。少一行就有一个客户端在页面上没有答案。"""
+    """十二个客户端，十二行。少一行就有一个客户端在页面上没有答案。"""
     data = json.loads(DATA.read_text(encoding="utf-8"))
-    assert len(data["clients"]) == 11
+    assert len(data["clients"]) == 12
     table = gct.render_table(data)
     rows = [line for line in table.splitlines() if "<tr>" in line and "<th>" not in line]
-    assert len(rows) == 11, f"the table has {len(rows)} client rows, expected 11"
+    assert len(rows) == 12, f"the table has {len(rows)} client rows, expected 12"
     for client in data["clients"]:
         assert client["name"] in table, f"{client['name']} is missing from the table"
 
@@ -168,8 +168,26 @@ def test_the_table_answers_install_reporting_and_account():
         assert f"<th>{header}</th>" in table
 
 
+def test_the_count_in_the_disclosure_line_is_generated():
+    """`<summary>Show the ten supported clients</summary>` sat over an eleven-row table (2026-10-30).
+
+    A hand-maintained number next to a generated list drifts exactly the way the table itself was
+    made impossible to drift — it was already one client behind. So the disclosure line is inside
+    the generated block now, and this pins both halves: the page carries the generated count, and
+    the hand-written one is gone rather than merely hidden behind it.
+    """
+    data = json.loads(DATA.read_text(encoding="utf-8"))
+    page = _page_text()
+    assert gct.render_summary(data).strip() in page, (
+        "the page's disclosure line is not the generated one — "
+        "run: python scripts/generate_clients_table.py --write"
+    )
+    assert f"the {len(data['clients'])} supported clients" in page
+    assert "the ten supported clients" not in page
+
+
 def test_the_installers_own_client_list_is_the_one_on_the_page():
-    """页面上的客户端必须就是安装器支持的那十一个——两边漂了就是假信息。"""
+    """页面上的客户端必须就是安装器支持的那十二个——两边漂了就是假信息。"""
     installer = REPO / "packages" / "misakanet-setup" / "bin" / "misakanet-setup.mjs"
     text = installer.read_text(encoding="utf-8")
     match = re.search(r"const AGENTS = \[(.*?)\];", text, flags=re.DOTALL)

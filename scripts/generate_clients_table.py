@@ -112,9 +112,20 @@ def render_table(data: dict) -> str:
     )
 
 
-def page_block(table: str) -> str:
-    """The marked block, as it appears in the page."""
-    return f"{START_MARKER}\n{table}\n{END_MARKER}"
+def render_summary(data: dict) -> str:
+    """The disclosure line above the table — the count is data too, so it is generated as well.
+
+    It read "Show the ten supported clients" over a table that already had eleven rows (measured
+    2026-10-30, the day the twelfth landed). The count sat *outside* the generated block, so it
+    drifted in exactly the way the table itself was made impossible to drift; a hand-maintained
+    number next to a generated list is the same bug waiting one client later.
+    """
+    return f'      <summary>Show the {len(data["clients"])} supported clients</summary>'
+
+
+def page_block(data: dict) -> str:
+    """The marked block, as it appears in the page: the disclosure line and the table."""
+    return f"{START_MARKER}\n{render_summary(data)}\n{render_table(data)}\n{END_MARKER}"
 
 
 def read_block(page: Path = PAGE) -> str:
@@ -139,8 +150,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     data = load_clients()
-    table = render_table(data)
-    block = page_block(table)
+    block = page_block(data)
 
     if args.write:
         text = PAGE.read_text(encoding="utf-8")

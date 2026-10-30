@@ -49,6 +49,10 @@ AGENT_DISPLAY = {
     # Issue #3777: a plugin directory instead of a JSON config file, but still one of `AGENTS` —
     # and the README's public row has to name it like every other target.
     "mcode": "MiniMax Code",
+    # The installer writes only this target's rules half (its tools come from `dsh plugin`), which
+    # is exactly why the README has to spell the split out next to the row rather than leave it
+    # looking like the other eleven.
+    "dsh": "DeepSeek Harness",
 }
 
 

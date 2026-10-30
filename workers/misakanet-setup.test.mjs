@@ -1178,7 +1178,162 @@ test('mcode: --list-writes --mcp-only does not ask for the rules block', () => {
   }
 });
 
-// ── the write manifest vs. the disk (issue #3833) ─────────────────────────────────────────
+// ── dsh: the rules half is a file target, the plugin half is printed (2026-10-30) ─────────────
+//
+// dsh is the one target whose *tools* a file cannot install: they ship in the `misakanet` plugin
+// bundle and only `dsh plugin` can write them. So the target is exactly one file — and the run has
+// to say so, because a reader who skips the printed command ends up with rules and no tools. The
+// other thing pinned here is a defect this work exposed: `dshHome()` honoured `DSH_HOME` even when
+// `--home <sandbox>` was given, so this suite wrote the developer's real `~/.dsh/AGENTS.md`
+// (truncated to 35 bytes, measured 2026-10-30). A sandbox run stays inside its home.
+const DSH_RULES = '.dsh/AGENTS.md';
+// The one manual step, as the run prints it: `--profile` follows DSH_PROFILE, defaulting to web.
+const DSH_PLUGIN = 'dsh plugin --profile web add misakanet';
+
+function makeDshHome() {
+  const home = mkdtempSync(join(tmpdir(), 'mn-dsh-'));
+  // Detection is "the dsh home exists". For a sandbox `--home`, that is `<home>/.dsh` — DSH_HOME is
+  // deliberately ignored there (see the isolation test below).
+  mkdirSync(join(home, '.dsh'), { recursive: true });
+  return home;
+}
+
+test('dsh: writes the marked rules block and prints the plugin command', () => {
+  const home = makeDshHome();
+  try {
+    const result = runOffline(home, '--only', 'dsh');
+    assert.equal(result.status, 0, result.stdout + result.stderr);
+
+    const rules = readFileSync(join(home, DSH_RULES), 'utf8');
+    assert.match(rules, /<!-- misakanet:start -->/, 'the block must be marked for --uninstall');
+    assert.match(rules, /<!-- misakanet:end -->/);
+    assert.match(rules, /misakanet_search/, 'the block is what makes the agent search on its own');
+
+    // No MCP config is written for dsh — the installer has no path into the plugin bundle, and a
+    // fabricated entry would look installed while registering nothing. One file is the whole
+    // footprint under `$DSH_HOME`; `profiles/` belongs to `dsh plugin`, not to this run.
+    assert.deepEqual(readdirSync(join(home, '.dsh')), ['AGENTS.md'],
+      'the installer writes the rules file and nothing else under $DSH_HOME');
+    // The honesty half: the one manual step, and what skipping it costs.
+    assert.ok(result.stdout.includes(DSH_PLUGIN), `the manual step is not printed:\n${result.stdout}`);
+    assert.match(result.stdout, /只有规则、没有 mcp__misakanet__\* 工具/, result.stdout);
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test('dsh: idempotent — a second run changes nothing, byte for byte', () => {
+  const home = makeDshHome();
+  try {
+    assert.equal(runOffline(home, '--only', 'dsh').status, 0);
+    const rules = readFileSync(join(home, DSH_RULES), 'utf8');
+
+    const second = runOffline(home, '--only', 'dsh');
+    assert.equal(second.status, 0, second.stdout + second.stderr);
+    assert.match(second.stdout, /规则块 unchanged/, second.stdout);
+    assert.match(second.stdout, /本次实际写入 0 个文件/, second.stdout);
+    assert.equal(readFileSync(join(home, DSH_RULES), 'utf8'), rules);
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test('dsh: --mcp-only writes no rules block', () => {
+  const home = makeDshHome();
+  try {
+    const result = runOffline(home, '--only', 'dsh', '--mcp-only');
+    assert.equal(result.status, 0, result.stdout + result.stderr);
+    assert.ok(!existsSync(join(home, DSH_RULES)), '--mcp-only must not write tier ②');
+    assert.match(result.stdout, /规则块未写/, result.stdout);
+    // The printed manual step survives: the tools are not tier ②, so --mcp-only cannot remove it.
+    assert.match(result.stdout, /dsh plugin --profile/, result.stdout);
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test('dsh: --list-writes names the rules file and its tier, and writes nothing', () => {
+  const home = makeDshHome();
+  try {
+    const before = snapshot(home);
+    const result = runOffline(home, '--list-writes', '--only', 'dsh');
+    assert.equal(result.status, 0, result.stdout + result.stderr);
+    assert.deepEqual(snapshot(home), before, '--list-writes must be a pure read');
+
+    const rows = result.stdout.split('\n').filter((line) => line.startsWith('tier'));
+    const rulesRow = rows.find((row) => mentions(row, '.dsh/AGENTS.md'));
+    assert.ok(rulesRow, `the rules file is missing from the manifest:\n${result.stdout}`);
+    assert.ok(rulesRow.startsWith('tier2'), `the rules block is tier ②: ${rulesRow}`);
+    // dsh has no installer tier ①: the endpoint entry lives in the plugin bundle, not in a file.
+    assert.ok(!rows.some((row) => mentions(row, '.dsh/') && row.startsWith('tier1')), result.stdout);
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test('dsh: --uninstall strips the block and leaves the user\'s own text byte-identical', () => {
+  const home = makeDshHome();
+  try {
+    const mine = '# my own dsh rules\n\n- keep this line\n';
+    writeFileSync(join(home, DSH_RULES), mine);
+
+    assert.equal(runOffline(home, '--only', 'dsh').status, 0);
+    assert.ok(readFileSync(join(home, DSH_RULES), 'utf8').length > mine.length,
+      'the install must append the block to the user\'s file, not replace it');
+
+    const removed = runOffline(home, '--only', 'dsh', '--uninstall');
+    assert.equal(removed.status, 0, removed.stdout + removed.stderr);
+    assert.match(removed.stdout, /移除规则块/, removed.stdout);
+    assert.equal(readFileSync(join(home, DSH_RULES), 'utf8'), mine,
+      'uninstall must give the user back exactly the text they had');
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test('dsh: --verify reports the rules block, and says which half it cannot see', () => {
+  // Measured before this check existed (2026-10-30): with `$DSH_HOME/AGENTS.md` deleted,
+  // `--verify --only dsh` still printed "安装完整性：完整" — a green with nothing underneath it.
+  const home = makeDshHome();
+  try {
+    assert.equal(runOffline(home, '--only', 'dsh').status, 0);
+
+    const done = run(home, '--only', 'dsh', '--verify');
+    assert.match(done.stdout, /dsh：规则块已装/, done.stdout);
+    // The half it cannot check has to be named, not silently counted as intact.
+    assert.match(done.stdout, /工具在插件包里，--verify 看不到它/, done.stdout);
+
+    rmSync(join(home, DSH_RULES));
+    const missing = run(home, '--only', 'dsh', '--verify');
+    assert.match(missing.stdout, /dsh：没装过/, missing.stdout);
+    assert.match(missing.stdout, /规则块没装/, missing.stdout);
+    assert.doesNotMatch(missing.stdout, /安装完整性：完整/, missing.stdout);
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test('dsh: a sandbox --home ignores DSH_HOME (the suite must never write the real ~/.dsh)', () => {
+  // The measured failure: a run with `--home /tmp/…` inherited DSH_HOME from the developer's shell
+  // and wrote the *real* `~/.dsh/AGENTS.md` instead of the sandbox one.
+  const home = makeDshHome();
+  const elsewhere = mkdtempSync(join(tmpdir(), 'mn-dsh-home-'));
+  try {
+    const env = childEnv({ DSH_HOME: elsewhere });
+    delete env.MISAKANET_ENDPOINT;
+    const result = spawnSync(process.execPath,
+      [CLI, '--home', home, '--no-register', '--only', 'dsh'], { encoding: 'utf8', env });
+    assert.equal(result.status, 0, result.stdout + result.stderr);
+
+    assert.ok(existsSync(join(home, DSH_RULES)), 'the block belongs to the sandbox home');
+    assert.deepEqual(readdirSync(elsewhere), [],
+      `DSH_HOME is a user setting: a sandbox run must not write ${elsewhere}`);
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+    rmSync(elsewhere, { recursive: true, force: true });
+  }
+});
+
 // Two numbers describe one run: the preview ("将涉及 N 个文件", the *scope*) and the closing count
 // ("本次实际写入 N 个文件", what was *touched*). Both have to be true of the disk — the preview named
 // `~/.misakanet-agent/hook.mjs` on every non-Claude target (where no hook can exist), and the count

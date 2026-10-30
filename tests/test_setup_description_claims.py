@@ -81,6 +81,9 @@ CLIENT_NAMES = (
     # Issue #3777: MiniMax Code reads a plugin directory rather than a user config file, but it is a
     # target of the same `AGENTS` list — so the roster must name it too.
     "MiniMax Code",
+    # The rules-half target (#100.4): the installer writes `$DSH_HOME/AGENTS.md` and prints the
+    # plugin command, so it is one of `AGENTS` and the roster names it like the rest.
+    "DeepSeek Harness",
 )
 
 

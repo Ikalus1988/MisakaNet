@@ -59,6 +59,9 @@ DISPLAY = {
     # Issue #3777: MiniMax Code's MCP entry is a plugin manifest, but it is still one of the
     # assistants the installer wires — so the intro has to name it like the rest.
     "mcode": "MiniMax Code",
+    # Same rule for the harness whose tools come from its own plugin: the installer wires its rules
+    # half, so the intro names it, and the install text says which half is which.
+    "dsh": "DeepSeek Harness",
 }
 
 # Dated snapshots and benchmark payloads quote whatever was true when they were written; a file
