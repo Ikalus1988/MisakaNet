@@ -218,9 +218,26 @@ rendered as one table:
 | `[Lesson]` | new submissions | how many became lessons | open + age |
 | our own issues | new | — (they are the repo's work, not the corpus's) | open + age, never-commented count |
 
-Plus four lines: **issue → lesson** median/p90 days (over lessons created in the last 30 days),
+Plus five lines: **issue → lesson** median/p90 days (over lessons created in the last 30 days),
 **questions answered** (all-time, `answered` label), **auto-rejected salvage** (how many rejected
-reports still became lessons), and the window's own caveat.
+reports still became lessons), the **search index** (see below), and the window's own caveat.
+
+### Panel 4's index line — added 2026-10-31
+
+`https://misakanet.org/api/search-index` already answers "does the index hold the corpus": `docCount`,
+`behindBy`, `stale`, `builtAt`, `syncStamp`. The panel prints that as one line, because the day the
+batch of 47 lessons landed the corpus was complete in D1 while four title-verbatim queries returned
+`no_match` — and the answer took decoding a 1 MB gzip row out of `kv_store` by hand, while that
+endpoint was already reporting `behindBy: 0` (the queries had simply landed inside the index's 5-minute
+memo window).
+
+```bash
+curl -sS https://misakanet.org/api/search-index | jq '{docCount, behindBy, stale, builtAt, syncStamp}'
+```
+
+A finished rebuild reaches every isolate within the memo TTL (`_BM25_MEMO_TTL_MS`, 5 minutes), so a
+lesson that merged "just now" is searchable a few minutes later, not immediately. The line is what makes
+a *stuck* index visible: `behind by N` or `stale` means the corpus grew and the index did not follow.
 
 **What it refuses to claim.** `converted` is provenance — a lesson that names the issue through the
 shapes `scripts/intake_receipt.py` already owns (`#N`, `intake-N`, an issue URL) — and a number
