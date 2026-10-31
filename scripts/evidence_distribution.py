@@ -57,7 +57,7 @@ def collect(lessons_root: pathlib.Path | None = None) -> collections.Counter:
     """Counts keyed by E0-E4 plus `E0 (default)` for lessons that declare nothing."""
     counts: collections.Counter = collections.Counter()
     for path in canonical_lessons(lessons_root or REPO_ROOT / "lessons"):
-        if path.name.upper() == "README.MD" or "TEMPLATE" in path.name.upper():
+        if path.name.upper() == "README.MD" or path.name.upper() == "TEMPLATE.MD":
             continue
         level = read_level(path.read_text(encoding="utf-8", errors="replace"))
         counts[level or "E0 (default)"] += 1

@@ -132,7 +132,7 @@ def lessons_citing(issue: int, lessons_dir: Path = LESSONS_DIR) -> list[dict]:
     """
     found: list[dict] = []
     for path in sorted(lessons_dir.rglob("*.md")):
-        if path.name.upper() == "README.MD" or "TEMPLATE" in path.name.upper():
+        if path.name.upper() == "README.MD" or path.name.upper() == "TEMPLATE.MD":
             continue
         text = path.read_text(encoding="utf-8", errors="replace")
         fm = _frontmatter(text)
