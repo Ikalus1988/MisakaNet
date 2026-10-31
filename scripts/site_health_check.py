@@ -39,6 +39,7 @@ ENDPOINTS = [
     ("/api/health", "/api/health", "application/json", ["status"]),
     ("/api/counter", "/api/counter", "application/json", ["current"]),
     ("/api/lessons", "/api/lessons", "application/json", None),
+    ("/api/search-index", "/api/search-index", "application/json", ["docCount"]),
     ("/search/", "/search/", "text/html", None),
     ("Journey page", "/journey/", "text/html", None),
 ]
@@ -178,6 +179,51 @@ def check_frontend(bodies: dict) -> list:
     return results
 
 
+def check_search_index(payload: dict, error: str = "") -> dict:
+    """The search index must hold the corpus — `available: true` cannot tell you that.
+
+    `/api/search-index` reports `docCount`, `behindBy` and `stale`, which is the only place the
+    difference between "the index is built" and "the index is built *from what exists now*" is
+    answerable. 2026-10-31: 47 lessons merged, four title-verbatim queries returned `no_match`, and the
+    index was in fact healthy (`docCount 705`, `behindBy 0`) — the queries had landed inside its own
+    five-minute memo window. A snapshot that only asserted `available` would have passed all of it and
+    told nobody anything.
+    """
+    label, path = "Search index", "/api/search-index"
+    if error:
+        # A failed read is not an unhealthy index, and it is not a healthy one either. Saying which
+        # is the whole Rule-4 distinction; the 2026-10-31 network outage produced three "unhealthy"
+        # checks that all actually meant "the probe could not reach the host".
+        return {"label": label, "path": path, "ok": False, "status": None, "elapsed_ms": None,
+                "notes": f"could not be read ({error}) — not a claim that the index is healthy"}
+    if not isinstance(payload, dict) or not payload:
+        return {"label": label, "path": path, "ok": False, "status": None, "elapsed_ms": None,
+                "notes": "the index endpoint did not return an object"}
+    notes: list[str] = []
+    ok = True
+    if payload.get("available") is not True:
+        ok = False
+        notes.append(f"not available ({payload.get('reason') or 'no reason given'})")
+    doc_count = payload.get("docCount")
+    if not isinstance(doc_count, int) or doc_count <= 0:
+        ok = False
+        notes.append(f"docCount {doc_count!r}")
+    else:
+        notes.append(f"{doc_count} docs")
+    behind = payload.get("behindBy")
+    if isinstance(behind, int) and behind > 0:
+        ok = False
+        notes.append(f"**behind by {behind}** (index {doc_count}, corpus {doc_count + behind})")
+    if payload.get("stale") is True:
+        ok = False
+        notes.append("**stale**")
+    built = str(payload.get("builtAt") or "")
+    if built:
+        notes.append(f"built {built[:19].replace('T', ' ')}Z")
+    return {"label": label, "path": path, "ok": ok, "status": None, "elapsed_ms": None,
+            "notes": "; ".join(notes)}
+
+
 def run_checks(base_url: str = DEFAULT_BASE_URL, fetch=http_get, timeout: int = DEFAULT_TIMEOUT) -> dict:
     """Run every endpoint and frontend check. Returns a serializable report."""
     checks = []
@@ -196,6 +242,21 @@ def run_checks(base_url: str = DEFAULT_BASE_URL, fetch=http_get, timeout: int = 
         else:
             checks.append(check_endpoint(label, path, expected_type, required_keys,
                                          base_url, fetch=fetch, timeout=timeout))
+
+    # The index check is semantic, not a shape check: the endpoint is fetched once here and read by
+    # `check_search_index` (the ENDPOINTS probe above only asserts that it answers JSON).
+    error = ""
+    payload: dict = {}
+    try:
+        response = fetch(f"{base_url.rstrip('/')}/api/search-index", timeout)
+        error = str(response.get("error") or "")
+        body = response.get("body") or ""
+        if not error and body:
+            parsed = json.loads(body)
+            payload = parsed if isinstance(parsed, dict) else {}
+    except (ValueError, KeyError, TypeError) as exc:
+        error = f"{type(exc).__name__}: {exc}"
+    checks.append(check_search_index(payload, error))
 
     # One fetch per page a frontend check reads, each cached. The homepage body is already in hand
     # from its endpoint probe; `/register/` has no endpoint of its own.
