@@ -59,7 +59,13 @@ function createD1({ failTokenWrites = false } = {}) {
       _args: [],
       bind(...args) { stmt._args = args; return stmt; },
       async all() { return stmt._exec(); },
-      async run() { stmt._exec(); return { success: true }; },
+      async run() {
+        const result = stmt._exec();
+        // `meta.changes` is what `claimOnce` reads to decide whether it won the key: a stand-in that
+        // drops it makes every claim look lost, which is how the first version of this stub turned a
+        // working pairing flow into a 409.
+        return { success: true, meta: result.meta || { changes: 0 } };
+      },
       _exec() {
         const args = stmt._args;
         if (/INSERT INTO counters/i.test(sql)) {
@@ -96,8 +102,15 @@ function createD1({ failTokenWrites = false } = {}) {
           if (failTokenWrites && String(args[0]).startsWith('mcp_token:')) {
             throw new Error('D1_ERROR: kv_store write failed');
           }
-          kv.set(String(args[0]), String(args[1]));
-          return { results: [] };
+          const key = String(args[0]);
+          const exists = kv.has(key);
+          // `claimOnce` is `INSERT … ON CONFLICT(key) DO NOTHING`: an existing key is not an error and
+          // not a write, and the caller learns it lost from `meta.changes === 0`.
+          if (exists && /ON CONFLICT\s*\(\s*key\s*\)\s*DO\s+NOTHING/i.test(sql)) {
+            return { results: [], meta: { changes: 0 } };
+          }
+          kv.set(key, String(args[1]));
+          return { results: [], meta: { changes: 1 } };
         }
         if (/SELECT value FROM kv_store/i.test(sql)) {
           const value = kv.get(String(args[0]));

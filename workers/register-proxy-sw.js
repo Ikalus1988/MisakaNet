@@ -3567,6 +3567,38 @@ async function sweepExpiredStore(env, { limit = 500 } = {}) {
   }
 }
 
+/**
+ * Claim a key exactly once. Returns true for the caller that created the row, false for everyone else.
+ *
+ * `storePut` is an upsert: two concurrent callers both succeed, which is how a *one-time* pairing code
+ * was redeemed twice (found by the 2026-10-31 audit: two concurrent `/mcp/pair` requests both returned
+ * 200 with two different tokens; sequentially the second got 409). A read-then-write cannot be made
+ * atomic from the worker side, so the claim is a **primary-key insert**: SQLite lets exactly one writer
+ * create the row, and the loser sees the constraint error instead of a second token.
+ *
+ * D1 is the arbiter. Without a D1 binding this returns false rather than pretending: the KV fallback
+ * has no conditional write, and a caller that needs atomicity must know it did not get it.
+ */
+async function claimOnce(env, key, value, options = {}) {
+  const d1 = d1Binding(env);
+  if (!d1) return false;
+  const expiresAt = options.expirationTtl
+    ? new Date(Date.now() + options.expirationTtl * 1000).toISOString()
+    : null;
+  try {
+    await ensureKvStoreTable(d1);
+    const { meta } = await d1.prepare(
+      `INSERT INTO kv_store (key, value, expires_at, updated_at)
+       VALUES (?1, ?2, ?3, datetime('now'))
+       ON CONFLICT(key) DO NOTHING`,
+    ).bind(String(key), String(value), expiresAt).run();
+    return !!meta && meta.changes === 1;
+  } catch (error) {
+    logInternal("claim failed", error);
+    return false;
+  }
+}
+
 async function storePut(env, key, value, options = {}) {
   const expiresAt = options.expirationTtl
     ? new Date(Date.now() + options.expirationTtl * 1000).toISOString()
@@ -9800,6 +9832,12 @@ export default {
       let pairBody;
       try { pairBody = await request.json(); } catch { return jsonResponse({ error: "Invalid JSON" }, 400); }
 
+      // A one-time code needs a conditional write, and only D1 has one. KV-only deployments used to
+      // "work" by accepting the race, which is the defect; they now say what they need instead.
+      if (!d1Binding(env)) {
+        return jsonResponse({ error: "pairing requires the durable store (D1) for atomic redemption" }, 503);
+      }
+
       const code = sanitizeIdentifier(pairBody.code, 10);
       if (!code || code.length !== 6) return jsonResponse({ error: "Invalid code format" }, 400);
 
@@ -9808,7 +9846,22 @@ export default {
       if (!pairData) return jsonResponse({ error: "Invalid or expired code" }, 404);
       if (pairData.status !== "pending") return jsonResponse({ error: "Code already used" }, 409);
 
-      // Mark code as used
+      // **Claim before issuing anything.** The two checks above are a read; between the read and the
+      // write below, a second request could pass both of them, and both would get a token — measured
+      // by the 2026-10-31 audit against this exact code, with an in-memory KV and two concurrent
+      // requests: two 200s, two distinct tokens, and one `used` record afterwards.
+      //
+      // The claim row is the arbiter: the primary-key insert succeeds for exactly one caller. It gets
+      // the code's own lifetime rather than the token's, because it only has to outlive the window in
+      // which the code could still be presented.
+      const claimed = await claimOnce(env, `pair_claim:${code}`, JSON.stringify({
+        claimed_at: new Date().toISOString(),
+        claimed_ip: request.headers.get("CF-Connecting-IP") || "unknown",
+      }), { expirationTtl: 86400 });
+      if (!claimed) return jsonResponse({ error: "Code already used" }, 409);
+
+      // Mark code as used (best effort: the claim above is what decides, this is the audit trail the
+      // operator reads — `used_at` / `used_ip` on the code itself).
       pairData.status = "used";
       pairData.used_at = new Date().toISOString();
       pairData.used_ip = request.headers.get("CF-Connecting-IP") || "unknown";
@@ -10548,6 +10601,10 @@ export {
   // comment enqueued *before* the work is awaited, or the whole frame is buffered and the link cuts it
   // (#4072). A refactor that awaits first recreates the bug while still "returning SSE".
   mcpSseStreamedResponse,
+  // Exported for workers/pair-code-claim.test.mjs: `/mcp/pair` used to be a read-then-write, so two
+  // concurrent redemptions of one code both got a token (2026-10-31 audit). The claim is the fix, and
+  // a test has to drive it directly because the concurrency cannot be reproduced through `fetch`.
+  claimOnce,
 };
 
 /** Test seam: forget the cooldown. */
