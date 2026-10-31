@@ -242,6 +242,20 @@ SKILL_MD_SHA256 = "5eb335759294f9179bacb1b47277f108830dc5379f15ef88534bffa6aff0e
 SKILL_MD_PATH = "skills/misakanet/SKILL.md"
 
 
+def skill_digest(payload: bytes) -> str:
+    """sha256 of `SKILL.md`, **line-ending normalised**.
+
+    Hashing raw bytes made the check platform-dependent: a Windows checkout with `core.autocrlf` hands
+    the verifier CRLF, the digest computed on Linux is LF, and the installer refuses a file that is
+    byte-identical to git. The download from raw.githubusercontent is LF, so normalising is a no-op
+    there; on a checkout it is the difference between "this file is wrong" and "this checkout uses
+    CRLF".
+    """
+    import hashlib
+
+    return hashlib.sha256(payload.replace(b"\r\n", b"\n")).hexdigest()
+
+
 def _fetch_raw(rel_path: str, timeout: float = 10.0) -> str:
     """Fetch a repo file over HTTP. Returns "" when offline.
 
@@ -263,9 +277,7 @@ def _fetch_raw(rel_path: str, timeout: float = 10.0) -> str:
         except Exception:
             continue
         if expected:
-            import hashlib
-
-            got = hashlib.sha256(payload).hexdigest()
+            got = skill_digest(payload)
             if got != expected:
                 # Do not fall through to the next mirror with a *bad* answer in hand: a mirror serving
                 # different bytes for a pinned tag is the attack, and trying more mirrors just gives it
