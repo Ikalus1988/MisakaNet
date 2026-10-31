@@ -216,6 +216,14 @@ This tests:
 - **No raw sensitive content uploaded.** Search queries stay local. Lesson content is public (open-source repo). Usage reports contain only lesson ID + outcome, not source code or error logs.
 - **Write operations require explicit confirmation.** `misakanet_write_lesson` and `misakanet_submit_intake` create GitHub issues only when called — nothing is sent without an explicit tool call.
 
+## Companion servers
+
+MisakaNet answers *"has someone hit this before?"*; it deliberately knows nothing about your
+repository's issues, pull requests or CI. For those, connect
+[GitHub's MCP server](https://github.com/github/github-mcp-server) **read-only** alongside this one — the
+settings, the division of labour and the reason writes should stay in `gh`/REST are in
+[`docs/agents/tooling-companions.md`](agents/tooling-companions.md).
+
 ## Glama
 
 MisakaNet is listed on [Glama.ai](https://glama.ai/mcp/servers) for MCP server discovery.
