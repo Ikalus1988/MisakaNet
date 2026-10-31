@@ -2102,7 +2102,23 @@ async function semanticFallbackHits(env, query, top = 5, floorOverride = null) {
   const text = String(query || "").trim();
   if (!text) return [];
   const model = env.SEMANTIC_MODEL || "@cf/baai/bge-m3";
-  const out = await env.AI.run(model, { text: [text] });
+  // AI Gateway in front of the *serving* embedding call (2026-10-31). The gateway `misakanet-bench`
+  // has existed since 2026-08-28 with caching and logs on, and had seen no traffic since 2026-10-12
+  // because only the paused benchmark ever pointed at it: this call goes straight to `env.AI`.
+  //
+  // Behind a var, not hardcoded: the gateway is a proxy hop on the one path whose latency budget is
+  // already the tightest (semantic fallback only runs when BM25 returned nothing, or for a CJK query's
+  // fusion arm), and turning it on should be a dashboard change with a one-var rollback
+  // (`MISAKANET_AI_GATEWAY=""`), not a deploy. Empty/absent = the direct call, today's behaviour.
+  //
+  // What it buys, in the order it matters: per-call latency and token logs for the one inference this
+  // repo makes in production; a cache for the repeated query embeddings that the `search` traffic does
+  // produce (the top query alone ran 388 times in a day); and a cost/rate limit the gateway can
+  // enforce without a code change.
+  const gatewayId = String(env.MISAKANET_AI_GATEWAY || "").trim();
+  const out = gatewayId
+    ? await env.AI.run(model, { text: [text] }, { gateway: { id: gatewayId } })
+    : await env.AI.run(model, { text: [text] });
   const vector = out && out.data && out.data[0];
   if (!Array.isArray(vector) || vector.length !== 1024) return [];
   const found = await env.VECTORIZE.query(vector, {
@@ -10421,6 +10437,10 @@ export {
   rateWindowTenMinutes,
   intakeSourceBucket,
   INTAKE_SOURCE_WHITELIST,
+  // Exported for workers/semantic-gateway.test.mjs: the AI Gateway is a var-gated proxy hop on the
+  // serving embedding call, and the property worth asserting is that an unset var means *today's
+  // call* — byte-identical arguments — while a set one adds exactly one option.
+  semanticFallbackHits,
 };
 
 /** Test seam: forget the cooldown. */
