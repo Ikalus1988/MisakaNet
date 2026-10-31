@@ -124,11 +124,20 @@ def test_the_installer_downloads_without_gnu_timeout(tmp_path):
     script exited 1 with nothing downloaded.
     """
     shell = require_posix_shell()
+    shim_path = _path_without(tmp_path / "shim", "timeout")
+    # The scenario is "a POSIX machine without GNU `timeout`". Building that PATH means replacing it
+    # with a directory of links/copies, and on Windows that directory has no POSIX userland the script
+    # can use (`tr: command not found`): Git for Windows keeps those in `usr/bin`, and MSYS resolves
+    # them inside bash rather than from the inherited PATH. That is a limitation of the harness, not of
+    # the script — skip instead of reporting a portability bug that does not exist.
+    if not shutil.which("tr", path=shim_path):
+        import pytest
+        pytest.skip("this host cannot build a POSIX PATH (no tr in the shim)")
     setup_dir = tmp_path / "setup"
     setup_dir.mkdir()
     env = dict(
         os.environ,
-        PATH=_path_without(tmp_path / "shim", "timeout"),
+        PATH=shim_path,
         # `as_uri()` (percent-encoded, `file:///D:/…` on Windows) and `RAW_ONLY=1`: a literal
         # `file://C:\…` is not a URL `curl` accepts, and the download then fell through to the network
         # mirrors — the test verified a *tagged* installer against the working tree's digest and failed
