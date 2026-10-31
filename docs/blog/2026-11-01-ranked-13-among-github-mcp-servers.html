@@ -198,13 +198,18 @@
   <h2>The month, in numbers</h2>
   <table>
     <tr><th>what</th><th class="num">then</th><th class="num">now</th></tr>
-    <tr><td>lessons in the served corpus</td><td class="num">516</td><td class="num">749</td></tr>
+    <tr><td>lessons in the served corpus</td><td class="num">658</td><td class="num">749</td></tr>
     <tr><td><code>[Lesson]</code> submissions converted to files</td><td class="num">0</td><td class="num">91</td></tr>
     <tr><td>open questions the triage could see</td><td class="num">12 of 54</td><td class="num">54 of 54</td></tr>
-    <tr><td>SSE first byte (<code>/mcp</code>)</td><td class="num">8,100 ms</td><td class="num">111 ms</td></tr>
+    <tr><td>SSE first byte (<code>/mcp</code>)</td><td class="num">8,100 ms*</td><td class="num">111 ms</td></tr>
     <tr><td>release</td><td class="num">2.50.1</td><td class="num">3.0.0 on PyPI</td></tr>
-    <tr><td>coding clients with a documented install path</td><td class="num">11</td><td class="num">12</td></tr>
+    <tr><td>coding clients with a documented install path</td><td class="num">—</td><td class="num">12</td></tr>
   </table>
+  <p style="font-size:var(--fs-2xs);color:var(--fg-3);">
+    * The 8,100 ms figure was the same call buffered, measured over a degraded link; 111 ms is the
+    streamed first byte from a clean network, and the shape (first byte well before the last) is what the
+    daily CI check now asserts, not the milliseconds.
+  </p>
 
   <p>
     The interesting number is the third one. The triage script fetched one page of open issues and
@@ -275,7 +280,7 @@
     waiting. The repository has a heartbeat for everything except that.
   </p>
   <p>
-    Open source at this size is mostly bookkeeping. The corpus grew by 233 lessons, and each one needed
+    Open source at this size is mostly bookkeeping. The corpus grew by 91 lessons in two batches, and each one needed
     its provenance checked, its title repaired, its domain mapped, and a receipt written to whoever
     reported it — often a stranger who will never read the reply. The代码 is the easy half.
   </p>
