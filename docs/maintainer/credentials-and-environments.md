@@ -156,6 +156,29 @@ Delete `NPM_TOKEN` (and the `NODE_AUTH_TOKEN` passthrough) only when all three p
 Deleting earlier trades a working fallback for a release that can fail with a bare 401, and step 5 above is
 the only thing that makes deletion safe.
 
+### 4.1a PyPI: trusted publishing *and* PEP 740 attestations (2026-11-01)
+
+`release-pypi.yml` has published through trusted publishing (`environment: pypi`, `id-token: write`) for a
+while; that proves **who** uploaded a file. The publish step now also passes `attestations: true`, which
+attaches Sigstore-backed provenance saying **what** built it and from which commit:
+
+```sh
+# anyone can check, without our key:
+pip install pypi-attestations
+pypi-attestations verify --repository https://pypi.org/misakanet/ dist/misakanet-*.whl
+```
+
+It costs one line because the OIDC token is already requested. This is the half of "signed releases" that
+covers the channel users actually install from.
+
+**The half deliberately not done:** signing the git tags, the GitHub Releases, and the Marketplace action's
+moving `v1` alias. The threat those would address is a rewritten tag or release body, and the mitigation
+this repository actually relies on is narrower and already in place — the installer and bootstrap **pin a
+tag and verify a sha256 of every file they download** (2026-10-31, audit F19), so a rewritten tag fails
+closed instead of executing. Signed tags would add a verification step for a population (people who
+`git clone` and check signatures) that the project does not currently have; that is a decision to revisit
+when a second distribution channel exists, not before.
+
 ### 4.2 The onboarding snapshot's GitHub traffic leg is deliberately credential-free (2026-10-01)
 
 `scripts/snapshot_onboarding.py` has three legs: npm downloads, the site's own activity counts, and

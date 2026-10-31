@@ -99,3 +99,14 @@ jobs:
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33  # release/v1
+        with:
+          # PEP 740 attestations (2026-11-01). Trusted publishing already proves *who* uploaded the
+          # files; this attaches Sigstore-backed provenance saying *what* built them and from which
+          # commit, verifiable without our key: `pypi-attestations verify ...`. No secret, no extra
+          # workflow — `id-token: write` above is all it needs, which is why it costs one line.
+          #
+          # This is the cheap half of "signed releases", and the half that matters for the channel
+          # users install from (`pip install misakanet`). The other half — signing the git tags and
+          # the Marketplace action's `v1` alias — is deliberately not done: see
+          # docs/maintainer/credentials-and-environments.md §4.
+          attestations: true
