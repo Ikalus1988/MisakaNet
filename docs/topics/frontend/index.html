@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Frontend Lessons — MisakaNet</title>
-<meta name="description" content="14 indexed failure lessons about frontend. From MisakaNet — Git-backed failure lesson network.">
+<meta name="description" content="17 indexed failure lessons about frontend. From MisakaNet — Git-backed failure lesson network.">
 <link rel="canonical" href="https://misakanet.org/topics/frontend/">
 <meta property="og:title" content="Frontend Lessons">
-<meta property="og:description" content="14 indexed failure lessons about frontend. From MisakaNet — Git-backed failure lesson network.">
+<meta property="og:description" content="17 indexed failure lessons about frontend. From MisakaNet — Git-backed failure lesson network.">
 <meta property="og:url" content="https://misakanet.org/topics/frontend/">
 <!-- design-tokens:start -->
 <style id="misaka-design-tokens">
@@ -168,7 +168,7 @@
 </head>
 <body>
 <h1>Frontend Lessons</h1>
-<div class="count">14 lessons in this domain</div>
+<div class="count">17 lessons in this domain</div>
 
 <div class="lesson">
   <a href="/lessons/antd-upload-fires-onchange-once-per-file-per-batch-so-one-drop-becomes-n-busines/">antd Upload fires onChange once per file per batch, so one drop becomes N business units</a>
@@ -187,12 +187,24 @@
   <div class="summary">Seller account exists and cookies from a real Firefox profile inject into Playwright. Navigation to:</div>
 </div>
 <div class="lesson">
+  <a href="/lessons/fractional-devicepixelratio-makes-1dpr-pens-anti-alias-and-breaks-pixel-exact-qt/">Fractional devicePixelRatio makes 1/DPR pens anti-alias and breaks pixel-exact Qt render tests</a>
+  <div class="summary">On a fractional devicePixelRatio the exact pixel assertions of a Qt/PySide render test fail, while the same suite passes</div>
+</div>
+<div class="lesson">
   <a href="/lessons/js-dead-code-chain-break/">JavaScript 执行链断裂：一个未捕获 TypeError 如何让整个页面静默失效</a>
   <div class="summary">JavaScript 是单线程事件驱动模型。同步执行线程中任何一个未捕获的异常（TypeError、ReferenceError 等）都会导致**整个执行线程中断**，该线程后续所有代码不再执行。常见场景：</div>
 </div>
 <div class="lesson">
   <a href="/lessons/knowledge-graph-ux-patterns-from-high-star-projects/">knowledge graph ux patterns from high star projects</a>
   <div class="summary">知识图谱可视化项目存在典型问题: 节点过多导致信息过载、关系缺乏上下文、无法聚焦局部视图。</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/qt-enable-highdpi-scaling0-forces-devicepixelratiof10-for-deterministic-qt-tests/">QT_ENABLE_HIGHDPI_SCALING=0 forces devicePixelRatioF()==1.0 for deterministic Qt tests without offscreen</a>
+  <div class="summary">On a Linux desktop with fractional screen DPI (devicePixelRatioF() = 1.208) Qt render tests were non-deterministic; QT_S</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/qwidgetrenderqimage-maps-one-logical-widget-pixel-to-one-target-pixel-regardless/">QWidget.render(QImage) maps one logical widget pixel to one target pixel regardless of screen DPR</a>
+  <div class="summary">While debugging exact-pixel tests, setting the target QImage's devicePixelRatio to the widget's DPR (1.208) moved the re</div>
 </div>
 <div class="lesson">
   <a href="/lessons/missing-react-dom-render-react-elements-to-static-html-with-a-hand-written-rende/">Missing react-dom: render React elements to static HTML with a hand-written renderer</a>

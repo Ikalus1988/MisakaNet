@@ -69,7 +69,7 @@ Start-Process $chrome -ArgumentList "--user-data-dir=`"$UserDataDir`""
 **(B) 直接不用带空格的路径**，例如：
 
 ```powershell
-$UserDataDir = 'C:\Users\Public\chrome-cdp-profile'
+$UserDataDir = 'C:\Users\<user>\chrome-cdp-profile'
 ```
 
 附带一个坑：`$args` 是 PowerShell 的**自动变量**，不要拿它当参数数组名，用 `$progArgs` 之类的名字。

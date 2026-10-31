@@ -79,7 +79,7 @@ MisakaNet should stay offline-first and Git-backed. External listings are useful
 | 工作线 | 在跑的证据 | 状态 |
 |---|---|---|
 | **embedding / 语义闸门** | 三臂同语料同查询：跨语言 zh→en，`bge-m3` 0.636 / `gemini` 0.727 / 线上 0.455（[`embedding-ab-2026-10-27.md`](docs/benchmarks/embedding-ab-2026-10-27.md)）→ 融合上线后实测 0.697（[`cjk-fusion-2026-10-28.md`](docs/benchmarks/cjk-fusion-2026-10-28.md)） | 测量已完成，**机制已改**：CJK 查询改为 RRF 融合（同日 #3980，回滚 `MISAKANET_CJK_FUSE=0`）；**English 侧未动** |
-| **数据集发布** | `data.misakanet.org`（R2，版本化 `v<日期>-<sha>`，逐文件 SHA-256）+ BigQuery `misakanet`（651 lessons / 267 queries，公开可查） | 已上线 |
+| **数据集发布** | `data.misakanet.org`（R2，版本化 `v<日期>-<sha>`，逐文件 SHA-256）+ BigQuery `misakanet`（发布快照 651 条课程 / 267 条查询，公开可查；活语料见 `data/lessons.json`） | 已上线 |
 | **Analytics Engine** | 未建：`GET /accounts/.../analytics_engine/datasets` → 404（2026-10-28） | **阻塞**，所以季度「state of agent failures」没有数据源 |
 
 ### 四、里程碑 1 的四个环节：一个已交付（两面）、一个半个、一个没做

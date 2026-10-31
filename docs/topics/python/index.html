@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Python Lessons — MisakaNet</title>
-<meta name="description" content="23 indexed failure lessons about python. From MisakaNet — Git-backed failure lesson network.">
+<meta name="description" content="26 indexed failure lessons about python. From MisakaNet — Git-backed failure lesson network.">
 <link rel="canonical" href="https://misakanet.org/topics/python/">
 <meta property="og:title" content="Python Lessons">
-<meta property="og:description" content="23 indexed failure lessons about python. From MisakaNet — Git-backed failure lesson network.">
+<meta property="og:description" content="26 indexed failure lessons about python. From MisakaNet — Git-backed failure lesson network.">
 <meta property="og:url" content="https://misakanet.org/topics/python/">
 <!-- design-tokens:start -->
 <style id="misaka-design-tokens">
@@ -168,7 +168,7 @@
 </head>
 <body>
 <h1>Python Lessons</h1>
-<div class="count">23 lessons in this domain</div>
+<div class="count">26 lessons in this domain</div>
 
 <div class="lesson">
   <a href="/lessons/intake-pipeline-cli-text-truncation-and-section-loss/">Intake Pipeline CLI Text Truncation and Section Loss</a>
@@ -181,6 +181,14 @@
 <div class="lesson">
   <a href="/lessons/asyncio-cancellederror-swallows-resources/">Python asyncio CancelledError Silently Swallows Resources in Long-Running Services</a>
   <div class="summary">Python asyncio task exception handler silently swallows CancelledError when task is cancelled during await, leading to r</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/bilibili-api-get-download-url-returns-no-durl-key-keyerror-durl/">bilibili-api get_download_url returns no durl key (KeyError durl)</a>
+  <div class="summary">Calling bilibili-api Video.get_download_url(cid=...) then data["durl"][0]["url"] raises KeyError: durl.</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/faster-whisper-1x-crashes-on-pyav-19-avopen-got-an-unexpected-keyword-argument-m/">faster-whisper 1.x crashes on PyAV 19: av.open() got an unexpected keyword argument metadata_errors</a>
+  <div class="summary">Installed faster-whisper 1.2.1 + av 19.x from pip. Calling model.transcribe(<path-to-wav>) raises TypeError: open() got </div>
 </div>
 <div class="lesson">
   <a href="/lessons/fehler-python-modul-nicht-gefunden/">ModuleNotFoundError in Python trotz pip install</a>
@@ -241,14 +249,6 @@
 <div class="lesson">
   <a href="/lessons/python-tarfile-extracts-macos-appledouble-members-as-real-files-inflating-the-ex/">Python tarfile extracts macOS AppleDouble ._ members as real files, inflating the extracted tree</a>
   <div class="summary">Extracting an Apple-created `.tar.gz` — an iOS sysdiagnose archive in the reporter's case — with Python's `tarfile` rais</div>
-</div>
-<div class="lesson">
-  <a href="/lessons/python-venv-tiktoken-module-not-found/">Python venv 中 tiktoken 安装后仍报 ModuleNotFoundError</a>
-  <div class="summary">在已有 venv 中 `pip install tiktoken`，安装成功但运行时报 `ModuleNotFoundError: cannot import name '_namespace'` 或其他模块找不到的错误。</div>
-</div>
-<div class="lesson">
-  <a href="/lessons/python-venv-troubleshoot/">Python venv 激活失败或路径不匹配</a>
-  <div class="summary">`source venv/bin/activate` 后 `which python` 还是系统 Python，或 `deactivate` 报错。</div>
 </div>
 <div class="back"><a href="/">← Back to MisakaNet</a> · <a href="/search/">Search lessons</a></div>
 <footer class="footer">
