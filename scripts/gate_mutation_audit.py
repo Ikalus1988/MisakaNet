@@ -176,7 +176,11 @@ def hard_gates(path: Path | None = None) -> tuple[str, ...]:
 def missing_hard_gates(gates: Sequence["Gate"] | None = None) -> tuple[str, ...]:
     """Hard gates with no entry in `gates` (default: the module-level registry) proving them."""
     registry = gates if gates is not None else GATES.values()
-    covered = {gate.check for gate in registry if gate.check}
+    covered: set[str] = set()
+    for gate in registry:
+        if gate.check:
+            covered.add(gate.check)
+        covered.update(getattr(gate, "also_checks", ()))
     return tuple(context for context in hard_gates() if context not in covered)
 
 
@@ -973,6 +977,12 @@ class Gate:
     `docs/ci-gates.md` spells it; a full run fails when any context in that table has no gate
     naming it. `why` is required when `check` is `None`: an entry that is not a hard gate has to say
     why it is in the audit anyway, or it is just a gate nobody asked to prove.
+
+    `also_checks` exists because a *matrix* produces several contexts from one job: since
+    2026-11-01 both `test (ubuntu-latest, 3.11)` and `test (windows-latest, 3.11)` are required, and
+    they run the same `Run Tests` / `Verify test outcome` steps — the matrix changes `runs-on`, not
+    the criterion. Proving that criterion once is proving it for every leg; a second entry would run
+    the same mutation against the same steps and call the duplicate evidence.
     """
 
     name: str
@@ -982,6 +992,7 @@ class Gate:
     mutations: tuple[Mutation, ...]
     prepare: Callable[[Path], Path]              # (run_dir) -> the valid artifact (file or dir)
     check: str | None = None                     # hard-gate context from docs/ci-gates.md
+    also_checks: tuple[str, ...] = ()            # further contexts this same job produces
     why: str = ""                                # required when check is None
 
 
@@ -1069,6 +1080,9 @@ GATES: dict[str, Gate] = {
     "pytest-leg": Gate(
         name="pytest-leg",
         check="test (ubuntu-latest, 3.11)",
+        # Required since 2026-11-01. Same job, same two steps, different `runs-on` — the matrix
+        # changes the machine, not the criterion, so one mutation proves both contexts.
+        also_checks=("test (windows-latest, 3.11)",),
         description=("the pytest suite on the required `ubuntu-latest` + 3.11 leg, and the step "
                      "that turns pytest's exit code into that leg's verdict"),
         script=CROSS_PLATFORM_WORKFLOW,
@@ -1272,7 +1286,11 @@ class AuditReport:
         """Hard gates this run did not prove — a required check nobody showed can fail."""
         if self.hard_gates is None:
             return ()
-        covered = {result.gate.check for result in self.results if result.gate.check}
+        covered: set[str] = set()
+        for result in self.results:
+            if result.gate.check:
+                covered.add(result.gate.check)
+            covered.update(result.gate.also_checks)
         return tuple(context for context in self.hard_gates if context not in covered)
 
     @property
@@ -1580,11 +1598,14 @@ def main(argv: list[str] | None = None) -> int:
         except AuditError as exc:
             print(f"audit could not run: {exc}", file=sys.stderr)
             return 2
-        covered = {gate.check for gate in GATES.values() if gate.check}
         for name, gate in GATES.items():
             label = gate.check or "not a hard gate"
+            if gate.also_checks:
+                label += f" (+ {', '.join(gate.also_checks)})"
             print(f"{name:<22} {label}")
-        missing = [context for context in hard if context not in covered]
+        # `missing_hard_gates` is the one definition of "covered": it knows a matrix job produces
+        # several contexts. Recomputing the set here is how the two readers drifted apart once.
+        missing = list(missing_hard_gates())
         print(f"\nhard gates from {_rel(HARD_GATES_DOC)}: {', '.join(hard)}")
         if missing:
             print(f"uncovered: {', '.join(missing)}")
