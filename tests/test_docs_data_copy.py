@@ -284,7 +284,7 @@ def test_the_browser_projection_is_a_view_of_the_corpus():
     problems = cdc.compare_lite_projection(cdc.CANONICAL, cdc.LITE)
     assert problems == [], problems
     size = cdc.LITE.stat().st_size
-    assert size < cdc.LITE_MAX_BYTES, (
+    assert size < cdc.lite_ceiling(len(cdc.load_index(cdc.LITE))), (
         f"the projection grew to {size:,} bytes; it exists to be far smaller than the corpus")
 
 

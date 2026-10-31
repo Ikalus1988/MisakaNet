@@ -347,7 +347,11 @@ def load_public_vocabulary(repo: Path = REPO, base: bool = False) -> set[str] | 
 
     data = None
     if base:
-        ref = _base_ref(repo) if hasattr(sys.modules[__name__], "_base_ref") else None
+        # `sys.modules.get`, not `sys.modules[__name__]`: a caller that loads this file by path
+        # (importlib, a test sandbox) may never register the module, and the bare lookup raised
+        # KeyError before any vocabulary check ran — the gate crashed on the input it was there
+        # to judge (2026-10-31, `test_lesson_source_contract.py`).
+        ref = _base_ref(repo) if hasattr(sys.modules.get(__name__), "_base_ref") else None
         if ref:
             try:
                 import subprocess

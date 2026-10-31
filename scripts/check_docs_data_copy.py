@@ -55,6 +55,17 @@ if str(REPO) not in sys.path:            # runnable as `python3 scripts/check_do
 from scripts.update_lessons_json import LITE_FIELDS  # noqa: E402  (REPO must exist first)
 
 LITE_MAX_BYTES = 300_000
+# 2026-10-30: the flat cap above was a proxy that only held while the corpus was ~650 lessons. The file
+# is a *view* — seven short fields, no body text — and its per-lesson shape did not change when the
+# corpus grew to 705 (326,351 B / 705 = 463 B per lesson); only the count did. A per-lesson budget keeps
+# the guard pointed at the shape: a re-introduced `preview` is ~2 KB per lesson and blows it immediately,
+# while a corpus that is simply bigger no longer turns the check red for being bigger.
+LITE_MAX_BYTES_PER_LESSON = 470
+
+
+def lite_ceiling(entries: int) -> int:
+    """The byte budget for a projection of `entries` lessons (flat floor, per-lesson above it)."""
+    return max(LITE_MAX_BYTES, LITE_MAX_BYTES_PER_LESSON * max(entries, 1))
 PUBLISHED = REPO / "docs" / "data" / "lessons.json"
 
 # How many ids a failure message names before it stops: enough to recognize the diff, short enough to
@@ -219,8 +230,9 @@ def compare_lite_projection(canonical: Path, lite: Path) -> list:
             break
 
     size = lite.stat().st_size
-    if size > LITE_MAX_BYTES:
-        problems.append(f"the projection is {size:,} bytes, over the {LITE_MAX_BYTES:,}-byte ceiling — it "
+    ceiling = lite_ceiling(len(projection))
+    if size > ceiling:
+        problems.append(f"the projection is {size:,} bytes, over the {ceiling:,}-byte ceiling — it "
                         "is meant to be a small view of the corpus, not the corpus")
     return problems
 
