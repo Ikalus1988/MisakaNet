@@ -74,7 +74,20 @@ def _path_without(shim: Path, excluded: str) -> str:
     """
     shim.mkdir(parents=True, exist_ok=True)
     linked: set[str] = set()
-    for directory in os.environ.get("PATH", "").split(os.pathsep):
+    directories = os.environ.get("PATH", "").split(os.pathsep)
+    # Git for Windows puts its userland (`tr`, `awk`, `sha256sum`, …) in `usr/bin`, which the Windows
+    # PATH does not carry — bash adds it *inside* bash. This test replaces PATH for a bash child, so
+    # without this the shim has no `tr` and the script fails with `tr: command not found`: a harness
+    # gap that looks exactly like a portability bug in the script, which is what this file measures.
+    for probe in ("git", "bash"):
+        found = shutil.which(probe)
+        if not found:
+            continue
+        root = Path(found).resolve().parent.parent
+        for candidate in (root / "usr" / "bin", root / "bin"):
+            if candidate.is_dir() and str(candidate) not in directories:
+                directories.append(str(candidate))
+    for directory in directories:
         if not directory:
             continue
         try:
