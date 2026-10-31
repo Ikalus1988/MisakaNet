@@ -2455,6 +2455,37 @@ async function readStoredIndex(env) {
 }
 
 /** Record the outcome of a refresh attempt. Never throws: it runs on failure paths too. */
+/**
+ * How many lessons the serving table holds **right now**, or `null` when D1 cannot answer.
+ *
+ * One `COUNT(*)` on a primary-key table. It costs a row read and turns `/api/search-index` from "did
+ * the last refresh agree with itself" into "is the published index the size of the corpus".
+ */
+async function liveLessonCount(env) {
+  const d1 = d1Binding(env);
+  if (!d1) return null;
+  try {
+    const row = await d1.prepare("SELECT COUNT(*) AS n FROM lessons").first();
+    const n = row && Number(row.n);
+    return Number.isFinite(n) ? n : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * `behindBy` = (corpus now) − (what the index published), or `null` when neither number exists.
+ *
+ * The live count wins. `refreshedCorpusCount` is the corpus the *last refresh saw*, and using it made
+ * the field read 0 in the one window where a reader needs it to be non-zero (2026-10-31: sync at 05:50,
+ * index still at 705, `behindBy: 0` against 749 rows).
+ */
+function behindByValue(liveCount, docCount, refreshedCorpusCount) {
+  const corpus = Number.isFinite(liveCount) ? liveCount
+    : Number.isFinite(refreshedCorpusCount) ? refreshedCorpusCount : null;
+  return corpus === null || !Number.isFinite(docCount) ? null : corpus - docCount;
+}
+
 async function recordIndexHealth(env, record) {
   try {
     await storePut(env, BM25_INDEX_HEALTH_KEY, JSON.stringify({ at: new Date().toISOString(), ...record }), {
@@ -9448,6 +9479,7 @@ export default {
     if (request.method === "POST" && url.pathname === "/api/feedback") {
       if (!hasDurableStore(env)) return jsonResponse({ error: "no storage configured" }, 503);
 
+
       // IP rate limit: 10 feedbacks per IP per minute.
       //
       // Through `consumeQuota` rather than the `storeGet` + compare + `storePut` this used to be
@@ -9551,6 +9583,9 @@ export default {
         // Read unconditionally: the health row is what explains an *empty* or frozen index, so it has
         // to be reported in exactly the states where the index itself cannot be read.
         const health = await storeGet(env, BM25_INDEX_HEALTH_KEY, "json").catch(() => null);
+        // The live count, so `behindBy` answers "is the index the size of the corpus" rather than "did
+        // the last refresh agree with itself". `null` when D1 cannot answer — never 0 by default.
+        const liveCount = await liveLessonCount(env);
         if (!index) {
           return jsonResponse({ available: false, lastRefresh: health || null,
             corpusHint: "no index row: the cron has never published one, or the row was swept" });
@@ -9582,15 +9617,20 @@ export default {
           // stays because a frozen index is a symptom worth reporting whoever caused it.
           stale: !Number.isFinite(Date.parse(index.built_at)) ||
                  Date.now() - Date.parse(index.built_at) > BM25_INDEX_MAX_AGE_MS,
-          // `lastRefresh.corpusCount` is the corpus the last refresh *saw*; `docCount` is what is
-          // published. They disagreeing is the freeze this endpoint exists to make visible, and the
-          // reason is in `lastRefresh.reason` ("fresh" while they disagree = the comparison is wrong).
-          behindBy: Number.isFinite(health?.corpusCount) ? health.corpusCount - index.docCount : null,
+          // `behindBy` used to be `lastRefresh.corpusCount - docCount`, which is 0 in exactly the case
+          // that matters: a sync has run, the cron has not, and the index still holds yesterday's
+          // corpus. Measured 2026-10-31 — 47 lessons merged at 05:50, the last refresh record said
+          // `corpusCount: 705`, `/api/search-index` reported `behindBy: 0` while D1 held 749. The
+          // number now comes from the live table (`liveCorpusCount`), with the refresh record kept as
+          // the fallback and as the *reason* (`lastRefresh.reason`).
+          liveCorpusCount: liveCount,
+          behindBy: behindByValue(liveCount, index.docCount, health?.corpusCount),
           // Which implementation answered today's searches (#2121): `{bm25: N, fallback: M}`. Empty
           // without a D1 binding, for the same reason `mcpClients` is.
           servedBy: await readSearchBackendCounts(env, new Date().toISOString().slice(0, 10)),
           lastRefresh: health || null,
-          corpusHint: "compare docCount against data/lessons.json; a frozen builtAt means the write failed",
+          corpusHint: "behindBy uses liveCorpusCount (D1 now) − docCount; a frozen builtAt means the "
+                    + "cron could not write, and `lastRefresh.reason` says what it decided",
           channelHint: cjkChannel
             ? "the published index carries the bigram channel; CJK ranking is live"
             : "no bigram channel in the published index: rankCjkChannel() returns [] and CJK recall is at "
@@ -10605,6 +10645,10 @@ export {
   // concurrent redemptions of one code both got a token (2026-10-31 audit). The claim is the fix, and
   // a test has to drive it directly because the concurrency cannot be reproduced through `fetch`.
   claimOnce,
+  // Exported for workers/search-index-behindby.test.mjs: `behindBy` read 0 in the one window it exists
+  // to report (sync done, cron not yet), because it compared the index against the corpus the *last
+  // refresh* saw rather than against the corpus now.
+  behindByValue,
 };
 
 /** Test seam: forget the cooldown. */
