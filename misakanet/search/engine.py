@@ -75,11 +75,15 @@ def _l2():
                 title TEXT, domain TEXT, status TEXT,
                 reference TEXT, scope TEXT, source TEXT, tags TEXT, language TEXT
             )""")
-        # Migration: add language column if upgrading from older schema
-        try:
+        # Migration: add `language` if upgrading from an older schema.
+        #
+        # `PRAGMA table_info` rather than try/except around the ALTER. The 2026-10-31 audit ran eight
+        # threads against this function and seven died with `DatabaseError: duplicate column name:
+        # language`: SQLite reports that one through the *parent* exception class often enough that
+        # `except sqlite3.OperationalError` walked past it. Asking the schema removes the exception.
+        columns = {row[1] for row in _L2_CONN.execute("PRAGMA table_info(file_cache)").fetchall()}
+        if "language" not in columns:
             _L2_CONN.execute("ALTER TABLE file_cache ADD COLUMN language TEXT")
-        except sqlite3.OperationalError:
-            pass  # column already exists
         _L2_CONN.commit()
     return _L2_CONN
 
@@ -150,6 +154,19 @@ def _parse_yaml_frontmatter(text: str) -> dict:
 
 
 def _load_docs_cached(directory: Path, is_lesson: bool = True) -> list[CachedDoc]:
+    """Serialised entry point for the shared connection.
+
+    `check_same_thread=False` lets every searching thread reach one `sqlite3.Connection`, and SQLite
+    permits that only when the *uses* are serialised. They were not: the 2026-10-31 audit's eight-thread
+    run lost seven of them to `DatabaseError: duplicate column name: language` (the schema migration
+    racing itself, plus queries interleaved with it). The lock covers the whole load — that is what a
+    single connection requires, and the work it protects is one committed read plus the changed rows.
+    """
+    with _CACHE_LOCK:
+        return _load_docs_cached_locked(directory, is_lesson)
+
+
+def _load_docs_cached_locked(directory: Path, is_lesson: bool = True) -> list[CachedDoc]:
     """L2缓存加载 — 只重新解析有变动的文件。
 
     如果 is_lesson=True，扫描 misakanet.lesson_index.canonical_lessons 给出
