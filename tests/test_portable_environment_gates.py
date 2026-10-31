@@ -140,7 +140,11 @@ def test_a_wget_only_machine_can_download(tmp_path):
     for name in files:
         target = mirror / "integrations" / "agent-autostart" / name
         target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(f"# {name}\n", encoding="utf-8")
+        # The real bytes, not `# name` placeholders: bootstrap verifies each download's sha256 before
+        # handing over (the audit's F19), and a mirror is by definition a copy of the same files. A
+        # placeholder here would test "the download loop reaches the verification step", not "a
+        # wget-only machine can install" — which is what this file is about.
+        shutil.copy(BOOTSTRAP.parent / name, target)
 
     bindir = tmp_path / "bin"
     bindir.mkdir()
@@ -153,7 +157,11 @@ def test_a_wget_only_machine_can_download(tmp_path):
     # the installer itself is out of scope here; stop at the hand-over
     (bindir / "python3").write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
     (bindir / "python3").chmod(0o755)
-    for name in ("sed", "mkdir", "cp", "rm", "mktemp", "tr", "sh"):
+    # `sha256sum`/`shasum`: bootstrap refuses to hand over an unverified installer, so a machine that
+    # can install is one that has a digest tool. Every real POSIX system has one of the two; the stub
+    # PATH has to say so or this test measures the stub, not the machine.
+    # `awk` because the digest helpers pipe through it; every POSIX system ships it.
+    for name in ("sed", "awk", "mkdir", "cp", "rm", "mktemp", "tr", "sh", "sha256sum", "shasum"):
         found = shutil.which(name)
         if found:
             (bindir / name).symlink_to(found)
