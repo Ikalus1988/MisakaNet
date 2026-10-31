@@ -86,6 +86,21 @@ def _day(value: str | None) -> date | None:
 _CITE = re.compile(r"(?:#\s*|intake[-_ ](?:issue[-_ ])?)(\d{2,6})(?!\d)|issues/(\d{2,6})(?!\d)", re.I)
 
 
+def frontmatter_available() -> bool:
+    """Can this interpreter parse lesson frontmatter at all?
+
+    `intake_receipt._frontmatter` degrades to `{}` when PyYAML is missing ("never raises on a malformed
+    lesson"), so every lesson then looks like it has no provenance and the panel reported
+    `converted 0 · salvage 0/89 · no lesson cites an issue` — a read failure rendered as an absence,
+    live, on 2026-10-31. The check is here so that state can be named instead of averaged in.
+    """
+    try:
+        import yaml  # noqa: F401,PLC0415 — presence check, not a use
+        return True
+    except Exception:  # noqa: BLE001 — any import failure means "cannot parse"
+        return False
+
+
 def lesson_records(lessons_dir: Path = LESSONS_DIR) -> list[dict]:
     """`{created, issues}` for every lesson, read once.
 
@@ -242,6 +257,15 @@ def render_lines(summary: dict) -> list[str]:
             f"{row['converted']} ({_pct(row['converted'], row['created'])}) | {open_cell} |"
         )
 
+    lessons_error = summary.get("lessons_error") or ""
+    if lessons_error:
+        lines += ["", f"- **lesson provenance could not be read** ({lessons_error}) — the conversion "
+                      f"numbers are **absent, not zero**: `converted`, the latency percentiles and the "
+                      f"salvage rate all come from lesson frontmatter."]
+        return lines + ["", "_This panel reads issue state, not answers: `converted` means a lesson "
+                           "cites the issue (provenance, not a keyword). It is a shape of the backlog, "
+                           "not a verdict on it._"]
+
     latency = summary["latency"]
     if latency["n"]:
         lines += ["", f"- **issue → lesson**: median **{latency['median']} days**, p90 "
@@ -362,6 +386,11 @@ def collect(*, token: str | None, lessons_dir: Path = LESSONS_DIR,
     lessons = lesson_records(lessons_dir)
     summary = summarize(issues, lessons, today)
     summary["lessons_on_disk"] = corpus_size(lessons_dir) or len(lessons)
+    if not lessons and summary["lessons_on_disk"]:
+        summary["lessons_error"] = (
+            "PyYAML is not installed, so lesson frontmatter cannot be parsed"
+            if not frontmatter_available() else
+            "no lesson on disk carries readable frontmatter")
     if fetch_index_payload:
         try:
             summary["index"] = fetch_index(index_url)

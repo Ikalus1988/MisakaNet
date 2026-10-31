@@ -62,6 +62,14 @@ jobs:
           # matches the suite's floor rather than a dependency of this script.
           python-version: "3.11"
 
+      # ...except the pipeline panel's provenance read, which is not stdlib. Its lesson citations come
+      # from `scripts/intake_receipt._frontmatter`, and that helper degrades to `{}` when PyYAML is
+      # absent ("never raises on a malformed lesson") — so without this line every lesson looks like it
+      # has no provenance and the panel printed `converted 0`, `salvage 0/89` and "no lesson cites an
+      # issue" on 2026-10-31. Measured before the fix: those three lines were all a missing dependency.
+      - name: Install the one non-stdlib dependency the provenance read needs
+        run: python3 -m pip install --quiet pyyaml
+
       - name: Compose the digest
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}

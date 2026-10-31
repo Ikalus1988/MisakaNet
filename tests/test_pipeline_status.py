@@ -251,3 +251,33 @@ def test_without_a_published_index_the_count_falls_back_to_the_parseable_lessons
     (lessons / "core").mkdir(parents=True)
     (lessons / "core" / "a.md").write_text("---\nissue: '#1'\n---\n", encoding="utf-8")
     assert ps.corpus_size(lessons) is None
+
+
+# ── unreadable provenance is not "nothing converted" (2026-10-31) ───────────
+#
+# The heartbeat workflow installs nothing ("Stdlib only"), PyYAML is therefore absent, and
+# `intake_receipt._frontmatter` degrades every lesson to `{}`. The panel then printed
+# `converted 0 (0%)`, `no lesson was created in the last 30 days that cites an issue` and
+# `salvage 0/89` — three confident zeros, all of them a missing dependency.
+
+def test_an_unreadable_provenance_says_so_instead_of_printing_zeros():
+    issues = [issue(1, "[Intake] rejected", created_days_ago=2, labels=["auto-rejected"])]
+    summary = ps.summarize(issues, [], TODAY)
+    summary["lessons_on_disk"] = 705
+    summary["lessons_error"] = "PyYAML is not installed, so lesson frontmatter cannot be parsed"
+    text = "\n".join(ps.render_lines(summary))
+    assert "lesson provenance could not be read" in text
+    assert "PyYAML is not installed" in text
+    assert "absent, not zero" in text
+    assert "no lesson was created in the last 30 days" not in text
+    assert "auto-rejected salvage" not in text
+
+
+def test_collect_flags_the_missing_parser(monkeypatch):
+    monkeypatch.setattr(ps, "fetch_issues", lambda *_a, **_k: [issue(1, "[Intake] i")])
+    monkeypatch.setattr(ps, "lesson_records", lambda *_a, **_k: [])
+    monkeypatch.setattr(ps, "corpus_size", lambda *_a, **_k: 705)
+    monkeypatch.setattr(ps, "frontmatter_available", lambda: False)
+    summary, reason = ps.collect(token="t", today=TODAY, fetch_index_payload=False)
+    assert reason == ""
+    assert "PyYAML" in summary["lessons_error"]
