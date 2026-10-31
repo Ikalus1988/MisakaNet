@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-10-31T05:57:07.919134+00:00",
+  "generated_at": "2026-10-31T12:47:53.819752+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "lessons: convert the second `[Lesson]` batch — 44 of 47, with titles and domains reviewed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4205",
-      "timestamp": "2026-10-31T05:49:57Z",
+      "title": "fix(corpus): a lesson named `…template…` is a lesson, not a template",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4222",
+      "timestamp": "2026-10-31T12:38:46Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(worker): the AI Gateway becomes a var on the serving embedding call, off by default",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4204",
-      "timestamp": "2026-10-31T04:40:08Z",
+      "title": "chore(main): release 3.0.0",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3827",
+      "timestamp": "2026-10-31T12:19:16Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(intake): `intake_lesson_to_file.py` — the `[Lesson]` converter, in the repo this time",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4203",
-      "timestamp": "2026-10-31T04:04:18Z",
+      "title": "feat(ci): measure the first byte from CI, and assert the shape rather than the milliseconds",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4214",
+      "timestamp": "2026-10-31T12:00:28Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(heartbeat): the pipeline panel reported \"nothing converted\" when PyYAML was missing",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4200",
-      "timestamp": "2026-10-31T03:41:06Z",
+      "title": "fix(installer): the skill digest is line-ending normalised",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4213",
+      "timestamp": "2026-10-31T11:23:19Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(health): assert the search index holds the corpus, not merely that it answers",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4199",
-      "timestamp": "2026-10-31T03:29:32Z",
+      "title": "fix(search-index): `behindBy` compares against the corpus now, not against the last refresh",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4215",
+      "timestamp": "2026-10-31T11:07:21Z",
       "source": "github"
     },
     {
