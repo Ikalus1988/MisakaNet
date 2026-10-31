@@ -329,7 +329,7 @@ function addDebugContext(env, errorObj, context) {
 const MCP_TOOLS = [
   {
     name: "misakanet_register",
-    description: "[ONBOARDING] Get a Bearer token for authenticated access (unlocks misakanet_write_lesson and higher rate limits). Reading needs no registration and has no daily cap: misakanet_search / misakanet_get_lesson work anonymously (a per-address burst limit protects the index; it is a speed limit, not a quota). No GitHub account or email needed, and no personal data is collected — the node is a pseudonym, not an account.\nToken lifetime: valid ~30 days. Pass client_id (a random UUID you generate once and keep private) to get the SAME node_id and token back on every later call and to renew them; without client_id every call creates a new node, which means your reuse evidence, receipts and history start over. Treat client_id as the node's key: presenting it returns that node's token, so don't publish it, commit it, or build it from something already public (a hostname or workspace id is guessable and usually visible) — generate a random UUID and store it like a token.\nReturns: object {node_id: string, token: string, registered_at: string, agent_type: string, reused: boolean} — reused=true means an existing node was found for this client_id; reused=false means this call created a new node (so a client_id you expected to be recognised was not, and the identity you had is not attached to this token).\nExample: misakanet_register(agent_type='claude-code', client_id='8f14e45f-2b1c-4f3a-9d2e-7c6b5a4d3e2f')\nOptional referral_code: the code of the node that invited you (`misakanet` referral code, 4-16 letters/digits). Recorded against your node and counted for that code — the only place a referral has ever been recorded, since the invitation otherwise never leaves the inviting machine. Counted once per new node: calling register again with the same client_id renews the same node and does not add to the count.",
+    description: "[ONBOARDING] Get a Bearer token for authenticated access (unlocks misakanet_write_lesson and higher rate limits). Reading needs no registration and has no daily cap: misakanet_search / misakanet_get_lesson work anonymously (a per-address burst limit protects the index; it is a speed limit, not a quota). No GitHub account or email needed, and no personal data is collected — the node is a pseudonym, not an account.\nToken lifetime: valid ~30 days. Pass client_id (a random UUID you generate once and keep private) to get the SAME node_id and token back on every later call and to renew them; without client_id every call creates a new node, which means your reuse evidence, receipts and history start over. `client_id` is a *name*, not the key: to renew a node, send the token it was given as `Authorization: Bearer` along with the same client_id. A renewal that presents only the name still works during a deprecation window, returns `deprecated`, and is refused once strict mode is on (`client_id_proof_required`). A fresh client_id registers as before. Still generate it randomly and keep it private — the name is how the node is found, and the token is how the caller proves it is the one that owns it.\nReturns: object {node_id: string, token: string, registered_at: string, agent_type: string, reused: boolean} — reused=true means an existing node was found for this client_id; reused=false means this call created a new node (so a client_id you expected to be recognised was not, and the identity you had is not attached to this token).\nExample: misakanet_register(agent_type='claude-code', client_id='8f14e45f-2b1c-4f3a-9d2e-7c6b5a4d3e2f')\nOptional referral_code: the code of the node that invited you (`misakanet` referral code, 4-16 letters/digits). Recorded against your node and counted for that code — the only place a referral has ever been recorded, since the invitation otherwise never leaves the inviting machine. Counted once per new node: calling register again with the same client_id renews the same node and does not add to the count.",
     inputSchema: {
       type: "object",
       properties: {
@@ -4065,12 +4065,43 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
         if (refreshed.some((ok) => !ok)) {
           logInternal("register: token refresh on reuse failed", kvWriteStats.last_error);
         }
+        // § The second half of the identity: who is asking? (2026-10-31 audit, needs_validation)
+        //
+        // `client_id` is a *name* — it appears in configs, transcripts and tutorials. The token is the
+        // key. This branch used to hand the token to anyone who knew the name, which is exactly what
+        // the audit measured. A caller that presents the token it was given proves it already holds
+        // the key; a caller with only the name is answering a question the name cannot answer.
+        //
+        // Grace first: `MISAKANET_CLIENT_ID_PROOF=strict` (a dashboard var, so enforcement needs no
+        // deploy) turns the answer into a refusal. Until then the response carries `deprecated` with
+        // the instruction, because the alternative — flipping straight to 401 — breaks every agent
+        // that stored the name and not the key, on the day it renews.
+        const presented = String(authToken || "").trim();
+        let provenWithToken = false;
+        if (presented.startsWith("mcp_")) {
+          const presentedRow = await storeGet(env, `mcp_token:${presented}`, "json");
+          provenWithToken = Boolean(presentedRow && presentedRow.node_id === mapping.node_id);
+        }
+        const strictProof = String(env.MISAKANET_CLIENT_ID_PROOF || "").toLowerCase() === "strict";
+        if (!provenWithToken && strictProof) {
+          return {
+            error: "client_id alone cannot renew a node's token",
+            code: "client_id_proof_required",
+            hint: "Present the token you were given: call misakanet_register with the same client_id and "
+                  + "`Authorization: Bearer <token>`. Omit client_id to create a new node instead.",
+          };
+        }
         return {
           node_id: mapping.node_id,
           token: known.token,
           registered_at: known.registered_at || mapping.created_at || now,
           agent_type: known.agent_type || agentType,
           reused: true,
+          ...(provenWithToken ? {} : {
+            deprecated: "renewing with client_id alone is being retired: also send the token you were "
+                        + "given as `Authorization: Bearer`, or this call will be refused once strict "
+                        + "mode is enabled.",
+          }),
         };
       }
     }

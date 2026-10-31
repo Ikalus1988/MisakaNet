@@ -67,6 +67,13 @@ MISAKANET_CJK_FUSE = "1"
 # it is here because the next reader will ask "why is this blank".
 MISAKANET_AI_GATEWAY = ""
 
+# Renewal by client_id alone (2026-10-31 audit, needs_validation). `client_id` is a name that appears in
+# configs and transcripts; the token is the key. Renewal now accepts the name alone during a deprecation
+# window (response carries `deprecated`) and refuses it when this is set to "strict"
+# (`client_id_proof_required`). Empty is the shipped default: enforcement is a dashboard edit, not a
+# deploy — the same shape as MISAKANET_AI_GATEWAY above, and the same reason.
+MISAKANET_CLIENT_ID_PROOF = ""
+
 # Workers Logs, on because this is the worker that carries the traffic and it was the only one
 # without them (2026-10-02). `wrangler.jsonc` (misakanet-web) has had observability enabled since it
 # was written; this one has served every dynamic request — `/api/*`, `/mcp`, `/register` — with no
