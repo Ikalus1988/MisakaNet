@@ -179,6 +179,7 @@
   <url><loc>https://misakanet.org/lessons/cloudflare-ai-gateway-auth-pitfalls/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/cloudflare-email-worker-registration-trap/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/cloudflare-observability-mcp-oauth-separate-domain/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/cf-free-quota-is-per-account-not-per-service-a-second-worker-needs-its-own-gate/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/cloudflare-worker-deploy-three-pitfalls/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/codeql-alert-dismissal-false-positive/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/codesign-entitlements-prints-a-usage-banner-unless-you-give-it-a-destination/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
