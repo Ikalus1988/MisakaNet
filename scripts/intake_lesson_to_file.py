@@ -116,11 +116,19 @@ def yq(value: str) -> str:
 
 
 def slugify(title: str, number: int) -> str:
-    text = unicodedata.normalize("NFKD", title).encode("ascii", "ignore").decode()
-    slug = re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")
+    """The URL stem: Unicode words kept, everything else collapsed to dashes.
+
+    ASCII-stripping was the first version, and it is wrong for most of this queue: a Chinese title lost
+    its leading half and became `50-30-35` or `adddatarepresentative` — a URL that names a number
+    fragment. The page generator (`build_lesson_pages.slugify`) keeps Unicode word characters, so the
+    file stem and the page URL agree when this does the same.
+    """
+    text = unicodedata.normalize("NFKC", title).lower().strip()
+    slug = re.sub(r"[^\w\s-]", "", text, flags=re.UNICODE)
+    slug = re.sub(r"[\s_]+", "-", slug)
+    slug = re.sub(r"-+", "-", slug).strip("-")
     if not slug:
-        # A title with no Latin characters has no ASCII slug. The issue number keeps the URL stable and
-        # unique; a transliteration library would be a dependency for a filename.
+        # Nothing word-like survived: the issue number keeps the URL stable and unique.
         return f"lesson-{number}"
     if len(slug) > SLUG_MAX:
         cut = slug[:SLUG_MAX]
@@ -156,19 +164,34 @@ def one_line(text: str, limit: int) -> str:
 
 # ── one issue → one lesson ──────────────────────────────────────────────────
 
-def convert(issue: dict, canonical: set[str]) -> tuple[dict | None, list[str]]:
-    """A lesson record plus the normalisations applied, or `None` and the reasons it was skipped."""
+def convert(issue: dict, canonical: set[str],
+            override: dict | None = None) -> tuple[dict | None, list[str]]:
+    """A lesson record plus the normalisations applied, or `None` and the reasons it was skipped.
+
+    `override` is a maintainer's correction for one issue — `{"domain": ...}` and/or `{"title": ...}`.
+    Per-issue rather than a bigger `DOMAIN_MAP`, because the submitter's label is a guess about *their*
+    submission, not a vocabulary: four `packaging` issues in the 2026-10-31 queue are all iOS IPA
+    signing (`mobile`), while `packaging` as a topic is build/release work (`devops`). A vocabulary
+    entry would be permanently wrong for one of them; an override is a decision about one issue.
+    """
     notes: list[str] = []
     body = clean(issue.get("body") or "")
     raw_domain = field(body, "Domain").lower()
+    override = override or {}
+    if override.get("domain"):
+        notes.append(f"domain {raw_domain or '?'} → {override['domain']} (maintainer override)")
+        raw_domain = str(override["domain"]).lower()
     domain = DOMAIN_MAP.get(raw_domain, raw_domain)
     if domain not in canonical:
         return None, [f"domain {raw_domain!r} has no canonical form"]
     if domain != raw_domain:
         notes.append(f"domain {raw_domain} → {domain}")
 
-    title = shorten(field(body, "Title") or str(issue.get("title", "")).replace("[Lesson]", "").strip(),
-                    FIELDS_MAX["title"])
+    title = str(override.get("title") or field(body, "Title")
+                or str(issue.get("title", "")).replace("[Lesson]", "").strip())
+    if override.get("title"):
+        notes.append("title replaced by a maintainer override")
+    title = shorten(title, FIELDS_MAX["title"])
     problem, cause, fix = (section(body, name) for name in ("Problem", "Root Cause", "Fix"))
     verify = section(body, "Verification") or section(body, "Verify") or section(body, "验证")
     if not (problem and cause and fix):
@@ -259,6 +282,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--created", default=None,
                         help="the `created:` date for the new files (default: today, UTC)")
     parser.add_argument("--limit", type=int, default=0, help="only the first N issues")
+    parser.add_argument("--overrides", type=Path, default=None,
+                        help="JSON {issue number: {domain|title: value}} — maintainer corrections")
     parser.add_argument("--slugs", type=Path, default=None,
                         help="also write a JSON map {issue number: file stem} here (for receipts)")
     args = parser.parse_args(argv)
@@ -283,12 +308,14 @@ def main(argv: list[str] | None = None) -> int:
         issues = issues[: args.limit]
 
     canonical = set(json.loads(DOMAINS.read_text(encoding="utf-8"))["canonical"])
+    overrides = (json.loads(args.overrides.read_text(encoding="utf-8"))
+                 if args.overrides else {})
     existing = published_titles()
     written: dict[int, str] = {}
     skipped: list[tuple[int, list[str]]] = []
 
     for issue in sorted(issues, key=lambda i: i.get("number", 0)):
-        lesson, notes = convert(issue, canonical)
+        lesson, notes = convert(issue, canonical, overrides.get(str(issue.get("number"))))
         if lesson is None:
             skipped.append((issue["number"], notes))
             continue
