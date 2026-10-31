@@ -1,0 +1,81 @@
+name: MCP first-byte
+# Time-to-first-byte against the live MCP endpoint, judged structurally (see scripts/bench_ttfb.py).
+#
+# Why this is not a per-PR check: every run makes ~25 HTTPS requests to production, and a runner's
+# network varies by region and time of day, so a per-PR assertion would be noise in the way of review.
+# It runs daily, on demand, and on the one class of PR that can regress it — a change to the worker's
+# response path or to the probe's own thresholds.
+#
+# The assertions are relative on purpose: "first byte before last byte", "SSE not slower than JSON",
+# "the endpoint answers". A fixed fast call (`tools/list`) is measured first as a network baseline; if
+# that baseline is slow or flaky the whole run is **inconclusive**, never a failure — a bad link must
+# not be allowed to convict the code. That guard is the difference between a check people read and one
+# they mute.
+
+on:
+  schedule:
+    # 06:20 UTC — after the nightly index rebuild (≤15 min after 06:00 syncs) and before the heartbeat.
+    - cron: '20 6 * * *'
+  workflow_dispatch:
+    inputs:
+      samples:
+        description: 'Samples per path'
+        required: false
+        default: '10'
+  pull_request:
+    paths:
+      - 'workers/register-proxy-sw.js'
+      - 'scripts/bench_ttfb.py'
+      - '.github/workflows/ttfb.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  measure:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7
+        with:
+          python-version: '3.11'
+
+      - name: Measure first-byte vs total
+        id: measure
+        env:
+          SAMPLES: ${{ github.event.inputs.samples || '10' }}
+        run: |
+          set -o pipefail
+          # The script's own exit code is the verdict (1 = fail, 0 = pass/inconclusive). It writes the
+          # table to stdout so the summary and the log are the same artefact.
+          python3 scripts/bench_ttfb.py --samples "$SAMPLES" --json-out ttfb-report.json \
+            | tee ttfb-report.md
+
+      - name: Verdict in the job summary
+        if: always()
+        run: |
+          {
+            echo "### MCP first-byte vs total"
+            echo ""
+            if [ -f ttfb-report.md ]; then cat ttfb-report.md; else echo "(no report was produced)"; fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the report
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7
+        with:
+          name: ttfb-report
+          path: |
+            ttfb-report.md
+            ttfb-report.json
+          if-no-files-found: warn
+
+      - name: Calibration note on failures
+        if: failure()
+        run: |
+          echo "::error::the live endpoint failed the streaming assertions — read the table above."
+          echo "If the baseline row is slow or mostly failing, this is the runner's link, not the code:"
+          echo "re-run before changing anything."
