@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Llm Lessons — MisakaNet</title>
-<meta name="description" content="14 indexed failure lessons about llm. From MisakaNet — Git-backed failure lesson network.">
+<meta name="description" content="16 indexed failure lessons about llm. From MisakaNet — Git-backed failure lesson network.">
 <link rel="canonical" href="https://misakanet.org/topics/llm/">
 <meta property="og:title" content="Llm Lessons">
-<meta property="og:description" content="14 indexed failure lessons about llm. From MisakaNet — Git-backed failure lesson network.">
+<meta property="og:description" content="16 indexed failure lessons about llm. From MisakaNet — Git-backed failure lesson network.">
 <meta property="og:url" content="https://misakanet.org/topics/llm/">
 <!-- design-tokens:start -->
 <style id="misaka-design-tokens">
@@ -168,7 +168,7 @@
 </head>
 <body>
 <h1>Llm Lessons</h1>
-<div class="count">14 lessons in this domain</div>
+<div class="count">16 lessons in this domain</div>
 
 <div class="lesson">
   <a href="/lessons/anthropic-proxy-internal-gateway/">Internal Gateway — Incompatible with Anthropic Format, Requires OpenAI Proxy</a>
@@ -219,12 +219,20 @@
   <div class="summary">In multi-turn character roleplay with prompt caching (e.g. Claude, GPT-4o), the context is split into:</div>
 </div>
 <div class="lesson">
+  <a href="/lessons/rk3566-上-yolo-常驻检测-分割按需量测的两阶段架构实测代价与-9-条隐患/">RK3566 上 YOLO 常驻检测 + 分割按需量测的两阶段架构：实测代价与 9 条隐患</a>
+  <div class="summary">在 RK3566（单核 NPU、3.8GB 无 swap）上要同时做「YOLO 常驻视频流检测」和「分割模型毫米量测」，设计阶段无法判断可行性：YOLOv8n 在这块 NPU 上到底多快没有实测数据，而且按检测框裁剪后再量测是否会让结果变差</div>
+</div>
+<div class="lesson">
   <a href="/lessons/v100-strata-moe-serving-sm70-decode-kernels-cpu-prefill-share-and-iq3-xxs-quant/">V100 Strata MoE serving: SM70 decode kernels, CPU prefill share, and IQ3_XXS quant switch</a>
   <div class="summary">Qwen3.8-Flash-Next MoE (48 expert layers) served on 2x V100 32GB via the **Strata** engine:</div>
 </div>
 <div class="lesson">
   <a href="/lessons/vertex-ai-streaming-response-sse/">Vertex AI Streaming: Robust SSE Chunk Assembly and Buffer Handling</a>
   <div class="summary">When consuming the Vertex AI `streamGenerateContent` API over HTTP or via custom middleware, client applications frequen</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/whisper-transcribes-its-own-initial-prompt-when-the-audio-is-near-silence-gate-o/">Whisper transcribes its own initial_prompt when the audio is near-silence — gate on audio energy first</a>
+  <div class="summary">A 13.8 s short video with almost no speech (background music only) came back from faster-whisper with exactly one line: </div>
 </div>
 <div class="back"><a href="/">← Back to MisakaNet</a> · <a href="/search/">Search lessons</a></div>
 <footer class="footer">
