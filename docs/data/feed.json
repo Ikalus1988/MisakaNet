@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-10-31T12:47:53.819752+00:00",
+  "generated_at": "2026-10-31T19:22:24.862121+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "fix(corpus): a lesson named `…template…` is a lesson, not a template",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4222",
-      "timestamp": "2026-10-31T12:38:46Z",
+      "title": "feat(release): attach PEP 740 attestations to the PyPI upload",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4256",
+      "timestamp": "2026-10-31T19:07:12Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(main): release 3.0.0",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/3827",
-      "timestamp": "2026-10-31T12:19:16Z",
+      "title": "feat(ci): the Windows leg is required — one leg, not three",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4255",
+      "timestamp": "2026-10-31T19:00:37Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(ci): measure the first byte from CI, and assert the shape rather than the milliseconds",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4214",
-      "timestamp": "2026-10-31T12:00:28Z",
+      "title": "docs(record): three figures were wrong, and the page is about not publishing those",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4254",
+      "timestamp": "2026-10-31T18:22:28Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(installer): the skill digest is line-ending normalised",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4213",
-      "timestamp": "2026-10-31T11:23:19Z",
+      "title": "docs(site): the record — ranked 13th among GitHub MCP servers",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4250",
+      "timestamp": "2026-10-31T18:01:05Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(search-index): `behindBy` compares against the corpus now, not against the last refresh",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4215",
-      "timestamp": "2026-10-31T11:07:21Z",
+      "title": "fix(mcp): a client_id is a name; the token is the key",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4237",
+      "timestamp": "2026-10-31T17:13:35Z",
       "source": "github"
     },
     {
