@@ -39,6 +39,8 @@ BODIES = {
     "/api/health": json.dumps({"status": "ok", "hasKV": True}),
     "/api/counter": json.dumps({"current": 10061, "updated": "2026-08-05"}),
     "/api/lessons": json.dumps([{"id": "a"}, {"id": "b"}]),
+    "/api/search-index": json.dumps({"available": True, "docCount": 705, "behindBy": 0,
+                                     "stale": False, "builtAt": "2026-10-31T01:46:04.737Z"}),
     "/search/": "<html>search</html>",
     "/journey/": "<html>journey</html>",
 }
@@ -70,7 +72,8 @@ def test_healthy_site_reports_every_check_ok():
     report = run_checks("https://example.test", fetch=fake_fetch())
     assert report["healthy"] is True
     assert report["warnings"] == []
-    assert len(report["checks"]) == len(ENDPOINTS) + len(FRONTEND_CHECKS)
+    # +1: the search-index check is semantic (it reads the payload), so it is not one of ENDPOINTS.
+    assert len(report["checks"]) == len(ENDPOINTS) + len(FRONTEND_CHECKS) + 1
 
 
 def test_non_200_endpoint_becomes_a_warning():
@@ -173,3 +176,76 @@ def test_snapshot_doc_exists_for_the_current_release():
     text = snapshots[-1].read_text(encoding="utf-8")
     assert "| Endpoint | Status | Notes |" in text
     assert "## Warnings" in text
+
+
+# ── the search index must hold the corpus, not merely exist ──────────────────
+#
+# 2026-10-31: 47 lessons merged; four title-verbatim queries returned `no_match`; the index was healthy
+# (`docCount 705`, `behindBy 0`) and the queries had landed inside its five-minute memo window. A check
+# that only asserted `available` would have passed all of it and told nobody anything — these assert
+# the numbers that would have answered it.
+
+def _index_report(payload, error=""):
+    from scripts.site_health_check import check_search_index
+    return check_search_index(payload, error)
+
+
+def test_a_healthy_index_is_ok_and_says_how_many_docs():
+    got = _index_report({"available": True, "docCount": 705, "behindBy": 0, "stale": False,
+                         "builtAt": "2026-10-31T01:46:04.737Z"})
+    assert got["ok"] is True
+    assert "705 docs" in got["notes"]
+    assert "built 2026-10-31 01:46:04Z" in got["notes"]
+
+
+def test_an_index_behind_the_corpus_is_a_warning_with_both_numbers():
+    got = _index_report({"available": True, "docCount": 658, "behindBy": 47, "stale": True})
+    assert got["ok"] is False
+    assert "behind by 47" in got["notes"]
+    assert "corpus 705" in got["notes"], got["notes"]
+    assert "stale" in got["notes"]
+
+
+def test_an_unavailable_index_is_a_warning():
+    got = _index_report({"available": False, "reason": "kv unavailable"})
+    assert got["ok"] is False
+    assert "not available" in got["notes"]
+
+
+def test_an_empty_payload_is_a_warning_not_a_pass():
+    got = _index_report({})
+    assert got["ok"] is False
+    assert "did not return an object" in got["notes"]
+
+
+def test_the_snapshot_reads_the_index_payload_end_to_end():
+    report = run_checks("https://example.test", fetch=fake_fetch())
+    index = [c for c in report["checks"] if c["label"] == "Search index"]
+    assert len(index) == 1 and index[0]["ok"] is True
+
+
+def test_a_behind_index_makes_the_snapshot_unhealthy():
+    import json as _json
+    payload = _json.dumps({"available": True, "docCount": 658, "behindBy": 47, "stale": True})
+    report = run_checks("https://example.test",
+                        fetch=fake_fetch({"/api/search-index": {"status": 200, "content_type": "application/json",
+                                                "body": payload}}))
+    assert report["healthy"] is False
+    assert any(c["label"] == "Search index" for c in report["warnings"])
+
+
+def test_a_failed_read_is_not_reported_as_an_unhealthy_index():
+    got = _index_report({}, "URLError: SSL handshake failed")
+    assert got["ok"] is False
+    assert "could not be read" in got["notes"]
+    assert "URLError: SSL handshake failed" in got["notes"]
+    assert "not a claim that the index is healthy" in got["notes"]
+
+
+def test_an_http_error_on_the_index_endpoint_keeps_its_reason():
+    report = run_checks("https://example.test",
+                        fetch=fake_fetch({"/api/search-index": {"status": 503, "body": "",
+                                                                "error": "HTTP 503"}}))
+    index = [c for c in report["checks"] if c["label"] == "Search index"][0]
+    assert index["ok"] is False
+    assert "HTTP 503" in index["notes"]
