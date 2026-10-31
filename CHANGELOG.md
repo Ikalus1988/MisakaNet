@@ -22,7 +22,6 @@ All notable changes to the Misaka Network project are documented here.
 * **dataset:** publish the corpus and the benchmarks as a versioned bundle ([#3955](https://github.com/Ikalus1988/MisakaNet/issues/3955)) ([45fe19e](https://github.com/Ikalus1988/MisakaNet/commit/45fe19eee682468b046e361f511f42cbd379ca56))
 * **dataset:** publish to BigQuery, and record where the advice was wrong ([#3966](https://github.com/Ikalus1988/MisakaNet/issues/3966)) ([bd5a6e8](https://github.com/Ikalus1988/MisakaNet/commit/bd5a6e8820199e8a2b44659305a516382ca93bbc))
 * **gate:** a mechanism that runs by itself must be able to fail ([87a987b](https://github.com/Ikalus1988/MisakaNet/commit/87a987bd7ed467f52380fb72b58405bcb41d92d6))
-* **gate:** a mechanism that runs by itself must be able to fail ([7c8a497](https://github.com/Ikalus1988/MisakaNet/commit/7c8a4979369062ed1ebd1cdedb2687710ce67652))
 * **gate:** refuse a lesson that teaches a command name the public corpus has never seen ([#4008](https://github.com/Ikalus1988/MisakaNet/issues/4008)) ([c030e37](https://github.com/Ikalus1988/MisakaNet/commit/c030e37097d67b99a4255d95124831293a9f0a17))
 * **health:** assert the search index holds the corpus, not merely that it answers ([#4199](https://github.com/Ikalus1988/MisakaNet/issues/4199)) ([920c342](https://github.com/Ikalus1988/MisakaNet/commit/920c3428994581d24f72f5025fda793b81206155))
 * **heartbeat:** a fourth panel — the intake pipeline, issues in and lessons out ([#4131](https://github.com/Ikalus1988/MisakaNet/issues/4131)) ([11fb6fc](https://github.com/Ikalus1988/MisakaNet/commit/11fb6fc8e5b12a7ff7e6785bf642195224f0135f))
@@ -37,7 +36,6 @@ All notable changes to the Misaka Network project are documented here.
 * **setup:** dsh is an installer target — the rules half is written, the plugin half is printed ([#4083](https://github.com/Ikalus1988/MisakaNet/issues/4083)) ([7169531](https://github.com/Ikalus1988/MisakaNet/commit/7169531ccafc6e36a55b99d8f9881647df87e213))
 * **setup:** say the install worked, with the version and whether it is current ([#4035](https://github.com/Ikalus1988/MisakaNet/issues/4035)) ([85e4844](https://github.com/Ikalus1988/MisakaNet/commit/85e4844ceaf993562123a321ba5643b0850e1356))
 * **setup:** the verify verdict is per client, and one client can be judged on its own ([48879af](https://github.com/Ikalus1988/MisakaNet/commit/48879aff3db5f2b2c6624c928a45fabf5348d88c))
-* **setup:** the verify verdict is per client, and one client can be judged on its own ([3f7310d](https://github.com/Ikalus1988/MisakaNet/commit/3f7310d582c733597f1b5a46c60c225455bc488c))
 * **site:** a /dataset/ page, because published files nobody can find are not published ([#4012](https://github.com/Ikalus1988/MisakaNet/issues/4012)) ([a1cd99a](https://github.com/Ikalus1988/MisakaNet/commit/a1cd99a99c40d1b2a20d5259909351e2ebc178ce))
 * **worker:** the AI Gateway becomes a var on the serving embedding call, off by default ([#4204](https://github.com/Ikalus1988/MisakaNet/issues/4204)) ([362bf32](https://github.com/Ikalus1988/MisakaNet/commit/362bf3206ffcbdfa659bf8801a048d56bb696905))
 
@@ -47,13 +45,10 @@ All notable changes to the Misaka Network project are documented here.
 * a degraded read renders as incomplete, never as zero ([#3537](https://github.com/Ikalus1988/MisakaNet/issues/3537)) ([c5335cc](https://github.com/Ikalus1988/MisakaNet/commit/c5335cc94d8aca1ba740d0520dae984125d7e861))
 * **audit:** the intake-kind flip check now decides the exit code ([#3853](https://github.com/Ikalus1988/MisakaNet/issues/3853)) ([db187b1](https://github.com/Ikalus1988/MisakaNet/commit/db187b1882775686f912104d71dd023546b558d7))
 * **audit:** the node summary is read in both reporter shapes ([363a02e](https://github.com/Ikalus1988/MisakaNet/commit/363a02e1b5b76b438e43022920cd9d8c6d13aadb))
-* **audit:** the node summary is read in both reporter shapes ([bc4ad9d](https://github.com/Ikalus1988/MisakaNet/commit/bc4ad9d860dc174409ced0a1e3d6d62e2f0e655a))
 * **bench:** a request that never completed is a missing row, not a miss ([#3984](https://github.com/Ikalus1988/MisakaNet/issues/3984)) ([0c7fe72](https://github.com/Ikalus1988/MisakaNet/commit/0c7fe72c067427f5ae50ee75f838e842e223d02c))
 * **ci:** prove all four hard gates can go red, on every PR ([#3855](https://github.com/Ikalus1988/MisakaNet/issues/3855)) ([5f5e69f](https://github.com/Ikalus1988/MisakaNet/commit/5f5e69f195917fd272f3dec8a0ff7c0cbd0a1981))
 * **ci:** the failure→lesson path must be able to see, and must say when it cannot ([2718b5a](https://github.com/Ikalus1988/MisakaNet/commit/2718b5a7ce4f874be4a153c9b468aae2ec4e599e))
-* **ci:** the failure→lesson path must be able to see, and must say when it cannot ([b4a51ac](https://github.com/Ikalus1988/MisakaNet/commit/b4a51ac39ae354f5ceb93459bd2e1f16a7a0b08e))
 * **ci:** the same-repo test compared a field the context does not have ([332abfa](https://github.com/Ikalus1988/MisakaNet/commit/332abfa70e6e675bc9a51547b687375898481540))
-* **ci:** the same-repo test compared a field the context does not have ([67e0f3b](https://github.com/Ikalus1988/MisakaNet/commit/67e0f3b6ce00aeb072bc972103c03ac258be8cfe))
 * **dataset:** derive the version from the commit, so a version is never rewritten ([#3959](https://github.com/Ikalus1988/MisakaNet/issues/3959)) ([525bcb6](https://github.com/Ikalus1988/MisakaNet/commit/525bcb6c251dc040dcd2a25df69bdbeb192890c7))
 * **dataset:** poll for the custom domain instead of asking once ([#3958](https://github.com/Ikalus1988/MisakaNet/issues/3958)) ([e9391a0](https://github.com/Ikalus1988/MisakaNet/commit/e9391a0d015a65cd14717f3beb3853ea785da362))
 * **fatal-guard:** publish the files the package requires ([#4028](https://github.com/Ikalus1988/MisakaNet/issues/4028)) ([c094a22](https://github.com/Ikalus1988/MisakaNet/commit/c094a22676ad040a36ced19b8792e53132445db9))
@@ -61,12 +56,9 @@ All notable changes to the Misaka Network project are documented here.
 * **gate:** decide the third-party scanner's verdict here, not on Monday ([9348da6](https://github.com/Ikalus1988/MisakaNet/commit/9348da651c234bb617ed6283dc4c56cb0418c91b))
 * **heartbeat:** the pipeline panel reported "nothing converted" when PyYAML was missing ([#4200](https://github.com/Ikalus1988/MisakaNet/issues/4200)) ([81b6121](https://github.com/Ikalus1988/MisakaNet/commit/81b61217d680df0178fcb229fb924e8d799da821))
 * **hook:** the entry guard must survive a symlinked path ([54b29b6](https://github.com/Ikalus1988/MisakaNet/commit/54b29b606e7a2a27563540da5a0354df3ffdb255))
-* **hook:** the entry guard must survive a symlinked path ([3c623d0](https://github.com/Ikalus1988/MisakaNet/commit/3c623d0643105455df0aef539ed30d78ed5d7d7f))
 * **installer:** the DSH uninstall removes the autostart block it wrote ([0d03b39](https://github.com/Ikalus1988/MisakaNet/commit/0d03b39d2df5d3c2cf61159a02111fee698ce4ea))
-* **installer:** the DSH uninstall removes the autostart block it wrote ([889d23b](https://github.com/Ikalus1988/MisakaNet/commit/889d23b27194436466b6b9239a54de58d848c411))
 * **installer:** the skill digest is line-ending normalised ([#4213](https://github.com/Ikalus1988/MisakaNet/issues/4213)) ([7ad4d5a](https://github.com/Ikalus1988/MisakaNet/commit/7ad4d5a9390f0285ffc319dc39c78296d9054849))
 * **installer:** the uninstall takes back what we wrote and nothing else ([088338e](https://github.com/Ikalus1988/MisakaNet/commit/088338e957974425be504468738e4796a25a0d89))
-* **installer:** the uninstall takes back what we wrote and nothing else ([d943464](https://github.com/Ikalus1988/MisakaNet/commit/d943464d69b6bd7953a8883409e9e4b8b14be1c6))
 * **intake:** a card number is grouped, so a PID and a date are not one ([#4060](https://github.com/Ikalus1988/MisakaNet/issues/4060)) ([#4067](https://github.com/Ikalus1988/MisakaNet/issues/4067)) ([2cfe2b7](https://github.com/Ikalus1988/MisakaNet/commit/2cfe2b77521985e9cf68c2b5442d6dc38b161af1))
 * **intake:** an advisory check must not sit between the request and its write ([#4055](https://github.com/Ikalus1988/MisakaNet/issues/4055)) ([73d4f42](https://github.com/Ikalus1988/MisakaNet/commit/73d4f4298d7dadf62b86262398d451e75826b3e5))
 * **intake:** count a repeated command token everywhere it appears ([#4001](https://github.com/Ikalus1988/MisakaNet/issues/4001)) ([f7f318a](https://github.com/Ikalus1988/MisakaNet/commit/f7f318adad60b6f11c5c6c7de16945b7df553bdf))
@@ -89,7 +81,6 @@ All notable changes to the Misaka Network project are documented here.
 * **setup:** uninstall ownership, stable client id, truthful manifest ([#3852](https://github.com/Ikalus1988/MisakaNet/issues/3852)) ([8e8b132](https://github.com/Ikalus1988/MisakaNet/commit/8e8b13292e7538131f7fddeaed05478e89875090)), closes [#3831](https://github.com/Ikalus1988/MisakaNet/issues/3831) [#3832](https://github.com/Ikalus1988/MisakaNet/issues/3832) [#3833](https://github.com/Ikalus1988/MisakaNet/issues/3833) [#3834](https://github.com/Ikalus1988/MisakaNet/issues/3834)
 * **setup:** verify and report key Claude Code on ~/.claude.json ([#3868](https://github.com/Ikalus1988/MisakaNet/issues/3868)) ([2cb53ca](https://github.com/Ikalus1988/MisakaNet/commit/2cb53caba95f093ab4e0011a89b54ba8e2820e4a))
 * **site:** one copy of the escaper and the JSON reader ([8454040](https://github.com/Ikalus1988/MisakaNet/commit/845404097b2210be82e460a494ff6cbb4af71b73))
-* **site:** one copy of the escaper and the JSON reader ([db1ca1e](https://github.com/Ikalus1988/MisakaNet/commit/db1ca1eb813ce10235b66c8fc55932d3ce6bfac7))
 * the registration check reads /register/, and misakanet_register always says reused ([#4119](https://github.com/Ikalus1988/MisakaNet/issues/4119)) ([3818218](https://github.com/Ikalus1988/MisakaNet/commit/3818218633477fa38c4e20210dde18dba1d4877b))
 * three findings from the 2026-10-31 audit — pairing-code race, unverified instruction file, sqlite thread crash ([#4212](https://github.com/Ikalus1988/MisakaNet/issues/4212)) ([8be2e15](https://github.com/Ikalus1988/MisakaNet/commit/8be2e1530683b9168d414d51c29c46bb7d9dc378))
 * **triage:** the question autopilot reads the whole backlog, retries a dropped read, and keeps one digest ([#4130](https://github.com/Ikalus1988/MisakaNet/issues/4130)) ([c8fde5d](https://github.com/Ikalus1988/MisakaNet/commit/c8fde5d02ab22e345f8e6540e4ff32c51e181570))
@@ -111,16 +102,13 @@ All notable changes to the Misaka Network project are documented here.
 * **setup:** the flags table has to know about --client ([48d42b0](https://github.com/Ikalus1988/MisakaNet/commit/48d42b0949d6a4368d1b98b4d3a9fa6fbf58b37f))
 * **setup:** the restart is not universal, and the tool list is how you confirm it ([#3830](https://github.com/Ikalus1988/MisakaNet/issues/3830)) ([7e74ec9](https://github.com/Ikalus1988/MisakaNet/commit/7e74ec9efd2c4c399cce7d369c40f7fef05415d1)), closes [#3700](https://github.com/Ikalus1988/MisakaNet/issues/3700)
 * **test:** the floor-docs rule describes one floor, not two ([9859e90](https://github.com/Ikalus1988/MisakaNet/commit/9859e90bfaadfbf1654b8522c0cb4ce6652990f5))
-* **test:** the floor-docs rule describes one floor, not two ([e7d74a2](https://github.com/Ikalus1988/MisakaNet/commit/e7d74a2dc1a27185781e782d3c4837b200b6a6c1))
 
 
 ### Tests
 
 * **crash:** two tests reached the network, which is what "flaky" meant ([#4005](https://github.com/Ikalus1988/MisakaNet/issues/4005)) ([c42786c](https://github.com/Ikalus1988/MisakaNet/commit/c42786c6b948d742567f75ea6c0df3ab1dff7d9f))
-* **gate:** decide the third-party scanner's verdict here, not on Monday ([dd4f141](https://github.com/Ikalus1988/MisakaNet/commit/dd4f14187c26253cdda1ce5e75581d74ee472055))
 * **hook:** make the inner redaction gate load-bearing ([#3866](https://github.com/Ikalus1988/MisakaNet/issues/3866)) ([54dab95](https://github.com/Ikalus1988/MisakaNet/commit/54dab95d66be6a438c03fabcf2561db2262ea272))
 * **setup:** the manifest assertion must not assume POSIX separators ([bcb4065](https://github.com/Ikalus1988/MisakaNet/commit/bcb4065febebbc97d7d4152b77da630a51a5ca92))
-* **setup:** the manifest assertion must not assume POSIX separators ([bc48fce](https://github.com/Ikalus1988/MisakaNet/commit/bc48fce6bf58ea62ebb06220799445ca928a4f6b))
 
 
 ### CI/CD
