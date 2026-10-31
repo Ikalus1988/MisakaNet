@@ -106,7 +106,12 @@ def test_the_installer_downloads_without_gnu_timeout(tmp_path):
     env = dict(
         os.environ,
         PATH=_path_without(tmp_path / "shim", "timeout"),
-        MISAKANET_RAW_BASE=f"file://{REPO}",
+        # `as_uri()` (percent-encoded, `file:///D:/…` on Windows) and `RAW_ONLY=1`: a literal
+        # `file://C:\…` is not a URL `curl` accepts, and the download then fell through to the network
+        # mirrors — the test verified a *tagged* installer against the working tree's digest and failed
+        # for a reason that had nothing to do with GNU `timeout`.
+        MISAKANET_RAW_BASE=REPO.as_uri(),
+        MISAKANET_RAW_ONLY="1",
         MISAKANET_SETUP_DIR=str(setup_dir),
         MISAKANET_ENDPOINT="http://127.0.0.1:9/mcp",
         HOME=str(tmp_path / "home"),
