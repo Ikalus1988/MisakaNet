@@ -2,7 +2,7 @@
   "name": "MisakaNet",
   "description": "Git-backed failure lesson network for AI coding agents. Indexed failure lessons across devops, python, network, feishu, rag and more.",
   "url": "https://misakanet.org",
-  "version": "3.1.0",
+  "version": "3.2.0",
   "provider": {
     "name": "MisakaNet",
     "url": "https://github.com/Ikalus1988/MisakaNet"

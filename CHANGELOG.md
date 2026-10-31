@@ -7,6 +7,13 @@ All notable changes to the Misaka Network project are documented here.
 
 ---
 
+## [3.2.0](https://github.com/Ikalus1988/MisakaNet/compare/v3.1.0...v3.2.0) (2026-10-31)
+
+
+### Features
+
+* **lessons:** admit Kuro AI's CF per-account quota lesson ([#3992](https://github.com/Ikalus1988/MisakaNet/issues/3992)) ([#4257](https://github.com/Ikalus1988/MisakaNet/issues/4257)) ([20024e4](https://github.com/Ikalus1988/MisakaNet/commit/20024e40c0ebba7d3855902642ef69a49bb15d85))
+
 ## [3.1.0](https://github.com/Ikalus1988/MisakaNet/compare/v3.0.0...v3.1.0) (2026-10-31)
 
 
