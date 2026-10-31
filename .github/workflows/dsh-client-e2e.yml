@@ -79,7 +79,7 @@ jobs:
           }
           git fetch --no-tags origin "${{ github.base_ref }}" \
             || fail_open "could not fetch ${{ github.base_ref }}"
-          changed=$(git diff --name-only "origin/${{ github.base_ref }}...HEAD" -- \
+          changed=$(git -c core.quotepath=false diff --name-only "origin/${{ github.base_ref }}...HEAD" -- \
               lib/ index.js index.d.ts cordis.patch.yml locale/ icon.svg tests/e2e/ \
               .github/workflows/dsh-client-e2e.yml) \
             || fail_open "could not compute the changed-file set"

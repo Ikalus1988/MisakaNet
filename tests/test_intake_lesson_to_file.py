@@ -127,8 +127,10 @@ def test_tags_are_capped_at_ten_and_deduplicated():
     assert len(lesson["tags"]) == 10
 
 
-def test_a_chinese_title_with_no_latin_characters_gets_an_issue_number_slug():
-    assert conv.slugify("长上下文污染", 2738) == "lesson-2738"
+def test_a_chinese_title_keeps_its_words_in_the_slug():
+    """ASCII-stripping turned `偏航阈值…50/30/35 是上限` into `50-30-35` — a URL made of a number."""
+    assert conv.slugify("长上下文污染", 2738) == "长上下文污染"
+    assert conv.slugify("偏航阈值是几何下限 50/30/35 是上限", 4170).startswith("偏航阈值是几何下限")
     assert conv.slugify("npm registry unreachable: pin a mirror", 1) == "npm-registry-unreachable-pin-a-mirror"
 
 
@@ -163,3 +165,18 @@ def test_the_cli_dry_run_writes_nothing(tmp_path, monkeypatch):
     issues.write_text(json.dumps([sample()]), encoding="utf-8")
     assert conv.main(["--issues-json", str(issues)]) == 0
     assert list((tmp_path / "contrib").glob("*.md")) == []
+
+
+def test_a_maintainer_override_corrects_one_domain_and_says_so():
+    """Four `packaging` issues in the 2026-10-31 queue are all iOS IPA signing — `mobile`, not `devops`."""
+    lesson, notes = conv.convert(sample(domain="packaging"), CANONICAL, {"domain": "mobile"})
+    assert lesson is not None
+    assert lesson["domain"] == "mobile"
+    assert any("maintainer override" in note for note in notes), notes
+
+
+def test_a_title_override_replaces_the_submitter_title():
+    lesson, notes = conv.convert(sample(), CANONICAL, {"title": "A clearer title"})
+    assert lesson is not None
+    assert lesson["title"] == "A clearer title"
+    assert any("title replaced" in note for note in notes), notes

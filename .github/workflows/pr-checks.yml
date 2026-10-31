@@ -38,7 +38,7 @@ jobs:
             exit 0
           fi
 
-          CHANGED=$(git diff --name-only "$BASE_SHA" "$HEAD_SHA")
+          CHANGED=$(git -c core.quotepath=false diff --name-only "$BASE_SHA" "$HEAD_SHA")
           NON_LESSON=$(echo "$CHANGED" | grep -Ev '^(lessons/|\.github/workflows/(lesson-quality|pr-checks)\.ya?ml$)' || true)
           NON_WORKFLOW=$(echo "$CHANGED" | grep -Ev '^\.github/workflows/[^/]+\.ya?ml$' || true)
           NON_JS_DEPS=$(echo "$CHANGED" | grep -Ev '^(package|package-lock)\.json$' || true)
@@ -338,7 +338,7 @@ jobs:
             exit 0
           fi
 
-          CHANGED=$(git diff --name-only "$BASE_SHA" "$HEAD_SHA")
+          CHANGED=$(git -c core.quotepath=false diff --name-only "$BASE_SHA" "$HEAD_SHA")
           PY_DEPS_CHANGED=false
           JS_DEPS_CHANGED=false
           if echo "$CHANGED" | grep -qE '(^|/)requirements\.txt$|^pyproject\.toml$'; then
@@ -519,7 +519,7 @@ jobs:
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             BASE_SHA="${{ github.event.pull_request.base.sha }}"
             HEAD_SHA="${{ github.event.pull_request.head.sha }}"
-            mapfile -t TARGETS < <(git diff --name-only "$BASE_SHA" "$HEAD_SHA" -- 'lessons/**/*.md' 'lessons/*.md')
+            mapfile -t TARGETS < <(git -c core.quotepath=false diff --name-only "$BASE_SHA" "$HEAD_SHA" -- 'lessons/**/*.md' 'lessons/*.md')
           elif [ -n "$PR_NUM" ]; then
             # Manual audit of one PR: validate only the lessons that PR touches.
             mapfile -t TARGETS < <(gh pr diff "$PR_NUM" --repo Ikalus1988/MisakaNet --name-only 2>/dev/null \

@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Devops Lessons — MisakaNet</title>
-<meta name="description" content="168 indexed failure lessons about devops. From MisakaNet — Git-backed failure lesson network.">
+<meta name="description" content="175 indexed failure lessons about devops. From MisakaNet — Git-backed failure lesson network.">
 <link rel="canonical" href="https://misakanet.org/topics/devops/">
 <meta property="og:title" content="Devops Lessons">
-<meta property="og:description" content="168 indexed failure lessons about devops. From MisakaNet — Git-backed failure lesson network.">
+<meta property="og:description" content="175 indexed failure lessons about devops. From MisakaNet — Git-backed failure lesson network.">
 <meta property="og:url" content="https://misakanet.org/topics/devops/">
 <!-- design-tokens:start -->
 <style id="misaka-design-tokens">
@@ -168,7 +168,7 @@
 </head>
 <body>
 <h1>Devops Lessons</h1>
-<div class="count">168 lessons in this domain</div>
+<div class="count">175 lessons in this domain</div>
 
 <div class="lesson">
   <a href="/lessons/auto-merge-ci-pipeline/">Auto-Merge CI Pipeline — DCO, Quality Score, Shadow Branch, Dynamic Deps, Auto-Merge</a>
@@ -231,6 +231,10 @@
   <div class="summary">A service failed repeatedly, and a watchdog had been set up to bring it back automatically. When the</div>
 </div>
 <div class="lesson">
+  <a href="/lessons/bash-32var-后面紧跟中文全角符号变量名会被吞进去unbound-variable/">bash 3.2：$VAR 后面紧跟中文/全角符号，变量名会被吞进去（unbound variable）</a>
+  <div class="summary">```bash</div>
+</div>
+<div class="lesson">
   <a href="/lessons/ci-dco-decouple-pythonpath-fork-pr/">GitHub Actions CI for AI Agent PRs — DCO decoupling & PYTHONPATH fix</a>
   <div class="summary">AI Agent 从 fork 仓库提交 PR 后，GitHub Actions CI 频繁报 `ModuleNotFoundError: No module named 'misakanet'`，且 DCO（Signed-off-by）门</div>
 </div>
@@ -245,10 +249,6 @@
 <div class="lesson">
   <a href="/lessons/ci-lambda-module-level-side-effects/">CI 测试陷阱 — 模块级副作用导致 import 失败</a>
   <div class="summary">Python 测试文件尝试 `importlib.import_module()` 导入 Lambda 函数模块，CI 报错：</div>
-</div>
-<div class="lesson">
-  <a href="/lessons/ci-manual-dispatch-whole-corpus-false-red/">A manual CI run that sweeps the whole corpus always fails, so nobody trusts the red</a>
-  <div class="summary">A maintainer dispatched the PR-audit workflow by hand to answer one question:</div>
 </div>
 <div class="back"><a href="/">← Back to MisakaNet</a> · <a href="/search/">Search lessons</a></div>
 <footer class="footer">

@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Mobile Lessons — MisakaNet</title>
-<meta name="description" content="1 indexed failure lessons about mobile. From MisakaNet — Git-backed failure lesson network.">
+<meta name="description" content="30 indexed failure lessons about mobile. From MisakaNet — Git-backed failure lesson network.">
 <link rel="canonical" href="https://misakanet.org/topics/mobile/">
 <meta property="og:title" content="Mobile Lessons">
-<meta property="og:description" content="1 indexed failure lessons about mobile. From MisakaNet — Git-backed failure lesson network.">
+<meta property="og:description" content="30 indexed failure lessons about mobile. From MisakaNet — Git-backed failure lesson network.">
 <meta property="og:url" content="https://misakanet.org/topics/mobile/">
 <!-- design-tokens:start -->
 <style id="misaka-design-tokens">
@@ -168,11 +168,87 @@
 </head>
 <body>
 <h1>Mobile Lessons</h1>
-<div class="count">1 lessons in this domain</div>
+<div class="count">30 lessons in this domain</div>
 
+<div class="lesson">
+  <a href="/lessons/amapnavirideviewcameradegree-在锁车态不生效导航图面一直是斜的-3d/">AMapNaviRideView.cameraDegree 在锁车态不生效：导航图面一直是斜的 3D</a>
+  <div class="summary">导航时地图是「带角度的」3D，不是 2D 平面；`v.cameraDegree = 0` 设了完全没效果，也没有报错。</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/amapnavirideviewshowmode-被拖图改掉后不会自动恢复镜头停在原处/">AMapNaviRideView.showMode 被拖图改掉后不会自动恢复，镜头停在原处</a>
+  <div class="summary">导航时拖了一下地图，之后车骑出去几百米，镜头还停在他乡，必须手动点定位才回来。</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/ble-短暂断链被当成永久断线读数立刻清空成-其实-04-秒就重连回来了/">BLE 短暂断链被当成永久断线：读数立刻清空成 --，其实 0.4 秒就重连回来了</a>
+  <div class="summary">电池卡从 78% 突然变成 `--`，一两秒后又恢复，看起来像数据在闪；骑行中出现会让人以为电池掉线。</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/mamapviewdelegaterendererfor-在-add-时同步回调先-add-再登记会让所有折线同色/">MAMapViewDelegate.rendererFor 在 add() 时同步回调：先 add 再登记会让所有折线同色</a>
+  <div class="summary">多方案预览时三条路线全是同一种蓝色，完全分不出哪条是哪条；点选高亮也看不出变化。</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/nas-trip-手工映射漏字段movingms从-nas-恢复的行程骑行均速永远是/">NAS → Trip 手工映射漏字段（movingMs）：从 NAS 恢复的行程「骑行均速」永远是 --</a>
+  <div class="summary">从 NAS 恢复的行程，「骑行均速」显示 `--`；路线耗时的加权平均也算不进这些记录。本地记录的同一趟是正常的。</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/sdk-持续回调-重建逻辑无条件清空-published用户点击每秒被抹掉一次/">SDK 持续回调 + 重建逻辑无条件清空 @Published：用户点击每秒被抹掉一次</a>
+  <div class="summary">点方案按钮没反应——不高亮、其他线还在、像根本没点过。但代码里明明设了 selectedRouteID。</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/sidestore-报-an-invalid-value-冲出马路-was-provided-for-the-parameter-appidname/">SideStore 报 An invalid value '冲出马路' was provided for the parameter 'appIdName'</a>
+  <div class="summary">把 ipa 丢进 SideStore 点安装直接失败：</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/swiftui-动态字体三个雷linelimit1-挡不住压缩contentsizecategory-没有-isaccessibilitysize大字号必须分级/">SwiftUI 动态字体三个雷：lineLimit(1) 挡不住压缩、ContentSizeCategory 没有 isAccessibilitySize、大字号必须分级封顶</a>
+  <div class="summary">1) 三栏布局右侧日期被压成逐字换行（显示成「10-1 / 9 / 13:2 / 0」）；2) 想用 `ContentSizeCategory.isAccessibilitySize` 判断超大字号，编译不过；3) 系统字号调大后 46pt</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/swiftui-里-colorclear-不是空占位会把整张卡片撑到屏幕高度/">SwiftUI 里 Color.clear 不是「空占位」：会把整张卡片撑到屏幕高度</a>
+  <div class="summary">为了给卡片右列留出「和另一张卡箭头同宽」的空位，写了 `Color.clear.frame(width: 14)` 放进 `HStack`。结果整张卡片被撑到接近屏幕高度，原本的 `frame(minHeight: 76)` 完全失效，两张</div>
+</div>
 <div class="lesson">
   <a href="/lessons/tor-orbot-privacy-in-react-native-tr/">React Native uygulamasında Orbot (Tor) ile gizlilik akışı</a>
   <div class="summary">Mobil uygulamada gizlilik amacıyla Tor kullanımı hedefleniyordu ancak Orbot’un çalışıp çalışmadığı, cihazda yüklü olup o</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/两处各自写死间距导致右列数字差几像素共享常量-量像素验收/">两处「各自写死间距」导致右列数字差几像素：共享常量 + 量像素验收</a>
+  <div class="summary">用户截了两张图直接指出「图一数字没有对齐。图二的数字也没对齐。」——并排的两张卡片右侧数值、以及详情页里温度卡与四宫格的数值，左边缘差几像素，肉眼可见地歪。功能没问题，但看起来就是没做完。</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/偏航重算用-calcroute-会每次从新起点重新规划旧路线瞬间消失像重新开始导航/">偏航重算用 calcRoute 会「每次从新起点重新规划」：旧路线瞬间消失，像重新开始导航</a>
+  <div class="summary">骑错路口后路线要等好几秒才更新，新路线是从当前位置画一条**全新的**，原来的路线直接消失，体感像「重新开始导航」。</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/偏航阈值是几何下限不能再靠调参变快离线仿真实测5030精度35-是上限/">偏航阈值是几何下限，不能再靠调参变快（离线仿真实测：50/30/精度35 是上限）</a>
+  <div class="summary">需求是「故意骑错一个路口，路线应该几秒内更新」，但真机试骑判断不了——误报是偶发的，试十次可能一次都碰不到，凭感觉调参只会来回摇摆。</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/关掉控制器数据桥后车速冻在最后一个读数stop-只停轮询没清派生状态/">关掉控制器数据桥后车速冻在最后一个读数：stop() 只停轮询没清派生状态</a>
+  <div class="summary">骑行中把「数据桥」关掉（或桥自己 stop），界面速度不再变化、里程也几乎不涨，但 GPS 明明在跳；行程记录的极速/均速跟着失真，看起来像「卡了」而不是「没数据」。</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/删掉的行程同步后又回来了上传重试队列没撤销-删除标记收到-200-就清掉/">删掉的行程同步后又回来了：上传重试队列没撤销 + 删除标记收到 200 就清掉</a>
+  <div class="summary">左滑删除一条历史，过一会儿点右上角同步，它又出现了。反复删反复回来。</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/地图标注只加不删-取景没算浮层遮挡起终点残留路线被卡片挡住/">地图标注只加不删 + 取景没算浮层遮挡（起终点残留、路线被卡片挡住）</a>
+  <div class="summary">现象 a：选完路线开始导航后，「起/终」标记还赖在地图上。现象 b：多方案预览时路线被上方的速度卡和方案列表挡住，看不到全程，用户以为路线画错了。</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/复用组件的可选闭包回调最容易漏传不传也能编译运行时静默无效/">复用组件的可选闭包回调最容易漏传：不传也能编译，运行时静默无效</a>
+  <div class="summary">导航页点地图上的抓拍点完全没反应；同一个组件在「识得路」页面工作正常，所以第一反应是数据或坐标问题。</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/多文件-swiftc-编译顶层代码必须放-mainswift否则-statements-are-not-allowed-at-the-top-level/">多文件 swiftc 编译：顶层代码必须放 main.swift，否则 statements are not allowed at the top level</a>
+  <div class="summary">测试脚本单独编译能跑，和源码一起编译时报 `error: statements are not allowed at the top level`。</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/开发签名-ipa-自签-ipa去签名要做四件事缺一个-sidestore-就报错/">开发签名 ipa ≠ 自签 ipa：去签名要做四件事，缺一个 SideStore 就报错</a>
+  <div class="summary">开发签名打出来的 ipa 拿到别人手机上装不上；直接丢给 SideStore 也报错，搞不清该用哪种包。</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/没人读的-published-也在每秒触发-objectwillchange整页白重算/">没人读的 @Published 也在每秒触发 objectWillChange，整页白重算</a>
+  <div class="summary">首页三栏、骑行页、连接页每秒都在重新计算视图 body（耗电、掉帧），但界面上看不到任何数字在变。</div>
 </div>
 <div class="back"><a href="/">← Back to MisakaNet</a> · <a href="/search/">Search lessons</a></div>
 <footer class="footer">
