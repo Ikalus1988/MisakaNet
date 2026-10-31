@@ -17,6 +17,11 @@ What it reads
 * **lessons** — `lessons/**/*.md` on disk: `created:` and the citation fields `intake_receipt` already
   knows how to read. Provenance, not keywords: a lesson that merely *mentions* #1234 is not a
   conversion of it, and `intake_receipt._cites` is the one implementation of that shape in this repo.
+* **the search index** — `https://misakanet.org/api/search-index`, which already answers the question
+  "does the index hold the corpus" (`docCount`, `behindBy`, `stale`, `builtAt`). It is here because on
+  2026-10-31 a batch of 47 lessons was in D1 while four title-verbatim queries returned `no_match`;
+  the answer took decoding a 1 MB gzip row out of `kv_store` by hand, and the one endpoint that
+  already knew said `behindBy: 0`. A number nobody reads is not observability.
 
 What it refuses to do
 ---------------------
@@ -26,8 +31,10 @@ What it refuses to do
 """
 from __future__ import annotations
 
+import http.client
 import json
 import re
+import time
 import urllib.error
 import urllib.request
 from datetime import date, datetime, timedelta
@@ -103,6 +110,24 @@ def lesson_records(lessons_dir: Path = LESSONS_DIR) -> list[dict]:
         out.append({"path": path.relative_to(REPO).as_posix() if path.is_relative_to(REPO) else str(path),
                     "created": created, "issues": numbers})
     return out
+
+
+def corpus_size(lessons_dir: Path = LESSONS_DIR) -> int | None:
+    """How many lessons the corpus holds, by the repository's own count.
+
+    `data/lessons.json` is the generated index of the corpus, and its row count is what the search
+    index's `docCount` is supposed to equal. Counting `lessons/**/*.md` instead overcounts by the
+    translations and mirrors that are deliberately not separate documents (743 files against 705
+    rows on 2026-10-31), which would make a healthy index look like it was ahead of the corpus.
+    """
+    published = lessons_dir.parent / "data" / "lessons.json"
+    try:
+        rows = json.loads(published.read_text(encoding="utf-8"))
+        if isinstance(rows, list) and rows:
+            return len(rows)
+    except (OSError, ValueError):
+        pass
+    return None
 
 
 def converted_numbers(lessons: list[dict]) -> set[int]:
@@ -234,6 +259,9 @@ def render_lines(summary: dict) -> list[str]:
     salvaged = sum(rows[k]["auto_rejected_salvaged"] for k in KINDS)
     lines.append(f"- **auto-rejected salvage**: **{salvaged}/{rejected}** became lessons "
                  f"({_pct(salvaged, rejected)})")
+    if "index" in summary or "index_error" in summary:
+        lines.append(index_line(summary.get("index"), summary.get("index_error") or "",
+                                summary.get("lessons_on_disk")))
     lines += ["", "_This panel reads issue state, not answers: `converted` means a lesson cites the "
                   "issue (provenance, not a keyword), and an open issue may already be answered "
                   "in-thread. It is a shape of the backlog, not a verdict on it._"]
@@ -243,8 +271,25 @@ def render_lines(summary: dict) -> list[str]:
 # ── fetching (the only part with a network) ─────────────────────────────────
 
 def fetch_issues(token: str, slug: str = "Ikalus1988/MisakaNet", page_size: int = 100,
-                 max_pages: int = 40) -> list[dict]:
-    """Every issue, open and closed, paginated. PRs are filtered out by the caller's `summarize`."""
+                 max_pages: int = 40, attempts: int = 3) -> list[dict]:
+    """Every issue, open and closed, paginated. PRs are filtered out by the caller's `summarize`.
+
+    `attempts=2` because the API drops a page now and then (measured on this host 2026-10-31: a
+    346 KB read against a 459 KB body raised `http.client.IncompleteRead`). A daily panel that loses
+    its whole issue table to one dropped read is the failure the panel exists to report, so the read
+    is retried once before the caller is told it failed.
+    """
+    for attempt in range(attempts):
+        try:
+            return _fetch_issues_once(token, slug, page_size, max_pages)
+        except (urllib.error.URLError, http.client.HTTPException, OSError, ValueError):
+            if attempt + 1 >= attempts:
+                raise
+            time.sleep(2)
+    raise AssertionError("unreachable")
+
+
+def _fetch_issues_once(token: str, slug: str, page_size: int, max_pages: int) -> list[dict]:
     out: list[dict] = []
     for page in range(1, max_pages + 1):
         url = (f"https://api.github.com/repos/{slug}/issues"
@@ -264,13 +309,64 @@ def fetch_issues(token: str, slug: str = "Ikalus1988/MisakaNet", page_size: int 
     return out
 
 
+INDEX_ENDPOINT = "https://misakanet.org/api/search-index"
+
+
+def fetch_index(url: str = INDEX_ENDPOINT) -> dict:
+    """The search index's own freshness report. Raises on a transport failure (the caller reports it)."""
+    request = urllib.request.Request(url, headers={"Accept": "application/json",
+                                                  "User-Agent": "misakanet-heartbeat"})
+    with urllib.request.urlopen(request, timeout=30) as response:
+        payload = json.loads(response.read().decode() or "{}")
+    if not isinstance(payload, dict):
+        raise ValueError("the index endpoint did not return an object")
+    return payload
+
+
+def index_line(index: dict | None, error: str, lessons_on_disk: int | None) -> str:
+    """One line: does the index hold the corpus, and how far behind is it?
+
+    The point is `behindBy`, not the count: an index that says 705 while the corpus is 705 is healthy,
+    and one that says 658 while the corpus is 705 is the failure the 2026-10-31 investigation spent an
+    hour finding by hand.
+    """
+    if index is None:
+        return (f"- **search index**: could not be read ({error or 'no reason recorded'}) — "
+                f"not a claim that it is healthy")
+    doc_count = index.get("docCount")
+    behind = index.get("behindBy")
+    stale = index.get("stale")
+    built = str(index.get("builtAt") or "")[:19].replace("T", " ")
+    head = f"- **search index**: **{doc_count}** docs"
+    if lessons_on_disk is not None:
+        head += f" · corpus **{lessons_on_disk}**"
+    if isinstance(behind, int) and behind > 0:
+        head += f" · **behind by {behind}**"
+    if stale:
+        head += " · **stale**"
+    if built:
+        head += f" · built {built}Z"
+    return head
+
+
 def collect(*, token: str | None, lessons_dir: Path = LESSONS_DIR,
-            today: date | None = None) -> tuple[dict | None, str]:
+            today: date | None = None, index_url: str = INDEX_ENDPOINT,
+            fetch_index_payload: bool = True) -> tuple[dict | None, str]:
     """Read both sources. Returns (summary, "") or (None, reason) — never an empty summary."""
     if not token:
         return None, "no GitHub token in the environment (GITHUB_TOKEN / GH_TOKEN)"
     try:
         issues = fetch_issues(token)
-    except (urllib.error.URLError, OSError, ValueError) as error:
+    except (urllib.error.URLError, http.client.HTTPException, OSError, ValueError) as error:
         return None, f"{type(error).__name__}: {error}"
-    return summarize(issues, lesson_records(lessons_dir), today), ""
+    lessons = lesson_records(lessons_dir)
+    summary = summarize(issues, lessons, today)
+    summary["lessons_on_disk"] = corpus_size(lessons_dir) or len(lessons)
+    if fetch_index_payload:
+        try:
+            summary["index"] = fetch_index(index_url)
+            summary["index_error"] = ""
+        except (urllib.error.URLError, http.client.HTTPException, OSError, ValueError) as error:
+            summary["index"] = None
+            summary["index_error"] = f"{type(error).__name__}: {error}"
+    return summary, ""
