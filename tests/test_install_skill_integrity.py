@@ -35,7 +35,7 @@ def _module():
 
 def test_the_embedded_digest_matches_the_skill_file():
     module = _module()
-    actual = hashlib.sha256(SKILL.read_bytes()).hexdigest()
+    actual = module.skill_digest(SKILL.read_bytes())
     assert module.SKILL_MD_SHA256 == actual, (
         "SKILL.md changed without bumping SKILL_MD_SHA256 — that bump is the review step: a modified "
         "instruction file must be a deliberate, visible change, not something a download can do")
@@ -96,3 +96,11 @@ def test_the_real_file_passes_the_same_check(monkeypatch):
     monkeypatch.setattr("urllib.request.urlopen",
                         lambda url, timeout=None: FakeResponse(real))
     assert module._fetch_raw(module.SKILL_MD_PATH).startswith("---"), "frontmatter, i.e. the real file"
+
+
+def test_the_digest_ignores_line_endings():
+    """A Windows checkout hands CRLF; the digest computed on Linux is LF. Same file, same digest."""
+    module = _module()
+    lf = b"---\nname: x\n---\n"
+    crlf = lf.replace(b"\n", b"\r\n")
+    assert module.skill_digest(lf) == module.skill_digest(crlf)
