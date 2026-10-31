@@ -45,8 +45,8 @@ mv.setCameraDegree(0, animated: false, duration: 0)
 mv.isRotateCameraEnabled = false   // 双指上滑别再拉成 3D
 ```
 
-⚠️ 别用 KVC `value(forKey: "mapView")` —— key 不存在会直接抛异常崩溃。
-⚠️ 限流：0.3° 以内不动、0.5 秒最多写一次，避免和 SDK 的相机更新每帧互顶。
+WARNING: 别用 KVC `value(forKey: "mapView")` —— key 不存在会直接抛异常崩溃。
+WARNING: 限流：0.3° 以内不动、0.5 秒最多写一次，避免和 SDK 的相机更新每帧互顶。
 
 ## Verification
 

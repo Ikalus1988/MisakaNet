@@ -36,7 +36,7 @@ provenance:
 用「同尺寸 + 透明」的**真实视图**占位（`Image` 有固有尺寸，不会抢高度）：
 
 ```swift
-// ⚠️ 不要用 Color.clear
+// WARNING: 不要用 Color.clear
 Image(systemName: "chevron.down")
     .bmsFont(11, weight: .bold)
     .frame(width: Self.chevronW)   // 和另一张卡的箭头同一个常量

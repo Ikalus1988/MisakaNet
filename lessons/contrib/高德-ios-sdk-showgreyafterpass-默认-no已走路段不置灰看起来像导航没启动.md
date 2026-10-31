@@ -35,7 +35,7 @@ AMapNaviRideView 的 showGreyAfterPass 默认值是 NO（since 7.4.0），头文
 在 SwiftUI 的 makeUIView 里建好 AMapNaviRideView 之后立刻打开：
 
 ```swift
-v.showGreyAfterPass = true   // ⚠️ 默认 NO，不设就永远不置灰
+v.showGreyAfterPass = true   // WARNING: 默认 NO，不设就永远不置灰
 v.autoZoomMapLevel  = true   // 顺带开，导航视角更自然
 ```
 

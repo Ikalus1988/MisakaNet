@@ -46,8 +46,8 @@ mkdir -p "$APP/zh-Hans.lproj"
 printf '"CFBundleDisplayName" = "冲出马路";\n' > "$APP/zh-Hans.lproj/InfoPlist.strings"
 ```
 
-⚠️ 只改主 plist 不改本地化，桌面图标名会变成英文。
-⚠️ `.strings` 用 UTF-8 无 BOM 即可（iOS 同时支持 UTF-16）。
+WARNING: 只改主 plist 不改本地化，桌面图标名会变成英文。
+WARNING: `.strings` 用 UTF-8 无 BOM 即可（iOS 同时支持 UTF-16）。
 
 ## Verification
 

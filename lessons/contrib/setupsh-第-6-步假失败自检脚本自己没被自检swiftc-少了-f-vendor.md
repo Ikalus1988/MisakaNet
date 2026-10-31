@@ -14,8 +14,8 @@ evidence_level: "E1"
 created: "2026-10-31"
 updated: "2026-10-31"
 source: "intake-4178"
-summary_plain: "新机器 `git clone` → `bootstrap.sh` → `setup.sh`：第 5 步 ✅ BUILD SUCCEEDED，第 6 步却报： ``` ❌ 有编译错误，详见 <PATH>…"
-trigger: "setup.sh 第 6 步「假失败」：自检脚本自己没被自检（swiftc 少了 -F Vendor）. 新机器 `git clone` → `bootstrap.sh` → `setup.sh`：第 5 步 ✅ BUILD SUCCEEDED，第 6 步却报： ``` ❌…"
+summary_plain: "新机器 `git clone` → `bootstrap.sh` → `setup.sh`：第 5 步 OK BUILD SUCCEEDED，第 6 步却报： ``` FAIL 有编译错误，详见 <PATH>…"
+trigger: "setup.sh 第 6 步「假失败」：自检脚本自己没被自检（swiftc 少了 -F Vendor）. 新机器 `git clone` → `bootstrap.sh` → `setup.sh`：第 5 步 OK BUILD SUCCEEDED，第 6 步却报： ``` FAIL…"
 verify: "新机器跑完 `setup.sh`：第 5、6 步都通过；故意删掉 `-F Vendor` 能复现该报错，证明判据真的覆盖到了。"
 provenance:
   issue: "#4178"
@@ -24,10 +24,10 @@ provenance:
 
 ## Problem
 
-新机器 `git clone` → `bootstrap.sh` → `setup.sh`：第 5 步 ✅ BUILD SUCCEEDED，第 6 步却报：
+新机器 `git clone` → `bootstrap.sh` → `setup.sh`：第 5 步 OK BUILD SUCCEEDED，第 6 步却报：
 
 ```
-❌ 有编译错误，详见 <PATH>
+FAIL 有编译错误，详见 <PATH>
 BMSiOS/UI/AMapContainer.swift:24:8: error: no such module 'AMapNaviKit'
 ```
 
