@@ -19,7 +19,8 @@ Read that way on 2026-09-29, the gates that block a merge are the rows below —
 | Check (context as GitHub reports it) | Workflow | What it validates |
 |---|---|---|
 | **DCO / Signed-off-by** | `dco-check.yml` | Every commit carries `Signed-off-by:` |
-| **test (ubuntu-latest, 3.11)** | `ci-cross-platform.yml` | The pytest suite on the `ubuntu-latest` + 3.11 leg of that workflow's matrix — every other leg is *not* required, so none of them can hold a merge |
+| **test (ubuntu-latest, 3.11)** | `ci-cross-platform.yml` | The pytest suite on the `ubuntu-latest` + 3.11 leg of that workflow's matrix — every other Linux/macOS leg is *not* required, so none of them can hold a merge |
+| **test (windows-latest, 3.11)** | `ci-cross-platform.yml` | Required since 2026-11-01. The same suite on the platform most of this project's users run, at the Python floor the package now requires (3.0.0 is `>=3.11`). One leg, not three: the 3.12/3.13 Windows legs still report and still do not block |
 | **gate** | `lesson-gate.yml` | The lesson gate (structure, quality, injection). It deliberately has **no `paths:` filter**, because a required check that sometimes does not run blocks every PR that does not trigger it (#1920) |
 | **audit** | `pr-checks.yml` | The audit verdict: DCO audit, secret scan (`scripts/check_worker_secrets.py`), dependency audit, the worker `node --test` suite, and a `pytest --cov-fail-under=20` run. This is the job that turns a test failure into a blocked merge |
 
@@ -40,9 +41,15 @@ gates naming scope they did not have):
 
 Three notes that have each cost someone an afternoon:
 
-* **"Required" is about the *context name*.** Only `test (ubuntu-latest, 3.11)` is required out of the
-  `test (…)` matrix legs, so a red `windows-latest` or `macos-latest` leg **does not block a merge** — it merges
-  green-looking and shows up afterwards as "that PR broke something". Read the leg you changed.
+* **"Required" is about the *context name*.** Two legs of the `test (…)` matrix are required —
+  `ubuntu-latest, 3.11` and, since 2026-11-01, `windows-latest, 3.11`. The rest are advisory, so a red
+  `macos-latest` leg **does not block a merge**: it merges green-looking and shows up afterwards as "that
+  PR broke something". Read the leg you changed.
+  The Windows leg became required after it was shown to be *capable* of going red for a real reason: on
+  2026-10-31 it caught a CRLF digest mismatch in the installer and a PATH-shim bug that Linux could not
+  see, and both were fixed rather than silenced. The cost is real — every PR now waits for it — and the
+  rule for the next red one is the one this repository already uses: fix the cause, or remove the
+  requirement deliberately, never re-add `continue-on-error`.
 * **`audit` runs pytest too** (with a coverage floor), so the suite *is* gated even though the
   `Run Test Suite` step inside `pr-checks.yml` is `continue-on-error`.
 * **The node suite is behind the required `audit` verdict — it was not, until 2026-10-02.**

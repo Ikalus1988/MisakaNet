@@ -116,6 +116,7 @@ RULESET_RESPONSE = {
                 "required_status_checks": [
                     {"context": "DCO / Signed-off-by"},
                     {"context": "test (ubuntu-latest, 3.11)"},
+                    {"context": "test (windows-latest, 3.11)"},
                     {"context": "gate"},
                     {"context": "audit"},
                 ]

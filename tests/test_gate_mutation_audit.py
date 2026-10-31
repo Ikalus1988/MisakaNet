@@ -46,6 +46,7 @@ import gate_mutation_audit as gma  # noqa: E402
 EXPECTED_HARD_GATES = {
     "DCO / Signed-off-by",
     "test (ubuntu-latest, 3.11)",
+    "test (windows-latest, 3.11)",
     "gate",
     "audit",
 }
@@ -98,7 +99,8 @@ def test_hard_gates_are_read_from_the_documented_table():
 
 def test_every_hard_gate_has_a_gate_that_proves_it():
     """Coverage, not a subset: every required context is named by a `Gate`, and vice versa."""
-    covered = {gate.check for gate in gma.GATES.values() if gate.check}
+    covered = {context for gate in gma.GATES.values()
+               for context in ((gate.check,) if gate.check else ()) + tuple(gate.also_checks)}
     assert covered == EXPECTED_HARD_GATES, (
         f"the audit proves {sorted(covered)} but the ruleset requires {sorted(EXPECTED_HARD_GATES)}")
     assert gma.missing_hard_gates() == ()
