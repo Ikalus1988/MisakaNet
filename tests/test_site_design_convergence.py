@@ -72,7 +72,10 @@ def test_the_generated_pages_are_inside_the_gate():
     # 16 since #3532: `docs/insights/quickstart-events.html` (issue #1897) is the sixteenth
     # hand-written page. The PR that added it was green, because the ratchet read 15 while the
     # tree already held 16 — the check only fires on the merge, not on the pull request.
-    assert len(cdc.hand_written_pages(REPO)) == 17, "the hand-written page set changed shape"
+    # 18 since 2026-11-01: /blog/2026-11-01-ranked-13-among-github-mcp-servers.html — the record of
+    # the Glama shortlist. A page under `blog/` is still a page a reader lands on, so it is inside the
+    # gate like the rest.
+    assert len(cdc.hand_written_pages(REPO)) == 18, "the hand-written page set changed shape"
     # 17 since 2026-10-28: /dataset/ — the published files had no entry point on the site.
 
 
