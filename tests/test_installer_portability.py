@@ -130,9 +130,13 @@ def test_the_installer_downloads_without_gnu_timeout(tmp_path):
     # can use (`tr: command not found`): Git for Windows keeps those in `usr/bin`, and MSYS resolves
     # them inside bash rather than from the inherited PATH. That is a limitation of the harness, not of
     # the script — skip instead of reporting a portability bug that does not exist.
-    if not shutil.which("tr", path=shim_path):
+    if os.name == "nt":
+        # The scenario needs a PATH composed only of links to POSIX commands. Windows cannot provide
+        # it: symlinks need a privilege the runner lacks, and a *copy* of Git's `tr.exe` does not run
+        # outside its own directory (it needs the MSYS DLLs beside it). Probing for `tr` in the shim is
+        # not enough — the copy exists and does not execute — so the platform is what decides.
         import pytest
-        pytest.skip("this host cannot build a POSIX PATH (no tr in the shim)")
+        pytest.skip("a POSIX-only PATH cannot be modelled on Windows (MSYS binaries are not relocatable)")
     setup_dir = tmp_path / "setup"
     setup_dir.mkdir()
     env = dict(
