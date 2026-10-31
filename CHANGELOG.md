@@ -7,6 +7,124 @@ All notable changes to the Misaka Network project are documented here.
 
 ---
 
+## [3.0.0](https://github.com/Ikalus1988/MisakaNet/compare/v2.50.1...v3.0.0) (2026-10-31)
+
+
+### ⚠ BREAKING CHANGES
+
+* **packaging:** the package now requires Python >= 3.11. Python 3.10 reached end-of-life on 2026-10-01 and is no longer supported, so pip refuses to install this release on 3.10 with "requires a different Python". Upgrade the interpreter to 3.11 or newer before upgrading the package.
+
+### Features
+
+* **bench:** measure the bge-m3 arm — the lever is the gate, not the model ([#3961](https://github.com/Ikalus1988/MisakaNet/issues/3961)) ([4f39aa0](https://github.com/Ikalus1988/MisakaNet/commit/4f39aa0eb08cd35682236fa29efab509b4c07184))
+* **ci:** measure the first byte from CI, and assert the shape rather than the milliseconds ([#4214](https://github.com/Ikalus1988/MisakaNet/issues/4214)) ([d70959c](https://github.com/Ikalus1988/MisakaNet/commit/d70959c2549a7b2a7859a744ca262f6c48a5da35))
+* **corpus:** propose the three missing structured fields, and record why the bulk run stops here ([#4033](https://github.com/Ikalus1988/MisakaNet/issues/4033)) ([9777b3a](https://github.com/Ikalus1988/MisakaNet/commit/9777b3a1be7b4051297294df660cd5cd98c7df2f))
+* **dataset:** publish the corpus and the benchmarks as a versioned bundle ([#3955](https://github.com/Ikalus1988/MisakaNet/issues/3955)) ([45fe19e](https://github.com/Ikalus1988/MisakaNet/commit/45fe19eee682468b046e361f511f42cbd379ca56))
+* **dataset:** publish to BigQuery, and record where the advice was wrong ([#3966](https://github.com/Ikalus1988/MisakaNet/issues/3966)) ([bd5a6e8](https://github.com/Ikalus1988/MisakaNet/commit/bd5a6e8820199e8a2b44659305a516382ca93bbc))
+* **gate:** a mechanism that runs by itself must be able to fail ([87a987b](https://github.com/Ikalus1988/MisakaNet/commit/87a987bd7ed467f52380fb72b58405bcb41d92d6))
+* **gate:** refuse a lesson that teaches a command name the public corpus has never seen ([#4008](https://github.com/Ikalus1988/MisakaNet/issues/4008)) ([c030e37](https://github.com/Ikalus1988/MisakaNet/commit/c030e37097d67b99a4255d95124831293a9f0a17))
+* **health:** assert the search index holds the corpus, not merely that it answers ([#4199](https://github.com/Ikalus1988/MisakaNet/issues/4199)) ([920c342](https://github.com/Ikalus1988/MisakaNet/commit/920c3428994581d24f72f5025fda793b81206155))
+* **heartbeat:** a fourth panel — the intake pipeline, issues in and lessons out ([#4131](https://github.com/Ikalus1988/MisakaNet/issues/4131)) ([11fb6fc](https://github.com/Ikalus1988/MisakaNet/commit/11fb6fc8e5b12a7ff7e6785bf642195224f0135f))
+* **heartbeat:** the pipeline panel reports whether the search index holds the corpus ([#4197](https://github.com/Ikalus1988/MisakaNet/issues/4197)) ([2c2937a](https://github.com/Ikalus1988/MisakaNet/commit/2c2937abacad1de373974c491acf078a6b05285b))
+* **intake:** `intake_lesson_to_file.py` — the `[Lesson]` converter, in the repo this time ([#4203](https://github.com/Ikalus1988/MisakaNet/issues/4203)) ([6291d53](https://github.com/Ikalus1988/MisakaNet/commit/6291d53c08289f0ae50e675a93d4a0b985c9444a))
+* **intake:** surface check for identifiers the public corpus has never seen ([#3994](https://github.com/Ikalus1988/MisakaNet/issues/3994)) ([24e008e](https://github.com/Ikalus1988/MisakaNet/commit/24e008e9a212344e226e4926b360b17ed4f36cc7))
+* **lessons:** add the lesson_gate PyYAML false-missing-fields report ([#3941](https://github.com/Ikalus1988/MisakaNet/issues/3941)) ([0ae5cc3](https://github.com/Ikalus1988/MisakaNet/commit/0ae5cc3b31b20cabd3efecada786cdedbc2092d2))
+* **maintainer:** check downstream PRs before merging a branch ([#3867](https://github.com/Ikalus1988/MisakaNet/issues/3867)) ([5a2f115](https://github.com/Ikalus1988/MisakaNet/commit/5a2f1158552c8cc2418a9630f1c86aa7e3691884))
+* **packaging:** the interpreter floor is 3.11 — Python 3.10 reached end-of-life on 2026-10-01 ([1e9ca23](https://github.com/Ikalus1988/MisakaNet/commit/1e9ca23dc6ac9a1cf2c4a1b311b319501d7b2ace))
+* **process:** a weekly decision queue, and a notebook anyone can point at their own endpoint ([#3973](https://github.com/Ikalus1988/MisakaNet/issues/3973)) ([c27c605](https://github.com/Ikalus1988/MisakaNet/commit/c27c605f29a41e258544ce6961f2464e97c240b1))
+* **search:** fuse the vector path for CJK queries instead of gating it behind an empty result ([#3980](https://github.com/Ikalus1988/MisakaNet/issues/3980)) ([08db81e](https://github.com/Ikalus1988/MisakaNet/commit/08db81ec9cd2d0ab7b7e83f8ef66214f8b4a0817))
+* **setup:** dsh is an installer target — the rules half is written, the plugin half is printed ([#4083](https://github.com/Ikalus1988/MisakaNet/issues/4083)) ([7169531](https://github.com/Ikalus1988/MisakaNet/commit/7169531ccafc6e36a55b99d8f9881647df87e213))
+* **setup:** say the install worked, with the version and whether it is current ([#4035](https://github.com/Ikalus1988/MisakaNet/issues/4035)) ([85e4844](https://github.com/Ikalus1988/MisakaNet/commit/85e4844ceaf993562123a321ba5643b0850e1356))
+* **setup:** the verify verdict is per client, and one client can be judged on its own ([48879af](https://github.com/Ikalus1988/MisakaNet/commit/48879aff3db5f2b2c6624c928a45fabf5348d88c))
+* **site:** a /dataset/ page, because published files nobody can find are not published ([#4012](https://github.com/Ikalus1988/MisakaNet/issues/4012)) ([a1cd99a](https://github.com/Ikalus1988/MisakaNet/commit/a1cd99a99c40d1b2a20d5259909351e2ebc178ce))
+* **worker:** the AI Gateway becomes a var on the serving embedding call, off by default ([#4204](https://github.com/Ikalus1988/MisakaNet/issues/4204)) ([362bf32](https://github.com/Ikalus1988/MisakaNet/commit/362bf3206ffcbdfa659bf8801a048d56bb696905))
+
+
+### Bug Fixes
+
+* a degraded read renders as incomplete, never as zero ([#3537](https://github.com/Ikalus1988/MisakaNet/issues/3537)) ([c5335cc](https://github.com/Ikalus1988/MisakaNet/commit/c5335cc94d8aca1ba740d0520dae984125d7e861))
+* **audit:** the intake-kind flip check now decides the exit code ([#3853](https://github.com/Ikalus1988/MisakaNet/issues/3853)) ([db187b1](https://github.com/Ikalus1988/MisakaNet/commit/db187b1882775686f912104d71dd023546b558d7))
+* **audit:** the node summary is read in both reporter shapes ([363a02e](https://github.com/Ikalus1988/MisakaNet/commit/363a02e1b5b76b438e43022920cd9d8c6d13aadb))
+* **bench:** a request that never completed is a missing row, not a miss ([#3984](https://github.com/Ikalus1988/MisakaNet/issues/3984)) ([0c7fe72](https://github.com/Ikalus1988/MisakaNet/commit/0c7fe72c067427f5ae50ee75f838e842e223d02c))
+* **ci:** prove all four hard gates can go red, on every PR ([#3855](https://github.com/Ikalus1988/MisakaNet/issues/3855)) ([5f5e69f](https://github.com/Ikalus1988/MisakaNet/commit/5f5e69f195917fd272f3dec8a0ff7c0cbd0a1981))
+* **ci:** the failure→lesson path must be able to see, and must say when it cannot ([2718b5a](https://github.com/Ikalus1988/MisakaNet/commit/2718b5a7ce4f874be4a153c9b468aae2ec4e599e))
+* **ci:** the same-repo test compared a field the context does not have ([332abfa](https://github.com/Ikalus1988/MisakaNet/commit/332abfa70e6e675bc9a51547b687375898481540))
+* **dataset:** derive the version from the commit, so a version is never rewritten ([#3959](https://github.com/Ikalus1988/MisakaNet/issues/3959)) ([525bcb6](https://github.com/Ikalus1988/MisakaNet/commit/525bcb6c251dc040dcd2a25df69bdbeb192890c7))
+* **dataset:** poll for the custom domain instead of asking once ([#3958](https://github.com/Ikalus1988/MisakaNet/issues/3958)) ([e9391a0](https://github.com/Ikalus1988/MisakaNet/commit/e9391a0d015a65cd14717f3beb3853ea785da362))
+* **fatal-guard:** publish the files the package requires ([#4028](https://github.com/Ikalus1988/MisakaNet/issues/4028)) ([c094a22](https://github.com/Ikalus1988/MisakaNet/commit/c094a22676ad040a36ced19b8792e53132445db9))
+* **fatal-guard:** the version test pinned the version it was testing ([#4014](https://github.com/Ikalus1988/MisakaNet/issues/4014)) ([48f488d](https://github.com/Ikalus1988/MisakaNet/commit/48f488db18b1bd159deff5e9c194901247c7f389))
+* **gate:** decide the third-party scanner's verdict here, not on Monday ([9348da6](https://github.com/Ikalus1988/MisakaNet/commit/9348da651c234bb617ed6283dc4c56cb0418c91b))
+* **heartbeat:** the pipeline panel reported "nothing converted" when PyYAML was missing ([#4200](https://github.com/Ikalus1988/MisakaNet/issues/4200)) ([81b6121](https://github.com/Ikalus1988/MisakaNet/commit/81b61217d680df0178fcb229fb924e8d799da821))
+* **hook:** the entry guard must survive a symlinked path ([54b29b6](https://github.com/Ikalus1988/MisakaNet/commit/54b29b606e7a2a27563540da5a0354df3ffdb255))
+* **installer:** the DSH uninstall removes the autostart block it wrote ([0d03b39](https://github.com/Ikalus1988/MisakaNet/commit/0d03b39d2df5d3c2cf61159a02111fee698ce4ea))
+* **installer:** the skill digest is line-ending normalised ([#4213](https://github.com/Ikalus1988/MisakaNet/issues/4213)) ([7ad4d5a](https://github.com/Ikalus1988/MisakaNet/commit/7ad4d5a9390f0285ffc319dc39c78296d9054849))
+* **installer:** the uninstall takes back what we wrote and nothing else ([088338e](https://github.com/Ikalus1988/MisakaNet/commit/088338e957974425be504468738e4796a25a0d89))
+* **intake:** a card number is grouped, so a PID and a date are not one ([#4060](https://github.com/Ikalus1988/MisakaNet/issues/4060)) ([#4067](https://github.com/Ikalus1988/MisakaNet/issues/4067)) ([2cfe2b7](https://github.com/Ikalus1988/MisakaNet/commit/2cfe2b77521985e9cf68c2b5442d6dc38b161af1))
+* **intake:** an advisory check must not sit between the request and its write ([#4055](https://github.com/Ikalus1988/MisakaNet/issues/4055)) ([73d4f42](https://github.com/Ikalus1988/MisakaNet/commit/73d4f4298d7dadf62b86262398d451e75826b3e5))
+* **intake:** count a repeated command token everywhere it appears ([#4001](https://github.com/Ikalus1988/MisakaNet/issues/4001)) ([f7f318a](https://github.com/Ikalus1988/MisakaNet/commit/f7f318adad60b6f11c5c6c7de16945b7df553bdf))
+* **intake:** give `answered` to closed questions that already have an answer (30% → 60% searchable) ([#3981](https://github.com/Ikalus1988/MisakaNet/issues/3981)) ([e939d68](https://github.com/Ikalus1988/MisakaNet/commit/e939d680c60d0be14b38a000b93902bfe0cf9a8a))
+* **intake:** put surface_report on the intake response, not the lesson one ([#3999](https://github.com/Ikalus1988/MisakaNet/issues/3999)) ([e18402b](https://github.com/Ikalus1988/MisakaNet/commit/e18402ba2816b4122a1456f2f130fef98f17ea51))
+* **mcp:** open read-only preflight and dedup intake by problem ([#3934](https://github.com/Ikalus1988/MisakaNet/issues/3934)) ([e41d332](https://github.com/Ikalus1988/MisakaNet/commit/e41d33298e71a9792b9ba462d750c430d5add1bb))
+* **mcp:** pad the first SSE chunk so a buffering hop actually flushes it ([#4208](https://github.com/Ikalus1988/MisakaNet/issues/4208)) ([ef47feb](https://github.com/Ikalus1988/MisakaNet/commit/ef47febb1f9c35d27f9e3c52df0811b62b4c027b))
+* **mcp:** the SSE answer starts streaming before the work does ([#4207](https://github.com/Ikalus1988/MisakaNet/issues/4207)) ([2df4b73](https://github.com/Ikalus1988/MisakaNet/commit/2df4b73b78797b57066b393961e93fd696c069fb))
+* **quickstart:** "no external JS" means no third-party script, not no script at all ([b54cb70](https://github.com/Ikalus1988/MisakaNet/commit/b54cb701391f8c1f7f2e1e7f811722e1147f06d9))
+* **release:** give the package tag a committer identity ([#4037](https://github.com/Ikalus1988/MisakaNet/issues/4037)) ([732292b](https://github.com/Ikalus1988/MisakaNet/commit/732292b1b2989708bce92569e6b6b307ac422baa))
+* **release:** render the root Release body from the CHANGELOG ([#3854](https://github.com/Ikalus1988/MisakaNet/issues/3854)) ([689a960](https://github.com/Ikalus1988/MisakaNet/commit/689a960d58a2094bf32bba90bf39617c8def7d30)), closes [#3836](https://github.com/Ikalus1988/MisakaNet/issues/3836)
+* **release:** stand down on npm E409 when the version already exists ([#3826](https://github.com/Ikalus1988/MisakaNet/issues/3826)) ([07f15c6](https://github.com/Ikalus1988/MisakaNet/commit/07f15c6faea60b6609b6ef6a0f2856a35f940eba))
+* **release:** tag merged package releases, and dispatch their publish ([#4032](https://github.com/Ikalus1988/MisakaNet/issues/4032)) ([6c0e663](https://github.com/Ikalus1988/MisakaNet/commit/6c0e663ec02188c9a14c1148248ffa17932d1cac))
+* **script:** the mutation audit's planted token is assembled at run time ([8998df8](https://github.com/Ikalus1988/MisakaNet/commit/8998df85dc1a9b4043a3628c8145ed066687c3ec))
+* **search-index:** `behindBy` compares against the corpus now, not against the last refresh ([#4215](https://github.com/Ikalus1988/MisakaNet/issues/4215)) ([165bd56](https://github.com/Ikalus1988/MisakaNet/commit/165bd56e8960a7589e2e7015b320123050e0e758))
+* **search:** a CJK query orders by its expanded terms, not its Latin fragment ([#4112](https://github.com/Ikalus1988/MisakaNet/issues/4112)) ([206224f](https://github.com/Ikalus1988/MisakaNet/commit/206224ffbaabebc9082ab62ed5e00d32e7c87e96))
+* **search:** a no_match says what the filter removed, not just which matcher ran ([#3979](https://github.com/Ikalus1988/MisakaNet/issues/3979)) ([a02219b](https://github.com/Ikalus1988/MisakaNet/commit/a02219ba424f98481e81cf7b33f6764b0e22e1ef))
+* **search:** keep FAQ scores in the lesson band ([#3936](https://github.com/Ikalus1988/MisakaNet/issues/3936)) ([68fb694](https://github.com/Ikalus1988/MisakaNet/commit/68fb694e6627ae8ce3a2a071548eef9ce00e814d))
+* **setup:** the installer honours MISAKANET_AGENT_DIR like the hook does ([#3844](https://github.com/Ikalus1988/MisakaNet/issues/3844)) ([a0cd165](https://github.com/Ikalus1988/MisakaNet/commit/a0cd16542b8085e6b52b1f9db55306756c659c90))
+* **setup:** uninstall ownership, stable client id, truthful manifest ([#3852](https://github.com/Ikalus1988/MisakaNet/issues/3852)) ([8e8b132](https://github.com/Ikalus1988/MisakaNet/commit/8e8b13292e7538131f7fddeaed05478e89875090)), closes [#3831](https://github.com/Ikalus1988/MisakaNet/issues/3831) [#3832](https://github.com/Ikalus1988/MisakaNet/issues/3832) [#3833](https://github.com/Ikalus1988/MisakaNet/issues/3833) [#3834](https://github.com/Ikalus1988/MisakaNet/issues/3834)
+* **setup:** verify and report key Claude Code on ~/.claude.json ([#3868](https://github.com/Ikalus1988/MisakaNet/issues/3868)) ([2cb53ca](https://github.com/Ikalus1988/MisakaNet/commit/2cb53caba95f093ab4e0011a89b54ba8e2820e4a))
+* **site:** one copy of the escaper and the JSON reader ([8454040](https://github.com/Ikalus1988/MisakaNet/commit/845404097b2210be82e460a494ff6cbb4af71b73))
+* the registration check reads /register/, and misakanet_register always says reused ([#4119](https://github.com/Ikalus1988/MisakaNet/issues/4119)) ([3818218](https://github.com/Ikalus1988/MisakaNet/commit/3818218633477fa38c4e20210dde18dba1d4877b))
+* three findings from the 2026-10-31 audit — pairing-code race, unverified instruction file, sqlite thread crash ([#4212](https://github.com/Ikalus1988/MisakaNet/issues/4212)) ([8be2e15](https://github.com/Ikalus1988/MisakaNet/commit/8be2e1530683b9168d414d51c29c46bb7d9dc378))
+* **triage:** the question autopilot reads the whole backlog, retries a dropped read, and keeps one digest ([#4130](https://github.com/Ikalus1988/MisakaNet/issues/4130)) ([c8fde5d](https://github.com/Ikalus1988/MisakaNet/commit/c8fde5d02ab22e345f8e6540e4ff32c51e181570))
+
+
+### Documentation
+
+* **adr:** end the Coogen borrowing programme, keep two mechanisms ([#3965](https://github.com/Ikalus1988/MisakaNet/issues/3965)) ([ee34c0f](https://github.com/Ikalus1988/MisakaNet/commit/ee34c0fba40e0419250b7556dea926aaca6a275f))
+* **bench:** gemini-embedding reaches R@1 0.757 on the L1-267 set; the cross-lingual misses are not Latin tokens ([#3953](https://github.com/Ikalus1988/MisakaNet/issues/3953)) ([d1f5ccd](https://github.com/Ikalus1988/MisakaNet/commit/d1f5ccdb72f51753b3c7953f0941ee4d322ca04f))
+* **bench:** measure zh retrieval by target language on the live path ([#3951](https://github.com/Ikalus1988/MisakaNet/issues/3951)) ([2e3ab1c](https://github.com/Ikalus1988/MisakaNet/commit/2e3ab1cb6366ffc804ec984d58795e067eba533c)), closes [#2250](https://github.com/Ikalus1988/MisakaNet/issues/2250)
+* **bench:** record the CJK fusion result, and correct the English reading ([#3989](https://github.com/Ikalus1988/MisakaNet/issues/3989)) ([5919893](https://github.com/Ikalus1988/MisakaNet/commit/59198939be1b5e547099d6e5662d18573cef30fc))
+* **bench:** the live numbers after the deploy, and the failure mode behind them ([#4114](https://github.com/Ikalus1988/MisakaNet/issues/4114)) ([e035f7d](https://github.com/Ikalus1988/MisakaNet/commit/e035f7d2b48794bbda7731dc9b9daa4a6ece63df))
+* **gates:** one rule, one copy ([6d0baeb](https://github.com/Ikalus1988/MisakaNet/commit/6d0baeb5a172bae35587894c78d94593a6b7b6d2))
+* **heartbeat:** decide recurrence's three questions, with the first real number ([#3982](https://github.com/Ikalus1988/MisakaNet/issues/3982)) ([04b38ff](https://github.com/Ikalus1988/MisakaNet/commit/04b38ff46093d0a10542d293e5d00f13b53981d1))
+* **lessons:** backfill structured fields for 37 lessons (batch 1-2 of the 61% gap) ([#4041](https://github.com/Ikalus1988/MisakaNet/issues/4041)) ([91f0402](https://github.com/Ikalus1988/MisakaNet/commit/91f0402e866e1eb6740503ed165d14d3b77d868e))
+* **readme:** the retrieval table describes a configuration production no longer runs ([#4059](https://github.com/Ikalus1988/MisakaNet/issues/4059)) ([2069136](https://github.com/Ikalus1988/MisakaNet/commit/206913688aedb32c692d329c0125673c08f953f6))
+* **roadmap:** 2026-10-28 rulings — ADR-0002 closed, ③'s second half lost, three workstreams registered ([#3975](https://github.com/Ikalus1988/MisakaNet/issues/3975)) ([de5cbbf](https://github.com/Ikalus1988/MisakaNet/commit/de5cbbfc6f04215ca441bad43a58724629a4afc2))
+* **roadmap:** the pointer and the workstream table were stale within the same day ([#4004](https://github.com/Ikalus1988/MisakaNet/issues/4004)) ([708a911](https://github.com/Ikalus1988/MisakaNet/commit/708a911d91354d4e06ab05411f97a51c09b9cfa1))
+* **setup:** the flags table has to know about --client ([48d42b0](https://github.com/Ikalus1988/MisakaNet/commit/48d42b0949d6a4368d1b98b4d3a9fa6fbf58b37f))
+* **setup:** the restart is not universal, and the tool list is how you confirm it ([#3830](https://github.com/Ikalus1988/MisakaNet/issues/3830)) ([7e74ec9](https://github.com/Ikalus1988/MisakaNet/commit/7e74ec9efd2c4c399cce7d369c40f7fef05415d1)), closes [#3700](https://github.com/Ikalus1988/MisakaNet/issues/3700)
+* **test:** the floor-docs rule describes one floor, not two ([9859e90](https://github.com/Ikalus1988/MisakaNet/commit/9859e90bfaadfbf1654b8522c0cb4ce6652990f5))
+
+
+### Tests
+
+* **crash:** two tests reached the network, which is what "flaky" meant ([#4005](https://github.com/Ikalus1988/MisakaNet/issues/4005)) ([c42786c](https://github.com/Ikalus1988/MisakaNet/commit/c42786c6b948d742567f75ea6c0df3ab1dff7d9f))
+* **hook:** make the inner redaction gate load-bearing ([#3866](https://github.com/Ikalus1988/MisakaNet/issues/3866)) ([54dab95](https://github.com/Ikalus1988/MisakaNet/commit/54dab95d66be6a438c03fabcf2561db2262ea272))
+* **setup:** the manifest assertion must not assume POSIX separators ([bcb4065](https://github.com/Ikalus1988/MisakaNet/commit/bcb4065febebbc97d7d4152b77da630a51a5ca92))
+
+
+### CI/CD
+
+* **provenance:** publish the verdict to the step summary — a fork PR's comment can never be the only channel ([#3977](https://github.com/Ikalus1988/MisakaNet/issues/3977)) ([ad34fd8](https://github.com/Ikalus1988/MisakaNet/commit/ad34fd8afe2b644299db34c5fd26d2b0f01bd515))
+
+
+### Lessons
+
+* **contrib:** 125 intake lessons from the 2026-10-25 triage ([#3851](https://github.com/Ikalus1988/MisakaNet/issues/3851)) ([f757620](https://github.com/Ikalus1988/MisakaNet/commit/f7576206b700ca0dcbf709ff94d85b0ffa8b5815))
+* **contrib:** answer five claimed questions ([#3924](https://github.com/Ikalus1988/MisakaNet/issues/3924) [#3925](https://github.com/Ikalus1988/MisakaNet/issues/3925) [#3923](https://github.com/Ikalus1988/MisakaNet/issues/3923) [#3926](https://github.com/Ikalus1988/MisakaNet/issues/3926) [#3962](https://github.com/Ikalus1988/MisakaNet/issues/3962)) ([#3967](https://github.com/Ikalus1988/MisakaNet/issues/3967)) ([c269fcc](https://github.com/Ikalus1988/MisakaNet/commit/c269fcc0b712c3b34591189950de464632177cc1))
+* **contrib:** convert intake [#4021](https://github.com/Ikalus1988/MisakaNet/issues/4021) — V100 Strata MoE serving, measured ([#4039](https://github.com/Ikalus1988/MisakaNet/issues/4039)) ([276bb6a](https://github.com/Ikalus1988/MisakaNet/commit/276bb6afe51418479baa220eecfb30470e8105e1))
+* convert 47 `[Lesson]` submissions into the corpus, close 4 duplicates (658 → 705) ([#4185](https://github.com/Ikalus1988/MisakaNet/issues/4185)) ([0db2ba0](https://github.com/Ikalus1988/MisakaNet/commit/0db2ba0fae8884246335bbfef8aab7d403ead06b))
+* convert the second `[Lesson]` batch — 44 of 47, with titles and domains reviewed ([#4205](https://github.com/Ikalus1988/MisakaNet/issues/4205)) ([3c38072](https://github.com/Ikalus1988/MisakaNet/commit/3c3807201e06076dd43a159156a7ee9908554494))
+* **core:** a --home sandbox must ignore the config-dir env var the shell exports ([#4118](https://github.com/Ikalus1988/MisakaNet/issues/4118)) ([8eacbc9](https://github.com/Ikalus1988/MisakaNet/commit/8eacbc9a0a7b7c3a424b32bb8e8074ae6f357566))
+
 ## [2.50.1](https://github.com/Ikalus1988/MisakaNet/compare/v2.50.0...v2.50.1) (2026-10-25)
 
 

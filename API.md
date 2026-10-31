@@ -1,6 +1,6 @@
 # MisakaNet API Reference
 
-> **Version:** 2.50.1 <!-- x-release-please-version --> | **Protocol:** `misaka-protocol.json`
+> **Version:** 3.0.0 <!-- x-release-please-version --> | **Protocol:** `misaka-protocol.json`
 
 MisakaNet exposes a multi-surface API: CLI search, MCP tools, GitHub-based contribution endpoints, and optional Hub federation. This document catalogues every supported interface.
 
