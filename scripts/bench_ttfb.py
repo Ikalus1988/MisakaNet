@@ -82,6 +82,10 @@ def probe(host: str, method: str, accept: str, params: dict | None = None,
     received = 0
     try:
         context = ssl.create_default_context()
+        # Stated rather than implied: `create_default_context` already refuses TLS < 1.2 on every Python
+        # this project supports, but the analyser cannot see that and a reader should not have to know
+        # it. Pinning the floor is the same behaviour, written down.
+        context.minimum_version = ssl.TLSVersion.TLSv1_2
         with socket.create_connection((host, 443), timeout=timeout) as raw:
             with context.wrap_socket(raw, server_hostname=host) as sock:
                 sock.sendall(request)
