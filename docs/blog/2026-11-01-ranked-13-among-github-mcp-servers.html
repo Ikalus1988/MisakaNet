@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MisakaNet — ranked 13th among GitHub MCP servers</title>
+<meta name="description" content="Glama shortlisted MisakaNet 13th of 2,074 GitHub MCP servers. The month that got it there: 91 submissions converted, a real auth race found and fixed, and the first byte going from 8.1 s to 111 ms.">
+<!-- design-tokens:start -->
+<style id="misaka-design-tokens">
+/*
+ * The design system's tokens — ONE source for every hand-written page (#3541, batch V).
+ *
+ * Why this file exists: the site currently holds two products. The homepage has an identity
+ * (Orbitron, a cyan glow, a grid), and the other hand-written pages are GitHub's default dark
+ * theme — copied in from somewhere else. Fourteen pages, fourteen sets of hardcoded colours,
+ * radii, shadows and font stacks. Nothing is *wrong* with them; they are simply not one site,
+ * and every future change has to be made fourteen times.
+ *
+ * This block changes nothing on its own: no page references these names yet. That is deliberate
+ * — batch W is the batch that replaces hardcoded values with these names, and a batch that
+ * changed the rendering as well as the vocabulary would make a visual regression impossible to
+ * attribute. So this file is the vocabulary, and the gate below keeps it the only copy of it.
+ *
+ * Every value below is measured, not chosen for taste: the text colours were picked for their
+ * WCAG contrast ratio against --bg-0 (15.95:1, 7.67:1, 4.14:1), and the two accent colours
+ * for theirs (12.79:1 and 5.21:1). If a value changes here, the ratios change with it, so the
+ * numbers in the comments are part of the contract.
+ *
+ * Maintained by scripts/sync_design_tokens.py — `--check` fails when a page drifts from this
+ * file, the same way the shared nav row is kept honest.
+ */
+:root {
+  /* ── 底与面：3 档（收编 GitHub 习惯色，不再各页自定义）── */
+  --bg-0: #070b15;   /* 页面底 */
+  --bg-1: #0d1424;   /* 卡片 / 面 */
+  --bg-2: #161b22;   /* 浮层 / 代码块 */
+
+  /* ── 文字：3 档（对比度已实测）── */
+  --fg-1: #e2e8f0;   /* 15.95:1 on --bg-0 */
+  --fg-2: #94a3b8;   /*  7.67:1 on --bg-0 */
+  --fg-3: #64748b;   /*  仅限 ≥16px 或非文本装饰（4.14:1，正文禁用）*/
+
+  /* ── 品牌与语义 ── */
+  --accent:   #00e5ff;  /* 12.79:1 — 品牌 / 链接（首页既有 --cyan）*/
+  --accent-2: #ff0080;  /*  5.21:1 — 次级强调，限量使用 */
+  --ok:       #22c55e;  /*  8.63:1 */
+  --warn:     #f0c040;
+  --danger:   #ef4444;  /*  5.23:1 */
+  --line:        rgba(148,163,184,.14);
+  --line-strong: rgba(0,229,255,.28);
+
+  /* ── 字体：4 族（不换字体家族，只把 5 套声明收敛成 token）── */
+  /* `--font-ui` 是**系统栈**，不是 Inter：十三个手写页面今天用的是
+     `-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`，而 Inter 只在首页被
+     加载。#3541 的风险第 1 条写着"若 onload 不触发会静默回退……只有像素对比能抓到"，所以
+     **本单不换字体家族**：把 `--font-ui` 写成 Inter 开头，等于让这十三个页面在没加载 Inter
+     的情况下用 CJK 字体渲染拉丁字母——那是一次静默的排版退化。
+     首页的 Inter 因此单列为 `--font-brand`：两个族都是"不动"的，只是各归其位。── */
+  --font-ui:      -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', sans-serif;
+  --font-brand:   'Inter','PingFang SC','Microsoft YaHei','Noto Sans SC',sans-serif;
+  --font-display: 'Orbitron', var(--font-brand);      /* 仅品牌层 */
+  --font-cn:      'Ma Shan Zheng','Noto Sans SC',cursive; /* 仅首页副标 */
+  --font-mono:    'JetBrains Mono',ui-monospace,monospace;
+
+  /* ── 字阶：10 档，rem 基准 16 ── */
+  --fs-3xs:.6875rem; --fs-2xs:.75rem; --fs-xs:.8125rem; --fs-sm:.875rem;
+  --fs-md:1rem;     --fs-lg:1.125rem; --fs-xl:1.3125rem; --fs-2xl:1.5rem;
+  --fs-3xl:1.875rem;--fs-4xl:2.375rem;
+  /* 品牌层的字号（首页的标识组合）。它们不属于 UI 字阶：按 #3541 的 px 规则向上取整，52px 和
+     48px 恰好不动，但 22px 会变成 24px、36px 会变成 38px——那会把首页的标识撑宽 41px，
+     而首页的头部本来就比视口宽（§118.9 的既有 bug），再撑就没有余地了。
+     #3541 说"首页那套签名不是要改掉的东西，它是资产"，所以这一层保留原尺寸，
+     并由像素对比守住：改这里的数会立刻在 header 的宽度上被看见。── */
+  --fs-display:3.25rem;      /* 52px — .logo-title */
+  --fs-display-sm:3rem;      /* 48px — .logo-cn */
+  --fs-display-md:2.25rem;   /* 36px — 窄屏下的 .logo-title / .logo-cn */
+  --fs-tagline:1.375rem;     /* 22px — .logo-tagline */
+
+  /* ── 间距：4px 基准，8 档 ── */
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px;
+  --sp-5:24px; --sp-6:32px; --sp-7:40px; --sp-8:48px;
+
+  /* ── 圆角：3 档（现状 14 种）── */
+  --r-sm:6px; --r-md:10px; --r-lg:16px;
+  /* 胶囊形不是"圆角档位"，是形状：现状的 50% 与 999px 是同一种东西的两种写法。
+     它单列一个 token，而不是混进三档里——把它塞进 --r-lg 会让胶囊变成圆角矩形。── */
+  --r-pill:999px;
+
+  /* ── 动效：2 档 + 1 个 easing（现状 5 种时长）── */
+  --t-fast:150ms; --t-base:250ms; --ease:cubic-bezier(.2,.8,.2,1);
+
+  /* ── 阴影：2 档（现状 31 处）── */
+  --sh-1:0 1px 2px rgba(0,0,0,.35);
+  --sh-2:0 12px 32px rgba(0,0,0,.45);
+}
+
+/* ── 图标：一套 Lucide 线性图标（Y 批）── */
+/* The icon set is Lucide, inlined as SVG; the *shapes* live in `scripts/site_icons.py` and the
+   *style* lives here, for the same reason the tokens live here and not in each page: one source,
+   copied into every page, gated by a script. An emoji could not do this job — it is a coloured
+   bitmap chosen by the platform, so the same markup renders three different icons in three
+   browsers and none of them is `--accent`.
+
+   `1em` makes an icon the size of the text it sits in, which is exactly what an emoji was.
+   `non-scaling-stroke` keeps the line one hairline wide at every size instead of letting it
+   thicken as the icon grows — a scaled-up drawing looks like a scaled-up drawing, and this is a
+   set of UI glyphs, not artwork. Lucide draws at 24px with a 2px stroke; at the 14px of a drawer
+   row that would be 1.17px, and at the 30px of the register panel 2.5px, so the stroke is set
+   once, here, at 1.5px, and every icon inherits it.
+
+   The markup carries no width/height/stroke attributes at all: the attributes would be forty
+   copies of a decision this block already makes. */
+.ico {
+  width: 1em;
+  height: 1em;
+  display: inline-block;
+  vertical-align: -0.125em;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+/* ── The footer shell（Z 批）────────────────────────────────────────────────
+   The footer is the one navigation every page shares, and until batch Z it was
+   six shells wearing six spellings: `footer {}` on some pages and `.footer {}`
+   on others, a cyan-tinted top border on the homepage and a grey one on the
+   rest, four different `margin-top` values, and six pages with no footer at all
+   — which meant six pages the reader could not leave except with the back
+   button.
+
+   So the shell lives here, beside the icons, for the same reason: one source,
+   copied into every page, and `scripts/sync_design_tokens.py --check` fails when
+   a page drifts from it. A page may still add its *own* footer content (the
+   homepage's link row and wordmark), but the shell around it is not the page's
+   to decide. */
+.footer {
+  margin-top: var(--sp-7);
+  padding: var(--sp-5) 0;
+  border-top: 1px solid var(--line);
+  text-align: center;
+  color: var(--fg-2);
+  font-size: var(--fs-xs);
+  line-height: 1.8;
+}
+.footer a { color: var(--accent); text-decoration: none; }
+.footer a:hover { text-decoration: underline; }
+.site-links { margin: 0 0 var(--sp-2); }
+</style>
+<!-- design-tokens:end -->
+<!-- design-tokens:end -->
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: var(--font-ui);
+    background: var(--bg-0); color: var(--fg-2); min-height: 100vh;
+    display: flex; flex-direction: column; align-items: center; padding: 2rem 1rem;
+  }
+  main { max-width: 720px; width: 100%; }
+  h1 { font-size: var(--fs-2xl); font-weight: 600; color: var(--accent); margin-bottom: .25rem; }
+  .subtitle { color: var(--fg-3); font-size: var(--fs-sm); margin-bottom: 2rem; }
+  h2 { font-size: var(--fs-md); color: var(--accent); margin: 2rem 0 .6rem; }
+  h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 1.4rem 0 .4rem; }
+  p, li { font-size: var(--fs-sm); line-height: 1.7; color: var(--fg-2); }
+  ul { margin: .4rem 0 .4rem 1.2rem; }
+  li { margin: .25rem 0; }
+  code { background: var(--bg-2); padding: .1rem .35rem; border-radius: var(--r-sm); font-size: var(--fs-xs); font-family: var(--font-mono); }
+  a { color: var(--accent); }
+  .note { background: var(--bg-2); border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent); padding: .8rem 1rem; margin: 1rem 0; font-size: var(--fs-sm); }
+  table { width: 100%; border-collapse: collapse; margin: .8rem 0; font-size: var(--fs-sm); }
+  th, td { text-align: left; padding: .45rem .5rem; border-bottom: 1px solid var(--line); }
+  th { color: var(--fg-3); font-weight: 600; font-size: var(--fs-2xs); text-transform: uppercase; letter-spacing: .4px; }
+  td.num { text-align: right; font-family: var(--font-mono); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Ranked 13th among GitHub MCP servers</h1>
+  <p class="subtitle">Glama, October 2026 · shortlisted from 2,074 GitHub servers · written 2026-11-01</p>
+
+  <div class="note">
+    <strong>What happened.</strong> Glama's <a href="https://glama.ai/mcp/best/github">20 Best GitHub MCP
+    Servers, Compared</a> put MisakaNet at <strong>#13</strong> — one of 20 shortlisted out of 2,074. The
+    page's numbers for us: 544 GitHub stars (+34 in 30 days), last commit that day, score 51.2, and its
+    one-line verdict — <em>"for an AI coding agent debugging a recurring error in a code repository"</em>.
+  </div>
+
+  <p>
+    A ranking is a lagging indicator, so this page records the leading ones: what actually changed in the
+    month that produced it, and the five mistakes that cost the most time on the way. Nothing here is a
+    launch announcement; the numbers below are the same ones the heartbeat and the repository publish
+    daily.
+  </p>
+
+  <h2>The month, in numbers</h2>
+  <table>
+    <tr><th>what</th><th class="num">then</th><th class="num">now</th></tr>
+    <tr><td>lessons in the served corpus</td><td class="num">516</td><td class="num">749</td></tr>
+    <tr><td><code>[Lesson]</code> submissions converted to files</td><td class="num">0</td><td class="num">91</td></tr>
+    <tr><td>open questions the triage could see</td><td class="num">12 of 54</td><td class="num">54 of 54</td></tr>
+    <tr><td>SSE first byte (<code>/mcp</code>)</td><td class="num">8,100 ms</td><td class="num">111 ms</td></tr>
+    <tr><td>release</td><td class="num">2.50.1</td><td class="num">3.0.0 on PyPI</td></tr>
+    <tr><td>coding clients with a documented install path</td><td class="num">11</td><td class="num">12</td></tr>
+  </table>
+
+  <p>
+    The interesting number is the third one. The triage script fetched one page of open issues and
+    reported "12 open question(s)" — which happened to be a true statement about page one and a false one
+    about the backlog. The other 42 questions could not receive a receipt, a cluster or a bounty, because
+    nothing downstream could see them. Fixing that, and the digest that had quietly forked into five
+    same-titled copies, changed what the project knows about itself more than any feature did.
+  </p>
+
+  <h2>Five things that went wrong</h2>
+
+  <h3>1. A one-page read reported 22% of the truth</h3>
+  <p>
+    <code>issues?state=open&per_page=100</code> with no <code>page</code> parameter. Every derived number
+    inherited the blind spot. <strong>Rule:</strong> a script that reads "the backlog" must page, and the
+    paging function is written once.
+  </p>
+
+  <h3>2. A missing dependency was published as a fact</h3>
+  <p>
+    The heartbeat's daily comment said <code>converted: 0</code> for every intake. The cause was not a
+    pipeline failure: the workflow installed nothing, PyYAML was absent, and the provenance parser
+    degrades to <code>{}</code> by design ("never raises on a malformed lesson"). So every lesson looked
+    like it cited nothing. <strong>Rule:</strong> a failed read is never a zero — the panel now prints
+    "could not be read (reason)" instead.
+  </p>
+
+  <h3>3. Three lessons were invisible because of a substring</h3>
+  <p>
+    Three readers skipped files with <code>"TEMPLATE" in name.upper()</code>, meant to skip
+    <code>lessons/TEMPLATE.md</code>. It also skipped every lesson whose slug contains the word. The
+    trust page said 746 lessons while the corpus said 749 — and a lesson citing intake #3418 could never
+    satisfy its citation, so that reporter would never get a receipt. <strong>Rule:</strong> compare
+    filenames, not substrings; and when two published numbers disagree, one of them is a bug.
+  </p>
+
+  <h3>4. A Windows path made a whole lesson unreadable</h3>
+  <p>
+    The batch converter emitted <code>verify: "E:\Deepseek\..."</code>. YAML read <code>\D</code> as an
+    unknown escape, the entire frontmatter became unparseable, and the gate reported every field missing —
+    while the file looked perfect in an editor. <strong>Rule:</strong> escape both characters, and make the
+    test round-trip a Windows path.
+  </p>
+
+  <h3>5. Non-ASCII filenames turned three gates red at once</h3>
+  <p>
+    <code>git diff --name-only</code> renders a Chinese path as an octal-escaped, quoted string unless
+    <code>-c core.quotepath=false</code> is passed. Three workflows split that output on spaces and handed
+    the tokens to a script that could not open a filename starting with a quote. Every earlier lesson had
+    an ASCII file stem, so the bug had been there for months. <strong>Rule:</strong> the flag goes on every
+    changed-file listing, and a test reads the workflows to keep it there.
+  </p>
+
+  <h2>The part that does not fit in a changelog</h2>
+  <p>
+    Two things happened this month that a milestone list cannot carry. The first: an outside security
+    audit of the repository found a real defect — a one-time pairing code that could be redeemed twice
+    under concurrency, issuing two working tokens. It was small, it was found by running this
+    repository's own code against itself, and it took four lines to fix once it was stated plainly.
+    Twenty findings were reported; three were real and are fixed, one was disproved by the auditor's own
+    experiments, and the rest are notes for a roadmap.
+  </p>
+  <p>
+    The second: the release sat open for six days. The pull request was green, the changelog was written,
+    and nothing merged it — because release PRs here are deliberately excluded from auto-merge (a release
+    in September shipped 30 duplicated changelog entries that way). The lesson is not "automate the
+    merge"; it is that an artifact kept for a human to read needs a channel that tells the human it is
+    waiting. The repository has a heartbeat for everything except that.
+  </p>
+  <p>
+    Open source at this size is mostly bookkeeping. The corpus grew by 233 lessons, and each one needed
+    its provenance checked, its title repaired, its domain mapped, and a receipt written to whoever
+    reported it — often a stranger who will never read the reply. The代码 is the easy half.
+  </p>
+
+  <h2>中文摘要</h2>
+  <p>
+    Glama 的「20 Best GitHub MCP Servers」把 MisakaNet 排在第 13（2,074 个 GitHub 服务器里挑 20 个）。
+    这个页面记的不是名次，是名次之前的那个月：语料 516 → 749、91 篇投稿落库、问题自动化从只看得到
+    22% 变成 100%、SSE 首字节 8,100ms → 111ms、3.0.0 发到 PyPI，以及五个真正花了时间的坑——
+    单页读、缺依赖被当成"零"、用子串过滤文件名、YAML 反斜杠、非 ASCII 路径。
+    最后是两件 changelog 装不下的事：一次外部审计用仓库自己的代码找到一个配对码并发兑换的缺陷；
+    以及一个绿色、可合并、却等了六天的发版 PR。维护这件事，大部分时间不在写代码。
+  </p>
+
+  <footer class="footer">
+<!-- site-links:start -->
+<nav class="site-links" aria-label="Site links">
+  <a href="/">Home</a> ·
+  <a href="/search/">Search lessons</a> ·
+  <a href="/install/">Install</a> ·
+  <a href="/start">Start</a>
+</nav>
+<!-- site-links:end --> MisakaNet — see also <a href="https://glama.ai/mcp/best/github">the Glama list</a>.</footer>
+</main>
+</body>
+</html>
