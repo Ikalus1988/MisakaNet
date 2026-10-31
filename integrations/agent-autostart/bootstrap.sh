@@ -14,7 +14,7 @@
 #      MISAKANET_SETUP_DIR (where files land, default ~/.misakanet-agent)
 set -euo pipefail
 
-BASE="${MISAKANET_RAW_BASE:-https://raw.githubusercontent.com/Ikalus1988/MisakaNet/main}"
+BASE="${MISAKANET_RAW_BASE:-https://raw.githubusercontent.com/Ikalus1988/MisakaNet/misakanet-setup-v0.9.0}"
 DIR="${MISAKANET_SETUP_DIR:-$HOME/.misakanet-agent}"
 FILES="install_misakanet_agent.py checkpoint_reminder.py checkpoint_reminder.mjs prompt.md"
 PREFIX="integrations/agent-autostart"
@@ -24,10 +24,15 @@ PREFIX="integrations/agent-autostart"
 # api.github.com and codeload answered instantly), and a one-liner that fails there takes
 # the whole onboarding with it. Each source is tried in order; MISAKANET_RAW_ONLY=1 pins
 # the first one (tests rely on that).
+# Pinned to the release tag, not `main`: this loop downloads `install_misakanet_agent.py` and `exec`s
+# it. `main` is mutable — anyone who can push to it, or a CDN cache in front of it, decides what runs
+# on a user's machine with no diff and no signature in front of them (2026-10-31 audit, F19). A tag
+# does not move; changing the installer means a release, which is a reviewed commit.
+MISAKANET_PINNED_REF="${MISAKANET_PINNED_REF:-misakanet-setup-v0.9.0}"
 SOURCES=("$BASE")
 if [ -z "${MISAKANET_RAW_ONLY:-}" ]; then
-  SOURCES+=("https://cdn.jsdelivr.net/gh/Ikalus1988/MisakaNet@main")
-  SOURCES+=("https://ghproxy.net/https://raw.githubusercontent.com/Ikalus1988/MisakaNet/main")
+  SOURCES+=("https://cdn.jsdelivr.net/gh/Ikalus1988/MisakaNet@${MISAKANET_PINNED_REF}")
+  SOURCES+=("https://ghproxy.net/https://raw.githubusercontent.com/Ikalus1988/MisakaNet/${MISAKANET_PINNED_REF}")
 fi
 
 say() { printf '%s\n' "$*"; }

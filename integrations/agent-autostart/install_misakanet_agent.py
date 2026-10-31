@@ -214,13 +214,32 @@ def marker_pattern(start: str, end: str) -> re.Pattern:
     return re.compile(rf"(?m)^[ \t]*#\s*{re.escape(start)}\s*$\n?.*?^[ \t]*#\s*{re.escape(end)}\s*$\n?", re.S)
 
 
-RAW_BASE_DEFAULT = "https://raw.githubusercontent.com/Ikalus1988/MisakaNet/main"
+#: The ref every raw fetch is pinned to.
+#:
+#: It used to be `main`, and that is a security hole rather than a freshness trade-off: what this
+#: fetches is `skills/misakanet/SKILL.md` — not a resource the agent *reads* but an instruction set it
+#: *follows*. Anyone able to change `main`, or a CDN cache in front of it, could change what the model
+#: is told between the moment this installer was reviewed and the moment a user runs it, with no
+#: signature and no diff in front of them. A release tag does not move (2026-10-31 audit, F19).
+PINNED_REF = "misakanet-setup-v0.9.0"
+RAW_BASE_DEFAULT = f"https://raw.githubusercontent.com/Ikalus1988/MisakaNet/{PINNED_REF}"
 # raw.githubusercontent stalls on blocked networks; these two answered instantly from the
 # same box where raw hung (jsDelivr 1.6s, ghproxy 1.0s). Keep the order: primary first.
+# Pinned to the same tag for the same reason.
 MIRRORS = {
-    "jsdelivr": "https://cdn.jsdelivr.net/gh/Ikalus1988/MisakaNet@main",
-    "ghproxy": "https://ghproxy.net/https://raw.githubusercontent.com/Ikalus1988/MisakaNet/main",
+    "jsdelivr": f"https://cdn.jsdelivr.net/gh/Ikalus1988/MisakaNet@{PINNED_REF}",
+    "ghproxy": f"https://ghproxy.net/https://raw.githubusercontent.com/Ikalus1988/MisakaNet/{PINNED_REF}",
 }
+
+#: sha256 of `skills/misakanet/SKILL.md` **at `PINNED_REF`**.
+#:
+#: The pin stops `main` from moving under us; it does not stop a mirror from serving different bytes
+#: for the same tag. This is the second half: the installer carries the digest of the file it expects,
+#: so a mirror that answers with anything else is refused instead of written into `~/.agents/skills/`.
+#: `tests/test_install_skill_integrity.py` recomputes it from the working tree, so the constant cannot
+#: drift from the file — changing SKILL.md forces a deliberate bump here, in the same review.
+SKILL_MD_SHA256 = "5eb335759294f9179bacb1b47277f108830dc5379f15ef88534bffa6aff0eace"
+SKILL_MD_PATH = "skills/misakanet/SKILL.md"
 
 
 def _fetch_raw(rel_path: str, timeout: float = 10.0) -> str:
@@ -236,12 +255,30 @@ def _fetch_raw(rel_path: str, timeout: float = 10.0) -> str:
     bases = [primary]
     if not os.environ.get("MISAKANET_RAW_ONLY"):
         bases += [MIRRORS["jsdelivr"], MIRRORS["ghproxy"]]
+    expected = SKILL_MD_SHA256 if rel_path == SKILL_MD_PATH else ""
     for base in bases:
         try:
             with urllib.request.urlopen(f"{base}/{rel_path}", timeout=timeout) as response:
-                return response.read().decode("utf-8")
+                payload = response.read()
         except Exception:
             continue
+        if expected:
+            import hashlib
+
+            got = hashlib.sha256(payload).hexdigest()
+            if got != expected:
+                # Do not fall through to the next mirror with a *bad* answer in hand: a mirror serving
+                # different bytes for a pinned tag is the attack, and trying more mirrors just gives it
+                # more chances. Refusing is the outcome, and the caller reports it as "cannot install".
+                print(
+                    f"[x] {base}/{rel_path} 的 sha256 与安装器内置值不一致，拒绝写入：\n"
+                    f"    期望 {expected}\n    实际 {got}\n"
+                    "    这通常意味着镜像被篡改或缓存了别的版本；请用 "
+                    "MISAKANET_RAW_BASE 指向可信来源，或从 git clone 里运行。",
+                    file=sys.stderr,
+                )
+                return ""
+        return payload.decode("utf-8")
     return ""
 
 
