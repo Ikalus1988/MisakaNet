@@ -20,6 +20,7 @@ from __future__ import annotations
 import os
 import pathlib
 import re
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -85,10 +86,19 @@ def _path_without(shim: Path, excluded: str) -> str:
             name = entry.name
             if name == excluded or name in linked:
                 continue
+            target = shim / name
             try:
-                (shim / name).symlink_to(entry)
+                target.symlink_to(entry)
             except (OSError, FileExistsError):
-                continue
+                # Windows: creating a symlink needs a privilege the CI runner does not have, and the
+                # `continue` that used to sit here left the shim nearly empty — the script then failed
+                # with `tr: command not found`, which looks like a bug in the script and is not.
+                # A copy needs no privilege and models the same thing: an executable on PATH.
+                try:
+                    if not target.exists():
+                        shutil.copy2(entry, target)
+                except (OSError, shutil.Error):
+                    continue
             linked.add(name)
     assert excluded not in linked
     return str(shim)
