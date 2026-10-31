@@ -5404,7 +5404,15 @@ function mcpSseStreamedResponse(work, preflight = null) {
         }
       };
       // First bytes, before any await: this is the whole point of the function.
-      send(": connected\n\n");
+      //
+      // **Padded on purpose.** A 13-byte comment is not enough to get past the buffering in front of
+      // this worker: measured after the first deploy (2026-10-31) the SSE first byte was still 4,832 ms
+      // against 8,100 ms before — better, and nowhere near the millisecond it should be. Middleboxes
+      // (and HTTP/2 flow-control windows) hold small chunks until they have a reason to flush; 4 KiB
+      // is the smallest size that reliably trips the flush in practice, and SSE comments are free —
+      // clients discard every line that starts with `:`, so this costs 4 KiB of upload and nothing else.
+      const padding = ": " + " ".repeat(4092) + "\n\n";
+      send(padding);
       let body;
       try {
         const response = await work();

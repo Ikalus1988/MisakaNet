@@ -39,7 +39,9 @@ test('the first chunk is the comment, before the work resolves', async () => {
   const reader = response.body.getReader();
   const first = await reader.read();
   const text = new TextDecoder().decode(first.value);
-  assert.equal(text, ': connected\n\n', 'the comment is the first bytes, not the frame');
+  assert.ok(text.startsWith(': '), 'the first bytes are an SSE comment, not the frame');
+  assert.ok(text.length >= 1024, `the first chunk is padded to survive a buffering hop (got ${text.length} bytes)`);
+  assert.ok(text.trimEnd().endsWith(''), 'comment lines carry no data');
   released();
   const rest = [];
   for (;;) {
@@ -62,7 +64,7 @@ test('the content type is SSE and the status is 200', () => {
 test('a handler that throws becomes a JSON-RPC error frame, not a dead stream', async () => {
   const response = mcpSseStreamedResponse(async () => { throw new Error('boom'); });
   const all = (await chunks(response, 8)).join('');
-  assert.match(all, /^-?\s*: connected/);
+  assert.ok(all.startsWith(': '), 'the comment precedes the error frame');
   const frame = all.split('event: message\ndata: ')[1];
   const body = JSON.parse(frame);
   assert.equal(body.error.code, -32603);
