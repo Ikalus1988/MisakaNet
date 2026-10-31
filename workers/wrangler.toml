@@ -59,6 +59,14 @@ SEMANTIC_MIN_SCORE = "0.62"
 # disable without a code revert — same switch shape as MISAKANET_SEMANTIC.
 MISAKANET_CJK_FUSE = "1"
 
+# AI Gateway in front of the serving embedding call (2026-10-31). EMPTY BY DEFAULT: the code path is
+# the direct `env.AI.run` until someone sets this to `misakanet-bench` (the gateway already on the
+# account, cache_ttl 300, collect_logs on). A var rather than a deploy, because the flag adds a proxy
+# hop to the one inference this worker makes and has to be reversible in one dashboard edit.
+# The comment is the contract `tests/test_worker_config_comments.py`-style gates check nothing of —
+# it is here because the next reader will ask "why is this blank".
+MISAKANET_AI_GATEWAY = ""
+
 # Workers Logs, on because this is the worker that carries the traffic and it was the only one
 # without them (2026-10-02). `wrangler.jsonc` (misakanet-web) has had observability enabled since it
 # was written; this one has served every dynamic request — `/api/*`, `/mcp`, `/register` — with no
