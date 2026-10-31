@@ -7,6 +7,36 @@ All notable changes to the Misaka Network project are documented here.
 
 ---
 
+## [3.1.0](https://github.com/Ikalus1988/MisakaNet/compare/v3.0.0...v3.1.0) (2026-10-31)
+
+
+### Features
+
+* **ci:** the Windows leg is required — one leg, not three ([#4255](https://github.com/Ikalus1988/MisakaNet/issues/4255)) ([b1ae132](https://github.com/Ikalus1988/MisakaNet/commit/b1ae1324e9815943d5898c40b5736c863d24ffd5))
+* **release:** attach PEP 740 attestations to the PyPI upload ([#4256](https://github.com/Ikalus1988/MisakaNet/issues/4256)) ([0d60976](https://github.com/Ikalus1988/MisakaNet/commit/0d6097648e1da3b51807feab2de1d4dfef4d0b69))
+
+
+### Bug Fixes
+
+* **corpus:** a lesson named `…template…` is a lesson, not a template ([#4222](https://github.com/Ikalus1988/MisakaNet/issues/4222)) ([98513ba](https://github.com/Ikalus1988/MisakaNet/commit/98513ba1dd13d6245c659f45c8e1d92ccfd1be96))
+* **installer:** bootstrap verifies the installer's digest before it runs it ([#4225](https://github.com/Ikalus1988/MisakaNet/issues/4225)) ([04b6a49](https://github.com/Ikalus1988/MisakaNet/commit/04b6a498b376fd4c9184020e66550a497c67b80c))
+* **mcp:** a client_id is a name; the token is the key ([#4237](https://github.com/Ikalus1988/MisakaNet/issues/4237)) ([88b365d](https://github.com/Ikalus1988/MisakaNet/commit/88b365d122072b9076cf89aea656f893c3a0430f))
+
+
+### Documentation
+
+* **record:** three figures were wrong, and the page is about not publishing those ([#4254](https://github.com/Ikalus1988/MisakaNet/issues/4254)) ([816563d](https://github.com/Ikalus1988/MisakaNet/commit/816563d5ef9723f893bba2020f720b6106e95ee4))
+* **site:** the record — ranked 13th among GitHub MCP servers ([#4250](https://github.com/Ikalus1988/MisakaNet/issues/4250)) ([89fd198](https://github.com/Ikalus1988/MisakaNet/commit/89fd198f59eff9f6643db02b3f5d74e61ebef735))
+
+
+### Tests
+
+* **portability:** include Git's userland in the PATH shim ([#4231](https://github.com/Ikalus1988/MisakaNet/issues/4231)) ([9398ef4](https://github.com/Ikalus1988/MisakaNet/commit/9398ef430952d8ac4ae288564a1c7562910c0648))
+* **portability:** skip this one on Windows, for a reason the platform decides ([#4233](https://github.com/Ikalus1988/MisakaNet/issues/4233)) ([f140d22](https://github.com/Ikalus1988/MisakaNet/commit/f140d22ee49a5bb14d05c77b24e850d6536eb559))
+* **portability:** skip when the host cannot build a POSIX PATH ([#4232](https://github.com/Ikalus1988/MisakaNet/issues/4232)) ([9938e18](https://github.com/Ikalus1988/MisakaNet/commit/9938e185c953f8826af7cd3d533b4c8a1cdb7f42))
+* **portability:** the no-timeout test stops reaching the network ([#4228](https://github.com/Ikalus1988/MisakaNet/issues/4228)) ([9b5ef04](https://github.com/Ikalus1988/MisakaNet/commit/9b5ef040da3b57b2b4a455287844a0df399bf4a9))
+* **portability:** the PATH shim copies when it cannot symlink ([#4230](https://github.com/Ikalus1988/MisakaNet/issues/4230)) ([314045c](https://github.com/Ikalus1988/MisakaNet/commit/314045cc34759123acc418b74b8f9438350b97f0))
+
 ## [3.0.0](https://github.com/Ikalus1988/MisakaNet/compare/v2.50.1...v3.0.0) (2026-10-31)
 
 
