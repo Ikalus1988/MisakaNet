@@ -83,8 +83,8 @@ jobs:
 
           # `.github/workflows/pr-checks.yml`.
 
-          ADDED=$(git diff --name-only --diff-filter=A "$BASE" HEAD -- 'lessons/**/*.md' 'lessons/*.md' | tr '\n' ' ')
-          MODIFIED=$(git diff --name-only --diff-filter=MR "$BASE" HEAD -- 'lessons/**/*.md' 'lessons/*.md' | tr '\n' ' ')
+          ADDED=$(git -c core.quotepath=false diff --name-only --diff-filter=A "$BASE" HEAD -- 'lessons/**/*.md' 'lessons/*.md' | tr '\n' ' ')
+          MODIFIED=$(git -c core.quotepath=false diff --name-only --diff-filter=MR "$BASE" HEAD -- 'lessons/**/*.md' 'lessons/*.md' | tr '\n' ' ')
           echo "added=$ADDED" >> "$GITHUB_OUTPUT"
           echo "modified=$MODIFIED" >> "$GITHUB_OUTPUT"
 
