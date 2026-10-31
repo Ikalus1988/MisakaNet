@@ -821,7 +821,11 @@ def test_bootstrap_downloads_and_hands_over(tmp_path):
     home = make_home(tmp_path)
     env = dict(
         os.environ,
-        MISAKANET_RAW_BASE=f"file://{INTEGRATION.parent.parent}",   # repo root
+        # `as_uri()`, not an f-string: this checkout lives under `/mnt/c/Users/Eric Jia/...`, and a
+        # URL with a literal space fails `curl`, which then falls through to the network mirrors — the
+        # test then downloads the *tagged* installer instead of the working tree and verifies a digest
+        # that legitimately differs. Percent-encoding keeps it hermetic.
+        MISAKANET_RAW_BASE=REPO.as_uri(),   # repo root
         MISAKANET_SETUP_DIR=str(setup_dir),
         MISAKANET_ENDPOINT="http://127.0.0.1:9/mcp",
     )

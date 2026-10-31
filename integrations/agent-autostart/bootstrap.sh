@@ -17,6 +17,29 @@ set -euo pipefail
 BASE="${MISAKANET_RAW_BASE:-https://raw.githubusercontent.com/Ikalus1988/MisakaNet/misakanet-setup-v0.9.0}"
 DIR="${MISAKANET_SETUP_DIR:-$HOME/.misakanet-agent}"
 FILES="install_misakanet_agent.py checkpoint_reminder.py checkpoint_reminder.mjs prompt.md"
+
+# ── What those four files are supposed to be ──────────────────────────────────────────────────────
+#
+# This script downloads an installer and then `exec`s it, which is the strongest thing either install
+# path does — and until 2026-10-31 it did it unverified from three different hosts (the audit's F19).
+# Pinning the ref stopped `main` from moving underneath us; this stops a *mirror* from serving
+# different bytes for the same tag, which is the threat the mirrors actually carry (they exist because
+# raw.githubusercontent stalls on some networks, so the mirror is the only copy a user gets).
+#
+# The digests live **here**, not in a CHECKSUMS file fetched at run time: in exactly the network the
+# mirrors exist for, the primary is unreachable, and a checksum that cannot be fetched verifies
+# nothing. They are computed over line endings normalised to LF (CRLF is folded first), so a Windows
+# checkout matches what raw.githubusercontent serves.
+# `scripts/update_install_checksums.py --write` rewrites the block and
+# `tests/test_bootstrap_checksums.py` fails when it and the files disagree — a bump is a reviewed diff.
+# >>> CHECKSUMS (generated: python3 scripts/update_install_checksums.py --write) >>>
+CHECKSUMS="
+341b0a40df9a77a10e58ee99bf9889d49f3c25c6067802af40cb412c6d8a88f6  install_misakanet_agent.py
+436ab0473a0952fd3f1b0cc1d37e9de917a539d362425c2e780f83a58689b056  checkpoint_reminder.py
+7313414e110e29901c4e268fa013963544b33ce0e048516102e77f44f133caac  checkpoint_reminder.mjs
+48ebe861cf5ff303d1a31f5fe96725cea194cedc7ebe52cbd7da3ad35ece7424  prompt.md
+"
+# <<< CHECKSUMS <<<
 PREFIX="integrations/agent-autostart"
 
 # Mirror chain. raw.githubusercontent.com is unreachable or stalls on plenty of networks
@@ -104,6 +127,52 @@ for f in $FILES; do
     exit 1
   fi
 done
+# ── Verify before executing ────────────────────────────────────────────────────────────────────────
+#
+# Checked here rather than inside the installer because the installer is the thing being checked. A
+# mismatch deletes the file and stops: running a download that does not match what was reviewed is
+# the failure this block exists for, and "continue anyway" would make the digests decorative.
+# Line endings are folded to LF before hashing, matching how the digests are computed and how
+# raw.githubusercontent serves these files. Without it the check would fail on a checkout whose
+# `core.autocrlf` rewrote them — a false alarm that teaches people to ignore the check, which is worse
+# than the bug it guards.
+sha256_of() {
+  if command -v sha256sum >/dev/null 2>&1; then
+    tr -d '\r' < "$1" | sha256sum | awk '{print $1}'
+  elif command -v shasum >/dev/null 2>&1; then
+    tr -d '\r' < "$1" | shasum -a 256 | awk '{print $1}'
+  else
+    printf ''
+  fi
+}
+
+verify_downloads() {
+  verified=0
+  while read -r expected name; do
+    [ -n "$expected" ] || continue
+    actual="$(sha256_of "$DIR/$name")"
+    if [ -z "$actual" ]; then
+      say "[x] 这台机器没有 sha256sum / shasum，无法校验 ${name}。"
+      say "    不校验就执行一个下载来的安装器，正是这次要堵的口子。请改用 git clone 后本地运行："
+      say "      python3 integrations/agent-autostart/install_misakanet_agent.py"
+      exit 1
+    fi
+    if [ "$actual" != "$expected" ]; then
+      say "[x] ${name} 的 sha256 与脚本内置值不一致，已删除并中止。"
+      say "    期望 ${expected}"
+      say "    实际 ${actual}"
+      say "    这通常意味着镜像被篡改或缓存了别的版本。请改用可信来源，或从 git clone 运行。"
+      rm -f "$DIR/$name"
+      exit 1
+    fi
+    verified=$((verified + 1))
+  done <<EOF
+$CHECKSUMS
+EOF
+  say "✓ 已校验 ${verified} 个文件的 sha256"
+}
+
+verify_downloads
 say "✓ 已下载：$(echo $FILES | tr ' ' ', ')（来源：${USED}）"
 
 PY=""
