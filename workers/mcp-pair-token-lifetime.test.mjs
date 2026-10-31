@@ -19,9 +19,48 @@ import { testToken } from './_test-token.mjs';
 
 const THIRTY_DAYS = 86400 * 30;
 
+/**
+ * The `kv_store` statements the pairing path issues, with `meta.changes` — `claimOnce` decides whether
+ * it won the code from that number, so a stand-in without it turns a working pair into a 409.
+ *
+ * D1 is required for `/mcp/pair` since 2026-10-31 (a conditional write is the only way a one-time code
+ * is one-time), so this file's fixture carries one.
+ */
+function createD1() {
+  const rows = new Map();
+  return {
+    rows,
+    prepare(sql) {
+      const stmt = { _args: [], bind(...args) { stmt._args = args; return stmt; } };
+      stmt.run = async () => {
+        const args = stmt._args;
+        if (/CREATE TABLE/i.test(sql)) return { success: true, meta: { changes: 0 } };
+        if (/INSERT INTO kv_store/i.test(sql)) {
+          const key = String(args[0]);
+          const exists = rows.has(key);
+          if (exists && /DO NOTHING/i.test(sql)) return { success: true, meta: { changes: 0 } };
+          rows.set(key, String(args[1]));
+          return { success: true, meta: { changes: 1 } };
+        }
+        return { success: true, meta: { changes: 0 } };
+      };
+      stmt.all = async () => {
+        const args = stmt._args;
+        if (/SELECT value FROM kv_store/i.test(sql)) {
+          const value = rows.get(String(args[0]));
+          return { results: value === undefined ? [] : [{ value }] };
+        }
+        return { results: [] };
+      };
+      return stmt;
+    },
+  };
+}
+
 function createEnv() {
   const store = new Map();
   return {
+    MISAKANET_D1: createD1(),
     MCP_TOKEN: testToken('pair-lifetime'),
     MCP_VERSION: 'pair-lifetime-test',
     MISAKANET_KV: {
@@ -72,7 +111,11 @@ test('the advertised lifetime is the one actually stored', async () => {
   const env = createEnv();
   const { body } = await pair(env, await getCode(env));
 
-  const stored = JSON.parse(env.MISAKANET_KV._store.get(`mcp_token:${body.token}`));
+  // D1 is where `storePut` writes while it is bound; KV is only the fallback. Reading the KV stub here
+  // found nothing as soon as the pairing path required D1, which is the tell that the assertion was
+  // pointed at the wrong store rather than that the token was missing.
+  const raw = env.MISAKANET_D1.rows.get(`mcp_token:${body.token}`);
+  const stored = JSON.parse(raw);
   assert.ok(stored, 'the token was never stored, so the caller would fail on its next call');
   const storedSeconds = (new Date(stored.expires).getTime() - Date.now()) / 1000;
   assert.ok(Math.abs(storedSeconds - body.expires_in) < 120,
