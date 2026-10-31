@@ -5368,6 +5368,95 @@ function mcpSseResponse(body, status = 200, extraHeaders = {}) {
   });
 }
 
+/**
+ * The SSE answer, streamed so the **first byte leaves before the work starts** (#4072).
+ *
+ * `mcpSseResponse` builds the whole frame as one string and returns it, so the runtime emits nothing
+ * until the handler returns — i.e. until the search is done. Measured against production on
+ * 2026-10-31 with `Accept: text/event-stream`: median **first byte 8,100 ms**, total 8,279 ms, 4 of 8
+ * requests cut. With `Accept: application/json` the same shape (3,098 ms first byte, 3 of 8 cut): the
+ * response is fully buffered and the link drops anything whose first byte arrives after ~3 s.
+ *
+ * A `ReadableStream` changes that: the comment below is enqueued synchronously, so it is the first
+ * thing on the wire, and the JSON-RPC frame follows when the work finishes. SSE clients ignore
+ * comment lines by definition, so nothing in the protocol changes — only *when* bytes start moving.
+ *
+ * Status codes: the stream is already a 200 by the time the work finishes, so an error becomes a
+ * JSON-RPC error frame rather than an HTTP status. That is the MCP convention (`jsonrpc` errors ride
+ * on 200) — but two client errors are *not* protocol-level: a malformed version header and a bad
+ * `Origin` are answered with 400/403 before any byte is streamed, because a client that gets 200 and
+ * a JSON-RPC error frame cannot tell "your request is broken" from "the server failed". `preflight`
+ * runs first and returns that Response, or `null` to stream.
+ */
+function mcpSseStreamedResponse(work, preflight = null) {
+  if (typeof preflight === "function") {
+    const rejected = preflight();
+    if (rejected) return rejected;
+  }
+  const encoder = new TextEncoder();
+  return new Response(new ReadableStream({
+    async start(controller) {
+      const send = (text) => {
+        try {
+          controller.enqueue(encoder.encode(text));
+        } catch {
+          // The client went away mid-flight; there is nobody to send the rest to.
+        }
+      };
+      // First bytes, before any await: this is the whole point of the function.
+      send(": connected\n\n");
+      let body;
+      try {
+        const response = await work();
+        const text = await response.text();
+        try {
+          body = JSON.parse(text);
+        } catch {
+          body = { jsonrpc: "2.0", id: null,
+                   error: { code: -32603, message: "internal error: the handler did not return JSON" } };
+        }
+      } catch (error) {
+        body = { jsonrpc: "2.0", id: null,
+                 error: { code: -32603, message: `internal error: ${String(error && error.message || error)}` } };
+      }
+      send(`event: message\ndata: ${JSON.stringify(body)}\n\n`);
+      try {
+        controller.close();
+      } catch {
+        // Already closed by the runtime; nothing to do.
+      }
+    },
+  }), {
+    status: 200,
+    headers: {
+      "content-type": "text/event-stream",
+      "cache-control": "no-cache",
+      ...CORS_HEADERS,
+    },
+  });
+}
+
+/**
+ * The client errors that must keep their HTTP status even on the SSE path.
+ *
+ * Returns a complete `text/event-stream` Response (the same frame an SSE client already parses), or
+ * `null` when the request is fine. Kept next to `handleMcpRequest` so the rule is one function rather
+ * than a second copy inside the streamed wrapper — the two used to diverge the moment one changed.
+ */
+function mcpSsePreflight(request, env) {
+  if (!validateMcpOrigin(request)) {
+    return mcpSseResponse(
+      { jsonrpc: "2.0", error: { code: -32000, message: "Forbidden: invalid Origin" } }, 403);
+  }
+  const protocolVersion = request.headers.get("MCP-Protocol-Version") || MCP_PROTOCOL_VERSION;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(protocolVersion)) {
+    return mcpSseResponse(
+      { jsonrpc: "2.0", error: { code: -32600, message: `Unsupported protocol version: ${protocolVersion}` } },
+      400);
+  }
+  return null;
+}
+
 async function handleMcpRequest(request, env, useSse = false, ctx) {
   const respond = useSse ? mcpSseResponse : mcpJsonResponse;
   // 1. Origin validation (MCP spec: prevent DNS rebinding)
@@ -9764,7 +9853,13 @@ export default {
     if (request.method === "POST" && url.pathname === "/mcp") {
       const accept = request.headers.get("Accept") || "";
       const useSse = accept.includes("text/event-stream");
-      return handleMcpRequest(request, env, useSse, ctx);
+      if (useSse) {
+        // Streamed so the first byte escapes the buffer (#4072); the work itself runs in JSON mode and
+        // its response is re-framed as the SSE `message` event.
+        return mcpSseStreamedResponse(() => handleMcpRequest(request, env, false, ctx),
+                                      () => mcpSsePreflight(request, env));
+      }
+      return handleMcpRequest(request, env, false, ctx);
     }
     // OPTIONS /mcp — CORS preflight (browser clients need this)
     if (request.method === "OPTIONS" && url.pathname === "/mcp") {
@@ -10441,6 +10536,10 @@ export {
   // serving embedding call, and the property worth asserting is that an unset var means *today's
   // call* — byte-identical arguments — while a set one adds exactly one option.
   semanticFallbackHits,
+  // Exported for workers/mcp-sse-first-byte.test.mjs: the first chunk of an SSE answer has to be a
+  // comment enqueued *before* the work is awaited, or the whole frame is buffered and the link cuts it
+  // (#4072). A refactor that awaits first recreates the bug while still "returning SSE".
+  mcpSseStreamedResponse,
 };
 
 /** Test seam: forget the cooldown. */
