@@ -1,82 +1,82 @@
 {
-  "generated_at": "2026-10-31T01:41:07.938489+00:00",
+  "generated_at": "2026-10-31T05:57:07.919134+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "lessons: convert 47 `[Lesson]` submissions into the corpus, close 4 duplicates (658 → 705)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4185",
-      "timestamp": "2026-10-31T01:40:57Z",
+      "title": "lessons: convert the second `[Lesson]` batch — 44 of 47, with titles and domains reviewed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4205",
+      "timestamp": "2026-10-31T05:49:57Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4193",
-      "timestamp": "2026-10-30T22:43:54Z",
+      "title": "feat(worker): the AI Gateway becomes a var on the serving embedding call, off by default",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4204",
+      "timestamp": "2026-10-31T04:40:08Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4186",
-      "timestamp": "2026-10-30T18:16:59Z",
+      "title": "feat(intake): `intake_lesson_to_file.py` — the `[Lesson]` converter, in the repo this time",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4203",
+      "timestamp": "2026-10-31T04:04:18Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "docs(handoff): the pipeline round — three defects fixed, one panel shipped, nine issues closed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4135",
-      "timestamp": "2026-10-30T17:08:12Z",
+      "title": "fix(heartbeat): the pipeline panel reported \"nothing converted\" when PyYAML was missing",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4200",
+      "timestamp": "2026-10-31T03:41:06Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(heartbeat): a fourth panel — the intake pipeline, issues in and lessons out",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4131",
-      "timestamp": "2026-10-30T16:40:47Z",
+      "title": "feat(health): assert the search index holds the corpus, not merely that it answers",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4199",
+      "timestamp": "2026-10-31T03:29:32Z",
       "source": "github"
     },
     {
       "type": "lesson",
-      "title": "A CLI's --home sandbox must not honour the config directory env var the shell exports",
-      "url": "lessons/core/cli-home-sandbox-must-ignore-config-env-var.md",
-      "timestamp": "2026-10-30",
+      "title": "AMapNaviRideView.cameraDegree 在锁车态不生效：导航图面一直是斜的 3D",
+      "url": "lessons/contrib/amapnavirideviewcameradegree-在锁车态不生效导航图面一直是斜的-3d.md",
+      "timestamp": "2026-10-31",
+      "domain": "mobile",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "AMapNaviRideView.showMode 被拖图改掉后不会自动恢复，镜头停在原处",
+      "url": "lessons/contrib/amapnavirideviewshowmode-被拖图改掉后不会自动恢复镜头停在原处.md",
+      "timestamp": "2026-10-31",
+      "domain": "mobile",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "bash 3.2：$VAR 后面紧跟中文/全角符号，变量名会被吞进去（unbound variable）",
+      "url": "lessons/contrib/bash-32var-后面紧跟中文全角符号变量名会被吞进去unbound-variable.md",
+      "timestamp": "2026-10-31",
       "domain": "devops",
       "source": "lessons"
     },
     {
       "type": "lesson",
-      "title": "为什么 AI 编码代理的 API Key 用量是普通聊天的上百倍：上下文重放 + 缓存统计口径（附本地台账与官网余额对不上的原因）",
-      "url": "lessons/contrib/agent-api-key-usage-vs-chat-context-replay-and-cache-accounting.md",
-      "timestamp": "2026-10-30",
-      "domain": "agent",
+      "title": "Bilibili space API (member/videos) returns 访问权限不足 to anonymous clients that have no wbi signature",
+      "url": "lessons/contrib/bilibili-space-api-membervideos-returns-访问权限不足-to-anonymous.md",
+      "timestamp": "2026-10-31",
+      "domain": "development",
       "source": "lessons"
     },
     {
       "type": "lesson",
-      "title": "bilibili-api get_download_url returns no durl key (KeyError durl)",
-      "url": "lessons/contrib/bilibili-api-get-download-url-returns-no-durl-key-keyerror.md",
-      "timestamp": "2026-10-30",
-      "domain": "python",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "Chinese PowerShell 5.1 script saved as UTF-8 without BOM is read as GBK and fails to parse",
-      "url": "lessons/contrib/chinese-powershell-5-1-script-saved-as-utf-8-without-bom-is.md",
-      "timestamp": "2026-10-30",
-      "domain": "windows",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "Clash TUN 下发 AAAA 但本机无 IPv6 公网导致微信朋友圈图片全白",
-      "url": "lessons/contrib/clash-tun-aaaa-ipv6.md",
-      "timestamp": "2026-10-30",
-      "domain": "network",
+      "title": "BLE 短暂断链被当成永久断线：读数立刻清空成 --，其实 0.4 秒就重连回来了",
+      "url": "lessons/contrib/ble-短暂断链被当成永久断线读数立刻清空成-其实-04-秒就重连回来了.md",
+      "timestamp": "2026-10-31",
+      "domain": "mobile",
       "source": "lessons"
     },
     {
