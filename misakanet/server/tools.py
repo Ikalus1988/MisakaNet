@@ -250,16 +250,28 @@ TOOLS = [
             "properties": {
                 "kind": {
                     "type": "string",
+                    # Five, not three. `question` was documented in the description and in every
+                    # doc page but missing from this enum, so a client that validates inputs
+                    # could not ask a question through the stdio server at all; `proposal` was
+                    # missing everywhere (#4251 — a plan had to be filed as a lesson candidate).
+                    # tests/test_intake_kind_parity.py keeps this list equal to the other four.
                     "enum": [
                         "missing_lesson",
                         "stale_lesson",
                         "new_lesson_candidate",
+                        "question",
+                        "proposal",
                     ],
                     "description": (
                         "Type of intake. missing_lesson = no match"
                         " found; stale_lesson = matched but wrong;"
                         " new_lesson_candidate = user resolved a"
-                        " new problem."
+                        " new problem; question = asking for help"
+                        " (opens a [Question] issue, not a lesson"
+                        " candidate); proposal = a plan or product"
+                        " request, explicitly not a failure report"
+                        " (answerable by a decision, never"
+                        " converted into a lesson)."
                     ),
                 },
                 "problem": {

@@ -455,7 +455,7 @@ const MCP_TOOLS = [
     inputSchema: {
       type: "object",
       properties: {
-        kind: { type: "string", description: "missing_lesson (knowledge gap), stale_lesson (outdated lesson), new_lesson_candidate (new failure mode), or question (ask for help)." },
+        kind: { type: "string", description: "missing_lesson (knowledge gap), stale_lesson (outdated lesson), new_lesson_candidate (new failure mode), question (ask for help), or proposal (a plan / product request that is explicitly not a failure report — decided, never converted to a lesson)." },
         problem: { type: "string", description: "Required: short description of the failure, gap, or question (max 2000 chars)." },
         error: { type: "string", description: "Optional: short error message (auto-redacted)." },
         what_tried: { type: "string", description: "Optional: what was attempted." },

@@ -99,7 +99,11 @@ function validateMcpOrigin(request) {
 // auto-rejected to badcase). Conservative on purpose: only clear question
 // phrasing with NO failure evidence flips the kind.
 
-const INTAKE_KINDS = ["missing_lesson", "stale_lesson", "new_lesson_candidate", "question"];
+// The five kinds, in one place per language. `proposal` joined on 2026-11-01 (#4251):
+// without it an executable plan has to be filed as `new_lesson_candidate` and then argue
+// with the keyword classifier in prose — the form was the first half of that bug.
+// tests/test_intake_kind_parity.py holds this list equal to the four other readers.
+const INTAKE_KINDS = ["missing_lesson", "stale_lesson", "new_lesson_candidate", "question", "proposal"];
 
 // -- intake-kind-hints:start (auto-generated, do not edit) --
 const QUESTION_HINTS = [

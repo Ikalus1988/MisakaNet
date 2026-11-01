@@ -127,9 +127,17 @@ MCP Intake requires:
 
 | Kind | Use When |
 |------|----------|
-| `new_lesson_candidate` | New failure scenario not in knowledge base |
 | `missing_lesson` | Search returned no results for your query |
+| `stale_lesson` | A lesson matched but it is outdated or wrong |
+| `new_lesson_candidate` | New failure scenario not in knowledge base |
 | `question` | Question that may not need a full lesson |
+| `proposal` | A plan, product request or roadmap — **not** a failure report |
+
+A `proposal` is decided rather than converted: it opens an issue whose exit is "accept and split
+into issues that name a file or a gate" or "decline and say what it assumed". Say so in your own
+words too ("this is not a failure report") — that sentence is the signal the triage classifier
+keys on, and it is never inferred from the topic, so a failure report that merely mentions
+`error` stays a failure report.
 
 ## Deduplication
 

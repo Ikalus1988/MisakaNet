@@ -258,8 +258,11 @@ def misakanet_submit_intake(
     Routing (kind): missing_lesson (knowledge gap), stale_lesson (outdated
     lesson), new_lesson_candidate (new failure mode), question (ask for help —
     opens a [Question] issue with needs-human-review instead of being scored
-    as a lesson). Question-shaped content submitted as the default
-    missing_lesson with no error/fix/verification is auto-routed to question.
+    as a lesson), proposal (a plan or product request that says of itself that
+    it is not a failure report — decided, never converted to a lesson).
+    Question-shaped content submitted as the default missing_lesson with no
+    error/fix/verification is auto-routed to question; nothing is ever
+    auto-routed to proposal.
     """
     if not problem or not str(problem).strip():
         return {"error": "problem is required", "voice": "failure-warning"}

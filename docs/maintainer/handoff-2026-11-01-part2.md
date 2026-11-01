@@ -85,11 +85,11 @@ JS 真跑一遍（proposal / lesson-candidate / question 三条路 + 重跑改�
 重跑分诊，标签从 `type:bug/pending-review` 变成 `type:feature`，评论改口为"由 lesson-candidate 改为
 proposal"，并在 issue 里给了逐条判定（哪些值得做、哪些要决定、以及对 `me_events` 用 `anyOf` 的纠正）。
 
-**还没做，需要一次决定**：把 `proposal` 加进 `kind` 枚举。它被 **5 处代码**读
-（`workers/lib/utils.js`、`workers/register-proxy-sw.js`、`scripts/intake_kind.py`、
-`scripts/intake_pipeline.py`、`misakanet/server/tools.py`）加 `docs/mcp-intake-guide.md` 与一个断言
-"枚举就是这四个"的测试，而且改变的是**线上 `submit_intake` 接受什么**——契约变更 + worker 部署。
-现在这条路由是止血，不是根治：下一个提案仍然要按 `new_lesson_candidate` 提交，靠自述那一句被认出来。
+**已完成（同一天）**：`proposal` 进了 `kind`，五处读取（worker 的 `INTAKE_KINDS`、`scripts/intake_kind.py`、
+`scripts/intake_pipeline.py`、stdio 的 `submit_intake.inputSchema.enum`、`docs/mcp-intake-guide.md` 的表）
+由 `tests/test_intake_kind_parity.py` 逐处**解析**后比对，正文自述作为旧客户端的兼容路径保留。
+顺手发现并修的一处同类漂移：stdio 的 `kind` 枚举**从来没有 `question`**——文档、worker、脚本都是四种，
+只有客户端会校验的那份是三处，于是"用本地 server 提问"这件事在会校验 schema 的客户端里根本发不出去。
 
 ## 3. 可复用的判据（本卷新增）
 

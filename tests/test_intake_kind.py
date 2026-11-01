@@ -93,8 +93,31 @@ def test_invalid_kind_falls_back_to_missing_lesson():
     assert (kind, auto) == ("missing_lesson", False)
 
 
+def test_explicit_proposal_is_honoured_and_never_inferred():
+    """`proposal` is a declared kind, not a detected one (#4251).
+
+    The submission that made this necessary was a three-month plan that had to be filed as
+    `new_lesson_candidate` because the enum had nowhere else to put it. Two properties matter: an
+    explicit `proposal` survives untouched, and prose never becomes one — the keyword guess is what
+    labelled that plan `type:bug` in the first place.
+    """
+    kind, auto = infer_intake_kind(
+        kind="proposal",
+        problem="How we could improve the listing score over three months, with targets.",
+    )
+    assert (kind, auto) == ("proposal", False)
+    # Nothing in the inference path may *produce* proposal: not a question-shaped text, not a
+    # failure-shaped one, not an absent kind.
+    for kwargs in ({"problem": "How do I configure MCP auth?"},
+                   {"problem": "pip install times out behind a corporate proxy"},
+                   {"kind": "missing_lesson", "problem": "How do I configure MCP auth?"}):
+        assert infer_intake_kind(**kwargs)[0] in {"missing_lesson", "question"}
+
+
 def test_kind_whitelist():
-    assert set(INTAKE_KINDS) == {"missing_lesson", "stale_lesson", "new_lesson_candidate", "question"}
+    assert set(INTAKE_KINDS) == {
+        "missing_lesson", "stale_lesson", "new_lesson_candidate", "question", "proposal",
+    }
 
 
 # ── helpers ──
