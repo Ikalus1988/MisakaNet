@@ -36,7 +36,8 @@
 ## 2. 处置动作
 
 - **修复类**：开 PR（引用 issue），合并后 issue 由 `Fixes #N` 自动关——**自动关不等于完成**，见 §3。
-- **lesson 类**：走 lesson-gate（evidence_level + provenance），合入后关 issue。
+- **lesson 类**：走 lesson-gate（evidence_level + provenance），合入后关 issue；issue → 文件的逐步流程、
+  阈值与必须重跑的生成物见 [lesson-intake-playbook.md](lesson-intake-playbook.md)。
 - **question 类**：维护者直接在 issue 内答复（**答复即回执**），必要时沉淀进 FAQ/lesson。
   标签是 `needs-answer`（2026-10-17 起，不再是 `needs-human-review`）：问句的出口是"被回答"，
   回答写在 issue 线程里、`answered` 之后由 `sync-question-answers.yml` 进 FAQ——**不需要 PR**。
