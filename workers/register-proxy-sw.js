@@ -4313,11 +4313,13 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
     // cannot intercept.
     args = { ...args, query: redactIntake(String(args.query)) };
 
-    // Rate limit: 5 free reads/day per IP for remote HTTP (shared across
-    // search + get_lesson). Local stdio MCP is unlimited (user has the code).
-    // Authenticated callers (any valid token) are exempt — the token proves
-    // they registered, so they get the registered quota instead. Anonymous
-    // callers have an empty token here (auth failures never reach this point).
+    // Rate limit: a per-address burst window for remote HTTP (shared across
+    // search + get_lesson/me_events/me_inbox), READ_BURST_LIMIT reads per
+    // READ_BURST_WINDOW_SECONDS. There is no daily cap and no quota — reads are
+    // anonymous and unmetered since 2026-09-18; this is a speed limit that stops
+    // one address from hammering the index. Local stdio MCP is not rate-limited
+    // (the user runs the code). Authenticated callers are exempt because a token
+    // proves they are a known node, not because they bought reads.
     if (!authToken) {
       const ip = clientIp || "unknown";
       // Burst window, not a daily cap (2026-09-18): reuse the same D1 counter with a minute key, so
@@ -5579,8 +5581,9 @@ async function handleMcpRequest(request, env, useSse = false, ctx) {
   try {
     const peekBody = await request.clone().json();
     // Open tools: intake/register (write) + search/get_lesson/me_events/me_inbox
-    // (read, rate-limited). Anonymous users get 5 combined reads/day per IP (PR
-    // #1121); registration lifts the limit. initialize + tools/list stay open for
+    // (read, behind the per-address burst window). Reading needs no registration
+    // and has no daily cap — the pre-2026-09-18 "5 reads/day per IP" quota is gone
+    // (registration unlocks writing, not reads). initialize + tools/list stay open for
     // MCP registry scans. me_events is open because trust evidence should be
     // freely checkable before reusing a lesson (E4 reuse receipts). preflight is
     // read-only and stays open so a connector without an auth header can still

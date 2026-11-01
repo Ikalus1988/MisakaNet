@@ -51,7 +51,7 @@ lessons/                  # Shared knowledge (indexed failure lessons)  — size
 
 ## CI Pipeline Architecture
 
-MisakaNet uses a multi-layered CI architecture powered by GitHub Actions with **69 workflow files** under `.github/workflows/` (`ls .github/workflows/*.yml | wc -l`, 2026-09-18). Each workflow is a self-contained quality gate or automation task. Full inventory (names, triggers, failure paths): see `docs/CI.md`.
+MisakaNet uses a multi-layered CI architecture powered by GitHub Actions with **88 workflow files** under `.github/workflows/` (`ls .github/workflows/*.yml | wc -l`, 2026-11-01 — this number moves with every gate added; `tests/test_workflow_inventory.py` owns the list in `docs/CI.md`, not this sentence). Each workflow is a self-contained quality gate or automation task. Full inventory (names, triggers, failure paths): see `docs/CI.md`.
 
 ### CI Layer Model
 
