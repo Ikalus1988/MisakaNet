@@ -7,6 +7,22 @@ All notable changes to the Misaka Network project are documented here.
 
 ---
 
+## [3.4.0](https://github.com/Ikalus1988/MisakaNet/compare/v3.3.0...v3.4.0) (2026-11-01)
+
+
+### Features
+
+* **lessons:** admit 16 intakes from the queue — batch 3 ([#4296](https://github.com/Ikalus1988/MisakaNet/issues/4296)) ([1c4cf67](https://github.com/Ikalus1988/MisakaNet/commit/1c4cf67df69154d151b238feef04a12cc636d0c4))
+* **mcp:** the stdio tools say what they do to the world, and the worker already did ([#4284](https://github.com/Ikalus1988/MisakaNet/issues/4284)) ([6b73636](https://github.com/Ikalus1988/MisakaNet/commit/6b736365415a8c270b58a2d8676c612ae8975b5c))
+
+
+### Bug Fixes
+
+* **ci:** route the approval tracker into the queue a person actually works ([#4291](https://github.com/Ikalus1988/MisakaNet/issues/4291)) ([5f54d21](https://github.com/Ikalus1988/MisakaNet/commit/5f54d21e2e4eff0d07f5091ea7d13c94d0b38a20))
+* **registry:** the read-back only ever saw the first page, so every release "failed" ([#4282](https://github.com/Ikalus1988/MisakaNet/issues/4282)) ([7db6bb2](https://github.com/Ikalus1988/MisakaNet/commit/7db6bb2dca8642f359dbc92ee3c56bd7e9a4c7c5))
+* **release:** stop asking for approval to publish a version npm already has ([#4283](https://github.com/Ikalus1988/MisakaNet/issues/4283)) ([a8b9c22](https://github.com/Ikalus1988/MisakaNet/commit/a8b9c22a5a870091cd3345f3e7457af0ac7f7576))
+* **search:** the fusion weight measured query length, not relevance ([#4293](https://github.com/Ikalus1988/MisakaNet/issues/4293)) ([2f7555e](https://github.com/Ikalus1988/MisakaNet/commit/2f7555e0cee7ae85f0c54267a0b0c208a2ee94b1))
+
 ## [3.3.0](https://github.com/Ikalus1988/MisakaNet/compare/v3.2.0...v3.3.0) (2026-11-01)
 
 
