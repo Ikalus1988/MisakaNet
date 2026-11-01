@@ -14,11 +14,22 @@
 | 真 bug / 服务缺陷 | 可复现、影响用户 | 立修（P0 优先），修复后按 §3 回执 |
 | 真盲区（仓库无相关 lesson） | 检索确认 0 覆盖 | 转 lesson 任务或自家补课 |
 | 伪盲区（已有 lesson 但没召回） | 仓库有但 gap 记录出现 | 修召回/索引（**不要写重复课**），引用既有 lesson id |
+| **提案 / 非报料** | 提交者自己说"不是失败报告"，或给的是计划、路线图、产品需求 | **决策**：接受就拆成"点名文件/门禁 + 引用的那份测量"的 issue，不接受就写明它假设了什么仓库不成立；**不转 lesson**，也不进 `pending-review` |
 | 已知/重复 | 已有 issue/lesson | duplicate 关闭 + 指向原项 |
 | 噪音 | 服务端已 `auto-rejected` | 不主动关闭；批量清理时按 salvage 评估 |
 
 > 判定"真盲区 vs 伪盲区"必须先检索仓库（`search_knowledge.py` / lessons 目录），
 > 2026-09-07 的 KV 分析显示 19 条 gap 里有 2 条是召回缺陷而非缺课。
+
+> **提案为什么单独一类**（2026-11-01，#4251）：MCP 的 `kind` 只有 missing_lesson /
+> stale_lesson / new_lesson_candidate / question——**没有提案这个值**，于是一份三个月计划只能按
+> `new_lesson_candidate` 提交，提交者还得在正文里补一句"这不是失败报告"。分类器照关键词办事，
+> 看到通篇在讲失败，就把这条提案打成了 `lesson-candidate` + `type:bug` + `priority:high` +
+> `pending-review`：前两个说错了它是什么，后一个把它放进"等落库的课程"队列。
+> 所以现在按**提交者的自述**分流（`declaresNotAFailureReport`），并在重新分诊时把 `type:bug` /
+> `pending-review` 摘掉。**不要改成"读起来像计划"的启发式**：那正是刚才判错的那类关键词猜测。
+> 行为有门禁：`tests/test_intake_proposal_route.py` 把工作流里那段 JS 真跑一遍（node + 打桩的
+> github API），proposal / lesson-candidate / question 三条路各有一个用例。
 
 ## 2. 处置动作
 
@@ -28,6 +39,10 @@
   标签是 `needs-answer`（2026-10-17 起，不再是 `needs-human-review`）：问句的出口是"被回答"，
   回答写在 issue 线程里、`answered` 之后由 `sync-question-answers.yml` 进 FAQ——**不需要 PR**。
 - **服务端 auto-rejected 噪音**：保留标签，不占用维护者时间。
+- **提案类**：不走 lesson-gate（提案没有可复现的失败，写不成 Problem/Root Cause/Fix），也不进
+  lesson 批量落库。出口是**一次决策**：接受的部分各自变成一个 issue，每条点名它会改的文件、工作流或
+  门禁，并附上支撑它的那份测量；不接受的部分在 issue 里写明理由（它假设了什么、仓库里不成立）。
+  决策本身要按 §3 回执给提交者。
 
 ## 3. 铁律：修复/答复后必须给报料者回执（致谢）
 

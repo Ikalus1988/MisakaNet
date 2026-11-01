@@ -74,6 +74,15 @@ jobs:
 
             const isTest = /heartbeat-verify|heartbeat verify|session-test/i.test(text) || /heartbeat|session-test/i.test(source);
             const isHarvestedAgentSkill = /harvested from local lesson skill-|Hermes Agent/i.test(text);
+            // A submission that says, in its own words, that it is not a failure report. The
+            // intake tool's `kind` enum has no value for a proposal (#4251 — a three-month plan
+            // had to be filed as `new_lesson_candidate`, and the submitter appended "please
+            // triage it as such" because the form gave them nowhere else to go). Guessing the
+            // class from topic words is what labelled that proposal `type:bug`: it *discusses*
+            // failures. The declaration is the one signal keywords cannot fake, so it is the one
+            // this branch uses — narrow on purpose, no "sounds like a plan" heuristics.
+            const declaresNotAFailureReport =
+              /\bnot a failure report\b|\bnon[- ]failure report\b|\(proposal\)|\btriage it as (?:such|a proposal)\b|\bthis is a proposal\b/i.test(text);
             const hasProblem = /##\s+Problem/i.test(body);
             const hasVerification = /##\s+Verification/i.test(body);
             const hasFix = /##\s+Fix/i.test(body);
@@ -90,6 +99,7 @@ jobs:
 
             let issueType = 'unknown';
             if (kindLower === 'question') issueType = 'question';
+            else if (declaresNotAFailureReport) issueType = 'feature';
             else if (isBug) issueType = 'bug';
             else if (isFeature) issueType = 'feature';
             else if (isQuestion) issueType = 'question';
@@ -125,6 +135,10 @@ jobs:
             let classification = 'lesson-candidate';
             let suggestedAction = 'Review manually. Convert to a formal lesson if the failure, fix, and verification are concrete; otherwise ask for details or close.';
             const labelsToAdd = ['intake', 'mcp-intake', 'pending-review', 'needs-human-review'];
+            // Labels the fresh classification contradicts, removed on re-triage. The question
+            // branch has always done this; the proposal branch needs it because #4251 already
+            // carries `type:bug` and `pending-review` from its first, wrong pass.
+            const labelsToRemove = [];
 
             if (kindLower === 'question') {
               // Question / knowledge-gap intake — NOT a lesson candidate.
@@ -134,6 +148,15 @@ jobs:
               classification = 'question';
               suggestedAction = 'Question / knowledge-gap intake (not a lesson candidate). Ask the submitter for the concrete error, what was tried, and the expected outcome. Convert to a lesson only if it gains a failure + fix + verification shape; otherwise answer, keep as an open question, or close as a duplicate.';
               labelsToAdd.push('question');
+              labelsToRemove.push('auto-rejected', 'needs-salvage', 'type:feature', 'type:bug');
+            } else if (declaresNotAFailureReport) {
+              // A proposal / product request: not lesson material, not a bug, and not waiting to
+              // be reviewed as a lesson. Its exit is a decision plus, if accepted, issues that
+              // name the file or the gate each change touches — so `pending-review` and the
+              // bug-keyword type both have to come off rather than sit there meaning nothing.
+              classification = 'proposal';
+              suggestedAction = 'Proposal / product request — not a failure report, so there is no lesson to convert. Decide accept or decline. If accepted, split it into issues that each name the file, workflow or gate they change, and cite the measurement behind each target; if declined, say what the proposal assumes that the repository does not hold. Nothing here rides on a benchmark score alone.';
+              labelsToRemove.push('pending-review', 'type:bug');
             } else if (isTest) {
               classification = 'intake-test';
               suggestedAction = 'Verify the transport path, then close as a test intake. Do not convert to a lesson unless it captures a reusable failure pattern.';
@@ -144,7 +167,9 @@ jobs:
               labelsToAdd.push('agent-friendly');
             }
 
-            if (!hasCoreStructure) {
+            // `needs-ac` means "the failure report lacks acceptance criteria". A proposal is not
+            // a report, so the rule does not apply to it and the label would be noise.
+            if (!hasCoreStructure && classification !== 'proposal') {
               labelsToAdd.push('needs-ac');
             }
 
@@ -162,17 +187,14 @@ jobs:
               core.info('No labels to add.');
             }
 
-            // Reconcile labels that contradict the fresh classification.
-            // A question intake is neither a lesson failure case (auto-rejected/
-            // needs-salvage) nor a feature/bug (spurious keyword hits), so any
-            // such labels left over from earlier runs are removed.
-            if (issueType === 'question') {
-              const stale = ['auto-rejected', 'needs-salvage', 'type:feature', 'type:bug'];
-              for (const label of stale) {
-                if (labelNames.has(label)) {
-                  await github.rest.issues.removeLabel({ owner, repo, issue_number, name: label });
-                  core.info(`Removed stale label: ${label}`);
-                }
+            // Reconcile labels that contradict the fresh classification. A question intake is
+            // neither a lesson failure case (auto-rejected/needs-salvage) nor a feature/bug
+            // (spurious keyword hits); a proposal is not awaiting lesson review and is not a bug.
+            // Anything the branch above listed comes off here.
+            for (const label of labelsToRemove) {
+              if (labelNames.has(label)) {
+                await github.rest.issues.removeLabel({ owner, repo, issue_number, name: label });
+                core.info(`Removed stale label: ${label}`);
               }
             }
 
