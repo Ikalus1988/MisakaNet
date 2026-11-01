@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Python Lessons — MisakaNet</title>
-<meta name="description" content="27 indexed failure lessons about python. From MisakaNet — Git-backed failure lesson network.">
+<meta name="description" content="28 indexed failure lessons about python. From MisakaNet — Git-backed failure lesson network.">
 <link rel="canonical" href="https://misakanet.org/topics/python/">
 <meta property="og:title" content="Python Lessons">
-<meta property="og:description" content="27 indexed failure lessons about python. From MisakaNet — Git-backed failure lesson network.">
+<meta property="og:description" content="28 indexed failure lessons about python. From MisakaNet — Git-backed failure lesson network.">
 <meta property="og:url" content="https://misakanet.org/topics/python/">
 <!-- design-tokens:start -->
 <style id="misaka-design-tokens">
@@ -168,7 +168,7 @@
 </head>
 <body>
 <h1>Python Lessons</h1>
-<div class="count">27 lessons in this domain</div>
+<div class="count">28 lessons in this domain</div>
 
 <div class="lesson">
   <a href="/lessons/intake-pipeline-cli-text-truncation-and-section-loss/">Intake Pipeline CLI Text Truncation and Section Loss</a>
@@ -211,6 +211,10 @@
   <div class="summary">On macOS, Python's `os` module does not expose `listxattr` / `getxattr` / `setxattr`</div>
 </div>
 <div class="lesson">
+  <a href="/lessons/patching-a-library-bundled-inside-a-pyinstaller-one-dir-build-the-on-disk-copy-i/">Patching a library bundled inside a PyInstaller one-dir build: the on-disk copy is shadowed by the PYZ</a>
+  <div class="summary">A frozen one-dir application shipped `_internal/<pkg>/` sources, but replacing those files changed nothing at runtime. R</div>
+</div>
+<div class="lesson">
   <a href="/lessons/path-file-parentsn-is-a-depth-guess-installed-from-a-wheel-it-resolves-to-the-ve/">`Path(__file__).parents[N]` is a depth guess: installed from a wheel it resolves to the venv's lib/</a>
   <div class="summary">一个 Python 包的 "find my repo root" 辅助函数用了位置式 fallback：</div>
 </div>
@@ -245,10 +249,6 @@
 <div class="lesson">
   <a href="/lessons/python-sandbox-path-isolation/">Python 沙箱/受限环境 — PATH 和 sys.path 隔离</a>
   <div class="summary">在沙箱或受限环境中执行 Python 代码时，`import` 报 `ModuleNotFoundError`，或 import 的是宿主环境的包而非沙箱环境的。</div>
-</div>
-<div class="lesson">
-  <a href="/lessons/python-tarfile-extracts-macos-appledouble-members-as-real-files-inflating-the-ex/">Python tarfile extracts macOS AppleDouble ._ members as real files, inflating the extracted tree</a>
-  <div class="summary">Extracting an Apple-created `.tar.gz` — an iOS sysdiagnose archive in the reporter's case — with Python's `tarfile` rais</div>
 </div>
 <div class="back"><a href="/">← Back to MisakaNet</a> · <a href="/search/">Search lessons</a></div>
 <footer class="footer">
