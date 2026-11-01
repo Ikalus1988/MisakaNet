@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-11-01T14:11:15.126527+00:00",
+  "generated_at": "2026-11-01T16:07:55.296438+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "feat(lessons): admit 16 intakes from the queue — batch 3",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4296",
-      "timestamp": "2026-11-01T14:11:04Z",
+      "title": "docs(handoff): volume 25 — the second audit pass, re-rated",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4304",
+      "timestamp": "2026-11-01T16:03:39Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "docs(handoff): volume 24 §2.6 — the fusion fix landed, its production effect did not get measured",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4294",
-      "timestamp": "2026-11-01T13:26:10Z",
+      "title": "fix(docs): the numbers and the auth story say what the code does",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4302",
+      "timestamp": "2026-11-01T15:45:35Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(search): the fusion weight measured query length, not relevance",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4293",
-      "timestamp": "2026-11-01T13:08:30Z",
+      "title": "chore(main): release 3.4.0",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4285",
+      "timestamp": "2026-11-01T15:19:36Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "docs(playbook): how an intake becomes a lesson, with the numbers the gate enforces",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4292",
-      "timestamp": "2026-11-01T12:50:58Z",
+      "title": "docs(handoff): volume 24 closes — what deployed, what it scored, what it did not settle",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4301",
+      "timestamp": "2026-11-01T15:17:34Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(ci): route the approval tracker into the queue a person actually works",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4291",
-      "timestamp": "2026-11-01T12:36:47Z",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4300",
+      "timestamp": "2026-11-01T14:26:37Z",
       "source": "github"
     },
     {
