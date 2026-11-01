@@ -70,6 +70,27 @@
 `#4072` 剩余（`recovery_hint` 指向持久 `client_id`、setup 落盘注册 id、孤儿节点 `Misaka38493`、SSE 长尾未量）。
 邮件回执的结论也不变：先把"你的报料成了课程"这个触发点做出来，再谈搬家。
 
+### 2.8 提案类 intake：路由有了，根因还欠一个决定（新账）
+
+`#4251`（Glama 排名三个月计划）暴露的是一**类**问题：MCP 的 `kind` 只有
+`missing_lesson / stale_lesson / new_lesson_candidate / question`，**没有"提案"这个值**，
+所以计划只能按课程候选提交，再在正文里跟关键词分类器讲理。它于是被打成
+`lesson-candidate` + `type:bug` + `priority:high` + `pending-review` —— 前两个说错它是什么，
+第三个把它塞进"等落库的课程"队列。量过：当时 220 条开着的 intake 里，自述"不是失败报告"的**只有这 1 条**
+（kind 分布 `missing_lesson` 126 / `question` 49 / `new_lesson_candidate` 43 / `stale_lesson` 2）。
+
+**已做**：分类器按**提交者自述**分流（`proposal` / `type:feature`，摘掉 `type:bug` 与
+`pending-review`），SOP §1/§2 各加一行，行为门禁 `tests/test_intake_proposal_route.py` 把工作流里那段
+JS 真跑一遍（proposal / lesson-candidate / question 三条路 + 重跑改口 + 首次路径）。`#4251` 已实际
+重跑分诊，标签从 `type:bug/pending-review` 变成 `type:feature`，评论改口为"由 lesson-candidate 改为
+proposal"，并在 issue 里给了逐条判定（哪些值得做、哪些要决定、以及对 `me_events` 用 `anyOf` 的纠正）。
+
+**还没做，需要一次决定**：把 `proposal` 加进 `kind` 枚举。它被 **5 处代码**读
+（`workers/lib/utils.js`、`workers/register-proxy-sw.js`、`scripts/intake_kind.py`、
+`scripts/intake_pipeline.py`、`misakanet/server/tools.py`）加 `docs/mcp-intake-guide.md` 与一个断言
+"枚举就是这四个"的测试，而且改变的是**线上 `submit_intake` 接受什么**——契约变更 + worker 部署。
+现在这条路由是止血，不是根治：下一个提案仍然要按 `new_lesson_candidate` 提交，靠自述那一句被认出来。
+
 ## 3. 可复用的判据（本卷新增）
 
 1. **量门禁必须用门禁自己的命令。** 上一卷数 F841 用的是 `ruff --select F841 scripts/` → 25 处；门禁跑的
@@ -88,6 +109,16 @@
 5. **Windows 检出上编辑文件，整篇会变 CRLF。** `git diff --stat` 里"整文件重写"就是这个，不是逻辑改动；
    `git diff --check` **看不出来**（它只查空白错误），要逐文件 `grep -cU $'\r'`。本卷的实际形态：
    35 个文件显示 5385/5412 行改动，归一化行尾后真实改动是 83/110 行。**提交前做这一步，否则 reviewer 看到的是噪音。**
+6. **线上重跑通过，不证明"首次路径"也对。** `#4251` 的重跑看起来完美（标签摘对了、评论改口了），
+   但那是因为 `pending-review` 那条标签**原本就在**——首次提交的提案会先被加上、再因为删除循环
+   拿的是加之前的标签快照而永远删不掉。同一天补的离线用例（标签集合里没有那个标签）才把它照出来。
+   **判据：验证一条"摘标签/摘字段"的规则，必须构造一个"它本来不存在"的输入。**
+7. **重跑要说自己改了什么。** 分类器的评论守卫原来只问"有没有评论过"，于是规则变了、标签变了，评论还
+   停在旧结论上——bot 前后矛盾比不评论更糟，因为读者信任的是那句旧结论。改成按**分类值**判重，
+   改口时明写 `from X to Y`。
+8. **提交者已经把话说清楚时，别让分类器猜。** `#4251` 正文里写着"这不是失败报告"，分类器却按
+   `error`/`fail` 两个词把它判成 bug。新增的规则只认**自述**、不认"读起来像计划"——后者正是刚判错的那类
+   关键词猜测。**判据：能由提交者声明的东西，就不要从主题词推断。**
 
 ## 4. 下一轮入口
 
@@ -97,3 +128,5 @@
 3. **融合归一化**（6 行 hit@1 miss），材料齐，见 §2.6。
 4. **2026-11-14 前后**：`MISAKANET_CLIENT_ID_PROOF=strict` + 删宽限期措辞，见 §2.4。
 5. **365 篇字段回填**（等额度窗口）；AE / Search Console / Colab（文档已给最小步骤，未执行）。
+6. **`proposal` 进 `kind` 枚举**（§2.8）：5 处代码 + 1 份文档 + 1 个断言枚举的测试，外加一次 worker 部署。
+   要做就先决定"提案是否算 intake 的合法类型"，再一次性改五处并重跑 `tests/test_intake_kind.py`。
