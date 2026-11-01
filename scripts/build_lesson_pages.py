@@ -655,7 +655,6 @@ def plan_with_slugs(lessons: list, known_slugs: dict[str, str] | None = None,
     a 404. Sticky slugs are what a CMS does; the page content follows the title.
     """
     known = dict(known_slugs or {})
-    titles = {lesson.get("id", ""): lesson.get("title", "") for lesson in lessons}
     blocks = shared_markup(root)
 
     seen_slugs: dict[str, str] = {}

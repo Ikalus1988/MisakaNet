@@ -29,7 +29,6 @@ def compute_priority_score(
     has_core_structure: bool = False,
 ) -> int:
     """Compute priority score (0-100) for an intake issue."""
-    text = f"{title}\n{body}"
     score = 50  # baseline
 
     # Structure bonus

@@ -67,7 +67,9 @@ def test_each_sample_log_gets_the_right_class_and_retry_decision(tmp_path):
         log.write_text(log_text + "\n", encoding="utf-8")
         output = tmp_path / "github_output"
         output.write_text("", encoding="utf-8")
-        result = subprocess.run(
+        # check=True raises on a non-zero exit, so the return value itself is not needed —
+        # only the GITHUB_OUTPUT file it writes.
+        subprocess.run(
             ["bash", str(script)],
             env={**os.environ, "LOG_FILE": str(log), "EXIT_CODE": "1", "GITHUB_OUTPUT": str(output)},
             capture_output=True, text=True, check=True,

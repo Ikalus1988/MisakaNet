@@ -179,7 +179,6 @@ def test_the_required_audit_check_still_runs_on_those_branches():
     `test (ubuntu-latest, 3.11)`, `gate` and `audit` — so a skipped `audit` job would leave every snapshot
     pull request waiting forever on a check that never reports.
     """
-    text = (WORKFLOWS / "pr-checks.yml").read_text(encoding="utf-8")
     job = _jobs(WORKFLOWS / "pr-checks.yml")["audit"]
     assert not job.get("if"), (
         "the `audit` job now has a condition, so a `bot/*` pull request would never see its required "

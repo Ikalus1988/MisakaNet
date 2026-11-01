@@ -68,8 +68,6 @@ def _gh_json(path: str):
 def metrics() -> dict[str, str]:
     """Every value is a string: either a measured number or an explicit TODO. Never a guess."""
     m: dict[str, str] = {}
-    iso = (date.today() - timedelta(days=7)).isoformat()
-    iso_end = date.today().isoformat()
 
     # ── machine-readable ──────────────────────────────────────────────────────
     # GitHub's traffic endpoint answers `uniques` and covers the trailing 14 days, not 7.
@@ -184,7 +182,6 @@ def main() -> int:
         print(f"{today} already in the Update Log — nothing written")
         return 0
     head, _, tail = text.partition(heading)
-    note = re.search(r"^_\(.*\)$", tail.strip(), re.M)
     DOC.write_text(f"{head}{heading}\n\n{entry}\n\n{tail.lstrip()}", encoding="utf-8")
     print(f"wrote {today} into {DOC.relative_to(REPO_ROOT)}")
     return 0

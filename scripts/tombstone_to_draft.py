@@ -466,15 +466,13 @@ def main():
                         help="Generate AI diagnostic hint to guide contributors")
     args = parser.parse_args()
 
-    # 读取输入
+    # 读取输入（来源路径由 `args.source_file` 直接传给 `_generate_draft`，
+    # 不再维护一份只写不读的 `source_label`）
     raw_data = None
-    source_label = ""
     if args.source_file:
-        source_label = args.source_file
         with open(args.source_file, "r", encoding="utf-8", errors="replace") as f:
             raw_data = f.read()
     elif args.stdin:
-        source_label = "stdin"
         raw_data = sys.stdin.read()
     else:
         print("错误: 需要 --from-file 或 --stdin", file=sys.stderr)

@@ -265,7 +265,6 @@ def main():
         current_top = leaderboard[0]
         meta = load_meta()
         previous_top_agent = meta.get("top_agent", "")
-        previous_top_score = meta.get("top_score", 0)
 
         if previous_top_agent and previous_top_agent != current_top["agent"]:
             # #1 changed — 打印通知；`leaderboard_watch.py`（已于 2026-10-15 随其 workflow 删除，#1919）

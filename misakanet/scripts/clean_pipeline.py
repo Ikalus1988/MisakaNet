@@ -83,6 +83,9 @@ FIX_SECTION_PATTERNS = [
     re.compile(r"##\s*(?:修复|Fix|方案|Solution)", re.IGNORECASE),
     re.compile(r"##\s*(?:验证|Verification|测试|Test)", re.IGNORECASE),
 ]
+# 索引即语义，P1 门禁按下标取同一份定义：0=问题 1=修复 2=验证。
+# 内联再写一遍正则就是第二个读者 —— 改了一处忘另一处，两条判据迟早分家。
+FIX_IDX, VERIFICATION_IDX = 1, 2
 
 
 # ── 核心函数 ──────────────────────────────────────────────
@@ -172,10 +175,9 @@ def step_quality_gate(lessons: list[dict]) -> list[dict]:
         body = lesson["body"]
         status = lesson["fm"].get("status", "draft")
 
-        has_fix = any(p.search(body) for p in FIX_SECTION_PATTERNS)
-        # 至少需要 fix 部分
-        has_fix_section = bool(re.search(r"##\s*(?:修复|Fix|方案|Solution)", body, re.IGNORECASE))
-        has_verification = bool(re.search(r"##\s*(?:验证|Verification|测试|Test)", body, re.IGNORECASE))
+        # 至少需要「修复」和「验证」两节
+        has_fix_section = bool(FIX_SECTION_PATTERNS[FIX_IDX].search(body))
+        has_verification = bool(FIX_SECTION_PATTERNS[VERIFICATION_IDX].search(body))
 
         issues = []
         if not has_fix_section:
@@ -268,7 +270,6 @@ def step_classify(lessons: list[dict]) -> list[dict]:
             continue  # 已有明确 domain，跳过
 
         body_lower = (lesson["fm"].get("title", "") + " " + lesson["body"]).lower()
-        title_lower = lesson["fm"].get("title", "").lower()
 
         scores = {}
         for d, keywords in DOMAIN_KEYWORDS.items():

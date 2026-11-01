@@ -161,8 +161,14 @@ def load_usage_reports() -> dict:
         return {}
 
 
-def compute_reputation(lessons: list[dict], usage: dict) -> list[dict]:
-    """Compute reputation scores for all contributors."""
+def compute_reputation(lessons: list[dict], usage: dict,
+                       now: datetime | None = None) -> list[dict]:
+    """Compute reputation scores for all contributors.
+
+    `now` is injectable because `time_decay` is relative to it: a test that checks
+    "an old lesson decays more than a recent one" has to pin the clock, or it is
+    asserting against whatever day CI happens to run on.
+    """
     contributors = defaultdict(lambda: {
         "login": "",
         "lessons_contributed": 0,
@@ -176,7 +182,7 @@ def compute_reputation(lessons: list[dict], usage: dict) -> list[dict]:
         "lesson_details": [],
     })
 
-    now = datetime.now(timezone.utc)
+    now = now or datetime.now(timezone.utc)
 
     for lesson in lessons:
         author = lesson["contributor"]

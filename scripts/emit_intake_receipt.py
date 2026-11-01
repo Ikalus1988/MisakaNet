@@ -97,7 +97,6 @@ def _append_receipt(contrib_id: str, lesson_path: str, issue_url: str, evidence_
 def _scan_published_lessons() -> list[dict]:
     """Scan all published lessons (not drafts) for contrib_id in frontmatter."""
     results = []
-    skip_dirs = {"drafts"}
     skip_files = {"README.md", "index.md", "TEMPLATE.md", "CONTRIBUTING.md"}
 
     for subdir in ("core", "contrib", "en"):

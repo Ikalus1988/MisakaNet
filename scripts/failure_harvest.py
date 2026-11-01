@@ -115,8 +115,6 @@ def build_draft(cluster: dict) -> str:
     kind = cluster["kind"]
     signals = cluster.get("signals", [])
     top = cluster["top_error"]
-    slug_kind = re.sub(r"[^A-Za-z0-9]+", "-", kind)[:40].lower()
-    slug = f"harvest-{now.strftime('%Y%m%d')}-{cluster['cid']}-{slug_kind}"
     domain = STACK_DOMAIN.get(stack[0] if stack else "", "general")
     tags = ["draft", "auto-generated", "failure-harvest"]
     tags += list(stack)[:3]

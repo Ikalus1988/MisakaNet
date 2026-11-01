@@ -116,8 +116,8 @@ def test_long_time_contributor():
          "has_verification": True, "created": "2026-07-07", "domain": "devops", "status": "published"},
     ]
 
-    result_old = compute_reputation(lessons_old, {})
-    result_new = compute_reputation(lessons_new, {})
+    result_old = compute_reputation(lessons_old, {}, now=now)
+    result_new = compute_reputation(lessons_new, {}, now=now)
 
     veteran = result_old[0]
     newcomer = result_new[0]
@@ -149,15 +149,7 @@ def test_single_large_pr():
     check("50-lesson score < 100", bulk["final_score"] < 100,
           f"got {bulk['final_score']}")
 
-    # Compare with 10-lesson contributor
-    lessons_10 = [
-        {"path": f"lessons/contrib/careful-{i}.md", "contributor": "careful",
-         "has_verification": True, "created": "2026-07-01", "domain": "devops", "status": "published"}
-        for i in range(10)
-    ]
-    result_10 = compute_reputation(lessons_10, {})
-    careful = result_10[0]
-
+    # There used to be a 10-lesson contributor computed here and never asserted on.
     # Sigmoid prevents linear scaling: 50 lessons ≠ 5× 10 lessons
     # sigmoid(50) ≈ 1.0, sigmoid(10) ≈ 0.5, so ratio ≈ 2x, not 5x
     # But 10-lesson sigmoid is very low (~0.007), so ratio is higher

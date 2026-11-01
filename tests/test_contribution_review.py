@@ -109,7 +109,6 @@ class TestConvert:
             fix="Use git commit --amend --signoff",
         )
 
-        drafts_dir = tmp_path / "lessons" / "drafts"
         with mock_patch("scripts.contribution_review.REPO_ROOT", tmp_path):
             converted = convert_to_draft(result["id"], "lesson", "devops")
             assert converted["converted"] is True

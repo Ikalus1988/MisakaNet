@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Two bug classes that shipped twice today, and that no gate in this repository could see.
+"""The bug classes that shipped twice, and that no gate in this repository could see.
 
 Why this file exists (2026-09-28)
 ---------------------------------
@@ -24,6 +24,17 @@ already clean for both — 436 maintained files, zero findings. The broader conf
 contributors running `ruff check .` locally, because turning on `E`/`I`/`N`/`UP` repo-wide would be
 thousands of findings and a gate nobody could keep green.
 
+Why `F841` joined on 2026-11-01
+-------------------------------
+It is the same instinct one step down from a crash: **a value computed and then dropped**. The sweep
+that added it found 29 in the maintained tree, and several were checks that had never once run —
+`score_lessons.py` measured whether a `## Verification` section states an expected result and then
+ignored the measurement, so the tier `docs/quality-score.md` defines as "commands **and** expected
+output" was reachable on commands alone; `clean_pipeline.py` kept a section-pattern list next to an
+inline copy of the same regexes, so one of the two could be edited and the other would keep deciding.
+Nothing raises on any of that, which is exactly why nothing noticed. The rule enters green: 29 findings
+before the sweep, 0 after it.
+
 `archive/` is excluded in `pyproject.toml`, not here: it is the dead-code graveyard, one of its files does
 not even parse, and excluding it in the config means a contributor's `ruff check .` inspects exactly the
 files this gate does.
@@ -37,7 +48,7 @@ from pathlib import Path
 import pytest
 
 REPO = Path(__file__).resolve().parents[1]
-SELECT = "F821,F811"
+SELECT = "F821,F811,F841"
 # The maintained tree, measured 2026-09-28: 459 tracked Python files, 436 of them outside `archive/`.
 MIN_FILES = 400
 
@@ -77,35 +88,38 @@ def test_the_gate_is_scanning_the_maintained_tree(ruff_available: None) -> None:
 
 
 def test_the_rule_set_is_live(ruff_available: None, tmp_path: Path) -> None:
-    """The control: both bug classes must be reported when they are present.
+    """The control: every rule in `SELECT` must report when its shape is present.
 
     Without this, a `--select` typo (or a config that disabled the rules) would leave the gate green over
     a broken file — the failure mode this file is about, one level up.
     """
     sample = tmp_path / "shipped_twice.py"
     sample.write_text(
-        '"""Two shapes that reached main today."""\n'
+        '"""Two shapes that reached main today, and one that reached it unnoticed."""\n'
         "import os\n"
         "import os  # F811: redefinition of the unused name above\n"
         "\n"
         "\n"
         "def dev_fallback(text):\n"
+        "    leaked = text.upper()   # F841: computed, never used — a check that does nothing\n"
         "    return hashlib.sha256(text.encode()).digest()   # F821: hashlib is never imported\n",
         encoding="utf-8",
     )
     result = ruff("check", "--select", SELECT, "--no-cache", "--output-format", "concise", str(sample))
-    assert result.returncode != 0, f"neither bug class was reported:\n{result.stdout}"
+    assert result.returncode != 0, f"none of the bug classes was reported:\n{result.stdout}"
     assert "F821" in result.stdout, f"undefined name not reported:\n{result.stdout}"
     assert "F811" in result.stdout, f"redefinition not reported:\n{result.stdout}"
+    assert "F841" in result.stdout, f"unused assignment not reported:\n{result.stdout}"
 
 
 def test_no_undefined_names_or_shadowed_imports(ruff_available: None) -> None:
     """The gate. Same command as the control, over the repository."""
     result = ruff("check", "--select", SELECT, "--no-cache", "--output-format", "concise", ".")
     assert result.returncode == 0, (
-        "ruff found crash-shaped name errors (F821 undefined name / F811 redefinition):\n"
-        f"{result.stdout}{result.stderr}\n"
-        "Both classes shipped on 2026-09-28 in code no test drives (a dev fallback and a token-auth "
-        "branch) — see the module docstring. Fix the finding; if a rule is a false positive for a real "
+        "ruff found the three shapes this gate exists for (F821 undefined name / F811 redefinition / "
+        f"F841 value assigned and then dropped):\n{result.stdout}{result.stderr}\n"
+        "F821 and F811 shipped on 2026-09-28 in code no test drives (a dev fallback and a token-auth "
+        "branch); F841 is the same class one step down — a check whose result nobody reads — and it "
+        "entered this gate clean on 2026-11-01. Fix the finding; if a rule is a false positive for a real "
         "pattern, add a `# noqa: <code>` with the reason next to it rather than widening this gate."
     )

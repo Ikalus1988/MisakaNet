@@ -34,14 +34,12 @@ def find_duplicates(threshold: float = 0.5):
     for i, d1 in enumerate(docs):
         t1_title = set(_tokenize(d1.title))
         t1_content = set(_tokenize(d1.content[:2000]))  # first 2k chars
-        t1_all = t1_title | t1_content
 
         for j, d2 in enumerate(docs):
             if j <= i:
                 continue
             t2_title = set(_tokenize(d2.title))
             t2_content = set(_tokenize(d2.content[:2000]))
-            t2_all = t2_title | t2_content
 
             # Title similarity
             title_sim = 0.0

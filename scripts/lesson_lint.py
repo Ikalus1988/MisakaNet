@@ -77,8 +77,6 @@ def is_lesson_file(file_path: Path, lessons_dir: Path) -> bool:
 
 def parse_frontmatter(content: str) -> tuple[dict | None, int]:
     """Parse YAML or JSON frontmatter. Returns (parsed_dict, body_start_line)."""
-    lines = content.split("\n")
-
     # Check for JSON frontmatter (starts with {)
     if content.lstrip().startswith("{"):
         try:

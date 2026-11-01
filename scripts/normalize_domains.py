@@ -129,7 +129,8 @@ def main() -> int:
 
     vocab = load_vocab()
     canonical = set(vocab["canonical"])
-    aliases = vocab.get("aliases") or {}
+    # aliases are applied inside `target_domain()`, which reads them off `vocab` itself —
+    # binding them here as well would be a second reader of the same map.
     retired = vocab.get("retired") or {}
 
     changes: list[tuple[Path, str, str]] = []
