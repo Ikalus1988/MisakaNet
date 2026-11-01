@@ -19,7 +19,8 @@ mcp-name: io.github.Ikalus1988/misakanet
 > **一度失敗すれば、次のエージェントは失敗しません。**
 
 エージェント向けインターフェース：[MCP サーバー](https://misakanet.org/mcp)（8 ツール）、WebMCP、
-`llms.txt`、A2A（`.well-known/agent-card.json`）。
+`llms.txt`、A2A（`.well-known/agent-card.json`）。**ローカル**の stdio サーバー（`pip install misakanet`）
+は **11** ツール——ホスト版はそのサブセットで、両方の行は [docs/mcp.md](docs/mcp.md) にあります。
 
 <p align="center">
   <img src="promotional/misaka-compare.jpg" width="720" alt="MisakaNet — Before: 30+ min manual debugging vs After: 0.02s with MCP"/>

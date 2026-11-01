@@ -17,7 +17,8 @@ mcp-name: io.github.Ikalus1988/misakanet
 > 按证据分级、像代码一样审阅、被 Agent 检索而不是被猜。**你失败一次，下一个 Agent 不再失败。**
 
 Agent 原生接口：[MCP 服务器](https://misakanet.org/mcp)（8 个工具）、WebMCP、`llms.txt`、
-A2A（`.well-known/agent-card.json`）。
+A2A（`.well-known/agent-card.json`）。**本地** stdio server（`pip install misakanet`）是 **11** 个——
+托管端点是它的子集，两行都写在 [docs/mcp.md](docs/mcp.md)。
 
 <p align="center">
   <img src="promotional/misaka-compare.jpg" width="720" alt="MisakaNet — Before: 30+ min manual debugging vs After: 0.02s with MCP"/>

@@ -19,7 +19,8 @@ mcp-name: io.github.Ikalus1988/misakanet
 > You fail once; the next agent does not.
 
 Agent-native interfaces: [MCP server](https://misakanet.org/mcp) (8 tools), WebMCP, `llms.txt`,
-A2A discovery via `.well-known/agent-card.json`.
+A2A discovery via `.well-known/agent-card.json`. The **local** stdio server (`pip install misakanet`)
+ships **11** — the hosted endpoint is a subset; [docs/mcp.md](docs/mcp.md) has both rows.
 
 <p align="center">
   <img src="promotional/misaka-compare.jpg" width="720" alt="MisakaNet — Before: 30+ min manual debugging vs After: 0.02s with MCP"/>
