@@ -134,8 +134,11 @@ def _log_zero_result(query: str):
         with open(log_file, "a", encoding="utf-8") as f:
             # ensure_ascii=False keeps non-ASCII queries readable on disk
             f.write(json.dumps(entry, ensure_ascii=False) + "\n")
-    except Exception:
-        pass  # Non-critical, don't fail search
+    except OSError:
+        # Non-critical, don't fail search. Narrow on purpose: a closed disk or a permission
+        # problem is the expected failure here, and a TypeError from a bad entry is a bug that
+        # should surface instead of being swallowed alongside it (audit F17, 2026-11-01).
+        pass
 
     # Check if same query failed >3 times → suggest creating issue.
     # Parse each line as JSON and compare the query field, so quotes/backslashes/
@@ -160,7 +163,9 @@ def _log_zero_result(query: str):
                 )
                 print(f"     {url}")
                 print()
-    except Exception:
+    except (OSError, UnicodeDecodeError):
+        # Reading the log back is advisory: a missing or half-written file must not turn a search
+        # into a crash. Everything else (a bug in this block) should surface (audit F17).
         pass
 
 

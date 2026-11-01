@@ -386,6 +386,10 @@ jobs:
           fi
 
       # ── Test Suite (full scope only) ──
+      # Skipped for lessons-only / ci-only / js-deps-only because this step's distinct value is the
+      # `--cov=misakanet --cov-fail-under=20` floor, and those scopes cannot move Python coverage.
+      # The *test suite itself* is not skipped anywhere: `ci-cross-platform.yml` runs
+      # `pytest tests/` on every pull request and its 3.11 legs are required contexts.
       - name: Run Test Suite
         if: steps.scope.outputs.scope == 'full'
         id: pytest
@@ -822,7 +826,13 @@ jobs:
             if [ "$SCOPE" = "lessons-only" ]; then
               REPORT+="✅ DCO + schema passed. Ready for merge."
             elif [ "$SCOPE" = "ci-only" ]; then
-              REPORT+="✅ CI-only gates passed. Ready for merge."
+              # This job's own pytest+coverage step is skipped for this scope. The **test evidence**
+              # for a ci-only PR is the required `test (ubuntu-latest, 3.11)` / `test (windows-latest,
+              # 3.11)` matrix, which runs `pytest tests/` on every pull request with no scope
+              # condition (`ci-cross-platform.yml`). Saying "ready for merge" here read as "this job
+              # verified everything", which is the sentence an audit re-reported as a hole
+              # (2026-11-01) even though nothing could merge without those matrix legs.
+              REPORT+="✅ CI-only gates passed. The test suite is the required \`test (…)\` matrix, not this job — check those before merging."
             elif [ "$SCOPE" = "js-deps-only" ]; then
               REPORT+="✅ JS dependency audit + DCO + schema passed. Ready for merge."
             else

@@ -37,9 +37,11 @@ New to open source? Here's how to make your first contribution:
 
 ### Three ways to contribute knowledge — pick by how much structure you have
 
-> **Registering is never required to contribute.** A node (anonymous id + token) buys exactly two things:
-> it lifts the per-IP read cap, and it unlocks the *structured lesson* fast path. Both open paths below
-> work without one, and there is no review queue standing between you and submitting.
+> **Registering is never required to contribute.** A node (anonymous id + token) buys exactly one thing:
+> the *structured lesson* fast path. Reading needs no registration and has no daily cap — an anonymous
+> caller gets the same reads as a registered one; what protects the index is a per-address burst window
+> (a speed limit, not a quota). Both open paths below work without a token, and there is no review queue
+> standing between you and submitting.
 
 | Path | Token? | What you send | What it becomes | Who merges |
 |---|---|---|---|---|
@@ -227,7 +229,9 @@ This repository is AI Agent-friendly — we welcome automated PRs. However, to m
 
 ### ✅ Required Checks
 - All submissions must pass `pytest tests/` before opening a PR
-- `ruff check` must pass with zero warnings
+- `ruff check --select F821,F811,F841` must pass with zero findings (that is what CI gates:
+  undefined names, shadowed imports, and values computed then dropped). The full style sweep is **not**
+  in CI — run `ruff check .` locally if you want it, but a style finding will not block a PR.
 - PRs must only modify files relevant to the Issue's acceptance criteria
 - **No unrelated files** (e.g. generic `main.txt`, `test.html`, `newfile.py`) outside the scope of the Issue
 
