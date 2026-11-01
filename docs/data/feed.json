@@ -1,9 +1,30 @@
 {
-  "generated_at": "2026-11-01T00:12:47.825739+00:00",
+  "generated_at": "2026-11-01T06:25:30.865334+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "fix(gate): F841 joins the bug-class gate — 39 values were computed and then dropped",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4266",
+      "timestamp": "2026-11-01T06:16:48Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "docs(handoff): volume 23 — the session that shipped three releases",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4262",
+      "timestamp": "2026-11-01T02:29:31Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4261",
+      "timestamp": "2026-11-01T00:27:41Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "chore(main): release 3.2.0",
@@ -16,27 +37,6 @@
       "title": "feat(lessons): admit Kuro AI's CF per-account quota lesson (#3992)",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/4257",
       "timestamp": "2026-10-31T19:48:56Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4258",
-      "timestamp": "2026-10-31T19:37:15Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(main): release 3.1.0",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4223",
-      "timestamp": "2026-10-31T19:24:52Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat(release): attach PEP 740 attestations to the PyPI upload",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4256",
-      "timestamp": "2026-10-31T19:07:12Z",
       "source": "github"
     },
     {
