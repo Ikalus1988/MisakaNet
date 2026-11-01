@@ -787,3 +787,44 @@ def _filtered_tools() -> list[dict]:
         return [t for t in TOOLS if matches_any(t["name"])]
     else:
         return [t for t in TOOLS if not matches_any(t["name"])]
+
+# ── annotations ───────────────────────────────────────────────────────────────
+# The four MCP hints say what a tool *does to the world* — read-only? destructive? idempotent? does
+# it reach outside this process? — and a client uses them to decide what it may call without asking
+# a human first. The hosted worker has carried them since #3634 (`workers/register-proxy-sw.js`);
+# this surface did not, on any of its eleven tools, which is the stdio half of what #4251 measured
+# (TDQS scores "Behavioral Transparency" on exactly this: side effects, safety, destructiveness).
+#
+# One table rather than four keys repeated inside eleven `inputSchema` dicts: the repeated-copy
+# version is a place for one entry to differ from the others, and the point of the hint is that all
+# eleven agree about what "read-only" means. The eight names the worker also serves copy the
+# worker's values verbatim — a client that talks to both surfaces must not be told two different
+# things about the same tool. `tests/test_mcp_annotations.py` holds both.
+#
+# A tool added without an entry fails at import rather than shipping without hints.
+ANNOTATIONS: dict[str, dict[str, bool]] = {
+    # read-only retrieval: no side effects, safe to retry, reaches the network
+    "misakanet_search": {"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True},
+    "misakanet_get_lesson": {"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True},
+    "misakanet_preflight": {"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True},
+    "misakanet_me_events": {"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True},
+    "misakanet_me_inbox": {"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True},
+    "misakanet_memory_context": {"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True},
+    # writes, and none of them destroys anything: an intake can be closed, a lesson can be
+    # superseded, a registration can be renewed — retrying is not the same as "the same state"
+    "misakanet_register": {"readOnlyHint": False, "destructiveHint": False, "idempotentHint": False, "openWorldHint": False},
+    "misakanet_submit_intake": {"readOnlyHint": False, "destructiveHint": False, "idempotentHint": False, "openWorldHint": False},
+    "misakanet_write_lesson": {"readOnlyHint": False, "destructiveHint": False, "idempotentHint": False, "openWorldHint": False},
+    # local bookkeeping: the read is read-only, the write appends a record
+    "misakanet_usage_status": {"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": False},
+    "misakanet_submit_usage": {"readOnlyHint": False, "destructiveHint": False, "idempotentHint": False, "openWorldHint": False},
+}
+
+_unannotated = [tool["name"] for tool in TOOLS if tool["name"] not in ANNOTATIONS]
+if _unannotated:
+    raise RuntimeError(
+        "every tool needs an entry in ANNOTATIONS — a client reads those hints to decide what it "
+        f"may call without asking a human. Missing: {_unannotated}"
+    )
+for _tool in TOOLS:
+    _tool["annotations"] = ANNOTATIONS[_tool["name"]]
