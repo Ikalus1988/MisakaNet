@@ -122,6 +122,24 @@ jobs:
                   `<!-- approval-watch -->\n<!-- approval-watch:seen=${waiting.length && oldestOverThreshold ? `stale:${fingerprint}` : fingerprint} -->`),
               });
               core.info(`updated #${existing.number}`);
+              // The label decides whether the tracker is read at all. #2416 was created on
+              // 2026-09-28 carrying `needs-ac` — "this needs acceptance criteria", which is not
+              // what it needs — so it never entered the queue a human works
+              // (`dependency-vuln-audit.yml` uses `needs-human-review` for exactly this shape).
+              // Measured 2026-11-01: the tracker was accurate and current through every second of
+              // the 55-request pile-up, 257 comments deep, and it still took somebody opening the
+              // Actions tab to see one.
+              //
+              // Applied on every update rather than only at creation, because the fix has to reach
+              // the issue that already exists — the one where the history is.
+              const hasRouting = (existing.labels || []).some(l => (l.name || l) === 'needs-human-review');
+              if (!hasRouting) {
+                await github.rest.issues.addLabels({
+                  owner: context.repo.owner, repo: context.repo.repo, issue_number: existing.number,
+                  labels: ['needs-human-review'],
+                });
+                core.info(`#${existing.number}: added needs-human-review so the wait enters the human queue`);
+              }
               if (shouldComment) {
                 const headline = previous === undefined || previous === ''
                   ? 'First observation of a waiting run.'
@@ -148,7 +166,9 @@ jobs:
                 owner: context.repo.owner, repo: context.repo.repo, title: TITLE,
                 body: body.replace('<!-- approval-watch -->',
                   `<!-- approval-watch -->\n<!-- approval-watch:seen=${fingerprint} -->`),
-                labels: [LABEL],
+                // `needs-human-review` from the first second, not `needs-ac`: the issue exists to
+                // get a click, so it belongs in the queue that produces clicks (see the note below).
+                labels: [LABEL, 'needs-human-review'],
               });
               core.info(`created #${created.data.number}`);
             }
