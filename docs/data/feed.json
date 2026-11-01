@@ -1,82 +1,82 @@
 {
-  "generated_at": "2026-11-01T06:25:30.865334+00:00",
+  "generated_at": "2026-11-01T14:11:15.126527+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "fix(gate): F841 joins the bug-class gate — 39 values were computed and then dropped",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4266",
-      "timestamp": "2026-11-01T06:16:48Z",
+      "title": "feat(lessons): admit 16 intakes from the queue — batch 3",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4296",
+      "timestamp": "2026-11-01T14:11:04Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "docs(handoff): volume 23 — the session that shipped three releases",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4262",
-      "timestamp": "2026-11-01T02:29:31Z",
+      "title": "docs(handoff): volume 24 §2.6 — the fusion fix landed, its production effect did not get measured",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4294",
+      "timestamp": "2026-11-01T13:26:10Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4261",
-      "timestamp": "2026-11-01T00:27:41Z",
+      "title": "fix(search): the fusion weight measured query length, not relevance",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4293",
+      "timestamp": "2026-11-01T13:08:30Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(main): release 3.2.0",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4259",
-      "timestamp": "2026-10-31T20:09:33Z",
+      "title": "docs(playbook): how an intake becomes a lesson, with the numbers the gate enforces",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4292",
+      "timestamp": "2026-11-01T12:50:58Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(lessons): admit Kuro AI's CF per-account quota lesson (#3992)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4257",
-      "timestamp": "2026-10-31T19:48:56Z",
+      "title": "fix(ci): route the approval tracker into the queue a person actually works",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4291",
+      "timestamp": "2026-11-01T12:36:47Z",
       "source": "github"
     },
     {
       "type": "lesson",
-      "title": "AMapNaviRideView.cameraDegree 在锁车态不生效：导航图面一直是斜的 3D",
-      "url": "lessons/contrib/amapnavirideviewcameradegree-在锁车态不生效导航图面一直是斜的-3d.md",
-      "timestamp": "2026-10-31",
-      "domain": "mobile",
+      "title": "A port-bound session cookie minted per launch overflows the 16KB request header and breaks startup",
+      "url": "lessons/contrib/a-port-bound-session-cookie-minted-per-launch-overflows-the.md",
+      "timestamp": "2026-11-01",
+      "domain": "network",
       "source": "lessons"
     },
     {
       "type": "lesson",
-      "title": "AMapNaviRideView.showMode 被拖图改掉后不会自动恢复，镜头停在原处",
-      "url": "lessons/contrib/amapnavirideviewshowmode-被拖图改掉后不会自动恢复镜头停在原处.md",
-      "timestamp": "2026-10-31",
-      "domain": "mobile",
+      "title": "An Electron app's cookie SQLite cannot be read while it runs, and no non-admin trick bypasses the lock",
+      "url": "lessons/contrib/an-electron-apps-cookie-sqlite-cannot-be-read-while-it-runs.md",
+      "timestamp": "2026-11-01",
+      "domain": "windows",
       "source": "lessons"
     },
     {
       "type": "lesson",
-      "title": "bash 3.2：$VAR 后面紧跟中文/全角符号，变量名会被吞进去（unbound variable）",
-      "url": "lessons/contrib/bash-32var-后面紧跟中文全角符号变量名会被吞进去unbound-variable.md",
-      "timestamp": "2026-10-31",
+      "title": "curl -K batch download writes nothing: backslash escaping in the config file plus missing --create-dirs",
+      "url": "lessons/contrib/curl-k-batch-download-writes-nothing-backslash-escaping-in.md",
+      "timestamp": "2026-11-01",
       "domain": "devops",
       "source": "lessons"
     },
     {
       "type": "lesson",
-      "title": "Bilibili space API (member/videos) returns 访问权限不足 to anonymous clients that have no wbi signature",
-      "url": "lessons/contrib/bilibili-space-api-membervideos-returns-访问权限不足-to-anonymous.md",
-      "timestamp": "2026-10-31",
-      "domain": "development",
+      "title": "Desktop app setting toggles look applied but never persist until the settings dialog is saved",
+      "url": "lessons/contrib/desktop-app-setting-toggles-look-applied-but-never-persist.md",
+      "timestamp": "2026-11-01",
+      "domain": "devops",
       "source": "lessons"
     },
     {
       "type": "lesson",
-      "title": "BLE 短暂断链被当成永久断线：读数立刻清空成 --，其实 0.4 秒就重连回来了",
-      "url": "lessons/contrib/ble-短暂断链被当成永久断线读数立刻清空成-其实-04-秒就重连回来了.md",
-      "timestamp": "2026-10-31",
-      "domain": "mobile",
+      "title": "DSH profile 的 dsh.profile.bundles 要写包全名，写裸名该插件静默不加载",
+      "url": "lessons/contrib/dsh-profile-的-dshprofilebundles-要写包全名写裸名该插件静默不加载.md",
+      "timestamp": "2026-11-01",
+      "domain": "dsh",
       "source": "lessons"
     },
     {
