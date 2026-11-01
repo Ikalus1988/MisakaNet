@@ -36,7 +36,7 @@ import pytest
 import yaml
 
 REPO = Path(__file__).resolve().parents[1]
-WORKFLOW = REPO / ".github/workflows/issue-intake-triage.yml"
+MODULE = REPO / "scripts" / "intake_triage_classifier.cjs"
 
 # The bodies travel as data. They are shaped like the real submissions: the fields the workflow
 # parses (`**Kind:**`, `## Problem`, ...) and enough prose to trigger the keyword rules.
@@ -105,16 +105,6 @@ How do I configure MCP auth in production?
 """
 
 FILLER = "Extra context for the priority scorer. " * 30
-
-
-def _script() -> str:
-    """The inline `actions/github-script` body, as it runs in Actions."""
-    workflow = yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))
-    for step in workflow["jobs"]["triage"]["steps"]:
-        script = step.get("with", {}).get("script")
-        if script:
-            return script
-    raise AssertionError("no inline script in the triage job — this gate would be checking nothing")
 
 
 def _cases() -> list[dict]:
@@ -216,56 +206,55 @@ def _cases() -> list[dict]:
     ]
 
 
-@pytest.mark.skipif(shutil.which("node") is None, reason="the classifier is JavaScript inside the workflow")
+@pytest.mark.skipif(shutil.which("node") is None, reason="the classifier is JavaScript")
 def test_the_classifier_routes_what_it_says_it_routes(tmp_path: Path) -> None:
-    """Run the real rule with the API stubbed, and read back the decisions it took."""
+    """Run the real module with the API stubbed, and read back the decisions it took.
+
+    The harness `require`s `scripts/intake_triage_classifier.cjs` — the same file the workflow
+    requires — instead of extracting a string out of the YAML and evaluating it. That is not
+    cosmetics: the string form was two code-scanning alerts (#386/#387, dynamic code execution), and
+    a test that builds a program from text cannot be analysed by anything, including itself.
+    """
     program = (
-        "const fs = require('node:fs');\n"
-        "(async () => {\n"
+        "const { createRequire } = require('node:module');\n"
         "const cases = " + json.dumps(_cases()) + ";\n"
-        "const script = fs.readFileSync(process.argv[2], 'utf8');\n"
-        "const results = [];\n"
-        "for (const c of cases) {\n"
-        "  const added = []; const removed = []; let classification = null; let issueType = null;\n"
-        "  let commented = false; let commentBody = '';\n"
-        "  const existing = new Set(c.labels);\n"
-        "  const priorComments = c.prior_classification\n"
-        "    ? [{ body: '<!-- misakanet-intake-triage -->\\n## MCP Intake Triage\\n\\n- Classification: `'\n"
-        "        + c.prior_classification + '`\\n' }]\n"
-        "    : [];\n"
-        "  const core = { info: () => {}, setFailed: (m) => { throw new Error(m); } };\n"
-        "  const github = {\n"
-        "    rest: { issues: {\n"
-        "      get: async () => ({ data: c }),\n"
-        "      addLabels: async ({ labels }) => { for (const l of labels) added.push(l); },\n"
-        "      removeLabel: async ({ name }) => { removed.push(name); },\n"
-        "      createComment: async ({ body }) => {\n"
-        "        commented = true; commentBody = body;\n"
-        "        classification = (body.match(/- Classification: `([^`]+)`/) || [])[1] || null;\n"
-        "        issueType = (body.match(/- Issue type: `([^`]+)`/) || [])[1] || null;\n"
-        "        return { data: {} };\n"
-        "      },\n"
-        "      listComments: async () => ({ data: priorComments }),\n"
-        "    } },\n"
-        "    paginate: async (fn, params) => (await fn(params)).data,\n"
-        "  };\n"
-        "  const issue = { number: 1, title: c.title, body: c.body, labels: c.labels.map((name) => ({ name })) };\n"
-        "  const context = { repo: { owner: 'o', repo: 'r' }, issue: { number: 1 }, payload: { issue } };\n"
-        "  const run = new Function('github', 'core', 'context', 'require',\n"
-        "    `return (async () => {\\n${script}\\n})();`);\n"
-        "  await run(github, core, context, require);\n"
-        "  results.push({ added, removed, classification, issueType, commented, commentBody, existing: [...existing] });\n"
-        "}\n"
-        "console.log('@@RESULTS@@' + JSON.stringify(results));\n"
+        "const classifyIntake = require(process.argv[2]);\n"
+        "(async () => {\n"
+        "  const results = [];\n"
+        "  for (const c of cases) {\n"
+        "    const added = []; const removed = []; let classification = null; let issueType = null;\n"
+        "    let commented = false; let commentBody = '';\n"
+        "    const priorComments = c.prior_classification\n"
+        "      ? [{ body: '<!-- misakanet-intake-triage -->\\n## MCP Intake Triage\\n\\n- Classification: `'\n"
+        "          + c.prior_classification + '`\\n' }]\n"
+        "      : [];\n"
+        "    const core = { info: () => {}, setFailed: (m) => { throw new Error(m); } };\n"
+        "    const github = {\n"
+        "      rest: { issues: {\n"
+        "        get: async () => ({ data: c }),\n"
+        "        addLabels: async ({ labels }) => { for (const l of labels) added.push(l); },\n"
+        "        removeLabel: async ({ name }) => { removed.push(name); },\n"
+        "        createComment: async ({ body }) => {\n"
+        "          commented = true; commentBody = body;\n"
+        "          classification = (body.match(/- Classification: `([^`]+)`/) || [])[1] || null;\n"
+        "          issueType = (body.match(/- Issue type: `([^`]+)`/) || [])[1] || null;\n"
+        "          return { data: {} };\n"
+        "        },\n"
+        "        listComments: async () => ({ data: priorComments }),\n"
+        "      } },\n"
+        "      paginate: async (fn, params) => (await fn(params)).data,\n"
+        "    };\n"
+        "    const issue = { number: 1, title: c.title, body: c.body, labels: c.labels.map((name) => ({ name })) };\n"
+        "    const context = { repo: { owner: 'o', repo: 'r' }, issue: { number: 1 }, payload: { issue } };\n"
+        "    await classifyIntake({ github, core, context });\n"
+        "    results.push({ added, removed, classification, issueType, commented, commentBody });\n"
+        "  }\n"
+        "  console.log('@@RESULTS@@' + JSON.stringify(results));\n"
         "})();\n"
     )
-    script_path = tmp_path / "triage-script.js"
-    script_path.write_text(_script(), encoding="utf-8")
-    program_path = tmp_path / "harness.js"
+    program_path = tmp_path / "harness.cjs"
     program_path.write_text(program, encoding="utf-8")
-
-    result = subprocess.run(["node", str(program_path), str(script_path)],
-                            capture_output=True, text=True)
+    result = subprocess.run(["node", str(program_path), str(MODULE)], capture_output=True, text=True)
     assert result.returncode == 0, f"the classifier harness failed:\n{result.stderr}{result.stdout}"
     marker = "@@RESULTS@@"
     assert marker in result.stdout, f"the harness printed no result line:\n{result.stdout}"
@@ -280,11 +269,6 @@ def test_the_classifier_routes_what_it_says_it_routes(tmp_path: Path) -> None:
                                 f"expected {case['expect_classification']!r}")
             if got["issueType"] != case["expect_type"]:
                 problems.append(f"{name}: typed {got['issueType']!r}, expected {case['expect_type']!r}")
-        else:
-            # Nothing is posted, so the decision is only observable in the labels. That is enough:
-            # `expect_not_added` below covers the one label a proposal must never gain, and triage
-            # is allowed to (re)apply its standard set on every pass.
-            pass
         for label in case["expect_removed"]:
             if label not in got["removed"]:
                 problems.append(f"{name}: did not remove the contradicted label {label!r} "
