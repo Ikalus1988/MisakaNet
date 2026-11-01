@@ -6,6 +6,10 @@ on:
 
 permissions:
   contents: write
+  # The `isolate` job labels the PR (`gh pr edit --add-label shadow-isolated`) and swallows any
+  # error with `2>/dev/null || true`, so without this scope the mirror succeeds and the label
+  # silently never appears — a write whose failure is designed to be invisible.
+  pull-requests: write
 
 jobs:
   isolate:

@@ -23,6 +23,14 @@ concurrency:
 
 permissions:
   contents: read
+  # `issues: write` is required and was missing until 2026-11-02. The backfill step below calls
+  # `gh issue edit --add-label answered`, and with only `contents: read` every one of those calls
+  # returned 403 — the step exited 1, and because the sync is the *next* step it never ran at all.
+  # Measured on run 41315405837: "9 closed question issue(s) carry an answer but no `answered` label /
+  # labelled 0/9; failed: [3574, 3923, 3924, 3925, 3926, 4050, 4090, 4091, 4092]". So the daily cron
+  # had been red since the backfill landed (2026-10-28) and answered questions were not reaching D1 —
+  # a producer that had stopped producing while its run history said only "red, unclear".
+  issues: write
 
 jobs:
   sync:

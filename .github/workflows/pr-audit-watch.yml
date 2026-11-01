@@ -28,7 +28,11 @@ permissions:
   checks: read          # read the check-runs of a PR head
   contents: read
   issues: write         # label a fork PR the repair cannot reach
-  pull-requests: read
+  # `write`, not `read`: this watcher posts the 'the audit did not run for this head' comment
+  # on fork PRs (line ~106). With `read` that call 403s and the one message a contributor needs
+  # to see is the one that never lands. Found by tests/test_workflow_permissions_cover_writes.py
+  # on 2026-11-02, the day the same class of omission stopped the answer sync.
+  pull-requests: write
 
 jobs:
   watch:
