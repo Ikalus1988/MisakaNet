@@ -7,6 +7,27 @@ All notable changes to the Misaka Network project are documented here.
 
 ---
 
+## [3.3.0](https://github.com/Ikalus1988/MisakaNet/compare/v3.2.0...v3.3.0) (2026-11-01)
+
+
+### Features
+
+* **intake:** `proposal` is a kind, and `question` was missing from the enum a client enforces ([#4280](https://github.com/Ikalus1988/MisakaNet/issues/4280)) ([a6329c8](https://github.com/Ikalus1988/MisakaNet/commit/a6329c8a0a5f3021673cc2de844155a295ec33c4))
+
+
+### Bug Fixes
+
+* **gate:** F841 joins the bug-class gate — 39 values were computed and then dropped ([#4266](https://github.com/Ikalus1988/MisakaNet/issues/4266)) ([f332b8a](https://github.com/Ikalus1988/MisakaNet/commit/f332b8a5afe82a804bf861cc1113843538234661))
+* **gate:** the docstring said 29 findings; the number was 39 ([#4270](https://github.com/Ikalus1988/MisakaNet/issues/4270)) ([a14b0d5](https://github.com/Ikalus1988/MisakaNet/commit/a14b0d560290fddd04446b9fa69fadac25cb100c))
+* **intake:** a proposal is not a lesson candidate, and the classifier can say so ([#4271](https://github.com/Ikalus1988/MisakaNet/issues/4271)) ([5642be8](https://github.com/Ikalus1988/MisakaNet/commit/5642be88a0e6db48fb8de5c56f347441f9429b70))
+* **intake:** a re-triage says what changed, and a proposal never gains pending-review ([#4273](https://github.com/Ikalus1988/MisakaNet/issues/4273)) ([97dc0c9](https://github.com/Ikalus1988/MisakaNet/commit/97dc0c9d1d921a4ebc7825b551888344f1cf107d))
+
+
+### Documentation
+
+* **handoff:** volume 23 — the session that shipped three releases ([#4262](https://github.com/Ikalus1988/MisakaNet/issues/4262)) ([ee235a6](https://github.com/Ikalus1988/MisakaNet/commit/ee235a6f047eb609134b370347b6cf9ca9de54ca))
+* **readme:** the interface line says 8 tools; the local server ships 11 ([#4281](https://github.com/Ikalus1988/MisakaNet/issues/4281)) ([e7c576d](https://github.com/Ikalus1988/MisakaNet/commit/e7c576d62896cf4284572b96131e1f8d279d97d7))
+
 ## [3.2.0](https://github.com/Ikalus1988/MisakaNet/compare/v3.1.0...v3.2.0) (2026-10-31)
 
 
