@@ -127,7 +127,7 @@ def _cases() -> list[dict]:
             "expect_classification": "proposal",
             "expect_type": "feature",
             "expect_removed": ["pending-review", "type:bug"],
-            "expect_not_added": ["needs-ac"],
+            "expect_not_added": ["needs-ac", "pending-review"],
         },
         {
             "name": "a failure report, which must keep its route",
@@ -162,6 +162,38 @@ def _cases() -> list[dict]:
             "expect_removed": [],
             "expect_not_added": [],
         },
+        {
+            # Re-triage after a rule change: the labels moved on #4251 but the comment above them
+            # still said `lesson-candidate`, because the guard was "a triage comment exists" rather
+            # than "it says this classification". A second triage pass has to be allowed to correct
+            # the record — and to say that it did.
+            "name": "a re-triage whose classification changed posts the correction",
+            "title": "[Intake] 3-month plan for the listing (proposal, not a failure report)",
+            "body": PROPOSAL_BODY,
+            "labels": ["intake", "mcp-intake", "type:feature"],
+            "prior_classification": "lesson-candidate",
+            "expect_classification": "proposal",
+            "expect_type": "feature",
+            "expect_removed": [],
+            "expect_not_added": ["needs-ac"],
+            "expect_not_added": ["needs-ac", "pending-review"],
+            "expect_comment": True,
+            "expect_retriage_note": True,
+        },
+        {
+            # The other half of that guard: an unchanged classification must not re-comment, or every
+            # `edited` event on an intake issue would add a duplicate.
+            "name": "a re-triage that agrees with the existing comment stays quiet",
+            "title": "[Intake] 3-month plan for the listing (proposal, not a failure report)",
+            "body": PROPOSAL_BODY,
+            "labels": ["intake", "mcp-intake", "type:feature"],
+            "prior_classification": "proposal",
+            "expect_classification": "proposal",
+            "expect_type": "feature",
+            "expect_removed": [],
+            "expect_not_added": ["needs-ac", "pending-review"],
+            "expect_comment": False,
+        },
     ]
 
 
@@ -176,7 +208,12 @@ def test_the_classifier_routes_what_it_says_it_routes(tmp_path: Path) -> None:
         "const results = [];\n"
         "for (const c of cases) {\n"
         "  const added = []; const removed = []; let classification = null; let issueType = null;\n"
+        "  let commented = false; let commentBody = '';\n"
         "  const existing = new Set(c.labels);\n"
+        "  const priorComments = c.prior_classification\n"
+        "    ? [{ body: '<!-- misakanet-intake-triage -->\\n## MCP Intake Triage\\n\\n- Classification: `'\n"
+        "        + c.prior_classification + '`\\n' }]\n"
+        "    : [];\n"
         "  const core = { info: () => {}, setFailed: (m) => { throw new Error(m); } };\n"
         "  const github = {\n"
         "    rest: { issues: {\n"
@@ -184,20 +221,21 @@ def test_the_classifier_routes_what_it_says_it_routes(tmp_path: Path) -> None:
         "      addLabels: async ({ labels }) => { for (const l of labels) added.push(l); },\n"
         "      removeLabel: async ({ name }) => { removed.push(name); },\n"
         "      createComment: async ({ body }) => {\n"
+        "        commented = true; commentBody = body;\n"
         "        classification = (body.match(/- Classification: `([^`]+)`/) || [])[1] || null;\n"
         "        issueType = (body.match(/- Issue type: `([^`]+)`/) || [])[1] || null;\n"
         "        return { data: {} };\n"
         "      },\n"
-        "      listComments: async () => ({ data: [] }),\n"
+        "      listComments: async () => ({ data: priorComments }),\n"
         "    } },\n"
-        "    paginate: async () => [],\n"
+        "    paginate: async (fn, params) => (await fn(params)).data,\n"
         "  };\n"
         "  const issue = { number: 1, title: c.title, body: c.body, labels: c.labels.map((name) => ({ name })) };\n"
         "  const context = { repo: { owner: 'o', repo: 'r' }, issue: { number: 1 }, payload: { issue } };\n"
         "  const run = new Function('github', 'core', 'context', 'require',\n"
         "    `return (async () => {\\n${script}\\n})();`);\n"
         "  await run(github, core, context, require);\n"
-        "  results.push({ added, removed, classification, issueType, existing: [...existing] });\n"
+        "  results.push({ added, removed, classification, issueType, commented, commentBody, existing: [...existing] });\n"
         "}\n"
         "console.log('@@RESULTS@@' + JSON.stringify(results));\n"
         "})();\n"
@@ -217,11 +255,17 @@ def test_the_classifier_routes_what_it_says_it_routes(tmp_path: Path) -> None:
     problems = []
     for case, got in zip(_cases(), decisions):
         name = case["name"]
-        if got["classification"] != case["expect_classification"]:
-            problems.append(f"{name}: classified {got['classification']!r}, "
-                            f"expected {case['expect_classification']!r}")
-        if got["issueType"] != case["expect_type"]:
-            problems.append(f"{name}: typed {got['issueType']!r}, expected {case['expect_type']!r}")
+        if case.get("expect_comment", True):
+            if got["classification"] != case["expect_classification"]:
+                problems.append(f"{name}: classified {got['classification']!r}, "
+                                f"expected {case['expect_classification']!r}")
+            if got["issueType"] != case["expect_type"]:
+                problems.append(f"{name}: typed {got['issueType']!r}, expected {case['expect_type']!r}")
+        else:
+            # Nothing is posted, so the decision is only observable in the labels. That is enough:
+            # `expect_not_added` below covers the one label a proposal must never gain, and triage
+            # is allowed to (re)apply its standard set on every pass.
+            pass
         for label in case["expect_removed"]:
             if label not in got["removed"]:
                 problems.append(f"{name}: did not remove the contradicted label {label!r} "
@@ -229,6 +273,11 @@ def test_the_classifier_routes_what_it_says_it_routes(tmp_path: Path) -> None:
         for label in case["expect_not_added"]:
             if label in got["added"]:
                 problems.append(f"{name}: added {label!r}, which does not apply to this shape")
+        if "expect_comment" in case and got["commented"] != case["expect_comment"]:
+            problems.append(f"{name}: commented={got['commented']}, expected {case['expect_comment']}"
+                            " (the guard must key on the classification, not on 'a comment exists')")
+        if case.get("expect_retriage_note") and "Re-triaged:" not in got["commentBody"]:
+            problems.append(f"{name}: the re-triage comment does not say the classification changed")
     assert not problems, "intake classifier decisions changed:\n- " + "\n- ".join(problems)
 
 

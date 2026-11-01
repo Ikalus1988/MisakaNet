@@ -156,6 +156,11 @@ jobs:
               // bug-keyword type both have to come off rather than sit there meaning nothing.
               classification = 'proposal';
               suggestedAction = 'Proposal / product request — not a failure report, so there is no lesson to convert. Decide accept or decline. If accepted, split it into issues that each name the file, workflow or gate they change, and cite the measurement behind each target; if declined, say what the proposal assumes that the repository does not hold. Nothing here rides on a benchmark score alone.';
+              // Out of the *add* set too, not just off the issue: dropping it only from
+              // `labelsToRemove` meant a first-time proposal got `pending-review` applied (the
+              // removal pass checks the label snapshot taken before the add), and on #4251 the
+              // label happened to pre-exist, which is why the live re-triage looked right.
+              labelsToAdd.splice(labelsToAdd.indexOf('pending-review'), 1);
               labelsToRemove.push('pending-review', 'type:bug');
             } else if (isTest) {
               classification = 'intake-test';
@@ -205,9 +210,19 @@ jobs:
               issue_number,
               per_page: 100,
             });
-            const alreadyCommented = comments.some((comment) => comment.body && comment.body.includes(marker));
-            if (alreadyCommented) {
-              core.info('Triage comment already exists; skipping comment.');
+            // "Already commented" is not the same question as "already said *this*". The guard used
+            // to be the marker alone, so a rule change re-labelled the issue while the comment above
+            // it kept saying the old thing — observed on #4251 an hour after its proposal branch
+            // landed: labels went `lesson-candidate`/`type:bug` → `proposal`/`type:feature` and the
+            // comment did not move. Compare the classification line, not the marker, so a
+            // re-triage that changes its mind says so.
+            const previous = comments
+              .filter((comment) => comment.body && comment.body.includes(marker))
+              .map((comment) => (comment.body.match(/- Classification: `([^`]+)`/) || [])[1])
+              .filter(Boolean);
+            const lastClassification = previous.length ? previous[previous.length - 1] : null;
+            if (lastClassification === classification) {
+              core.info(`Triage comment already says ${classification}; skipping comment.`);
               return;
             }
 
@@ -215,6 +230,7 @@ jobs:
               marker,
               '## MCP Intake Triage',
               '',
+              ...(lastClassification ? [`- Re-triaged: classification changed from \`${lastClassification}\` to \`${classification}\`; the labels were reconciled.`] : []),
               `- Classification: \`${classification}\``,
               `- Issue type: \`${issueType}\``,
               `- Priority: \`${priorityLabel}\` (score: ${priorityScore}/100)`,
