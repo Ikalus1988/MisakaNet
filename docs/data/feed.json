@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-11-01T16:07:55.296438+00:00",
+  "generated_at": "2026-11-01T22:11:06.241383+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "docs(handoff): volume 25 — the second audit pass, re-rated",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4304",
-      "timestamp": "2026-11-01T16:03:39Z",
+      "title": "docs(handoff): volume 25 §3.5 — the two \"you decide\" questions, answered with a count",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4312",
+      "timestamp": "2026-11-01T18:40:43Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(docs): the numbers and the auth story say what the code does",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4302",
-      "timestamp": "2026-11-01T15:45:35Z",
+      "title": "fix(ci): three jobs ran writes without the scope to make them",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4310",
+      "timestamp": "2026-11-01T18:18:35Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(main): release 3.4.0",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4285",
-      "timestamp": "2026-11-01T15:19:36Z",
+      "title": "chore(scripts): delete three files nothing could reach",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4311",
+      "timestamp": "2026-11-01T18:14:24Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "docs(handoff): volume 24 closes — what deployed, what it scored, what it did not settle",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4301",
-      "timestamp": "2026-11-01T15:17:34Z",
+      "title": "docs(ops): \"MCP client can't connect but curl can\" is a broken IPv6 path, not DNS",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4309",
+      "timestamp": "2026-11-01T17:47:15Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4300",
-      "timestamp": "2026-11-01T14:26:37Z",
+      "title": "feat(mcp): three retrieval tools now say which one to call instead of the others",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4308",
+      "timestamp": "2026-11-01T17:10:06Z",
       "source": "github"
     },
     {
