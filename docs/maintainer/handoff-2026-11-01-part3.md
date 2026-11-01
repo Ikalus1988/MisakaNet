@@ -49,6 +49,14 @@ path filter，而 `test (ubuntu-latest, 3.11)` 与 `test (windows-latest, 3.11)`
 3. **增长侧三件**（我一直没动，仍在等决定）：Glama listing 文案加 GitHub、telemetry hook、25–35 篇改
    `domain=github`。立场不变：文案是定位、出站调用是隐私契约、词表迁移要过 bench——都不是维护者能自决的。
 
+   **本条有一个新事实（2026-11-01 晚）**：Glama 的服务器页当天重扫了，**TDQS 4.2 → 4.4**（`Scored 2026-11-01
+   15:25 across 11 tools`），Behavior 从"没有注解可引"变成 **5/5**（"annotations already declare read-only,
+   idempotent, open-world, non-destructive"）——就是 `#4284` 那 11 个工具的注解被看见了。**Disambiguation 仍
+   3/5**：`search` / `memory_context` / `preflight` 三个检索形状的工具从不说明"该用哪个而不是哪个"，
+   这是下一个具体可做的项（写文案，不需要决定）。榜单侧仍 **#13 / 51.2**（页脚 `Updated 2026-10-26`，周重建）；
+   0.60 那个 relevance 乘数没动，原因见 §3 正文。里程碑与这篇推荐已写成博客：
+   `Ikalus1988/Ikalus1988.github.io` 的 `cases/ranked-13th-of-2074.html`。
+
 ## 4. 下一轮入口
 
 1. **F4 按正确定义做**（§1 第 2 条）：缓存 `canonical_lessons()` 的文件清单，别在读 L1 前先做 765 次 `stat`。
