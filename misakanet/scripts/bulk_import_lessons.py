@@ -193,10 +193,9 @@ def cmd_import(args):
     content = src.read_text(encoding="utf-8")
     if not content.startswith("---"):
         print("  ⚠ 文件不以 --- 开头，将包装为模板", file=sys.stderr)
-        slug = _slugify(src.stem)
         content = "---\ntitle: " + src.stem + "\nstatus: draft\nsource: bootstrap\n---\n\n" + content
 
-    # 提取 title 作为文件名
+    # 提取 title 作为文件名（唯一由内容决定的一条路径：`_slugify` 只用在这里）
     title_match = re.search(r'^title:\s*["\']?(.+?)["\']?\s*$', content.split("---", 2)[1], re.MULTILINE)
     filename = _slugify(title_match.group(1) if title_match else src.stem) + ".md"
     filepath = STAGING_DIR / node / filename
@@ -259,7 +258,6 @@ def cmd_validate(args):
             errs = _validate_frontmatter(f)
             if errs:
                 errors += 1
-                title = f.name.replace(".md", "")
                 print(f"  ❌ {node_dir.name}/{f.name}")
                 for e in errs:
                     print(f"      {e}")

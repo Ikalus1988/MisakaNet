@@ -226,9 +226,6 @@ def normalize_tokens(text: str) -> list[str]:
     Placeholders (<PATH>, <PID>, etc.) are lowercased too — the hash must be
     case-insensitive. The _KNOWN_TOKENS set is already lowercase.
     """
-    # Extract placeholders before lowercasing (they have a canonical form)
-    placeholders = set(re.findall(r"<[A-Z]+>", text))
-
     text = text.lower()
     # Collapse whitespace and strip punctuation (keep < > for placeholders)
     text = re.sub(r"[^\w\s<>-]", " ", text)

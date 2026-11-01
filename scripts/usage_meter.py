@@ -136,7 +136,6 @@ def check_lesson(user: str, lesson_id: str) -> dict:
 def record_read(user: str, lesson_id: str) -> dict:
     """Record a lesson read. Deducts from free quota or credits."""
     status = get_status(user)
-    today = _today()
 
     # Determine cost source
     reads_today = status["free_reads_used"]

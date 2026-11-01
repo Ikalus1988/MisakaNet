@@ -130,7 +130,9 @@ def fix_frontmatter_parse(filepath: Path, dry_run: bool = True) -> bool:
     inline_match = re.match(r'^---\n(.*?)\n---\n---(\{.*?\})---\s*\n(.*)', content, re.DOTALL)
     if inline_match:
         yaml_block = inline_match.group(1)
-        json_str = inline_match.group(2)
+        # group(2) is the stray JSON block. Dropping it is the fix: the YAML block is the
+        # frontmatter that gets rewritten, and the body follows. Keep the pattern's group
+        # numbered for that reason — the body must stay group(3).
         body = inline_match.group(3)
 
         # Try to parse the YAML block
@@ -210,7 +212,6 @@ def fix_verification_no_command(filepath: Path, dry_run: bool = True) -> bool:
     if not m:
         return False
 
-    section_header = m.group(1)
     section_body = m.group(3)
 
     # Check if there's already a bash code block with commands

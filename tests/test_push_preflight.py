@@ -315,7 +315,7 @@ def test_the_environment_wins_over_the_file(tmp_path, monkeypatch):
 def test_resolve_token_reads_a_real_working_tree_shape(tmp_path, monkeypatch):
     monkeypatch.delenv("GITHUB_TOKEN", raising=False)
     monkeypatch.delenv("GH_TOKEN", raising=False)
-    path = _creds(tmp_path, "https://Ikalus1988:gho_example@github.com")
+    _creds(tmp_path, "https://Ikalus1988:gho_example@github.com")   # writes the file; the path is tmp_path
     monkeypatch.setattr(pp.pathlib.Path, "home", staticmethod(lambda: tmp_path))
     assert pp.resolve_token() == "gho_example"
 

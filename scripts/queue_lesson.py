@@ -60,28 +60,11 @@ from lesson_gate import VALID_STATUS  # noqa: E402
 
 LESSONS_DIR = Path(os.environ.get("LESSONS_DIR", str(REPO_ROOT / "lessons")))
 
-
-def _get_token():
-    """Get GitHub token securely via git credential helper"""
-    try:
-        result = subprocess.run(
-            ["git", "credential", "fill"],
-            input="protocol=https\nhost=github.com\n",
-            capture_output=True, text=True, timeout=5
-        )
-        for line in result.stdout.split("\n"):
-            if line.startswith("password="):
-                return line.split("=", 1)[1].strip()
-    except Exception:
-        pass
-    # Fallback: read from file with proper handling
-    try:
-        cred_path = os.path.expanduser("~/.git-credentials")
-        with open(cred_path, 'r') as f:
-            creds = f.read().strip()
-        return creds.split("://")[1].split("@")[0].split(":")[1]
-    except Exception:
-        return None
+# There used to be a local `_get_token()` here (git credential helper, then
+# `~/.git-credentials`) whose only two callers assigned the result and never used it: the
+# push below goes through git's own credential helper. It was a second token reader with
+# none of the hardening `scripts/contribute.py:_get_token()` has (the 0644 check in
+# `tests/test_python_channel_fixes.py`), so it is gone rather than kept as dead weight.
 
 
 def _slugify(title):
@@ -210,7 +193,6 @@ def write_lesson(title, domain, tags, content, source=NODE_ID, status="published
     _update_index(filepath, title, domain, tags, source)
 
     # git commit + push (cwd= 参数避免 os.chdir 竞态)
-    token = _get_token()
     repo_root = REPO_ROOT
 
     subprocess.run(["git", "add", str(filepath), str(LESSONS_DIR / "index.md")],
@@ -322,7 +304,6 @@ def write_lesson_from_file(filepath: str) -> bool:
     _update_index(dest, title, domain, tags, source)
 
     # git commit + push (cwd= 参数避免 os.chdir 竞态)
-    token = _get_token()
     repo_root = REPO_ROOT
 
     subprocess.run(["git", "add", str(dest), str(LESSONS_DIR / "index.md")],

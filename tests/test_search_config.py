@@ -4,7 +4,7 @@ from __future__ import annotations
 import os
 import tempfile
 from pathlib import Path
-from scripts.search_config import SearchConfig, get_search_config, _load_config_from_yaml
+from scripts.search_config import SearchConfig, _load_config_from_yaml
 
 
 def test_default_config():
@@ -74,9 +74,8 @@ def test_load_from_env(monkeypatch):
     """Env vars should override yaml."""
     monkeypatch.setenv("MISAKA_SEARCH_BM25_WEIGHT", "0.55")
     monkeypatch.setenv("MISAKA_SEARCH_RRF_K", "30")
-    cfg = get_search_config()
-    # Env overrides should be applied (but we can't test full integration
-    # without mocking _cached_config)
+    # Only the env layer is asserted here: `get_search_config()` caches the merged result,
+    # so a real end-to-end check would be reading a process-wide cache, not this test's env.
     from scripts.search_config import _load_config_from_env
     env_cfg = _load_config_from_env()
     assert env_cfg["bm25_weight"] == "0.55"

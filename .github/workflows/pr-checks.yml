@@ -115,9 +115,9 @@ jobs:
           done
           echo "=== Test dependencies ==="
           # `ruff` is not a style pass here: `tests/test_python_undefined_names.py` shells out to it for
-          # F821/F811 only (undefined names and shadowed imports — the two classes that shipped on
-          # 2026-09-28 in code no test drives). Without it in this install the gate skips and the
-          # failure mode it exists for is invisible again.
+          # F821/F811/F841 only (undefined names, shadowed imports, and values computed then dropped —
+          # the classes that shipped in code no test drives). Without it in this install the gate skips
+          # and the failure mode it exists for is invisible again.
           pip install pytest pytest-cov ruff
           echo "PYTHONPATH=$(pwd):$PYTHONPATH" >> "$GITHUB_ENV"
           echo "=== Dependency install complete ==="

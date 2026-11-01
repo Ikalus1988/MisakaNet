@@ -93,7 +93,6 @@ class TestRunBenchmark:
         (fake_repo / "data").mkdir(exist_ok=True)
         (fake_repo / "data" / "lessons.json").write_text(tiny_lessons_json.read_text(), encoding="utf-8")
 
-        monkeypatch_repo = lambda: None
         bench.REPO = fake_repo
 
         results = run_benchmark(tiny_okf, db, ["MCP server", "GPU setup"], 5, keep_db=False)

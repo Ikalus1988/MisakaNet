@@ -13,18 +13,12 @@ from pathlib import Path
 LESSONS_DIR = Path(__file__).resolve().parent.parent / "lessons"
 
 
-def extract_keywords(text: str) -> list[str]:
-    """Extract lowercase keywords from text."""
-    return re.findall(r"[a-z][\w-]{2,}", text.lower())
-
-
 def classify(text: str) -> tuple[str, str, str]:
     """Classify intake text into a category with label and confidence.
 
     Returns (category, label, reason).
     """
     text_lower = text.lower()
-    keywords = set(extract_keywords(text))
 
     # ── Rescue patterns (operational, urgent) ──────────────────
     rescue_patterns = [

@@ -57,7 +57,6 @@ def get_last_tag(repo):
 
 def get_merged_prs(repo, since_date=None, owner=None, repo_name=None):
     since = since_date or "2020-01-01"
-    query = f"merged:>={since}"
     cmd = [
         "gh", "pr", "list",
         "--repo", f"{owner}/{repo_name}",

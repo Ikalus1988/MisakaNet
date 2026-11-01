@@ -475,11 +475,11 @@ def planned_bounties(plan: dict) -> list[dict]:
 
 
 def existing_bounty(anchor_number: int) -> dict | None:
-    marker = BOUNTY_MARKER.format(anchor_number).split(":")[0]
+    wanted = BOUNTY_MARKER.format(anchor_number)
     for issue in gh(f"/issues?state=all&labels={BOUNTY_LABEL}&per_page=100"):
         if "pull_request" in issue:
             continue
-        if BOUNTY_MARKER.format(anchor_number) in (issue.get("body") or ""):
+        if wanted in (issue.get("body") or ""):
             return issue
     return None
 

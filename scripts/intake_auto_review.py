@@ -986,7 +986,7 @@ def auto_review_issue(
     # while the genuine report it was written to beat scored 51.7). Hard signals cap
     # the weighted score below the review threshold; the submission stays recoverable
     # through the salvage digest, and the reasons name the signal.
-    hard, soft = content_quality_signals(body)["hard"], content_quality_signals(body)["soft"]
+    hard = content_quality_signals(body)["hard"]
     if hard:
         result.weighted_score = min(result.weighted_score, 35.0)
         result.reasons.append(

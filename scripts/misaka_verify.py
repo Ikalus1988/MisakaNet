@@ -118,7 +118,6 @@ def main():
     # Single task mode
     task_ids = [a for a in args if not a.startswith("--")]
     if task_ids:
-        results = []
         for tid in task_ids:
             task = resolve_task(tid)
             if not task:

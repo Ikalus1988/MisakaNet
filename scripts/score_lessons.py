@@ -68,15 +68,21 @@ def score_lesson(filepath: Path) -> dict:
         clarity = 0.0
 
     # --- verify_completeness ---
+    # The three tiers below are the table in `docs/quality-score.md`: 1.0 is "executable
+    # commands **and** expected output", 0.5 is "steps but missing commands or expected
+    # output". `verify_has_expected` was computed and then ignored, so a lesson with
+    # commands and no expected result scored a full 1.0 against a documented rule that
+    # says otherwise — the score was reading the doc's headline, not its table.
     has_verify_section = bool(re.search(r'^## Verification', content, re.M))
     verify_has_commands = False
+    verify_has_expected = False
     if has_verify_section:
         idx = content.index('## Verification')
         verify_text = content[idx:idx + 1500]
         verify_has_commands = bool(re.search(r'```(bash|sh|python|yaml|json|text|cmd)', verify_text))
         verify_has_expected = bool(re.search(r'(expected|should see|output:|result:)', verify_text, re.I))
 
-    if has_verify_section and verify_has_commands:
+    if has_verify_section and verify_has_commands and verify_has_expected:
         verify = 1.0
     elif has_verify_section:
         verify = 0.5

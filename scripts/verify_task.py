@@ -6,8 +6,11 @@ Uses the task's test_cmd field to run verification.
 
 Usage:
     python3 scripts/verify_task.py <task_id>              # basic check
-    python3 scripts/verify_task.py <task_id> --execute    # run test_cmd
-    python3 scripts/verify_task.py <task_id> --sandbox    # run in subprocess
+    python3 scripts/verify_task.py <task_id> --execute    # run the verification in a subprocess
+
+There is no `--sandbox` flag: it was printed here and parsed into a variable that nothing
+read. The subprocess `--execute` runs is a plain pytest invocation, not a sandbox, and
+saying so is the point of this paragraph.
 """
 import json
 import os
@@ -146,10 +149,9 @@ def run_pytest_on_agent_output(task: dict, agent_code: str = "") -> dict:
 def main():
     task_id = sys.argv[1] if len(sys.argv) > 1 else ""
     execute = "--execute" in sys.argv
-    sandbox = "--sandbox" in sys.argv
 
     if not task_id:
-        print("Usage: python3 scripts/verify_task.py <task_id> [--execute] [--sandbox]")
+        print("Usage: python3 scripts/verify_task.py <task_id> [--execute]")
         sys.exit(1)
 
     task_file = REPO / "tasks" / f"{task_id}.json"

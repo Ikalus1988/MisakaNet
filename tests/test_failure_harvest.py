@@ -120,7 +120,7 @@ def test_harvest_three_families_one_draft_each(tmp_path):
 
 
 def test_harvest_writes_drafts_with_weak_signals_in_patterns(tmp_path):
-    s = harvest(_demo_events(), tmp_path, min_occ=2)
+    harvest(_demo_events(), tmp_path, min_occ=2)   # the drafts it writes are the subject here
     git_file = tmp_path / "G-generic-git.md"
     assert git_file.exists()
     body = git_file.read_text(encoding="utf-8")
