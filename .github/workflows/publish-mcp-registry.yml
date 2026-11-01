@@ -131,27 +131,51 @@ jobs:
       # Read it back rather than trusting "publish exited 0": the whole point of #1820 is that a
       # self-reported number nobody checks drifts. This step fails when the registry's `isLatest`
       # is not the version we just published.
+      #
+      # **It has to page.** The endpoint answers 30 versions per request and hands back a
+      # `nextCursor`; this step used to read only the first page. Measured 2026-11-01, publishing
+      # 3.3.0: page one ended at 2.50.0, so every release since then failed here with "the registry
+      # does not list <version> at all" while the publish itself had succeeded — the registry did
+      # list 3.3.0, as latest, on page two. A gate that reports a false failure on every release is
+      # worse than no gate: it teaches the reader to re-run without looking.
       - name: The registry now says this version is latest
         env:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
           set -euo pipefail
           python3 - "$VERSION" <<'PY'
-          import json, sys, urllib.request
+          import json, sys, urllib.error, urllib.parse, urllib.request
           expected = sys.argv[1]
-          url = ("https://registry.modelcontextprotocol.io/v0/servers"
-                 "?search=io.github.Ikalus1988/misakanet")
-          with urllib.request.urlopen(url, timeout=30) as resp:
-              payload = json.load(resp)
+          base = "https://registry.modelcontextprotocol.io/v0/servers"
           official = "io.modelcontextprotocol.registry/official"
-          latest = [(s.get("server", s).get("version"),
-                     s.get("_meta", {}).get(official, {}).get("isLatest"))
-                    for s in payload.get("servers", [])]
-          print("registry versions:", latest)
+          # Follow every page the registry offers. The cap is a runaway guard, not a limit: 35
+          # versions were live when this was written, so 20 pages of 30 is three times the room
+          # needed and a cursor loop that never ends still terminates.
+          latest, cursor, pages = [], None, 0
+          while pages < 20:
+              pages += 1
+              query = {"search": "io.github.Ikalus1988/misakanet"}
+              if cursor:
+                  query["cursor"] = cursor
+              url = base + "?" + urllib.parse.urlencode(query)
+              try:
+                  with urllib.request.urlopen(url, timeout=30) as resp:
+                      payload = json.load(resp)
+              except urllib.error.HTTPError as exc:
+                  sys.exit(f"the registry answered HTTP {exc.code} for {url} — this is not a verdict "
+                           "about the publish; fix the read before re-running")
+              latest += [(s.get("server", s).get("version"),
+                          s.get("_meta", {}).get(official, {}).get("isLatest"))
+                         for s in payload.get("servers", [])]
+              cursor = (payload.get("metadata") or {}).get("nextCursor")
+              if not cursor:
+                  break
+          print(f"registry versions ({pages} page(s), {len(latest)} total): {latest}")
           winners = [v for v, is_latest in latest if is_latest]
           if expected not in [v for v, _ in latest]:
-              sys.exit(f"the registry does not list {expected} at all (propagation can take a moment; "
-                       "re-run this job before assuming the publish failed)")
+              sys.exit(f"the registry does not list {expected} at all, across every page "
+                       f"({pages} read). Propagation can take a moment; re-run this job before "
+                       "assuming the publish failed.")
           if winners != [expected]:
               sys.exit(f"the registry's isLatest is {winners}, expected exactly ['{expected}']")
           print(f"registry isLatest = {expected}")
