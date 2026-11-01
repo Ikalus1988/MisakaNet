@@ -29,6 +29,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { testToken } from './_test-token.mjs';
+import { fuseRankings } from './register-proxy-sw.js';
 
 const WORKER = new URL('./register-proxy-sw.js', import.meta.url);
 const SOURCE = readFileSync(WORKER, 'utf8');
@@ -146,13 +147,39 @@ test('the query that motivated this returns the right lesson, never the decoy', 
 test('a higher share of the query outranks a lower one at the same rank', async () => {
   // The ordering rule the fusion uses, on a fixture: two documents that both match the CJK channel at
   // rank 1 are impossible, but two that match *different shares* of the query are not — and the one that
-  // accounts for more of what the user typed must come first. This is the rule that moved `wsl2 landlock
-  // 文件系统沙箱` off the top of the answer on the bench (measured: CJK top-1 6/22 → 11/22 with it,
-  // 10/22 without), and it is a per-channel ratio rather than a comparison of two channels' scores.
+  // accounts for more of what the user typed must come first. Here that order is the channel's own BM25
+  // ranking (one channel, so the fusion cannot reorder it); the fusion never compares a share from this
+  // channel with a share from the English one — see the test below.
   const env = createEnv(withChannelModule, { aliases: false });
   const { ids } = await search(withChannel, env, "文件系统沙箱", 3);
   assert.equal(ids[0], 'landlock-sandbox-lesson',
     `the lesson that carries the whole query is not first: ${JSON.stringify(ids)}`);
+});
+
+test('a coverage ratio from two different term spaces does not decide the fusion', () => {
+  // The recorded failure (docs/benchmarks/hit1-misses-2026-10-30.md, verdict 3): the fusion weighted each
+  // channel's vote by `covered`, a share of *that channel's* query terms. The two channels expand one CJK
+  // query to very different term counts — here 2 English words and 9 bigrams — so the denominators are
+  // not comparable, and a lesson that matched both English words (1.00) beat the lesson that is the
+  // answer while the latter matched 3 of the 9 bigrams (0.33).
+  //
+  // The shape below distils that row: the answer is rank 1 in BOTH channels (2 of 2 English words, 3 of
+  // 9 bigrams) and a decoy is rank 2 in both. The decoy wins nothing on position, yet the old weight
+  // promoted it on 4/9 = 0.44 > 3/9 = 0.33, i.e. the fusion contradicted both channels. Rank fusion
+  // reads the ranks, which agree.
+  const answer = { doc: { id: 'feishu-gateway-drops-messages' } };
+  const decoy = { doc: { id: 'feishu-setup-complete-cc-connect' } };
+  const english = [
+    { ...answer, score: 4.10, userScore: 4.10, covered: 2 / 2 },
+    { ...decoy, score: 3.90, userScore: 3.90, covered: 2 / 2 },
+  ];
+  const cjk = [
+    { ...answer, score: 6.20, covered: 3 / 9 },
+    { ...decoy, score: 5.80, covered: 4 / 9 },
+  ];
+  assert.deepEqual(fuseRankings(english, cjk).map((entry) => entry.doc.id),
+    ['feishu-gateway-drops-messages', 'feishu-setup-complete-cc-connect'],
+    'a per-channel coverage ratio outvoted both channels\' own top hit');
 });
 
 test('a document matching both channels outranks one matching a single channel', async () => {

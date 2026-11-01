@@ -1557,16 +1557,6 @@ function scoringQueryFor(query, env) {
 // `workers/search-dual-floor.test.mjs`.
 const RRF_K = 60;
 
-// Each channel's vote is weighted by how much of *its own* query terms the document matched. Without it
-// a rank-1-vs-rank-1 tie is decided by whichever channel happens to come first in the sort, which on the
-// real corpus put the unrelated WSL2 browser-automation lesson back on top for
-// `wsl2 landlock 文件系统沙箱` (measured 2026-09-28 — the fusion moved the bench but not that case).
-// The weight is a coverage *ratio* per channel, never a comparison of scores across the two maps.
-function share(entry) {
-  const covered = Number.isFinite(entry.covered) ? entry.covered : 1;
-  return covered > 0 ? covered : 0;
-}
-
 function rankCjkChannel(index, query, domain) {
   const cjk = index && index.cjk;
   if (!cjk || !cjk.terms || !cjk.docCount) return [];
@@ -1612,12 +1602,27 @@ function rankCjkChannel(index, query, domain) {
     const doc = index.docs[i];
     if (!doc) continue;
     if (domain && doc.domain && doc.domain.toLowerCase() !== domain.toLowerCase()) continue;
-    out.push({ doc, score: scores[i], covered: coverage[i] / grams.length });
+    out.push({ doc, score: scores[i] });
   }
   out.sort((a, b) => b.score - a.score);
   return out;
 }
 
+// The fusion weight is a constant: one vote per channel, discounted by the channel's own rank. RRF is
+// normally stated that way, and this one used to multiply the vote by `covered` — the share of *that*
+// channel's query terms the document matched. That ratio's denominator is however many terms the query
+// expands to in that channel, so it measures the expansion's length as much as the match: a CJK query
+// becomes ~2 English words but ~9 bigrams, and a lesson matching both English words scored 1.00 while
+// the lesson that is the answer, ranked first by the bigram channel with 3 of 9, scored 0.33 and lost
+// (`飞书机器人收不到消息`, recorded with its measured scores in docs/benchmarks/hit1-misses-2026-10-30.md).
+//
+// The alternatives were measured on the floor bench too, and each normalises something the two maps do
+// not share. A per-channel top-coverage ratio still calls 1.00 of a 2-term space equal to 1.00 of a
+// 9-bigram one, and makes a document's weight change when an unrelated document enters the channel. A
+// top-score ratio compares BM25 from maps with different IDF bases and average lengths, which is exactly
+// the cross-space arithmetic #2358 removed. Rank alone keeps the property the fusion is for — a document
+// both channels place gets two votes, one they disagree about gets one — without a factor whose size
+// depends on the query's spelling.
 /** Reciprocal Rank Fusion of the English ranking and the bigram ranking, by document id. */
 function fuseRankings(english, cjk, k = RRF_K) {
   const fused = new Map();
@@ -1625,12 +1630,12 @@ function fuseRankings(english, cjk, k = RRF_K) {
     const id = entry.doc && entry.doc.id;
     if (!id) return;
     fused.set(id, { doc: entry.doc, score: entry.score, userScore: entry.userScore,
-                    rrf: share(entry) / (k + rank + 1), channels: 1 });
+                    rrf: 1 / (k + rank + 1), channels: 1 });
   });
   cjk.forEach((entry, rank) => {
     const id = entry.doc && entry.doc.id;
     if (!id) return;
-    const contribution = share(entry) / (k + rank + 1);
+    const contribution = 1 / (k + rank + 1);
     const existing = fused.get(id);
     if (existing) {
       existing.rrf += contribution;
@@ -1694,7 +1699,6 @@ function searchLessonsBM25(index, query, domain, top = 5, floorQuery = null, sta
   const scores = new Float64Array(docCount);        // the user's words + alias expansions
   const userScores = new Float64Array(docCount);    // only the words the user actually typed
   const matched = new Uint8Array(docCount);
-  const coverage = new Uint8Array(docCount);       // distinct query terms per doc
   const informative = new Uint8Array(docCount);    // … that are discriminating
   // The floor's own counters, accumulated from `floorTerms` and nothing else: the same term set
   // `floor.required` and `idfTotal` below are computed from. See the note at the floor.
@@ -1756,7 +1760,6 @@ function searchLessonsBM25(index, query, domain, top = 5, floorQuery = null, sta
         floorMatchedIdf[doc] += idf;
       }
       matched[doc] = 1;
-      coverage[doc] += 1;
     }
   }
 
@@ -1785,8 +1788,8 @@ function searchLessonsBM25(index, query, domain, top = 5, floorQuery = null, sta
   // `chrome-relay-browser-automation` matches `wsl2`+`sandbox` = 6.747, i.e. 0.677 against that
   // denominator — above RELEVANCE_MIN_COVERAGE, so an unrelated lesson was returned as the answer.
   // Counted from the floor terms it is 3.235/9.966 = 0.325 and the floor refuses it, which is what
-  // it was written to do. `covered` (below) stays over `queryTerms`: it is the fusion weight, and it
-  // describes this channel's own term space rather than the floor's.
+  // it was written to do. Nothing below re-measures that ratio for the fusion (see `fuseRankings`):
+  // the floor judges relevance, the fusion compares rank, and neither compares the two maps' scores.
   //
   // This is *not* the design `workers/search-cjk-recall.test.mjs` measured as row four of #2250's table
   // ("counting coverage only over the user's words" → 0/20 zh, 4/15 English). That design moved the
@@ -1811,11 +1814,7 @@ function searchLessonsBM25(index, query, domain, top = 5, floorQuery = null, sta
       continue;
     }
 
-    results.push({ doc, score: scores[i], userScore: userScores[i],
-                    // The share of *this channel's* query terms the document matched. A ratio, not a
-                    // score: it stays inside its own term space, which is what keeps the two channels
-                    // comparable without comparing an IDf from one map with an IDF from another.
-                    covered: queryTerms.length ? coverage[i] / queryTerms.length : 0 });
+    results.push({ doc, score: scores[i], userScore: userScores[i] });
   }
 
   // The user's own words decide the order; alias expansions only break ties. When the tokenizer
@@ -10581,6 +10580,10 @@ export {
   // Exported for workers/cjk-fusion.test.mjs: the whole experiment is "does a wrong lexical hit
   // stop suppressing the vector path", and the fusion is the part that decides.
   rrfFuse,
+  // Exported for workers/search-cjk-fusion.test.mjs: the BM25/CJK fusion is a pure function of two
+  // ranked lists, and the weight it gives each channel is the defect that test pins. Driving it through
+  // the handler would require a corpus engineered to reach exact channel ranks, which reads as noise.
+  fuseRankings,
   CJK_CHAR,
   matchTokens,
   // Query alias expansion (#1780) — exported so workers/query-alias-expansion.test.mjs
