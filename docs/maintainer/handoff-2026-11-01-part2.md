@@ -91,6 +91,27 @@ proposal"，并在 issue 里给了逐条判定（哪些值得做、哪些要决�
 顺手发现并修的一处同类漂移：stdio 的 `kind` 枚举**从来没有 `question`**——文档、worker、脚本都是四种，
 只有客户端会校验的那份是三处，于是"用本地 server 提问"这件事在会校验 schema 的客户端里根本发不出去。
 
+### 2.9 发版链路里三处"门禁在说错话"（新账，本卷收掉两处）
+
+`3.3.0` 发出去之后逐条核对线上结果，发现三处**报告与事实相反**的地方：
+
+1. **`Publish to MCP Registry` 从 2.50.0 起每次发版都红，而每次 publish 都成功了。** 校验步骤读
+   `/v0/servers?search=…` 的 `servers[]`——**一页 30 条**——然后断言"registry 里没有这个版本"。
+   实测 3.3.0 在第 2 页、`isLatest: true`。已修：跟随 `metadata.nextCursor`（20 页上限），HTTP 错误与
+   "版本不存在"分开报，并且把读了几页写进输出。
+2. **`Publish @misaka-net/misakanet-setup` 每次 push main 都生成一个审批请求。** `release`
+   environment 有 required reviewer，而 `tag` job 在"release-please 已经建好 tag"这条路径上无条件
+   dispatch；npm 早就有那个版本，审批批了也只会 `cannot publish over`。**实测 55 个**（同日手动取消）。
+   已修：把"npm 上有没有这个版本"的检查搬到**没有审批门**的 `tag` job，没有才 dispatch；npm 不可达时
+   仍然 dispatch（一个多余的审批比一次发不出去的版本便宜）。
+3. **`Deploy Cloudflare Worker` 与 `Publish dataset to R2` 会一直挂在审批队列里没人批。** 前者
+   10-31 20:09 就挂着，线上 `serverInfo.version` 因此停在 3.0.0 而 main 是 3.2.0；后者从 10-31 05:50
+   挂到现在，R2 数据集比 `data/lessons.json` 落后一天多。**这两个需要 owner 点，不是代码问题**——
+   本卷只把它们写在这里，别让它再无声无息地攒着。
+
+**还没做**：没有"审批队列里挂超过 N 小时就提醒"的东西（`stale.yml` 按更新时间算，对这类 run 不管用）。
+攒了 55 个才被看见，说明"点一下"这件事本身没有被任何东西盯着。
+
 ## 3. 可复用的判据（本卷新增）
 
 1. **量门禁必须用门禁自己的命令。** 上一卷数 F841 用的是 `ruff --select F841 scripts/` → 25 处；门禁跑的
@@ -117,16 +138,29 @@ proposal"，并在 issue 里给了逐条判定（哪些值得做、哪些要决�
    停在旧结论上——bot 前后矛盾比不评论更糟，因为读者信任的是那句旧结论。改成按**分类值**判重，
    改口时明写 `from X to Y`。
 8. **提交者已经把话说清楚时，别让分类器猜。** `#4251` 正文里写着"这不是失败报告"，分类器却按
-   `error`/`fail` 两个词把它判成 bug。新增的规则只认**自述**、不认"读起来像计划"——后者正是刚判错的那类
-   关键词猜测。**判据：能由提交者声明的东西，就不要从主题词推断。**
+   `error`/`fail` 两个词把它判成 bug。新增的规则只认**自述**（外加结构化的 `kind=proposal`）、不认
+   "读起来像计划"——后者正是刚判错的那类关键词猜测。**判据：能由提交者声明的东西，就不要从主题词推断。**
+9. **读一个 API 之前先问"这个接口一次给几条"。** registry 的校验步骤默认 `servers[]` 就是全部，
+   实际是 30 条一页 + `nextCursor`；于是"没有这个版本"其实是"这一页没有"。**判据：分页接口上的
+   "不存在"结论，必须先证明你读完了所有页。**
+10. **审批门在 job 层时，步骤层的"已经发布就跳过"救不了它。** `misakanet-setup-publish` 的 publish job
+    里早就有"npm 已有这个版本就 stand down"的步骤，但那一步跑在人点过"Approve"之后——所以它挡住的
+    只是浪费的执行，不是浪费的审批。**判据：要挡审批，判断必须放在没有审批门的那个 job 里。**
+11. **同一个事实有第二个 surface 时，让测试去解析第二个 surface，别抄。** stdio 的 11 个工具原本一个
+    annotation 都没有，而 worker 的 8 个早就有；现在两张表由 `tests/test_mcp_annotations.py` 逐处解析
+    比对（含"写工具不许自称 readOnly"）。**判据：跨 surface 的一致性要靠解析对方的文件，抄一遍就是两份契约。**
 
 ## 4. 下一轮入口
 
-1. **先合 `#4263`（3.2.1）**：本卷的修复正躺在里面等发版。§2.3 的提醒仍是设计，本轮先人工合一次。
+1. **发版收尾**：`#4263` 已合并（`3.3.0`，PyPI / npm / GHCR / MCP Registry 都已发；registry 的校验红是
+   §2.9 第 1 条那个分页 bug，已修）。`Deploy Cloudflare Worker`（`57068cbb`）还在审批队列里，批了线上
+   `serverInfo.version` 才会从 3.2.0 变成 3.3.0。§2.3 那个"发版在等人"的提醒**仍是设计**。
 2. **20 条 `[Lesson]` 落库**（比上一卷说的小一半，按 §2.2 实测数排期）：先写 playbook（哪些字段缺了可以补、
    `domain` 映射表、标题多长会被 gate 拒、正文 <400 字符怎么办），再按批量 1/2 的流程跑。
 3. **融合归一化**（6 行 hit@1 miss），材料齐，见 §2.6。
 4. **2026-11-14 前后**：`MISAKANET_CLIENT_ID_PROOF=strict` + 删宽限期措辞，见 §2.4。
 5. **365 篇字段回填**（等额度窗口）；AE / Search Console / Colab（文档已给最小步骤，未执行）。
-6. **`proposal` 进 `kind` 枚举**（§2.8）：5 处代码 + 1 份文档 + 1 个断言枚举的测试，外加一次 worker 部署。
-   要做就先决定"提案是否算 intake 的合法类型"，再一次性改五处并重跑 `tests/test_intake_kind.py`。
+6. **`proposal` 进 `kind` 枚举**（§2.8）：**已完成**，5 处读取由 `tests/test_intake_kind_parity.py` 守着。
+7. **审批队列要有人盯**（§2.9 第 3 条）：`Deploy Cloudflare Worker` / `Publish dataset to R2` 这类
+   `release` environment 的 run 会一直挂着，且没有任何东西提醒。要么做提醒，要么把这两个 job 挪到
+   不需要人点的路径上（比如只在 tag 上部署），**不要继续靠"想起来去看一眼"**。
