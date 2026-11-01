@@ -57,6 +57,40 @@ path filter，而 `test (ubuntu-latest, 3.11)` 与 `test (windows-latest, 3.11)`
    0.60 那个 relevance 乘数没动，原因见 §3 正文。里程碑与这篇推荐已写成博客：
    `Ikalus1988/Ikalus1988.github.io` 的 `cases/ranked-13th-of-2074.html`。
 
+## 3.5 两个"该由谁决定"的问题，按第一性原理量出来是数据题
+
+owner 说这两条他回答不了、要我用第一性原理判断。做法是量，不是表态。
+
+**Q2 `scripts/` 是投资还是债务？** 量 195 个脚本各自被谁引用（workflow / test / doc / 另一个脚本）：
+**被引用不到的有 2 个，另有 1 个重复孪生**——`create_issue.py`（硬编码一条早已办完的 issue 正文）、
+`retrieval_noise_bench.py`（`retrieval_noisebench.py` 的旧孪生，测试 imports 的是后者）、
+`lesson_reuse_agent.py`（252 行，唯一提及它在某篇 2026 课程的正文里）。结论：**资产 + 三条尾巴**，删掉
+（`#4311`，470 行）。`pyproject.toml` 的 `omit = ["scripts/*"]` 是**记录在案的取舍**（这些是 CI 胶水，
+由调用它的 workflow 练着），代价正是"够不到的脚本 CI 看不见"，所以尾巴要手动剪。
+
+**Q7 34 个 cron 哪些是哨兵？** 量 35 个带 `schedule:` 的 workflow 的**产出形态**（issue / commit / 判定）
+与**触发情况**（按 event 查，不按 run list 抽样）：
+
+- **生产者**：update-lessons、sync-d1、build-feed、update-badges、update-smithery-badge、auto-sync-prs、
+  arch-review、nightly-mirror-consistency、d1-backup、install-smoke、misakanet-setup-ci。
+- **哨兵**：site-health（10-30 抓到 `/register/` 丢 `node_name` 标记，红了两天后自愈——真的在看）、
+  approval-watch、heartbeat、question-autopilot、registry-drift-watch、dependency-vuln-audit、
+  provenance-gate、deploy-freshness、intake-kind-audit、intake-salvage-digest、stale、
+  check-documented-gates、workers-builds-watch（CF 构建守望）、codeql、dsh-client-e2e、ttfb、
+  gate-mutation-audit、guarded-repository、field-report-schema、external-asset-integrity、
+  claim-enforcer、pr-audit-watch。
+- **纯负载：0 个。** 两个"看起来死了"的都是抽样假象——`workers-builds-watch` 最近 100 次里 99 次是
+  `check_suite` 跳过事件，它的**定时**运行（GitHub 对 `*/30` 节流成约 3 小时）是绿的；
+  `decision-queue-digest` 只是 10-28 建成、还没到第一个周一 09:23。**"从 run list 抽样下结论"正是
+  审计 F1 犯的错，这次没犯。**
+
+真正的发现是第三条：**`sync-question-answers` 这个生产者已经不生产了**——`permissions: contents: read`
+却调用 `gh issue edit --add-label`，403 让回填步退出 1，而**同步是下一步**，所以自 10-28 起答案就没进过
+D1。修好（`#4310`）+ 加了门禁 `tests/test_workflow_permissions_cover_writes.py`，它当场又抓出两个同类
+（`pr-audit-watch` 用 `pull-requests: read` 去评论 fork PR；`shadow-branch` 用 `2>/dev/null || true`
+偷偷给 PR 打标签而根本没申请 `pull-requests` 权限）。派发验证：9/9 打上 `answered`、同步 success、
+答案已能从公开搜索取到（`faq-issue-3574`、`faq-issue-4090/4091/4092`）。
+
 ## 4. 下一轮入口
 
 1. **F4 按正确定义做**（§1 第 2 条）：缓存 `canonical_lessons()` 的文件清单，别在读 L1 前先做 765 次 `stat`。
