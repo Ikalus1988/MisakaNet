@@ -74,15 +74,16 @@ jobs:
 
             const isTest = /heartbeat-verify|heartbeat verify|session-test/i.test(text) || /heartbeat|session-test/i.test(source);
             const isHarvestedAgentSkill = /harvested from local lesson skill-|Hermes Agent/i.test(text);
-            // A submission that says, in its own words, that it is not a failure report. The
-            // intake tool's `kind` enum has no value for a proposal (#4251 — a three-month plan
-            // had to be filed as `new_lesson_candidate`, and the submitter appended "please
-            // triage it as such" because the form gave them nowhere else to go). Guessing the
-            // class from topic words is what labelled that proposal `type:bug`: it *discusses*
-            // failures. The declaration is the one signal keywords cannot fake, so it is the one
-            // this branch uses — narrow on purpose, no "sounds like a plan" heuristics.
+            // A proposal announces itself one of two ways. `kind=proposal` is the structured one
+            // (it exists because of #4251 — a three-month plan had to be filed as
+            // `new_lesson_candidate` and then argue in prose that it was not a failure report);
+            // the prose declaration is what a client that only knows the four older kinds can
+            // still do, and it stays supported on purpose. Guessing the class from topic words is
+            // what labelled #4251 `type:bug` — the plan *discusses* failures — so neither path
+            // reads the subject, and neither is a "sounds like a plan" heuristic.
             const declaresNotAFailureReport =
               /\bnot a failure report\b|\bnon[- ]failure report\b|\(proposal\)|\btriage it as (?:such|a proposal)\b|\bthis is a proposal\b/i.test(text);
+            const isProposal = kindLower === 'proposal' || declaresNotAFailureReport;
             const hasProblem = /##\s+Problem/i.test(body);
             const hasVerification = /##\s+Verification/i.test(body);
             const hasFix = /##\s+Fix/i.test(body);
@@ -99,7 +100,7 @@ jobs:
 
             let issueType = 'unknown';
             if (kindLower === 'question') issueType = 'question';
-            else if (declaresNotAFailureReport) issueType = 'feature';
+            else if (isProposal) issueType = 'feature';
             else if (isBug) issueType = 'bug';
             else if (isFeature) issueType = 'feature';
             else if (isQuestion) issueType = 'question';
@@ -149,7 +150,7 @@ jobs:
               suggestedAction = 'Question / knowledge-gap intake (not a lesson candidate). Ask the submitter for the concrete error, what was tried, and the expected outcome. Convert to a lesson only if it gains a failure + fix + verification shape; otherwise answer, keep as an open question, or close as a duplicate.';
               labelsToAdd.push('question');
               labelsToRemove.push('auto-rejected', 'needs-salvage', 'type:feature', 'type:bug');
-            } else if (declaresNotAFailureReport) {
+            } else if (isProposal) {
               // A proposal / product request: not lesson material, not a bug, and not waiting to
               // be reviewed as a lesson. Its exit is a decision plus, if accepted, issues that
               // name the file or the gate each change touches — so `pending-review` and the

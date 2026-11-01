@@ -53,7 +53,7 @@ D1_ID = os.environ.get("MISAKANET_D1_ID", "b9adbe87-6bbf-4d2f-ae56-41c3487b2831"
 MC = str(REPO / ".tools" / "bin" / "mcporter")
 CFG = str(REPO / ".tools" / "mcporter.json")
 
-VALID_KINDS = {"missing_lesson", "stale_lesson", "new_lesson_candidate", "question"}
+VALID_KINDS = {"missing_lesson", "stale_lesson", "new_lesson_candidate", "question", "proposal"}
 
 #: Labels that mean "this intake is a question", never a lesson candidate.
 #: `intake-auto-review.yml` applies both to every intake it routes as a question (#1396).

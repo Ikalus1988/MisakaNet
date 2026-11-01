@@ -21,11 +21,13 @@
 > 判定"真盲区 vs 伪盲区"必须先检索仓库（`search_knowledge.py` / lessons 目录），
 > 2026-09-07 的 KV 分析显示 19 条 gap 里有 2 条是召回缺陷而非缺课。
 
-> **提案为什么单独一类**（2026-11-01，#4251）：MCP 的 `kind` 只有 missing_lesson /
+> **提案为什么单独一类**（2026-11-01，#4251）：当时 MCP 的 `kind` 只有 missing_lesson /
 > stale_lesson / new_lesson_candidate / question——**没有提案这个值**，于是一份三个月计划只能按
 > `new_lesson_candidate` 提交，提交者还得在正文里补一句"这不是失败报告"。分类器照关键词办事，
 > 看到通篇在讲失败，就把这条提案打成了 `lesson-candidate` + `type:bug` + `priority:high` +
 > `pending-review`：前两个说错了它是什么，后一个把它放进"等落库的课程"队列。
+> `kind="proposal"` 现在有了（五处读取一致，由 `tests/test_intake_kind_parity.py` 守），
+> 但**正文自述仍然认**——只用得上旧四种 kind 的客户端还在。两条路都不看主题词。
 > 所以现在按**提交者的自述**分流（`declaresNotAFailureReport`），并在重新分诊时把 `type:bug` /
 > `pending-review` 摘掉。**不要改成"读起来像计划"的启发式**：那正是刚才判错的那类关键词猜测。
 > 行为有门禁：`tests/test_intake_proposal_route.py` 把工作流里那段 JS 真跑一遍（node + 打桩的

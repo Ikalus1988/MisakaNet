@@ -18,7 +18,17 @@ import json
 import re
 from pathlib import Path
 
-INTAKE_KINDS = ("missing_lesson", "stale_lesson", "new_lesson_candidate", "question")
+INTAKE_KINDS = (
+    "missing_lesson",
+    "stale_lesson",
+    "new_lesson_candidate",
+    "question",
+    "proposal",
+)
+# `proposal` (#4251) is honoured when explicit and **never inferred from prose**: the whole
+# reason it exists is that a keyword guess labelled a three-month plan `type:bug`. If the
+# submission does not say what it is, this function keeps returning the failure kinds.
+# tests/test_intake_kind_parity.py holds this list equal to the other four readers.
 
 # Single source of truth: data/intake-kind-hints.json
 _HINTS_PATH = Path(__file__).resolve().parent.parent / "data" / "intake-kind-hints.json"
@@ -53,11 +63,12 @@ def infer_intake_kind(
     """Resolve the intake kind for a submission.
 
     - An explicit, valid kind (stale_lesson / new_lesson_candidate / question /
-      missing_lesson) is honored as-is, EXCEPT ``kind="missing_lesson"``:
+      proposal / missing_lesson) is honored as-is, EXCEPT ``kind="missing_lesson"``:
       callers are still guided toward it by older copy, so a clear question
       with zero failure evidence is re-routed to ``"question"``.
     - An absent kind defaults to ``"missing_lesson"``, upgraded to
-      ``"question"`` under the same rule.
+      ``"question"`` under the same rule. Nothing is ever inferred into
+      ``"proposal"``: that kind exists because guessing produced the wrong label.
 
     Returns ``(kind, auto_detected)``.
     """

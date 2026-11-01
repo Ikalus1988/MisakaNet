@@ -194,6 +194,25 @@ def _cases() -> list[dict]:
             "expect_not_added": ["needs-ac", "pending-review"],
             "expect_comment": False,
         },
+        {
+            # The structured signal, which is the one that should carry the load from now on: a
+            # submission whose own text never says "not a failure report" — only `kind=proposal`
+            # does. If this case routes as a lesson candidate, the new kind is a field nobody reads.
+            "name": "kind=proposal routes without any prose declaration",
+            "title": "[Intake] Listing score: a three-month plan",
+            "body": (
+                "**Kind:** proposal\n**Source:** cindy\n\n## Problem\n\n"
+                "A three-month plan for the listing: declare the integration, annotate the\n"
+                "tools, and measure adoption. Four workstreams, each tied to one term.\n\n"
+                "## Fix (if known)\n\nMonth 1 is the declarations and the tool surface.\n\n"
+                "## Verification\n\nRead the public listing page after the next rebuild.\n"
+            ),
+            "labels": ["intake", "mcp-intake"],
+            "expect_classification": "proposal",
+            "expect_type": "feature",
+            "expect_removed": [],
+            "expect_not_added": ["needs-ac", "pending-review"],
+        },
     ]
 
 
