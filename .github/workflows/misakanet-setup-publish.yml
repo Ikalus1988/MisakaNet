@@ -86,9 +86,22 @@ jobs:
               # to do". Measured 2026-10-30: release-please pushed `misakanet-setup-v0.8.1`, this
               # job printed "nothing to tag", the dispatch never happened, and npm stayed at 0.8.0
               # while the repository said 0.8.1 — a release that exists in the tag list and nowhere
-              # a user can install it. The publish job skips a version npm already has, so
-              # dispatching at an existing tag is idempotent and always the right reaction.
-              echo "the release tag misakanet-setup-v$LATEST already exists (release-please creates it) — dispatching the publish for it"
+              # a user can install it.
+              #
+              # Ask npm *here* whether the version is already published, because this job has no
+              # approval gate and the publish job does. Measured 2026-11-01: the `release`
+              # environment has a required reviewer, and this branch fires on **every push to
+              # main** once the tag exists — 55 approval requests had piled up for the same 0.9.0,
+              # every one of which could only end in "cannot publish over 0.9.0". The publish job
+              # does skip an already-published version, but that step runs *after* a human clicks.
+              # Failure direction is deliberate: an unreachable npm falls through to the dispatch,
+              # because one wasted approval is cheaper than a release that never gets published.
+              if npm view "@misaka-net/misakanet-setup@$VERSION" version >/dev/null 2>&1; then
+                echo "npm already has $VERSION — no tag to create, nothing to dispatch"
+                echo "needed=false" >> "$GITHUB_OUTPUT"
+                exit 0
+              fi
+              echo "the release tag misakanet-setup-v$LATEST already exists (release-please creates it) and npm does not have $VERSION — dispatching the publish for it"
               echo "needed=false" >> "$GITHUB_OUTPUT"
               echo "dispatch_existing=true" >> "$GITHUB_OUTPUT"
               exit 0
