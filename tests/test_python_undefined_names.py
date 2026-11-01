@@ -27,13 +27,13 @@ thousands of findings and a gate nobody could keep green.
 Why `F841` joined on 2026-11-01
 -------------------------------
 It is the same instinct one step down from a crash: **a value computed and then dropped**. The sweep
-that added it found 29 in the maintained tree, and several were checks that had never once run —
-`score_lessons.py` measured whether a `## Verification` section states an expected result and then
-ignored the measurement, so the tier `docs/quality-score.md` defines as "commands **and** expected
-output" was reachable on commands alone; `clean_pipeline.py` kept a section-pattern list next to an
-inline copy of the same regexes, so one of the two could be edited and the other would keep deciding.
-Nothing raises on any of that, which is exactly why nothing noticed. The rule enters green: 29 findings
-before the sweep, 0 after it.
+that added it found 39 in the maintained tree (25 in `scripts/`, 4 in `misakanet/scripts/`, 10 in
+`tests/`), and several were checks that had never once run — `score_lessons.py` measured whether a
+`## Verification` section states an expected result and then ignored the measurement, so the tier
+`docs/quality-score.md` defines as "commands **and** expected output" was reachable on commands
+alone; `clean_pipeline.py` kept a section-pattern list next to an inline copy of the same regexes,
+so one of the two could be edited and the other would keep deciding. Nothing raises on any of that,
+which is exactly why nothing noticed. The rule enters green: 39 findings before the sweep, 0 after.
 
 `archive/` is excluded in `pyproject.toml`, not here: it is the dead-code graveyard, one of its files does
 not even parse, and excluding it in the config means a contributor's `ruff check .` inspects exactly the
@@ -119,7 +119,7 @@ def test_no_undefined_names_or_shadowed_imports(ruff_available: None) -> None:
         "ruff found the three shapes this gate exists for (F821 undefined name / F811 redefinition / "
         f"F841 value assigned and then dropped):\n{result.stdout}{result.stderr}\n"
         "F821 and F811 shipped on 2026-09-28 in code no test drives (a dev fallback and a token-auth "
-        "branch); F841 is the same class one step down — a check whose result nobody reads — and it "
-        "entered this gate clean on 2026-11-01. Fix the finding; if a rule is a false positive for a real "
-        "pattern, add a `# noqa: <code>` with the reason next to it rather than widening this gate."
+        "branch); F841 is the same class one step down — a check whose result nobody reads — and "
+        "it entered this gate clean on 2026-11-01. Fix the finding; a false positive for a real "
+        "pattern gets a `# noqa: <code>` with the reason beside it, never a widened gate."
     )
