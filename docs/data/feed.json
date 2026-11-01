@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-10-31T19:22:24.862121+00:00",
+  "generated_at": "2026-11-01T00:12:47.825739+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
+      "title": "chore(main): release 3.2.0",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4259",
+      "timestamp": "2026-10-31T20:09:33Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "feat(lessons): admit Kuro AI's CF per-account quota lesson (#3992)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4257",
+      "timestamp": "2026-10-31T19:48:56Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4258",
+      "timestamp": "2026-10-31T19:37:15Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(main): release 3.1.0",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4223",
+      "timestamp": "2026-10-31T19:24:52Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
       "title": "feat(release): attach PEP 740 attestations to the PyPI upload",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/4256",
       "timestamp": "2026-10-31T19:07:12Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat(ci): the Windows leg is required — one leg, not three",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4255",
-      "timestamp": "2026-10-31T19:00:37Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "docs(record): three figures were wrong, and the page is about not publishing those",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4254",
-      "timestamp": "2026-10-31T18:22:28Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "docs(site): the record — ranked 13th among GitHub MCP servers",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4250",
-      "timestamp": "2026-10-31T18:01:05Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "fix(mcp): a client_id is a name; the token is the key",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4237",
-      "timestamp": "2026-10-31T17:13:35Z",
       "source": "github"
     },
     {
