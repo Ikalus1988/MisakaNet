@@ -144,6 +144,27 @@ def test_it_reports_into_one_tracking_issue_instead_of_creating_a_new_one_each_t
     assert "deployments/activity_log" in body, "the report must link where the approval is actually given"
 
 
+def test_the_tracker_enters_the_queue_a_person_actually_works():
+    """A tracker nobody is routed to is a tracker nobody reads (2026-11-01).
+
+    #2416 was accurate and current through the entire 55-request pile-up — 257 comments, the newest
+    one minute-accurate — and it still took somebody opening the Actions tab to notice. It was
+    created with `needs-ac` ("this needs acceptance criteria"), which is not what it needs and is
+    not a label any triage window scans. `dependency-vuln-audit.yml` labels its digest
+    `needs-human-review` for exactly this reason: the issue exists so that one action by a person
+    becomes visible, so it has to live in the queue that produces those actions.
+    """
+    body = text()
+    assert "'needs-human-review'" in body or '"needs-human-review"' in body, (
+        "the tracking issue is not labelled into the human-review queue — it will accumulate, as "
+        "#2416 did, without ever appearing where a maintainer looks"
+    )
+    assert "addLabels" in body, (
+        "the label is only applied at creation, so the issue that already exists (the one carrying "
+        "the history) never gets it — re-apply on update"
+    )
+
+
 def test_the_watcher_never_approves_a_deployment():
     """The safety property: this is an observer. Approving is the human's decision, and automating it would
     defeat the environment reviewer that the whole design rests on."""
