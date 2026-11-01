@@ -162,8 +162,12 @@ lesson PR 的 `gate` 会在跑完生成器后断言"`main` 保留的生成物没
 | `lessons/index.md` | `scripts/rebuild_lessons_index.py` | main-side（清单第 80 行） |
 | `data/public-vocabulary.json` | `scripts/export_public_vocabulary.py` | **只有** `tests/test_public_vocabulary.py:26-31` |
 | `docs/lessons/**`、`docs/topics/**`、`docs/sitemap.xml`、`docs/_redirects`、`docs/.generated-pages.json` | `scripts/build_lesson_pages.py` | `tests/test_lesson_page_generator.py:39` |
+| `tests/fixtures/ranking-snapshot.json` | `python3 scripts/gen_ranking_snapshot.py` | `tests/test_ranking_snapshot.py`（31 个查询的 top-N 与分数逐条钉住） |
+| `docs/trust-semantics.md` 的 E0–E4 分布表 | `python3 scripts/evidence_distribution.py`（**只打印，要自己粘进去**），再用 `--check docs/trust-semantics.md` 验 | `tests/test_evidence_distribution.py` |
 
-三条容易踩的：
+五条容易踩的（后两条是批量 3 用 CI 换来的：第一次跑时 `evidence_distribution` 与
+`gen_ranking_snapshot` 都不在清单里，三条测试腿一起红——语料一变，这两处**必然**跟着变，因为它们的
+输入都是整个语料）：
 
 1. **`public-vocabulary.json` 不在 lesson-gate 的步骤里**（`.github/workflows/lesson-gate.yml:161-168`），
    它的门禁只有那条逐字节比对的测试。它必须**最后**跑：输入是整个语料，先跑就会漏掉刚加的课。
@@ -183,6 +187,9 @@ python3 scripts/update_lessons_json.py
 python3 scripts/export_okf.py
 python3 scripts/rebuild_lessons_index.py
 python3 scripts/build_lesson_pages.py
+python3 scripts/gen_ranking_snapshot.py                       # 排名快照：语料一变，分数就变
+python3 scripts/evidence_distribution.py                      # 打印 E0–E4 分布（粘进 docs/trust-semantics.md）
+python3 scripts/evidence_distribution.py --check docs/trust-semantics.md
 python3 scripts/export_public_vocabulary.py                   # 最后：输入是语料本身
 python3 scripts/sync_lesson_count.py --check
 git status --porcelain                                        # 生成物必须已提交，不是"已生成"
