@@ -24,6 +24,7 @@
 | `provenance-baseline.json` | `scripts/check_provenance.py` | `provenance-gate.yml`（溯源门禁）| PR + 定时（周）|
 | `pr-genius-stats.json` | `scripts/pr_genius_stats.py` | 站点（全站**唯一** `data/` fetch）、`workers/register-proxy-sw.js` | 手动 / CI |
 | `pr-genius-observations.jsonl` | `scripts/pr_genius_observe.py` | 无（观察记录，供人工分析）| 手动 |
+| `intake_receipts.jsonl` | `scripts/emit_intake_receipt.py` | `scripts/emit_intake_receipt.py`、`update-lessons.yml`（每日）| 手动（首次开启时 `--seed-log` 种入一次）|
 | `publish_rhythm.jsonl` | `scripts/publish_rhythm.py` | 无 | 手动 |
 | `retrieval_noisebench_queries.json` | `scripts/retrieval_noisebench.py` | `scripts/retrieval_noisebench.py`（自用）| 手动 |
 | `retrieval_noisebench_report.json` | `scripts/retrieval_noisebench.py` | 无（报告产物）| 手动 |

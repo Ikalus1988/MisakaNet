@@ -26,10 +26,18 @@ def run(*args):
     )
 
 
-def test_check_passes_with_no_contributions():
-    """--check returns 0 when no lessons have contrib_id."""
+def test_check_passes_once_the_log_covers_the_corpus():
+    """--check is 0 when every lesson that cites an issue has a receipt.
+
+    It used to assert 0 with no setup at all, because the scan matched `contrib_id` and **no lesson
+    ever carried it** — the test and the feature were green together while nothing was ever
+    receipted. Now that the scan matches `provenance.issue`, a corpus of ~800 lessons is "pending"
+    until the log is seeded, so the test seeds first. `--seed-log` is idempotent.
+    """
+    seed = run("--seed-log")
+    assert seed.returncode == 0, seed.stderr
     r = run("--check")
-    assert r.returncode == 0, f"expected 0, got {r.returncode}\n{r.stderr}"
+    assert r.returncode == 0, f"expected 0 after seeding, got {r.returncode}\n{r.stderr}"
 
 
 def test_check_detects_pending_receipt(tmp_path=None):
@@ -151,3 +159,27 @@ if __name__ == "__main__":
                 print("PASS")
             except Exception as e:
                 print(f"FAIL: {e}")
+
+def test_provenance_issue_is_a_receipt_key_too():
+    """The field the converter writes is the field this must read.
+
+    Measured 2026-11-02: **0** lessons carried `contrib_id` and **330** carried
+    `provenance.issue` — so the daily "Emit intake receipts" step in `update-lessons.yml` had been a
+    no-op since it was added, and every receipt in this repository had been posted by hand.
+    """
+    mod = load_module()
+    assert mod._issue_from_provenance({"provenance": {"issue": "#4249"}}) == "4249"
+    assert mod._issue_from_provenance({"provenance": {"issue": "#4146 + #4157"}}) == "4146"
+    assert mod._issue_from_provenance({"provenance": {"issue": ""}}) == ""
+    assert mod._issue_from_provenance({}) == ""
+
+
+def test_the_scan_sees_the_lessons_that_carry_provenance_issue():
+    """A guard on the corpus, not on a fixture: if this number collapses, the key changed again."""
+    mod = load_module()
+    rows = mod._scan_published_lessons()
+    assert len(rows) > 200, (
+        f"the scan found {len(rows)} convertible lessons; the corpus has hundreds of "
+        "`provenance.issue` citations, so this means the reader stopped matching them")
+    assert all(r["contrib_id"].isdigit() for r in rows), (
+        "every receipt key has to resolve to an issue number, or the post step has nowhere to go")
