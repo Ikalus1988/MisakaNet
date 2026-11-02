@@ -64,6 +64,7 @@
 export const SELF_IDENTITIES = new Set([
   "misakanet-bot",         // scripts/adopt_pr.py DEFAULT_SIGNOFF_NAME; workflows' `git config user.name`
   "misakanet-sync-bot",    // .github/workflows/auto-sync-prs.yml
+  "misakanet-intake-bot",  // .github/workflows/intake-batch-convert.yml
   "misakanet-agent",       // older tooling identity (no GitHub account)
   "misakanet agent",       //   the same, with a space
   "github-actions",        // the *name* GitHub's own runner commits with, distinct from [bot]
