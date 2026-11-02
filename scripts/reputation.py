@@ -151,7 +151,7 @@ def load_usage_reports() -> dict:
     if not USAGE_FILE.exists():
         return {}
     try:
-        data = json.loads(USAGE_FILE.read_text())
+        data = json.loads(USAGE_FILE.read_text(encoding="utf-8"))
         # Expected format: list of {lesson_id, tool, outcome, date}
         reports = defaultdict(list)
         for r in data:

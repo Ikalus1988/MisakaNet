@@ -404,8 +404,9 @@ def main() -> int:
     except Refused as exc:
         # The previous file is deliberately left alone: a failed fetch is not a quiet week.
         print(f"::error::refusing to write a series snapshot — {exc}")
-        print(f"  {out} is unchanged (last window: "
-              f"{(json.loads(out.read_text()).get('window') if out.is_file() else 'absent')})")
+        # Same hoist as `sync_site_activity.py`: f-string + keyword argument needs 3.12 grammar.
+        last_window = json.loads(out.read_text(encoding="utf-8")).get("window") if out.is_file() else "absent"
+        print(f"  {out} is unchanged (last window: {last_window})")
         return 1
 
     if out.is_file() and not args.force:

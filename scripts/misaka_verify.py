@@ -30,7 +30,7 @@ def load_tasks(filter_domain: str | None = None) -> list[dict]:
     if not index.exists():
         print(f"❌ No tasks/index.json found. Run scripts/extract_tasks.py first.")
         sys.exit(1)
-    tasks = json.loads(index.read_text())
+    tasks = json.loads(index.read_text(encoding="utf-8"))
     if filter_domain:
         tasks = [t for t in tasks if t.get("domain") == filter_domain]
     return tasks
@@ -57,7 +57,7 @@ def run_verification(task: dict) -> tuple[str, str]:
         return SKIP, f"Source not found: {task['source']}"
 
     # Read full task for test_cmd
-    task_data = json.loads(task_file.read_text())
+    task_data = json.loads(task_file.read_text(encoding="utf-8"))
     test_cmd = task_data.get("test_cmd", "")
 
     # If we have a pytest command, run it

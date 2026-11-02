@@ -316,7 +316,7 @@ def load_lesson_context(scene: str, max_chars: int = 1500) -> tuple:
 def load_cache(path: Path) -> dict:
     if path and path.exists():
         try:
-            return json.loads(path.read_text())
+            return json.loads(path.read_text(encoding="utf-8"))
         except Exception:
             pass
     return {"runs": []}

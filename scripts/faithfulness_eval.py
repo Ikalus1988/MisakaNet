@@ -166,7 +166,7 @@ def main():
                 lid = lid.strip()
                 lesson_path = REPO_ROOT / "lessons" / f"{lid}.md"
                 if lesson_path.exists():
-                    contents.append(lesson_path.read_text())
+                    contents.append(lesson_path.read_text(encoding="utf-8"))
 
         result = evaluate_faithfulness(args.query, args.response, contents)
 

@@ -541,7 +541,7 @@ def main() -> int:
     if args.input:
         raw = json.loads(args.input)
     elif args.json_file:
-        raw = json.loads(Path(args.json_file).read_text())
+        raw = json.loads(Path(args.json_file).read_text(encoding="utf-8"))
     elif args.stdin:
         raw = json.loads(sys.stdin.read())
     else:

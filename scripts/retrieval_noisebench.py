@@ -143,7 +143,7 @@ def main():
         print(f"Error: queries file not found: {queries_path}", file=sys.stderr)
         sys.exit(1)
 
-    queries = json.loads(queries_path.read_text())
+    queries = json.loads(queries_path.read_text(encoding="utf-8"))
     docs = _load_docs_cached(LESSONS, is_lesson=True)
 
     print(f"Loaded {len(docs)} lessons, {len(queries)} queries\n")
