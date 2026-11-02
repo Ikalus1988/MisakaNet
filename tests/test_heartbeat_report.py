@@ -634,3 +634,35 @@ def test_the_digest_asks_nothing_of_the_reader():
 
 if __name__ == "__main__":
     raise SystemExit(pytest.main([__file__, "-v"]))
+
+
+# ── the marketplace action, counted from the one mark it leaves ───────────────────────────────
+
+def test_intake_bot_counts_summarises_user_agents():
+    rows = [{"ua": "misakanet-intakebot-v1.0", "count": 4},
+            {"ua": "misakanet-intakebot-v1.1", "count": 2},
+            {"ua": "misakanet-intakebot-v1.0", "count": 1}]
+    assert hr.intake_bot_counts(rows) == {
+        "misakanet-intakebot-v1.0": 5, "misakanet-intakebot-v1.1": 2}
+
+
+def test_intake_bot_counts_distinguishes_unreadable_from_empty():
+    """Rule 4: a failed read is not a zero."""
+    assert hr.intake_bot_counts(None) is None
+    assert hr.intake_bot_counts([]) == {}
+
+
+def test_the_panel_names_the_action_and_says_what_it_is_not(monkeypatch):
+    lines = hr.panel_who(None, "2026-11-02", {},
+                                {"misakanet-intakebot-v1.1": 3})
+    text = "\n".join(lines)
+    assert "misakanet-intake-bot" in text
+    assert "3 run(s)" in text
+    assert "a run is a row, not a person" in text, (
+        "the panel's own rule for client names has to apply here too: one repository can run the "
+        "action on every push")
+
+
+def test_the_panel_is_silent_when_the_numbers_could_not_be_read():
+    """No line at all, rather than a 0 that reads as 'nobody uses it'."""
+    assert "marketplace action" not in "\n".join(hr.panel_who(None, "2026-11-02", {}, None))
