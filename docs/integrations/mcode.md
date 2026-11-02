@@ -19,12 +19,35 @@ npx @misaka-net/misakanet-setup --only mcode
 
 | File | What it is |
 |---|---|
-| `~/.minimax/plugins/misakanet/.claude-plugin/plugin.json` | the plugin manifest mcode reads as source `LOCAL_CLAUDE`; it carries the `misakanet` MCP entry |
-| `~/.minimax/AGENTS.md` | the rules block (`misakanet:start` / `misakanet:end`), global scope — applied to every session |
+| `<data dir>/plugins/misakanet/.claude-plugin/plugin.json` | the plugin manifest mcode reads as source `LOCAL_CLAUDE`; it carries the `misakanet` MCP entry |
+| `<data dir>/AGENTS.md` | the rules block (`misakanet:start` / `misakanet:end`), global scope — applied to every session |
 
-`mcode` is detected by `~/.minimax/` (or the older `~/.minimax-code/`), so running the installer
-without `--only` includes it. `--mcp-only` writes the plugin manifest and skips the rules block
-(tier ① only).
+`<data dir>` is **resolved, never assumed** — see [Where the data directory is](#where-the-data-directory-is)
+below. The default is `~/.minimax`. The installer prints the resolved path on every write, so the
+report can be checked against where mcode actually reads (issue #3838: hardcoded `~/.minimax` made
+the installer report success at a path a `~/.mavis` or `$MINIMAX_DATA_DIR` machine never reads).
+
+`mcode` is detected by any of its known layouts — the resolved data directory, `~/.minimax/`, the
+older `~/.minimax-code/` (#3777) or `~/.mavis/` — so running the installer without `--only` includes
+it. `--mcp-only` writes the plugin manifest and skips the rules block (tier ① only).
+
+## Where the data directory is
+
+mcode's data directory has three possible locations, and the installer resolves them in mcode's own
+order (issue #3838):
+
+1. **`MINIMAX_DATA_DIR`** — the explicit override mcode's runtime honours. The installer honours it
+   too (for detection, writes, `--verify` and `--uninstall` alike). One exception: a `--home <dir>`
+   sandbox run ignores values pointing *outside* that sandbox, so a shell-exported variable cannot
+   redirect a sandboxed write to your real machine.
+2. **`~/.minimax/`** — the default layout, when it exists.
+3. **`~/.mavis/`** — the alias mcode also reads (`.mavis` / `.mavis-*` directory names), when it
+   exists.
+
+When none of them exists, the installer creates `~/.minimax/` (the fresh-machine default). When
+both `~/.minimax/` and `~/.mavis/` exist, `~/.minimax/` wins — which one a *running* mcode reads in
+that case is not documented by MiniMax, so the choice follows the order above and is stated here
+rather than guessed at.
 
 The manifest the installer writes looks like this:
 
@@ -92,7 +115,7 @@ confirm the manifest). If the tools are missing while `plugin list` is enabled, 
 
 ## Rules, and what mcode does not have
 
-`~/.minimax/AGENTS.md` is mcode's **global** rules scope — the block applies to every session, and
+The data directory's `AGENTS.md` (default `~/.minimax/AGENTS.md`) is mcode's **global** rules scope — the block applies to every session, and
 a project's own `AGENTS.md` keeps working alongside it. The installer writes the global one (route
 A), so a session started anywhere gets the "search before retrying" behaviour.
 
@@ -107,10 +130,12 @@ there is nowhere for it to go.
 npx @misaka-net/misakanet-setup --uninstall
 ```
 
-That removes the rules block from `~/.minimax/AGENTS.md` (the file itself goes away when nothing
-else was in it) and deletes `~/.minimax/plugins/misakanet/` — **only** that directory: your other
-plugins under `~/.minimax/plugins/` and the parent directories are left alone. Rewritten files keep
-a `*.misakanet.bak` copy.
+That removes the rules block from the resolved `<data dir>/AGENTS.md` (the file itself goes away
+when nothing else was in it) and deletes `<data dir>/plugins/misakanet/` — **only** that directory:
+your other plugins under `<data dir>/plugins/` and the parent directories are left alone.
+`--uninstall` resolves the data directory the same way the install did (issue #3838), so a plugin
+installed under `~/.mavis` or `$MINIMAX_DATA_DIR` is found and removed from there. Rewritten files
+keep a `*.misakanet.bak` copy.
 
 ## Learn more
 

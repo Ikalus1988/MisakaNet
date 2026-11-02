@@ -51,6 +51,7 @@
   <url><loc>https://misakanet.org/topics/wechat/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/kubernetes/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/scraping/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://misakanet.org/topics/integrations/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/crypto-ops/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/openclaw/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/backend/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
@@ -149,6 +150,7 @@
   <url><loc>https://misakanet.org/lessons/bge-embedding-fallback-crash/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/bilibili-api-get-download-url-returns-no-durl-key-keyerror-durl/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/bilibili-space-api-membervideos-returns-访问权限不足-to-anonymous-clients-that-have-no/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/二进制反汇编的-entry-偏移可能是代码区相对偏移按绝对偏移切段会整体错位且不报错/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/ble-短暂断链被当成永久断线读数立刻清空成-其实-04-秒就重连回来了/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/bm25-chinese-sliding-window-tuning/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/bm25-vector-hybrid-search-weights/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -271,6 +273,7 @@
   <url><loc>https://misakanet.org/lessons/escrow-fee-rounding-per-provider/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/an-event-count-is-not-a-health-signal-auto-remediation-keyed-on-it-restarts-a-he/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/an-external-issues-diagnosis-is-a-hypothesis-reproduce-the-failure-before-applyi/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/fanuc-报警代码索引按子系统一次查全motnprogsystcommintpsrvomemo/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/fanuc-alarm-severity-guide/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/fanuc-auto-abort-on-fault-restart/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/fanuc-backup-checks-count-every-metric-twice-when-the-ls-and-tp-copies-of-one-pr/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -314,6 +317,7 @@
   <url><loc>https://misakanet.org/lessons/feishu-doc-delete-blocks-by-range-pitfall/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/feishu-doc-url-use-api-return/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/feishu-gateway-group-policy-silently-drops-messages/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/feishu-knowledge-base-search-structured-sources-first-wiki-v1-node-search-inside/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/feishu-markdown-table-not-rendered/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/feishu-mcp-server-deepseek-tui-setup/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/feishu-setup-complete-cc-connect/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -381,6 +385,7 @@
   <url><loc>https://misakanet.org/lessons/three-checks-that-were-green-and-covered-nothing-the-subject-was-outside-the-sco/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-green-compile-says-nothing-about-reachability-the-fix-shipped-in-code-no-user/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/green-unit-tests-hid-a-build-only-type-error-because-the-test-runner-strips-type/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/griffe-docstring-parsers-return-empty-instead-of-raising-a-tryexcept-fall-throug/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/headless-chrome-cdp-port-answers-but-the-page-target-is-hung-automation-fails-si/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/heartbeat-scan-improvement/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/hermes-model-switch-ccswitch/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -494,6 +499,7 @@
   <url><loc>https://misakanet.org/lessons/nsis-installer-refuses-in-place-upgrade-when-appid-differs-from-the-released-bui/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/nsis-silent-install-exits-2-inside-an-agent-job-electron-dies-with-status-breakp/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/nsopenpanelnssavepanel-buttons-stay-disabled-in-sandboxed-swiftui-macos-app/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/obsidian-local-rest-api-wraps-note-content-in-json-write-back-without-unwrapping/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/an-on-chain-payout-has-no-retry-the-checks-an-agent-must-pass-before-it-signs/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/hand-written-ooxml-pptx-truncation-marker-written-back-and-missing-cnvpr-descr/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/openai-compatible-api-call/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -505,6 +511,7 @@
   <url><loc>https://misakanet.org/lessons/openclaw-82-session-nodes-entry-valid-stays-0-after-manual-sqlite-edit/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/opencode-cli-on-native-windows-lists-zero-models-wsl-style-file-paths-break-plug/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/opire-bounty-hunting/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/claiming-an-oss-issue-is-an-investment-a-six-step-gate-before-the-claim-comment/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/oss-refactor-lessons/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/owa-thread-view-exposes-only-the-newest-messages-attachments-older-ones-need-a-m/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/scope-parallel-prs-by-who-owns-the-fact-not-by-file-path-or-two-green-prs-merge/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -541,6 +548,7 @@
   <url><loc>https://misakanet.org/lessons/powershell-51-set-content-encoding-utf8-adds-a-bom-that-breaks-an-electron-apps/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/powershell-start-process-argumentlist-splits-a-path-at-its-spaces-silently/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-pull-request-body-goes-stale-the-moment-you-force-push-a-fix-and-nothing-signa/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/prissue-comment-bodies-need-a-quoted-heredoc-double-quotes-and-eof-both-expand-a/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/pr-genius-issue-evaluator-for-intake/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/pr-strategy/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/private-agent-memory-fallacy/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
