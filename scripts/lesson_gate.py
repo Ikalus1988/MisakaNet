@@ -248,6 +248,10 @@ SURFACE_TOKEN_RE = re.compile(r"^[a-z][a-z0-9._+-]{1,39}$")
 # Lookahead, not `\s+word`: a consuming match eats the token after the command, which is exactly how
 # the worker's first version counted `zetaqx` once in a text that used it three times.
 SURFACE_FOLLOW_RE = re.compile(r"\b([a-z][a-z0-9._+-]{1,39})(?=\s+(?:[a-z]{2,}|-{1,2}[a-z]))", re.I)
+#: Word-forming prefixes that make a hyphenated token an adjective rather than a program name.
+#: Closed on purpose: every entry here is a prefix no CLI is named after, and a token this list
+#: does not cover still reaches the vocabulary check like any other name.
+_PROSE_PREFIX_RE = re.compile(r"^(?:pre|non|un|semi|anti|post|multi|sub|inter|intra|auto|micro|macro|co|de|re|mis|over|under)-")
 SHELL_FENCE_RE = re.compile(r"```(?:bash|sh|shell|zsh|console|shell-session|powershell|ps1)\n([\s\S]*?)```", re.I)
 INLINE_RE = re.compile(r"`([^`\n]{1,160})`")
 PROMPT_RE = re.compile(r"^\s*\$\s+(\S+)", re.M)
@@ -304,6 +308,12 @@ def command_surface_identifiers(text: str) -> list[str]:
     for match in SURFACE_FOLLOW_RE.finditer(body):
         token = match.group(1).lower()
         if FILE_EXTENSION_RE.search(token):
+            continue
+        # "a pre-converted frame cache" is prose, not a CLI. A command with a hyphen in it is
+        # almost always written as a code span or in a fence — those paths are checked above and
+        # keep their evidence. Measured 2026-11-02: the bare-mention path flagged `pre-converted`
+        # in a lesson whose only real name was `webm`.
+        if _PROSE_PREFIX_RE.match(token):
             continue
         occurrences[token] = occurrences.get(token, 0) + 1
     for token, count in occurrences.items():
@@ -426,9 +436,75 @@ REQUIRED_SECTIONS = (
 MIN_NEW_LESSON_CHARS = 400
 
 
+def section_is_empty(body: str) -> bool:
+    """True when a section heading has nothing a reader can use under it.
+
+    Deliberately not a length rule: "something breaks" is short and complete, and a threshold would
+    have rejected it (it did, at 20 characters, and an existing test caught that within minutes).
+    The two shapes that are actually empty are a section with nothing under it, and one whose only
+    content is a fence opener — which is exactly what a truncated conversion produces (`## Fix`
+    followed by "```bash" and then the next heading).
+    """
+    stripped = body.strip()
+    if not stripped:
+        return True
+    # Drop fence markers; a section that was only a fence opener has nothing left.
+    remainder = [line for line in stripped.splitlines()
+                 if line.strip() and not re.match(r"^\s*(?:```|~~~)\S*\s*$", line)]
+    return not remainder
+
+
+def _sections_outside_fences(content: str) -> list[tuple[str, str]]:
+    """(heading, body) pairs for every level-2/3 heading **outside** a code fence.
+
+    Fences are tracked because a shell comment is a line that starts with `#`: reading one as a
+    heading truncates the section above it. That is not hypothetical — it is how the intake
+    converter lost a complete `Fix` on 2026-11-02, and the same mistake in this file's first
+    version of `validate_section_content` then reported the section it had just cut as empty.
+    """
+    lines = content.split("\n")
+    sections: list[tuple[str, str]] = []
+    in_fence = False
+    current: tuple[str, list[str]] | None = None
+    for line in lines:
+        if re.match(r"^\s*(?:```|~~~)", line):
+            in_fence = not in_fence
+        heading = None if in_fence else re.match(r"^#{2,3}\s*([^\n]+)$", line)
+        if heading:
+            if current is not None:
+                sections.append((current[0], "\n".join(current[1]).strip()))
+            current = (heading.group(1).strip(), [])
+        elif current is not None:
+            current[1].append(line)
+    if current is not None:
+        sections.append((current[0], "\n".join(current[1]).strip()))
+    return sections
+
+
+def validate_section_content(content: str) -> list[str]:
+    """Names of the standard sections that exist but are effectively empty.
+
+    A heading is not a section. Measured 2026-11-02: the intake converter cut a `Fix` section at
+    the first `#` line inside a bash fence, so a complete lesson was written with `## Fix` followed
+    immediately by `## Verification`, and the gate passed it — the section was present, so
+    `validate_sections` had nothing to say. The lesson could not be acted on, which is the one thing
+    the section list exists to prevent.
+    """
+    empty = []
+    for label, aliases in REQUIRED_SECTIONS:
+        for heading, body in _sections_outside_fences(content):
+            lowered = heading.lower()
+            if not any(lowered.startswith(alias) for alias in aliases):
+                continue
+            if section_is_empty(body):
+                empty.append(label)
+            break
+    return empty
+
+
 def validate_sections(content: str) -> list[str]:
     """Names of the standard lesson sections missing from `content`."""
-    headings = [h.strip().lower() for h in re.findall(r"^#{2,3}\s*(.+?)\s*$", content, re.M)]
+    headings = [heading.lower() for heading, _ in _sections_outside_fences(content)]
     missing = []
     for label, aliases in REQUIRED_SECTIONS:
         if not any(alias in heading for heading in headings for alias in aliases):
@@ -436,8 +512,27 @@ def validate_sections(content: str) -> list[str]:
     return missing
 
 
+#: Han, kana and hangul. One of these carries roughly what two or three Latin characters carry, so
+#: a character count that treats them as equal measures alphabet, not information.
+_CJK_RE = re.compile(r"[\u3400-\u4dbf\u4e00-\u9fff\u3040-\u30ff\uac00-\ud7af]")
+
+
+def content_weight(content: str) -> int:
+    """Length in "Latin-character equivalents": CJK counts double.
+
+    The 400-character floor on new lessons exists so a lesson has enough substance to act on.
+    Counted in raw characters it also rejected complete Chinese lessons: measured 2026-11-02, eight
+    of ten submissions in one batch failed at 350-390 characters while carrying Problem / Root
+    Cause / Fix / Verification in full — and the playbook forbids padding to fit a number. Weighting
+    CJK at 2 keeps the floor where it bites (a 200-character Chinese stub is still refused at ~370)
+    and stops punishing a script for being compact.
+    """
+    text = content.strip()
+    return len(text) + len(_CJK_RE.findall(text))
+
+
 def validate_content_len(content: str, minimum: int = MIN_CONTENT_CHARS) -> bool:
-    return len(content.strip()) >= minimum
+    return content_weight(content) >= minimum
 
 
 # ── Structured fields for *new* lessons (issue #1783) ───────────────
@@ -1024,6 +1119,12 @@ def validate_file(path: Path, repo: Path = REPO, dirs: tuple[str, ...] | None = 
             errors.append(
                 "missing required section(s): " + ", ".join(missing)
                 + " — see lessons/TEMPLATE.md (Problem / Root Cause / Solution / Verification)")
+        empty = validate_section_content(content)
+        if empty:
+            errors.append(
+                "section(s) present but empty: " + ", ".join(empty)
+                + " — a heading with nothing under it (or only a fence opener) is not something a "
+                "reader can act on")
     else:
         missing = validate_sections(content)
         if missing:

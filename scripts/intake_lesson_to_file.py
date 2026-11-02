@@ -82,10 +82,42 @@ def clean(text: str) -> str:
     return re.sub(r"\n{3,}", "\n\n", text).strip()
 
 
+_FENCE_RE = re.compile(r"^\s*(?:```|~~~)")
+
+
 def section(body: str, name: str) -> str:
-    """The text under `## <name>`, up to the next heading or the tags line. Empty when absent."""
-    match = re.search(rf"^#+\s*{name}\s*$(.*?)(?=^#+\s|\*\*Tags:\*\*|\Z)", body, re.M | re.S)
-    return clean(match.group(1)) if match else ""
+    r"""The text under `## <name>`, up to the next heading or the tags line. Empty when absent.
+
+    Headings are only headings **outside** a code fence. The first version of this function matched
+    `^#+\s` anywhere, so a shell comment inside a `Fix` block ended the section: measured
+    2026-11-02, a Chinese lesson whose Fix was a bash fence beginning `# 1) 空数组安全展开` was
+    converted with an empty Fix and an empty Verification, and the lesson gate passed it because
+    both headings were present. Every lesson with a commented command would have lost the same way.
+    """
+    lines = body.split("\n")
+    start = end = None
+    in_fence = False
+    heading_re = re.compile(r"^#+\s*")
+    for index, line in enumerate(lines):
+        if _FENCE_RE.match(line):
+            in_fence = not in_fence
+            if start is not None and end is None:
+                continue
+        if in_fence:
+            continue
+        if heading_re.match(line):
+            if start is None:
+                if re.match(rf"^#+\s*{re.escape(name)}\s*$", line):
+                    start = index + 1
+            elif end is None:
+                end = index
+                break
+        elif start is not None and end is None and line.strip().startswith("**Tags:**"):
+            end = index
+            break
+    if start is None:
+        return ""
+    return clean("\n".join(lines[start:end if end is not None else len(lines)]))
 
 
 def field(body: str, name: str) -> str:

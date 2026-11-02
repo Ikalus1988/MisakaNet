@@ -180,3 +180,43 @@ def test_a_title_override_replaces_the_submitter_title():
     assert lesson is not None
     assert lesson["title"] == "A clearer title"
     assert any("title replaced" in note for note in notes), notes
+
+
+def test_a_fenced_fix_keeps_its_shell_comments():
+    """Measured 2026-11-02: `# 1)` inside a bash fence ended the section and the lesson lost its Fix."""
+    body = """**Kind:** lesson_submission
+
+## Problem
+
+It fails.
+
+## Root Cause
+
+The array is empty.
+
+## Fix
+
+```bash
+# 1) expand safely
+rm -f "${ARR[@+\"${ARR[@]}\"}"
+
+# 2) braces after the variable
+echo "size=${size}）"
+```
+
+Use python for logic.
+
+## Verification
+
+Run it with `set -u` and see no unbound variable.
+
+**Tags:** bash, set-u
+"""
+    fix = conv.section(body, "Fix")
+    assert "# 1) expand safely" in fix, "the first bash comment must survive"
+    assert "# 2) braces after the variable" in fix, "so must the second"
+    assert "Use python for logic." in fix, (
+        "prose after the fence is part of the section too; stopping at the fence would be the same "
+        "truncation one step later")
+    assert conv.section(body, "Verification").startswith("Run it with"), (
+        "Verification must still start after the fence ends, not inside it")
