@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import os
 import sys
 
 from ._config import get_server_version
@@ -160,12 +161,39 @@ def handle_request(request: dict) -> dict:
         }
 
 
+def _enable_docs_cache() -> float:
+    """Turn on the in-process corpus cache and return the window it uses, in seconds.
+
+    This process lives as long as the client's session, and every tool call used to re-walk the
+    corpus: measured 6.6 s per call on a WSL checkout (765 lessons on `/mnt/c`) against 0.007 ms
+    for a cached load, because it is 765 `stat()` calls, not because anything changed. The window
+    is a staleness budget, not a freshness guarantee — the corpus changes on a daily cron, so five
+    seconds is invisible to a user and removes the walk from every call after the first.
+
+    Separate from `main()` so the wiring can be tested without a stdin loop:
+    `MISAKANET_DOCS_TTL_SECONDS=0` turns it off, and a value that is not a number falls back to 5
+    rather than crashing a server before it can say anything.
+    """
+    from ..search.engine import set_docs_cache_ttl  # noqa: PLC0415
+
+    raw = os.environ.get("MISAKANET_DOCS_TTL_SECONDS", "5")
+    try:
+        ttl = max(0.0, float(raw))
+    except ValueError:
+        sys.stderr.write(
+            f"MISAKANET_DOCS_TTL_SECONDS={raw!r} is not a number; using 5 seconds\n")
+        ttl = 5.0
+    set_docs_cache_ttl(ttl)
+    return ttl
+
+
 def main():
     """MCP stdio server loop."""
     from ._config import _init_search
 
     HAS_SAG, _, HAS_BM25, _ = _init_search()  # noqa: N806
 
+    _enable_docs_cache()
     sys.stderr.write("MisakaNet MCP Server started\n")
     sag_status = "available" if HAS_SAG else "not available (run build_sag_index.py)"
     bm25_status = "available" if HAS_BM25 else "not available"
