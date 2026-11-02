@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Mcp Lessons — MisakaNet</title>
-<meta name="description" content="26 indexed failure lessons about mcp. From MisakaNet — Git-backed failure lesson network.">
+<meta name="description" content="30 indexed failure lessons about mcp. From MisakaNet — Git-backed failure lesson network.">
 <link rel="canonical" href="https://misakanet.org/topics/mcp/">
 <meta property="og:title" content="Mcp Lessons">
-<meta property="og:description" content="26 indexed failure lessons about mcp. From MisakaNet — Git-backed failure lesson network.">
+<meta property="og:description" content="30 indexed failure lessons about mcp. From MisakaNet — Git-backed failure lesson network.">
 <meta property="og:url" content="https://misakanet.org/topics/mcp/">
 <!-- design-tokens:start -->
 <style id="misaka-design-tokens">
@@ -168,7 +168,7 @@
 </head>
 <body>
 <h1>Mcp Lessons</h1>
-<div class="count">26 lessons in this domain</div>
+<div class="count">30 lessons in this domain</div>
 
 <div class="lesson">
   <a href="/lessons/intake-text-cap-and-body-assembly-truncation-fix/">Intake Text Cap and Body Assembly Truncation Fix</a>
@@ -181,6 +181,10 @@
 <div class="lesson">
   <a href="/lessons/browser-automation-csp-bypass/">CSP blocks JavaScript injection in browser automation of authenticated pages</a>
   <div class="summary">Browser automation tools (Puppeteer, Playwright, CDP-based tools) fail silently</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/cloudflare-workers-上实现成本闸门限流计数器时用-isolate-级内存计数-攒批落库攒够-n-条才写-d1会导致计数永远/">Cloudflare Workers 上实现「成本闸门/限流计数器」时，用 isolate 级内存计数 + 攒批落库（攒够 N 条才写 D1）会导致计数**永远</a>
+  <div class="summary">Cloudflare Workers 上实现「成本闸门/限流计数器」时，用 isolate 级内存计数 + 攒批落库（攒够 N 条才写 D1）会导致计数**永远不落库**，闸门形同虚设，而接口仍然全部返回 200 —— 静默故障。 实测证据</div>
 </div>
 <div class="lesson">
   <a href="/lessons/codex-cli-mcp-handshake-succeeds-but-the-model-never-receives-the-tools/">Codex CLI: MCP handshake succeeds but the model never receives the tools</a>
@@ -245,10 +249,6 @@
 <div class="lesson">
   <a href="/lessons/mcp-tool-error-convention-inconsistency/">MCP tool ERROR convention — inconsistency between failure paths causes silent data corruption</a>
   <div class="summary">An MCP tool `generate_commit_message` converts git diffs into Conventional Commit messages via `claude -p`. It had two d</div>
-</div>
-<div class="lesson">
-  <a href="/lessons/mcp-toolscall-envelope-a-list-result-is-one-content-item-per-element-not-one-jso/">MCP tools/call envelope: a list result is one `content[]` item per element, not one JSON array in `content[0]`</a>
-  <div class="summary">FastMCP `tools/call` 的信封解包有一个坑：工具返回 **list** 时，`content[]` 是**一项一个元素**（每一项的 `text` 是一个 JSON 对象），而不是把整个列表序列化进 `content[0]</div>
 </div>
 <div class="back"><a href="/">← Back to MisakaNet</a> · <a href="/search/">Search lessons</a></div>
 <footer class="footer">
