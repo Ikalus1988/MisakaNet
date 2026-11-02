@@ -5,6 +5,7 @@ BM25 核心算法委托给 misakanet-core 包。
 import json
 import math
 import os
+import time
 import re
 import sqlite3
 import sys
@@ -58,6 +59,41 @@ _CACHE_DIR = Path(os.environ.get("MISAKANET_CACHE_DIR") or (REPO / ".cache"))
 _CACHE_DB = _CACHE_DIR / "search_cache.db"
 _L1_CACHE = {}
 _L1_MAX = 50
+
+# ── The loaded-document cache (see `set_docs_cache_ttl`) ──
+#
+# `_load_docs_cached` below answers "which lessons exist and what do they say" by walking the
+# corpus and `stat()`-ing every file, then re-reading only the changed ones from the L2 SQLite
+# cache. The re-read is cheap; the **walk is not**. Measured 2026-11-02 on a WSL checkout
+# (`/mnt/c`), 765 lessons: 18.5 s cold and **6.6 s for a second, unchanged load** — roughly 8 ms
+# per `stat()` over the Windows interop layer. A stdio server pays that on *every* tool call,
+# so a `misakanet_search` that should be ranking takes seconds before it ranks anything.
+#
+# So a long-lived process may keep the loaded list for a short while. Off by default: a one-shot
+# CLI gains nothing from it, and a test that writes a lesson and searches again must see it.
+# `set_docs_cache_ttl` is called by the stdio server (which is the process that benefits) and is
+# the only way to turn it on, deliberately — a cache nobody can point at is a stale read waiting
+# to happen.
+_DOCS_TTL_SECONDS = 0.0
+_DOCS_CACHE: dict[tuple[str, bool], tuple[float, list]] = {}
+
+
+def set_docs_cache_ttl(seconds: float) -> None:
+    """Keep the loaded corpus in memory for `seconds` between calls (0 disables and clears).
+
+    The window is a *staleness budget*, not a freshness guarantee: within it, a lesson added or
+    edited on disk is not seen. That is why it defaults to 0 and why the server sets it, not the
+    library.
+    """
+    global _DOCS_TTL_SECONDS
+    _DOCS_TTL_SECONDS = max(0.0, float(seconds))
+    if _DOCS_TTL_SECONDS <= 0:
+        _DOCS_CACHE.clear()
+
+
+def invalidate_docs_cache() -> None:
+    """Drop the in-memory corpus so the next load re-reads the tree."""
+    _DOCS_CACHE.clear()
 _L2_CONN = None
 _CACHE_LOCK = threading.RLock()
 
@@ -162,8 +198,16 @@ def _load_docs_cached(directory: Path, is_lesson: bool = True) -> list[CachedDoc
     racing itself, plus queries interleaved with it). The lock covers the whole load — that is what a
     single connection requires, and the work it protects is one committed read plus the changed rows.
     """
+    key = (str(directory), is_lesson)
+    if _DOCS_TTL_SECONDS > 0:
+        hit = _DOCS_CACHE.get(key)
+        if hit is not None and (time.monotonic() - hit[0]) < _DOCS_TTL_SECONDS:
+            return hit[1]
     with _CACHE_LOCK:
-        return _load_docs_cached_locked(directory, is_lesson)
+        docs = _load_docs_cached_locked(directory, is_lesson)
+    if _DOCS_TTL_SECONDS > 0:
+        _DOCS_CACHE[key] = (time.monotonic(), docs)
+    return docs
 
 
 def _load_docs_cached_locked(directory: Path, is_lesson: bool = True) -> list[CachedDoc]:
