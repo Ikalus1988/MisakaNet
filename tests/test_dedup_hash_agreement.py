@@ -59,12 +59,22 @@ def _worker_hash(text: str) -> str:
     node = shutil.which("node")
     if node is None:
         pytest.skip("node unavailable; the JS half cannot be evaluated here")
+    # The worker's own `hashString`, lifted out and **required**, not `eval`ed.
+    #
+    # It used to be `eval(fn[0])`, which is how a test ends up on the code-scanning list for dynamic
+    # code execution (#400) — and the alert is right about the shape even though the input is our own
+    # source. Writing the extracted function to a file and requiring it keeps exactly the property the
+    # test needs (the hash that runs is the one in the worker) without building a program out of text.
     program = """
 const fs = require('fs');
+const path = require('path');
+const os = require('os');
 const src = fs.readFileSync(process.argv[1], 'utf8');
 const fn = src.match(/function hashString\\(str\\) \\{[\\s\\S]*?\\n\\}/);
 if (!fn) { throw new Error('hashString not found in the worker source'); }
-eval(fn[0]);
+const target = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'misakanet-hash-')), 'hash.js');
+fs.writeFileSync(target, fn[0] + '\\nmodule.exports = hashString;\\n');
+const hashString = require(target);
 process.stdout.write(hashString(JSON.parse(process.argv[2])));
 """
     done = subprocess.run(

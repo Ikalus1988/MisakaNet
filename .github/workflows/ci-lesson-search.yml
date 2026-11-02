@@ -51,6 +51,13 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
         with:
           repository: Ikalus1988/MisakaNet
+          # Named, not left to the event. This job is triggered by `workflow_run` (which defaults to
+          # the default branch) **and** by `workflow_dispatch` (which can be fired from any ref), and
+          # it holds `pull-requests: write`. Without the pin, a manual dispatch from a branch would
+          # run that branch's scripts with the token — the shape code scanning reports as
+          # `GITHUB_ACTIONS_UNTRUSTED_CHECKOUT` (#397). Same reasoning (and same fix) as
+          # `deploy-freshness.yml`, whose comment already cites the earlier pair of alerts.
+          ref: ${{ github.event.repository.default_branch || 'main' }}
 
       - name: Setup Python
         uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7
