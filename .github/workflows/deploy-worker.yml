@@ -58,6 +58,22 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
 
+      # The declared Wrangler must be the Wrangler that deploys (#2891). This job used to run
+      # `cd workers && npx wrangler deploy` with no install at all: `npx` resolves `latest` from the
+      # registry when nothing is installed, so `package.json`'s `^4.156.0` — and every dependabot PR
+      # that bumps it — governed nothing about production. `npm ci` installs the locked version, and
+      # `--no-install` makes the deploy fail loudly rather than silently fetching an unlisted one.
+      - name: Setup Node
+        uses: actions/setup-node@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9
+        with:
+          node-version: "22"
+
+      - name: Install the declared toolchain
+        run: |
+          set -euo pipefail
+          npm ci --ignore-scripts --audit=false --fund=false
+          node -e "console.log('wrangler', require('./node_modules/wrangler/package.json').version)"
+
       - name: Pre-flight — no placeholder ids in deployed config (audit T1.5)
         run: |
           set -euo pipefail
@@ -73,7 +89,9 @@ jobs:
           # COMMIT_SHA is what makes staleness measurable: it lands in `/api/health` as
           # `commit_sha`, and `doctor.py --deploy-freshness` compares it to the checkout.
           # The version number cannot do this job (#2779).
-          npx wrangler deploy --config wrangler.toml --var COMMIT_SHA:"${GITHUB_SHA}"
+          # `--no-install`: the version comes from `package-lock.json` or this step fails. A deploy
+          # that quietly fetches a different Wrangler is not reproducible (#2891).
+          npx --no-install wrangler deploy --config wrangler.toml --var COMMIT_SHA:"${GITHUB_SHA}"
 
       - name: Post-deploy — the deployed endpoint answers the handshake, at the version we shipped
         run: |
