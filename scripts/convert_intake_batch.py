@@ -29,6 +29,7 @@ REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO / "scripts"))
 
 import intake_lesson_to_file as conv  # noqa: E402
+import lesson_gate  # noqa: E402  — the same gate CI runs, so a candidate it would reject is not written
 
 #: Domain guesses by topic keyword. Kept in one place and deliberately crude: a wrong domain is
 #: correctable in the pull request, while a converter that refuses everything converts nothing.
@@ -88,6 +89,20 @@ def main(argv: list[str] | None = None) -> int:
         record, notes = conv.convert(issue, canonical, {"domain": domain} if domain else None)
         if record is None:
             skips[notes[0].split("(")[0][:60]] += 1
+            continue
+        # Gate **before** writing. The converter's own floors are looser than the gate's (120 vs 400
+        # characters of body), so a batch that skipped this step opened a pull request carrying a
+        # lesson CI would refuse — measured 2026-11-02, the same ASAR report was dropped by hand in
+        # batch 5 and re-added by the first automated batch. `convert()` cannot know the gate's rules;
+        # this module can, so it asks.
+        gate_problems = []
+        if not lesson_gate.validate_content_len(record["content"], lesson_gate.MIN_NEW_LESSON_CHARS):
+            gate_problems.append(
+                f"body too short for the gate (< {lesson_gate.MIN_NEW_LESSON_CHARS} chars)")
+        gate_problems += [f"missing section: {name}" for name in lesson_gate.validate_sections(record["content"])]
+        gate_problems += [f"empty section: {name}" for name in lesson_gate.validate_section_content(record["content"])]
+        if gate_problems:
+            skips["would fail the lesson gate"] += 1
             continue
         overrides[str(issue["number"])] = {"domain": record["domain"]}
         writable.append(issue)
