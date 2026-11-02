@@ -213,8 +213,10 @@ def main() -> int:
     except Refused as exc:
         # The previous file is deliberately left alone: a failed fetch is not a quiet day.
         print(f"::error::refusing to write a snapshot — {exc}")
-        print(f"  {out} is unchanged (last date: "
-              f"{(json.loads(out.read_text(encoding="utf-8")).get('date') if out.is_file() else 'absent')})")
+        # Hoisted out of the f-string: a call with a keyword argument inside a nested expression
+        # needs Python 3.12's relaxed f-string grammar, and this repository runs 3.11 in CI.
+        last_date = json.loads(out.read_text(encoding="utf-8")).get("date") if out.is_file() else "absent"
+        print(f"  {out} is unchanged (last date: {last_date})")
         return 1
 
     if out.is_file() and not args.force:
