@@ -85,7 +85,11 @@ jobs:
           python3 scripts/sync_lesson_count.py
           python3 scripts/build_lesson_pages.py
           python3 scripts/gen_ranking_snapshot.py
-          python3 scripts/build_feed.py
+          # NOT `build_feed.py`: its `generated_at` and "newest merged PRs" change on every run, so a
+          # batch PR that carried it would conflict with main by construction — measured on the first
+          # automated batch (#4352), where the feed was the only real diff besides one lesson. The
+          # daily sync owns that file.
+
           python3 - <<'PY'
           import re, subprocess, pathlib
           out = subprocess.run(["python3", "scripts/evidence_distribution.py"],
