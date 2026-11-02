@@ -44,9 +44,18 @@ def gh_json(args: list[str]) -> list:
 
 
 def candidates() -> list[dict]:
-    """Closed question issues with no `answered` label that DO have an answer in-thread."""
-    issues = gh_json(["issue", "list", "--state", "closed", "--label", "question", "--limit", "500",
-                      "--json", "number,title,labels,comments,closedAt"])
+    """Question issues with no `answered` label that DO have an answer in-thread.
+
+    **Open and closed**, because the label is what the answer delivery loop reads, not what closing
+    means: measured 2026-11-02, `#4109` had been answered in-thread on 2026-10-30 and was still
+    open and unlabelled, so the daily sync skipped it and the answer never reached the FAQ. The
+    first version only looked at closed issues — it fixed the 42 unlabelled closed ones and left
+    every answered-but-open question exactly where it was.
+    """
+    issues = []
+    for state in ("open", "closed"):
+        issues += gh_json(["issue", "list", "--state", state, "--label", "question", "--limit", "500",
+                           "--json", "number,title,labels,comments,closedAt"])
     found = []
     for issue in issues:
         labels = {l["name"] for l in issue["labels"]}
@@ -79,7 +88,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.json:
         print(json.dumps({"candidates": rows, "count": len(rows)}, ensure_ascii=False, indent=1))
     else:
-        print(f"{len(rows)} closed question issue(s) carry an answer but no `{LABEL}` label")
+        print(f"{len(rows)} question issue(s) carry an answer but no `{LABEL}` label")
         for row in rows:
             print(f"  #{row['number']:5d} {row['answer_chars']:5d} chars  {row['title'][:70]}")
 
