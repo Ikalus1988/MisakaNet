@@ -66,6 +66,7 @@
 - [BGE Embedding Fallback Crash](contrib/bge-embedding-fallback-crash.md) | rag | "project:agent-medici", "severity:high", "node:hermes-wsl" | bootstrap
 - [bilibili-api get_download_url returns no durl key (KeyError durl)](contrib/bilibili-api-get-download-url-returns-no-durl-key-keyerror.md) | python | "bilibili-api", "python", "dash", "durl" | intake-3789
 - [Bilibili space API (member/videos) returns 访问权限不足 to anonymous clients that have no wbi signature](contrib/bilibili-space-api-membervideos-returns-访问权限不足-to-anonymous.md) | development | "bilibili", "wbi", "api", "risk-control", "unsigned-endpoint", "scraping" | intake-4192
+- [二进制反汇编的 entry 偏移可能是「代码区相对偏移」——按绝对偏移切段会整体错位且不报错](contrib/binary-disassembly-entry-offsets-code-relative-base.md) | development | "binary", "disassembly", "offset", "base-address", "parser", "silent-mis-split" | intake-4279
 - [BLE 短暂断链被当成永久断线：读数立刻清空成 --，其实 0.4 秒就重连回来了](contrib/ble-短暂断链被当成永久断线读数立刻清空成-其实-04-秒就重连回来了.md) | mobile | "ble", "bluetooth", "ios", "disconnect", "reconnect", "stale-data", "backoff" | intake-4151
 - [中文 BM25 搜索：滑动窗口子串加分与唯一候选加分](contrib/bm25-chinese-sliding-window-tuning.md) | search | "bm25", "chinese", "search", "recall", "sliding-window" | mcp-intake-1112
 - [BM25 + Vector Hybrid Search: configurable blending weights](contrib/bm25-vector-hybrid-search-weights.md) | search | "bm25", "vector", "hybrid", "search", "weights" | closed-pr-1029
