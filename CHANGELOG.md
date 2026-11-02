@@ -7,6 +7,25 @@ All notable changes to the Misaka Network project are documented here.
 
 ---
 
+## [3.5.0](https://github.com/Ikalus1988/MisakaNet/compare/v3.4.0...v3.5.0) (2026-11-01)
+
+
+### Features
+
+* **mcp:** three retrieval tools now say which one to call instead of the others ([#4308](https://github.com/Ikalus1988/MisakaNet/issues/4308)) ([1da087e](https://github.com/Ikalus1988/MisakaNet/commit/1da087e86e312795e807eb1eed1053f036db6dbc))
+
+
+### Bug Fixes
+
+* **ci:** the classifier is a module, so nothing has to build a program out of text ([#4306](https://github.com/Ikalus1988/MisakaNet/issues/4306)) ([fc15336](https://github.com/Ikalus1988/MisakaNet/commit/fc153363a0e1ae6eaa12c6523e427fd173f1eff7))
+* **ci:** three jobs ran writes without the scope to make them ([#4310](https://github.com/Ikalus1988/MisakaNet/issues/4310)) ([a9437ae](https://github.com/Ikalus1988/MisakaNet/commit/a9437ae34afb46d6ec633e12fe7d4e82c2d4ccd6))
+* **docs:** the numbers and the auth story say what the code does ([#4302](https://github.com/Ikalus1988/MisakaNet/issues/4302)) ([4c378cb](https://github.com/Ikalus1988/MisakaNet/commit/4c378cbaaf127450a966cb8f8f3efc1c7503618a))
+
+
+### Documentation
+
+* **ops:** "MCP client can't connect but curl can" is a broken IPv6 path, not DNS ([#4309](https://github.com/Ikalus1988/MisakaNet/issues/4309)) ([202690c](https://github.com/Ikalus1988/MisakaNet/commit/202690cfc48ea180bde74d592bdbc7116344bb2e))
+
 ## [3.4.0](https://github.com/Ikalus1988/MisakaNet/compare/v3.3.0...v3.4.0) (2026-11-01)
 
 
