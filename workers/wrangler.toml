@@ -59,6 +59,7 @@ SEMANTIC_MIN_SCORE = "0.62"
 # disable without a code revert — same switch shape as MISAKANET_SEMANTIC.
 MISAKANET_CJK_FUSE = "1"
 
+
 # AI Gateway in front of the serving embedding call (2026-10-31). EMPTY BY DEFAULT: the code path is
 # the direct `env.AI.run` until someone sets this to `misakanet-bench` (the gateway already on the
 # account, cache_ttl 300, collect_logs on). A var rather than a deploy, because the flag adds a proxy
@@ -72,6 +73,13 @@ MISAKANET_AI_GATEWAY = ""
 # window (response carries `deprecated`) and refuses it when this is set to "strict"
 # (`client_id_proof_required`). Empty is the shipped default: enforcement is a dashboard edit, not a
 # deploy — the same shape as MISAKANET_AI_GATEWAY above, and the same reason.
+#
+# **Scheduled flip: 2026-11-14**, two weeks after the 2026-10-31 announcement. Not earlier, on
+# purpose: agents that stored the name and not the key need the window, and flipping early breaks
+# exactly the callers the window exists for. The flip is a dashboard var edit to `strict` — no deploy
+# — followed by removing the grace wording from `AGENTS.md` §3.3 and `docs/mcp.md`.
+# `workers/client-id-proof.test.mjs` (6 cases) already pins both branches, so the flip cannot be a
+# surprise to the code.
 MISAKANET_CLIENT_ID_PROOF = ""
 
 # Workers Logs, on because this is the worker that carries the traffic and it was the only one
