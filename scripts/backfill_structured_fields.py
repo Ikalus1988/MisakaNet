@@ -14,6 +14,13 @@ The work is generative and mechanical, which is the shape a free plan fits: this
 already included in the Workers Paid plan, so it consumes no external quota and no separate budget.
 (`GEMINI_API_KEY` is used only if `--provider gemini` is asked for, which is the free-tier path.)
 
+**`--provider derived` needs neither.** Most of the 402 lessons that lack the fields contain the
+material already: `summary_plain` is the first sentence of `## Problem`, `trigger` is the title plus
+that sentence (the intake converter has always built it that way), `verify` is the first line under
+`## Verification`. Verbatim, in the submitter's own words — which is the point of the field, not a
+shortcut around it. It runs in seconds, costs nothing, and leaves a remainder that is exactly the
+lessons whose own text has nothing to offer; that remainder is what the model providers are for.
+
 What it does not do
 -------------------
 It does not edit 394 files in one commit. `--propose` (the default) writes a JSON review file; `--apply`
@@ -93,6 +100,65 @@ def problem_and_fix(body: str, row: dict) -> tuple[str, str]:
     return problem[:2500], fix[:1500]
 
 
+def _section(body: str, *names: str) -> str:
+    """The text under the first matching `## <name>`, fence-aware.
+
+    Fence height matters: a shell comment inside a code block starts with `#`, and reading it as a
+    heading truncates the section above it (measured twice this week, in the intake converter and in
+    the lesson gate).
+    """
+    lines = body.split("\n")
+    in_fence = False
+    started = False
+    collected: list[str] = []
+    for line in lines:
+        if re.match(r"^\s*(?:```|~~~)", line):
+            in_fence = not in_fence
+        heading = None if in_fence else re.match(r"^#{2,3}\s*([^\n]+)$", line)
+        if heading:
+            title = heading.group(1).strip().lower()
+            if not started:
+                started = any(title.startswith(name) for name in names)
+            else:
+                break
+            continue
+        if started:
+            collected.append(line)
+    return "\n".join(collected).strip()
+
+
+def _shorten(text: str, limit: int) -> str:
+    text = re.sub(r"\s+", " ", text).strip().strip('"')
+    if len(text) <= limit:
+        return text
+    cut = text[: limit - 1]
+    if " " in cut:
+        cut = cut[: cut.rfind(" ")]
+    return cut.rstrip(" ,;:.") + "…"
+
+
+def _one_line(text: str, limit: int) -> str:
+    first = re.split(r"(?<=[.!?。！？])\s+", re.sub(r"\s+", " ", text).strip())[0]
+    return _shorten(first, limit)
+
+
+def derive_fields(row: dict, body: str) -> dict | None:
+    """The fields this lesson's own text already contains, verbatim. No model, no paraphrase."""
+    problem = _section(body, "problem", "问题")
+    title = str(row.get("title") or "").strip()
+    out: dict[str, str] = {}
+    if problem:
+        out["summary_plain"] = _one_line(problem, 120)
+        head = _one_line(problem, 90)
+        out["trigger"] = _shorten(f"{title}. {head}" if title else head, 160)
+    verification = _section(body, "verification", "verify", "验证")
+    if verification:
+        first = verification.split("\n")[0].strip()
+        if first and not first.startswith("```"):
+            out["verify"] = _shorten(first, 200)
+    return out or None
+
+
 def call_workers_ai(prompt: str, account: str, token: str, model: str) -> str:
     payload = json.dumps({"messages": [{"role": "user", "content": prompt}],
                           "max_tokens": 400}).encode()
@@ -161,7 +227,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--limit", type=int, default=None, help="how many lessons to process")
     ap.add_argument("--propose", type=Path, default=None, help="write proposals to this JSON file")
     ap.add_argument("--apply", action="store_true", help="write the fields into the lesson frontmatter")
-    ap.add_argument("--provider", choices=("workers-ai", "gemini"), default="workers-ai")
+    ap.add_argument("--provider", choices=("workers-ai", "gemini", "derived"),
+                    default="workers-ai",
+                    help="`derived` uses the lesson's own sentences and needs no credentials")
     ap.add_argument("--model", default=DEFAULT_MODEL)
     args = ap.parse_args(argv)
 
@@ -182,6 +250,14 @@ def main(argv: list[str] | None = None) -> int:
         problem, fix = problem_and_fix(body, row)
         prompt = PROMPT.format(title=row.get("title"), domain=row.get("domain"),
                                problem=problem, fix=fix)
+        if args.provider == "derived":
+            derived = derive_fields(row, body)
+            if derived:
+                proposals.append({"id": row.get("id"), "url": row.get("url"),
+                                  "title": row.get("title"), "fields": derived})
+            else:
+                failures.append({"id": row.get("id"), "error": "nothing derivable in the lesson text"})
+            continue
         try:
             raw = (call_workers_ai(prompt, account, token, args.model)
                    if args.provider == "workers-ai" else call_gemini(prompt, key))
@@ -207,7 +283,8 @@ def main(argv: list[str] | None = None) -> int:
 
     print(f"proposed {len(proposals)}, failed {len(failures)}, written {written}")
     for proposal in proposals[:3]:
-        print(f"  {proposal['id']}: {proposal['fields']['summary_plain'][:90]}")
+        sample = proposal["fields"].get("summary_plain") or proposal["fields"].get("trigger") or ""
+        print(f"  {proposal['id']}: {sample[:90]}")
     for failure in failures[:3]:
         print(f"  FAILED {failure['id']}: {failure['error'][:80]}")
     return 0 if proposals else 1

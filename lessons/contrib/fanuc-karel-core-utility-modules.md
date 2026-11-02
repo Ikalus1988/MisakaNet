@@ -27,6 +27,9 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "KAREL 是 FANUC 控制器上的类 Pascal 编译语言，没有标准库。开发者在每个项目中都要重复实现错误处理、字符串操作、类型转换等基础功能，导致代码冗余且质量参差不齐。"
+trigger: "KAREL Core Utility Modules: errors, system, Strings API Reference. KAREL 是 FANUC 控制器上的类 Pascal 编译语言，没有标准库。开发者在每个项目中都要重复实现错误处理、字符串操作、类型转换等基础功能，导致代码冗余且质量参差不齐。"
+verify: "1. **errors 模块：** 调用 `karelError(0, 'test error', 2)` 后 TP 显示屏显示错误信息，TP 历史记录中有对应条目"
 ---
 
 ## KAREL Core Utility Modules: errors, system, Strings API Reference

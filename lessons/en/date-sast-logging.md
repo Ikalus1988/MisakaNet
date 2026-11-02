@@ -15,6 +15,8 @@ provenance:
   contributor: "Unknown"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Logs mix UTC and local time; a \"9am job\" misses by two hours on Hetzner UTC boxes."
+trigger: "Log timestamps in SAST for SA ops agents. Logs mix UTC and local time; a \"9am job\" misses by two hours on Hetzner UTC boxes."
 ---
 
 # Log timestamps in SAST for SA ops agents

@@ -9,6 +9,7 @@ provenance:
   source: "MisakaNet maintainer run logs, 2026-09-13"
 trigger: "when a fork PR audit check fails and the PR only shows a red X because posting the report comment was blocked"
 verify: "Run the workflow on a fork PR and see the audit verdict appear in the Checks page (annotation) or in the run’s step summary."
+summary_plain: "A contributor's PR shows a failed `audit` check and nothing else."
 ---
 
 # GitHub Actions: a fork PR can never receive the comment that explains its red check

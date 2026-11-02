@@ -20,6 +20,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "调用飞书 `doc_delete_blocks_by_range` 时只传了 `start=0` 没传 `end`，想删5行残留旧内容，结果工具从 start 一直删到文档末尾，**删掉 172…"
+trigger: "飞书 doc_delete_blocks_by_range 不传 end 会删到文档末尾. 调用飞书 `doc_delete_blocks_by_range` 时只传了 `start=0` 没传 `end`，想删5行残留旧内容，结果工具从 start…"
 ---
 
 ## Problem

@@ -21,6 +21,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "GitHub Release 大文件（60MB）在 CN 网络下载失败：直连 GitHub 速度极慢（~107KB/s）然后不可达；gh-proxy 镜像大多失效或 429；单连接断点续传通过代理会损坏文件（重试后文件大小缩小）。"
+trigger: "GitHub Release 大文件下载在 CN 网络超时：分段并行下载方案. GitHub Release 大文件（60MB）在 CN 网络下载失败：直连 GitHub 速度极慢（~107KB/s）然后不可达；gh-proxy 镜像大多失效或…"
 ---
 
 ## Problem

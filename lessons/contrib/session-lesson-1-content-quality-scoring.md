@@ -20,6 +20,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "批量生成的内容质量参差不齐。人工审核效率低，无法规模化。需要自动化评估系统筛选合格内容。"
+trigger: "Content Quality Scoring System — Automated Lesson Evaluation. 批量生成的内容质量参差不齐。人工审核效率低，无法规模化。需要自动化评估系统筛选合格内容。"
 ---
 
 ## Problem

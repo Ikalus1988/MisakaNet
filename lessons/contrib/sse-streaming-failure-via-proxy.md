@@ -10,6 +10,8 @@ evidence_level: E3
 provenance:
   source: "intake"
   issue: "#1555"
+summary_plain: "MCP SSE transport works locally but returns no streaming data when accessed through a reverse proxy (nginx, Caddy…"
+trigger: "SSE streaming returns no data through reverse proxy. MCP SSE transport works locally but returns no streaming data when accessed through a…"
 ---
 
 ## Problem

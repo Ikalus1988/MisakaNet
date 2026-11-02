@@ -10,6 +10,8 @@ evidence_level: E3
 provenance:
   source: "intake"
   issue: "#1553"
+summary_plain: "`alembic upgrade head` fails with various errors after updating mcp-memory-service or its dependencies."
+trigger: "Alembic upgrade fails after dependency update. `alembic upgrade head` fails with various errors after updating mcp-memory-service or…"
 ---
 
 ## Problem

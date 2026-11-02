@@ -15,6 +15,8 @@ provenance:
   contributor: "Unknown"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Two agents create the same work dir; one crashes on FileExistsError in code that used os.mkdir."
+trigger: "Race-safe mkdir -p in parallel agents. Two agents create the same work dir; one crashes on FileExistsError in code that used…"
 ---
 
 # Race-safe mkdir -p in parallel agents

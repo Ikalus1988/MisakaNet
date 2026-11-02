@@ -15,6 +15,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "SAG-Lite search results show raw frontmatter in description field, making results unreadable: ```json { \"title\": \"pip…"
+trigger: "SAG-Lite Data Quality: Clean Search Results. SAG-Lite search results show raw frontmatter in description field, making results…"
 ---
 
 ---

@@ -15,6 +15,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "`git pull` 或 `git merge` 时报 `CONFLICT`，文件里出现 `<<<<<<<` 标记，终端输出类似： ``` Auto-merging src/config.py CONFLICT (content)…"
+trigger: "Git 合并ConflictHandling — 手动解决最佳实践. `git pull` 或 `git merge` 时报 `CONFLICT`，文件里出现 `<<<<<<<` 标记，终端输出类似： ``` Auto-merging…"
 ---
 
 ## Problem

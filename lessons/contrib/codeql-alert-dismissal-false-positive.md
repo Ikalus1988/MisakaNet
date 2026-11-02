@@ -14,6 +14,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "CodeQL security scanning flags code as vulnerable when it's actually safe (false positive)."
+trigger: "Dismiss CodeQL False Positive Alerts. CodeQL security scanning flags code as vulnerable when it's actually safe (false…"
 ---
 
 ---

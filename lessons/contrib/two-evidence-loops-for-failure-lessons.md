@@ -16,6 +16,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "A failure-lesson project can undercount real value if it only treats public feedback signals as proof of reuse."
+trigger: "Two Evidence Loops for Failure Lessons. A failure-lesson project can undercount real value if it only treats public feedback…"
 ---
 
 ## Problem

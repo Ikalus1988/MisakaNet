@@ -21,6 +21,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "心跳只用 `gh search prs --author` 扫描，漏掉了： 1."
+trigger: "GitHub Contribution Heartbeat Scan. 心跳只用 `gh search prs --author` 扫描，漏掉了： 1."
 ---
 
 ## Problem

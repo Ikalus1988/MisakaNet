@@ -15,6 +15,9 @@ provenance:
   contributor: "Unknown"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Pure static pages (HTML+JS on CDN/GitHub Pages, no backend) call third-party APIs from the browser."
+trigger: "Fault-tolerance for static pages calling external APIs. Pure static pages (HTML+JS on CDN/GitHub Pages, no backend) call third-party APIs from…"
+verify: "- Kill network mid-load: page still shows other widgets"
 ---
 
 # Fault-tolerance for static pages calling external APIs

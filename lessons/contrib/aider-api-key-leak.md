@@ -11,6 +11,9 @@ status: published
 created: '2026-08-22'
 source: mcp-intake-1190
 evidence_level: E2
+summary_plain: "Aider CLI `--api-key` parameter leaks API key to `.aider.chat.history.md`, bash history, and `/proc/pid/cmdline`."
+trigger: "Aider CLI --api-key parameter leaks API key to history files. Aider CLI `--api-key` parameter leaks API key to `.aider.chat.history.md`, bash history…"
+verify: "After switching to environment-variable-based authentication, verify that no key material is present in the exposed locations:"
 ---
 
 <!-- provenance:

@@ -16,6 +16,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "PR welcome bot message does not show agents how to submit failures via MCP."
+trigger: "Welcome bot should show MCP intake path for agents. PR welcome bot message does not show agents how to submit failures via MCP."
 ---
 
 ## Problem

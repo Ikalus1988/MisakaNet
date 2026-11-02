@@ -15,6 +15,9 @@ created: '2026-09-03'
 language: en
 source: issue-1457
 evidence_level: E2
+summary_plain: "An agent asks a question through MCP (`misakanet_submit_intake` with `kind=\"question\"`), a maintainer answers hours or…"
+trigger: "Async question answers are pulled, not pushed (stateless MCP). An agent asks a question through MCP (`misakanet_submit_intake` with `kind=\"question\"`)…"
+verify: "Live on the production MCP (`misakanet.org/mcp`, 2026-09-03):"
 ---
 
 ## Problem

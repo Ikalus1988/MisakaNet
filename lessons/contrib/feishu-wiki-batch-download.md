@@ -15,6 +15,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "从企业知识库批量下载文件时，不同文件类型需要不同的提取策略。直接API调用无法处理所有类型。"
+trigger: "Feishu WikiBatch Download：文件类型Handling策略. 从企业知识库批量下载文件时，不同文件类型需要不同的提取策略。直接API调用无法处理所有类型。"
 ---
 
 # Feishu WikiBatch Download：文件类型Handling策略

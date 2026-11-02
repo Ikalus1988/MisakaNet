@@ -18,6 +18,9 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "`mm_module_h.kl`（头文件）末尾存在如下声明： ```kl ROUTINE Check_Status(params : INTEGER) : BOOLEAN FROM MM_MODULE ```…"
+trigger: "FANUC KL: mm_module_h.kl 禁止 ROUTINE 声明. `mm_module_h.kl`（头文件）末尾存在如下声明： ```kl ROUTINE Check_Status(params : INTEGER) : BOOLEAN…"
+verify: "**步骤 1：检查头文件中是否残留 ROUTINE 声明**"
 ---
 
 ## FANUC KL: mm_module_h.kl 禁止 ROUTINE 声明

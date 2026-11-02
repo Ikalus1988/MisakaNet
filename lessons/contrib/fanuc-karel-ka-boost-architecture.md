@@ -27,6 +27,9 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "KAREL 是 FANUC 机器人控制器上的类 Pascal 编译语言，缺乏泛型、关联数组、原生字符串操作、标准库等现代编程基础设施。开发大型项目（如 5 轴 DLP 3D 打印切片器）时，代码复用困难，模块化程度低，构建和部署流程复杂。"
+trigger: "Ka-Boost: 8-Layer KAREL Module Architecture and Build System. KAREL 是 FANUC 机器人控制器上的类 Pascal 编译语言，缺乏泛型、关联数组、原生字符串操作、标准库等现代编程基础设施。开发大型项目（如 5 轴 DLP 3D…"
+verify: "1. `rossum .. -w -o` 成功生成 `build.ninja`，无依赖解析错误"
 ---
 
 ## Ka-Boost: 8-Layer KAREL Module Architecture and Build System

@@ -19,6 +19,9 @@ provenance:
   contributor: "Ikalus1988"
   merged_at: "2026-09-11"
   evidence: "post-publication"
+summary_plain: "I added one line to an automation config after \"checking it against the published JSON Schema\", and broke the tool on…"
+trigger: "A JSON Schema `\"key\": true` says \"any value allowed\" — not \"set it to true\". I added one line to an automation config after \"checking it against the published…"
+verify: "- Drive the tool's own updater/parser with the candidate value and confirm the produced artifact —"
 ---
 
 # A JSON Schema `"key": true` says "any value allowed" — not "set it to true"

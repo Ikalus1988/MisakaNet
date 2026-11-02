@@ -25,6 +25,9 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "FANUC KAREL标准库仅提供基础的PR读写和简单位姿操作，缺少以下关键能力： - 逆运动学(IK)和正运动学(FK)求解 - 四元数旋转(避免万向锁) - 4x4齐次变换矩阵运算 - 圆柱/极坐标系与笛卡尔坐标系之间的转换 -…"
+trigger: "KAREL Pose Library API Reference — IK/FK, Quaternion, Matrix Transforms. FANUC KAREL标准库仅提供基础的PR读写和简单位姿操作，缺少以下关键能力： - 逆运动学(IK)和正运动学(FK)求解 - 四元数旋转(避免万向锁) -…"
+verify: "1. **单元测试**：运行`test_pose.kl`和`test_matpose.kl`(通过KUnit HTTP接口：`http://robot.ip/KAREL/kunit?filenames=test_pose`)"
 ---
 
 ### Problem描述

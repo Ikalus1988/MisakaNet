@@ -15,6 +15,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "需要修改 WSL 中的配置文件（如 `.env`、`config.yaml`），通过 Windows Terminal 粘贴时出现神秘失败。"
+trigger: "WSL 终端编辑Setup危险 — TTy粘贴吞下划线. 需要修改 WSL 中的配置文件（如 `.env`、`config.yaml`），通过 Windows Terminal 粘贴时出现神秘失败。"
 ---
 
 ## Problem

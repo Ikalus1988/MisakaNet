@@ -15,6 +15,9 @@ created: '2026-09-01'
 language: en
 source: issue-1418
 evidence_level: E0
+summary_plain: "Installing a DSH (DeepSeek Harness) plugin from the [dsh-plugin.org](https://dsh-plugin.org) marketplace failed with…"
+trigger: "DSH Plugin Install Failures — GitHub codeload Timeout vs npm Channel. Installing a DSH (DeepSeek Harness) plugin from the…"
+verify: "- `dsh plugin --profile web add misakanet` completes in ~1s (resolved, downloaded, added) when the package is on npm."
 ---
 
 ## Problem

@@ -20,6 +20,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Websites are designed for humans."
+trigger: "webMCP — Chrome's Experimental Protocol for AI Agents. Websites are designed for humans."
 ---
 
 ## Problem

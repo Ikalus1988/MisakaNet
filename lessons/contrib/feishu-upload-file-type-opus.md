@@ -20,6 +20,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Feishu `im/v1/files` 上传接口调用失败，返回 `234001 Invalid request param`。"
+trigger: "feishu upload file type opus. Feishu `im/v1/files` 上传接口调用失败，返回 `234001 Invalid request param`。"
 ---
 
 ---

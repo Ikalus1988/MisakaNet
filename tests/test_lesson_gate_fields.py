@@ -15,6 +15,7 @@ existing suite (``tests/test_lesson_gate.py``) is the regression net for that.
 Run: python3 -m pytest tests/test_lesson_gate_fields.py -q
 """
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -263,11 +264,13 @@ def test_a_file_outside_a_lesson_tree_is_not_covered(tmp_path):
 
 
 def test_an_existing_corpus_lesson_is_advisory_not_failing():
-    """The command a maintainer actually runs — the bare CLI on a lesson that has been
-    in the corpus for months — must not start failing because of #1783.
+    """The command a maintainer actually runs — the bare CLI on a lesson that has been in the corpus
+    for months — must not start failing because of #1783.
 
-    Skipped where git cannot place the file on a base branch (the classification then
-    falls back to the corpus-path rule, which is strict by design).
+    The assertion is about the *tier*, not about which field happens to be missing: this test used to
+    require `summary_plain` in the output, which was true only until the 2026-11-02 backfill filled
+    it. Pinning a particular field makes the test an assertion about the corpus that happens to be
+    true on the day it was written.
     """
     if not EXISTING_LESSON.exists():
         pytest.skip(f"{EXISTING_LESSON} is not in this checkout")
@@ -275,14 +278,31 @@ def test_an_existing_corpus_lesson_is_advisory_not_failing():
         pytest.skip("git cannot resolve a base branch here")
 
     assert structured_field_tier(EXISTING_LESSON, REPO) == "advisory"
+    missing = missing_structured_fields(_frontmatter_of(EXISTING_LESSON))
+    if not missing:
+        pytest.skip("this lesson now carries every structured field; nothing to warn about")
+
     proc = subprocess.run(
         [sys.executable, str(REPO / "scripts" / "lesson_gate.py"), str(EXISTING_LESSON)],
         cwd=REPO, capture_output=True, text=True, timeout=180,
     )
     assert proc.returncode == 0, proc.stdout + proc.stderr
     assert "WARN" in proc.stdout, proc.stdout
-    for field in STRUCTURED_FIELDS:
-        assert field in proc.stdout, proc.stdout
+    assert "structured field(s) not set" in proc.stdout, proc.stdout
+    for field in missing:
+        assert field in proc.stdout, (
+            f"{field} is missing from this lesson but the warning does not name it:\n{proc.stdout}")
+
+
+def _frontmatter_of(path: Path) -> dict:
+    """Just enough YAML for the three flat fields this test asks about."""
+    text = path.read_text(encoding="utf-8", errors="replace")
+    if not text.startswith("---"):
+        return {}
+    end = text.find("\n---", 3)
+    head = text[4:end] if end > 0 else ""
+    return {m.group(1): m.group(2) for m in
+            re.finditer(r"^(summary_plain|trigger|verify):\s*(.+)$", head, re.MULTILINE)}
 
 
 def test_existing_true_overrides_classification(tmp_path):

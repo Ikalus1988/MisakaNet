@@ -20,6 +20,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "FANUC robots require accurate payload (load) configuration for safe and precise motion."
+trigger: "FANUC Payload Estimation — Auto and Manual Load Configuration. FANUC robots require accurate payload (load) configuration for safe and precise motion."
 ---
 
 ## Problem

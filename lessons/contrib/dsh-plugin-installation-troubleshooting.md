@@ -15,6 +15,9 @@ created: '2026-09-02'
 language: en
 source: issue-1421
 evidence_level: E1
+summary_plain: "Users installing the MisakaNet DSH plugin encounter a variety of failures across npm, git, and manual installation…"
+trigger: "DSH Plugin Installation Troubleshooting — Common Failures and Fixes. Users installing the MisakaNet DSH plugin encounter a variety of failures across npm…"
+verify: "After fixing any installation issue:"
 ---
 
 ## Problem

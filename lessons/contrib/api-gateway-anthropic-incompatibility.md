@@ -12,6 +12,8 @@ confidence: 0.8
 domain_expert: bootstrap
 verified_date: '2026-05-03'
 subdomain: api
+summary_plain: "Hermes Agent 配置 Anthropic provider 使用 internal-gateway.local API 时失败， API 返回 400 错误。"
+trigger: "api gateway anthropic incompatibility. Hermes Agent 配置 Anthropic provider 使用 internal-gateway.local API 时失败， API 返回 400 错误。"
 ---
 
 <!-- provenance:

@@ -19,6 +19,9 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Running `playwright install chromium` (Playwright 1.60.0) inside a WSL2 Ubuntu 24.04 image succeeds in downloading the…"
+trigger: "Playwright Chromium launch fails on WSL2 with missing libnss3 / libnspr4. Running `playwright install chromium` (Playwright 1.60.0) inside a WSL2 Ubuntu 24.04…"
+verify: "After applying Option A, run a minimal smoke test:"
 ---
 
 # Playwright Chromium launch fails on WSL2 with missing libnss3 / libnspr4

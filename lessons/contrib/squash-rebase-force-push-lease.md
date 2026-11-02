@@ -16,6 +16,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "A contribution branch had been periodically force-pushed while staying based on an older commit."
+trigger: "Squash-rebase rewrites the patch base and breaks force-push expectations. A contribution branch had been periodically force-pushed while staying based on an…"
 ---
 
 # Squash-rebase silently changes the base — and force-push races follow

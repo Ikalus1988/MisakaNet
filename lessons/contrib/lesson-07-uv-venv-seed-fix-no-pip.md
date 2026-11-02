@@ -18,6 +18,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "On Ubuntu (especially WSL Ubuntu 22.04 / 24.04), the system Python is a **stripped package** that does not include…"
+trigger: "Ubuntu WSL Python venv Missing pip — uv venv --seed Fixes Without sudo. On Ubuntu (especially WSL Ubuntu 22.04 / 24.04), the system Python is a **stripped…"
 ---
 
 # Ubuntu WSL Python venv Missing pip — uv venv --seed Fixes Without sudo

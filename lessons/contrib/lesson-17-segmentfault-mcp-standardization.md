@@ -20,6 +20,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "AI Agent 调用外部工具时，每个 LLM 提供商的 function calling 格式不同，每个工具需要单独适配。工具越多，维护成本越高。"
+trigger: "MCP — AI Agent 工具调用标准化协议. AI Agent 调用外部工具时，每个 LLM 提供商的 function calling 格式不同，每个工具需要单独适配。工具越多，维护成本越高。"
 ---
 
 ## Problem

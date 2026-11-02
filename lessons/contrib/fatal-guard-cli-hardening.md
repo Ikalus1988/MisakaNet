@@ -15,6 +15,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Fatal-guard CLI 缺少 `--help`、`--version` 以及规范的退出码支持。这导致以下具体问题： - **CI/CD…"
+trigger: "Fatal-guard CLI: harden entry point with --help, --version, exit codes. Fatal-guard CLI 缺少 `--help`、`--version` 以及规范的退出码支持。这导致以下具体问题： - **CI/CD…"
 ---
 
 ## Problem

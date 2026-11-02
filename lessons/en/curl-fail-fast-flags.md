@@ -15,6 +15,8 @@ provenance:
   contributor: "Unknown"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "curl hangs or follows bad redirects; scripts look stuck."
+trigger: "curl fail-fast flags for agent scripts. curl hangs or follows bad redirects; scripts look stuck."
 ---
 
 # curl fail-fast flags for agent scripts

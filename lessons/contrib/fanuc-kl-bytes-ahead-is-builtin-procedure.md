@@ -26,6 +26,9 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "在调试 KL 编译错误时，开发者可能会误判 `BYTES_AHEAD` 为非法标识符或禁用保留字，进而将其从 `MM_RCV_NTFY.kl`…"
+trigger: "FANUC KL: BYTES_AHEAD 是 Karel 内置 Procedure. 在调试 KL 编译错误时，开发者可能会误判 `BYTES_AHEAD` 为非法标识符或禁用保留字，进而将其从 `MM_RCV_NTFY.kl`…"
+verify: "**方法一：直接编译验证**"
 ---
 
 ## FANUC KL: BYTES_AHEAD 是 Karel 内置 Procedure

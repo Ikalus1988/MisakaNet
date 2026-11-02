@@ -18,6 +18,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Upgrading `vitest` and `@vitest/coverage-v8` from 3.x to 4.x dropped branch coverage from 81.30% to 74.96%, causing…"
+trigger: "Vitest 4 V8 AST Coverage Remapping Shifts Branch Coverage Below Threshold. Upgrading `vitest` and `@vitest/coverage-v8` from 3.x to 4.x dropped branch coverage…"
 ---
 
 ## Problem

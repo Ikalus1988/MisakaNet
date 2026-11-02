@@ -19,6 +19,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Standard scraping tools (requests, curl) are easily detected and blocked by anti-bot systems."
+trigger: "Scrapling — Web Scraping Library with Anti-Detection. Standard scraping tools (requests, curl) are easily detected and blocked by anti-bot…"
 ---
 
 ## Problem

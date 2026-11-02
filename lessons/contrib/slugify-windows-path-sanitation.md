@@ -16,6 +16,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "When creating a new lesson using `scripts/new_lesson.py` (either interactively or via batch mode), if the user or…"
+trigger: "slugify windows path sanitation. When creating a new lesson using `scripts/new_lesson.py` (either interactively or via…"
 ---
 
 ---

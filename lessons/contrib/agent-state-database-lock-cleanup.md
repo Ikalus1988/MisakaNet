@@ -18,6 +18,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Agent framework uses a SQLite-based state database to persist conversation context, session metadata, and operational…"
+trigger: "Agent State Database Lock Issues — Cleanup Protocol. Agent framework uses a SQLite-based state database to persist conversation context…"
 ---
 
 ## Verification

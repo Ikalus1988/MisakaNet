@@ -19,6 +19,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "On a WSL Ubuntu machine behind Clash proxy on the Windows host, `pip install` from GitHub zipball fails: ``` $…"
+trigger: "pip install HTTPS Timeout from WSL — Prepend HTTPS_PROXY=http://172.19.128.1:7890. On a WSL Ubuntu machine behind Clash proxy on the Windows host, `pip…"
 ---
 
 # pip install HTTPS Timeout from WSL — Prepend HTTPS_PROXY=http://172.19.128.1:7890

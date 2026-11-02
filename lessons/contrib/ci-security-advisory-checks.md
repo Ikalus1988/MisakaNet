@@ -18,6 +18,7 @@ provenance:
   evidence: "post-publication"
 trigger: "when CI workflow runs and warns about unpinned actions, write-all permissions, missing README sections, or many TODO/FIXME items"
 verify: "Run the workflow and see no ::warning lines for action pinning, permissions, README, or TODOs in the job output."
+summary_plain: "No automated checks for CI action pinning, overly broad permissions, README quality, or code style in PRs."
 ---
 
 ## Problem

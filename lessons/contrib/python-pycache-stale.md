@@ -14,6 +14,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "改了 Python 文件后运行，行为还是旧的。函数返回值、错误信息、path 等都没有改变。常见场景包括： - 修改了函数逻辑，但运行结果依然是旧的返回值 - 修改了异常信息字符串，但抛出的还是旧文本 - 通过 `git…"
+trigger: "Python 代码修改不生效 — stale .pyc Cache. 改了 Python 文件后运行，行为还是旧的。函数返回值、错误信息、path 等都没有改变。常见场景包括： - 修改了函数逻辑，但运行结果依然是旧的返回值 -…"
 ---
 
 ## Problem

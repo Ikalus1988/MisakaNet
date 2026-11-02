@@ -15,6 +15,8 @@ provenance:
   contributor: "Unknown"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Two cron invocations of `mm-snipe` overlap and double-hit the same API."
+trigger: "Single-instance flock for shell snipers. Two cron invocations of `mm-snipe` overlap and double-hit the same API."
 ---
 
 # Single-instance flock for shell snipers

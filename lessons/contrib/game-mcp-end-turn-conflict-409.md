@@ -15,6 +15,9 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "When sending an end_turn command via MCP, the game returns a 409 Conflict HTTP status."
+trigger: "Game MCP: End Turn Returns 409 Conflict. When sending an end_turn command via MCP, the game returns a 409 Conflict HTTP status."
+verify: "1. Send end_turn command"
 ---
 
 ---

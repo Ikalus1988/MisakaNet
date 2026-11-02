@@ -15,6 +15,8 @@ provenance:
   contributor: "Unknown"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Superteam returns `403 Insufficient credits` on submit."
+trigger: "Build Superteam content packs before credits refill. Superteam returns `403 Insufficient credits` on submit."
 ---
 
 # Build Superteam content packs before credits refill

@@ -21,6 +21,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "RAG knowledge-base queries take 40-60 seconds on CPU-only infrastructure."
+trigger: "Cross-encoder reranker kills RAG latency on CPU-only machines. RAG knowledge-base queries take 40-60 seconds on CPU-only infrastructure."
 ---
 
 # Cross-encoder reranker kills RAG latency on CPU-only machines

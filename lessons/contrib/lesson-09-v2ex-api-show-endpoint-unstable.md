@@ -20,6 +20,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "When scraping V2EX topic details programmatically, the `/api/topics/show.json` endpoint is unreliable: ``` $ curl -sS…"
+trigger: "V2EX API /api/topics/show.json Unstable — Use r.jina.ai Instead. When scraping V2EX topic details programmatically, the `/api/topics/show.json` endpoint…"
 ---
 
 # V2EX API /api/topics/show.json Unstable — Use r.jina.ai Instead

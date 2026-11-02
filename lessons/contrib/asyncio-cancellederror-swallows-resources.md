@@ -15,6 +15,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Python asyncio task exception handler silently swallows CancelledError when task is cancelled during await, leading to…"
+trigger: "Python asyncio CancelledError Silently Swallows Resources in Long-Running Services. Python asyncio task exception handler silently swallows CancelledError…"
 ---
 
 # Python asyncio CancelledError Silently Swallows Resources

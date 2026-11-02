@@ -12,6 +12,8 @@ status: published
 created: '2026-09-05'
 source: intake-issue-1368
 evidence_level: E2
+summary_plain: "`pip install` fails with `ReadTimeoutError` or `ConnectionResetError` when behind corporate proxy with SSL inspection."
+trigger: "pip install ReadTimeoutError Behind Corporate Proxy: Certificate Validation and Timeout Configuration. `pip install` fails with `ReadTimeoutError` or…"
 ---
 
 # pip install Fails Behind Corporate Proxy

@@ -13,6 +13,9 @@ evidence_level: "E2"
 provenance:
   source: "compliance_audit"
   evidence: "post-publication"
+summary_plain: "In multi-tier enterprise environments where model traffic flows through API gateways, rate-limiting proxies, or…"
+trigger: "Gemini Safety Settings: Multi-Hop Gateway Passthrough and Compliance Preservation. In multi-tier enterprise environments where model traffic flows through API…"
+verify: "Run the test suite ensuring that safety threshold relaxation is rejected, categories are preserved, and compliance response fields are maintained:"
 ---
 
 # Gemini Safety Settings: Multi-Hop Gateway Passthrough and Compliance Preservation

@@ -17,6 +17,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "After four consecutive clean runs of `npx tsc --noEmit`, a production page showed an error instead of content."
+trigger: "TypeScript solution-style tsconfig — tsc --noEmit checks nothing silently. After four consecutive clean runs of `npx tsc --noEmit`, a production page showed an…"
 ---
 
 ## Problem

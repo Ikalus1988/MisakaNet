@@ -17,6 +17,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Running multiple mcporter auth commands in parallel (e.g., cloudflare-bindings/builds/observability three background…"
+trigger: "mcporter OAuth Authorization Must Be Serial: Concurrent Auth Causes client_id/state Corruption. Running multiple mcporter auth commands in parallel (e.g…"
 ---
 
 # mcporter OAuth Authorization Must Be Serial

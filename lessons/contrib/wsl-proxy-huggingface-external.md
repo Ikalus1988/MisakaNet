@@ -14,6 +14,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "WSL 内 Python 脚本无法下载 HuggingFace 模型（sentence-transformers/BGE）， git clone HuggingFace 仓库也失败，只有 Windows 侧能访问外网。"
+trigger: "wsl proxy huggingface external. WSL 内 Python 脚本无法下载 HuggingFace 模型（sentence-transformers/BGE）， git clone HuggingFace…"
 ---
 
 ## Problem

@@ -16,6 +16,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Agents and developers often get stuck contributing to the same repos."
+trigger: "Cross-Repo Contribution Strategy — Finding and Contributing to New Repos. Agents and developers often get stuck contributing to the same repos."
 ---
 
 ## Problem

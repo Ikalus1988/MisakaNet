@@ -21,6 +21,8 @@ provenance:
   contributor: "Unknown"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "`links.json` mixes URL strings and `{local, ready}` objects."
+trigger: "Normalize mixed types in links.json pack manifests. `links.json` mixes URL strings and `{local, ready}` objects."
 ---
 
 # Normalize mixed types in links.json pack manifests

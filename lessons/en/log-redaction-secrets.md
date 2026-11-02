@@ -15,6 +15,8 @@ provenance:
   contributor: "Unknown"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Earn agents log full HTTP headers, cookies, or env dumps."
+trigger: "Redact secrets from agent logs before they leave the machine. Earn agents log full HTTP headers, cookies, or env dumps."
 ---
 
 # Redact secrets from agent logs before they leave the machine

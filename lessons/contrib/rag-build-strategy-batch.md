@@ -38,6 +38,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "During knowledge-base construction (chunks_v3, 34,100 docs), all data was loaded into VRAM/WSL memory at once."
+trigger: "RAG Build Strategy Batch. During knowledge-base construction (chunks_v3, 34,100 docs), all data was loaded into…"
 ---
 
 ## Problem

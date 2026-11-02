@@ -20,6 +20,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Over 180 lessons accumulated in the MisakaNet knowledge base with significant quality and consistency issues: 1."
+trigger: "Lesson Management Standardization — Naming, Content Sanitization, and Automated Submission Pipeline. Over 180 lessons accumulated in the MisakaNet knowledge…"
 ---
 
 # Lesson Management Standardization — Naming, Content Sanitization, and Automated Submission Pipeline

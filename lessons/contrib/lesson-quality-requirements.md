@@ -15,6 +15,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Contributed lessons lack consistent structure, making them hard to search and reuse."
+trigger: "Lesson Quality Requirements: failure-memory protocol Format. Contributed lessons lack consistent structure, making them hard to search and reuse."
 ---
 
 ## Problem

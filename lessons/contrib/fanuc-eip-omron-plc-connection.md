@@ -34,6 +34,9 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "在工业自动化项目中，需要将 **OMRON PLC** 与 **FANUC 机器人** 建立通讯连接。常见通讯方案（PROFINET、DeviceNet）通常需要为 FANUC 机器人额外购买专用通讯硬件卡，增加了系统成本。"
+trigger: "FANUC Robot EtherNet/IP Connection with OMRON PLC. 在工业自动化项目中，需要将 **OMRON PLC** 与 **FANUC 机器人** 建立通讯连接。常见通讯方案（PROFINET、DeviceNet）通常需要为 FANUC…"
+verify: "1. OMRON PLC 编程软件中确认 FANUC EIP 设备状态为**在线**"
 ---
 
 ## FANUC 机器人与 OMRON PLC 的 EtherNet/IP 连接

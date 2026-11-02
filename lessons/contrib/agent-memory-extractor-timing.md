@@ -15,6 +15,7 @@ provenance:
   merged_at: "2026-08-23"
   evidence: "post-publication"
 trigger: "when memory extractor runs on every user message and token usage spikes or extraction quality drops on long chats"
+summary_plain: "Agent memory extractors that run at the wrong time waste tokens or produce low-quality extractions."
 ---
 
 ## Problem

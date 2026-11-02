@@ -37,6 +37,9 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "以 FANUC R-2000IB 机器人为例，分享一个使用 **RSR 启动模式** 的搬运程序示例。程序综合运用了运动指令、寄存器索引、OFFSET 偏移和 SELECT 分支逻辑，是 FANUC TP 编程的典型实践。"
+trigger: "FANUC RSR Program with OFFSET and SELECT Logic Sharing. 以 FANUC R-2000IB 机器人为例，分享一个使用 **RSR 启动模式** 的搬运程序示例。程序综合运用了运动指令、寄存器索引、OFFSET 偏移和 SELECT…"
+verify: "1. **RSR 启动**：通过 PLC 发送 RSR 信号，确认程序 RSR0112 正常启动"
 ---
 
 ## FANUC RSR 程序的 OFFSET 与 SELECT 逻辑

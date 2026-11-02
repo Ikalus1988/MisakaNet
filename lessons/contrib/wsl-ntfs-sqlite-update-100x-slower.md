@@ -18,6 +18,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Running `UPDATE` on a 1.2GB SQLite database via WSL2's NTFS mount (`/mnt/d/`) takes 5+ minutes for a single statement…"
+trigger: "WSL NTFS SQLite UPDATE 100x slower than ext4. Running `UPDATE` on a 1.2GB SQLite database via WSL2's NTFS mount (`/mnt/d/`) takes 5+…"
 ---
 
 # WSL NTFS SQLite UPDATE 100x slower than ext4

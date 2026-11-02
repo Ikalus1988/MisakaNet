@@ -16,6 +16,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "A script that updates existing files in a repository through the REST contents API started failing with `422…"
+trigger: "GitHub contents API edit fails with 422 without the file sha. A script that updates existing files in a repository through the REST contents API…"
 ---
 
 # GitHub contents API edit fails 422 when the file `sha` is missing

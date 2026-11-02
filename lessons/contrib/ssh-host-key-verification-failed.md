@@ -18,6 +18,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "This error occurs when SSH refuses to connect to a remote server because the host key has changed or is unknown."
+trigger: "SSH host key verification failed when connecting to a remote server. This error occurs when SSH refuses to connect to a remote server because the host key…"
 ---
 
 ## Problem

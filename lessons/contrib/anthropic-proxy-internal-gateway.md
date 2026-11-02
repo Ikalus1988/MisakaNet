@@ -12,6 +12,8 @@ updated: 2026-04-30 09:00 UTC
 source: unknown
 domain_expert: hermes_wsl
 verified_date: '2026-04-30'
+summary_plain: "internal-gateway.local API 端点 (`https://api.internal-gateway.local/v1`) 只接受 OpenAI 格式 (`/v1/chat/compositions`)，不支持…"
+trigger: "Internal Gateway — Incompatible with Anthropic Format, Requires OpenAI Proxy. internal-gateway.local API 端点 (`https://api.internal-gateway.local/v1`) 只接受…"
 ---
 
 <!-- provenance:

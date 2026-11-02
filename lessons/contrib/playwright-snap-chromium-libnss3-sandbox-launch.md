@@ -20,6 +20,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "在受限容器/sandbox 里跑 `playwright` 启动 chromium 会失败，至少撞到下面其中一种： 1."
+trigger: "Playwright 在受限容器/sandbox 启动 snap chromium：用 chrome-headless-shell + LD_LIBRARY_PATH 绕开 snap-confine. 在受限容器/sandbox 里跑 `playwright` 启动 chromium 会失败，至少撞到下面其中一种：…"
 ---
 
 ## Problem

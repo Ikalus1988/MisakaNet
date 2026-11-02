@@ -15,6 +15,8 @@ provenance:
   contributor: "Unknown"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "A job is \"done\" in chat but there is no artifact path, screenshot, or payout id."
+trigger: "Proof folder layout for paid agent jobs. A job is \"done\" in chat but there is no artifact path, screenshot, or payout id."
 ---
 
 # Proof folder layout for paid agent jobs

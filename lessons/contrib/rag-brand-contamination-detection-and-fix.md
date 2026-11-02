@@ -15,6 +15,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "一个面向特定品牌的垂直 RAG 知识库（200K+ 向量），在每日巡检中发现部分查询答案混入了竞品品牌技术内容。例如： - 查询「急停回路和安全门联锁在电路设计上有什么不同？」时，答案引用了竞品文档 - 查询「TCP…"
+trigger: "RAG 知识库品牌污染Detection与治理. 一个面向特定品牌的垂直 RAG 知识库（200K+ 向量），在每日巡检中发现部分查询答案混入了竞品品牌技术内容。例如： -…"
 ---
 
 ## Problem

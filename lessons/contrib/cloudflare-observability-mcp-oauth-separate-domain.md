@@ -19,6 +19,8 @@ provenance:
   contributor: "cf-workers-errors-2026-09-10"
   merged_at: "2026-09-10"
   evidence: "post-publication"
+summary_plain: "Authorizing `cloudflare-observability` MCP (`https://observability.mcp.cloudflare.com/mcp`) to diagnose Workers errors…"
+trigger: "Cloudflare Observability MCP OAuth: Separate Authorization Domain + mcporter Client Trap. Authorizing `cloudflare-observability` MCP…"
 ---
 
 # Cloudflare Observability MCP OAuth: Separate Authorization Domain + mcporter Client Trap

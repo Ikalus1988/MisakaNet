@@ -16,6 +16,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "When maintainers provide feedback on PRs, contributors often address surface-level comments while missing the core…"
+trigger: "Maintainer Feedback Iteration — Address Blockers, Not Just Comments. When maintainers provide feedback on PRs, contributors often address surface-level…"
 ---
 
 ## Problem

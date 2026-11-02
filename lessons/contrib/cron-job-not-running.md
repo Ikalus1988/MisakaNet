@@ -16,6 +16,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "`crontab -e` 设置好后，作业从未执行。输出没有、日志没有、进程没有。"
+trigger: "Cron 作业不执行 / 不生效排障. `crontab -e` 设置好后，作业从未执行。输出没有、日志没有、进程没有。"
 ---
 
 ---

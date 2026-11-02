@@ -17,6 +17,9 @@ provenance:
   contributor: "MisakaNet Core"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "A growing agent-knowledge project can accumulate many valid directions at once: reusable experience substrate…"
+trigger: "Search-first roadmap loop for agent knowledge projects. A growing agent-knowledge project can accumulate many valid directions at once: reusable…"
+verify: "This pattern is verified when a fresh maintainer can answer these in under five minutes:"
 ---
 
 ## Problem

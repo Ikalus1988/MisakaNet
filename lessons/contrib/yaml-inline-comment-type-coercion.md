@@ -19,6 +19,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "YAML 内联注释导致类型强制转换失败 — `0.15 # comment` 被读取为字符串而非 float。"
+trigger: "YAML 内联注释导致类型强制转换失败. YAML 内联注释导致类型强制转换失败 — `0.15 # comment` 被读取为字符串而非 float。"
 ---
 
 ## Problem

@@ -17,6 +17,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "After continuous document imports, the RAG knowledge base developed data contamination, version confusion…"
+trigger: "Knowledge Base 4-Sigma Quality Audit Pipeline. After continuous document imports, the RAG knowledge base developed data contamination…"
 ---
 
 ## Problem

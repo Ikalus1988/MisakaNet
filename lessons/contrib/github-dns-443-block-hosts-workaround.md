@@ -19,6 +19,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "`git push` / `git fetch` 持续超时或报 TLS 握手错误： ``` fatal: unable to access 'https://github.com/...': GnuTLS recv error…"
+trigger: "GitHub DNS 污染/443端口不通 — hosts 备用 IP 方案. `git push` / `git fetch` 持续超时或报 TLS 握手错误： ``` fatal: unable to access…"
 ---
 
 ---

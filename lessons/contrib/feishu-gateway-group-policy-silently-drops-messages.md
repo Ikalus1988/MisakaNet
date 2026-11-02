@@ -17,6 +17,7 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+verify: "1. `tail -F ~/.hermes/logs/gateway.log`,在群里发一条 @bot 测试消息。"
 ---
 
 

@@ -15,6 +15,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "MisakaNet's `search_knowledge.py --heal` is the **end-to-end** error triage pipeline that turns a CLI fatal error into…"
+trigger: "MisakaNet --heal Engine Bootstrap Workflow. MisakaNet's `search_knowledge.py --heal` is the **end-to-end** error triage pipeline…"
 ---
 
 # MisakaNet --heal Engine Bootstrap Workflow

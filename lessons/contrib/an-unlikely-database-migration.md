@@ -18,6 +18,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Tailscale's control plane (CONTROL) began using a JSON file-based persistence layer that became a significant…"
+trigger: "An Unlikely Database Migration: From JSON Files to etcd. Tailscale's control plane (CONTROL) began using a JSON file-based persistence layer that…"
 ---
 
 ## Problem

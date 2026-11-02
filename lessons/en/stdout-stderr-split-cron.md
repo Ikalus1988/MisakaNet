@@ -21,6 +21,8 @@ provenance:
   contributor: "Unknown"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Cron mails mix debug prints and real errors; failures hide in noise."
+trigger: "Split stdout/stderr in cron earn jobs. Cron mails mix debug prints and real errors; failures hide in noise."
 ---
 
 # Split stdout/stderr in cron earn jobs

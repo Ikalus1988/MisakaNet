@@ -17,6 +17,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "The original 5-test `test_slugify.py` (merged in commit `6912f87` for issue #95) covered the basics: standard titles…"
+trigger: "slugify path traversal deep coverage. The original 5-test `test_slugify.py` (merged in commit `6912f87` for issue #95) covered…"
 ---
 
 ---

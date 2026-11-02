@@ -17,6 +17,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "飞书 WebSocket 接收消息 API 返回 404 错误。测试端点包括： - `wss://open.feishu.cn/open-apis/bot/v3/ws` -…"
+trigger: "Feishu WebSocket 404 Error - HTTP Webhook Required. 飞书 WebSocket 接收消息 API 返回 404 错误。测试端点包括： - `wss://open.feishu.cn/open-apis/bot/v3/ws` -…"
 ---
 
 ## 问题描述

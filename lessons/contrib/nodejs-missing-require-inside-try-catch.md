@@ -16,6 +16,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Missing `require(\"node:os\")` inside a `try/catch(_){}` block silently kills the entire Windows code path."
+trigger: "Node.js missing require inside try/catch silently kills win32 code path. Missing `require(\"node:os\")` inside a `try/catch(_){}` block silently kills the entire…"
 ---
 
 ## Problem

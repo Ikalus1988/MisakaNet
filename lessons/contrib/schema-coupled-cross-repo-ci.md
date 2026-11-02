@@ -16,6 +16,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "A data repository changed a CSV header (e.g."
+trigger: "Schemas coupled across repos break CI until the counterpart PR merges. A data repository changed a CSV header (e.g."
 ---
 
 # Schemas coupled across repos break CI until the counterpart PR merges

@@ -16,6 +16,9 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "When using MCP to play a turn-based strategy game, selecting a rare relic option causes the game client to freeze or…"
+trigger: "game mcp rare relic freeze. When using MCP to play a turn-based strategy game, selecting a rare relic option causes…"
+verify: "1. Select a rare relic option"
 ---
 
 ---

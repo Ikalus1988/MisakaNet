@@ -15,6 +15,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "在新环境中使用 git 操作时，如果没有正确配置凭证和节点标识，会遇到： 1."
+trigger: "Git Credentials 和 Node ID Setup. 在新环境中使用 git 操作时，如果没有正确配置凭证和节点标识，会遇到： 1."
 ---
 
 ## Git Credentials 和 Node ID 配置

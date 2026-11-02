@@ -16,6 +16,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Submitting an MCP server to a public registry before its smoke tests, tool descriptions, and user-facing install path…"
+trigger: "MCP Registry Readiness Requires QA Before Promotion. Submitting an MCP server to a public registry before its smoke tests, tool descriptions…"
 ---
 
 ## Problem

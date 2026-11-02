@@ -25,6 +25,9 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "FANUC 工业机器人在汽车焊装等场景中需要通过 PROFINET IO 协议与 PLC（如西门子 S7-1200/1500）进行 IO 通信。配置 PROFINET IO 从站需要专用的配置软件，但该软件不是 FANUC…"
+trigger: "FANUC Robot PROFINET IO Configuration with PFN-CT Software. FANUC 工业机器人在汽车焊装等场景中需要通过 PROFINET IO 协议与 PLC（如西门子 S7-1200/1500）进行 IO 通信。配置 PROFINET IO…"
+verify: "1. PFN-CT 软件在 Windows PC 上安装并正常启动"
 ---
 
 ## FANUC Robot PROFINET IO Configuration with PFN-CT Software

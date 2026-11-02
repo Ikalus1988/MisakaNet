@@ -21,6 +21,8 @@ provenance:
   contributor: "Unknown"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Chat history is the only record of what the earn agent did; audits fail."
+trigger: "Append-only JSONL activity ledger for agents. Chat history is the only record of what the earn agent did; audits fail."
 ---
 
 # Append-only JSONL activity ledger for agents

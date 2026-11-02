@@ -1,5 +1,7 @@
 ---
 {"title":"RAG 检索沉底多层机制：同章节措辞差异 + 截断/降权拦截短文本精确答案","domain":"rag","tags":["rag","retrieval","silent-degradation","bm25","overlap-guard","fanuc","anchor"],"status":"published","created":"2026-08-24","language":"zh","source":"intake-issue-1196","evidence_level":"E2"}
+summary_plain: "2026-08-21/22 R-2000iC 换油周期案例：hermes 回答\"数值对（碰巧）但来源错位\"，④ 误判\"KB 蒸馏覆盖缺口\"——实际 **B-82334CM/05 §7.3 数据完整在库**（3年/11520h +…"
+trigger: "RAG 检索沉底多层机制：同章节措辞差异 + 截断/降权拦截短文本精确答案. 2026-08-21/22 R-2000iC 换油周期案例：hermes 回答\"数值对（碰巧）但来源错位\"，④ 误判\"KB 蒸馏覆盖缺口\"——实际 **B-82334CM/05…"
 ---
 
 ## Problem

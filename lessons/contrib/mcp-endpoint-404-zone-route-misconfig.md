@@ -16,6 +16,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "POST https://misakanet.org/mcp returns 404 {\"error\":\"Not found\"}, but GET /mcp returns the worker's HTML info page."
+trigger: "MCP Endpoint 404: Zone Route Points to Worker Without MCP Implementation. POST https://misakanet.org/mcp returns 404 {\"error\":\"Not found\"}, but GET /mcp…"
 ---
 
 # MCP Endpoint 404: Zone Route Points to Worker Without MCP Implementation

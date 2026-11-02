@@ -31,6 +31,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Given a FANUC robot backup directory, extract the payload (load mass, center of gravity, inertia) configuration."
+trigger: "FANUC Backup Payload Extraction — .VR/.SV Binary Parsing and .LS Text Fallback. Given a FANUC robot backup directory, extract the payload (load mass, center…"
 ---
 
 ## Problem

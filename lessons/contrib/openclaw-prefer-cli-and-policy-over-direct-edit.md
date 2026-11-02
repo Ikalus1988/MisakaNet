@@ -15,6 +15,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "直接修改配置文件（临时hack）容易变成默认模型，导致官方路径退化。当多个开发者或自动化流程同时操作同一配置文件时，直接编辑会引发竞态条件、格式损坏以及版本冲突，最终使系统处于不可预期的状态。此外，直接修改绕过了官方工具内置的校验逻辑，错…"
+trigger: "openclaw prefer cli and policy over direct edit. 直接修改配置文件（临时hack）容易变成默认模型，导致官方路径退化。当多个开发者或自动化流程同时操作同一配置文件时，直接编辑会引发竞态条件、格式损坏以及版本冲突，最终使系统处于不…"
 ---
 
 ---

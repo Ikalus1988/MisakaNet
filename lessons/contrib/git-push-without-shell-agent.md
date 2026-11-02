@@ -18,6 +18,9 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "在某些 Agent 平台的安全模式下，shell 工具不可用。需要执行 `git push` 时，不能直接用 shell 命令。"
+trigger: "Git Push 的正确方式 — 在受限 Agent 环境中推送代码. 在某些 Agent 平台的安全模式下，shell 工具不可用。需要执行 `git push` 时，不能直接用 shell 命令。"
+verify: "push 后检查远程："
 ---
 
 ---

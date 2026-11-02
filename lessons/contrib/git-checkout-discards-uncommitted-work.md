@@ -7,6 +7,9 @@ evidence_level: "E2"
 created: "2026-09-13"
 provenance:
   source: "MisakaNet maintainer session, 2026-09-13"
+summary_plain: "While reviewing a pull request, a maintainer fetched the PR into a local branch and staged its files to read the diff…"
+trigger: "Uncommitted work has no undo: `git checkout -- .` and reset --hard during branch juggling. While reviewing a pull request, a maintainer fetched the PR into a…"
+verify: "- Reproduce the two behaviours in a scratch repository with the four-command"
 ---
 
 # Uncommitted work has no undo: `git checkout -- .` and reset --hard during branch juggling

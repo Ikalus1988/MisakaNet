@@ -17,6 +17,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "训练时数据加载器逐字查 phoneme 词典，全部 KeyError。"
+trigger: "gpt sovits name2text arpabet. 训练时数据加载器逐字查 phoneme 词典，全部 KeyError。"
 ---
 
 ---

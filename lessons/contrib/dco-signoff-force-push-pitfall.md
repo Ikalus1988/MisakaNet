@@ -23,6 +23,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Force push 后 DCO (Developer Certificate of Origin) check 持续失败，即使本地 commit 有 `Signed-off-by`。"
+trigger: "DCO Signoff Lost During Force Push. Force push 后 DCO (Developer Certificate of Origin) check 持续失败，即使本地 commit 有…"
 ---
 
 ## Problem

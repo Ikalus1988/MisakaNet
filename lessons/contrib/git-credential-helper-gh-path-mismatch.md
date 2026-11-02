@@ -14,6 +14,8 @@ tags:
 - mismatch
 title: gh credential helper 路径Error导致 git push 静默失败
 verification: metadata-normalized
+summary_plain: "执行 `git push` 时卡住或报错： ``` /home/<user>/.local/bin/gh auth git-credential get: 1: /home/<user>/.local/bin/gh: not found…"
+trigger: "gh credential helper 路径Error导致 git push 静默失败. 执行 `git push` 时卡住或报错： ``` /home/<user>/.local/bin/gh auth git-credential get: 1…"
 ---
 ## Problem
 

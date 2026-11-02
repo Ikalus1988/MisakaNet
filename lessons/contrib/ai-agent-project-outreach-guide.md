@@ -16,6 +16,9 @@ confidence: 0.95
 domain_expert: Misaka10004
 verified_date: '2026-05-11'
 subdomain: outreach
+summary_plain: "为 AI Agent 项目（御坂网络）做了一次系统性宣发引流，沉淀了完整的实操流程和平台调研数据。"
+trigger: "AI Agent Project Outreach Guide. 为 AI Agent 项目（御坂网络）做了一次系统性宣发引流，沉淀了完整的实操流程和平台调研数据。"
+verify: "- [ ] GitHub Issue / Discussion 已发布"
 ---
 
 <!-- provenance:

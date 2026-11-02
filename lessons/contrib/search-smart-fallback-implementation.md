@@ -18,6 +18,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "When search returns 0 results, users hit a dead end."
+trigger: "Search Smart Fallback — Turning Zero Results into Discovery. When search returns 0 results, users hit a dead end."
 ---
 
 ## Verification

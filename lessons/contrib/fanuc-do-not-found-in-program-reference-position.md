@@ -20,6 +20,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "A digital output (e.g., DO[66]) is confirmed active on the robot, but searching all TP programs for \"DO[66]\" or \"DO[\"…"
+trigger: "FANUC DO Not Found in Program — Check Reference Position. A digital output (e.g., DO[66]) is confirmed active on the robot, but searching all TP…"
 ---
 
 ## Problem

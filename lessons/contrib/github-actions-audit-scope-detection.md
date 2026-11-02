@@ -16,6 +16,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Dependabot PRs that only update GitHub Actions workflow files trigger the full Python/JS test suite, causing false…"
+trigger: "GitHub Actions audit: scope detection for bot PRs. Dependabot PRs that only update GitHub Actions workflow files trigger the full Python/JS…"
 ---
 
 ## Problem

@@ -16,6 +16,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Remote HTTP MCP search has no rate limiting, allowing unlimited usage without identification."
+trigger: "Remote search rate limiting: 5 free/day, then registration. Remote HTTP MCP search has no rate limiting, allowing unlimited usage without…"
 ---
 
 ## Problem

@@ -19,6 +19,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "The \"DevOps hero\" approach — trying to master every tool (Docker, K8s, Terraform, Ansible, Jenkins, ArgoCD…"
+trigger: "DevOps Platform Engineering — Golden Paths to Reduce Cognitive Load. The \"DevOps hero\" approach — trying to master every tool (Docker, K8s, Terraform…"
 ---
 
 ## Problem

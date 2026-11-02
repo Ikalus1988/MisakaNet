@@ -18,6 +18,9 @@ evidence_level: "E2"
 provenance:
   source: "code_review"
   evidence: "unit_test"
+summary_plain: "In Go microservices processing HTTP protocol headers, API routing tags, query parameters, or agent tool arguments…"
+trigger: "Go strings.Contains Case Sensitivity Pitfalls and Zero-Allocation Matching. In Go microservices processing HTTP protocol headers, API routing tags, query…"
+verify: "Execute the following Go test program validating ASCII case insensitivity, asymmetric mixed-case headers, Unicode case folding, and rejection of non-matching substrings:"
 ---
 
 # Go strings.Contains Case Sensitivity Pitfalls and Zero-Allocation Matching

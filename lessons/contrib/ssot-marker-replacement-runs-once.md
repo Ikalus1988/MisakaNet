@@ -19,6 +19,9 @@ provenance:
   contributor: "Ikalus1988"
   merged_at: "2026-09-12"
   evidence: "post-publication"
+summary_plain: "A repository-wide \"single source of truth\" helper was added to stop public numbers from drifting."
+trigger: "A marker-replacement sync consumes its own marker: run #2 is a silent no-op. A repository-wide \"single source of truth\" helper was added to stop public…"
+verify: "- **Run it twice with different inputs.** `sync(400)` then `sync(500)` must rewrite the same file again."
 ---
 
 # A marker-replacement sync consumes its own marker: run #2 is a silent no-op

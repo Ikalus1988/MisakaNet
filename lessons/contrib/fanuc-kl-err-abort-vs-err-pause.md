@@ -18,6 +18,9 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "在 FANUC KAREL 程序中处理 IPC（进程间通信）错误时，若未正确区分 `ERR_ABORT` 和 `ERR_PAUSE`，会导致所有运行中的任务被强制中止，进而造成程序号（Program…"
+trigger: "FANUC KL: ERR_ABORT vs ERR_PAUSE 行为差异. 在 FANUC KAREL 程序中处理 IPC（进程间通信）错误时，若未正确区分 `ERR_ABORT` 和…"
+verify: "**步骤 1：模拟 IPC 超时场景**"
 ---
 
 ## FANUC KL: ERR_ABORT vs ERR_PAUSE 行为差异

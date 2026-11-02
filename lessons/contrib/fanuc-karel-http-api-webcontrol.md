@@ -27,6 +27,9 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "需要通过HTTP接口远程控制FANUC机器人： - 发送运动指令(绝对/相对，关节/笛卡尔) - 实时监控机器人状态(关节角、笛卡尔位置、限位、错误) - 设置运动限位保护 - 管理程序执行(启动、停止、重置)…"
+trigger: "FANUC KAREL HTTP API — WebControl Robot Motion and Monitoring. 需要通过HTTP接口远程控制FANUC机器人： - 发送运动指令(绝对/相对，关节/笛卡尔) - 实时监控机器人状态(关节角、笛卡尔位置、限位、错误) - 设置运动限位保护 -…"
+verify: "1. **运动控制**：发送webcontrol请求，验证返回204"
 ---
 
 ### Problem描述

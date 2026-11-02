@@ -14,6 +14,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "写入文件或构建向量库时报 `No space left on device` / `ENOSPC`，hermes-hub 进程崩溃。"
+trigger: "磁盘空间不足 / chroma_db_v4 CacheCleanup. 写入文件或构建向量库时报 `No space left on device` / `ENOSPC`，hermes-hub 进程崩溃。"
 ---
 
 ## Problem

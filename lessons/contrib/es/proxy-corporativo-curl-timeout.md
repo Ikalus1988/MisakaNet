@@ -13,6 +13,8 @@ created: '2026-09-05'
 source: translation-corporate-proxy-curl-timeout
 evidence_level: E2
 lang: es
+summary_plain: "Las peticiones `curl` a APIs externas fallan con timeout detrás de un proxy corporativo con inspección SSL habilitada."
+trigger: "Timeout de curl detrás de proxy corporativo: inspección SSL rompe validación de certificados. Las peticiones `curl` a APIs externas fallan con timeout detrás…"
 ---
 
 # Timeout de curl detrás de proxy corporativo

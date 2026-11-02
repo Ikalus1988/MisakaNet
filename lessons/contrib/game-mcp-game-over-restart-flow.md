@@ -16,6 +16,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "After reaching a GAME OVER state, restarting the game via MCP requires a specific sequence of commands."
+trigger: "Game MCP: GAME OVER Restart Flow. After reaching a GAME OVER state, restarting the game via MCP requires a specific…"
 ---
 
 ---

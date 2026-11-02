@@ -16,6 +16,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "`source venv/bin/activate` 后 `which python` 还是系统 Python，或 `deactivate` 报错。"
+trigger: "Python venv 激活失败或路径不匹配. `source venv/bin/activate` 后 `which python` 还是系统 Python，或 `deactivate` 报错。"
 ---
 
 ---

@@ -15,6 +15,8 @@ provenance:
   contributor: "Unknown"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Empty boards cause noisy errors and pager spam from cron."
+trigger: "Idle-exit cleanly when bounty boards are empty. Empty boards cause noisy errors and pager spam from cron."
 ---
 
 # Idle-exit cleanly when bounty boards are empty

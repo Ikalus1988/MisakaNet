@@ -18,6 +18,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Al hacer push de un commit a un repositorio que requiere DCO (Developer Certificate of Origin), el mensaje de error…"
+trigger: "Error de DCO sign-off en commits de Git en Windows. Al hacer push de un commit a un repositorio que requiere DCO (Developer Certificate of…"
 ---
 
 ## Problem

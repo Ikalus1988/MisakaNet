@@ -18,6 +18,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "ETL pipeline derives identifiers from source filenames (e.g., `robot_name` from Excel sheet names)."
+trigger: "Data Quality Fix: Always Keep Three Layers (DB + ETL + Query). ETL pipeline derives identifiers from source filenames (e.g., `robot_name` from Excel…"
 ---
 
 # Data Quality Fix: Always Keep Three Layers (DB + ETL + Query)

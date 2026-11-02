@@ -15,6 +15,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "A frontend project installed fine on the developer's laptop but failed in CI with a postinstall native-build error…"
+trigger: "npm install failing on one host but not another (native build arch mismatch). A frontend project installed fine on the developer's laptop but failed in CI…"
 ---
 
 # npm install failing on one host but not another (native build arch mismatch)

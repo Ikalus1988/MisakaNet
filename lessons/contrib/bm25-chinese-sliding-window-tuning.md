@@ -15,6 +15,8 @@ source: mcp-intake-1112
 domain_expert: ''
 verified_date: ''
 evidence_level: E2
+summary_plain: "中文 BM25 搜索长查询召回率低，标准 BM25 对中文分词后的短 token 敏感度不足。"
+trigger: "中文 BM25 搜索：滑动窗口子串加分与唯一候选加分. 中文 BM25 搜索长查询召回率低，标准 BM25 对中文分词后的短 token 敏感度不足。"
 ---
 
 <!-- provenance:

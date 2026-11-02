@@ -24,6 +24,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Агент работает с marketplace на Base (Taskmarket и похожие x402-сервисы)."
+trigger: "USDC: base units vs human amounts — агент платит 1000x или думает, что 1000 USDC это $1000. Агент работает с marketplace на Base (Taskmarket и похожие…"
 ---
 
 # USDC: base units vs human amounts — агент платит 1000x или думает, что 1000 USDC это $1000

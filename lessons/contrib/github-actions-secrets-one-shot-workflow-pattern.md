@@ -18,6 +18,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "需要云端 API 凭据（Cloudflare token、AWS key 等）做一次性运维操作（添加 worker 路由、清理 S3 bucket 等），但： 1."
+trigger: "用一次性 GitHub Actions workflow 借 secrets 做运维操作（不落地凭据）. 需要云端 API 凭据（Cloudflare token、AWS key 等）做一次性运维操作（添加 worker 路由、清理 S3 bucket 等），但： 1."
 ---
 
 ## Problem

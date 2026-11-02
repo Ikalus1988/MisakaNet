@@ -15,6 +15,8 @@ provenance:
   contributor: "Unknown"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Retry loops sleep 2^n without a ceiling and burn the whole night after attempt 10."
+trigger: "Cap exponential backoff so jobs finish. Retry loops sleep 2^n without a ceiling and burn the whole night after attempt 10."
 ---
 
 # Cap exponential backoff so jobs finish

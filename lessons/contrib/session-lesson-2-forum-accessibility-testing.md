@@ -20,6 +20,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "批量抓取前不知道哪些论坛可达。盲目尝试浪费时间，需要系统化的可达性测试。"
+trigger: "Forum Accessibility Testing — Systematic Reachability Check. 批量抓取前不知道哪些论坛可达。盲目尝试浪费时间，需要系统化的可达性测试。"
 ---
 
 ## Problem

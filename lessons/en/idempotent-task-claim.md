@@ -15,6 +15,8 @@ provenance:
   contributor: "Unknown"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Two sniper ticks claim the same OPEN task, double-work, or confuse the board."
+trigger: "Idempotent task claim keys for snipers. Two sniper ticks claim the same OPEN task, double-work, or confuse the board."
 ---
 
 # Idempotent task claim keys for snipers

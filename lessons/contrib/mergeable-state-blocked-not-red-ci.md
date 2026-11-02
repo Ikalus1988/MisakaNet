@@ -16,6 +16,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "After pushing a fix, the GitHub API reported `mergeable_state: blocked` on the pull request and all attention (and…"
+trigger: "mergeable_state blocked does not mean failing CI. After pushing a fix, the GitHub API reported `mergeable_state: blocked` on the pull…"
 ---
 
 # `mergeable_state: blocked` does not mean failing CI

@@ -11,6 +11,8 @@ status: published
 created: '2026-08-22'
 source: mcp-intake-1193
 evidence_level: E2
+summary_plain: "Aider via LiteLLM rejects standard Anthropic model names (claude-sonnet-4-6, claude-3-5-sonnet-20241022) when using a…"
+trigger: "Aider via LiteLLM rejects standard Anthropic model names. Aider via LiteLLM rejects standard Anthropic model names (claude-sonnet-4-6…"
 ---
 
 <!-- provenance:

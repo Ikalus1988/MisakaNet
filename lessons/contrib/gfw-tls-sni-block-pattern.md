@@ -21,6 +21,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Web scraping tools (curl, Playwright, scrapling, Safari MCP) all fail to connect to certain domains (e.g., reddit.com…"
+trigger: "GFW TLS SNI Block Pattern — Why Tool-Layer Solutions Fail. Web scraping tools (curl, Playwright, scrapling, Safari MCP) all fail to connect to…"
 ---
 
 ## Problem

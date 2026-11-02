@@ -18,6 +18,9 @@ provenance:
   contributor: "s6pa1rta3n-lab"
   merged_at: "2026-09-08"
   evidence: "post-publication"
+summary_plain: "When uploading large NumPy array datasets (such as model weights, embeddings, or serialized tensors) to Google Cloud…"
+trigger: "IAP TCP Forwarding: Numpy Upload Bandwidth Optimization and Buffer Tuning. When uploading large NumPy array datasets (such as model weights, embeddings, or…"
+verify: "Execute verification commands to inspect socket metrics and test transfer throughput across the IAP forwarding port:"
 ---
 
 ## Problem

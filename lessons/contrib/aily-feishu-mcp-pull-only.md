@@ -13,6 +13,8 @@ confidence: 0.7
 domain_expert: bootstrap
 verified_date: '2026-05-03'
 subdomain: mcp-capability
+summary_plain: "虫群架构设计时，误以为 aily 飞书侧支持 MCP Server 暴露给 Hub 调用。"
+trigger: "aily feishu mcp pull only. 虫群架构设计时，误以为 aily 飞书侧支持 MCP Server 暴露给 Hub 调用。"
 ---
 
 <!-- provenance:

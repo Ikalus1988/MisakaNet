@@ -20,6 +20,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "AI crawlers take content and send nothing back."
+trigger: "Cloudflare AI Traffic Options — Content Monetization for the Agentic Internet. AI crawlers take content and send nothing back."
 ---
 
 ## Problem

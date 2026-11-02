@@ -18,6 +18,9 @@ evidence_level: "E2"
 provenance:
   source: "agent_runtime"
   evidence: "unit_test"
+summary_plain: "Reasoning models such as DeepSeek-R1, Qwen-QwQ, and OpenAI-compatible reasoning variants emit internal…"
+trigger: "Streaming Thought Tags Stripping: State-Machine Buffer for Reasoning Models. Reasoning models such as DeepSeek-R1, Qwen-QwQ, and OpenAI-compatible reasoning…"
+verify: "Execute the following unit test script verifying chunk split boundaries, partial tag prefixes, non-tag angle brackets, and stream flush behavior:"
 ---
 
 # Streaming Thought Tags Stripping: State-Machine Buffer for Reasoning Models

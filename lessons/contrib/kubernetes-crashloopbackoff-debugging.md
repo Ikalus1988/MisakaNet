@@ -17,6 +17,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "CrashLoopBackOff is a Kubernetes pod status that indicates a container is crashing and being automatically restarted…"
+trigger: "Tips for Debugging Kubernetes CrashLoopBackOff in a Container. CrashLoopBackOff is a Kubernetes pod status that indicates a container is crashing and…"
 ---
 
 ## Problem

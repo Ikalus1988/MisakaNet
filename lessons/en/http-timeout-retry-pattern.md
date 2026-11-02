@@ -15,6 +15,8 @@ provenance:
   contributor: "Unknown"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Overnight earn agents hang forever on a dead HTTP peer, or fail once on a blip and abandon a good job."
+trigger: "HTTP client timeout + retry pattern for agents. Overnight earn agents hang forever on a dead HTTP peer, or fail once on a blip and…"
 ---
 
 # HTTP client timeout + retry pattern for agents

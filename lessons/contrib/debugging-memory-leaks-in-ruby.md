@@ -18,6 +18,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Ruby applications can experience memory leaks ranging from tiny constant memory growth to sudden spurts during job…"
+trigger: "Debugging memory leaks in Ruby. Ruby applications can experience memory leaks ranging from tiny constant memory growth…"
 ---
 
 ## Problem

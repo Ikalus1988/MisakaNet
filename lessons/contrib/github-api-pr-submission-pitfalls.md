@@ -21,6 +21,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "网络慢无法 clone 大仓时，可用 GitHub Contents API 直接创建分支、修改文件、提 PR。但有 4 个常见坑。"
+trigger: "GitHub API PR Submission Pitfalls. 网络慢无法 clone 大仓时，可用 GitHub Contents API 直接创建分支、修改文件、提 PR。但有 4 个常见坑。"
 ---
 
 ## Problem

@@ -15,6 +15,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Hermes Agent 频繁崩溃，用户反映\"卡死\"。实际调查发现是 **WSL PTY 断连**导致 CLI 崩溃，而非 Gateway 本身问题。"
+trigger: "Gateway 进程挂死未崩溃 — watchdog 自动Recovery. Hermes Agent 频繁崩溃，用户反映\"卡死\"。实际调查发现是 **WSL PTY 断连**导致 CLI 崩溃，而非 Gateway 本身问题。"
 ---
 
 ## Problem

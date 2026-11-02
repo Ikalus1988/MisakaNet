@@ -21,6 +21,9 @@ provenance:
   contributor: "Ikalus1988"
   merged_at: "2026-09-12"
   evidence: "post-publication"
+summary_plain: "An MCP tool served `misakanet_search` over a corpus of 384 failure lessons."
+trigger: "Two truncations silently became the soul of an agent-facing search: a default page size and a 400-char projection. An MCP tool served `misakanet_search` over…"
+verify: "- `GET /api/search-index` went from `docCount 100` to `docCount 384, textMode: rich` after the next"
 ---
 
 # Two truncations silently became the soul of an agent-facing search: a default page size and a 400-char projection

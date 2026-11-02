@@ -24,6 +24,9 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "FANUC KAREL 程序没有原生的单元测试支持。开发者通常需要将程序部署到控制器或 ROBOGUIDE 上运行才能验证逻辑，调试效率低且风险高。需要一种在部署前就能系统性验证 KAREL 程序逻辑的方法。"
+trigger: "Unit Testing FANUC KAREL Programs with KUnit Framework. FANUC KAREL 程序没有原生的单元测试支持。开发者通常需要将程序部署到控制器或 ROBOGUIDE…"
+verify: "1. `kunit.pc` 和 `strings.pc` 已正确部署到控制器"
 ---
 
 ## Unit Testing FANUC KAREL Programs with KUnit Framework

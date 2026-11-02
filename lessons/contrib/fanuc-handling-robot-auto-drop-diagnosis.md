@@ -32,6 +32,9 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "FANUC 搬运机器人负责搬运车顶零件。零件到位后，销式快换耦合器（pin-type quick-change…"
+trigger: "FANUC Handling Robot Unexpected Auto Mode Dropout Diagnosis. FANUC 搬运机器人负责搬运车顶零件。零件到位后，销式快换耦合器（pin-type quick-change…"
+verify: "1. 清洁/更换触点后连续运行 **3 天以上**无掉自动现象"
 ---
 
 ## FANUC 搬运机器人掉自动模式诊断

@@ -21,6 +21,8 @@ provenance:
   contributor: "Unknown"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "You patch `earn_all.py` but the old process keeps running with the bug."
+trigger: "Restart long-lived earn loops after code fixes. You patch `earn_all.py` but the old process keeps running with the bug."
 ---
 
 # Restart long-lived earn loops after code fixes

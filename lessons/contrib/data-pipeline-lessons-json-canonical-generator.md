@@ -18,6 +18,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "改 `data/lessons.json` 时如果误用 `misakanet-index.py` 重新生成： - 新格式带 `evidence_level/trust_score` 字段，但**丢失**…"
+trigger: "数据管道 lessons.json 必须用规范生成器 update_lessons_json.py. 改 `data/lessons.json` 时如果误用 `misakanet-index.py` 重新生成： - 新格式带…"
 ---
 
 ## Problem
