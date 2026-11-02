@@ -1178,6 +1178,129 @@ test('mcode: --list-writes --mcp-only does not ask for the rules block', () => {
   }
 });
 
+// ── mcode: the data directory is resolved, never assumed (issue #3838) ────────────────────────
+//
+// Three layouts are real: `~/.minimax` (default), `~/.mavis` (an alias mcode's own runtime reads)
+// and `$MINIMAX_DATA_DIR` (explicit override). The installer used to hardcode `~/.minimax` on every
+// write, so on the other two it reported "写入插件清单" at a path the machine's mcode never reads —
+// success reported, nothing installed.
+
+test('mcode: MINIMAX_DATA_DIR decides where the plugin lands — and the report names that path', () => {
+  // No `--home` on purpose: `MINIMAX_DATA_DIR` is mcode's own override and may point anywhere —
+  // that branch only applies when the install addresses the real home, so this run fakes the real
+  // home by exporting HOME/USERPROFILE (os.homedir() reads them) instead of sandboxing with
+  // `--home`. Both directories are test-owned, so nothing on the real machine is touched.
+  const home = mkdtempSync(join(tmpdir(), 'mn-mcode-home-'));
+  const dataDir = mkdtempSync(join(tmpdir(), 'mn-mcode-data-'));
+  try {
+    // The decoy: the layout the old installer would have written to, which must stay untouched.
+    mkdirSync(join(home, '.minimax'), { recursive: true });
+    const env = childEnv({ HOME: home, USERPROFILE: home, MINIMAX_DATA_DIR: dataDir });
+    delete env.MISAKANET_ENDPOINT;
+    const result = spawnSync(process.execPath, [CLI, '--no-register', '--only', 'mcode'],
+      { encoding: 'utf8', env });
+    assert.equal(result.status, 0, result.stdout + result.stderr);
+
+    const plugin = join(dataDir, 'plugins', 'misakanet', '.claude-plugin', 'plugin.json');
+    assert.ok(existsSync(plugin), `the plugin must land in MINIMAX_DATA_DIR:\n${result.stdout}`);
+    assert.match(result.stdout, /写入插件清单/, result.stdout);
+    assert.ok(result.stdout.includes(plugin),
+      `the report must name the resolved path so the user can check it:\n${result.stdout}`);
+    assert.ok(!existsSync(join(home, '.minimax', 'plugins')),
+      'the default layout must stay untouched when MINIMAX_DATA_DIR points elsewhere');
+    assert.ok(existsSync(join(dataDir, 'AGENTS.md')),
+      'the rules block belongs to the same resolved data dir');
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+    rmSync(dataDir, { recursive: true, force: true });
+  }
+});
+
+test('mcode: a --home sandbox ignores a MINIMAX_DATA_DIR that points outside it', () => {
+  // The measured failure shape this pins is the dsh one (DSH_HOME, 2026-10-30): a run with
+  // `--home <sandbox>` inherited a shell-exported config-dir var and wrote the user's real files
+  // from inside the test suite.
+  const home = makeMcodeHome();
+  const outside = mkdtempSync(join(tmpdir(), 'mn-mcode-outside-'));
+  try {
+    const env = childEnv({ MINIMAX_DATA_DIR: outside });
+    delete env.MISAKANET_ENDPOINT;
+    const result = spawnSync(process.execPath,
+      [CLI, '--home', home, '--no-register', '--only', 'mcode'], { encoding: 'utf8', env });
+    assert.equal(result.status, 0, result.stdout + result.stderr);
+    assert.ok(existsSync(join(home, MCODE_PLUGIN)), 'the sandbox keeps its own writes');
+    assert.ok(!existsSync(join(outside, 'plugins')),
+      `a sandbox run must not be redirected out of --home by an exported var:\n${result.stdout}`);
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+    rmSync(outside, { recursive: true, force: true });
+  }
+});
+
+test('mcode: a ~/.mavis layout is detected and installed into (issue #3838 case 1)', () => {
+  const home = mkdtempSync(join(tmpdir(), 'mn-mcode-mavis-'));
+  try {
+    // The machine from the issue: mcode runs from `~/.mavis`, and `~/.minimax` does not exist —
+    // the installer answered "没有检测到任何受支持的助手" and installed nothing.
+    mkdirSync(join(home, '.mavis'), { recursive: true });
+    const result = runOffline(home, '--only', 'mcode');
+    assert.equal(result.status, 0, result.stdout + result.stderr);
+    assert.doesNotMatch(result.stdout, /没有检测到任何受支持的助手/, result.stdout);
+
+    const plugin = join(home, '.mavis', 'plugins', 'misakanet', '.claude-plugin', 'plugin.json');
+    assert.ok(existsSync(plugin), `the plugin must land in the .mavis alias:\n${result.stdout}`);
+    assert.ok(result.stdout.includes(plugin),
+      `the report must name the resolved path:\n${result.stdout}`);
+    assert.ok(!existsSync(join(home, '.minimax')),
+      'nothing may be written to the layout this machine is not using');
+    const rules = readFileSync(join(home, '.mavis', 'AGENTS.md'), 'utf8');
+    assert.match(rules, /<!-- misakanet:start -->/, 'the rules block must be marked for uninstall');
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test('mcode: MINIMAX_DATA_DIR alone is evidence — no ~/.minimax anywhere and still detected', () => {
+  // Issue #3838 case 2, the worst shape of it: the old installer reported success writing to
+  // `~/.minimax` while this machine's mcode read `$MINIMAX_DATA_DIR` — detection and write must
+  // both see the resolved directory.
+  const home = mkdtempSync(join(tmpdir(), 'mn-mcode-envonly-'));
+  const dataDir = join(home, 'mcode-data');
+  try {
+    mkdirSync(dataDir, { recursive: true }); // mcode created its data dir; no layout dir exists
+    const env = childEnv({ MINIMAX_DATA_DIR: dataDir });
+    delete env.MISAKANET_ENDPOINT;
+    const result = spawnSync(process.execPath,
+      [CLI, '--home', home, '--no-register', '--only', 'mcode'], { encoding: 'utf8', env });
+    assert.equal(result.status, 0, result.stdout + result.stderr);
+    assert.doesNotMatch(result.stdout, /没有检测到任何受支持的助手/, result.stdout);
+    assert.ok(existsSync(join(dataDir, 'plugins', 'misakanet', '.claude-plugin', 'plugin.json')),
+      `the plugin must land in the env-named data dir:\n${result.stdout}`);
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test('mcode: --uninstall locates the plugin through the same resolution (issue #3838 AC)', () => {
+  const home = mkdtempSync(join(tmpdir(), 'mn-mcode-uninst-'));
+  try {
+    mkdirSync(join(home, '.mavis'), { recursive: true });
+    assert.equal(runOffline(home, '--only', 'mcode').status, 0);
+    const pluginDir = join(home, '.mavis', 'plugins', 'misakanet');
+    assert.ok(existsSync(pluginDir), 'the install must have placed the plugin under .mavis');
+
+    const result = runOffline(home, '--uninstall');
+    assert.equal(result.status, 0, result.stdout + result.stderr);
+    assert.ok(!existsSync(pluginDir),
+      `--uninstall must find the plugin through the resolver, not ~.minimax:\n${result.stdout}`);
+    assert.ok(!existsSync(join(home, '.mavis', 'AGENTS.md')) || !/misakanet:start/.test(
+      readFileSync(join(home, '.mavis', 'AGENTS.md'), 'utf8')),
+    'the rules block must be gone from the resolved rules file');
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
 // ── dsh: the rules half is a file target, the plugin half is printed (2026-10-30) ─────────────
 //
 // dsh is the one target whose *tools* a file cannot install: they ship in the `misakanet` plugin
