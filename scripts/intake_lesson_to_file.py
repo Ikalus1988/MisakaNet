@@ -51,6 +51,8 @@ PUBLISHED = REPO / "data" / "lessons.json"
 DOMAINS = REPO / "data" / "domains.json"
 
 SLUG_MAX = 60
+#: Bytes, not characters: the corpus is checked out on Windows filesystems too (see `slugify`).
+SLUG_MAX_BYTES = 96
 FIELDS_MAX = {"summary_plain": 120, "trigger": 160, "verify": 200, "title": 120}
 TAGS_MAX = 10
 
@@ -79,6 +81,10 @@ DOMAIN_MAP = {
 def clean(text: str) -> str:
     text = text.replace("<br/>", " ").replace("<hr/>", " ")
     text = re.sub(r"<details.*?</details>", " ", text, flags=re.S)  # the Opire banner
+    # The footer `submit_intake` appends after its sections. Without this it lands inside whichever
+    # section is last — measured 2026-11-02, it turned up at the end of `Verification` and inside the
+    # `verify:` frontmatter field, so a reader saw "_Submitted via remote MCP_" as part of the fix.
+    text = re.sub(r"\n---\s*\n_Submitted via remote MCP[^\n]*\n?", "\n", text)
     return re.sub(r"\n{3,}", "\n\n", text).strip()
 
 
@@ -165,6 +171,15 @@ def slugify(title: str, number: int) -> str:
     if len(slug) > SLUG_MAX:
         cut = slug[:SLUG_MAX]
         slug = cut[: cut.rfind("-")] if "-" in cut else cut
+    # ...and in **bytes**, because the limit that actually bites is the path, not the characters:
+    # this checkout lives under `/mnt/c/...` on a Windows filesystem, where the whole path stops at
+    # 260 characters. A 60-character Chinese slug is 180 bytes, and `os.rename` failed with
+    # "File name too long" on 2026-11-02 for exactly the titles this queue produces. 96 bytes keeps
+    # ~30 CJK characters, which is still a name a person can read.
+    encoded = slug.encode("utf-8")
+    if len(encoded) > SLUG_MAX_BYTES:
+        trimmed = encoded[:SLUG_MAX_BYTES].decode("utf-8", "ignore")
+        slug = trimmed[: trimmed.rfind("-")] if "-" in trimmed else trimmed
     return slug.rstrip("-")
 
 
@@ -196,6 +211,42 @@ def one_line(text: str, limit: int) -> str:
 
 # ── one issue → one lesson ──────────────────────────────────────────────────
 
+CAUSE_MARKERS = ("根因", "原因是", "原因：", "原因:", "root cause", "Root Cause", "起因")
+FIX_MARKERS = ("修复", "改为", "换用", "解决", "绕过", "改法", "对策", "fix:", "Fix:")
+
+
+def split_intake_problem(text: str) -> tuple[str, str, str] | None:
+    """Split a `missing_lesson` Problem paragraph into (problem, cause, fix), verbatim.
+
+    The intake form is documented as accepting "a partial failure description", and it writes one
+    free-text paragraph under `## Problem` with no `## Root Cause` section. That is why **none** of
+    the 164 intakes open on 2026-11-02 could be converted: `convert()` needs a cause, and a cause
+    section was never asked for.
+
+    This does not invent one. It splits the paragraph on sentence boundaries and assigns whole
+    sentences by the markers the submitter wrote: the sentences before a 根因 / 原因是 / root cause
+    sentence are the problem; that sentence is the cause; sentences carrying 修复 / 改为 / 绕过 are
+    the fix. If any of the three is missing, it returns `None` and the intake stays in the queue —
+    which is the honest outcome, because a lesson without a cause cannot be acted on.
+    """
+    sentences = [s.strip() for s in re.split(r"(?<=[。；;！!？?])\s*", text) if s.strip()]
+    if len(sentences) < 2:
+        return None
+    cause_at = next((i for i, s in enumerate(sentences) if any(m in s for m in CAUSE_MARKERS)), None)
+    if cause_at is None or cause_at == 0:
+        return None
+    problem = " ".join(sentences[:cause_at])
+    cause = sentences[cause_at]
+    rest = sentences[cause_at + 1:]
+    fix = " ".join(s for s in rest if any(m in s for m in FIX_MARKERS))
+    if not fix:
+        rest_all = " ".join(rest).strip()
+        fix = rest_all if rest_all else ""
+    if not (problem and cause and fix):
+        return None
+    return problem, cause, fix
+
+
 def convert(issue: dict, canonical: set[str],
             override: dict | None = None) -> tuple[dict | None, list[str]]:
     """A lesson record plus the normalisations applied, or `None` and the reasons it was skipped.
@@ -220,11 +271,26 @@ def convert(issue: dict, canonical: set[str],
         notes.append(f"domain {raw_domain} → {domain}")
 
     title = str(override.get("title") or field(body, "Title")
-                or str(issue.get("title", "")).replace("[Lesson]", "").strip())
+                or re.sub(r"^\[(?:Lesson|Intake|Question)\]\s*", "",
+                          str(issue.get("title", ""))).strip())
     if override.get("title"):
         notes.append("title replaced by a maintainer override")
     title = shorten(title, FIELDS_MAX["title"])
-    problem, cause, fix = (section(body, name) for name in ("Problem", "Root Cause", "Fix"))
+    problem = section(body, "Problem")
+    cause = section(body, "Root Cause")
+    split = None
+    if not cause:
+        split = split_intake_problem(problem)
+        if split:
+            problem, cause, split_fix = split
+            notes.append("sections split from the intake's Problem paragraph, sentences verbatim")
+    # `## Fix (if known)` is what `misakanet_submit_intake` writes for a `missing_lesson` report, and
+    # this reader only knew `## Fix` — so 111 of the 164 intakes open on 2026-11-02 carried a fix the
+    # converter could not see. An alias, not a guess: it is the same section under the heading the
+    # form actually emits.
+    fix = (section(body, "Fix") or section(body, "Fix (if known)")
+           or section(body, "修复") or section(body, "Solution")
+           or (split[2] if split else ""))
     verify = section(body, "Verification") or section(body, "Verify") or section(body, "验证")
     if not (problem and cause and fix):
         return None, ["missing Problem/Root Cause/Fix"]

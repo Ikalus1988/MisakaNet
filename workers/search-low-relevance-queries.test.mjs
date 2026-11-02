@@ -79,12 +79,16 @@ const env = createEnv();
 // the floor is now *right* to admit it for them, and asserting `no_match` would have been asserting a wish. A
 // boundary query has to be one the corpus has never seen; the historical pair lives in this comment for the
 // history, not in the assertions (measured 2026-10-01: two of the six failed for exactly this reason).
+//
+// **A third case left on 2026-11-02**: `0x0a`. It was a hex byte nobody had written about; now two lessons
+// do — one about a C++ child process framing binary payloads over stdout (`[1B kind][4B len]…`), one about a
+// verifier that mis-called a byte range. The corpus gained the term, so the query is no longer a boundary
+// query, and asserting `no_match` for it would be asserting that the corpus stay small.
 const NOT_RELEVANT = [
   ['zzzq nonexistent quantum flux capacitor banana 998877', 'no results on 2026-10-01'],
   ['zzqx flibber wumbo 9871', 'no results on 2026-10-01'],
   ['asdfqwer zzzz nonsense xyzzy', 'no results on 2026-10-01 (keyboard mashing)'],
   ['how to bake sourdough bread', 'no results on 2026-10-01'],
-  ['0x0a', 'no results on 2026-10-01 (a hex byte, not a question)'],
   ['zzzz-no-such-thing-xyz', 'no results on 2026-10-01'],
 ];
 

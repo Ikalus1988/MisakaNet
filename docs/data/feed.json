@@ -1,9 +1,16 @@
 {
-  "generated_at": "2026-11-02T06:26:32.254089+00:00",
+  "generated_at": "2026-11-02T07:23:27.849788+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4329",
+      "timestamp": "2026-11-02T06:41:53Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "chore(data): sync lessons.json + refresh feed",
@@ -33,13 +40,6 @@
       "source": "github"
     },
     {
-      "type": "merged_pr",
-      "title": "chore(deps): bump the pip group with 2 updates",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4316",
-      "timestamp": "2026-11-02T03:06:16Z",
-      "source": "github"
-    },
-    {
       "type": "lesson",
       "title": "A .cmd with non-ASCII comments emits a phantom \"is not recognized\" command: chcp inside the file is already too late",
       "url": "lessons/contrib/a-cmd-with-non-ascii-comments-emits-a-phantom-is-not.md",
@@ -49,32 +49,32 @@
     },
     {
       "type": "lesson",
+      "title": "Cloudflare Workers 上实现「成本闸门/限流计数器」时，用 isolate 级内存计数 + 攒批落库（攒够 N 条才写 D1）会导致计数**永远",
+      "url": "lessons/contrib/cloudflare-workers-上实现成本闸门限流计数器时用-isolate-级内存计数.md",
+      "timestamp": "2026-11-02",
+      "domain": "mcp",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "Coopanion 的 GPT-SoVITS 语音扩展（@wocwang/cortico-world-gpt-sovits-for-coopanion）推理服务",
+      "url": "lessons/contrib/coopanion-的-gpt-sovits-语音扩展wocwangcortico-world-gpt-sovits.md",
+      "timestamp": "2026-11-02",
+      "domain": "windows",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "Coopanion（Cortico 桌宠）装扩展后启动即退出（exit 1），core.log 报 RangeError: Maximum call stack",
+      "url": "lessons/contrib/coopanioncortico-桌宠装扩展后启动即退出exit-1corelog-报-rangeerror.md",
+      "timestamp": "2026-11-02",
+      "domain": "windows",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
       "title": "cordis patch 的 !!js 表达式里 Windows 反斜杠会被 JS 吃掉",
       "url": "lessons/contrib/cordis-patch-的-js-表达式里-windows-反斜杠会被-js-吃掉-4248.md",
-      "timestamp": "2026-11-02",
-      "domain": "devops",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "DSH Web GUI 每次启动端口都变，写死端口的脚本下次就连不上",
-      "url": "lessons/contrib/dsh-web-gui-每次启动端口都变写死端口的脚本下次就连不上.md",
-      "timestamp": "2026-11-02",
-      "domain": "devops",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "DSH 插件 peerDependencies 不满足时被静默跳过：装上了但完全不加载",
-      "url": "lessons/contrib/dsh-插件-peerdependencies-不满足时被静默跳过装上了但完全不加载.md",
-      "timestamp": "2026-11-02",
-      "domain": "devops",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "DSH 里两个 bundle patch 的 id 撞车会互相覆盖，且 pnpm 重装抹掉本地修复",
-      "url": "lessons/contrib/dsh-里两个-bundle-patch-的-id-撞车会互相覆盖且-pnpm-重装抹掉本地修复.md",
       "timestamp": "2026-11-02",
       "domain": "devops",
       "source": "lessons"
