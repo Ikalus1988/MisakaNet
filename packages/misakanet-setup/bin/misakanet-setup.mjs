@@ -39,7 +39,7 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, copyFileSync, rmSync,
 // package.json since 0.4 and had never been executed on the version it names.
 import { randomUUID } from 'node:crypto';
 import { homedir } from 'node:os';
-import { basename, delimiter, join, dirname, resolve } from 'node:path';
+import { basename, delimiter, isAbsolute, join, dirname, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -517,12 +517,57 @@ const AGENT_LABELS = {
  * "installed but 0 tools" — a runtime fact, documented in docs/integrations/mcode.md, not
  * something an installer can write around.
  */
-const MCODE_PLUGIN_REL = join('.minimax', 'plugins', 'misakanet', '.claude-plugin', 'plugin.json');
-const MCODE_RULES_REL = join('.minimax', 'AGENTS.md');
+/**
+ * Where mcode keeps its data directory — one resolver, because the old code had two readers that
+ * disagreed (issue #3838): detection knew `~/.minimax`, `~/.minimax-code` and `~/.mavis`, while
+ * every *write* path hardcoded `~/.minimax`. On a machine whose mcode runs from `~/.mavis` (an
+ * official layout) or from `$MINIMAX_DATA_DIR`, the installer wrote a plugin manifest somewhere
+ * mcode never reads — and still printed "写入插件清单", the worst shape of wrong: success reported,
+ * nothing installed.
+ *
+ * Resolution follows mcode's own runtime (issue #3838):
+ *
+ *   * `MINIMAX_DATA_DIR` — mcode's explicit override. Like `DSH_HOME` above it is a *user* setting:
+ *     a `--home <sandbox>` run must not be redirected out of the sandbox by a shell-exported var.
+ *     A value that points *inside* the sandbox is still honoured — it cannot leak a write, and it
+ *     is what makes this resolution testable without touching a real machine.
+ *   * `<home>/.minimax` when it exists — the default layout.
+ *   * `<home>/.mavis` when it exists — the alias mcode also reads (`.mavis` / `.mavis-*`).
+ *   * `<home>/.minimax` — the fresh-machine default. When both `.minimax` and `.mavis` exist the
+ *     order above decides; which one a *running* mcode reads in that case is not documented
+ *     anywhere we could check, so the ambiguity is stated here instead of guessed at.
+ */
+function mcodeDataDir(home = HOME, env = process.env) {
+  const explicit = String(env.MINIMAX_DATA_DIR || '').trim();
+  if (explicit) {
+    const target = resolve(explicit);
+    const sandboxed = resolve(home) !== resolve(homedir());
+    const inside = target === resolve(home) || target.startsWith(resolve(home) + sep);
+    if (!sandboxed || inside) return target;
+  }
+  if (existsSync(join(home, '.minimax'))) return join(home, '.minimax');
+  if (existsSync(join(home, '.mavis'))) return join(home, '.mavis');
+  return join(home, '.minimax');
+}
+
+/**
+ * Every directory that is evidence mcode lives here. Detection is broader than the resolution on
+ * purpose: a machine may have been installed under `~/.minimax` before `MINIMAX_DATA_DIR` pointed
+ * mcode elsewhere, and any of these layouts is evidence the CLI was here (#3777's legacy name
+ * included). The resolution still decides where a write goes.
+ */
+function mcodeEvidenceDirs(home = HOME, env = process.env) {
+  return [...new Set([mcodeDataDir(home, env), join(home, '.minimax'),
+                      join(home, '.minimax-code'), join(home, '.mavis')])];
+}
+
 const MCODE_DESCRIPTION = 'MisakaNet failure memory: search evidence-rated failure lessons before '
   + 're-debugging, and turn new failures into shared knowledge.';
 
-const mcodePluginPath = (home) => join(home, MCODE_PLUGIN_REL);
+const mcodePluginPath = (home = HOME) => join(mcodeDataDir(home), 'plugins', 'misakanet',
+  '.claude-plugin', 'plugin.json');
+const mcodeRulesPath = (home = HOME) => join(mcodeDataDir(home), 'AGENTS.md');
+const mcodePluginDir = (home = HOME) => join(mcodeDataDir(home), 'plugins', 'misakanet');
 
 /** The manifest we write — the shape `mcode plugin list` reads. */
 function mcodePluginDoc(bearer) {
@@ -566,8 +611,9 @@ const AGENT_WRITE_PATHS = {
     .map(([id, spec]) => [id, (home) => [spec.config(home)]])),
   // Two files, two tiers: the plugin manifest registers the endpoint (①) and the global AGENTS.md
   // carries the rules block (②). Listing both here is what makes the preview, `--list-writes` and
-  // the permission pre-check agree with `installMcode`.
-  mcode: (home) => [join(home, MCODE_PLUGIN_REL), join(home, MCODE_RULES_REL)],
+  // the permission pre-check agree with `installMcode`. Both resolve through `mcodeDataDir()`, so a
+  // preview and the write can never name different directories (issue #3838).
+  mcode: (home) => [mcodePluginPath(home), mcodeRulesPath(home)],
   // dsh reads its instructions from $DSH_HOME/AGENTS.md (default ~/.dsh). Its MCP servers
   // come from a plugin bundle this installer cannot write, so one file is the whole manifest.
   dsh: (home) => [join(dshHome(home), 'AGENTS.md')],
@@ -1719,11 +1765,13 @@ function detect(agent) {
     openclaw: ['.openclaw'],
     codewhale: ['.codewhale'],
     ...Object.fromEntries(Object.entries(MCP_ONLY_TARGETS).map(([id, spec]) => [id, spec.detect])),
-    // Both names are in circulation: `~/.minimax` is the current one, `~/.minimax-code` the older
-    // directory some installs still have (issue #3777). Either is evidence the CLI was here.
-    mcode: ['.minimax', '.minimax-code'],
+    // Evidence, not the write resolution: `~/.minimax` and `~/.minimax-code` (#3777) and `~/.mavis`
+    // are all layouts a real mcode has used, and `$MINIMAX_DATA_DIR` may hold it somewhere else
+    // entirely (issue #3838). Any of them existing is evidence the CLI was here; the write side
+    // still goes through `mcodeDataDir()`.
+    mcode: mcodeEvidenceDirs(HOME),
   }[agent] || [];
-  return paths.some((p) => existsSync(join(HOME, p)));
+  return paths.some((p) => existsSync(isAbsolute(p) ? p : join(HOME, p)));
 }
 
 async function installClaude(hookPath, bearer) {
@@ -2328,13 +2376,14 @@ async function installMcpOnly(agent, bearer) {
 /**
  * MiniMax Code: write the plugin manifest, then the rules block in its global `AGENTS.md`.
  *
- * Two rules from the comment on `MCODE_PLUGIN_REL` drive the whole function:
+ * Two rules from the comment on `mcodePluginPath` drive the whole function:
  *
  *   * **the file may not be ours.** A plugin directory is a user-owned space, so an existing
  *     manifest with a different `name` (or one that is not JSON) is *preserved* and reported as a
  *     manual step — overwriting it would delete someone else's plugin to install ours.
- *   * **`--mcp-only` is tier ①.** The manifest is the endpoint registration; `~/.minimax/AGENTS.md`
- *     is a rules block (②), so it is skipped there — the same split every other target follows.
+ *   * **`--mcp-only` is tier ①.** The manifest is the endpoint registration; the data directory's
+ *     `AGENTS.md` is a rules block (②), so it is skipped there — the same split every other target
+ *     follows.
  *
  * Idempotent through `sameJson` (an editor that reorders keys is not a change) and through
  * `adoptExistingClientId`, so a re-run without `--client-id` keeps the header the file already
@@ -2407,14 +2456,14 @@ async function installMcode(bearer) {
     }
   }
 
-  const rules = join(HOME, MCODE_RULES_REL);
+  const rules = mcodeRulesPath(HOME);
   if (!MCP_ONLY) ok(`MiniMax Code：规则块 ${injectBlock(rules, PROMPT_BLOCK)} → ${rules}`);
   else skip('MiniMax Code：规则块未写（--mcp-only：只放插件清单）');
 
   // Said out loud for the same reason Cursor's and Gemini's layers are: an install that looks
   // complete and has no behaviour layer is the failure this installer refuses to hide.
   skip('MiniMax Code：没有 Claude Code 那种钩子（mcode 没有 hook 机制）'
-    + ' → 规则块在 ~/.minimax/AGENTS.md（每个会话生效），自动沉淀那一步做不到');
+    + ` → 规则块在 ${rules}（每个会话生效），自动沉淀那一步做不到`);
   need('MiniMax Code：重启后跑 `mcode plugin list` 复核（应显示 misakanet@local enabled）；'
     + '公司代理下还要设 NODE_USE_ENV_PROXY=1 —— 它的 HTTP MCP 发现预算约 2000ms，'
     + '不设会表现为"装上了但 0 个工具"（`mcode plugin add` 报 LOCAL_PLUGIN_INSTALL_UNSUPPORTED '
@@ -2837,7 +2886,7 @@ async function verify() {
   // local plugins on purpose (LOCAL_PLUGIN_INSTALL_UNSUPPORTED), so its exit code is not evidence
   // either way — the directory is, and that is what this reads.
   if (wantClient('mcode') && detect('mcode')) {
-    const rules = join(HOME, MCODE_RULES_REL);
+    const rules = mcodeRulesPath(HOME);
     if (!readText(rules).includes(`<!-- ${START} -->`)) {
       needWrite('mcode', rules,
         `MiniMax Code：规则块没装（${rules}）→ 重跑安装命令`,
@@ -3238,8 +3287,11 @@ function mcodePluginDirectoryOwnership() {
 function uninstall() {
   let hermesRulesRemoved = false;
   if (stripBlock(join(dshHome(), 'AGENTS.md'))) ok(`移除规则块 → ${join(dshHome(), 'AGENTS.md')}`);
-  for (const rel of ['.claude/CLAUDE.md', '.codex/AGENTS.md', '.hermes/SOUL.md', '.minimax/AGENTS.md']) {
-    if (stripBlock(join(HOME, rel))) {
+  for (const rel of ['.claude/CLAUDE.md', '.codex/AGENTS.md', '.hermes/SOUL.md', mcodeRulesPath(HOME)]) {
+    // The mcode entry is already absolute — its data dir is resolved (issue #3838), never assumed
+    // to be `~/.minimax`.
+    const file = isAbsolute(rel) ? rel : join(HOME, rel);
+    if (stripBlock(file)) {
       ok(`移除规则块 → ${rel}`);
       // Recorded here because the block is already gone by the time the Hermes summary is built —
       // "已移除" must describe what this run did, not what a file says now (#3834).
@@ -3288,7 +3340,7 @@ function uninstall() {
   // `mcodePluginDirectoryOwnership` for what asking the same question as the install costs (#3831).
   // `~/.minimax/plugins/` is the user's namespace and stays even when it ends up empty — deleting
   // it would remove a place their other plugins live.
-  const mcodeDir = join(HOME, '.minimax', 'plugins', 'misakanet');
+  const mcodeDir = mcodePluginDir(HOME);
   if (existsSync(mcodeDir)) {
     const ownership = mcodePluginDirectoryOwnership();
     if (!ownership.ours) {
