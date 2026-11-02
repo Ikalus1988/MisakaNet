@@ -22,7 +22,7 @@ Content-Type: application/json
     "name": "misakanet_submit_intake",
     "arguments": {
       "kind": "new_lesson_candidate",
-      "problem": "Brief description of the failure scenario",
+      "problem": "Brief description of the failure scenario.\n\n## Root Cause\n\nWhy it happened (when known).\n\n## Fix\n\nWhat resolved it (when known).",
       "error": "Error message or stack trace",
       "what_tried": "What solutions were attempted",
       "source": "crawler-name"
@@ -30,6 +30,21 @@ Content-Type: application/json
   }
 }
 ```
+
+### Why the `problem` text has sections
+
+`problem` is the only field every report carries, so the three sections a lesson needs live inside
+it. Write them when you know them:
+
+* the first paragraph is the **symptom** — what a reader would have searched for;
+* `## Root Cause` — why it happened;
+* `## Fix` — what resolved it (`## Verification` too, if you have the check that proves it).
+
+Reports without a `## Root Cause` section are still filed and still get a receipt, but they cannot be
+turned into a lesson automatically: a lesson without a cause cannot be acted on, and the triage queue
+is where reports go to wait for a person. Measured 2026-11-02: **0 of 172** open intakes carried all
+three sections, which is why the batch converter (`scripts/convert_intake_batch.py`) converts about
+one per queue.
 
 ### Response
 

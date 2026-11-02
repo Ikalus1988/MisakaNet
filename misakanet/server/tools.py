@@ -240,7 +240,13 @@ TOOLS = [
             " Input semantics: problem is required (short"
             " description of the failure); kind defaults to"
             " missing_lesson; error, what_tried, fix, verification,"
-            " and matched_lesson_id are optional. Output schema:"
+            " and matched_lesson_id are optional."
+            " Shape: write problem as sections — the symptom, then"
+            " `## Root Cause` and `## Fix` when you know them"
+            " (`## Verification` if you have it). Without a root cause"
+            " the report is still filed, but it cannot become a"
+            " lesson automatically — it waits for a person."
+            " Output schema:"
             " JSON with submitted (boolean), intake_id, status"
             " (pending_review), redactions_applied, quality_score,"
             " dedup_key, poll_hint, and receipt. Error cases:"
@@ -283,8 +289,10 @@ TOOLS = [
                 "problem": {
                     "type": "string",
                     "description": (
-                        "Required short description of the failure"
-                        " or gap (max 2000 chars)."
+                        "Required. The symptom first, then a `## Root Cause`"
+                        " section and a `## Fix` section when known"
+                        " (max 2000 chars). Reports with those sections can"
+                        " become lessons automatically."
                     ),
                 },
                 "error": {
