@@ -46,7 +46,11 @@ from pathlib import Path
 
 REMOTE_LESSONS = "https://misakanet.org/api/lessons"          # ?search=<q>&limit=N 服务端检索
 INTAKE_URL = "https://misakanet.org/mcp"
-UA = "MisakaNet-IntakeBot-v1.0"
+# The version is how a run is attributable: `lesson_usage.user_agent` stores this string, so a
+# future report can tell a v1.0 run from a v1.1 one. It was `v1.0` while the action shell still
+# pinned Python 3.10 (EOL 2026-10-01); the tag move that fixed the interpreter is why this moved
+# with it.
+UA = "MisakaNet-IntakeBot-v1.1"
 _CACHE_ROOT = os.environ.get("MISAKA_CACHE_DIR") or os.environ.get("XDG_CACHE_HOME")
 CACHE_DIR = Path(_CACHE_ROOT or (Path.home() / ".cache")) / "misaka-intake-bot"
 SIG_FILE = CACHE_DIR / "sigs.json"
