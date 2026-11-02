@@ -454,8 +454,13 @@ def section_is_empty(body: str) -> bool:
     return not remainder
 
 
-def _sections_outside_fences(content: str) -> list[tuple[str, str]]:
-    """(heading, body) pairs for every level-2/3 heading **outside** a code fence.
+def _sections_outside_fences(content: str) -> list[tuple[int, str, str]]:
+    """(level, heading, body) for every heading **outside** a code fence.
+
+    A section's body runs to the next heading of the same or a shallower level, so `## Fix`
+    followed by `### Steps` keeps the steps: a sub-heading is content, not the end of the section.
+    Level matters for the emptiness check; `validate_sections` ignores it and only asks whether a
+    heading of each kind exists.
 
     Fences are tracked because a shell comment is a line that starts with `#`: reading one as a
     heading truncates the section above it. That is not hypothetical — it is how the intake
@@ -463,21 +468,27 @@ def _sections_outside_fences(content: str) -> list[tuple[str, str]]:
     version of `validate_section_content` then reported the section it had just cut as empty.
     """
     lines = content.split("\n")
-    sections: list[tuple[str, str]] = []
+    headings: list[tuple[int, int, str]] = []  # (line index, level, heading)
     in_fence = False
-    current: tuple[str, list[str]] | None = None
-    for line in lines:
+    for index, line in enumerate(lines):
         if re.match(r"^\s*(?:```|~~~)", line):
             in_fence = not in_fence
-        heading = None if in_fence else re.match(r"^#{2,3}\s*([^\n]+)$", line)
-        if heading:
-            if current is not None:
-                sections.append((current[0], "\n".join(current[1]).strip()))
-            current = (heading.group(1).strip(), [])
-        elif current is not None:
-            current[1].append(line)
-    if current is not None:
-        sections.append((current[0], "\n".join(current[1]).strip()))
+            continue
+        if in_fence:
+            continue
+        match = re.match(r"^(#{1,6})\s*([^\n]+)$", line)
+        if match:
+            headings.append((index, len(match.group(1)), match.group(2).strip()))
+    sections: list[tuple[int, str, str]] = []
+    for position, (index, level, heading) in enumerate(headings):
+        if level not in (2, 3):
+            continue
+        end = len(lines)
+        for later_index, later_level, _ in headings[position + 1:]:
+            if later_level <= level:
+                end = later_index
+                break
+        sections.append((level, heading, "\n".join(lines[index + 1:end]).strip()))
     return sections
 
 
@@ -492,7 +503,7 @@ def validate_section_content(content: str) -> list[str]:
     """
     empty = []
     for label, aliases in REQUIRED_SECTIONS:
-        for heading, body in _sections_outside_fences(content):
+        for _level, heading, body in _sections_outside_fences(content):
             lowered = heading.lower()
             if not any(lowered.startswith(alias) for alias in aliases):
                 continue
@@ -504,7 +515,7 @@ def validate_section_content(content: str) -> list[str]:
 
 def validate_sections(content: str) -> list[str]:
     """Names of the standard lesson sections missing from `content`."""
-    headings = [heading.lower() for heading, _ in _sections_outside_fences(content)]
+    headings = [heading.lower() for _level, heading, _body in _sections_outside_fences(content)]
     missing = []
     for label, aliases in REQUIRED_SECTIONS:
         if not any(alias in heading for heading in headings for alias in aliases):
