@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-11-02T12:06:45.471891+00:00",
+  "generated_at": "2026-11-02T17:10:05.227564+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "feat(lessons): 348 summaries and triggers derived from the lessons' own sentences",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4344",
-      "timestamp": "2026-11-02T12:06:26Z",
+      "title": "fix(#4357, #4358): one workflow count, and every read_text names its encoding",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4359",
+      "timestamp": "2026-11-02T17:09:49Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(intake): the receipt step pointed at a field no lesson has ever carried",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4333",
-      "timestamp": "2026-11-02T10:26:59Z",
+      "title": "fix(scanning): two real findings fixed, ten false positives to dismiss with reasons",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4356",
+      "timestamp": "2026-11-02T16:30:30Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4336",
-      "timestamp": "2026-11-02T10:00:38Z",
+      "title": "fix(intake-batch): check the gate before writing, and leave the feed alone",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4355",
+      "timestamp": "2026-11-02T15:58:52Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(lessons): adopt three lesson PRs from @zsxh1990 (#4323 #4324 #4325)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4335",
-      "timestamp": "2026-11-02T09:43:29Z",
+      "title": "feat(heartbeat): report the marketplace action, from the only mark it leaves",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4354",
+      "timestamp": "2026-11-02T15:35:01Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "draft(tombstone): the generated draft says \"Solution: (unfilled)\" out loud (#3645)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4321",
-      "timestamp": "2026-11-02T09:08:03Z",
+      "title": "chore(action): tell v1.1 runs apart from v1.0 in the usage table",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4353",
+      "timestamp": "2026-11-02T15:28:25Z",
       "source": "github"
     },
     {
