@@ -26,10 +26,18 @@ def run(*args):
     )
 
 
-def test_check_passes_with_no_contributions():
-    """--check returns 0 when no lessons have contrib_id."""
+def test_check_passes_once_the_log_covers_the_corpus():
+    """--check is 0 when every lesson that cites an issue has a receipt.
+
+    It used to assert 0 with no setup at all, because the scan matched `contrib_id` and **no lesson
+    ever carried it** — the test and the feature were green together while nothing was ever
+    receipted. Now that the scan matches `provenance.issue`, a corpus of ~800 lessons is "pending"
+    until the log is seeded, so the test seeds first. `--seed-log` is idempotent.
+    """
+    seed = run("--seed-log")
+    assert seed.returncode == 0, seed.stderr
     r = run("--check")
-    assert r.returncode == 0, f"expected 0, got {r.returncode}\n{r.stderr}"
+    assert r.returncode == 0, f"expected 0 after seeding, got {r.returncode}\n{r.stderr}"
 
 
 def test_check_detects_pending_receipt(tmp_path=None):
