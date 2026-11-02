@@ -39,8 +39,11 @@ jobs:
         with:
           python-version: "3.12"
 
+      # `requirements.txt`, not just pyyaml: `gen_ranking_snapshot.py` imports the search engine, which
+      # imports `misakanet_core`. Installing one dependency and not the others failed the first real
+      # run of this workflow at the regenerate step — after the conversion had already succeeded.
       - name: Install the corpus dependencies
-        run: python3 -m pip install --quiet pyyaml
+        run: python3 -m pip install --quiet -r requirements.txt
 
       # The histogram is the point of this step: "converted 0" alone does not say whether the form is
       # still not asking, or whether the queue is simply empty. It goes into the job summary so the
