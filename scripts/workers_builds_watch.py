@@ -351,7 +351,7 @@ def _read_event(path: str) -> dict | None:
 
     `$GITHUB_EVENT_PATH` is always set for the triggers this workflow uses, so a missing or malformed
     file means the trigger changed, which is not a reason to lose the run: the answer is still available
-    from the branch tip. The first version called `json.loads(Path(args.event).read_text())` directly, so
+    from the branch tip. The first version called `json.loads(Path(args.event).read_text(encoding="utf-8"))` directly, so
     a payload that was absent (`FileNotFoundError`) or truncated (`JSONDecodeError`) ended the run in a
     stack trace — a watcher whose job is to notice a silent failure failing silently itself. The warning
     names the file, because "the payload could not be read" is otherwise a fact nobody can check.

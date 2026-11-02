@@ -760,3 +760,23 @@ def test_the_own_check_run_guard_is_read_against_the_workflows_own_job_names():
                      "    if: github.event.check_run.name != 'codecov'\n")
     assert self_triggering_triggers({"y.yml": someone_elses}), (
         "excluding a check run this workflow does not produce does not exclude its own")
+
+
+def test_architecture_states_one_workflow_count():
+    """Every workflow count in ARCHITECTURE.md has to equal the directory, or say nothing.
+
+    Measured 2026-11-03: the page carried **three** numbers — 88 in the prose, 69 in the mermaid
+    diagram, 69 in the closing paragraph — while the directory held 89. A reader believes whichever
+    one they meet first, so the disagreement is the defect; one number, one source.
+    """
+    import re as _re  # noqa: PLC0415
+
+    repo = Path(__file__).resolve().parents[1]
+    actual = len(list((repo / ".github" / "workflows").glob("*.y*ml")))
+    text = (repo / "ARCHITECTURE.md").read_text(encoding="utf-8")
+    stated = {int(n) for n in _re.findall(r"(\d+)\s+workflow", text)}
+    assert stated, "ARCHITECTURE.md no longer states a workflow count at all"
+    wrong = sorted(n for n in stated if n != actual)
+    assert not wrong, (
+        f"ARCHITECTURE.md states {wrong} workflow(s); the directory holds {actual}. "
+        "One number, one source — see this test's docstring for the day it carried three.")

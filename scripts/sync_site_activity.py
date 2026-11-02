@@ -214,7 +214,7 @@ def main() -> int:
         # The previous file is deliberately left alone: a failed fetch is not a quiet day.
         print(f"::error::refusing to write a snapshot — {exc}")
         print(f"  {out} is unchanged (last date: "
-              f"{(json.loads(out.read_text()).get('date') if out.is_file() else 'absent')})")
+              f"{(json.loads(out.read_text(encoding="utf-8")).get('date') if out.is_file() else 'absent')})")
         return 1
 
     if out.is_file() and not args.force:

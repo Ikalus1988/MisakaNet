@@ -164,7 +164,7 @@ def main():
             print(f"Task not found: {task_id}")
             sys.exit(1)
 
-    task = json.loads(task_file.read_text())
+    task = json.loads(task_file.read_text(encoding="utf-8"))
     source = task.get("source", "")
     source_path = REPO / source if source else Path("/dev/null")
 

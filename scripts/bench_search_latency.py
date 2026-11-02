@@ -64,7 +64,7 @@ def load_engines():
 
     lessons_json = DATA_DIR / "lessons.json"
     if lessons_json.exists():
-        lessons_data = json.loads(lessons_json.read_text())
+        lessons_data = json.loads(lessons_json.read_text(encoding="utf-8"))
         lessons_list = lessons_data if isinstance(lessons_data, list) else list(lessons_data.values())
 
         def fallback_search(query, top=5):
