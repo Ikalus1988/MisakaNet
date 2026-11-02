@@ -42,7 +42,7 @@
 | `approval-watch.yml` | Approval Watch | 定时, 手动 | `17,47 * * * *` —— 列出 `status: waiting` 的 run，维护一个跟踪 issue；**永不审批**（`tests/test_approval_watch.py` 断言它不含任何审批调用） |
 | `shadow-branch.yml` | Shadow Branch - External Agent Isolation | PR |  |
 
-## 数据/索引（24）
+## 数据/索引（25）
 
 | workflow | 用途 | 触发 | 定时 |
 |---|---|---|---|
@@ -53,6 +53,7 @@
 | `build-feed.yml` | Build Live Feed（并写 `docs/data/activity.json`：首页活动面板的**兜底**快照，由 `scripts/sync_site_activity.py` 生成。面板首选 `/api/activity`——同一批计数器的匿名边缘缓存投影，TTL 分钟级（2026-09-29 加）；三小时快照只在它不可达时兜底。起因：2026-09-29 实测首页显示 `total 5974` 而同日端点报 6645，日期相同、页面看不出陈旧；当年 17.4 秒冷路径理由是重测为 1.08–1.28 秒）| push, 定时, 手动 | `23 */3 * * *` |
 | `example-capture.yml` | Example Capture (not active) | 手动 |  |
 | `intake-auto-review.yml` | Intake Auto Review | issues, 手动 |  |
+| `intake-batch-convert.yml` | Intake Batch Convert（把 open `mcp-intake` 队列里**形状可转换**的报告批量转成课程，重新生成派生文件，开一个 PR；转不了的把 skip 直方图写进 job summary）| 定时, 手动 | `40 6 * * 1` |
 | `intake-kind-audit.yml` | Intake Kind Audit | 定时, 手动 | `30 6 * * 1` |
 | `intake-pipeline-test.yml` | Intake Pipeline Test (PRD ③) | 手动 |  |
 | `decision-queue-digest.yml` | Decision Queue Digest（每週把「`decision`/`product-design` 标签 + 零评论 + ≥14 天」的 issue 列成一条跟踪 issue；**空清单不发言**，只报告、不关单、不自动决策）| 定时, 手动 | `23 9 * * 1` |
