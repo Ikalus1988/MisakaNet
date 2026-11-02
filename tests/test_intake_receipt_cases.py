@@ -199,13 +199,13 @@ def test_a_lesson_merged_minutes_ago_is_found(tmp_path):
 
 def test_nothing_to_receipt_is_not_a_success(capsys):
     """Exit 2, not 0: a caller that treats 'nothing found' as success posts an empty receipt."""
-    assert main(["--intake", "4242"]) == 2
+    assert main(["--intake", "990001"]) == 2
     out = capsys.readouterr().out
     assert "不发送回执" in out and "no lesson cites" in out
 
 
 def test_render_never_names_a_lesson_that_does_not_exist():
-    text = render(compose(4242, "unknown"))
+    text = render(compose(990001, "unknown"))
     assert "lessons/" not in text, "a refusal must not leak a plausible-looking path"
 
 

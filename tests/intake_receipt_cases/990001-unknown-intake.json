@@ -1,0 +1,10 @@
+{
+  "id": "990001-unknown-intake",
+  "why": "an intake nobody has converted: emitting a receipt here would invent a citation. Deliberately a number this repository will not reach for years — the case used #4242 until 2026-11-02, and the batch that converted #4242 into a lesson turned this fixture into a false failure on the macOS leg. A fixture that names a real convertible intake is a fixture with an expiry date.",
+  "intake": 990001,
+  "source": "unknown",
+  "expected": {
+    "emitted": false,
+    "reason_contains": "no lesson cites"
+  }
+}

@@ -25,7 +25,12 @@ REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO))
 
 from scripts.lesson_gate import (  # noqa: E402
+    MIN_NEW_LESSON_CHARS,
     STRUCTURED_FIELDS,
+    content_weight,
+    validate_content_len,
+    validate_section_content,
+    validate_sections,
     exists_on_base_branch,
     is_corpus_path,
     missing_structured_fields,
@@ -285,3 +290,77 @@ def test_existing_true_overrides_classification(tmp_path):
     path = write_lesson(tmp_path, lesson_frontmatter())
     assert structured_field_tier(path, tmp_path) == "strict"
     assert structured_field_tier(path, tmp_path, existing=True) == "advisory"
+
+
+# ── the floor measures information, not alphabet ────────────────────────────────────────────────
+
+CHINESE_LESSON = """## Problem
+
+脚本在自己机器上好好的，换台 Mac 直接失败：一个报 `unbound variable`，一个报完全看不懂的变量名。
+
+## Root Cause
+
+macOS 自带的是 bash 3.2：`set -u` 下展开空数组会报 unbound variable；变量后紧跟全角括号时，
+多字节字符的字节会被算进变量名。
+
+## Fix
+
+```bash
+# 空数组安全展开
+rm -f "${ARR[@+\"${ARR[@]}\"}"
+
+# 变量后面接中文/全角一律加花括号
+echo "大小=${size}）"
+```
+
+能用 python 就别用 bash 写逻辑。
+
+## Verification
+
+空数组、空变量、中文后缀三种情况跑一遍都不报 unbound variable；`bash --version` 显示 3.2.x。
+"""
+
+
+def test_a_complete_chinese_lesson_is_not_rejected_for_being_compact():
+    """The 400-character floor counted characters, so a CJK lesson paid ~2x for the same content."""
+    assert len(CHINESE_LESSON) < MIN_NEW_LESSON_CHARS, "fixture must be under the raw floor"
+    assert validate_content_len(CHINESE_LESSON, MIN_NEW_LESSON_CHARS), (
+        "a lesson that states Problem / Root Cause / Fix / Verification in full is not thin because "
+        "the script packs the same meaning into fewer characters")
+    assert content_weight(CHINESE_LESSON) >= MIN_NEW_LESSON_CHARS
+
+
+def test_an_english_stub_is_still_rejected():
+    """The floor has to keep biting; weighting CJK is not an excuse to lower it for everyone."""
+    stub = "## Problem\n\nIt broke.\n\n## Fix\n\nRestart it.\n"
+    assert not validate_content_len(stub, MIN_NEW_LESSON_CHARS)
+
+
+# ── a heading is not a section ──────────────────────────────────────────────────────────────────
+
+def test_an_empty_section_is_reported_even_though_the_heading_exists():
+    # The shape a truncated conversion leaves: the heading, and then the next heading — the Fix
+    # body is gone entirely. (A *stray unclosed fence* is a different, also-detected failure: the
+    # later headings move inside it and `validate_sections` reports them missing.)
+    broken = CHINESE_LESSON.replace(
+        CHINESE_LESSON[CHINESE_LESSON.index("## Fix"):CHINESE_LESSON.index("## Verification")],
+        "## Fix\n\n")
+    assert validate_sections(broken) == [], "the heading is still there — that is the trap"
+    assert validate_section_content(broken) == ["Solution"], (
+        "a `## Fix` with nothing under it cannot be acted on, and the gate has to say which one")
+    assert validate_section_content(CHINESE_LESSON) == []
+
+
+def test_a_shell_comment_does_not_end_the_section_above_it():
+    """The bug this check was written after: `# 1)` inside a fence read as a heading."""
+    sections = validate_section_content(CHINESE_LESSON)
+    assert sections == [], (
+        "a `#` comment inside a bash fence is not a heading; if it is read as one, a complete Fix is "
+        "truncated and then reported as empty — which is exactly what happened on 2026-11-02")
+
+
+def test_a_section_that_is_only_a_fence_opener_is_empty():
+    """That is the other shape a bad conversion leaves, and it reads as content to a length check."""
+    body = "## Fix\n\n```bash\n```\n\n## Verification\n\nexit code is 0\n"
+    assert validate_section_content(body) == ["Solution"], (
+        "a fence with nothing in it is not a fix; the fence markers are structure, not content")
