@@ -90,6 +90,19 @@ def test_a_generated_draft_declares_evidence_level_and_a_canonical_domain(tmp_pa
     assert frontmatter["status"] == "draft"
 
 
+def test_a_generated_draft_says_solution_unfilled_out_loud(tmp_path):
+    """#3645's D: the draft names its own gap — `Solution: (unfilled)`, in the open.
+
+    A `<!-- TODO -->` comment is invisible to a grep and to an agent skimming for
+    what is missing; the crash report never carries a fix ("自动产生草稿"能成立，
+    "自动产生课程"不成立), so the draft must say so in a line that can be found.
+    """
+    draft = _draft(tmp_path, NODE_WRAPPER_PAYLOAD)
+    body = draft.read_text(encoding="utf-8")
+
+    assert "Solution: (unfilled)" in body
+
+
 def test_the_domain_rules_only_name_canonical_domains():
     """A rule that names a domain outside the vocabulary would fail the gate."""
     canonical = _canonical_domains()
