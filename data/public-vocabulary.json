@@ -6,7 +6,7 @@
 "exists to prevent — write the lesson generically instead."
 ],
 "generated_from": "data/lessons.json + lessons/**/*.md",
-"corpus_rows": 765,
+"corpus_rows": 766,
 "corpus": [
 "a+b+c",
 "a-",
@@ -7967,6 +7967,8 @@
 "fan-out",
 "fanuc",
 "fanuc-",
+"fanuc-alarm-code-index",
+"fanuc-alarm-code-index.md",
 "fanuc-alarm-code-reference",
 "fanuc-alarm-code-reference.md",
 "fanuc-alarm-severity-guide",
@@ -8484,6 +8486,7 @@
 "fiverr.",
 "fiverr.com",
 "fix",
+"fix-acceptance-is-a-degradation-n",
 "fix-acceptance-is-a-degradation-not-a-cr",
 "fix-dco",
 "fix-verification",
@@ -22216,6 +22219,7 @@
 "srunes",
 "srv",
 "srv_tot",
+"srvo",
 "srvo-001",
 "srvo-002",
 "srvo-007",
