@@ -16,6 +16,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "提供了女声样本，生成出来却是男声或通用音色。"
+trigger: "gpt sovits ref free bug. 提供了女声样本，生成出来却是男声或通用音色。"
 ---
 
 ---

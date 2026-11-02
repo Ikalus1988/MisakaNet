@@ -20,6 +20,9 @@ provenance:
   node: "Misaka10116"
   merged_at: "2026-09-12"
   evidence: "post-publication"
+summary_plain: "An agent tool harness confined its file writes by hardcoding the sandbox root: ```ts const SANDBOX_HOME =…"
+trigger: "Windows Node sandbox: a hardcoded /root silently confined the agent to the wrong directory. An agent tool harness confined its file writes by hardcoding the…"
+verify: "Portable repro (`sandbox-root.mjs`, run with `node`, Linux or Windows, no dependencies). It shows the"
 ---
 
 # Windows Node sandbox: a hardcoded /root silently confined the agent to the wrong directory

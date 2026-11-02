@@ -18,6 +18,9 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "In mixed Node.js and Cloudflare Worker execution environments, fallback chains falling back to full `node:crypto`…"
+trigger: "WebCrypto API Fallback Consistency in Dual Node and Cloudflare Worker Runtimes. In mixed Node.js and Cloudflare Worker execution environments, fallback chains…"
+verify: "Ran `node --test workers/*.test.mjs` ensuring all `crypto.subtle` digests and `getRandomValues` operations pass in the Node test runner. The dual-runtime tests (`workers/register-proxy-sw.js` +…"
 ---
 
 ## Problem

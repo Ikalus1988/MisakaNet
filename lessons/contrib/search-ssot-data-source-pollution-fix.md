@@ -18,6 +18,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "A static site deployed via GitHub Pages used a Worker API (`/api/lessons`) as the data source for its search feature."
+trigger: "Search SSOT: Fixing Data Source Pollution in Static-Deployed Sites. A static site deployed via GitHub Pages used a Worker API (`/api/lessons`) as the data…"
 ---
 
 # Search SSOT: Fixing Data Source Pollution

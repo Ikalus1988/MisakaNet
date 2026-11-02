@@ -15,6 +15,8 @@ provenance:
   contributor: "Unknown"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Many sniper processes wake on the same cron second, hit 429 together, and back off on the same schedule forever."
+trigger: "Add jitter to retry sleeps (avoid thundering herd). Many sniper processes wake on the same cron second, hit 429 together, and back off on…"
 ---
 
 # Add jitter to retry sleeps (avoid thundering herd)

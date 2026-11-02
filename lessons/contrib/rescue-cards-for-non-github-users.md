@@ -16,6 +16,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Not every real user can read a full technical lesson, open a GitHub issue, or write a structured report."
+trigger: "When Lessons Are Too Heavy, Use Rescue Cards. Not every real user can read a full technical lesson, open a GitHub issue, or write a…"
 ---
 
 ## Problem

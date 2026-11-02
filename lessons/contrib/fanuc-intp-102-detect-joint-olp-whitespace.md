@@ -21,6 +21,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "OLP tool (RoboDK) generates programs with `DETECT JOINT[3,22]` that throw INTP-102 (\"Code format is not valid\") on the…"
+trigger: "FANUC INTP-102 DETECT JOINT — OLP Whitespace Bug. OLP tool (RoboDK) generates programs with `DETECT JOINT[3,22]` that throw INTP-102…"
 ---
 
 ## Problem

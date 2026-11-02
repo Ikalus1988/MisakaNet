@@ -20,6 +20,8 @@ provenance:
   contributor: "benchmark-oauth-2026-09-02"
   merged_at: "2026-09-02"
   evidence: "post-publication"
+summary_plain: "Authorizing mcporter for Cloudflare MCP (`mcporter auth cloudflare`) failed in three distinct ways before success: 1."
+trigger: "mcporter Cloudflare OAuth: Correct Endpoint, No Scope, and WSL Callback Trap. Authorizing mcporter for Cloudflare MCP (`mcporter auth cloudflare`) failed in…"
 ---
 
 ## Problem

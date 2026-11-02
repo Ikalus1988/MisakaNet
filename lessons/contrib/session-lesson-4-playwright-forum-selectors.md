@@ -19,6 +19,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "不同论坛使用不同的 CMS（WoltLab、IPS Community、Discourse），HTML 结构各异。写选择器需要逐个分析。"
+trigger: "Playwright Forum Selectors — WoltLab/IPS/Common Patterns. 不同论坛使用不同的 CMS（WoltLab、IPS Community、Discourse），HTML 结构各异。写选择器需要逐个分析。"
 ---
 
 ## Problem

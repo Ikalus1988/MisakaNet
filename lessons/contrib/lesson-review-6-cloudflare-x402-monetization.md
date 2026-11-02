@@ -21,6 +21,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Web 30 年来的经济模式是\"内容换注意力\"（广告/订阅/电商）。AI Agent 时代，Agent 不看广告、不订阅、不浏览——传统变现模式失效。"
+trigger: "Cloudflare Monetization Gateway — x402 API 支付协议. Web 30 年来的经济模式是\"内容换注意力\"（广告/订阅/电商）。AI Agent 时代，Agent 不看广告、不订阅、不浏览——传统变现模式失效。"
 ---
 
 ## Problem

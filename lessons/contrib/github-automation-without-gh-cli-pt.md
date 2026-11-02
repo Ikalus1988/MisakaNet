@@ -20,6 +20,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Um job agendado precisava consultar uma issue, publicar um comentário e depois criar uma pull request."
+trigger: "Automação do GitHub quando o comando gh não está instalado. Um job agendado precisava consultar uma issue, publicar um comentário e depois criar uma…"
 ---
 
 # Automação do GitHub quando o comando `gh` não está instalado

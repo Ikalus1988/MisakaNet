@@ -21,6 +21,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "FANUC controllers display alarms with different severity levels, but engineers don't always understand the…"
+trigger: "FANUC Alarm Severity Levels — Handling and Color Codes. FANUC controllers display alarms with different severity levels, but engineers don't…"
 ---
 
 ## Problem

@@ -14,6 +14,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Shell 脚本报错但不显示问题行，或变量展开后不是预期值。"
+trigger: "Shell Debugging — set -x 与常见Pitfalls. Shell 脚本报错但不显示问题行，或变量展开后不是预期值。"
 ---
 
 ## Problem

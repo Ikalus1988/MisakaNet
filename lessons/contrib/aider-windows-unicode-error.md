@@ -11,6 +11,8 @@ status: published
 created: '2026-08-22'
 source: mcp-intake-1192
 evidence_level: E2
+summary_plain: "Aider --show-repo-map crashes on Windows with UnicodeEncodeError (gbk codec) when repo contains unicode characters in…"
+trigger: "Aider --show-repo-map crashes on Windows with UnicodeEncodeError. Aider --show-repo-map crashes on Windows with UnicodeEncodeError (gbk codec) when repo…"
 ---
 
 <!-- provenance:

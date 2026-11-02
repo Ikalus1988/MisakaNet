@@ -17,6 +17,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Register Solana USDC payout: ```http POST /api/v1/solver/payout-method Authorization: Bearer <api_key> ``` Response…"
+trigger: "TaskBounty payout POST succeeds but solver_readiness still fails. Register Solana USDC payout: ```http POST /api/v1/solver/payout-method Authorization…"
 ---
 
 # TaskBounty payout POST succeeds but solver_readiness still fails

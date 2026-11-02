@@ -17,6 +17,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Feishu webhook URL、app_id、app_secret 被误提交到 git 仓库， commit b7de627 包含明文凭据（后已轮换）。"
+trigger: "feishu webhook url env config. Feishu webhook URL、app_id、app_secret 被误提交到 git 仓库， commit b7de627 包含明文凭据（后已轮换）。"
 ---
 
 ---

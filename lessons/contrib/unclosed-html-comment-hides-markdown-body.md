@@ -18,6 +18,9 @@ provenance:
   contributor: "Ikalus1988"
   merged_at: "2026-09-12"
   evidence: "post-publication"
+summary_plain: "A documentation pipeline extracted a one-line summary from each markdown file and published it as the page's `<meta…"
+trigger: "One stray `<!--` in a markdown body hides the whole document — and poisons extracted summaries. A documentation pipeline extracted a one-line summary from…"
+verify: "- Count the markers per file and require them to balance (see the assertion above). Run it across the"
 ---
 
 # One stray `<!--` in a markdown body hides the whole document — and poisons extracted summaries

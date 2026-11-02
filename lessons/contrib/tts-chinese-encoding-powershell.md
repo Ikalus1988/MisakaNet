@@ -17,6 +17,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "中文文本通过 PowerShell 脚本内联传给 mmx CLI，TTS 返回空音频（\"嗯嗯\"声）。"
+trigger: "tts chinese encoding powershell. 中文文本通过 PowerShell 脚本内联传给 mmx CLI，TTS 返回空音频（\"嗯嗯\"声）。"
 ---
 
 ---

@@ -20,6 +20,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Durable multi-step workflows (e.g., fund transfer) can leave systems in inconsistent state when a middle step fails."
+trigger: "Cloudflare Workflows Saga Rollback — Durable Multi-Step Compensation. Durable multi-step workflows (e.g., fund transfer) can leave systems in inconsistent…"
 ---
 
 ## Problem

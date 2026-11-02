@@ -17,6 +17,8 @@ source: unknown
 confidence: 0.95
 domain_expert: ''
 verified_date: ''
+summary_plain: "When pushing to a GitHub repo you own via a different GitHub account (e.g., `<user>/pr-genius` while…"
+trigger: "Git Push to Fork Repo: 'Permission Denied to Other User' — Wrong PAT Selected by Helper. When pushing to a GitHub repo you own via a different GitHub account…"
 ---
 
 # Git Push to Fork Repo: "Permission Denied to Other User" — Wrong PAT Selected by Helper

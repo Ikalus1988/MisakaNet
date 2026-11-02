@@ -19,6 +19,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Reverse engineering binaries is manual, time-consuming work."
+trigger: "Ghidra MCP Server — AI-Assisted Reverse Engineering. Reverse engineering binaries is manual, time-consuming work."
 ---
 
 ## Problem

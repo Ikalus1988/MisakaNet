@@ -28,6 +28,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Need to find the maximum electrode tip wear amount (最大磨损量) for a FANUC spot welding robot."
+trigger: "FANUC Spot Weld Tip Max Wear Amount — sysspot.sv Variable Lookup via kconvars. Need to find the maximum electrode tip wear amount (最大磨损量) for a FANUC spot…"
 ---
 
 ## Problem

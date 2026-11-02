@@ -12,6 +12,8 @@ status: published
 created: '2026-09-02'
 source: deepwiki-review-2026-09
 evidence_level: E0
+summary_plain: "An external architecture review (DeepWiki AI analysis) judged MisakaNet as a \"wrapped personal/small-team tool\" with a…"
+trigger: "DeepWiki Architecture Review: Fair Hits, Stale-Snapshot Misses, and the Right Trajectory. An external architecture review (DeepWiki AI analysis) judged…"
 ---
 
 ## Problem

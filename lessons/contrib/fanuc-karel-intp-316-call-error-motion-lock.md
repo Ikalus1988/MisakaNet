@@ -34,6 +34,9 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "从 KAREL 调用 TP 程序时触发 **INTP-316**（呼叫错误 / Call Error），同时动作锁定被激活。KAREL 程序本身可正常运行，仅在调用 TP 程序时出错。"
+trigger: "FANUC KAREL: INTP-316 调用TP程序触发动作锁定. 从 KAREL 调用 TP 程序时触发 **INTP-316**（呼叫错误 / Call Error），同时动作锁定被激活。KAREL 程序本身可正常运行，仅在调用 TP…"
+verify: "在 KAREL 中执行："
 ---
 
 ## FANUC KAREL: INTP-316 调用TP程序触发动作锁定

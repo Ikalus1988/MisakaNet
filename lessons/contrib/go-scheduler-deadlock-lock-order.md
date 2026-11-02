@@ -19,6 +19,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "A Go application using the `go-co-op/gocron` v1 scheduler would hang indefinitely when a scheduled job tried to remove…"
+trigger: "Go Scheduler Deadlock — Nested Lock Acquisition in gocron v1. A Go application using the `go-co-op/gocron` v1 scheduler would hang indefinitely when a…"
 ---
 
 ## Problem

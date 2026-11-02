@@ -20,6 +20,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "After installing Panniantong/Agent-Reach (v1.5.0), running `agent-reach doctor` shows 4/15 channels working without…"
+trigger: "Agent-Reach v1.5.0 doctor Baseline: 4/15 Channels Available Without Login. After installing Panniantong/Agent-Reach (v1.5.0), running `agent-reach doctor`…"
 ---
 
 # Agent-Reach v1.5.0 doctor Baseline: 4/15 Channels Available Without Login

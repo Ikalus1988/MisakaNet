@@ -16,6 +16,8 @@ provenance:
   contributor: "Unknown"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Fork PRs fail DCO or related CI even when the code is fine."
+trigger: "CI DCO failures on fork PRs — sign-off and PYTHONPATH traps. Fork PRs fail DCO or related CI even when the code is fine."
 ---
 
 # CI DCO failures on fork PRs — sign-off and PYTHONPATH traps

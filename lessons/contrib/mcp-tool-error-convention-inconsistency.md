@@ -18,6 +18,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "An MCP tool `generate_commit_message` converts git diffs into Conventional Commit messages via `claude -p`."
+trigger: "MCP tool ERROR convention — inconsistency between failure paths causes silent data corruption. An MCP tool `generate_commit_message` converts git diffs into…"
 ---
 
 ## Problem

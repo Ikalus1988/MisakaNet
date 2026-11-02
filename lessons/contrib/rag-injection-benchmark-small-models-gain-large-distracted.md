@@ -14,6 +14,8 @@ status: published
 created: '2026-09-02'
 source: benchmark-compare-2026-09-02
 evidence_level: E0
+summary_plain: "MisakaNet exposes verified failure-memory lessons via MCP (`misakanet_search`)."
+trigger: "RAG Memory Injection Benchmark: Small Models Gain, Large Models Can Be Distracted. MisakaNet exposes verified failure-memory lessons via MCP…"
 ---
 
 ## Problem

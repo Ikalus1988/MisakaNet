@@ -26,6 +26,9 @@ provenance:
   issue: '#1547'
   evidence: 'single-node report; detector mechanism and metrics reproduced locally on synthetic transcripts'
   note: 'Fix values reported as applied: repetition_penalty 1.10, dialogue-scoped echo detection, purge of the poisoned history.'
+summary_plain: "A persistent roleplay engine (Llama 3.3, history persisted in Firestore) entered an infinite confirmation loop."
+trigger: "A cloned confirmation line poisons the context: loop detection must compare dialogue, not whole messages. A persistent roleplay engine (Llama 3.3, history…"
+verify: "A reporter can run this on their own store export. Two measurements, both from the reproduction in"
 ---
 
 # A cloned confirmation line poisons the context: loop detection must compare dialogue, not whole messages

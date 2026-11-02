@@ -18,6 +18,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "This error occurs when running `npm install -g` without sufficient permissions."
+trigger: "npm install EACCES permission error on Linux and macOS. This error occurs when running `npm install -g` without sufficient permissions."
 ---
 
 ## Problem

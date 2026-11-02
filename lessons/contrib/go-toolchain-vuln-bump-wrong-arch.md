@@ -15,6 +15,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "A repository's CI was permanently red because a transitive dependency `golang.org/x/text` had a published…"
+trigger: "Go dependency vuln bump blocked by wrong-architecture toolchain download. A repository's CI was permanently red because a transitive dependency…"
 ---
 
 # Go dependency vuln bump blocked by wrong-architecture toolchain download

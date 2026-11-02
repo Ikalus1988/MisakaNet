@@ -15,6 +15,8 @@ provenance:
   contributor: "Unknown"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "A research script accidentally claims paid tasks or spends credits during scouting."
+trigger: "Separate scout vs worker modes in earn agents. A research script accidentally claims paid tasks or spends credits during scouting."
 ---
 
 # Separate scout vs worker modes in earn agents

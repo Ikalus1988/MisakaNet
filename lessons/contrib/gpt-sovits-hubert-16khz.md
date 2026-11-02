@@ -17,6 +17,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "HuBERT SSL 特征提取失败，音频克隆效果异常。"
+trigger: "gpt sovits hubert 16khz. HuBERT SSL 特征提取失败，音频克隆效果异常。"
 ---
 
 ---

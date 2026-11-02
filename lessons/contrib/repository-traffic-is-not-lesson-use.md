@@ -16,6 +16,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "A repository can show strong clone, star, fork, issue, and pull-request activity while still having no evidence that…"
+trigger: "Repository Traffic Is Not Lesson Use. A repository can show strong clone, star, fork, issue, and pull-request activity while…"
 ---
 
 ## Problem

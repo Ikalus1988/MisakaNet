@@ -25,6 +25,9 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "5轴DLP 3D打印切片器需要将2D切片几何(从SVG/DXF文件导入)转换为机器人可执行的XYZWPR运动指令。整个流程涉及多个阶段：2D几何处理、路径规划排序、坐标系转换、运动插值、多层迭代、硬件控制。每个阶段需要不同的算法和数据结构。"
+trigger: "UV-to-XYZWPR Pipeline — From 2D Slice Geometry to Robot Motion. 5轴DLP…"
+verify: "1. **几何验证**：使用Python工具链(DXF/SVG解析 + Clipper裁剪 + Matplotlib可视化)离线验证2D几何正确性"
 ---
 
 ### Problem描述

@@ -20,6 +20,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Duplicate detection flagged two lessons with ~0.80 similarity: - `lessons/contrib/cc-connect-feishu-setup-complete.md`…"
+trigger: "Near-duplicate Feishu bot lessons: keep cc-connect, archive generic stub. Duplicate detection flagged two lessons with ~0.80 similarity: -…"
 ---
 
 # Near-duplicate Feishu bot lessons: keep cc-connect, archive generic stub

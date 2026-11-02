@@ -15,6 +15,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "CLI tools and AI agents (OpenClaw, Hermes, etc.) lack a standard, secure mechanism to route fatal error diagnostics to…"
+trigger: "OPENCLAW_ERROR_HANDLER — Standard protocol for CLI fatal error external hooks. CLI tools and AI agents (OpenClaw, Hermes, etc.) lack a standard, secure…"
 ---
 
 # OPENCLAW_ERROR_HANDLER — Standard protocol for CLI fatal error external hooks

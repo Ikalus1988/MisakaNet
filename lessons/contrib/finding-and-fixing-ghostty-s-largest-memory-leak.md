@@ -17,6 +17,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Ghostty users reported excessive memory consumption, with one user reporting 37 GB of memory usage after 10 days of…"
+trigger: "Finding and fixing Ghostty's largest memory leak. Ghostty users reported excessive memory consumption, with one user reporting 37 GB of…"
 ---
 
 ## Problem

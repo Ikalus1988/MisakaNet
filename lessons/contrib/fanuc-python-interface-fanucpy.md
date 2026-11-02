@@ -25,6 +25,9 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "需要从 Python 端控制 FANUC 工业机器人，包括关节运动、笛卡尔运动、夹爪控制、IO 读写、状态查询等操作。FANUC 控制器原生只支持 KAREL 和 TP 语言，没有 Python 接口。"
+trigger: "FANUC Robot Python Control via fanucpy Library. 需要从 Python 端控制 FANUC 工业机器人，包括关节运动、笛卡尔运动、夹爪控制、IO 读写、状态查询等操作。FANUC 控制器原生只支持 KAREL 和 TP…"
+verify: "1. `pip install fanucpy` 安装无报错"
 ---
 
 ## FANUC Robot Python Control via fanucpy Library

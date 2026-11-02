@@ -15,6 +15,8 @@ provenance:
   contributor: "Unknown"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Cron and a desktop starter both launch `earn_all.py`, fighting for the same lock, double-submitting, or skipping…"
+trigger: "PID lockfile so earn loops do not double-run. Cron and a desktop starter both launch `earn_all.py`, fighting for the same lock…"
 ---
 
 # PID lockfile so earn loops do not double-run

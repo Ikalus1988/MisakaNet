@@ -15,6 +15,8 @@ provenance:
   contributor: "Unknown"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "API keys in `.env` are world-readable."
+trigger: "Keep .env and secret files at mode 600. API keys in `.env` are world-readable."
 ---
 
 # Keep .env and secret files at mode 600

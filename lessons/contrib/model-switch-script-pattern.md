@@ -15,6 +15,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "不同 AI Agent 使用不同的配置文件/代理通道，各自需要独立的模型管理方案。手动改配置容易出错（改错文件、两侧不一致）。"
+trigger: "多模型Switch脚本模式 — 双 Agent 模型管理. 不同 AI Agent 使用不同的配置文件/代理通道，各自需要独立的模型管理方案。手动改配置容易出错（改错文件、两侧不一致）。"
 ---
 
 # 多模型Switch脚本模式 — 双 Agent 模型管理

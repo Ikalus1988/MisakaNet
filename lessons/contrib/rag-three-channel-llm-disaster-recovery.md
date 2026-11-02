@@ -17,6 +17,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "When serving a RAG knowledge base externally (Gradio Web UI / WeChat bot), a single LLM API path may become…"
+trigger: "RAG Three-Channel LLM Disaster Recovery. When serving a RAG knowledge base externally (Gradio Web UI / WeChat bot), a single LLM…"
 ---
 
 ## Problem

@@ -17,6 +17,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "After importing FANUC PDF documents into RAG, retrieval quality was unstable and recall was low for long documents."
+trigger: "RAG Chunk Parameters 800 Characters and 100 Overlap. After importing FANUC PDF documents into RAG, retrieval quality was unstable and recall…"
 ---
 
 ## Problem

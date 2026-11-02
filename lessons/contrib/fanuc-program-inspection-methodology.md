@@ -19,6 +19,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Robot programs need systematic inspection before production to catch signal mapping errors, safety violations, and…"
+trigger: "FANUC Robot Program Inspection Methodology — Systematic Check Guide. Robot programs need systematic inspection before production to catch signal mapping…"
 ---
 
 ## Problem

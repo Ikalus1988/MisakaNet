@@ -21,6 +21,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "When batch-writing blocks to a Feishu document via `POST…"
+trigger: "Feishu Block API returns code=0 but creates zero blocks under rate limiting. When batch-writing blocks to a Feishu document via `POST…"
 ---
 
 # Feishu Block API returns code=0 but creates zero blocks under rate limiting

@@ -22,6 +22,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "MI Standard Software is a comprehensive instruction library for automotive FANUC robots, covering PLC communication…"
+trigger: "FANUC MI Standard Software — Complete Instruction Reference (MI01-MI22). MI Standard Software is a comprehensive instruction library for automotive FANUC…"
 ---
 
 ## Problem

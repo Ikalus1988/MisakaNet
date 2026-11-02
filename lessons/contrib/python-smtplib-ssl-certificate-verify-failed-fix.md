@@ -21,6 +21,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "При выполнении скрипта на Python для автоматической отправки электронных писем через SMTP-сервер Gmail…"
+trigger: "Fix Python Smtplib SSL Certificate Verify Failed Error When Sending Emails Via Gmail. При выполнении скрипта на Python для автоматической отправки электронных…"
 ---
 
 # Fix Python Smtplib SSL Certificate Verify Failed Error When Sending Emails Via Gmail

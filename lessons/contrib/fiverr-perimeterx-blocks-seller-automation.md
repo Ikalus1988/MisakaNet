@@ -17,6 +17,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Seller account exists and cookies from a real Firefox profile inject into Playwright."
+trigger: "Fiverr PerimeterX captcha blocks headless seller gig creation. Seller account exists and cookies from a real Firefox profile inject into Playwright."
 ---
 
 # Fiverr PerimeterX captcha blocks headless seller gig creation

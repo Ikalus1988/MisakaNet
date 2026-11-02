@@ -10,6 +10,8 @@ tags:
 status: published
 created: '2026-07-06'
 source: unknown
+summary_plain: "大批量API任务没有提前测试限流，任务中途被截断，无法续命。例如：向某第三方API批量发送10000条请求，跑到第3000条时触发429错误，整个任务崩溃，已处理数据全部丢失，只能从头重跑，浪费大量时间和资源。"
+trigger: "api rate limit handling best practices. 大批量API任务没有提前测试限流，任务中途被截断，无法续命。例如：向某第三方API批量发送10000条请求，跑到第3000条时触发429错误，整个任务崩溃，已处理数据全部丢失，只…"
 ---
 
 <!-- provenance:

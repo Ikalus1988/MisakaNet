@@ -18,6 +18,9 @@ provenance:
   contributor: "Ikalus1988"
   merged_at: "2026-09-12"
   evidence: "post-publication"
+summary_plain: "A daily \"keep the docs in sync\" job had been green for weeks."
+trigger: "GITHUB_TOKEN cannot push changes to .github/workflows/** — your bot job will fail at push time. A daily \"keep the docs in sync\" job had been green for weeks."
+verify: "- Dispatch the job and read the **step-level** result, not just the workflow conclusion — the failure"
 ---
 
 # GITHUB_TOKEN cannot push changes to .github/workflows/** — your bot job will fail at push time

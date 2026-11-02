@@ -15,6 +15,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "`curl https://example.com` 返回空、报错或超时。不知道是 DNS、代理、证书还是目标服务的问题。"
+trigger: "curl / wget 请求失败通用Diagnosis. `curl https://example.com` 返回空、报错或超时。不知道是 DNS、代理、证书还是目标服务的问题。"
 ---
 
 ## Problem

@@ -21,6 +21,8 @@ provenance:
   contributor: "Unknown"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Earn sites auth in Firefox but Python APIs get 401."
+trigger: "Copy Firefox cookies.sqlite for authenticated API calls. Earn sites auth in Firefox but Python APIs get 401."
 ---
 
 # Copy Firefox cookies.sqlite for authenticated API calls

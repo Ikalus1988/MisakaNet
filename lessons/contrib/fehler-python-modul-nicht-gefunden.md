@@ -18,6 +18,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "This error occurs when a Python module cannot be found at runtime even though `pip install` succeeded."
+trigger: "ModuleNotFoundError in Python trotz pip install. This error occurs when a Python module cannot be found at runtime even though `pip…"
 ---
 
 ## Problem

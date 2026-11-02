@@ -17,6 +17,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "FFmpeg 输出 OGG 文件为 0 字节。"
+trigger: "ffmpeg audio libopus not ogg. FFmpeg 输出 OGG 文件为 0 字节。"
 ---
 
 ---

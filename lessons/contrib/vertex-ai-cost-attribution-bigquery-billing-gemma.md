@@ -12,6 +12,9 @@ status: "published"
 evidence_level: "E3"
 language: "zh"
 provenance: "https://cloud.google.com/billing/docs/how-to/export-data-bigquery"
+summary_plain: "在 Google Cloud 上混合部署 Vertex AI 原生模型（如 Gemini API 按 Token 计费）与 Gemma 开源大模型（部署在 Vertex AI Endpoint 或托管 GPU…"
+trigger: "Vertex AI 成本归因：BigQuery billing exports + traces + Gemma 混合计费. 在 Google Cloud 上混合部署 Vertex AI 原生模型（如 Gemini API 按 Token 计费）与 Gemma 开源大模型（部署在 Vertex AI…"
+verify: "运行验证脚本测试计费分析 SQL 语法合规性、BigQuery Schema 解析逻辑以及 Trace 关联逻辑："
 ---
 
 # Vertex AI 成本归因：BigQuery billing exports + traces + Gemma 混合计费

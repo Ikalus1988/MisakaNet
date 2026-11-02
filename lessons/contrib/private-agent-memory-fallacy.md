@@ -19,6 +19,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "The idea of a portable \"memory wallet\" — like Plaid for AI, where your context travels between agents — sounds…"
+trigger: "The Private Agent Memory Fallacy — Why Portable Memory Wallets Fail. The idea of a portable \"memory wallet\" — like Plaid for AI, where your context travels…"
 ---
 
 ## Problem

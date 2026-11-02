@@ -15,6 +15,8 @@ provenance:
   contributor: "Unknown"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Agents accept arbitrary JSON from task boards and crash later on missing keys or wrong types."
+trigger: "Validate JSON agent inputs with a minimal schema check. Agents accept arbitrary JSON from task boards and crash later on missing keys or wrong…"
 ---
 
 # Validate JSON agent inputs with a minimal schema check

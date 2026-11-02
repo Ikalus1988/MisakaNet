@@ -26,6 +26,9 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "FANUC KAREL标准库缺少面向机器人应用的3D几何计算能力： - 没有平面、线段、圆柱等几何图元的定义和操作 - 缺少几何图元之间的交集、投影、距离计算 - 没有碰撞检测(点是否在包围盒/圆柱内) -…"
+trigger: "Geometry and Kinematics Layer — Shapes, Pose, Sensors for Robot Programming. FANUC KAREL标准库缺少面向机器人应用的3D几何计算能力： - 没有平面、线段、圆柱等几何图元的定义和操作 - 缺少几何图元之间的交集、投影、距离计算 -…"
+verify: "1. **shapes模块**：通过TP交互式示教程序验证几何操作正确性"
 ---
 
 ### Problem描述

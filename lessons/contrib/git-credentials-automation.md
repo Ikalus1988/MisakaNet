@@ -14,6 +14,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "脚本自动执行 `git push` 时弹出用户名密码输入框，导致自动化流程卡住。"
+trigger: "Git 凭证Setup — Automation push 免密码. 脚本自动执行 `git push` 时弹出用户名密码输入框，导致自动化流程卡住。"
 ---
 
 ## Problem

@@ -15,6 +15,8 @@ provenance:
   contributor: "Unknown"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Readers see half-written `data.json` while the dashboard refreshes and parse errors flash."
+trigger: "Atomic file replace for agent status JSON. Readers see half-written `data.json` while the dashboard refreshes and parse errors flash."
 ---
 
 # Atomic file replace for agent status JSON

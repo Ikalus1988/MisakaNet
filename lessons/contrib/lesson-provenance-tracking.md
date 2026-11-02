@@ -15,6 +15,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Lessons lack provenance metadata — no way to trace who contributed, which PR, when edited, or who merged."
+trigger: "Lesson Provenance Tracking: author, PR, source, merge history. Lessons lack provenance metadata — no way to trace who contributed, which PR, when…"
 ---
 
 ## Problem

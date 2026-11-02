@@ -12,6 +12,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "`pip install` 失败，常见报错信息包括： - `ReadTimeoutError: HTTPSConnectionPool(host='files.pythonhosted.org', port=443): Read…"
+trigger: "pip install Network Timeout / SSL ErrorFix. `pip install` 失败，常见报错信息包括： - `ReadTimeoutError…"
 ---
 
 ## Problem

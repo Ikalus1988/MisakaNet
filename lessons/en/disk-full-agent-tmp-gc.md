@@ -15,6 +15,8 @@ provenance:
   contributor: "Unknown"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Agent machines fill `/tmp` or `work/runs` with screenshots, tarballs, and venvs."
+trigger: "Disk full from agent tmp dirs — GC pattern. Agent machines fill `/tmp` or `work/runs` with screenshots, tarballs, and venvs."
 ---
 
 # Disk full from agent tmp dirs — GC pattern

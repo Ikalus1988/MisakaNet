@@ -20,6 +20,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "API 设计不一致导致开发者困惑：有些端点用 POST 创建，有些用 PUT；有些返回 201，有些返回 200；有些用 camelCase，有些用 snake_case。"
+trigger: "API 设计原则 — 无抽象、一致性、幂等性. API 设计不一致导致开发者困惑：有些端点用 POST 创建，有些用 PUT；有些返回 201，有些返回 200；有些用 camelCase，有些用 snake_case。"
 ---
 
 ## Problem

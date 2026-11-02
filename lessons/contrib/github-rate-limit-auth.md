@@ -16,6 +16,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "A script that queries the GitHub API for issue/PR metadata suddenly returned `API rate limit exceeded` for the shared…"
+trigger: "GitHub rate limiting hitting unauthenticated searches during automation. A script that queries the GitHub API for issue/PR metadata suddenly returned `API rate…"
 ---
 
 # GitHub rate limiting hitting unauthenticated searches during automation

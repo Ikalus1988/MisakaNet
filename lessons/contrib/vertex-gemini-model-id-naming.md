@@ -10,6 +10,8 @@ evidence_level: E3
 provenance:
   source: "intake"
   issue: "#1472"
+summary_plain: "Switching between Gemini API and Vertex AI causes \"model not found\" errors."
+trigger: "Vertex AI vs Gemini model ID naming conventions differ. Switching between Gemini API and Vertex AI causes \"model not found\" errors."
 ---
 
 ## Problem

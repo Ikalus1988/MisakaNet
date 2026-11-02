@@ -11,6 +11,8 @@ status: draft
 created: '2026-07-15'
 source: PR review feedback analysis
 confidence: 0.95
+summary_plain: "When contributing benchmark results to open-source projects, presenting simulated or partial results as real evidence…"
+trigger: "Benchmark Honesty — Distinguishing Simulated vs Real Results. When contributing benchmark results to open-source projects, presenting simulated or…"
 ---
 
 <!-- provenance:

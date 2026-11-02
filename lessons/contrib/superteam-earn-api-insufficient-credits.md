@@ -17,6 +17,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Authenticated to Superteam Earn (`isTalentFilled: true`, valid session cookies)."
+trigger: "Superteam Earn API returns Insufficient credits on submission create. Authenticated to Superteam Earn (`isTalentFilled: true`, valid session cookies)."
 ---
 
 # Superteam Earn API returns Insufficient credits on submission create

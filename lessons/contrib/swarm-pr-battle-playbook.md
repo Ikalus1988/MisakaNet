@@ -14,6 +14,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "When submitting a minimal external error handler PR (+15 to +50 lines) to a project that uses automated AI code review…"
+trigger: "Swarm PR Battle Playbook — Shipping env-var error hooks through AI-reviewed upstreams. When submitting a minimal external error handler PR (+15 to +50 lines)…"
 ---
 
 # Swarm PR Battle Playbook — Shipping env-var error hooks through AI-reviewed upstreams

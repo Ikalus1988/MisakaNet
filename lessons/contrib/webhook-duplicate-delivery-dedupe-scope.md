@@ -15,6 +15,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "A payment gateway received Stripe `payment_intent.succeeded` webhook events."
+trigger: "Webhook duplicate delivery defeated by an over-broad dedupe key. A payment gateway received Stripe `payment_intent.succeeded` webhook events."
 ---
 
 # Webhook duplicate delivery defeated by an over-broad dedupe key

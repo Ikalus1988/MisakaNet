@@ -21,6 +21,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "AI Agent 调用外部工具（S3、DynamoDB、内部 API）时，每个工具都要写 function calling schema 和调用逻辑。工具一多，维护成本很高，没有标准化方案。"
+trigger: "MCP 协议 + Bedrock 实战 — Agent 外部工具调用标准化. AI Agent 调用外部工具（S3、DynamoDB、内部 API）时，每个工具都要写 function calling schema…"
 ---
 
 ## Problem

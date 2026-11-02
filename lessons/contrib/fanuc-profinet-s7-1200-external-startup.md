@@ -38,6 +38,9 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "在汽车焊装产线中，需要将 FANUC 机器人与 Siemens S7-1200 PLC 通过 **PROFINET** 协议建立通讯，并配置外部启动功能，使 PLC…"
+trigger: "FANUC PROFINET Communication with Siemens S7-1200 and External Startup. 在汽车焊装产线中，需要将 FANUC 机器人与 Siemens S7-1200 PLC 通过 **PROFINET** 协议建立通讯，并配置外部启动功能，使 PLC…"
+verify: "1. **通讯验证**：在 TIA Portal 中确认 PROFINET 网络拓扑显示 FANUC Device 为绿色在线状态"
 ---
 
 ## FANUC PROFINET 通讯与 S7-1200 外部启动配置

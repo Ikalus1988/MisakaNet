@@ -26,6 +26,9 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "需要从外部 PC（Python/C++/其他）通过 TCP/IP 网络与 FANUC 机器人控制器建立 socket 通信，实现远程运动控制、变量读写、程序调用等功能。FANUC…"
+trigger: "FANUC Robot TCP/IP Socket Communication Protocol and MAPPDK Setup. 需要从外部 PC（Python/C++/其他）通过 TCP/IP 网络与 FANUC 机器人控制器建立 socket…"
+verify: "1. 从 PC ping 控制器 IP（如 192.168.234.2）通"
 ---
 
 ## FANUC Robot TCP/IP Socket Communication Protocol and MAPPDK Setup

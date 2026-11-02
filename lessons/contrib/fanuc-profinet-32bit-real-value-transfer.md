@@ -20,6 +20,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "SCARA 12iA + R-30iB Compact Plus needs to send/receive 32-bit real values via Profinet, but GI/GO are limited to…"
+trigger: "FANUC Profinet 32-bit Real Value Transfer Without KAREL. SCARA 12iA + R-30iB Compact Plus needs to send/receive 32-bit real values via Profinet…"
 ---
 
 ## Problem

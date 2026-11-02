@@ -26,6 +26,9 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "FANUC KAREL机器人编程中，运动学和坐标变换操作容易出现以下问题： - IK求解在奇异点附近失败，但程序不报错 - 欧拉角在±90°俯仰角附近出现万向锁，导致WPR值跳变 - 圆柱坐标转换的z_axis参数(Z_AXES vs…"
+trigger: "IK/FK and Quaternion Math Guide for FANUC KAREL Robot Programming. FANUC KAREL机器人编程中，运动学和坐标变换操作容易出现以下问题： - IK求解在奇异点附近失败，但程序不报错 -…"
+verify: "1. **IK/FK往返测试**：对同一位置做IK→FK，验证精度"
 ---
 
 ### Problem描述

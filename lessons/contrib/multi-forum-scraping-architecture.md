@@ -20,6 +20,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Scraping multiple technical forums requires different approaches per site."
+trigger: "Multi-Forum Scraping Architecture — API vs Playwright. Scraping multiple technical forums requires different approaches per site."
 ---
 
 ## Problem

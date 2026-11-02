@@ -19,6 +19,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Reddit's official API closed self-service registration in 2025-11."
+trigger: "rdt-cli — Reddit in Your Terminal (Reverse-Engineered API). Reddit's official API closed self-service registration in 2025-11."
 ---
 
 ## Problem

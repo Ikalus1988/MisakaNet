@@ -24,6 +24,9 @@ provenance:
   contributor: "s6pa1rta3n-lab"
   verified_date: "2026-09-08"
   evidence: "E2"
+summary_plain: "在将微服务知识检索（RAG）管道从本地 HuggingFace/BGE 模型或 OpenAI 嵌入服务迁移至 Google Cloud Vertex AI 及 Vertex Model Garden 托管的 Qwen…"
+trigger: "Vertex AI Embedding 迁移实战：Python 与 Go 双客户端接入、Qwen 适配与维度配额避坑指南. 在将微服务知识检索（RAG）管道从本地 HuggingFace/BGE 模型或 OpenAI 嵌入服务迁移至 Google Cloud Vertex AI 及 Vertex…"
+verify: "通过以下命令与测试用例验证修复方案有效性："
 ---
 
 # Vertex AI Embedding 迁移实战（Python + Go + Qwen）

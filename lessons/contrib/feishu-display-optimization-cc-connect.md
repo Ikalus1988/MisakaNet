@@ -12,6 +12,9 @@ source: unknown
 confidence: 0.9
 subdomain: cc-connect
 evidence_level: E1
+summary_plain: "cc-connect 默认会在飞书聊天中显示工具调用信息（如 \"🔧 工具 #5: Bash\"）和上下文占用提示（如 \"[ctx: ~0%]\"），影响用户体验。"
+trigger: "cc connect feishu display optimization. cc-connect 默认会在飞书聊天中显示工具调用信息（如 \"🔧 工具 #5: Bash\"）和上下文占用提示（如 \"[ctx: ~0%]\"），影响用户体验。"
+verify: "1. 重启 cc-connect：`cc-connect stop --force && cc-connect`"
 ---
 
 <!-- provenance:

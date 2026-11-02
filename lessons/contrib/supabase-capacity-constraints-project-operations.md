@@ -18,6 +18,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "On 2026-06-30, Supabase reported an incident titled **\"Project status change failures in multiple regions\"**."
+trigger: "Supabase capacity constraints caused project operation failures. On 2026-06-30, Supabase reported an incident titled **\"Project status change failures in…"
 ---
 
 ## Problem

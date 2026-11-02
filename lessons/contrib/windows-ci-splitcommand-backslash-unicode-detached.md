@@ -19,6 +19,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Three distinct bugs surfaced in a single Windows CI session: 1."
+trigger: "Windows CI: splitCommand backslash stripping, UnicodeEncodeError, and detached process failure. Three distinct bugs surfaced in a single Windows CI session: 1."
 ---
 
 ## Problem

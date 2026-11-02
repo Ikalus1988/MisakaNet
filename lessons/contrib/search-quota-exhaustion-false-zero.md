@@ -18,6 +18,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Running several local searches in a row produced **0 results for queries that should have matched**."
+trigger: "A zero-result search is not proof of absence — check what swallowed the query. Running several local searches in a row produced **0 results for queries that…"
 ---
 
 ## Verification

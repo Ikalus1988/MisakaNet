@@ -20,6 +20,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "После успешного слияния документационного pull request планировалось сразу начать следующую независимую задачу в том…"
+trigger: "Чистая ветка после слияния предыдущего pull request. После успешного слияния документационного pull request планировалось сразу начать…"
 ---
 
 # Чистая ветка после слияния предыдущего pull request

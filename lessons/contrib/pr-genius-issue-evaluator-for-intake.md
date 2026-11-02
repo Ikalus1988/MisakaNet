@@ -16,6 +16,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Maintainers need to manually review each intake issue for quality, spam, and actionability."
+trigger: "PR Genius issue evaluator: batch review intake issues. Maintainers need to manually review each intake issue for quality, spam, and…"
 ---
 
 ## Problem

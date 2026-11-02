@@ -22,6 +22,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "AI agents gathering knowledge from technical forums hit inconsistent results: some requests succeed, others return…"
+trigger: "Agent Web Access Toolchain — 7 Libraries for Reliable Forum Scraping. AI agents gathering knowledge from technical forums hit inconsistent results: some…"
 ---
 
 ## Problem

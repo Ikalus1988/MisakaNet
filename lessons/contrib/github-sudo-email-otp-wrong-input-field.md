@@ -18,6 +18,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Automating GitHub **sudo mode** (sensitive actions like creating a classic PAT at `/settings/tokens/new`) via…"
+trigger: "GitHub sudo email OTP fails when the wrong input is filled. Automating GitHub **sudo mode** (sensitive actions like creating a classic PAT at…"
 ---
 
 # GitHub sudo email OTP fails when the wrong input is filled

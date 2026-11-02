@@ -12,6 +12,8 @@ status: published
 created: '2026-09-05'
 source: intake-issue-1458
 evidence_level: E2
+summary_plain: "`curl` requests to external APIs timeout behind corporate proxy with SSL inspection enabled."
+trigger: "curl Timeout Behind Corporate Proxy: SSL Inspection Breaks Certificate Validation. `curl` requests to external APIs timeout behind corporate proxy with SSL…"
 ---
 
 # curl Timeout Behind Corporate Proxy

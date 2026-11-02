@@ -11,6 +11,8 @@ status: published
 created: '2026-08-22'
 source: closed-pr-1029
 evidence_level: E2
+summary_plain: "Search uses only BM25, missing semantic similarity from vector embeddings."
+trigger: "BM25 + Vector Hybrid Search: configurable blending weights. Search uses only BM25, missing semantic similarity from vector embeddings."
 ---
 
 <!-- provenance:

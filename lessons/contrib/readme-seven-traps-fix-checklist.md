@@ -15,6 +15,7 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+verify: "- README 从 310 行 → 170 行（-45%）"
 ---
 
 ## Root Cause

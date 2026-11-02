@@ -20,6 +20,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "FANUC DCS (Dual Check Safety) is a critical safety system that uses independent dual CPUs to monitor robot position…"
+trigger: "FANUC DCS Safety System — Configuration and Stop Modes. FANUC DCS (Dual Check Safety) is a critical safety system that uses independent dual…"
 ---
 
 ## Problem

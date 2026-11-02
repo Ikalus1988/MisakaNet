@@ -14,6 +14,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "调用飞书文档 `document.blocks.children.create` API 批量创建 block 时，每次请求超过约 20 个 block 会触发限流（HTTP 429）或发生静默截断（请求成功但部分 block 未写入）。"
+trigger: "feishu block batch limit. 调用飞书文档 `document.blocks.children.create` API 批量创建 block 时，每次请求超过约 20 个 block 会触发限流（HTTP…"
 ---
 
 ## 飞书 Block 批量写入上限

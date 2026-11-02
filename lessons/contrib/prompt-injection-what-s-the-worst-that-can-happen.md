@@ -17,6 +17,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "LLM applications that combine carefully crafted system prompts with untrusted user input are vulnerable to prompt…"
+trigger: "Prompt Injection: What's the Worst That Can Happen?. LLM applications that combine carefully crafted system prompts with untrusted user input…"
 ---
 
 ## Problem

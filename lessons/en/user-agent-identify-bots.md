@@ -15,6 +15,8 @@ provenance:
   contributor: "Unknown"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "APIs block default Python-urllib user agents or cannot rate-limit fairly across bots."
+trigger: "Set a clear User-Agent on earn HTTP clients. APIs block default Python-urllib user agents or cannot rate-limit fairly across bots."
 ---
 
 # Set a clear User-Agent on earn HTTP clients

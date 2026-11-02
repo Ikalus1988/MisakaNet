@@ -17,6 +17,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Open-source projects want to attract AI agent crawlers and automated PR contributors, but traditional bounty models…"
+trigger: "Zero-Bounty Agent Competition Flywheel: Issue Design for Crawler Attraction. Open-source projects want to attract AI agent crawlers and automated PR…"
 ---
 
 # Zero-Bounty Agent Competition Flywheel

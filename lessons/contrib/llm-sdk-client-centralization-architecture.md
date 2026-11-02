@@ -18,6 +18,9 @@ evidence_level: "E2"
 provenance:
   source: "production_incident"
   evidence: "unit_test"
+summary_plain: "In modular multi-agent architectures, independent subagents, planning loops, and dynamically dispatched tool handlers…"
+trigger: "Centralized SDK Client Architecture for High-Concurrency Multi-Agent Runtimes. In modular multi-agent architectures, independent subagents, planning loops, and…"
+verify: "Execute the following test script validating client deduplication, multi-threaded access safety, configuration isolation, and resource teardown:"
 ---
 
 # Centralized SDK Client Architecture for High-Concurrency Multi-Agent Runtimes

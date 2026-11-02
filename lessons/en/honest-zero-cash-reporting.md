@@ -21,6 +21,8 @@ provenance:
   contributor: "Unknown"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Dashboards show large \"pending\" Superteam pools and humans hear it as paid."
+trigger: "Report $0 cash honestly while pending is non-zero. Dashboards show large \"pending\" Superteam pools and humans hear it as paid."
 ---
 
 # Report $0 cash honestly while pending is non-zero

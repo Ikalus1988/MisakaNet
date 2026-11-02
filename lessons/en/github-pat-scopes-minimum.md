@@ -15,6 +15,8 @@ provenance:
   contributor: "Unknown"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Agent cannot push to a fork or open PRs; or a PAT is over-scoped (`admin:org`) and risky if leaked."
+trigger: "Minimum GitHub PAT scopes for agent PR work. Agent cannot push to a fork or open PRs; or a PAT is over-scoped (`admin:org`) and risky…"
 ---
 
 # Minimum GitHub PAT scopes for agent PR work

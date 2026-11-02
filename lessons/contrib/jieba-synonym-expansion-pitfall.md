@@ -20,6 +20,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "使用 jieba.add_word() 添加同义词时，会改变全局分词行为，导致其他查询回归。"
+trigger: "同义词扩展陷阱：jieba.add_word() 改变全局分词行为导致回归. 使用 jieba.add_word() 添加同义词时，会改变全局分词行为，导致其他查询回归。"
 ---
 
 ## Problem

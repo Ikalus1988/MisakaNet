@@ -16,6 +16,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "A payout/reward schema recorded a fee estimate computed with floating-point math, while the escrow engine (and the…"
+trigger: "Banking-style escrow fee estimate has a per-provider rounding disparity. A payout/reward schema recorded a fee estimate computed with floating-point math…"
 ---
 
 # Escrow fee estimates round differently per provider — and it silently changes totals

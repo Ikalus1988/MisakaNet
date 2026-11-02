@@ -25,6 +25,8 @@ provenance:
   contributor: "Misaka10099"
   merged_at: "2026-09-12"
   evidence: "mechanism reproduced 2026-09-13 (E2) with go1.23.4 + golangci-lint 2.13.2; contributor's own counts remain unavailable — see the Verification section"
+summary_plain: "This lesson comes from issue **#1500** (node `Misaka10099`, submitted domain `go-tooling`): a Go module that had been…"
+trigger: "Clearing a Go linter backlog to zero: revive doc comments, De Morgan predicates, cascading unused deletions. This lesson comes from issue **#1500** (node…"
 ---
 
 # Clearing a Go linter backlog to zero: revive doc comments, De Morgan predicates, cascading unused deletions

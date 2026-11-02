@@ -16,6 +16,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Claude Code sessions using MCP tools rapidly consume the 200K context window."
+trigger: "Context Mode: Reducing Claude Code Context Consumption by 98%. Claude Code sessions using MCP tools rapidly consume the 200K context window."
 ---
 
 ## Problem

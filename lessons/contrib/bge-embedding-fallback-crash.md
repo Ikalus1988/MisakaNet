@@ -12,6 +12,8 @@ source: bootstrap
 domain_expert: bootstrap
 verified_date: '2026-05-03'
 subdomain: embedding
+summary_plain: "When HermesHub starts, if the BGE-m3 model has not been downloaded to the local path, SkillIndexer crashes immediately."
+trigger: "BGE Embedding Fallback Crash. When HermesHub starts, if the BGE-m3 model has not been downloaded to the local path…"
 ---
 
 <!-- provenance:

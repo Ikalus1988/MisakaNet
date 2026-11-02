@@ -15,6 +15,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "访问者问\"fanuc r-2000ic 系列所有机器人的最大速度\"，RAG 返回了 KUKA Series 2000 的数据。"
+trigger: "FANUC R-2000iC 检索混淆Fix — 关键词强制召回. 访问者问\"fanuc r-2000ic 系列所有机器人的最大速度\"，RAG 返回了 KUKA Series 2000 的数据。"
 ---
 
 ## Problem

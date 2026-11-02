@@ -15,6 +15,8 @@ provenance:
   contributor: "Unknown"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Supervisors cannot tell if a local earn dashboard or API is up."
+trigger: "Tiny /healthz endpoint for agent services. Supervisors cannot tell if a local earn dashboard or API is up."
 ---
 
 # Tiny /healthz endpoint for agent services

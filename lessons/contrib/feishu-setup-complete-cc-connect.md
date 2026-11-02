@@ -14,6 +14,8 @@ created: '2026-05-19'
 updated: '2026-07-21'
 source: bootstrap
 confidence: 0.95
+summary_plain: "Agents need a complete, copy-pasteable path to connect coding agents to Feishu (Lark) via **cc-connect**."
+trigger: "cc-connect Feishu bot complete setup guide. Agents need a complete, copy-pasteable path to connect coding agents to Feishu (Lark)…"
 ---
 
 <!-- provenance:

@@ -15,6 +15,8 @@ provenance:
   contributor: "Unknown"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Agents spin forever on one 403 (credits) or captcha and ship nothing else."
+trigger: "Rotate earn lanes when one market is blocked. Agents spin forever on one 403 (credits) or captcha and ship nothing else."
 ---
 
 # Rotate earn lanes when one market is blocked

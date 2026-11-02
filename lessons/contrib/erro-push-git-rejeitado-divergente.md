@@ -18,6 +18,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "This error occurs when Git refuses to push local commits because the remote branch has commits that the local branch…"
+trigger: "Erro de push rejeitado no Git: branches divergentes e como resolver. This error occurs when Git refuses to push local commits because the remote branch has…"
 ---
 
 ## Problem

@@ -17,6 +17,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Version number appears in multiple files that need to be updated together: - `pyproject.toml` — Python package version…"
+trigger: "Version Management Across Multiple Files. Version number appears in multiple files that need to be updated together: -…"
 ---
 
 ## Problem

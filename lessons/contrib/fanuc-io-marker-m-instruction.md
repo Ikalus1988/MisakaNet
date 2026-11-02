@@ -20,6 +20,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "The M[] option appears in the I/O replace menu but is undocumented in standard TP programming guides."
+trigger: "FANUC IO Marker M[] Instruction — Background Logic Alternative. The M[] option appears in the I/O replace menu but is undocumented in standard TP…"
 ---
 
 ## Problem

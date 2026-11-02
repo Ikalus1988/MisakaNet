@@ -17,6 +17,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Writing a Markdown document through the document-block API, `paragraph` blocks are accepted while every `heading`…"
+trigger: "lessons md fix heading block type. Writing a Markdown document through the document-block API, `paragraph` blocks are…"
 ---
 
 # Document block writes: heading types are unusable, bold paragraphs are the fallback

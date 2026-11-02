@@ -18,6 +18,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "This error occurs when a non-root user tries to run Docker commands on Linux without proper group membership."
+trigger: "Erreur de permission Docker: permission denied sur /var/run/docker.sock. This error occurs when a non-root user tries to run Docker commands on Linux without…"
 ---
 
 ## Problem

@@ -19,6 +19,9 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "FANUC 机器人运行过程中出现各类报警代码，现场工程师需要快速查询报警含义和处理方法，但缺乏系统性的报警代码速查资料。"
+trigger: "FANUC Robot Alarm Code Reference Table. FANUC 机器人运行过程中出现各类报警代码，现场工程师需要快速查询报警含义和处理方法，但缺乏系统性的报警代码速查资料。"
+verify: "1. 报警代码查询响应时间 < 5 分钟"
 ---
 
 ## Problem

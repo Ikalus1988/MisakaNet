@@ -15,6 +15,8 @@ provenance:
   contributor: "Unknown"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Child python jobs run forever and pile up CPU."
+trigger: "Timeout wrapper for runaway agent children. Child python jobs run forever and pile up CPU."
 ---
 
 # Timeout wrapper for runaway agent children

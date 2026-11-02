@@ -21,6 +21,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "RAG 知识库包含完整的 FANUC M-900iB/330L 规格表，但 agent 回答\"M-900iB/330L 不存在\"。六个独立层级各自丢弃了有效 chunk — 无单一修复足够。"
+trigger: "RAG 检索六层静默退化：BM25 失败 + 截断 + 分数混合导致有效 chunk 被丢弃. RAG 知识库包含完整的 FANUC M-900iB/330L 规格表，但 agent 回答\"M-900iB/330L 不存在\"。六个独立层级各自丢弃了有效 chunk —…"
 ---
 
 ## Problem

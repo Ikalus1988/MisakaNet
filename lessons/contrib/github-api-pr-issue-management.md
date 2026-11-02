@@ -15,6 +15,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Need to manage PRs and issues programmatically via GitHub API when `gh` CLI is not authenticated or unavailable."
+trigger: "GitHub API for PR and Issue Management. Need to manage PRs and issues programmatically via GitHub API when `gh` CLI is not…"
 ---
 
 ---

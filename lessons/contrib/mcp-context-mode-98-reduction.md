@@ -19,6 +19,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Every MCP tool call in Claude Code dumps raw data into the 200K context window."
+trigger: "MCP Context Mode — 98% Context Window Reduction for Claude Code. Every MCP tool call in Claude Code dumps raw data into the 200K context window."
 ---
 
 ## Problem

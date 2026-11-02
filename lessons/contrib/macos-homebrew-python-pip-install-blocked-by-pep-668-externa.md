@@ -20,6 +20,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "On macOS with Homebrew-installed Python (3.12+), `pip install` is blocked by PEP 668: ``` $ pip3 install pyyaml error…"
+trigger: "macOS Homebrew Python: pip install Blocked by PEP 668 externally-managed-environment. On macOS with Homebrew-installed Python (3.12+), `pip install` is…"
 ---
 
 # macOS Homebrew Python: pip install Blocked by PEP 668 externally-managed-environment

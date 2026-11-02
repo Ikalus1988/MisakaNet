@@ -18,6 +18,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Describe the network-related issue encountered."
+trigger: "Network Domain Lesson Template. Describe the network-related issue encountered."
 ---
 
 ## Problem

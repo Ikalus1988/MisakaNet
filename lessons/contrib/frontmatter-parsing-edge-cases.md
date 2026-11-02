@@ -18,6 +18,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Frontmatter parsing in MisakaNet has several edge cases that can cause silent data loss or misleading validation…"
+trigger: "Frontmatter Parsing Edge Cases — Silent Failures and Data Loss. Frontmatter parsing in MisakaNet has several edge cases that can cause silent data loss…"
 ---
 
 ## Verification

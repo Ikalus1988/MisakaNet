@@ -16,6 +16,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "A commit made inside a `git worktree add <path> <branch>` appeared to vanish: the remote branch did not move, and the…"
+trigger: "git worktree commit lost after pushing from the wrong directory. A commit made inside a `git worktree add <path> <branch>` appeared to vanish: the remote…"
 ---
 
 # git worktree commits "disappear" after pushing from the wrong directory

@@ -20,6 +20,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "A modal overlay with `z-index: 9999` was appearing **behind** an element with `z-index: 100`."
+trigger: "CSS z-index Not Working — Stacking Context Inversion in Modal Overlays. A modal overlay with `z-index: 9999` was appearing **behind** an element with `z-index…"
 ---
 
 ## Problem

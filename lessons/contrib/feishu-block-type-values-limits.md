@@ -15,6 +15,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "飞书 block API 的 type 字段使用数字 ID，错误值导致静默失败或 400 错误。开发者在参考官方文档或社区资料时，常遇到文档值与实际可用值不一致的问题，导致调试困难、时间浪费。"
+trigger: "feishu block type values limits. 飞书 block API 的 type 字段使用数字 ID，错误值导致静默失败或 400…"
 ---
 
 ## 飞书 Block Type 正确值与已知限制

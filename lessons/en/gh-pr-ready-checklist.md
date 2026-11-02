@@ -15,6 +15,8 @@ provenance:
   contributor: "Unknown"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Docs PRs sit red for trivial reasons: missing DCO, quality score, or dirty base."
+trigger: "GitHub PR ready checklist for agent docs PRs. Docs PRs sit red for trivial reasons: missing DCO, quality score, or dirty base."
 ---
 
 # GitHub PR ready checklist for agent docs PRs

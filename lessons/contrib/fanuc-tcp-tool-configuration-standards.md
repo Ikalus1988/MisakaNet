@@ -22,6 +22,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "In automotive robot applications, TCP (Tool Center Point) and tool configuration must follow specific standards for…"
+trigger: "FANUC TCP and Tool Configuration — Standards for Automotive Applications. In automotive robot applications, TCP (Tool Center Point) and tool configuration must…"
 ---
 
 ## Problem

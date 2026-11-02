@@ -17,6 +17,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "用正则从 Python 源码中提取 `os.environ.get(\"KEY\", \"default_value\")` 的默认值时，提取结果被截断： ```python source = 'exclude =…"
+trigger: "正则陷阱 — 源码中转义引号导致非贪婪匹配提前终止. 用正则从 Python 源码中提取 `os.environ.get(\"KEY\", \"default_value\")` 的默认值时，提取结果被截断： ```python…"
 ---
 
 ## Problem

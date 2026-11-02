@@ -14,6 +14,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "`git pull` 或 `git push` 时报： ``` fatal: unable to access 'https://github.com/user/repo.git/': gnutls_handshake()…"
+trigger: "GitHub TLS 握手失败 — gnutls_handshake() Error. `git pull` 或 `git push` 时报： ``` fatal: unable to access…"
 ---
 
 ## Problem

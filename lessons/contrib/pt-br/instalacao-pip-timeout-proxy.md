@@ -13,6 +13,8 @@ created: '2026-09-05'
 source: translation-pip-install-proxy-timeout
 evidence_level: E2
 lang: pt-br
+summary_plain: "O `pip install` falha com `ReadTimeoutError` ou `ConnectionResetError` atrás de um proxy corporativo com inspeção SSL…"
+trigger: "pip install falha com ReadTimeoutError atrás de proxy corporativo. O `pip install` falha com `ReadTimeoutError` ou `ConnectionResetError` atrás de um proxy…"
 ---
 
 # pip install falha atrás de proxy corporativo

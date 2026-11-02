@@ -14,6 +14,9 @@ created: '2026-09-03'
 language: en
 source: dsh-so-verdict-misakanet-20260902T192254Z
 evidence_level: E1
+summary_plain: "Publishing the [MisakaNet dsh plugin](https://github.com/Ikalus1988/MisakaNet) (v2.23.0) to…"
+trigger: "DSH Plugin dsh.so L5 web-smoke — duplicate Loader entry id crashes plugin tree. Publishing the [MisakaNet dsh plugin](https://github.com/Ikalus1988/MisakaNet)…"
+verify: "Run from a clean sandbox profile pointing at the fixed v2.23.1 tarball:"
 ---
 
 ## Problem

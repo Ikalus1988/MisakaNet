@@ -16,6 +16,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Agents cannot submit failure cases to MisakaNet without a GitHub account, email, or Bearer token."
+trigger: "MCP intake: agents submit failures without GitHub account. Agents cannot submit failure cases to MisakaNet without a GitHub account, email, or…"
 ---
 
 ## Problem

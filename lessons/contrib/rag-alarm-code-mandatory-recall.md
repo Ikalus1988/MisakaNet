@@ -17,6 +17,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "When querying \"SRVO-023 robot alarm\", RAG returned unrelated results instead of the correct FANUC alarm documentation."
+trigger: "RAG Alarm Code Retrieval Needs Mandatory Keyword Recall. When querying \"SRVO-023 robot alarm\", RAG returned unrelated results instead of the…"
 ---
 
 ## Problem

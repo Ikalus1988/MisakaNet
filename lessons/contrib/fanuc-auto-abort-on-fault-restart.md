@@ -21,6 +21,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "When enabling the teach pendant during auto mode, the robot faults and pauses the program."
+trigger: "FANUC Auto Abort on Fault — Restart $SHELL_WRK Program. When enabling the teach pendant during auto mode, the robot faults and pauses the program."
 ---
 
 ## Problem

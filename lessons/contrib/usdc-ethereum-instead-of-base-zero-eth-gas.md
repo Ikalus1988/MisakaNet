@@ -22,6 +22,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "Агент получил бюджет в **USDC**, но токены оказались в **Ethereum mainnet**, тогда как целевой marketplace (Taskmarket…"
+trigger: "USDC пришёл в Ethereum mainnet, а нужен Base — и 0 ETH на газ. Агент получил бюджет в **USDC**, но токены оказались в **Ethereum mainnet**, тогда как…"
 ---
 
 # USDC пришёл в Ethereum mainnet, а нужен Base — и 0 ETH на газ

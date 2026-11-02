@@ -18,6 +18,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "文档、lesson、教程里写\"凭证占位符\"时如果用真实 URL 形状 `https://username:TOKEN@host`，GitGuardian 会报 `Secret type: Basic Auth String`，触发： -…"
+trigger: "GitGuardian 误报 Basic Auth String：教程里凭证占位符必须用尖括号，不写完整 user:pass@host. 文档、lesson、教程里写\"凭证占位符\"时如果用真实 URL 形状 `https://username:TOKEN@host`，GitGuardian 会报 `Secret…"
 ---
 
 ## Problem

@@ -18,6 +18,9 @@ provenance:
   source: "dsh"
   contributor: "Ikalus1988"
   evidence: "locally reproduced + unit tested"
+summary_plain: "In a Go roleplay chat app, a user wrote: ``` Arlete, vá até a loja da Ana ``` (`Arlete` = main character/protagonist…"
+trigger: "Roleplay Vocative vs Mention — Entity Disambiguation Failure in Portuguese Turn Routing. In a Go roleplay chat app, a user wrote: ``` Arlete, vá até a loja da…"
+verify: "Table-driven unit tests for the vocative detector:"
 ---
 
 # Roleplay Vocative vs Mention — Entity Disambiguation Failure in Portuguese Turn Routing

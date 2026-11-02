@@ -18,6 +18,9 @@ provenance:
   contributor: "s6pa1rta3n-lab"
   merged_at: "2026-09-08"
   evidence: "post-publication"
+summary_plain: "When managing multi-service topologies (such as a web application, background worker, relational database, and cache)…"
+trigger: "Docker Compose Basics: Multi-Container Networking and Service Healthcheck Orchestration. When managing multi-service topologies (such as a web application…"
+verify: "Execute verification commands to validate configuration syntax, service health transitions, and inter-service network connectivity:"
 ---
 
 ## Problem

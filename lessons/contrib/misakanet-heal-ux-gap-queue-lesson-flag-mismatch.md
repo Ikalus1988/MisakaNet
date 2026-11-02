@@ -16,6 +16,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "`search_knowledge.py --heal` (line 188-194) prints suggested `queue_lesson.py` commands to help agents submit a lesson…"
+trigger: "MisakaNet --heal UX Gap — Suggested queue_lesson.py Command Uses Wrong Flag. `search_knowledge.py --heal` (line 188-194) prints suggested `queue_lesson.py`…"
 ---
 
 # MisakaNet --heal UX Gap — Suggested queue_lesson.py Command Uses Wrong Flag

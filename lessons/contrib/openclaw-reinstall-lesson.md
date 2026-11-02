@@ -17,6 +17,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "愚者飞书机器人无反应，尝试重装 OpenClaw。"
+trigger: "OpenClaw 重装教训 — 删除前先停服务清残留. 愚者飞书机器人无反应，尝试重装 OpenClaw。"
 ---
 
 ---

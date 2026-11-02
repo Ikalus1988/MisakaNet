@@ -16,6 +16,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "You saved a file's content from terminal output (using `cat -n`, `sed -n '...p'`, or `less -N`), but the file won't…"
+trigger: "Before — inspect raw first line. You saved a file's content from terminal output (using `cat -n`, `sed -n '...p'`, or…"
 ---
 
 ---

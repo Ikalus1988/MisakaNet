@@ -14,6 +14,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "在 WSL 中运行 Python 脚本，读取或写入文件时报： ``` UnicodeDecodeError: 'gbk' codec can't decode byte ..."
+trigger: "Python GBK Encoding Error — Windows/WSL 跨平台. 在 WSL 中运行 Python 脚本，读取或写入文件时报： ``` UnicodeDecodeError: 'gbk' codec can't decode byte ..."
 ---
 
 ## Problem

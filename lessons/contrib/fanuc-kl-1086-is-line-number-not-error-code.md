@@ -28,6 +28,9 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+summary_plain: "分析 FANUC 1086 报错时，误将 1086 当作某种错误码，一路追错方向。"
+trigger: "FANUC KL: 1086 是代码行号而非错误码. 分析 FANUC 1086 报错时，误将 1086 当作某种错误码，一路追错方向。"
+verify: "复现 IPC 超时场景，确认 1086 出现在 KTRANS 编译输出中（而非运行时日志）。"
 ---
 
 ## FANUC KL: 1086 是代码行号而非错误码
