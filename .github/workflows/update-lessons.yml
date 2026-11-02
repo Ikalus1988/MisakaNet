@@ -142,7 +142,12 @@ jobs:
       - name: Emit intake receipts
         env:
           GH_TOKEN: ${{ secrets.SHELDON_PAT }}
-        run: python3 scripts/emit_intake_receipt.py --quiet
+        run: |
+          # `--close`: a published lesson IS the resolution of the intake that asked for it. Until
+          # 2026-11-02 nothing closed them — the receipt step only commented, and the issue stayed
+          # open until a maintainer remembered. `--seed-log` was run once, by hand, over the 341
+          # lessons that already existed, so the first automated run receipts only new promotions.
+          python3 scripts/emit_intake_receipt.py --quiet --close
 
       - name: Check for changes
         id: check

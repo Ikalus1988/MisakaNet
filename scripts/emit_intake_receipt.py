@@ -63,6 +63,23 @@ def _parse_frontmatter(text: str) -> dict:
     return {}
 
 
+def _issue_from_provenance(fm: dict) -> str:
+    """The issue number a lesson cites, as a string, or "" — from `provenance.issue`.
+
+    Accepts `"#4249"`, `"#4146 + #4157"` (the converter's merged form) and a bare number. A merged
+    lesson cites the *first* issue for the receipt: one receipt per issue is the contract, and the
+    second intake is named in the case rather than in the log.
+    """
+    provenance = fm.get("provenance")
+    value = ""
+    if isinstance(provenance, dict):
+        value = str(provenance.get("issue") or "")
+    if not value:
+        value = str(fm.get("provenance_issue") or "")
+    match = re.search(r"#?(\d{1,7})", value)
+    return match.group(1) if match else ""
+
+
 def _load_receipts() -> set[str]:
     """Load set of contrib_ids that already received receipts."""
     if not RECEIPT_LOG.exists():
@@ -110,6 +127,13 @@ def _scan_published_lessons() -> list[dict]:
             fm = _parse_frontmatter(text)
             contrib_id = fm.get("contrib_id", "")
             if not contrib_id:
+                # `provenance.issue: "#4249"` is what the intake converter writes; `contrib_id` is
+                # what this script was written to look for, and **no lesson has ever carried it**
+                # (measured 2026-11-02: 0 lessons with `contrib_id`, 330 with `provenance.issue`).
+                # So the daily "Emit intake receipts" step in `update-lessons.yml` had been a no-op
+                # since it was added, and every receipt posted until now was posted by hand.
+                contrib_id = _issue_from_provenance(fm)
+            if not contrib_id:
                 continue
             # Skip drafts
             status = fm.get("status", "")
@@ -156,6 +180,14 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--dry-run", action="store_true", help="Preview without posting")
     parser.add_argument("--check", action="store_true", help="Exit 1 if pending receipts exist")
     parser.add_argument("--quiet", action="store_true", help="Silent on success")
+    parser.add_argument("--close", action="store_true",
+                        help="Close the intake issue after a receipt is posted (the conversion is "
+                             "the resolution; a receipt nobody closes leaves the queue looking full)")
+    parser.add_argument("--seed-log", action="store_true",
+                        help="Record every current lesson↔issue pair WITHOUT posting anything. Run "
+                             "once before enabling the daily job on a corpus that already has "
+                             "hundreds of converted intakes, otherwise the first run posts a receipt "
+                             "for every lesson ever written.")
     args = parser.parse_args(argv)
 
     # Scan for published lessons with contrib_id
@@ -164,6 +196,13 @@ def main(argv: list[str] | None = None) -> int:
 
     # Find new promotions
     pending = [l for l in published if l["contrib_id"] not in already_receipted]
+
+    if args.seed_log:
+        for lesson in pending:
+            _append_receipt(lesson["contrib_id"], lesson["lesson_path"],
+                            _resolve_issue_url(lesson["contrib_id"]) or "", lesson["evidence_level"])
+        print(f"seeded {len(pending)} lesson↔issue pair(s); nothing was posted and no issue closed")
+        return 0
 
     if args.check:
         if pending:
@@ -212,7 +251,9 @@ def main(argv: list[str] | None = None) -> int:
             failed.append(contrib_id)
 
         if success:
-            print(f"  ✅ Receipt posted for {contrib_id} -> {lesson['lesson_path']}")
+            closed = _close_issue(issue_url) if args.close else False
+            print(f"  ✅ Receipt posted for {contrib_id} -> {lesson['lesson_path']}"
+                  + (" (issue closed)" if closed else ""))
         elif issue_url:
             print(f"  ⚠️  Comment FAILED for {contrib_id} — not recorded, retried next run")
         else:
@@ -238,6 +279,14 @@ def main(argv: list[str] | None = None) -> int:
         print(f"\n✅ Emitted {emitted} intake receipt(s)")
 
     return 0
+
+
+def _close_issue(issue_url: str) -> bool:
+    """Close an intake whose lesson has been published. Failure is not fatal: the receipt is the
+    obligation, the close is bookkeeping."""
+    out = subprocess.run(["gh", "issue", "close", issue_url, "--reason", "completed"],
+                         capture_output=True, text=True)
+    return out.returncode == 0
 
 
 def _resolve_issue_url(contrib_id: str) -> str | None:
