@@ -413,26 +413,20 @@ const MCP_TOOLS = [
   },
   {
     name: "misakanet_get_lesson",
-    description: "[RETRIEVAL / READ] Fetch one public MisakaNet lesson by repository path or lesson ID. Use after misakanet_search returns a promising result to pull the full fix content. Provide exactly one of id or path (path takes precedence if both are supplied); if neither is supplied the tool returns {error}. `path` must be a lesson file (lessons/<topic>/<slug>.md) — anything else is refused with code=invalid_lesson_path rather than read.\nReturns: object {path: string, content: string} — lesson markdown body, capped at 5000 chars per call; or {error, code}. The code says which: lesson_not_found (no such lesson — do not retry, search instead), invalid_lesson_path (the argument is not a lesson reference — fix the argument), internal_error (a service fault — retrying is reasonable). When the lesson is longer than the cap the response says so instead of pretending to be complete: {truncated: true, content_length: <full chars>, content_returned: <chars here>, full_content_url: <raw markdown>} — fetch that URL when the tail matters (the cut can fall before the Verification section).\nExample: misakanet_get_lesson(id='auto-merge-ci-pipeline')",
+    description: "[RETRIEVAL / READ] Fetch one public MisakaNet lesson by repository path or lesson ID. Use after misakanet_search returns a promising result to pull the full fix content. Pass `path` or `id` (path wins if both are supplied); at least one is required, and the empty call returns {error, code}. `path` must be a lesson file (lessons/<topic>/<slug>.md) — anything else is refused with code=invalid_lesson_path rather than read.\nReturns: object {path: string, content: string} — lesson markdown body, capped at 5000 chars per call; or {error, code}. The code says which: lesson_not_found (no such lesson — do not retry, search instead), invalid_lesson_path (the argument is not a lesson reference — fix the argument), internal_error (a service fault — retrying is reasonable). When the lesson is longer than the cap the response says so instead of pretending to be complete: {truncated: true, content_length: <full chars>, content_returned: <chars here>, full_content_url: <raw markdown>} — fetch that URL when the tail matters (the cut can fall before the Verification section).\nExample: misakanet_get_lesson(id='auto-merge-ci-pipeline')",
     inputSchema: {
       type: "object",
       properties: {
         path: { type: "string", description: "Lesson path relative to the repository, e.g. lessons/core/auto-merge-ci-pipeline.md — must be a file under lessons/ ending in .md (other repository files are not readable through this tool). Either path or id is required." },
         id: { type: "string", description: "Lesson ID, usually the filename without .md, e.g. auto-merge-ci-pipeline. Either id or path is required." },
       },
-      // "At least one of" written out, because `minProperties` is not in the keyword subset a
-      // conservative MCP client accepts (#2967). dsh 0.2.0-rc.2 validates tool schemas against
-      // {type, oneOf, properties, required, additionalProperties, items, enum, const} and, because
-      // its bundle sets failOnStartupError: false, one unrecognised keyword does not raise — it
-      // silently registers **zero tools** for the whole server. `anyOf` would say this more
-      // directly but is outside that subset; the three `oneOf` branches below cover exactly the
-      // three accepted argument shapes, including both-supplied, which `path` gives precedence.
-      // tests/test_mcp_schema_branches.py holds the subset.
-      oneOf: [
-        { required: ["path"] },
-        { required: ["id"] },
-        { required: ["path", "id"] },
-      ],
+      // **No composition keyword.** This was a three-branch `oneOf` that meant "at least one of",
+      // and it enforced the opposite: `oneOf` is *exactly one*, so the documented call that supplies
+      // both `path` and `id` (path wins) matched branches 1 and 3 simultaneously and was rejected
+      // before the handler ran — while the neither-supplied case was rejected at the schema layer,
+      // so the handler's actionable `invalid_lesson_path` error never reached the client (#4360).
+      // The requirement is stated in the descriptions, and the handler refuses the empty call.
+      // tests/test_mcp_schema_branches.py fails any tool schema that uses these keywords again.
     },
     annotations: {
       readOnlyHint: true,
@@ -595,14 +589,9 @@ const MCP_TOOLS = [
         lesson_id: { type: "string", description: "Lesson ID (filename stem), e.g. dco-auto-fix-workflow. Either lesson_id or lesson_path is required." },
         lesson_path: { type: "string", description: "Optional full path, e.g. lessons/core/dco-auto-fix-workflow.md. Either lesson_id or lesson_path is required." },
       },
-      // See the note on `misakanet_get_lesson` above: `minProperties` sits outside the keyword
-      // subset a conservative MCP client accepts, and an unrecognised keyword there costs the
-      // client every tool on the server (#2967).
-      oneOf: [
-        { required: ["lesson_id"] },
-        { required: ["lesson_path"] },
-        { required: ["lesson_id", "lesson_path"] },
-      ],
+      // See the note on `misakanet_get_lesson` above: no composition keyword, because `oneOf` means
+      // *exactly one* and the handler accepts either field or both (#4360). The empty call is
+      // refused by the handler with `{error: "lesson_id or lesson_path is required"}`.
     },
     annotations: {
       readOnlyHint: true,
@@ -633,7 +622,9 @@ const MCP_TOOLS = [
         intake_id: { type: "string", description: "Question intake ID from a prior submit_intake response, e.g. 'issue-1528' or '1528'; for non-question intakes use dedup_key. Either intake_id or dedup_key is required." },
         dedup_key: { type: "string", description: "The dedup_key (16-char hash) from a prior submit_intake response. Either intake_id or dedup_key is required." },
       },
-      minProperties: 1,
+      // No `minProperties`: this is the #2967 recurrence (#4361). The keyword cost one client every
+      // tool on the server once already, and the stdio face of this same tool never had it. The
+      // handler refuses the empty call with `{error: "intake_id or dedup_key is required"}`.
     },
     annotations: {
       readOnlyHint: true,

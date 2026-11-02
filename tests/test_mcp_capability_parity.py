@@ -38,6 +38,8 @@ from pathlib import Path
 
 import pytest
 
+import _worker_tools  # noqa: E402 — tests dir is on sys.path
+
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))
 
@@ -86,83 +88,12 @@ def _dispatchable_tool_names() -> set[str]:
 
 
 def _hosted_tool_definitions() -> dict[str, dict]:
-    """The worker's `MCP_TOOLS` array, parsed from source (the offline source of truth).
+    """The hosted tool definitions, from the shared reader (`tests/_worker_tools.py`).
 
-    Parsed rather than evaluated: running the worker module would execute the whole edge handler.
-    `MCP_TOOLS` is an array of plain object literals, so a string-aware pass that quotes the bare
-    keys and drops the trailing commas turns it into JSON. This is the same file
-    `scripts/sync_lesson_count.registered_hosted_tools()` reads for the *names*; the definitions are
-    needed here because the local proxy must not drift from the hosted schema.
+    It used to be a local copy of the JS-to-JSON pass — two copies of one reader, which is how the
+    trailing-comma fix landed in one and not the other on 2026-11-03.
     """
-    text = WORKER.read_text(encoding="utf-8")
-    start = text.index("const MCP_TOOLS = [")
-    cursor = text.index("[", start)
-    depth, in_string, escaped = 0, False, False
-    while cursor < len(text):
-        char = text[cursor]
-        if in_string:
-            if escaped:
-                escaped = False
-            elif char == "\\":
-                escaped = True
-            elif char == '"':
-                in_string = False
-        elif char == '"':
-            in_string = True
-        elif char == "[":
-            depth += 1
-        elif char == "]":
-            depth -= 1
-            if depth == 0:
-                break
-        cursor += 1
-    source = text[text.index("[", start):cursor + 1]
-
-    out: list[str] = []
-    index, in_string, escaped = 0, False, False
-    while index < len(source):
-        char = source[index]
-        if in_string:
-            out.append(char)
-            if escaped:
-                escaped = False
-            elif char == "\\":
-                escaped = True
-            elif char == '"':
-                in_string = False
-            index += 1
-            continue
-        if char == '"':
-            in_string = True
-            out.append(char)
-            index += 1
-            continue
-        # A `//` comment inside `MCP_TOOLS`. This pass was string-aware but not comment-aware, so
-        # a comment explaining a schema — the natural thing to add next to one — broke
-        # `json.loads` with an error pointing at the comment rather than at the schema. Comments
-        # are not JSON; drop them the way a JS parser would, and only outside strings.
-        if char == "/" and source[index + 1:index + 2] == "/":
-            newline = source.find("\n", index)
-            index = len(source) if newline == -1 else newline
-            continue
-        if char == ",":  # JS allows a trailing comma; JSON does not
-            if source[index + 1:].lstrip()[:1] in ("}", "]"):
-                index += 1
-                continue
-            out.append(char)
-            index += 1
-            continue
-        if char.isalpha() or char == "_":
-            ident = re.match(r"[A-Za-z_][A-Za-z0-9_]*", source[index:])
-            if ident and source[index + len(ident.group(0)):].lstrip().startswith(":"):
-                out.append(f'"{ident.group(0)}"')
-                index += len(ident.group(0))
-                continue
-        out.append(char)
-        index += 1
-
-    tools = json.loads("".join(out))
-    return {tool["name"]: tool for tool in tools}
+    return _worker_tools.hosted_definitions()
 
 
 def _guide_form_rows() -> dict[str, str]:
