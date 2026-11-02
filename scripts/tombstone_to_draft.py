@@ -437,6 +437,8 @@ def _generate_draft(tombstone: dict, source_file: str = "", ai_hint: str = "") -
 
 ## Solution
 
+Solution: (unfilled)
+
 <!-- TODO: Agent 需提供修复方案 -->
 
 ## Verification
