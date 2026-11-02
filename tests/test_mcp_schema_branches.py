@@ -40,6 +40,8 @@ from pathlib import Path
 
 import pytest
 
+import _worker_tools  # noqa: E402 — tests dir is on sys.path
+
 REPO = Path(__file__).resolve().parent.parent
 WORKER = REPO / "workers" / "register-proxy-sw.js"
 LOCAL_TOOLS = REPO / "misakanet" / "server" / "tools.py"
@@ -52,70 +54,8 @@ MAP_OF_SCHEMAS = frozenset({"properties", "patternProperties", "$defs", "definit
 
 
 def _hosted_input_schemas() -> dict[str, dict]:
-    """The worker's `MCP_TOOLS`, parsed from source — running the module would run the handler."""
-    text = WORKER.read_text(encoding="utf-8")
-    start = text.index("const MCP_TOOLS = [")
-    cursor = text.index("[", start)
-    depth, in_string, escaped = 0, False, False
-    while cursor < len(text):
-        char = text[cursor]
-        if in_string:
-            if escaped:
-                escaped = False
-            elif char == "\\":
-                escaped = True
-            elif char == '"':
-                in_string = False
-        elif char == '"':
-            in_string = True
-        elif char == "[":
-            depth += 1
-        elif char == "]":
-            depth -= 1
-            if depth == 0:
-                break
-        cursor += 1
-    source = text[text.index("[", start):cursor + 1]
-
-    out: list[str] = []
-    index, in_string, escaped = 0, False, False
-    while index < len(source):
-        char = source[index]
-        if in_string:
-            out.append(char)
-            if escaped:
-                escaped = False
-            elif char == "\\":
-                escaped = True
-            elif char == '"':
-                in_string = False
-            index += 1
-            continue
-        if char == '"':
-            in_string = True
-            out.append(char)
-            index += 1
-            continue
-        if char == "/" and source[index + 1:index + 2] == "/":
-            newline = source.find("\n", index)
-            index = len(source) if newline == -1 else newline
-            continue
-        if char == ",":
-            if source[index + 1:].lstrip()[:1] in ("}", "]"):
-                index += 1
-                continue
-            out.append(char)
-            index += 1
-            continue
-        if char.isalpha() or char == "_":
-            ident = re.match(r"[A-Za-z_][A-Za-z0-9_]*", source[index:])
-            if ident and source[index + len(ident.group(0)):].lstrip().startswith(":"):
-                out.append(f'"{ident.group(0)}"')
-                index += len(ident.group(0))
-                continue
-        out.append(char)
-        index += 1
-    return {tool["name"]: tool["inputSchema"] for tool in json.loads("".join(out))}
+    """`{tool: inputSchema}` for the hosted surface, from the shared reader."""
+    return {name: tool["inputSchema"] for name, tool in _worker_tools.hosted_definitions().items()}
 
 
 def _dangling_required(schema, path="") -> list[str]:
@@ -196,3 +136,57 @@ def test_the_gate_can_see_the_defect_it_forbids():
         "oneOf": [{"required": ["outer"]}],
     }
     assert _dangling_required(nested) == []
+
+# ── the contract the schema must not contradict ────────────────────────────────────────────────
+
+#: Keywords this repository has used to express "at least one of these fields", each of which
+#: enforced something else:
+#:
+#: * `oneOf` is *exactly one*, so the documented call that supplies both `path` and `id` matched two
+#:   branches and was rejected before the handler ran (#4360);
+#: * `minProperties` sits outside the subset a conservative client accepts and cost one client every
+#:   tool on the server once already — and came back on `misakanet_me_inbox` (#4361, #2967).
+FORBIDDEN = ("oneOf", "anyOf", "minProperties")
+
+
+def _tool_schemas() -> list[tuple[str, str, dict]]:
+    """(surface, tool, inputSchema) for both faces."""
+    import sys as _sys  # noqa: PLC0415
+
+    _sys.path.insert(0, str(REPO))
+    from misakanet.server.tools import TOOLS  # noqa: PLC0415
+
+    out = [("hosted", name, schema) for name, schema in _hosted_input_schemas().items()]
+    out += [("stdio", tool["name"], tool["inputSchema"]) for tool in TOOLS]
+    return out
+
+
+def test_no_tool_schema_turns_at_least_one_into_a_composition_keyword():
+    problems = []
+    for surface, name, schema in _tool_schemas():
+        for keyword in FORBIDDEN:
+            if keyword in schema:
+                problems.append(f"{surface} {name}: {keyword}")
+    assert not problems, (
+        "these schemas express a requirement with a keyword that either means something else or "
+        "costs a conservative client every tool on the server: " + ", ".join(problems) + ". "
+        "State the requirement in the descriptions and let the handler refuse the empty call — "
+        "it returns a code and a hint, which a schema rejection cannot.")
+
+
+def test_the_handler_refuses_what_the_schema_no_longer_does():
+    """The constraint moved from the schema to the handler; this is that the handler really has it.
+
+    Both faces are checked by reading their source for the error they return, because running the
+    worker means running the handler and this suite is offline.
+    """
+    worker = WORKER.read_text(encoding="utf-8")
+    for needle in (
+        '"lesson_id or lesson_path is required"',
+        '"intake_id or dedup_key is required"',
+        '"invalid_lesson_path"',
+    ):
+        assert needle in worker, f"the hosted handler lost its refusal: {needle}"
+    tools_src = LOCAL_TOOLS.read_text(encoding="utf-8")
+    assert "missing_lesson_reference" in tools_src or "lesson_id or lesson_path" in tools_src, (
+        "the stdio me_events handler no longer refuses an empty reference")

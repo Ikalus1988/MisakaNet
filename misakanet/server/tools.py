@@ -721,11 +721,10 @@ TOOLS = [
             # keyword makes such a client register zero tools (#2967). These three branches say
             # "at least one of" and also allow both, which the handler resolves by preferring
             # lesson_id.
-            "oneOf": [
-                {"required": ["lesson_id"]},
-                {"required": ["lesson_path"]},
-                {"required": ["lesson_id", "lesson_path"]},
-            ],
+            # No composition keyword: `oneOf` means *exactly one*, so the documented call that
+            # supplies both fields was rejected by the schema while the handler accepts it (path
+            # wins for get_lesson, id for me_events) — and the empty call was refused at the schema
+            # layer, hiding the handler's actionable error (#4360).
         },
     },
     {
