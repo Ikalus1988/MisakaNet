@@ -1301,7 +1301,17 @@ NODE = "node"
 CLIENT_APPLY_HARNESS = r"""
 global.window = { __ModuleLoader__: { load: (m) => { global.__m = m; } } };
 const fs = require('fs');
-eval(fs.readFileSync(process.env.CLIENT_FILE, 'utf8'));
+const path = require('path');
+const os = require('os');
+// The bundle under test, **required** rather than `eval`ed. It is a plain script whose only entry
+// point is `window.__ModuleLoader__.load(...)`, so loading it as a CommonJS module in a fake window
+// exercises exactly what the host does — while `eval(fs.readFileSync(...))` is the shape that put
+// this test on the code-scanning list for dynamic code execution (#399). Copied to a `.cjs` because
+// this package is `"type": "module"`, and required from there.
+const bundleSource = fs.readFileSync(process.env.CLIENT_FILE, 'utf8');
+const bundlePath = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'misakanet-bundle-')), 'client.cjs');
+fs.writeFileSync(bundlePath, bundleSource);
+require(bundlePath);
 const react = { createElement: () => null, useState: (v) => [v, () => {}], useRef: (v) => ({ current: v }),
                 useEffect: () => {}, Fragment: function () {} };
 const mod = global.__m.factory((name) => (name === 'react' ? react : undefined));
