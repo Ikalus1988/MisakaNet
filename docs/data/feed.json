@@ -1,9 +1,16 @@
 {
-  "generated_at": "2026-11-02T04:27:08.188470+00:00",
+  "generated_at": "2026-11-02T05:24:44.432229+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "feat(lessons): batch 4 — ten submissions, and the two gate bugs they found",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4322",
+      "timestamp": "2026-11-02T05:24:33Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "perf(search): the corpus is walked once per process, not once per tool call",
@@ -30,13 +37,6 @@
       "title": "chore(deps-dev): bump wrangler from 4.152.0 to 4.156.0 in the npm group",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/4315",
       "timestamp": "2026-11-02T03:06:07Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(main): release 3.5.0",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4303",
-      "timestamp": "2026-11-02T03:05:28Z",
       "source": "github"
     },
     {
