@@ -475,7 +475,8 @@ def pulse_line(analytics: dict | None, day: str, errors: dict[str, str]) -> list
             f"window reads {history} rows per day, oldest first."]
 
 
-def panel_who(counters, day: str, errors: dict[str, str]) -> list[str]:
+def panel_who(counters, day: str, errors: dict[str, str],
+              intake_bot: dict[str, int] | None = None) -> list[str]:
     """Panel 1 — who is calling, with rule 1's sentence attached to the names."""
     lines = ["## 1 · Who is calling", ""]
     lines += [
@@ -498,6 +499,18 @@ def panel_who(counters, day: str, errors: dict[str, str]) -> list[str]:
     else:
         rendered = " · ".join(f"`{name} {classes.get(name, 0)}`" for name in TRAFFIC_TYPES)
         lines += [f"**calls on {day}** by traffic class: {rendered}", ""]
+
+    # The marketplace action, counted by the only mark it leaves. GitHub exposes no install metric
+    # for an action, so this line is the whole of what anyone can know: how many intake-bot runs
+    # called MisakaNet at all. It is a run count, not a user count — one repository can run the
+    # action on every push.
+    if intake_bot is not None:
+        total = sum(intake_bot.values())
+        detail = ", ".join(f"`{ua}` {n}" for ua, n in list(intake_bot.items())[:3]) or "none"
+        lines += ["", f"**marketplace action** (`misakanet-intake-bot`): {total} run(s) — {detail}",
+                  "- counted from `lesson_usage.user_agent`. GitHub Marketplace reports no install "
+                  "or usage metrics, so this is the only number that exists; a run is a row, not a "
+                  "person.", ""]
 
     counts = client_counts(counters, day)
     if counts is None:
@@ -882,7 +895,7 @@ def render_digest(*, day: str, counters, analytics: dict | None, funnel: dict | 
         lines += [f"**No source could be read for {day}** — every panel below is a report of a "
                   f"failed read, not of a quiet day.", ""]
 
-    lines += panel_who(counters, day, errors)
+    lines += panel_who(counters, day, errors, intake_bot_counts_for(day, errors))
     lines += ["---", ""]
     lines += panel_what(counters, analytics, day, errors)
     lines += ["---", ""]
@@ -956,6 +969,69 @@ def fetch_retrieval_counts(day: str) -> dict[str, int]:
         raise RuntimeError(wrangler_failure(result.stdout, result.stderr))
     rows = result_rows(result.stdout)
     return retrieval_counts(rows) or {}
+
+
+#: The intake bot's User-Agent prefix (`scripts/intake_bot.py`). It is the only server-side mark of a
+#: marketplace-action run: GitHub Marketplace exposes no install or usage metric, so if the answer to
+#: "is the action used?" exists anywhere, it is `lesson_usage.user_agent`.
+INTAKE_BOT_UA_PREFIX = "misakanet-intakebot"
+
+
+def intake_bot_counts(rows) -> dict[str, int] | None:
+    """`{ua: runs}` for intake-bot rows over the vote window, or `None` when they could not be read.
+
+    A run is a row, not a person: one repository can run the action on every push. The honest
+    sentence is the one panel 1 already uses for client names, and it applies here too.
+    """
+    if rows is None:
+        return None
+    counts: dict[str, int] = {}
+    for row in rows:
+        ua = str(row.get("ua") or "").strip().lower()
+        if not ua:
+            continue
+        counts[ua] = counts.get(ua, 0) + int(row.get("count") or 0)
+    return dict(sorted(counts.items()))
+
+
+def intake_bot_counts_for(day: str, errors: dict[str, str]) -> dict[str, int] | None:
+    """The panel's view of the intake-bot numbers: `None` when unreadable, and the reason recorded.
+
+    A failed read and a quiet day are different answers (rule 4), so the failure is written into
+    `errors` and the panel says nothing rather than printing a zero.
+    """
+    try:
+        counts = fetch_intake_bot_counts(day)
+    except Exception as error:  # noqa: BLE001 — the digest must not die over one optional panel
+        errors["intake_bot"] = str(error)[:200]
+        return None
+    if counts is None:
+        errors["intake_bot"] = "wrangler could not read lesson_usage.user_agent"
+    return counts
+
+
+def fetch_intake_bot_counts(day: str) -> dict[str, int] | None:
+    """Ask D1 which intake-bot User-Agents called, over the same window as the vote ratio.
+
+    `None` on failure — including `no such table`, which a young deployment answers — because the
+    digest has a sentence for "could not be read" and it is truer than a traceback.
+    """
+    days = window_days(day)
+    sql = ("SELECT lower(user_agent) AS ua, COUNT(*) AS count FROM lesson_usage "
+           f"WHERE lower(user_agent) LIKE '{INTAKE_BOT_UA_PREFIX}%' "
+           f"AND created_at >= '{days[0]}' "
+           f"AND created_at < '{(date.fromisoformat(days[-1]) + timedelta(days=1)).isoformat()}' "
+           "GROUP BY ua ORDER BY count DESC;")
+    result = subprocess.run(
+        ["wrangler", "d1", "execute", "misakanet-db", "--remote", "--json", "--command", sql],
+        cwd=REPO_ROOT / "workers", capture_output=True, text=True, check=False,
+    )
+    if result.returncode != 0:
+        return None
+    try:
+        return intake_bot_counts(result_rows(result.stdout))
+    except (ValueError, TypeError):
+        return None
 
 
 def fetch_e4_density() -> dict | None:
