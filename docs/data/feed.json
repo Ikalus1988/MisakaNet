@@ -1,83 +1,83 @@
 {
-  "generated_at": "2026-11-02T19:37:03.533128+00:00",
+  "generated_at": "2026-11-03T02:57:24.065978+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "fix(ci): the Wrangler that deploys is the Wrangler the lockfile names",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4364",
-      "timestamp": "2026-11-02T18:11:15Z",
+      "title": "lessons(contrib): convert five intakes — LevelDB bloat, GBK batch, \\Z in JS, async races, no-timeout telemetry",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4372",
+      "timestamp": "2026-11-03T02:52:36Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(mcp): the schema stops contradicting the handler it describes (#4360, #4361)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4363",
-      "timestamp": "2026-11-02T17:37:31Z",
+      "title": "fix(ci): the deploy's setup-node pin was github-script's SHA, so nothing could deploy",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4371",
+      "timestamp": "2026-11-03T02:20:21Z",
       "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "fix(worker): the three anonymous write paths #2939 measured now have limits",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4369",
+      "timestamp": "2026-11-03T01:47:25Z",
+      "source": "github"
+    },
+    {
+      "type": "lesson",
+      "title": "同步改异步后台投递后测试假红：轮询只等了两个可见事件里的第一个",
+      "url": "lessons/contrib/async-delivery-test-must-poll-all-visible-conditions.md",
+      "timestamp": "2026-11-03",
+      "domain": "testing",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "LevelDB 批量导入 2.8 亿行内存涨到 19GB：调 write_buffer/cache、每 2~5 万行 flush、并发限 3~4",
+      "url": "lessons/contrib/leveldb-bulk-import-memory-bloat-write-buffers-and-flush.md",
+      "timestamp": "2026-11-03",
+      "domain": "database",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "启动期遥测同步请求没有超时＝UI 永久冻结：超时+后台化+超时留队三件套",
+      "url": "lessons/contrib/no-timeout-sync-telemetry-freezes-ui-on-hung-network.md",
+      "timestamp": "2026-11-03",
+      "domain": "network",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "正则移植：PCRE 的 \\Z 在 JavaScript 里是字面量 Z——一切含 Z 的内容被静默截断",
+      "url": "lessons/contrib/pcre-end-anchor-z-is-a-literal-in-javascript-regex.md",
+      "timestamp": "2026-11-03",
+      "domain": "nodejs",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": ".cmd 包装中文文件名 exe 在计划任务里退出码 255：批处理要按 GBK 写盘或全用 ASCII 名",
+      "url": "lessons/contrib/windows-scheduled-task-cmd-wrapper-chinese-exe-name-exit-255.md",
+      "timestamp": "2026-11-03",
+      "domain": "windows",
+      "source": "lessons"
     },
     {
       "type": "merged_pr",
       "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4362",
-      "timestamp": "2026-11-02T17:26:44Z",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4365",
+      "timestamp": "2026-11-02T19:53:37Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(#4357, #4358): one workflow count, and every read_text names its encoding",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4359",
-      "timestamp": "2026-11-02T17:09:49Z",
+      "title": "fix(ci): the Wrangler that deploys is the Wrangler the lockfile names",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4364",
+      "timestamp": "2026-11-02T18:11:15Z",
       "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "fix(scanning): two real findings fixed, ten false positives to dismiss with reasons",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4356",
-      "timestamp": "2026-11-02T16:30:30Z",
-      "source": "github"
-    },
-    {
-      "type": "lesson",
-      "title": "A .cmd with non-ASCII comments emits a phantom \"is not recognized\" command: chcp inside the file is already too late",
-      "url": "lessons/contrib/a-cmd-with-non-ascii-comments-emits-a-phantom-is-not.md",
-      "timestamp": "2026-11-02",
-      "domain": "windows",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "二进制反汇编的 entry 偏移可能是「代码区相对偏移」——按绝对偏移切段会整体错位且不报错",
-      "url": "lessons/contrib/binary-disassembly-entry-offsets-code-relative-base.md",
-      "timestamp": "2026-11-02",
-      "domain": "development",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "Cloudflare Workers 上实现「成本闸门/限流计数器」时，用 isolate 级内存计数 + 攒批落库（攒够 N 条才写 D1）会导致计数**永远",
-      "url": "lessons/contrib/cloudflare-workers-上实现成本闸门限流计数器时用-isolate-级内存计数.md",
-      "timestamp": "2026-11-02",
-      "domain": "mcp",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "Coopanion 的 GPT-SoVITS 语音扩展（@wocwang/cortico-world-gpt-sovits-for-coopanion）推理服务",
-      "url": "lessons/contrib/coopanion-的-gpt-sovits-语音扩展wocwangcortico-world-gpt-sovits.md",
-      "timestamp": "2026-11-02",
-      "domain": "windows",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "Coopanion（Cortico 桌宠）装扩展后启动即退出（exit 1），core.log 报 RangeError: Maximum call stack",
-      "url": "lessons/contrib/coopanioncortico-桌宠装扩展后启动即退出exit-1corelog-报-rangeerror.md",
-      "timestamp": "2026-11-02",
-      "domain": "windows",
-      "source": "lessons"
     },
     {
       "type": "challenge",
