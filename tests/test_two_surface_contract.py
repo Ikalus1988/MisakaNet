@@ -89,12 +89,6 @@ DECLARED_DIVERGENCES: dict[str, dict[str, str]] = {
             "the local schema so an older client with `token:` still gets a stated refusal instead "
             "of a schema error."
         ),
-        "~/properties/tags/type": (
-            "hosted takes a comma-separated string, the local schema an array. A caller moving "
-            "between surfaces has to change the argument — the divergence this rule exists to "
-            "surface; declared now, fixed when `write_lesson` is next touched."
-        ),
-        "+/properties/tags/items": "follows the array type above.",
     },
 }
 
