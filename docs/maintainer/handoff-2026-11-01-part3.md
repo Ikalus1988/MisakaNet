@@ -1,6 +1,6 @@
 # Handoff — 2026-11-01（第 25 卷，承接 `handoff-2026-11-01-part2.md`）
 
-> 上一卷：`docs/maintainer/handoff-2026-11-01-part2.md`　·　下一卷：（本文件为最新）
+> 上一卷：`docs/maintainer/handoff-2026-11-01-part2.md`　·　下一卷：`docs/maintainer/handoff-2026-11-03.md`
 >
 > 本卷只记一件事：**第二轮审计报告到货，我逐条核了一遍**——哪些是真的、哪些被高估了、
 > 哪些需要 owner 决定。收口状态在上一卷 §1，这里不重复。
