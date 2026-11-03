@@ -63,6 +63,12 @@ function createEnv(opts = {}) {
             counters.set(key, next);
             return { results: [{ count: next }] };
           }
+          if (sql.includes('COUNT(latency_ms)')) {
+            // The latency aggregate (#4052). Checked before the generic branch, which would
+            // otherwise answer it with `signalRows` — rows the aggregate never returns.
+            if (opts.latencyThrows) throw new Error('D1_ERROR: no such column: latency_ms');
+            return { results: opts.latencyRow ? [opts.latencyRow] : [] };
+          }
           if (sql.includes('FROM search_signals')) {
             if (sql.includes('GROUP BY')) {
               if (opts.groupsThrow) throw new Error('D1_ERROR: no such column: domain');
@@ -171,6 +177,17 @@ test('a hit records one row with solved=1, the top id and the result count', asy
   assert.equal(rows[0].domain, 'python');
 });
 
+test('a completed search records how long the caller waited', async () => {
+  // #4052: the column existed and nothing wrote it, so the one episode anyone measured (six
+  // calls, 1.3 s → 62 s on the same query) left no row to look at afterwards.
+  const env = createEnv();
+  await search('pip install timeout', {}, env);
+  const row = env.MISAKANET_D1._signals[0];
+  assert.ok(Number.isFinite(row.latency_ms), `latency must be a number, got ${row.latency_ms}`);
+  assert.ok(row.latency_ms >= 0, 'a duration cannot be negative');
+  assert.ok(row.latency_ms < 60000, `a local test search should not take a minute (${row.latency_ms}ms)`);
+});
+
 test('a miss records one row with solved=0, no top id and a zero count', async () => {
   const env = createEnv();
   const result = await search('zzz-no-such-topic-anywhere-999', {}, env);
@@ -258,6 +275,41 @@ test('the stats endpoint answers an empty window before anything was recorded', 
   assert.deepEqual(body.rows, []);
   assert.equal(body.days, 7, 'the default window is 7 days');
   assert.equal(body.truncated, false);
+  // Nothing has ever been recorded, so the latency side is a *measured* zero, not a failed read.
+  assert.deepEqual(body.latency, {
+    n: 0, max_ms: null,
+    buckets: { lt_1s: 0, s_1_3: 0, s_3_10: 0, s_10_30: 0, s_30_60: 0, gt_60s: 0 },
+  });
+});
+
+test('the stats endpoint serves the latency histogram as counts', async () => {
+  // The exact shape of the 2026-10-29 episode: three searches in the 1–3 s band and one in the
+  // 30–60 s band. A p95 would report one number here; the histogram keeps the bimodality visible.
+  const env = createEnv({
+    latencyRow: { n: 4, max_ms: 62220, lt_1s: 0, s_1_3: 3, s_3_10: 0, s_10_30: 0, s_30_60: 1, gt_60s: 0 },
+  });
+  const resp = await worker.fetch(
+    new Request('https://misakanet.org/api/search-signals/stats?days=30'), env);
+  assert.equal(resp.status, 200);
+  const body = await resp.json();
+  assert.deepEqual(body.latency, {
+    n: 4, max_ms: 62220,
+    buckets: { lt_1s: 0, s_1_3: 3, s_3_10: 0, s_10_30: 0, s_30_60: 1, gt_60s: 0 },
+  });
+  assert.equal(body.latency.buckets.s_30_60, 1, 'the slow tail has to stay countable on its own');
+});
+
+test('a deployment without the latency column still serves the hit-rate rows', async () => {
+  // `null` means "could not read", which is a different answer from `n: 0` ("nothing measured").
+  const env = createEnv({
+    latencyThrows: true,
+    signalRows: [{ solved: 1, created_at: '2026-09-16 10:00:00' }],
+  });
+  const resp = await worker.fetch(new Request('https://misakanet.org/api/search-signals/stats'), env);
+  assert.equal(resp.status, 200, 'the aggregate is a bonus read, not the endpoint');
+  const body = await resp.json();
+  assert.equal(body.latency, null);
+  assert.equal(body.rows.length, 1, 'the rows the aggregator needs are unaffected');
 });
 
 test('the stats endpoint needs the D1 binding', async () => {

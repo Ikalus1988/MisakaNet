@@ -4287,6 +4287,13 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx, 
   if (toolName === "misakanet_search") {
     if (!args.query) return { error: "query is required" };
 
+    // How long the caller waited (#4052). Recorded with the signal row, which already had a
+    // `latency_ms` column nothing filled: the only trace of the 2026-10-29 episode (six calls,
+    // 1.3 s → 62 s, the client reporting `fetch failed`) was a user's report. The timer starts
+    // before the quota read, so it covers the whole served request — quota D1 read, lesson load,
+    // cold index load, scoring — which is what the client measures, not just the scorer.
+    const searchStartedAt = Date.now();
+
     // #3692: the query is the one thing that carries the caller's machine into our storage.
     // Today the raw text reached five places — `search_signals.query` (80 chars), `lesson_usage.query`
     // (200 chars), the knowledge-gap KV entry, the gap counter's bucket key, and (through the same
@@ -4540,6 +4547,7 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx, 
       // must not be able to change or break the answer.
       if (ctx) ctx.waitUntil(recordSearchSignal(env, {
         solved: false, query: args.query, topId: null, resultCount: 0, domain: args.domain,
+        latencyMs: Date.now() - searchStartedAt,
         // The pseudonym, hashed here so the row store never holds it as sent. `args.client_id` now
         // arrives from a header too (X-MisakaNet-Client), so this works for readers who never
         // registered — which is the point of the 2026-09-18 read-policy change.
@@ -4588,6 +4596,7 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx, 
       topId: String((results[0] && (results[0].id || results[0].path)) || "") || null,
       resultCount: results.length,
       domain: args.domain,
+      latencyMs: Date.now() - searchStartedAt,
       clientHint: args.client_id ? dedupKey(env, args.client_id) : "",
       // Self-declared and optional (2026-09-18): the installer knows the OS and the
       // assistant; a client that sends none of this is still served.
@@ -7522,11 +7531,50 @@ async function handleSearchSignalStats(env, url) {
       debugLog(env, 2, "search signal breakdown unavailable", String((e && e.message) || e));
     }
 
+    // How long searches took (#4052). A histogram, not a percentile: SQLite has no percentile
+    // here, one scan answers the whole window, and the episode that motivated this was
+    // **bimodal** — 1–3 s normally, 35–62 s when it went wrong — so a p95 would have averaged away
+    // the only shape worth seeing. `n` counts rows that carry a latency; rows written before
+    // 2026-11-03 have none and are excluded rather than counted as zero. A `null` here means the
+    // read failed (a worker deployed before the column existed), which is not the same answer as
+    // n=0 ("nothing measured yet") — the same rule the rest of this file follows.
+    let latency = null;
+    try {
+      const agg = await d1.prepare(
+        `SELECT COUNT(latency_ms) AS n,
+                MAX(latency_ms) AS max_ms,
+                SUM(CASE WHEN latency_ms < 1000 THEN 1 ELSE 0 END) AS lt_1s,
+                SUM(CASE WHEN latency_ms >= 1000 AND latency_ms < 3000 THEN 1 ELSE 0 END) AS s_1_3,
+                SUM(CASE WHEN latency_ms >= 3000 AND latency_ms < 10000 THEN 1 ELSE 0 END) AS s_3_10,
+                SUM(CASE WHEN latency_ms >= 10000 AND latency_ms < 30000 THEN 1 ELSE 0 END) AS s_10_30,
+                SUM(CASE WHEN latency_ms >= 30000 AND latency_ms < 60000 THEN 1 ELSE 0 END) AS s_30_60,
+                SUM(CASE WHEN latency_ms >= 60000 THEN 1 ELSE 0 END) AS gt_60s
+           FROM search_signals
+          WHERE latency_ms IS NOT NULL AND created_at >= datetime('now', ?1)`
+      ).bind(`-${days} days`).all();
+      const row = (agg.results && agg.results[0]) || {};
+      latency = {
+        n: Number(row.n || 0),
+        max_ms: row.max_ms === null || row.max_ms === undefined ? null : Number(row.max_ms),
+        buckets: {
+          lt_1s: Number(row.lt_1s || 0),
+          s_1_3: Number(row.s_1_3 || 0),
+          s_3_10: Number(row.s_3_10 || 0),
+          s_10_30: Number(row.s_10_30 || 0),
+          s_30_60: Number(row.s_30_60 || 0),
+          gt_60s: Number(row.gt_60s || 0),
+        },
+      };
+    } catch (e) {
+      debugLog(env, 2, "search latency aggregate unavailable", String((e && e.message) || e));
+    }
+
     return jsonResponse({
       ...base,
       rows: rows.slice(0, SEARCH_SIGNAL_MAX_ROWS),
       truncated: rows.length > SEARCH_SIGNAL_MAX_ROWS,
       breakdown: buildSignalBreakdown(groups),
+      latency,
       generated_at: new Date().toISOString(),
     });
   } catch (e) {
@@ -7534,7 +7582,18 @@ async function handleSearchSignalStats(env, url) {
     // honest "no samples" state, not a server error: answer with an empty window
     // so the aggregator can print "sample too small" instead of a 502.
     if (/no such table/i.test(String((e && e.message) || e))) {
-      return jsonResponse({ ...base, rows: [], truncated: false, generated_at: new Date().toISOString() });
+      // Nothing has ever been recorded, so the latency side has no samples either — that is a
+      // measured zero (`n: 0`), not a failed read (`latency: null`).
+      return jsonResponse({
+        ...base,
+        rows: [],
+        truncated: false,
+        latency: {
+          n: 0, max_ms: null,
+          buckets: { lt_1s: 0, s_1_3: 0, s_3_10: 0, s_10_30: 0, s_30_60: 0, gt_60s: 0 },
+        },
+        generated_at: new Date().toISOString(),
+      });
     }
     return errorResponse("api handler failed", "internal_error", 502, e);
   }

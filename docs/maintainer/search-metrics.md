@@ -26,6 +26,7 @@
 | `result_count` | 响应里实际带了几条结果 | 未命中为 `0` |
 | `domain` | 调用方传的 `domain` 过滤参数 | 没传为 `""` |
 | `created_at` | 写入时间 | DB 默认 `datetime('now')`（UTC），与 `lesson_usage`/`counters` 一致 |
+| `latency_ms` | 这次检索从请求进来到写下信号花了多久（毫秒），**2026-11-03 起写入** | 整数；更早的行没有该值（`NULL`） |
 
 **写入位置**：检索结算处，命中分支与 `no_match` 分支各一处，每次检索**恰好**写一行。
 写入用 `ctx.waitUntil` 投递（不阻塞响应），并且整段包在 try/catch 里 ——
@@ -95,6 +96,27 @@ npx wrangler d1 execute misakanet-db --remote --command \
    WHERE created_at >= datetime('now','-7 days') GROUP BY solved"
 ```
 
+### 3.4 延迟直方图（#4052）
+
+端点 `/api/search-signals/stats` 的响应多了一个 `latency` 对象：
+
+```json
+{ "n": 4, "max_ms": 62220,
+  "buckets": { "lt_1s": 0, "s_1_3": 3, "s_3_10": 1, "s_10_30": 0, "s_30_60": 1, "gt_60s": 0 } }
+```
+
+它回答的是「有没有人等了 30 秒以上」，不是「平均多快」。三条判据：
+
+1. **桶，不是百分位。** #4052 的分布是双峰的（常态 1–3 s，出问题时 35–62 s），一个 p95 会把第二个峰
+   平均成一个看起来没问题的数字；桶把它留着。SQLite 里也没有可直接用的百分位函数，一次扫描比三次扫描便宜。
+2. **`n` 只数带 `latency_ms` 的行。** 2026-11-03 之前的行没有这个字段，它们被**排除**在外面，而不是按 0 计。
+3. **`null` ≠ `n: 0`。** `latency: null` 表示读失败（例如 worker 版本还没有这一列）；`n: 0` 表示
+   窗口内确实没有样本。前端/脚本必须把这两种情况说成两句话。
+
+`python3 scripts/search_hit_rate.py` 会把这张直方图打进文本报告，并在出现 `s_30_60` / `gt_60s` 时
+单独警告——那是客户端读成 `fetch failed` 的形状。要复现**客户端**的视角，用
+`python3 scripts/bench_search_latency.py --remote`（它把冷启动那一次单独报成 `cold_ms`，不混进 p50）。
+
 ## 4. 这个数字是什么、不是什么
 
 **是**：我们的语料（当前约 400 篇课程 + FAQ）能回答**我们的检索流量**里多大比例 —— 一个 worker 侧口径的检索质量数字，
@@ -155,10 +177,16 @@ npx wrangler d1 execute misakanet-db --remote --command \
 - `workers/d1/schema.sql` 的补录见第 2 节末尾。
 - 测试：`node --test workers/search-signals.test.mjs`、`python3 -m pytest tests/test_search_hit_rate.py -q`。
 
+- **延迟只覆盖服务端**：`latency_ms` 从请求进来算到写下信号，不含到调用方的网络与连接排队。
+  客户端总耗时只会更长；两者的差值要单独量（`bench_search_latency.py --remote` 量的是客户端侧）。
+- **2026-11-03 之前的行没有延迟**：历史窗口的直方图会偏小，不要拿它和之后的窗口直接比。
+
 ## 8. 相关文件
 
 - `workers/register-proxy-sw.js` — 记录处（检索结算分支）、`recordSearchSignal`、`GET /api/search-signals/stats`
 - `scripts/search_hit_rate.py` — 聚合脚本
 - `tests/test_search_hit_rate.py` — 聚合算术与 CLI 契约（离线）
-- `workers/search-signals.test.mjs` — 检索路径写行、kill switch、失败不影响检索、端点契约
+- `workers/search-signals.test.mjs` — 检索路径写行、kill switch、失败不影响检索、端点契约（含延迟直方图）
+- `scripts/bench_search_latency.py` — 客户端视角的延迟测量；`--remote` 把冷启动那次单独报成 `cold_ms`
+- `tests/test_bench_search_latency.py` — 远程测量的算术、错误计数与退出码（离线）
 - `docs/maintainer/blueprint-and-strategy-review-2026-09-16.md` §4.3 — "能提效"的成色评估（本 issue 的由来）
