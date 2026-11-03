@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-11-03T11:03:10.487675+00:00",
+  "generated_at": "2026-11-03T19:38:05.900664+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "test(contract): one gate for the two surfaces — schema structure and hosted dependencies",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4389",
-      "timestamp": "2026-11-03T08:50:51Z",
+      "title": "fix(cindy-plugin): the docs name the version the manifest has, and a gate keeps them honest",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4402",
+      "timestamp": "2026-11-03T18:28:59Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "docs(handoff): volume 27 addendum — #4052 was measured and instrumented after the volume merged",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4387",
-      "timestamp": "2026-11-03T08:19:46Z",
+      "title": "fix(cindy-plugin): pass the endpoint's summary_plain through to the agent",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4401",
+      "timestamp": "2026-11-03T18:03:35Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(search): the latency column said \"0 ms\" for every row written before today",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4386",
-      "timestamp": "2026-11-03T08:00:55Z",
+      "title": "docs(handoff): vol 28 — a label, a directory name and a verdict word all have to mean what they say",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4400",
+      "timestamp": "2026-11-03T17:54:41Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(search): record and expose how long a search took — the 62s episode left no trace",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4384",
-      "timestamp": "2026-11-03T07:35:30Z",
+      "title": "feat(integrations): Cindy becomes the 13th host — and the first target that writes nothing",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4397",
+      "timestamp": "2026-11-03T17:19:13Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "docs(handoff): volume 27 — three colours, and what each of them was carrying",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4380",
-      "timestamp": "2026-11-03T06:01:45Z",
+      "title": "feat(shape-guard): a shipped dot-directory can be declared instead of guessed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4398",
+      "timestamp": "2026-11-03T16:59:29Z",
       "source": "github"
     },
     {
