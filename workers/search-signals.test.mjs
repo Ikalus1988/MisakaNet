@@ -15,7 +15,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
-import worker from './register-proxy-sw.js';
+import worker, { latencyValue } from './register-proxy-sw.js';
 import { testToken } from './_test-token.mjs';
 
 const TOKEN = testToken('search-signals');
@@ -175,6 +175,28 @@ test('a hit records one row with solved=1, the top id and the result count', asy
   assert.equal(rows[0].top_id, 'pip-timeout-mirror');
   assert.equal(rows[0].result_count, result.results.length);
   assert.equal(rows[0].domain, 'python');
+});
+
+test('"no duration" is null, not 0 — the trap that made every old row claim 0 ms', () => {
+  // `Number(null)` is 0 and `Number.isFinite(0)` is true, so the old guard
+  // `Number.isFinite(Number(latencyMs))` bound 0 for every call that had no duration. Every
+  // `search_signals` row written before 2026-11-03 therefore says 0 ms, and the first live
+  // histogram read `n: 4564, max_ms: 0` — a confident lie instead of "no samples" (#4052).
+  assert.equal(latencyValue(null), null);
+  assert.equal(latencyValue(undefined), null);
+  assert.equal(latencyValue("12"), null, 'a string is not a measurement');
+  assert.equal(latencyValue(Number.NaN), null);
+  assert.equal(latencyValue(0), 0, 'an explicit zero is still a number');
+  assert.equal(latencyValue(4.6), 5, 'rows store whole milliseconds');
+});
+
+test('the histogram excludes the legacy 0 ms rows instead of counting them as fast', () => {
+  // The writer is fixed, but rows written before 2026-11-03 keep their 0 until they age out of
+  // the window. A served search cannot take 0 ms, so the aggregate filters `> 0`; without it the
+  // first deploy reported 4,564 samples, all `<1 s`, max 0 — the opposite of the truth.
+  const query = WORKER_SOURCE.slice(WORKER_SOURCE.indexOf('SELECT COUNT(latency_ms) AS n'));
+  assert.match(query.slice(0, 1200), /WHERE latency_ms > 0/,
+    'the aggregate must not treat the legacy zeros as measurements');
 });
 
 test('a completed search records how long the caller waited', async () => {
