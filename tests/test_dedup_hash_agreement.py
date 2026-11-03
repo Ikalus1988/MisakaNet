@@ -61,10 +61,14 @@ def _worker_hash(text: str) -> str:
         pytest.skip("node unavailable; the JS half cannot be evaluated here")
     # The worker's own `hashString`, lifted out and **required**, not `eval`ed.
     #
-    # It used to be `eval(fn[0])`, which is how a test ends up on the code-scanning list for dynamic
-    # code execution (#400) — and the alert is right about the shape even though the input is our own
-    # source. Writing the extracted function to a file and requiring it keeps exactly the property the
-    # test needs (the hash that runs is the one in the worker) without building a program out of text.
+    # It used to hand the extracted source to the JavaScript interpreter directly, which is how a test
+    # ends up on the code-scanning list for dynamic code execution (#400) — and the alert was right
+    # about the shape even though the input is our own source. Writing the extracted function to a
+    # file and requiring it keeps exactly the property the test needs (the hash that runs is the one
+    # in the worker) without building a program out of text.
+    #
+    # The wording above deliberately does not quote the API it replaced: the scanner matches file
+    # **text**, comments included, so a comment that names the call re-creates the alert it explains.
     program = """
 const fs = require('fs');
 const path = require('path');
