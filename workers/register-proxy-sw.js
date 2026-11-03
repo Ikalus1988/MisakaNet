@@ -5192,11 +5192,13 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx, 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 15000);
     try {
-      // question kind gets a needs-human-review label so maintainers can
-      // triage help requests distinctly from failure intakes.
+      // A question gets `needs-answer`, **not** `pending-review`: that label means "waiting to be
+      // reviewed as a lesson", and until 2026-11-03 every question carried it — the classifier and
+      // the auto-review workflow each had a question path that never took it off either, so 50 of
+      // 50 open questions sat in the corpus queue (#4238/#4239 among them).
       const labels = attention.file
         ? (kind === "question"
-          ? ["intake", "mcp-intake", "pending-review", "needs-answer"]
+          ? ["intake", "mcp-intake", "needs-answer"]
           : ["intake", "mcp-intake", "pending-review"])
         : attention.labels;
       // L4: surface the flag to triage instead of silently publishing injection text.

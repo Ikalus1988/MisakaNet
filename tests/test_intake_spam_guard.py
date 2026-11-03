@@ -211,5 +211,53 @@ class TestIntakeSpamGuardRegressionCorpus:
             assert res.get("voice") == "pair-success"
 
 
+class TestTheIntakeLabelsSayWhatTheSubmissionIs:
+    """#4238/#4239: a repo-improvement question sat in the lesson queue for three days.
+
+    `pending-review` is the corpus queue ("waiting to be reviewed as a lesson"). The local HTTP
+    intake path applied it to every submission and only added `needs-answer` on top, so the issue
+    read as a lesson candidate nobody had rejected.
+    """
+
+    def test_a_question_is_labelled_needs_answer_and_not_pending_review(self):
+        with patch("subprocess.run") as mock_subproc:
+            mock_subproc.return_value = MagicMock(
+                returncode=0,
+                stdout="https://github.com/Ikalus1988/MisakaNet/issues/7\n",
+                stderr="",
+            )
+            res = misakanet_submit_intake(
+                kind="question",
+                problem="How do I configure MCP auth in production when one endpoint is shared by a team?",
+                source="anon",
+            )
+        assert res.get("submitted") is True, res
+        argv = mock_subproc.call_args.args[0]
+        labels = argv[argv.index("--label") + 1]
+        assert "needs-answer" in labels, labels
+        assert "pending-review" not in labels, (
+            f"a question entered the lesson queue: {labels}"
+        )
+
+    def test_a_failure_report_keeps_the_queue_label(self):
+        with patch("subprocess.run") as mock_subproc:
+            mock_subproc.return_value = MagicMock(
+                returncode=0,
+                stdout="https://github.com/Ikalus1988/MisakaNet/issues/8\n",
+                stderr="",
+            )
+            res = misakanet_submit_intake(
+                kind="missing_lesson",
+                problem="pip install ReadTimeoutError behind a corporate proxy after 60 seconds",
+                error="ERROR: Could not install packages due to an OSError: ReadTimeoutError",
+                source="anon",
+            )
+        assert res.get("submitted") is True, res
+        argv = mock_subproc.call_args.args[0]
+        labels = argv[argv.index("--label") + 1]
+        assert "pending-review" in labels, labels
+        assert "needs-answer" not in labels, labels
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
