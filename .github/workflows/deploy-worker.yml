@@ -64,7 +64,7 @@ jobs:
       # that bumps it — governed nothing about production. `npm ci` installs the locked version, and
       # `--no-install` makes the deploy fail loudly rather than silently fetching an unlisted one.
       - name: Setup Node
-        uses: actions/setup-node@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7
         with:
           node-version: "22"
 
