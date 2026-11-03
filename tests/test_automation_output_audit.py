@@ -192,3 +192,199 @@ def test_manual_only_workflows_are_listed_and_never_fail_the_run():
     assert notes["auto-draft.yml"].rule == "manual-only"
     assert "last run 2026-06-22" in notes["auto-draft.yml"].detail
     assert "never run" in notes["intake-pipeline-test.yml"].detail
+
+# ── the zero-job rule: a run that failed without ever starting ────────────────────────────────
+# GitHub refuses a workflow file it will not parse *before* any job exists. The run then has zero
+# jobs, no log, no annotation, and a name that may fall back to the file path. Two issues in this
+# repository (#3232 guarded-repository 100/100 failures, #2957 a red run on every push) were this
+# one shape, and each took weeks to diagnose because no gate looked at runs at all.
+def run_entry(run_id, name, branch, conclusion="failure", created="2026-10-22T15:21:44Z"):
+    return {
+        "id": run_id,
+        "name": name,
+        "head_branch": branch,
+        "conclusion": conclusion,
+        "created_at": created,
+        "html_url": f"https://github.com/owner/repo/actions/runs/{run_id}",
+        "workflow_id": 1,
+    }
+
+
+def fake_fetch_all(failed=(), startup=(), jobs=None, total_failed=None, total_startup=None):
+    """A `fetch` for the whole audit. Records which runs were probed for jobs."""
+    probed = []
+
+    def fetch(url, token):
+        if "/actions/runs?" in url:
+            if "status=startup_failure" in url:
+                return {"total_count": total_startup if total_startup is not None else len(startup),
+                        "workflow_runs": list(startup)}
+            return {"total_count": total_failed if total_failed is not None else len(failed),
+                    "workflow_runs": list(failed)}
+        if "/jobs" in url:
+            run_id = int(url.split("/actions/runs/")[1].split("/")[0])
+            probed.append(run_id)
+            return {"total_count": (jobs or {}).get(run_id, 0)}
+        if "/actions/workflows/" in url and "/runs?" in url:
+            return {"total_count": 5, "workflow_runs": [{"created_at": "2026-06-22T00:00:00Z"}]}
+        if "/search/issues?" in url:
+            return {"total_count": 5}
+        if "/actions/workflows/" in url:
+            return {"created_at": "2026-01-01T00:00:00Z"}
+        raise AssertionError(f"unexpected URL: {url}")
+
+    fetch.probed = probed
+    return fetch
+
+
+def run_zero_job(failed=(), startup=(), jobs=None, max_probes=audit_mod.ZERO_JOB_PROBES,
+                 total_failed=None, total_startup=None):
+    return audit_mod.zero_job_findings(
+        "owner/repo", datetime(2026, 10, 1, tzinfo=timezone.utc), "token",
+        fetch=fake_fetch_all(failed, startup, jobs, total_failed, total_startup),
+        max_probes=max_probes,
+    )
+
+
+def test_a_default_branch_run_that_never_started_is_a_failure():
+    """#2957's main-branch shape, and #3232's: the run exists, the job does not."""
+    findings, stats = run_zero_job(
+        failed=[run_entry(41574856776, "Provenance Gate", "main")],
+        jobs={41574856776: 0},
+    )
+    failures = [f for f in findings if f.severity == "fail"]
+    assert failures, findings
+    assert failures[0].rule == "zero-job-failure"
+    assert failures[0].workflow == "Provenance Gate"
+    assert "0 jobs" in failures[0].detail
+    assert "no log" in failures[0].detail
+    assert stats == {"failed_runs": 1, "examined": 1, "zero_job": 1, "truncated": False}
+
+
+def test_a_failed_run_that_did_start_is_not_flagged():
+    """A red gate with a real job is a verdict on the code, not on the workflow file.
+
+    `provenance-gate.yml` fails on pull requests that cite a source that does not resolve — a
+    designed failure with one job and a log. Counting that as "never started" would make the rule
+    cry wolf on exactly the gate that is working.
+    """
+    findings, stats = run_zero_job(
+        failed=[run_entry(41171382374, "Provenance Gate", "main")],
+        jobs={41171382374: 1},
+    )
+    assert findings == [], findings
+    assert stats["zero_job"] == 0
+
+
+def test_a_startup_failure_on_main_fails_without_spending_a_jobs_call():
+    """GitHub already said this run never started; asking for its jobs would be redundant.
+
+    `status=startup_failure` is a real conclusion in this repository's history (11 runs), so it is
+    read exhaustively while `failure` has to be sampled.
+    """
+    fetch = fake_fetch_all(
+        startup=[run_entry(424242, "Intake Bot Demo", "main", conclusion="startup_failure")],
+    )
+    findings, stats = audit_mod.zero_job_findings(
+        "owner/repo", datetime(2026, 10, 1, tzinfo=timezone.utc), "token", fetch=fetch,
+    )
+    assert [f.severity for f in findings] == ["fail"], findings
+    assert findings[0].workflow == "Intake Bot Demo"
+    assert fetch.probed == [], "startup_failure runs must not be probed for jobs"
+    assert stats["examined"] == 1
+
+
+def test_a_zero_job_failure_on_a_feature_branch_is_a_note_not_a_failure():
+    """The real 2026-10-22 run came from a branch still carrying the pre-fix file (dc0f8679).
+
+    That is worth seeing, but it says nothing about `main` — and a rule that fails the weekly job
+    for a stale branch is a rule people learn to ignore.
+    """
+    findings, stats = run_zero_job(
+        failed=[run_entry(39804103965, ".github/workflows/provenance-gate.yml",
+                          "fix/retry-action-quotes")],
+        jobs={39804103965: 0},
+    )
+    assert [f for f in findings if f.severity == "fail"] == [], findings
+    notes = [f for f in findings if f.severity == "note"]
+    assert notes and notes[0].rule == "zero-job-failure"
+    assert "fix/retry-action-quotes" in notes[0].detail
+    assert "not a verdict on the default branch" in notes[0].detail
+    assert stats["zero_job"] == 1
+
+
+def test_the_path_shaped_name_is_reported_verbatim():
+    """GitHub falls back to the file path when it cannot read `name:` — that fallback is the clue.
+
+    #2957 spent a month on "`gh workflow list` reports the name as a path"; a finding that
+    prettified `.github/workflows/provenance-gate.yml` into "provenance-gate" would delete the one
+    piece of evidence the run gives.
+    """
+    findings, _ = run_zero_job(
+        failed=[run_entry(1, ".github/workflows/provenance-gate.yml", "main")], jobs={1: 0},
+    )
+    assert findings[0].workflow == ".github/workflows/provenance-gate.yml", findings[0]
+
+
+def test_the_default_branch_is_probed_before_feature_branches():
+    """The sample has to spend its probes where a zero-job failure is actually a defect.
+
+    #3232's history is mostly feature-branch runs; if those consumed the budget, the main-branch
+    verdict — the only one that fails the job — would be the starved one.
+    """
+    failed = [run_entry(1, "Some Workflow", "fix/branch-a"),
+              run_entry(2, "Some Workflow", "main")]
+    findings, stats = run_zero_job(failed=failed, jobs={1: 0, 2: 0}, max_probes=1)
+    assert stats["examined"] == 1
+    assert [f.severity for f in findings] == ["fail"], findings
+    assert "on main" in findings[0].detail
+
+
+def test_the_sample_says_how_much_of_the_window_it_looked_at():
+    """A sampled read is not a clean read: 12 probes of 494 failures must say so in the table."""
+    failed = [run_entry(i, "Some Workflow", "main") for i in range(1, 21)]
+    findings, table = audit_mod.audit(
+        "owner/repo", 30, "token",
+        fetch=fake_fetch_all(failed=failed, jobs={i: 1 for i in range(1, 21)}, total_failed=494),
+        now=datetime(2026, 11, 3, tzinfo=timezone.utc),
+    )
+    assert [f for f in findings if f.severity == "fail"] == [], findings
+    row = next(r for r in table if r["workflow"] == "(all workflows)")
+    assert "examined 12 of 494" in row["produces"], row
+    assert "sampled, not exhaustively probed" in row["produces"], row
+
+
+def test_a_green_window_reports_nothing():
+    findings, stats = run_zero_job()
+    assert findings == []
+    assert stats == {"failed_runs": 0, "examined": 0, "zero_job": 0, "truncated": False}
+
+
+def test_the_rule_is_wired_into_the_audit():
+    """The rule has to be in the report the weekly job prints, or nobody reads it."""
+    findings, table = audit_mod.audit(
+        "owner/repo", 30, "token",
+        fetch=fake_fetch_all(failed=[run_entry(7, "Guarded Repository", "main")], jobs={7: 0}),
+        now=datetime(2026, 11, 3, tzinfo=timezone.utc),
+    )
+    assert any(f.severity == "fail" and f.rule == "zero-job-failure" for f in findings), findings
+    assert any(r["workflow"] == "(all workflows)" for r in table), table
+
+
+def test_the_rule_uses_its_own_week_not_the_audits_month(monkeypatch):
+    """A refused workflow fails on every trigger, so one week is a full sample of it.
+
+    Measuring it over the audit's 30-day window instead fails the build for incidents fixed weeks
+    earlier: the first live run on 2026-11-03 flagged two `startup_failure` runs from 2026-10-07 —
+    the #3232/#2957 incident, already fixed — and would have kept failing until they aged out.
+    """
+    seen = {}
+
+    def fake(repo, since, token, fetch, max_probes=audit_mod.ZERO_JOB_PROBES):
+        seen["since"] = since
+        return [], {"failed_runs": 0, "examined": 0, "zero_job": 0, "truncated": False}
+
+    monkeypatch.setattr(audit_mod, "zero_job_findings", fake)
+    now = datetime(2026, 11, 3, tzinfo=timezone.utc)
+    audit_mod.audit("owner/repo", 30, "token", fetch=fake_fetch_all(), now=now)
+    assert (now - seen["since"]).days == audit_mod.ZERO_JOB_WINDOW_DAYS
