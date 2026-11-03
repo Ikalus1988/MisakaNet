@@ -1,28 +1,42 @@
 {
-  "generated_at": "2026-11-03T02:57:24.065978+00:00",
+  "generated_at": "2026-11-03T11:03:10.487675+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "lessons(contrib): convert five intakes — LevelDB bloat, GBK batch, \\Z in JS, async races, no-timeout telemetry",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4372",
-      "timestamp": "2026-11-03T02:52:36Z",
+      "title": "test(contract): one gate for the two surfaces — schema structure and hosted dependencies",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4389",
+      "timestamp": "2026-11-03T08:50:51Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(ci): the deploy's setup-node pin was github-script's SHA, so nothing could deploy",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4371",
-      "timestamp": "2026-11-03T02:20:21Z",
+      "title": "docs(handoff): volume 27 addendum — #4052 was measured and instrumented after the volume merged",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4387",
+      "timestamp": "2026-11-03T08:19:46Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(worker): the three anonymous write paths #2939 measured now have limits",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4369",
-      "timestamp": "2026-11-03T01:47:25Z",
+      "title": "fix(search): the latency column said \"0 ms\" for every row written before today",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4386",
+      "timestamp": "2026-11-03T08:00:55Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "feat(search): record and expose how long a search took — the 62s episode left no trace",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4384",
+      "timestamp": "2026-11-03T07:35:30Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "docs(handoff): volume 27 — three colours, and what each of them was carrying",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4380",
+      "timestamp": "2026-11-03T06:01:45Z",
       "source": "github"
     },
     {
@@ -64,20 +78,6 @@
       "timestamp": "2026-11-03",
       "domain": "windows",
       "source": "lessons"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4365",
-      "timestamp": "2026-11-02T19:53:37Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "fix(ci): the Wrangler that deploys is the Wrangler the lockfile names",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4364",
-      "timestamp": "2026-11-02T18:11:15Z",
-      "source": "github"
     },
     {
       "type": "challenge",
