@@ -110,6 +110,15 @@
       "reporting": "mcp-only",
       "account": "no",
       "docs": "/integrations/dsh.md"
+    },
+    {
+      "id": "cindy",
+      "name": "Cindy",
+      "writes": "nothing by the installer — install the `misakanet` plugin in Cindy",
+      "scope": "package-only",
+      "reporting": "mcp-only",
+      "account": "no",
+      "docs": "/integrations/cindy.md"
     }
   ]
 }

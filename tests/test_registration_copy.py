@@ -258,10 +258,10 @@ def test_adding_a_client_to_one_place_only_turns_this_gate_red(page: str) -> Non
     assert client_drift(offered, npm_targets(npm_src)) == ([], [])
 
     # 1) a client added to the installer only. The anchor is the *last* target in `AGENTS`
-    # (`dsh`, appended after `mcode` in 2026-10-30): appending is what a new client looks like, so
+    # (`cindy`, appended after `dsh` in 2026-11-03): appending is what a new client looks like, so
     # the mutation has to append too.
     installer_drift = client_drift(
-        offered, npm_targets(npm_src.replace("'dsh']", "'dsh', 'zencoder']"))
+        offered, npm_targets(npm_src.replace("'cindy']", "'cindy', 'zencoder']"))
     )
     assert installer_drift == ([], ["zencoder"]), installer_drift
 
@@ -273,7 +273,7 @@ def test_adding_a_client_to_one_place_only_turns_this_gate_red(page: str) -> Non
     assert page_drift == (["zencoder"], ["kiro"]), page_drift
 
     # 3) and the mutation really is a mutation of what the gate reads.
-    assert npm_targets(npm_src.replace("'dsh']", "'dsh', 'zencoder']")) != npm_targets(npm_src)
+    assert npm_targets(npm_src.replace("'cindy']", "'cindy', 'zencoder']")) != npm_targets(npm_src)
     assert site_clients(page.replace('data-agent="kiro"', 'data-agent="zencoder"')) != site_clients(
         page
     )

@@ -84,6 +84,9 @@ CLIENT_NAMES = (
     # The rules-half target (#100.4): the installer writes `$DSH_HOME/AGENTS.md` and prints the
     # plugin command, so it is one of `AGENTS` and the roster names it like the rest.
     "DeepSeek Harness",
+    # The 13th target (#4238): the installer writes nothing at all for it — the tools come from the
+    # plugin the app installs itself — but it is in `AGENTS`, so the roster names it too.
+    "Cindy",
 )
 
 

@@ -53,6 +53,10 @@ AGENT_DISPLAY = {
     # is exactly why the README has to spell the split out next to the row rather than leave it
     # looking like the other eleven.
     "dsh": "DeepSeek Harness",
+    # The 13th target, and the first that writes nothing: its tools come from the plugin the app
+    # installs itself. The README's row has to name it like every other target, and the integration
+    # doc has to explain what the installer does *not* do.
+    "cindy": "Cindy",
 }
 
 

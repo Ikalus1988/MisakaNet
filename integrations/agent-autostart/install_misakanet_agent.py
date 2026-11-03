@@ -63,7 +63,10 @@ HOOK_FILE_MJS = HERE / "checkpoint_reminder.mjs"  # the Node implementation (pre
 # The agents this knows how to configure. `detect` is a path that only exists when the
 # agent is actually installed here; everything else hangs off HOME.
 AGENTS = ("claude", "codex", "hermes", "openclaw", "codewhale",
-          "cursor", "gemini", "copilot", "opencode", "kiro", "mcode", "dsh")
+          "cursor", "gemini", "copilot", "opencode", "kiro", "mcode", "dsh",
+          # A plugin-bundle host with no user-level config and no rules file: the target only
+          # prints the step it cannot take — see install_cindy.
+          "cindy")
 
 
 def _force_utf8_io() -> None:
@@ -705,6 +708,9 @@ def detect(home: Path, agent: str) -> bool:
         # the older one some installs still have (issue #3777).
         "mcode": [home / ".minimax", home / ".minimax-code"],
         "dsh": [home / ".dsh", home / ".agents"],
+        # ~/.cindy is the directory the app creates on first run; its plugin store is inside the
+        # app, which is why this path is evidence of the host and nothing more (#4238).
+        "cindy": [home / ".cindy"],
     }
     return any(p.exists() for p in checks[agent])
 
@@ -1332,6 +1338,13 @@ def verify(home: Path, endpoint: str, rep: Report) -> bool:
         rules = {"codex": home / ".codex" / "AGENTS.md", "hermes": home / ".hermes" / "SOUL.md",
                  "mcode": home.joinpath(*MCODE_RULES_REL),
                  "dsh": home / ".agents" / "skills" / "misakanet" / "SKILL.md"}.get(agent)
+        if agent == "cindy":
+            # Nothing this process can read is our footprint: the app installs the plugin into its
+            # own store. 「✗ 缺失」 would be a claim we did not verify, so the line says what is true
+            # and does not fail the run — unknown is not broken (#4238).
+            rep.needs_manual(
+                "Cindy: 插件装没装只在应用内可见，本进程读不到 → 在 Cindy 的插件列表里确认 "
+                "「MisakaNet 故障记忆」（id: misakanet）已安装")
         if agent == "codewhale":
             whale_dirs = [d for d in codewhale_projects(home) if d.is_dir()]
             rules = (whale_dirs[0] / "AGENTS.md") if whale_dirs else None
@@ -1441,6 +1454,21 @@ def install_openclaw(home: Path, dry: bool, rep: Report) -> None:
     rep.ok(f"OpenClaw: {'会写入 MCP 条目' if dry else '注册 MCP（streamable-http）'} → {cfg}")
 
 
+def install_cindy(home: Path, dry: bool, rep: Report) -> None:
+    """Cindy — a plugin-bundle host this installer writes nothing for (#4238).
+
+    Its tools come from the plugin `misakanet` ("MisakaNet 故障记忆"), which the app installs into
+    its own store; there is no user-level MCP config file and no rules file this installer could
+    write. Writing anything would look installed while the app had no tools — the false green every
+    other target here is built to avoid. So the target prints the one step it cannot take, and the
+    verify side says it cannot read the app's state instead of claiming 「缺失」.
+    """
+    rep.needs_manual(
+        "Cindy: 工具来自应用内插件「MisakaNet 故障记忆」（id: misakanet），本安装器不写任何文件 → "
+        "在 Cindy 的插件/市场里安装该插件；装好后让它调用一次 misakanet_search 复核"
+    )
+
+
 INSTALLERS = {
     "claude": install_claude,
     "codex": install_codex,
@@ -1450,6 +1478,7 @@ INSTALLERS = {
     **{a: partial(install_mcp_only, agent=a) for a in MCP_ONLY_TARGETS},
     "mcode": install_mcode,
     "dsh": install_dsh,
+    "cindy": install_cindy,
 }
 
 

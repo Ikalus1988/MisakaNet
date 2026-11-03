@@ -6,11 +6,13 @@ integrate.
 ## Track A — Let your assistant search (30 seconds)
 
 For Claude Code / Codex / Hermes / OpenClaw / codewhale / Cursor / Gemini CLI / Copilot CLI /
-OpenCode / Kiro / MiniMax Code / DeepSeek Harness — the same twelve the installer wires (`AGENTS` in
-`packages/misakanet-setup/bin/misakanet-setup.mjs`). The installer writes the MCP endpoint into
-each assistant's own config; for DeepSeek Harness it writes the rules block instead and prints
-`dsh plugin --profile web add misakanet` for the tools. It does not install anything behind your
-back, and it registers the anonymous node itself, so **no pairing code is involved**.
+OpenCode / Kiro / MiniMax Code / DeepSeek Harness / Cindy — the same thirteen the installer wires
+(`AGENTS` in `packages/misakanet-setup/bin/misakanet-setup.mjs`). The installer writes the MCP
+endpoint into each assistant's own config; for DeepSeek Harness it writes the rules block instead
+and prints `dsh plugin --profile web add misakanet` for the tools; for Cindy it writes nothing at
+all and prints the plugin step, because Cindy's tools come from a plugin the app installs itself
+([cindy.md](integrations/cindy.md)). It does not install anything behind your back, and it
+registers the anonymous node itself, so **no pairing code is involved**.
 
 1. **Install the endpoint** into every assistant you use:
 

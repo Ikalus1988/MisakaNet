@@ -3799,3 +3799,28 @@ test('--client with an unknown client refuses instead of guessing (issue #3699)'
   }
 });
 
+
+// ── Cindy: the first target that writes nothing at all (#4238) ─────────────────────────────────
+test('cindy: writes nothing, prints the plugin step, and --verify says 查不了 with exit 2', () => {
+  const home = mkdtempSync(join(tmpdir(), 'mn-cindy-'));
+  try {
+    mkdirSync(join(home, '.cindy'), { recursive: true });
+    const install = runOffline(home, '--only', 'cindy');
+    assert.equal(install.status, 0, install.stdout + install.stderr);
+    assert.match(install.stdout, /Cindy：工具来自应用内插件/, install.stdout);
+    // `.misakanet-agent` is the installer's own identity/hook state, not a client config: the
+    // target's manifest is empty, so the only footprint is that one shared directory.
+    assert.deepEqual(readdirSync(home).sort(), ['.cindy', '.misakanet-agent'],
+      'the installer must write no client config for Cindy');
+    assert.deepEqual(readdirSync(join(home, '.cindy')), [],
+      'and it must not touch the app directory it only used for detection');
+
+    const verify = run(home, '--only', 'cindy', '--verify');
+    assert.equal(verify.status, 2,
+      `a state we cannot read must not become a machine verdict (0 or 1):\n${verify.stdout}`);
+    assert.match(verify.stdout, /查不了/, verify.stdout);
+    assert.doesNotMatch(verify.stdout, /✗ 缺失/, 'it must not claim the plugin is missing');
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+  }
+});

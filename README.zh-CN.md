@@ -62,6 +62,7 @@ A2A（`.well-known/agent-card.json`）。**本地** stdio server（`pip install 
 |---|---|
 | **DeepSeek Harness** | `dsh plugin --profile web add misakanet`，或在 **Add plugin** 里输入 `misakanet` |
 | **Claude Code** | `/plugin marketplace add Ikalus1988/MisakaNet`，然后 `/plugin install misakanet@misakanet` |
+| **Cindy** | 在 Cindy 的插件列表里安装 **MisakaNet 故障记忆**（id `misakanet`） |
 | **Codex、Cursor、Gemini CLI、Copilot CLI、OpenCode …** | `npx @misaka-net/misakanet-setup`，把 MCP 行写进各宿主配置 |
 | **任意 MCP 客户端** | 指向 `https://misakanet.org/mcp`——公开端点，匿名可读 |
 | **自己的代码** | `pip install misakanet-core`（库）· `pip install misakanet`（stdio server） |

@@ -62,6 +62,8 @@ DISPLAY = {
     # Same rule for the harness whose tools come from its own plugin: the installer wires its rules
     # half, so the intro names it, and the install text says which half is which.
     "dsh": "DeepSeek Harness",
+    # The 13th target: the Quickstart's intro has to name it like the other twelve.
+    "cindy": "Cindy",
 }
 
 # Dated snapshots and benchmark payloads quote whatever was true when they were written; a file

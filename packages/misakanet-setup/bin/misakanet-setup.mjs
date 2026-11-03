@@ -132,7 +132,10 @@ const SILENT = has('--silent');
 const REPORT_JSON = has('--report-json');
 const HOME = resolve(valueOf('--home', homedir()));
 const AGENTS = ['claude', 'codex', 'hermes', 'openclaw', 'codewhale',
-                'cursor', 'gemini', 'copilot', 'opencode', 'kiro', 'mcode', 'dsh'];
+                'cursor', 'gemini', 'copilot', 'opencode', 'kiro', 'mcode', 'dsh',
+                // A plugin-bundle host with no user-level config and no rules file: the whole
+                // target is a printed instruction (see `installCindy`).
+                'cindy'];
 
 /**
  * The three line lists, and what every line knows about itself.
@@ -485,6 +488,9 @@ const AGENT_LABELS = {
   codewhale: 'Codewhale',
   // dsh is a plugin-bundle client: the installer writes only its rules half (see installDsh).
   dsh: 'dsh',
+  // Cindy's tools come from a plugin bundle too, and it has no rules file this installer could
+  // write — the target prints the step instead (see installCindy).
+  cindy: 'Cindy',
   ...Object.fromEntries(Object.entries(MCP_ONLY_TARGETS).map(([id, spec]) => [id, spec.label])),
   // Not an MCP-only target: it takes a rules block too (see `installMcode`), so its label cannot be
   // read from that table.
@@ -617,6 +623,11 @@ const AGENT_WRITE_PATHS = {
   // dsh reads its instructions from $DSH_HOME/AGENTS.md (default ~/.dsh). Its MCP servers
   // come from a plugin bundle this installer cannot write, so one file is the whole manifest.
   dsh: (home) => [join(dshHome(home), 'AGENTS.md')],
+  // Cindy is the first target that writes **nothing**: no user-level MCP config (the tools come
+  // from the plugin it installs itself) and no rules file (it reads the plugin's manual). An empty
+  // manifest is a statement, not an omission — `--list-writes` says so, and the preview cannot
+  // promise a line this installer will never write.
+  cindy: () => [],
   openclaw: () => openclawWorkspaces().map((workspace) => join(workspace, 'AGENTS.md')),
 };
 
@@ -1758,6 +1769,8 @@ function detect(agent) {
   // dsh may live outside $HOME (DSH_HOME), so it is answered by its own resolver rather
   // than by the relative-path table below.
   if (agent === 'dsh') return existsSync(dshHome());
+  // Same shape: Cindy's home is the one path evidence we have (its plugin store is inside the app).
+  if (agent === 'cindy') return existsSync(cindyHome());
   const paths = {
     claude: ['.claude.json', '.claude'],
     codex: ['.codex'],
@@ -2426,6 +2439,35 @@ async function installDsh() {
     + '（不跑就只有规则、没有 mcp__misakanet__* 工具）');
 }
 
+/**
+ * Where Cindy keeps its per-user state.
+ *
+ * `~/.cindy` is the directory the app creates on first run (measured 2026-10-31 on Windows: it holds
+ * `themes/` and is the only user-level path that survived updates). The plugin's own data lives
+ * elsewhere — inside the app's owner store, which this process must not read — so this path is used
+ * for one thing only: **detecting that Cindy is on this machine**.
+ */
+function cindyHome(home = HOME) {
+  return join(home, '.cindy');
+}
+
+/**
+ * Cindy — a plugin-bundle host, and the first target that writes nothing at all.
+ *
+ * What we know without guessing (measured 2026-10-31): its tools come from the plugin
+ * `misakanet` ("MisakaNet 故障记忆"), which the app installs into its own store; there is no
+ * user-level MCP config file, and the app reads its usage manual from the plugin, not from an
+ * `AGENTS.md` this installer could write. So writing anything here would produce a file that looks
+ * installed while the app still had no tools — the exact false green the rest of this installer is
+ * built to avoid. The target therefore prints the one step it cannot take, and the verify side
+ * reports 「查不了」 instead of 「没装过」 for the same reason (#4238).
+ */
+async function installCindy() {
+  need('Cindy：工具来自应用内插件「MisakaNet 故障记忆」（id: misakanet），安装器不写任何文件 → '
+    + '在 Cindy 的插件/市场里安装该插件；装好后在对话里让它调用 misakanet_search 复核', 'cindy',
+  'unknown');
+}
+
 async function installMcode(bearer) {
   const plugin = mcodePluginPath(HOME);
   const existing = readText(plugin);
@@ -2937,6 +2979,16 @@ async function verify() {
         'dsh');
     }
   }
+  // Cindy: nothing this process can read is our footprint. The plugin is installed into the app's
+  // own store, so the honest answer is 「查不了」 — not 「没装过」 (which would send the user to re-run
+  // an installer that writes nothing) and not 「就绪」 (which would claim a check we did not make).
+  // The verdict word is new with this target, and it turns the exit code into 2: a machine we could
+  // not read is not a machine that failed.
+  if (wantClient('cindy') && detect('cindy')) {
+    need('Cindy：插件装没装只在应用内可见，本进程读不到 → 在 Cindy 的插件列表里确认 '
+      + '「MisakaNet 故障记忆」（id: misakanet）已安装，并在对话里调用一次 misakanet_search 复核',
+    'cindy', 'unknown');
+  }
   // Version: what is installed, and whether the registry has moved on. Read-only here — the
   // hook owns the periodic nudge (it cannot be a network call in this process's hot path), and
   // `--verify` is an explicit user action, so one lookup is both cheap and expected.
@@ -2959,13 +3011,16 @@ async function verify() {
         + 'npx @misaka-net/misakanet-setup@latest');
     }
   }
+  const clientVerdictList = clientVerdicts();
   return {
     allOk,
     usable,
     probeState,
-    // `true` only for the probe answers that are not a verdict about the machine (timeout, and a
-    // proxy this Node cannot use). It is what turns the exit code from 1 into 2 (#3778).
-    unverified: probeState === 'unverified',
+    // `true` for the answers that are not a verdict about the machine: a probe that timed out or
+    // went through a proxy this Node cannot use (#3778), and a client whose state this process
+    // cannot read at all (「查不了」, added with Cindy). Both turn the exit code from 1 into 2.
+    unverified: probeState === 'unverified'
+      || clientVerdictList.some((client) => client.verdict === CLIENT_VERDICT_WORDS.unknown),
     // A home with none of the supported targets: distinct from "detected, but our files are missing",
     // and the only case where `install-scope` is forced to `none` in the report.
     zeroTargets: !detectedAgents.length,
@@ -2976,7 +3031,7 @@ async function verify() {
     // One verdict per client, so the conclusion can be read per assistant instead of per machine
     // (issue #3699). The machine-level verdict below is derived from these, not the other way
     // round: a client that was not checked cannot be the reason this machine is not ready.
-    clients: clientVerdicts(),
+    clients: clientVerdictList,
     segments: { start: segmentStart, end: segmentEnd },
   };
 }
@@ -3066,13 +3121,23 @@ function exitCodeFor(verdict) {
  * `blocked` wins over `broken` wins over `absent`: a client we cannot write to is not merely "not
  * installed", and saying so would send the reader after the wrong fix.
  */
-const CLIENT_VERDICT_WORDS = { blocked: '装不了', broken: '装坏了', absent: '没装过' };
+const CLIENT_VERDICT_WORDS = {
+  blocked: '装不了',
+  broken: '装坏了',
+  absent: '没装过',
+  // A fifth word, added with the Cindy target (#4238): the state lives inside the host application
+  // and this process cannot read it. 「没装过」 would be a claim we did not verify, and 「就绪」 the
+  // same claim in the other direction. 「查不了」 is the only true one, and it exits 2 — unknown,
+  // not broken.
+  unknown: '查不了',
+};
 /** What to do about each verdict, in the order the fix differs. */
 const CLIENT_VERDICT_HINTS = {
   就绪: '',
   装不了: '（改权限后重跑安装命令）',
   没装过: '（重跑安装命令）',
   装坏了: '（重跑安装命令）',
+  查不了: '（在宿主应用内确认，本安装器读不到它的状态）',
 };
 
 function clientVerdicts() {
@@ -3097,7 +3162,8 @@ function clientVerdicts() {
     const verdict = !b.kinds.size ? '就绪'
       : b.kinds.has('blocked') ? CLIENT_VERDICT_WORDS.blocked
         : b.kinds.has('broken') ? CLIENT_VERDICT_WORDS.broken
-          : CLIENT_VERDICT_WORDS.absent;
+          : b.kinds.has('absent') ? CLIENT_VERDICT_WORDS.absent
+            : CLIENT_VERDICT_WORDS.unknown;
     return {
       id,
       label: clientLabel(id),
@@ -3932,6 +3998,7 @@ try {
         else if (agent === 'codewhale') await installCodewhale(bearer);
         else if (agent === 'mcode') await installMcode(bearer);
         else if (agent === 'dsh') await installDsh();
+        else if (agent === 'cindy') await installCindy();
         else if (MCP_ONLY_TARGETS[agent]) await installMcpOnly(agent, bearer);
         installed += 1;
       } catch (err) {
