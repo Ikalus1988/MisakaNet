@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Network Lessons — MisakaNet</title>
-<meta name="description" content="20 indexed failure lessons about network. From MisakaNet — Git-backed failure lesson network.">
+<meta name="description" content="21 indexed failure lessons about network. From MisakaNet — Git-backed failure lesson network.">
 <link rel="canonical" href="https://misakanet.org/topics/network/">
 <meta property="og:title" content="Network Lessons">
-<meta property="og:description" content="20 indexed failure lessons about network. From MisakaNet — Git-backed failure lesson network.">
+<meta property="og:description" content="21 indexed failure lessons about network. From MisakaNet — Git-backed failure lesson network.">
 <meta property="og:url" content="https://misakanet.org/topics/network/">
 <!-- design-tokens:start -->
 <style id="misaka-design-tokens">
@@ -168,7 +168,7 @@
 </head>
 <body>
 <h1>Network Lessons</h1>
-<div class="count">20 lessons in this domain</div>
+<div class="count">21 lessons in this domain</div>
 
 <div class="lesson">
   <a href="/lessons/a-port-bound-session-cookie-minted-per-launch-overflows-the-16kb-request-header/">A port-bound session cookie minted per launch overflows the 16KB request header and breaks startup</a>
@@ -231,6 +231,10 @@
   <div class="summary">Running `ngrok http 8123` on a fresh Windows install exits with `ERR_NGROK_4018 authentication failed: This ngrok sessio</div>
 </div>
 <div class="lesson">
+  <a href="/lessons/启动期遥测同步请求没有超时ui-永久冻结超时后台化超时留队三件套/">启动期遥测同步请求没有超时＝UI 永久冻结：超时+后台化+超时留队三件套</a>
+  <div class="summary">桌面应用启动即「未响应」：启动时上报遥测的**同步网络请求没有超时**，而企业网到 CDN 的双栈路径</div>
+</div>
+<div class="lesson">
   <a href="/lessons/npmjs-registry-unreachable-from-this-host-self-signedexpired-cert-pin-a-mirror-n/">npmjs registry unreachable from this host (self-signed/expired cert): pin a mirror, never disable TLS</a>
   <div class="summary">`pnpm` / `plugin-add` failed with `ERR_PNPM_META_FETCH_FAIL` preceded by:</div>
 </div>
@@ -245,10 +249,6 @@
 <div class="lesson">
   <a href="/lessons/add-jitter-to-retry-sleeps-avoid-thundering-herd/">Add jitter to retry sleeps (avoid thundering herd)</a>
   <div class="summary">Many sniper processes wake on the same cron second, hit 429 together, and back off on the same schedule forever.</div>
-</div>
-<div class="lesson">
-  <a href="/lessons/set-a-clear-user-agent-on-earn-http-clients/">Set a clear User-Agent on earn HTTP clients</a>
-  <div class="summary">APIs block default Python-urllib user agents or cannot rate-limit fairly across bots.</div>
 </div>
 <div class="back"><a href="/">← Back to MisakaNet</a> · <a href="/search/">Search lessons</a></div>
 <footer class="footer">
