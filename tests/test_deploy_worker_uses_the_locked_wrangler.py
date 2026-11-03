@@ -67,3 +67,23 @@ def test_the_other_bare_uses_are_recorded_not_forgotten() -> None:
     assert found <= known, (
         f"these workflows grew a bare `npx wrangler` call: {sorted(found - known)} — either install "
         "from the lockfile and pass --no-install, or add the file here with a reason")
+
+
+def test_every_setup_node_pin_is_the_same_sha() -> None:
+    """One pin per action, or a typo in one workflow breaks only that one — silently until it runs.
+
+    Measured 2026-11-03: `deploy-worker.yml` was given `actions/setup-node@3a2844b7…`, which is
+    **github-script v9**'s SHA. The workflow parsed, the YAML was valid, and the deploy failed at run
+    time with "Unable to resolve action" — meaning the production deploy could not run at all until
+    someone read the log. A per-file test would not have caught it; a cross-file one does.
+    """
+    import re as _re  # noqa: PLC0415
+
+    pins: dict[str, set[str]] = {}
+    for path in (REPO / ".github" / "workflows").glob("*.yml"):
+        for match in _re.finditer(r"uses:\s*(actions/[a-z-]+)@([0-9a-f]{40})", path.read_text(encoding="utf-8")):
+            pins.setdefault(match.group(1), set()).add(match.group(2))
+    for action, shas in pins.items():
+        assert len(shas) == 1, (
+            f"{action} is pinned to {len(shas)} different SHAs across the workflows: {sorted(shas)} — "
+            "a wrong or stale SHA is not caught by YAML parsing, only by a run")
