@@ -34,7 +34,7 @@ FILES="install_misakanet_agent.py checkpoint_reminder.py checkpoint_reminder.mjs
 # `tests/test_bootstrap_checksums.py` fails when it and the files disagree — a bump is a reviewed diff.
 # >>> CHECKSUMS (generated: python3 scripts/update_install_checksums.py --write) >>>
 CHECKSUMS="
-341b0a40df9a77a10e58ee99bf9889d49f3c25c6067802af40cb412c6d8a88f6  install_misakanet_agent.py
+9cf19f0e931e75cf8048480e9834667abec7ddc26fca527eafdadfe36765e6de  install_misakanet_agent.py
 436ab0473a0952fd3f1b0cc1d37e9de917a539d362425c2e780f83a58689b056  checkpoint_reminder.py
 7313414e110e29901c4e268fa013963544b33ce0e048516102e77f44f133caac  checkpoint_reminder.mjs
 48ebe861cf5ff303d1a31f5fe96725cea194cedc7ebe52cbd7da3ad35ece7424  prompt.md

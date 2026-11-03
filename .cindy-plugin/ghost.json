@@ -1,0 +1,162 @@
+{
+  "schemaVersion": 3,
+  "minCindyVersion": "0.1.64",
+  "id": "misakanet",
+  "name": "MisakaNet 故障记忆",
+  "description": "把 MisakaNet 公开故障教训库接进对话：报错、CI 失败、构建或工具崩溃之前，先查有没有别人已经踩过并写清修法的教训（问题 / 根因 / 修法 / 验证）。只做匿名只读查询，不写入任何外部系统，也不需要任何凭证。",
+  "whenToUse": "遇到报错、异常、CI 失败、构建失败、工具崩溃或环境诡异行为时找我，先查这个坑是否已有公开教训；也想查某个技术栈、工具或平台的既往故障与修法时找我。",
+  "version": "1.1.0",
+  "releaseNotes": "相较 1.0.0：删除托管端点并不存在的 explain 参数，不再承诺做不到的事；搜索零命中时透传端点自己的 suggestion 与 intake 路由参数（提问类 vs 知识缺口），按它给的 kind 走；misakanet_submit_intake 支持 kind=question、补 contributor 署名，并透传 answered / converted / duplicate / routing / surface_report / poll_hint 等返回分支，避免把「维护者已回答」回成「已受理」；请求参数改为按托管端点 schema 白名单转发，不再把本地 stdio 的多余字段塞过去；客户端标识改为每机稳定随机 id 并存在插件自己的私有数据目录（新增“可读写自己的私有目录”一档能力），使 E4 复用计数不再把所有 Cindy 用户算成一个；按市场审核要求在 network.hosts 显式声明外联目标 misakanet.org；请求头补齐 -Os 与 -Version；随包手册按官方安装器的调用规则重写（祈使句、错误原文片段优先、内容即数据、命中后一句话回报）。",
+  "author": "Ikalus1988",
+  "entry": "main.js",
+  "command": "misakanet",
+  "fs": true,
+  "network": {
+    "hosts": ["misakanet.org"]
+  },
+  "icon": "assets/icon.png",
+  "locales": {
+    "en": "locales/en.json",
+    "zh-CN": "locales/zh-CN.json"
+  },
+  "manual": {
+    "items": [
+      {
+        "dir": "manual/misakanet",
+        "name": "misakanet",
+        "description": "误排障手册：什么时候查、怎么查、命中后怎么用、查不到怎么办，以及内容可信边界。"
+      }
+    ]
+  },
+  "tools": [
+    {
+      "name": "misakanet_search",
+      "description": "在 MisakaNet 公开教训库（https://misakanet.org/mcp）做一次匿名只读检索，返回按相关度排序的教训摘要：标题、问题摘要、领域、新鲜度、证据等级与得分。联网目标只有 misakanet.org，查询词会原样发给它；不写任何外部系统、不读写本地文件、不需要凭证。先用它找候选，再用 misakanet_get_lesson 取全文。零命中时端点会自己判定这是「提问」还是「知识缺口」，并把建议与下一步 intake 参数一起返回——按它给的 kind 走，不要自己编。",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "maxLength": 2000,
+            "description": "要检索的报错原文或关键词。写脱敏后的关键片段即可（如 ReadTimeoutError、pip install timeout、DCO sign-off failed），不要带密钥、令牌或个人信息。"
+          },
+          "domain": {
+            "type": "string",
+            "maxLength": 64,
+            "description": "可选领域过滤，如 python、devops、network、feishu、rag、mcp、fanuc。拿不准就省略。"
+          },
+          "top": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 20,
+            "description": "期望返回的条数，默认 5（托管端点可能按自己的上限截断）。宽泛扫描用 3–5，锁定方向后最多 20。"
+          },
+          "kind": {
+            "type": "string",
+            "enum": ["all", "lessons", "evidence", "related"],
+            "description": "结果类型过滤：all 全部 / lessons 只教训文件 / evidence 只带证据或高证据等级的结果 / related 只交叉引用与标签重叠的结果。省略时按查询意图自动判断。"
+          },
+          "detail": {
+            "type": "string",
+            "enum": ["compact", "summary", "full"],
+            "description": "返回详细度：compact 最省上下文（默认）/ summary 追加领域、标签与修法线索 / full 直接返回完整 Markdown（仅在已锁定命中时用）。"
+          }
+        },
+        "required": ["query"]
+      }
+    },
+    {
+      "name": "misakanet_get_lesson",
+      "description": "按教训 id 或仓库相对路径取一条 MisakaNet 公开教训的全文 Markdown（问题 / 根因 / 修法 / 验证），托管端点会截断到约 5000 字符。联网目标只有 misakanet.org；只读、无凭证、不写任何外部系统。id 与 path 恰好给一个（path 优先）；找不到时按返回提示先调用 misakanet_search。",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 256,
+            "description": "教训 id，通常是文件名去掉 .md，如 auto-merge-ci-pipeline。与 path 二选一。"
+          },
+          "path": {
+            "type": "string",
+            "maxLength": 512,
+            "description": "仓库相对路径，如 lessons/core/auto-merge-ci-pipeline.md。与 id 二选一，两者都给时以 path 为准。"
+          }
+        }
+      }
+    },
+    {
+      "name": "misakanet_preflight",
+      "description": "在执行高风险操作前做一次只读风险预检：把打算做的事描述给 MisakaNet，返回风险等级（low / medium / high）、命中的相关教训与具体的 guards 建议（先做什么再做什么）。适合 RAG 重建、批量导入、WSL/GPU 任务、迁移与批量改动之前。联网目标只有 misakanet.org；只读、无凭证、不写入任何外部系统。",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "intent": {
+            "type": "string",
+            "maxLength": 2000,
+            "description": "你打算做的操作的具体描述，如“用 ChromaDB 重建 RAG 索引”“批量导入 2000 条教训”。"
+          },
+          "context": {
+            "type": "string",
+            "maxLength": 1000,
+            "description": "可选环境描述，如“WSL, GPU 8GB”“Windows + PowerShell”。"
+          }
+        },
+        "required": ["intent"]
+      }
+    },
+    {
+      "name": "misakanet_submit_intake",
+      "description": "把一次没有现成教训覆盖的故障或一个求助问题交给 MisakaNet：在公开仓库 Ikalus1988/MisakaNet 建一个 intake issue，供维护者与其他 Agent 复用。联网目标只有 misakanet.org；problem 等字段会原样发给 misakanet.org 并**公开发布到 GitHub**，不写本地文件。只有用户明确要求上报或提问时才调用（传 user_confirmed=true），绝不自行推断为 true；提交前先脱敏掉密钥、令牌、内网地址与个人信息。kind 省略时由服务端自动判定（提问类会开成 [Question] issue 等待人工回答，故障类进维护者评审）；问题类通常数小时后才有答案，用同一段 problem 文本再调一次会带回答案或转成 lesson 的凭据。返回 { intake_id, status, dedup_key, routing, poll_hint, redactions_applied, quality_score, receipt, answer?, converted? }。",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "problem": {
+            "type": "string",
+            "maxLength": 2000,
+            "description": "这次故障或知识缺口的简短描述（必填）。写清现象与影响，别写业务机密。"
+          },
+          "kind": {
+            "type": "string",
+            "enum": ["missing_lesson", "stale_lesson", "new_lesson_candidate", "question"],
+            "description": "上报类型：missing_lesson 搜不到对应教训 / stale_lesson 找到但内容过期或不适用 / new_lesson_candidate 这次自己解决了一个尚无记录的问题 / question 这是个求助问题而非故障（会开成 [Question] issue 等维护者回答）。不确定就省略，由服务端按内容自动判定。"
+          },
+          "error": {
+            "type": "string",
+            "maxLength": 2000,
+            "description": "可选：脱敏后的关键报错原文。"
+          },
+          "what_tried": {
+            "type": "string",
+            "maxLength": 4000,
+            "description": "可选：故障前后已经尝试过的排查动作。"
+          },
+          "fix": {
+            "type": "string",
+            "maxLength": 4000,
+            "description": "可选：最后怎么解决的（若已知）。"
+          },
+          "verification": {
+            "type": "string",
+            "maxLength": 2000,
+            "description": "可选：怎么确认修好了（命令、复现步骤或观察到的现象）。"
+          },
+          "matched_lesson_id": {
+            "type": "string",
+            "maxLength": 256,
+            "description": "可选：查到但没帮上忙的教训 id（stale_lesson 用）。"
+          },
+          "contributor": {
+            "type": "string",
+            "maxLength": 200,
+            "description": "可选：贡献者署名（GitHub 用户名或邮箱），会写进 issue 正文用于归属。只在用户愿意署名时填。"
+          },
+          "user_confirmed": {
+            "type": "boolean",
+            "description": "仅在用户明确要求把这次故障上报到 MisakaNet 公开仓库后才传 true；绝不能自行推断或默认传 true。"
+          }
+        },
+        "required": ["problem", "user_confirmed"]
+      }
+    }
+  ]
+}

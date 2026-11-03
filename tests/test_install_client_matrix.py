@@ -148,14 +148,14 @@ def test_the_readme_points_at_the_install_page():
     assert "https://misakanet.org/install/" in section
 
 
-# ── 4. 十二个客户端各占一行 ─────────────────────────────────────────────────────────────────────
+# ── 4. 十三个客户端各占一行 ─────────────────────────────────────────────────────────────────────
 def test_every_supported_client_has_a_row():
-    """十二个客户端，十二行。少一行就有一个客户端在页面上没有答案。"""
+    """十三个客户端，十三行。少一行就有一个客户端在页面上没有答案。"""
     data = json.loads(DATA.read_text(encoding="utf-8"))
-    assert len(data["clients"]) == 12
+    assert len(data["clients"]) == 13
     table = gct.render_table(data)
     rows = [line for line in table.splitlines() if "<tr>" in line and "<th>" not in line]
-    assert len(rows) == 12, f"the table has {len(rows)} client rows, expected 12"
+    assert len(rows) == 13, f"the table has {len(rows)} client rows, expected 13"
     for client in data["clients"]:
         assert client["name"] in table, f"{client['name']} is missing from the table"
 

@@ -64,6 +64,7 @@ mcp-name: io.github.Ikalus1988/misakanet
 |---|---|
 | **DeepSeek Harness** | `dsh plugin --profile web add misakanet`、または **Add plugin** で `misakanet` |
 | **Claude Code** | `/plugin marketplace add Ikalus1988/MisakaNet` のあと `/plugin install misakanet@misakanet` |
+| **Cindy** | Cindy のプラグイン一覧から **MisakaNet 故障记忆**（id `misakanet`）をインストール |
 | **Codex、Cursor、Gemini CLI、Copilot CLI、OpenCode …** | `npx @misaka-net/misakanet-setup`（各ホストの設定に MCP 行を書き込みます） |
 | **その他の MCP クライアント** | `https://misakanet.org/mcp` を指定——公開エンドポイント、匿名で読めます |
 | **自分のコードから** | `pip install misakanet-core`（ライブラリ）· `pip install misakanet`（stdio サーバー） |

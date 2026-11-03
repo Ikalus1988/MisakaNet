@@ -13,6 +13,7 @@ Connect MisakaNet to your AI coding tool. Search indexed failure-recovery lesson
 | **Kiro** | ✅ Ready | [Setup Guide](kiro.md) |
 | **MiniMax Code** | 🟡 Recipe | [Setup Guide](mcode.md) |
 | **DeepSeek Harness** | ✅ Ready | [Setup Guide](dsh.md) |
+| **Cindy** | 🟡 Recipe | [Setup Guide](cindy.md) |
 | **Oh-my-Pi** | ✅ Ready | [Setup Guide](oh-my-pi.md) |
 | **Shell** | ✅ Ready | `misaka-search.sh` — see below |
 | **`misaka run`** | ✅ Ready | `python scripts/misaka_run.py <cmd>` |

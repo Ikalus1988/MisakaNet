@@ -1,13 +1,15 @@
 # @misaka-net/misakanet-setup
 
 One command to teach your **Claude Code**, **Codex**, **Hermes**, **OpenClaw**, **codewhale**,
-**Cursor**, **Gemini CLI**, **Copilot CLI**, **OpenCode**, **Kiro**, **MiniMax Code** or
-**DeepSeek Harness** to check MisakaNet's failure lessons before repeating a mistake — and to write
-up the reusable lessons this session produced, at a checkpoint.
+**Cursor**, **Gemini CLI**, **Copilot CLI**, **OpenCode**, **Kiro**, **MiniMax Code**,
+**DeepSeek Harness** or **Cindy** to check MisakaNet's failure lessons before repeating a mistake —
+and to write up the reusable lessons this session produced, at a checkpoint.
 
 For **DeepSeek Harness (dsh)** that command writes the **rules half only** (`$DSH_HOME/AGENTS.md`)
-and prints the one command its tools need (`dsh plugin --profile web add misakanet`); everything
-else in this README applies to all twelve exactly as written. The split, and why dsh is the one
+and prints the one command its tools need (`dsh plugin --profile web add misakanet`). For **Cindy**
+it writes nothing at all: the tools come from the plugin the app installs itself, so the command
+prints that step and `--verify` answers 查不了 (exit code 2 — "could not verify", not "broken");
+everything else in this README applies to all thirteen exactly as written. The split, and why dsh is the one
 target shaped that way, is in [dsh: the rules half, written](#dsh-the-rules-half-written--the-plugin-half-printed).
 
 **What it writes:** an MCP endpoint into each agent config, rules blocks for the clients that take

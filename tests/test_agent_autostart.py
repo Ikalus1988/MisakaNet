@@ -1267,3 +1267,31 @@ def test_a_non_list_permissions_allow_does_not_break_the_install(tmp_path):
     assert isinstance(allow, list), allow
     assert allow[0] == "all", f"the user's own value must survive: {allow}"
     assert "mcp__misakanet__misakanet_search" in allow, allow
+
+
+# ── Cindy: the first target that writes nothing at all (#4238) ─────────────────────────────────
+def test_cindy_install_writes_nothing_and_prints_the_plugin_step(tmp_path):
+    home = tmp_path / "home"
+    (home / ".cindy").mkdir(parents=True)
+    result = run_installer(home, "--only", "cindy", "--no-register")
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "Cindy" in result.stdout and "misakanet" in result.stdout, result.stdout
+    assert list((home / ".cindy").iterdir()) == [], "the installer must not write into ~/.cindy"
+    # `.misakanet-agent` is the installer's own identity/hook state, shared by every run — not a
+    # client config. The target's own footprint (AGENT_WRITE_PATHS.cindy) is empty.
+    # `--no-register` also skips the shared identity dir, so the only entry is the directory the
+    # app created itself — the target's own footprint (AGENT_WRITE_PATHS.cindy) is empty.
+    assert sorted(p.name for p in home.iterdir()) == [".cindy"], (
+        "no client config and no state dir: the whole footprint is a printed instruction:\n"
+        + result.stdout)
+
+
+def test_cindy_verify_says_it_cannot_read_the_app_state(tmp_path):
+    """「查不了」, not 「缺失」: the plugin lives inside the app, so absence is not observable here."""
+    home = tmp_path / "home"
+    (home / ".cindy").mkdir(parents=True)
+    result = run_installer(home, "--only", "cindy", "--verify", "--no-register")
+    assert "本进程读不到" in result.stdout, result.stdout
+    assert "✗ 缺失" not in result.stdout, (
+        "a state this process cannot read must not be reported as a missing file:\n"
+        + result.stdout)
