@@ -102,9 +102,10 @@ python3 scripts/bench_production_recall.py --json     # 机器可读
 
 ### PR 上的硬阻断门禁
 
-> 本表说的是「失败会不会拦合并」，不是「会不会跑」。只有 ruleset `23826057` 里的那四项是硬阻断
-> （DCO / `test (ubuntu-latest, 3.11)` / `gate` / `audit`，用 `gh api repos/Ikalus1988/MisakaNet/rulesets/23826057`
-> 自己读，不要信本文档）。`docs/ci-gates.md` 的 *Soft Gates* 表列了完整清单和每一条为什么软。
+> 本表说的是「失败会不会拦合并」，不是「会不会跑」。只有 ruleset `23826057` 里的那**五**项是硬阻断
+> （DCO / `test (ubuntu-latest, 3.11)` / `test (windows-latest, 3.11)` / `gate` / `audit`，用
+> `gh api repos/Ikalus1988/MisakaNet/rulesets/23826057` 自己读，不要信本文档）。
+> `docs/ci-gates.md` 的 *Soft Gates* 表列了完整清单和每一条为什么软。
 
 | 门禁 | 何时跑 | 失败原因示例 |
 |---|---|---|
@@ -161,8 +162,10 @@ python3 scripts/bench_production_recall.py --json     # 机器可读
 >          |.parameters.required_status_checks[].context'
 > ```
 >
-> 实测 2026-10-07 返回四项。本段曾长期写「三个」，而同一 ruleset 的 `ci-gates.md` 一直写四个——
-> 同一件事在仓内有两个版本，而错的这个在维护者操作手册里。
+> 实测 2026-10-07 返回四项；**2026-11-03 返回五项**（`test (windows-latest, 3.11)` 是 2026-11-01
+> 加进 ruleset 的，见 `ci-gates.md`）。本段更早时写「三个」，而 `ci-gates.md` 一直写四个——同一件
+> 事在仓内有两个版本，而错的那个在维护者操作手册里。教训不是「数会变」，是**数必须每次从 API 读**：
+> 这一轮它又漂了一次，而漂的方向是「少算一条必需检查」。
 >
 > 所以人类和自动化的固定动作都是**开 PR**：
 >
