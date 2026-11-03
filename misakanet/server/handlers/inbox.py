@@ -1,10 +1,37 @@
-"""Inbox handler — check intake status via the hosted worker API."""
+"""Inbox handler — poll an intake's status without re-submitting it.
+
+Why this is a proxy to the hosted *tool* (2026-11-03, #3577)
+-----------------------------------------------------------
+This handler used to GET `<origin>/api/inbox?...`. No such route exists: the worker answers
+`404 {"error":"Not found"}`, so every lookup that was not in the local contribution queue was
+reported as `status: "not_found"` — a claim the data cannot support. Measured against the live
+endpoint on 2026-11-03 for the same intake:
+
+    stdio   {"intake_id": "issue-1528", "status": "not_found",
+             "note": "No intake found with this ID or dedup_key."}
+    hosted  {"intake_id": "issue-1528", "status": "unknown",
+             "note": "Nothing found in the D1 question table, the lesson corpus, or the dedup
+                      store. Read this as 'cannot be determined', not 'never happened' ..."}
+
+"Does not exist" and "cannot be determined" are different answers, and the stdio surface was
+giving the stronger one. The hosted service exposes this read as the `misakanet_me_inbox` tool
+(D1 `questions` → lesson-corpus citations → KV dedup store), so the local server calls that tool
+through the package's one MCP client (`misakanet/remote.py`) instead of inventing a second wire
+contract. `tests/test_me_inbox.py` pins the routing, the argument names, and the status vocabulary
+against the hosted schema.
+
+The local contribution queue is still consulted first: a `contrib_…` id only ever existed on this
+machine, so no hosted lookup can answer for it.
+"""
 from __future__ import annotations
 
-import json as _json
-import os as _os
-import urllib.error as _url_error
-import urllib.request as _url_request
+from misakanet import remote
+
+# The hosted read is a few D1/KV lookups; keep the proxy short so a black-holed connection fails
+# this call rather than the session (same bound as `me_events`).
+_TIMEOUT_SECONDS = 15.0
+
+_TOOL = "misakanet_me_inbox"
 
 
 def _local_entry(intake_id: str, dedup_key: str) -> dict | None:
@@ -54,10 +81,10 @@ def _local_answer(entry: dict) -> dict:
 def handle_me_inbox(args: dict) -> dict:
     """Check the status of a previously submitted intake without re-submitting.
 
-    Accepts an intake_id (e.g. 'issue-1234') from a prior submit_intake
-    response, or a dedup_key (the 16-char hash). The local contribution queue
-    is consulted first — a locally queued intake has no hosted counterpart —
-    and the hosted worker endpoint answers for everything else.
+    Accepts an `intake_id` (e.g. 'issue-1234') or a `dedup_key` from a prior `submit_intake`
+    response. The local contribution queue is consulted first — a locally queued intake has no
+    hosted counterpart — and the hosted tool answers for everything else in its own words,
+    including its own `unknown` when a lookup finds nothing but cannot conclude absence.
 
     Returns: {intake_id, status, answer?, lesson_id?, issue_url?, note}
     """
@@ -70,42 +97,31 @@ def handle_me_inbox(args: dict) -> dict:
     if local is not None:
         return _local_answer(local)
 
-    base = _os.environ.get("MISAKANET_API_BASE", "https://misakanet.org").rstrip("/")
-
-    # Build query params
-    params = []
+    payload: dict[str, str] = {}
     if intake_id:
-        params.append(f"intake_id={intake_id}")
+        payload["intake_id"] = intake_id
     if dedup_key:
-        params.append(f"dedup_key={dedup_key}")
-    query = "&".join(params)
+        payload["dedup_key"] = dedup_key
 
     try:
-        url = f"{base}/api/inbox?{query}"
-        req = _url_request.Request(
-            url,
-            method="GET",
-            headers={"User-Agent": "MisakaNet-MCP"},
-        )
-        with _url_request.urlopen(req, timeout=10) as resp:
-            body = resp.read() or b"{}"
-            return _json.loads(body.decode("utf-8", errors="replace"))
-    except _url_error.HTTPError as exc:
-        if exc.code == 404:
-            return {
-                "intake_id": intake_id or f"dedup-{dedup_key}",
-                "status": "not_found",
-                "note": "No intake found with this ID or dedup_key.",
-            }
+        result = remote.call(_TOOL, payload, timeout=_TIMEOUT_SECONDS)
+    except Exception as exc:  # RemoteError, McpReplyUnreadable, McpRpcError, OSError
+        # A read failure is not a verdict on the intake: name the failure instead of answering
+        # `not_found`, which would claim the report never existed.
         return {
-            "error": f"Worker returned HTTP {exc.code}",
             "intake_id": intake_id or f"dedup-{dedup_key}",
             "status": "unknown",
+            "error": "hosted_endpoint_unavailable",
+            "note": f"Could not read the intake status from the hosted endpoint "
+                    f"({type(exc).__name__}: {exc}). This answers nothing about whether the "
+                    "intake exists — retry when the network is up.",
         }
-    except (OSError, _url_error.URLError, ValueError) as exc:
+
+    if not isinstance(result, dict):
         return {
-            "error": f"Worker unreachable: {exc}",
             "intake_id": intake_id or f"dedup-{dedup_key}",
             "status": "unknown",
-            "note": "Could not reach the hosted endpoint. Try again later.",
+            "error": "unexpected_reply",
+            "note": "The hosted endpoint answered with something that is not a tool payload.",
         }
+    return result

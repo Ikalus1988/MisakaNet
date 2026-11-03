@@ -1,26 +1,39 @@
 #!/usr/bin/env python3
 """`misakanet_me_inbox` — check an intake's status without re-submitting it.
 
-Why this file was rewritten
----------------------------
-The original tests patched `misakanet.server.handlers.inbox._query_d1`. **That name has never
-existed**: `handle_me_inbox` calls the hosted worker over HTTP (`_url_request.urlopen`), because
-the local server holds no durable state and cannot answer a status lookup on its own. The tests
-and the handler came from different generations of the same change, so `test_me_inbox.py` failed
-**6 of 13 at PR #2494's own head** — verified by running it on the PR's head, not only on the
-rebased branch. The PR had been open 15 days without noticing.
+Why this file was rewritten again (2026-11-03, #3577)
+-----------------------------------------------------
+The 2026-10-20 rewrite replaced a patch target that never existed (`_query_d1`) with the real one,
+`_url_request.urlopen` — and the tests then passed against a URL that 404s in production:
 
-The tests below therefore drive the real code path: a fake `urlopen` returning a body, an
-`HTTPError`, or raising. Asserting on what the handler *would* do against a seam it does not have
-is the "a gate that cannot fail" shape in a different costume — the patch target was unreachable,
-so the tests were asserting `mock.assert_called()` on a mock the code never consulted.
+    GET https://misakanet.org/api/inbox?intake_id=issue-1528  ->  404 {"error":"Not found"}
+
+There is no `/api/inbox` route in the worker (`grep` for it in `workers/register-proxy-sw.js`
+finds only the MCP tool). So every stdio lookup that was not in the local contribution queue
+answered `status: "not_found"`, while the hosted tool answered `status: "unknown"` with the reason:
+
+    stdio   {"intake_id": "issue-1528", "status": "not_found",
+             "note": "No intake found with this ID or dedup_key."}
+    hosted  {"intake_id": "issue-1528", "status": "unknown",
+             "note": "Nothing found in the D1 question table, the lesson corpus, or the dedup
+                      store. Read this as 'cannot be determined', not 'never happened' ..."}
+
+Mocking the wrong seam is how both generations of this test stayed green: the first mocked a
+function that did not exist, the second mocked a request that reaches nothing. The handler now
+forwards to the hosted `misakanet_me_inbox` tool through `misakanet/remote.py` — the same MCP
+client `me_events` uses — so these tests patch `remote.call`, which is the seam the code has.
+
+What is pinned:
+1. the forwarded tool name and argument names are the hosted ones (a renamed argument here would
+   silently look up nothing);
+2. a hosted payload is returned unchanged, including the hosted `unknown` status;
+3. a network failure is reported as an unreachable endpoint, never as `not_found` — "cannot be
+   determined" and "never happened" are different answers and only one of them was true;
+4. a locally queued intake is answered from the local queue without a network call.
 """
 from __future__ import annotations
 
-import io
-import json
 import tempfile
-import urllib.error
 from pathlib import Path
 from unittest.mock import patch
 
@@ -28,27 +41,7 @@ import pytest  # the __main__ block below
 
 from misakanet.server.handlers.inbox import handle_me_inbox
 
-_URLOPEN = "misakanet.server.handlers.inbox._url_request.urlopen"
-
-
-class _FakeResponse:
-    """Minimal stand-in for the context manager `urlopen` returns."""
-
-    def __init__(self, payload: bytes):
-        self._buf = io.BytesIO(payload)
-
-    def read(self):
-        return self._buf.read()
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, *exc):
-        return False
-
-
-def _serving(payload):
-    return patch(_URLOPEN, return_value=_FakeResponse(json.dumps(payload).encode()))
+_REMOTE_CALL = "misakanet.remote.call"
 
 
 class TestMeInbox:
@@ -63,58 +56,77 @@ class TestMeInbox:
 
     def test_a_resolved_answer_is_passed_through(self):
         body = {"intake_id": "issue-1", "status": "answered", "answer": "see the lesson"}
-        with _serving(body):
+        with patch(_REMOTE_CALL, return_value=body):
             assert handle_me_inbox({"intake_id": "issue-1"}) == body
 
     def test_pending_is_returned_as_is(self):
         body = {"intake_id": "issue-1", "status": "pending"}
-        with _serving(body):
+        with patch(_REMOTE_CALL, return_value=body):
             assert handle_me_inbox({"intake_id": "issue-1"})["status"] == "pending"
 
     def test_converted_carries_the_lesson_id(self):
         body = {"intake_id": "issue-2", "status": "converted", "lesson_id": "dco-auto-fix-workflow"}
-        with _serving(body):
+        with patch(_REMOTE_CALL, return_value=body):
             got = handle_me_inbox({"intake_id": "issue-2"})
         assert got["lesson_id"] == "dco-auto-fix-workflow"
 
-    def test_the_lookup_url_carries_the_argument_given(self):
-        """The argument has to reach the query string, or the tool answers about nothing."""
+    def test_a_hosted_unknown_is_passed_through_instead_of_becoming_not_found(self):
+        """The hosted tool's honest "cannot be determined" must survive the proxy."""
+        body = {"intake_id": "issue-1528", "status": "unknown",
+                "note": "Read this as 'cannot be determined', not 'never happened'."}
+        with patch(_REMOTE_CALL, return_value=body):
+            got = handle_me_inbox({"intake_id": "issue-1528"})
+        assert got["status"] == "unknown"
+        assert "cannot be determined" in got["note"]
+
+    def test_it_calls_the_hosted_tool_with_the_same_argument_names(self):
+        """A renamed argument looks up nothing and answers `unknown` about a real intake."""
         seen = {}
 
-        def _capture(req, timeout=None):
-            seen["url"] = req.full_url
-            return _FakeResponse(b'{"status":"pending"}')
+        def _capture(tool, arguments, **kwargs):
+            seen["tool"] = tool
+            seen["arguments"] = arguments
+            seen["timeout"] = kwargs.get("timeout")
+            return {"intake_id": "dedup-deadbeef", "status": "pending"}
 
-        with patch(_URLOPEN, _capture):
-            handle_me_inbox({"dedup_key": "deadbeefdeadbeef"})
-        assert "dedup_key=deadbeefdeadbeef" in seen["url"]
-        assert seen["url"].startswith("https://misakanet.org/api/inbox?")
+        with patch(_REMOTE_CALL, _capture):
+            handle_me_inbox({"dedup_key": "deadbeef"})
+        assert seen["tool"] == "misakanet_me_inbox"
+        assert seen["arguments"] == {"dedup_key": "deadbeef"}
+        assert seen["timeout"] and seen["timeout"] > 0
 
-    def test_a_404_becomes_not_found_rather_than_an_error(self):
-        err = urllib.error.HTTPError("u", 404, "Not Found", None, None)
-        with patch(_URLOPEN, side_effect=err):
-            got = handle_me_inbox({"intake_id": "issue-9"})
-        assert got["status"] == "not_found"
-        assert "error" not in got
-
-    def test_another_http_status_is_unknown_with_the_code_said_out(self):
-        err = urllib.error.HTTPError("u", 502, "Bad Gateway", None, None)
-        with patch(_URLOPEN, side_effect=err):
+    def test_an_unreachable_endpoint_is_unknown_not_not_found(self):
+        """This is the whole defect: a failed read used to be reported as a missing intake."""
+        with patch(_REMOTE_CALL, side_effect=OSError("connection refused")):
             got = handle_me_inbox({"intake_id": "issue-9"})
         assert got["status"] == "unknown"
-        assert "502" in got["error"]
+        assert got["error"] == "hosted_endpoint_unavailable"
+        assert "connection refused" in got["note"]
+        assert "nothing about whether the intake exists" in got["note"]
 
-    def test_an_unreachable_endpoint_degrades_instead_of_raising(self):
-        """An agent must get a sentence it can act on, not a traceback."""
-        with patch(_URLOPEN, side_effect=urllib.error.URLError("no route")):
+    def test_a_non_payload_reply_degrades_instead_of_raising(self):
+        with patch(_REMOTE_CALL, return_value=["not", "a", "dict"]):
             got = handle_me_inbox({"intake_id": "issue-9"})
         assert got["status"] == "unknown"
-        assert got["note"]
+        assert got["error"] == "unexpected_reply"
 
-    def test_malformed_json_degrades_instead_of_raising(self):
-        with patch(_URLOPEN, return_value=_FakeResponse(b"<html>502</html>")):
-            got = handle_me_inbox({"intake_id": "issue-9"})
-        assert got["status"] == "unknown"
+    def test_a_locally_queued_intake_is_answered_without_a_network_call(self):
+        """A `contrib_…` id exists only on this machine; the hosted service cannot know it."""
+        import scripts.contribution_queue as contribution_queue
+        from misakanet.server.handlers.submit import handle_submit_intake
+
+        queue = Path(tempfile.mkdtemp()) / "queue.jsonl"
+        with patch.object(contribution_queue, "QUEUE_FILE", queue), patch.dict(
+            "os.environ", {"MISAKANET_INTAKE_DISABLE_REMOTE": "1"}
+        ):
+            receipt = handle_submit_intake({
+                "kind": "missing_lesson", "problem": "local only", "source": "test"})
+            with patch(_REMOTE_CALL) as call:
+                got = handle_me_inbox({"intake_id": receipt["intake_id"]})
+        assert not call.called, "a local id must not be sent to the hosted endpoint"
+        assert got["delivery"] == "local_queue"
+        assert got["intake_id"] == receipt["intake_id"]
+
 
 class TestSubmitIntakePollHint:
     """`submit_intake` returns a poll hint that can actually be followed.
@@ -127,8 +139,6 @@ class TestSubmitIntakePollHint:
 
     def test_submit_returns_poll_hint(self):
         """submit_intake response includes a poll hint naming the inbox tool."""
-        from unittest.mock import patch
-
         import scripts.contribution_queue as contribution_queue
 
         queue = Path(tempfile.mkdtemp()) / "queue.jsonl"
@@ -145,12 +155,10 @@ class TestSubmitIntakePollHint:
         assert result["poll_hint"]["tool"] == "misakanet_me_inbox"
         assert result["intake_id"] in result["poll_hint"]["argument"]
         assert "dedup_key" in result
-        assert len(result["dedup_key"]) == 16  # SHA256 truncated to 16 chars
+        assert len(result["dedup_key"]) == 16  # the local queue's SHA-256 prefix, not the worker's
 
     def test_question_poll_hint_carries_the_recheck_clock(self):
         """Question kind → the hosted endpoint's own advice: 21600s, not a sentence."""
-        from unittest.mock import patch
-
         import scripts.contribution_queue as contribution_queue
 
         queue = Path(tempfile.mkdtemp()) / "queue.jsonl"
@@ -166,7 +174,7 @@ class TestSubmitIntakePollHint:
 
 
 class TestMeInboxToolDefinition:
-    """Test that the tool is properly registered."""
+    """The local definition has to describe what the tool actually returns."""
 
     def test_tool_in_tools_list(self):
         from misakanet.server.tools import TOOLS
@@ -181,6 +189,16 @@ class TestMeInboxToolDefinition:
         assert "Input semantics" in tool["description"]
         assert "Output schema" in tool["description"]
         assert "Error cases" in tool["description"]
+
+    def test_the_description_names_the_statuses_the_tool_can_return(self):
+        """It used to describe `me_events` (`events[]`, `poll_hint`) — the wrong tool's shape."""
+        from misakanet.server.tools import TOOLS
+        description = next(
+            t for t in TOOLS if t["name"] == "misakanet_me_inbox")["description"]
+        for status in ("answered", "pending", "converted", "unknown"):
+            assert status in description, status
+        assert "events[]" not in description, "me_inbox returns no events[] — that is me_events"
+        assert "events" not in description.split("Output schema")[1].split("Error cases")[0]
 
     def test_handler_registered(self):
         from misakanet.server.protocol import _HANDLERS

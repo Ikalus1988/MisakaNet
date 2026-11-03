@@ -730,41 +730,49 @@ TOOLS = [
     {
         "name": "misakanet_me_inbox",
         "description": (
-            "Check your agent inbox for answered questions and"
-            " conversion receipts. Use after submitting an intake"
-            " (misakanet_submit_intake) to poll for maintainer"
-            " answers or lesson conversions."
-            " Input semantics: provide intake_id (the ID from"
-            " submit_intake) or dedup_key (the dedup hash from"
-            " submit_intake). At least one is required."
-            " Output schema: JSON with events[], count, status,"
-            " and poll_hint. Each event has a type (answered,"
-            " converted, accepted, lesson_published) and"
-            " type-specific fields. An intake still sitting in the"
-            " local queue is answered from there (delivery="
-            " local_queue) — the hosted endpoint has never seen it."
+            "Check the status of a previously submitted intake"
+            " (question, missing_lesson, ...) without re-submitting"
+            " it. The read is served by the hosted endpoint; an"
+            " intake still sitting in the local contribution queue"
+            " is answered from there (delivery=local_queue), because"
+            " no hosted lookup can see it."
+            " Input semantics: provide intake_id (e.g."
+            " 'issue-1234' or '1234') or dedup_key from"
+            " misakanet_submit_intake. At least one is required."
+            " Output schema: {intake_id, status, answer?,"
+            " lesson_id?, issue_url?, note}. status is one of"
+            " answered, pending, converted, unknown — 'unknown'"
+            " means the lookup could not determine it, which is a"
+            " different answer from 'never happened'."
             " Error cases: missing both intake_id and dedup_key"
-            " returns {error, hint}."
+            " returns {error, hint}; an unreachable endpoint"
+            " returns status=unknown with"
+            " error=hosted_endpoint_unavailable, never a false"
+            " not_found."
             " Side effects: none — this is a read-only call."
             " Auth: none."
-            " Rate limits: none — reads from D1 database and"
-            " local data files."
+            " Rate limits: none of its own — the hosted endpoint's"
+            " read burst limit applies to the forwarded call."
         ),
+        # The hosted definition's own schema, verbatim: `test_mcp_capability_parity.py` compares
+        # the two and a reworded argument description is how the surfaces start teaching different
+        # lookups for the same tool name (#3577).
         "inputSchema": {
             "type": "object",
             "properties": {
                 "intake_id": {
                     "type": "string",
                     "description": (
-                        "The intake ID from misakanet_submit_intake"
-                        " response (e.g. 'abc123')."
+                        "Question intake ID from a prior submit_intake response, e.g."
+                        " 'issue-1528' or '1528'; for non-question intakes use dedup_key."
+                        " Either intake_id or dedup_key is required."
                     ),
                 },
                 "dedup_key": {
                     "type": "string",
                     "description": (
-                        "The dedup hash from misakanet_submit_intake"
-                        " response (e.g. 'def456')."
+                        "The dedup_key (8-char FNV-1a hex key) from a prior submit_intake"
+                        " response. Either intake_id or dedup_key is required."
                     ),
                 },
             },

@@ -101,6 +101,12 @@ checkout — `misakanet_submit_usage`, `misakanet_usage_status`, `misakanet_memo
 local install. `.codex-plugin/plugin.json` declares both sets, and `tests/test_mcp_capability_parity.py`
 checks them against this server and the worker.
 
+`misakanet_me_inbox` is a proxy too, and for the same reason: intake status lives in the worker's
+D1/KV stores. The local server answers an intake that is still in this checkout's contribution
+queue from the queue, and forwards everything else to the hosted tool — so the same id gets the
+same answer on both surfaces. Before 2026-11-03 it called a `/api/inbox` route that does not
+exist and answered `not_found` for every hosted lookup (#3577).
+
 The three sets are pinned against their sources by `tests/test_mcp_doc_surface.py`, so a tool added
 without a line here fails the suite rather than leaving a reader with a wrong map.
 

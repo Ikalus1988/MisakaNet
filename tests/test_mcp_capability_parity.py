@@ -233,6 +233,47 @@ def test_the_local_me_events_definition_matches_the_hosted_one():
     )
 
 
+ME_INBOX = "misakanet_me_inbox"
+
+
+def test_the_local_me_inbox_definition_matches_the_hosted_one():
+    """#3577: the two surfaces must not teach different lookups for the same tool name.
+
+    The local handler forwards to the hosted `misakanet_me_inbox` tool, so a reworded argument
+    description here is not cosmetic — it is a client being told to pass something the forwarded
+    call will not use (`dedup_key` was described as a "16-char hash" on both surfaces while the
+    worker's key is 8 hex characters, and the stdio tool advertised `me_events`' `events[]`).
+    """
+    hosted = _hosted_tool_definitions()[ME_INBOX]
+    local = next(tool for tool in LOCAL_TOOLS if tool["name"] == ME_INBOX)
+    assert local["inputSchema"] == hosted["inputSchema"], {
+        "local": local["inputSchema"],
+        "hosted": hosted["inputSchema"],
+    }
+
+
+def test_the_two_surfaces_teach_the_same_me_inbox_status_vocabulary():
+    """The statuses a caller may branch on, on both surfaces.
+
+    `not_found` stays in the hosted enum for older clients but is never produced: the handler
+    answers `unknown` with a reason, because "cannot be determined" is a different claim from
+    "never happened" (the stdio surface used to make the stronger, false one).
+    """
+    hosted = _hosted_tool_definitions()[ME_INBOX]
+    schema_statuses = set(hosted["outputSchema"]["properties"]["status"]["enum"])
+    returnable = {"answered", "pending", "converted", "unknown"}
+    assert returnable <= schema_statuses, sorted(returnable - schema_statuses)
+
+    local = next(tool for tool in LOCAL_TOOLS if tool["name"] == ME_INBOX)
+    for status in returnable:
+        assert status in local["description"], (
+            f"the local description never names {status!r}, so a caller cannot know it is an answer"
+        )
+    assert "events[]" not in local["description"], (
+        "me_inbox returns one intake, not an event list — `events[]` is me_events' shape"
+    )
+
+
 # ── the local server answers, offline-safely ─────────────────────────────────────────────────────
 
 def _call_local(name: str, arguments: dict) -> dict:

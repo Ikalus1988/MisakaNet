@@ -38,7 +38,6 @@ import pytest
 from misakanet.server.handlers.inbox import handle_me_inbox
 from misakanet.server.handlers.submit import handle_submit_intake
 
-_URLOPEN = "misakanet.server.handlers.inbox._url_request.urlopen"
 _REMOTE_CALL = "misakanet.remote.call"
 
 
@@ -99,6 +98,25 @@ class TestLocalFallbackIsHonest:
         assert hint["tool"] == "misakanet_me_inbox"
         assert result["intake_id"] in hint["argument"]
 
+    def test_the_local_poll_hint_has_the_hosted_shape(self, local_queue):
+        """One reader handles both transports (#3577 criterion 1).
+
+        The hosted submit_intake's `outputSchema` is the contract; the local fallback cannot return
+        the same values (it has no hosted dedup key to poll), but it must return the same *keys*, or
+        a caller that reads `poll_hint["recheck_after_seconds"]` works on one transport and crashes
+        on the other.
+        """
+        import _worker_tools
+
+        hosted = _worker_tools.hosted_definitions()["misakanet_submit_intake"]
+        shape = hosted["outputSchema"]["properties"]["poll_hint"]["properties"]
+        result = handle_submit_intake({
+            "kind": "missing_lesson", "problem": "poll hint shape parity", "source": "test"})
+        assert set(result["poll_hint"]) == set(shape), {
+            "local": sorted(result["poll_hint"]),
+            "hosted": sorted(shape),
+        }
+
     def test_question_and_failure_report_poll_on_different_clocks(self, local_queue):
         question = handle_submit_intake({
             "kind": "question", "problem": "how do I configure this?", "source": "test"})
@@ -113,7 +131,8 @@ class TestTheLocalLoopCloses:
         """The receipt promises a poll; the poll has to work."""
         submitted = handle_submit_intake({
             "kind": "missing_lesson", "problem": "will anyone answer me?", "source": "test"})
-        with patch(_URLOPEN, side_effect=AssertionError("the local queue must answer, not the network")):
+        with patch(_REMOTE_CALL, side_effect=AssertionError(
+                "the local queue must answer, not the network")):
             got = handle_me_inbox({"intake_id": submitted["intake_id"]})
         assert got["status"] != "not_found"
         assert got["delivery"] == "local_queue"
@@ -122,18 +141,16 @@ class TestTheLocalLoopCloses:
     def test_me_inbox_finds_a_local_entry_by_its_dedup_key_too(self, local_queue):
         submitted = handle_submit_intake({
             "kind": "missing_lesson", "problem": "find me by key", "source": "test"})
-        with patch(_URLOPEN, side_effect=AssertionError("the local queue must answer, not the network")):
+        with patch(_REMOTE_CALL, side_effect=AssertionError(
+                "the local queue must answer, not the network")):
             got = handle_me_inbox({"dedup_key": submitted["dedup_key"]})
         assert got["delivery"] == "local_queue"
 
     def test_an_unknown_id_still_goes_to_the_hosted_endpoint(self, local_queue):
         """A local lookup that misses must not swallow the hosted lookup."""
-        with patch(_URLOPEN) as opener:
-            opener.return_value.read.return_value = json.dumps(
-                {"intake_id": "issue-1", "status": "pending"}).encode()
-            opener.return_value.__enter__.return_value = opener.return_value
+        with patch(_REMOTE_CALL, return_value={"intake_id": "issue-1", "status": "pending"}) as call:
             got = handle_me_inbox({"intake_id": "issue-1"})
-        assert opener.called
+        assert call.called
         assert got["status"] == "pending"
 
 

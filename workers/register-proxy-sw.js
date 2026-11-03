@@ -615,12 +615,12 @@ const MCP_TOOLS = [
   },
   {
     name: "misakanet_me_inbox",
-    description: "[AGENT READABLE INBOX] Check the status of a previously submitted intake (question, missing_lesson, etc.) without re-submitting. Accepts an intake_id (e.g. 'issue-1234' or '1234') for question intakes, or a dedup_key (the 16-char hash) for any intake. Returns: {status: 'answered'|'pending'|'converted'|'not_found', ...} — 'answered' includes the maintainer's answer, 'converted' includes the lesson_id this intake became. Read-only, rate-limited, no auth required.\nReturns: object {intake_id, status, answer?, lesson_id?, issue_url?, note}.\nExample: misakanet_me_inbox(intake_id='issue-1528') or misakanet_me_inbox(dedup_key='a1b2c3d4e5f67890')",
+    description: "[AGENT READABLE INBOX] Check the status of a previously submitted intake (question, missing_lesson, etc.) without re-submitting. Accepts an intake_id (e.g. 'issue-1234' or '1234') for question intakes, or a dedup_key (the 8-char FNV-1a key from a prior submit_intake response) for any intake. Returns: {status: 'answered'|'pending'|'converted'|'unknown', ...} — 'answered' includes the maintainer's answer, 'converted' includes the lesson_id this intake became, and 'unknown' means the lookup could not determine it, which is not the same answer as 'never happened'. Read-only, rate-limited, no auth required.\nReturns: object {intake_id, status, answer?, lesson_id?, issue_url?, note}.\nExample: misakanet_me_inbox(intake_id='issue-1528') or misakanet_me_inbox(dedup_key='9f8e7d6c')",
     inputSchema: {
       type: "object",
       properties: {
         intake_id: { type: "string", description: "Question intake ID from a prior submit_intake response, e.g. 'issue-1528' or '1528'; for non-question intakes use dedup_key. Either intake_id or dedup_key is required." },
-        dedup_key: { type: "string", description: "The dedup_key (16-char hash) from a prior submit_intake response. Either intake_id or dedup_key is required." },
+        dedup_key: { type: "string", description: "The dedup_key (8-char FNV-1a hex key) from a prior submit_intake response. Either intake_id or dedup_key is required." },
       },
       // No `minProperties`: this is the #2967 recurrence (#4361). The keyword cost one client every
       // tool on the server once already, and the stdio face of this same tool never had it. The
