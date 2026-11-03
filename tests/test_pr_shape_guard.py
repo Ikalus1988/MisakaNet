@@ -360,6 +360,28 @@ def test_a_declared_new_top_level_directory_is_allowed():
     assert new_top_level_directory(["hooks/pre-tool-use.sh"], REPO_DIRS, "about hooks") != []
 
 
+def test_a_declared_new_dot_directory_is_allowed():
+    """A shipped package can be a new dot-directory; the body declares which one, and why."""
+    marker = ("<!-- shape-guard: allow-new-dot-dir .cindy-plugin: the Cindy plugin package, the same "
+              "kind of artifact as .claude-plugin/ -->")
+    assert internal_artifact([".cindy-plugin/ghost.json"], REPO_DIRS, marker) == []
+    # Still caught without the declaration: the rule is about the declaration, not the name.
+    assert internal_artifact([".cindy-plugin/ghost.json"], REPO_DIRS) != []
+
+
+def test_a_dot_directory_declaration_needs_a_reason_and_the_right_name():
+    """A bare marker is not a declaration, and one directory's marker does not excuse another."""
+    no_reason = "<!-- shape-guard: allow-new-dot-dir .cindy-plugin: -->"
+    assert internal_artifact([".cindy-plugin/ghost.json"], REPO_DIRS, no_reason) != []
+    other_dir = "<!-- shape-guard: allow-new-dot-dir .claude-plugin: already shipped -->"
+    assert internal_artifact([".cindy-plugin/ghost.json"], REPO_DIRS, other_dir) != []
+    # The declaration covers its own directory only.
+    both = ("<!-- shape-guard: allow-new-dot-dir .cindy-plugin: package -->\n"
+            ".ai_bounty_patches/x.patch")
+    assert internal_artifact([".cindy-plugin/ghost.json", ".ai_bounty_patches/x.patch"],
+                             REPO_DIRS, both) != []
+
+
 def test_the_repository_own_shape_is_not_judged_without_the_base_list():
     """No base list means no opinion: a guard that guesses is worse than one that abstains."""
     assert internal_artifact([".ai_bounty_patches/x.patch"], None) == []
