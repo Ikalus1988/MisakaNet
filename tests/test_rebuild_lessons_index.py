@@ -25,15 +25,15 @@ def test_check_passes_after_rebuild():
 def test_check_fails_on_stale_index():
     """--check returns 1 when the index drifts from the corpus."""
     index = REPO / "lessons" / "index.md"
-    original = index.read_text()
+    original = index.read_text(encoding="utf-8")
     try:
         # Inject a fake entry
-        index.write_text(original + "\n- [Fake](core/nonexistent.md) | test | | \n")
+        index.write_text(original + "\n- [Fake](core/nonexistent.md) | test | | \n", encoding="utf-8")
         r = run("--check")
         assert r.returncode == 1, f"expected 1, got {r.returncode}"
         assert "out of sync" in r.stderr
     finally:
-        index.write_text(original)
+        index.write_text(original, encoding="utf-8")
 
 
 def test_deterministic_output():
@@ -47,7 +47,7 @@ def test_deterministic_output():
 
 def test_all_corpus_files_covered():
     """Every .md lesson file (except skips) appears in the rebuilt index."""
-    index_content = (REPO / "lessons" / "index.md").read_text()
+    index_content = (REPO / "lessons" / "index.md").read_text(encoding="utf-8")
     skip = {"README.md", "index.md", "TEMPLATE.md", "CONTRIBUTING.md"}
     for subdir in ("core", "contrib", "en"):
         d = REPO / "lessons" / subdir

@@ -117,7 +117,7 @@ class TestConvert:
             # Check draft file exists and has content
             draft_file = tmp_path / converted["draft_path"]
             assert draft_file.exists()
-            content = draft_file.read_text()
+            content = draft_file.read_text(encoding="utf-8")
             assert "Fix DCO sign-off failure" in content
             assert "DCO check fails" in content
 

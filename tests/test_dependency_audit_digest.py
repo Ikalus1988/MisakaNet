@@ -204,7 +204,7 @@ def test_offline_mode_reports_both_as_unavailable():
 def test_the_digest_is_what_the_workflow_greps_for():
     """`dependency-vuln-audit.yml` decides whether to post a digest by grepping for `CLEAN_LINE`.
     If the two ever drift, the workflow posts a digest on every clean week and nobody reads it."""
-    workflow = (REPO / ".github" / "workflows" / "dependency-vuln-audit.yml").read_text()
+    workflow = (REPO / ".github" / "workflows" / "dependency-vuln-audit.yml").read_text(encoding="utf-8")
     assert audit.CLEAN_LINE in workflow, (
         "the workflow does not grep for the sentence this module defines; the two have drifted"
     )

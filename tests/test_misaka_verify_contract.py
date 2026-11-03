@@ -65,7 +65,7 @@ def probe(mv, tmp_path):
 
 def _run(mv, probe, body: bytes):
     probe["source"].write_bytes(body)
-    probe["task_file"].write_text(json.dumps({"task_id": probe["task"]["task_id"]}))
+    probe["task_file"].write_text(json.dumps({"task_id": probe["task"]["task_id"]}), encoding="utf-8")
     return mv.run_verification(probe["task"])
 
 

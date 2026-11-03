@@ -201,7 +201,7 @@ def main():
         print(json.dumps(report, indent=2))
     else:
         report_path = REPO / "data" / "bm25_weight_benchmark.json"
-        report_path.write_text(json.dumps(report, indent=2, ensure_ascii=False))
+        report_path.write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
         print(f"\nReport saved to: {report_path}")
 
 

@@ -36,14 +36,17 @@ def test_http_cli_serves_tools_resources_and_prompts_on_requested_port(tmp_path:
         try:
             deadline = time.monotonic() + 10
             while time.monotonic() < deadline:
-                assert process.poll() is None, log_path.read_text()
+                assert process.poll() is None, log_path.read_text(encoding="utf-8")
                 try:
                     with socket.create_connection(("127.0.0.1", port), timeout=0.1):
                         break
                 except OSError:
                     time.sleep(0.05)
             else:
-                raise AssertionError(f"HTTP server did not start: {log_path.read_text()}")
+                # Hoisted out of the f-string: `read_text(encoding="utf-8")` inside a double-quoted
+                # f-string is PEP 701 (3.12+), and the 3.11 legs are required checks.
+                log_text = log_path.read_text(encoding="utf-8")
+                raise AssertionError(f"HTTP server did not start: {log_text}")
 
             async def exercise() -> None:
                 async with Client(

@@ -45,9 +45,9 @@ FAKE_PROBE = '''#!/usr/bin/env python3
 import json, os, pathlib, sys
 
 calls = pathlib.Path(os.environ["FAKE_CALLS"])
-seen = json.loads(calls.read_text()) if calls.exists() else []
+seen = json.loads(calls.read_text(encoding="utf-8")) if calls.exists() else []
 seen.append(sys.argv[1:])
-calls.write_text(json.dumps(seen))
+calls.write_text(json.dumps(seen), encoding="utf-8")
 verdicts = json.loads(os.environ["FAKE_VERDICTS"])
 print(f"fake probe: call {len(seen)}, argv={sys.argv[1:]}")
 sys.exit(verdicts[min(len(seen) - 1, len(verdicts) - 1)])
@@ -101,7 +101,7 @@ def run_probe(tmp_path: Path, verdicts: list[int], base_url: str = "") -> dict:
         "returncode": proc.returncode,
         "stdout": proc.stdout,
         "stderr": proc.stderr,
-        "calls": json.loads(calls.read_text()) if calls.exists() else [],
+        "calls": json.loads(calls.read_text(encoding="utf-8")) if calls.exists() else [],
         "summary": summary.read_text(encoding="utf-8"),
         "tmp_path": tmp_path,
     }

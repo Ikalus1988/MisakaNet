@@ -724,7 +724,7 @@ def test_a_fixture_is_not_labelled_auto_rejected():
     queue every morning. The placeholder branch must therefore never *add* that label.
     """
     root = Path(__file__).parent.parent
-    workflow = (root / ".github/workflows/intake-auto-review.yml").read_text()
+    workflow = (root / ".github/workflows/intake-auto-review.yml").read_text(encoding="utf-8")
     branch = workflow.split('elif [ "$DECISION" = "placeholder" ]', 1)[1].split("\n          else", 1)[0]
 
     assert '--add-label "auto-placeholder"' in branch, "the placeholder branch adds no label"
@@ -740,7 +740,7 @@ def test_a_fixture_is_not_labelled_auto_rejected():
 def test_the_salvage_digest_does_not_sweep_fixtures():
     digest = (
         Path(__file__).parent.parent / ".github/workflows/intake-salvage-digest.yml"
-    ).read_text()
+    ).read_text(encoding="utf-8")
     assert "auto-placeholder" not in digest, (
         "the digest would have to opt fixtures out explicitly; the label is meant to be "
         "invisible to it"

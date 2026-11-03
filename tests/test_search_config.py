@@ -54,8 +54,7 @@ def test_load_from_yaml(tmp_path):
         "  bm25_weight: 0.70\n"
         "  metadata_weight: 0.15\n"
         "  baseline_weight: 0.15\n"
-        "  rrf_k: 100\n"
-    )
+        "  rrf_k: 100\n", encoding="utf-8")
     # Monkey-patch CONFIG_FILE
     import scripts.search_config as mod
     old_file = mod.CONFIG_FILE

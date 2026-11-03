@@ -45,15 +45,14 @@ def test_new_published_dir_needs_no_code_change(tmp_path):
     """A brand-new dir (simulating lessons/verified/) is picked up as-is."""
     root = tmp_path / "lessons"
     (root / "core").mkdir(parents=True)
-    (root / "core" / "pip-timeout.md").write_text("---\ntitle: pip timeout\n---\nbody\n")
+    (root / "core" / "pip-timeout.md").write_text("---\ntitle: pip timeout\n---\nbody\n", encoding="utf-8")
     (root / "templates").mkdir()
-    (root / "templates" / "x.md").write_text("placeholder\n")
+    (root / "templates" / "x.md").write_text("placeholder\n", encoding="utf-8")
     (root / "_archive").mkdir()
-    (root / "_archive" / "old.md").write_text("old\n")
+    (root / "_archive" / "old.md").write_text("old\n", encoding="utf-8")
     (root / "verified").mkdir()
     (root / "verified" / "my-verified-lesson.md").write_text(
-        "---\ntitle: verified fix\n---\nbody\n"
-    )
+        "---\ntitle: verified fix\n---\nbody\n", encoding="utf-8")
 
     found = {d.name for d in discover_lesson_dirs(root)}
     assert found == {"core", "verified"}
@@ -96,7 +95,7 @@ def test_canonical_dedupes_mirror_copies(tmp_path):
     (root / "en").mkdir()
     for d, stem in (("contrib", "topic-a"), ("en", "topic-a"),
                     ("core", "topic-b"), ("en", "topic-b"), ("en", "unique-c")):
-        (root / d / f"{stem}.md").write_text("---\ntitle: x\n---\nbody\n")
+        (root / d / f"{stem}.md").write_text("---\ntitle: x\n---\nbody\n", encoding="utf-8")
 
     canon = {f.parent.name + "/" + f.name for f in canonical_lessons(root)}
     assert canon == {"contrib/topic-a.md", "core/topic-b.md", "en/unique-c.md"}

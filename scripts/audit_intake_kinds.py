@@ -89,7 +89,7 @@ def _token() -> str:
             return t
     cred = Path.home() / ".git-credentials"
     if cred.exists():
-        m = re.match(r"https://[^:]+:([^@]+)@", cred.read_text(errors="replace").strip())
+        m = re.match(r"https://[^:]+:([^@]+)@", cred.read_text(errors="replace", encoding="utf-8").strip())
         if m:
             return m.group(1)
     return ""
