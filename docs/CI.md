@@ -138,7 +138,7 @@
 | `stale.yml` | 97 次 success；`label:stale` 1 条；自动关闭评论 0 条 | 豁免面很大（`keep`/`registered`/`help wanted`/`bounty` + `exempt-all-milestones`），而本仓多数开放项都带其中至少一个 | 出现既不豁免、又 14 天（PR）/30 天（issue）无活动的项。**这是它的设计目的**：宁可空转，也不要在一堆 bounty 上乱贴 stale |
 | `lesson-notify.yml` | 2953 次运行：2946 skipped / 2 success / 5 failure | 只在 `new-lesson` 标签出现时才有意义，而该标签全仓只有 6 条 | 新建的 lesson PR 打上 `new-lesson`。投递成功与否**不可见**——这是它真正的短板，要改不是关 |
 | `intake-kind-audit.yml` | 3 次 clean；2026-09-25 手工重跑仍然 clean（37 条 open `mcp-intake`） | 语料里**确实**没有错分 | 出现"内容读起来是问题、却被当课程处理"的 intake。这条以前无法区分"真的干净"和"检测从不触发"，现在 `tests/test_intake_kind_audit.py` 用夹具证明检测能触发；2026-10-25（#3835）起 workflow 改按脚本退出码判定：翻转 / 0 行红，misfiles 仍绿并建 digest issue |
-| `automation_output_audit.py` | 2026-09-21 定时运行 **success**（job `automation-output-audit`） | push 触发时该 job 会被 skip，只有每周一 07:00 的窗口才跑 | 每周一。`#1826` 记的"这个 job 一次都没跑过"是因为当时窗口还没到——**已经跑过了** |
+| `automation_output_audit.py` | 2026-09-21 定时运行 **success**（job `automation-output-audit`） | push 触发时该 job 会被 skip，只有每周一 07:00 的窗口才跑 | 每周一。`#1826` 记的"这个 job 一次都没跑过"是因为当时窗口还没到——**已经跑过了**。2026-11-03 起还会探最近 7 天的失败 run 是不是 **0 作业**（GitHub 拒绝整个 workflow 文件的形状，见 #3232 / #2957）：默认分支上出现即 fail，其他分支只记 note，采样覆盖写在表格的 `(all workflows)` 行里 |
 
 **已修好的那几条**（同一次复核）：`pr-checks.yml` 的 Auto-Merge Gate（布尔比 `true` 而不是 GraphQL 的 `MERGEABLE` 枚举）、
 `auto-merge-docs.yml` 的触发补上 `labeled`、`auto-draft.yml` 不再依赖没有写入者的 `crash-reports/` 路径、
