@@ -395,11 +395,11 @@ def misakanet_submit_intake(
         if len(body.encode("utf-8")) > 8000:
             body = body[:7900] + "\n\n... [truncated to 8k limit]"
 
-        # question kind gets a needs-human-review label so maintainers triage
-        # help requests distinctly from failure intakes.
-        labels = "intake,mcp-intake,pending-review"
-        if kind == "question":
-            labels += ",needs-answer"
+        # A question gets `needs-answer` and **not** `pending-review`: the latter is the corpus
+        # queue ("waiting to be reviewed as a lesson"), which is the one thing a question is not
+        # (#4238/#4239 carried it for three days; every open question did).
+        labels = "intake,mcp-intake"
+        labels += ",needs-answer" if kind == "question" else ",pending-review"
 
         # Create GitHub issue
         import subprocess

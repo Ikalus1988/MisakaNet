@@ -130,14 +130,18 @@ def _cases() -> list[dict]:
             "expect_not_added": [],
         },
         {
+            # A question is not a lesson awaiting review: the worker applies `pending-review` when
+            # it opens the issue, and until 2026-11-03 nothing took it off a question. Measured
+            # that day: 50 of 50 open questions carried the corpus queue label (#4238/#4239 among
+            # them — repo-improvement requests reading as "waiting to become a lesson").
             "name": "a question, routed by its explicit kind",
             "title": "[Intake] How do I configure MCP auth?",
             "body": QUESTION_BODY,
-            "labels": ["intake"],
+            "labels": ["intake", "mcp-intake", "pending-review", "needs-human-review"],
             "expect_classification": "question",
             "expect_type": "question",
-            "expect_removed": [],
-            "expect_not_added": [],
+            "expect_removed": ["pending-review", "needs-human-review"],
+            "expect_not_added": ["pending-review", "needs-human-review"],
         },
         {
             # The narrow-trigger contract: a report that merely discusses failures — the shape the
@@ -296,4 +300,30 @@ def test_the_proposal_branch_is_not_the_only_route_pinned(tmp_path: Path) -> Non
     assert {"proposal", "lesson-candidate", "question"} <= classes, (
         f"the case table no longer covers every route (has {sorted(classes)}); the proposal route "
         "was added because #4251 was mislabelled — keep a case for each class"
+    )
+
+
+def test_the_auto_review_question_branch_also_leaves_the_lesson_queue():
+    """Two implementations of one routing rule, and both had the hole.
+
+    `issue-intake-triage.yml` runs `scripts/intake_triage_classifier.cjs`; `intake-auto-review.yml`
+    does the same label edits in shell. Its question branch removed six labels and stopped at
+    `exit 0` — `pending-review` was in the *non*-question branch below that exit, so a question
+    kept it no matter which workflow finished last. This asserts the shell half, because the
+    classifier half is covered by the harness above.
+    """
+    workflow = yaml.safe_load((REPO / ".github" / "workflows" / "intake-auto-review.yml")
+                              .read_text(encoding="utf-8"))
+    steps = [step for job in workflow["jobs"].values() for step in job.get("steps", [])]
+    apply_labels = next(step for step in steps if step.get("name") == "Apply labels")
+    run = apply_labels["run"]
+    start = run.index('if [ "$DECISION" = "question" ]; then')
+    end = run.index("exit 0", start)
+    branch = run[start:end]
+    assert "needs-answer" in branch, (
+        "the extracted block is not the question path — the test is broken, not the workflow"
+    )
+    assert '--remove-label "pending-review"' in branch, (
+        "a question keeps the corpus queue label: `pending-review` says 'waiting to become a "
+        "lesson', which is the one thing a question is not"
     )

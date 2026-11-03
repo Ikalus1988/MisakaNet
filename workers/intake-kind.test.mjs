@@ -74,6 +74,10 @@ test('submit_intake question kind creates issue with needs-answer label', async 
     assert.ok(captured);
     assert.ok(captured.labels.includes('needs-answer'));
     assert.ok(captured.labels.includes('intake'));
+    // Not the corpus queue: `pending-review` means "waiting to be reviewed as a lesson", and until
+    // 2026-11-03 every question carried it (#4238/#4239 sat in the lesson queue for three days).
+    assert.ok(!captured.labels.includes('pending-review'),
+      `a question must not enter the lesson queue: ${JSON.stringify(captured.labels)}`);
     assert.match(captured.title, /^\[Question\]/);
     assert.match(captured.body, /\*\*Kind:\*\* question/);
   } finally {
@@ -94,6 +98,8 @@ test('submit_intake missing_lesson keeps standard labels and title', async () =>
     assert.ok(captured);
     assert.ok(captured.labels.includes('intake'));
     assert.ok(!captured.labels.includes('needs-answer'));
+    assert.ok(captured.labels.includes('pending-review'),
+      'a failure report is a lesson candidate and keeps the queue label');
     assert.match(captured.title, /^\[Intake\]/);
   } finally {
     restore();

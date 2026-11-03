@@ -376,7 +376,10 @@ def _question_issue_payload(intake: dict) -> tuple[str, list[str], str]:
     problem = _clip_question((intake["problem"] or "").strip())
     first_line = (problem.splitlines() or ["help request"])[0][:80]
     title = f"[Question] {first_line}"
-    labels = ["intake", "mcp-intake", "pending-review", "needs-answer", "question"]
+    # No `pending-review`: that label is the corpus queue ("waiting to be reviewed as a
+    # lesson"). A question's queue is `needs-answer` — see #4238/#4239, where
+    # repo-improvement questions sat in the lesson queue for three days.
+    labels = ["intake", "mcp-intake", "needs-answer", "question"]
     body = (
         f"**Kind:** question\n**Source:** {intake['source']}\n"
         f"**Dedup:** `{intake['source_id'] or 'n/a'}`\n\n"

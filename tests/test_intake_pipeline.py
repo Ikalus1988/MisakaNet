@@ -102,6 +102,23 @@ class TestRun(unittest.TestCase):
         self.assertIn("draft_preview", result)
 
 
+class TestQuestionIssueLabels(unittest.TestCase):
+    """#4238/#4239 were repo-improvement questions sitting in the lesson queue for three days.
+
+    `pending-review` means "waiting to be reviewed as a lesson". A question's exit is an answer,
+    so its label is `needs-answer` — the pipeline used to emit both.
+    """
+
+    def test_a_question_issue_does_not_enter_the_lesson_queue(self):
+        title, labels, _body = ip._question_issue_payload(
+            {"problem": "how do I sync the answers?", "source": "mcp", "source_id": "s1"})
+        self.assertTrue(title.startswith("[Question]"))
+        self.assertIn("needs-answer", labels)
+        self.assertIn("question", labels)
+        self.assertNotIn("pending-review", labels,
+                         f"a question in the corpus queue: {labels}")
+
+
 class TestQuestionRouting(unittest.TestCase):
     """#1396: question intakes must never mint a lesson-shaped draft into
     lesson_drafts — they route straight to a [Question] issue."""

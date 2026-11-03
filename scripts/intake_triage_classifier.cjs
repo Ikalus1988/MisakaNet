@@ -145,6 +145,17 @@ module.exports = async function classifyIntake({ github, core, context }) {
     suggestedAction = 'Question / knowledge-gap intake (not a lesson candidate). Ask the submitter for the concrete error, what was tried, and the expected outcome. Convert to a lesson only if it gains a failure + fix + verification shape; otherwise answer, keep as an open question, or close as a duplicate.';
     labelsToAdd.push('question');
     labelsToRemove.push('auto-rejected', 'needs-salvage', 'type:feature', 'type:bug');
+    // A question is not a lesson awaiting review, and its queue is `needs-answer` (owner
+    // decision 2026-10-17), not `needs-human-review`. Both were missing here until 2026-11-03:
+    // the worker applies `pending-review` when it creates the issue, this branch never took it
+    // off, and the *other* workflow's question path also missed it — so every open question
+    // carried the corpus queue label. Measured that day: 50 of 50 (#4238, #4239 among them,
+    // where the label read as "this repo-improvement request is waiting to become a lesson").
+    for (const stale of ['pending-review', 'needs-human-review']) {
+      const at = labelsToAdd.indexOf(stale);
+      if (at !== -1) labelsToAdd.splice(at, 1);
+      labelsToRemove.push(stale);
+    }
   } else if (isProposal) {
     // A proposal / product request: not lesson material, not a bug, and not waiting to
     // be reviewed as a lesson. Its exit is a decision plus, if accepted, issues that
