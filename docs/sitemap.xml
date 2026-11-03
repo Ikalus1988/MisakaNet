@@ -138,6 +138,7 @@
   <url><loc>https://misakanet.org/lessons/api-rate-limit-handling/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/an-assertion-that-cannot-fail-is-not-a-test-five-shapes-it-took-in-one-working-s/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/astro-dev-serves-the-updated-css-but-the-page-screenshot-still-renders-the-old-s/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/同步改异步后台投递后测试假红轮询只等了两个可见事件里的第一个/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/asyncio-cancellederror-swallows-resources/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-weak-signal-sample-can-raise-a-factors-relative-contribution-while-its-auc-fal/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/audit-sampling-stratified-sampling-for-kb-inspection/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -437,6 +438,7 @@
   <url><loc>https://misakanet.org/lessons/lesson-template-network/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/editing-a-lessons-frontmatter-without-regenerating-datalessonsjson-trips-the-sta/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/lessons-md-fix-heading-block-type/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/leveldb-批量导入-28-亿行内存涨到-19gb调-write-buffercache每-25-万行-flush并发限-34/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/bundled-libreoffice-rasterizer-draws-pptx-shapes-at-15x-inside-a-correctly-sized/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/llamacpp-returns-400-failed-to-parse-grammar-when-tools-and-response-format-are/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/llm-cost-telemetry-undercounting-wrong-model-label-discarded-retries-invisible/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -486,6 +488,7 @@
   <url><loc>https://misakanet.org/lessons/napcat-send-private-msg-fails-with-eventchecker-ntevent-listener-while-receive-w/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/nas-trip-手工映射漏字段movingms从-nas-恢复的行程骑行均速永远是/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/ngrok-gives-err-ngrok-4018-and-never-opens-a-tunnel-when-no-authtoken-is-configu/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/启动期遥测同步请求没有超时ui-永久冻结超时后台化超时留队三件套/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/node-dataviewgetuint32-defaults-to-big-endian-so-a-little-endian-read-reports-an/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/node-strip-only-mode-rejects-typescript-syntax-that-needs-lowering-not-just-type/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/nodejs-missing-require-inside-try-catch/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -519,6 +522,7 @@
   <url><loc>https://misakanet.org/lessons/a-patch-that-fails-on-a-later-hunk-has-usually-already-changed-the-earlier-ones/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/patching-a-library-bundled-inside-a-pyinstaller-one-dir-build-the-on-disk-copy-i/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/path-file-parentsn-is-a-depth-guess-installed-from-a-wheel-it-resolves-to-the-ve/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/正则移植pcre-的-z-在-javascript-里是字面量-z一切含-z-的内容被静默截断/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/pdf-oxide-drops-compound-word-hyphen-when-pdf-wraps-at-that-hyphen/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/permission-denied-fix/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/phase-0-output-gate/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -719,6 +723,7 @@
   <url><loc>https://misakanet.org/lessons/initdb-fails-with-invalid-byte-sequence-for-encoding-utf8-when-the-installation/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-second-parallel-edit-of-the-same-file-on-windows-fails-with-replacefilew-eio-w/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/windows-powershell-内联命令的双层转义陷阱node-e-静默失败/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/cmd-包装中文文件名-exe-在计划任务里退出码-255批处理要按-gbk-写盘或全用-ascii-名/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/windows-wsl2-环境下-node-的-fetchundici-访问-github-release-资源会-connect-timeout10/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/windows-上把-deepseek-harness-工作区pathudocumentsdeepseek-harness搬到-d-盘后用-mk/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/windows-下-c-子进程经-stdout-向父进程传输二进制协议帧1b-kind4b-lenbodybody-为-pcm-音频静音/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>

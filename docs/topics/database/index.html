@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Database Lessons — MisakaNet</title>
-<meta name="description" content="3 indexed failure lessons about database. From MisakaNet — Git-backed failure lesson network.">
+<meta name="description" content="4 indexed failure lessons about database. From MisakaNet — Git-backed failure lesson network.">
 <link rel="canonical" href="https://misakanet.org/topics/database/">
 <meta property="og:title" content="Database Lessons">
-<meta property="og:description" content="3 indexed failure lessons about database. From MisakaNet — Git-backed failure lesson network.">
+<meta property="og:description" content="4 indexed failure lessons about database. From MisakaNet — Git-backed failure lesson network.">
 <meta property="og:url" content="https://misakanet.org/topics/database/">
 <!-- design-tokens:start -->
 <style id="misaka-design-tokens">
@@ -168,11 +168,15 @@
 </head>
 <body>
 <h1>Database Lessons</h1>
-<div class="count">3 lessons in this domain</div>
+<div class="count">4 lessons in this domain</div>
 
 <div class="lesson">
   <a href="/lessons/an-unlikely-database-migration/">An Unlikely Database Migration: From JSON Files to etcd</a>
   <div class="summary">Tailscale's control plane (CONTROL) began using a JSON file-based persistence layer that became a significant bottleneck</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/leveldb-批量导入-28-亿行内存涨到-19gb调-write-buffercache每-25-万行-flush并发限-34/">LevelDB 批量导入 2.8 亿行内存涨到 19GB：调 write_buffer/cache、每 2~5 万行 flush、并发限 3~4</a>
+  <div class="summary">往 LevelDB 批量写入（单次 2.8 亿行）时，服务进程内存从 0.3GB 涨到 **19GB**，32GB 机器只剩 1GB 可用，</div>
 </div>
 <div class="lesson">
   <a href="/lessons/postgresql-connection-pool-exhaustion-ar/">حل مشكلة استنفاد تجميع اتصالات قاعدة البيانات PostgreSQL في بيئات الإنتاج</a>
