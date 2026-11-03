@@ -128,7 +128,7 @@ def test_the_source_can_be_read_without_being_told_where_it_came_from(stub_url, 
     """The file is the only record of where the number came from, so it has to carry the URL."""
     out = tmp_path / "activity.json"
     assert run(stub_url, out).returncode == 0
-    assert json.loads(out.read_text())["source"] == f"{stub_url}/api/analytics/traffic"
+    assert json.loads(out.read_text(encoding="utf-8"))["source"] == f"{stub_url}/api/analytics/traffic"
 
 
 # ── the refusals: what must never be published ───────────────────────────────────────────────────
@@ -143,7 +143,7 @@ def test_a_failed_fetch_never_publishes_a_zero(stub_url, tmp_path):
     assert proc.returncode == 1, proc.stdout + proc.stderr
     assert out.read_bytes() == before, "the previous snapshot was modified by a failed fetch"
     assert "refusing to write" in proc.stdout, proc.stdout
-    assert json.loads(out.read_text())["total"] == 9302, "yesterday's number survived"
+    assert json.loads(out.read_text(encoding="utf-8"))["total"] == 9302, "yesterday's number survived"
 
 
 def test_an_endpoint_that_answers_zero_is_refused(stub_url, tmp_path):
@@ -237,12 +237,12 @@ def test_force_writes_anyway(stub_url, tmp_path):
     out.write_text(json.dumps(tampered, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
     assert run(stub_url, out).returncode == 0
-    assert json.loads(out.read_text())["generated_at"] == "1999-01-01T00:00:00Z", (
+    assert json.loads(out.read_text(encoding="utf-8"))["generated_at"] == "1999-01-01T00:00:00Z", (
         "an unchanged-day run rewrote the file, which is churn"
     )
 
     assert run(stub_url, out, "--force").returncode == 0
-    forced = json.loads(out.read_text())
+    forced = json.loads(out.read_text(encoding="utf-8"))
     assert forced["generated_at"] != "1999-01-01T00:00:00Z", "--force did not rewrite the snapshot"
     assert forced["total"] == tampered["total"], "the rewrite lost the data"
 
@@ -253,7 +253,7 @@ def test_a_moved_total_is_written(stub_url, tmp_path):
     StubTraffic.body = json.dumps({**GOOD, "total": 9682,
                                    "breakdown": {**GOOD["breakdown"], "mcp": 9054}}).encode()
     assert run(stub_url, out).returncode == 0
-    assert json.loads(out.read_text())["total"] == 9682
+    assert json.loads(out.read_text(encoding="utf-8"))["total"] == 9682
 
 
 # ── --check: what CI runs ────────────────────────────────────────────────────────────────────────

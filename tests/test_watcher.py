@@ -108,21 +108,21 @@ class TestProcessFile:
 
     def test_skips_short_file(self, tmp_path):
         f = tmp_path / "short.md"
-        f.write_text("too short\n")
+        f.write_text("too short\n", encoding="utf-8")
         result = process_file(str(f))
         assert result["status"] == "skipped"
         assert "too short" in result["reason"]
 
     def test_skips_no_failure(self, tmp_path):
         f = tmp_path / "clean.md"
-        f.write_text("word " * 100)  # 500 chars, no failure patterns
+        f.write_text("word " * 100, encoding="utf-8")  # 500 chars, no failure patterns
         result = process_file(str(f))
         assert result["status"] == "skipped"
 
     def test_extracts_from_failure(self, tmp_path):
         f = tmp_path / "error-log.md"
         content = "word " * 50 + "\nan exception was thrown during build\n" + "word " * 50
-        f.write_text(content)
+        f.write_text(content, encoding="utf-8")
         result = process_file(str(f))
         assert result["status"] == "extracted"
         assert result["draft"] is not None
@@ -149,9 +149,9 @@ class TestWatchDirectory:
 
     def test_watches_files(self, tmp_path):
         # Create test files
-        (tmp_path / "good.md").write_text("word " * 50 + "\nerror happened\n" + "word " * 50)
-        (tmp_path / "skip.md").write_text("too short")
-        (tmp_path / "ignore.txt").write_text("word " * 50 + "\nerror happened\n" + "word " * 50)
+        (tmp_path / "good.md").write_text("word " * 50 + "\nerror happened\n" + "word " * 50, encoding="utf-8")
+        (tmp_path / "skip.md").write_text("too short", encoding="utf-8")
+        (tmp_path / "ignore.txt").write_text("word " * 50 + "\nerror happened\n" + "word " * 50, encoding="utf-8")
 
         results = watch_directory(str(tmp_path), pattern="*.md")
         files = {r["file"]: r["status"] for r in results}
@@ -161,6 +161,6 @@ class TestWatchDirectory:
         assert not any("ignore.txt" in f for f in files)
 
     def test_custom_pattern(self, tmp_path):
-        (tmp_path / "log.txt").write_text("word " * 50 + "\nerror occurred\n" + "word " * 50)
+        (tmp_path / "log.txt").write_text("word " * 50 + "\nerror occurred\n" + "word " * 50, encoding="utf-8")
         results = watch_directory(str(tmp_path), pattern="*.txt")
         assert any(r["status"] == "extracted" for r in results)

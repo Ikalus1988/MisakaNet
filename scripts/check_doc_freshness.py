@@ -171,7 +171,7 @@ def main():
     if args.reverse_test:
         test_content = "# Test\nWe have {} lessons in our corpus.\n".format(managed_lessons + 100)
         test_path = REPO_ROOT / "_freshness_test_tmp.md"
-        test_path.write_text(test_content)
+        test_path.write_text(test_content, encoding="utf-8")
         try:
             issues = scan_file(test_path, managed_lessons, managed_domains)
             errors = [i for i in issues if i["severity"] == "error"]

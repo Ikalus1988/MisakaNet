@@ -399,8 +399,8 @@ def test_sessions_are_counted_independently(tmp_path):
     run_hook(json.dumps({"session_id": "b"}), "prompt", state)
     # Both are turn 1, so both announce; what matters is that each session has its own count.
     assert "已接入失败经验库" in first_a
-    assert json.loads((state / "a.json").read_text())["turn"] == 1
-    assert json.loads((state / "b.json").read_text())["turn"] == 1
+    assert json.loads((state / "a.json").read_text(encoding="utf-8"))["turn"] == 1
+    assert json.loads((state / "b.json").read_text(encoding="utf-8"))["turn"] == 1
 
 
 def test_threshold_is_configurable(tmp_path):

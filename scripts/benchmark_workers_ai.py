@@ -383,7 +383,7 @@ def run_one(args, model, scene, condition, prompt, ref_cmds, out_path):
         data["runs"].append(run)
         if out_path:
             out_path.parent.mkdir(parents=True, exist_ok=True)
-            out_path.write_text(json.dumps(data, ensure_ascii=False, indent=2))
+            out_path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
     name = model.rsplit("/", 1)[-1]
     print(f"  ✓ {name} × {scene[:40]} [{condition}] "
           f"len={metrics['length']} hit={int(metrics['lesson_hit_rate']*100)}%", flush=True)

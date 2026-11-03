@@ -77,10 +77,9 @@ def write_stub(bindir: Path, dump: str) -> None:
         "  esac\n"
         "  exit 0\n"
         "fi\n"
-        'echo "stub wrangler: $*"\n'
-    )
+        'echo "stub wrangler: $*"\n', encoding="utf-8")
     (bindir / "wrangler").chmod((bindir / "wrangler").stat().st_mode | stat.S_IEXEC)
-    (bindir / "npm").write_text("#!/usr/bin/env bash\nexit 0\n")
+    (bindir / "npm").write_text("#!/usr/bin/env bash\nexit 0\n", encoding="utf-8")
     (bindir / "npm").chmod((bindir / "npm").stat().st_mode | stat.S_IEXEC)
     # BSD `stat`, deliberately — see the module docstring. `-c` does not exist there and the size is
     # `-f%z`, so a step that reintroduces the GNU spelling fails here instead of only on macOS.
@@ -91,8 +90,7 @@ def write_stub(bindir: Path, dump: str) -> None:
         '  -f) [ "${2:-}" = "%z" ] && shift 2 ;;\n'
         '  *) echo "stat: illegal option -- ${1#-}" >&2; exit 1 ;;\n'
         "esac\n"
-        'wc -c < "$1" | tr -d "[:space:]"\n'
-    )
+        'wc -c < "$1" | tr -d "[:space:]"\n', encoding="utf-8")
     (bindir / "stat").chmod((bindir / "stat").stat().st_mode | stat.S_IEXEC)
 
 
@@ -101,7 +99,7 @@ def run_export(tmp_path: Path, dump: str) -> subprocess.CompletedProcess:
     bindir.mkdir(exist_ok=True)
     write_stub(bindir, dump)
     output = tmp_path / "gh_output"
-    output.write_text("")
+    output.write_text("", encoding="utf-8")
     return subprocess.run(
         [require_posix_shell(), "-c", export_script()],
         cwd=REPO,

@@ -294,7 +294,7 @@ def main():
 
     if args.save:
         OUTPUT.parent.mkdir(parents=True, exist_ok=True)
-        OUTPUT.write_text(json.dumps(reputation, indent=2, ensure_ascii=False))
+        OUTPUT.write_text(json.dumps(reputation, indent=2, ensure_ascii=False), encoding="utf-8")
         print(f"\nSaved to {OUTPUT}")
 
 

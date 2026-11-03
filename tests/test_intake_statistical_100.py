@@ -27,7 +27,7 @@ from intake_auto_review import auto_review_issue, AutoReviewResult
 # triggering the PR Shape Guard (Rule 3: no markdown code blocks in .py diffs).
 
 _DATA_PATH = Path(__file__).parent / "intake_test_samples.json"
-_DATA = json.loads(_DATA_PATH.read_text())
+_DATA = json.loads(_DATA_PATH.read_text(encoding="utf-8"))
 
 ERRORS = [(e["name"], e["body"]) for e in _DATA["errors"]]
 FIXES = [(f["name"], f["body"]) for f in _DATA["fixes"]]

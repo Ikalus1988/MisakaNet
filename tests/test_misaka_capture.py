@@ -23,7 +23,7 @@ def test_capture_basic(tmp_path):
     from scripts.misaka_capture import main
 
     ctx = tmp_path / "error.log"
-    ctx.write_text("ERROR: pip install timeout behind proxy")
+    ctx.write_text("ERROR: pip install timeout behind proxy", encoding="utf-8")
 
     with patch("sys.argv", ["misaka-capture", "--summary", "pip timeout", "--context", str(ctx)]):
         main()
@@ -35,7 +35,7 @@ def test_capture_with_context(tmp_path):
     from scripts.misaka_capture import main
 
     ctx = tmp_path / "error.log"
-    ctx.write_text("ERROR: ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghij12 auth failed")
+    ctx.write_text("ERROR: ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghij12 auth failed", encoding="utf-8")
 
     with patch("sys.argv", ["misaka-capture", "--summary", "GitHub auth failed", "--context", str(ctx)]):
         main()

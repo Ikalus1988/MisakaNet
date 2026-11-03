@@ -54,17 +54,17 @@ def tiny_lessons_json(tmp_path):
 
 class TestFallbackSearch:
     def test_matches_by_term(self, tiny_lessons_json):
-        lessons = json.loads(tiny_lessons_json.read_text())
+        lessons = json.loads(tiny_lessons_json.read_text(encoding="utf-8"))
         results = fallback_search(lessons, "MCP server", top=5)
         assert results
         assert results[0]["id"] == "mcp"
 
     def test_top_limit_respected(self, tiny_lessons_json):
-        lessons = json.loads(tiny_lessons_json.read_text())
+        lessons = json.loads(tiny_lessons_json.read_text(encoding="utf-8"))
         assert len(fallback_search(lessons, "core", top=1)) <= 1
 
     def test_no_match_returns_empty(self, tiny_lessons_json):
-        lessons = json.loads(tiny_lessons_json.read_text())
+        lessons = json.loads(tiny_lessons_json.read_text(encoding="utf-8"))
         assert fallback_search(lessons, "zzzznope", top=5) == []
 
 
@@ -91,7 +91,7 @@ class TestRunBenchmark:
         # so load_lessons_json uses our fixture dir.
         fake_repo = tmp_path
         (fake_repo / "data").mkdir(exist_ok=True)
-        (fake_repo / "data" / "lessons.json").write_text(tiny_lessons_json.read_text(), encoding="utf-8")
+        (fake_repo / "data" / "lessons.json").write_text(tiny_lessons_json.read_text(encoding="utf-8"), encoding="utf-8")
 
         bench.REPO = fake_repo
 

@@ -142,14 +142,14 @@ def test_the_source_can_be_read_without_being_told_where_it_came_from(stub_url, 
     """The file is the only record of where the numbers came from, so it has to carry the route."""
     out = tmp_path / "activity-series.json"
     assert run(stub_url, out).returncode == 0
-    assert json.loads(out.read_text())["source"] == f"{stub_url}/api/activity/history"
+    assert json.loads(out.read_text(encoding="utf-8"))["source"] == f"{stub_url}/api/activity/history"
 
 
 def test_the_window_is_requested_explicitly_and_recorded(stub_url, tmp_path):
     out = tmp_path / "activity-series.json"
     assert run(stub_url, out, "--days", "7").returncode == 0
     assert any("days=7" in path for path in StubHistory.calls), StubHistory.calls
-    assert json.loads(out.read_text())["window"]["days"] == 7
+    assert json.loads(out.read_text(encoding="utf-8"))["window"]["days"] == 7
 
 
 # ── the refusals: what must never be published ───────────────────────────────────────────────────
@@ -276,7 +276,7 @@ def test_check_validates_a_committed_file_and_rejects_a_hole(tmp_path):
     proc = run("http://127.0.0.1:1", out, "--check")  # no network: --check never fetches
     assert proc.returncode == 0, proc.stdout + proc.stderr
 
-    broken = json.loads(out.read_text())
+    broken = json.loads(out.read_text(encoding="utf-8"))
     broken["series"] = broken["series"][:2] + broken["series"][3:]
     broken["window"]["days"] = 6
     out.write_text(json.dumps(broken), encoding="utf-8")
@@ -300,7 +300,7 @@ def test_an_unchanged_week_writes_nothing(stub_url, tmp_path):
 def test_a_new_day_is_a_material_change(stub_url, tmp_path):
     out = previous_file(tmp_path)
     assert run(stub_url, out).returncode == 0
-    written = json.loads(out.read_text())
+    written = json.loads(out.read_text(encoding="utf-8"))
     assert written["window"]["to"] == "2026-10-01"
     assert [d["date"] for d in written["series"]][-1] == "2026-10-01"
 
@@ -422,7 +422,7 @@ def test_the_bootstrap_output_passes_the_same_gate_as_the_endpoint_output(tmp_pa
     ])
     out = tmp_path / "activity-series.json"
     assert run_bootstrap(repo, out).returncode == 0
-    sync_activity_series.validate(json.loads(out.read_text()), where=str(out))
+    sync_activity_series.validate(json.loads(out.read_text(encoding="utf-8")), where=str(out))
 
 
 def test_a_day_the_store_refused_is_not_published_as_a_lower_bound():
