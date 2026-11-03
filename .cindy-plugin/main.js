@@ -261,6 +261,9 @@ function shapeSearch(payload, args) {
       tags: asArray(row.tags).map((tag) => asString(tag)).filter(Boolean),
       freshness: asString(row.freshness) || undefined,
       evidence_level: asString(row.evidence_level) || undefined,
+      // 端点给的白话摘要：官方规则块要求「命中后用 summary_plain 原样说给用户听」。
+      // 透传它，模型就不必自己编一句；没有这个字段的条目仍然有 problem 摘要可转述。
+      summary_plain: clip(asString(row.summary_plain), 240) || undefined,
       score: typeof row.score === 'number' ? row.score : undefined,
       problem: clip(asString(row.problem), 240) || undefined,
       path: asString(row.path) || undefined,
