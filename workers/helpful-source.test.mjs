@@ -137,7 +137,11 @@ test('an absent source behaves exactly as before: no source row at all', async (
   const resp = await vote(env, { lesson_id: 'curl-lesson' });
   assert.deepEqual(await resp.json(), { lesson_id: 'curl-lesson', count: 1 });
   assert.equal(d1.kvStore.get('helpful:curl-lesson'), '1');
-  assert.equal(d1.counters.size, 0,
+  // Scope-specific since #2939: the endpoint now also writes a `rate_helpful` counter (it was the
+  // one unauthenticated write with no limit at all), so "no counters" would be asserting the
+  // absence of the rate limit rather than the absence of a source row.
+  const sourceRows = [...d1.counters.keys()].filter((key) => key.startsWith('helpful-source|'));
+  assert.deepEqual(sourceRows, [],
     'a caller that sends no source must not appear in the per-source counters at all');
 });
 
@@ -147,11 +151,12 @@ test('an unusable source degrades to "no source" rather than inventing one', asy
   const blank = await vote(env, { lesson_id: 'a-lesson', source: '  ' });
   assert.equal(blank.status, 200, 'a blank source is not the voter\'s problem; the vote still counts');
   assert.deepEqual(await blank.json(), { lesson_id: 'a-lesson', count: 1 });
-  assert.equal(d1.counters.size, 0, 'a blank label must not become a counter bucket');
+  assert.deepEqual([...d1.counters.keys()].filter((key) => key.startsWith('helpful-source|')), [],
+    'a blank label must not become a counter bucket');
   // `sanitizeIdentifier` is the guard every other field goes through, and it keeps the source a plain
   // word: a label that could carry the counter's own delimiter could forge a row.
   await vote(env, { lesson_id: 'a-lesson', source: 'dsh:web|2026-10-16' });
-  const keys = [...d1.counters.keys()];
+  const keys = [...d1.counters.keys()].filter((key) => key.startsWith('helpful-source|'));
   assert.equal(keys.length, 1, keys.join(','));
   assert.match(keys[0], /^helpful-source\|[A-Za-z0-9_-]+\|\d{4}-\d{2}-\d{2}$/, keys[0]);
   assert.ok(!keys[0].includes('web|'), 'the delimiter in the label must not survive: ' + keys[0]);
