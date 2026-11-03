@@ -291,11 +291,15 @@ def comment_context(body: str, association: str) -> dict:
 
 
 def pull_request_context(*, draft=False, labels=(), head_ref="fix/dsh-panel",
-                         title="fix(dsh): repair the capture panel") -> dict:
+                         title="fix(dsh): repair the capture panel",
+                         head_repo="Ikalus1988/MisakaNet") -> dict:
+    """A `pull_request` event. `head_repo` is the fork's full name for a fork PR (#2972)."""
     return {"github": {"event_name": "pull_request", "head_ref": head_ref,
+                       "repository": "Ikalus1988/MisakaNet",
                        "event": {"pull_request": {"draft": draft,
                                                   "labels": [{"name": n} for n in labels],
-                                                  "title": title}}}}
+                                                  "title": title,
+                                                  "head": {"repo": {"full_name": head_repo}}}}}}
 
 
 def pr_agent_review_condition() -> str:
@@ -354,11 +358,39 @@ def test_the_gate_sits_on_the_comment_branch_and_not_on_the_pull_request_branch(
         (pull_request_context(labels=["bug"]), True, "a pull request with an unrelated label"),
         (pull_request_context(head_ref="bot/build-feed"), False, "an automation branch"),
         (pull_request_context(title="chore(main): release 2.46.0"), False, "a release pull request"),
+        (pull_request_context(head_repo="zsxh1990/MisakaNet"), False,
+         "a pull request from a fork, which receives no OPENAI_KEY"),
     )
     for context, expected, label in kept:
         assert evaluate(condition, context) is expected, (
             f"the association gate changed the `pull_request` branch: {label} now evaluates to "
             f"{evaluate(condition, context)!r}, expected {expected!r}")
+
+
+def test_synchronize_is_not_a_trigger_because_pr_agent_never_reviewed_it():
+    """#2972: the green check on a `synchronize` push meant "skipped", not "reviewed".
+
+    Measured 2026-11-03 on one unchanged fork PR (`zsxh1990/MisakaNet`):
+
+        02:20 opened       -> failure  ("OPENAI_KEY not set", the model call 401s)
+        02:23 synchronize  -> success  (log: `Skipping action: synchronize`)
+        02:35 synchronize  -> success
+
+    Same code, three colours, and the two greens are the events that provably reviewed nothing.
+    A re-review after a push is a `/review` comment, which runs here with the key.
+    """
+    workflow = yaml.safe_load(PR_AGENT_REVIEW.read_text(encoding="utf-8"))
+    triggers = workflow.get("on", workflow.get(True))  # PyYAML 1.1 reads bare `on:` as True
+    types = triggers["pull_request"]["types"]
+    assert "synchronize" not in types, (
+        "re-adding `synchronize` re-creates a green check for pushes pr-agent never reviews "
+        "(it logs `Skipping action: synchronize` and exits 0)"
+    )
+    assert "opened" in types, "an opened PR still has to get a review — removing the trigger is not the fix"
+    assert "2972" in PR_AGENT_REVIEW.read_text(encoding="utf-8"), (
+        "the workflow must keep the measurement that justifies dropping `synchronize`, or the next "
+        "reader re-adds it as an obvious improvement"
+    )
 
 
 def test_a_comment_with_no_command_is_refused_even_for_an_owner():
