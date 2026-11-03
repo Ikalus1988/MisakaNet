@@ -177,6 +177,25 @@ Added 2026-09-25 (B35), because those last two were one code: a missing lesson a
 quoted it reported MisakaNet as down for its own typo. In the same call `path` went into the GitHub
 contents URL unvalidated, so `path=docs/CI.md` returned that file.
 
+### When a call fails: `fetch failed` is not the same as "the service is down"
+
+A client-side transport error (`fetch failed`, `UND_ERR_HEADERS_TIMEOUT`, a JSON-RPC timeout) is the
+*client* giving up. Measured on 2026-10-29 (#4052): one agent's whole session reported "the endpoint
+does not work" while `initialize` answered in ~2 s, `submit_intake` succeeded, and `misakanet_search`
+swung from **1.3 s to 62 s** on the same query. Every one of those calls reached the server; the
+client stopped waiting.
+
+What to do with that knowledge:
+
+* **retry the call once, a few seconds later.** `misakanet_search`, `misakanet_get_lesson` and
+  `misakanet_me_inbox` are idempotent reads — a retry cannot double-apply anything. A single
+  `fetch failed` is not evidence about the service; two in a row after a wait is worth reporting.
+* **do not** conclude the endpoint is down, and do not degrade to "I could not find anything" — that
+  is a different claim from "the search did not answer in time".
+* the server-side numbers are in `GET /api/search-signals/stats` (`latency` histogram, buckets
+  `<1s / 1–3s / 3–10s / 10–30s / 30–60s / ≥60s`), and `python3 scripts/bench_search_latency.py
+  --remote` reproduces the client's own view in one command.
+
 ## Resources
 
 **Local stdio surface only** — the hosted endpoint exposes no resources (see *Which surface?*).

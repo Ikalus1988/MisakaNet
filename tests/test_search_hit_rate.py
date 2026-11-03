@@ -253,3 +253,54 @@ def test_the_json_output_carries_the_breakdown(capsys):
         assert main(["--json", "--since", "7"]) == 0
     out = json.loads(capsys.readouterr().out)
     assert out["breakdown"]["by_day"][0]["key"] == "2026-09-21"
+
+
+# ── 延迟直方图（#4052）────────────────────────────────────────────────────────
+
+LATENCY = {
+    "n": 4, "max_ms": 62220,
+    "buckets": {"lt_1s": 0, "s_1_3": 3, "s_3_10": 1, "s_10_30": 0, "s_30_60": 1, "gt_60s": 0},
+}
+
+
+def test_the_latency_histogram_is_passed_through_untouched():
+    """The worker computes the buckets over its own window; re-bucketing here would drift."""
+    from scripts.search_hit_rate import report
+
+    result = report({"rows": [], "latency": LATENCY}, DEFAULT_ENDPOINT, 7)
+    assert result["latency"] == LATENCY
+
+
+def test_the_text_report_renders_the_buckets_and_the_slow_tail():
+    from scripts.search_hit_rate import format_text, report
+
+    text = format_text(report({"rows": [], "latency": LATENCY}, DEFAULT_ENDPOINT, 7))
+    assert "| 1–3s | 3 |" in text
+    assert "| 30–60s | 1 |" in text
+    assert "max: 62.22s" in text
+    assert "≥30s" in text, "the tail that clients read as `fetch failed` has to be named"
+
+
+def test_an_older_worker_without_latency_says_it_could_not_measure_it():
+    """`None` (could not read) and `n: 0` (nothing measured) must not print the same."""
+    from scripts.search_hit_rate import format_text, report
+
+    text = format_text(report({"rows": []}, DEFAULT_ENDPOINT, 7))
+    assert "测不出" in text
+    assert "worker 版本较旧" in text
+
+
+def test_a_measured_zero_says_nothing_has_been_recorded_yet():
+    from scripts.search_hit_rate import format_text, report
+
+    zero = {"n": 0, "max_ms": None, "buckets": {
+        "lt_1s": 0, "s_1_3": 0, "s_3_10": 0, "s_10_30": 0, "s_30_60": 0, "gt_60s": 0}}
+    text = format_text(report({"rows": [], "latency": zero}, DEFAULT_ENDPOINT, 7))
+    assert "还没有带 latency 的样本" in text
+    assert "测不出" not in text, "nothing measured yet is not the same as a failed read"
+
+
+def test_the_caveats_name_the_latency_fields_limits():
+    assert any("latency" in c for c in CAVEATS), (
+        "the histogram is server-side only; a reader has to be told the client's total is longer"
+    )

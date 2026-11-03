@@ -41,6 +41,9 @@ CAVEATS = [
     "端点不返回 query 文本；下面的 domain 拆分是服务端按聚合计数给的，不是逐条查询。",
     "命中率低不等于语料差：也可能是问法（语言、措辞）与索引不匹配——第 ③ 项要解决的正是这个。",
     "只覆盖走 worker 的 misakanet_search；本地 stdio MCP 与网站检索页不在其中。",
+    "延迟直方图只统计**带 latency 的行**（2026-11-03 起写入）；更早的行没有这个字段，"
+    "按“没有样本”排除，而不是按 0 计。",
+    "延迟是服务端从请求进来到写出信号的时间，不含到调用方的网络与排队：客户端总耗时只会更长。",
 ]
 
 
@@ -109,6 +112,10 @@ def report(payload: dict, endpoint: str, days: int) -> dict:
         # so the split cannot be derived here). Absent on an older worker: the scalar summary
         # still works and the table is simply not printed.
         "breakdown": payload.get("breakdown") or None,
+        # The latency histogram (#4052). `None` means the worker could not read it (an older
+        # deployment); an object with `n: 0` means nothing has been measured yet. Two different
+        # answers, and the formatter keeps them apart.
+        "latency": payload.get("latency", None),
         "source": payload.get("source") or "unknown",
         "url": endpoint,
         "days": days,
@@ -142,6 +149,35 @@ def _breakdown_lines(breakdown) -> list[str]:
     return lines
 
 
+def _latency_lines(latency) -> list[str]:
+    """The latency histogram, in the same units and order the worker reports it.
+
+    Buckets rather than a percentile on purpose (#4052): the episode that motivated this was
+    bimodal — 1–3 s normally, 35–62 s when it went wrong — and a single p95 averages the second
+    mode into a number that looks fine. `None` (could not read) and `n == 0` (nothing measured)
+    print differently, per the same rule the rest of this repository follows.
+    """
+    if latency is None:
+        return ["", "延迟：端点没有返回 latency（worker 版本较旧），这一项**测不出**，不是 0。"]
+    n = latency.get("n") or 0
+    if not n:
+        return ["", "延迟：窗口内还没有带 latency 的样本（2026-11-03 起才开始记录）。"]
+    buckets = latency.get("buckets") or {}
+    labels = [("lt_1s", "<1s"), ("s_1_3", "1–3s"), ("s_3_10", "3–10s"),
+              ("s_10_30", "10–30s"), ("s_30_60", "30–60s"), ("gt_60s", "≥60s")]
+    max_ms = latency.get("max_ms")
+    lines = ["", f"延迟（服务端，带 latency 的 {n} 条）", "",
+             "| 区间 | 条数 |", "|---|---|"]
+    lines += [f"| {label} | {int(buckets.get(key) or 0)} |" for key, label in labels]
+    if max_ms is not None:
+        lines.append("")
+        lines.append(f"max: {max_ms / 1000:.2f}s")
+    slow = int(buckets.get("s_30_60") or 0) + int(buckets.get("gt_60s") or 0)
+    if slow:
+        lines.append(f"⚠️ {slow} 条 ≥30s：这个形状客户端会读成 `fetch failed`（issue #4052）。")
+    return lines
+
+
 def format_text(result: dict) -> str:
     total = result["total"]
     rate = "n/a（窗口内没有样本）" if result["hit_rate"] is None else f"{result['hit_rate'] * 100:.1f}%"
@@ -158,6 +194,7 @@ def format_text(result: dict) -> str:
     if result["truncated"]:
         lines.append("warn            : 端点行数被截断，这个数字只是下界")
     lines.extend(_breakdown_lines(result.get("breakdown")))
+    lines.extend(_latency_lines(result.get("latency")))
     if total == 0:
         lines.append("")
         lines.append("样本不足，等待数据：窗口内还没有记录到的检索，请不要引用任何命中率。")
