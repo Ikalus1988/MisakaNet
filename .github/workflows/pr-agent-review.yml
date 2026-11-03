@@ -2,7 +2,18 @@ name: PR-Agent Code Review
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
+    # No `synchronize` (removed 2026-11-03, #2972). PR-Agent does not review a synchronize event:
+    # it logs `Skipping action: synchronize` and exits 0, so the check reported **success** for a
+    # push it never looked at. Measured on one unchanged fork PR (zsxh1990/MisakaNet, 2026-11-03):
+    #
+    #   02:20 opened       -> failure  (the fork gets no OPENAI_KEY, so the model call 401s)
+    #   02:23 synchronize  -> success  (skipped before the model call — no review either way)
+    #   02:35 synchronize  -> success
+    #
+    # Same code, three colours, and none of them meant "reviewed". Re-request a review after a push
+    # with a `/review` comment: that path runs on the base repository, which is also the only way a
+    # fork PR can be reviewed at all.
+    types: [opened, reopened]
   issue_comment:
     types: [created]
 
@@ -18,8 +29,15 @@ jobs:
     # comment any account can post — the same exposure `fix-dco.yml` closes. The association gate
     # goes on the `issue_comment` branch only: on `pull_request` there is no comment author, and
     # the event already carries its own author (see `pr-welcome.yml`).
+    #
+    # The fork guard is the other half of the same honesty problem (#2972): a `pull_request` run
+    # from a fork receives no secrets, so the model call fails with "OPENAI_KEY not set" and the
+    # check goes red for a reason that has nothing to do with the code. Skipping is the truthful
+    # colour — and the `/review` path above still works for fork PRs, because it runs here with the
+    # secret available to a maintainer's comment.
     if: |
       (github.event_name == 'pull_request' &&
+       github.event.pull_request.head.repo.full_name == github.repository &&
        !github.event.pull_request.draft &&
        !contains(github.event.pull_request.labels.*.name, 'docs-only') &&
        !startsWith(github.head_ref, 'bot/') &&
