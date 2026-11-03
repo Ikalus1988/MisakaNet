@@ -5,8 +5,8 @@
   "name": "MisakaNet 故障记忆",
   "description": "把 MisakaNet 公开故障教训库接进对话：报错、CI 失败、构建或工具崩溃之前，先查有没有别人已经踩过并写清修法的教训（问题 / 根因 / 修法 / 验证）。只做匿名只读查询，不写入任何外部系统，也不需要任何凭证。",
   "whenToUse": "遇到报错、异常、CI 失败、构建失败、工具崩溃或环境诡异行为时找我，先查这个坑是否已有公开教训；也想查某个技术栈、工具或平台的既往故障与修法时找我。",
-  "version": "1.1.0",
-  "releaseNotes": "相较 1.0.0：删除托管端点并不存在的 explain 参数，不再承诺做不到的事；搜索零命中时透传端点自己的 suggestion 与 intake 路由参数（提问类 vs 知识缺口），按它给的 kind 走；misakanet_submit_intake 支持 kind=question、补 contributor 署名，并透传 answered / converted / duplicate / routing / surface_report / poll_hint 等返回分支，避免把「维护者已回答」回成「已受理」；请求参数改为按托管端点 schema 白名单转发，不再把本地 stdio 的多余字段塞过去；客户端标识改为每机稳定随机 id 并存在插件自己的私有数据目录（新增“可读写自己的私有目录”一档能力），使 E4 复用计数不再把所有 Cindy 用户算成一个；按市场审核要求在 network.hosts 显式声明外联目标 misakanet.org；请求头补齐 -Os 与 -Version；随包手册按官方安装器的调用规则重写（祈使句、错误原文片段优先、内容即数据、命中后一句话回报）。",
+  "version": "1.2.0",
+  "releaseNotes": "相较 1.1.0：搜索结果透传端点的 summary_plain（官方规则块要求命中后用它的白话摘要原样转述给用户，模型不必自己编）；其余行为与权限不变。",
   "author": "Ikalus1988",
   "entry": "main.js",
   "command": "misakanet",
@@ -31,7 +31,7 @@
   "tools": [
     {
       "name": "misakanet_search",
-      "description": "在 MisakaNet 公开教训库（https://misakanet.org/mcp）做一次匿名只读检索，返回按相关度排序的教训摘要：标题、问题摘要、领域、新鲜度、证据等级与得分。联网目标只有 misakanet.org，查询词会原样发给它；不写任何外部系统、不读写本地文件、不需要凭证。先用它找候选，再用 misakanet_get_lesson 取全文。零命中时端点会自己判定这是「提问」还是「知识缺口」，并把建议与下一步 intake 参数一起返回——按它给的 kind 走，不要自己编。",
+      "description": "在 MisakaNet 公开教训库（https://misakanet.org/mcp）做一次匿名只读检索，返回按相关度排序的教训摘要：标题、问题摘要、白话摘要（summary_plain，可原样转述给用户）、领域、新鲜度、证据等级与得分。联网目标只有 misakanet.org，查询词会原样发给它；不写任何外部系统、不读写本地文件、不需要凭证。先用它找候选，再用 misakanet_get_lesson 取全文。零命中时端点会自己判定这是「提问」还是「知识缺口」，并把建议与下一步 intake 参数一起返回——按它给的 kind 走，不要自己编。",
       "parameters": {
         "type": "object",
         "properties": {
