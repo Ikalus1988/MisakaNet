@@ -4002,7 +4002,7 @@ function redactIntake(text) {
     return clipSubmittedText(r, "an intake");
 }
 
-async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) {
+async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx, identityVerified = false) {
   if (toolName === "misakanet_register") {
     const agentType = args.agent_type || "unknown";
     if (!hasDurableStore(env)) return { error: "no storage configured" };
@@ -4311,7 +4311,7 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
     // one address from hammering the index. Local stdio MCP is not rate-limited
     // (the user runs the code). Authenticated callers are exempt because a token
     // proves they are a known node, not because they bought reads.
-    if (!authToken) {
+    if (!identityVerified) {
       const ip = clientIp || "unknown";
       // Burst window, not a daily cap (2026-09-18): reuse the same D1 counter with a minute key, so
       // this needs no new storage and stays atomic across isolates.
@@ -4604,7 +4604,7 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
 
   if (toolName === "misakanet_get_lesson") {
     // Same anonymous read burst window as search (one counter, per address per minute).
-    if (!authToken) {
+    if (!identityVerified) {
       const ip = clientIp || "unknown";
       const refusal = await consumeQuota(env, {
         scope: "rate_read", bucket: ip, period: readBurstPeriod(), limit: READ_BURST_LIMIT,
@@ -4686,7 +4686,7 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
   // into queryable facts.
   if (toolName === "misakanet_me_events") {
     // Same anonymous read burst window as search/get_lesson (one counter per address per minute).
-    if (!authToken) {
+    if (!identityVerified) {
       const ip = clientIp || "unknown";
       const refusal = await consumeQuota(env, {
         scope: "rate_read", bucket: ip, period: readBurstPeriod(), limit: READ_BURST_LIMIT,
@@ -4804,7 +4804,7 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
 
   if (toolName === "misakanet_me_inbox") {
     // Rate-limit anonymous reads (same window as search/get_lesson).
-    if (!authToken) {
+    if (!identityVerified) {
       const ip = clientIp || "unknown";
       const refusal = await consumeQuota(env, {
         scope: "rate_read", bucket: ip, period: readBurstPeriod(), limit: READ_BURST_LIMIT,
@@ -4926,6 +4926,19 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
 
   if (toolName === "misakanet_submit_intake") {
     if (!args.problem) return { error: "problem is required" };
+
+    // Same budget as the HTTP route above (#2939). That route has had `rate_intake` at 10/hour
+    // since 2026-10-07; this branch — the one the MCP tool advertises as "open, rate-limited" —
+    // had no limit at all, so the documented sentence was false and the unauthenticated path to
+    // `POST /repos/.../issues` was unbounded. Same scope and same bucket on purpose: two doors,
+    // one budget, so a caller cannot double its allowance by mixing them.
+    const intakeIp = clientIp || "unknown";
+    const intakeRefusal = await consumeQuota(env, {
+      scope: "rate_intake", bucket: intakeIp, period: rateWindowHour(), limit: 10,
+      message: "Rate limited (10/hour). Try again later.",
+      hint: "the HTTP route and the MCP tool share this budget",
+    });
+    if (intakeRefusal) return intakeRefusal;
 
     // Coogen borrow (Phase 2): ?intent= instrumentation — id-only, opt-in.
     // Recorded before dedup so even duplicate submissions count toward
@@ -5611,17 +5624,28 @@ async function handleMcpRequest(request, env, useSse = false, ctx) {
     console.warn("isIntakeCall parse failed:", peekErr?.message || peekErr);
   }
 
+  // Two different questions, two different bits (#2939):
+  //
+  //   `authed`           — may this request proceed? Public methods and intake calls are allowed
+  //                        without a token, so it is true for them as well.
+  //   `identityVerified` — did the caller *prove* an identity? Only the two token branches set it.
+  //                        The anonymous burst window keys on this one, because the previous gate
+  //                        was `!authToken` — the raw header — so `Authorization: x` skipped the
+  //                        limit while proving nothing.
   let authed = false;
+  let identityVerified = false;
   if (isIntakeCall || isPublicMethod) {
     authed = true;
   } else if (expectedToken && token && timingSafeEqual(token, expectedToken)) {
     authed = true;
+    identityVerified = true;
   } else if (token && token.startsWith("mcp_")) {
     // No `&& env.MISAKANET_KV` guard: tokens live in the durable store now, so requiring a KV
     // binding here would lock a D1-only deployment out of every token it issued.
     const tokenData = await storeGet(env, `mcp_token:${token}`, "json");
     if (tokenData && new Date(tokenData.expires) > new Date()) {
       authed = true;
+      identityVerified = true;
     }
   }
 
@@ -5851,7 +5875,10 @@ async function handleMcpRequest(request, env, useSse = false, ctx) {
         });
       }
       const clientIp = request.headers.get("CF-Connecting-IP") || "unknown";
-      const result = await handleMcpToolCall(env, toolName, args, token, clientIp, ctx);
+      // `token` (raw) because the register-renewal lineage check and the identity aura need to
+      // see what the caller presented; `authed` separately, because only a *verified* token may
+      // exempt a call from the anonymous burst window (#2939).
+      const result = await handleMcpToolCall(env, toolName, args, token, clientIp, ctx, identityVerified);
 
       // Log tool call result at debug level 2
       debugLog(env, 2, "MCP tool result", {
@@ -9486,6 +9513,24 @@ export default {
       try { voteBody = await request.json(); } catch { return jsonResponse({ error: "Invalid JSON" }, 400); }
       const lessonId = sanitizeIdentifier(voteBody.lesson_id, 100);
       if (!lessonId) return jsonResponse({ error: "Missing lesson_id" }, 400);
+
+      // Rate-limited since #2939. This endpoint is unauthenticated by design — a vote carries no
+      // account — but it had no limit at all, so one address could inflate a lesson's "helpful"
+      // count without cost, and that count is read by `me_events` as an E3 hint. Same shape as the
+      // `/api/feedback` route below, ten per hour per address.
+      //
+      // **Not migrated to an atomic counter.** The value is still a KV read-modify-write, which
+      // loses increments under concurrency; moving it to the `counters` table would make it
+      // atomic *and* reset every existing count to zero in the same deploy, which is a migration
+      // decision about a published evidence number, not a bug fix. Recorded here so the next
+      // reader knows the gap is known and why it was not taken in the same change.
+      const voteIp = request.headers.get("CF-Connecting-IP") || "unknown";
+      const voteRefusal = await consumeQuota(env, {
+        scope: "rate_helpful", bucket: `${voteIp}:${lessonId}`, period: rateWindowHour(), limit: 10,
+        message: "Rate limited (10 votes/hour per lesson). Try again later.",
+      });
+      if (voteRefusal) return jsonResponse({ error: voteRefusal.error }, 429);
+
       const kvKey = `helpful:${lessonId}`;
       const cur = parseInt(await storeGet(env, kvKey, "text") || "0", 10) || 0;
       const newCount = cur + 1;
