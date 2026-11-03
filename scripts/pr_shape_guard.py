@@ -278,14 +278,40 @@ def question_bounty_without_a_lesson(paths, issue_bodies: dict, pr_text: str = "
 # the workflow reads it out of the tree it checked out, not out of a constant in this file.
 
 
-def internal_artifact(paths, repo_dirs: set[str] | None) -> list[str]:
-    """A file under a dot-directory this repository does not have."""
+#: The declaration that makes a **new** dot-directory deliberate rather than scratch.
+#:
+#: A dot-directory the repository already has is the negative half of the rule below, but a new one
+#: is not automatically a tool's scratch: this repository ships plugin packages as dot-directories
+#: (`.claude-plugin/`, `.codex-plugin/`), and a new host's package is the same kind of artifact
+#: (2026-11-03: `.cindy-plugin/`, the 13th host). So the exception is declared the way the README
+#: rewrite already is — in the pull-request body, with the directory named and a reason after the
+#: colon. A marker with no reason is not a declaration, and a marker for another directory does not
+#: excuse this one: the allowance is per-directory, because a blanket "new dot-dirs are fine" would
+#: re-open exactly the scratch-patch hole (#3748) this rule exists for.
+DOT_DIR_ALLOWANCE = re.compile(
+    r"<!--\s*shape-guard:\s*allow-new-dot-dir\s+([A-Za-z0-9._/-]+?)\s*:\s*(\S[^>]*?)\s*-->",
+    re.I | re.S,
+)
+
+
+def declared_dot_dirs(pr_text: str) -> set[str]:
+    """The dot-directories the body declares, each with a reason; without one it declares nothing."""
+    return {
+        match.group(1).strip().strip("/")
+        for match in DOT_DIR_ALLOWANCE.finditer(pr_text or "")
+        if match.group(2).strip()
+    }
+
+
+def internal_artifact(paths, repo_dirs: set[str] | None, pr_text: str = "") -> list[str]:
+    """A file under a dot-directory this repository does not have — unless the body declares it."""
     if not repo_dirs:
         return []
+    allowed = declared_dot_dirs(pr_text)
     hits = []
     for path in paths:
         head = path.split("/", 1)[0]
-        if "/" in path and head.startswith(".") and head not in repo_dirs:
+        if "/" in path and head.startswith(".") and head not in repo_dirs and head not in allowed:
             hits.append(path)
     if not hits:
         return []
@@ -295,7 +321,10 @@ def internal_artifact(paths, repo_dirs: set[str] | None) -> list[str]:
         + " — a file under a dot-directory the repository does not have. That is where a tool's own "
         "scratch lives (a patch draft, a work packet, an edit plan); it is not part of the project, "
         "and nothing in the repository keeps it out except a reviewer's attention. Keep it in your "
-        "own tooling, or add the directory to `.gitignore` in a change that says why."
+        "own tooling — or, when it is a package this repository is meant to ship (the way "
+        "`.claude-plugin/` and `.codex-plugin/` are), declare it in the pull-request body: "
+        "`<!-- shape-guard: allow-new-dot-dir .the-dir: what it is -->`. A marker without a reason, "
+        "or for a different directory, does not count."
     ]
 
 
@@ -333,7 +362,7 @@ def findings(*, paths, pr_text: str = "", base_pyproject: str | None = None,
     out += root_solution_dump(paths)
     out += packaging_damage(base_pyproject, head_pyproject)
     out += question_bounty_without_a_lesson(paths, issue_bodies or {}, pr_text)
-    out += internal_artifact(paths, repo_dirs)
+    out += internal_artifact(paths, repo_dirs, pr_text)
     out += new_top_level_directory(paths, repo_dirs, pr_text)
     return out
 
