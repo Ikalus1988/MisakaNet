@@ -2,6 +2,23 @@
 from __future__ import annotations
 
 
+def _tag_text(value) -> str:
+    """`tags` as the comma-separated string the hosted schema advertises.
+
+    The two surfaces used to disagree here (#4383's gate found it): the hosted `write_lesson` takes
+    a string (`tags: {type: "string"}`) and interpolates it into the issue, while this one took an
+    array and did `", ".join(tags)` — so an agent that read the hosted schema and passed
+    `"pip, network"` got `p, i, p, ,, ...` in the queued lesson. Accept both now: the schema says
+    string (the hosted contract), and an array is still tolerated because this surface advertised
+    one for months.
+    """
+    if value is None:
+        return ""
+    if isinstance(value, (list, tuple)):
+        return ", ".join(str(item).strip() for item in value if str(item).strip())
+    return ", ".join(part.strip() for part in str(value).split(",") if part.strip())
+
+
 def handle_write_lesson(args: dict) -> dict:
     """Submit a structured lesson via registered agent token."""
     from scripts.contribution_queue import submit_contribution
@@ -12,7 +29,7 @@ def handle_write_lesson(args: dict) -> dict:
     root_cause = args.get("root_cause", "")
     fix = args.get("fix", "")
     verification = args.get("verification", "")
-    tags = args.get("tags", [])
+    tags = _tag_text(args.get("tags", ""))
     source = args.get("source", "mcp-agent")
     token = args.get("token", "")
 
@@ -54,7 +71,7 @@ def handle_write_lesson(args: dict) -> dict:
     parts = [
         f"# {title}",
         f"Domain: {domain}",
-        f"Tags: {', '.join(tags) if tags else 'none'}",
+        f"Tags: {tags or 'none'}",
         "",
         "## Problem",
         problem,

@@ -401,12 +401,12 @@ TOOLS = [
                     ),
                 },
                 "tags": {
-                    "type": "array",
-                    "items": {"type": "string"},
+                    "type": "string",
                     "description": (
-                        "Optional tags for categorization"
-                        " (e.g. ['proxy', 'pip',"
-                        " 'corporate-network'])."
+                        "Comma-separated tags (e.g."
+                        " 'proxy, pip, corporate-network')."
+                        " Older callers that pass an array are"
+                        " still accepted."
                     ),
                 },
                 "token": {
