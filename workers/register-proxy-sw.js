@@ -7415,6 +7415,21 @@ function dedupKey(env, value) {
   return hashString(`${salt}:${text}`);
 }
 
+/**
+ * A duration in milliseconds, or null — and **not** `Number.isFinite(Number(value))`.
+ *
+ * `Number(null)` is 0 and `Number.isFinite(0)` is true, so the obvious guard stored **0 ms** for
+ * every call that had no duration. That is what every `search_signals` row written between
+ * 2026-09-19 and 2026-11-03 contains, and it is why the first live histogram read
+ * `n: 4564, max_ms: 0` instead of "no samples": a table that was never empty, telling a confident
+ * lie (#4052). A served search cannot take 0 ms, so `handleSearchSignalStats` also filters `> 0`
+ * rather than trusting `IS NOT NULL`.
+ */
+function latencyValue(value) {
+  if (typeof value !== "number" || !Number.isFinite(value)) return null;
+  return Math.max(0, Math.round(value));
+}
+
 async function recordSearchSignal(env, {
   solved, query, topId, resultCount, domain,
   clientHint = "", agent = "", version = "", os = "", latencyMs = null,
@@ -7450,7 +7465,7 @@ async function recordSearchSignal(env, {
       agent ? String(agent).slice(0, 40) : null,
       version ? String(version).slice(0, 40) : null,
       os ? String(os).slice(0, 40) : null,
-      Number.isFinite(Number(latencyMs)) ? Number(latencyMs) : null,
+      latencyValue(latencyMs),
     ).run();
     return { solved: !!solved };
   } catch (e) {
@@ -7550,7 +7565,7 @@ async function handleSearchSignalStats(env, url) {
                 SUM(CASE WHEN latency_ms >= 30000 AND latency_ms < 60000 THEN 1 ELSE 0 END) AS s_30_60,
                 SUM(CASE WHEN latency_ms >= 60000 THEN 1 ELSE 0 END) AS gt_60s
            FROM search_signals
-          WHERE latency_ms IS NOT NULL AND created_at >= datetime('now', ?1)`
+          WHERE latency_ms > 0 AND created_at >= datetime('now', ?1)`
       ).bind(`-${days} days`).all();
       const row = (agg.results && agg.results[0]) || {};
       latency = {
@@ -10556,6 +10571,9 @@ export {
   resetCountersReadState,
   countersReadable,
   MCP_TOOLS,
+  // Exported for workers/search-signals.test.mjs: `Number(null)` is 0 and `Number.isFinite(0)` is
+  // true, which is how "no duration" became "0 ms" on every row before 2026-11-03 (#4052).
+  latencyValue,
   buildVersionsPayload,
   healthStatus,
   deployedCommit,
