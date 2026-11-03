@@ -89,9 +89,9 @@ def test_the_register_page_exists_and_carries_the_form(register: str) -> None:
     ):
         assert f'id="{element_id}"' in register, f"the register page has no #{element_id}"
     assert 'class="agent-selector"' in register, "the agent selector is gone"
-    # 12 wired clients (dsh joined the npm installer's `AGENTS` in 2026-10-30) plus the free-text
+    # 13 wired clients (Cindy joined the npm installer's `AGENTS` on 2026-11-03) plus the free-text
     # escape hatch.
-    assert register.count('class="agent-option') == 13, (
+    assert register.count('class="agent-option') == 14, (
         "the selector no longer offers the installer's clients plus the free-text escape hatch"
     )
 
