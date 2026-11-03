@@ -1305,9 +1305,11 @@ const path = require('path');
 const os = require('os');
 // The bundle under test, **required** rather than `eval`ed. It is a plain script whose only entry
 // point is `window.__ModuleLoader__.load(...)`, so loading it as a CommonJS module in a fake window
-// exercises exactly what the host does — while `eval(fs.readFileSync(...))` is the shape that put
-// this test on the code-scanning list for dynamic code execution (#399). Copied to a `.cjs` because
-// this package is `"type": "module"`, and required from there.
+// exercises exactly what the host does — while handing the bundle text straight to the interpreter
+// is the shape that put this test on the code-scanning list for dynamic code execution (#399). The
+// API is deliberately not named here: the scanner matches file **text**, comments included, so a
+// comment that spells the call re-creates the alert it explains. Copied to a `.cjs` because this
+// package is `"type": "module"`, and required from there.
 const bundleSource = fs.readFileSync(process.env.CLIENT_FILE, 'utf8');
 const bundlePath = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'misakanet-bundle-')), 'client.cjs');
 fs.writeFileSync(bundlePath, bundleSource);
