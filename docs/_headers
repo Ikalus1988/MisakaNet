@@ -1,4 +1,9 @@
 /*
+  # HSTS: Cloudflare's Security Center reported "Domains without HSTS" for data.misakanet.org and
+  # edgetunnel.misakanet.org (2026-11-04), and the main site was sending no header either. This
+  # covers the site this file serves; the subdomains are R2/other workers and need the zone-level
+  # setting (SSL/TLS → Edge Certificates → HSTS, includeSubDomains), which cannot live in a repo.
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
   X-Content-Type-Options: nosniff
   X-Frame-Options: SAMEORIGIN
   Referrer-Policy: strict-origin-when-cross-origin
