@@ -5205,7 +5205,9 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx, 
         ? (kind === "question"
           ? ["intake", "mcp-intake", "needs-answer"]
           : kind === "proposal"
-            ? ["intake", "mcp-intake", "needs-human-review"]
+            // `decision` is the label the weekly decision digest reads (`scripts/decision_queue.py`).
+            // Without it a proposal submitted through MCP never enters the queue that exists for it.
+            ? ["intake", "mcp-intake", "needs-human-review", "decision"]
             : ["intake", "mcp-intake", "pending-review"])
         : attention.labels;
       // L4: surface the flag to triage instead of silently publishing injection text.

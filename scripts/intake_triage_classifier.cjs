@@ -172,6 +172,8 @@ module.exports = async function classifyIntake({ github, core, context }) {
     // label happened to pre-exist, which is why the live re-triage looked right.
     labelsToAdd.splice(labelsToAdd.indexOf('pending-review'), 1);
     labelsToRemove.push('pending-review', 'type:bug');
+    // `decision` is what `scripts/decision_queue.py` reads; a proposal's exit is a decision.
+    labelsToAdd.push('decision');
   } else if (isTest) {
     classification = 'intake-test';
     suggestedAction = 'Verify the transport path, then close as a test intake. Do not convert to a lesson unless it captures a reusable failure pattern.';

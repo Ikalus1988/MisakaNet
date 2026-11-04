@@ -57,7 +57,7 @@
 | `intake-batch-convert.yml` | Intake Batch Convert（把 open `mcp-intake` 队列里**形状可转换**的报告批量转成课程，重新生成派生文件，开一个 PR；转不了的把 skip 直方图写进 job summary）| 定时, 手动 | `40 6 * * 1` |
 | `intake-kind-audit.yml` | Intake Kind Audit | 定时, 手动 | `30 6 * * 1` |
 | `intake-pipeline-test.yml` | Intake Pipeline Test (PRD ③) | 手动 |  |
-| `decision-queue-digest.yml` | Decision Queue Digest（每週把「`decision`/`product-design` 标签 + 零评论 + ≥14 天」的 issue 列成一条跟踪 issue；**空清单不发言**，只报告、不关单、不自动决策）| 定时, 手动 | `23 9 * * 1` |
+| `decision-queue-digest.yml` | Decision Queue Digest（每週把「`decision`/`product-design` 标签 + 零人类回复 + ≥14 天」的 issue 列成一条跟踪 issue；bot 的分诊评论不算回复；**空清单不发言**，只报告、不关单、不自动决策）| 定时, 手动 | `23 9 * * 1` |
 | `intake-salvage-digest.yml` | Intake Salvage Digest（另跑 `scripts/done_but_open.py`：工作已在 `main`、issue 还开着的 intake，非空才写进 digest 议题；**只报告，不关单**）| 定时, 手动 | `0 8 * * *` |
 | `issue-intake-triage.yml` | MCP Intake Triage | issues, 手动 |  |
 | `sync-d1.yml` | Sync Lessons to D1 (PRD ④) | push, 定时, 手动 | `0 3 * * *` |

@@ -26,12 +26,17 @@
 > `new_lesson_candidate` 提交，提交者还得在正文里补一句"这不是失败报告"。分类器照关键词办事，
 > 看到通篇在讲失败，就把这条提案打成了 `lesson-candidate` + `type:bug` + `priority:high` +
 > `pending-review`：前两个说错了它是什么，后一个把它放进"等落库的课程"队列。
-> `kind="proposal"` 现在有了（五处读取一致，由 `tests/test_intake_kind_parity.py` 守），
+> `kind="proposal"` 现在有了（六处读取一致，由 `tests/test_intake_kind_parity.py` 守；第六处是 Cindy 插件的客户端枚举），
 > 但**正文自述仍然认**——只用得上旧四种 kind 的客户端还在。两条路都不看主题词。
 > 所以现在按**提交者的自述**分流（`declaresNotAFailureReport`），并在重新分诊时把 `type:bug` /
 > `pending-review` 摘掉。**不要改成"读起来像计划"的启发式**：那正是刚才判错的那类关键词猜测。
 > 行为有门禁：`tests/test_intake_proposal_route.py` 把工作流里那段 JS 真跑一遍（node + 打桩的
 > github API），proposal / lesson-candidate / question 三条路各有一个用例。
+>
+> **提案进决策队列**（2026-11-04）：proposal 的标签里带 `decision`——那正是每周
+> `decision-queue-digest.yml` 读的标签（`scripts/decision_queue.py`）。队列判「没人回」时只数
+> **人**的评论：每条 intake 都会在几秒内收到 bot 的分诊评论，把它算进来的话，自动化提交的提案
+> 永远进不了这个队列。
 
 ## 2. 处置动作
 

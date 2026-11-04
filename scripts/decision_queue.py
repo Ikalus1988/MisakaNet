@@ -10,7 +10,7 @@ while the decision half does not, because nothing in this repository ever asks a
 
 The intake side already has that machinery (`issue-intake-triage.yml`, `intake-salvage-digest.yml`);
 this is the same shape for the class that has no automation: a list, produced on a schedule, of
-issues that are **labelled as needing a decision and have nobody talking on them**.
+issues that are **labelled as needing a decision and that no person has replied to**.
 
 What it deliberately does not do:
 
@@ -36,9 +36,30 @@ from datetime import datetime, timezone
 # Labels that mean "this is waiting for a decision, not for work". A `decision` issue and a
 # `product-design` issue are the same thing to a reader: something has to be chosen.
 DECISION_LABELS = ("decision", "product-design")
-# Zero comments is the signal: someone has spoken about it, so it is not waiting on silence. A
-# comment is a weak proxy, and it is the one that was measured (41 of 94 never got one).
+# No reply from a *person* is the signal: someone has spoken about it, so it is not waiting on
+# silence. A comment is a weak proxy, and it is the one that was measured (41 of 94 never got one).
+#
+# Bots do not count. Every issue that arrives through `misakanet_submit_intake` gets a triage comment
+# from `github-actions` within seconds, so "zero comments" kept every automated proposal out of this
+# queue forever — measured 2026-11-04 on #4413/#4414. The queue is about a person having replied.
 DEFAULT_MIN_AGE_DAYS = 14
+
+BOT_LOGINS = {
+    "github-actions", "github-actions[bot]",
+    "dependabot", "dependabot[bot]",
+    "renovate", "renovate[bot]",
+}
+
+
+def human_comments(issue: dict) -> list[dict]:
+    """The comments a person wrote. A bot's triage note is not a reply about the decision."""
+    out = []
+    for comment in issue.get("comments") or []:
+        login = ((comment.get("author") or {}).get("login") or "").strip().lower()
+        if login in BOT_LOGINS or login.endswith("[bot]"):
+            continue
+        out.append(comment)
+    return out
 
 
 def fetch(repo: str, limit: int = 300) -> list[dict]:
@@ -67,7 +88,7 @@ def select(issues: list[dict], now: datetime, min_age_days: int = DEFAULT_MIN_AG
         labels = {l["name"] for l in issue.get("labels", [])}
         if not (labels & set(DECISION_LABELS)):
             continue
-        if issue.get("comments"):
+        if human_comments(issue):
             continue
         age = age_days(issue, now)
         if age < min_age_days:
@@ -83,7 +104,7 @@ def render(rows: list[dict], repo: str, now: datetime, min_age_days: int) -> str
     lines = [
         f"# Decision queue — {len(rows)} waiting",
         "",
-        f"Open issues labelled `{'`/`'.join(DECISION_LABELS)}`, **no comments**, at least "
+        f"Open issues labelled `{'`/`'.join(DECISION_LABELS)}`, **no reply from a person**, at least "
         f"{min_age_days} days old. As of {now.strftime('%Y-%m-%d %H:%M UTC')}.",
         "",
         "| # | age | issue | label |",
@@ -97,8 +118,9 @@ def render(rows: list[dict], repo: str, now: datetime, min_age_days: int) -> str
                      f"| {', '.join(row['waiting_labels'])} |")
     lines += [
         "",
-        "Nothing here is closed automatically. A row leaves this list when somebody comments on the "
-        "issue — a decision, a deferral with a trigger, or a rejection all count; silence does not.",
+        "Nothing here is closed automatically. A row leaves this list when a person replies on the "
+        "issue — a decision, a deferral with a trigger, or a rejection all count; silence does not. "
+        "A bot's triage comment does not count either way.",
     ]
     return "\n".join(lines)
 

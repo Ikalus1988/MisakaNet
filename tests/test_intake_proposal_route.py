@@ -118,6 +118,7 @@ def _cases() -> list[dict]:
             "expect_type": "feature",
             "expect_removed": ["pending-review", "type:bug"],
             "expect_not_added": ["needs-ac", "pending-review"],
+            "expect_added": ["decision"],
         },
         {
             "name": "a failure report, which must keep its route",
@@ -171,6 +172,7 @@ def _cases() -> list[dict]:
             "expect_removed": [],
             "expect_not_added": ["needs-ac"],
             "expect_not_added": ["needs-ac", "pending-review"],
+            "expect_added": ["decision"],
             "expect_comment": True,
             "expect_retriage_note": True,
         },
@@ -186,6 +188,7 @@ def _cases() -> list[dict]:
             "expect_type": "feature",
             "expect_removed": [],
             "expect_not_added": ["needs-ac", "pending-review"],
+            "expect_added": ["decision"],
             "expect_comment": False,
         },
         {
@@ -280,6 +283,9 @@ def test_the_classifier_routes_what_it_says_it_routes(tmp_path: Path) -> None:
         for label in case["expect_not_added"]:
             if label in got["added"]:
                 problems.append(f"{name}: added {label!r}, which does not apply to this shape")
+        for label in case.get("expect_added", []):
+            if label not in got["added"]:
+                problems.append(f"{name}: did not add {label!r} (added {got['added']})")
         if "expect_comment" in case and got["commented"] != case["expect_comment"]:
             problems.append(f"{name}: commented={got['commented']}, expected {case['expect_comment']}"
                             " (the guard must key on the classification, not on 'a comment exists')")
