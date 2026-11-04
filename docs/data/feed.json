@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-11-04T01:34:55.406821+00:00",
+  "generated_at": "2026-11-04T11:12:07.843555+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "feat(ci): a red pr-agent can now say whether the model answered (#2972)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4404",
-      "timestamp": "2026-11-04T01:26:39Z",
+      "title": "docs(triage): the `scope:repo` contract — a judgment at triage, never an inference",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4433",
+      "timestamp": "2026-11-04T09:22:46Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4403",
-      "timestamp": "2026-11-03T19:55:27Z",
+      "title": "fix(queue): engagement is recency, not existence — an old reply no longer hides an undecided issue",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4432",
+      "timestamp": "2026-11-04T09:03:17Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(cindy-plugin): the docs name the version the manifest has, and a gate keeps them honest",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4402",
-      "timestamp": "2026-11-03T18:28:59Z",
+      "title": "fix(intake): an empty `## Problem` is not \"problem present\"",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4431",
+      "timestamp": "2026-11-04T08:43:52Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(cindy-plugin): pass the endpoint's summary_plain through to the agent",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4401",
-      "timestamp": "2026-11-03T18:03:35Z",
+      "title": "docs(handoff): vol 29 — three non-corpus exits, and why no new intake field",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4429",
+      "timestamp": "2026-11-04T08:24:52Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "docs(handoff): vol 28 — a label, a directory name and a verdict word all have to mean what they say",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4400",
-      "timestamp": "2026-11-03T17:54:41Z",
+      "title": "fix(intake): a proposal is not a lesson — skip the auto-review, and say so in the four copies",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4428",
+      "timestamp": "2026-11-04T07:59:34Z",
       "source": "github"
     },
     {
