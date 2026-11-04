@@ -6,9 +6,9 @@ Why a test for a digest
 The digest's only job is to be *right about which issues are stuck*, and every way it can be wrong is
 quiet:
 
-* an issue with a person's reply is not stuck — counting it inflates the queue until nobody reads
-  it, and counting a bot's triage comment empties the queue of everything that arrived through the
-  intake path;
+* an issue with a person's *recent* reply is not stuck — counting it inflates the queue until nobody
+  reads it; counting a bot's triage comment empties the queue of everything that arrived through the
+  intake path; and counting an *old* reply keeps an undecided issue off the list forever;
 * an issue labelled `product-design` but not `decision` is still a decision (the first live run found
   the four stuck ones under `decision` and the open product reviews under `product-design`; a filter
   that only knew one label would have reported half the problem);
@@ -31,13 +31,15 @@ from scripts import decision_queue as queue  # noqa: E402
 NOW = datetime(2026, 10, 28, 12, 0, tzinfo=timezone.utc)
 
 
-def issue(number, days_old, labels, comments=0, title="t", assignees=(), authors=None):
+def issue(number, days_old, labels, comments=0, title="t", assignees=(), authors=None,
+          comment_age_days=1):
     created = (NOW - timedelta(days=days_old)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    commented_at = (NOW - timedelta(days=comment_age_days)).strftime("%Y-%m-%dT%H:%M:%SZ")
     if authors is None:
         # No author recorded reads as a person's comment: the pre-2026-11-04 helper.
-        comment_rows = [{}] * comments
+        comment_rows = [{"createdAt": commented_at}] * comments
     else:
-        comment_rows = [{"author": {"login": a}} for a in authors]
+        comment_rows = [{"author": {"login": a}, "createdAt": commented_at} for a in authors]
     return {"number": number, "title": title, "url": f"https://example/{number}",
             "createdAt": created, "comments": comment_rows,
             "labels": [{"name": n} for n in labels],
@@ -52,6 +54,19 @@ def test_a_decision_with_no_comment_and_no_age_is_still_waiting():
 def test_an_issue_somebody_commented_on_is_not_waiting():
     # A comment is the exit condition: a decision, a deferral or a rejection all look like this.
     rows = queue.select([issue(1, 30, ["decision"], comments=2)], NOW)
+    assert rows == []
+
+
+def test_an_old_reply_does_not_keep_an_undecided_issue_off_the_list():
+    """#4399: an agent's recommendation, under the owner's login, cleared the row forever."""
+    rows = queue.select([issue(13, 30, ["decision"], authors=["Ikalus1988"], comment_age_days=20)],
+                        NOW, min_age_days=14)
+    assert [r["number"] for r in rows] == [13]
+
+
+def test_a_recent_reply_keeps_it_off_while_somebody_is_engaging():
+    rows = queue.select([issue(14, 30, ["decision"], authors=["Ikalus1988"], comment_age_days=2)],
+                        NOW, min_age_days=14)
     assert rows == []
 
 
@@ -119,7 +134,7 @@ def test_an_empty_queue_reads_as_a_fact_not_a_failure():
     assert "Checked 0 matching issue(s)" in text
 
 
-def test_the_rendered_digest_names_the_rule_and_the_exit_condition():
+def test_the_rendered_digest_says_the_window_not_just_a_reply():
     text = queue.render(queue.select([issue(11, 20, ["decision"])], NOW), "o/r", NOW, 14)
     assert "Nothing here is closed automatically" in text
-    assert "A row leaves this list when a person replies" in text
+    assert "A row leaves this list while a person is replying" in text

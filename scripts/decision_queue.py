@@ -31,7 +31,7 @@ import argparse
 import json
 import subprocess
 import sys
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 # Labels that mean "this is waiting for a decision, not for work". A `decision` issue and a
 # `product-design` issue are the same thing to a reader: something has to be chosen.
@@ -62,6 +62,29 @@ def human_comments(issue: dict) -> list[dict]:
     return out
 
 
+def recent_human_reply(issue: dict, now: datetime, within_days: int) -> dict | None:
+    """A person's comment newer than the window, or None.
+
+    The exit rule used to be "any comment ever", which is wrong in both directions: an agent's
+    recommendation, posted under the owner's login, cleared the row forever (#4399 will never
+    return to the list), while a decision that got one reply and then stalled never came back
+    either. Engagement is recency, not existence — the window is the same age gate the queue uses
+    for the issue itself.
+    """
+    cutoff = now - timedelta(days=within_days)
+    for comment in human_comments(issue):
+        raw = comment.get("createdAt")
+        if not raw:
+            continue
+        try:
+            created = datetime.fromisoformat(str(raw).replace("Z", "+00:00"))
+        except ValueError:
+            continue
+        if created >= cutoff:
+            return comment
+    return None
+
+
 def fetch(repo: str, limit: int = 300) -> list[dict]:
     out = subprocess.run(
         ["gh", "issue", "list", "--repo", repo, "--state", "open", "--limit", str(limit),
@@ -88,7 +111,7 @@ def select(issues: list[dict], now: datetime, min_age_days: int = DEFAULT_MIN_AG
         labels = {l["name"] for l in issue.get("labels", [])}
         if not (labels & set(DECISION_LABELS)):
             continue
-        if human_comments(issue):
+        if recent_human_reply(issue, now, min_age_days):
             continue
         age = age_days(issue, now)
         if age < min_age_days:
@@ -104,7 +127,8 @@ def render(rows: list[dict], repo: str, now: datetime, min_age_days: int) -> str
     lines = [
         f"# Decision queue — {len(rows)} waiting",
         "",
-        f"Open issues labelled `{'`/`'.join(DECISION_LABELS)}`, **no reply from a person**, at least "
+        f"Open issues labelled `{'`/`'.join(DECISION_LABELS)}`, **no reply from a person in the last "
+        f"{min_age_days} days**, at least "
         f"{min_age_days} days old. As of {now.strftime('%Y-%m-%d %H:%M UTC')}.",
         "",
         "| # | age | issue | label |",
@@ -118,9 +142,10 @@ def render(rows: list[dict], repo: str, now: datetime, min_age_days: int) -> str
                      f"| {', '.join(row['waiting_labels'])} |")
     lines += [
         "",
-        "Nothing here is closed automatically. A row leaves this list when a person replies on the "
+        "Nothing here is closed automatically. A row leaves this list while a person is replying on the "
         "issue — a decision, a deferral with a trigger, or a rejection all count; silence does not. "
-        "A bot's triage comment does not count either way.",
+        "A bot's triage comment does not count, and an old reply does not keep an undecided issue off "
+        "the list forever.",
     ]
     return "\n".join(lines)
 
