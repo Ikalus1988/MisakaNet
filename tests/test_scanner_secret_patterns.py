@@ -98,10 +98,8 @@ SCAN_GLOBS = [
 # leak. Each one is named with the reason it is exempt, and each must still match a pattern (a stale
 # exemption is a hole — see `test_every_exemption_is_still_earned`).
 EXEMPT_FILES = {
-    "test_contribution_queue.py": "queues a message containing a PAT and asserts it is redacted",
     "test_intake_redaction.py": "redacts secrets/env dumps out of intake payloads — the fixtures",
     "test_intake_spam_guard.py": "asserts credential-shaped intake bodies are refused",
-    "test_misaka_capture.py": "asserts captured failure reports have credentials stripped",
     "test_redaction_sync.py": "the JS and Python redactors must agree on the same fixture set",
     "test_tombstone_redaction.py": "tombstones carry secrets; the test asserts they are removed",
 }
