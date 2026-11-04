@@ -55,13 +55,26 @@ jobs:
           fi
 
       - name: Update the tracking issue
-        if: steps.build.outputs.empty == 'no'
         run: |
           set -euo pipefail
-          COUNT=$(grep -c '^| \[#' /tmp/digest.md || true)
-          TITLE="[Decision queue] ${COUNT} waiting"
           EXISTING=$(gh issue list --repo "$REPO" --search "[Decision queue] in:title" \
             --state open --json number --jq '.[0].number // empty')
+          if [ "${{ steps.build.outputs.empty }}" = "yes" ]; then
+            # An empty list does not create a new issue — but an existing tracking issue that says
+            # "8 waiting" after the queue emptied is worse than no issue: it is a false statement a
+            # reader trusts. Close it with the measured state; the next non-empty week opens a new
+            # one (the search only looks at open issues).
+            if [ -n "$EXISTING" ]; then
+              printf 'No decision has been waiting more than %s days without a comment. Checked %s.\n\nThis tracking issue is closed; the next non-empty week opens a new one.\n' \
+                "14" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > /tmp/empty.md
+              gh issue edit "$EXISTING" --repo "$REPO" --title "[Decision queue] 0 waiting" --body-file /tmp/empty.md
+              gh issue close "$EXISTING" --repo "$REPO" --reason completed
+              echo "closed #$EXISTING (queue empty)"
+            fi
+            exit 0
+          fi
+          COUNT=$(grep -c '^| \[#' /tmp/digest.md || true)
+          TITLE="[Decision queue] ${COUNT} waiting"
           if [ -n "$EXISTING" ]; then
             # Edit, not comment: one issue per week would be 52 issues a year of the same list.
             gh issue edit "$EXISTING" --repo "$REPO" --title "$TITLE" --body-file /tmp/digest.md

@@ -138,3 +138,20 @@ def test_the_rendered_digest_says_the_window_not_just_a_reply():
     text = queue.render(queue.select([issue(11, 20, ["decision"])], NOW), "o/r", NOW, 14)
     assert "Nothing here is closed automatically" in text
     assert "A row leaves this list while a person is replying" in text
+
+
+def test_the_digest_closes_its_tracking_issue_when_the_queue_empties():
+    """An open "8 waiting" issue after the queue emptied is a false statement a reader trusts.
+
+    The first version skipped the update step when the digest was empty ("an empty list does not
+    speak") — right for *creating* recurring empty issues, wrong for the one already open. On
+    2026-11-04 the queue went to zero and #4366 kept its stale body; this pins the close path.
+    """
+    workflow = (
+        Path(__file__).resolve().parent.parent
+        / ".github/workflows/decision-queue-digest.yml"
+    ).read_text(encoding="utf-8")
+    assert 'if: steps.build.outputs.empty' not in workflow, "the empty branch must not skip the step"
+    assert 'if [ "${{ steps.build.outputs.empty }}" = "yes" ]' in workflow
+    assert "gh issue close" in workflow
+    assert "0 waiting" in workflow
