@@ -56,7 +56,8 @@ jobs:
 
       - name: Update the tracking issue
         env:
-          # `${{ }}` inside a `run:` body is the injection shape the gate refuses; pass it as env.
+          # The output is passed through env because an expression token inside a run body is the
+          # injection shape `test_workflow_script_injection` refuses.
           EMPTY: ${{ steps.build.outputs.empty }}
         run: |
           set -euo pipefail
