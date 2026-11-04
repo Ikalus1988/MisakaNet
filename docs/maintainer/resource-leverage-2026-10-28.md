@@ -17,8 +17,8 @@ Read it as a ledger, not a plan. Every "evidence" cell is something that can be 
 | G-1 | Use Vertex `gemini-embedding-001` for a retrieval ceiling | **done** | the A/B that measured R@1 0.757 and changed the retrieval roadmap |
 | G-2 | Publish the corpus as a queryable BigQuery dataset | **done** | 651 lessons + 267 queries, public (`allAuthenticatedUsers: READER`), joins work; no download needed to ask "how many lessons are `fanuc`" |
 | G-3 | `bge-m3` arm (the model production already runs) | **done** | changed the answer: gate ≈18 points, model swap ≈9 |
-| G-4 | Decision-queue digest for stalled `decision` issues | **not done** | 94 non-corpus issues open, 41 never commented, 5 `decision` issues from 2026-09-30 still at 0 comments |
-| G-5 | Colab notebook: reproduce the benchmark in five minutes | **not done** | dataset is downloadable and queryable; the five-minute path does not exist |
+| G-4 | Decision-queue digest for stalled `decision` issues | **done** (2026-10-28; refined 2026-11-04) | weekly `decision-queue-digest.yml` + `scripts/decision_queue.py`; 2026-11-04 the queue counts only **people** (bot triage comments no longer clear a row, #4420) and engagement is a **14-day window** (#4432) — the queue went 5 → 8, the three added rows being decisions whose last human reply is older than the window |
+| G-5 | Colab notebook: reproduce the benchmark in five minutes | **done** (2026-11-04) | `docs/benchmarks/reproduce-in-colab.ipynb` — clone + run `scripts/bench_production_recall.py`, which has **no dependencies beyond the stdlib**; the notebook also shows the local BM25 path so the two corpora are not confused |
 | CF-4 | Migrate `kv_store` out of D1 into KV | **deliberately not done** | `kv_store` is 67,575 rows / 567 MB, D1 total 752 MB of 5 GB, and rows-read stopped being binding on the paid plan — it is an optimisation of a resource that is not scarce |
 | CF-5 | Delete the two zero-traffic workers (`misakanet`, `misakanet-api`) | **not done** | both at 0 requests/week; needs a write credential, so it is an owner action |
 | CF-6 | Create the Analytics Engine dataset | **blocked** | the API answers 404 for the account; needs dashboard creation, then the "state of agent failures" report has data |
@@ -62,7 +62,7 @@ already applies this to its own tests ("先复现，再解释"); it was not appl
 | `kv_store` → KV | D1 storage above ~4 GB, or a page load above ~500 ms attributable to the 1.38 MB blobs |
 | Analytics Engine dataset | the "state of agent failures" report is scheduled — it needs the dataset first |
 | Colab notebook | next time someone outside the project asks how to reproduce a number |
-| Decision digest | now: 5 `decision` issues have been silent for 28 days |
+| Decision digest | **done** — 8 rows on 2026-11-04 (#4432); re-check when the list stays empty for two weeks |
 | Free-tier Gemini key | before it is used by anything automated: free quota is per project, so a leaked key burns it |
 
 ## Related
@@ -71,3 +71,38 @@ already applies this to its own tests ("先复现，再解释"); it was not appl
 - `docs/benchmarks/embedding-ab-2026-10-27.md` — the three-arm measurement this page reports
 - `docs/adr/0002-end-coogen-borrowing.md` — the decision process this round used for a product call
 - `docs/maintainer/handoff-2026-10-27.md` — the cross-volume state
+
+## 5. 复核（2026-11-04）：CF Security Center、Google，以及下一批候选
+
+### 5.1 Cloudflare Security Center 的七条洞察 → 处置
+
+| 洞察 | 处置 | 状态 |
+|---|---|---|
+| Security.txt not configured | 仓库新增 `docs/.well-known/security.txt`（RFC 9116，GitHub 私密 advisory + 公开 issue 两条 contact） | **done**，`https://misakanet.org/.well-known/security.txt` 200 |
+| Domains without HSTS（主站）| `docs/_headers` 的 `/*` 加 `Strict-Transport-Security: max-age=31536000; includeSubDomains` | **done**，header 在线 |
+| Domains without HSTS（data./edgetunnel.）| Zone 级 HSTS（SSL/TLS → Edge Certificates → HSTS，includeSubDomains）——R2 与另一个 worker 的响应头不在仓库里 | **owner（dashboard）** |
+| Older TLS（data.）| Minimum TLS Version = TLS 1.2 | **owner（dashboard）** |
+| Users without MFA | 账户 2FA；该账户持有 DNS/Workers/R2/token，是这轮真实风险最高的一条 | **owner（dashboard）** |
+| Bot Fight Mode | **决定不开**：用户是非浏览器 MCP 客户端，JS challenge 会一起挡掉；要减爬虫负载用 WAF 规则限定营销页 | decided |
+| AI Labyrinth | **决定暂不开**：站点在 `llms.txt` / `.well-known/agent-card.json` 里主动邀请 agent，诱饵页与这个定位矛盾 | decided |
+
+### 5.2 Google
+
+| 项 | 状态 | 说明 |
+|---|---|---|
+| Colab 复现 | **done** | 见 G-5；`docs/benchmarks/reproduce-in-colab.ipynb` |
+| BigQuery 公开数据集 | done | G-2；`misakanet` 项目，`allAuthenticatedUsers: READER` |
+| Gemini 免费层 | done | 无计费项目的 key 可用（见 §2 第一条错误）；回填脚本用它 |
+| Search Console | **待 owner** | `docs/sitemap.xml`、`docs/robots.txt` 已在；只差验证（DNS/HTML 文件）与提交 sitemap——这是让 800 篇课程被索引的最短路径，零成本 |
+| Cloud 试用额度 / Google Developer Program | **待 owner 评估** | 只有账户持有人能申请；当前用量（Gemini 免费层 + BigQuery 免费层）没有烧钱项，申请额度属于“未来实验预算”而非缺口 |
+
+### 5.3 新增候选（带触发条件）
+
+| 候选 | 为什么现在不做 | 触发条件 |
+|---|---|---|
+| **Turnstile** 保护网页注册表单 | 需要站点 key（dashboard）；MCP 注册路径不受影响，两者要分开配 | 出现脚本批量注册（连续同一 UA/IP 的空节点） |
+| **Cloudflare Web Analytics**（无 cookie） | 需要 beacon token；站点目前完全没有分析，隐私页已承诺无追踪 | 需要判断“用户从哪来”或验证 onboarding 漏斗时 |
+| **AI Gateway** 包装模型调用 | 当前调用量小（回填是批处理）；收益是缓存/限流/用量面板 | 回填或 embedding 的调用变成常态，或出现配额/成本不可见 |
+| **Email Routing**（security@） | 需要域名邮箱路由；security.txt 已给 GitHub 私密通道 | 有人明确需要一个邮件地址时 |
+| **Analytics Engine** 数据集 | CF-6 仍 blocked（API 404，需 dashboard 建） | “agent 失败状态”报告排期时 |
+| 删除两个零流量 worker（CF-5） | 需要写权限凭据，owner 动作 | 下次动 wrangler 配置时一并删 |
