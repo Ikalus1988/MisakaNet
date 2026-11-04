@@ -37,8 +37,8 @@ npx @misaka-net/misakanet-setup --only cindy
 
 插件源码在本仓库 [`.cindy-plugin/`](https://github.com/Ikalus1988/MisakaNet/tree/main/.cindy-plugin)：
 `ghost.json`（清单）、`main.js`（电子脑）、`locales/en.json` 与 `locales/zh-CN.json`（文案）、
-`manual/misakanet/MANUAL.md`（随包手册）、`assets/icon.png`。市场里 1.2.3 在人工审核中（已上架的是 1.2.2），仓库已到 **1.2.3**（kind 补上 `proposal`，本次提审已带上）；
-审核通过后，仓库这与市场里的包内容一致。
+`manual/misakanet/MANUAL.md`（随包手册）、`assets/icon.png`。市场里发布的就是本仓库这个包（提审期间市场可能仍显示上一版），仓库已到 **1.2.3**（kind 补上 `proposal`，本次提审已带上）；
+仓库这与市场里的包内容一致。
 
 ## 2. 工具面
 
