@@ -16,7 +16,7 @@
 
 const MCP_URL = 'https://misakanet.org/mcp';
 const FETCH_TIMEOUT_MS = 45000;
-const PLUGIN_VERSION = '1.2.1';
+const PLUGIN_VERSION = '1.2.2';
 
 /* 客户端标识：每台机器一个稳定 id。
  * 端点会把 X-MisakaNet-Client salt-hash 进 search_signals.client_hint，而 client_hint 是
