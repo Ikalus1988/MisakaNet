@@ -1,9 +1,23 @@
 {
-  "generated_at": "2026-11-03T19:38:05.900664+00:00",
+  "generated_at": "2026-11-04T01:34:55.406821+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "feat(ci): a red pr-agent can now say whether the model answered (#2972)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4404",
+      "timestamp": "2026-11-04T01:26:39Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4403",
+      "timestamp": "2026-11-03T19:55:27Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "fix(cindy-plugin): the docs name the version the manifest has, and a gate keeps them honest",
@@ -23,20 +37,6 @@
       "title": "docs(handoff): vol 28 — a label, a directory name and a verdict word all have to mean what they say",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/4400",
       "timestamp": "2026-11-03T17:54:41Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat(integrations): Cindy becomes the 13th host — and the first target that writes nothing",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4397",
-      "timestamp": "2026-11-03T17:19:13Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat(shape-guard): a shipped dot-directory can be declared instead of guessed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4398",
-      "timestamp": "2026-11-03T16:59:29Z",
       "source": "github"
     },
     {
