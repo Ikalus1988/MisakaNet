@@ -373,3 +373,49 @@ class TestLabelAndBodyDisagreement:
         assert s.main() == 0, "not-a-question is a skip, not a sync failure"
         out = capsys.readouterr().out
         assert "2895" in out and "nothing" in out, out[:200]
+
+
+class TestAnsweredNonQuestionIntake:
+    """The salvage pass answers reports that were never questions (#4454).
+
+    The worker's re-submission pull looks the dedup hash up in the same `questions` table ("works
+    for questions and any intake"), so an answered `missing_lesson` report is reachable through
+    `misakanet_me_inbox` — but only if `--issue` stops refusing every non-question kind.
+    """
+
+    @staticmethod
+    def _issue(number: int, body: str, labels: list[str]) -> dict:
+        return {
+            "number": number,
+            "body": body,
+            "state": "closed",
+            "html_url": f"https://github.com/Ikalus1988/MisakaNet/issues/{number}",
+            "labels": [{"name": n} for n in labels],
+        }
+
+    def test_an_answered_missing_lesson_is_stored(self, monkeypatch, capsys):
+        from scripts import sync_answered_questions as s
+
+        body = "**Kind:** missing_lesson\n**Dedup:** `e141aeb5-cb3`\n\n## Problem\nsomething broke"
+        monkeypatch.setattr(s, "gh_api", lambda path: (
+            [{"body": "<!-- misakanet-answer -->\n## ✅ Answered\nuse the cache"}]
+            if "comments" in path else self._issue(2846, body, ["answered", "intake"])
+        ))
+        calls = []
+        monkeypatch.setattr(s, "upsert_answered", lambda issue: calls.append(issue["number"]) or True)
+        monkeypatch.setattr(s.sys, "argv", ["sync_answered_questions.py", "--issue", "2846"])
+
+        assert s.main() == 0
+        assert calls == [2846], "an answered non-question intake must still be stored"
+        assert "upserted" in capsys.readouterr().out
+
+    def test_an_unanswered_non_question_still_skips(self, monkeypatch, capsys):
+        from scripts import sync_answered_questions as s
+
+        body = "**Kind:** missing_lesson\n\n## Problem\nsomething broke"
+        monkeypatch.setattr(s, "gh_api", lambda path: self._issue(2846, body, ["intake"]))
+        monkeypatch.setattr(s.sys, "argv", ["sync_answered_questions.py", "--issue", "2846"])
+
+        assert s.main() == 0
+        out = capsys.readouterr().out
+        assert "nothing" in out, out[:200]
