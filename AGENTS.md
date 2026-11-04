@@ -204,6 +204,10 @@ python3 scripts/sync_lesson_count.py --check     # 改公开计数/meta 描述�
 python3 scripts/doctor.py                        # 仓库自检
 ```
 
+- **建 issue 时贴对标签**：交付物是改本仓（代码/文档/CI/站点）→ `scope:repo`（bug 模板已自带）；
+  要 owner 拍板（计划/方案/取舍）→ `decision`；只是求助 → 走 intake，由分诊贴 `needs-answer`
+  （提交者不能设标签）。`area:*` 只在 PR 上按路径自动加，不能代替这两个。合约见
+  `docs/maintainer/intake-triage.md` §2。
 - **每个提交都要 `Signed-off-by:`**（`git commit --signoff`）——DCO 是硬门禁
 - **public 里的课程数不要手写**：README / ARCHITECTURE / 站点 `<meta description>` 等处的
   "N lessons" 由 `scripts/sync_lesson_count.py` 统一维护（每日 `update-lessons.yml` 会跑）；

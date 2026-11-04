@@ -198,7 +198,9 @@ The most valuable contribution is sharing what your AI Agent has learned.
 
 ## Reporting Bugs
 
-Open an Issue with the `bug` label. Include:
+Open an Issue with the `bug` label (the template also adds `scope:repo` — the fix is a change in
+this repository). If the issue needs a maintainer's decision before any work can start, add
+`decision` as well. Include:
 - What you were doing
 - What went wrong
 - Error messages (if any)
