@@ -1,0 +1,55 @@
+name: PR-Agent Verdicts
+
+# The runtime half of #2972. `pr-agent`'s conclusion is `failure` for a model timeout, a missing
+# secret and a real review alike; the log says which. This reads the recent failed runs and writes
+# the classification where a maintainer already looks (the run summary), so "the red is infra" is a
+# line to read rather than a log to open.
+#
+# It is **not** a gate: a timeout cannot be fixed by a pull request, and a workflow that went red
+# every time the model timed out would be a second red saying the same thing. An `unknown` verdict —
+# a log with no marker at all — is the one that earns a warning annotation.
+on:
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: "how many failed runs to read"
+        required: false
+        default: "10"
+  schedule:
+    # One run a day is enough to keep the classification current; the script is also one command away
+    # for a maintainer looking at a specific red.
+    - cron: '20 5 * * *'
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  verdicts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+      - name: Classify the recent pr-agent failures
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          LIMIT: ${{ inputs.limit || '10' }}
+        run: |
+          set -o pipefail
+          python3 scripts/pr_agent_verdict.py --limit "$LIMIT" | tee verdicts.md
+          cat verdicts.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Flag the verdicts the log cannot explain
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          LIMIT: ${{ inputs.limit || '10' }}
+        run: |
+          python3 scripts/pr_agent_verdict.py --limit "$LIMIT" --json > verdicts.json
+          python3 - <<'PY'
+          import json
+          rows = json.load(open("verdicts.json", encoding="utf-8"))
+          unknown = [row for row in rows if row["verdict"] == "unknown"]
+          for row in unknown:
+              print(f"::warning::pr-agent run {row['run']} is red with no marker in its log "
+                    f"({row['url']}) — this is the one worth a human's time")
+          print(f"classified {len(rows)} failed run(s); {len(unknown)} unexplained")
+          PY
