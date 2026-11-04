@@ -151,7 +151,10 @@ module.exports = async function classifyIntake({ github, core, context }) {
     // off, and the *other* workflow's question path also missed it — so every open question
     // carried the corpus queue label. Measured that day: 50 of 50 (#4238, #4239 among them,
     // where the label read as "this repo-improvement request is waiting to become a lesson").
-    for (const stale of ['pending-review', 'needs-human-review']) {
+    // `needs-ac` is "the failure report lacks acceptance criteria" — a question is not a report, so
+    // the label says nothing about it (and 49 of 50 open questions carried it on 2026-11-04, the
+    // same shape as `pending-review` the day before).
+    for (const stale of ['pending-review', 'needs-human-review', 'needs-ac']) {
       const at = labelsToAdd.indexOf(stale);
       if (at !== -1) labelsToAdd.splice(at, 1);
       labelsToRemove.push(stale);
@@ -179,9 +182,10 @@ module.exports = async function classifyIntake({ github, core, context }) {
     labelsToAdd.push('agent-friendly');
   }
 
-  // `needs-ac` means "the failure report lacks acceptance criteria". A proposal is not
-  // a report, so the rule does not apply to it and the label would be noise.
-  if (!hasCoreStructure && classification !== 'proposal') {
+  // `needs-ac` means "the failure report lacks acceptance criteria". A proposal and a question are
+  // neither failure reports nor lesson candidates, so the rule does not apply to either and the
+  // label would be noise. (A question's queue is `needs-answer`; its exit is an answer.)
+  if (!hasCoreStructure && classification !== 'proposal' && classification !== 'question') {
     labelsToAdd.push('needs-ac');
   }
 
