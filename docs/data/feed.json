@@ -1,9 +1,30 @@
 {
-  "generated_at": "2026-11-04T16:56:26.380471+00:00",
+  "generated_at": "2026-11-04T19:54:11.553143+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "docs(handoff): vol 30 — each unclear thing became a query or a closed issue",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4468",
+      "timestamp": "2026-11-04T17:55:05Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "feat(sync): store an answer for any answered intake, not only kind=question",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4461",
+      "timestamp": "2026-11-04T17:20:44Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4460",
+      "timestamp": "2026-11-04T17:14:19Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "fix(lesson): correct the whisper no_speech_prob gate measured as harmful (#4221)",
@@ -16,27 +37,6 @@
       "title": "fix(scorer): stop penalising portable paths and the pipeline's own note (#4454 D)",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/4457",
       "timestamp": "2026-11-04T16:38:21Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "fix(digest): an emptied queue closes its tracking issue instead of leaving a stale list",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4453",
-      "timestamp": "2026-11-04T15:22:04Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat(contract): decide the three trade-offs in DECLARED_DIVERGENCES (#4399)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4449",
-      "timestamp": "2026-11-04T14:35:49Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "docs(resources): close G-5 with a Colab notebook, and re-check the CF/Google ledger",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4448",
-      "timestamp": "2026-11-04T14:05:55Z",
       "source": "github"
     },
     {
