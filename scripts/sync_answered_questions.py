@@ -303,6 +303,25 @@ def main() -> int:
     if args.issue:
         issue = gh_api(f"/issues/{args.issue}")
         kind, _, _ = parse_kind_and_problem(issue.get("body") or "")
+        labels = {l["name"] for l in issue.get("labels", [])}
+        # Only a body that declares a known kind can be hashed the way the worker hashed it; an
+        # empty kind (label/body mismatch) keeps the old "nothing to sync" message.
+        _SYNCABLE_KINDS = {"missing_lesson", "stale_lesson", "new_lesson_candidate", "proposal"}
+        if kind in _SYNCABLE_KINDS and "answered" in labels:
+            # An answered intake of another kind. The worker's re-submission pull looks the dedup
+            # hash up in this same table (`workers/register-proxy-sw.js`: "works for questions and
+            # any intake"), so storing the answer makes it reachable through `misakanet_me_inbox`
+            # instead of only on the GitHub thread. This is the salvage queue's receipt channel for
+            # reports that were answered rather than converted (#4454).
+            if args.dry_run:
+                print(f"#{args.issue}: would store the answer (body declares kind={kind!r})")
+            else:
+                ok = upsert_answered(issue)
+                print(
+                    f"#{args.issue}: {'answered row upserted' if ok else 'no answer comment found (skipped)'} "
+                    f"(body declares kind={kind!r})"
+                )
+            return 0
         if kind != "question":
             # Not a failure of the sync — there is nothing to sync. Returning 1 here made every
             # such close turn the workflow red for a reason that was never going to resolve itself
