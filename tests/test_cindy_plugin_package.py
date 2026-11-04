@@ -26,7 +26,9 @@ MANIFEST = PLUGIN / "ghost.json"
 #: sentence rather than the file: `status.md` legitimately names other clients' versions (v1.3.1,
 #: 0.154.0), and a whole-file scan would call those drift.
 DOC_VERSION_PATTERNS = {
-    "docs/integrations/cindy.md": r"市场里\s*(\d+\.\d+\.\d+)\s*在人工审核中",
+    # The repo's version is the one this gate is about; the market copy can be one release behind
+    # while its review is pending (2026-11-04: repo 1.2.3, submitted 1.2.2).
+    "docs/integrations/cindy.md": r"仓库已到 \*\*(\d+\.\d+\.\d+)\*\*",
     "docs/integrations/status.md": r"plugin bundle `misakanet`\s+(\d+\.\d+\.\d+)",
 }
 #: The tools the plugin's own MANUAL and the integration page promise. A tool removed from the
@@ -110,7 +112,7 @@ def test_the_version_the_docs_name_is_the_manifest_version():
 
 def test_a_stale_version_in_a_doc_is_reported():
     """The gate can fail on the defect it forbids — measured live on 2026-11-04."""
-    stale = {"docs/integrations/cindy.md": "市场里 1.1.0 在人工审核中"}
+    stale = {"docs/integrations/cindy.md": "仓库已到 **1.1.0**"}
     assert version_mismatches(stale, "1.2.0") == [
         "docs/integrations/cindy.md: names 1.1.0, the manifest is 1.2.0"
     ]
