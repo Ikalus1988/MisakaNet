@@ -137,11 +137,11 @@ def _cases() -> list[dict]:
             "name": "a question, routed by its explicit kind",
             "title": "[Intake] How do I configure MCP auth?",
             "body": QUESTION_BODY,
-            "labels": ["intake", "mcp-intake", "pending-review", "needs-human-review"],
+            "labels": ["intake", "mcp-intake", "pending-review", "needs-human-review", "needs-ac"],
             "expect_classification": "question",
             "expect_type": "question",
-            "expect_removed": ["pending-review", "needs-human-review"],
-            "expect_not_added": ["pending-review", "needs-human-review"],
+            "expect_removed": ["pending-review", "needs-human-review", "needs-ac"],
+            "expect_not_added": ["pending-review", "needs-human-review", "needs-ac"],
         },
         {
             # The narrow-trigger contract: a report that merely discusses failures — the shape the
@@ -326,4 +326,8 @@ def test_the_auto_review_question_branch_also_leaves_the_lesson_queue():
     assert '--remove-label "pending-review"' in branch, (
         "a question keeps the corpus queue label: `pending-review` says 'waiting to become a "
         "lesson', which is the one thing a question is not"
+    )
+    assert '--remove-label "needs-ac"' in branch, (
+        "a question keeps `needs-ac`: it means 'the failure report lacks acceptance criteria', and "
+        "a question is not a failure report (49 of 50 open questions carried it on 2026-11-04)"
     )

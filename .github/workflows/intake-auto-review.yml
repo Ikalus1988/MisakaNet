@@ -180,6 +180,7 @@ jobs:
               --remove-label "needs-salvage" \
               --remove-label "needs-human-review" \
               --remove-label "pending-review" \
+              --remove-label "needs-ac" \
               --remove-label "type:feature" \
               --remove-label "type:bug" 2>/dev/null || true
             gh issue edit $ISSUE_NUMBER --repo ${{ github.repository }} \
