@@ -77,7 +77,7 @@ class TestPrecheck(unittest.TestCase):
 
     def test_secret_pattern_flagged(self):
         intake = ip.parse_intake({"kind": "missing_lesson",
-                                  "problem": "token ghp_abcdefghijklmnopqrstuvwxyz leaked",
+                                  "problem": "token " + "ghp_" + "a" * 36 + " leaked",
                                   "source": "mcp"})
         cls = ip.classify(intake)
         draft = ip.generate_draft(intake, cls)

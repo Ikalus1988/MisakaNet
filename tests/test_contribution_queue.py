@@ -92,7 +92,7 @@ class TestRedaction:
     def test_secrets_redacted(self):
         result = submit_contribution(
             contrib_type="intake",
-            message="my token is ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghij12",
+            message="my token is " + "ghp_" + "A" * 36,
         )
         assert result["redactions_applied"] >= 1
 
