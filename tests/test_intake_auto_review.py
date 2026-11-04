@@ -124,6 +124,29 @@ def test_completeness_with_verification():
     assert result.score >= 50  # 55: problem(25) + fix(25) + verification_bonus(5)
 
 
+def test_an_empty_problem_section_is_not_present():
+    """#4427: `## Problem` alone scored "✓ problem present" — a heading is not a problem."""
+    body = "## Problem\n\n## Fix\nReinstall the package.\n"
+    result = score_completeness(body, {})
+    assert "✗ problem empty" in result.reasons, result.reasons
+    assert not any("✓ problem present" in r for r in result.reasons)
+
+
+def test_a_symptom_section_carries_the_problem():
+    """The #4417 shape: the text lives under `## 症状`, one heading below an empty `## Problem`."""
+    body = ("## Problem\n## 症状\n`npx hyperframes` downloads chrome at 30KB/s and fails.\n"
+            "## Fix\nUse a local Chrome.\n")
+    result = score_completeness(body, {})
+    assert "✓ problem present" in result.reasons, result.reasons
+
+
+def test_the_pipeline_placeholder_is_not_a_problem():
+    """The placeholder says "there is no problem text" — counting it as content is the same bug."""
+    body = "## Problem\n_no problem text_\n## Fix\nReinstall.\n"
+    result = score_completeness(body, {})
+    assert "✗ problem empty" in result.reasons, result.reasons
+
+
 # === Generalization Tests ===
 
 def test_generalization_good():
