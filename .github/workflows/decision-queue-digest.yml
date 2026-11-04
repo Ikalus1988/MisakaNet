@@ -55,11 +55,14 @@ jobs:
           fi
 
       - name: Update the tracking issue
+        env:
+          # `${{ }}` inside a `run:` body is the injection shape the gate refuses; pass it as env.
+          EMPTY: ${{ steps.build.outputs.empty }}
         run: |
           set -euo pipefail
           EXISTING=$(gh issue list --repo "$REPO" --search "[Decision queue] in:title" \
             --state open --json number --jq '.[0].number // empty')
-          if [ "${{ steps.build.outputs.empty }}" = "yes" ]; then
+          if [ "$EMPTY" = "yes" ]; then
             # An empty list does not create a new issue — but an existing tracking issue that says
             # "8 waiting" after the queue emptied is worse than no issue: it is a false statement a
             # reader trusts. Close it with the measured state; the next non-empty week opens a new

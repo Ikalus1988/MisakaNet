@@ -152,6 +152,7 @@ def test_the_digest_closes_its_tracking_issue_when_the_queue_empties():
         / ".github/workflows/decision-queue-digest.yml"
     ).read_text(encoding="utf-8")
     assert 'if: steps.build.outputs.empty' not in workflow, "the empty branch must not skip the step"
-    assert 'if [ "${{ steps.build.outputs.empty }}" = "yes" ]' in workflow
+    assert "EMPTY: ${{ steps.build.outputs.empty }}" in workflow
+    assert 'if [ "$EMPTY" = "yes" ]' in workflow
     assert "gh issue close" in workflow
     assert "0 waiting" in workflow
