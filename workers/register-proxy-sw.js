@@ -333,10 +333,9 @@ const MCP_TOOLS = [
     inputSchema: {
       type: "object",
       properties: {
-        agent_type: { type: "string", description: "Agent type (e.g. claude-code, codex, cursor, dsh, other)" },
+        agent_type: { type: "string", description: "Agent type (e.g. claude-code, codex, cursor, dsh, other). Optional: an omitted value is recorded as \"unknown\", the same default the local surface has always used." },
         client_id: { type: "string", description: "Optional stable identifier for this client (8-64 chars of A-Z a-z 0-9 . _ : -). Generate it once and reuse it so later calls return the same node instead of a new one." },
       },
-      required: ["agent_type"],
     },
     annotations: {
       readOnlyHint: false,
