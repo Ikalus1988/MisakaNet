@@ -61,9 +61,15 @@
 >
 > * **谁贴**：分诊时由人 / agent 逐条判断。**永不从正文推断**——#4251 的教训是「读起来像计划」的
 >   关键词猜测判错过一次；这个标签是判断，不是检测。
-> * **贴在哪**：**只贴在 intake 上**。没有 `intake` 标签的 issue 本来就是本仓工作，再贴是冗余。
-> * **回填**：不做批量回填。`area:*` 在 issue 上被误用过（有 DSH 产品的报料也贴了 `area:core`），
->   所以每条都要看过；2026-11-04 只回填了两条明确案例（#2574 文档版本漂移、#4413 生成器链条缺失）。
+> * **贴在哪**：**任何**交付物是改本仓的 issue——intake 与手工 issue 都贴。没有 `intake` 标签的
+>   issue 本来就是本仓工作，但**显式贴**让 `label:"scope:repo" is:open` 成为完整答案，而不是
+>   「非 intake 的那一半要靠读者自己补」。**不贴**三类：语料产物（`lesson-submission`、bounty 的
+>   「回答 N 个问题」）、自动生成的操作性 issue（heartbeat / digest / leaderboard / approval-watch）、
+>   以及属于别的产品的报料。
+> * **回填**：按条判断，不做无脑批量。`area:*` 在 issue 上被误用过（有 DSH 产品的报料也贴了
+>   `area:core`），所以每条都要看过；2026-11-04 回填了 40 条：全部 decision / product-design，加上
+>   明确是本仓改动的 bug、docs、CI、enhancement（#2574、#4413、#4399、#4052 …），排除 bounty、
+>   heartbeat、leaderboard、approval-watch 等自动议题。
 > * **消费者**：一条固定查询 `label:"scope:repo" is:open`。不要同时喂给决策队列——`decision` 已经
 >   覆盖「要拍板」的那一半；`scope:repo` 覆盖「要动手」的那一半。
 
