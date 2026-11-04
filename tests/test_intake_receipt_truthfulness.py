@@ -215,3 +215,47 @@ class TestNoQueueAndNoNetwork:
             result = handle_submit_intake({"kind": "missing_lesson"})
         assert not call.called
         assert result["error"] == "problem is required"
+
+
+class TestAttributionReachesTheIssue:
+    """#4399 Q1: the stdio surface dropped `contributor` on the way to the worker.
+
+    The field is accepted by the hosted tool (it lands on the GitHub issue), but the local
+    `_INTAKE_FIELDS` whitelist did not include it, so a local agent could pass it and watch it
+    vanish. The two-surface gate registered the difference; this pins the behaviour.
+    """
+
+    def test_contributor_is_forwarded_to_the_hosted_tool(self, monkeypatch):
+        # conftest switches the remote path off for the suite; this test is about the payload it sends.
+        monkeypatch.delenv("MISAKANET_INTAKE_DISABLE_REMOTE", raising=False)
+        seen = {}
+
+        def fake_call(tool, args):
+            seen["tool"], seen["args"] = tool, args
+            return {"submitted": True, "intake_id": "issue-1", "status": "pending_review"}
+
+        with patch(_REMOTE_CALL, fake_call):
+            result = handle_submit_intake({
+                "kind": "missing_lesson",
+                "problem": "pip install times out behind a corporate proxy",
+                "contributor": "octocat",
+                "source": "test",
+            })
+
+        assert seen["tool"] == "misakanet_submit_intake"
+        assert seen["args"].get("contributor") == "octocat"
+        assert result["submitted"] is True
+        assert result["delivery"] == "remote"
+
+    def test_an_omitted_contributor_is_not_sent(self, monkeypatch):
+        monkeypatch.delenv("MISAKANET_INTAKE_DISABLE_REMOTE", raising=False)
+        seen = {}
+
+        def fake_call(tool, args):
+            seen["args"] = args
+            return {"submitted": True, "intake_id": "issue-1", "status": "pending_review"}
+
+        with patch(_REMOTE_CALL, fake_call):
+            handle_submit_intake({"problem": "pip timeout", "source": "test"})
+
+        assert "contributor" not in seen["args"]

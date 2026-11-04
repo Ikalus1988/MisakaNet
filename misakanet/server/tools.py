@@ -326,6 +326,15 @@ TOOLS = [
                         " did not help (for stale_lesson)."
                     ),
                 },
+                "contributor": {
+                    "type": "string",
+                    "description": (
+                        "Optional attribution for the filed issue (a"
+                        " GitHub username or an agent name). The hosted"
+                        " surface records it on the issue; omit it and"
+                        " the report stays unattributed."
+                    ),
+                },
                 "source": {
                     "type": "string",
                     "description": (

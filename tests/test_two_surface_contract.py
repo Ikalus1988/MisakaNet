@@ -56,13 +56,6 @@ SHARED = sorted(set(HOSTED) & set(LOCAL))
 #: one has to be removed here too. Key format: `+path` = only local, `-path` = only hosted,
 #: `~path` = both present, different structure.
 DECLARED_DIVERGENCES: dict[str, dict[str, str]] = {
-    "misakanet_register": {
-        "-/required": (
-            "hosted requires `agent_type`; the stdio tool documents it as optional and defaults to "
-            "'unknown'. Same property, different obligation — deliberately left until the local "
-            "callers (the installer) are audited."
-        ),
-    },
     "misakanet_search": {
         "+/properties/explain": "local-only: explains the ranking from the in-memory index.",
         "+/properties/include_stale": (
@@ -71,11 +64,6 @@ DECLARED_DIVERGENCES: dict[str, dict[str, str]] = {
         ),
     },
     "misakanet_submit_intake": {
-        "-/properties/contributor": (
-            "hosted records attribution on the GitHub issue; the stdio path files through the same "
-            "worker, so the field could be forwarded — it is declared rather than fixed because it "
-            "needs a decision about which name a local agent should claim."
-        ),
         "+/properties/kind/enum": (
             "the local schema restricts `kind` to the worker's current whitelist; the hosted one "
             "lists no enum and lets the handler refuse. Structurally stricter here, and the enum "
@@ -83,7 +71,7 @@ DECLARED_DIVERGENCES: dict[str, dict[str, str]] = {
         ),
     },
     "misakanet_write_lesson": {
-        "-/properties/contributor": "same attribution gap as submit_intake.",
+        "-/properties/contributor": "the local write path queues the lesson in this checkout; there is no GitHub issue for an attribution field to land on. The hosted path files one and records it.",
         "+/properties/token": (
             "deprecated argument: the Bearer header is the only auth path (AGENTS.md §3.3). Kept in "
             "the local schema so an older client with `token:` still gets a stated refusal instead "
