@@ -241,7 +241,7 @@ MIRRORS = {
 #: so a mirror that answers with anything else is refused instead of written into `~/.agents/skills/`.
 #: `tests/test_install_skill_integrity.py` recomputes it from the working tree, so the constant cannot
 #: drift from the file — changing SKILL.md forces a deliberate bump here, in the same review.
-SKILL_MD_SHA256 = "5eb335759294f9179bacb1b47277f108830dc5379f15ef88534bffa6aff0eace"
+SKILL_MD_SHA256 = "06f0b700093e484a6a49070f39ef4c5280fca497fb4593ec2102091c21ab2b19"
 SKILL_MD_PATH = "skills/misakanet/SKILL.md"
 
 
