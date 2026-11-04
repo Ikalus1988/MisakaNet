@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The set of intake kinds is written down in five places; this holds them equal.
+"""The set of intake kinds is written down in six places; this holds them equal.
 
 Why this file exists (2026-11-01)
 ---------------------------------
@@ -10,14 +10,16 @@ validates a tool's `inputSchema` before calling it could not ask a question thro
 at all — and nothing in the suite could see it, because each site had its own idea of the list and
 the only assertion (`tests/test_intake_kind.py`) covered one of them.
 
-Five readers, one fact:
+Six readers, one fact:
 
 * `workers/lib/utils.js` — `INTAKE_KINDS`, the worker's allow-list;
 * `scripts/intake_kind.py` — `INTAKE_KINDS`, the Python mirror the MCP HTTP server uses;
 * `scripts/intake_pipeline.py` — `VALID_KINDS`, the CLI pipeline;
 * `misakanet/server/tools.py` — the `kind` enum inside `misakanet_submit_intake`'s `inputSchema`,
   which is the one a *client* enforces;
-* `docs/mcp-intake-guide.md` — the table a submitter reads.
+* `docs/mcp-intake-guide.md` — the table a submitter reads;
+* `.cindy-plugin/ghost.json` — the `kind` enum the Cindy plugin puts in front of its clients
+  (added 2026-11-04, when `proposal` was missing there and only there).
 
 This is a text gate over parsed structures, not a grep for a phrase: each reader's own syntax is
 parsed (a JS array literal, a Python tuple/set, a schema dict, a markdown table) and the parsed
@@ -67,6 +69,19 @@ def _stdio_schema_enum() -> set[str]:
     return set(re.findall(r'"([a-z_]+)"', block[enum_at:end]))
 
 
+def _plugin_schema_enum() -> set[str]:
+    """The `kind` enum the Cindy plugin ships to its clients.
+
+    A client-enforced schema like the stdio one: a value missing here is a value a Cindy user cannot
+    submit at all. Measured 2026-11-04: `proposal` was missing, so a plan could only be filed as
+    `new_lesson_candidate` — and the classifier then scored it as a failure report (a replay of
+    #4409's body lands in the corpus queue with `type:bug`).
+    """
+    entry = json.loads((REPO / ".cindy-plugin" / "ghost.json").read_text(encoding="utf-8"))
+    tool = next(t for t in entry["tools"] if t["name"] == "misakanet_submit_intake")
+    return set(tool["parameters"]["properties"]["kind"]["enum"])
+
+
 def _guide_table() -> set[str]:
     text = (REPO / "docs/mcp-intake-guide.md").read_text(encoding="utf-8")
     start = text.index("## Kind Types")
@@ -82,6 +97,7 @@ def readers() -> dict[str, set[str]]:
         "scripts/intake_pipeline.py:VALID_KINDS": _python_literal(REPO / "scripts/intake_pipeline.py", "VALID_KINDS"),
         "misakanet/server/tools.py:submit_intake.kind enum": _stdio_schema_enum(),
         "docs/mcp-intake-guide.md:Kind Types table": _guide_table(),
+        ".cindy-plugin/ghost.json:submit_intake.kind enum": _plugin_schema_enum(),
     }
 
 
@@ -100,10 +116,10 @@ def test_every_reader_declares_the_same_kinds() -> None:
     )
 
 
-def test_the_gate_reads_five_real_readers() -> None:
+def test_the_gate_reads_six_real_readers() -> None:
     """A guard on the guard: a parser that silently matched nothing would pass the check above."""
     found = readers()
-    assert len(found) == 5, f"expected five readers, parsed {sorted(found)}"
+    assert len(found) == 6, f"expected six readers, parsed {sorted(found)}"
     for where, kinds in found.items():
         assert kinds, f"{where} parsed as empty — the syntax moved and this gate stopped reading it"
 

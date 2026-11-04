@@ -52,7 +52,7 @@
           "description": "这次故障或知识缺口的简短描述（必填）。写清现象与影响，别写业务机密。"
         },
         "/properties/kind": {
-          "description": "上报类型：missing_lesson 搜不到对应教训 / stale_lesson 找到但内容过期或不适用 / new_lesson_candidate 这次自己解决了一个尚无记录的问题 / question 这是个求助问题而非故障（会开成 [Question] issue 等维护者回答）。不确定就省略，由服务端按内容自动判定。"
+          "description": "上报类型：missing_lesson 搜不到对应教训 / stale_lesson 找到但内容过期或不适用 / new_lesson_candidate 这次自己解决了一个尚无记录的问题 / question 这是个求助问题而非故障（会开成 [Question] issue 等维护者回答）/ proposal 计划或产品请求，明确不是故障报告（进决策队列，绝不会被转成 lesson）。不确定就省略，由服务端按内容自动判定——但计划类不会被自动判定，请显式传 proposal。"
         },
         "/properties/error": {
           "description": "可选：脱敏后的关键报错原文。"

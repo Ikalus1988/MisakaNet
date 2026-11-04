@@ -85,6 +85,34 @@ test('submit_intake question kind creates issue with needs-answer label', async 
   }
 });
 
+test('submit_intake proposal kind labels a decision, not a lesson', async () => {
+  const env = createEnv();
+  let captured = null;
+  const restore = captureGitHubFetch(env, (p) => { captured = p; });
+  try {
+    const resp = await submitIntake({
+      kind: 'proposal',
+      problem: 'A three-month plan for the listing: declare the integration and annotate the tools.',
+    }, env);
+    assert.equal(resp.status, 200);
+    const body = await resp.json();
+    const result = JSON.parse(body.result.content[0].text);
+    assert.equal(result.submitted, true);
+    assert.ok(captured);
+    assert.ok(captured.labels.includes('needs-human-review'),
+      `a proposal is a decision: ${JSON.stringify(captured.labels)}`);
+    // Not the corpus queue: the classifier took `pending-review` off a proposal seconds later, but
+    // the issue's first label should not describe the one thing a proposal is not (#4251).
+    assert.ok(!captured.labels.includes('pending-review'),
+      `a proposal must not enter the lesson queue: ${JSON.stringify(captured.labels)}`);
+    assert.ok(!captured.labels.includes('needs-answer'));
+    assert.match(captured.title, /^\[Intake\]/);
+    assert.match(captured.body, /\*\*Kind:\*\* proposal/);
+  } finally {
+    restore();
+  }
+});
+
 test('submit_intake missing_lesson keeps standard labels and title', async () => {
   const env = createEnv();
   let captured = null;

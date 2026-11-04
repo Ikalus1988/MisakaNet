@@ -5,14 +5,16 @@
   "name": "MisakaNet 故障记忆",
   "description": "把 MisakaNet 公开故障教训库接进对话：报错、CI 失败、构建或工具崩溃之前，先查有没有别人已经踩过并写清修法的教训（问题 / 根因 / 修法 / 验证）。misakanet_search / misakanet_get_lesson / misakanet_preflight 三个工具是匿名只读查询，只访问 misakanet.org，不需要任何凭证；misakanet_submit_intake 则会在用户明确确认后，把一次故障或提问写成公开仓库 Ikalus1988/MisakaNet 的 GitHub issue——内容公开发布，提交前必须脱敏。",
   "whenToUse": "遇到报错、异常、CI 失败、构建失败、工具崩溃或环境诡异行为时找我，先查这个坑是否已有公开教训；也想查某个技术栈、工具或平台的既往故障与修法时找我。",
-  "version": "1.2.2",
-  "releaseNotes": "相较 1.2.1：按市场审核意见修正市场简介——如实区分「三个匿名只读工具」与「会在用户明确确认后公开写入 GitHub issue 的 submit_intake」，并说明数据去向、公开可见性与脱敏要求；只读工具的说明也补上了「插件只用它自己的私有目录存一个随机客户端 id」。版本头修复（PLUGIN_VERSION 跟清单对齐）保持不变。",
+  "version": "1.2.3",
+  "releaseNotes": "相较 1.2.2：kind 补上 proposal（计划 / 产品请求）——托管端点一直接受它，而插件 schema 的枚举只有四个值，客户端会当场拒绝，提交者只能选 new_lesson_candidate，于是一份方案被当成故障报告送进课程队列。其余行为与权限不变。相较 1.2.1：按市场审核意见修正市场简介——如实区分「三个匿名只读工具」与「会在用户明确确认后公开写入 GitHub issue 的 submit_intake」，并说明数据去向、公开可见性与脱敏要求；只读工具的说明也补上了「插件只用它自己的私有目录存一个随机客户端 id」。版本头修复（PLUGIN_VERSION 跟清单对齐）保持不变。",
   "author": "Ikalus1988",
   "entry": "main.js",
   "command": "misakanet",
   "fs": true,
   "network": {
-    "hosts": ["misakanet.org"]
+    "hosts": [
+      "misakanet.org"
+    ]
   },
   "icon": "assets/icon.png",
   "locales": {
@@ -53,16 +55,27 @@
           },
           "kind": {
             "type": "string",
-            "enum": ["all", "lessons", "evidence", "related"],
+            "enum": [
+              "all",
+              "lessons",
+              "evidence",
+              "related"
+            ],
             "description": "结果类型过滤：all 全部 / lessons 只教训文件 / evidence 只带证据或高证据等级的结果 / related 只交叉引用与标签重叠的结果。省略时按查询意图自动判断。"
           },
           "detail": {
             "type": "string",
-            "enum": ["compact", "summary", "full"],
+            "enum": [
+              "compact",
+              "summary",
+              "full"
+            ],
             "description": "返回详细度：compact 最省上下文（默认）/ summary 追加领域、标签与修法线索 / full 直接返回完整 Markdown（仅在已锁定命中时用）。"
           }
         },
-        "required": ["query"]
+        "required": [
+          "query"
+        ]
       }
     },
     {
@@ -101,7 +114,9 @@
             "description": "可选环境描述，如“WSL, GPU 8GB”“Windows + PowerShell”。"
           }
         },
-        "required": ["intent"]
+        "required": [
+          "intent"
+        ]
       }
     },
     {
@@ -117,8 +132,14 @@
           },
           "kind": {
             "type": "string",
-            "enum": ["missing_lesson", "stale_lesson", "new_lesson_candidate", "question"],
-            "description": "上报类型：missing_lesson 搜不到对应教训 / stale_lesson 找到但内容过期或不适用 / new_lesson_candidate 这次自己解决了一个尚无记录的问题 / question 这是个求助问题而非故障（会开成 [Question] issue 等维护者回答）。不确定就省略，由服务端按内容自动判定。"
+            "enum": [
+              "missing_lesson",
+              "stale_lesson",
+              "new_lesson_candidate",
+              "question",
+              "proposal"
+            ],
+            "description": "上报类型：missing_lesson 搜不到对应教训 / stale_lesson 找到但内容过期或不适用 / new_lesson_candidate 这次自己解决了一个尚无记录的问题 / question 这是个求助问题而非故障（会开成 [Question] issue 等维护者回答）/ proposal 计划或产品请求，明确不是故障报告（进决策队列，绝不会被转成 lesson）。不确定就省略，由服务端按内容自动判定——但计划类不会被自动判定，请显式传 proposal。"
           },
           "error": {
             "type": "string",
@@ -155,7 +176,10 @@
             "description": "仅在用户明确要求把这次故障上报到 MisakaNet 公开仓库后才传 true；绝不能自行推断或默认传 true。"
           }
         },
-        "required": ["problem", "user_confirmed"]
+        "required": [
+          "problem",
+          "user_confirmed"
+        ]
       }
     }
   ]

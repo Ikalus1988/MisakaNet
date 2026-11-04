@@ -52,7 +52,7 @@
           "description": "Short description of this failure or knowledge gap (required). State the symptom and the impact; keep business secrets out."
         },
         "/properties/kind": {
-          "description": "Intake type: missing_lesson no lesson matched / stale_lesson a lesson matched but is outdated or does not apply / new_lesson_candidate you solved a problem that has no record yet / question this is a help question rather than a failure (it becomes a [Question] issue awaiting a maintainer). Omit it when unsure and let the server decide from the content."
+          "description": "Intake type: missing_lesson no lesson matched / stale_lesson a lesson matched but is outdated or does not apply / new_lesson_candidate you solved a problem that has no record yet / question this is a help question rather than a failure (it becomes a [Question] issue awaiting a maintainer) / proposal a plan or product request that is explicitly not a failure report (it goes to a decision queue and is never converted to a lesson). Omit it when unsure and let the server decide from the content — a plan is not auto-detected, pass proposal explicitly."
         },
         "/properties/error": {
           "description": "Optional: redacted key error text."
