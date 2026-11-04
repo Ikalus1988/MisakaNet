@@ -1,7 +1,10 @@
 name: Bug Report
 description: Report a bug or issue
 title: "bug: "
-labels: ["bug"]
+# `scope:repo` is automatic here, not a judgement: a bug report against this repository is,
+# by definition, work in this repository. The label is triage-applied elsewhere
+# (docs/maintainer/intake-triage.md has the contract).
+labels: ["bug", "scope:repo"]
 body:
   - type: textarea
     id: description
