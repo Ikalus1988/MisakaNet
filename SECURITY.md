@@ -9,10 +9,16 @@
 
 ## Reporting a Vulnerability
 
-If you discover a security vulnerability in Misaka Network, please report it confidentially:
+If you discover a security vulnerability in Misaka Network, please report it:
 
-1. **Open a GitHub Issue** with the `security` label (preferred for non-critical issues)
-2. **For sensitive disclosures**, email the project maintainer or open a Discussion
+1. **Privately, for anything exploitable** — [GitHub Security Advisories](https://github.com/Ikalus1988/MisakaNet/security/advisories/new)
+   (private vulnerability reporting is enabled on this repository; the report stays between you and
+   the maintainer until an advisory is published).
+2. **In the open, for non-critical issues** — a GitHub issue with the `security` label.
+
+The machine-readable version of this page is served at
+<https://misakanet.org/.well-known/security.txt> (source: `docs/.well-known/security.txt`), with the
+same two contact channels, an `Expires` date and this policy's URL.
 
 We will acknowledge receipt within 48 hours and provide an estimated timeline for a fix.
 

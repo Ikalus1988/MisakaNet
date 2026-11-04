@@ -1,0 +1,9 @@
+# MisakaNet security contact — RFC 9116
+# Served from docs/.well-known/security.txt; the live copy is
+# https://misakanet.org/.well-known/security.txt
+Contact: https://github.com/Ikalus1988/MisakaNet/security/advisories/new
+Contact: https://github.com/Ikalus1988/MisakaNet/issues/new?labels=security
+Expires: 2027-11-04T00:00:00Z
+Preferred-Languages: en, zh-CN
+Canonical: https://misakanet.org/.well-known/security.txt
+Policy: https://github.com/Ikalus1988/MisakaNet/blob/main/SECURITY.md
