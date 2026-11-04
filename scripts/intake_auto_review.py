@@ -51,10 +51,36 @@ PIPELINE_BOILERPLATE_PATTERNS = [
 ]
 
 
+_SURFACE_CHECK_START = re.compile(r"^>\s*\[!NOTE\]\s*$", re.IGNORECASE)
+
+
+def strip_surface_check_note(body: str) -> str:
+    """Drop the `> [!NOTE] ... Surface check:` block the pipeline prepends.
+
+    The note is written by the intake server, not the reporter: it quotes the tokens the corpus has
+    never indexed, and that list can contain a word like "internal". Scoring it as the reporter's
+    own text produced `✗ Contains internal references` on #4417 (#4454 · D2), and the report lost
+    the generalization points for something it never said.
+    """
+    lines = body.splitlines()
+    start = None
+    for i, line in enumerate(lines[:6]):
+        if _SURFACE_CHECK_START.match(line.strip()):
+            start = i
+            break
+    if start is None or "surface check" not in "\n".join(lines[start:start + 8]).lower():
+        return body
+    end = start
+    while end < len(lines) and lines[end].lstrip().startswith(">"):
+        end += 1
+    return "\n".join(lines[:start] + lines[end:])
+
+
 def strip_pipeline_boilerplate(body: str) -> str:
     """Drop the lines the intake pipeline adds, keeping the reporter's text."""
     if not body:
         return ""
+    body = strip_surface_check_note(body)
     lines = [
         line for line in body.splitlines()
         if not any(re.match(pattern, line.strip(), re.IGNORECASE)
@@ -200,11 +226,14 @@ def score_generalization(body: str, sections: dict[str, str]) -> DimensionScore:
     reasons = []
 
     # Check for user-specific paths (negative)
+    # `~/` is deliberately absent: it is the *portable* spelling of the path a reader needs in
+    # order to reproduce, not a username leaked into the report. Flagging it was backwards (#4454 D1
+    # measured it on #3840's `~/.npmrc` and #4417's `~/.cache/...`, both one point below the
+    # threshold on otherwise complete reports).
     user_paths = [
         r"/home/\w+/",
         r"/Users/\w+/",
         r"C:\\Users\\",
-        r"~/",
     ]
     has_user_paths = any(re.search(p, body) for p in user_paths)
     if has_user_paths:
@@ -218,7 +247,10 @@ def score_generalization(body: str, sections: dict[str, str]) -> DimensionScore:
     internal_patterns = [
         r"xiaomi",
         r"mify",
-        r"internal",
+        # `internal` alone matched "internal error" and the pipeline's own note. The names below are
+        # the shapes that actually mean "this text is not for the public" (#4454 D2).
+        r"\binternal (?:network|tool|service|system|infrastructure|api)\b",
+        r"\bcompany-internal\b",
         r"公司内部",
         r"内网",
     ]

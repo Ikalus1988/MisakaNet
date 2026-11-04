@@ -886,3 +886,37 @@ def test_each_decision_value_gets_its_own_heading_and_decision_line(decision, ma
     assert marker in lines[0], f"{decision} rendered as {lines[0]!r}, expected {marker}"
     assert any(l.startswith("**Decision:**") for l in lines), \
         f"{decision} produced no decision line"
+
+
+# === Salvage-pass findings (#4454 D): two generalization rules that fired on the wrong text ===
+
+def test_a_portable_home_path_is_not_a_user_specific_path():
+    """`~/.npmrc` is the path a reader needs to reproduce; flagging it was backwards (#3840)."""
+    body = "## Problem\n`pnpm` ignores store-dir in ~/.npmrc after v11.\n## Fix\nMove it to the global config."
+    result = score_generalization(body, {})
+    assert any("✓ No user-specific paths" in r for r in result.reasons), result.reasons
+
+
+def test_an_absolute_home_path_is_still_a_user_specific_path():
+    body = "## Problem\nIn /home/alice/project the script fails."
+    result = score_generalization(body, {})
+    assert any("✗ Contains user-specific paths" in r for r in result.reasons), result.reasons
+
+
+def test_the_pipeline_surface_check_note_is_not_scored_as_the_reporter_text():
+    """The note quotes tokens the corpus lacks — and that list can contain "internal" (#4417)."""
+    body = (
+        "> [!NOTE]\n"
+        "> **Surface check:** `internal`, `no_speech_prob` do not appear in the public corpus.\n"
+        "> That is not proof they are internal.\n\n"
+        "## Problem\nA real failure with no internal references at all.\n"
+        "## Fix\nDo the thing.\n"
+    )
+    result = score_generalization(body, {})
+    assert any("✓ No internal references" in r for r in result.reasons), result.reasons
+
+
+def test_the_word_internal_in_ordinary_technical_text_is_not_an_internal_reference():
+    body = "## Problem\nThe server returned `internal error 500` under load.\n## Fix\nRetry with backoff."
+    result = score_generalization(body, {})
+    assert any("✓ No internal references" in r for r in result.reasons), result.reasons
