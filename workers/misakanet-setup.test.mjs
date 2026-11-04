@@ -3824,3 +3824,77 @@ test('cindy: writes nothing, prints the plugin step, and --verify says 查不了
     rmSync(home, { recursive: true, force: true });
   }
 });
+
+test('cindy: a second run changes nothing and still prints the step', () => {
+  // The step is the whole install, so a reader who only ever sees the second run still needs it:
+  // a run that "changed nothing" and said nothing would leave the reader with no tools and no
+  // instruction. Idempotence here means the disk, not the narration.
+  const home = mkdtempSync(join(tmpdir(), 'mn-cindy-'));
+  try {
+    mkdirSync(join(home, '.cindy'), { recursive: true });
+    assert.equal(runOffline(home, '--only', 'cindy').status, 0);
+    const before = snapshot(home);
+
+    const second = runOffline(home, '--only', 'cindy');
+    assert.equal(second.status, 0, second.stdout + second.stderr);
+    assert.match(second.stdout, /Cindy：工具来自应用内插件/, second.stdout);
+    assert.deepEqual(snapshot(home), before, 'a second run must not touch the disk');
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test('cindy: --list-writes names no Cindy file, and reads nothing', () => {
+  // The manifest is the installer's promise of what it will write. For Cindy it is the state
+  // directory and nothing else — a row naming a `.cindy` path would promise a file this target
+  // never writes (it only *reads* the app directory to detect the client).
+  const home = mkdtempSync(join(tmpdir(), 'mn-cindy-'));
+  try {
+    mkdirSync(join(home, '.cindy'), { recursive: true });
+    const before = snapshot(home);
+    const result = runOffline(home, '--list-writes', '--only', 'cindy');
+    assert.equal(result.status, 0, result.stdout + result.stderr);
+    assert.deepEqual(snapshot(home), before, '--list-writes must be a pure read');
+
+    const rows = result.stdout.split('\n').filter((line) => line.startsWith('tier'));
+    assert.ok(!rows.some((row) => mentions(row, '.cindy')),
+      `the manifest must not name a Cindy file:\n${result.stdout}`);
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test('cindy: the sandbox never reads the machine\'s own Cindy', () => {
+  // Detection is "the Cindy home exists" — and for a sandboxed run that home is the sandbox's
+  // own `<home>/.cindy`. A resolver that looked at the machine's app-data directory would
+  // install into the developer's Cindy instead of into the sandbox, and a run with no Cindy
+  // anywhere must not print an import step: there would be nothing to import into.
+  const home = mkdtempSync(join(tmpdir(), 'mn-cindy-sandbox-'));
+  const appData = mkdtempSync(join(tmpdir(), 'mn-cindy-appdata-'));
+  mkdirSync(join(appData, 'Cindy'), { recursive: true });
+  try {
+    const env = childEnv({ APPDATA: appData, LOCALAPPDATA: appData });
+    delete env.MISAKANET_ENDPOINT;
+    const runSandboxed = (...flags) => spawnSync(process.execPath,
+      [CLI, '--home', home, '--no-register', ...flags], { encoding: 'utf8', env });
+
+    const missing = runSandboxed('--only', 'cindy');
+    assert.ok(!missing.stdout.includes('Cindy：工具来自应用内插件'),
+      `there is nothing to import into, so no manual step:\n${missing.stdout}`);
+    assert.deepEqual(readdirSync(home), [], 'a run with no target writes nothing at all');
+    assert.deepEqual(readdirSync(join(appData, 'Cindy')), [],
+      `a sandbox run must not touch the machine's own Cindy:\n${missing.stdout}`);
+
+    // With `<home>/.cindy` the sandbox *is* a Cindy machine — and the machine's own Cindy still
+    // has nothing to do with it.
+    mkdirSync(join(home, '.cindy'), { recursive: true });
+    const hit = runSandboxed('--only', 'cindy');
+    assert.equal(hit.status, 0, hit.stdout + hit.stderr);
+    assert.match(hit.stdout, /Cindy：工具来自应用内插件/, hit.stdout);
+    assert.deepEqual(readdirSync(join(appData, 'Cindy')), [],
+      'a sandbox run must not touch the machine\'s own Cindy');
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+    rmSync(appData, { recursive: true, force: true });
+  }
+});
