@@ -116,12 +116,23 @@ def score_completeness(body: str, sections: dict[str, str]) -> DimensionScore:
     score = 0
     reasons = []
 
-    # Required fields - check both section headers and body content
+    # Required fields - check both section headers and body content.
+    #
+    # `problem` used to be the heading alone: a body whose Problem section was empty (or whose
+    # content lived under a nested `## 症状` heading, the #4417 shape) scored "✓ problem present".
+    # A section with nothing under it is not evidence of a problem, and the placeholder the
+    # pipeline writes for a textless report is not evidence either (#4427).
+    problem_heading = any(
+        heading in body for heading in ("## Problem", "## 问题", "## 背景", "## Background")
+    )
+    problem_text = ""
+    for name in ("problem", "问题", "背景", "background", "症状", "symptom"):
+        problem_text = _section_text(body, (name,)).strip()
+        if problem_text:
+            break
+    problem_present = bool(problem_text) and problem_text not in PROBLEM_PLACEHOLDERS
     required = {
-        "problem": (
-            "## Problem" in body or "## 问题" in body or
-            "## 背景" in body or "## Background" in body
-        ),
+        "problem": problem_present,
         "error": (
             "error" in body.lower() or "exception" in body.lower() or
             "traceback" in body.lower() or "失败" in body or
@@ -145,6 +156,10 @@ def score_completeness(body: str, sections: dict[str, str]) -> DimensionScore:
         if present:
             score += 25
             reasons.append(f"✓ {field_name} present")
+        elif field_name == "problem" and problem_heading:
+            # Naming the defect matters: `missing` sends the reader looking for a heading that is
+            # already there; `empty` says what to do (put the symptom under it).
+            reasons.append("✗ problem empty")
         else:
             reasons.append(f"✗ {field_name} missing")
 
@@ -664,6 +679,9 @@ SCORER_FOCUSED_PATTERNS = [
     r"\bto\s+(?:get|raise|increase|improve)\s+(?:a\s+)?(?:better\s+)?(?:score|grade|rating)\b",
 ]
 MIN_PROBLEM_WORDS = 35
+#: What the intake pipeline writes when a report has no problem text. It is a placeholder,
+#: not a problem statement, so the completeness dimension must not count it (#4427).
+PROBLEM_PLACEHOLDERS = {"_no problem text_"}
 
 
 def _section_text(body: str, names: tuple[str, ...]) -> str:

@@ -5105,6 +5105,10 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx, 
       } catch (_) { /* corpus unavailable → normal intake */ }
     }
 
+    // The pipeline writes `_no problem text_` for a textless report; the hosted path wrote nothing,
+    // so the same report produced two different bodies and the scorer could not tell either from a
+    // real problem (#4427).
+    const problemBody = String(safeProblem || "").trim() ? safeProblem : "_no problem text_";
     const bodyParts = [
       `**Kind:** ${kind}`,
       `**Source:** ${args.source || "mcp"}`,
@@ -5112,7 +5116,7 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx, 
       args.contributor ? `**Contributor:** ${args.contributor}` : "",
       "",
       "## Problem",
-      safeProblem,
+      problemBody,
     ];
     if (safeError) bodyParts.push("", "## Error", safeError);
     if (args.what_tried) bodyParts.push("", "## What was tried", redactIntake(args.what_tried));

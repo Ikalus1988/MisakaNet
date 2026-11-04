@@ -138,6 +138,21 @@ test('submit_intake missing_lesson keeps standard labels and title', async () =>
   }
 });
 
+test('submit_intake writes the pipeline placeholder for a whitespace-only problem', async () => {
+  const env = createEnv();
+  let captured = null;
+  const restore = captureGitHubFetch(env, (p) => { captured = p; });
+  try {
+    const resp = await submitIntake({ kind: 'missing_lesson', problem: '   ' }, env);
+    assert.equal(resp.status, 200);
+    assert.ok(captured);
+    // Same body both paths produce for a textless report — the scorer reads this heading (#4427).
+    assert.match(captured.body, /## Problem\n+_no problem text_/, captured.body);
+  } finally {
+    restore();
+  }
+});
+
 test('submit_intake rejects unknown kind', async () => {
   const env = createEnv();
   const resp = await submitIntake({ kind: 'totally-unknown', problem: 'x' }, env);
