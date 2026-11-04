@@ -11,7 +11,7 @@
 > 许多 workflow 是机器人/数据管道，失败常在外部依赖（D1、registry、配额）。
 
 
-## 质量门禁（26）
+## 质量门禁（27）
 
 | workflow | 用途 | 触发 | 定时 |
 |---|---|---|---|
@@ -34,6 +34,7 @@
 | `mcp-stress.yml` | MCP Endpoint Stress Tests | PR, push, 手动 |  |
 | `misakanet-setup-ci.yml` | Setup Package CI（安装器：3 OS × Node 18/20/22 单测 + 打包产物 e2e + **drift**：npm 上已发布的安装器不许落后于本仓库）| PR, push, 手动, 定时 | `17 4 * * *` —— drift 巡检：漂移是**累积**的（发版被切了却没打 tag，或源码动了却没发版，都不会再产生任何 PR，只有下次有人碰这个包时才会被发现；npm 上的安装器因此停了 0.5.6 一个月，见 #3691）。定时触发只跑 drift 这一个 job，矩阵 job 在 schedule 下 `if:` 跳过 |
 | `pr-agent-review.yml` | PR-Agent Code Review | PR, 评论 |  |
+| `pr-agent-verdicts.yml` | PR-Agent Verdicts（读最近失败的 pr-agent 日志，回答「这条红是模型超时还是真的评审」；**不是门禁**，只对日志里没有任何标记的 `unknown` 发 warning） | 手动, 定时 | `20 5 * * *` —— 每天把分类写进 run summary；超时不是一个 PR 能修的，每天为它红一次等于用第二个红说同一句话（#2972） |
 | `pr-checks.yml` | Misaka Network Agent Auditor | PR, 手动 |  |
 | `pr-genius-check.yml` | PR Genius Check | PR |  |
 | `pr-quality-gate.yml` | PR Quality Gate | PR |  |
