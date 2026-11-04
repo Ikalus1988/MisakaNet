@@ -138,3 +138,27 @@ def test_a_missing_kind_in_any_single_reader_is_caught() -> None:
 
 if __name__ == "__main__":  # pragma: no cover - manual run
     sys.exit(0 if all(readers()[k] == EXPECTED for k in readers()) else 1)
+
+
+#: The copies a *submitter* reads before calling the tool. The six readers above are the schemas;
+#: these are the prose that decides whether the one value a plan needs is ever passed. Measured
+#: 2026-11-04 (#4424): all four mentioned `question` and `missing_lesson`, none mentioned `proposal`,
+#: so an agent following them could not send a proposal even though every schema accepts it.
+AGENT_COPY_SITES = (
+    "packages/misakanet-setup/bin/misakanet-setup.mjs",
+    "skills/misakanet/SKILL.md",
+    "integrations/agent-autostart/prompt.md",
+    "AGENTS.md",
+)
+
+
+def test_the_agent_facing_copies_name_the_proposal_kind():
+    missing = [
+        path for path in AGENT_COPY_SITES
+        if "proposal" not in (REPO / path).read_text(encoding="utf-8")
+    ]
+    assert not missing, (
+        "these agent-facing copies never name `proposal`, so a submitter following them cannot send "
+        "a plan as a plan — and the classifier scores it as a failure report instead:\n  "
+        + "\n  ".join(missing)
+    )

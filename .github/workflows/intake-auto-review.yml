@@ -58,9 +58,19 @@ jobs:
           KIND=$(sed -n 's/^\*\*Kind:\*\*[[:space:]]*//p' /tmp/issue_body.txt | head -1 | tr '[:upper:]' '[:lower:]' | tr -d '[:space:]')
           echo "kind=$KIND" >> "$GITHUB_OUTPUT"
 
-          if [ "$KIND" = "question" ]; then
-            echo "Question intake (#$ISSUE_NUMBER) — skipping lesson auto-review."
-            echo "decision=question" >> "$GITHUB_OUTPUT"
+          # Two kinds are not lesson candidates: a question (its exit is an answer) and a
+          # proposal (its exit is a decision). Only `question` was here until 2026-11-04, so a
+          # proposal went through lesson scoring, was auto-rejected (score below threshold) and
+          # lost `needs-human-review` — measured on #4424, a proposal labelled `decision` by the
+          # classifier and `auto-rejected` by the scorer minutes later.
+          if [ "$KIND" = "question" ] || [ "$KIND" = "proposal" ]; then
+            if [ "$KIND" = "proposal" ]; then
+              echo "Proposal intake (#$ISSUE_NUMBER) — skipping lesson auto-review; this is a decision."
+              echo "decision=proposal" >> "$GITHUB_OUTPUT"
+            else
+              echo "Question intake (#$ISSUE_NUMBER) — skipping lesson auto-review."
+              echo "decision=question" >> "$GITHUB_OUTPUT"
+            fi
             echo "final_score=-1" >> "$GITHUB_OUTPUT"
             echo "lesson_title=" >> "$GITHUB_OUTPUT"
             echo "lesson_domain=" >> "$GITHUB_OUTPUT"
@@ -105,6 +115,15 @@ jobs:
         env:
           # Static markdown for the question-routing comment (no heredoc:
           # column-0 content would break the YAML block scalar).
+          PROPOSAL_COMMENT: |
+            <!-- misakanet-intake-proposal -->
+            ## [PROPOSAL] Treated as a Decision, Not a Lesson
+
+            This intake carries Kind: `proposal` — a plan or product request that is explicitly **not** a failure report. It was not run through the lesson auto-review and not archived as a badcase.
+
+            Its exit is a decision: **accept** (then split it into issues that each name the file, workflow or gate they change) or **decline** (and say what the proposal assumes the repository does not hold). No lesson is published from it.
+
+            _Automated routing only — the decision is a maintainer's._
           QUESTION_COMMENT: |
             <!-- misakanet-intake-question -->
             ## [QUESTION] Treated as a Question, Not a Lesson
@@ -125,7 +144,17 @@ jobs:
           DECISION="${{ steps.review.outputs.decision }}"
           ARCHIVE_PATH="${{ steps.review.outputs.archive_path }}"
 
-          # Question intakes get a routing comment instead of a review verdict.
+          # Proposals and questions get a routing comment instead of a review verdict.
+          if [ "$DECISION" = "proposal" ]; then
+            if gh issue view $ISSUE_NUMBER --repo ${{ github.repository }} --json comments --jq '.comments[].body' \
+              | grep -q "## \[PROPOSAL\]"; then
+              echo "Proposal comment already exists — skipping."
+              exit 0
+            fi
+            gh issue comment $ISSUE_NUMBER --repo ${{ github.repository }} --body "$PROPOSAL_COMMENT"
+            exit 0
+          fi
+
           if [ "$DECISION" = "question" ]; then
             if gh issue view $ISSUE_NUMBER --repo ${{ github.repository }} --json comments --jq '.comments[].body' \
               | grep -q "## \[QUESTION\]"; then
@@ -187,6 +216,22 @@ jobs:
               --add-label "question" \
               --add-label "type:question" \
               --add-label "needs-answer"
+            exit 0
+          fi
+
+          # A proposal is a decision: it keeps `needs-human-review`, gets `decision` (the label the
+          # weekly decision digest reads), and loses the labels that describe a rejected lesson.
+          if [ "$DECISION" = "proposal" ]; then
+            gh issue edit $ISSUE_NUMBER --repo ${{ github.repository }} \
+              --remove-label "auto-approved" \
+              --remove-label "auto-rejected" \
+              --remove-label "needs-salvage" \
+              --remove-label "pending-review" \
+              --remove-label "needs-ac" \
+              --remove-label "type:bug" 2>/dev/null || true
+            gh issue edit $ISSUE_NUMBER --repo ${{ github.repository }} \
+              --add-label "decision" \
+              --add-label "needs-human-review"
             exit 0
           fi
 
