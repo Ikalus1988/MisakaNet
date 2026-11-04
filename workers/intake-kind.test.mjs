@@ -101,6 +101,10 @@ test('submit_intake proposal kind labels a decision, not a lesson', async () => 
     assert.ok(captured);
     assert.ok(captured.labels.includes('needs-human-review'),
       `a proposal is a decision: ${JSON.stringify(captured.labels)}`);
+    // The label the weekly decision digest reads: without it a proposal submitted through MCP is
+    // invisible to the queue that exists for it (scripts/decision_queue.py).
+    assert.ok(captured.labels.includes('decision'),
+      `a proposal must enter the decision queue: ${JSON.stringify(captured.labels)}`);
     // Not the corpus queue: the classifier took `pending-review` off a proposal seconds later, but
     // the issue's first label should not describe the one thing a proposal is not (#4251).
     assert.ok(!captured.labels.includes('pending-review'),

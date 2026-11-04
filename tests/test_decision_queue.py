@@ -6,7 +6,9 @@ Why a test for a digest
 The digest's only job is to be *right about which issues are stuck*, and every way it can be wrong is
 quiet:
 
-* an issue with a comment is not stuck — counting it inflates the queue until nobody reads it;
+* an issue with a person's reply is not stuck — counting it inflates the queue until nobody reads
+  it, and counting a bot's triage comment empties the queue of everything that arrived through the
+  intake path;
 * an issue labelled `product-design` but not `decision` is still a decision (the first live run found
   the four stuck ones under `decision` and the open product reviews under `product-design`; a filter
   that only knew one label would have reported half the problem);
@@ -29,10 +31,15 @@ from scripts import decision_queue as queue  # noqa: E402
 NOW = datetime(2026, 10, 28, 12, 0, tzinfo=timezone.utc)
 
 
-def issue(number, days_old, labels, comments=0, title="t", assignees=()):
+def issue(number, days_old, labels, comments=0, title="t", assignees=(), authors=None):
     created = (NOW - timedelta(days=days_old)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    if authors is None:
+        # No author recorded reads as a person's comment: the pre-2026-11-04 helper.
+        comment_rows = [{}] * comments
+    else:
+        comment_rows = [{"author": {"login": a}} for a in authors]
     return {"number": number, "title": title, "url": f"https://example/{number}",
-            "createdAt": created, "comments": [{}] * comments,
+            "createdAt": created, "comments": comment_rows,
             "labels": [{"name": n} for n in labels],
             "assignees": [{"login": a} for a in assignees]}
 
@@ -46,6 +53,22 @@ def test_an_issue_somebody_commented_on_is_not_waiting():
     # A comment is the exit condition: a decision, a deferral or a rejection all look like this.
     rows = queue.select([issue(1, 30, ["decision"], comments=2)], NOW)
     assert rows == []
+
+
+def test_a_bot_triage_comment_does_not_clear_an_intake():
+    """Every MCP intake gets one within seconds; counting it emptied the queue of automated proposals."""
+    rows = queue.select([issue(10, 30, ["decision"],
+                               authors=["github-actions", "github-actions[bot]"])], NOW)
+    assert [r["number"] for r in rows] == [10]
+
+
+def test_a_persons_reply_does_clear_it():
+    """The exit condition is a person talking about the decision, not any text on the issue."""
+    assert queue.select([issue(11, 30, ["decision"], authors=["github-actions", "Ikalus1988"])],
+                        NOW) == []
+    # A login that looks like a bot (the `[bot]` suffix is GitHub's own convention) is still a bot.
+    assert [r["number"] for r in queue.select(
+        [issue(12, 30, ["decision"], authors=["some-app[bot]"])], NOW)] == [12]
 
 
 def test_product_design_counts_as_a_decision():
@@ -99,4 +122,4 @@ def test_an_empty_queue_reads_as_a_fact_not_a_failure():
 def test_the_rendered_digest_names_the_rule_and_the_exit_condition():
     text = queue.render(queue.select([issue(11, 20, ["decision"])], NOW), "o/r", NOW, 14)
     assert "Nothing here is closed automatically" in text
-    assert "A row leaves this list when somebody comments" in text
+    assert "A row leaves this list when a person replies" in text
