@@ -188,6 +188,7 @@
   <url><loc>https://misakanet.org/lessons/cf-free-quota-is-per-account-not-per-service-a-second-worker-needs-its-own-gate/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/cloudflare-worker-deploy-three-pitfalls/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/cloudflare-workers-上实现成本闸门限流计数器时用-isolate-级内存计数-攒批落库攒够-n-条才写-d1会导致计数永远/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/同一份-cmd-在非系统盘双击必弹未知发布者安全警告无-motw-也触发入口挪到用户目录即绕过/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/codeql-alert-dismissal-false-positive/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/codesign-entitlements-prints-a-usage-banner-unless-you-give-it-a-destination/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/codesign-verify-r-reads-a-bare-requirement-string-as-a-filename-prefix-it-with/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -462,6 +463,7 @@
   <url><loc>https://misakanet.org/lessons/mcp-endpoint-404-zone-route-misconfig/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/mcp-intake-no-account-submission/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-silent-truncation-in-the-mcp-intake-worker-fixed-four-times-each-time-at-the-n/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/mcp-initialized-通知被-sse-包装导致客户端拒绝notification-的应答要走空-202不能进-sse-分发/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/mcp-question-answer-pull-delivery/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/mcp-registry-readiness-requires-qa-before-promotion/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/mcp-server-direct-handler-testing/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -589,6 +591,7 @@
   <url><loc>https://misakanet.org/lessons/rag-检索沉底多层机制同章节措辞差异-截断降权拦截短文本精确答案/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/rag-retrieval-six-layer-silent-degradation/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/rag-three-channel-llm-disaster-recovery/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/rd-sdk-键只支持两段表k1k2写四段键不报错但-rdget-永远返回空数据成黑洞/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/rdt-cli-reddit-terminal/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/readme-seven-traps-fix-checklist/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/ffmpeg-screen-recording-to-mp4-killed-mid-way-moov-atom-not-found-record-mkv-or/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -601,6 +604,7 @@
   <url><loc>https://misakanet.org/lessons/relative-path-command-retry-loop-no-such-file-or-directory-means-the-shell-is-in/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-signature-or-manifest-assembled-before-the-last-build-ships-stale-and-the-pipe/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/remote-search-rate-limiting/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/改名同步增量层目录后近期数据消失日k分钟k退回资金流为空基线其实完好/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/missing-react-dom-render-react-elements-to-static-html-with-a-hand-written-rende/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-precursor-that-fires-repeatedly-is-not-a-countdown-fixed-delay-warning-windows/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/replying-to-a-douyin-comment-needs-the-thread-root-id-a-comments-own-id-is-only/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -682,6 +686,7 @@
   <url><loc>https://misakanet.org/lessons/tmux-session-management/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/工具面塌陷后的穷尽式空转重试到会话被截断无止损点的自锁循环/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/tor-orbot-privacy-in-react-native-tr/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/盘后采集采到上一个交易日的数据交易日判定不能用本地日k的最新日期要问行情服务器/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/ts2305-under-nodenext-is-usually-a-real-missing-export-not-a-types-condition-pro/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/tts-chinese-encoding-powershell/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/two-artifacts-with-the-same-name-are-two-production-paths-separate-them-by-trigg/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
