@@ -35,7 +35,9 @@ def test_capture_with_context(tmp_path):
     from scripts.misaka_capture import main
 
     ctx = tmp_path / "error.log"
-    ctx.write_text("ERROR: ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghij12 auth failed", encoding="utf-8")
+    # Assembled at run time: a literal token-shaped string is a standing HARDCODED_SECRET alert
+    # (plugin-scanner #401-#403), and dimissing it on every scan is a chore that hides the next real one.
+    ctx.write_text("ERROR: " + "ghp_" + "A" * 36 + " auth failed", encoding="utf-8")
 
     with patch("sys.argv", ["misaka-capture", "--summary", "GitHub auth failed", "--context", str(ctx)]):
         main()

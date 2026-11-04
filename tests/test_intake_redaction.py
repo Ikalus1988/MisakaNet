@@ -26,12 +26,12 @@ class TestRedactText:
         assert redact_text("pip install times out") == "pip install times out"
 
     def test_github_token(self):
-        result = redact_text("found ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghij12 in config")
+        result = redact_text("found " + "ghp_" + "A" * 36 + " in config")
         assert "[REDACTED:github_token]" in result
         assert "ghp_" not in result
 
     def test_github_token_with_key_prefix(self):
-        result = redact_text("token: ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghij12")
+        result = redact_text("token: " + "ghp_" + "A" * 36)
         # "token:" triggers the generic credential pattern first — either way, redacted
         assert "[REDACTED:" in result
         assert "ghp_" not in result
