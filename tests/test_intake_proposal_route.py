@@ -337,3 +337,33 @@ def test_the_auto_review_question_branch_also_leaves_the_lesson_queue():
         "a question keeps `needs-ac`: it means 'the failure report lacks acceptance criteria', and "
         "a question is not a failure report (49 of 50 open questions carried it on 2026-11-04)"
     )
+
+
+def test_the_auto_review_skips_a_proposal_instead_of_scoring_it():
+    """#4424: a proposal was scored as a lesson, auto-rejected, and lost `needs-human-review`.
+
+    The workflow's early exit only knew `question`; everything else — including a declared proposal —
+    went through `intake_auto_review.py`, whose score (< threshold) produced `auto-rejected` +
+    `needs-salvage` on an issue the classifier had just labelled `decision`. Two verdicts on one
+    issue, and the wrong one was the loud one.
+    """
+    workflow = yaml.safe_load((REPO / ".github" / "workflows" / "intake-auto-review.yml")
+                              .read_text(encoding="utf-8"))
+    steps = [step for job in workflow["jobs"].values() for step in job.get("steps", [])]
+
+    review = next(step for step in steps if step.get("name") == "Run auto-review")
+    assert 'if [ "$KIND" = "question" ] || [ "$KIND" = "proposal" ]' in review["run"], (
+        "a proposal still runs through lesson scoring — the early exit knows only `question`")
+
+    comment = next(step for step in steps if step.get("name") == "Post review comment")
+    assert '[ "$DECISION" = "proposal" ]' in comment["run"], (
+        "a proposal gets the generic review comment instead of the decision-routing one")
+
+    apply_labels = next(step for step in steps if step.get("name") == "Apply labels")
+    run = apply_labels["run"]
+    start = run.index('if [ "$DECISION" = "proposal" ]')
+    branch = run[start:run.index("exit 0", start)]
+    for label in ("auto-approved", "auto-rejected", "needs-salvage", "pending-review", "needs-ac"):
+        assert f'--remove-label "{label}"' in branch, f"a proposal keeps the rejected-lesson label {label}"
+    assert '--add-label "decision"' in branch
+    assert '--add-label "needs-human-review"' in branch
