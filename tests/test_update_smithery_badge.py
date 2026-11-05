@@ -55,3 +55,19 @@ def test_a_non_404_failure_still_fails(monkeypatch, tmp_path):
     with pytest.raises(SystemExit) as exc:
         mod.main()
     assert exc.value.code == 1
+
+
+def test_the_publish_steps_are_gated_on_a_written_badge():
+    """A skipped write must not reach `cp /tmp/smithery.json`, which is what turned the 404 into red."""
+    import yaml
+
+    wf = yaml.safe_load(
+        (REPO / ".github/workflows/update-smithery-badge.yml").read_text(encoding="utf-8"))
+    steps = {s.get("name"): s for s in wf["jobs"]["update-badge"]["steps"] if s.get("name")}
+    assert steps["Fetch Smithery Kin score and write badge JSON"].get("id") == "fetch"
+    for name in (
+        "Checkout data branch for commit",
+        "Commit and push if changed",
+        "Verify badge JSON is on the data branch",
+    ):
+        assert steps[name].get("if") == "steps.fetch.outputs.updated == 'yes'", name
