@@ -630,7 +630,20 @@ def score_format(body: str, sections: dict[str, str]) -> DimensionScore:
     else:
         reasons.append("✗ No lists")
 
-    # JSON frontmatter
+    # JSON frontmatter.
+    #
+    # An intake is a GitHub issue, and an issue does not carry this: measured 2026-11-06, 0 of
+    # all 713 issues labelled `intake` begin with `---` or `{`. The 20 points are therefore a
+    # constant for every report — at most 20 x 0.10 = 2.0 weighted points — and a constant cannot
+    # reorder two reports, only move where the 40-point line sits; that line was calibrated with
+    # the constant in place. Removing the constant is thus equivalent to lowering the line to 38,
+    # which is a threshold policy change, not a scale fix.
+    #
+    # Measured on the 37-item salvage sample (21 open `auto-rejected` + the 16 closed on
+    # 2026-11-04): neutralising the points moves 4/37 across 40 (2 of them already closed);
+    # normalising format over its attainable 80 moves 3/37; dropping the dimension for the issue
+    # surface moves 13/37. Decision (2026-11-06): no issue-specific format scale — the gap is
+    # uniform, and the alternatives either buy nothing or re-band a sixth of the queue.
     if body.strip().startswith("{"):
         try:
             json.loads(body.split("\n\n")[0])
