@@ -457,6 +457,7 @@ const MCP_TOOLS = [
         matched_lesson_id: { type: "string", description: "Optional: lesson ID that was checked but didn't help." },
         source: { type: "string", description: "Calling client: codex, claude-code, cursor, dsh, curl, or other." },
         contributor: { type: "string", description: "Optional: contributor identity (GitHub username, agent name, or email). Included in issue body for attribution." },
+        notify_email: { type: "string", description: "Optional: an email for the ANSWER only, and only for kind=\"question\". Ask the user first — never invent it. It is used to send one confirmation message now and, once confirmed, one notification when the answer is ready (the issue URL; never the reporter's text). Omit it and the pull path (me_inbox / FAQ) is unchanged." },
       },
       required: ["problem"],
     },
@@ -4001,6 +4002,130 @@ function redactIntake(text) {
     return clipSubmittedText(r, "an intake");
 }
 
+const NOTIFY_EMAIL_RE = /^[^\s@]{1,64}@[^\s@]{1,190}\.[^\s@]{2,}$/;
+
+function notifyFromAddress() {
+  return "notify@misakanet.org";
+}
+
+async function queueAnswerNoticeImpl(env, { dedupHash, email, issueUrl }) {
+  if (!dedupHash || !email || !NOTIFY_EMAIL_RE.test(String(email))) return false;
+  if (!env.EMAIL) {
+    // The binding is optional: without it the intake still works and the pull path is unchanged.
+    console.log("[notify] EMAIL binding absent; notification not queued");
+    return false;
+  }
+  const token = (crypto.randomUUID() + crypto.randomUUID()).replace(/-/g, "");
+  const record = JSON.stringify({
+    email: String(email),
+    token,
+    issue_url: issueUrl || "",
+    state: "pending",
+    created: new Date().toISOString(),
+  });
+  try {
+    await storePut(env, `notify:${dedupHash}`, record, { expirationTtl: 7 * 86400 });
+    await storePut(env, `notify-token:${token}`, dedupHash, { expirationTtl: 7 * 86400 });
+  } catch (e) {
+    console.error("[notify] could not store the request", e && e.message);
+    return false;
+  }
+  const confirmUrl = `https://misakanet.org/api/notify/confirm?t=${token}`;
+  try {
+    await env.EMAIL.send({
+      to: String(email),
+      from: notifyFromAddress(),
+      subject: "Confirm: MisakaNet answer notification",
+      text: [
+        "Someone asked MisakaNet to email them when a question was answered.",
+        "",
+        "If that was you, confirm this address:",
+        confirmUrl,
+        "",
+        "If it was not you, ignore this message — no further mail is sent unless the link is used,",
+        "and the address is deleted within seven days either way.",
+      ].join("\n"),
+    });
+    return true;
+  } catch (e) {
+    console.error("[notify] confirmation send failed", e && e.code, e && e.message);
+    return false;
+  }
+}
+
+async function confirmAnswerNoticeImpl(env, token) {
+  if (!token) return false;
+  let dedupHash = null;
+  try {
+    dedupHash = await storeGet(env, `notify-token:${token}`, "text");
+  } catch (_) {}
+  if (!dedupHash) return false;
+  let record = null;
+  try {
+    const raw = await storeGet(env, `notify:${dedupHash}`, "text");
+    record = raw ? JSON.parse(raw) : null;
+  } catch (_) {}
+  if (!record) return false;
+  record.state = "confirmed";
+  record.confirmed_at = new Date().toISOString();
+  try {
+    await storePut(env, `notify:${dedupHash}`, JSON.stringify(record), { expirationTtl: 7 * 86400 });
+    await storeDelete(env, `notify-token:${token}`);
+  } catch (_) {
+    return false;
+  }
+  return true;
+}
+
+async function deliverAnswerNoticesImpl(env) {
+  const d1 = d1Binding(env);
+  if (!d1 || !env.EMAIL) return { sent: 0 };
+  let rows = [];
+  try {
+    const result = await d1.prepare(
+      "SELECT dedup_hash, issue_url FROM questions WHERE status = 'answered' " +
+      "AND answered_at IS NOT NULL AND answered_at > datetime('now', '-2 days') LIMIT 50",
+    ).all();
+    rows = (result && result.results) || [];
+  } catch (e) {
+    console.error("[notify] answered-row scan failed", e && e.message);
+    return { sent: 0 };
+  }
+  let sent = 0;
+  for (const row of rows) {
+    if (!row || !row.dedup_hash) continue;
+    let record = null;
+    try {
+      const raw = await storeGet(env, `notify:${row.dedup_hash}`, "text");
+      record = raw ? JSON.parse(raw) : null;
+    } catch (_) {}
+    if (!record || record.state !== "confirmed") continue;
+    try {
+      await env.EMAIL.send({
+        to: record.email,
+        from: notifyFromAddress(),
+        subject: "Your MisakaNet question was answered",
+        text: [
+          "The answer is on the issue:",
+          row.issue_url || record.issue_url || "https://misakanet.org",
+          "",
+          "Pull it any time with misakanet_me_inbox, or re-submit the same text to get the answer back.",
+          "This address is deleted now that the notice is sent.",
+        ].join("\n"),
+      });
+      sent += 1;
+    } catch (e) {
+      console.error("[notify] answer notice failed", e && e.code, e && e.message);
+      continue;
+    }
+    try {
+      await storeDelete(env, `notify:${row.dedup_hash}`);
+    } catch (_) {}
+  }
+  if (sent) console.log(`[notify] sent ${sent} answer notice(s)`);
+  return { sent };
+}
+
 async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx, identityVerified = false) {
   if (toolName === "misakanet_register") {
     const agentType = args.agent_type || "unknown";
@@ -5246,6 +5371,18 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx, 
           source: args.source || "mcp",
           issueUrl: data.html_url,
         });
+      }
+      // Optional answer-notification email. Queued only for questions, only when the caller says
+      // the user asked for it; the address does nothing until the person confirms it, and a failed
+      // send never fails the intake (the issue is already filed).
+      if (kind === "question" && args.notify_email) {
+        const queue = queueAnswerNoticeImpl(env, {
+          dedupHash: dedupContentHash,
+          email: args.notify_email,
+          issueUrl: data.html_url,
+        }).catch((e) => console.error("[notify] queue failed", e && e.message));
+        if (ctx) ctx.waitUntil(queue);
+        else await queue;
       }
       // The attention gate closes the issue it just opened, so the submission keeps its
       // URL, its dedup entry and its poll path while never entering the review queue.
@@ -8912,6 +9049,14 @@ export default {
     // page it is reporting about.
     if (_cls) bufferTraffic(env, typeof ctx !== "undefined" ? ctx : null, _cls);
 
+    if (request.method === "GET" && url.pathname === "/api/notify/confirm") {
+      const ok = await confirmAnswerNoticeImpl(env, url.searchParams.get("t"));
+      const html = ok
+        ? "<!doctype html><meta charset=utf-8><title>Confirmed</title><p>Confirmed. We will email you once, when the answer is ready.</p><p><a href=\"/\">misakanet.org</a></p>"
+        : "<!doctype html><meta charset=utf-8><title>Link not valid</title><p>This confirmation link is unknown or has expired. Nothing was sent.</p><p><a href=\"/\">misakanet.org</a></p>";
+      return new Response(html, { status: ok ? 200 : 404, headers: { "Content-Type": "text/html; charset=utf-8" } });
+    }
+
     if (request.method === "GET" && url.pathname === "/api/health") {
       const kvGlobal = await readKvHealth(env);
       const kvHealth = healthStatus({
@@ -10452,6 +10597,12 @@ async function getCode() {
 
   async scheduled(controller, env, ctx) {
     ctx.waitUntil(runKeepaliveSweep(controller.cron, env));
+    // Daily only: the answer sync writes `questions.answered_at`, and 15-minute scanning would spend
+    // D1 rows for a notice nobody is waiting on that fast.
+    if (controller.cron === "17 3 * * *") {
+      ctx.waitUntil(deliverAnswerNoticesImpl(env).catch((e) =>
+        console.error("[notify] delivery failed", e && e.message)));
+    }
     // Daily traffic aggregation: accumulate daily traffic:* into monthly traffic-month:*
     //
     // `hasDurableStore`, not `env.MISAKANET_KV` (2026-09-29). Both this and the index refresh below write
@@ -10563,6 +10714,9 @@ function findCoveringLesson(problemText, errorText, lessons) {
 
 
 export {
+  queueAnswerNoticeImpl,
+  confirmAnswerNoticeImpl,
+  deliverAnswerNoticesImpl,
   // Exported for workers/lessons-fallback.test.mjs: D1's daily row-read limit is a quota, and the
   // question this pair answers is whether a refused read degrades to the snapshot or takes search
   // down with it.

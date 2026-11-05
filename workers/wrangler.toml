@@ -110,6 +110,13 @@ head_sampling_rate = 1
 [triggers]
 crons = ["*/15 * * * *", "17 3 * * *"]
 
+# Outbound email for the optional answer-notification path (#4455-era work). The sender address is
+# `notify@misakanet.org`; the domain must be onboarded to Email Sending (dashboard → Email Service →
+# Sending, 200/day on the plan this project runs). The binding is optional by code: if it is ever
+# removed, intake keeps working and the notification path degrades to "not queued".
+[[send_email]]
+name = "EMAIL"
+
 [[kv_namespaces]]
 binding = "MISAKANET_KV"
 id = "d5fb6b0797b84d17b0586fb982231ffe"

@@ -335,6 +335,17 @@ TOOLS = [
                         " the report stays unattributed."
                     ),
                 },
+                "notify_email": {
+                    "type": "string",
+                    "description": (
+                        "Optional, questions only: an email for the"
+                        " ANSWER. Ask the user first; never invent it."
+                        " One confirmation message is sent now, and"
+                        " one notification (the issue URL, never your"
+                        " text) once the answer is ready. Omit it and"
+                        " the me_inbox / FAQ pull path is unchanged."
+                    ),
+                },
                 "source": {
                     "type": "string",
                     "description": (

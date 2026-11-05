@@ -104,7 +104,7 @@ def handle_submit_usage(args: dict) -> dict:
 # silent no-op at best, so the field list is explicit here.
 _INTAKE_FIELDS = (
     "kind", "problem", "error", "what_tried", "fix", "verification",
-    "matched_lesson_id", "source", "contributor",
+    "matched_lesson_id", "source", "contributor", "notify_email",
 )
 
 # How long a caller should wait before re-checking, mirroring the hosted endpoint's own advice:
