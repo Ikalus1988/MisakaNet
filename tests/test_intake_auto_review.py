@@ -920,3 +920,33 @@ def test_the_word_internal_in_ordinary_technical_text_is_not_an_internal_referen
     body = "## Problem\nThe server returned `internal error 500` under load.\n## Fix\nRetry with backoff."
     result = score_generalization(body, {})
     assert any("✓ No internal references" in r for r in result.reasons), result.reasons
+
+
+# === #4455: a heading is a label, not evidence ===
+
+def test_an_empty_verification_heading_earns_nothing():
+    """Appending `## Verification` with no content must not move the verification score (#4455).
+
+    Measured 2026-11-04: it moved 33 of 44 open auto-rejected intakes by +6.9 weighted on average
+    and pushed 10 over the 40 line with no wording change.
+    """
+    plain = "## Problem\nnpm install times out behind the proxy.\n## Fix\nSet the proxy for npm."
+    with_empty = plain + "\n\n## Verification\n"
+    a = score_verification(plain, {})
+    b = score_verification(with_empty, {})
+    assert b.score == a.score, (a.score, b.score, b.reasons)
+    assert not any("✓ Verification section present" in r for r in b.reasons), b.reasons
+
+
+def test_a_whitespace_only_verification_heading_earns_nothing():
+    plain = "## Problem\nsomething\n## Fix\nsomething else"
+    with_blank = plain + "\n\n## Verification\n   \n\t\n"
+    assert score_verification(with_blank, {}).score == score_verification(plain, {}).score
+
+
+def test_a_verification_section_with_content_still_earns():
+    body = ("## Problem\nsomething\n## Fix\nsomething else\n"
+            "## Verification\nRan `pytest -q`: 42 passed.")
+    result = score_verification(body, {})
+    assert any("✓ Verification section present" in r for r in result.reasons), result.reasons
+    assert result.score > 0
