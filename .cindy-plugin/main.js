@@ -16,7 +16,7 @@
 
 const MCP_URL = 'https://misakanet.org/mcp';
 const FETCH_TIMEOUT_MS = 45000;
-const PLUGIN_VERSION = '1.3.0';
+const PLUGIN_VERSION = '1.3.1';
 
 /* 客户端标识：每台机器一个稳定 id。
  * 端点会把 X-MisakaNet-Client salt-hash 进 search_signals.client_hint，而 client_hint 是
@@ -425,6 +425,13 @@ function shapeInbox(payload) {
     note = '这条上报已被转成正式 lesson，把 receipt / events 里点名的课程路径与证据等级给用户。';
   } else if (answer) {
     note = '维护者已经回答了这个问题，把 answer 原样转给用户。';
+  } else if (status === 'unknown') {
+    // 端点只在提问表、课程库与去重库里找得到细节；proposal 类的上报不在这三处，于是它回
+    // 「查不到」。按端点自己的说法：查不到 ≠ 没发生——多半只是这个 kind 查不到细节。
+    note =
+      '端点在这条上报里查不到细节（它的查找范围是提问表、课程库与去重库）。按端点自己的说法：' +
+      '查不到 ≠ 没发生——多半这条还没结案（提问等人回答、故障等评审、提案等决定），' +
+      '要确认就去 GitHub 上看那条 issue。';
   } else if (status) {
     note =
       '状态：' + status + '。还在等人处理——提问类通常数小时后有答复，故障类要等评审。' +

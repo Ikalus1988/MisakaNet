@@ -5,8 +5,8 @@
   "name": "MisakaNet 故障记忆",
   "description": "把 MisakaNet 公开故障教训库接进对话：报错、CI 失败、构建或工具崩溃之前，先查有没有别人已经踩过并写清修法的教训（问题 / 根因 / 修法 / 验证）。四个查询工具匿名只读、只访问 misakanet.org，不需要凭证；misakanet_submit_intake 会在用户明确确认后，把一次故障或提问写成公开仓库 Ikalus1988/MisakaNet 的 GitHub issue（内容公开可见，提交前必须脱敏），misakanet_me_inbox 可回头查它的答复。装上后第一轮会有一条轻提示，每 20 轮提醒一次沉淀；不上传任何数据，只在本机存一个随机客户端 id。",
   "whenToUse": "遇到报错、异常、CI 失败、构建失败、工具崩溃或环境诡异行为时找我，先查这个坑是否已有公开教训；也想查某个技术栈、工具或平台的既往故障与修法时找我；用户之前提过问题、想知道维护者答没答时也找我。",
-  "version": "1.3.0",
-  "releaseNotes": "相较 1.2.2：新增 misakanet_me_inbox（查一次已提交上报的现状：维护者答没答、有没有已转成正式课程），把「提问→等答复」这条链在 Cindy 里补齐——之前只能拿同一段 problem 原文重新提交一次才能看到答复。同时复现仓库那份 checkpoint 钩子的节奏：旁听轮次（subscribe turn），第一轮弹一条「已接入」的轻提示，第 20 轮起每 10 轮提醒一次沉淀。新增权限档：旁听轮次事件、轻提示。仓库钩子还有一条「工具失败后提醒先查」，Cindy 侧没有等价事件源（activity 事件不含工具输入与报错文本），故未实现。其余行为、工具与外联目标不变。",
+  "version": "1.3.1",
+  "releaseNotes": "相较 1.3.0：me_inbox 在 status=unknown 时把话说准——端点只在提问表、课程库与去重库里找得到细节，proposal 类上报查不到时它自己说「查不到 ≠ 没发生」，插件原先把它写成「还在等人处理」而没解释 unknown 的含义，现在按端点原话讲清查找范围与下一步（去 GitHub 看那条 issue）。工具与权限不变。",
   "author": "Ikalus1988",
   "entry": "main.js",
   "command": "misakanet",
@@ -191,7 +191,7 @@
     },
     {
       "name": "misakanet_me_inbox",
-      "description": "查一次已提交上报的现状：维护者答没答、有没有已转成正式课程。传 intake_id（如 issue-4238 或 4238）或 dedup_key（8 位），二选一；不要拿 problem 原文重发来查（那是 submit_intake 的复查路径）。联网目标只有 misakanet.org；只读、无凭证、不写任何外部系统。",
+      "description": "查一次已提交上报的现状：维护者答没答、有没有已转成正式课程。传 intake_id（如 issue-4238 或 4238）或 dedup_key（8 位），二选一；不要拿 problem 原文重发来查（那是 submit_intake 的复查路径）。联网目标只有 misakanet.org；只读、无凭证、不写任何外部系统。端点只在提问表、课程库与去重库里查得到细节：proposal 类上报会回 status=unknown（查不到 ≠ 没发生），这时直接去 GitHub 看那条 issue。",
       "parameters": {
         "type": "object",
         "properties": {

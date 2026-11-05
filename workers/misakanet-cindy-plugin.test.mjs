@@ -394,3 +394,24 @@ test('a dropped event batch resets the counter and does not announce twice', asy
   const state = JSON.parse(load.dataDir.get('checkpoint.json'));
   assert.equal(state.sessions.s2.turns, 1, 'the count restarts from the event that did arrive');
 });
+
+test('me_inbox: an unknown status says "cannot be determined", not "still waiting"', async () => {
+  // The endpoint finds details for questions, lessons and the dedup store. A proposal is in
+  // none of them, so it answers "cannot be determined" — and the plugin used to dress that up
+  // as "still waiting", which is a different claim about the machine.
+  const load = await loadPlugin({
+    respond: () => ({
+      intake_id: 'issue-4424',
+      status: 'unknown',
+      note: 'Nothing found in the D1 question table, the lesson corpus, or the dedup store.',
+    }),
+  });
+  const answer = await callTool(load, 'misakanet_me_inbox', { intake_id: 'issue-4424' });
+  assert.equal(answer.ok, true);
+  assert.equal(answer.result.status, 'unknown');
+  assert.match(answer.result.note, /查不到/);
+  assert.doesNotMatch(answer.result.note, /状态：unknown。还在等人处理/,
+    'the old wording claimed a status it could not know');
+  assert.match(answer.result.note, /≠ 没发生/);
+  assert.match(answer.result.note, /提问表/, 'the note says where the endpoint looked');
+});

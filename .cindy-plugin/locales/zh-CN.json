@@ -78,7 +78,7 @@
       }
     },
     "misakanet_me_inbox": {
-      "description": "查一次已提交上报的现状：维护者答没答、有没有已转成正式课程。传 intake_id（如 issue-4238 或 4238）或 dedup_key（8 位），二选一；不要拿 problem 原文重发来查（那是 submit_intake 的复查路径）。联网目标只有 misakanet.org；只读、无凭证、不写任何外部系统。",
+      "description": "查一次已提交上报的现状：维护者答没答、有没有已转成正式课程。传 intake_id（如 issue-4238 或 4238）或 dedup_key（8 位），二选一；不要拿 problem 原文重发来查（那是 submit_intake 的复查路径）。联网目标只有 misakanet.org；只读、无凭证、不写任何外部系统。端点只在提问表、课程库与去重库里查得到细节：proposal 类上报会回 status=unknown（查不到 ≠ 没发生），这时直接去 GitHub 看那条 issue。",
       "parameters": {
         "/properties/intake_id": {
           "description": "上报时返回的 intake_id（如 issue-4238，或纯数字 4238）。与 dedup_key 二选一。"
