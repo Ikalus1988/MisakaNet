@@ -1,9 +1,23 @@
 {
-  "generated_at": "2026-11-04T19:54:11.553143+00:00",
+  "generated_at": "2026-11-05T01:30:55.624012+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "fix(daily): two scheduled jobs were red for reasons that were states, not failures",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4480",
+      "timestamp": "2026-11-05T01:09:37Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4476",
+      "timestamp": "2026-11-04T20:14:55Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "docs(handoff): vol 30 — each unclear thing became a query or a closed issue",
@@ -23,20 +37,6 @@
       "title": "chore(data): sync lessons.json + refresh feed",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/4460",
       "timestamp": "2026-11-04T17:14:19Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "fix(lesson): correct the whisper no_speech_prob gate measured as harmful (#4221)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4456",
-      "timestamp": "2026-11-04T16:56:14Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "fix(scorer): stop penalising portable paths and the pipeline's own note (#4454 D)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4457",
-      "timestamp": "2026-11-04T16:38:21Z",
       "source": "github"
     },
     {
