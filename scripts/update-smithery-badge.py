@@ -12,10 +12,21 @@ import argparse
 import json
 import re
 import sys
+import urllib.error
 import urllib.request
 
 SMITHERY_SERVER_URL = "https://smithery.ai/servers/misakanet/misakanet"
 DEFAULT_OUTPUT = "data/badges/smithery.json"
+
+
+class ListingUnpublished(Exception):
+    """The server page answers 404: the listing is not published at this URL.
+
+    That is a *state*, not a transient failure — the daily job failing on it for days is a red
+    someone learns to ignore (measured 2026-11-04: the page has answered 404 since at least
+    2026-11-02 while the Smithery API still lists the server). Skipping is the honest outcome;
+    the API entry still exists, so discovery is unaffected.
+    """
 
 
 def fetch_score(url: str) -> str | None:
@@ -28,6 +39,11 @@ def fetch_score(url: str) -> str | None:
     try:
         with urllib.request.urlopen(req, timeout=15) as resp:
             html = resp.read().decode("utf-8", errors="replace")
+    except urllib.error.HTTPError as e:
+        if e.code == 404:
+            raise ListingUnpublished(url) from None
+        print(f"Error fetching {url}: {e}", file=sys.stderr)
+        return None
     except Exception as e:
         print(f"Error fetching {url}: {e}", file=sys.stderr)
         return None
@@ -68,7 +84,15 @@ def main():
     )
     args = parser.parse_args()
 
-    score = fetch_score(SMITHERY_SERVER_URL)
+    try:
+        score = fetch_score(SMITHERY_SERVER_URL)
+    except ListingUnpublished:
+        print(
+            f"::warning::{SMITHERY_SERVER_URL} answers 404: the listing page is not published "
+            "at this URL. Badge left unchanged; this is a state, not a failure.",
+            file=sys.stderr,
+        )
+        return
     if score is None:
         print("Failed to fetch Smithery score", file=sys.stderr)
         sys.exit(1)

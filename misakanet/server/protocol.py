@@ -187,13 +187,29 @@ def _enable_docs_cache() -> float:
     return ttl
 
 
+def _try_enable_docs_cache() -> bool:
+    """Enable the corpus cache, or say why not and keep serving.
+
+    The cache is an optimisation, never a prerequisite. A git checkout that has not installed the
+    optional `misakanet-core` wheel used to start and degrade (`BM25: not available`, search still
+    answered 3 results); the cache call made that import unconditional and killed the server before
+    it could say anything — install-smoke was red from 2026-11-02 to 2026-11-04 for this reason.
+    """
+    try:
+        _enable_docs_cache()
+        return True
+    except Exception as exc:  # noqa: BLE001 - any failure here is non-fatal by definition
+        sys.stderr.write(f"docs cache disabled ({type(exc).__name__}: {exc})\n")
+        return False
+
+
 def main():
     """MCP stdio server loop."""
     from ._config import _init_search
 
     HAS_SAG, _, HAS_BM25, _ = _init_search()  # noqa: N806
 
-    _enable_docs_cache()
+    _try_enable_docs_cache()
     sys.stderr.write("MisakaNet MCP Server started\n")
     sag_status = "available" if HAS_SAG else "not available (run build_sag_index.py)"
     bm25_status = "available" if HAS_BM25 else "not available"
