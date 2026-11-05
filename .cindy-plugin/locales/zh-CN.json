@@ -1,7 +1,7 @@
 {
   "name": "MisakaNet 故障记忆",
-  "description": "把 MisakaNet 公开故障教训库接进对话：报错、CI 失败、构建或工具崩溃之前，先查有没有别人已经踩过并写清修法的教训（问题 / 根因 / 修法 / 验证）。misakanet_search / misakanet_get_lesson / misakanet_preflight 三个工具是匿名只读查询，只访问 misakanet.org，不需要任何凭证；misakanet_submit_intake 则会在用户明确确认后，把一次故障或提问写成公开仓库 Ikalus1988/MisakaNet 的 GitHub issue——内容公开发布，提交前必须脱敏。",
-  "whenToUse": "遇到报错、异常、CI 失败、构建失败、工具崩溃或环境诡异行为时找我，先查这个坑是否已有公开教训；也想查某个技术栈、工具或平台的既往故障与修法时找我。",
+  "description": "把 MisakaNet 公开故障教训库接进对话：报错、CI 失败、构建或工具崩溃之前，先查有没有别人已经踩过并写清修法的教训（问题 / 根因 / 修法 / 验证）。四个查询工具匿名只读、只访问 misakanet.org，不需要凭证；misakanet_submit_intake 会在用户明确确认后，把一次故障或提问写成公开仓库 Ikalus1988/MisakaNet 的 GitHub issue（内容公开可见，提交前必须脱敏），misakanet_me_inbox 可回头查它的答复。装上后第一轮会有一条轻提示，每 20 轮提醒一次沉淀；不上传任何数据，只在本机存一个随机客户端 id。",
+  "whenToUse": "遇到报错、异常、CI 失败、构建失败、工具崩溃或环境诡异行为时找我，先查这个坑是否已有公开教训；也想查某个技术栈、工具或平台的既往故障与修法时找我；用户之前提过问题、想知道维护者答没答时也找我。",
   "tools": {
     "misakanet_search": {
       "description": "在 MisakaNet 公开教训库（https://misakanet.org/mcp）做一次匿名只读检索，返回按相关度排序的教训摘要：标题、问题摘要、白话摘要（summary_plain，可原样转述给用户）、领域、新鲜度、证据等级与得分。联网目标只有 misakanet.org，查询词会原样发给它；不写任何外部系统、不读写用户的本地文件（插件只用它自己的私有目录存一个随机客户端 id）、不需要凭证。先用它找候选，再用 misakanet_get_lesson 取全文。零命中时端点会自己判定这是「提问」还是「知识缺口」，并把建议与下一步 intake 参数一起返回——按它给的 kind 走，不要自己编。",
@@ -74,6 +74,17 @@
         },
         "/properties/user_confirmed": {
           "description": "仅在用户明确要求把这次故障上报到 MisakaNet 公开仓库后才传 true；绝不能自行推断或默认传 true。"
+        }
+      }
+    },
+    "misakanet_me_inbox": {
+      "description": "查一次已提交上报的现状：维护者答没答、有没有已转成正式课程。传 intake_id（如 issue-4238 或 4238）或 dedup_key（8 位），二选一；不要拿 problem 原文重发来查（那是 submit_intake 的复查路径）。联网目标只有 misakanet.org；只读、无凭证、不写任何外部系统。",
+      "parameters": {
+        "/properties/intake_id": {
+          "description": "上报时返回的 intake_id（如 issue-4238，或纯数字 4238）。与 dedup_key 二选一。"
+        },
+        "/properties/dedup_key": {
+          "description": "上报时返回的 8 位 dedup_key。与 intake_id 二选一。"
         }
       }
     }

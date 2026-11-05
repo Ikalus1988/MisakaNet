@@ -37,8 +37,8 @@ npx @misaka-net/misakanet-setup --only cindy
 
 插件源码在本仓库 [`.cindy-plugin/`](https://github.com/Ikalus1988/MisakaNet/tree/main/.cindy-plugin)：
 `ghost.json`（清单）、`main.js`（电子脑）、`locales/en.json` 与 `locales/zh-CN.json`（文案）、
-`manual/misakanet/MANUAL.md`（随包手册）、`assets/icon.png`。市场里发布的就是本仓库这个包（提审期间市场可能仍显示上一版），仓库已到 **1.2.3**（kind 补上 `proposal`，本次提审已带上）；
-仓库这与市场里的包内容一致。
+`manual/misakanet/MANUAL.md`（随包手册）、`assets/icon.png`。市场里发布的就是本仓库这个包（提审期间市场可能仍显示上一版），仓库已到 **1.3.0**（kind 补上 `proposal`，本次提审已带上）；
+审核通过后，仓库这与市场里的包内容一致。
 
 ## 2. 工具面
 
@@ -49,6 +49,7 @@ npx @misaka-net/misakanet-setup --only cindy
 | `misakanet_search` | 按报错原文/关键词检索教训（`detail` 三档，默认最省上下文） |
 | `misakanet_get_lesson` | 按 id 或仓库路径取一篇教训全文（`path` 优先；端点会截断到约 5000 字符） |
 | `misakanet_preflight` | 高风险操作前的只读预检（`risk_level` + `guards`） |
+| `misakanet_me_inbox` | 查一次已提交上报的答复／是否已转成课程 | `intake_id` 或 `dedup_key`（二选一） |
 | `misakanet_submit_intake` | 提交 intake / 提问 / 计划（`kind=proposal`，计划类不会被自动判定）；**必须** `user_confirmed=true`，联网目标只有 `misakanet.org` |
 
 联网目标在 `ghost.json` 里显式声明为 `misakanet.org`——市场审核要求，也是给用户的边界：

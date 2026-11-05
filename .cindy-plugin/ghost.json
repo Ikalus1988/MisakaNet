@@ -3,17 +3,24 @@
   "minCindyVersion": "0.1.64",
   "id": "misakanet",
   "name": "MisakaNet 故障记忆",
-  "description": "把 MisakaNet 公开故障教训库接进对话：报错、CI 失败、构建或工具崩溃之前，先查有没有别人已经踩过并写清修法的教训（问题 / 根因 / 修法 / 验证）。misakanet_search / misakanet_get_lesson / misakanet_preflight 三个工具是匿名只读查询，只访问 misakanet.org，不需要任何凭证；misakanet_submit_intake 则会在用户明确确认后，把一次故障或提问写成公开仓库 Ikalus1988/MisakaNet 的 GitHub issue——内容公开发布，提交前必须脱敏。",
-  "whenToUse": "遇到报错、异常、CI 失败、构建失败、工具崩溃或环境诡异行为时找我，先查这个坑是否已有公开教训；也想查某个技术栈、工具或平台的既往故障与修法时找我。",
-  "version": "1.2.3",
-  "releaseNotes": "相较 1.2.2：kind 补上 proposal（计划 / 产品请求）——托管端点一直接受它，而插件 schema 的枚举只有四个值，客户端会当场拒绝，提交者只能选 new_lesson_candidate，于是一份方案被当成故障报告送进课程队列。其余行为与权限不变。相较 1.2.1：按市场审核意见修正市场简介——如实区分「三个匿名只读工具」与「会在用户明确确认后公开写入 GitHub issue 的 submit_intake」，并说明数据去向、公开可见性与脱敏要求；只读工具的说明也补上了「插件只用它自己的私有目录存一个随机客户端 id」。版本头修复（PLUGIN_VERSION 跟清单对齐）保持不变。",
+  "description": "把 MisakaNet 公开故障教训库接进对话：报错、CI 失败、构建或工具崩溃之前，先查有没有别人已经踩过并写清修法的教训（问题 / 根因 / 修法 / 验证）。四个查询工具匿名只读、只访问 misakanet.org，不需要凭证；misakanet_submit_intake 会在用户明确确认后，把一次故障或提问写成公开仓库 Ikalus1988/MisakaNet 的 GitHub issue（内容公开可见，提交前必须脱敏），misakanet_me_inbox 可回头查它的答复。装上后第一轮会有一条轻提示，每 20 轮提醒一次沉淀；不上传任何数据，只在本机存一个随机客户端 id。",
+  "whenToUse": "遇到报错、异常、CI 失败、构建失败、工具崩溃或环境诡异行为时找我，先查这个坑是否已有公开教训；也想查某个技术栈、工具或平台的既往故障与修法时找我；用户之前提过问题、想知道维护者答没答时也找我。",
+  "version": "1.3.0",
+  "releaseNotes": "相较 1.2.2：新增 misakanet_me_inbox（查一次已提交上报的现状：维护者答没答、有没有已转成正式课程），把「提问→等答复」这条链在 Cindy 里补齐——之前只能拿同一段 problem 原文重新提交一次才能看到答复。同时复现仓库那份 checkpoint 钩子的节奏：旁听轮次（subscribe turn），第一轮弹一条「已接入」的轻提示，第 20 轮起每 10 轮提醒一次沉淀。新增权限档：旁听轮次事件、轻提示。仓库钩子还有一条「工具失败后提醒先查」，Cindy 侧没有等价事件源（activity 事件不含工具输入与报错文本），故未实现。其余行为、工具与外联目标不变。",
   "author": "Ikalus1988",
   "entry": "main.js",
   "command": "misakanet",
+  "launch": "resident",
   "fs": true,
   "network": {
     "hosts": [
       "misakanet.org"
+    ]
+  },
+  "notify": true,
+  "subscribe": {
+    "topics": [
+      "turn"
     ]
   },
   "icon": "assets/icon.png",
@@ -180,6 +187,25 @@
           "problem",
           "user_confirmed"
         ]
+      }
+    },
+    {
+      "name": "misakanet_me_inbox",
+      "description": "查一次已提交上报的现状：维护者答没答、有没有已转成正式课程。传 intake_id（如 issue-4238 或 4238）或 dedup_key（8 位），二选一；不要拿 problem 原文重发来查（那是 submit_intake 的复查路径）。联网目标只有 misakanet.org；只读、无凭证、不写任何外部系统。",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "intake_id": {
+            "type": "string",
+            "maxLength": 64,
+            "description": "上报时返回的 intake_id（如 issue-4238，或纯数字 4238）。与 dedup_key 二选一。"
+          },
+          "dedup_key": {
+            "type": "string",
+            "maxLength": 32,
+            "description": "上报时返回的 8 位 dedup_key。与 intake_id 二选一。"
+          }
+        }
       }
     }
   ]

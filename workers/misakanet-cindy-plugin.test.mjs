@@ -283,7 +283,7 @@ test('preflight: the risk level and the guards come back', async () => {
   assert.equal(answer.result.matched_lessons[0].id, 'x');
 });
 
-test('the package declares exactly four tools, and answers nothing else', async () => {
+test('the package declares exactly five tools, and answers nothing else', async () => {
   // The host only dispatches a tool the manifest declares, so the plugin's handler ignores
   // anything else **on purpose**: answering a tool it does not own would be answering on
   // behalf of somebody else's manifest. The declaration is what the host reads.
@@ -299,8 +299,98 @@ test('the package declares exactly four tools, and answers nothing else', async 
   assert.equal(load.sent.length, 0, 'a tool this package does not declare gets no answer');
   assert.deepEqual(MANIFEST.tools.map((tool) => tool.name).sort(), [
     'misakanet_get_lesson',
+    'misakanet_me_inbox',
     'misakanet_preflight',
     'misakanet_search',
     'misakanet_submit_intake',
   ]);
+});
+
+test('me_inbox: looks one submitted report up and hands the answer back', async () => {
+  const load = await loadPlugin({
+    respond: () => ({
+      intake_id: 'issue-4238',
+      status: 'answered',
+      answer: 'Use the Authorization header.',
+      dedup_key: 'a28a0593',
+    }),
+  });
+  const answer = await callTool(load, 'misakanet_me_inbox', { intake_id: 'issue-4238' });
+  assert.equal(answer.ok, true);
+  assert.equal(answer.result.answered, true);
+  assert.equal(answer.result.answer, 'Use the Authorization header.');
+  assert.equal(answer.result.dedup_key, 'a28a0593');
+  // The lookup is a query: exactly the reference it was given, nothing else.
+  assert.deepEqual(JSON.parse(load.requests[0].body).params.arguments, { intake_id: 'issue-4238' });
+});
+
+test('me_inbox: without a reference it asks for one and sends nothing', async () => {
+  const load = await loadPlugin();
+  const answer = await callTool(load, 'misakanet_me_inbox', {});
+  assert.equal(answer.ok, false);
+  assert.equal(answer.errorCode, 'MISSING_INTAKE_REF');
+  assert.equal(load.requests.length, 0, 'a lookup without a reference must not reach the endpoint');
+});
+
+test('me_inbox: a dedup_key is a reference too', async () => {
+  const load = await loadPlugin({ respond: () => ({ intake_id: 'issue-4238', status: 'pending' }) });
+  const answer = await callTool(load, 'misakanet_me_inbox', { dedup_key: 'a28a0593' });
+  assert.equal(answer.ok, true);
+  assert.equal(answer.result.status, 'pending');
+  assert.deepEqual(JSON.parse(load.requests[0].body).params.arguments, { dedup_key: 'a28a0593' });
+});
+
+test('the manifest declares the turn subscription, the resident launch and the notice capability', async () => {
+  // The three fields are the plugin's whole reason for being resident: without them the turn
+  // counter never runs, and a manifest that only promises tools would be a lie about the
+  // behaviour (the same reason the marketplace brief had to be corrected once).
+  assert.deepEqual(MANIFEST.subscribe, { topics: ['turn'] });
+  assert.equal(MANIFEST.launch, 'resident');
+  assert.equal(MANIFEST.notify, true);
+});
+
+test('the first turn announces once, then the reminder comes every 10 turns from the 20th', async () => {
+  const load = await loadPlugin();
+  const notices = () => load.sent.filter((m) => m.type === 'notify');
+  const endTurn = async (sessionId) => {
+    await load.stub.handler({ type: 'event', name: 'did-turn-end', data: { sessionId } });
+    await new Promise((resolve) => setTimeout(resolve, 5));
+  };
+
+  await endTurn('s1');
+  assert.equal(notices().length, 1, 'the first turn announces that the library is connected');
+
+  for (let i = 2; i <= 19; i += 1) await endTurn('s1');
+  assert.equal(notices().length, 1, 'nothing is said before the 20th turn');
+
+  await endTurn('s1');
+  assert.equal(notices().length, 2, 'the 20th turn reminds about writing lessons up');
+
+  for (let i = 21; i <= 29; i += 1) await endTurn('s1');
+  assert.equal(notices().length, 2, 'the reminder is every 10 turns, not every turn');
+
+  await endTurn('s1');
+  assert.equal(notices().length, 3, 'the 30th turn reminds again');
+});
+
+test('a dropped event batch resets the counter and does not announce twice', async () => {
+  // The host drops events while the plugin is asleep; the derived count is then wrong, and the
+  // reference says: reset the state and believe the events that follow.
+  const load = await loadPlugin();
+  const notices = () => load.sent.filter((m) => m.type === 'notify');
+  await load.stub.handler({ type: 'event', name: 'did-turn-end', data: { sessionId: 's2' } });
+  await new Promise((resolve) => setTimeout(resolve, 10));
+  assert.equal(notices().length, 1);
+
+  await load.stub.handler({
+    type: 'event',
+    name: 'did-turn-end',
+    data: { sessionId: 's2' },
+    dropped: 4,
+  });
+  await new Promise((resolve) => setTimeout(resolve, 10));
+  assert.equal(notices().length, 1, 'the announcement is not repeated after a drop');
+
+  const state = JSON.parse(load.dataDir.get('checkpoint.json'));
+  assert.equal(state.sessions.s2.turns, 1, 'the count restarts from the event that did arrive');
 });
