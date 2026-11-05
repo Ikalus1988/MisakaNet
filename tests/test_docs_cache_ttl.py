@@ -164,3 +164,19 @@ def test_the_measurement_that_justifies_the_window_is_still_a_walk() -> None:
     assert "f.stat()" in body, (
         "the window exists because the loader stats every file; if that changed, delete the cache "
         "rather than paying a staleness budget for a walk that no longer happens")
+
+
+def test_a_missing_engine_does_not_kill_the_server(monkeypatch, capsys):
+    """A checkout without `misakanet-core` must still start and serve degraded (install-smoke).
+
+    The cache call imports the engine; before the guard, that import was unconditional and the
+    server died before printing anything — red from 2026-11-02 to 2026-11-04.
+    """
+    from misakanet.server import protocol
+
+    def boom():
+        raise ModuleNotFoundError("No module named 'misakanet_core'")
+
+    monkeypatch.setattr(protocol, "_enable_docs_cache", boom)
+    assert protocol._try_enable_docs_cache() is False
+    assert "docs cache disabled" in capsys.readouterr().err
