@@ -30,10 +30,21 @@ jobs:
           python-version: '3.12'
 
       - name: Fetch Smithery Kin score and write badge JSON
+        id: fetch
         run: |
           python3 scripts/update-smithery-badge.py --output /tmp/smithery.json
+          # A 404 on the listing page is a state, not a failure: the script returns 0 without
+          # writing the file. The publish steps below assume it exists, so they are gated on it
+          # instead of each failing on a missing path.
+          if [ -f /tmp/smithery.json ]; then
+            echo "updated=yes" >> "$GITHUB_OUTPUT"
+          else
+            echo "updated=no" >> "$GITHUB_OUTPUT"
+            echo "::warning::no badge written (listing page not published); publish steps skipped"
+          fi
 
       - name: Checkout data branch for commit
+        if: steps.fetch.outputs.updated == 'yes'
         # NOTE: the previous `git checkout data` silently did nothing (the job only
         # fetched main with fetch-depth: 1, so no local 'data' branch existed) — the
         # commit then landed on main, the rebase rewrote the branch, and the push was
@@ -47,6 +58,7 @@ jobs:
           git status --short badges/
 
       - name: Commit and push if changed
+        if: steps.fetch.outputs.updated == 'yes'
         run: |
           git config user.name "misakanet-bot"
           git config user.email "bot@misakanet.org"
@@ -61,6 +73,7 @@ jobs:
           fi
 
       - name: Verify badge JSON is on the data branch
+        if: steps.fetch.outputs.updated == 'yes'
         run: |
           git fetch origin data --depth=1
           git show origin/data:badges/smithery.json >/dev/null
