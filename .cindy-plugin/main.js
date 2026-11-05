@@ -16,7 +16,7 @@
 
 const MCP_URL = 'https://misakanet.org/mcp';
 const FETCH_TIMEOUT_MS = 45000;
-const PLUGIN_VERSION = '1.2.3';
+const PLUGIN_VERSION = '1.3.0';
 
 /* 客户端标识：每台机器一个稳定 id。
  * 端点会把 X-MisakaNet-Client salt-hash 进 search_signals.client_hint，而 client_hint 是
@@ -107,11 +107,14 @@ const INTAKE_ARGS = [
   'contributor',
 ];
 
+const INBOX_ARGS = ['intake_id', 'dedup_key'];
+
 const TOOLS = {
   misakanet_search: 'misakanet_search',
   misakanet_get_lesson: 'misakanet_get_lesson',
   misakanet_preflight: 'misakanet_preflight',
   misakanet_submit_intake: 'misakanet_submit_intake',
+  misakanet_me_inbox: 'misakanet_me_inbox',
 };
 
 /* ---------- 通用工具 ---------- */
@@ -413,6 +416,122 @@ function shapeIntake(payload) {
   };
 }
 
+function shapeInbox(payload) {
+  const answer = asString(payload.answer);
+  const converted = payload.converted === true;
+  const status = asString(payload.status);
+  let note;
+  if (converted) {
+    note = '这条上报已被转成正式 lesson，把 receipt / events 里点名的课程路径与证据等级给用户。';
+  } else if (answer) {
+    note = '维护者已经回答了这个问题，把 answer 原样转给用户。';
+  } else if (status) {
+    note =
+      '状态：' + status + '。还在等人处理——提问类通常数小时后有答复，故障类要等评审。' +
+      (asString(payload.note) ? ' ' + asString(payload.note) : '');
+  } else {
+    note = asString(payload.note) || '端点没有给出状态。';
+  }
+
+  return {
+    intake_id: asString(payload.intake_id) || undefined,
+    dedup_key: asString(payload.dedup_key) || undefined,
+    status: status || undefined,
+    issue_url: asString(payload.issue_url) || undefined,
+    answered: answer ? true : undefined,
+    answer: answer || undefined,
+    converted: converted ? true : undefined,
+    receipt: asString(payload.receipt) ? clip(asString(payload.receipt), 1200) : undefined,
+    events: payload.events === undefined ? undefined : payload.events,
+    note,
+  };
+}
+
+/* ---------- 轮次计数与轻提示（对应仓库里的 checkpoint 钩子） ---------- */
+
+/*
+ * 仓库那份钩子（integrations/agent-autostart/checkpoint_reminder.mjs）装在 Claude Code 的
+ * settings.json 里，做两件事：第 1 轮公告「已接入」，第 20 轮起每 10 轮提醒一次沉淀。
+ * Cindy 没有 settings.json 这种钩子机制，但插件能旁听轮次（subscribe topics: ["turn"]），
+ * 所以同一套节奏在这里用 did-turn-end + notify 复现。
+ *
+ * 有一件事在 Cindy 里做不出来：仓库钩子还有一个 failure 模式（工具失败后注入「重试前先查」）。
+ * Cindy 的 activity topic 只给 thinking / approval / user-input 的边界，不含工具输入与报错文本，
+ * 所以没有等价事件源——这里不做假的，宁可没有。
+ */
+const CHECKPOINT_STATE_FILE = 'checkpoint.json';
+const CHECKPOINT_AT = 20;
+const CHECKPOINT_EVERY = 10;
+
+async function readCheckpointState() {
+  try {
+    const read = await cindy.send({
+      type: 'fs-request',
+      op: 'read',
+      root: 'data',
+      path: CHECKPOINT_STATE_FILE,
+    });
+    if (read && read.ok === true && typeof read.content === 'string') {
+      const parsed = JSON.parse(read.content);
+      if (parsed && typeof parsed === 'object' && parsed.sessions && typeof parsed.sessions === 'object') {
+        return { sessions: parsed.sessions };
+      }
+    }
+  } catch (error) {
+    /* 读不到就当没有 */
+  }
+  return { sessions: {} };
+}
+
+async function writeCheckpointState(state) {
+  try {
+    await cindy.send({
+      type: 'fs-request',
+      op: 'write',
+      root: 'data',
+      path: CHECKPOINT_STATE_FILE,
+      content: JSON.stringify(state),
+    });
+  } catch (error) {
+    /* 写不了就只在内存里记 */
+  }
+}
+
+async function notify(text, tone) {
+  try {
+    await cindy.send({ type: 'notify', text, tone: tone || 'info' });
+  } catch (error) {
+    /* 提示失败不能影响会话（仓库钩子的同一条契约：永不打断会话） */
+  }
+}
+
+async function handleTurnEnd(msg) {
+  const data = msg.data || {};
+  const sessionId = asString(data.sessionId) || 'unknown';
+  const state = await readCheckpointState();
+  let session = state.sessions[sessionId];
+  if (!session || typeof session !== 'object') session = { turns: 0, announced: false };
+  // 熄灯期事件溢出过（msg.dropped）：本地派生的计数作废，从此刻重新数，但不再重复公告。
+  if (msg.dropped) session = { turns: 0, announced: true };
+  session.turns = (Number(session.turns) || 0) + 1;
+  const turns = session.turns;
+  const firstTurn = !session.announced;
+  if (firstTurn) session.announced = true;
+  state.sessions[sessionId] = session;
+  await writeCheckpointState(state);
+
+  if (firstTurn) {
+    await notify('MisakaNet 失败经验库已接入：以后遇到报错，我会先查有没有人踩过、怎么修的。', 'info');
+    return;
+  }
+  if (turns >= CHECKPOINT_AT && (turns - CHECKPOINT_AT) % CHECKPOINT_EVERY === 0) {
+    await notify(
+      '该沉淀了：这次会话里可泛化、有判据的教训，用 misakanet_submit_intake 提交（故障 missing_lesson／计划 proposal）；不够价值就别提交。',
+      'info',
+    );
+  }
+}
+
 /* ---------- 入口 ---------- */
 
 async function handleToolCall(msg) {
@@ -466,7 +585,22 @@ async function handleToolCall(msg) {
       return sendResult(callId, true, shapeIntake(payload));
     }
 
-    return fail(callId, 'UNKNOWN_TOOL', '未知工具 ' + String(tool) + '。本插件只提供 misakanet_search / misakanet_get_lesson / misakanet_preflight / misakanet_submit_intake。');
+    if (tool === TOOLS.misakanet_me_inbox) {
+      const intakeId = asString(args.intake_id).trim();
+      const dedupKey = asString(args.dedup_key).trim();
+      if (!intakeId && !dedupKey) {
+        return fail(
+          callId,
+          'MISSING_INTAKE_REF',
+          'misakanet_me_inbox 需要 intake_id（如 issue-4238 或 4238）或 dedup_key（8 位）——二选一。',
+        );
+      }
+      const inboxArgs = pickArgs(args, INBOX_ARGS);
+      const payload = await callHostedTool(TOOLS.misakanet_me_inbox, inboxArgs, callId);
+      return sendResult(callId, true, shapeInbox(payload));
+    }
+
+    return fail(callId, 'UNKNOWN_TOOL', '未知工具 ' + String(tool) + '。本插件只提供 misakanet_search / misakanet_get_lesson / misakanet_preflight / misakanet_submit_intake / misakanet_me_inbox。');
   } catch (error) {
     const code = (error && error.code) || 'MISAKANET_ERROR';
     const hint = (error && error.hint) || '调用 MisakaNet 失败。';
@@ -475,7 +609,14 @@ async function handleToolCall(msg) {
 }
 
 cindy.onHostMessage(function (msg) {
-  if (!msg || msg.type !== 'tool-call') return;
-  if (!TOOLS[msg.tool]) return;
-  handleToolCall(msg);
+  if (!msg) return;
+  if (msg.type === 'tool-call') {
+    if (!TOOLS[msg.tool]) return;
+    handleToolCall(msg);
+    return;
+  }
+  // 旁听轮次：第 1 轮公告、第 20 轮起每 10 轮提醒沉淀（对应仓库的 checkpoint 钩子）。
+  if (msg.type === 'event' && msg.name === 'did-turn-end') {
+    handleTurnEnd(msg);
+  }
 });
