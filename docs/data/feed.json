@@ -1,9 +1,30 @@
 {
-  "generated_at": "2026-11-05T01:30:55.624012+00:00",
+  "generated_at": "2026-11-05T11:11:45.663981+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "Update README for MisakaNet plugin instructions",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4489",
+      "timestamp": "2026-11-05T06:53:30Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4482",
+      "timestamp": "2026-11-05T01:45:12Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "fix(smithery): the publish steps are gated on a written badge",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4481",
+      "timestamp": "2026-11-05T01:36:25Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "fix(daily): two scheduled jobs were red for reasons that were states, not failures",
@@ -16,27 +37,6 @@
       "title": "chore(data): sync lessons.json + refresh feed",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/4476",
       "timestamp": "2026-11-04T20:14:55Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "docs(handoff): vol 30 — each unclear thing became a query or a closed issue",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4468",
-      "timestamp": "2026-11-04T17:55:05Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat(sync): store an answer for any answered intake, not only kind=question",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4461",
-      "timestamp": "2026-11-04T17:20:44Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4460",
-      "timestamp": "2026-11-04T17:14:19Z",
       "source": "github"
     },
     {
