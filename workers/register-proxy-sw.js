@@ -10597,12 +10597,13 @@ async function getCode() {
 
   async scheduled(controller, env, ctx) {
     ctx.waitUntil(runKeepaliveSweep(controller.cron, env));
-    // Daily only: the answer sync writes `questions.answered_at`, and 15-minute scanning would spend
-    // D1 rows for a notice nobody is waiting on that fast.
-    if (controller.cron === "17 3 * * *") {
-      ctx.waitUntil(deliverAnswerNoticesImpl(env).catch((e) =>
-        console.error("[notify] delivery failed", e && e.message)));
-    }
+    // Every cron, not only the daily one: the scan is one indexed query over a two-day window, and
+    // the difference for the person waiting is "within 15 minutes" versus "tomorrow". The notice is
+    // sent once per confirmed record and the record is deleted, so the repeated scan cannot repeat a
+    // send. `answered_at` only moves when the answer sync writes it, which is what makes the window
+    // cheap.
+    ctx.waitUntil(deliverAnswerNoticesImpl(env).catch((e) =>
+      console.error("[notify] delivery failed", e && e.message)));
     // Daily traffic aggregation: accumulate daily traffic:* into monthly traffic-month:*
     //
     // `hasDurableStore`, not `env.MISAKANET_KV` (2026-09-29). Both this and the index refresh below write
