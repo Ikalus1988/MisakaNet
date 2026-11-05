@@ -320,25 +320,24 @@ def score_verification(body: str, sections: dict[str, str]) -> DimensionScore:
     score = 0
     reasons = []
 
-    # Check for verification section in both sections dict and body
-    has_verification = (
-        any("verification" in name.lower() or "验证" in name.lower()
-            for name in sections) or
-        "## Verification" in body or
-        "## 验证" in body
-    )
+    # A heading is a label, not evidence. `score_completeness` already learned this for
+    # `## Problem` (an empty heading was credited as present, #4427); the same thing was true for
+    # verification, and it was worth more: measured 2026-11-04, appending `## Verification` with no
+    # content raised 33 of 44 open `auto-rejected` intakes by +6.9 on average (+13.0 at most) and
+    # pushed 10 of them over the 40 line with no wording change (#4455).
+    verification_content = ""
+    for name, content in sections.items():
+        if "verification" in name.lower() or "验证" in name.lower():
+            verification_content = (content or "").strip()
+            break
+    if not verification_content:
+        verification_content = _section_text(body, ("verification", "验证")).strip()
+    has_verification = bool(verification_content)
 
     quality_signals = content_quality_signals(body)
     if has_verification:
-        score += 20  # Base score for having section
+        score += 20  # Base score for a section that says something
         reasons.append("✓ Verification section present")
-
-        # Get verification content from sections or extract from body
-        verification_content = ""
-        for name, content in sections.items():
-            if "verification" in name.lower() or "验证" in name.lower():
-                verification_content = content
-                break
 
         # If section content is empty, try to extract from body
         if not verification_content:
