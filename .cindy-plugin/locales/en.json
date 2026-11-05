@@ -78,7 +78,7 @@
       }
     },
     "misakanet_me_inbox": {
-      "description": "Check one submitted report: whether a maintainer answered, and whether it became a lesson. Pass intake_id (e.g. issue-4238 or 4238) or dedup_key (8 characters), one of the two; do not re-post the original problem text to check it (that is submit_intake's re-check path). The only network target is misakanet.org; read-only, no credential, nothing written to external systems.",
+      "description": "Check one submitted report: whether a maintainer answered, and whether it became a lesson. Pass intake_id (e.g. issue-4238 or 4238) or dedup_key (8 characters), one of the two; do not re-post the original problem text to check it (that is submit_intake's re-check path). The only network target is misakanet.org; read-only, no credential, nothing written to external systems.The endpoint only finds details for questions, lessons and the dedup store: a proposal comes back as status=unknown (cannot be determined is not never happened) — look the issue up on GitHub.",
       "parameters": {
         "/properties/intake_id": {
           "description": "The intake_id returned by the submission (e.g. issue-4238, or the plain number 4238). One of intake_id or dedup_key."
