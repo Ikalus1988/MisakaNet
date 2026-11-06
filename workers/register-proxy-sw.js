@@ -1148,6 +1148,35 @@ function matchTokens(text) {
   return [...new Set([...latin, ...cjk])];
 }
 
+// A `status: superseded` lesson must never outrank a live one (2026-11-06).
+//
+// That status is the lesson telling the reader not to follow it — its body opens with a correction
+// pointing at the replacement — so answering the query with it first is answering with a refusal.
+// Measured on the 838-file corpus (real bodies, the D1 rich projection): `docker compose port is
+// already allocated` ranked the superseded `ruby-require-relative-and-docker-port-allocation` first
+// (14.5) and its replacement `port-already-allocated-find-and-free-the-holder` second (13.9).
+//
+// A stable partition, not a filter. The order inside each group is untouched, and a superseded row
+// still comes back when it is the only match — an old error whose only write-up was superseded is
+// still better than `no_match`, as long as the correction travels with it (it does: the row keeps
+// its id, and `enrichSearchHits` re-attaches the body, header included).
+function liveBeforeSuperseded(rows, statusOf) {
+  const live = [];
+  const retired = [];
+  for (const row of rows) {
+    (String(statusOf(row) || "").toLowerCase() === "superseded" ? retired : live).push(row);
+  }
+  return retired.length ? live.concat(retired) : rows;
+}
+
+// The BM25 index docs are {id,title,domain,path,len} and carry no `status` — the rankers resolve it
+// from the lesson records the caller already loaded. One shape for both call sites so "what counts
+// as the same lesson id" cannot drift between them.
+function lessonStatusMap(lessons) {
+  return new Map((Array.isArray(lessons) ? lessons : [])
+    .map((l) => [String(l.id || l.name || ""), String(l.status || "")]));
+}
+
 // Simple keyword-based lesson search (runs in Worker, no BM25)
 function searchLessons(lessons, query, domain, top = 5, floorQuery = null, statusFilter = null) {
   if (!Array.isArray(lessons) || !query) return [];
@@ -1213,7 +1242,8 @@ function searchLessons(lessons, query, domain, top = 5, floorQuery = null, statu
     ? relevant.filter(({ lesson }) =>
         String((lesson && lesson.status) || "").toLowerCase() === statusFilter)
     : relevant;
-  return admitted.slice(0, top).map(({ lesson, score }) => ({
+  return liveBeforeSuperseded(admitted, ({ lesson }) => lesson && lesson.status)
+    .slice(0, top).map(({ lesson, score }) => ({
     id: lesson.id || lesson.name || "",
     title: lesson.title || lesson.name || "",
     domain: lesson.domain || "",
@@ -1826,7 +1856,9 @@ function searchLessonsBM25(index, query, domain, top = 5, floorQuery = null, sta
         return String(lesson || "").toLowerCase() === statusFilter;
       })
     : ordered;
-  return admitted.slice(0, top).map(({ doc, score }) => ({
+  return liveBeforeSuperseded(admitted,
+    ({ doc }) => statusByLessonId.get(String((doc && doc.id) || "")))
+    .slice(0, top).map(({ doc, score }) => ({
     id: doc.id || "",
     title: doc.title || "",
     domain: doc.domain || "",
@@ -4479,7 +4511,12 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx, 
     if (bm25Index) {
       // `args.query` is also passed as the floor query: the expansion may add score, but
       // the relevance floor keeps judging what the user typed (see searchLessonsBM25).
-      results = searchLessonsBM25(bm25Index, scoringQuery, args.domain, args.top || 5, args.query);
+      // The status map is what keeps a superseded lesson below every live one — the index
+      // docs carry no status, so it comes from the records already loaded here.
+      results = searchLessonsBM25(
+        bm25Index, scoringQuery, args.domain, args.top || 5, args.query, null,
+        lessonStatusMap(lessons),
+      );
       source = "worker-bm25";
       noteSearchBackend(env, "bm25");
       debugLog(env, 2, "BM25 search", { query: scoringQuery, results: results.length });
@@ -9287,7 +9324,7 @@ export default {
           const index = await loadBM25Index(env);
           const hits = index
             ? searchLessonsBM25(index, scoringQuery, qDomain, limit, qSearch, statusNorm,
-                statusNorm ? new Map(lessons.map(l => [String(l.id || l.name || ""), String(l.status || "")])) : null)
+                lessonStatusMap(lessons))
             : searchLessons(lessons, scoringQuery, qDomain, limit, qSearch, statusNorm);
           const source = index ? "worker-bm25" : "worker-search";
           let data = enrichSearchHits(hits, lessons).map(r => ({
