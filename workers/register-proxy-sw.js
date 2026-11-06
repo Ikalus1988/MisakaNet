@@ -2187,14 +2187,33 @@ function cjkChannelShape(index) {
   };
 }
 
-function buildBM25Index(lessons, { k1 = 1.5, b = 0.75, textMode } = {}) {
+// `b` (length normalisation) is 0.5, not BM25's textbook 0.75 (measured 2026-11-06).
+//
+// 0.75 is calibrated for corpora whose documents are all about the same thing; here a lesson is
+// 72 tokens (a testimonial) or 3,300 (a full write-up), and the long document is usually the one
+// that actually names the error. The cost was measurable: for
+// `ModuleNotFoundError: No module named 'requests'` the 72-token `testimonio-misakanet` won on
+// length alone (12.7) while missing `requests`, and the 3,328-byte German lesson — which contains
+// the exact traceback — came second (12.0). `pnpm 11 peer diamond` was the same shape (2nd).
+//
+// Measured with b=0.5 over two labelled sets, ranking only (no floor):
+//   * 267-query benchmark: hit@1 128 → 134, hit@3 154 → 158, hit@5 unchanged;
+//   * 17 English regression queries: hit@1 15 → 16, hit@3 unchanged;
+//   * both named queries move from rank 2 to rank 1.
+// The index carries `b`, so a rebuild is what publishes this; the freshness gate compares a stored
+// index against these two constants (a parameter change is invisible to docCount/textMode/version),
+// and the ranker's own `b = 0.75` default stays for hand-built indexes that predate the field.
+const BM25_K1 = 1.5;
+const BM25_B = 0.5;
+
+function buildBM25Index(lessons, { k1 = BM25_K1, b = BM25_B, textMode } = {}) {
   const docs = [];
   const lengths = [];
   const termDocs = new Map();
   // ── the CJK channel (issue #2355) ──────────────────────────────────────────
   //
   // Bigrams go into their **own** map with their **own** lengths, and never into `termDocs`. The
-  // reason is `avgDocLen`: BM25 normalises every document's score by it (`b = 0.75`), so a bigram
+  // reason is `avgDocLen`: BM25 normalises every document's score by it (`b`, 0.5 here), so a bigram
   // stream sharing the text would move every English score even though no English token changed —
   // which is exactly what `workers/relevance-floor-calibration.test.mjs` measures, and this channel
   // must leave that table byte-identical.
@@ -2556,12 +2575,17 @@ async function refreshSearchIndex(env) {
       // projection existed; same reasoning, or the fix would idle for 20h.
       const modeChanged = (existing.textMode || "lean") !== textMode;
       const textChanged = (existing.textVersion || 0) !== INDEX_TEXT_VERSION;
+      // The ranker reads `k1`/`b` off the stored index, so a build made with the previous parameters
+      // keeps scoring every query the old way — and docCount, textMode and textVersion all stay equal
+      // across that change, which is the same blind spot `INDEX_TEXT_VERSION` was added for. Measured
+      // 2026-11-06 (b 0.75 → 0.5): without this check the new default would idle for up to 20h.
+      const paramsChanged = (existing.k1 ?? BM25_K1) !== BM25_K1 || (existing.b ?? BM25_B) !== BM25_B;
       // A sync that rewrote rows (a lesson edit, a correction) must reindex even when
       // the count is unchanged.
       const corpusChanged = !!syncStamp && existing.syncStamp !== syncStamp;
       if (Number.isFinite(age) && age < BM25_INDEX_MAX_AGE_MS &&
           existing.docCount === lessons.length && !modeChanged && !textChanged &&
-          !corpusChanged) {
+          !paramsChanged && !corpusChanged) {
         const fresh = { refreshed: false, reason: "fresh", docCount: existing.docCount,
                         corpusCount: lessons.length, textMode: existing.textMode || "lean",
                         textVersion: existing.textVersion || 0,

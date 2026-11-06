@@ -23,7 +23,7 @@ from pathlib import Path
 
 # BM25 parameters (standard defaults)
 DEFAULT_K1 = 1.5
-DEFAULT_B = 0.75
+DEFAULT_B = 0.5  # must match buildBM25Index in workers/register-proxy-sw.js
 
 # Minimum term length to index
 MIN_TERM_LENGTH = 2
