@@ -48,7 +48,7 @@ Index Statistics:
   Documents: <N>
   Unique terms: 1,710
   Avg doc length: 10.5 tokens
-  BM25 parameters: k1=1.5, b=0.75
+  BM25 parameters: k1=1.5, b=0.5
 ```
 
 ### 2. Sync to KV
@@ -99,7 +99,8 @@ Where:
 - `|D|`: Length of document D
 - `avgdl`: Average document length
 - `k1 = 1.5`: Term frequency saturation parameter
-- `b = 0.75`: Length normalization parameter
+- `b = 0.5`: Length normalization parameter (the worker default since 2026-11-06; the
+  textbook 0.75 is calibrated for same-size documents, and this corpus runs 72–3,300 tokens)
 
 ### IDF Calculation
 
@@ -120,7 +121,7 @@ Where:
   "docCount": 435,
   "avgDocLen": 10.5,
   "k1": 1.5,
-  "b": 0.75,
+  "b": 0.5,
   "terms": {
     "docker": {
       "df": 45,

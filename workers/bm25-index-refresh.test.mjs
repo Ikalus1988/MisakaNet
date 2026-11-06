@@ -114,6 +114,29 @@ test('the refresh builds and stores a usable index', async () => {
   assert.ok(timeout.docs[0].doc >= 0 && timeout.docs[0].tf >= 1 && timeout.docs[0].len > 0);
 });
 
+// The published index is the only place `b` comes from — the ranker reads it off the index, so a
+// change here silently re-scores every query. Pinned because it WAS changed on a measurement
+// (2026-11-06, b 0.75 → 0.5: benchmark hit@1 128 → 134, hit@3 154 → 158; the two named queries the
+// handoff listed moved from rank 2 to rank 1), and an unpinned constant is how it drifts back.
+test('the index carries the measured length-normalisation parameter', () => {
+  const index = buildBM25Index(LESSONS);
+  assert.equal(index.b, 0.5);
+  assert.equal(index.k1, 1.5);
+});
+
+// The ranker reads k1/b off the *stored* index, and none of the other freshness signals can see a
+// parameter change: docCount, textMode and textVersion are all equal across it. Without this check
+// the new value idles for up to BM25_INDEX_MAX_AGE_MS (20h) — the same trap INDEX_TEXT_VERSION
+// documents for the text shape.
+test('an index built with the old b is rebuilt, not trusted for 20 hours', async () => {
+  const env = createEnv();
+  env._store.set(BM25_INDEX_KEY, JSON.stringify(buildBM25Index(LESSONS, { b: 0.75 })));
+  const result = await refreshSearchIndex(env);
+  assert.equal(result.refreshed, true, JSON.stringify(result));
+  const stored = await storedIndex(env);
+  assert.equal(stored.b, 0.5);
+});
+
 test('once built, search uses the BM25 path', async () => {
   const env = createEnv();
   await refreshSearchIndex(env);
