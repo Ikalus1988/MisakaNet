@@ -7,6 +7,97 @@ All notable changes to the Misaka Network project are documented here.
 
 ---
 
+## [3.6.0](https://github.com/Ikalus1988/MisakaNet/compare/v3.5.0...v3.6.0) (2026-11-07)
+
+
+### Features
+
+* **ci:** a red pr-agent can now say whether the model answered ([#2972](https://github.com/Ikalus1988/MisakaNet/issues/2972)) ([#4404](https://github.com/Ikalus1988/MisakaNet/issues/4404)) ([03a13c0](https://github.com/Ikalus1988/MisakaNet/commit/03a13c0d968fb69f0b5d867b3434af562f9cd137))
+* **cindy-plugin:** 1.3.0 — a lookup for the answer, and the checkpoint rhythm ([#4507](https://github.com/Ikalus1988/MisakaNet/issues/4507)) ([29fa815](https://github.com/Ikalus1988/MisakaNet/commit/29fa815d2009992923c06421727889be498a319a))
+* **contract:** decide the three trade-offs in DECLARED_DIVERGENCES ([#4399](https://github.com/Ikalus1988/MisakaNet/issues/4399)) ([#4449](https://github.com/Ikalus1988/MisakaNet/issues/4449)) ([c7461c2](https://github.com/Ikalus1988/MisakaNet/commit/c7461c25573985c36ba2354d7682b4b390e101c5))
+* **heartbeat:** report the marketplace action, from the only mark it leaves ([#4354](https://github.com/Ikalus1988/MisakaNet/issues/4354)) ([d09c51a](https://github.com/Ikalus1988/MisakaNet/commit/d09c51a05ca99217ddff732e4671b8b676475ed3))
+* **intake:** a proposal is routable end to end — worker labels it, the Cindy plugin can submit it ([#4412](https://github.com/Ikalus1988/MisakaNet/issues/4412)) ([1cac438](https://github.com/Ikalus1988/MisakaNet/commit/1cac438b07fdf1c284a834274de98660c658ca12))
+* **intake:** optional answer-notification email, confirm-before-send ([#4513](https://github.com/Ikalus1988/MisakaNet/issues/4513)) ([6e7251b](https://github.com/Ikalus1988/MisakaNet/commit/6e7251b9bedee51deb936ed6ba35c8fdfb6da18e))
+* **intake:** the form asks for the cause while the reporter still remembers it ([#4349](https://github.com/Ikalus1988/MisakaNet/issues/4349)) ([8fab170](https://github.com/Ikalus1988/MisakaNet/commit/8fab170021a5eca6a6e842899edc9e7fb870146b))
+* **intake:** the scheduled batch — and why its last mile is one click ([#4350](https://github.com/Ikalus1988/MisakaNet/issues/4350)) ([0493b1f](https://github.com/Ikalus1988/MisakaNet/commit/0493b1fc5346acb2c206dbdf0edf18c2cebbf2c3))
+* **integrations:** Cindy becomes the 13th host — and the first target that writes nothing ([#4397](https://github.com/Ikalus1988/MisakaNet/issues/4397)) ([4274867](https://github.com/Ikalus1988/MisakaNet/commit/4274867c33ecfe6631dabc759e5cf23c94fd9e74))
+* **lessons:** 348 summaries and triggers derived from the lessons' own sentences ([#4344](https://github.com/Ikalus1988/MisakaNet/issues/4344)) ([2e89742](https://github.com/Ikalus1988/MisakaNet/commit/2e89742274ec1c547df042139f2330eed041cce5))
+* **lessons:** adopt three lesson PRs — FANUC index, entry offsets, five generalizable lessons ([#4335](https://github.com/Ikalus1988/MisakaNet/issues/4335)) ([8f51b9e](https://github.com/Ikalus1988/MisakaNet/commit/8f51b9e94e182144828e57a4962d21924b478a7a))
+* **lessons:** batch 4 — ten submissions, and the two gate bugs they found ([#4322](https://github.com/Ikalus1988/MisakaNet/issues/4322)) ([23d66e9](https://github.com/Ikalus1988/MisakaNet/commit/23d66e95fd8a0e893b9dcc0db89bc818df01f917))
+* **lessons:** batch 5 — thirteen intake reports the converter used to refuse ([#4330](https://github.com/Ikalus1988/MisakaNet/issues/4330)) ([94ed70e](https://github.com/Ikalus1988/MisakaNet/commit/94ed70eb3c7c12685cf0617accb73a1ffca26e20))
+* **search:** record and expose how long a search took — the 62s episode left no trace ([#4384](https://github.com/Ikalus1988/MisakaNet/issues/4384)) ([26d54c2](https://github.com/Ikalus1988/MisakaNet/commit/26d54c2e4d0658bd0199928e2accf717563e39c7)), closes [#4052](https://github.com/Ikalus1988/MisakaNet/issues/4052)
+* **security:** publish /.well-known/security.txt, and send HSTS from the site ([#4447](https://github.com/Ikalus1988/MisakaNet/issues/4447)) ([168fe71](https://github.com/Ikalus1988/MisakaNet/commit/168fe71931be142e531ee829e4dc1795f09ef308))
+* **shape-guard:** a shipped dot-directory can be declared instead of guessed ([#4397](https://github.com/Ikalus1988/MisakaNet/issues/4397)) ([#4398](https://github.com/Ikalus1988/MisakaNet/issues/4398)) ([a3b3de9](https://github.com/Ikalus1988/MisakaNet/commit/a3b3de9969f24219bea6f73a22329a5e53f3181f))
+* **sync:** store an answer for any answered intake ([#4461](https://github.com/Ikalus1988/MisakaNet/issues/4461)) ([3097e80](https://github.com/Ikalus1988/MisakaNet/commit/3097e80a8c9a121335850fe40096a2deca6d4bfa))
+* **triage:** a proposal enters the decision queue, and bot comments stop clearing it ([#4420](https://github.com/Ikalus1988/MisakaNet/issues/4420)) ([b7e2340](https://github.com/Ikalus1988/MisakaNet/commit/b7e234014ed0c6b9fd36d993e57948e763f67fb4))
+
+
+### Bug Fixes
+
+* **#4357, #4358:** one workflow count, and every read_text names its encoding ([#4359](https://github.com/Ikalus1988/MisakaNet/issues/4359)) ([327d266](https://github.com/Ikalus1988/MisakaNet/commit/327d26607bc70b7eab457d54f8129db96db70ae3))
+* **ci:** a run that failed without starting now has a gate that can see it ([#4377](https://github.com/Ikalus1988/MisakaNet/issues/4377)) ([5ad27b9](https://github.com/Ikalus1988/MisakaNet/commit/5ad27b99996e5dc46d55aafcf834df4d5ef00050)), closes [#3232](https://github.com/Ikalus1988/MisakaNet/issues/3232) [#2957](https://github.com/Ikalus1988/MisakaNet/issues/2957)
+* **cindy-plugin:** 1.3.1 — an unknown status says "cannot be determined", not "still waiting" ([#4516](https://github.com/Ikalus1988/MisakaNet/issues/4516)) ([def62d4](https://github.com/Ikalus1988/MisakaNet/commit/def62d42b1cb92ff143607939a8efcf1773b2b05))
+* **cindy-plugin:** pass the endpoint's summary_plain through to the agent ([#4401](https://github.com/Ikalus1988/MisakaNet/issues/4401)) ([664ee4b](https://github.com/Ikalus1988/MisakaNet/commit/664ee4b2f7b89757299a5fe0ffa2d07c64ba4a94))
+* **cindy-plugin:** the docs name the version the manifest has, and a gate keeps them honest ([#4402](https://github.com/Ikalus1988/MisakaNet/issues/4402)) ([2069ef4](https://github.com/Ikalus1988/MisakaNet/commit/2069ef45d12a1743729bd8975b49638b6b3c34e0))
+* **ci:** the deploy's `setup-node` pin was github-script's SHA, so nothing could deploy ([#4371](https://github.com/Ikalus1988/MisakaNet/issues/4371)) ([5e640f2](https://github.com/Ikalus1988/MisakaNet/commit/5e640f2c61db380b754e8e8711b46221a3092819))
+* **ci:** the Wrangler that deploys is the Wrangler the lockfile names ([#4364](https://github.com/Ikalus1988/MisakaNet/issues/4364)) ([5b3060c](https://github.com/Ikalus1988/MisakaNet/commit/5b3060c6e855968e21dbbebc6a4f2884e7604734))
+* **daily:** two scheduled jobs were red for reasons that were states, not failures ([#4480](https://github.com/Ikalus1988/MisakaNet/issues/4480)) ([844f10e](https://github.com/Ikalus1988/MisakaNet/commit/844f10e6ae77d2dbcbb13308fa0e76cf38aa9027))
+* **digest:** an emptied queue closes its tracking issue ([#4453](https://github.com/Ikalus1988/MisakaNet/issues/4453)) ([edb5175](https://github.com/Ikalus1988/MisakaNet/commit/edb51751cf39cea4323546b6e0a9d1da403664ee))
+* **intake-batch:** check the gate before writing, and leave the feed alone ([#4355](https://github.com/Ikalus1988/MisakaNet/issues/4355)) ([8f2d2ca](https://github.com/Ikalus1988/MisakaNet/commit/8f2d2ca24d5499d9dc318fa4a44c9cdc7b901064))
+* **intake-batch:** install the whole requirements file, not one package ([#4351](https://github.com/Ikalus1988/MisakaNet/issues/4351)) ([ec588c6](https://github.com/Ikalus1988/MisakaNet/commit/ec588c62be942801335cf82bdbf1be12907eb943))
+* **intake:** a proposal is not a lesson — skip the auto-review, and say so in the four copies ([#4428](https://github.com/Ikalus1988/MisakaNet/issues/4428)) ([2734b09](https://github.com/Ikalus1988/MisakaNet/commit/2734b09acbf398334aee6c9c0c88a02f65992365))
+* **intake:** an answered question that is still open was invisible to search ([#4332](https://github.com/Ikalus1988/MisakaNet/issues/4332)) ([405bcc4](https://github.com/Ikalus1988/MisakaNet/commit/405bcc43d94bd9a15cf93122c8e33322423fa48b))
+* **intake:** an empty `## Problem` is not "problem present" ([#4427](https://github.com/Ikalus1988/MisakaNet/issues/4427)) ([#4431](https://github.com/Ikalus1988/MisakaNet/issues/4431)) ([062c083](https://github.com/Ikalus1988/MisakaNet/commit/062c0833ec72eea20ab1709441a71223085eb98b))
+* **intake:** the receipt step pointed at a field no lesson has ever carried ([#4333](https://github.com/Ikalus1988/MisakaNet/issues/4333)) ([5b70037](https://github.com/Ikalus1988/MisakaNet/commit/5b70037a27779b572ba2232a90b38e83aad404c9))
+* **lesson:** correct the whisper no_speech_prob gate ([#4456](https://github.com/Ikalus1988/MisakaNet/issues/4456)) ([0f15c42](https://github.com/Ikalus1988/MisakaNet/commit/0f15c42900cf1136bca7d537d65d9f0aefc7b1f7))
+* **mcp:** the schema stops contradicting the handler it describes ([#4363](https://github.com/Ikalus1988/MisakaNet/issues/4363)) ([693a673](https://github.com/Ikalus1988/MisakaNet/commit/693a6731ea4c9ffa57dac30b728b88090fcf0231))
+* **mcp:** the stdio me_inbox called an endpoint that does not exist ([#4378](https://github.com/Ikalus1988/MisakaNet/issues/4378)) ([7f67c86](https://github.com/Ikalus1988/MisakaNet/commit/7f67c861cf9bc31670384f1da1a4ee44a161fac9)), closes [#3577](https://github.com/Ikalus1988/MisakaNet/issues/3577)
+* **mcp:** write_lesson took an array where the hosted schema says a comma-separated string ([#4395](https://github.com/Ikalus1988/MisakaNet/issues/4395)) ([caf6402](https://github.com/Ikalus1988/MisakaNet/commit/caf640296233bea588cba3616257943b26ded71a)), closes [#4383](https://github.com/Ikalus1988/MisakaNet/issues/4383)
+* **notify:** deliver on every cron tick ([#4515](https://github.com/Ikalus1988/MisakaNet/issues/4515)) ([e696f6f](https://github.com/Ikalus1988/MisakaNet/commit/e696f6f8c9bf63d0663f5b3a6863f11526a4b4b4))
+* **queue:** engagement is recency, not existence — an old reply no longer hides an undecided issue ([#4432](https://github.com/Ikalus1988/MisakaNet/issues/4432)) ([eb61e23](https://github.com/Ikalus1988/MisakaNet/commit/eb61e23e8ec6e608f4896bfb05a4c38c3fbddb54))
+* **scanning:** the scanner reads text, so the comments explaining the fix re-raised it ([#4374](https://github.com/Ikalus1988/MisakaNet/issues/4374)) ([4830f09](https://github.com/Ikalus1988/MisakaNet/commit/4830f09fe41150e993cf83a9dafd8d125016e32c))
+* **scanning:** two real findings fixed, ten false positives to dismiss with reasons ([#4356](https://github.com/Ikalus1988/MisakaNet/issues/4356)) ([9d84edc](https://github.com/Ikalus1988/MisakaNet/commit/9d84edcb521b576d45396496497d125fc806937f))
+* **scorer:** an empty Verification heading is worth nothing ([#4506](https://github.com/Ikalus1988/MisakaNet/issues/4506)) ([b0e1b47](https://github.com/Ikalus1988/MisakaNet/commit/b0e1b47b4791974d1f9c71d33bc41d89ca94a3d8))
+* **scorer:** stop penalising portable paths and the pipeline's own note ([#4457](https://github.com/Ikalus1988/MisakaNet/issues/4457)) ([cb1d8bb](https://github.com/Ikalus1988/MisakaNet/commit/cb1d8bbc204121ee7a1e63111dbb4196287c4804))
+* **search:** a superseded lesson must never outrank a live one ([#4520](https://github.com/Ikalus1988/MisakaNet/issues/4520)) ([bdd54f8](https://github.com/Ikalus1988/MisakaNet/commit/bdd54f85759f229360cdd47b594b61726116b92a))
+* **search:** stop penalising long lessons — b 0.75 → 0.5, measured ([#4524](https://github.com/Ikalus1988/MisakaNet/issues/4524)) ([ffc1abd](https://github.com/Ikalus1988/MisakaNet/commit/ffc1abde33a036f0b9e4db73230c07bf695281c8))
+* **search:** the latency column said "0 ms" for every row written before today ([#4386](https://github.com/Ikalus1988/MisakaNet/issues/4386)) ([75a70e1](https://github.com/Ikalus1988/MisakaNet/commit/75a70e16fb246234b7a23692708c2fcad44f7a96))
+* **setup:** resolve mcode's data dir instead of assuming ~/.minimax (fixes [#3838](https://github.com/Ikalus1988/MisakaNet/issues/3838)) ([#4319](https://github.com/Ikalus1988/MisakaNet/issues/4319)) ([ccd2d80](https://github.com/Ikalus1988/MisakaNet/commit/ccd2d80c762d5cbcad6dc98a5d56fdc192fbb47d))
+* **smithery:** gate the publish steps ([#4481](https://github.com/Ikalus1988/MisakaNet/issues/4481)) ([a5d4b58](https://github.com/Ikalus1988/MisakaNet/commit/a5d4b5854852b96e29597080f96a1746fc42a44e))
+* **tests:** every text read and write in the maintained trees names its encoding ([#4382](https://github.com/Ikalus1988/MisakaNet/issues/4382)) ([#4388](https://github.com/Ikalus1988/MisakaNet/issues/4388)) ([5c8245b](https://github.com/Ikalus1988/MisakaNet/commit/5c8245b1e5ee0acc94a865e0e84dfaef72fbc69c))
+* **triage:** `needs-ac` is not a question's label either ([#4239](https://github.com/Ikalus1988/MisakaNet/issues/4239)) ([#4406](https://github.com/Ikalus1988/MisakaNet/issues/4406)) ([d8b25df](https://github.com/Ikalus1988/MisakaNet/commit/d8b25dff9cc239c3fa4375dd750d8ad47c9bb8e6))
+* **triage:** a question kept the corpus queue label — 50 of 50, including [#4238](https://github.com/Ikalus1988/MisakaNet/issues/4238) and [#4239](https://github.com/Ikalus1988/MisakaNet/issues/4239) ([#4396](https://github.com/Ikalus1988/MisakaNet/issues/4396)) ([2fb51d9](https://github.com/Ikalus1988/MisakaNet/commit/2fb51d9639298427a88fd1a3d12bd570384585e1))
+* **worker:** the three anonymous write paths [#2939](https://github.com/Ikalus1988/MisakaNet/issues/2939) measured now have limits ([#4369](https://github.com/Ikalus1988/MisakaNet/issues/4369)) ([f4aa190](https://github.com/Ikalus1988/MisakaNet/commit/f4aa19009b5394b4ae863fb70526fbb3d17b100d))
+
+
+### Documentation
+
+* **cindy:** the market sentence follows the market ([#4419](https://github.com/Ikalus1988/MisakaNet/issues/4419)) ([9a8afb2](https://github.com/Ikalus1988/MisakaNet/commit/9a8afb293dacb9bbd39928eb92a033f70cec286c))
+* **cindy:** the market sentence states the rule, not the moment ([#4423](https://github.com/Ikalus1988/MisakaNet/issues/4423)) ([478b2c1](https://github.com/Ikalus1988/MisakaNet/commit/478b2c140219f52cb8061ec89c16e391e7e5d3af))
+* **handoff:** volume 27 — three colours, and what each of them was carrying ([#4380](https://github.com/Ikalus1988/MisakaNet/issues/4380)) ([f4d68f8](https://github.com/Ikalus1988/MisakaNet/commit/f4d68f847010e4ef27b0b106c5330cbe9f356fba))
+* **intake:** where the flywheel is stuck, measured, and what unblocks it ([#4346](https://github.com/Ikalus1988/MisakaNet/issues/4346)) ([03f81ba](https://github.com/Ikalus1988/MisakaNet/commit/03f81ba961d49f3dfc485191d4e8976bfec48086))
+* **resources:** close G-5 with a Colab notebook, re-check the CF/Google ledger ([#4448](https://github.com/Ikalus1988/MisakaNet/issues/4448)) ([923489e](https://github.com/Ikalus1988/MisakaNet/commit/923489ef2f296c024274b8b40e01f777010d170a))
+* **scorer:** record why the issue surface gets no separate format scale ([#4518](https://github.com/Ikalus1988/MisakaNet/issues/4518)) ([6335587](https://github.com/Ikalus1988/MisakaNet/commit/633558767deef79ac0e71cb41dec548666f56400))
+* **triage:** make scope:repo discoverable where issues are filed ([#4437](https://github.com/Ikalus1988/MisakaNet/issues/4437)) ([c50090a](https://github.com/Ikalus1988/MisakaNet/commit/c50090a9d774aa3b46fce3fea57fb2b2d99556d8))
+* **triage:** scope:repo covers any repo-work issue ([#4438](https://github.com/Ikalus1988/MisakaNet/issues/4438)) ([a9fb140](https://github.com/Ikalus1988/MisakaNet/commit/a9fb140729e07739f1f84c36d8897d805d4e4b02))
+
+
+### Tests
+
+* **cindy-plugin:** cover what the package does with the endpoint's answers ([#4408](https://github.com/Ikalus1988/MisakaNet/issues/4408)) ([0609cb3](https://github.com/Ikalus1988/MisakaNet/commit/0609cb3d94641e0adde4b7f2515182a8d8900ade))
+* **contract:** one gate for the two surfaces — schema structure and hosted dependencies ([#4383](https://github.com/Ikalus1988/MisakaNet/issues/4383)) ([#4389](https://github.com/Ikalus1988/MisakaNet/issues/4389)) ([c36b4e2](https://github.com/Ikalus1988/MisakaNet/commit/c36b4e2bca10bf24de1dd41044d01b08912a82c7))
+* **secrets:** assemble the token fixtures at run time, so the scanner has nothing to redact ([#4445](https://github.com/Ikalus1988/MisakaNet/issues/4445)) ([0b554e2](https://github.com/Ikalus1988/MisakaNet/commit/0b554e2ca696be6c1e9d951de01932d0d69982ca))
+
+
+### CI/CD
+
+* **pr-agent:** the review check no longer reports green for pushes it never read ([#4379](https://github.com/Ikalus1988/MisakaNet/issues/4379)) ([9451de7](https://github.com/Ikalus1988/MisakaNet/commit/9451de7dfc04112a0d75fede9f84114f9b312f6b)), closes [#2972](https://github.com/Ikalus1988/MisakaNet/issues/2972)
+
+
+### Lessons
+
+* **contrib:** convert five intakes — LevelDB bloat, GBK batch, \Z in JS, async races, no-timeout telemetry ([#4372](https://github.com/Ikalus1988/MisakaNet/issues/4372)) ([2284cff](https://github.com/Ikalus1988/MisakaNet/commit/2284cff10709fec197b7cde1c3799f226aee01a8))
+
 ## [3.5.0](https://github.com/Ikalus1988/MisakaNet/compare/v3.4.0...v3.5.0) (2026-11-01)
 
 
