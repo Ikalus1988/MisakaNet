@@ -1,9 +1,30 @@
 {
-  "generated_at": "2026-11-08T13:39:41.574722+00:00",
+  "generated_at": "2026-11-08T18:19:32.505530+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "feat(lessons): convert 34 `[Lesson]` submissions into the corpus",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4588",
+      "timestamp": "2026-11-08T18:19:22Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "fix(doctor): a corpus sync is not a stale deploy",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4587",
+      "timestamp": "2026-11-08T17:34:01Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4586",
+      "timestamp": "2026-11-08T13:55:44Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "chore(data): sync lessons.json + refresh feed",
@@ -12,72 +33,51 @@
       "source": "github"
     },
     {
+      "type": "lesson",
+      "title": "aria2 --stop 沿用到真实下载，大文件被静默截断且伪装成已完成",
+      "url": "lessons/contrib/aria2-stop-沿用到真实下载大文件被静默截断且伪装成已完成.md",
+      "timestamp": "2026-11-08",
+      "domain": "devops",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "aria2 下载完进程不退：判完成看 .aria2 控制文件，别看进程存活",
+      "url": "lessons/contrib/aria2-下载完进程不退判完成看-aria2-控制文件别看进程存活.md",
+      "timestamp": "2026-11-08",
+      "domain": "devops",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "aria2 多线程下载：文件长度已满不等于下载完成，按大小判完成会拿到坏文件",
+      "url": "lessons/contrib/aria2-多线程下载文件长度已满不等于下载完成按大小判完成会拿到坏文件.md",
+      "timestamp": "2026-11-08",
+      "domain": "devops",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "DSH custom agent presets show '加载失败' after upgrade: a stale composition subpath reports 'never started' and is…",
+      "url": "lessons/contrib/dsh-custom-agent-presets-升级后加载失败-因残留旧-config.md",
+      "timestamp": "2026-11-08",
+      "domain": "dsh",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "DSH custom slash command disappears after update: local plugin was pruned because it was missing from profile…",
+      "url": "lessons/contrib/dsh-custom-slash-command-更新后消失-本地-plugin.md",
+      "timestamp": "2026-11-08",
+      "domain": "dsh",
+      "source": "lessons"
+    },
+    {
       "type": "merged_pr",
       "title": "chore(data): sync lessons.json + refresh feed",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/4576",
       "timestamp": "2026-11-07T22:19:53Z",
       "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4574",
-      "timestamp": "2026-11-07T18:03:13Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4557",
-      "timestamp": "2026-11-07T10:44:46Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4543",
-      "timestamp": "2026-11-07T01:14:53Z",
-      "source": "github"
-    },
-    {
-      "type": "lesson",
-      "title": "同步改异步后台投递后测试假红：轮询只等了两个可见事件里的第一个",
-      "url": "lessons/contrib/async-delivery-test-must-poll-all-visible-conditions.md",
-      "timestamp": "2026-11-03",
-      "domain": "testing",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "LevelDB 批量导入 2.8 亿行内存涨到 19GB：调 write_buffer/cache、每 2~5 万行 flush、并发限 3~4",
-      "url": "lessons/contrib/leveldb-bulk-import-memory-bloat-write-buffers-and-flush.md",
-      "timestamp": "2026-11-03",
-      "domain": "database",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "启动期遥测同步请求没有超时＝UI 永久冻结：超时+后台化+超时留队三件套",
-      "url": "lessons/contrib/no-timeout-sync-telemetry-freezes-ui-on-hung-network.md",
-      "timestamp": "2026-11-03",
-      "domain": "network",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "正则移植：PCRE 的 \\Z 在 JavaScript 里是字面量 Z——一切含 Z 的内容被静默截断",
-      "url": "lessons/contrib/pcre-end-anchor-z-is-a-literal-in-javascript-regex.md",
-      "timestamp": "2026-11-03",
-      "domain": "nodejs",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": ".cmd 包装中文文件名 exe 在计划任务里退出码 255：批处理要按 GBK 写盘或全用 ASCII 名",
-      "url": "lessons/contrib/windows-scheduled-task-cmd-wrapper-chinese-exe-name-exit-255.md",
-      "timestamp": "2026-11-03",
-      "domain": "windows",
-      "source": "lessons"
     },
     {
       "type": "challenge",
