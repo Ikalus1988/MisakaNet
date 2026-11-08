@@ -15,7 +15,7 @@ answer.
 
 Usage:
     python3 scripts/sync_answered_questions.py            # full sync
-    python3 scripts/sync_answered_questions.py --issue 1362 --execute
+    python3 scripts/sync_answered_questions.py --issue 1362
     python3 scripts/sync_answered_questions.py --dry-run
 
 Auth:
