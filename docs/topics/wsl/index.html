@@ -168,7 +168,7 @@
 </head>
 <body>
 <h1>WSL & Windows Issues</h1>
-<div class="count">110 lessons in this domain</div>
+<div class="count">128 lessons in this domain</div>
 
 <div class="lesson">
   <a href="/lessons/an-allowlist-that-rejects-real-data-is-worse-than-no-validation-test-the-rule-ag/">An allowlist that rejects real data is worse than no validation — test the rule against the corpus</a>
@@ -197,6 +197,14 @@
 <div class="lesson">
   <a href="/lessons/api-gateway-anthropic-incompatibility/">api gateway anthropic incompatibility</a>
   <div class="summary">Hermes Agent 配置 Anthropic provider 使用 internal-gateway.local API 时失败，</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/aria2-下载完进程不退判完成看-aria2-控制文件别看进程存活/">aria2 下载完进程不退：判完成看 .aria2 控制文件，别看进程存活</a>
+  <div class="summary">用 aria2 多线程下一个约 950 MB 的模型包。文件大小已经停止增长、同目录的 `<file>.aria2` 控制文件也消失了，但 aria2 进程仍然挂着不退。看起来像"还在下但卡住了"，于是继续等，白等十几分钟。更糟的是：即使判</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/aria2-多线程下载文件长度已满不等于下载完成按大小判完成会拿到坏文件/">aria2 多线程下载：文件长度已满不等于下载完成，按大小判完成会拿到坏文件</a>
+  <div class="summary">用 aria2（-x 16 -s 16 --file-allocation=none）下载一个约 184MB 的 APK。磁盘上的文件长度很快变成完整大小，于是按"文件大小对了"判定下载完成并结束进程；随后 sha256 与官方 SHA25</div>
 </div>
 <div class="lesson">
   <a href="/lessons/bge-embedding-fallback-crash/">BGE Embedding Fallback Crash</a>
@@ -241,14 +249,6 @@
 <div class="lesson">
   <a href="/lessons/dsh-experience-library-imports-no-lessons-its-meow-memory-adapter-resolves-memor/">dsh-experience-library imports no lessons: its meow-memory adapter resolves memory.db relative to the plugin and…</a>
   <div class="summary">After installing the DSH plugin `dsh-experience-library` next to `meow-memory`, `experience_import(action="list")` kept </div>
-</div>
-<div class="lesson">
-  <a href="/lessons/migrating-dsh-home-with-robocopy-materializes-the-profile-node-modules-junctions/">Migrating DSH_HOME with robocopy materializes the profile node_modules junctions, and dsh refuses to boot</a>
-  <div class="summary">After moving `DSH_HOME` to another location with `robocopy`, dsh refuses to start and reports:</div>
-</div>
-<div class="lesson">
-  <a href="/lessons/dsh-on-windows-a-workspace-not-owned-by-the-current-user-blocks-every-shell-tool/">DSH on Windows: a workspace not owned by the current user blocks every shell tool (WRITE_OWNER), while ops_bash with…</a>
-  <div class="summary">On Windows, DeepSeek Harness refused to start ANY shell tool for a workspace directory, before the command itself ran:</div>
 </div>
 <div class="back"><a href="/">← Back to MisakaNet</a> · <a href="/search/">Search lessons</a></div>
 <footer class="footer">

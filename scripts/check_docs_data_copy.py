@@ -60,8 +60,9 @@ LITE_MAX_BYTES = 300_000
 # corpus grew to 705 (326,351 B / 705 = 463 B per lesson); only the count did. A per-lesson budget keeps
 # the guard pointed at the shape: a re-introduced `preview` is ~2 KB per lesson and blows it immediately,
 # while a corpus that is simply bigger no longer turns the check red for being bigger.
-LITE_MAX_BYTES_PER_LESSON = 480  # 2026-10-31: 354,736 B / 752 = 471.7 after the second batch
-# (the titles in that batch are long CJK strings; the schema did not change).
+LITE_MAX_BYTES_PER_LESSON = 500  # 2026-11-09: 404,801 B / 834 = 485.4 after the fourth batch
+# (again long CJK titles/summaries; the schema did not change). The failure mode this budget exists
+# for — a re-introduced `preview` — is ~2 KB per lesson, four times above this line.
 
 
 def lite_ceiling(entries: int) -> int:

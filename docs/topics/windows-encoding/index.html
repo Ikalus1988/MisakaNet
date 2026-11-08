@@ -168,7 +168,7 @@
 </head>
 <body>
 <h1>Windows-Encoding Lessons</h1>
-<div class="count">88 lessons in this domain</div>
+<div class="count">106 lessons in this domain</div>
 
 <div class="lesson">
   <a href="/lessons/roboguide-handlingpro-plugin-unavailable-a-missing-install-feature-not-com-regis/">ROBOGUIDE HandlingPRO 'plugin unavailable': a missing install feature, not COM registration</a>
@@ -189,6 +189,14 @@
 <div class="lesson">
   <a href="/lessons/an-electron-apps-cookie-sqlite-cannot-be-read-while-it-runs-and-no-non-admin-tri/">An Electron app's cookie SQLite cannot be read while it runs, and no non-admin trick bypasses the lock</a>
   <div class="summary">While an Electron desktop app is running, its cookie database (Network\Cookies, a plain SQLite file) cannot be read by a</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/aria2-下载完进程不退判完成看-aria2-控制文件别看进程存活/">aria2 下载完进程不退：判完成看 .aria2 控制文件，别看进程存活</a>
+  <div class="summary">用 aria2 多线程下一个约 950 MB 的模型包。文件大小已经停止增长、同目录的 `<file>.aria2` 控制文件也消失了，但 aria2 进程仍然挂着不退。看起来像"还在下但卡住了"，于是继续等，白等十几分钟。更糟的是：即使判</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/aria2-多线程下载文件长度已满不等于下载完成按大小判完成会拿到坏文件/">aria2 多线程下载：文件长度已满不等于下载完成，按大小判完成会拿到坏文件</a>
+  <div class="summary">用 aria2（-x 16 -s 16 --file-allocation=none）下载一个约 184MB 的 APK。磁盘上的文件长度很快变成完整大小，于是按"文件大小对了"判定下载完成并结束进程；随后 sha256 与官方 SHA25</div>
 </div>
 <div class="lesson">
   <a href="/lessons/chinese-powershell-51-script-saved-as-utf-8-without-bom-is-read-as-gbk-and-fails/">Chinese PowerShell 5.1 script saved as UTF-8 without BOM is read as GBK and fails to parse</a>
@@ -241,14 +249,6 @@
 <div class="lesson">
   <a href="/lessons/dsh-windows-job-runner-exits-1-because-the-profile-dependency-closure-is-incompl/">DSH Windows job runner exits 1 because the profile dependency closure is incomplete</a>
   <div class="summary">On Windows the DSH (DeepSeek Harness) engine started normally and the GUI opened, but</div>
-</div>
-<div class="lesson">
-  <a href="/lessons/dsh-shell-tools-on-windows-fail-in-two-stages-the-powershell-script-policy-then/">DSH shell tools on Windows fail in two stages: the PowerShell script policy, then a sandbox ACL temp grant</a>
-  <div class="summary">On Windows every DSH shell tool (`pwsh`, `ops_bash`) was blocked **before it could start**, and the</div>
-</div>
-<div class="lesson">
-  <a href="/lessons/dsh-workspace-write-denies-writes-in-workspace-subdirectories-while-the-root-is/">DSH workspace-write denies writes in workspace subdirectories while the root is writable</a>
-  <div class="summary">In a DSH (DeepSeek Harness) session on Windows under the `workspace-write` file policy,</div>
 </div>
 <div class="back"><a href="/">← Back to MisakaNet</a> · <a href="/search/">Search lessons</a></div>
 <footer class="footer">

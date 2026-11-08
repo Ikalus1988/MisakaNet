@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Video Lessons — MisakaNet</title>
-<meta name="description" content="2 indexed failure lessons about video. From MisakaNet — Git-backed failure lesson network.">
+<meta name="description" content="6 indexed failure lessons about video. From MisakaNet — Git-backed failure lesson network.">
 <link rel="canonical" href="https://misakanet.org/topics/video/">
 <meta property="og:title" content="Video Lessons">
-<meta property="og:description" content="2 indexed failure lessons about video. From MisakaNet — Git-backed failure lesson network.">
+<meta property="og:description" content="6 indexed failure lessons about video. From MisakaNet — Git-backed failure lesson network.">
 <meta property="og:url" content="https://misakanet.org/topics/video/">
 <!-- design-tokens:start -->
 <style id="misaka-design-tokens">
@@ -168,8 +168,24 @@
 </head>
 <body>
 <h1>Video Lessons</h1>
-<div class="count">2 lessons in this domain</div>
+<div class="count">6 lessons in this domain</div>
 
+<div class="lesson">
+  <a href="/lessons/edge-tts-的-wordboundary-在中文上粒度很粗拿它切字幕会得到一行-40-多字/">edge-tts 的 WordBoundary 在中文上粒度很粗，拿它切字幕会得到一行 40 多字</a>
+  <div class="summary">用 edge-tts 的 WordBoundary 事件生成字幕：遍历 stream()，收集 type=="WordBoundary" 的 offset/duration，再按累计字数每 12 字切一组，生成 SRT。</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/ffmpeg-drawbox-的-x-表达式里-w-不生效导致图形贴左边水平居中要用-iw/">FFmpeg drawbox 的 x 表达式里 w 不生效导致图形贴左边，水平居中要用 iw</a>
+  <div class="summary">想在竖屏视频顶部画一条水平居中的装饰短线，用 drawbox：</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/ffmpeg-filter-里写-windows-绝对路径盘符冒号导致-parse-error改用工作目录内相对文件名/">FFmpeg filter 里写 Windows 绝对路径（盘符冒号）导致 parse error，改用工作目录内相对文件名</a>
+  <div class="summary">用 -vf 给视频烧中文文字时，把字体和文本写成 Windows 绝对路径：</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/ffmpeg-subtitles-的-force-style-在-shell-里被静默丢弃字幕按默认样式满屏乱跑/">ffmpeg subtitles 的 force_style 在 shell 里被静默丢弃，字幕按默认样式满屏乱跑</a>
+  <div class="summary">想把 SRT 烧进竖屏视频并指定字幕样式：</div>
+</div>
 <div class="lesson">
   <a href="/lessons/frame-grid-validation-when-a-replacement-shot-is-shorter-than-its-montage-slot/">Frame-grid validation when a replacement shot is shorter than its montage slot</a>
   <div class="summary">A fixed-duration montage is assembled by filling each slot with a shot. When a shot is replaced</div>
