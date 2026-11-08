@@ -181,6 +181,43 @@ def commits_behind(live: str, head: str) -> int | None:
     return int(out.stdout.strip()) if out.returncode == 0 else None
 
 
+# The paths `deploy-worker.yml` triggers on. A commit outside them cannot make the deployed
+# artifact older: `main` gets a corpus-sync commit several times a day, and the worker is only
+# redeployed when one of these changes.
+#
+# Comparing production's SHA against *HEAD* without this set makes the daily probe red every day:
+# measured 2026-11-06..08, all three scheduled runs failed with "production runs ffc1abde33a0, but
+# this checkout is 267fd12739d9 — 7 commit(s) behind", while every one of those seven commits was
+# `chore(data): sync lessons.json + refresh feed`. A probe that reddens on commits which cannot
+# change the deployed artifact is the "red for a reason that is not a defect" the workflow header
+# warns teaches people to ignore it — and it hides the case it exists for, a worker change that
+# merged without a deploy.
+WORKER_DEPLOY_PATHS = (
+    "workers/register-proxy-sw.js",
+    "workers/register-proxy-entry.js",
+    "workers/wrangler.toml",
+)
+
+
+def worker_commits_since(live: str, head: str, cwd: str | None = None) -> list[str] | None:
+    """Commits in `live..head` that change the deployed worker, or None when git cannot say.
+
+    None (shallow clone, unknown `live`) keeps the caller conservative: it falls back to "stale",
+    the answer that cannot hide a missed deploy. An empty list is a *measurement*: the commits on
+    top of the deployed one do not touch anything `deploy-worker.yml` deploys.
+    """
+    try:
+        out = subprocess.run(
+            ["git", "log", "--format=%H", f"{live}..{head}", "--", *WORKER_DEPLOY_PATHS],
+            cwd=cwd or REPO, capture_output=True, text=True, timeout=10,
+        )
+    except (subprocess.TimeoutExpired, OSError):
+        return None
+    if out.returncode != 0:
+        return None
+    return [line for line in out.stdout.splitlines() if line.strip()]
+
+
 def check_deploy_freshness(url: str = HEALTH_ENDPOINT) -> tuple[bool, str]:
     """Is the deployed worker built from the same commit as this checkout? (#2779)
 
@@ -190,10 +227,13 @@ def check_deploy_freshness(url: str = HEALTH_ENDPOINT) -> tuple[bool, str]:
     while `serverInfo.version` matched the manifest and every check stayed green. A version
     that only moves on release is a version that cannot see a stale deploy.
 
-    So this compares commit SHAs, which change on every push. Three outcomes, all explicit:
+    So this compares commit SHAs, which change on every push. Four outcomes, all explicit:
 
     - equal — production is this commit
-    - different — production is behind, and the message says by how many commits
+    - different, but no commit since touches the deployed paths — production is the newest
+      *deployable* commit; the later ones are corpus syncs (`WORKER_DEPLOY_PATHS`). Fresh.
+    - different, with at least one worker commit since — production is behind, and the message
+      says by how many commits
     - `unknown` — production was deployed by something that does not pass a SHA (a local
       `make deploy-api`), so freshness **cannot be verified**. That is reported as a
       failure rather than a pass: claiming to be fresh when nothing was measured is the
@@ -216,6 +256,12 @@ def check_deploy_freshness(url: str = HEALTH_ENDPOINT) -> tuple[bool, str]:
 
     behind = commits_behind(live, head)
     how_far = f"{behind} commit(s) behind" if behind is not None else "behind by an unknown number of commits"
+    # `None` (shallow clone / unknown SHA) is not evidence of freshness: only an *empty list* is,
+    # and only an empty list may turn this probe green. Anything we could not measure stays stale.
+    worker_commits = worker_commits_since(live, head)
+    if worker_commits is not None and not worker_commits:
+        return True, (f"production runs {live[:12]}, the last commit that changes the worker; "
+                      f"the {how_far} do not touch {', '.join(WORKER_DEPLOY_PATHS)}")
     return False, (f"production runs {live[:12]}, but this checkout is {head[:12]} "
                    f"— {how_far}. The worker is stale; the deploy did not land. (#2779)")
 

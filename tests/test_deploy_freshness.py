@@ -24,13 +24,14 @@ HEAD = "a" * 40
 LIVE = "b" * 40
 
 
-def _patch(monkeypatch, live_sha, head=HEAD, behind=None):
+def _patch(monkeypatch, live_sha, head=HEAD, behind=None, worker_commits=None):
     monkeypatch.setattr(
         doctor, "health_body",
         lambda url=doctor.HEALTH_ENDPOINT: (True, f"{url} reachable", {"commit_sha": live_sha}),
     )
     monkeypatch.setattr(doctor, "local_head_sha", lambda: head)
     monkeypatch.setattr(doctor, "commits_behind", lambda live, h: behind)
+    monkeypatch.setattr(doctor, "worker_commits_since", lambda live, h, cwd=None: worker_commits)
 
 
 def test_the_same_commit_passes(monkeypatch):
@@ -41,11 +42,63 @@ def test_the_same_commit_passes(monkeypatch):
 
 
 def test_a_stale_deployment_fails_and_says_by_how_much(monkeypatch):
-    _patch(monkeypatch, LIVE, head=HEAD, behind=7)
+    # `worker_commits` non-empty: at least one of the seven commits changes the deployed worker,
+    # which is exactly the deploy that did not land.
+    _patch(monkeypatch, LIVE, head=HEAD, behind=7, worker_commits=["c" * 40])
     ok, message = doctor.check_deploy_freshness()
     assert not ok, "a worker on an older commit is stale, whatever version it reports"
     assert LIVE[:12] in message and HEAD[:12] in message
     assert "7 commit(s) behind" in message
+
+
+def test_corpus_commits_after_the_deploy_are_not_staleness(monkeypatch):
+    """main gets a corpus-sync commit several times a day; the worker is redeployed only when one
+    of WORKER_DEPLOY_PATHS changes. Measured 2026-11-06..08: all three scheduled runs reddened on
+    seven `chore(data)` commits, i.e. on a deploy that had nothing to deploy."""
+    _patch(monkeypatch, LIVE, head=HEAD, behind=7, worker_commits=[])
+    ok, message = doctor.check_deploy_freshness()
+    assert ok, message
+    assert "last commit that changes the worker" in message
+    assert "7 commit(s) behind" in message, "the size of the gap is still reported"
+
+
+def test_an_unmeasurable_git_answer_is_not_freshness(monkeypatch):
+    """`worker_commits_since` returns None on a shallow clone or an unknown SHA. Only an empty
+    *measurement* may turn the probe green; "could not tell" must keep the old failure."""
+    _patch(monkeypatch, LIVE, head=HEAD, behind=7, worker_commits=None)
+    ok, message = doctor.check_deploy_freshness()
+    assert not ok, "a probe that could not measure must not report fresh"
+    assert "stale" in message
+
+
+def test_worker_commits_since_reads_the_deploy_paths(tmp_path):
+    """The real git call, against a throwaway repository: a commit outside `workers/` is not a
+    deploy, and a commit inside it is."""
+    import subprocess
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    def git(*args):
+        return subprocess.run(
+            ["git", "-c", "user.email=t@example.com", "-c", "user.name=t", *args],
+            cwd=repo, check=True, capture_output=True, text=True,
+        ).stdout.strip()
+    git("init", "-q")
+    (repo / "README.md").write_text("hello\n", encoding="utf-8")
+    git("add", ".")
+    git("commit", "-q", "-m", "docs: first")
+    first = git("rev-parse", "HEAD")
+    (repo / "data").mkdir()
+    (repo / "data" / "lessons.json").write_text("{}\n", encoding="utf-8")
+    git("add", ".")
+    git("commit", "-q", "-m", "chore(data): sync")
+    (repo / "workers").mkdir()
+    (repo / "workers" / "register-proxy-sw.js").write_text("export default {};\n", encoding="utf-8")
+    git("add", ".")
+    git("commit", "-q", "-m", "fix(worker): change the deployed artifact")
+    second = git("rev-parse", "HEAD")
+
+    assert doctor.worker_commits_since(first, second, cwd=str(repo)) == [second]
+    assert doctor.worker_commits_since(first, first, cwd=str(repo)) == []
 
 
 def test_an_unknown_sha_fails_rather_than_claiming_freshness(monkeypatch):
