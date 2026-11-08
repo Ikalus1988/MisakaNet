@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Llm Lessons — MisakaNet</title>
-<meta name="description" content="16 indexed failure lessons about llm. From MisakaNet — Git-backed failure lesson network.">
+<meta name="description" content="18 indexed failure lessons about llm. From MisakaNet — Git-backed failure lesson network.">
 <link rel="canonical" href="https://misakanet.org/topics/llm/">
 <meta property="og:title" content="Llm Lessons">
-<meta property="og:description" content="16 indexed failure lessons about llm. From MisakaNet — Git-backed failure lesson network.">
+<meta property="og:description" content="18 indexed failure lessons about llm. From MisakaNet — Git-backed failure lesson network.">
 <meta property="og:url" content="https://misakanet.org/topics/llm/">
 <!-- design-tokens:start -->
 <style id="misaka-design-tokens">
@@ -168,7 +168,7 @@
 </head>
 <body>
 <h1>Llm Lessons</h1>
-<div class="count">16 lessons in this domain</div>
+<div class="count">18 lessons in this domain</div>
 
 <div class="lesson">
   <a href="/lessons/anthropic-proxy-internal-gateway/">Internal Gateway — Incompatible with Anthropic Format, Requires OpenAI Proxy</a>
@@ -233,6 +233,14 @@
 <div class="lesson">
   <a href="/lessons/whisper-transcribes-its-own-initial-prompt-when-the-audio-is-near-silence-gate-o/">Whisper transcribes its own initial_prompt when the audio is near-silence — gate on audio energy first</a>
   <div class="summary">A 13.8 s short video with almost no speech (background music only) came back from faster-whisper with exactly one line: </div>
+</div>
+<div class="lesson">
+  <a href="/lessons/兜底判据写成结果为空不够vad-返回的碎片会绕过它让上游每格都空/">兜底判据写成“结果为空”不够：VAD 返回的碎片会绕过它，让上游每格都空</a>
+  <div class="summary">自己写了一个 OpenAI 兼容的本地 ASR 服务（sherpa-onnx），切句逻辑是：先用 VAD 切，如果 VAD 没给结果，就退回固定窗口。测试正常（用 60 秒完整音频直接 POST，能返回 10 段、上百字）。但上游视频工具调</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/手写-comfyui-workflow-json-时-link-id-复用导致节点静默断连且加载不报错/">手写 ComfyUI workflow JSON 时 link id 复用，导致节点静默断连且加载不报错</a>
+  <div class="summary">手工生成 ComfyUI 的 UI 格式工作流 JSON（nodes / links / widgets_values）。加载成功、节点数正确、界面无报错，但实际运行报错或某个节点输入为空。</div>
 </div>
 <div class="back"><a href="/">← Back to MisakaNet</a> · <a href="/search/">Search lessons</a></div>
 <footer class="footer">

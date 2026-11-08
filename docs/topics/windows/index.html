@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Windows Lessons — MisakaNet</title>
-<meta name="description" content="36 indexed failure lessons about windows. From MisakaNet — Git-backed failure lesson network.">
+<meta name="description" content="39 indexed failure lessons about windows. From MisakaNet — Git-backed failure lesson network.">
 <link rel="canonical" href="https://misakanet.org/topics/windows/">
 <meta property="og:title" content="Windows Lessons">
-<meta property="og:description" content="36 indexed failure lessons about windows. From MisakaNet — Git-backed failure lesson network.">
+<meta property="og:description" content="39 indexed failure lessons about windows. From MisakaNet — Git-backed failure lesson network.">
 <meta property="og:url" content="https://misakanet.org/topics/windows/">
 <!-- design-tokens:start -->
 <style id="misaka-design-tokens">
@@ -168,7 +168,7 @@
 </head>
 <body>
 <h1>Windows Lessons</h1>
-<div class="count">36 lessons in this domain</div>
+<div class="count">39 lessons in this domain</div>
 
 <div class="lesson">
   <a href="/lessons/a-cmd-with-non-ascii-comments-emits-a-phantom-is-not-recognized-command-chcp-ins/">A .cmd with non-ASCII comments emits a phantom "is not recognized" command: chcp inside the file is already too late</a>
@@ -203,8 +203,16 @@
   <div class="summary">在 DSH 桌面版（Electron 打包）运行期间，用命令行 dsh plugin add 或插件市场装插件失败；市场报错会明说「这是官方桌面端：命令行那条路用不了，请改在应用的设置→插件里操作」。</div>
 </div>
 <div class="lesson">
+  <a href="/lessons/elevated-powershell-51-script-exits-2-with-no-log-when-it-contains-a-non-ascii-s/">Elevated PowerShell 5.1 script exits 2 with no log when it contains a non-ASCII string literal</a>
+  <div class="summary">On Windows, an elevated PowerShell 5.1 script (launched via `Start-Process -Verb 'RunAs' -Wait`) exits with code 2 and w</div>
+</div>
+<div class="lesson">
   <a href="/lessons/napcat-注入-qq-后秒退dshagent-工作区目录被打了低完整性标签/">NapCat 注入 QQ 后秒退：DSH/agent 工作区目录被打了低完整性标签</a>
   <div class="summary">在 agent 指定的工作目录（如 <PATH> NapCat.Shell 并运行 launcher.bat，注入后 QQ 立刻退出：控制台只有 '[NapCat Backend] Main Process ID … Creating pi</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/napcatqq-re-login-stuck-on-quot当前账号已登录无法重复登录quot-restart-the-qqnt-client-not-jus/">NapCat/QQ re-login stuck on &quot;当前账号已登录,无法重复登录&quot; — restart the QQNT client, not just the bot</a>
+  <div class="summary">A QQ bot stack (QQNT client + NapCat injected into it, exposing OneBot v11 over a local WebSocket) cannot re-login. Rest</div>
 </div>
 <div class="lesson">
   <a href="/lessons/nsis-installer-refuses-in-place-upgrade-when-appid-differs-from-the-released-bui/">NSIS Installer Refuses In-Place Upgrade When appId Differs from the Released Build</a>
@@ -241,14 +249,6 @@
 <div class="lesson">
   <a href="/lessons/powershell-51-set-content-encoding-utf8-adds-a-bom-that-breaks-an-electron-apps/">PowerShell 5.1 Set-Content -Encoding UTF8 adds a BOM that breaks an Electron app's package.json</a>
   <div class="summary">An Electron application's `package.json` was edited with Windows PowerShell 5.1:</div>
-</div>
-<div class="lesson">
-  <a href="/lessons/powershell-start-process-argumentlist-splits-a-path-at-its-spaces-silently/">PowerShell Start-Process -ArgumentList splits a path at its spaces, silently</a>
-  <div class="summary">PowerShell 的 `Start-Process -ArgumentList` **不会**给含空格的数组元素自动加引号。传</div>
-</div>
-<div class="lesson">
-  <a href="/lessons/pywinauto-uia-on-winforms-the-button-has-no-automationid-its-name-lives-in-windo/">pywinauto UIA on WinForms: the Button has no AutomationId, its name lives in window_text</a>
-  <div class="summary">Automating a WinForms desktop app (a FANUC ROBOGUIDE cell-controller UI) with pywinauto's UIA</div>
 </div>
 <div class="back"><a href="/">← Back to MisakaNet</a> · <a href="/search/">Search lessons</a></div>
 <footer class="footer">

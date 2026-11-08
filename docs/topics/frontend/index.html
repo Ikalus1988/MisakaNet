@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Frontend Lessons — MisakaNet</title>
-<meta name="description" content="17 indexed failure lessons about frontend. From MisakaNet — Git-backed failure lesson network.">
+<meta name="description" content="19 indexed failure lessons about frontend. From MisakaNet — Git-backed failure lesson network.">
 <link rel="canonical" href="https://misakanet.org/topics/frontend/">
 <meta property="og:title" content="Frontend Lessons">
-<meta property="og:description" content="17 indexed failure lessons about frontend. From MisakaNet — Git-backed failure lesson network.">
+<meta property="og:description" content="19 indexed failure lessons about frontend. From MisakaNet — Git-backed failure lesson network.">
 <meta property="og:url" content="https://misakanet.org/topics/frontend/">
 <!-- design-tokens:start -->
 <style id="misaka-design-tokens">
@@ -168,7 +168,7 @@
 </head>
 <body>
 <h1>Frontend Lessons</h1>
-<div class="count">17 lessons in this domain</div>
+<div class="count">19 lessons in this domain</div>
 
 <div class="lesson">
   <a href="/lessons/antd-upload-fires-onchange-once-per-file-per-batch-so-one-drop-becomes-n-busines/">antd Upload fires onChange once per file per batch, so one drop becomes N business units</a>
@@ -233,6 +233,14 @@
 <div class="lesson">
   <a href="/lessons/ant-design-v5-renders-unstyled-in-tauri-v1-webview2-csp-blocks-the-style-tags-cs/">Ant Design v5 renders unstyled in Tauri v1 WebView2: CSP blocks the style tags cssinjs injects at runtime</a>
   <div class="summary">A Tauri v1 desktop app (Windows, WebView2) built with Ant Design v5 opens and works, but **every Ant</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/拖到垃圾桶删除后弹找不到对象delete-先落盘-过期存坐标-update-竞态stale-op/">拖到垃圾桶删除后弹「找不到对象」：delete 先落盘 + 过期存坐标 update 竞态（stale-op）</a>
+  <div class="summary">把卡片拖到左上角垃圾桶删除后弹「找不到对象：it_xxx / Not found: it_xxx」，但卡片其实已消失、持久化 state 里该 id 已不存在。抓包显示一次拖拽产生 2 条独立 POST /ops：一条 {op:'updat</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/拖到垃圾桶删除报找不到对象一次手势重复派发-后端非幂等-silent-压不住-errors/">拖到垃圾桶删除报『找不到对象』：一次手势重复派发 + 后端非幂等 + silent 压不住 errors</a>
+  <div class="summary">DSH 插件（灵感卡看板类）把卡片拖到左上角垃圾桶删除后弹『找不到对象：it_xxxx / Not found: it_xxxx』错误，但卡片其实已被删除、持久化 state 里已无该 id。原始报错来自后端 findById：throw </div>
 </div>
 <div class="lesson">
   <a href="/lessons/fault-tolerance-for-static-pages-calling-external-apis/">Fault-tolerance for static pages calling external APIs</a>

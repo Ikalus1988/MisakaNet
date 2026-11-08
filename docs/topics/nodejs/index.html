@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Nodejs Lessons — MisakaNet</title>
-<meta name="description" content="24 indexed failure lessons about nodejs. From MisakaNet — Git-backed failure lesson network.">
+<meta name="description" content="25 indexed failure lessons about nodejs. From MisakaNet — Git-backed failure lesson network.">
 <link rel="canonical" href="https://misakanet.org/topics/nodejs/">
 <meta property="og:title" content="Nodejs Lessons">
-<meta property="og:description" content="24 indexed failure lessons about nodejs. From MisakaNet — Git-backed failure lesson network.">
+<meta property="og:description" content="25 indexed failure lessons about nodejs. From MisakaNet — Git-backed failure lesson network.">
 <meta property="og:url" content="https://misakanet.org/topics/nodejs/">
 <!-- design-tokens:start -->
 <style id="misaka-design-tokens">
@@ -168,7 +168,7 @@
 </head>
 <body>
 <h1>Nodejs Lessons</h1>
-<div class="count">24 lessons in this domain</div>
+<div class="count">25 lessons in this domain</div>
 
 <div class="lesson">
   <a href="/lessons/js-regex-escape-a-literal-dollar-sign-never-escape-the-end-of-line-anchor/">JS regex: escape a literal dollar sign, never escape the end-of-line anchor</a>
@@ -231,6 +231,10 @@
   <div class="summary">A published package declares a dependency on a directory that is **not** in its own</div>
 </div>
 <div class="lesson">
+  <a href="/lessons/path-上明明有-npm工具仍报没有找到-npm它拼的是-npm-clijs-文件路径不认-npmcmd/">PATH 上明明有 npm，工具仍报「没有找到 npm」：它拼的是 npm-cli.js 文件路径，不认 npm.cmd</a>
+  <div class="summary">Windows 上 where npm / npx 都能找到 npm，但某个 Node 工具（本例是 DSH 的 hyperframes 插件「准备渲染环境」）始终报：</div>
+</div>
+<div class="lesson">
   <a href="/lessons/正则移植pcre-的-z-在-javascript-里是字面量-z一切含-z-的内容被静默截断/">正则移植：PCRE 的 \Z 在 JavaScript 里是字面量 Z——一切含 Z 的内容被静默截断</a>
   <div class="summary">正则从 PCRE/Python 移植到 JavaScript 时 `\Z`（文末锚）变成**字面量字符 'Z'**——分节正则</div>
 </div>
@@ -245,10 +249,6 @@
 <div class="lesson">
   <a href="/lessons/a-pnpm-store-moved-across-drives-over-a-junction-breaks-hard-links-and-empties-t/">A pnpm store moved across drives over a junction breaks hard links and empties the plugin list</a>
   <div class="summary">为清理 C 盘空间，把 pnpm 缓存目录 `C:\Users\<user>\AppData\Local\pnpm` 迁移到 `D:\`，并在原位置建立**目录联接（Junction）**。之后宿主执行插件安装时，pnpm 报出：</div>
-</div>
-<div class="lesson">
-  <a href="/lessons/qlimit-得到-nan-slice00-接口静默返回空数组日志干干净净/">+q.limit 得到 NaN → slice(0,0) → 接口静默返回空数组，日志干干净净</a>
-  <div class="summary">客户端带一个非法参数（`?limit=abc`），接口不报错、不抛异常、日志干净，就是「没数据」。用户以为是数据丢了，实际是解析成了空数组。</div>
 </div>
 <div class="back"><a href="/">← Back to MisakaNet</a> · <a href="/search/">Search lessons</a></div>
 <footer class="footer">
