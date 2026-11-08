@@ -1,9 +1,23 @@
 {
-  "generated_at": "2026-11-08T18:19:32.505530+00:00",
+  "generated_at": "2026-11-08T19:46:38.231152+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "docs(handoff): vol 31 — recall b, format decision, freshness path rule, lesson batch 4",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4590",
+      "timestamp": "2026-11-08T18:47:12Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4589",
+      "timestamp": "2026-11-08T18:36:45Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "feat(lessons): convert 34 `[Lesson]` submissions into the corpus",
@@ -23,13 +37,6 @@
       "title": "chore(data): sync lessons.json + refresh feed",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/4586",
       "timestamp": "2026-11-08T13:55:44Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4579",
-      "timestamp": "2026-11-08T06:34:25Z",
       "source": "github"
     },
     {
@@ -71,13 +78,6 @@
       "timestamp": "2026-11-08",
       "domain": "dsh",
       "source": "lessons"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4576",
-      "timestamp": "2026-11-07T22:19:53Z",
-      "source": "github"
     },
     {
       "type": "challenge",
