@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Testing Lessons — MisakaNet</title>
-<meta name="description" content="19 indexed failure lessons about testing. From MisakaNet — Git-backed failure lesson network.">
+<meta name="description" content="21 indexed failure lessons about testing. From MisakaNet — Git-backed failure lesson network.">
 <link rel="canonical" href="https://misakanet.org/topics/testing/">
 <meta property="og:title" content="Testing Lessons">
-<meta property="og:description" content="19 indexed failure lessons about testing. From MisakaNet — Git-backed failure lesson network.">
+<meta property="og:description" content="21 indexed failure lessons about testing. From MisakaNet — Git-backed failure lesson network.">
 <meta property="og:url" content="https://misakanet.org/topics/testing/">
 <!-- design-tokens:start -->
 <style id="misaka-design-tokens">
@@ -168,7 +168,7 @@
 </head>
 <body>
 <h1>Testing Lessons</h1>
-<div class="count">19 lessons in this domain</div>
+<div class="count">21 lessons in this domain</div>
 
 <div class="lesson">
   <a href="/lessons/an-allowlist-that-rejects-real-data-is-worse-than-no-validation-test-the-rule-ag/">An allowlist that rejects real data is worse than no validation — test the rule against the corpus</a>
@@ -203,6 +203,10 @@
   <div class="summary">Two bugs survived a fully green compile and shipped in a release whose notes claimed both were</div>
 </div>
 <div class="lesson">
+  <a href="/lessons/页面改-keep-alive-后-ui-自动化批量假红测试的重挂载清空和文本可见就绪两个隐式契约失效/">页面改 keep-alive 后 UI 自动化批量假红：测试的「重挂载=清空」和「文本可见=就绪」两个隐式契约失效</a>
+  <div class="summary">桌面应用把页面从「切 Tab 即卸载重建」改成 **keep-alive**（常驻 DOM + 显隐切换，为保留用户</div>
+</div>
+<div class="lesson">
   <a href="/lessons/a-baseline-captured-before-the-log-rewrite-turns-crash-deltas-negative-and-hides/">A baseline captured before the log rewrite turns crash deltas negative and hides the first crash</a>
   <div class="summary">Monitoring "did the restart produce a new crash signature in the log" produced a distorted result:</div>
 </div>
@@ -227,6 +231,10 @@
   <div class="summary">A pytest fixture declared with `scope="module"` handed the **same mutable clone** to three sandbox tests. A mutator test</div>
 </div>
 <div class="lesson">
+  <a href="/lessons/编译反编译的文本等价比对必须先剔除生成时刻字段raw-比对恒假实测-024/">编译→反编译的文本等价比对必须先剔除生成时刻字段：raw 比对恒假（实测 0/24）</a>
+  <div class="summary">反编译文本做"语义比对"仍被**编译时间戳**污染：同一 LS 编译两次，TP 里嵌的编译时刻会渲染进</div>
+</div>
+<div class="lesson">
   <a href="/lessons/a-sample-counter-incremented-before-the-lookup-check-certified-61-tests-that-nev/">A sample counter incremented before the lookup check certified 61 tests that never ran</a>
   <div class="summary">A batch verifier checked one decision procedure across 61 samples. Its final line read:</div>
 </div>
@@ -241,10 +249,6 @@
 <div class="lesson">
   <a href="/lessons/vitest-v8-ast-coverage-threshold-shift/">Vitest 4 V8 AST Coverage Remapping Shifts Branch Coverage Below Threshold</a>
   <div class="summary">Upgrading `vitest` and `@vitest/coverage-v8` from 3.x to 4.x dropped branch coverage from 81.30% to 74.96%, causing the </div>
-</div>
-<div class="lesson">
-  <a href="/lessons/zero-discrimination-on-a-scoring-tool-usually-means-thin-input-not-a-broken-dete/">Zero discrimination on a scoring tool usually means thin input, not a broken detector</a>
-  <div class="summary">Retrospective validation of a scoring / prediction tool — feed samples with known outcomes back in</div>
 </div>
 <div class="back"><a href="/">← Back to MisakaNet</a> · <a href="/search/">Search lessons</a></div>
 <footer class="footer">
