@@ -22,7 +22,9 @@ from scripts.search_hit_rate import (  # noqa: E402  (需要先插入仓库根�
     CAVEATS,
     DEFAULT_ENDPOINT,
     aggregate,
+    format_text,
     main,
+    report,
     solved_flag,
 )
 
@@ -304,3 +306,38 @@ def test_the_caveats_name_the_latency_fields_limits():
     assert any("latency" in c for c in CAVEATS), (
         "the histogram is server-side only; a reader has to be told the client's total is longer"
     )
+
+
+# ── by_agent（#4617）──────────────────────────────────────────────────────────
+
+def _agent_payload():
+    return {
+        "rows": rows(True, True, False),
+        "breakdown": {
+            "by_day": [{"key": "2026-11-09", "hits": 2, "total": 3, "miss": 1, "hit_rate": 2 / 3}],
+            "by_domain": [{"key": "devops", "hits": 2, "total": 3, "miss": 1, "hit_rate": 2 / 3}],
+            "by_agent": [
+                {"key": "cindy", "hits": 2, "total": 3, "miss": 1, "hit_rate": 2 / 3},
+                {"key": "unknown", "hits": 0, "total": 1, "miss": 1, "hit_rate": 0.0},
+            ],
+        },
+    }
+
+
+def test_by_agent_is_not_printed_unless_asked():
+    text = format_text(report(_agent_payload(), DEFAULT_ENDPOINT, 7))
+    assert "按客户端" not in text, "the default report keeps its old shape"
+
+
+def test_by_agent_renders_the_client_table_when_asked():
+    result = report(_agent_payload(), DEFAULT_ENDPOINT, 7, by_agent=True)
+    text = format_text(result)
+    assert "按客户端" in text
+    assert "| cindy | 2 | 1 | 3 | 66.7% |" in text
+    assert result["by_agent"] is True
+
+
+def test_by_agent_json_carries_the_breakdown_and_the_flag():
+    result = report(_agent_payload(), DEFAULT_ENDPOINT, 7, by_agent=True)
+    assert result["breakdown"]["by_agent"][0]["key"] == "cindy"
+    assert result["by_agent"] is True

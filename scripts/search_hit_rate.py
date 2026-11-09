@@ -103,7 +103,7 @@ def fetch_payload(endpoint: str, days: int, token: str | None = None, timeout: f
     return payload
 
 
-def report(payload: dict, endpoint: str, days: int) -> dict:
+def report(payload: dict, endpoint: str, days: int, by_agent: bool = False) -> dict:
     """把端点载荷变成最终结果字典（文本与 --json 共用同一份算术）。"""
     stats = aggregate(payload.get("rows"))
     return {
@@ -112,6 +112,9 @@ def report(payload: dict, endpoint: str, days: int) -> dict:
         # so the split cannot be derived here). Absent on an older worker: the scalar summary
         # still works and the table is simply not printed.
         "breakdown": payload.get("breakdown") or None,
+        # Rendered only on request (`--by-agent`): the table is new, and a default print would
+        # change every existing report's shape for readers who did not ask for the split.
+        "by_agent": bool(by_agent),
         # The latency histogram (#4052). `None` means the worker could not read it (an older
         # deployment); an object with `n: 0` means nothing has been measured yet. Two different
         # answers, and the formatter keeps them apart.
@@ -128,8 +131,8 @@ def _rate(value) -> str:
     return "n/a" if value is None else f"{value * 100:.1f}%"
 
 
-def _breakdown_lines(breakdown) -> list[str]:
-    """The part that can be pasted into release notes: hit rate by day, and by topic."""
+def _breakdown_lines(breakdown, by_agent: bool = False) -> list[str]:
+    """The part that can be pasted into release notes: hit rate by day, by topic, and by client."""
     if not breakdown:
         return ["", "分组：端点没有返回 breakdown（worker 版本较旧），下面只有总计。"]
     lines: list[str] = []
@@ -146,6 +149,22 @@ def _breakdown_lines(breakdown) -> list[str]:
                                                   -(r.get("total") or 0)))
         lines += [f"| {r.get('key', '?')} | {r.get('hits', 0)} | {r.get('miss', 0)} | "
                   f"{r.get('total', 0)} | {_rate(r.get('hit_rate'))} |" for r in ranked]
+    if by_agent:
+        # The caller-reported X-MisakaNet-Agent header, grouped the same way domain is (#4617).
+        # "unknown" is every row written before that header existed, or by a client that sends none.
+        agents = breakdown.get("by_agent") or []
+        if agents:
+            lines += ["", "按客户端（X-MisakaNet-Agent；命中率最低的在前）", "",
+                      "| 客户端 | 命中 | 未命中 | 合计 | 命中率 |", "|---|---|---|---|---|"]
+            ranked_agents = sorted(
+                agents,
+                key=lambda r: (r.get("hit_rate") if r.get("hit_rate") is not None else -1,
+                               -(r.get("total") or 0)),
+            )
+            lines += [f"| {r.get('key', '?')} | {r.get('hits', 0)} | {r.get('miss', 0)} | "
+                      f"{r.get('total', 0)} | {_rate(r.get('hit_rate'))} |" for r in ranked_agents]
+        else:
+            lines += ["", "按客户端：端点没有返回 by_agent（worker 版本较旧），这一项**测不出**。"]
     return lines
 
 
@@ -193,7 +212,7 @@ def format_text(result: dict) -> str:
     ]
     if result["truncated"]:
         lines.append("warn            : 端点行数被截断，这个数字只是下界")
-    lines.extend(_breakdown_lines(result.get("breakdown")))
+    lines.extend(_breakdown_lines(result.get("breakdown"), bool(result.get("by_agent"))))
     lines.extend(_latency_lines(result.get("latency")))
     if total == 0:
         lines.append("")
@@ -211,7 +230,9 @@ def main(argv=None) -> int:
     )
     parser.add_argument("--since", type=int, default=DEFAULT_SINCE_DAYS, metavar="DAYS",
                         help=f"统计窗口的天数（默认 {DEFAULT_SINCE_DAYS}）")
-    parser.add_argument("--json", action="store_true", help="输出 JSON")
+    parser.add_argument("--json", action="store_true", help="输出 JSON（含端点返回的 by_agent）")
+    parser.add_argument("--by-agent", action="store_true",
+                        help="额外渲染按客户端（X-MisakaNet-Agent）拆分的命中率表")
     parser.add_argument("--url", default=DEFAULT_ENDPOINT, help=f"统计端点（默认 {DEFAULT_ENDPOINT}）")
     parser.add_argument("--token", default=os.environ.get("MISAKANET_TOKEN", ""),
                         help="可选令牌（默认取 $MISAKANET_TOKEN）；端点当前开放，不带也能跑")
@@ -227,7 +248,7 @@ def main(argv=None) -> int:
               "以及窗口内是否真的还没有任何检索被记录。", file=sys.stderr)
         return 2
 
-    result = report(payload, args.url, days)
+    result = report(payload, args.url, days, by_agent=args.by_agent)
     if args.json:
         print(json.dumps(result, ensure_ascii=False, indent=2))
     else:
