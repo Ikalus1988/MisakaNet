@@ -1,9 +1,23 @@
 {
-  "generated_at": "2026-11-09T14:39:10.271614+00:00",
+  "generated_at": "2026-11-09T15:50:01.479020+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "feat(lessons): review-band batch 2, slice 2 — ten intakes + the vocabulary calls",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4628",
+      "timestamp": "2026-11-09T15:49:49Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4626",
+      "timestamp": "2026-11-09T14:55:32Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "feat(lessons): review-band batch 2, slice 1 — ten intakes with real titles",
@@ -23,20 +37,6 @@
       "title": "fix(intake): section() concatenates every occurrence — the form's empty heading stops hiding the report",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/4621",
       "timestamp": "2026-11-09T12:13:31Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4620",
-      "timestamp": "2026-11-09T12:06:53Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "docs(maintainer): 50-sample test of the review band — 21/50 content-ready, converter sees 1",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4619",
-      "timestamp": "2026-11-09T10:15:23Z",
       "source": "github"
     },
     {
