@@ -1,81 +1,81 @@
 {
-  "generated_at": "2026-11-09T01:10:34.185802+00:00",
+  "generated_at": "2026-11-09T03:31:50.936344+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "feat(lessons): adopt the two conflicting lesson batches from @zsxh1990",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4595",
-      "timestamp": "2026-11-09T01:10:23Z",
+      "title": "feat(lessons): convert the review band — 31 intakes, one corrected, one superseded",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4602",
+      "timestamp": "2026-11-09T03:31:39Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(deps): bump the github-actions group with 4 updates",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4594",
-      "timestamp": "2026-11-09T00:41:59Z",
+      "title": "chore(main): release misakanet-setup 0.10.0",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4334",
+      "timestamp": "2026-11-09T03:00:46Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(deps): update mkdocs-git-revision-date-localized-plugin requirement from >=1.6.2 to >=1.6.3 in the pip group",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4593",
-      "timestamp": "2026-11-09T00:41:56Z",
+      "title": "chore(main): release 3.6.0",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4327",
+      "timestamp": "2026-11-09T02:36:30Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(deps-dev): bump wrangler from 4.156.0 to 4.158.0 in the npm group",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4592",
-      "timestamp": "2026-11-09T00:41:53Z",
+      "title": "docs(handoff): vol 31 §7 — first-principles pass over dead-end PRs and the question queue",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4599",
+      "timestamp": "2026-11-09T02:34:15Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4591",
-      "timestamp": "2026-11-08T20:02:28Z",
+      "title": "docs(handoff): correct the PR-Agent note — two failures, then recovered",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4598",
+      "timestamp": "2026-11-09T01:53:57Z",
       "source": "github"
     },
     {
       "type": "lesson",
-      "title": "aria2 --stop 沿用到真实下载，大文件被静默截断且伪装成已完成",
-      "url": "lessons/contrib/aria2-stop-沿用到真实下载大文件被静默截断且伪装成已完成.md",
-      "timestamp": "2026-11-08",
-      "domain": "devops",
+      "title": "A cross-platform recovery CLI emitted a POSIX-quoted executable and JSON argumen",
+      "url": "lessons/contrib/a-cross-platform-recovery-cli-emitted-a-posix-quoted.md",
+      "timestamp": "2026-11-09",
+      "domain": "windows",
       "source": "lessons"
     },
     {
       "type": "lesson",
-      "title": "aria2 下载完进程不退：判完成看 .aria2 控制文件，别看进程存活",
-      "url": "lessons/contrib/aria2-下载完进程不退判完成看-aria2-控制文件别看进程存活.md",
-      "timestamp": "2026-11-08",
-      "domain": "devops",
+      "title": "A reviewed Python source bundle had identical file bytes on Windows and POSIX bu",
+      "url": "lessons/contrib/a-reviewed-python-source-bundle-had-identical-file-bytes-on.md",
+      "timestamp": "2026-11-09",
+      "domain": "windows",
       "source": "lessons"
     },
     {
       "type": "lesson",
-      "title": "aria2 多线程下载：文件长度已满不等于下载完成，按大小判完成会拿到坏文件",
-      "url": "lessons/contrib/aria2-多线程下载文件长度已满不等于下载完成按大小判完成会拿到坏文件.md",
-      "timestamp": "2026-11-08",
-      "domain": "devops",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "DSH custom agent presets show '加载失败' after upgrade: a stale composition subpath reports 'never started' and is…",
-      "url": "lessons/contrib/dsh-custom-agent-presets-升级后加载失败-因残留旧-config.md",
-      "timestamp": "2026-11-08",
+      "title": "A worksheet patch accepted XFE1 and produced an Excel workbook whose column exce",
+      "url": "lessons/contrib/a-worksheet-patch-accepted-xfe1-and-produced-an-excel.md",
+      "timestamp": "2026-11-09",
       "domain": "dsh",
       "source": "lessons"
     },
     {
       "type": "lesson",
-      "title": "DSH custom slash command disappears after update: local plugin was pruned because it was missing from profile…",
-      "url": "lessons/contrib/dsh-custom-slash-command-更新后消失-本地-plugin.md",
-      "timestamp": "2026-11-08",
+      "title": "An instruction-policy installer succeeds in writing a merged file but its immedi",
+      "url": "lessons/contrib/an-instruction-policy-installer-succeeds-in-writing-a.md",
+      "timestamp": "2026-11-09",
+      "domain": "mcp",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "Clash Verge Rev 2.5.9 里「全局模式」代理页与「规则模式」界面完全一样（同样的策略组卡片），且在全局模式下点击策略组换节点，实际出口 IP",
+      "url": "lessons/contrib/clash-verge-rev-259.md",
+      "timestamp": "2026-11-09",
       "domain": "dsh",
       "source": "lessons"
     },
