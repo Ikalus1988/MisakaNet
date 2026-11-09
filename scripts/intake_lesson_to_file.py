@@ -92,7 +92,12 @@ _FENCE_RE = re.compile(r"^\s*(?:```|~~~)")
 
 
 def section(body: str, name: str) -> str:
-    r"""The text under `## <name>`, up to the next heading or the tags line. Empty when absent.
+    r"""The text under **every** `## <name>` heading, concatenated; empty when absent.
+
+    Concatenating instead of taking the first occurrence: the MCP intake form emits an empty
+    `## Problem` before the submitter's own heading, so the first occurrence is empty while the text
+    lives under the second one. Measured 2026-11-09 on 50 open `needs-human-review` intakes — 16 of
+    the 22 structurally complete ones were reported "missing Problem" for this reason alone.
 
     Headings are only headings **outside** a code fence. The first version of this function matched
     `^#+\s` anywhere, so a shell comment inside a `Fix` block ended the section: measured
@@ -101,29 +106,31 @@ def section(body: str, name: str) -> str:
     both headings were present. Every lesson with a commented command would have lost the same way.
     """
     lines = body.split("\n")
-    start = end = None
-    in_fence = False
+    wanted = re.compile(rf"^#+\s*{re.escape(name)}\s*$")
     heading_re = re.compile(r"^#+\s*")
-    for index, line in enumerate(lines):
+    chunks: list[str] = []
+    current: list[str] | None = None
+    in_fence = False
+    for line in lines:
         if _FENCE_RE.match(line):
             in_fence = not in_fence
-            if start is not None and end is None:
-                continue
-        if in_fence:
+            if current is not None:
+                current.append(line)
             continue
-        if heading_re.match(line):
-            if start is None:
-                if re.match(rf"^#+\s*{re.escape(name)}\s*$", line):
-                    start = index + 1
-            elif end is None:
-                end = index
-                break
-        elif start is not None and end is None and line.strip().startswith("**Tags:**"):
-            end = index
-            break
-    if start is None:
-        return ""
-    return clean("\n".join(lines[start:end if end is not None else len(lines)]))
+        if not in_fence and heading_re.match(line):
+            if current is not None:
+                chunks.append("\n".join(current))
+            current = [] if wanted.match(line) else None
+            continue
+        if current is not None:
+            if not in_fence and line.strip().startswith("**Tags:**"):
+                chunks.append("\n".join(current))
+                current = None
+                continue
+            current.append(line)
+    if current is not None:
+        chunks.append("\n".join(current))
+    return clean("\n".join(chunk for chunk in chunks if chunk.strip()))
 
 
 def field(body: str, name: str) -> str:
@@ -276,7 +283,8 @@ def convert(issue: dict, canonical: set[str],
     if override.get("title"):
         notes.append("title replaced by a maintainer override")
     title = shorten(title, FIELDS_MAX["title"])
-    problem = section(body, "Problem")
+    problem = (section(body, "Problem") or section(body, "症状")
+               or section(body, "Symptom"))
     cause = section(body, "Root Cause")
     split = None
     if not cause:

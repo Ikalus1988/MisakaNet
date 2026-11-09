@@ -220,3 +220,28 @@ Run it with `set -u` and see no unbound variable.
         "truncation one step later")
     assert conv.section(body, "Verification").startswith("Run it with"), (
         "Verification must still start after the fence ends, not inside it")
+
+
+def test_an_empty_form_heading_does_not_shadow_the_submitters_heading():
+    """The MCP intake form writes `## Problem` with nothing under it, then the submitter's own heading.
+
+    Measured 2026-11-09 on 50 open need-human-review intakes: the first occurrence is empty for most
+    of them, and taking only that occurrence made the converter report "missing Problem" for reports
+    that carried a complete one.
+    """
+    full = sample()
+    body = full["body"].replace(
+        "## Problem\npnpm failed with ERR_PNPM_META_FETCH_FAIL against registry.npmjs.org.\n",
+        "## Problem\n\n## Problem\npnpm failed with ERR_PNPM_META_FETCH_FAIL against registry.npmjs.org.\n",
+    )
+    lesson, notes = conv.convert({**full, "body": body}, CANONICAL)
+    assert lesson is not None, notes
+    assert "ERR_PNPM_META_FETCH_FAIL" in lesson["content"]
+
+
+def test_a_symptom_heading_is_accepted_as_the_problem():
+    full = sample()
+    body = full["body"].replace("## Problem\n", "## Problem\n\n## 症状\n", 1)
+    lesson, notes = conv.convert({**full, "body": body}, CANONICAL)
+    assert lesson is not None, notes
+    assert "ERR_PNPM_META_FETCH_FAIL" in lesson["content"]
