@@ -5,8 +5,9 @@
  * 包装成 Cindy 的工具，让 Agent 在重新排查一个故障之前，先查一遍别人已经写好的教训。
  *
  * 运行边界：
- * - 沙箱无网络直连，所有 HTTP 都由主机代发（cindy.fetch）。本次调用在 Agent 在途，
- *   带 callId 复用宿主对本次调用的授权；不声明 network 能力，也不写任何外部系统。
+ * - 沙箱无网络直连，所有 HTTP 都由主机代发（cindy.fetch），且只发生在 tool-call 内。manifest 只声明
+ *   misakanet.org 一个宿主（市场评审要求声明的边界），不声明自主联网。本次调用在 Agent 在途，
+ *   带 callId 复用宿主对本次调用的授权；不写任何外部系统。
  * - 托管端点只认 tools/call 与 tools/list；不需要 initialize / session。
  * - 只用 Accept: application/json，让服务端直接回 JSON；不要用 text/event-stream，
  *   那条路是长连接 SSE，宿主代发拿不到完整响应。
@@ -16,7 +17,7 @@
 
 const MCP_URL = 'https://misakanet.org/mcp';
 const FETCH_TIMEOUT_MS = 45000;
-const PLUGIN_VERSION = '1.3.2';
+const PLUGIN_VERSION = '1.3.3';
 
 /* 客户端标识：每台机器一个稳定 id。
  * 端点会把 X-MisakaNet-Client salt-hash 进 search_signals.client_hint，而 client_hint 是
@@ -28,12 +29,28 @@ const CLIENT_ID_RE = /^[A-Za-z0-9._-]{8,64}$/;
 let clientIdPromise = null;
 
 function randomClientId() {
-  const alphabet = 'abcdefghijklmnopqrstuvwxyz0123456789';
-  let id = 'cindy-';
-  for (let i = 0; i < 16; i += 1) {
-    id += alphabet[Math.floor(Math.random() * alphabet.length)];
+  // 外发标识必须来自密码学随机源：这个值会作为 X-MisakaNet-Client 发给外部端点，端点还用它
+  // 统计「有多少个独立客户端」。Math.random 可预测，且没有安全的降级方案——拿不到 crypto 时
+  // 宁可失败，也不退回弱随机。
+  const cryptoObj = typeof globalThis === 'object' && globalThis ? globalThis.crypto : undefined;
+  if (!cryptoObj || typeof cryptoObj.getRandomValues !== 'function') {
+    const err = new Error('crypto.getRandomValues 不可用，拒绝用弱随机生成外发客户端标识');
+    err.code = 'MISAKANET_NO_CSPRNG';
+    // handleToolCall 的 catch 只透传 err.hint；不设它，用户只会看到「调用 MisakaNet 失败。」
+    err.hint = err.message;
+    throw err;
   }
-  return id;
+  const alphabet = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  const chars = [];
+  const bytes = new Uint8Array(32);
+  while (chars.length < 16) {
+    cryptoObj.getRandomValues(bytes);
+    for (let i = 0; i < bytes.length && chars.length < 16; i += 1) {
+      // 252 = 36 * 7：拒绝 >251 的字节，避免取模偏差。
+      if (bytes[i] < 252) chars.push(alphabet[bytes[i] % 36]);
+    }
+  }
+  return 'cindy-' + chars.join('');
 }
 
 async function ensureClientId() {
@@ -258,6 +275,7 @@ async function callHostedTool(toolName, args, callId) {
 /* ---------- 各工具的结果整形 ---------- */
 
 function shapeSearch(payload, args) {
+  const wantFull = asString(args.detail) === 'full' || asString(payload.detail) === 'full';
   const results = asArray(payload.results).map((item) => {
     const row = item && typeof item === 'object' ? item : {};
     return {
@@ -274,6 +292,9 @@ function shapeSearch(payload, args) {
       problem: clip(asString(row.problem), 240) || undefined,
       path: asString(row.path) || undefined,
       kind: asString(row.kind) || undefined,
+      // detail=full 的契约是「返回完整课程数据」：端点给了正文就必须透传，否则调用方还得再
+      // 调一次 get_lesson，`detail` 参数等于只改了个名字。
+      ...(wantFull ? { content: asString(row.content) || asString(row.solution) || undefined } : {}),
     };
   });
 
@@ -473,7 +494,12 @@ const CHECKPOINT_STATE_FILE = 'checkpoint.json';
 const CHECKPOINT_AT = 20;
 const CHECKPOINT_EVERY = 10;
 
+// 内存是提醒状态的真相，文件只是持久化副本：写盘失败时（只读目录、磁盘满）不能退化成
+// 「每轮重新公告」或「计数停在旧值」。重启进程才回到读文件。
+let checkpointStateCache = null;
+
 async function readCheckpointState() {
+  if (checkpointStateCache) return { sessions: Object.assign({}, checkpointStateCache.sessions) };
   try {
     const read = await cindy.send({
       type: 'fs-request',
@@ -484,7 +510,8 @@ async function readCheckpointState() {
     if (read && read.ok === true && typeof read.content === 'string') {
       const parsed = JSON.parse(read.content);
       if (parsed && typeof parsed === 'object' && parsed.sessions && typeof parsed.sessions === 'object') {
-        return { sessions: parsed.sessions };
+        checkpointStateCache = parsed;
+        return { sessions: Object.assign({}, parsed.sessions) };
       }
     }
   } catch (error) {
@@ -494,6 +521,7 @@ async function readCheckpointState() {
 }
 
 async function writeCheckpointState(state) {
+  checkpointStateCache = { sessions: Object.assign({}, state.sessions) };
   try {
     await cindy.send({
       type: 'fs-request',
@@ -536,7 +564,7 @@ async function handleTurnEnd(msg) {
   }
   if (turns >= CHECKPOINT_AT && (turns - CHECKPOINT_AT) % CHECKPOINT_EVERY === 0) {
     await notify(
-      '该沉淀了：这次会话里可泛化、有判据的教训，用 misakanet_submit_intake 提交（故障 missing_lesson／计划 proposal）；不够价值就别提交。',
+      '该沉淀了：这次会话里可泛化、有判据的教训，用 misakanet_submit_intake 提交（自己解决了、尚无记录的问题用 new_lesson_candidate；计划用 proposal）；不够价值就别提交。',
       'info',
     );
   }
@@ -591,8 +619,20 @@ async function handleToolCall(msg) {
       // kind 省略时交给服务端自动判定（提问类会被重路由成 question）。
       if (!intakeArgs.kind) delete intakeArgs.kind;
       intakeArgs.source = 'cindy';
-      const payload = await callHostedTool(TOOLS.misakanet_submit_intake, intakeArgs, callId);
-      return sendResult(callId, true, shapeIntake(payload));
+      // 外发不可逆：失败时不能默认「可以重试」——issue 可能已经建好，重试会重复建单。
+      // 只有校验阶段（上面的 user_confirmed / problem）能确定「没发出」；一旦进入网络调用，
+      // 除拿到成功回执外的任何结果都是 uncertain。
+      try {
+        const payload = await callHostedTool(TOOLS.misakanet_submit_intake, intakeArgs, callId);
+        return sendResult(callId, true, shapeIntake(payload));
+      } catch (error) {
+        return fail(
+          callId,
+          'SUBMIT_UNCERTAIN',
+          '提交状态未知：公开 issue 可能已经创建。不要直接重发——先用同一段 problem 文本调用一次 misakanet_submit_intake（端点按内容去重），或到 GitHub 上核对。'
+            + '（宿主报告：' + String((error && error.message) || error) + '）',
+        );
+      }
     }
 
     if (tool === TOOLS.misakanet_me_inbox) {

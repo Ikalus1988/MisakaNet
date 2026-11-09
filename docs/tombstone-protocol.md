@@ -3,6 +3,7 @@
 > A standardized, minimal, redacted fatal-error payload format for Node.js process crashes.
 > Status: Draft | Version: 2 (alpha) | 2026-06-22
 > Implementation: `@misaka-net/fatal-guard`
+> Machine-readable v1 contract: [`tombstone-protocol.schema.json`](tombstone-protocol.schema.json) (JSON Schema; the v2 sections below are still a draft and are not emitted by the reference implementation)
 
 ## Purpose
 

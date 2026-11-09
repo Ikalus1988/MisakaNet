@@ -37,7 +37,7 @@ npx @misaka-net/misakanet-setup --only cindy
 
 插件源码在本仓库 [`.cindy-plugin/`](https://github.com/Ikalus1988/MisakaNet/tree/main/.cindy-plugin)：
 `ghost.json`（清单）、`main.js`（电子脑）、`locales/en.json` 与 `locales/zh-CN.json`（文案）、
-`manual/misakanet/MANUAL.md`（随包手册）、`assets/icon.png`。市场里发布的就是本仓库这个包（提审期间市场可能仍显示上一版），仓库已到 **1.3.2**（新增 User-Agent 自报：`cindy-plugin/<版本>`，本次提审已带上）；
+`manual/misakanet/MANUAL.md`（随包手册）、`assets/icon.png`。市场里发布的就是本仓库这个包（提审期间市场可能仍显示上一版），仓库已到 **1.3.3**（按官方评审修五处：密码学随机客户端 id、上报失败三态、detail=full 透传正文、提醒状态以内存为准、已解决场景用 new_lesson_candidate）；
 审核通过后，仓库这与市场里的包内容一致。
 
 ## 2. 工具面
@@ -53,7 +53,7 @@ npx @misaka-net/misakanet-setup --only cindy
 | `misakanet_submit_intake` | 提交 intake / 提问 / 计划（`kind=proposal`，计划类不会被自动判定）；**必须** `user_confirmed=true`，联网目标只有 `misakanet.org` |
 
 联网目标在 `ghost.json` 里显式声明为 `misakanet.org`——市场审核要求，也是给用户的边界：
-插件不写任何外部系统、不读本地文件（除了它自己的私有 `client_id` 目录）、不需要凭证。
+插件不写任何外部系统、不读你的文件（只用它自己的私有目录存 `client_id` 与提醒计数 `checkpoint.json`）、不需要凭证。
 
 ## 3. 验证
 
@@ -84,4 +84,4 @@ npx @misaka-net/misakanet-setup --only cindy --verify
 
 - 安装器**不写任何文件**，所以"重跑安装命令"修不了 Cindy 的任何问题——能修的只有应用内的插件状态；
 - `--verify` 的「查不了」**不是错误**，它不会让安装失败，只让退出码变成 2；
-- 私有数据目录里只存一个每机稳定的 `client_id`（用于端点侧的复用计数），卸载时随插件数据一起走。
+- 私有数据目录里存一个每机稳定的 `client_id`（用于端点侧的复用计数）和一个提醒计数 `checkpoint.json`，卸载时随插件数据一起走。

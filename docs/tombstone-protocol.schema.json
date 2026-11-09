@@ -1,0 +1,95 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://misakanet.org/schemas/tombstone-protocol.schema.json",
+  "title": "Tombstone Protocol v1",
+  "description": "The redacted fatal-error payload emitted by a crash guard (packages/fatal-guard) and consumed by scripts/tombstone_to_draft.py and scripts/fatal_guard_handler.py. Machine-readable form of docs/tombstone-protocol.md § v1. Required fields are the ones the consumer needs to produce a draft; everything else is enrichment. Additional properties are allowed on purpose: the protocol grows additively and a reader must ignore fields it does not know.",
+  "type": "object",
+  "required": [
+    "reason",
+    "timestamp",
+    "pid"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1,
+      "description": "Payload shape version. Optional because the Python sidecar predates the field; when present it must be 1 (v2 is a draft and is not emitted by the reference implementation)."
+    },
+    "reason": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^(uncaught_exception|unhandled_rejection|process_crash|exit_code|killed_by_[A-Z0-9]+)$",
+      "description": "Why the process ended. killed_by_<SIGNAL> carries the signal name."
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?(Z|[+-]\\d{2}:\\d{2})$",
+      "description": "ISO 8601 time the crash was observed. The pattern is redundant with format for tools without a format checker; both say the same thing."
+    },
+    "pid": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Process id of the crashed process."
+    },
+    "errorName": {
+      "type": "string",
+      "maxLength": 100,
+      "description": "Error constructor name (Node: uncaught_exception / unhandled_rejection)."
+    },
+    "message": {
+      "type": "string",
+      "maxLength": 500,
+      "description": "Redacted error message. The Node wrapper truncates to 500 chars."
+    },
+    "stackSnippet": {
+      "type": "string",
+      "maxLength": 1000,
+      "description": "Redacted stack excerpt. The Node wrapper truncates to 1000 chars."
+    },
+    "snippet": {
+      "type": "string",
+      "maxLength": 500,
+      "description": "Error text as the Python sidecar writes it; the consumer accepts snippet or message+stackSnippet."
+    },
+    "exit_code": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 255,
+      "description": "Process exit code when the crash was an exit (Node wrapper)."
+    },
+    "exitCode": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 255,
+      "description": "v2 draft spelling; accepted so a v2-shaped payload from an older guard still validates."
+    },
+    "signal": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 16,
+      "description": "Signal name when the process was killed (v2 draft; optional in v1)."
+    },
+    "host": {
+      "type": "string",
+      "maxLength": 100,
+      "description": "Host label added by a sidecar that knows it; never required."
+    },
+    "node_id": {
+      "type": "string",
+      "maxLength": 100,
+      "description": "Anonymous node id, when the guard is registered."
+    },
+    "tombstone_hash": {
+      "type": "string",
+      "maxLength": 128,
+      "description": "Stable dedupe hash, when a consumer computed one."
+    }
+  },
+  "additionalProperties": true
+}

@@ -284,8 +284,19 @@ jobs:
             # previously staged version" is that same fact arriving late, and it is the desired end
             # state — stand down instead of turning a successful release into a red run.
             if grep -qE 'E409|previously staged|previously published|Cannot publish over' /tmp/npm-publish.log; then
-              echo "::notice::npm refused the publish because this version already exists on npm; treating it as the desired end state (an earlier or concurrent run published it)."
-              exit 0
+              # A refusal is only the desired end state if the version is actually LIVE. A staged
+              # publish (npm 2FA) also ends in E409, and treating that as success turned the run
+              # green while npm stayed on the previous version — measured 2026-11-09: 3.7.0 was
+              # staged, `npm view misakanet@3.7.0` said "version not found", and `latest` was 3.6.0.
+              LIVE=$(node -p "require('./package.json').version")
+              PUBLISHED=$(npm view "misakanet@${LIVE}" version 2>/dev/null || true)
+              if [ "$PUBLISHED" = "$LIVE" ]; then
+                echo "::notice::misakanet@${LIVE} is live on npm; treating the refusal as the desired end state."
+                exit 0
+              fi
+              echo "::error::npm refused the publish, but misakanet@${LIVE} is NOT live (read back '${PUBLISHED}')."
+              echo "::error::A staged publish also returns E409. Approve it at npmjs.com (Packages -> Staged publishes) or clear the stage, then re-run."
+              exit 1
             fi
             echo "::error::npm publish failed (exit $RC)."
           fi

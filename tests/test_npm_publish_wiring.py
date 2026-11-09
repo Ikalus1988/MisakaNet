@@ -717,3 +717,61 @@ def test_the_publish_safety_rule_notices_a_workflow_with_neither(tmp_path):
         "      - name: Publish\n        if: steps.npm_state.outputs.already != 'true'\n"
         "        run: npm publish --access public\n", encoding="utf-8")
     assert publish_safety_problems(tmp_path) == []
+
+
+# ── the E409 branch, executed ──────────────────────────────────────────────────────────────────────
+# npm refuses a publish for two very different reasons: the version is already live (a second trigger
+# of the same release standing down — the desired end state), or the version is only STAGED and its
+# approval is pending. Both end in E409, so the log line cannot be the verdict; the registry read is.
+# Measured 2026-11-09: 3.7.0 was staged, the run went green, and `latest` stayed on 3.6.0.
+
+def _run_publish_step(tmp_path: Path, view_output: str, version: str = "3.7.0"):
+    tree = tmp_path / "tree"
+    tree.mkdir(parents=True, exist_ok=True)
+    (tree / "package.json").write_text(
+        json.dumps({"name": "misakanet", "version": version}) + "\n", encoding="utf-8")
+
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    npm_shim = bin_dir / "npm"
+    npm_shim.write_text(
+        "#!/bin/sh\n"
+        "case \"$1\" in\n"
+        "  publish)\n"
+        "    echo 'npm error 409 Conflict - PUT https://registry.npmjs.org/misakanet - "
+        "Cannot publish over previously staged version \"'\"$LIVE_VERSION\"'\"' >&2\n"
+        "    exit 1 ;;\n"
+        "  view)\n"
+        "    if [ -n \"${FAKE_NPM_VIEW:-}\" ]; then echo \"$FAKE_NPM_VIEW\"; exit 0; fi\n"
+        "    exit 1 ;;\n"
+        "esac\n", encoding="utf-8")
+    npm_shim.chmod(0o755)
+    script = tmp_path / "publish.sh"
+    script.write_text(_step(PUBLISH, "Publish to npm")["run"], encoding="utf-8")
+    environment = {
+        "PATH": f"{bin_dir}{os.pathsep}{os.environ['PATH']}",
+        "HOME": os.environ.get("HOME", ""),
+        "ACTIONS_ID_TOKEN_REQUEST_URL": "https://example.invalid/token",
+        "LIVE_VERSION": version,
+        "FAKE_NPM_VIEW": view_output,
+    }
+    return subprocess.run([require_posix_shell(), str(script)], cwd=tree, env=environment,
+                          capture_output=True, text=True)
+
+
+def test_a_staged_publish_is_not_reported_as_success(tmp_path):
+    """E409 with nothing live on npm means the release did not land — the run must say so."""
+    result = _run_publish_step(tmp_path / "staged", view_output="")
+    combined = result.stdout + result.stderr
+    assert result.returncode != 0, (
+        f"a staged publish was reported as success:\n{combined}")
+    assert "NOT live" in combined, combined
+    assert "Staged publishes" in combined, "the failure must name the action that clears a staged version"
+
+
+def test_a_live_version_behind_the_e409_is_the_desired_end_state(tmp_path):
+    """The negative fixture: a second trigger of the same release must stay a no-op."""
+    result = _run_publish_step(tmp_path / "live", view_output="3.7.0")
+    combined = result.stdout + result.stderr
+    assert result.returncode == 0, f"a live version must stand down, not fail:\n{combined}"
+    assert "is live on npm" in combined, combined

@@ -1,6 +1,6 @@
 {
   "name": "MisakaNet 故障记忆",
-  "description": "把 MisakaNet 公开故障教训库接进对话：报错、CI 失败、构建或工具崩溃之前，先查有没有别人已经踩过并写清修法的教训（问题 / 根因 / 修法 / 验证）。四个查询工具匿名只读、只访问 misakanet.org，不需要凭证；misakanet_submit_intake 会在用户明确确认后，把一次故障或提问写成公开仓库 Ikalus1988/MisakaNet 的 GitHub issue（内容公开可见，提交前必须脱敏），misakanet_me_inbox 可回头查它的答复。装上后第一轮会有一条轻提示，每 20 轮提醒一次沉淀；不上传任何数据，只在本机存一个随机客户端 id。",
+  "description": "把 MisakaNet 公开故障教训库接进对话：报错、CI 失败、构建或工具崩溃之前，先查有没有别人已经踩过并写清修法的教训（问题 / 根因 / 修法 / 验证）。四个查询工具匿名只读、只访问 misakanet.org，不需要凭证；misakanet_submit_intake 会在用户明确确认后，把一次故障或提问写成公开仓库 Ikalus1988/MisakaNet 的 GitHub issue（内容公开可见，提交前必须脱敏），misakanet_me_inbox 可回头查它的答复。装上后第一轮会有一条轻提示，每 20 轮提醒一次沉淀；不发你的文件、对话与凭证；只把查询词和几个自报标签（客户端名、版本、系统、随机客户端 id）发给端点。",
   "whenToUse": "遇到报错、异常、CI 失败、构建失败、工具崩溃或环境诡异行为时找我，先查这个坑是否已有公开教训；也想查某个技术栈、工具或平台的既往故障与修法时找我；用户之前提过问题、想知道维护者答没答时也找我。",
   "tools": {
     "misakanet_search": {

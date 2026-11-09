@@ -7,6 +7,29 @@ All notable changes to the Misaka Network project are documented here.
 
 ---
 
+## [3.7.0](https://github.com/Ikalus1988/MisakaNet/compare/v3.6.0...v3.7.0) (2026-11-09)
+
+
+### Features
+
+* **cindy:** per-client intake ledger, per-client hit rate, and the 1.3.2 plugin UA ([#4622](https://github.com/Ikalus1988/MisakaNet/issues/4622)) ([29b2814](https://github.com/Ikalus1988/MisakaNet/commit/29b2814ec3fee5e9fa620326fb044398e067a64c))
+* **lessons:** [#4609](https://github.com/Ikalus1988/MisakaNet/issues/4609) — confirm the deliverable form instead of inferring it from a mention ([#4612](https://github.com/Ikalus1988/MisakaNet/issues/4612)) ([80f7ff0](https://github.com/Ikalus1988/MisakaNet/commit/80f7ff0b202ce554a632d9ed9783f537ed32244e))
+* **lessons:** convert the review band — 31 intakes, one corrected, one superseded ([#4602](https://github.com/Ikalus1988/MisakaNet/issues/4602)) ([1aa12f5](https://github.com/Ikalus1988/MisakaNet/commit/1aa12f5f265145ad58ab1f079f2b64e5ad884361))
+* **lessons:** review-band batch 2, slice 1 — ten intakes with real titles ([#4625](https://github.com/Ikalus1988/MisakaNet/issues/4625)) ([48888d7](https://github.com/Ikalus1988/MisakaNet/commit/48888d7dfbe43e5e2eb25404ebf300b8dd5c7c44))
+* **lessons:** review-band batch 2, slice 2 — ten intakes, and the vocabulary calls the first slice surfaced ([#4628](https://github.com/Ikalus1988/MisakaNet/issues/4628)) ([507c093](https://github.com/Ikalus1988/MisakaNet/commit/507c0931e398f00ff89ebbcc645161e8ef9e94af))
+* **registry:** declare the hosted streamable-http endpoint in server.json ([#4632](https://github.com/Ikalus1988/MisakaNet/issues/4632)) ([c7f7609](https://github.com/Ikalus1988/MisakaNet/commit/c7f7609164c3426ba3cd7c831747d2c7effca6f0))
+
+
+### Bug Fixes
+
+* **cindy-plugin:** 1.3.3 — five review findings from the market PR ([#4633](https://github.com/Ikalus1988/MisakaNet/issues/4633)) ([485daaf](https://github.com/Ikalus1988/MisakaNet/commit/485daaf88b696895bfd43d70cb81f2af52a1905c))
+* **intake:** section() concatenates every occurrence, so the form's empty heading stops hiding the report ([#4621](https://github.com/Ikalus1988/MisakaNet/issues/4621)) ([474336f](https://github.com/Ikalus1988/MisakaNet/commit/474336ff0a9d3b801930e6fa497983482c8d2c99))
+
+
+### Documentation
+
+* **lessons:** make [#4609](https://github.com/Ikalus1988/MisakaNet/issues/4609)'s root cause falsifiable — "misunderstood the user" is the symptom ([#4614](https://github.com/Ikalus1988/MisakaNet/issues/4614)) ([b8d60c7](https://github.com/Ikalus1988/MisakaNet/commit/b8d60c7374b9c3611a4ff68265c12046f7b93d47))
+
 ## [3.6.0](https://github.com/Ikalus1988/MisakaNet/compare/v3.5.0...v3.6.0) (2026-11-09)
 
 
