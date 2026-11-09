@@ -551,15 +551,25 @@
 - [External PR Strategy via pr-genius](contrib/pr-strategy.md) | meta | "github-pr", "external-pr", "pr-genius", "federation" | pr-genius
 - [The Private Agent Memory Fallacy — Why Portable Memory Wallets Fail](contrib/private-agent-memory-fallacy.md) | agent | "memory-wallet", "portable-memory", "privacy", "interoperability", "zep" | blog.getzep.com
 - [扩展名白名单收口成单一声明表，收集层仍各写一份：存储器报告整列 N/A](contrib/problem-3942.md) | mcp | "problem", "io", "zi" | intake-3942
+- [「声明了却没用」的变量名 lint 报出上万条噪声：共享 VAR 声明与 TYPE 块淹没 4 条真信号](contrib/problem-a-declared-but-unused-real-variable-name-lint-meant.md) | mcp | "problem", "declared", "unused" | intake-4608
 - [共享可预测工作目录被并行流程改写：产物中途消失，内容寻址照单全收](contrib/problem-a-multi-step-extractiondecompileingest-pipeline.md) | mcp | "problem", "multi", "step" | intake-4426
 - [AppKit 保存的窗口恢复后矮了 28pt：styleMask 在 setFrame 之后才插 fullSizeContentView](contrib/problem-appkit-macos-15-a-window-restored-from-a-saved.md) | development | "problem", "appkit", "macos" | intake-3848
 - [窗口以 0 高度打开（不可见）：设置 contentViewController 时容器根视图还是 .zero](contrib/problem-appkit-window-opened-with-zero-height-invisible.md) | development | "problem", "appkit", "window" | intake-3843
+- [对比 upstream 跑测试判断「有没有改坏」：editable install 让测试始终导入自己的源码树](contrib/problem-comparing-my-branch-against-upstream-to-decide.md) | mcp | "problem", "comparing", "my" | intake-3938
 - [@dsh-market/plugin 升级后侧边栏市场按钮消失：core 传递依赖停在旧版，client.js 不进 bundle](contrib/problem-dsh-marketplugin-升级后侧边栏插件市场按钮图标整个消失没有-ui.md) | dsh | "problem", "dsh", "market" | intake-4541
 - [dsh-session-groups 装好却调不通：apply() 取 webServer/tools 服务失败，桥接路由没注册](contrib/problem-dsh-session-groups-插件安装后session-groups-工具调用失败http.md) | dsh | "problem", "dsh", "session" | intake-4540
 - [DSH web_search 报 multiple usable web providers：seam 的 searchProvider 为空，多 provider 并存](contrib/problem-dsh-的-web-search-工具调用时报错-带-engine-参数的搜索如-advanced.md) | dsh | "problem", "dsh", "web" | intake-4538
 - [从 PDF 代码清单提取源码编译失败：折行与分页符把逻辑行拆开](contrib/problem-extracting-program-source-from-pdf-code-listings.md) | mcp | "problem", "extracting", "program" | intake-4607
 - [MCP 工具只加到本地 stdio 面、没加托管端点：远程调用找不到该工具](contrib/problem-mcp-tool-implementation-only-added-to-local-stdio.md) | mcp | "problem", "mcp", "tool" | intake-2559
 - [Swift localizedStandardCompare 排序 4 万文件名慢到 200ms：桥接 NSString + 跨核合并得不偿失](contrib/problem-sorting-40000-file-names-with-swift.md) | mcp | "problem", "sorting", "file" | intake-3861
+- [keep-alive 后 Playwright .first() 定位到隐藏页的同名元素：间歇性 not visible 超时](contrib/problem-ui-从切页卸载重建改成-keep-alive多页常驻-dom-display.md) | mcp | "problem", "ui", "keep" | intake-4381
+- [高缩放多窗口下 GUI 自动化连环踩坑：坐标语义、截图裁剪、z-order、锁屏句柄失效](contrib/problem-windows-gui-自动化在高缩放如.md) | windows | "problem", "windows", "gui" | intake-4601
+- [GUI 进程 spawn 控制台子进程：每次调用闪一个黑窗，诊断输出刷屏](contrib/problem-windows-gui.md) | windows | "problem", "windows", "gui" | intake-3972
+- [VB6 自绘树控件只认真实输入链路：合成消息不触发选中，老化实例还会静默降级](contrib/problem-windows-上自动化-vb6-自绘树控件如.md) | windows | "problem", "windows", "vb6" | intake-4600
+- [对拍 405 行 0 偏差仍全错：golden 与提取层同源，只锁公式层不锁输入](contrib/problem-一套数值引擎用与官方-excel-工具逐行对拍-405-行-0.md) | mcp | "problem", "excel", "bug" | intake-4490
+- [FANUC 负载组下标不是工具号：SET_TOOL/MI02_TCH 的 N 不能拿去查 $PLST_GRP1](contrib/problem-从-fanuc.md) | fanuc | "problem", "fanuc", "plst" | intake-3875
+- [ROBOGUIDE 版本代差：备份与媒体版本不一致时变量恢复违例、FTP 550、虚拟机器人起不来](contrib/problem-从机器人-md.md) | mcp | "problem", "md", "roboguide" | intake-4522
+- [feishu CLI docx update 返回 write_error not found 但内容已写入：盲目重试会重复插入](contrib/problem-使用-feishu-climifeishu-docx-update修改飞书文档时命令返回-write.md) | feishu | "problem", "feishu", "cli" | intake-4084
 - [工艺卡步序提取：辅助动作不算独立步序，按工艺动作分界](contrib/process-card-sequence-extraction-rules.md) | development | "process-card", "time-chart", "sequence", "cycle-time", "robot" | <user>
 - [A watchdog without backoff respawns a crashing agent shim into EADDRINUSE and a CPU spike](contrib/process-supervisor-watchdog-loops-restarting-crashing-agent.md) | devops | "devops", "watchdog", "supervisor", "eaddrinuse", "systemd", "flock", "restart-backoff" | intake-3819
 - [Prompt cache prefix invalidation causes location hallucination in roleplay](contrib/prompt-cache-prefix-invalidation-roleplay.md) | llm | "prompt-caching", "roleplay", "context-window", "hallucination", "location", "spatial-anchoring" | intake #1501 — multi-turn roleplay with prompt caching, location regresses to earlier scene
