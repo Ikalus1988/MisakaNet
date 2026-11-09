@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-11-08T19:46:38.231152+00:00",
+  "generated_at": "2026-11-09T01:10:34.185802+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "docs(handoff): vol 31 — recall b, format decision, freshness path rule, lesson batch 4",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4590",
-      "timestamp": "2026-11-08T18:47:12Z",
+      "title": "feat(lessons): adopt the two conflicting lesson batches from @zsxh1990",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4595",
+      "timestamp": "2026-11-09T01:10:23Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(deps): bump the github-actions group with 4 updates",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4594",
+      "timestamp": "2026-11-09T00:41:59Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(deps): update mkdocs-git-revision-date-localized-plugin requirement from >=1.6.2 to >=1.6.3 in the pip group",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4593",
+      "timestamp": "2026-11-09T00:41:56Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(deps-dev): bump wrangler from 4.156.0 to 4.158.0 in the npm group",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4592",
+      "timestamp": "2026-11-09T00:41:53Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
       "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4589",
-      "timestamp": "2026-11-08T18:36:45Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat(lessons): convert 34 `[Lesson]` submissions into the corpus",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4588",
-      "timestamp": "2026-11-08T18:19:22Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "fix(doctor): a corpus sync is not a stale deploy",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4587",
-      "timestamp": "2026-11-08T17:34:01Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4586",
-      "timestamp": "2026-11-08T13:55:44Z",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4591",
+      "timestamp": "2026-11-08T20:02:28Z",
       "source": "github"
     },
     {
