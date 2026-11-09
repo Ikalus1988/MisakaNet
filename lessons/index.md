@@ -785,6 +785,7 @@
 - [微软商店（Microsoft Store）下载极慢，几十 MB 的应用要下很久，但同机浏览器测速正常。单看"网速没问题"会查不出原因。 Root Cause 本](contrib/微软商店microsoft-store下载极慢几十-mb.md) | windows | "microsoft", "store", "mb" | intake-4568
 - [手写 ComfyUI workflow JSON 时 link id 复用，导致节点静默断连且加载不报错](contrib/手写-comfyui-workflow-json-时-link-id-复用导致节点静默断连且加载不报错.md) | llm | "comfyui", "workflow", "json", "graph", "wiring" | intake-4441
 - [手柄卡顿/震动排查中，用「找不到 VID_2E8A」推断 USB 桥接（Pico 2W 转发器）未接入，结论错误。 Root Cause 桥接固件伪装成真手柄上](contrib/手柄卡顿震动排查中用找不到-vid-2e8a推断-usb-桥接pico-2w.md) | dsh | "vid", "e8a", "usb" | intake-4565
+- [把「答案是给 PPT 用的」读成「把答案做成 PPT」：交付形态要在开工前确认](contrib/把答案是给-ppt-用的读成把答案做成-ppt交付形态要在开工前确认.md) | agent | "agent", "deliverable-form", "over-production", "confirmation", "token-cost", "dsh" | intake-4609
 - [抓拍点自动同步：接口只给版本号不给条数，且「版本没变」时没推进 lastSyncAt 导致每小时打一次](contrib/抓拍点自动同步接口只给版本号不给条数且版本没变时没推进-lastsyncat-导致每小时打一次.md) | nodejs | "nodejs", "sync", "scheduler", "version-check", "timestamp", "idempotent" | intake-4163
 - [拖到垃圾桶删除后弹「找不到对象」：delete 先落盘 + 过期存坐标 update 竞态（stale-op）](contrib/拖到垃圾桶删除后弹找不到对象delete-先落盘-过期存坐标-update-竞态stale-op.md) | frontend | "frontend", "react", "drag-drop", "pointer-events", "idempotency", "stale-op", "race-condition", "minified-bundle", "book-frontend" | intake-4547
 - [（已订正）拖到垃圾桶删除报『找不到对象』：原根因有误，见『delete 先落盘 + 过期 update 竞态』](contrib/拖到垃圾桶删除报找不到对象一次手势重复派发-后端非幂等-silent.md) | frontend | "frontend", "react", "drag-drop", "stale-op", "not-found", "dsh-plugin" | intake-4544
