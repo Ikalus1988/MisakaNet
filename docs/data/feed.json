@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-11-09T15:50:01.479020+00:00",
+  "generated_at": "2026-11-09T22:31:02.846602+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "feat(lessons): review-band batch 2, slice 2 — ten intakes + the vocabulary calls",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4628",
-      "timestamp": "2026-11-09T15:49:49Z",
+      "title": "feat(tombstone): freeze the payload contract as a JSON Schema",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4644",
+      "timestamp": "2026-11-09T17:47:12Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4626",
-      "timestamp": "2026-11-09T14:55:32Z",
+      "title": "fix(release): a staged npm publish is not a successful one",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4643",
+      "timestamp": "2026-11-09T17:44:42Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(lessons): review-band batch 2, slice 1 — ten intakes with real titles",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4625",
-      "timestamp": "2026-11-09T14:38:59Z",
+      "title": "chore(main): release 3.7.0",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4604",
+      "timestamp": "2026-11-09T17:21:45Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(cindy): per-client intake ledger, per-client hit rate, and the 1.3.2 plugin UA",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4622",
-      "timestamp": "2026-11-09T12:21:24Z",
+      "title": "fix(cindy-plugin): 1.3.3 — five review findings from the market PR",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4633",
+      "timestamp": "2026-11-09T16:50:07Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(intake): section() concatenates every occurrence — the form's empty heading stops hiding the report",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4621",
-      "timestamp": "2026-11-09T12:13:31Z",
+      "title": "feat(registry): declare the hosted streamable-http endpoint in server.json",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4632",
+      "timestamp": "2026-11-09T16:45:17Z",
       "source": "github"
     },
     {
