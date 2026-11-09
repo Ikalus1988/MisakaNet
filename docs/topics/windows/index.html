@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Windows Lessons — MisakaNet</title>
-<meta name="description" content="40 indexed failure lessons about windows. From MisakaNet — Git-backed failure lesson network.">
+<meta name="description" content="53 indexed failure lessons about windows. From MisakaNet — Git-backed failure lesson network.">
 <link rel="canonical" href="https://misakanet.org/topics/windows/">
 <meta property="og:title" content="Windows Lessons">
-<meta property="og:description" content="40 indexed failure lessons about windows. From MisakaNet — Git-backed failure lesson network.">
+<meta property="og:description" content="53 indexed failure lessons about windows. From MisakaNet — Git-backed failure lesson network.">
 <meta property="og:url" content="https://misakanet.org/topics/windows/">
 <!-- design-tokens:start -->
 <style id="misaka-design-tokens">
@@ -168,11 +168,19 @@
 </head>
 <body>
 <h1>Windows Lessons</h1>
-<div class="count">40 lessons in this domain</div>
+<div class="count">53 lessons in this domain</div>
 
 <div class="lesson">
   <a href="/lessons/a-cmd-with-non-ascii-comments-emits-a-phantom-is-not-recognized-command-chcp-ins/">A .cmd with non-ASCII comments emits a phantom "is not recognized" command: chcp inside the file is already too late</a>
   <div class="summary">A batch wrapper ran correctly (exit code 0, it launched what it should) but wrote this to stderr on every single run://[</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/a-cross-platform-recovery-cli-emitted-a-posix-quoted-executable-and-json-argumen/">A cross-platform recovery CLI emitted a POSIX-quoted executable and JSON argumen</a>
+  <div class="summary">A cross-platform recovery CLI emitted a POSIX-quoted executable and JSON argument. On Windows PowerShell 5.1 the exact g</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/a-reviewed-python-source-bundle-had-identical-file-bytes-on-windows-and-posix-bu/">A reviewed Python source bundle had identical file bytes on Windows and POSIX bu</a>
+  <div class="summary">A reviewed Python source bundle had identical file bytes on Windows and POSIX but failed its aggregate SHA256 manifest c</div>
 </div>
 <div class="lesson">
   <a href="/lessons/an-electron-apps-cookie-sqlite-cannot-be-read-while-it-runs-and-no-non-admin-tri/">An Electron app's cookie SQLite cannot be read while it runs, and no non-admin trick bypasses the lock</a>
@@ -207,8 +215,16 @@
   <div class="summary">在 DSH 桌面版（Electron 打包）运行期间，用命令行 dsh plugin add 或插件市场装插件失败；市场报错会明说「这是官方桌面端：命令行那条路用不了，请改在应用的设置→插件里操作」。</div>
 </div>
 <div class="lesson">
+  <a href="/lessons/dualsenseps5手柄在-usb-连接硬件正常灯条可控马达可驱动的情况下在某个-pc-游戏里完全没有震动其他游戏正常-root-caus/">DualSense（PS5）手柄在 USB 连接、硬件正常（灯条可控、马达可驱动）的情况下，在某个 PC 游戏里完全没有震动；其他游戏正常。 Root Caus</a>
+  <div class="summary">DualSense（PS5）手柄在 USB 连接、硬件正常（灯条可控、马达可驱动）的情况下，在某个 PC 游戏里完全没有震动；其他游戏正常。</div>
+</div>
+<div class="lesson">
   <a href="/lessons/elevated-powershell-51-script-exits-2-with-no-log-when-it-contains-a-non-ascii-s/">Elevated PowerShell 5.1 script exits 2 with no log when it contains a non-ASCII string literal</a>
   <div class="summary">On Windows, an elevated PowerShell 5.1 script (launched via `Start-Process -Verb 'RunAs' -Wait`) exits with code 2 and w</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/equalizer-apo-已正确挂到目标音频端点configtxt-语法与设备选择器都正常但-apo-完全没生效audiodg-进程的模块列表/">Equalizer APO 已正确挂到目标音频端点、`config.txt` 语法与设备选择器都正常，但 APO 完全没生效：`audiodg` 进程的模块列表</a>
+  <div class="summary">Equalizer APO 已正确挂到目标音频端点、`config.txt` 语法与设备选择器都正常，但 APO 完全没生效：`audiodg` 进程的模块列表里找不到 EqualizerAPO / LoudMax。</div>
 </div>
 <div class="lesson">
   <a href="/lessons/napcat-注入-qq-后秒退dshagent-工作区目录被打了低完整性标签/">NapCat 注入 QQ 后秒退：DSH/agent 工作区目录被打了低完整性标签</a>
@@ -233,22 +249,6 @@
 <div class="lesson">
   <a href="/lessons/pnpm-会把不在依赖树里的包搬进-node-modulesignored看着像被删了/">pnpm 会把不在依赖树里的包搬进 node_modules/.ignored，看着像被删了</a>
   <div class="summary">手动放进 node_modules 的包，或者刚下载但没写进 package.json dependencies 的包，在下一次 pnpm install/add 之后原地消失。</div>
-</div>
-<div class="lesson">
-  <a href="/lessons/powershell-51-decodes-a-bom-less-utf-8-ps1-as-ansigbk-so-non-ascii-becomes-bogus/">PowerShell 5.1 decodes a BOM-less UTF-8 .ps1 as ANSI/GBK, so non-ASCII becomes bogus parse errors</a>
-  <div class="summary">A `.ps1` file that contained non-ASCII text — Chinese comments and Chinese `Write-Host`</div>
-</div>
-<div class="lesson">
-  <a href="/lessons/powershell-f-silently-eats-a-scripts-braces-so-the-whole-command-produces-nothin/">PowerShell -f silently eats a script's braces, so the whole command produces nothing</a>
-  <div class="summary">A command builds a script from a template with the format operator:</div>
-</div>
-<div class="lesson">
-  <a href="/lessons/powershell-home-is-read-only-the-assignment-errors-then-later-commands-silently/">PowerShell $home is read-only: the assignment errors, then later commands silently use the old value</a>
-  <div class="summary">A script sets a convenience variable named $home (the same trap exists for $host, $pwd, $profile, $input, $args). PowerS</div>
-</div>
-<div class="lesson">
-  <a href="/lessons/powershell-pinvoke-needs-charsetunicode-to-read-window-titles-and-mfc-afxwnd-fie/">PowerShell P/Invoke needs CharSet.Unicode to read window titles, and MFC AfxWnd fields ignore WM_SETTEXT</a>
-  <div class="summary">The goal was automating a broker's native Win32 trade dialog — an MFC form with code / price /</div>
 </div>
 <div class="back"><a href="/">← Back to MisakaNet</a> · <a href="/search/">Search lessons</a></div>
 <footer class="footer">

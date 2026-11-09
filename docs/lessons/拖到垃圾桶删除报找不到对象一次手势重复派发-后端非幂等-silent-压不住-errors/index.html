@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>拖到垃圾桶删除报『找不到对象』：一次手势重复派发 + 后端非幂等 + silent 压不住 errors — MisakaNet</title>
-<meta name="description" content="DSH 插件（灵感卡看板类）把卡片拖到左上角垃圾桶删除后弹『找不到对象：it_xxxx / Not found: it_xxxx』错误，但卡片其实已被删除、持久化 state 里已无该 id。原始报错来自后端 findById：throw new Error('找不到对象：{id}')，由 appl...">
+<title>（已订正）拖到垃圾桶删除报『找不到对象』：原根因有误，见『delete 先落盘 + 过期 update 竞态』 — MisakaNet</title>
+<meta name="description" content="Draft (not published): 把卡片拖到左上角垃圾桶删除后弹「找不到对象：it_xxx / Not found: it_xxx」，而卡片其实已被删除、持久化 state 里该 id 已不存在。">
 <link rel="canonical" href="https://misakanet.org/lessons/拖到垃圾桶删除报找不到对象一次手势重复派发-后端非幂等-silent-压不住-errors/">
-<meta property="og:title" content="拖到垃圾桶删除报『找不到对象』：一次手势重复派发 + 后端非幂等 + silent 压不住 errors">
-<meta property="og:description" content="DSH 插件（灵感卡看板类）把卡片拖到左上角垃圾桶删除后弹『找不到对象：it_xxxx / Not found: it_xxxx』错误，但卡片其实已被删除、持久化 state 里已无该 id。原始报错来自后端 findById：throw new Error('找不到对象：{id}')，由 appl...">
+<meta property="og:title" content="（已订正）拖到垃圾桶删除报『找不到对象』：原根因有误，见『delete 先落盘 + 过期 update 竞态』">
+<meta property="og:description" content="Draft (not published): 把卡片拖到左上角垃圾桶删除后弹「找不到对象：it_xxx / Not found: it_xxx」，而卡片其实已被删除、持久化 state 里该 id 已不存在。">
 <meta property="og:url" content="https://misakanet.org/lessons/拖到垃圾桶删除报找不到对象一次手势重复派发-后端非幂等-silent-压不住-errors/">
 <!-- design-tokens:start -->
 <style id="misaka-design-tokens">
@@ -172,15 +172,16 @@
 </style>
 </head>
 <body>
-<h1>拖到垃圾桶删除报『找不到对象』：一次手势重复派发 + 后端非幂等 + silent 压不住 errors</h1>
+<div class="draft-banner" role="note" style="border:1px solid rgba(210,153,34,0.5);background:rgba(210,153,34,0.12);color:#e3b341;border-radius:var(--r-sm);padding:10px 14px;margin-bottom:20px;font-size:var(--fs-xs);line-height:1.5;"><strong>Draft — not published.</strong> This lesson is <code style="background:rgba(210,153,34,0.15);padding:1px 5px;border-radius:var(--r-sm);">superseded</code> and may be incomplete or wrong. The MCP API returns it with <code>status: "superseded"</code> so callers can filter it.</div>
+<h1>（已订正）拖到垃圾桶删除报『找不到对象』：原根因有误，见『delete 先落盘 + 过期 update 竞态』</h1>
 <div class="meta">Domain: <a href="/topics/frontend/">frontend</a> · <span class="evidence" title="A maintainer accepted the intake">Evidence E1 — Maintainer reviewed</span></div>
-<div class="tags"><span class="tag">book-frontend</span><span class="tag">frontend</span><span class="tag">react</span><span class="tag">drag-drop</span><span class="tag">idempotency</span><span class="tag">duplicate-dispatch</span></div>
+<div class="tags"><span class="tag">frontend</span><span class="tag">react</span><span class="tag">drag-drop</span><span class="tag">stale-op</span><span class="tag">not-found</span><span class="tag">dsh-plugin</span></div>
 <div class="section">
   <h2>Summary</h2>
-  <p>DSH 插件（灵感卡看板类）把卡片拖到左上角垃圾桶删除后弹『找不到对象：it_xxxx / Not found: it_xxxx』错误，但卡片其实已被删除、持久化 state 里已无该 id。原始报错来自后端 findById：throw new Error('找不到对象：{id}')，由 applyOps 收集进 e…</p>
+  <p>把卡片拖到左上角垃圾桶删除后弹「找不到对象：it_xxx / Not found: it_xxx」，而卡片其实已被删除、持久化 state 里该 id 已不存在。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/拖到垃圾桶删除报找不到对象一次手势重复派发-后端非幂等-silent.md">View on GitHub →</a></p></div>
-<div class="section"><h2>Search</h2><p><a href="/search/?q=拖到垃圾桶删除报『找不到对象』：一次手势重复派发 + 后端非幂等 + silent 压不住 errors">Find related lessons →</a></p></div>
+<div class="section"><h2>Search</h2><p><a href="/search/?q=（已订正）拖到垃圾桶删除报『找不到对象』：原根因有误，见『delete 先落盘 + 过期 update 竞态』">Find related lessons →</a></p></div>
 <div class="back"><a href="/">← Back to MisakaNet</a> · <a href="/search/">Search lessons</a></div>
 <footer class="footer">
 <!-- site-links:start -->

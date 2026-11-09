@@ -1,41 +1,41 @@
 ---
-title: "拖到垃圾桶删除报『找不到对象』：一次手势重复派发 + 后端非幂等 + silent 压不住 errors"
+title: "（已订正）拖到垃圾桶删除报『找不到对象』：原根因有误，见『delete 先落盘 + 过期 update 竞态』"
 domain: "frontend"
 tags:
-  - "book-frontend"
   - "frontend"
   - "react"
   - "drag-drop"
-  - "idempotency"
-  - "duplicate-dispatch"
+  - "stale-op"
   - "not-found"
   - "dsh-plugin"
-  - "minified-bundle"
-status: "published"
+status: "superseded"
 evidence_level: "E1"
 created: "2026-11-08"
-updated: "2026-11-08"
+updated: "2026-11-09"
 source: "intake-4544"
-summary_plain: "DSH 插件（灵感卡看板类）把卡片拖到左上角垃圾桶删除后弹『找不到对象：it_xxxx / Not found: it_xxxx』错误，但卡片其实已被删除、持久化 state 里已无该 id。原始报错来自后端…"
-trigger: "拖到垃圾桶删除报『找不到对象』：一次手势重复派发 + 后端非幂等 + silent 压不住 errors. DSH 插件（灵感卡看板类）把卡片拖到左上角垃圾桶删除后弹『找不到对象：it_xxxx / Not found: it_xxxx』错误，但卡片其实已被删除、持久化 state…"
-verify: "node --check 退出 0；抽取真实函数注入桩做功能测试（同 id 并发→1 次 POST、不同 id/串行同 id/混合批次→正常放行、批次内重复 id 折叠）；字节级校验 orig.replace(old,new)===cur 为真；DevTools Network 拖一次只 1 条 POST /ops、撤销一次卡片即回。"
-provenance:
-  issue: "#4544"
-  source: "MCP intake (dsh), lesson submission converted by the maintainer"
+summary_plain: "本课原根因（两条重复 delete 派发）已被抓包证伪并订正，内容并入『delete 先落盘 + 过期 update 竞态』一课。"
+trigger: "拖到垃圾桶删除 找不到对象 it_xxx 已订正 见 delete 先落盘 过期 update 竞态 superseded"
+verify: "判据已订正：拖一次正常就是 2 条 POST /ops（delete_item 与 update_item(pos)），不要拿「只有 1 条」当成功；看每条响应的 errors 是否为空。"
 ---
 
 ## Problem
 
-DSH 插件（灵感卡看板类）把卡片拖到左上角垃圾桶删除后弹『找不到对象：it_xxxx / Not found: it_xxxx』错误，但卡片其实已被删除、持久化 state 里已无该 id。原始报错来自后端 findById：throw new Error('找不到对象：{id}')，由 applyOps 收集进 errors[] 随 HTTP 200 正常返回。给删除调用加 silent 参数无效。包内只有压缩后的 dist/client.js，无 JSX 源码、无 scripts/build.mjs。
+把卡片拖到左上角垃圾桶删除后弹「找不到对象：it_xxx / Not found: it_xxx」，而卡片其实已被删除、持久化 state 里该 id 已不存在。
+
+**本课的第一版根因是错的**（写的是「一次手势有两条重复 delete_item 派发 + 后端非幂等」），据此给出的修法（前端只对 delete_item 做 in-flight 去重 + 幂等 delete_item）被报料者用运行时抓包复测证伪，仍报同一个错。
 
 ## Root Cause
 
-三层叠加：(1) 一次拖动手势有两条互不感知的 delete_item 派发路径 —— pointer-ghost 的 pointerup 几何命中垃圾桶，以及原生 HTML5 drag 的垃圾桶 onDrop（dataTransfer 读 id），都走同一个中央提交函数且无去重；(2) 后端 delete_item 非幂等，用 findById(state.items, op.id) 找不到就抛错，applyOps 把异常转 errors[] 随 HTTP 200 返回，第二条 delete 在已删除的 state 上必然踩中；(3) 提交函数里 silent 只 gate 成功 receipt 的 toast，errors 分支无条件弹错误提示。state 里 grep 不到该 id 即证明第一次删除已成功落盘。
+订正后的根因见 canonical 课：一次拖拽产生的是**两条不同 op** 的 POST /ops —— `delete_item` 与存坐标的 `update_item(pos)`。删除先把条目从 state 移除；随后到达的 `update_item` 走 `findById` 找不到 id 而抛错，`applyOps` 把它收进 errors[] 随 HTTP 200 返回，前端 errors toast 无条件弹。`silent` 只 gate 成功 receipt，压不住。
 
 ## Fix
 
-(1) 后端必做兜底：delete_item 改为 state.items.find(row=>row.id===op.id)，找不到只清残留关联数据并 return null，不抛错；host 直接 import 源码且有 Node 模块缓存，改完必须重启 host 才生效。(2) 前端治本：在中央提交函数按 op id 做 in-flight 去重 —— 进入时对带 id 的 delete_item 记 guard[id]、已在 guard 中的过滤掉，await 返回后（成功/异常都）delete guard[id]，其它 op 与混合批次放行；这样挡并发重复而不误挡串行再删。(3) 压缩 bundle 定点改：Get-Content -Raw 整读、抽函数原文、确认替换串唯一=1、先 Copy-Item 字节备份、String.Replace、UTF8Encoding($false) 无 BOM 写回保持 LF、node --check，失败自动从备份还原。别把 errors toast 也纳入 silent（会掩盖真实错误）。
+本课不再给出修法，改为指向已订正的 canonical 课：
+
+- [`lessons/contrib/拖到垃圾桶删除后弹找不到对象delete-先落盘-过期存坐标-update-竞态stale-op.md`](https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/拖到垃圾桶删除后弹找不到对象delete-先落盘-过期存坐标-update-竞态stale-op.md)
+
+修法要点：把抛错的 `update_item` 改为幂等静默（`find` 不到就 `return null`），改完重启 host。
 
 ## Verification
 
-node --check 退出 0；抽取真实函数注入桩做功能测试（同 id 并发→1 次 POST、不同 id/串行同 id/混合批次→正常放行、批次内重复 id 折叠）；字节级校验 orig.replace(old,new)===cur 为真；DevTools Network 拖一次只 1 条 POST /ops、撤销一次卡片即回。
+订正依据（intake #4546）：抓包 + 本地复现——`delete→update` 报 errors，`update→delete` 与 `delete→delete` 都干净；原课「拖一次只有 1 条 POST」的判据是错的，正常形态就是 2 条，判据应看每条响应的 `errors` 是否为空。

@@ -14,14 +14,15 @@ tags:
 status: "published"
 evidence_level: "E1"
 created: "2026-11-08"
-updated: "2026-11-08"
+updated: "2026-11-09"
 source: "intake-4547"
 summary_plain: "把卡片拖到左上角垃圾桶删除后弹「找不到对象：it_xxx / Not found: it_xxx」，但卡片其实已消失、持久化 state 里该 id 已不存在。抓包显示一次拖拽产生 2 条独立 POST /ops：一条…"
 trigger: "拖到垃圾桶删除后弹「找不到对象」：delete 先落盘 + 过期存坐标 update 竞态（stale-op）. 把卡片拖到左上角垃圾桶删除后弹「找不到对象：it_xxx / Not found: it_xxx」，但卡片其实已消失、持久化 state 里该 id…"
 verify: "node --check 通过；本地 import applyOps 跑 delete→update(pos) 得 errors:[]，并回归 item 存在时 update 仍生效（pos/score 正确写回）。重启 host 后拖卡到垃圾桶：卡片消失、不弹「找不到对象」、撤销一次即回；Network 仍是 2 条 POST 属正常形态，逐条看响应 errors…"
+supersedes: "拖到垃圾桶删除报找不到对象一次手势重复派发-后端非幂等-silent"
 provenance:
-  issue: "#4547"
-  source: "MCP intake (dsh), lesson submission converted by the maintainer"
+  issue: "#4547 + #4544 + #4546"
+  source: "MCP intake (dsh), lesson submission converted by the maintainer; absorbs #4544's corrected root cause after the #4546 stale_lesson report"
 ---
 
 ## Problem
