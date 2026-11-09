@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.10.0](https://github.com/Ikalus1988/MisakaNet/compare/misakanet-setup-v0.9.0...misakanet-setup-v0.10.0) (2026-11-09)
+
+
+### Features
+
+* **integrations:** Cindy becomes the 13th host — and the first target that writes nothing ([#4397](https://github.com/Ikalus1988/MisakaNet/issues/4397)) ([4274867](https://github.com/Ikalus1988/MisakaNet/commit/4274867c33ecfe6631dabc759e5cf23c94fd9e74))
+
+
+### Bug Fixes
+
+* **intake:** a proposal is not a lesson — skip the auto-review, and say so in the four copies ([#4428](https://github.com/Ikalus1988/MisakaNet/issues/4428)) ([2734b09](https://github.com/Ikalus1988/MisakaNet/commit/2734b09acbf398334aee6c9c0c88a02f65992365))
+* **setup:** resolve mcode's data dir instead of assuming ~/.minimax (fixes [#3838](https://github.com/Ikalus1988/MisakaNet/issues/3838)) ([#4319](https://github.com/Ikalus1988/MisakaNet/issues/4319)) ([ccd2d80](https://github.com/Ikalus1988/MisakaNet/commit/ccd2d80c762d5cbcad6dc98a5d56fdc192fbb47d))
+
 ## [0.9.0](https://github.com/Ikalus1988/MisakaNet/compare/misakanet-setup-v0.8.1...misakanet-setup-v0.9.0) (2026-10-30)
 
 
