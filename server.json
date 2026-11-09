@@ -23,5 +23,11 @@
         ]
       }
     }
+  ],
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://misakanet.org/mcp"
+    }
   ]
 }
