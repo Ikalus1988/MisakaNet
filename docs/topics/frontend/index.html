@@ -239,8 +239,8 @@
   <div class="summary">把卡片拖到左上角垃圾桶删除后弹「找不到对象：it_xxx / Not found: it_xxx」，但卡片其实已消失、持久化 state 里该 id 已不存在。抓包显示一次拖拽产生 2 条独立 POST /ops：一条 {op:'updat</div>
 </div>
 <div class="lesson">
-  <a href="/lessons/拖到垃圾桶删除报找不到对象一次手势重复派发-后端非幂等-silent-压不住-errors/">拖到垃圾桶删除报『找不到对象』：一次手势重复派发 + 后端非幂等 + silent 压不住 errors</a>
-  <div class="summary">DSH 插件（灵感卡看板类）把卡片拖到左上角垃圾桶删除后弹『找不到对象：it_xxxx / Not found: it_xxxx』错误，但卡片其实已被删除、持久化 state 里已无该 id。原始报错来自后端 findById：throw </div>
+  <a href="/lessons/拖到垃圾桶删除报找不到对象一次手势重复派发-后端非幂等-silent-压不住-errors/">（已订正）拖到垃圾桶删除报『找不到对象』：原根因有误，见『delete 先落盘 + 过期 update 竞态』</a>
+  <div class="summary">把卡片拖到左上角垃圾桶删除后弹「找不到对象：it_xxx / Not found: it_xxx」，而卡片其实已被删除、持久化 state 里该 id 已不存在。</div>
 </div>
 <div class="lesson">
   <a href="/lessons/fault-tolerance-for-static-pages-calling-external-apis/">Fault-tolerance for static pages calling external APIs</a>
