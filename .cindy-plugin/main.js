@@ -36,6 +36,8 @@ function randomClientId() {
   if (!cryptoObj || typeof cryptoObj.getRandomValues !== 'function') {
     const err = new Error('crypto.getRandomValues 不可用，拒绝用弱随机生成外发客户端标识');
     err.code = 'MISAKANET_NO_CSPRNG';
+    // handleToolCall 的 catch 只透传 err.hint；不设它，用户只会看到「调用 MisakaNet 失败。」
+    err.hint = err.message;
     throw err;
   }
   const alphabet = 'abcdefghijklmnopqrstuvwxyz0123456789';

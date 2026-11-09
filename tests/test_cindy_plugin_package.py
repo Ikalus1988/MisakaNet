@@ -38,6 +38,9 @@ EXPECTED_TOOLS = {
     "misakanet_get_lesson",
     "misakanet_preflight",
     "misakanet_submit_intake",
+    # The MANUAL and the integration page both promise this one; it was missing from the subset
+    # check, so a manifest that dropped it would have passed.
+    "misakanet_me_inbox",
 }
 
 
