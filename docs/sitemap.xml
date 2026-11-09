@@ -599,15 +599,25 @@
   <url><loc>https://misakanet.org/lessons/pr-strategy/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/private-agent-memory-fallacy/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/扩展名白名单收口成单一声明表收集层仍各写一份存储器报告整列-na/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/声明了却没用的变量名-lint-报出上万条噪声共享-var-声明与-type-块淹没-4-条真信号/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/共享可预测工作目录被并行流程改写产物中途消失内容寻址照单全收/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/appkit-保存的窗口恢复后矮了-28ptstylemask-在-setframe-之后才插-fullsizecontentview/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/窗口以-0-高度打开不可见设置-contentviewcontroller-时容器根视图还是-zero/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/对比-upstream-跑测试判断有没有改坏editable-install-让测试始终导入自己的源码树/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/dsh-marketplugin-升级后侧边栏市场按钮消失core-传递依赖停在旧版clientjs-不进-bundle/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/dsh-session-groups-装好却调不通apply-取-webservertools-服务失败桥接路由没注册/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/dsh-web-search-报-multiple-usable-web-providersseam-的-searchprovider-为空多-provider/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/从-pdf-代码清单提取源码编译失败折行与分页符把逻辑行拆开/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/mcp-工具只加到本地-stdio-面没加托管端点远程调用找不到该工具/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/swift-localizedstandardcompare-排序-4-万文件名慢到-200ms桥接-nsstring-跨核合并得不偿失/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/keep-alive-后-playwright-first-定位到隐藏页的同名元素间歇性-not-visible-超时/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/高缩放多窗口下-gui-自动化连环踩坑坐标语义截图裁剪z-order锁屏句柄失效/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/gui-进程-spawn-控制台子进程每次调用闪一个黑窗诊断输出刷屏/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/vb6-自绘树控件只认真实输入链路合成消息不触发选中老化实例还会静默降级/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/对拍-405-行-0-偏差仍全错golden-与提取层同源只锁公式层不锁输入/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/fanuc-负载组下标不是工具号set-toolmi02-tch-的-n-不能拿去查-plst-grp1/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/roboguide-版本代差备份与媒体版本不一致时变量恢复违例ftp-550虚拟机器人起不来/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/feishu-cli-docx-update-返回-write-error-not-found-但内容已写入盲目重试会重复插入/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/process-card-sequence-extraction-rules/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-watchdog-without-backoff-respawns-a-crashing-agent-shim-into-eaddrinuse-and-a/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/prompt-cache-prefix-invalidation-causes-location-hallucination-in-roleplay/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>

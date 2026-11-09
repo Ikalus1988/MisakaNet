@@ -108,14 +108,14 @@ when the committed table stops matching the corpus, so it cannot rot the way a h
 
 | Level | Lessons | Share |
 |---|---|---|
-| **E0** | 62 | 7.0% |
-| **E1** (declared) | 403 | 45.5% |
-| **E2** (declared) | 92 | 10.4% |
+| **E0** | 62 | 6.9% |
+| **E1** (declared) | 413 | 46.1% |
+| **E2** (declared) | 92 | 10.3% |
 | **E3** (declared) | 16 | 1.8% |
 | **E4** (declared) | 0 | 0.0% |
 
-- Total lessons: **886**
-- At **E0** in total (declared + default): **375** (42.3%) — of which **313** declare no level at all
+- Total lessons: **896**
+- At **E0** in total (declared + default): **375** (41.9%) — of which **313** declare no level at all
 - At **E4** (*observed reuse by two or more distinct clients*): **0**
 
 Three things this says that the definitions above do not:
