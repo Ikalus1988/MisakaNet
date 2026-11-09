@@ -426,6 +426,30 @@ test('the breakdown merges days and topics into count-only tables', async () => 
   assert.equal(devops.hit_rate, 1 / 6);
 });
 
+test('the breakdown splits by client the same way it splits by topic (#4617)', async () => {
+  // `agent` was always written; only the read side ignored it. Adding the third grouping must
+  // leave by_day / by_domain summing to the same totals.
+  const env = createEnv({
+    signalGroups: [
+      { day: '2026-09-16', domain: 'devops', agent: 'cindy', hits: 1, total: 4 },
+      { day: '2026-09-16', domain: 'devops', agent: 'dsh', hits: 3, total: 3 },
+      { day: '2026-09-15', domain: 'llm', agent: 'unknown', hits: 0, total: 2 },
+    ],
+  });
+  const body = await (await worker.fetch(
+    new Request('https://misakanet.org/api/search-signals/stats?days=30'), env)).json();
+
+  const cindy = body.breakdown.by_agent.find((r) => r.key === 'cindy');
+  assert.equal(cindy.total, 4);
+  assert.equal(cindy.hits, 1);
+  assert.equal(cindy.miss, 3, 'miss is derived, not asked of the database');
+  assert.equal(cindy.hit_rate, 1 / 4);
+
+  const day = body.breakdown.by_day.find((r) => r.key === '2026-09-16');
+  assert.equal(day.total, 7, 'the day still sums every client and topic');
+  assert.equal(day.hits, 4);
+});
+
 test('the breakdown counts legacy rows as misses, like the report does', async () => {
   // The SQL is `SUM(CASE WHEN solved = 1 ...)`, so a NULL solved contributes nothing to
   // `hits` while still counting in `total` — the same conservative rule as the script.
@@ -450,7 +474,7 @@ test('the breakdown adds no per-request detail to the response', async () => {
     assert.ok(!wire.includes(forbidden),
       `the breakdown must stay count-only — "${forbidden}" appeared in the response`);
   }
-  assert.ok(wire.includes('by_day') && wire.includes('by_domain'));
+  assert.ok(wire.includes('by_day') && wire.includes('by_domain') && wire.includes('by_agent'));
 });
 
 test('a deployment without the aggregate column still serves the rows', async () => {
@@ -465,5 +489,5 @@ test('a deployment without the aggregate column still serves the rows', async ()
   assert.equal(resp.status, 200);
   const body = await resp.json();
   assert.equal(body.rows.length, 1);
-  assert.deepEqual(body.breakdown, { by_day: [], by_domain: [] });
+  assert.deepEqual(body.breakdown, { by_day: [], by_domain: [], by_agent: [] });
 });

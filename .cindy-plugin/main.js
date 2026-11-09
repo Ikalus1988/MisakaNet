@@ -16,7 +16,7 @@
 
 const MCP_URL = 'https://misakanet.org/mcp';
 const FETCH_TIMEOUT_MS = 45000;
-const PLUGIN_VERSION = '1.3.1';
+const PLUGIN_VERSION = '1.3.2';
 
 /* 客户端标识：每台机器一个稳定 id。
  * 端点会把 X-MisakaNet-Client salt-hash 进 search_signals.client_hint，而 client_hint 是
@@ -85,6 +85,9 @@ function buildHeaders(clientId) {
   return {
     'Content-Type': 'application/json',
     Accept: 'application/json',
+    // 自报客户端身份：宿主代发时用的是通用 UA，端点分不出这是 Cindy 的调用（#4618）。
+    // 版本从常量拼，不手写第二遍。
+    'User-Agent': `cindy-plugin/${PLUGIN_VERSION}`,
     'X-MisakaNet-Agent': 'cindy',
     'X-MisakaNet-Client': clientId,
     'X-MisakaNet-Os': detectOs(),

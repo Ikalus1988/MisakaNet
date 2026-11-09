@@ -276,7 +276,7 @@ function normalizeIntent(value) {
 
 // ── The per-source intake ledger's key space is bounded (#2075) ───────────────
 // `intake_source_count:<source>` is one key per source, and `source` is **caller-reported**: the
-// tool takes a free string ("codex, claude-code, cursor, dsh, curl, or other"), so before this the
+// tool takes a free string ("codex, claude-code, cursor, dsh, curl, cindy, or other"), so before this the
 // ledger's cardinality was whatever a caller typed — a 40-character alphabet of junk keys is
 // unbounded in the one way that matters here, and the endpoint is open (no Bearer). The old code
 // truncated to 40 characters, which caps the length of a key and does nothing at all to the number
@@ -288,7 +288,7 @@ function normalizeIntent(value) {
 // #1528), so bucketing cannot break a consumer — it only stops an unauthenticated caller from
 // writing one row per distinct string.
 const INTAKE_SOURCE_WHITELIST = new Set([
-  "codex", "claude-code", "cursor", "dsh", "curl", "mcp", "other",
+  "codex", "claude-code", "cursor", "dsh", "curl", "mcp", "cindy", "other",
 ]);
 
 function intakeSourceBucket(raw) {
@@ -455,7 +455,7 @@ const MCP_TOOLS = [
         fix: { type: "string", description: "Optional: how it was resolved." },
         verification: { type: "string", description: "Optional: how to confirm the fix works." },
         matched_lesson_id: { type: "string", description: "Optional: lesson ID that was checked but didn't help." },
-        source: { type: "string", description: "Calling client: codex, claude-code, cursor, dsh, curl, or other." },
+        source: { type: "string", description: "Calling client: codex, claude-code, cursor, dsh, curl, cindy, or other." },
         contributor: { type: "string", description: "Optional: contributor identity (GitHub username, agent name, or email). Included in issue body for attribution." },
         notify_email: { type: "string", description: "Optional: an email for the ANSWER only, and only for kind=\"question\". Ask the user first — never invent it. It is used to send one confirmation message now and, once confirmed, one notification when the answer is ready (the issue URL; never the reporter's text). Omit it and the pull path (me_inbox / FAQ) is unchanged." },
       },
@@ -527,7 +527,7 @@ const MCP_TOOLS = [
         fix: { type: "string", description: "How to fix it (required)." },
         verification: { type: "string", description: "How to confirm the fix works." },
         tags: { type: "string", description: "Comma-separated tags." },
-        source: { type: "string", description: "Source: codex, claude-code, cursor, etc." },
+        source: { type: "string", description: "Source: codex, claude-code, cursor, dsh, curl, cindy, etc." },
         contributor: { type: "string", description: "Optional: contributor identity (GitHub username, agent name, or email). Included in lesson frontmatter for attribution." },
       },
       required: ["title", "domain", "problem", "root_cause", "fix"],
@@ -7699,17 +7699,25 @@ async function recordSearchSignal(env, {
 // serves no query text. So the split is computed *here*, as counts only — the response
 // gains no new per-request detail, just totals. `solved IS NULL` (legacy rows) counts as a
 // miss, matching the script, so the two never disagree.
-// Turn `{day, domain, hits, total}` rows into the two tables the report needs. Pure.
+// Turn `{day, domain, agent, hits, total}` rows into the three tables the report needs. Pure.
 // `hits` is compared as a number because D1 may hand back strings for SUM().
+//
+// `by_agent` is the third split, not new collection: `agent` (the caller-reported X-MisakaNet-Agent
+// header, stored since the table was created) was already written on every row, and only the read
+// side ignored it. It answers "is this client's search finding anything" — a decision the global and
+// per-domain cuts cannot make (#4617). Summing the (day, domain, agent) groups back up leaves
+// by_day and by_domain exactly as they were.
 function buildSignalBreakdown(groups) {
   const byDay = new Map();
   const byDomain = new Map();
+  const byAgent = new Map();
   for (const g of groups || []) {
     const day = String(g.day || "unknown");
     const domain = String(g.domain || "unknown");
+    const agent = String(g.agent || "unknown");
     const total = Number(g.total || 0);
     const hits = Number(g.hits || 0);
-    for (const [map, key] of [[byDay, day], [byDomain, domain]]) {
+    for (const [map, key] of [[byDay, day], [byDomain, domain], [byAgent, agent]]) {
       const acc = map.get(key) || { key, hits: 0, total: 0 };
       acc.hits += hits;
       acc.total += total;
@@ -7719,7 +7727,7 @@ function buildSignalBreakdown(groups) {
   const finish = (map) => Array.from(map.values())
     .map((r) => ({ ...r, miss: r.total - r.hits, hit_rate: r.total ? r.hits / r.total : null }))
     .sort((a, b) => (b.total - a.total) || (b.key < a.key ? -1 : 1));
-  return { by_day: finish(byDay).sort((a, b) => (a.key < b.key ? 1 : -1)), by_domain: finish(byDomain) };
+  return { by_day: finish(byDay).sort((a, b) => (a.key < b.key ? 1 : -1)), by_domain: finish(byDomain), by_agent: finish(byAgent) };
 }
 
 async function handleSearchSignalStats(env, url) {
@@ -7738,17 +7746,18 @@ async function handleSearchSignalStats(env, url) {
     ).bind(`-${days} days`, SEARCH_SIGNAL_MAX_ROWS + 1).all();
     const rows = (results || []).map((r) => ({ solved: r.solved ?? null, created_at: r.created_at || "" }));
 
-    // Counts per day and per topic, computed in SQL so nothing per-request crosses the wire.
+    // Counts per day, per topic and per client, computed in SQL so nothing per-request crosses the wire.
     let groups = [];
     try {
       const grouped = await d1.prepare(
         `SELECT date(created_at) AS day,
                 COALESCE(NULLIF(TRIM(domain), ''), 'unknown') AS domain,
+                COALESCE(NULLIF(TRIM(agent), ''), 'unknown') AS agent,
                 SUM(CASE WHEN solved = 1 THEN 1 ELSE 0 END) AS hits,
                 COUNT(*) AS total
            FROM search_signals
           WHERE created_at >= datetime('now', ?1)
-          GROUP BY day, domain
+          GROUP BY day, domain, agent
           LIMIT ?2`
       ).bind(`-${days} days`, SEARCH_SIGNAL_MAX_GROUPS).all();
       groups = grouped.results || [];

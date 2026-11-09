@@ -114,6 +114,12 @@ test('intakeSourceBucket maps the documented sources to themselves and everythin
   // The point of the change: `source` is caller-reported and the endpoint is open, so before this the
   // ledger's key count was whatever an unauthenticated caller felt like writing. Truncating to 40
   // characters capped the *length* of a key and nothing else.
+  // Cindy is a real client — its plugin sends source="cindy" — and it must keep its own ledger key
+  // instead of folding into `other`, or the per-source count cannot answer "which host reported
+  // this" (#4616). Asserted explicitly as well as through the whitelist loop above, so deleting the
+  // entry fails on the line that says why.
+  assert.equal(intakeSourceBucket('cindy'), 'cindy');
+  assert.equal(intakeSourceBucket('  Cindy  '), 'cindy');
   assert.equal(intakeSourceBucket('x'.repeat(10_000)), 'other');
   assert.equal(intakeSourceBucket('a-perfectly-plausible-new-client'), 'other');
   assert.equal(intakeSourceBucket('codex; DROP TABLE kv_store'), 'other');
