@@ -38,6 +38,9 @@ EXPECTED_TOOLS = {
     "misakanet_get_lesson",
     "misakanet_preflight",
     "misakanet_submit_intake",
+    # The MANUAL and the integration page both promise this one; it was missing from the subset
+    # check, so a manifest that dropped it would have passed.
+    "misakanet_me_inbox",
 }
 
 
@@ -130,3 +133,44 @@ def test_the_entry_point_parses():
     done = subprocess.run([node, "--check", str(PLUGIN / "main.js")],
                           capture_output=True, text=True)
     assert done.returncode == 0, done.stderr
+
+
+def test_plugin_version_constant_matches_the_manifest():
+    """`PLUGIN_VERSION` is what the UA and X-MisakaNet-Version headers carry.
+
+    The manifest version is what the market lists; they drifted once before (#4618's UA line made
+    the constant load-bearing). Pinning the equality here means a bump that forgets one file fails
+    in CI instead of in the endpoint's telemetry.
+    """
+    source = (PLUGIN / "main.js").read_text(encoding="utf-8")
+    match = re.search(r"const PLUGIN_VERSION = '([^']+)'", source)
+    assert match, "PLUGIN_VERSION is gone from main.js"
+    assert match.group(1) == manifest()["version"], (
+        f"main.js says {match.group(1)}, ghost.json says {manifest()['version']}"
+    )
+
+
+def test_the_client_id_comes_from_a_csprng_not_math_random():
+    """The id is sent as X-MisakaNet-Client and counts distinct clients at the endpoint.
+
+    The host's security contract (and the market review on PR 312) forbids weak randomness for any
+    externally visible identifier, with no fallback when crypto is unavailable.
+    """
+    source = (PLUGIN / "main.js").read_text(encoding="utf-8")
+    assert "Math.random(" not in source, "an externally visible id must not use Math.random"
+    assert "getRandomValues" in source, "the client id must come from crypto.getRandomValues"
+    assert "MISAKANET_NO_CSPRNG" in source, "a missing CSPRNG must fail, not fall back"
+
+
+def test_a_solved_problem_is_pointed_at_new_lesson_candidate():
+    """The MANUAL used to tell a just-solved problem to submit `missing_lesson`.
+
+    `new_lesson_candidate` is the taxonomy's bucket for "solved, no record yet"; `missing_lesson`
+    means "searched, found nothing, still unsolved". PR 312's review caught the mismatch.
+    """
+    manual = (PLUGIN / "manual" / "misakanet" / "MANUAL.md").read_text(encoding="utf-8")
+    solve_line = next(
+        (line for line in manual.splitlines() if "刚解决" in line), ""
+    )
+    assert 'kind="new_lesson_candidate"' in solve_line, solve_line
+    assert 'kind="missing_lesson"' not in solve_line, solve_line

@@ -415,3 +415,60 @@ test('me_inbox: an unknown status says "cannot be determined", not "still waitin
   assert.match(answer.result.note, /≠ 没发生/);
   assert.match(answer.result.note, /提问表/, 'the note says where the endpoint looked');
 });
+
+// ── the client id: the one value that leaves the machine and names this install ──────────────
+
+test('client id: crypto-random shape, and two installs never share one', async () => {
+  const one = await loadPlugin({ respond: () => ({ results: [] }) });
+  await callTool(one, 'misakanet_search', { query: 'shape' });
+  const first = one.requests[0].headers['X-MisakaNet-Client'];
+  assert.match(first, /^cindy-[a-z0-9]{16}$/, `unexpected client id shape: ${first}`);
+
+  // A fresh load gets a fresh private data dir, i.e. it is a different install.
+  const two = await loadPlugin({ respond: () => ({ results: [] }) });
+  await callTool(two, 'misakanet_search', { query: 'shape' });
+  assert.notEqual(two.requests[0].headers['X-MisakaNet-Client'], first,
+    'two installs must not collide — the endpoint counts them as distinct clients');
+});
+
+test('client id: no CSPRNG means refuse, say why, and send nothing', async () => {
+  const load = await loadPlugin({ respond: () => ({ results: [] }) });
+  const realCrypto = globalThis.crypto;
+  const realRandom = Math.random;
+  Object.defineProperty(globalThis, 'crypto', { value: undefined, configurable: true, writable: true });
+  Math.random = () => { throw new Error('Math.random must never generate an external id'); };
+  try {
+    const answer = await callTool(load, 'misakanet_search', { query: 'no-csprng' });
+    assert.equal(answer.ok, false);
+    assert.equal(answer.errorCode, 'MISAKANET_NO_CSPRNG');
+    assert.match(answer.message, /crypto/i, 'the refusal must explain itself, not say "call failed"');
+    assert.equal(load.requests.length, 0, 'no request may leave without a CSPRNG-derived id');
+  } finally {
+    Math.random = realRandom;
+    Object.defineProperty(globalThis, 'crypto', { value: realCrypto, configurable: true, writable: true });
+  }
+});
+
+test('client id: bytes >= 252 are rejected, so the alphabet has no modulo bias', async () => {
+  // 252 = 36 * 7: every character has exactly 7 preimages. A stub that fills the first batch with
+  // 252 forces a second draw instead of folding those bytes into 'a'.
+  const load = await loadPlugin({ respond: () => ({ results: [] }) });
+  const realCrypto = globalThis.crypto;
+  const calls = [];
+  const fake = {
+    getRandomValues(bytes) {
+      calls.push(bytes.length);
+      if (calls.length === 1) { bytes.fill(252); return bytes; }
+      for (let i = 0; i < bytes.length; i += 1) bytes[i] = i;
+      return bytes;
+    },
+  };
+  Object.defineProperty(globalThis, 'crypto', { value: fake, configurable: true, writable: true });
+  try {
+    await callTool(load, 'misakanet_search', { query: 'mapping' });
+    assert.equal(load.requests[0].headers['X-MisakaNet-Client'], 'cindy-abcdefghijklmnop');
+    assert.equal(calls.length, 2, 'a fully rejected batch must trigger another draw');
+  } finally {
+    Object.defineProperty(globalThis, 'crypto', { value: realCrypto, configurable: true, writable: true });
+  }
+});
