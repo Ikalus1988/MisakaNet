@@ -7,6 +7,14 @@ All notable changes to the Misaka Network project are documented here.
 
 ---
 
+## [3.9.0](https://github.com/Ikalus1988/MisakaNet/compare/v3.8.0...v3.9.0) (2026-11-10)
+
+
+### Features
+
+* **cindy-plugin:** sync the source of truth to the market-reviewed 1.6.0 ([#4662](https://github.com/Ikalus1988/MisakaNet/issues/4662)) ([f27f2c7](https://github.com/Ikalus1988/MisakaNet/commit/f27f2c76dccb31d4adb1bee718a65b8a78703759))
+* **cli:** `misakanet tombstone validate|draft` — the local half of the crash pipeline ([#4668](https://github.com/Ikalus1988/MisakaNet/issues/4668)) ([6dd3f8a](https://github.com/Ikalus1988/MisakaNet/commit/6dd3f8a773652a8c7b0d880fa8c7a7a51fd7c5c7))
+
 ## [3.8.0](https://github.com/Ikalus1988/MisakaNet/compare/v3.7.0...v3.8.0) (2026-11-10)
 
 
