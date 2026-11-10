@@ -7,6 +7,20 @@ All notable changes to the Misaka Network project are documented here.
 
 ---
 
+## [3.8.0](https://github.com/Ikalus1988/MisakaNet/compare/v3.7.0...v3.8.0) (2026-11-10)
+
+
+### Features
+
+* **ci:** reconcile the DCO status when the workflow fails to start ([#4654](https://github.com/Ikalus1988/MisakaNet/issues/4654)) ([8f9378e](https://github.com/Ikalus1988/MisakaNet/commit/8f9378ec77faee725011b687566d0d06530263bc))
+* **lessons:** intake batch 2026-11-09 ([#4641](https://github.com/Ikalus1988/MisakaNet/issues/4641)) ([81f42d3](https://github.com/Ikalus1988/MisakaNet/commit/81f42d3ee394e1b00fca9d0b2f60d1d7e4173c14))
+* **tombstone:** freeze the payload contract as a JSON Schema ([#4644](https://github.com/Ikalus1988/MisakaNet/issues/4644)) ([5843b59](https://github.com/Ikalus1988/MisakaNet/commit/5843b598862dbcd0441bced3fbd1e32c9c69849d))
+
+
+### Bug Fixes
+
+* **release:** a staged npm publish is not a successful one ([#4643](https://github.com/Ikalus1988/MisakaNet/issues/4643)) ([9451a2e](https://github.com/Ikalus1988/MisakaNet/commit/9451a2e0e0abcef8b796d5246ef88c63ae76616b))
+
 ## [3.7.0](https://github.com/Ikalus1988/MisakaNet/compare/v3.6.0...v3.7.0) (2026-11-09)
 
 
