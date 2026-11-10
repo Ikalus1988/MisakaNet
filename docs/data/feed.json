@@ -1,9 +1,30 @@
 {
-  "generated_at": "2026-11-10T07:29:52.934450+00:00",
+  "generated_at": "2026-11-10T17:08:53.921986+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "chore(main): release 3.9.0",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4665",
+      "timestamp": "2026-11-10T07:56:46Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4669",
+      "timestamp": "2026-11-10T07:46:57Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "feat(cli): misakanet tombstone validate|draft — the local half of the crash pipeline",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4668",
+      "timestamp": "2026-11-10T07:40:31Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "feat(cindy-plugin): sync the source of truth to the market-reviewed 1.6.0",
@@ -16,27 +37,6 @@
       "title": "chore(main): release 3.8.0",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/4645",
       "timestamp": "2026-11-10T02:42:56Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4655",
-      "timestamp": "2026-11-10T02:16:31Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat(lessons): intake batch 2026-11-09",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4641",
-      "timestamp": "2026-11-10T02:01:10Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat(ci): reconcile the DCO status when the workflow fails to start",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4654",
-      "timestamp": "2026-11-10T01:47:41Z",
       "source": "github"
     },
     {
