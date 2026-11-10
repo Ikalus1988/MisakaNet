@@ -1,5 +1,5 @@
 ---
-title: "症状 Windows 上 curl 能正常访问 GitHub/npm（走 Schannel + Windows 证书库），但同一台机器上 **Node.js 的"
+title: "Windows 上 curl 通、Node fetch 全失败：Node 不读系统证书库"
 domain: "windows"
 tags:
   - "windows"
@@ -10,8 +10,8 @@ evidence_level: "E1"
 created: "2026-11-09"
 updated: "2026-11-09"
 source: "intake-4416"
-summary_plain: "Windows 上 curl 能正常访问 GitHub/npm（走 Schannel + Windows 证书库），但同一台机器上 **Node.js 的 fetch/https 请求全部失败**： `fetch failed` →…"
-trigger: "症状 Windows 上 curl 能正常访问 GitHub/npm（走 Schannel + Windows 证书库），但同一台机器上 **Node.js 的. Windows 上 curl 能正常访问 GitHub/npm（走 Schannel + Windows 证书库），但同一台机器上 **Node.js 的…"
+summary_plain: "Windows 上 curl 通、Node fetch 全失败：Node 不读系统证书库"
+trigger: "Windows 上 curl 通、Node fetch 全失败：Node 不读系统证书库"
 verify: "同一 URL：`node -e \"fetch('https://api.github.com').then(r=>console.log(r.status))\"` 在设置 `NODE_OPTIONS=--use-system-ca` 前报 `unable to get local issuer certificate`，设置后返回 200；随后原本失败的安装器/模板克隆可跑通。"
 provenance:
   issue: "#4416"

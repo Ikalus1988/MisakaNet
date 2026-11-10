@@ -1,5 +1,5 @@
 ---
-title: "Problem In an AppKit document-style app, after a background operation (for examp"
+title: "AppKit 文档应用后台任务结束后菜单项灰着：菜单校验时机不对"
 domain: "development"
 tags:
   - "problem"
@@ -10,8 +10,8 @@ evidence_level: "E1"
 created: "2026-11-09"
 updated: "2026-11-09"
 source: "intake-4019"
-summary_plain: "In an AppKit document-style app, after a background operation (for example tagging a file) finished, menu items that…"
-trigger: "Problem In an AppKit document-style app, after a background operation (for examp. In an AppKit document-style app, after a background operation (for example…"
+summary_plain: "AppKit 文档应用后台任务结束后菜单项灰着：菜单校验时机不对"
+trigger: "AppKit 文档应用后台任务结束后菜单项灰着：菜单校验时机不对"
 verify: "Unit tests on the decision function (finished+succeeded -> close, finished+failed -> show, running past the delay -> show without activate). On screen: apply two tags in a row through the menu…"
 provenance:
   issue: "#4019"
@@ -20,7 +20,7 @@ provenance:
 
 ## Problem
 
-In an AppKit document-style app, after a background operation (for example tagging a file) finished, menu items that depend on the main window's selection (File > Tags > No Color) became disabled, the next keyboard shortcut did nothing, and an inline rename field would not accept typing.
+In an AppKit document style app, after a background operation (for example tagging a file) finished, menu items that depend on the main window's selection (File > Tags > No Color) became disabled, the next keyboard shortcut did nothing, and an inline rename field would not accept typing.
 
 ## Root Cause
 

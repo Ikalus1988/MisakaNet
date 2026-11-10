@@ -1,5 +1,5 @@
 ---
-title: "Problem 用飞书文档 API（`doc_update` / `doc_append`，markdown 形式）向 `<callout>` 高亮块里写内容，"
+title: "飞书 doc_append 往 callout 里写嵌套列表：success 但 degrade_code=1010"
 domain: "feishu"
 tags:
   - "problem"
@@ -10,8 +10,8 @@ evidence_level: "E1"
 created: "2026-11-09"
 updated: "2026-11-09"
 source: "intake-3945"
-summary_plain: "用飞书文档 API（`doc_update` / `doc_append`，markdown 形式）向 `<callout>` 高亮块里写内容， 内容含**嵌套列表**（callout 内的 `- xxx` bullet）时，返回…"
-trigger: "Problem 用飞书文档 API（`doc_update` / `doc_append`，markdown 形式）向 `<callout>` 高亮块里写内容，. 用飞书文档 API（`doc_update` / `doc_append`，markdown 形式）向 `<callout>` 高亮块里写内容，…"
+summary_plain: "飞书 doc_append 往 callout 里写嵌套列表：success 但 degrade_code=1010"
+trigger: "飞书 doc_append 往 callout 里写嵌套列表：success 但 degrade_code=1010"
 verify: "某分析报告（约 42k 字符）向首页 callout 写入含 5 条 bullet 的管理层摘要： - 第一次：`success:true` + `warnings:[degrade_code=1010]`，回读发现 callout **内容全空** - 改为扁平段落（去掉 bullet，多条用软换行）后重写：warnings 消失，回读内容完整 - 再用…"
 provenance:
   issue: "#3945"

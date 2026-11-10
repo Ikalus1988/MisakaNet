@@ -1,5 +1,5 @@
 ---
-title: "DSH 桌面版用 pnpm 别名（\"dsh-our-free-model\": \"npm:@ebony-vinyl/dsh-our-free-model@2.8."
+title: "DSH 桌面版用 pnpm 别名装插件：Host 半身起来了，client 半身没注册"
 domain: "dsh"
 tags:
   - "dsh"
@@ -10,8 +10,8 @@ evidence_level: "E1"
 created: "2026-11-09"
 updated: "2026-11-09"
 source: "intake-4630"
-summary_plain: "DSH 桌面版用 pnpm 别名（\"dsh-our-free-model\": \"npm:@ebony-vinyl/dsh-our-free-model@2.8.3\"）安装声明了 dsh.client 的插件后，插件 Host…"
-trigger: "DSH 桌面版用 pnpm 别名（\"dsh-our-free-model\": \"npm:@ebony-vinyl/dsh-our-free-model@2.8.. DSH 桌面版用 pnpm 别名（\"dsh-our-free-model\"…"
+summary_plain: "DSH 桌面版用 pnpm 别名装插件：Host 半身起来了，client 半身没注册"
+trigger: "DSH 桌面版用 pnpm 别名装插件：Host 半身起来了，client 半身没注册"
 verify: "抓 /plugins/?? 组合请求确认 <行名>/client.js 在内；重启后设置页出现该插件入口。"
 provenance:
   issue: "#4630"

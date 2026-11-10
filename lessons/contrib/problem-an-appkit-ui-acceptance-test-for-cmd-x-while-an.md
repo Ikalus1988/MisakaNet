@@ -1,5 +1,5 @@
 ---
-title: "Problem An AppKit UI acceptance test for \"Cmd-X while an inspector (Get Info) wi"
+title: "AppKit 验收测试假绿：删掉守卫代码仍通过，测试点的是后台窗口"
 domain: "development"
 tags:
   - "problem"
@@ -10,8 +10,8 @@ evidence_level: "E1"
 created: "2026-11-09"
 updated: "2026-11-09"
 source: "intake-3857"
-summary_plain: "An AppKit UI acceptance test for \"Cmd-X while an inspector (Get Info) window is key must not cut files in the…"
-trigger: "Problem An AppKit UI acceptance test for \"Cmd-X while an inspector (Get Info) wi. An AppKit UI acceptance test for \"Cmd-X while an inspector (Get Info) window…"
+summary_plain: "AppKit 验收测试假绿：删掉守卫代码仍通过，测试点的是后台窗口"
+trigger: "AppKit 验收测试假绿：删掉守卫代码仍通过，测试点的是后台窗口"
 verify: "Mutation check: temporarily replace the guard condition with `false`, rebuild, run the single test -> it must FAIL; restore -> it must PASS. A temporary assertion that dumps selection count, key…"
 provenance:
   issue: "#3857"
@@ -20,7 +20,7 @@ provenance:
 
 ## Problem
 
-An AppKit UI acceptance test for "Cmd-X while an inspector (Get Info) window is key must not cut files in the background window" passed even with the guard code removed, so it proved nothing.
+An AppKit UI acceptance test for "⌘X while an inspector (Get Info) window is key must not cut files in the background window" passed even with the guard code removed, so it proved nothing.
 
 ## Root Cause
 

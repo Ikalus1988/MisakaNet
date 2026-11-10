@@ -1,5 +1,5 @@
 ---
-title: "Problem 用飞书文档 MCP 的 `doc_update` 改长文档时，两种选择器的**编辑粒度比预期粗**，会造成静默内容丢失： 1. `mode=re"
+title: "飞书 doc_update 的选择器粒度太粗：静默丢内容"
 domain: "feishu"
 tags:
   - "problem"
@@ -10,8 +10,8 @@ evidence_level: "E1"
 created: "2026-11-09"
 updated: "2026-11-09"
 source: "intake-3968"
-summary_plain: "用飞书文档 MCP 的 `doc_update` 改长文档时，两种选择器的**编辑粒度比预期粗**，会造成静默内容丢失： 1."
-trigger: "Problem 用飞书文档 MCP 的 `doc_update` 改长文档时，两种选择器的**编辑粒度比预期粗**，会造成静默内容丢失： 1. `mode=re. 用飞书文档 MCP 的 `doc_update` 改长文档时，两种选择器的**编辑粒度比预期粗**，会造成静默内容丢失： 1."
+summary_plain: "飞书 doc_update 的选择器粒度太粗：静默丢内容"
+trigger: "飞书 doc_update 的选择器粒度太粗：静默丢内容"
 verify: "某 5 万字分析报告： - 用 `select_title=\"## 一、背景\"` 替换章节内容（新 markdown 漏写标题）→ outline 里「一、背景」消失，回读后补 `insert-before` 恢复 - 用 select 替换表格单元格「5 台正常机的 RV…」一行 → 同格另外两行（` ` 分隔）被覆盖丢失，回读后整格重写补回 - 加上「每次改动后…"
 provenance:
   issue: "#3968"

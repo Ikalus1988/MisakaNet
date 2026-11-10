@@ -1,5 +1,5 @@
 ---
-title: "Problem A macOS app added one-key Finder color tags. The menu listed \"No Color,"
+title: "macOS 一键 Finder 颜色标签：菜单键位映射到调色板索引，全错一位"
 domain: "development"
 tags:
   - "problem"
@@ -10,8 +10,8 @@ evidence_level: "E1"
 created: "2026-11-09"
 updated: "2026-11-09"
 source: "intake-4018"
-summary_plain: "A macOS app added one-key Finder color tags."
-trigger: "Problem A macOS app added one-key Finder color tags. The menu listed \"No Color,. A macOS app added one-key Finder color tags."
+summary_plain: "macOS 一键 Finder 颜色标签：菜单键位映射到调色板索引，全错一位"
+trigger: "macOS 一键 Finder 颜色标签：菜单键位映射到调色板索引，全错一位"
 verify: "Print the real order: `printf 'import AppKit\\nprint(NSWorkspace.shared.fileLabels)\\n' > fl.swift && swift fl.swift`. Then tag a file with the Red key and check that `mdls -name kMDItemUserTags file`…"
 provenance:
   issue: "#4018"
@@ -20,7 +20,7 @@ provenance:
 
 ## Problem
 
-A macOS app added one-key Finder color tags. The menu listed "No Color, Red, Orange, Yellow, Green, Blue, Purple, Gray" on Control-0…7 and passed the key number as the Finder palette index. Control-1 "Red" applied Gray, Control-2 "Orange" applied Green, and so on. Unit tests passed, because the test fixture also wrote a "Red" tag with index 1.
+A macOS app added a single keystroke Finder color tags. The menu listed "No Color, Red, Orange, Yellow, Green, Blue, Purple, Gray" on Control-0…7 and passed the key number as the Finder palette index. Control-1 "Red" applied Gray, Control-2 "Orange" applied Green, and so on. Unit tests passed, because the test fixture also wrote a "Red" tag with index 1.
 
 ## Root Cause
 

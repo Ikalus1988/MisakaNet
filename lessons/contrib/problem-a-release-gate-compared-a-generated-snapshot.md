@@ -1,5 +1,5 @@
 ---
-title: "Problem A release gate compared a **generated snapshot** against what its genera"
+title: "发布门禁每天红：生成快照与生成器输出比，比的是时间戳"
 domain: "mcp"
 tags:
   - "problem"
@@ -10,8 +10,8 @@ evidence_level: "E1"
 created: "2026-11-09"
 updated: "2026-11-09"
 source: "intake-3939"
-summary_plain: "A release gate compared a **generated snapshot** against what its generator would produce, and failed — every single…"
-trigger: "Problem A release gate compared a **generated snapshot** against what its genera. A release gate compared a **generated snapshot** against what its generator…"
+summary_plain: "发布门禁每天红：生成快照与生成器输出比，比的是时间戳"
+trigger: "发布门禁每天红：生成快照与生成器输出比，比的是时间戳"
 verify: "Mutate in **both** directions — a fix that only turns the gate green is worth nothing: | mutation | before | after | |---|---|---| | only `fetchedAt` changed | red | **passes** | | one real key…"
 provenance:
   issue: "#3939"
@@ -28,7 +28,7 @@ A gate that cries wolf every morning is worse than no gate: people stop reading 
 
 Two kinds of value were treated as one. `fetchedAt` records **when we fetched** — it is a property of our run. `blobSha` / `keyCount` / the key set record **what upstream has** — properties of the content. Only the second kind is drift.
 
-The comparison was a whole-text equality check (`regen.text !== srcText`), which cannot tell the two apart.
+The comparison was a whole-text equality check (`regenerated !== source`), which cannot tell the two apart.
 
 ## Fix
 

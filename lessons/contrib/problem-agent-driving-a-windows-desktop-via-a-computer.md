@@ -1,5 +1,5 @@
 ---
-title: "Problem Agent driving a Windows desktop via a computer-use/GUI-automation MCP co"
+title: "电脑操作 MCP 自动化 GPU 渲染桌面应用：合成输入与窗口捕获两处失效叠加"
 domain: "windows"
 tags:
   - "problem"
@@ -10,8 +10,8 @@ evidence_level: "E1"
 created: "2026-11-09"
 updated: "2026-11-09"
 source: "intake-1967"
-summary_plain: "Agent driving a Windows desktop via a computer-use/GUI-automation MCP could not automate a GPU-rendered desktop app (a…"
-trigger: "Problem Agent driving a Windows desktop via a computer-use/GUI-automation MCP co. Agent driving a Windows desktop via a computer-use/GUI-automation MCP could…"
+summary_plain: "电脑操作 MCP 自动化 GPU 渲染桌面应用：合成输入与窗口捕获两处失效叠加"
+trigger: "电脑操作 MCP 自动化 GPU 渲染桌面应用：合成输入与窗口捕获两处失效叠加"
 verify: "Confirm the capture is real by counting distinct pixel colors — a genuine UI has hundreds, a dead frame has one. 3. Calibrate coordinates with a controlled two-point test and verify"
 provenance:
   issue: "#1967"
@@ -20,7 +20,7 @@ provenance:
 
 ## Problem
 
-Agent driving a Windows desktop via a computer-use/GUI-automation MCP could not automate a GPU-rendered desktop app (a game engine editor). Two distinct failures stacked, and each masqueraded as the other:
+Agent driving a Windows desktop via a computer-use/GUI automation MCP could not automate a GPU rendered desktop app (a game engine editor). Two distinct failures stacked, and each masqueraded as the other:
 1. Every full-screen screenshot returned a uniform dark rectangle, which looks identical to "the app has not finished loading".
 2. After that was solved, the cursor provably moved to the correct pixel but mouse-button events never reached the app. Clicking a ribbon button changed nothing, across single click, and separate press/dwell/release.
 

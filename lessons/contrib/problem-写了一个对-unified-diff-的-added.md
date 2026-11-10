@@ -1,5 +1,5 @@
 ---
-title: "Problem 写了一个「对 unified diff 的 added 行做关键词扫描」的工具，其中一段负责从安装命令里抽出包名：先用空白切词，再剥离版本号和"
+title: "unified diff 的 added 行关键词扫描：包名提取把 flag 当包名"
 domain: "mcp"
 tags:
   - "problem"
@@ -10,8 +10,8 @@ evidence_level: "E1"
 created: "2026-11-09"
 updated: "2026-11-09"
 source: "intake-3673"
-summary_plain: "写了一个「对 unified diff 的 added 行做关键词扫描」的工具，其中一段负责从安装命令里抽出包名：先用空白切词，再剥离版本号和 extra（`==`、`>=`、`[`）。写了 18 条测试，其中 7…"
-trigger: "Problem 写了一个「对 unified diff 的 added 行做关键词扫描」的工具，其中一段负责从安装命令里抽出包名：先用空白切词，再剥离版本号和. 写了一个「对 unified diff 的 added 行做关键词扫描」的工具，其中一段负责从安装命令里抽出包名：先用空白切词，再剥离版本号和…"
+summary_plain: "unified diff 的 added 行关键词扫描：包名提取把 flag 当包名"
+trigger: "unified diff 的 added 行关键词扫描：包名提取把 flag 当包名"
 verify: "加两条并排断言：`+pip install 'uv[extra]==0.5.0'` 与 `+pip install uv[extra]==0.5.0` 必须产出**同一个**包名 `uv`；再加一条未闭合引号（`+pip install 'unterminated`）断言 finding 数仍为 1（畸形输入不吞命）、且包名不含前导引号或退化为原样 token。修法是用…"
 provenance:
   issue: "#3673"

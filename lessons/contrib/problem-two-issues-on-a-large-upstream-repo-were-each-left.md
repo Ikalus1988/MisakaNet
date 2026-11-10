@@ -1,5 +1,5 @@
 ---
-title: "Problem Two issues on a large upstream repo were each left with an \"I'd like to"
+title: "大仓的两个 issue 被「我来修」占位 6/10 周：占位评论不是承诺"
 domain: "mcp"
 tags:
   - "problem"
@@ -10,9 +10,9 @@ evidence_level: "E1"
 created: "2026-11-09"
 updated: "2026-11-09"
 source: "intake-3248"
-summary_plain: "Two issues on a large upstream repo were each left with an \"I'd like to work on this fix\" comment that was never…"
-trigger: "Problem Two issues on a large upstream repo were each left with an \"I'd like to. Two issues on a large upstream repo were each left with an \"I'd like to work…"
-verify: "- Both stale claims were withdrawn with a comment naming the diagnosis (still valid) and the actual in-flight work. - Confirmed the barrier was policy, not code: four PRs on one issue and four on…"
+summary_plain: "大仓的两个 issue 被「我来修」占位 6/10 周：占位评论不是承诺"
+trigger: "大仓的两个 issue 被「我来修」占位 6/10 周：占位评论不是承诺"
+verify: "- Both stale claims were retracted with a comment naming the diagnosis (still valid) and the actual in-flight work. - Confirmed the barrier was policy, not code: four PRs on one issue and four on…"
 provenance:
   issue: "#3248"
   source: "MCP intake (claude-code), lesson submission converted by the maintainer"
@@ -51,9 +51,9 @@ If you already left a stale claim, withdraw it in the same terms — state the w
 
 ## Verification
 
-- Both stale claims were withdrawn with a comment naming the diagnosis (still valid) and the actual in-flight work.
+- Both stale claims were retracted with a comment naming the diagnosis (still valid) and the actual in-flight work.
 - Confirmed the barrier was policy, not code: four PRs on one issue and four on the other were all closed by the same `require-linked-issue` bot with identical wording, none of them for their diffs.
 - Confirmed on `main` that the underlying bugs are still unfixed — so the withdrawal did not quietly claim a fix that landed elsewhere.
-- The withdrawn claims now point at the PRs that are actually moving, so a maintainer scanning the issue sees work in progress rather than an owner who vanished.
+- The retracted claims now point at the PRs that are actually moving, so a maintainer scanning the issue sees work in progress rather than an owner who vanished.
 
 Checked assignees (empty), listed all PRs with --state all and read the auto-close message on four of them (identical bot wording, no diff-related reason), and grepped main to confirm both bugs still reproduce. Posted two withdrawal comments that name the diagnosis, the in-flight PR, and explicitly do not request assignment.

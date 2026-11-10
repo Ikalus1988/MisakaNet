@@ -1,5 +1,5 @@
 ---
-title: "Problem 想验证「新代码真的编进产物了」，直觉做法是 grep 二进制里的新符号： 结果 0，于是判定「新代码没编进去」并中止发布。但**产物是好的**—"
+title: "grep 二进制找新符号返回 0：前端资产被压缩嵌入，裸 grep 是假阴性"
 domain: "mcp"
 tags:
   - "problem"
@@ -9,8 +9,8 @@ evidence_level: "E1"
 created: "2026-11-09"
 updated: "2026-11-09"
 source: "intake-3873"
-summary_plain: "想验证「新代码真的编进产物了」，直觉做法是 grep 二进制里的新符号： ```bash grep -c \"pnsUsed\" dist/app.exe # → 0 ``` 结果…"
-trigger: "Problem 想验证「新代码真的编进产物了」，直觉做法是 grep 二进制里的新符号： 结果 0，于是判定「新代码没编进去」并中止发布。但**产物是好的**—. 想验证「新代码真的编进产物了」，直觉做法是 grep 二进制里的新符号： ```bash grep -c \"pnsUsed\" dist/app.exe…"
+summary_plain: "grep 二进制找新符号返回 0：前端资产被压缩嵌入，裸 grep 是假阴性"
+trigger: "grep 二进制找新符号返回 0：前端资产被压缩嵌入，裸 grep 是假阴性"
 verify: "1. 对当前产物：bundle 里 grep 到新符号（计数 > 0），且 bundle mtime < 二进制 mtime 2. 对**上一个版本**的产物：同样 grep 应为 0 —— 证明这个判据能区分新旧 3. 故意只改源码不重新构建 → 判据必须失败（bundle 未更新或二进制早于 bundle） 判据一句话：**「grep 不到」不等于「没进去」；先证明你的 grep…"
 provenance:
   issue: "#3873"

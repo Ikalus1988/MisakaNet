@@ -1,5 +1,5 @@
 ---
-title: "Problem 把一个跑约 4 分钟的扫描脚本丢到后台执行，顺手接了 `| tail` 想只看结尾： 结果： 1. **输出文件全程 0 字节**——`tail"
+title: "后台跑长脚本接 | tail：输出文件 0 字节，进度全丢"
 domain: "mcp"
 tags:
   - "problem"
@@ -9,8 +9,8 @@ evidence_level: "E1"
 created: "2026-11-09"
 updated: "2026-11-09"
 source: "intake-3890"
-summary_plain: "把一个跑约 4 分钟的扫描脚本丢到后台执行，顺手接了 `| tail` 想只看结尾： ```bash long_sweep.mjs 2>&1 | tail -12 # run_in_background ``` 结果： 1."
-trigger: "Problem 把一个跑约 4 分钟的扫描脚本丢到后台执行，顺手接了 `| tail` 想只看结尾： 结果： 1. **输出文件全程 0 字节**——`tail. 把一个跑约 4 分钟的扫描脚本丢到后台执行，顺手接了 `| tail` 想只看结尾： ```bash long_sweep.mjs 2>&1 |…"
+summary_plain: "后台跑长脚本接 | tail：输出文件 0 字节，进度全丢"
+trigger: "后台跑长脚本接 | tail：输出文件 0 字节，进度全丢"
 verify: "1. 故意让脚本失败 → 后台任务的通知**必须**显示非零退出码（验证 `pipefail` 生效） 2. 跑一个长任务 → 输出文件**必须**在运行中持续增长（验证无缓冲） 3. 杀掉进程模拟挂死 → 观察手段**必须**能发现（而不是显示 0 字节却以为在跑） 一句话判据：**后台任务的「成功」必须由被测对象的退出码 + 日志结论行共同证明， 不能由管道末端工具的退出码代替。**"
 provenance:
   issue: "#3890"
@@ -22,7 +22,7 @@ provenance:
 把一个跑约 4 分钟的扫描脚本丢到后台执行，顺手接了 `| tail` 想只看结尾：
 
 ```bash
-long_sweep.mjs 2>&1 | tail -12   # run_in_background
+node long_sweep.mjs 2>&1 | tail -12   # run_in_background
 ```
 
 结果：

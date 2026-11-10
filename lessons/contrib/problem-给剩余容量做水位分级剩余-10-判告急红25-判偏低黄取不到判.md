@@ -1,5 +1,5 @@
 ---
-title: "Problem 给「剩余容量」做水位分级：剩余 ≤10% 判告急（红）、≤25% 判偏低（黄）、取不到判 unknown（灰）。实现写成： 单测一跑就红：`tp"
+title: "容量水位分级：Number(null)=0 让「取不到」被判成告急"
 domain: "mcp"
 tags:
   - "problem"
@@ -10,8 +10,8 @@ evidence_level: "E1"
 created: "2026-11-09"
 updated: "2026-11-09"
 source: "intake-3889"
-summary_plain: "给「剩余容量」做水位分级：剩余 ≤10% 判告急（红）、≤25% 判偏低（黄）、取不到判 unknown（灰）。实现写成： ```js const lg = Number(largestKb) const tot =…"
-trigger: "Problem 给「剩余容量」做水位分级：剩余 ≤10% 判告急（红）、≤25% 判偏低（黄）、取不到判 unknown（灰）。实现写成： 单测一跑就红：`tp. 给「剩余容量」做水位分级：剩余 ≤10% 判告急（红）、≤25% 判偏低（黄）、取不到判 unknown（灰）。实现写成： ```js const lg…"
+summary_plain: "容量水位分级：Number(null)=0 让「取不到」被判成告急"
+trigger: "容量水位分级：Number(null)=0 让「取不到」被判成告急"
 verify: "单测必须覆盖**空值各形态**，而不只覆盖数值边界： ```js expect(level(null, 1000)).toBe('unknown') // ← 这条抓到 bug expect(level(100, null)).toBe('unknown') expect(level(100, 0)).toBe('unknown') // 除零 expect(level(undefined…"
 provenance:
   issue: "#3889"

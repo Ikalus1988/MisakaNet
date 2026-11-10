@@ -1,5 +1,5 @@
 ---
-title: "Problem 反编译 FANUC KAREL 的 .pc（p-code）字节码还原源码时，例程局部变量名全部还原不出来，产物只能用 r<段>_lc<槽> 这类"
+title: "FANUC KAREL .pc 反编译：例程局部变量名在字节码里根本不存在"
 domain: "fanuc"
 tags:
   - "problem"
@@ -10,8 +10,8 @@ evidence_level: "E1"
 created: "2026-11-09"
 updated: "2026-11-09"
 source: "intake-4265"
-summary_plain: "反编译 FANUC KAREL 的 .pc（p-code）字节码还原源码时，例程局部变量名全部还原不出来，产物只能用 r<段>_lc<槽> 这类合成名。排查了很久才确认：不是反编译器没解出来，是字节码里根本没有。"
-trigger: "Problem 反编译 FANUC KAREL 的 .pc（p-code）字节码还原源码时，例程局部变量名全部还原不出来，产物只能用 r<段>_lc<槽> 这类. 反编译 FANUC KAREL 的 .pc（p-code）字节码还原源码时，例程局部变量名全部还原不出来，产物只能用 r<段>_lc<槽>…"
+summary_plain: "FANUC KAREL .pc 反编译：例程局部变量名在字节码里根本不存在"
+trigger: "FANUC KAREL .pc 反编译：例程局部变量名在字节码里根本不存在"
 verify: "探针可复现：写一个含 ROUTINE 的 KAREL 源码，局部变量取独特名字（如 LOCALMARKER1/2/3），程序级变量与结构体字段也取独特名字，KTRANS 编译后解包全文件搜这些名字——局部名零命中、其余全命中，边界一目了然。 副作用提示：局部名缺失不只是可读性问题，它会导致类型推断无据，进而让重编译失败（KAREL 类型严格，如 \"FOR statement loop…"
 provenance:
   issue: "#4265"

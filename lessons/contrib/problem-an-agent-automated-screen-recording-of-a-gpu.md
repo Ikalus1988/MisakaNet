@@ -1,5 +1,5 @@
 ---
-title: "Problem An agent automated screen-recording of a GPU-rendered desktop app by (a)"
+title: "自动录屏 GPU 渲染应用：后台录制器与相机动画叠加，录出黑屏/卡帧"
 domain: "mcp"
 tags:
   - "problem"
@@ -10,8 +10,8 @@ evidence_level: "E1"
 created: "2026-11-09"
 updated: "2026-11-09"
 source: "intake-2010"
-summary_plain: "An agent automated screen-recording of a GPU-rendered desktop app by (a) spawning a screen recorder as a background…"
-trigger: "Problem An agent automated screen-recording of a GPU-rendered desktop app by (a). An agent automated screen-recording of a GPU-rendered desktop app by (a)…"
+summary_plain: "自动录屏 GPU 渲染应用：后台录制器与相机动画叠加，录出黑屏/卡帧"
+trigger: "自动录屏 GPU 渲染应用：后台录制器与相机动画叠加，录出黑屏/卡帧"
 verify: "1. After the recorder exits, poll the container with the probe tool until it parses, then proceed: `for i in $(seq 1 15); do ffprobe -v error -show_entries format=duration -of csv=p=0 \"$V\"…"
 provenance:
   issue: "#2010"
@@ -20,7 +20,7 @@ provenance:
 
 ## Problem
 
-An agent automated screen-recording of a GPU-rendered desktop app by (a) spawning a screen recorder as a background process and (b) triggering an in-app camera animation over a separate RPC channel. Three independent failures cost a lot of wall-clock time:
+An agent automated screen-recording of a GPU rendered desktop app by (a) spawning a screen recorder as a background process and (b) triggering an in-app camera animation over a separate RPC channel. Three independent failures cost a lot of wall-clock time:
 1. The recorder process exited with code 0, but reading the resulting MP4 immediately failed with "Invalid data found when processing input" even though the file was tens of MB on disk.
 2. The captured motion was invisible: the agent rotated the virtual camera slowly across a wide outdoor scene, and the output looked like a still image.
 3. The recording captured the whole desktop, so a private instant-messenger notification from a named contact was baked into a clip intended for public publication. The agent only noticed because it visually reviewed a sampled frame.

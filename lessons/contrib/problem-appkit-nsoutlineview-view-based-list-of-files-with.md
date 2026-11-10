@@ -1,5 +1,5 @@
 ---
-title: "Problem AppKit NSOutlineView (view-based, list of files with expandable folders)"
+title: "NSOutlineView 刷新子目录后选中态丢失：reloadItem 重建了行"
 domain: "development"
 tags:
   - "problem"
@@ -10,8 +10,8 @@ evidence_level: "E1"
 created: "2026-11-09"
 updated: "2026-11-09"
 source: "intake-4023"
-summary_plain: "AppKit NSOutlineView (view-based, list of files with expandable folders)."
-trigger: "Problem AppKit NSOutlineView (view-based, list of files with expandable folders). AppKit NSOutlineView (view-based, list of files with expandable folders)."
+summary_plain: "NSOutlineView 刷新子目录后选中态丢失：reloadItem 重建了行"
+trigger: "NSOutlineView 刷新子目录后选中态丢失：reloadItem 重建了行"
 verify: "An app-level acceptance case selects a file inside an expanded subfolder, applies a change through the real menu item, waits for the subfolder refresh, and asserts that the selection still equals…"
 provenance:
   issue: "#4023"
@@ -20,7 +20,7 @@ provenance:
 
 ## Problem
 
-AppKit NSOutlineView (view-based, list of files with expandable folders). After a file change inside an expanded subfolder, the app reloads that folder's children with `reloadItem(parent, reloadChildren: true)` and then calls its own restoreSelection(). The selected child row is still lost, so the next menu command acting on "the selection" does nothing (beeps on empty selection).
+AppKit NSOutlineView (view-based, list of files with folders that expand). After a file change inside an expanded subfolder, the app reloads that folder's children with `reloadItem(parent, reloadChildren: true)` and then calls its own restoreSelection(). The selected child row is still lost, so the next menu command acting on "the selection" does nothing (beeps on empty selection).
 
 ## Root Cause
 

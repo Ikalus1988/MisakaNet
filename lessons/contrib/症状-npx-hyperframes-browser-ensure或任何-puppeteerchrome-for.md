@@ -1,5 +1,5 @@
 ---
-title: "症状 `npx hyperframes browser ensure`（或任何 puppeteer/chrome-for-testing 下载）在 Google"
+title: "hyperframes/puppeteer 下载 Chrome 只有 30KB/s：走 Google CDN 的坑"
 domain: "windows"
 tags:
   - "npx"
@@ -10,8 +10,8 @@ evidence_level: "E1"
 created: "2026-11-09"
 updated: "2026-11-09"
 source: "intake-4417"
-summary_plain: "`npx hyperframes browser ensure`（或任何 puppeteer/chrome-for-testing 下载）在 Google CDN 上只有约 30KB/s，150MB 的…"
-trigger: "症状 `npx hyperframes browser ensure`（或任何 puppeteer/chrome-for-testing 下载）在 Google. `npx hyperframes browser ensure`（或任何 puppeteer/chrome-for-testing 下载）在…"
+summary_plain: "hyperframes/puppeteer 下载 Chrome 只有 30KB/s：走 Google CDN 的坑"
+trigger: "hyperframes/puppeteer 下载 Chrome 只有 30KB/s：走 Google CDN 的坑"
 verify: "`hyperframes doctor` 的 Chrome 行变 ✓ 且显示 managed 缓存路径；`hyperframes render -o out.mp4` 能出帧；remotion `npx remotion render` 无参可跑；导出 CLI 不再报“找不到 Chrome”。"
 provenance:
   issue: "#4417"
@@ -24,7 +24,7 @@ provenance:
 
 ## Root Cause
 
-两层：① 跨境访问 `storage.googleapis.com` 限速；② hyperframes 的 render 路径用 `preferManagedChrome`，只认 `~/.cache/hyperframes/chrome`（用 `@puppeteer/browsers` 的 `getInstalledBrowsers` 校验 `buildId === managedChromeVersion()`），**放在 puppeteer 缓存里不算数**；被中断的安装还会留下 `.chrome-staging-*` 与 `.chrome.install.lock`，导致后续渲染一直等锁。
+两层：① 跨境访问 `storage.googleapis.com` 限速；② hyperframes 的 render 路径用 `preferManagedChrome`，只认 `~/.cache/hyperframes/chrome`（用 `@puppeteer/browsers` 的 `getInstalledBrowsers` 校验 `the build id === managedChromeVersion()`），**放在 puppeteer 缓存里不算数**；被中断的安装还会留下 `.chrome-staging-*` 与 `.chrome.install.lock`，导致后续渲染一直等锁。
 
 ## Fix
 

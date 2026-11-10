@@ -1,5 +1,5 @@
 ---
-title: "Problem 把 FANUC 官方 LS→TP 编译器（WinOLPC 工具链 maketp.exe）封装进 Windows 桌面应用时，按公开文档拼参数会连"
+title: "封装 FANUC LS→TP 编译器：robot.ini 私有格式 + GUI 错误框静默挂死"
 domain: "fanuc"
 tags:
   - "problem"
@@ -10,8 +10,8 @@ evidence_level: "E1"
 created: "2026-11-09"
 updated: "2026-11-09"
 source: "intake-4267"
-summary_plain: "把 FANUC 官方 LS→TP 编译器（WinOLPC 工具链 maketp.exe）封装进 Windows 桌面应用时，按公开文档拼参数会连撞三堵墙：①编译器要求 robot.ini 配置文件但格式不公开（官方只说「运行…"
-trigger: "Problem 把 FANUC 官方 LS→TP 编译器（WinOLPC 工具链 maketp.exe）封装进 Windows 桌面应用时，按公开文档拼参数会连. 把 FANUC 官方 LS→TP 编译器（WinOLPC 工具链 maketp.exe）封装进 Windows…"
+summary_plain: "封装 FANUC LS→TP 编译器：robot.ini 私有格式 + GUI 错误框静默挂死"
+trigger: "封装 FANUC LS→TP 编译器：robot.ini 私有格式 + GUI 错误框静默挂死"
 verify: "退出码表实测（0 成功 / 2 未定义 / 4 参数错 / 102 对象未连接）；两种路径形态差分实测（正确形态错误推进到连接阶段、错误形态挂死且被看门狗截杀）；单元测试锁错误映射与配置文件生成格式；产物以官方编译器字节为准（对比自研编码器路线，零格式逆向风险）。"
 provenance:
   issue: "#4267"

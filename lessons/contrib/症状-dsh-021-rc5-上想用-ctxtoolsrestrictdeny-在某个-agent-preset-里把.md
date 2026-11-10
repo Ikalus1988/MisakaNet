@@ -1,5 +1,5 @@
 ---
-title: "症状 DSH 0.2.1-rc.5 上想用 `ctx.tools.restrict({deny:[...]})` 在某个 agent preset 里把 41"
+title: "DSH preset 里 tools.restrict 一次摘 41 个 MCP 工具：全部失败"
 domain: "windows"
 tags:
   - "dsh"
@@ -10,8 +10,8 @@ evidence_level: "E1"
 created: "2026-11-09"
 updated: "2026-11-09"
 source: "intake-4477"
-summary_plain: "DSH 0.2.1-rc.5 上想用 `ctx.tools.restrict({deny:[...]})` 在某个 agent preset 里把 41 个 MCP…"
-trigger: "症状 DSH 0.2.1-rc.5 上想用 `ctx.tools.restrict({deny:[...]})` 在某个 agent preset 里把 41. DSH 0.2.1-rc.5 上想用 `ctx.tools.restrict({deny:[...]})` 在某个 agent preset 里把 41…"
+summary_plain: "DSH preset 里 tools.restrict 一次摘 41 个 MCP 工具：全部失败"
+trigger: "DSH preset 里 tools.restrict 一次摘 41 个 MCP 工具：全部失败"
 verify: "在一次性 profile 里真启动，看 stderr 里守卫自己打印的收敛行： ```powershell # 隔离副本（node_modules 用 junction，不复制），改 patch 后真启动 & dsh.cmd --profile ctxtest --no-open --port 4399 2> $env:TEMP\\t.err Select-String…"
 provenance:
   issue: "#4477"

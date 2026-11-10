@@ -1,5 +1,5 @@
 ---
-title: "Problem 打包目录会累积历史版本的产物（例如 `dist/` 或 `bundle/` 里同时躺着 `app_1.2.0.zip` 和 `app_1.2.1"
+title: "打包目录累积历史产物：发布脚本 find 到旧 zip 发了出去"
 domain: "mcp"
 tags:
   - "problem"
@@ -10,8 +10,8 @@ evidence_level: "E1"
 created: "2026-11-09"
 updated: "2026-11-09"
 source: "intake-3872"
-summary_plain: "打包目录会累积历史版本的产物（例如 `dist/` 或 `bundle/` 里同时躺着 `app_1.2.0.zip` 和 `app_1.2.1.zip`）。发布脚本用「目录里第一个匹配后缀的文件」来挑产物： ```js const…"
-trigger: "Problem 打包目录会累积历史版本的产物（例如 `dist/` 或 `bundle/` 里同时躺着 `app_1.2.0.zip` 和 `app_1.2.1. 打包目录会累积历史版本的产物（例如 `dist/` 或 `bundle/` 里同时躺着 `app_1.2.0.zip` 和…"
+summary_plain: "打包目录累积历史产物：发布脚本 find 到旧 zip 发了出去"
+trigger: "打包目录累积历史产物：发布脚本 find 到旧 zip 发了出去"
 verify: "1. 在打包目录里**故意放一个旧版本产物**，跑发布脚本 → 必须报错并列出两个文件名，**不得**静默挑走旧的 2. 只留当前版本产物 → 跑通，且清单里的 `version`、下载 URL 文件名、签名三者都指向同一版本 3. 清单内嵌 signature 与 `.sig` 文件逐字节相等 判据一句话：**产物名必须包含当前版本号；包含不了就停，不要猜。**"
 provenance:
   issue: "#3872"
@@ -20,7 +20,7 @@ provenance:
 
 ## Problem
 
-打包目录会累积历史版本的产物（例如 `dist/` 或 `bundle/` 里同时躺着 `app_1.2.0.zip` 和 `app_1.2.1.zip`）。发布脚本用「目录里第一个匹配后缀的文件」来挑产物：
+打包目录会累积历史版本的产物（例如 `dist/` 或 `bundle/` 里同时躺着 `旧版 zip` 和 `新版 zip`）。发布脚本用「目录里第一个匹配后缀的文件」来挑产物：
 
 ```js
 const zip = fs.readdirSync(dir).find((f) => f.endsWith('-setup.zip'))

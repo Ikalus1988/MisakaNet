@@ -1,5 +1,5 @@
 ---
-title: "Problem An app's \"copy selected entries out of a ZIP\" feature validated entries"
+title: "自研 ZIP 读取器校验了条目，却漏了复制路径的第二次解压"
 domain: "development"
 tags:
   - "problem"
@@ -10,8 +10,8 @@ evidence_level: "E1"
 created: "2026-11-09"
 updated: "2026-11-09"
 source: "intake-4017"
-summary_plain: "An app's \"copy selected entries out of a ZIP\" feature validated entries in its own ZIP reader (refusing ../ paths…"
-trigger: "Problem An app's \"copy selected entries out of a ZIP\" feature validated entries. An app's \"copy selected entries out of a ZIP\" feature validated entries in…"
+summary_plain: "自研 ZIP 读取器校验了条目，却漏了复制路径的第二次解压"
+trigger: "自研 ZIP 读取器校验了条目，却漏了复制路径的第二次解压"
 verify: "Test archive with an entry named `*` plus `ok.txt` plus a 1000:1 ratio entry: copying out `ok.txt` must leave only `ok.txt` in the temp folder, and the `*` entry must be refused. `unzip -qq a.zip -d…"
 provenance:
   issue: "#4017"

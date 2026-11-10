@@ -1,5 +1,5 @@
 ---
-title: "Problem 向 FANUC 虚拟/真机器人 FTP 上传程序文件（MD: 设备）时 550 错误码含义分层不明，易把「内容问题」误判为「路径问题」反复试错："
+title: "FANUC FTP 上传 .tp 报 550：先分清路径层、内容层、选项层"
 domain: "fanuc"
 tags:
   - "problem"
@@ -10,8 +10,8 @@ evidence_level: "E1"
 created: "2026-11-09"
 updated: "2026-11-09"
 source: "intake-4523"
-summary_plain: "向 FANUC 虚拟/真机器人 FTP 上传程序文件（MD: 设备）时 550 错误码含义分层不明，易把「内容问题」误判为「路径问题」反复试错：裸文件名报 `550 No destination device or…"
-trigger: "Problem 向 FANUC 虚拟/真机器人 FTP 上传程序文件（MD: 设备）时 550 错误码含义分层不明，易把「内容问题」误判为「路径问题」反复试错：. 向 FANUC 虚拟/真机器人 FTP 上传程序文件（MD: 设备）时 550…"
+summary_plain: "FANUC FTP 上传 .tp 报 550：先分清路径层、内容层、选项层"
+trigger: "FANUC FTP 上传 .tp 报 550：先分清路径层、内容层、选项层"
 verify: "同一控制器实测：probe.txt→\"No destination device or path\"；MD:PROBE.TP（假内容）→\"Invalid or corrupted TP file\"；真 .tp+选项缺失→\"Prog uses un-installed option\"；真 .tp+选项齐→上传成功（263 文件批量 186 成功、错误分层计数吻合）。判据=错误文本三分层可复现。…"
 provenance:
   issue: "#4523"

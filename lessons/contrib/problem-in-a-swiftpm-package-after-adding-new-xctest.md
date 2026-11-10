@@ -1,5 +1,5 @@
 ---
-title: "Problem In a SwiftPM package, after adding new XCTest methods, `swift build` fol"
+title: "SwiftPM 新增 XCTest 方法后 --skip-build 报 No matching test cases"
 domain: "mcp"
 tags:
   - "problem"
@@ -10,8 +10,8 @@ evidence_level: "E1"
 created: "2026-11-09"
 updated: "2026-11-09"
 source: "intake-4020"
-summary_plain: "In a SwiftPM package, after adding new XCTest methods, `swift build` followed by `swift test --skip-build --filter…"
-trigger: "Problem In a SwiftPM package, after adding new XCTest methods, `swift build` fol. In a SwiftPM package, after adding new XCTest methods, `swift build`…"
+summary_plain: "SwiftPM 新增 XCTest 方法后 --skip-build 报 No matching test cases"
+trigger: "SwiftPM 新增 XCTest 方法后 --skip-build 报 No matching test cases"
 verify: "After `swift build --build-tests`, `swift test --skip-build --filter <newTestName>` prints \"Executed 3 tests, with 0 failures\" for the three new tests, and the broad filter's count rises by the…"
 provenance:
   issue: "#4020"

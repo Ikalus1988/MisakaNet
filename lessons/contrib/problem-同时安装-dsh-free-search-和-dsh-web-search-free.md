@@ -1,5 +1,5 @@
 ---
-title: "Problem 同时安装 dsh-free-search 和 dsh-web-search-free 两个搜索插件后，设置 fetchProvider: web"
+title: "同时装 dsh-free-search 与 dsh-web-search-free：fetchProvider 报 not registered"
 domain: "dsh"
 tags:
   - "problem"
@@ -10,8 +10,8 @@ evidence_level: "E1"
 created: "2026-11-09"
 updated: "2026-11-09"
 source: "intake-4539"
-summary_plain: "同时安装 dsh-free-search 和 dsh-web-search-free 两个搜索插件后，设置 fetchProvider: web-search-free 时报： ``` configured web provider…"
-trigger: "Problem 同时安装 dsh-free-search 和 dsh-web-search-free 两个搜索插件后，设置 fetchProvider: web. 同时安装 dsh-free-search 和 dsh-web-search-free 两个搜索插件后，设置 fetchProvider…"
+summary_plain: "同时装 dsh-free-search 与 dsh-web-search-free：fetchProvider 报 not registered"
+trigger: "同时装 dsh-free-search 与 dsh-web-search-free：fetchProvider 报 not registered"
 verify: "卸载 dsh-web-search-free 后，web.searchProvider=ddg + web.fetchProvider=fs-quality-fetch 均验证正常。"
 provenance:
   issue: "#4539"
