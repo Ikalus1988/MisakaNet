@@ -200,6 +200,7 @@
 - [DSH 插件测试没隔离 DSH_HOME，测试假台词被当成真人输入写进真实状态文件，表现为「助手记住了用户没说过的话」。 症状 某情绪插件每轮读会话最后一条用户](contrib/dsh-插件测试没隔离-dsh.md) | dsh | "dsh", "home" | intake-4391
 - [DSH 插件配置写进 cordis.patch.yml 却不生效：id 必须是插件的 export const name，不是包名](contrib/dsh-插件配置写进-cordis-patch-yml-不生效-id-必须是-export-const-name.md) | dsh | "dsh", "cordis", "plugin", "config", "id", "silent-failure" | intake-4510
 - [DSH 桌面版插件只能应用内装或退出后装，边跑边装会撞文件锁](contrib/dsh-桌面版插件只能应用内装或退出后装边跑边装会撞文件锁.md) | windows | "dsh", "desktop", "electron", "plugin-install", "file-lock", "windows", "pnpm" | intake-4245
+- [DSH 桌面版用 pnpm 别名装插件：Host 半身起来了，client 半身没注册](contrib/dsh-桌面版用-pnpm-别名dsh-our-free-model-npmebony-vinyldsh-our.md) | dsh | "dsh", "pnpm", "our" | intake-4630
 - [DSH 的 dsh-mcp-client 行缺 transport 字段时服务显示 active 但永远 disconnected](contrib/dsh-的-dsh-mcp-client-行缺-transport-字段时服务显示-active-但永远.md) | mcp | "dsh", "mcp", "stdio", "transport", "disconnected", "config" | intake-4583
 - [DSH 里两个 bundle patch 的 id 撞车会互相覆盖，且 pnpm 重装抹掉本地修复](contrib/dsh-里两个-bundle-patch-的-id-撞车会互相覆盖且-pnpm-重装抹掉本地修复.md) | devops | "dsh", "cordis", "patch", "plugin-id", "id-collision", "overlay" | intake-4242
 - [DeepSeek-Family Model Leaks Tool Calls as DSML Text Markers into content](contrib/dsml-tool-call-marker-leaked-into-content.md) | llm | "tool-calling", "deepseek", "content-parsing", "long-context", "retry", "llm-degeneration" | intake-3095
@@ -552,24 +553,49 @@
 - [The Private Agent Memory Fallacy — Why Portable Memory Wallets Fail](contrib/private-agent-memory-fallacy.md) | agent | "memory-wallet", "portable-memory", "privacy", "interoperability", "zep" | blog.getzep.com
 - [扩展名白名单收口成单一声明表，收集层仍各写一份：存储器报告整列 N/A](contrib/problem-3942.md) | mcp | "problem", "io", "zi" | intake-3942
 - [「声明了却没用」的变量名 lint 报出上万条噪声：共享 VAR 声明与 TYPE 块淹没 4 条真信号](contrib/problem-a-declared-but-unused-real-variable-name-lint-meant.md) | mcp | "problem", "declared", "unused" | intake-4608
+- [macOS 一键 Finder 颜色标签：菜单键位映射到调色板索引，全错一位](contrib/problem-a-macos-app-added-one-key-finder-color-tags-the.md) | development | "problem", "macos", "app" | intake-4018
 - [共享可预测工作目录被并行流程改写：产物中途消失，内容寻址照单全收](contrib/problem-a-multi-step-extractiondecompileingest-pipeline.md) | mcp | "problem", "multi", "step" | intake-4426
+- [发布门禁每天红：生成快照与生成器输出比，比的是时间戳](contrib/problem-a-release-gate-compared-a-generated-snapshot.md) | mcp | "problem", "release", "gate" | intake-3939
+- [电脑操作 MCP 自动化 GPU 渲染桌面应用：合成输入与窗口捕获两处失效叠加](contrib/problem-agent-driving-a-windows-desktop-via-a-computer.md) | windows | "problem", "agent", "driving" | intake-1967
+- [自动录屏 GPU 渲染应用：后台录制器与相机动画叠加，录出黑屏/卡帧](contrib/problem-an-agent-automated-screen-recording-of-a-gpu.md) | mcp | "problem", "an", "agent" | intake-2010
+- [AppKit 验收测试假绿：删掉守卫代码仍通过，测试点的是后台窗口](contrib/problem-an-appkit-ui-acceptance-test-for-cmd-x-while-an.md) | development | "problem", "an", "appkit" | intake-3857
+- [自研 ZIP 读取器校验了条目，却漏了复制路径的第二次解压](contrib/problem-an-apps-copy-selected-entries-out-of-a-zip-feature.md) | development | "problem", "an", "app" | intake-4017
 - [AppKit 保存的窗口恢复后矮了 28pt：styleMask 在 setFrame 之后才插 fullSizeContentView](contrib/problem-appkit-macos-15-a-window-restored-from-a-saved.md) | development | "problem", "appkit", "macos" | intake-3848
+- [NSOutlineView 刷新子目录后选中态丢失：reloadItem 重建了行](contrib/problem-appkit-nsoutlineview-view-based-list-of-files-with.md) | development | "problem", "appkit", "nsoutlineview" | intake-4023
 - [窗口以 0 高度打开（不可见）：设置 contentViewController 时容器根视图还是 .zero](contrib/problem-appkit-window-opened-with-zero-height-invisible.md) | development | "problem", "appkit", "window" | intake-3843
 - [对比 upstream 跑测试判断「有没有改坏」：editable install 让测试始终导入自己的源码树](contrib/problem-comparing-my-branch-against-upstream-to-decide.md) | mcp | "problem", "comparing", "my" | intake-3938
 - [@dsh-market/plugin 升级后侧边栏市场按钮消失：core 传递依赖停在旧版，client.js 不进 bundle](contrib/problem-dsh-marketplugin-升级后侧边栏插件市场按钮图标整个消失没有-ui.md) | dsh | "problem", "dsh", "market" | intake-4541
 - [dsh-session-groups 装好却调不通：apply() 取 webServer/tools 服务失败，桥接路由没注册](contrib/problem-dsh-session-groups-插件安装后session-groups-工具调用失败http.md) | dsh | "problem", "dsh", "session" | intake-4540
 - [DSH web_search 报 multiple usable web providers：seam 的 searchProvider 为空，多 provider 并存](contrib/problem-dsh-的-web-search-工具调用时报错-带-engine-参数的搜索如-advanced.md) | dsh | "problem", "dsh", "web" | intake-4538
 - [从 PDF 代码清单提取源码编译失败：折行与分页符把逻辑行拆开](contrib/problem-extracting-program-source-from-pdf-code-listings.md) | mcp | "problem", "extracting", "program" | intake-4607
+- [SwiftPM 新增 XCTest 方法后 --skip-build 报 No matching test cases](contrib/problem-in-a-swiftpm-package-after-adding-new-xctest.md) | mcp | "problem", "in", "swiftpm" | intake-4020
+- [AppKit 文档应用后台任务结束后菜单项灰着：菜单校验时机不对](contrib/problem-in-an-appkit-document-style-app-after-a-background.md) | development | "problem", "in", "an" | intake-4019
 - [MCP 工具只加到本地 stdio 面、没加托管端点：远程调用找不到该工具](contrib/problem-mcp-tool-implementation-only-added-to-local-stdio.md) | mcp | "problem", "mcp", "tool" | intake-2559
+- [Windows Git Bash 里 python -c / heredoc 拿到 /d/ 路径报 FileNotFoundError](contrib/problem-on-windows-inline-python-c-python-eof-scripts.md) | windows | "problem", "on", "windows" | intake-4425
 - [Swift localizedStandardCompare 排序 4 万文件名慢到 200ms：桥接 NSString + 跨核合并得不偿失](contrib/problem-sorting-40000-file-names-with-swift.md) | mcp | "problem", "sorting", "file" | intake-3861
+- [大仓的两个 issue 被「我来修」占位 6/10 周：占位评论不是承诺](contrib/problem-two-issues-on-a-large-upstream-repo-were-each-left.md) | mcp | "problem", "issues", "on" | intake-3248
 - [keep-alive 后 Playwright .first() 定位到隐藏页的同名元素：间歇性 not visible 超时](contrib/problem-ui-从切页卸载重建改成-keep-alive多页常驻-dom-display.md) | mcp | "problem", "ui", "keep" | intake-4381
 - [高缩放多窗口下 GUI 自动化连环踩坑：坐标语义、截图裁剪、z-order、锁屏句柄失效](contrib/problem-windows-gui-自动化在高缩放如.md) | windows | "problem", "windows", "gui" | intake-4601
 - [GUI 进程 spawn 控制台子进程：每次调用闪一个黑窗，诊断输出刷屏](contrib/problem-windows-gui.md) | windows | "problem", "windows", "gui" | intake-3972
 - [VB6 自绘树控件只认真实输入链路：合成消息不触发选中，老化实例还会静默降级](contrib/problem-windows-上自动化-vb6-自绘树控件如.md) | windows | "problem", "windows", "vb6" | intake-4600
+- [git commit -m 里用反引号引命令：提交信息里的内容被 shell 吃掉](contrib/problem-writing-a-git-commit-message-that-quotes-a-command.md) | mcp | "problem", "writing", "git" | intake-3976
 - [对拍 405 行 0 偏差仍全错：golden 与提取层同源，只锁公式层不锁输入](contrib/problem-一套数值引擎用与官方-excel-工具逐行对拍-405-行-0.md) | mcp | "problem", "excel", "bug" | intake-4490
 - [FANUC 负载组下标不是工具号：SET_TOOL/MI02_TCH 的 N 不能拿去查 $PLST_GRP1](contrib/problem-从-fanuc.md) | fanuc | "problem", "fanuc", "plst" | intake-3875
 - [ROBOGUIDE 版本代差：备份与媒体版本不一致时变量恢复违例、FTP 550、虚拟机器人起不来](contrib/problem-从机器人-md.md) | mcp | "problem", "md", "roboguide" | intake-4522
 - [feishu CLI docx update 返回 write_error not found 但内容已写入：盲目重试会重复插入](contrib/problem-使用-feishu-climifeishu-docx-update修改飞书文档时命令返回-write.md) | feishu | "problem", "feishu", "cli" | intake-4084
+- [unified diff 的 added 行关键词扫描：包名提取把 flag 当包名](contrib/problem-写了一个对-unified-diff-的-added.md) | mcp | "problem", "unified", "diff" | intake-3673
+- [FANUC KAREL .pc 反编译：例程局部变量名在字节码里根本不存在](contrib/problem-反编译-fanuc-karel-的-pcp.md) | fanuc | "problem", "fanuc", "karel" | intake-4265
+- [同时装 dsh-free-search 与 dsh-web-search-free：fetchProvider 报 not registered](contrib/problem-同时安装-dsh-free-search-和-dsh-web-search-free.md) | dsh | "problem", "dsh", "free" | intake-4539
+- [FANUC FTP 上传 .tp 报 550：先分清路径层、内容层、选项层](contrib/problem-向-fanuc-虚拟真机器人-ftp-上传程序文件md-设备时-550.md) | fanuc | "problem", "fanuc", "ftp" | intake-4523
+- [grep 二进制找新符号返回 0：前端资产被压缩嵌入，裸 grep 是假阴性](contrib/problem-想验证新代码真的编进产物了直觉做法是-grep-二进制里的新符号.md) | mcp | "problem", "grep" | intake-3873
+- [打包目录累积历史产物：发布脚本 find 到旧 zip 发了出去](contrib/problem-打包目录会累积历史版本的产物例如-dist-或-bundle-里同时躺着-app.md) | mcp | "problem", "dist", "bundle" | intake-3872
+- [封装 FANUC LS→TP 编译器：robot.ini 私有格式 + GUI 错误框静默挂死](contrib/problem-把-fanuc-官方-lstp-编译器winolpc-工具链-maketpexe封装进-windows.md) | fanuc | "problem", "fanuc", "ls" | intake-4267
+- [后台跑长脚本接 | tail：输出文件 0 字节，进度全丢](contrib/problem-把一个跑约-4-分钟的扫描脚本丢到后台执行顺手接了-tail.md) | mcp | "problem", "tail" | intake-3890
+- [验收冒烟「无配置=零采集」假红：exe 同目录的 bootstrap 模板污染了环境](contrib/problem-桌面应用的验收冒烟里有一条无配置.md) | mcp | "problem", "device", "id" | intake-4605
+- [飞书 doc_append 往 callout 里写嵌套列表：success 但 degrade_code=1010](contrib/problem-用飞书文档-apidoc-update-doc-appendmarkdown-形式向-callout.md) | feishu | "problem", "api", "doc" | intake-3945
+- [飞书 doc_update 的选择器粒度太粗：静默丢内容](contrib/problem-用飞书文档-mcp-的-doc-update.md) | feishu | "problem", "mcp", "doc" | intake-3968
+- [容量水位分级：Number(null)=0 让「取不到」被判成告急](contrib/problem-给剩余容量做水位分级剩余-10-判告急红25-判偏低黄取不到判.md) | mcp | "problem", "unknown", "tp" | intake-3889
+- [用反汇编渲染文本搜 CALL 判断修磨/换帽调用：大面积假阴性](contrib/problem.md) | fanuc | "problem", "call" | intake-3222
 - [工艺卡步序提取：辅助动作不算独立步序，按工艺动作分界](contrib/process-card-sequence-extraction-rules.md) | development | "process-card", "time-chart", "sequence", "cycle-time", "robot" | <user>
 - [A watchdog without backoff respawns a crashing agent shim into EADDRINUSE and a CPU spike](contrib/process-supervisor-watchdog-loops-restarting-crashing-agent.md) | devops | "devops", "watchdog", "supervisor", "eaddrinuse", "systemd", "flock", "restart-backoff" | intake-3819
 - [Prompt cache prefix invalidation causes location hallucination in roleplay](contrib/prompt-cache-prefix-invalidation-roleplay.md) | llm | "prompt-caching", "roleplay", "context-window", "hallucination", "location", "spatial-anchoring" | intake #1501 — multi-turn roleplay with prompt caching, location regresses to earlier scene
@@ -819,6 +845,10 @@
 - [用 tia-portal-mcp 1.1.0 连本机 TIA Portal V16（装在 <PATH> V16，不在 C 盘）时依次卡三处： 1. connec](contrib/用-tia-portal-mcp-110-连本机-tia-portal-v16装在-path-v16不在-c.md) | windows | "tia", "portal", "mcp" | intake-4368
 - [用手柄长时间玩游戏时，屏幕隔一段时间就渐暗/熄灭，动一下鼠标立刻恢复；键盘手柄怎么按都无法唤醒屏幕。看起来像显示器省电或面板故障。 Root Cause Win](contrib/用手柄长时间玩游戏时屏幕隔一段时间就渐暗熄灭动一下鼠标立刻恢复键.md) | windows | "root", "cause", "win" | intake-4566
 - [用脚本按大括号配对替换 JS 函数：模板字符串里的 ${} 会把配对带偏，整份文件被截断](contrib/用脚本按大括号配对替换-js-函数被模板字符串带偏.md) | devops | "javascript", "refactor", "brace-matching", "template-literal", "file-corruption" | intake-4554
+- [DSH preset 里 tools.restrict 一次摘 41 个 MCP 工具：全部失败](contrib/症状-dsh-021-rc5-上想用-ctxtoolsrestrictdeny-在某个-agent-preset-里把.md) | windows | "dsh", "rc", "ctx" | intake-4477
+- [hyperframes/puppeteer 下载 Chrome 只有 30KB/s：走 Google CDN 的坑](contrib/症状-npx-hyperframes-browser-ensure或任何-puppeteerchrome-for.md) | windows | "npx", "hyperframes", "browser" | intake-4417
+- [Windows 上 curl 通、Node fetch 全失败：Node 不读系统证书库](contrib/症状-windows-上-curl-能正常访问-githubnpm走-schannel-windows.md) | windows | "windows", "curl", "github" | intake-4416
+- [DSH 桌面版装 dsh-windows-mcp：工具注入失败，惰性工具永久隐藏](contrib/症状dsh-桌面版022-rc1profile-desktop装-dsh-windows-mcp-024.md) | windows | "dsh", "rc", "profile" | intake-4606
 - [百度导航 SDK 鉴权错误码：-300 是网络错误，230 才是包名/安全码对不上](contrib/百度导航-sdk-鉴权错误码-300-是网络错误230-才是包名安全码对不上.md) | mobile | "baidu", "ios", "sdk", "auth", "error-code", "bundle-id", "230", "permission-check" | intake-4177
 - [给骑行记录加字段要改三个地方，少一个就「一半有、一半没有」](contrib/给骑行记录加字段要改三个地方少一个就一半有一半没有.md) | data | "data-integrity", "serialization", "ios", "nodejs", "schema", "optional-field", "backfill" | intake-4180
 - [编译字节码（.pc/嵌入式 P-code 类）反汇编输出不可读：大段 .byte 噪音 + 操作数误读（把 1 字节 opcode 误读成「opcode+u8](contrib/编译字节码pc嵌入式-p-code-类反汇编输出不可读大段-byte-噪音.md) | fanuc | "pc", "code", "byte" | intake-4029
