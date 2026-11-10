@@ -1,9 +1,16 @@
 {
-  "generated_at": "2026-11-10T17:08:53.921986+00:00",
+  "generated_at": "2026-11-10T23:32:37.380086+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4676",
+      "timestamp": "2026-11-10T17:26:38Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "chore(main): release 3.9.0",
@@ -30,13 +37,6 @@
       "title": "feat(cindy-plugin): sync the source of truth to the market-reviewed 1.6.0",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/4662",
       "timestamp": "2026-11-10T05:11:24Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(main): release 3.8.0",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4645",
-      "timestamp": "2026-11-10T02:42:56Z",
       "source": "github"
     },
     {
