@@ -1,0 +1,51 @@
+name: Reconcile DCO status
+
+# `DCO / Signed-off-by` is a REQUIRED status on `main`, and `dco-check.yml` creates it through the
+# Checks API. When that workflow fails to *start* — a platform-side startup failure, not a code
+# failure — the status is never reported and the PR sits at "Expected — waiting for status to be
+# reported" forever. Measured 2026-11-09: four PRs hit it in one evening (16:10–17:28Z), each
+# unblocked by dispatching the workflow by hand, while GitHub reported an incident with Actions.
+#
+# A startup failure leaves no log and no annotation, so the only defence is a retry loop. This job
+# is that loop: for every open PR whose head commit has no DCO status at all, dispatch the DCO
+# workflow once. A PR that already has the status — in any state — is left alone; this is not a
+# re-run of failed DCO checks, and it never overrides a failure.
+on:
+  schedule:
+    - cron: "17,47 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
+  actions: write     # `gh workflow run dco-check.yml`
+
+concurrency:
+  group: reconcile-dco
+  cancel-in-progress: true
+
+jobs:
+  reconcile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Dispatch DCO for pull requests whose status never appeared
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          dispatched=0
+          for pr in $(gh pr list --repo "$REPO" --state open --limit 50 --json number --jq '.[].number'); do
+            sha=$(gh pr view "$pr" --repo "$REPO" --json headRefOid --jq .headRefOid)
+            state=$(gh api "repos/$REPO/commits/$sha/status" \
+              --jq '[.statuses[] | select(.context == "DCO / Signed-off-by") | .state] | join(",")')
+            if [ -n "$state" ]; then
+              continue
+            fi
+            echo "::notice::PR #$pr has no DCO status on $sha — dispatching dco-check"
+            gh workflow run dco-check.yml --repo "$REPO" -f pr_number="$pr"
+            dispatched=$((dispatched + 1))
+            sleep 3
+          done
+          echo "dispatched $dispatched DCO run(s)"

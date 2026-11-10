@@ -11,7 +11,7 @@
 > 许多 workflow 是机器人/数据管道，失败常在外部依赖（D1、registry、配额）。
 
 
-## 质量门禁（27）
+## 质量门禁（28）
 
 | workflow | 用途 | 触发 | 定时 |
 |---|---|---|---|
@@ -41,6 +41,7 @@
 | `provenance-gate.yml` | Provenance Gate（溯源矩阵完整性）| PR, 定时, 手动 | `17 6 * * 1` |
 | `pr-shape-guard.yml` | PR Shape Guard | PR(目标) |  |
 | `approval-watch.yml` | Approval Watch | 定时, 手动 | `17,47 * * * *` —— 列出 `status: waiting` 的 run，维护一个跟踪 issue；**永不审批**（`tests/test_approval_watch.py` 断言它不含任何审批调用） |
+| `reconcile-dco.yml` | Reconcile DCO status | 定时, 手动 | `17,47 * * * *` —— 对「head 提交上完全没有 DCO 状态」的开放 PR 补发 `dco-check.yml`（平台 startup failure 的兜底）；已有状态（含失败）的 PR 不动 |
 | `shadow-branch.yml` | Shadow Branch - External Agent Isolation | PR |  |
 
 ## 数据/索引（25）
