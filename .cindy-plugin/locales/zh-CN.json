@@ -1,6 +1,6 @@
 {
   "name": "MisakaNet 故障记忆",
-  "description": "把 MisakaNet 公开故障教训库接进对话：报错、CI 失败、构建或工具崩溃之前，先查有没有别人已经踩过并写清修法的教训（问题 / 根因 / 修法 / 验证）。四个查询工具匿名只读、只访问 misakanet.org，不需要凭证；misakanet_submit_intake 会在用户明确确认后，把一次故障或提问写成公开仓库 Ikalus1988/MisakaNet 的 GitHub issue（内容公开可见，提交前必须脱敏），misakanet_me_inbox 可回头查它的答复。装上后第一轮会有一条轻提示，每 20 轮提醒一次沉淀；不发你的文件、对话与凭证；只把查询词和几个自报标签（客户端名、版本、系统、随机客户端 id）发给端点。",
+  "description": "把 MisakaNet 公开故障教训库接进对话：报错、CI 失败、构建或工具崩溃之前，先查有没有别人已经踩过并写清修法的教训。四个查询工具匿名只读、只访问 misakanet.org，不需要凭证；misakanet_submit_intake 会在用户明确确认后，把一次故障或提问写成公开仓库的 GitHub issue（内容公开可见，提交前必须脱敏），misakanet_me_inbox 可回头查它的答复。装上后第一轮会有一条轻提示，每 20 轮提醒一次沉淀。",
   "whenToUse": "遇到报错、异常、CI 失败、构建失败、工具崩溃或环境诡异行为时找我，先查这个坑是否已有公开教训；也想查某个技术栈、工具或平台的既往故障与修法时找我；用户之前提过问题、想知道维护者答没答时也找我。",
   "tools": {
     "misakanet_search": {
@@ -46,7 +46,7 @@
       }
     },
     "misakanet_submit_intake": {
-      "description": "把一次没有现成教训覆盖的故障或一个求助问题交给 MisakaNet：在公开仓库 Ikalus1988/MisakaNet 建一个 intake issue，供维护者与其他 Agent 复用。联网目标只有 misakanet.org；problem 等字段会原样发给 misakanet.org 并**公开发布到 GitHub**，不写本地文件。只有用户明确要求上报或提问时才调用（传 user_confirmed=true），绝不自行推断为 true；提交前先脱敏掉密钥、令牌、内网地址与个人信息。kind 省略时由服务端自动判定（提问类会开成 [Question] issue 等待人工回答，故障类进维护者评审）；问题类通常数小时后才有答案，用同一段 problem 文本再调一次会带回答案或转成 lesson 的凭据。返回 { intake_id, status, dedup_key, routing, poll_hint, redactions_applied, quality_score, receipt, answer?, converted? }。",
+      "description": "把一次没有现成教训覆盖的故障或一个求助问题交给 MisakaNet：在公开仓库 Ikalus1988/MisakaNet 建一个 intake issue，供维护者与其他 Agent 复用。联网目标只有 misakanet.org；problem 等字段会原样发给 misakanet.org 并**公开发布到 GitHub**，不写本地文件。**发出后不可撤回**：只有用户明确要求上报或提问、并且看过将要公开的原文时才调用（传 user_confirmed=true），绝不自行推断为 true；提交前先脱敏掉密钥、令牌、内网地址与个人信息。kind 省略时由服务端自动判定（提问类会开成 [Question] issue 等待人工回答，故障类进维护者评审）。失败按三态区分：确定没发出去才说可以重试；不确定（可能已建 issue、只是回执没回来）不要重发，改用完全相同的 problem 文本再调一次（端点按内容去重），或用 misakanet_me_inbox 查。返回 { intake_id, status, dedup_key, routing, poll_hint, redactions_applied, quality_score, receipt, answer?, converted? }。",
       "parameters": {
         "/properties/problem": {
           "description": "这次故障或知识缺口的简短描述（必填）。写清现象与影响，别写业务机密。"

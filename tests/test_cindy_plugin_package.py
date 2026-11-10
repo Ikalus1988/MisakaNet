@@ -86,8 +86,10 @@ def test_the_manifest_is_a_package_this_repository_ships():
     assert entry["schemaVersion"] == 3, "the Cindy manifest schema moved; update this gate with it"
     assert entry["id"] == "misakanet"
     assert re.fullmatch(r"\d+\.\d+\.\d+", entry["version"]), entry["version"]
-    # The one external host the market review asked to be declared (and the user-facing boundary).
-    assert entry["network"]["hosts"] == ["misakanet.org"], entry["network"]
+    # 1.6.0 removed the `network.hosts` declaration on the market review's advice: every HTTP call
+    # is host-mediated inside a tool call, so the autonomous-network grant had no use. A future
+    # manifest that re-adds it has to say why here.
+    assert "network" not in entry, entry.get("network")
     names = [tool["name"] for tool in entry["tools"]]
     assert len(names) == len(set(names)), f"duplicate tool names: {names}"
     assert EXPECTED_TOOLS <= set(names), f"missing tools: {sorted(EXPECTED_TOOLS - set(names))}"
