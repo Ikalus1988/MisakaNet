@@ -18,6 +18,27 @@ Define a portable, versioned, redacted-by-default JSON contract for reporting pr
 | **Lightweight** | Payload < 1KB in typical scenarios. No blocking I/O during collection. |
 | **Self-describing** | `schemaVersion` + `reason` alone are enough for basic alert routing. |
 
+## Using it from the CLI
+
+An installed `misakanet` wheel can check a payload **without cloning anything** — the validator is
+stdlib-only, so the check works anywhere Python does:
+
+```bash
+misakanet tombstone validate crash.json
+cat crash.json | misakanet tombstone validate -      # stdin
+```
+
+`draft` turns a validated tombstone into `lessons/drafts/<slug>.md`. It needs a checkout, because a
+draft is a repository file the gate will read; it finds one via `MISAKANET_REPO` or by walking up from
+the working directory:
+
+```bash
+misakanet tombstone draft crash.json --dry-run       # print, write nothing
+```
+
+The local pipeline is therefore: `fatal-guard` → tombstone JSON → `validate` → `draft` → review. The
+sending half (an ingest endpoint or a dispatch token) is still a decision; #4664 records the options.
+
 ## v1 (Current, 4 fields)
 
 ```json

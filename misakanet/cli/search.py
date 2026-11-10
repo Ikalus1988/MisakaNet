@@ -33,7 +33,9 @@ def build_parser() -> argparse.ArgumentParser:
         description="Search MisakaNet failure lessons by the error text you are looking at.",
         epilog="Reading needs no account. A token (env MISAKANET_TOKEN) lifts the anonymous limits and "
                "unlocks the write tools; MISAKANET_CLIENT_ID is the node's key — presenting it returns "
-               "that node's token, so generate a random UUID and keep it private.",
+               "that node's token, so generate a random UUID and keep it private.\n"
+               "Crash tombstones: `misakanet tombstone validate <file>` (no network, no checkout) and "
+               "`misakanet tombstone draft <file>` (needs a checkout).",
     )
     parser.add_argument("query", help="the most distinctive fragment of the error text")
     parser.add_argument("--top", type=int, default=5, help="how many lessons to show (default 5)")
@@ -56,6 +58,13 @@ def _results(payload: dict) -> list:
 
 
 def main(argv: list[str] | None = None) -> int:
+    # `misakanet tombstone …` is the crash-pipeline half of this binary; everything else is a
+    # search. Dispatch before argparse sees the positional so `misakanet "error text"` keeps working.
+    argv = list(sys.argv[1:] if argv is None else argv)
+    if argv and argv[0] == "tombstone":
+        from misakanet.cli.tombstone import main as tombstone_main
+
+        return tombstone_main(argv[1:])
     args = build_parser().parse_args(argv)
     try:
         payload = search(args.query, top=args.top, token=args.token, client_id=args.client_id,
