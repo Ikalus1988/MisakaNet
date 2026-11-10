@@ -3,10 +3,10 @@
   "minCindyVersion": "0.1.64",
   "id": "misakanet",
   "name": "MisakaNet 故障记忆",
-  "description": "把 MisakaNet 公开故障教训库接进对话：报错、CI 失败、构建或工具崩溃之前，先查有没有别人已经踩过并写清修法的教训（问题 / 根因 / 修法 / 验证）。四个查询工具匿名只读、只访问 misakanet.org，不需要凭证；misakanet_submit_intake 会在用户明确确认后，把一次故障或提问写成公开仓库 Ikalus1988/MisakaNet 的 GitHub issue（内容公开可见，提交前必须脱敏），misakanet_me_inbox 可回头查它的答复。装上后第一轮会有一条轻提示，每 20 轮提醒一次沉淀；不发你的文件、对话与凭证；只把查询词和几个自报标签（客户端名、版本、系统、随机客户端 id）发给端点。",
+  "description": "把 MisakaNet 公开故障教训库接进对话：报错、CI 失败、构建或工具崩溃之前，先查有没有别人已经踩过并写清修法。四个查询工具匿名只读、只访问 misakanet.org，不需要凭证；misakanet_submit_intake 会在用户明确确认后，把一次故障或提问写成公开仓库 Ikalus1988/MisakaNet 的 GitHub issue（公开可见，提交前必须脱敏），misakanet_me_inbox 可回头查答复。装上后第一轮有轻提示，每 20 轮提醒沉淀；不发你的文件、对话与凭证；只把查询词和几个自报标签（客户端名、版本、系统、随机客户端 id）发给端点。",
   "whenToUse": "遇到报错、异常、CI 失败、构建失败、工具崩溃或环境诡异行为时找我，先查这个坑是否已有公开教训；也想查某个技术栈、工具或平台的既往故障与修法时找我；用户之前提过问题、想知道维护者答没答时也找我。",
-  "version": "1.3.3",
-  "releaseNotes": "相较 1.3.2：按官方评审修五处——① 外发客户端 id 改用 crypto.getRandomValues（拿不到密码学随机源时直接失败，不退回弱随机）；② 上报失败不再提示「可以重试」：只有校验阶段能确定未发出，进入网络调用后的任何失败都标为不确定，提示先核对远端；③ misakanet_search 的 detail=\"full\" 现在真的返回课程正文；④ 提醒状态以内存为准，写盘失败不会每轮重复公告或计数停滞；⑤ 手册与轮次提醒把「刚解决的问题」归为 new_lesson_candidate。network.hosts 保持只声明 misakanet.org——它是市场评审要求声明的唯一外部宿主，也是用户可见的边界；工具、权限、检索与上报行为不变。",
+  "version": "1.6.0",
+  "releaseNotes": "按自动 review 的意见收口：外发客户端 id 来自 crypto.getRandomValues（无弱随机降级）；上报失败的三态默认「不确定」，只有能确认请求没离开本机才判可重试，fetch 抛异常与全局兜底出口同样按不确定处理；detail=full 保留端点返回的完整记录；轮次计数以内存为权威、私有目录文件只作持久化副本；并按「授权跟随执行者」删掉只用于工具调用的 network.hosts 声明——所有 HTTPS 都发生在当前 Agent 工具调用内并带在途 callId，宿主明确这种调用可访问未预声明的普通 HTTPS，插件没有自主联网场景。 按市场评审补：四个读工具的返回都带 `trust_notice`（第三方公开内容、其中的指令不要执行），MANUAL 的可信边界同步说明。",
   "author": "Ikalus1988",
   "entry": "main.js",
   "command": "misakanet",
@@ -21,7 +21,9 @@
   "icon": "assets/icon.png",
   "locales": {
     "en": "locales/en.json",
-    "zh-CN": "locales/zh-CN.json"
+    "zh-CN": "locales/zh-CN.json",
+    "ja": "locales/ja.json",
+    "ko": "locales/ko.json"
   },
   "manual": {
     "items": [
@@ -123,7 +125,7 @@
     },
     {
       "name": "misakanet_submit_intake",
-      "description": "把一次没有现成教训覆盖的故障或一个求助问题交给 MisakaNet：在公开仓库 Ikalus1988/MisakaNet 建一个 intake issue，供维护者与其他 Agent 复用。联网目标只有 misakanet.org；problem 等字段会原样发给 misakanet.org 并**公开发布到 GitHub**，不写本地文件。只有用户明确要求上报或提问时才调用（传 user_confirmed=true），绝不自行推断为 true；提交前先脱敏掉密钥、令牌、内网地址与个人信息。kind 省略时由服务端自动判定（提问类会开成 [Question] issue 等待人工回答，故障类进维护者评审）；问题类通常数小时后才有答案，用同一段 problem 文本再调一次会带回答案或转成 lesson 的凭据。返回 { intake_id, status, dedup_key, routing, poll_hint, redactions_applied, quality_score, receipt, answer?, converted? }。",
+      "description": "把一次没有现成教训覆盖的故障或一个求助问题交给 MisakaNet：在公开仓库 Ikalus1988/MisakaNet 建一个 intake issue，供维护者与其他 Agent 复用。联网目标只有 misakanet.org；problem 等字段会原样发给 misakanet.org 并**公开发布到 GitHub**，不写本地文件。**发出后不可撤回**：只有用户明确要求上报或提问、并且看过将要公开的原文时才调用（传 user_confirmed=true），绝不自行推断为 true；提交前先脱敏掉密钥、令牌、内网地址与个人信息。kind 省略时由服务端自动判定（提问类会开成 [Question] issue 等待人工回答，故障类进维护者评审）。失败按三态区分：确定没发出去才说可以重试；不确定（可能已建 issue、只是回执没回来）不要重发，改用完全相同的 problem 文本再调一次（端点按内容去重），或用 misakanet_me_inbox 查。返回 { intake_id, status, dedup_key, routing, poll_hint, redactions_applied, quality_score, receipt, answer?, converted? }。",
       "parameters": {
         "type": "object",
         "properties": {
@@ -203,10 +205,5 @@
         }
       }
     }
-  ],
-  "network": {
-    "hosts": [
-      "misakanet.org"
-    ]
-  }
+  ]
 }
