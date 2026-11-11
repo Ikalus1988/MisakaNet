@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-11-11T06:47:28.687494+00:00",
+  "generated_at": "2026-11-11T17:17:02.654835+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
-  "item_count": 11,
+  "item_count": 12,
   "items": [
     {
       "type": "merged_pr",
-      "title": "feat(lessons): review-band batch 3 — nine intakes with real titles",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4688",
-      "timestamp": "2026-11-11T06:46:24Z",
+      "title": "fix(measurement): E4 reads the table the worker writes + three decisions' repo halves",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4697",
+      "timestamp": "2026-11-11T17:04:39Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(main): release 3.10.1",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4686",
-      "timestamp": "2026-11-11T06:03:06Z",
+      "title": "fix(home): the terminal widget no longer advertises an unrunnable register command",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4694",
+      "timestamp": "2026-11-11T16:41:50Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(analytics): the daily series uses a day-aligned window (#4640 D2)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4684",
-      "timestamp": "2026-11-11T05:32:26Z",
+      "title": "fix(cindy-plugin): preflight 的 note 不再让模型照做第三方 guard；kind 过滤空不当成零命中",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4695",
+      "timestamp": "2026-11-11T16:31:38Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(main): release 3.10.0",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4681",
-      "timestamp": "2026-11-11T03:47:27Z",
+      "title": "chore(triage): audit the corpus-queue labels and fix what leaked",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4693",
+      "timestamp": "2026-11-11T16:07:25Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
       "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4680",
-      "timestamp": "2026-11-11T03:11:37Z",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4689",
+      "timestamp": "2026-11-11T07:08:19Z",
       "source": "github"
     },
     {
@@ -78,6 +78,22 @@
       "timestamp": "2026-11-11",
       "domain": "fanuc",
       "source": "lessons"
+    },
+    {
+      "type": "challenge",
+      "title": "[Bounty][$0][Setup] 在**你的**机器上跑一遍 npx setup，回报机器可校验的证据（10 个助手 / 三个断言）",
+      "url": "https://github.com/Ikalus1988/MisakaNet/issues/1753",
+      "labels": [
+        "help wanted",
+        "ready",
+        "area:scripts",
+        "bounty",
+        "agent-friendly",
+        "zero-bounty",
+        "status:competition"
+      ],
+      "timestamp": "2026-09-16T09:03:44Z",
+      "source": "github"
     },
     {
       "type": "challenge",
