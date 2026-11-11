@@ -207,6 +207,7 @@
   <url><loc>https://misakanet.org/lessons/coopanioncortico-桌宠装扩展后启动即退出exit-1corelog-报-rangeerror-maximum-call-stack/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-cordis-plugin-listing-a-service-that-never-appears-in-inject-silently-never-ru/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/cordis-patch-的-js-表达式里-windows-反斜杠会被-js-吃掉/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/cordispatchyml-里-id-指向不存在的条目会被静默丢弃配置从未生效/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/corporate-proxy-curl-timeout/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/fsreaddirsyncdirlength-counts-directories-too-and-inflated-a-per-chat-file-metri/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/classify-a-crash-by-its-signature-first-and-only-then-by-its-rate-two-rounds-can/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -250,6 +251,7 @@
   <url><loc>https://misakanet.org/lessons/migrating-dsh-home-with-robocopy-materializes-the-profile-node-modules-junctions/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/dsh-market-reports-a-successful-install-as-failed-the-empty-output-watchdog-kill/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/dsh-plugin-mcp-row-stays-disconnected-forever-once-the-reconnect-budget-is-spent/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/dsh-mnemon-新增记忆空间后全部空间消失provider-字段-scope-用错导致整批-body-加载中断/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/dsh-on-windows-a-workspace-not-owned-by-the-current-user-blocks-every-shell-tool/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/dsh-onebot-收-qq-消息后静默不回的两个根因sessions-树内的-bak-目录-纯文本未走-onebot-reply/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/registering-a-dsh-plugin-in-profile-bundles-before-pnpm-ran-its-blocked-build-cr/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -857,11 +859,14 @@
   <url><loc>https://misakanet.org/lessons/偏航阈值是几何下限不能再靠调参变快离线仿真实测5030精度35-是上限/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/兜底判据写成结果为空不够vad-返回的碎片会绕过它让上游每格都空/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/关掉控制器数据桥后车速冻在最后一个读数stop-只停轮询没清派生状态/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/关闭脚本的黑窗口会把-start-process-拉起的子进程一起杀掉/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/删掉的行程同步后又回来了上传重试队列没撤销-删除标记收到-200-就清掉/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/前端两层缓存叠加传了新-appjs-上去手机打开还是旧版/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/加新-lesson-后按生成器链重算派生产物update-lessons-json-export-okf-export-public-vocabula/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/双击-ps1-不会执行交付双击运行的脚本给用户可能一条都没跑/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/反向代理后面-remoteaddress-永远是-127001按-ip-限流实际变成了全局限流/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/受限环境下-adb-无法生成-adbkey预置一把私钥让它只读不写/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/只在-cordispatchyml-里-insert-的客户端插件host-半能跑浏览器侧-tab-永远不出现/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/在-openclaw-智能体中通过渐进加载的内置工具如飞书-lark-cli-封装工具干活时出现上一轮刚-tool-activate-成功并正常调用过的工/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/在-windows-上把一个符号链接提交进-git-仓而这个链接的目标里写的是未展开的变量例如字面量-homehermesskillsx/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/地图标注只加不删-取景没算浮层遮挡起终点残留路线被卡片挡住/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
