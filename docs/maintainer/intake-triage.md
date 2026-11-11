@@ -46,7 +46,7 @@
 |---|---|---|
 | `mcp-intake` | 语料 intake（`[Intake]` issue） | 产品/决策事项 |
 | `intake` | 历史别名，**190 条上与 `mcp-intake` 同时存在**；脚本一律按 `mcp-intake` 查 | 独立信号 |
-| `needs-human-review` | **可写 lesson 的语料素材**，等维护者处理 | 产品/路线图 issue 的"待看"标记 |
+| `needs-human-review` | **可写 lesson 的语料素材**，等维护者处理；`approval-watch.yml` 也用它表示「要人批准一次 run」（带 `approval-watch` 的 issue 由审计豁免） | 产品/路线图 issue 的"待看"标记 |
 | `needs-answer` | 问句在等回答（2026-10-17 起；问句不再用 `needs-human-review`） | 故障 intake |
 | `decision` | 需要 owner 拍板；**晋级后不再进语料队列**（`convert_intake_batch.is_convertible` 已跳过它们） | 可转换的 lesson 素材 |
 | `pending-review` / `auto-rejected` | 自动评审的两个出口 | |

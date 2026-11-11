@@ -26,8 +26,11 @@ import subprocess
 import sys
 
 CORPUS_LABELS = {"mcp-intake", "intake", "lesson-submission"}
-#: Labels that only make sense on corpus material; a product issue carrying one is a misfile.
+#: Queue labels that are corpus-only *in the intake flow*. `needs-human-review` is also written by
+#: `approval-watch.yml` for "a human must approve a run" (its own comment cites the dependency-audit
+#: workflow using it the same way), so an issue carrying one of these trackers is not a misfile.
 CORPUS_ONLY = {"needs-human-review", "pending-review", "auto-rejected", "needs-answer"}
+OPS_TRACKERS = {"approval-watch", "automated", "dependencies"}
 #: Pairs that are the same axis under two names; both used means the filter depends on the alias.
 ALIAS_GROUPS = [
     {"intake", "mcp-intake"},
@@ -55,7 +58,10 @@ def names(issue: dict) -> set[str]:
 
 
 def audit(issues: list[dict]) -> dict:
-    leaks = [i["number"] for i in issues if (names(i) & CORPUS_ONLY) and not (names(i) & CORPUS_LABELS)]
+    leaks = [
+        i["number"] for i in issues
+        if (names(i) & CORPUS_ONLY) and not (names(i) & CORPUS_LABELS) and not (names(i) & OPS_TRACKERS)
+    ]
     escalated = [i["number"] for i in issues if "decision" in names(i) and (names(i) & CORPUS_LABELS)]
     alias_report = {}
     for group in ALIAS_GROUPS:
