@@ -378,8 +378,11 @@ def test_copy_feedback_reuses_the_pages_one_toast():
     assert "alert(" not in copy_body, "copyQS reports through alert(), not the page toast"
     toast_body = _function_source(page, "toast")
     assert "getElementById('toast')" in toast_body, toast_body
-    register_body = _function_source(page, "copyAndToast")
-    assert "toast(" in register_body, "the register bar no longer shares the toast helper"
+    # The register bar's COPY button was removed with the widget's unrunnable curl block (2026-11-12):
+    # the helper existed only for it, so a second copy path must not come back without its own caller.
+    assert "copyAndToast" not in page, (
+        "a second copy helper is back; the page's one toast and one copy path are what #1893 fixed"
+    )
 
 
 # ── running the real page JS ───────────────────────────────────────────────────────────────────
