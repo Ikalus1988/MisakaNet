@@ -34,3 +34,9 @@ def test_an_escalated_decision_is_reported_separately():
 def test_two_labels_for_the_same_axis_are_reported():
     result = label_audit.audit([issue(4, "intake"), issue(5, "mcp-intake")])
     assert "intake / mcp-intake" in result["duplicate_aliases"]
+
+
+def test_an_approval_watch_tracker_is_not_a_misfile():
+    """`approval-watch.yml` writes `needs-human-review` to mean "a human must approve a run"."""
+    result = label_audit.audit([issue(6, "needs-human-review", "approval-watch", "needs-ac")])
+    assert result["leaks"] == []
