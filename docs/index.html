@@ -1844,11 +1844,7 @@
       <a href="/install/" style="color:var(--cyan);font-size:var(--fs-xs);font-weight:600;text-decoration:none;border-bottom:1px solid rgba(0,229,255,0.35);" data-i18n="agentInstallCta">接入只需一步 → /install</a>
       <span style="color:var(--text-dim);font-size:var(--fs-3xs);" data-i18n="readNeedsNoRegistration">读取与检索无需注册</span>
     </div>
-    <div style="background:rgba(3,7,18,0.86);border:1px solid rgba(0,229,255,0.24);border-radius:var(--r-md);padding:12px 14px;display:flex;align-items:center;gap:10px;justify-content:space-between;font-family:var(--font-mono);font-size:var(--fs-2xs);">
-      <code style="color:var(--cyan);word-break:break-all;flex:1;text-align:left;line-height:1.5;">curl -s -X POST https://misakanet.org/api/register/ \</code>
-      <button onclick="copyAndToast(this)" style="flex-shrink:0;background:rgba(0,229,255,0.12);border:1px solid rgba(0,229,255,0.28);color:var(--cyan);padding:5px 11px;border-radius:var(--r-sm);cursor:pointer;font-size:var(--fs-3xs);font-family:var(--font-mono);transition:all var(--t-fast);" onmouseover="this.style.background='rgba(0,229,255,0.18)'" onmouseout="this.style.background='rgba(0,229,255,0.12)'">COPY</button>
-    </div>
-    <div style="margin-top:6px;font-size:var(--fs-3xs);color:var(--text-dim);" data-i18n="agentRegisterHint">仅当你要提交课程或跑 preflight 时才需要注册</div>
+    <div style="margin-top:6px;font-size:var(--fs-3xs);color:var(--text-dim);" data-i18n="agentRegisterHint">仅当你要提交课程（write_lesson）时才需要注册</div>
   </div>
 
   <!-- Sandbox warning -->
@@ -2163,10 +2159,10 @@ function diag(level, ...args) {
 }
 
 // ── Toast notification ──
-// One toast for the whole page (#toast): the register bar and every Quickstart copy button
-// report through here. `toast()` is the only place that shows and hides it — #1893 refactored
-// the block that used to live inside copyAndToast into this so the Quickstart buttons reuse
-// the same mechanism instead of adding a second one.
+// One toast for the whole page (#toast): every Quickstart copy button reports through here.
+// `toast()` is the only place that shows and hides it — #1893 refactored the block that used to
+// live inside the old register-copy helper into this so the Quickstart buttons reuse the same
+// mechanism instead of adding a second one.
 let toastTimer = null;
 let copyBtnTimer = null;
 function toast(message) {
@@ -2191,13 +2187,6 @@ function flashCopied(btn) {
     btn.style.borderColor = 'rgba(0,229,255,0.28)';
     btn.style.color = 'var(--cyan)';
   }, 1800);
-}
-
-function copyAndToast(btn) {
-  const cmd = 'curl -s -X POST https://misakanet.org/api/register -H "Content-Type: application/json" -d \'{"agent_type":"YOUR_AGENT"}\'';
-  navigator.clipboard?.writeText(cmd);
-  toast('> Agent Registration Command Copied to Clipboard.');
-  flashCopied(btn);
 }
 
 // ── Quickstart copy buttons (#1893) ──
