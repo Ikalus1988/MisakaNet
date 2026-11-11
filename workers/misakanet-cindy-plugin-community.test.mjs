@@ -108,7 +108,7 @@ async function callTool(load, tool, args, options = {}) {
       actionId: 'intake-submit',
       spawnCallId: 'test-card',
       sessionId: 's1',
-      userActionToken: 'token-once',
+      userActionToken: 'once',
     });
     await new Promise((resolve) => setTimeout(resolve, 50));
     const results = load.sent.filter((m) => m.type === 'tool-result');
@@ -684,7 +684,7 @@ test('submit_intake: nothing leaves the machine until the user clicks the card',
     actionId: 'intake-submit',
     spawnCallId: 'test-card',
     sessionId: 's1',
-    userActionToken: 'token-once',
+    userActionToken: 'once',
   });
   await new Promise((resolve) => setTimeout(resolve, 50));
   assert.equal(load.requests.length, 1, 'the click is what sends the request');
@@ -705,7 +705,7 @@ test('submit_intake: clicking "cancel" creates nothing', async () => {
     actionId: 'intake-cancel',
     spawnCallId: 'test-card',
     sessionId: 's1',
-    userActionToken: 'token-once',
+    userActionToken: 'once',
   });
   await new Promise((resolve) => setTimeout(resolve, 50));
   assert.equal(load.requests.length, 0, 'cancelling must not send anything');

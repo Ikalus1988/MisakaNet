@@ -67,7 +67,6 @@ def test_the_read_retry_only_covers_reads():
     read_calls = source.count("callReadTool(TOOLS.misakanet_")
     assert read_calls >= 4, read_calls
     # No upload path may go through the retry helper.
-    upload_block = source.split("misakanet_submit_intake")[0]
     assert "callReadTool(TOOLS.misakanet_submit_intake" not in source
 
 
