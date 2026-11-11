@@ -7,6 +7,13 @@ All notable changes to the Misaka Network project are documented here.
 
 ---
 
+## [3.10.0](https://github.com/Ikalus1988/MisakaNet/compare/v3.9.0...v3.10.0) (2026-11-11)
+
+
+### Features
+
+* **lessons:** five lesson submissions from the 2026-11-09/10 queue ([#4679](https://github.com/Ikalus1988/MisakaNet/issues/4679)) ([b509c0e](https://github.com/Ikalus1988/MisakaNet/commit/b509c0e073e89fdb98a9db1dd6675f6da307a77a))
+
 ## [3.9.0](https://github.com/Ikalus1988/MisakaNet/compare/v3.8.0...v3.9.0) (2026-11-10)
 
 
