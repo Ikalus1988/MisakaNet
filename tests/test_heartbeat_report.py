@@ -666,3 +666,26 @@ def test_the_panel_names_the_action_and_says_what_it_is_not(monkeypatch):
 def test_the_panel_is_silent_when_the_numbers_could_not_be_read():
     """No line at all, rather than a 0 that reads as 'nobody uses it'."""
     assert "marketplace action" not in "\n".join(hr.panel_who(None, "2026-11-02", {}, None))
+
+
+def test_pulse_line_states_its_window_shape_and_that_today_is_partial():
+    """#4640: the series' window is day-aligned, so only the newest bucket is partial.
+
+    Before the worker's window fix, the *oldest* bucket was a rolling-timestamp remainder that
+    shrank every hour — a published series that drifts downward on its own. The line has to say
+    which end is partial, or a reader reads the shape as a trend.
+    """
+    analytics = {"daily_requests": [
+        {"day": "2026-10-14", "count": 649},
+        {"day": "2026-10-15", "count": 235},
+        {"day": DAY, "count": 229},
+    ]}
+    line = hr.pulse_line(analytics, DAY, {})[0]
+    assert "day-aligned" in line, line
+    assert "oldest day is complete" in line, line
+    assert "partial" in line, line
+
+
+def test_pulse_line_with_no_series_names_the_day_aligned_window():
+    line = hr.pulse_line({"daily_requests": []}, DAY, {})[0]
+    assert "day-aligned" in line, line
