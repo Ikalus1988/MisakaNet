@@ -25,6 +25,10 @@ instead of guessing.
   changelog stops at release **v2.43.0** (observed `2026-10-15T16:44:56Z`), while the
   repository is at **v2.48.0** (tagged `2026-10-18`). The listing was last scored
   `2026-10-16T21:15:25Z`.
+- **The listing's download number is the directory's score, not this repository's health.** It counts
+  the server package named in `server.json` and never the other artifacts this repository ships
+  (the dependency library, the installer, the guard). See
+  [Coverage is the directory's score](#coverage-is-the-directorys-score-not-ours).
 - The **trigger that actually refreshed the listing** was never confirmed by a human: it
   looks like a **release** does it, but that is an inference from two timestamps, not a
   confirmed procedure. The concrete paths to press are in
@@ -32,6 +36,33 @@ instead of guessing.
 - **A successful rescan may still not change the tool set**, and this is not a Glama
   failure: the listing is an introspection of the repository's **stdio** server, not of the
   hosted endpoint. See [A rescan will not fix the tool set](#a-rescan-will-not-fix-the-tool-set).
+
+## Coverage is the directory's score, not ours
+
+The listing prints one download figure per server. That figure counts the **server package declared
+in `server.json`**, and nothing else this repository publishes — not the dependency library, not the
+installer, not the guard. Reading it as "how much this repository is used" is the mistake this
+section exists to prevent.
+
+Two reasons the figure cannot carry that meaning:
+
+1. **The counters overlap, they do not describe two products.** The PyPI server package declares the
+   library as its dependency (`pyproject.toml`), so part of the library's download count is the
+   server being installed; the rest is people using the library directly. Neither number alone is
+   "server installs" — the honest statement is "at least the server package's count, with an unknown
+   upper bound".
+2. **Shipping several artifacts is this repository's shape, not a defect.** The guard alone carries
+   over a hundred same-repository references and dozens of documents, and its tombstone contract is
+   frozen as a JSON Schema. Moving a load-bearing piece to move a directory's denominator by a
+   fraction of a point is not a trade this repository makes.
+
+So: **do not put coverage in this repository's KPIs, and do not change packaging because a
+directory's number is low.** This repository's own health is the daily heartbeat (#3471): **who is
+calling, what they asked, and whether it helped.**
+
+If the directory's counting rule is ever raised with Glama, the argument is not "we are
+undercounted": for a *server* directory, counting the server package is the right definition. A
+"repository reach" number is a different metric and does not belong inside this score.
 
 ## The listing is two different objects
 
