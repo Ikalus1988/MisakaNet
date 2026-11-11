@@ -412,7 +412,8 @@ def test_comments_load_from_json_lines_as_well_as_an_array():
 
 # ── the E4 rung: a separate reading, and a zero that is a finding rather than a fault ─────────
 
-E4_FIXTURE = {"rows_total": 5475, "rows_solved": 4450, "lessons_seen": 483, "e4_lessons": 0}
+E4_FIXTURE = {"rows_total": 5475, "rows_solved": 4450, "lessons_seen": 483, "e4_lessons": 0,
+               "newest": "2026-10-16T00:00:00Z"}
 
 
 def test_the_e4_reading_is_its_own_section_not_a_fourth_question():
@@ -499,9 +500,12 @@ def test_the_e4_query_selects_exactly_what_the_predicate_claims():
         (1, "lessons/d.md", None), (1, "lessons/d.md", ""),     # anonymous only → not E4
     ])
     row = db.execute(hr.E4_SQL).fetchone()
-    assert row == (10, 7, 4, 1), (
+    assert row[:4] == (10, 7, 4, 1), (
         "the E4 SQL no longer selects (rows_total, rows_solved, lessons_seen, e4_lessons) the way "
         "the predicate is described")
+    assert isinstance(row[4], str) and row[4], (
+        "the E4 SQL must also report the table's newest created_at — the staleness check depends "
+        "on it (#4640)")
 
 
 # ── the raw rows: parsing, scoping, and the redaction that a public comment needs ───────────
@@ -689,3 +693,19 @@ def test_pulse_line_states_its_window_shape_and_that_today_is_partial():
 def test_pulse_line_with_no_series_names_the_day_aligned_window():
     line = hr.pulse_line({"daily_requests": []}, DAY, {})[0]
     assert "day-aligned" in line, line
+
+
+def test_the_e4_reading_says_how_old_the_table_is():
+    """#4640: the panel read a copy frozen on 2026-10-26 and printed its density as current."""
+    fresh = digest(e4={**E4_FIXTURE, "newest": "2026-10-16T00:00:00Z"})
+    assert "The table's newest row is `2026-10-16T00:00:00Z`" in fresh
+    stale = digest(e4={**E4_FIXTURE, "newest": "2026-10-06T00:00:00Z"})
+    assert "10 days before this digest" in stale
+    assert "stale table reports a normal-looking number" in stale
+
+
+def test_an_empty_search_signals_table_is_not_a_stale_one():
+    out = digest(e4={"rows_total": 0, "rows_solved": 0, "lessons_seen": 0, "e4_lessons": 0,
+                     "newest": None})
+    assert "The table is empty" in out
+    assert "stale" not in out.lower() or "stale table are different readings" in out

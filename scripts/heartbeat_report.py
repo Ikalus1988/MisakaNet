@@ -161,7 +161,8 @@ E4_SQL = """SELECT
       WHERE client_hint IS NOT NULL AND client_hint <> ''
       GROUP BY top_id
      HAVING COUNT(DISTINCT client_hint) >= {threshold}
-   )) AS e4_lessons;""".replace("{threshold}", str(E4_MIN_DISTINCT_CLIENTS))
+   )) AS e4_lessons,
+  (SELECT MAX(created_at) FROM search_signals) AS newest;""".replace("{threshold}", str(E4_MIN_DISTINCT_CLIENTS))
 
 #: Substrings that make a failed query look like a prompt rather than a query. Together with the
 #: length bound and a newline check this is what keeps a public comment from republishing the
@@ -378,6 +379,7 @@ def e4_density(row: dict | None) -> dict | None:
         "lessons_seen": int(row.get("lessons_seen") or 0),
         "rows_total": int(row.get("rows_total") or 0),
         "rows_solved": int(row.get("rows_solved") or 0),
+        "newest": row.get("newest"),
     }
 
 
@@ -725,6 +727,32 @@ def helpful_vote_lines(counters, retrievals: dict[str, int] | None, day: str,
     return lines
 
 
+def staleness_sentence(newest: object, day: str, rows_total: int = 0) -> list[str]:
+    """How old the table is, said out loud — a stale table reports a normal-looking number.
+
+    This is the second half of #4640: the panel was reading a database copy that stopped on
+    2026-10-26 and published its density as if it were current. Fixing the reader does not stop the
+    next silent staleness (a write path that moves again, a day with no writes), so the reading
+    carries its own age.
+    """
+    if not newest:
+        if rows_total:
+            return ["(The table's newest `created_at` could not be read; the density above still "
+                    "comes from that table's rows.)", ""]
+        return ["⚠️ **The table is empty** — no `created_at` to check. An empty table and a stale "
+                "table are different readings, and neither is a density of zero.", ""]
+    stamp = str(newest)
+    try:
+        age = (date.fromisoformat(day) - date.fromisoformat(stamp[:10])).days
+    except ValueError:
+        return [f"The table's newest row is `{stamp}` (it could not be compared with {day}).", ""]
+    if age > 2:
+        return [f"⚠️ **The table's newest row is `{stamp}` — {age} days before this digest.** The "
+                "density above is a reading of that table, not of current traffic; a stale table "
+                "reports a normal-looking number, which is why this line exists.", ""]
+    return [f"The table's newest row is `{stamp}` ({age} day(s) before this digest).", ""]
+
+
 def panel_e4(e4: dict | None, day: str, errors: dict[str, str]) -> list[str]:
     """A separate reading: how many lessons actually reach the ladder's top rung.
 
@@ -755,6 +783,7 @@ def panel_e4(e4: dict | None, day: str, errors: dict[str, str]) -> list[str]:
 
     lines += [f"**E4 lessons: {e4['e4_lessons']} of {e4['lessons_seen']}.** `search_signals` holds "
               f"{e4['rows_total']} rows, {e4['rows_solved']} of them hits (`solved=1`).", ""]
+    lines += staleness_sentence(e4.get("newest"), day, e4["rows_total"])
     if e4["e4_lessons"] == 0:
         lines += [
             "**Read the 0 as a finding, not as a fault.** No lesson has been retrieved by "
@@ -1042,8 +1071,13 @@ def fetch_e4_density() -> dict | None:
     answers `no such table`) rather than raising: the digest already has a sentence for "could not be
     read", and it is a truer one than a traceback.
     """
+    # Read the database the worker writes to. `search_signals` is written through `opsD1(env)`
+    # (`MISAKANET_OPS_D1` → `misakanet-ops`), while this panel used to read the same-named table in
+    # the main database — a copy frozen on 2026-10-26, so the digest published "1 of 453" while the
+    # live table read "56 of 714" (#4640). The lessons/counters/intake queries below still belong to
+    # the main database and must not be changed with this one.
     result = subprocess.run(
-        ["wrangler", "d1", "execute", "misakanet-db", "--remote", "--json", "--command", E4_SQL],
+        ["wrangler", "d1", "execute", "misakanet-ops", "--remote", "--json", "--command", E4_SQL],
         cwd=REPO_ROOT / "workers", capture_output=True, text=True, check=False,
     )
     if result.returncode != 0:

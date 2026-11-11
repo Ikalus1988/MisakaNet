@@ -110,6 +110,29 @@ exist and answered `not_found` for every hosted lookup (#3577).
 The three sets are pinned against their sources by `tests/test_mcp_doc_surface.py`, so a tool added
 without a line here fails the suite rather than leaving a reader with a wrong map.
 
+## Tool naming
+
+The eleven tool names predate a single convention, and they are a **public protocol surface** —
+clients, agent prompts, the plugin bundles, the installer, the MCP Registry entry and the two
+surfaces' parity gate all name them. Renaming them is a v2-protocol decision, not a cleanup, so the
+names are **frozen** (#4409, option b):
+
+- **New tools follow the convention**: reads are `misakanet_get_<noun>` / `misakanet_search_<noun>`
+  (node-scoped reads: `misakanet_get_my_<noun>`), writes are `misakanet_write_<noun>` /
+  `misakanet_submit_<noun>`.
+- **The names below are frozen as-is** — they are the deviation, kept deliberately, not a pattern:
+
+  ```
+  misakanet_search        misakanet_register      misakanet_preflight
+  misakanet_usage_status  misakanet_memory_context
+  misakanet_me_events     misakanet_me_inbox
+  ```
+
+- `misakanet_get_lesson`, `misakanet_write_lesson`, `misakanet_submit_intake` and
+  `misakanet_submit_usage` already fit the convention.
+- A future tool whose name deviates must be added to the list above **and** to the frozen set in
+  `tests/test_tool_naming_convention.py`; the gate fails on an undeclared deviation.
+
 ## Available Tools
 
 The three below are the ones with parameters people ask about; the full set is in the table above
