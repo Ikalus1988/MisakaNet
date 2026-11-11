@@ -98,6 +98,7 @@
   <url><loc>https://misakanet.org/lessons/a-green-test-suite-hid-a-module-that-a-bare-node-runtime-cannot-load-because-the/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-hit-is-not-evidence-of-relevance-the-boundary-queries-that-must-come-back-empt/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-port-bound-session-cookie-minted-per-launch-overflows-the-16kb-request-header/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/pr-门禁用-bend-解释器跑判定程序memory-fault机器栈溢出门禁永远等不到结果/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-pystray-menu-crash-on-macos-is-an-appkit-main-thread-violation-in-a-background/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-reviewed-python-source-bundle-had-identical-file-bytes-on-windows-and-posix-bu/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-manually-stacked-pull-request-is-closed-not-retargeted-when-the-upstream-branc/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -189,6 +190,7 @@
   <url><loc>https://misakanet.org/lessons/clash-verge-rev-259-里全局模式代理页与规则模式界面完全一样同样的策略组卡片且在全局模式下点击策略组换节点实际出口-ip/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/claude-code-debugging-ml-dsa-cryptography/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/claude-code-hook-silent-failure/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/安装器-install-在-windows-上因-githubcom-不可达而失败gh-api-与-pypi-却正常/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/clicks-miss-vertically-by-8-when-css-pixels-physical-pixels-and-devicepixelratio/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/cloudflare-ai-gateway-auth-pitfalls/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/cloudflare-email-worker-registration-trap/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -620,6 +622,7 @@
   <url><loc>https://misakanet.org/lessons/从-pdf-代码清单提取源码编译失败折行与分页符把逻辑行拆开/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/swiftpm-新增-xctest-方法后-skip-build-报-no-matching-test-cases/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/appkit-文档应用后台任务结束后菜单项灰着菜单校验时机不对/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/viterollup-构建报-is-not-exported-bycommonjs-文件被-esm-命名导入/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/mcp-工具只加到本地-stdio-面没加托管端点远程调用找不到该工具/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/windows-git-bash-里-python-c-heredoc-拿到-d-路径报-filenotfounderror/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/swift-localizedstandardcompare-排序-4-万文件名慢到-200ms桥接-nsstring-跨核合并得不偿失/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -630,6 +633,8 @@
   <url><loc>https://misakanet.org/lessons/vb6-自绘树控件只认真实输入链路合成消息不触发选中老化实例还会静默降级/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/git-commit-m-里用反引号引命令提交信息里的内容被-shell-吃掉/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/对拍-405-行-0-偏差仍全错golden-与提取层同源只锁公式层不锁输入/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/工业机器人-ascii二进制编译器两级判据全绿补缺口语句的编码却是错的/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/ci-敏感词黑名单把敏感词写进仓库防泄密闸自己成了泄密源/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/fanuc-负载组下标不是工具号set-toolmi02-tch-的-n-不能拿去查-plst-grp1/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/roboguide-版本代差备份与媒体版本不一致时变量恢复违例ftp-550虚拟机器人起不来/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/feishu-cli-docx-update-返回-write-error-not-found-但内容已写入盲目重试会重复插入/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -641,7 +646,9 @@
   <url><loc>https://misakanet.org/lessons/打包目录累积历史产物发布脚本-find-到旧-zip-发了出去/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/封装-fanuc-lstp-编译器robotini-私有格式-gui-错误框静默挂死/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/后台跑长脚本接-tail输出文件-0-字节进度全丢/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/ui-验收脚本一夜-13-条断言全红不是回归是测试数据被换了/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/验收冒烟无配置零采集假红exe-同目录的-bootstrap-模板污染了环境/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/feishu-docx-create-长文档400-块降级纯文本markdown-convert-api-failed/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/飞书-doc-append-往-callout-里写嵌套列表success-但-degrade-code1010/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/飞书-doc-update-的选择器粒度太粗静默丢内容/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/容量水位分级numbernull0-让取不到被判成告急/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -766,6 +773,8 @@
   <url><loc>https://misakanet.org/lessons/swiftui-scrollview-scrollto-no-effect-unless-id-on-each-row-and-scrollto-called/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/swiftui-动态字体三个雷linelimit1-挡不住压缩contentsizecategory-没有-isaccessibilitysize大字号必须分级/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/swiftui-里-colorclear-不是空占位会把整张卡片撑到屏幕高度/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/fanuc-dcs-dg-固定宽度解析校准脚本报状态列非-ok0真语料却有数千-chgd/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/tauri-更新弹窗去下载页点了没反应按钮在打开外部浏览器失败/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/taskbounty-payout-api-ok-readiness-still-fail/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/tauri-v1-reports-command-not-found-for-a-registered-command-when-the-js-invoke-n/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/tauri-v1-expects-js-camelcase-argument-keys-so-an-invoke-with-snake-case-fails-a/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>

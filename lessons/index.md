@@ -14,6 +14,7 @@
 - [A green test suite hid a module that a bare Node runtime cannot load, because the bundler rewrites the JSON import](contrib/a-green-test-suite-hid-a-module-a-bare-node-runtime-cannot-load.md) | nodejs | "nodejs", "esm", "json", "import-attributes", "vitest", "bundler", "ci_gates", "verification" | intake-3750
 - [A hit is not evidence of relevance — the boundary queries that must come back empty](contrib/a-hit-is-not-evidence-of-relevance.md) | search | "search", "relevance", "retrieval", "no-match", "relevance-floor", "boundary-queries", "trust" | issue-2615
 - [A port-bound session cookie minted per launch overflows the 16KB request header and breaks startup](contrib/a-port-bound-session-cookie-minted-per-launch-overflows-the.md) | network | "cookies", "http-header", "maxheadersize", "node-http", "electron", "port-binding" | intake-4290
+- [PR 门禁用 Bend 解释器跑判定程序：memory fault（机器栈溢出），门禁永远等不到结果](contrib/a-pull-request-gate-script-ran-a-bend-interpreter-over-its.md) | dsh | "pull", "request", "gate" | intake-4650
 - [A pystray menu crash on macOS is an AppKit main-thread violation in a background thread, not a host-app bug](contrib/a-pystray-menu-thread-crash-is-an-appkit-main-thread-violation.md) | python | "pystray", "appkit", "macos", "main-thread", "crash-report", "serena", "mcp" | intake-2261
 - [A reviewed Python source bundle had identical file bytes on Windows and POSIX bu](contrib/a-reviewed-python-source-bundle-had-identical-file-bytes-on.md) | windows | "reviewed", "python", "source" | intake-4470
 - [A manually stacked pull request is closed, not retargeted, when the upstream branch is deleted](contrib/a-stacked-pr-downstream-is-closed-when-the-upstream-branch-is-deleted.md) | devops | "github", "pull-request", "stacked-pr", "gh-cli", "branch", "recovery", "verification" | intake-3762
@@ -106,6 +107,7 @@
 - [Clash Verge Rev 2.5.9 里「全局模式」代理页与「规则模式」界面完全一样（同样的策略组卡片），且在全局模式下点击策略组换节点，实际出口 IP](contrib/clash-verge-rev-259.md) | dsh | "clash", "verge", "rev" | intake-4563
 - [Claude Code can debug low-level cryptography — ML-DSA signature verification failure](contrib/claude-code-debugging-ml-dsa-cryptography.md) | development | "claude_code", "cryptography", "post_quantum", "ml_dsa", "debugging", "go" | https://words.filippo.io/claude-debugging/
 - [A hook that swallows every error makes a misconfiguration look like "nothing to do"](contrib/claude-code-hook-silent-failure.md) | claude | "claude-code", "hooks", "error-handling", "observability", "ci", "settings-json" | claude-code-hook-silent-failure-2026-09-12
+- [安装器 install 在 Windows 上因 github.com 不可达而失败：gh api 与 PyPI 却正常](contrib/cli-hub-install-name-fails-on-windows-when-githubcom-is.md) | windows | "cli", "hub", "install" | intake-4663
 - [Clicks miss vertically by 8% when CSS pixels, physical pixels and devicePixelRatio are mixed](contrib/click-coordinates-miss-dpi-scaling-cdp.md) | windows | "devicepixelratio", "dpi-scaling", "coordinate-systems", "cdp", "wsl" | intake-2561
 - [Click does not activate but keyboard Enter works: probes separating pointer-delivery from handler failure](contrib/click-no-op-keyboard-works-pointer-vs-handler-triage.md) | automation | "playwright", "browser-automation", "click", "accessibility", "triage", "pointer-events" | 
 - [Cloudflare AI Gateway: gateway token ≠ account token, /workers-ai/run/ path required](contrib/cloudflare-ai-gateway-auth-pitfalls.md) | devops | "cloudflare", "ai-gateway", "workers-ai", "benchmark", "caching", "authentication" | 
@@ -572,6 +574,7 @@
 - [从 PDF 代码清单提取源码编译失败：折行与分页符把逻辑行拆开](contrib/problem-extracting-program-source-from-pdf-code-listings.md) | mcp | "problem", "extracting", "program" | intake-4607
 - [SwiftPM 新增 XCTest 方法后 --skip-build 报 No matching test cases](contrib/problem-in-a-swiftpm-package-after-adding-new-xctest.md) | mcp | "problem", "in", "swiftpm" | intake-4020
 - [AppKit 文档应用后台任务结束后菜单项灰着：菜单校验时机不对](contrib/problem-in-an-appkit-document-style-app-after-a-background.md) | development | "problem", "in", "an" | intake-4019
+- [Vite/Rollup 构建报 is not exported by：CommonJS 文件被 ESM 命名导入](contrib/problem-js-项目viterollup-打包-共享工具层构建报x-is-not-exported-by.md) | windows | "problem", "js", "vite" | intake-4672
 - [MCP 工具只加到本地 stdio 面、没加托管端点：远程调用找不到该工具](contrib/problem-mcp-tool-implementation-only-added-to-local-stdio.md) | mcp | "problem", "mcp", "tool" | intake-2559
 - [Windows Git Bash 里 python -c / heredoc 拿到 /d/ 路径报 FileNotFoundError](contrib/problem-on-windows-inline-python-c-python-eof-scripts.md) | windows | "problem", "on", "windows" | intake-4425
 - [Swift localizedStandardCompare 排序 4 万文件名慢到 200ms：桥接 NSString + 跨核合并得不偿失](contrib/problem-sorting-40000-file-names-with-swift.md) | mcp | "problem", "sorting", "file" | intake-3861
@@ -582,6 +585,8 @@
 - [VB6 自绘树控件只认真实输入链路：合成消息不触发选中，老化实例还会静默降级](contrib/problem-windows-上自动化-vb6-自绘树控件如.md) | windows | "problem", "windows", "vb6" | intake-4600
 - [git commit -m 里用反引号引命令：提交信息里的内容被 shell 吃掉](contrib/problem-writing-a-git-commit-message-that-quotes-a-command.md) | mcp | "problem", "writing", "git" | intake-3976
 - [对拍 405 行 0 偏差仍全错：golden 与提取层同源，只锁公式层不锁输入](contrib/problem-一套数值引擎用与官方-excel-工具逐行对拍-405-行-0.md) | mcp | "problem", "excel", "bug" | intake-4490
+- [工业机器人 ASCII↔二进制编译器：两级判据全绿，补缺口语句的编码却是错的](contrib/problem-为工业机器人-ascii-源码.md) | fanuc | "problem", "ascii", "disassemble" | intake-4658
+- [CI 敏感词黑名单把敏感词写进仓库：防泄密闸自己成了泄密源](contrib/problem-为防止敏感字面量口令序列号内部项目名等进入代码仓在-ci.md) | mcp | "problem", "ci", "grep" | intake-4670
 - [FANUC 负载组下标不是工具号：SET_TOOL/MI02_TCH 的 N 不能拿去查 $PLST_GRP1](contrib/problem-从-fanuc.md) | fanuc | "problem", "fanuc", "plst" | intake-3875
 - [ROBOGUIDE 版本代差：备份与媒体版本不一致时变量恢复违例、FTP 550、虚拟机器人起不来](contrib/problem-从机器人-md.md) | mcp | "problem", "md", "roboguide" | intake-4522
 - [feishu CLI docx update 返回 write_error not found 但内容已写入：盲目重试会重复插入](contrib/problem-使用-feishu-climifeishu-docx-update修改飞书文档时命令返回-write.md) | feishu | "problem", "feishu", "cli" | intake-4084
@@ -593,7 +598,9 @@
 - [打包目录累积历史产物：发布脚本 find 到旧 zip 发了出去](contrib/problem-打包目录会累积历史版本的产物例如-dist-或-bundle-里同时躺着-app.md) | mcp | "problem", "dist", "bundle" | intake-3872
 - [封装 FANUC LS→TP 编译器：robot.ini 私有格式 + GUI 错误框静默挂死](contrib/problem-把-fanuc-官方-lstp-编译器winolpc-工具链-maketpexe封装进-windows.md) | fanuc | "problem", "fanuc", "ls" | intake-4267
 - [后台跑长脚本接 | tail：输出文件 0 字节，进度全丢](contrib/problem-把一个跑约-4-分钟的扫描脚本丢到后台执行顺手接了-tail.md) | mcp | "problem", "tail" | intake-3890
+- [UI 验收脚本一夜 13 条断言全红：不是回归，是测试数据被换了](contrib/problem-桌面应用的-ui-验收脚本一夜之间-13.md) | mcp | "problem", "ui", "ro" | intake-4659
 - [验收冒烟「无配置=零采集」假红：exe 同目录的 bootstrap 模板污染了环境](contrib/problem-桌面应用的验收冒烟里有一条无配置.md) | mcp | "problem", "device", "id" | intake-4605
+- [feishu docx create 长文档（400+ 块）降级纯文本：Markdown convert API failed](contrib/problem-用-feishu-cli-的-docx-create-f-markdown-写入长文档400-块时响应.md) | feishu | "problem", "feishu", "cli" | intake-4682
 - [飞书 doc_append 往 callout 里写嵌套列表：success 但 degrade_code=1010](contrib/problem-用飞书文档-apidoc-update-doc-appendmarkdown-形式向-callout.md) | feishu | "problem", "api", "doc" | intake-3945
 - [飞书 doc_update 的选择器粒度太粗：静默丢内容](contrib/problem-用飞书文档-mcp-的-doc-update.md) | feishu | "problem", "mcp", "doc" | intake-3968
 - [容量水位分级：Number(null)=0 让「取不到」被判成告急](contrib/problem-给剩余容量做水位分级剩余-10-判告急红25-判偏低黄取不到判.md) | mcp | "problem", "unknown", "tp" | intake-3889
@@ -721,6 +728,8 @@
 - [SwiftUI ScrollView scrollTo no effect unless .id() on each row and scrollTo called in onChange](contrib/swiftui-scrollview-scrollto-doesnt-scroll.md) | development | "swift", "swiftui", "scrollview", "scrollviewreader", "scrollto", "focusstate", "macos", "ios" | 
 - [SwiftUI 动态字体三个雷：lineLimit(1) 挡不住压缩、ContentSizeCategory 没有 isAccessibilitySize、大字号必须分级封顶](contrib/swiftui-动态字体三个雷linelimit1-挡不住压缩contentsizecategory-没有.md) | mobile | "swiftui", "ios", "dynamic-type", "line-limit", "fixed-size", "minimum-scale-factor", "layout" | intake-4147
 - [SwiftUI 里 Color.clear 不是「空占位」：会把整张卡片撑到屏幕高度](contrib/swiftui-里-colorclear-不是空占位会把整张卡片撑到屏幕高度.md) | mobile | "swiftui", "ios", "layout", "color-clear", "spacer", "hstack", "flexible-view", "geometry" | intake-4181
+- [FANUC DCS .dg 固定宽度解析：校准脚本报状态列非 OK=0，真语料却有数千 CHGD](contrib/symptom-解析工业固定宽度文本fanuc-dcs-dg-安全链表时校准脚本报状态列非-ok.md) | fanuc | "symptom", "fanuc", "dcs" | intake-4683
+- [Tauri 更新弹窗「去下载页」点了没反应：按钮在，打开外部浏览器失败](contrib/symptom.md) | mcp | "symptom", "tauri" | intake-4685
 - [TaskBounty payout POST succeeds but solver_readiness still fails](contrib/taskbounty-payout-api-ok-readiness-still-fail.md) | web3 | "taskbounty", "payout", "api", "readiness", "solana", "usdc" | uncledad96-glitch
 - [Tauri v1 reports command not found for a registered command when the JS invoke name uses the other convention](contrib/tauri-command-not-found-naming-convention.md) | frontend | "tauri", "invoke", "command-not-found", "rename-all", "snakecase", "camelcase", "ipc" | intake-1977
 - [Tauri v1 expects JS camelCase argument keys, so an invoke with snake_case fails as missing required key](contrib/tauri-v1-camelcase-vs-snakecase-command-args.md) | frontend | "tauri", "invoke", "ipc", "camelcase", "snakecase", "rename-all", "contract-test", "rust" | intake-3553
