@@ -1,0 +1,92 @@
+{
+  "name": "MisakaNet 故障记忆",
+  "description": "把 MisakaNet 公开故障教训库接进对话：报错、CI 失败、构建或工具崩溃之前，先查有没有别人已经踩过并写清修法的教训。四个查询工具匿名只读、只访问 misakanet.org，不需要凭证；misakanet_submit_intake 会在用户明确确认后，把一次故障或提问写成公开仓库的 GitHub issue（内容公开可见，提交前必须脱敏），misakanet_me_inbox 可回头查它的答复。装上后第一轮会有一条轻提示，每 20 轮提醒一次沉淀。",
+  "whenToUse": "遇到报错、异常、CI 失败、构建失败、工具崩溃或环境诡异行为时找我，先查这个坑是否已有公开教训；也想查某个技术栈、工具或平台的既往故障与修法时找我；用户之前提过问题、想知道维护者答没答时也找我。",
+  "tools": {
+    "misakanet_search": {
+      "description": "在 MisakaNet 公开教训库（https://misakanet.org/mcp）做一次匿名只读检索，返回按相关度排序的教训摘要：标题、问题摘要、白话摘要（summary_plain，可原样转述给用户）、领域、新鲜度、证据等级与得分。联网目标只有 misakanet.org，查询词会原样发给它；不写任何外部系统、不读写用户的本地文件（插件只用它自己的私有目录存一个随机客户端 id）、不需要凭证。先用它找候选，再用 misakanet_get_lesson 取全文。零命中时端点会自己判定这是「提问」还是「知识缺口」，并把建议与下一步 intake 参数一起返回——按它给的 kind 走，不要自己编。",
+      "parameters": {
+        "/properties/query": {
+          "description": "要检索的报错原文或关键词。写脱敏后的关键片段即可（如 ReadTimeoutError、pip install timeout、DCO sign-off failed），不要带密钥、令牌或个人信息。"
+        },
+        "/properties/domain": {
+          "description": "可选领域过滤，如 python、devops、network、feishu、rag、mcp、fanuc。拿不准就省略。"
+        },
+        "/properties/top": {
+          "description": "期望返回的条数，默认 5（托管端点可能按自己的上限截断）。宽泛扫描用 3–5，锁定方向后最多 20。"
+        },
+        "/properties/kind": {
+          "description": "结果类型过滤：all 全部 / lessons 只教训文件 / evidence 只带证据或高证据等级的结果 / related 只交叉引用与标签重叠的结果。省略时按查询意图自动判断。"
+        },
+        "/properties/detail": {
+          "description": "返回详细度：compact 最省上下文（默认）/ summary 追加领域、标签与修法线索 / full 直接返回完整 Markdown（仅在已锁定命中时用）。"
+        }
+      }
+    },
+    "misakanet_get_lesson": {
+      "description": "按教训 id 或仓库相对路径取一条 MisakaNet 公开教训的全文 Markdown（问题 / 根因 / 修法 / 验证），托管端点会截断到约 5000 字符。联网目标只有 misakanet.org；只读、无凭证、不写任何外部系统、不读写用户的本地文件。id 与 path 恰好给一个（path 优先）；找不到时按返回提示先调用 misakanet_search。",
+      "parameters": {
+        "/properties/id": {
+          "description": "教训 id，通常是文件名去掉 .md，如 auto-merge-ci-pipeline。与 path 二选一。"
+        },
+        "/properties/path": {
+          "description": "仓库相对路径，如 lessons/core/auto-merge-ci-pipeline.md。与 id 二选一，两者都给时以 path 为准。"
+        }
+      }
+    },
+    "misakanet_preflight": {
+      "description": "在执行高风险操作前做一次只读风险预检：把打算做的事描述给 MisakaNet，返回风险等级（low / medium / high）、命中的相关教训与具体的 guards 建议（先做什么再做什么）。适合 RAG 重建、批量导入、WSL/GPU 任务、迁移与批量改动之前。联网目标只有 misakanet.org；只读、无凭证、不写入任何外部系统、不读写用户的本地文件。",
+      "parameters": {
+        "/properties/intent": {
+          "description": "你打算做的操作的具体描述，如“用 ChromaDB 重建 RAG 索引”“批量导入 2000 条教训”。"
+        },
+        "/properties/context": {
+          "description": "可选环境描述，如“WSL, GPU 8GB”“Windows + PowerShell”。"
+        }
+      }
+    },
+    "misakanet_submit_intake": {
+      "description": "把一次没有现成教训覆盖的故障或一个求助问题交给 MisakaNet：在公开仓库 Ikalus1988/MisakaNet 建一个 intake issue，供维护者与其他 Agent 复用。联网目标只有 misakanet.org；problem 等字段会原样发给 misakanet.org 并**公开发布到 GitHub**，不写本地文件。**发出后不可撤回**：调用后会先在聊天里供出一张确认卡（列出将要公开的原文、目标与可见性、脱敏提醒），只有用户点「确认提交」才真正创建 issue，点「不提交」则什么都没发生——不要在用户确认前自行提交。仍然需要 user_confirmed=true（绝不自行推断为 true），提交前先脱敏掉密钥、令牌、内网地址与个人信息。kind 省略时由服务端自动判定（提问类会开成 [Question] issue 等待人工回答，故障类进维护者评审）。失败按三态区分：确定没发出去才说可以重试；不确定（可能已建 issue、只是回执没回来）不要重发，改用完全相同的 problem 文本再调一次（端点按内容去重），或用 misakanet_me_inbox 查。confirm 参数（card 默认 / direct）只决定用不用确认卡，不影响是否需要用户确认。返回 { intake_id, status, dedup_key, routing, poll_hint, redactions_applied, quality_score, receipt, answer?, converted? }。",
+      "parameters": {
+        "/properties/problem": {
+          "description": "这次故障或知识缺口的简短描述（必填）。写清现象与影响，别写业务机密。"
+        },
+        "/properties/kind": {
+          "description": "上报类型：missing_lesson 搜不到对应教训 / stale_lesson 找到但内容过期或不适用 / new_lesson_candidate 这次自己解决了一个尚无记录的问题 / question 这是个求助问题而非故障（会开成 [Question] issue 等维护者回答）/ proposal 计划或产品请求，明确不是故障报告（进决策队列，绝不会被转成 lesson）。不确定就省略，由服务端按内容自动判定——但计划类不会被自动判定，请显式传 proposal。"
+        },
+        "/properties/error": {
+          "description": "可选：脱敏后的关键报错原文。"
+        },
+        "/properties/what_tried": {
+          "description": "可选：故障前后已经尝试过的排查动作。"
+        },
+        "/properties/fix": {
+          "description": "可选：最后怎么解决的（若已知）。"
+        },
+        "/properties/verification": {
+          "description": "可选：怎么确认修好了（命令、复现步骤或观察到的现象）。"
+        },
+        "/properties/matched_lesson_id": {
+          "description": "可选：查到但没帮上忙的教训 id（stale_lesson 用）。"
+        },
+        "/properties/contributor": {
+          "description": "可选：贡献者署名（GitHub 用户名或邮箱），会写进 issue 正文用于归属。只在用户愿意署名时填。"
+        },
+        "/properties/user_confirmed": {
+          "description": "仅在用户明确要求把这次故障上报到 MisakaNet 公开仓库后才传 true；绝不能自行推断或默认传 true。"
+        }
+      }
+    },
+    "misakanet_me_inbox": {
+      "description": "查一次已提交上报的现状：维护者答没答、有没有已转成正式课程。传 intake_id（如 issue-4238 或 4238）或 dedup_key（8 位），二选一；不要拿 problem 原文重发来查（那是 submit_intake 的复查路径）。联网目标只有 misakanet.org；只读、无凭证、不写任何外部系统。端点只在提问表、课程库与去重库里查得到细节：proposal 类上报会回 status=unknown（查不到 ≠ 没发生），这时直接去 GitHub 看那条 issue。",
+      "parameters": {
+        "/properties/intake_id": {
+          "description": "上报时返回的 intake_id（如 issue-4238，或纯数字 4238）。与 dedup_key 二选一。"
+        },
+        "/properties/dedup_key": {
+          "description": "上报时返回的 8 位 dedup_key。与 intake_id 二选一。"
+        }
+      }
+    }
+  }
+}

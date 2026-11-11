@@ -1,0 +1,92 @@
+{
+  "name": "MisakaNet Failure Memory",
+  "description": "MisakaNet failure lessons in your chat: check them before re-debugging an error. Read-only queries to misakanet.org; submit_intake publishes a public GitHub issue (only after you confirm and redact), me_inbox reads answers back. Turn 1 shows a notice, every 20 turns a write-up reminder.",
+  "whenToUse": "Use it when an error, CI failure, build failure or tool crash shows up, to check whether a public lesson already exists; to look up past failures for a stack, tool or platform; or when the user asked something before and wants to know whether it was answered.",
+  "tools": {
+    "misakanet_search": {
+      "description": "Run one anonymous read-only search against the public MisakaNet lesson library (https://misakanet.org/mcp) and return ranked lesson summaries: title, problem excerpt, plain-language summary (summary_plain, safe to repeat to the user as-is), domain, freshness, evidence level and score. The only network target is misakanet.org and the query text is sent to it verbatim; nothing is written to external systems, the user's own files are never touched (the plugin keeps only a random client id in its own private directory), and no credential is used. Use it to shortlist candidates, then misakanet_get_lesson for the full text. On zero hits the endpoint itself decides whether this is a question or a knowledge gap and returns its suggestion plus the next intake arguments — follow the kind it gives instead of inventing one.",
+      "parameters": {
+        "/properties/query": {
+          "description": "The error text or keywords to look up. Redacted key fragments are enough (e.g. ReadTimeoutError, pip install timeout, DCO sign-off failed); never include secrets, tokens or personal data."
+        },
+        "/properties/domain": {
+          "description": "Optional domain filter, e.g. python, devops, network, feishu, rag, mcp, fanuc. Omit it when unsure."
+        },
+        "/properties/top": {
+          "description": "How many results to return, default 5 (the hosted endpoint may cap it with its own limit). Use 3–5 for a broad scan, up to 20 once the direction is clear."
+        },
+        "/properties/kind": {
+          "description": "Result type filter: all everything / lessons lesson files only / evidence only results carrying evidence or a high evidence level / related only cross-references and tag overlaps. Omit it to let the query intent decide."
+        },
+        "/properties/detail": {
+          "description": "Result detail level: compact saves the most context (default) / summary adds domain, tags and fix hints / full returns the complete Markdown (only once a hit is locked in)."
+        }
+      }
+    },
+    "misakanet_get_lesson": {
+      "description": "Fetch the full Markdown of one public MisakaNet lesson (problem / root cause / fix / verification) by lesson id or repository-relative path; the hosted endpoint truncates at about 5000 characters. The only network target is misakanet.org; read-only, no credential, nothing written to external systems, and the user's own files are never touched. Give exactly one of id or path (path wins when both are given); when it is not found, follow the returned hint and call misakanet_search first.",
+      "parameters": {
+        "/properties/id": {
+          "description": "Lesson id, usually the file name without .md, e.g. auto-merge-ci-pipeline. One of id or path."
+        },
+        "/properties/path": {
+          "description": "Repository-relative path, e.g. lessons/core/auto-merge-ci-pipeline.md. One of id or path; path takes precedence when both are supplied."
+        }
+      }
+    },
+    "misakanet_preflight": {
+      "description": "Run a read-only risk pre-check before a high-risk operation: describe what you are about to do and MisakaNet returns the risk level (low / medium / high), the lessons that matched, and concrete guards (what to do before what). Useful before RAG rebuilds, bulk imports, WSL/GPU jobs, migrations and large batch changes. The only network target is misakanet.org; read-only, no credential, nothing written to external systems, and the user's own files are never touched.",
+      "parameters": {
+        "/properties/intent": {
+          "description": "A concrete description of the operation you plan to run, e.g. \"rebuild the RAG index with ChromaDB\" or \"bulk import 2000 lessons\"."
+        },
+        "/properties/context": {
+          "description": "Optional environment description, e.g. \"WSL, GPU 8GB\" or \"Windows + PowerShell\"."
+        }
+      }
+    },
+    "misakanet_submit_intake": {
+      "description": "Hand a failure no existing lesson covers, or a help question, to MisakaNet: it opens an intake issue in the public repository Ikalus1988/MisakaNet. The only network target is misakanet.org; the fields are sent verbatim and **published publicly on GitHub**; nothing is written locally. **Publishing cannot be undone**, so the call first shows a confirmation card (the exact text, the target, a redaction reminder): only the user's click on \"Confirm\" creates the issue — never submit before the user confirms. It still needs user_confirmed=true (never infer it); redact tokens, keys, internal addresses and personal data first. Omit kind and the server decides. Failures are three-state: definitely not sent → safe to retry; uncertain (the issue may exist but the receipt was lost) → do not resend, call again with the identical problem text or look it up with misakanet_me_inbox. The confirm argument (card by default / direct) only picks whether the card is used; it never changes whether the user must confirm.",
+      "parameters": {
+        "/properties/problem": {
+          "description": "Short description of this failure or knowledge gap (required). State the symptom and the impact; keep business secrets out."
+        },
+        "/properties/kind": {
+          "description": "Intake type: missing_lesson no lesson matched / stale_lesson a lesson matched but is outdated or does not apply / new_lesson_candidate you solved a problem that has no record yet / question this is a help question rather than a failure (it becomes a [Question] issue awaiting a maintainer) / proposal a plan or product request that is explicitly not a failure report (it goes to a decision queue and is never converted to a lesson). Omit it when unsure and let the server decide from the content — a plan is not auto-detected, pass proposal explicitly."
+        },
+        "/properties/error": {
+          "description": "Optional: redacted key error text."
+        },
+        "/properties/what_tried": {
+          "description": "Optional: what was already tried while debugging."
+        },
+        "/properties/fix": {
+          "description": "Optional: how the problem was finally resolved (if known)."
+        },
+        "/properties/verification": {
+          "description": "Optional: how to confirm the fix works (command, reproduction steps or observed behaviour)."
+        },
+        "/properties/matched_lesson_id": {
+          "description": "Optional: id of the lesson that was checked but did not help (for stale_lesson)."
+        },
+        "/properties/contributor": {
+          "description": "Optional: contributor attribution (GitHub username or email), written into the issue body. Fill it in only when the user agrees to be credited."
+        },
+        "/properties/user_confirmed": {
+          "description": "Pass true only after the user explicitly asked to publish this failure to the MisakaNet public repository; never infer or default it to true."
+        }
+      }
+    },
+    "misakanet_me_inbox": {
+      "description": "Check one submitted report: whether a maintainer answered, and whether it became a lesson. Pass intake_id (e.g. issue-4238 or 4238) or dedup_key (8 characters), one of the two; do not re-post the original problem text to check it (that is submit_intake's re-check path). The only network target is misakanet.org; read-only, no credential, nothing written to external systems.The endpoint only finds details for questions, lessons and the dedup store: a proposal comes back as status=unknown (cannot be determined is not never happened) — look the issue up on GitHub.",
+      "parameters": {
+        "/properties/intake_id": {
+          "description": "The intake_id returned by the submission (e.g. issue-4238, or the plain number 4238). One of intake_id or dedup_key."
+        },
+        "/properties/dedup_key": {
+          "description": "The 8-character dedup_key returned by the submission. One of intake_id or dedup_key."
+        }
+      }
+    }
+  }
+}
