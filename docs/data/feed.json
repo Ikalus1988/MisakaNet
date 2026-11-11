@@ -1,9 +1,55 @@
 {
-  "generated_at": "2026-11-10T23:32:37.380086+00:00",
+  "generated_at": "2026-11-11T02:53:20.624448+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "feat(lessons): five lesson submissions from the 2026-11-09/10 queue",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4679",
+      "timestamp": "2026-11-11T02:53:10Z",
+      "source": "github"
+    },
+    {
+      "type": "lesson",
+      "title": "dsh-mnemon 新增记忆空间后全部空间消失：Provider 字段 scope 用错导致整批 body 加载中断",
+      "url": "lessons/contrib/dsh-mnemon-新增记忆空间后全部空间消失provider-字段-scope-用错导致整批-body.md",
+      "timestamp": "2026-11-11",
+      "domain": "mcp",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "关闭脚本的黑窗口会把 Start-Process 拉起的子进程一起杀掉",
+      "url": "lessons/contrib/关闭脚本的黑窗口会把-start-process-拉起的子进程一起杀掉.md",
+      "timestamp": "2026-11-11",
+      "domain": "devops",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "双击 .ps1 不会执行：交付\"双击运行\"的脚本给用户，可能一条都没跑",
+      "url": "lessons/contrib/双击-ps1-不会执行交付双击运行的脚本给用户可能一条都没跑.md",
+      "timestamp": "2026-11-11",
+      "domain": "devops",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "只在 cordis.patch.yml 里 insert 的客户端插件：host 半能跑，浏览器侧 tab 永远不出现",
+      "url": "lessons/contrib/只在-cordispatchyml-里-insert-的客户端插件host-半能跑浏览器侧-tab.md",
+      "timestamp": "2026-11-11",
+      "domain": "devops",
+      "source": "lessons"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4678",
+      "timestamp": "2026-11-10T23:49:49Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "chore(data): sync lessons.json + refresh feed",
@@ -26,57 +72,11 @@
       "source": "github"
     },
     {
-      "type": "merged_pr",
-      "title": "feat(cli): misakanet tombstone validate|draft — the local half of the crash pipeline",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4668",
-      "timestamp": "2026-11-10T07:40:31Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat(cindy-plugin): sync the source of truth to the market-reviewed 1.6.0",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4662",
-      "timestamp": "2026-11-10T05:11:24Z",
-      "source": "github"
-    },
-    {
       "type": "lesson",
-      "title": "A cross-platform recovery CLI emitted a POSIX-quoted executable and JSON argumen",
-      "url": "lessons/contrib/a-cross-platform-recovery-cli-emitted-a-posix-quoted.md",
-      "timestamp": "2026-11-09",
-      "domain": "windows",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "A reviewed Python source bundle had identical file bytes on Windows and POSIX bu",
-      "url": "lessons/contrib/a-reviewed-python-source-bundle-had-identical-file-bytes-on.md",
-      "timestamp": "2026-11-09",
-      "domain": "windows",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "A worksheet patch accepted XFE1 and produced an Excel workbook whose column exce",
-      "url": "lessons/contrib/a-worksheet-patch-accepted-xfe1-and-produced-an-excel.md",
-      "timestamp": "2026-11-09",
-      "domain": "dsh",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "An instruction-policy installer succeeds in writing a merged file but its immedi",
-      "url": "lessons/contrib/an-instruction-policy-installer-succeeds-in-writing-a.md",
-      "timestamp": "2026-11-09",
-      "domain": "mcp",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "Clash Verge Rev 2.5.9 里「全局模式」代理页与「规则模式」界面完全一样（同样的策略组卡片），且在全局模式下点击策略组换节点，实际出口 IP",
-      "url": "lessons/contrib/clash-verge-rev-259.md",
-      "timestamp": "2026-11-09",
-      "domain": "dsh",
+      "title": "cordis.patch.yml 里 `- id:` 指向不存在的条目会被静默丢弃：配置从未生效",
+      "url": "lessons/contrib/cordis-patch-里-id-指向不存在的行会被静默丢弃配置从未生效.md",
+      "timestamp": "2026-11-10",
+      "domain": "devops",
       "source": "lessons"
     },
     {
