@@ -9494,9 +9494,14 @@ export default {
              WHERE event='intent' AND created_at >= datetime('now','-7 days')
              GROUP BY query ORDER BY n DESC LIMIT 10`
           ).all(),
+          // Day-aligned window (#4640). `datetime('now','-7 days')` is a rolling timestamp, so the
+          // oldest bucket held only the hours after `now-7d` and shrank every hour — a series
+          // published that way drifts downward on its own, and a reader sees a decline that is
+          // partly SQL. `datetime(date('now','-7 days'))` starts at midnight, so the oldest day is
+          // whole and only the newest day is partial (which the heartbeat already caveats).
           d1.prepare(
             `SELECT date(created_at) AS day, COUNT(*) AS n FROM lesson_usage
-             WHERE created_at >= datetime('now','-7 days')
+             WHERE created_at >= datetime(date('now','-7 days'))
              GROUP BY day ORDER BY day`
           ).all(),
         ]);

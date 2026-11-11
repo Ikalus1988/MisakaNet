@@ -463,16 +463,17 @@ def pulse_line(analytics: dict | None, day: str, errors: dict[str, str]) -> list
                 f"({errors.get('analytics', 'no reason recorded')}). This line is not a zero."]
     series = analytics.get("daily_requests") or []
     if not series:
-        return [f"**pulse** — `/api/analytics` recorded no `lesson_usage` rows in its 7-day "
-                f"window, so there is no trajectory to draw for {day}."]
+        return [f"**pulse** — `/api/analytics` recorded no `lesson_usage` rows in its day-aligned "
+                f"7-day window, so there is no trajectory to draw for {day}."]
     today = next((row for row in series if row.get("day") == day), None)
     history = " · ".join(str(row.get("count")) for row in series)
     if today is None:
-        return [f"**pulse** — no `lesson_usage` row for {day} itself; the API's window reads "
-                f"{history} rows per day, oldest first (a day with no row is not a day with zero "
-                f"rows)."]
-    return [f"**pulse** — {today.get('count')} `lesson_usage` rows on {day}; the API's rolling "
-            f"window reads {history} rows per day, oldest first."]
+        return [f"**pulse** — no `lesson_usage` row for {day} itself; the API's day-aligned window "
+                f"(UTC, oldest day complete) reads {history} rows per day, oldest first (a day with "
+                f"no row is not a day with zero rows)."]
+    return [f"**pulse** — {today.get('count')} `lesson_usage` rows on {day}; the API's day-aligned "
+            f"window (UTC) reads {history} rows per day, oldest first — the oldest day is complete "
+            f"and {day} itself is partial."]
 
 
 def panel_who(counters, day: str, errors: dict[str, str],
