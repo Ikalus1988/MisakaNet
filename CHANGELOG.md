@@ -7,6 +7,13 @@ All notable changes to the Misaka Network project are documented here.
 
 ---
 
+## [3.10.1](https://github.com/Ikalus1988/MisakaNet/compare/v3.10.0...v3.10.1) (2026-11-11)
+
+
+### Bug Fixes
+
+* **analytics:** the daily series uses a day-aligned window ([#4640](https://github.com/Ikalus1988/MisakaNet/issues/4640) D2) ([#4684](https://github.com/Ikalus1988/MisakaNet/issues/4684)) ([539f787](https://github.com/Ikalus1988/MisakaNet/commit/539f787f872b2da64d0cd9b2322da73812b343fb))
+
 ## [3.10.0](https://github.com/Ikalus1988/MisakaNet/compare/v3.9.0...v3.10.0) (2026-11-11)
 
 
