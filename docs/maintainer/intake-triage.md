@@ -38,6 +38,21 @@
 > **人**的评论：每条 intake 都会在几秒内收到 bot 的分诊评论，把它算进来的话，自动化提交的提案
 > 永远进不了这个队列。
 
+## 1.5 哪个标签代表什么（2026-11-11 审计）
+
+队列由标签拼出来，标错一个就会把工作送进错的队列。审计脚本：`python3 scripts/label_audit.py --check`（有误标即退出 1）。当前口径：
+
+| 标签 | 含义 | 不是 |
+|---|---|---|
+| `mcp-intake` | 语料 intake（`[Intake]` issue） | 产品/决策事项 |
+| `intake` | 历史别名，**190 条上与 `mcp-intake` 同时存在**；脚本一律按 `mcp-intake` 查 | 独立信号 |
+| `needs-human-review` | **可写 lesson 的语料素材**，等维护者处理 | 产品/路线图 issue 的"待看"标记 |
+| `needs-answer` | 问句在等回答（2026-10-17 起；问句不再用 `needs-human-review`） | 故障 intake |
+| `decision` | 需要 owner 拍板；**晋级后不再进语料队列**（`convert_intake_batch.is_convertible` 已跳过它们） | 可转换的 lesson 素材 |
+| `pending-review` / `auto-rejected` | 自动评审的两个出口 | |
+
+2026-11-11 审计发现并处理：5 条产品类 issue 误带 `needs-human-review`（#4648、#3645、#3644、#3508、#2416）；2 条 `[Intake]` 晋级为 `decision`（#4639、#4629）——转换器现在显式跳过 `decision`，不再可能把决策当建议发布。
+
 ## 2. 处置动作
 
 - **修复类**：开 PR（引用 issue），合并后 issue 由 `Fixes #N` 自动关——**自动关不等于完成**，见 §3。

@@ -60,15 +60,27 @@ def infer_domain(text: str) -> str:
     return ""
 
 
+def is_convertible(row: dict) -> bool:
+    """An intake is convertible when it is an `[Intake]` issue that did not escalate to a decision.
+
+    Some intakes become `decision` issues (2026-11-10 label audit: #4639 and #4629 carry both
+    `mcp-intake` and `decision`). They are still intakes by origin but their content is a question
+    for the owner, not a lesson: converting one would publish a decision as advice. `decision`
+    therefore wins over the intake label here.
+    """
+    labels = {label.get("name") for label in (row.get("labels") or []) if isinstance(label, dict)}
+    return str(row.get("title", "")).startswith("[Intake]") and "decision" not in labels
+
+
 def open_intakes(limit: int = 300) -> list[dict]:
     out = subprocess.run(
         ["gh", "issue", "list", "--repo", "Ikalus1988/MisakaNet", "--state", "open",
          "--label", "mcp-intake", "--limit", str(limit),
-         "--json", "number,title,body"],
+         "--json", "number,title,body,labels"],
         capture_output=True, text=True)
     if out.returncode != 0:
         raise SystemExit(f"gh issue list failed: {out.stderr[:300]}")
-    return [row for row in json.loads(out.stdout or "[]") if str(row.get("title", "")).startswith("[Intake]")]
+    return [row for row in json.loads(out.stdout or "[]") if is_convertible(row)]
 
 
 def main(argv: list[str] | None = None) -> int:
