@@ -114,6 +114,16 @@ npx wrangler d1 execute misakanet-ops --remote --command \
 心跳（`scripts/heartbeat_report.py`）与复发报告（`scripts/recurrence_report.py`）都按这条口径读 ops，
 读数旁带表龄；心跳在表超过两天没写入时会在三块面板之前打一条 ⚠️ banner。
 
+**2026-11-12 的实际处置**（#4696，用 CF 凭据实测）：主库 `counters` 的最后写入是 `2026-10-27 01:22`
+（`traffic`）/`01:04`（`gap`），ops 的是 `2026-11-12 06:06` —— 冻结确认。两份都先归档到 R2
+`misakanet-dataset/archive/2026-11-12/`（`main-counters-2026-11-12.sql` 20,808 行、
+`main-search_signals-2026-11-12.sql` 7,621 行），然后：
+
+- 主库 `search_signals` **DROP**（worker 会在它真正写入的那个库上惰性建表，所以没有副作用）；
+- 主库 `counters` **清空但保留**：`workers/d1/schema.sql` 仍声明它，作为**没有 `MISAKANET_OPS_D1`
+  绑定**的部署的兜底表（`opsD1(env)` 会回落到主库）。删表会被下一次 schema apply 重建，删数据才是
+  真正的收口。**在这套部署里这张表再出现行就是有读写点回落了**，是个"要查"的信号，不是常态。
+
 ### 3.4 延迟直方图（#4052）
 
 端点 `/api/search-signals/stats` 的响应多了一个 `latency` 对象：
@@ -186,8 +196,9 @@ npx wrangler d1 execute misakanet-ops --remote --command \
 2. **完整回滚**：`git revert <commit>` 后 push 到 `main`。worker 改动 push `main` 即自动部署
    （`.github/workflows/deploy-worker.yml`），不需要手工 `wrangler deploy`；**部署是异步的**，回滚后要验证线上。
    回滚后 `/api/search-signals/stats` 路由消失，脚本会报 404（"测不出"），不是打印 0%。
-3. **数据**：回滚不动表，留下的行不影响 worker。**权威副本在 `misakanet-ops`**（见 §3.3），主库那份是
-   冻结副本、待归档后删除（#4696）。要清就
+3. **数据**：回滚不动表，留下的行不影响 worker。**权威副本在 `misakanet-ops`**（见 §3.3）。主库的
+   冻结副本已在 2026-11-12 归档到 R2 并清空（`search_signals` 已 DROP，`counters` 保留为空表作
+   no-binding 兜底，见 §3.3 末段）。要清 ops 里的数据就
    `npx wrangler d1 execute misakanet-ops --remote --command "DROP TABLE IF EXISTS search_signals"`
    —— 先 `wrangler d1 export` 归档，删的是生产遥测，不是测试数据。
 

@@ -128,6 +128,14 @@ CREATE INDEX IF NOT EXISTS idx_questions_dedup ON questions(dedup_hash);
 -- Retention: rows are small and periodic. `scripts/prune_counters.py` (issue #1649)
 -- is not required for correctness; anything older than the longest window (30 days for
 -- traffic monthly) can be deleted at leisure.
+--
+-- **Which database**: production writes counters to `misakanet-ops` (binding
+-- `MISAKANET_OPS_D1`), and every reader reads it there. This DDL is applied to the main
+-- database, so it is the **fallback home** for a deployment that has no ops binding —
+-- `opsD1(env)` in the worker falls back to the main binding, and in that deployment this
+-- table is the live one. The main database's copy in *this* deployment was archived to R2
+-- and emptied on 2026-11-12 (#4696); seeing rows here again means a reader or a writer
+-- fell back, which is a finding, not routine.
 CREATE TABLE IF NOT EXISTS counters (
   scope      TEXT NOT NULL,   -- rate_read | rate_feedback | rate_intake | rate_connect | signal_rate | traffic | traffic_monthly | gap
   bucket     TEXT NOT NULL,   -- ip | ip:minute | class | query
