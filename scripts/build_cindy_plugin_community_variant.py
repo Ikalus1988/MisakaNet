@@ -30,7 +30,7 @@ COMMUNITY_SRC = Path(
          r"/d08837fa-53b2-4596-8e37-41e02fc7d03f/misakanet-cindy-plugin"
 )
 TARGET = REPO / ".cindy-plugin-community"
-VERSION = "1.5.8"
+VERSION = "1.5.9"
 
 
 def sub(text: str, old: str, new: str, count: int = 1, label: str = "") -> str:
@@ -265,6 +265,67 @@ def build_main() -> None:
         "  const rawKind = rawIntake && rawIntake.args ? asString(rawIntake.args.kind) : '';",
         1,
         "D13 read the routing kind",
+    )
+
+    # D14 — a submission that never left the machine reports `not_sent`: the irreversible tool
+    # promises three states on every failure path, and a pre-flight rejection is certainly one.
+    out = sub(
+        out,
+        "          'misakanet_submit_intake 会把内容公开发布到 MisakaNet 的 GitHub 仓库。只有用户明确要求上报这次故障或提问后，才带 user_confirmed=true 重新调用。',\n        );",
+        "          'misakanet_submit_intake 会把内容公开发布到 MisakaNet 的 GitHub 仓库。只有用户明确要求上报这次故障或提问后，才带 user_confirmed=true 重新调用。',\n"
+        "          'not_sent',\n        );",
+        1,
+        "D14 CONFIRM_REQUIRED reports not_sent",
+    )
+    out = sub(
+        out,
+        "return await fail(callId, 'MISSING_PROBLEM', 'misakanet_submit_intake 需要 problem：用一句话说清这次故障的现象与影响（或把要问的问题写清楚）。');",
+        "return await fail(callId, 'MISSING_PROBLEM', 'misakanet_submit_intake 需要 problem：用一句话说清这次故障的现象与影响（或把要问的问题写清楚）。', 'not_sent');",
+        1,
+        "D14 MISSING_PROBLEM reports not_sent",
+    )
+
+    # D15 — the tool name is ours to decide, not the endpoint's: a tampered response must not be
+    # able to point the agent at another installed tool.
+    out = sub(
+        out,
+        "        tool: asString(rawIntake.tool) || 'misakanet_submit_intake',",
+        "        tool: 'misakanet_submit_intake',",
+        1,
+        "D15 the tool name is pinned",
+    )
+
+    # D16 — the tracked session list must stay bounded: every session used to stay forever and
+    # every turn rewrote the whole state file, so the file and the per-turn I/O grew without
+    # limit until the host's private-file limit took the reminder progress with them.
+    out = sub(
+        out,
+        "async function notify(text, tone) {",
+        "const MAX_TRACKED_SESSIONS = 20;\n"
+        "\n"
+        "function pruneSessions(state) {\n"
+        "  const entries = Object.entries(state.sessions || {});\n"
+        "  if (entries.length <= MAX_TRACKED_SESSIONS) return;\n"
+        "  // 最近更新的留下；没有 updatedAt 的（老版本写的）算最旧。\n"
+        "  entries.sort((a, b) => (Number(b[1] && b[1].updatedAt) || 0) - (Number(a[1] && a[1].updatedAt) || 0));\n"
+        "  for (const [key] of entries.slice(MAX_TRACKED_SESSIONS)) {\n"
+        "    delete state.sessions[key];\n"
+        "  }\n"
+        "}\n"
+        "\n"
+        "async function notify(text, tone) {",
+        1,
+        "D16 session pruning helper",
+    )
+    out = sub(
+        out,
+        "  state.sessions[sessionId] = session;\n  await writeCheckpointState(state);",
+        "  session.updatedAt = Date.now();\n"
+        "  state.sessions[sessionId] = session;\n"
+        "  pruneSessions(state);\n"
+        "  await writeCheckpointState(state);",
+        1,
+        "D16 prune before writing",
     )
 
     # The version moves with the manifest.

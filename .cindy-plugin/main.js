@@ -389,7 +389,8 @@ function shapeSearch(payload, args) {
   const rawKind = rawIntake && rawIntake.args ? asString(rawIntake.args.kind) : '';
   const intake = rawIntake
     ? {
-        tool: asString(rawIntake.tool) || 'misakanet_submit_intake',
+        // 工具名固定，不由远端挑：否则一个被篡改的端点可以让 Agent 去调用另一个已安装的工具。
+        tool: 'misakanet_submit_intake',
         args: Object.assign(rawKind ? { kind: rawKind } : {}, { source: 'cindy' }),
       }
     : undefined;
@@ -653,6 +654,21 @@ async function writeCheckpointState(state) {
   }
 }
 
+/* 会话状态只用于提醒节奏，本地存着即可，但必须有上限：
+ * 长期使用会不断新增 sessionId，而每一轮都要把整份状态重新序列化写回——不淘汰的话，
+ * 状态文件与每轮 I/O 会无上限增长，最终撞上宿主的私有文件上限，连跨重启的提醒进度也一起丢掉。 */
+const MAX_TRACKED_SESSIONS = 20;
+
+function pruneSessions(state) {
+  const entries = Object.entries(state.sessions || {});
+  if (entries.length <= MAX_TRACKED_SESSIONS) return;
+  // 最近更新的留下；没有 updatedAt 的（老版本写的）算最旧。
+  entries.sort((a, b) => (Number(b[1] && b[1].updatedAt) || 0) - (Number(a[1] && a[1].updatedAt) || 0));
+  for (const [key] of entries.slice(MAX_TRACKED_SESSIONS)) {
+    delete state.sessions[key];
+  }
+}
+
 async function notify(text, tone) {
   try {
     await cindy.send({ type: 'notify', text, tone: tone || 'info' });
@@ -673,7 +689,9 @@ async function handleTurnEnd(msg) {
   const turns = session.turns;
   const firstTurn = !session.announced;
   if (firstTurn) session.announced = true;
+  session.updatedAt = Date.now();
   state.sessions[sessionId] = session;
+  pruneSessions(state);
   await writeCheckpointState(state);
 
   if (firstTurn) {
@@ -726,14 +744,23 @@ async function handleToolCall(msg) {
 
     if (tool === TOOLS.misakanet_submit_intake) {
       if (args.user_confirmed !== true) {
+        // 这条失败发生在任何 HTTP 请求之前：确定没有发出去，所以交付态是 not_sent——
+        // 外发工具的每条失败路径都要在三态里有位置，调用方才知道能不能重试。
         return await fail(
           callId,
           'CONFIRM_REQUIRED',
           'misakanet_submit_intake 会把内容公开发布到 MisakaNet 的 GitHub 仓库。只有用户明确要求上报这次故障或提问后，才带 user_confirmed=true 重新调用。',
+          'not_sent',
         );
       }
       if (!asString(args.problem).trim()) {
-        return await fail(callId, 'MISSING_PROBLEM', 'misakanet_submit_intake 需要 problem：用一句话说清这次故障的现象与影响（或把要问的问题写清楚）。');
+        // 同上：请求根本没发出去，交付态是 not_sent。
+        return await fail(
+          callId,
+          'MISSING_PROBLEM',
+          'misakanet_submit_intake 需要 problem：用一句话说清这次故障的现象与影响（或把要问的问题写清楚）。',
+          'not_sent',
+        );
       }
       const intakeArgs = pickArgs(args, INTAKE_ARGS);
       // kind 省略时交给服务端自动判定（提问类会被重路由成 question）。

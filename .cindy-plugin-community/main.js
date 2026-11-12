@@ -21,7 +21,7 @@ const FETCH_TIMEOUT_MS = 45000;
 // 它按不可逆外发处理，不确定态只能提示先核对远端状态。
 const READ_TIMEOUT_MS = 20000;
 const READ_RETRY_BACKOFF_MS = 400;
-const PLUGIN_VERSION = '1.5.8';
+const PLUGIN_VERSION = '1.5.9';
 
 /* 客户端标识：每台机器一个稳定 id。
  * 端点会把 X-MisakaNet-Client salt-hash 进 search_signals.client_hint，而 client_hint 是
@@ -587,7 +587,7 @@ function shapeSearch(payload, args) {
   const rawKind = rawIntake && rawIntake.args ? asString(rawIntake.args.kind) : '';
   const intake = rawIntake
     ? {
-        tool: asString(rawIntake.tool) || 'misakanet_submit_intake',
+        tool: 'misakanet_submit_intake',
         args: Object.assign(rawKind ? { kind: rawKind } : {}, { source: 'cindy' }),
       }
     : undefined;
@@ -847,6 +847,18 @@ async function writeCheckpointState(state) {
   }
 }
 
+const MAX_TRACKED_SESSIONS = 20;
+
+function pruneSessions(state) {
+  const entries = Object.entries(state.sessions || {});
+  if (entries.length <= MAX_TRACKED_SESSIONS) return;
+  // 最近更新的留下；没有 updatedAt 的（老版本写的）算最旧。
+  entries.sort((a, b) => (Number(b[1] && b[1].updatedAt) || 0) - (Number(a[1] && a[1].updatedAt) || 0));
+  for (const [key] of entries.slice(MAX_TRACKED_SESSIONS)) {
+    delete state.sessions[key];
+  }
+}
+
 async function notify(text, tone) {
   try {
     await cindy.send({ type: 'notify', text, tone: tone || 'info' });
@@ -867,7 +879,9 @@ async function handleTurnEnd(msg) {
   const turns = session.turns;
   const firstTurn = !session.announced;
   if (firstTurn) session.announced = true;
+  session.updatedAt = Date.now();
   state.sessions[sessionId] = session;
+  pruneSessions(state);
   await writeCheckpointState(state);
 
   if (firstTurn) {
@@ -924,10 +938,11 @@ async function handleToolCall(msg) {
           callId,
           'CONFIRM_REQUIRED',
           'misakanet_submit_intake 会把内容公开发布到 MisakaNet 的 GitHub 仓库。只有用户明确要求上报这次故障或提问后，才带 user_confirmed=true 重新调用。',
+          'not_sent',
         );
       }
       if (!asString(args.problem).trim()) {
-        return await fail(callId, 'MISSING_PROBLEM', 'misakanet_submit_intake 需要 problem：用一句话说清这次故障的现象与影响（或把要问的问题写清楚）。');
+        return await fail(callId, 'MISSING_PROBLEM', 'misakanet_submit_intake 需要 problem：用一句话说清这次故障的现象与影响（或把要问的问题写清楚）。', 'not_sent');
       }
       const intakeArgs = pickArgs(args, INTAKE_ARGS);
       // kind 省略时交给服务端自动判定（提问类会被重路由成 question）。
