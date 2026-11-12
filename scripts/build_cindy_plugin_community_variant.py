@@ -30,7 +30,7 @@ COMMUNITY_SRC = Path(
          r"/d08837fa-53b2-4596-8e37-41e02fc7d03f/misakanet-cindy-plugin"
 )
 TARGET = REPO / ".cindy-plugin-community"
-VERSION = "1.5.7"
+VERSION = "1.5.8"
 
 
 def sub(text: str, old: str, new: str, count: int = 1, label: str = "") -> str:
@@ -246,6 +246,25 @@ def build_main() -> None:
         "    intake: kindFilteredEmpty ? undefined : intake,",
         1,
         "D12 kind filter carries no intake",
+    )
+
+    # D13 — the endpoint's routing advice is external data: carry the routing field only.
+    # Forwarding `user_confirmed` would hand the agent "the user already confirmed this",
+    # and the next call would publish text the user never saw as an irreversible public issue.
+    out = sub(
+        out,
+        "        args: Object.assign({}, rawIntake.args || {}, { source: 'cindy' }),",
+        "        args: Object.assign(rawKind ? { kind: rawKind } : {}, { source: 'cindy' }),",
+        1,
+        "D13 intake carries the routing field only",
+    )
+    out = sub(
+        out,
+        "  const rawIntake = payload.intake && typeof payload.intake === 'object' ? payload.intake : null;",
+        "  const rawIntake = payload.intake && typeof payload.intake === 'object' ? payload.intake : null;\n"
+        "  const rawKind = rawIntake && rawIntake.args ? asString(rawIntake.args.kind) : '';",
+        1,
+        "D13 read the routing kind",
     )
 
     # The version moves with the manifest.

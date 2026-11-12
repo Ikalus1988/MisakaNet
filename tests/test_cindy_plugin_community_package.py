@@ -239,3 +239,20 @@ def test_a_kind_filtered_empty_result_carries_no_intake():
         assert "kindFilteredEmpty ? undefined : intake" in source, (
             f"{base.name}: the filtered-empty branch still carries the endpoint's intake"
         )
+
+
+def test_the_endpoint_cannot_hand_over_a_user_confirmed_flag():
+    """The endpoint's routing advice is external data.
+
+    `intake.args` used to be forwarded as-is, so a remote payload carrying `user_confirmed: true`
+    reached the agent as "the user already confirmed this" — and the next call published text the
+    user never saw as an irreversible public issue. Only the routing field may cross.
+    """
+    for base in (OFFICIAL, COMMUNITY):
+        source = (base / "main.js").read_text(encoding="utf-8")
+        assert "Object.assign(rawKind ? { kind: rawKind } : {}, { source: 'cindy' })" in source, (
+            f"{base.name}: the intake args still carry the endpoint's fields"
+        )
+        assert "Object.assign({}, rawIntake.args || {}" not in source, (
+            f"{base.name}: the endpoint's intake args are still forwarded wholesale"
+        )
