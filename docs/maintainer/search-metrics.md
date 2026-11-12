@@ -88,13 +88,31 @@ GET https://misakanet.org/api/search-signals/stats?days=7
 - 首次检索记录之前表还不存在，端点回 `rows: []`（200，不是 502）—— 这是"还没有样本"，不是故障。
 - 没有绑定 D1 时回 `503 {"error":"D1 not configured"}`。
 
-### 3.3 直接查 D1（维护者本地）
+### 3.3 直接查 D1（维护者本地）：读 `misakanet-ops`，不要读主库
+
+worker 通过 `opsD1(env)`（`MISAKANET_OPS_D1` → `misakanet-ops`）写 `search_signals` **和** `counters`。
+主库里也有两张同名表，它们是**冻结副本**：`search_signals` 停在 2026-10-26 16:27，`counters` 停在
+2026-10-27 凌晨。读主库那两张**不会报错** —— 它只会安静地给出旧数或空结果，而面板会把"空表"
+说成"这天没有流量"（#4696 就是这么找到的：同一天的 funnel 报 439 次 register，panel 1 却说
+"no traffic-class rows"）。
 
 ```bash
-npx wrangler d1 execute misakanet-db --remote --command \
+npx wrangler d1 execute misakanet-ops --remote --command \
   "SELECT solved, COUNT(*) FROM search_signals \
    WHERE created_at >= datetime('now','-7 days') GROUP BY solved"
 ```
+
+规则（写在这里，不靠记忆）：
+
+1. **`search_signals` / `counters` 的权威副本在 `misakanet-ops`**；`lesson_usage` 与课程表在主库
+   `misakanet-db`，两边不要混。
+2. 任何读这两张表的量，**同时打印表龄**（`MAX(created_at)` / `MAX(updated_at)`）。读对库也可能
+   遇到"表还在、但没人写了"——没有自检的话，两种情况都会安静地报出一个正常的数字。
+3. 新加读点时先问"worker 写的是哪个库"，再写 `wrangler d1 execute <db>`；
+   `tests/test_heartbeat_report.py` 与 `tests/test_recurrence_report.py` 各有一条测试钉住库名。
+
+心跳（`scripts/heartbeat_report.py`）与复发报告（`scripts/recurrence_report.py`）都按这条口径读 ops，
+读数旁带表龄；心跳在表超过两天没写入时会在三块面板之前打一条 ⚠️ banner。
 
 ### 3.4 延迟直方图（#4052）
 
@@ -168,8 +186,10 @@ npx wrangler d1 execute misakanet-db --remote --command \
 2. **完整回滚**：`git revert <commit>` 后 push 到 `main`。worker 改动 push `main` 即自动部署
    （`.github/workflows/deploy-worker.yml`），不需要手工 `wrangler deploy`；**部署是异步的**，回滚后要验证线上。
    回滚后 `/api/search-signals/stats` 路由消失，脚本会报 404（"测不出"），不是打印 0%。
-3. **数据**：回滚不动表，留下的行不影响 worker；要清就
-   `npx wrangler d1 execute misakanet-db --remote --command "DROP TABLE IF EXISTS search_signals"`。
+3. **数据**：回滚不动表，留下的行不影响 worker。**权威副本在 `misakanet-ops`**（见 §3.3），主库那份是
+   冻结副本、待归档后删除（#4696）。要清就
+   `npx wrangler d1 execute misakanet-ops --remote --command "DROP TABLE IF EXISTS search_signals"`
+   —— 先 `wrangler d1 export` 归档，删的是生产遥测，不是测试数据。
 
 ## 7. 已知局限 / 待办
 
