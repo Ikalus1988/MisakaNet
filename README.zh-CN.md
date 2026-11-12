@@ -127,8 +127,9 @@ MisakaNet 只回答它已经索引过的失败。没有命中时，返回的是 
 
 - **会动的数字是徽章**：Lessons 徽章读 `data/badges/lessons.json`，由 `update-badges.yml` 重新生成——
   可能落后一次运行，但永远不会是手写总数。
-- **证据阶梯的顶端是空的，这页如实写着**：`E4` 需要观测（两个不同客户端真的检索到同一篇），语料目前
-  一个都没有（[分布](docs/trust-semantics.md)，由 CI 重新生成并校验）。
+- **证据阶梯的顶端是「观测」不是「声明」**：`E4` 需要观测——两个不同客户端真的检索到同一篇——所以任何
+  课程文件都写不了它：语料里的声明数是 0（[声明分布](docs/trust-semantics.md)，由 CI 重新生成并校验），
+  真正存在的数字来自 worker 每天读 `search_signals`，由[心跳](https://github.com/Ikalus1988/MisakaNet/issues/3471)公开。
 - **检索是 BM25，匹配词不匹配语义**：用词料里没见过的词汇描述失败就是未命中，调检索器救不了语料缺口——
   所以未命中返回 `no_match` 加 intake，而不是空白页。
 - **报料速度高于分诊速度**：intake 队列是诚实的瓶颈。
@@ -199,6 +200,10 @@ with_lesson hit rate (per run date)
 
 **2. 复用一条 lesson，留下痕迹。** "这有用"这一票记为 `E3` 提示，不冒充证明。真正的证明更安静：
 你的检索会被匿名计为"又一个不同客户端用过这篇"。
+
+**3. 翻译这一页。** README 现在有三种语言；第四种只差一个合并的 PR——公开的
+[i18n 任务](https://github.com/Ikalus1988/MisakaNet/issues?q=is%3Aissue+is%3Aopen+label%3Ai18n)
+里写好了验收标准。
 
 **你得到的回报是署名**：lesson 在 frontmatter 里引用产生它的 intake（`source:`、`provenance.issue:`），
 管线可以出一张写明 lesson 与证据等级的回执。
