@@ -36,6 +36,13 @@ def test_two_labels_for_the_same_axis_are_reported():
     assert "intake / mcp-intake" in result["duplicate_aliases"]
 
 
+def test_a_needs_info_waiting_on_a_reporter_is_corpus_only():
+    """`needs-info` (2026-11-12) marks an intake that is waiting for its Root Cause, so a product
+    issue carrying it is the same misfile as a `needs-human-review` one."""
+    assert label_audit.audit([issue(7, "needs-info", "scope:repo")])["leaks"] == [7]
+    assert label_audit.audit([issue(8, "mcp-intake", "needs-info")])["leaks"] == []
+
+
 def test_an_approval_watch_tracker_is_not_a_misfile():
     """`approval-watch.yml` writes `needs-human-review` to mean "a human must approve a run"."""
     result = label_audit.audit([issue(6, "needs-human-review", "approval-watch", "needs-ac")])
