@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-11-12T00:50:52.713765+00:00",
+  "generated_at": "2026-11-12T11:29:59.841947+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 12,
   "items": [
     {
       "type": "merged_pr",
-      "title": "feat(cindy-plugin): 社区通道变体入仓——官方源 + 两项社区能力，双向漂移收口",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4698",
-      "timestamp": "2026-11-11T17:42:59Z",
+      "title": "chore(measurement): the TTFB benchmark names itself, so the funnel can subtract it",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4743",
+      "timestamp": "2026-11-12T10:49:30Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "docs(handoff): 第 32 卷 — 3.9.0 – 3.10.1, cindy 1.6.0 sync, and the measurement round",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4700",
-      "timestamp": "2026-11-11T17:38:19Z",
+      "title": "fix(cindy-plugin): 发送前失败报 not_sent、工具名固定、会话状态有上限（社区 1.5.9）",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4740",
+      "timestamp": "2026-11-12T09:50:28Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4701",
-      "timestamp": "2026-11-11T17:35:51Z",
+      "title": "chore(main): release 3.11.3",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4738",
+      "timestamp": "2026-11-12T09:28:27Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(triage): the label audit allows approval-watch trackers",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4699",
-      "timestamp": "2026-11-11T17:32:03Z",
+      "title": "fix(cindy-plugin): 端点给的下一步参数只带路由字段（社区 1.5.8）",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4735",
+      "timestamp": "2026-11-12T08:57:10Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(home): the terminal widget no longer advertises an unrunnable register command",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4694",
-      "timestamp": "2026-11-11T16:41:50Z",
+      "title": "chore(main): release 3.11.2",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4732",
+      "timestamp": "2026-11-12T08:54:53Z",
       "source": "github"
     },
     {
