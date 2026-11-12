@@ -201,6 +201,10 @@ with_lesson hit rate (per run date)
 **2. 复用一条 lesson，留下痕迹。** "这有用"这一票记为 `E3` 提示，不冒充证明。真正的证明更安静：
 你的检索会被匿名计为"又一个不同客户端用过这篇"。
 
+**3. 翻译这一页。** README 现在有三种语言；第四种只差一个合并的 PR——公开的
+[i18n 任务](https://github.com/Ikalus1988/MisakaNet/issues?q=is%3Aissue+is%3Aopen+label%3Ai18n)
+里写好了验收标准。
+
 **你得到的回报是署名**：lesson 在 frontmatter 里引用产生它的 intake（`source:`、`provenance.issue:`），
 管线可以出一张写明 lesson 与证据等级的回执。
 

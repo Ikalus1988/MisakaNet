@@ -246,6 +246,10 @@ no account, no email, no token, a five-line report is enough. It becomes a track
 **2. Reuse a lesson and leave the trace.** A "this helped" vote is recorded as an `E3` hint, not as
 proof. The proof is quieter: your retrieval is counted, anonymously, as one more distinct client.
 
+**3. Translate this page.** The README ships in three languages; a fourth is one merged PR away —
+the open [i18n tasks](https://github.com/Ikalus1988/MisakaNet/issues?q=is%3Aissue+is%3Aopen+label%3Ai18n)
+carry the exact acceptance criteria.
+
 **What you get back: attribution.** A lesson cites the intake that produced it (`source:`,
 `provenance.issue:`), and the pipeline can emit a receipt naming the lesson and its evidence level.
 

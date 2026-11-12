@@ -213,6 +213,10 @@ with_lesson hit rate (per run date)
 しません。本当の証明はもっと静かです：あなたの検索は「もう 1 つの別クライアントが使った」として匿名で
 数えられます。
 
+**3. このページを翻訳する。** README は 3 言語で出ています。4 つ目はマージされる PR 一つ分です——
+公開中の [i18n タスク](https://github.com/Ikalus1988/MisakaNet/issues?q=is%3Aissue+is%3Aopen+label%3Ai18n)
+に受け入れ条件がそのまま書いてあります。
+
 **見返りは帰属**です：レッスンは生んだ intake を frontmatter に記します（`source:`、`provenance.issue:`）。
 パイプラインはレッスン名と証拠レベルを書いた受領証を出せます。
 
