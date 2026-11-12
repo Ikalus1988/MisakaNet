@@ -1,5 +1,5 @@
 {
-  ".": "3.11.2",
+  ".": "3.11.3",
   "packages/misakanet-setup": "0.10.0",
   "packages/fatal-guard": "0.3.2"
 }
