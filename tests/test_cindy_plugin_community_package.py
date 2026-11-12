@@ -175,3 +175,25 @@ def test_the_kind_filter_only_hides_hits_when_there_were_hits():
     for base in (OFFICIAL, COMMUNITY):
         source = (base / "main.js").read_text(encoding="utf-8")
         assert "matchedBeforeFilter > 0" in source, f"{base.name}: the kind filter lost its condition"
+
+
+def test_the_publisher_key_is_published_and_self_consistent():
+    """The public key is the stamp users check the marketplace package against.
+
+    It is published in the repository so anyone can verify a package's signature and so the
+    official trust table can be extended with it. The keyId is not a separate fact: it is
+    `sha256(SPKI DER)` truncated — so the two must agree, or the stamp does not check out.
+    """
+    import base64
+    import hashlib
+
+    key = json.loads(
+        (REPO / "docs" / "integrations" / "cindy-publisher-key.json").read_text(encoding="utf-8")
+    )
+    spki = base64.b64decode(key["publicKey"])
+    assert key["algorithm"] == "ed25519"
+    assert key["keyId"] == "ed25519:" + hashlib.sha256(spki).hexdigest()[:32], (
+        "the published keyId is not derived from the published public key"
+    )
+    # The signing tool has to be in the repository too, or the key is a stamp with no press.
+    assert (REPO / "scripts" / "sign-plugin-package.mjs").exists()

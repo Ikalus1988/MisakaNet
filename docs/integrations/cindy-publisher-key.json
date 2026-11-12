@@ -1,0 +1,11 @@
+{
+  "note": "Cindy 社区投稿通道（插件 id `misakanet`）的发布者签名公钥。公开印章样本：谁都能拿它核对市场里那个包的签名，并把它加入 Cindy 的发布者信任表。签名证明「文件没被改、还是同一把钥匙」，不证明发布者的现实身份。私钥只在本机（~/.cindy/publisher-keys/），从未进仓库、.cindy 包或聊天记录。",
+  "algorithm": "ed25519",
+  "keyId": "ed25519:7ea71fcd12e457221aefc33b05ee9da9",
+  "publicKey": "MCowBQYDK2VwAyEA3wVdEJk80b7jo1QqTEpK+AAlKKmlFapl5zuzRilgJjY=",
+  "publicKeyEncoding": "base64 SPKI DER",
+  "keyIdDerivation": "ed25519: + sha256(SPKI DER).hex.slice(0, 32)",
+  "signedArtifact": "社区投稿通道的 .cindy 包内插件目录下的 cindy-signatures.json；包在市场审核通过后才发布",
+  "verifyCommand": "node scripts/sign-plugin-package.mjs verify --package <包路径>.cindy",
+  "officialChannel": "官方随包通道（makecindy/cindy-official-plugins）的包由平台发布流水线写入签名，不含本文件里的发布者签名"
+}
