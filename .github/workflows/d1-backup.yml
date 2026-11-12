@@ -66,13 +66,27 @@ jobs:
           # The split is honest: these are the rows git does not hold, the schema is versioned in
           # `workers/d1/schema.sql` (the file `sync-d1.yml` applies), and the FTS5 table is derived from
           # `lessons` and rebuilt by the worker, so a dump that omits it loses nothing.
-          TABLES="lessons lesson_sync_log lesson_drafts lesson_usage questions counters kv_store"
+          TABLES="lessons lesson_sync_log lesson_drafts lesson_usage questions kv_store"
           : > "/tmp/misakanet-db-$STAMP.sql"
           for t in $TABLES; do
             wrangler d1 export misakanet-db --remote --no-schema --table "$t" \
               --output "/tmp/export-$t.sql"
             cat "/tmp/export-$t.sql" >> "/tmp/misakanet-db-$STAMP.sql"
             echo "exported $t: $(wc -c < "/tmp/export-$t.sql") bytes"
+          done
+
+          # The telemetry tables moved to `misakanet-ops` (the worker writes them through `opsD1`), so
+          # they are dumped **from there**, into their own file: mixing two databases into one dump
+          # makes the restore step a decision about which half goes where (#4696). `counters` is still
+          # declared in `workers/d1/schema.sql` for a deployment with no `MISAKANET_OPS_D1` binding —
+          # in that deployment this file's counters half restores into the main database.
+          OPS_TABLES="counters search_signals"
+          : > "/tmp/misakanet-ops-$STAMP.sql"
+          for t in $OPS_TABLES; do
+            wrangler d1 export misakanet-ops --remote --no-schema --table "$t" \
+              --output "/tmp/export-ops-$t.sql"
+            cat "/tmp/export-ops-$t.sql" >> "/tmp/misakanet-ops-$STAMP.sql"
+            echo "exported ops.$t: $(wc -c < "/tmp/export-ops-$t.sql") bytes"
           done
 
           DUMP="/tmp/misakanet-db-$STAMP.sql"
@@ -118,7 +132,7 @@ jobs:
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7
         with:
           name: d1-dump-${{ steps.export.outputs.stamp }}
-          path: /tmp/misakanet-db-*.sql
+          path: /tmp/misakanet-*.sql
           # The artifact store is not a backup system either: 90 days is the ceiling, so at most ~13
           # weekly dumps are ever retained. Beyond that horizon the data lives in git (lessons/**) and
           # in Time Travel, which is the honest answer rather than a promise this job cannot keep.

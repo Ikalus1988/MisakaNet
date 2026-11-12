@@ -44,11 +44,14 @@ jobs:
         run: |
           set -euo pipefail
           cd workers
+          # `counters` lives in `misakanet-ops` — the worker writes it through `opsD1`.
+          # The main database holds a same-named table whose rows stop on 2026-10-27;
+          # reading it here reported that frozen table as the live one (#4696).
           echo "== totals by scope =="
-          wrangler d1 execute misakanet-db --remote --json --command \
+          wrangler d1 execute misakanet-ops --remote --json --command \
             "SELECT scope, COUNT(*) AS buckets, SUM(count) AS total, MAX(updated_at) AS last_update FROM counters GROUP BY scope ORDER BY total DESC;"
           echo "== last $DAYS day(s) by scope =="
-          wrangler d1 execute misakanet-db --remote --json --command \
+          wrangler d1 execute misakanet-ops --remote --json --command \
             "SELECT period, scope, COUNT(*) AS buckets, SUM(count) AS total FROM counters WHERE period >= date('now', '-$DAYS day') AND scope NOT IN ('rate_read') GROUP BY period, scope ORDER BY period DESC, total DESC LIMIT 40;"
           # `rate_read` is excluded on purpose: it is written per *minute* (a burst window is its
           # period), so on a real day it contributes hundreds of single-count rows and the LIMIT 40
@@ -66,7 +69,7 @@ jobs:
           # rate_read and gap must be served by D1 now; if either has zero rows while the
           # worker is live, the migration is not taking effect and this should be visible.
           for scope in rate_read gap signal_rate; do
-            n=$(wrangler d1 execute misakanet-db --remote --json --command \
+            n=$(wrangler d1 execute misakanet-ops --remote --json --command \
               "SELECT COUNT(*) AS n FROM counters WHERE scope='${scope}';" | grep -o '"n": *[0-9]*' | head -1 | grep -o '[0-9]*')
             echo "${scope}: ${n:-0} row(s)"
           done

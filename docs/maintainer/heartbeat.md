@@ -289,8 +289,10 @@ answers", `workers/register-proxy-sw.js`), and the composer keeps the distinctio
   `misakanet-ops`, the database the worker writes them to. The main database holds same-named copies
   that stopped on 2026-10-26 / 2026-10-27; reading them returns an empty or old table without an
   error, which is how the digest spent two weeks saying "the worker recorded no traffic-class rows"
-  while `/api/funnel` on the same day counted 439 registers (#4696). The rule and the archive/drop
-  plan live in `docs/maintainer/search-metrics.md` §3.3.
+  while `/api/funnel` on the same day counted 439 registers (#4696). Those copies were archived to
+  R2 and emptied on 2026-11-12 — `search_signals` was dropped, `counters` stays only as the
+  no-`MISAKANET_OPS_D1` fallback — so rows appearing in either again means a reader or a writer
+  fell back. The rule lives in `docs/maintainer/search-metrics.md` §3.3.
 - **A failed read does not fail the job.** The digest reports it in the comment and the step emits
   a `::warning::` annotation; turning it into a red run would give the owner a second notification
   that asks for an action, which is the thing a heartbeat must not do.

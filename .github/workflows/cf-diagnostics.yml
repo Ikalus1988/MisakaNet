@@ -845,5 +845,8 @@ jobs:
           wrangler d1 execute misakanet-db --remote --json --command \
             "SELECT substr(key, 1, instr(key || ':', ':') - 1) AS family, COUNT(*) AS keys FROM kv_store GROUP BY family ORDER BY keys DESC LIMIT 20;"
           echo "== counters by scope (a scope with no rows means that migration is not taking effect) =="
-          wrangler d1 execute misakanet-db --remote --json --command \
+          # `counters` is the telemetry table and it lives in `misakanet-ops`; the same-named table
+          # in the main database stopped on 2026-10-27, so reading it answered "migration not taking
+          # effect" about a table nobody writes (#4696).
+          wrangler d1 execute misakanet-ops --remote --json --command \
             "SELECT scope, COUNT(*) AS buckets, SUM(count) AS total, MAX(updated_at) AS last_update FROM counters GROUP BY scope ORDER BY total DESC;"
