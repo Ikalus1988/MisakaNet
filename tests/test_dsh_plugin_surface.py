@@ -826,6 +826,9 @@ CLIENT_TARGETS = {
     # write, and the only target section ⑦ adds.
     "https://misakanet.org/api/insights/lesson-coverage":
         "the panel's coverage section ⑦: the public coverage board's ranking of topics by unanswered searches",
+    "https://misakanet.org/api/leaderboard/ladder":
+        "the panel's contribution ladder ⑧: one public GET of the weekly ranking; the rows are written by the "
+        "MCP tools (write_lesson / submit_intake), never by the browser",
     "https://misakanet.org/lessons/": "the two lesson links a person clicks (the row and the toast)",
     "https://misakanet.org/": "the site link behind a result that has no id",
 }
@@ -904,10 +907,10 @@ def test_the_browser_half_only_calls_targets_a_human_allowlisted():
         "the browser half names an outbound target that is not on the allowlist: "
         + str(findings) + ". If the call is intended, add it to CLIENT_TARGETS with a reason — that review "
         "is the gate. If it is not on the list by accident, this is how D4 is meant to fail: loudly.")
-    # Call-site accounting: five `fetch(` sites (overlay search, the POST helper, the panel's per-lesson
-    # GET, the panel's analytics GET, the panel's coverage GET — the click-through link is not one) and two
-    # `post(` sites, every one of them against an approved target.
-    assert source.count("fetch(") == 5, (
+    # Call-site accounting: six `fetch(` sites (overlay search, the POST helper, the panel's per-lesson
+    # GET, the panel's analytics GET, the panel's coverage GET, the panel's ladder GET — the click-through
+    # link is not one) and two `post(` sites, every one of them against an approved target.
+    assert source.count("fetch(") == 6, (
         "the bundle gained or lost a `fetch(` call site: " + str(source.count("fetch(")) + ". The literal "
         "allowlist cannot see a computed target; this count is what makes a new call fail anyway")
     assert unreviewed_fetch_targets(source) == [], unreviewed_fetch_targets(source)
