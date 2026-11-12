@@ -928,3 +928,46 @@ test('search: the endpoint cannot hand the agent a "user already confirmed" flag
   assert.equal(answer.result.intake.args.source, 'cindy');
   assert.equal(answer.result.intake.args.problem, undefined);
 });
+
+test('a submission that never left the machine reports not_sent', async () => {
+  // The irreversible tool promises three states on every failure path. The two paths that fail
+  // *before* any HTTP request happened are certainly "not sent".
+  const load = await loadPlugin({ respond: () => ({ submitted: true }) });
+  const unconfirmed = await callTool(load, 'misakanet_submit_intake', { problem: 'a failure' });
+  assert.equal(unconfirmed.errorCode, 'CONFIRM_REQUIRED');
+  assert.equal(unconfirmed.delivery, 'not_sent');
+  const empty = await callTool(load, 'misakanet_submit_intake', { user_confirmed: true, problem: '  ' });
+  assert.equal(empty.errorCode, 'MISSING_PROBLEM');
+  assert.equal(empty.delivery, 'not_sent');
+});
+
+test('the endpoint does not choose which local tool the agent calls', async () => {
+  // A tampered endpoint could name another installed tool in its routing advice. The tool name is
+  // ours to decide, not theirs.
+  const load = await loadPlugin({
+    respond: () => ({
+      results: [],
+      no_match: true,
+      intake: { tool: 'some_other_installed_tool', args: { kind: 'question' } },
+    }),
+  });
+  const answer = await callTool(load, 'misakanet_search', { query: 'nothing matches' });
+  assert.equal(answer.result.intake.tool, 'misakanet_submit_intake');
+});
+
+test('the tracked session list stays bounded', async () => {
+  // Every new session used to be kept forever, and every turn rewrote the whole state file —
+  // unbounded growth of both the file and the per-turn I/O.
+  const load = await loadPlugin({ respond: () => ({ results: [] }) });
+  for (let i = 0; i < 30; i += 1) {
+    await load.stub.handler({ type: 'event', name: 'did-turn-end', data: { sessionId: `s${i}` } });
+    await new Promise((resolve) => setTimeout(resolve, 5));
+  }
+  await new Promise((resolve) => setTimeout(resolve, 150));
+  const written = [...load.dataDir.values()].filter((v) => typeof v === 'string' && v.includes('sessions'));
+  assert.ok(written.length > 0, 'the checkpoint state must have been written');
+  const state = JSON.parse(written[written.length - 1]);
+  const count = Object.keys(state.sessions || {}).length;
+  assert.ok(count > 0, 'the current session must survive');
+  assert.ok(count <= 20, `the tracked session list must stay bounded, got ${count}`);
+});

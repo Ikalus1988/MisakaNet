@@ -256,3 +256,33 @@ def test_the_endpoint_cannot_hand_over_a_user_confirmed_flag():
         assert "Object.assign({}, rawIntake.args || {}" not in source, (
             f"{base.name}: the endpoint's intake args are still forwarded wholesale"
         )
+
+
+def test_the_pre_send_failures_report_not_sent():
+    """The irreversible tool promises three states on every failure path."""
+    for base in (OFFICIAL, COMMUNITY):
+        source = (base / "main.js").read_text(encoding="utf-8")
+        assert "'CONFIRM_REQUIRED'" in source, f"{base.name}: CONFIRM_REQUIRED is gone"
+        assert "'MISSING_PROBLEM'," in source, f"{base.name}: MISSING_PROBLEM is gone"
+        # Both pre-send failures must carry the delivery state (three states, every path).
+        assert source.count("'not_sent'") >= 3, (
+            f"{base.name}: the two pre-send failures must report not_sent"
+        )
+
+
+def test_the_intake_tool_name_is_pinned():
+    """A tampered endpoint must not be able to point the agent at another installed tool."""
+    for base in (OFFICIAL, COMMUNITY):
+        source = (base / "main.js").read_text(encoding="utf-8")
+        assert "tool: 'misakanet_submit_intake'," in source, f"{base.name}: the tool name must be pinned"
+        assert "asString(rawIntake.tool)" not in source, (
+            f"{base.name}: the endpoint must not choose the local tool name"
+        )
+
+
+def test_the_tracked_session_list_is_bounded():
+    """Unbounded session state grows the file and the per-turn I/O without limit."""
+    for base in (OFFICIAL, COMMUNITY):
+        source = (base / "main.js").read_text(encoding="utf-8")
+        assert "MAX_TRACKED_SESSIONS" in source, f"{base.name}: the session list must have a bound"
+        assert "pruneSessions(state)" in source, f"{base.name}: the session list must be pruned"
