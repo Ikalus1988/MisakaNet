@@ -30,7 +30,7 @@ COMMUNITY_SRC = Path(
          r"/d08837fa-53b2-4596-8e37-41e02fc7d03f/misakanet-cindy-plugin"
 )
 TARGET = REPO / ".cindy-plugin-community"
-VERSION = "1.5.6"
+VERSION = "1.5.7"
 
 
 def sub(text: str, old: str, new: str, count: int = 1, label: str = "") -> str:
@@ -237,6 +237,17 @@ def build_main() -> None:
         "D11 kind filter condition",
     )
 
+    out = sub(
+        out,
+        "    suggestion: suggestion || undefined,\n    intake,",
+        "    // The filtered-empty branch is not a knowledge gap: carrying the endpoint's\n"
+        "    // `suggestion` and `intake` there invites a duplicate report of an existing lesson.\n"
+        "    suggestion: kindFilteredEmpty ? undefined : (suggestion || undefined),\n"
+        "    intake: kindFilteredEmpty ? undefined : intake,",
+        1,
+        "D12 kind filter carries no intake",
+    )
+
     # The version moves with the manifest.
     out = sub(out, "const PLUGIN_VERSION = '1.5.4';", f"const PLUGIN_VERSION = '{VERSION}';", 1, "version")
 
@@ -256,6 +267,10 @@ RELEASE_NOTES = (
     "这一版还带上两处修正：如实披露本地存储（私有目录除随机客户端 id 外，还按会话保存轮次计数与"
     "公告状态，只用于提醒节奏、不上传），以及 kind 过滤空只在过滤前确实命中过时才成立——"
     "真零命中照旧走 no_match，不再被说成「换个 kind 再试」。"
+    "再往后两处：披露文案把「发给端点的自报标签」与「只留在本地的轮次计数」分开写清"
+    "（随机客户端 id 与系统标签随每次请求发给端点，用于统计独立客户端），"
+    "以及 kind 过滤空的结果不再带端点给的 suggestion / intake——那一支不是知识缺口，"
+    "带上等于劝 Agent 把一条已公开的教训再报一遍。"
 )
 
 
@@ -264,6 +279,9 @@ def build_manifest() -> None:
     official = json.loads((OFFICIAL / "ghost.json").read_text(encoding="utf-8"))
 
     community["version"] = VERSION
+    # `whenToUse` is how a model finds the preflight tool; the risky-operation trigger has to
+    # be the official wording, so it is inherited rather than kept.
+    community["whenToUse"] = official["whenToUse"]
     community["releaseNotes"] = RELEASE_NOTES
     # The official description names the repository and discloses what the endpoint receives; the
     # community copy had drifted shorter. The manifest description limit is 300 characters.

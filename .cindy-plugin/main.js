@@ -428,8 +428,10 @@ function shapeSearch(payload, args) {
     trust_notice: asString(payload.trust_notice)
       ? asString(payload.trust_notice) + ' ' + UNTRUSTED_NOTICE
       : UNTRUSTED_NOTICE,
-    suggestion: suggestion || undefined,
-    intake,
+    // The filtered-empty branch is not a knowledge gap: carrying the endpoint's `suggestion` and
+    // `intake` there invites the agent to file a duplicate of a lesson that already exists.
+    suggestion: kindFilteredEmpty ? undefined : (suggestion || undefined),
+    intake: kindFilteredEmpty ? undefined : intake,
     results,
     note,
   };

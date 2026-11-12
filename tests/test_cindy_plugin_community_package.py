@@ -158,7 +158,7 @@ def test_the_storage_disclosure_reaches_both_channels():
     }
     for base in (OFFICIAL, COMMUNITY):
         description = manifest(base)["description"]
-        assert "私有目录" in description, f"{base.name}: the manifest description must disclose it"
+        assert "只留" in description, f"{base.name}: the manifest description must say what stays local"
         assert counters["zh-CN"] in description, f"{base.name}: the manifest must name the counter"
         for lang, word in counters.items():
             doc = json.loads((base / "locales" / f"{lang}.json").read_text(encoding="utf-8"))
@@ -197,3 +197,45 @@ def test_the_publisher_key_is_published_and_self_consistent():
     )
     # The signing tool has to be in the repository too, or the key is a stamp with no press.
     assert (REPO / "scripts" / "sign-plugin-package.mjs").exists()
+
+
+def test_the_disclosure_names_both_halves_in_every_language():
+    """Two different facts, and the copy has to name both.
+
+    The random client id and the OS tag go to the endpoint on every request (it counts distinct
+    clients) — they are not local-only; the per-session turn counter stays in the private
+    directory and is never uploaded. A draft that fixed the second half while dropping the first
+    is exactly what the market review caught.
+    """
+    counters = {"zh-CN": "轮次计数", "en": "turn counter", "ja": "ターン数", "ko": "턴 수"}
+    sent = {"zh-CN": "发给端点", "en": "go to the endpoint", "ja": "端点へ送られ", "ko": "엔드포인트로 전송"}
+    for base in (OFFICIAL, COMMUNITY):
+        description = manifest(base)["description"]
+        assert counters["zh-CN"] in description, f"{base.name}: the description must name the counter"
+        assert sent["zh-CN"] in description, f"{base.name}: the description must say what is sent"
+        assert "随机客户端 id" in description, f"{base.name}: the description must name the client id"
+        for lang in counters:
+            doc = json.loads((base / "locales" / f"{lang}.json").read_text(encoding="utf-8"))
+            tools = doc["tools"]
+            entry = tools["misakanet_search"] if isinstance(tools, dict) else [
+                t for t in tools if t["name"] == "misakanet_search"
+            ][0]
+            text = entry["description"] if isinstance(entry, dict) else entry
+            assert counters[lang] in text, f"{base.name}/{lang}: must name the counter"
+            assert sent[lang] in text, f"{base.name}/{lang}: must say what is sent"
+            # `whenToUse` is how a model finds the preflight tool.
+            assert re.search(r"高风险|high-risk|risky operation|高リスク|고위험", doc["whenToUse"]), (
+                f"{base.name}/{lang}: whenToUse must mention risky operations"
+            )
+
+
+def test_a_kind_filtered_empty_result_carries_no_intake():
+    """The filtered-empty branch is not a knowledge gap; the endpoint's intake must not ride along."""
+    for base in (OFFICIAL, COMMUNITY):
+        source = (base / "main.js").read_text(encoding="utf-8")
+        assert "kindFilteredEmpty ? undefined : (suggestion || undefined)" in source, (
+            f"{base.name}: the filtered-empty branch still carries the endpoint's suggestion"
+        )
+        assert "kindFilteredEmpty ? undefined : intake" in source, (
+            f"{base.name}: the filtered-empty branch still carries the endpoint's intake"
+        )

@@ -888,3 +888,21 @@ test('search: a kind filter that matched nothing at all is still a real zero hit
   assert.equal(answer.result.no_match, true);
   assert.match(answer.result.note, /没有命中任何教训/);
 });
+
+test('search: a kind-filtered empty result carries no intake suggestion', async () => {
+  // The lessons exist; the filter hid them. Handing the agent the endpoint's `suggestion` and
+  // `intake` there invites it to file a duplicate of a lesson that is already public.
+  const load = await loadPlugin({
+    respond: () => ({
+      results: [],
+      matched_before_filter: 4,
+      filtered_by_kind: 'evidence',
+      suggestion: 'No MisakaNet lesson matched with kind=evidence.',
+      intake: { tool: 'misakanet_submit_intake', args: { kind: 'missing_lesson' } },
+    }),
+  });
+  const answer = await callTool(load, 'misakanet_search', { query: 'pip install timeout', kind: 'evidence' });
+  assert.equal(answer.result.kind_filtered_empty, true);
+  assert.equal(answer.result.suggestion, undefined);
+  assert.equal(answer.result.intake, undefined);
+});
