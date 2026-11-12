@@ -44,6 +44,13 @@ test('a healthy answer is not labelled degraded', () => {
   assert.deepEqual(searchDegraded('worker-bm25'), { degraded: false });
 });
 
+test('the CJK fusion arm is an index answer, not a degraded one (#4651)', () => {
+  resetLessonsReadState();
+  assert.deepEqual(searchDegraded('worker-bm25+cjk-fuse'), { degraded: false },
+    'the fuse only runs after BM25 returned hits, so labelling it degraded claims the simpler'
+    + ' matcher answered while the index just did — measured live 2026-11-03, 11-10 and 11-12');
+});
+
 test('a missing index says the naive matcher answered, in its own reason', () => {
   resetLessonsReadState();
   const out = searchDegraded('worker-search');

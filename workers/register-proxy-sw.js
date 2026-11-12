@@ -6532,7 +6532,11 @@ async function probeLessonsRead(env) {
  */
 function searchDegraded(source) {
   const reasons = [];
-  if (!["worker-bm25", "worker-bm25+semantic", "semantic"].includes(source)) reasons.push("index_unavailable");
+  // `worker-bm25+cjk-fuse` rides on top of a BM25 answer — the fuse block only fires once the
+  // lexical arm has already returned hits — so it is an index answer too. It shipped without
+  // being added here (#4651): every CJK query was told the simpler matcher answered while the
+  // index had just answered.
+  if (!["worker-bm25", "worker-bm25+semantic", "worker-bm25+cjk-fuse", "semantic"].includes(source)) reasons.push("index_unavailable");
   const read = lastLessonsRead;
   if (read && read.ok === false && String(read.source || "").startsWith("snapshot")) {
     reasons.push("corpus_snapshot");
