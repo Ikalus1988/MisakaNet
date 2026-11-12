@@ -7,6 +7,13 @@ All notable changes to the Misaka Network project are documented here.
 
 ---
 
+## [3.11.1](https://github.com/Ikalus1988/MisakaNet/compare/v3.11.0...v3.11.1) (2026-11-12)
+
+
+### Bug Fixes
+
+* **telemetry:** the last three readers of the frozen counters table move to ops ([#4696](https://github.com/Ikalus1988/MisakaNet/issues/4696)) ([#4726](https://github.com/Ikalus1988/MisakaNet/issues/4726)) ([180b4da](https://github.com/Ikalus1988/MisakaNet/commit/180b4da7e775e833bbac3ff36c1329b87f7e0a6c))
+
 ## [3.11.0](https://github.com/Ikalus1988/MisakaNet/compare/v3.10.1...v3.11.0) (2026-11-12)
 
 
