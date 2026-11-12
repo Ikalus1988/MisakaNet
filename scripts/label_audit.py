@@ -29,7 +29,8 @@ CORPUS_LABELS = {"mcp-intake", "intake", "lesson-submission"}
 #: Queue labels that are corpus-only *in the intake flow*. `needs-human-review` is also written by
 #: `approval-watch.yml` for "a human must approve a run" (its own comment cites the dependency-audit
 #: workflow using it the same way), so an issue carrying one of these trackers is not a misfile.
-CORPUS_ONLY = {"needs-human-review", "pending-review", "auto-rejected", "needs-answer"}
+CORPUS_ONLY = {"needs-human-review", "pending-review", "auto-rejected", "needs-answer",
+               "needs-info"}
 OPS_TRACKERS = {"approval-watch", "automated", "dependencies"}
 #: Pairs that are the same axis under two names; both used means the filter depends on the alias.
 ALIAS_GROUPS = [

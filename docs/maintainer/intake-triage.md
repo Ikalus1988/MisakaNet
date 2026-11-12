@@ -48,6 +48,7 @@
 | `intake` | 历史别名，**190 条上与 `mcp-intake` 同时存在**；脚本一律按 `mcp-intake` 查 | 独立信号 |
 | `needs-human-review` | **可写 lesson 的语料素材**，等维护者处理；`approval-watch.yml` 也用它表示「要人批准一次 run」（带 `approval-watch` 的 issue 由审计豁免） | 产品/路线图 issue 的"待看"标记 |
 | `needs-answer` | 问句在等回答（2026-10-17 起；问句不再用 `needs-human-review`） | 故障 intake |
+| `needs-info` | **故障 intake 缺 `## Root Cause`（或 `Fix`）段，等提交者补**（2026-11-12 起；十月的 intake 表单没有这一节，不是投稿人的错）。补或不补都要回一次：回「未知」就转成待复现，回「关闭」就关，见 §2 的 review band 处置 | 问题已答完、只差人批复的 issue |
 | `decision` | 需要 owner 拍板；**晋级后不再进语料队列**（`convert_intake_batch.is_convertible` 已跳过它们） | 可转换的 lesson 素材 |
 | `pending-review` / `auto-rejected` | 自动评审的两个出口 | |
 
@@ -63,6 +64,11 @@
   标签是 `needs-answer`（2026-10-17 起，不再是 `needs-human-review`）：问句的出口是"被回答"，
   回答写在 issue 线程里、`answered` 之后由 `sync-question-answers.yml` 进 FAQ——**不需要 PR**。
 - **服务端 auto-rejected 噪音**：保留标签，不占用维护者时间。
+- **review band：十月旧表单缺 `## Root Cause`**（2026-11-12）：那一版 intake 表单没有根因这一节，
+  所以这批 intake 结构上永远过不了转换器。处置是**一条模板回信 + `needs-info`**（评论带
+  `<!-- needs-root-cause -->` 标记，重跑时据此去重），三个出口：补了根因的重新进转换流程；
+  回「未知」的记为**待复现**（不是失败，也不硬转）；回「关闭」的关单。**不要逐条手工补根因**——
+  根因只能由提报的人或复现者给出，维护者替它编一句就是把猜测写进语料。
 - **提案类**：不走 lesson-gate（提案没有可复现的失败，写不成 Problem/Root Cause/Fix），也不进
   lesson 批量落库。出口是**一次决策**：接受的部分各自变成一个 issue，每条点名它会改的文件、工作流或
   门禁，并附上支撑它的那份测量；不接受的部分在 issue 里写明理由（它假设了什么、仓库里不成立）。
