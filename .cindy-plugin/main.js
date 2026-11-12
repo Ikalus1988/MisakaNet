@@ -380,11 +380,17 @@ function shapeSearch(payload, args) {
 
   // 端点在零命中时会自己判定「提问」还是「知识缺口」，并把建议与下一步 intake 参数一起给回来。
   // 这一段是服务端给的路由建议，不要自己重写。
+  //
+  // 但**只带路由字段过去**：端点的载荷是外部数据，不能让它决定「用户已经确认过」。
+  // 原样转发 `rawIntake.args` 时，一个带 `user_confirmed: true` 的载荷会被当成「用户已确认」
+  // 递到 Agent 手里，下一次调用就会把用户从没看过的文字发成不可撤回的公开 issue。
+  // 用户确认只能来自当前这次对话里的真实确认。
   const rawIntake = payload.intake && typeof payload.intake === 'object' ? payload.intake : null;
+  const rawKind = rawIntake && rawIntake.args ? asString(rawIntake.args.kind) : '';
   const intake = rawIntake
     ? {
         tool: asString(rawIntake.tool) || 'misakanet_submit_intake',
-        args: Object.assign({}, rawIntake.args || {}, { source: 'cindy' }),
+        args: Object.assign(rawKind ? { kind: rawKind } : {}, { source: 'cindy' }),
       }
     : undefined;
 
@@ -428,8 +434,10 @@ function shapeSearch(payload, args) {
     trust_notice: asString(payload.trust_notice)
       ? asString(payload.trust_notice) + ' ' + UNTRUSTED_NOTICE
       : UNTRUSTED_NOTICE,
-    suggestion: suggestion || undefined,
-    intake,
+    // The filtered-empty branch is not a knowledge gap: carrying the endpoint's `suggestion` and
+    // `intake` there invites the agent to file a duplicate of a lesson that already exists.
+    suggestion: kindFilteredEmpty ? undefined : (suggestion || undefined),
+    intake: kindFilteredEmpty ? undefined : intake,
     results,
     note,
   };

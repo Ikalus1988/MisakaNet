@@ -21,7 +21,7 @@ const FETCH_TIMEOUT_MS = 45000;
 // 它按不可逆外发处理，不确定态只能提示先核对远端状态。
 const READ_TIMEOUT_MS = 20000;
 const READ_RETRY_BACKOFF_MS = 400;
-const PLUGIN_VERSION = '1.5.6';
+const PLUGIN_VERSION = '1.5.8';
 
 /* 客户端标识：每台机器一个稳定 id。
  * 端点会把 X-MisakaNet-Client salt-hash 进 search_signals.client_hint，而 client_hint 是
@@ -584,10 +584,11 @@ function shapeSearch(payload, args) {
   // 端点在零命中时会自己判定「提问」还是「知识缺口」，并把建议与下一步 intake 参数一起给回来。
   // 这一段是服务端给的路由建议，不要自己重写。
   const rawIntake = payload.intake && typeof payload.intake === 'object' ? payload.intake : null;
+  const rawKind = rawIntake && rawIntake.args ? asString(rawIntake.args.kind) : '';
   const intake = rawIntake
     ? {
         tool: asString(rawIntake.tool) || 'misakanet_submit_intake',
-        args: Object.assign({}, rawIntake.args || {}, { source: 'cindy' }),
+        args: Object.assign(rawKind ? { kind: rawKind } : {}, { source: 'cindy' }),
       }
     : undefined;
 
@@ -627,8 +628,10 @@ function shapeSearch(payload, args) {
     trust_notice: asString(payload.trust_notice)
       ? asString(payload.trust_notice) + ' ' + UNTRUSTED_NOTICE
       : UNTRUSTED_NOTICE,
-    suggestion: suggestion || undefined,
-    intake,
+    // The filtered-empty branch is not a knowledge gap: carrying the endpoint's
+    // `suggestion` and `intake` there invites a duplicate report of an existing lesson.
+    suggestion: kindFilteredEmpty ? undefined : (suggestion || undefined),
+    intake: kindFilteredEmpty ? undefined : intake,
     results,
     note,
   };

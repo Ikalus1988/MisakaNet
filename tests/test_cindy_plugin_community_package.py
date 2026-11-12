@@ -158,7 +158,7 @@ def test_the_storage_disclosure_reaches_both_channels():
     }
     for base in (OFFICIAL, COMMUNITY):
         description = manifest(base)["description"]
-        assert "私有目录" in description, f"{base.name}: the manifest description must disclose it"
+        assert "只留" in description, f"{base.name}: the manifest description must say what stays local"
         assert counters["zh-CN"] in description, f"{base.name}: the manifest must name the counter"
         for lang, word in counters.items():
             doc = json.loads((base / "locales" / f"{lang}.json").read_text(encoding="utf-8"))
@@ -197,3 +197,20 @@ def test_the_publisher_key_is_published_and_self_consistent():
     )
     # The signing tool has to be in the repository too, or the key is a stamp with no press.
     assert (REPO / "scripts" / "sign-plugin-package.mjs").exists()
+
+
+def test_the_endpoint_cannot_hand_over_a_user_confirmed_flag():
+    """The endpoint's routing advice is external data.
+
+    `intake.args` used to be forwarded as-is, so a remote payload carrying `user_confirmed: true`
+    reached the agent as "the user already confirmed this" — and the next call published text the
+    user never saw as an irreversible public issue. Only the routing field may cross.
+    """
+    for base in (OFFICIAL, COMMUNITY):
+        source = (base / "main.js").read_text(encoding="utf-8")
+        assert "Object.assign(rawKind ? { kind: rawKind } : {}, { source: 'cindy' })" in source, (
+            f"{base.name}: the intake args still carry the endpoint's fields"
+        )
+        assert "Object.assign({}, rawIntake.args || {}" not in source, (
+            f"{base.name}: the endpoint's intake args are still forwarded wholesale"
+        )
