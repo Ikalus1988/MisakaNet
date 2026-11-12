@@ -709,3 +709,53 @@ def test_an_empty_search_signals_table_is_not_a_stale_one():
                      "newest": None})
     assert "The table is empty" in out
     assert "stale" not in out.lower() or "stale table are different readings" in out
+
+
+# ── the counters table: which database it comes from, and how old it is (#4696) ──────────────
+
+def test_the_counters_reads_target_the_database_the_worker_writes(monkeypatch):
+    """`counters` is written through `opsD1(env)`; the main copy stopped during 2026-10-27.
+
+    A read pointed at the main copy does not fail — it returns no rows for the day, which the
+    panels render as "a quiet day". The database name is therefore part of the reading, not a
+    detail of the plumbing, and this test pins it.
+    """
+    calls = []
+
+    class Completed:
+        returncode = 0
+        stdout = '[{"results": []}]'
+        stderr = ""
+
+    def fake_run(argv, **kwargs):
+        calls.append(list(argv))
+        return Completed()
+
+    monkeypatch.setattr(hr.subprocess, "run", fake_run)
+    hr.fetch_counter_rows(DAY)
+    hr.fetch_counters_freshness()
+    assert len(calls) == 2
+    for argv in calls:
+        assert "misakanet-ops" in argv, argv
+        assert "misakanet-db" not in argv, argv
+
+
+def test_a_stopped_counters_table_says_so_instead_of_reporting_a_quiet_day():
+    out = digest(counters=[], counters_freshness={
+        "rows_total": 9000, "newest_period": "2026-09-26", "newest_write": "2026-09-26 00:58:00"})
+    assert "`counters` was last written on `2026-09-26`" in out
+    assert "20 days before this digest" in out
+    assert "stopped table, not a quiet day" in out
+
+
+def test_a_current_counters_table_gets_no_banner():
+    out = digest(counters_freshness={
+        "rows_total": 9000, "newest_period": DAY, "newest_write": f"{DAY} 06:00:00"})
+    assert "was last written" not in out
+
+
+def test_the_sources_row_names_the_counters_database_and_its_age():
+    out = digest(counters_freshness={
+        "rows_total": 1234, "newest_period": DAY, "newest_write": f"{DAY} 06:00:00"})
+    assert "`counters` (D1, `misakanet-ops`)" in out
+    assert "1234 row(s)" in out

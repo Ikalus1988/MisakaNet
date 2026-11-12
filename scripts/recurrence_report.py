@@ -11,9 +11,11 @@ and it has to be read as two different things (#4634):
   with the same `top_id` is a repeat after an answer. The rate is an **upper bound**: without an
   identifier, "the same person came back because the lesson did not help" and "a different person
   asked the same thing" are the same observation.
-* **B — unanswered repeats.** `counters(scope='gap')` holds one row per normalized query per day
-  for queries that hit nothing. A gap bucket seen on **two or more days** is someone hitting the
-  same wall again — or two someones.
+* **B — unanswered repeats.** `counters(scope='gap')` in the same telemetry database holds one row
+  per normalized query per day for queries that hit nothing. A gap bucket seen on **two or more
+  days** is someone hitting the same wall again — or two someones. (The main database has a
+  same-named `counters` table that stopped during 2026-10-27; reading it returns the gap history up
+  to that date and no error, see #4696.)
 
 Neither number is a help metric, and neither is a failure rate. They exist so the digest has a
 measured "recurrence" number instead of an invented one.
@@ -35,8 +37,9 @@ from datetime import date
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+#: Both panels read the telemetry database: `search_signals` and `counters` are written by the
+#: worker through `opsD1(env)`, and the main database's same-named copies are frozen (#4696).
 OPS_DB = "misakanet-ops"
-MAIN_DB = "misakanet-db"
 
 #: A — answered repeats, from the live `search_signals` table (ops).
 A_SQL = """WITH solved AS (
@@ -54,7 +57,7 @@ SELECT
    )) AS repeated_pairs,
   (SELECT MAX(created_at) FROM search_signals) AS newest;"""
 
-#: B — unanswered repeats, from the counters table (main database).
+#: B — unanswered repeats, from the counters table in the telemetry database (ops).
 B_SQL = """SELECT
   (SELECT COUNT(*) FROM (SELECT bucket FROM counters WHERE scope = 'gap' GROUP BY bucket)) AS buckets_total,
   (SELECT COUNT(*) FROM (
@@ -138,7 +141,7 @@ def render(result: dict, days: int) -> list[str]:
         lines.append(f"- newest row: `{a['newest']}`")
     lines += [
         "",
-        "## B · unanswered repeats (`counters` scope=gap, `misakanet-db`)",
+        "## B · unanswered repeats (`counters` scope=gap, `misakanet-ops`)",
         "",
         f"- gap buckets: **{b['buckets_total']}** over **{b['bucket_days']}** bucket-days",
         f"- seen on two or more days: **{b['repeated_buckets']}**",
@@ -163,12 +166,12 @@ def wrangler_json(database: str, sql: str) -> list[dict]:
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--days", type=int, default=7, help="window for the answered-repeat panel")
-    ap.add_argument("--ops-db", default=OPS_DB, help=f"database that owns the live search_signals (default {OPS_DB})")
-    ap.add_argument("--main-db", default=MAIN_DB, help=f"database that owns counters (default {MAIN_DB})")
+    ap.add_argument("--ops-db", default=OPS_DB,
+                    help=f"database that owns the live search_signals and counters (default {OPS_DB})")
     ap.add_argument("--json", action="store_true")
     args = ap.parse_args(argv)
     a_rows = wrangler_json(args.ops_db, A_SQL.replace("{days}", str(args.days)))
-    b_rows = wrangler_json(args.main_db, B_SQL)
+    b_rows = wrangler_json(args.ops_db, B_SQL)
     result = panels(a_rows[0] if a_rows else None, b_rows[0] if b_rows else None)
     result["window_days"] = args.days
     if args.json:

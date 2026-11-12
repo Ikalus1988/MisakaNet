@@ -259,6 +259,7 @@ answers, and neither is `0`:
 |---|---|
 | could not be read (`None`) | `⚠️ … could not be read for YYYY-MM-DD (reason). This is not a zero.` |
 | read, empty (`[]`) | `… recorded no rows for that day` / `no traffic-class rows for …` |
+| read, but the table stopped | a ⚠️ banner before panel 1: ``counters was last written on YYYY-MM-DD — N days before this digest`` |
 | read, non-empty | the counts, with the day named |
 
 The same rule is applied to the funnel: a day missing from `/api/funnel`'s window is reported as
@@ -271,9 +272,9 @@ answers", `workers/register-proxy-sw.js`), and the composer keeps the distinctio
 
 | source | what it is | its limit |
 |---|---|---|
-| `counters` (D1) | traffic classes, `mcpclient:` buckets, `gap` buckets, `helpful-source` vote buckets | the client dimension exists only where a client sends `initialize`; `gap` text is caller-supplied; a vote with no `source` writes no `helpful-source` row, so those columns are source-tagged votes only |
+| `counters` (D1, `misakanet-ops`) | traffic classes, `mcpclient:` buckets, `gap` buckets, `helpful-source` vote buckets; the panel also reads `MAX(updated_at)` so a table that stopped is visible | the client dimension exists only where a client sends `initialize`; `gap` text is caller-supplied; a vote with no `source` writes no `helpful-source` row, so those columns are source-tagged votes only |
 | `GET /api/analytics` | rolling `lesson_usage` aggregates | `knowledge_gaps` and `mcpClients` are withheld there on purpose — read from D1 instead, without changing that policy |
-| `search_signals` (D1) | rows, hits, distinct lessons, and lessons at the `E4` rung | a lesson is counted only when **two distinct** `client_hint`s retrieved it, and `client_hint` exists only for a caller that sent a `client_id` — so the number is a floor by construction |
+| `search_signals` (D1, `misakanet-ops`) | rows, hits, distinct lessons, and lessons at the `E4` rung | a lesson is counted only when **two distinct** `client_hint`s retrieved it, and `client_hint` exists only for a caller that sent a `client_id` — so the number is a floor by construction |
 | `lesson_usage` (D1) | per-day retrievals (`event='get_lesson'`) — the vote ratio's denominator | every retrieval writes one row, so an absent day is zero retrievals; the API's `top_lessons` is capped at ten and is not used as a total |
 | `GET /api/funnel` | `visit` / `register` / `authorize` / `pair` / `search` | `visit` counts only pageviews *this* worker serves (`/` and `/search/` come from `misakanet-web`); `register` counts **nodes**, and a client that omits `client_id` creates one per call, so it is neither people nor agents; `drop_off_rate` divides two different units and is deliberately unclamped, so the digest omits it and quotes its value rather than printing it as a rate |
 
@@ -284,6 +285,12 @@ answers", `workers/register-proxy-sw.js`), and the composer keeps the distinctio
   the `automation` environment — reviewer-free, D1-scoped, and branch-restricted to `main`. The
   deploy-capable `release` credential is not used here: a cron behind a required reviewer does not
   become safer, it stops (`docs/maintainer/credentials-and-environments.md` §3).
+- **Which database, and why it is written down.** `counters` and `search_signals` are read from
+  `misakanet-ops`, the database the worker writes them to. The main database holds same-named copies
+  that stopped on 2026-10-26 / 2026-10-27; reading them returns an empty or old table without an
+  error, which is how the digest spent two weeks saying "the worker recorded no traffic-class rows"
+  while `/api/funnel` on the same day counted 439 registers (#4696). The rule and the archive/drop
+  plan live in `docs/maintainer/search-metrics.md` §3.3.
 - **A failed read does not fail the job.** The digest reports it in the comment and the step emits
   a `::warning::` annotation; turning it into a red run would give the owner a second notification
   that asks for an action, which is the thing a heartbeat must not do.

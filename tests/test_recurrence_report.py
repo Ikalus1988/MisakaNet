@@ -39,3 +39,16 @@ def test_wrangler_envelopes_and_bare_arrays_both_parse():
     rows = [{"distinct_queries": 1, "repeated_pairs": 0}]
     assert rr.result_rows('[{"results": ' + str(rows).replace("'", '"') + ', "success": true}]') == rows
     assert rr.result_rows(str(rows).replace("'", '"')) == rows
+
+
+def test_both_panels_read_the_telemetry_database(monkeypatch):
+    """B used to read the main database, whose `counters` stopped during 2026-10-27 (#4696)."""
+    seen = []
+
+    def fake_wrangler_json(database, sql):
+        seen.append(database)
+        return [{}]
+
+    monkeypatch.setattr(rr, "wrangler_json", fake_wrangler_json)
+    rr.main([])
+    assert seen == ["misakanet-ops", "misakanet-ops"]

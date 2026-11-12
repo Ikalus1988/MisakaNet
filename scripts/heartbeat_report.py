@@ -30,6 +30,11 @@ Why D1 and not the public API for two of these: `/api/analytics` withholds `know
 tooling). This script reads them from `counters` with the same Cloudflare credential the counters
 report already uses — it does not change the withhold policy, and it does not carry the
 maintainer token (`env.MCP_TOKEN`) anywhere.
+
+Which database matters: the worker writes `counters` and `search_signals` to `OPS_DB`
+(`misakanet-ops`), and the same-named tables in the main database are frozen copies (#4696). Both
+readers therefore hit `OPS_DB`, and both print the table's own age, because a read pointed at a
+stopped copy does not fail — it reports an empty or zero panel, which reads as a quiet day.
 """
 from __future__ import annotations
 
@@ -69,6 +74,15 @@ HELPFUL_SOURCE_SCOPE = "helpful-source"
 #: precisely why it must not group by anything finer — a per-person or per-session cut would
 #: convert a privacy promise into a column.
 PANEL_VOTE_SOURCE = "dsh-web"
+
+#: The telemetry database. The worker writes `search_signals` **and** `counters` through
+#: `opsD1(env)` (`MISAKANET_OPS_D1` → `misakanet-ops`), so that database holds the live copies. The
+#: same-named tables in the main database are frozen copies — `search_signals` stopped on
+#: 2026-10-26 16:27, `counters` during 2026-10-27 (#4696) — and reading them does not fail: it
+#: returns an old or empty table, which the panels then describe as a quiet day. `lesson_usage`
+#: and the lesson tables really do live in the main database and are still read from there.
+OPS_DB = "misakanet-ops"
+MAIN_DB = "misakanet-db"
 
 # The intake funnel is a fourth panel (2026-10-30). It reads issue state and lesson provenance rather
 # than the counters table, so it lives in its own module with its own tests, and a failure to import it
@@ -753,6 +767,39 @@ def staleness_sentence(newest: object, day: str, rows_total: int = 0) -> list[st
     return [f"The table's newest row is `{stamp}` ({age} day(s) before this digest).", ""]
 
 
+def counters_staleness(freshness: dict | None, day: str) -> list[str]:
+    """A banner when the `counters` table has stopped being written to, and nothing otherwise.
+
+    The same failure as `staleness_sentence` above, one table over: panels 1-3 read `counters`, and
+    a copy that stopped on 2026-10-27 answers "no traffic-class rows", "no `gap` rows" and `0` in
+    every vote column — sentences that are true of the table and false of the traffic (#4696). A
+    write clock more than two days behind the digest day cannot be that day's traffic, the same
+    threshold `staleness_sentence` uses. The age is relative to the reported day, not to today, so
+    re-rendering an old digest does not invent a stale table.
+    """
+    if not freshness:
+        return []
+    stamp = freshness.get("newest_write")
+    if not stamp:
+        if freshness.get("rows_total"):
+            return ["(The `counters` table's newest `updated_at` could not be read; the empty or "
+                    "zero sections below still come from that table's rows.)", ""]
+        return []
+    try:
+        age = (date.fromisoformat(day) - date.fromisoformat(str(stamp)[:10])).days
+    except ValueError:
+        return []
+    if age <= 2:
+        return []
+    return [f"⚠️ **`counters` was last written on `{str(stamp)[:10]}` — {age} days before this "
+            f"digest.** Panels 1-3 read that table (traffic classes, self-declared client names, "
+            f"`gap` rows, `{HELPFUL_SOURCE_SCOPE}` votes), so an empty panel or a `0` below is the "
+            f"stopped table, not a quiet day. The worker writes `counters` to `{OPS_DB}` and this "
+            f"digest reads `{OPS_DB}`; the main database's same-named copy ends on 2026-10-27, so "
+            f"a table this old means the writes stopped or the read was pointed back at that "
+            f"copy (#4696).", ""]
+
+
 def panel_e4(e4: dict | None, day: str, errors: dict[str, str]) -> list[str]:
     """A separate reading: how many lessons actually reach the ladder's top rung.
 
@@ -821,11 +868,18 @@ def panel_pipeline(pipeline: dict | None, error: str, day: str) -> list[str]:
 
 
 def panel_sources(counters, analytics: dict | None, funnel: dict | None, e4: dict | None,
-                  retrievals: dict[str, int] | None, day: str, errors: dict[str, str]) -> list[str]:
+                  retrievals: dict[str, int] | None, day: str, errors: dict[str, str],
+                  counters_freshness: dict | None = None) -> list[str]:
     """The footer: what was read, what each number cannot say, and the errors, if any."""
     lines = ["---", "", "## Sources, and what each number cannot say", ""]
     counters_state = ("read" if counters is not None
                       else f"**could not be read** ({errors.get('counters', 'no reason recorded')})")
+    if counters is not None and counters_freshness:
+        # The row stays "read" even when the table is old: the read succeeded, and the age is a
+        # property of the table. The banner at the top of the digest is what makes it a warning.
+        last_write = str(counters_freshness.get("newest_write") or "")[:16]
+        counters_state = (f"read — {counters_freshness.get('rows_total', 0)} row(s)"
+                          + (f", last written `{last_write}`" if last_write else ""))
     analytics_state = ("read" if analytics is not None
                        else f"**could not be read** ({errors.get('analytics', 'no reason recorded')})")
     funnel_state = ("read" if funnel is not None
@@ -838,17 +892,17 @@ def panel_sources(counters, analytics: dict | None, funnel: dict | None, e4: dic
     lines += _table(
         ["source", "state", "what it is"],
         [
-            ["`counters` (D1)", counters_state,
+            [f"`counters` (D1, `{OPS_DB}`)", counters_state,
              "the worker's own rows: traffic classes, self-declared client names, unanswered "
              f"queries, and the `{HELPFUL_SOURCE_SCOPE}` vote rows (panel vs other)"],
             ["`/api/analytics`", analytics_state,
              "rolling 7 days of `lesson_usage`; its `knowledge_gaps` and `mcpClients` are withheld "
              "there and read from D1 here instead"],
             ["`/api/funnel`", funnel_state, "the first-call funnel, from the worker's counters"],
-            ["`search_signals` (D1)", e4_state,
+            [f"`search_signals` (D1, `{OPS_DB}`)", e4_state,
              "the E4 reading above: rows, hits, distinct lessons, and how many lessons sit at the "
              "top rung"],
-            ["`lesson_usage` (D1)", retrievals_state,
+            [f"`lesson_usage` (D1, `{MAIN_DB}`)", retrievals_state,
              f"per-day retrievals (`event='{RETRIEVAL_EVENT}'`) — the denominator of the vote "
              f"ratio, read here because the API's `top_lessons` is capped at ten lessons and is "
              f"not a total"],
@@ -897,12 +951,14 @@ def panel_sources(counters, analytics: dict | None, funnel: dict | None, e4: dic
 def render_digest(*, day: str, counters, analytics: dict | None, funnel: dict | None,
                   e4: dict | None = None, retrievals: dict[str, int] | None = None,
                   errors: dict[str, str] | None = None, pipeline: dict | None = None,
-                  pipeline_error: str = "") -> str:
+                  pipeline_error: str = "", counters_freshness: dict | None = None) -> str:
     """The whole comment body for one UTC day.
 
     `counters` / `analytics` / `funnel` / `e4` / `retrievals` are plain data or `None` for
     "could not be read"; `errors` maps a source to the reason, so the digest can say what it
-    could not see instead of printing a number nobody can trust.
+    could not see instead of printing a number nobody can trust. `counters_freshness` is the
+    table's own age (`MAX(updated_at)`), which turns "no rows for this day" from an ambiguous
+    answer into a checkable one.
     """
     errors = errors or {}
     lines = [
@@ -920,6 +976,7 @@ def render_digest(*, day: str, counters, analytics: dict | None, funnel: dict | 
         "of the numbers, not small print._",
     ]
     lines += [""] + pulse_line(analytics, day, errors) + ["", "---", ""]
+    lines += counters_staleness(counters_freshness, day)
 
     if counters is None and analytics is None and funnel is None:
         lines += [f"**No source could be read for {day}** — every panel below is a report of a "
@@ -932,7 +989,8 @@ def render_digest(*, day: str, counters, analytics: dict | None, funnel: dict | 
     lines += panel_helped(counters, analytics, retrievals, day, errors)
     lines += panel_e4(e4, day, errors)
     lines += panel_pipeline(pipeline, pipeline_error, day)
-    lines += panel_sources(counters, analytics, funnel, e4, retrievals, day, errors)
+    lines += panel_sources(counters, analytics, funnel, e4, retrievals, day, errors,
+                           counters_freshness)
     return "\n".join(lines).rstrip() + "\n"
 
 
@@ -963,18 +1021,56 @@ def fetch_counter_rows(day: str) -> list[dict]:
     reported day, and `helpful-source` for the whole vote window, so a single statement keeps the
     failure mode simple (either the rows arrive or they do not). The traffic and gap panels filter
     down to `day` themselves; the extra days in the result set are for the vote table only.
+
+    Read from `OPS_DB`, the database the worker writes to. The main database has a same-named table
+    that stopped during 2026-10-27; pointing this query at it is silent — the panels simply report
+    "no rows for this day" (#4696).
     """
     days = window_days(day)
     sql = ("SELECT scope, bucket, period, count FROM counters "
            f"WHERE period >= '{days[0]}' AND period <= '{days[-1]}' "
            f"AND scope IN ('{TRAFFIC_SCOPE}', '{GAP_SCOPE}', '{HELPFUL_SOURCE_SCOPE}');")
     result = subprocess.run(
-        ["wrangler", "d1", "execute", "misakanet-db", "--remote", "--json", "--command", sql],
+        ["wrangler", "d1", "execute", OPS_DB, "--remote", "--json", "--command", sql],
         cwd=REPO_ROOT / "workers", capture_output=True, text=True, check=False,
     )
     if result.returncode != 0:
         raise RuntimeError(wrangler_failure(result.stdout, result.stderr))
     return result_rows(result.stdout)
+
+
+#: The counters table's own age. A separate read because the panel queries above are windowed: a
+#: frozen table answers "no rows for this day", which is the same answer a quiet day gives, so the
+#: table's `updated_at` is what tells the two apart (#4696).
+#:
+#: `MAX(updated_at)`, not `MAX(period)`: `period` mixes shapes (`YYYY-MM-DD`, `YYYY-MM-DDTHH:MM`,
+#: `YYYY-MM`), and a month bucket sorts before every day inside that month, so a string MAX over
+#: them is not a date.
+COUNTERS_META_SQL = ("SELECT COUNT(*) AS rows_total, MAX(period) AS newest_period, "
+                     "MAX(updated_at) AS newest_write FROM counters;")
+
+
+def counters_freshness(row: dict | None) -> dict | None:
+    """The counters table's row count and last write, or `None` when no row came back."""
+    if not row:
+        return None
+    return {
+        "rows_total": int(row.get("rows_total") or 0),
+        "newest_period": row.get("newest_period"),
+        "newest_write": row.get("newest_write"),
+    }
+
+
+def fetch_counters_freshness() -> dict | None:
+    """Ask `OPS_DB` how old the counters table is; raises so `collect` can record the reason."""
+    result = subprocess.run(
+        ["wrangler", "d1", "execute", OPS_DB, "--remote", "--json", "--command", COUNTERS_META_SQL],
+        cwd=REPO_ROOT / "workers", capture_output=True, text=True, check=False,
+    )
+    if result.returncode != 0:
+        raise RuntimeError(wrangler_failure(result.stdout, result.stderr))
+    rows = result_rows(result.stdout)
+    return counters_freshness(rows[0] if rows else None)
 
 
 def fetch_retrieval_counts(day: str) -> dict[str, int]:
@@ -992,7 +1088,7 @@ def fetch_retrieval_counts(day: str) -> dict[str, int]:
            f"AND created_at >= '{days[0]}' AND created_at < '{(date.fromisoformat(days[-1]) + timedelta(days=1)).isoformat()}' "
            f"GROUP BY day ORDER BY day;")
     result = subprocess.run(
-        ["wrangler", "d1", "execute", "misakanet-db", "--remote", "--json", "--command", sql],
+        ["wrangler", "d1", "execute", MAIN_DB, "--remote", "--json", "--command", sql],
         cwd=REPO_ROOT / "workers", capture_output=True, text=True, check=False,
     )
     if result.returncode != 0:
@@ -1053,7 +1149,7 @@ def fetch_intake_bot_counts(day: str) -> dict[str, int] | None:
            f"AND created_at < '{(date.fromisoformat(days[-1]) + timedelta(days=1)).isoformat()}' "
            "GROUP BY ua ORDER BY count DESC;")
     result = subprocess.run(
-        ["wrangler", "d1", "execute", "misakanet-db", "--remote", "--json", "--command", sql],
+        ["wrangler", "d1", "execute", MAIN_DB, "--remote", "--json", "--command", sql],
         cwd=REPO_ROOT / "workers", capture_output=True, text=True, check=False,
     )
     if result.returncode != 0:
@@ -1074,10 +1170,11 @@ def fetch_e4_density() -> dict | None:
     # Read the database the worker writes to. `search_signals` is written through `opsD1(env)`
     # (`MISAKANET_OPS_D1` → `misakanet-ops`), while this panel used to read the same-named table in
     # the main database — a copy frozen on 2026-10-26, so the digest published "1 of 453" while the
-    # live table read "56 of 714" (#4640). The lessons/counters/intake queries below still belong to
-    # the main database and must not be changed with this one.
+    # live table read "56 of 714" (#4640). `counters` is the same shape one table over and moved to
+    # `OPS_DB` with it (#4696); `lesson_usage` and the intake reads really do belong to the main
+    # database and must not be changed with this one.
     result = subprocess.run(
-        ["wrangler", "d1", "execute", "misakanet-ops", "--remote", "--json", "--command", E4_SQL],
+        ["wrangler", "d1", "execute", OPS_DB, "--remote", "--json", "--command", E4_SQL],
         cwd=REPO_ROOT / "workers", capture_output=True, text=True, check=False,
     )
     if result.returncode != 0:
@@ -1095,13 +1192,18 @@ def fetch_json(url: str) -> dict:
 
 
 def collect(day: str) -> tuple[list[dict] | None, dict | None, dict | None, dict | None,
-                               dict[str, int] | None, dict[str, str]]:
+                               dict[str, int] | None, dict | None, dict[str, str]]:
     """Read every source, keeping each failure as a *reason* rather than as a zero."""
     errors: dict[str, str] = {}
     try:
         counters: list[dict] | None = fetch_counter_rows(day)
     except Exception as error:  # noqa: BLE001 — the digest reports the reason, it does not crash
         counters, errors["counters"] = None, reason_text(f"{type(error).__name__}: {error}")
+    try:
+        counters_freshness: dict | None = fetch_counters_freshness()
+    except Exception as error:  # noqa: BLE001 — the rows above still stand; only their age is unknown
+        counters_freshness = None
+        errors["counters_freshness"] = reason_text(f"{type(error).__name__}: {error}")
     try:
         e4: dict | None = fetch_e4_density()
     except Exception as error:  # noqa: BLE001 — same reason: a failed read is reported, not fatal
@@ -1118,7 +1220,7 @@ def collect(day: str) -> tuple[list[dict] | None, dict | None, dict | None, dict
         funnel: dict | None = fetch_json("https://misakanet.org/api/funnel?days=7")
     except (urllib.error.URLError, OSError, ValueError) as error:
         funnel, errors["funnel"] = None, reason_text(f"{type(error).__name__}: {error}")
-    return counters, analytics, funnel, e4, retrievals, errors
+    return counters, analytics, funnel, e4, retrievals, counters_freshness, errors
 
 
 def collect_pipeline(day: str) -> tuple[dict | None, str]:
@@ -1167,6 +1269,7 @@ def main(argv: list[str] | None = None) -> int:
 
     day = args.day or datetime.now(timezone.utc).strftime("%Y-%m-%d")
     counters: list[dict] | None = None
+    counters_freshness: dict | None = None
     analytics: dict | None = None
     funnel: dict | None = None
     e4: dict | None = None
@@ -1176,7 +1279,7 @@ def main(argv: list[str] | None = None) -> int:
     pipeline: dict | None = None
     pipeline_error = ""
     if args.fetch:
-        counters, analytics, funnel, e4, retrievals, errors = collect(day)
+        counters, analytics, funnel, e4, retrievals, counters_freshness, errors = collect(day)
         pipeline, pipeline_error = collect_pipeline(day)
     if args.issues_json:
         issues = json.loads(args.issues_json.read_text(encoding="utf-8"))
@@ -1198,7 +1301,8 @@ def main(argv: list[str] | None = None) -> int:
 
     digest = render_digest(day=day, counters=counters, analytics=analytics, funnel=funnel, e4=e4,
                            retrievals=retrievals, errors=errors, pipeline=pipeline,
-                           pipeline_error=pipeline_error)
+                           pipeline_error=pipeline_error,
+                           counters_freshness=counters_freshness)
     if args.out:
         args.out.write_text(digest, encoding="utf-8")
     else:
