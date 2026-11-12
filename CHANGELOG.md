@@ -7,6 +7,14 @@ All notable changes to the Misaka Network project are documented here.
 
 ---
 
+## [3.11.2](https://github.com/Ikalus1988/MisakaNet/compare/v3.11.1...v3.11.2) (2026-11-12)
+
+
+### Bug Fixes
+
+* **cindy-plugin:** 披露文案把「发的」与「留本地的」分开写清（社区 1.5.7） ([#4730](https://github.com/Ikalus1988/MisakaNet/issues/4730)) ([2ee0337](https://github.com/Ikalus1988/MisakaNet/commit/2ee0337ccd6dbe97dbc76924a29485f98f4fbbee))
+* **search:** the CJK fusion arm is an index answer, not a degraded one ([#4717](https://github.com/Ikalus1988/MisakaNet/issues/4717)) ([16d4046](https://github.com/Ikalus1988/MisakaNet/commit/16d40469ebcf01f1689a912bc6118e4c72f584f2)), closes [#4651](https://github.com/Ikalus1988/MisakaNet/issues/4651)
+
 ## [3.11.1](https://github.com/Ikalus1988/MisakaNet/compare/v3.11.0...v3.11.1) (2026-11-12)
 
 
