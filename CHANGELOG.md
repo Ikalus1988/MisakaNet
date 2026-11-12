@@ -7,6 +7,13 @@ All notable changes to the Misaka Network project are documented here.
 
 ---
 
+## [3.11.3](https://github.com/Ikalus1988/MisakaNet/compare/v3.11.2...v3.11.3) (2026-11-12)
+
+
+### Bug Fixes
+
+* **cindy-plugin:** 端点给的下一步参数只带路由字段（社区 1.5.8） ([#4735](https://github.com/Ikalus1988/MisakaNet/issues/4735)) ([bb2f04a](https://github.com/Ikalus1988/MisakaNet/commit/bb2f04a3dbb29c9c9156f8a658e4e1552b54c0dc))
+
 ## [3.11.2](https://github.com/Ikalus1988/MisakaNet/compare/v3.11.1...v3.11.2) (2026-11-12)
 
 
