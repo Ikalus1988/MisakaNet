@@ -30,7 +30,7 @@ COMMUNITY_SRC = Path(
          r"/d08837fa-53b2-4596-8e37-41e02fc7d03f/misakanet-cindy-plugin"
 )
 TARGET = REPO / ".cindy-plugin-community"
-VERSION = "1.5.5"
+VERSION = "1.5.6"
 
 
 def sub(text: str, old: str, new: str, count: int = 1, label: str = "") -> str:
@@ -224,6 +224,19 @@ def build_main() -> None:
         "D10d card-action handler",
     )
 
+    # D11 — a `kind` filter only hides hits when there *were* hits before it. Without this,
+    # a genuine zero hit reads as "filtered empty" and the agent is told to change the filter
+    # instead of being told the corpus had nothing (the market review's finding).
+    out = sub(
+        out,
+        "  const kindFilteredEmpty = results.length === 0 && !!filteredByKind;",
+        "  const kindFilteredEmpty =\n"
+        "    results.length === 0 && !!filteredByKind && typeof matchedBeforeFilter === 'number'\n"
+        "    && matchedBeforeFilter > 0;",
+        1,
+        "D11 kind filter condition",
+    )
+
     # The version moves with the manifest.
     out = sub(out, "const PLUGIN_VERSION = '1.5.4';", f"const PLUGIN_VERSION = '{VERSION}';", 1, "version")
 
@@ -240,6 +253,9 @@ RELEASE_NOTES = (
     "上报类绝不自动重试）、上报前的交互卡确认闸门（默认供卡，只有用户点「确认提交」才外发；30 秒等不到"
     "点击就明确放弃并告知调用方什么都没提交；调用方确认按钮点不动时可传 confirm=\"direct\" 走直发路径）。"
     "版本号与官方通道刻意错开（官方 1.6.x / 社区 1.5.x），避免占掉彼此的版本位。"
+    "这一版还带上两处修正：如实披露本地存储（私有目录除随机客户端 id 外，还按会话保存轮次计数与"
+    "公告状态，只用于提醒节奏、不上传），以及 kind 过滤空只在过滤前确实命中过时才成立——"
+    "真零命中照旧走 no_match，不再被说成「换个 kind 再试」。"
 )
 
 
@@ -253,9 +269,17 @@ def build_manifest() -> None:
     # community copy had drifted shorter. The manifest description limit is 300 characters.
     assert len(official["description"]) <= 300, len(official["description"])
     community["description"] = official["description"]
-    # The card declaration and the card-aware tool description stay: they are the community
-    # channel's own feature, not a leftover.
+    # The card declaration and the card-aware submit_intake description stay: they are the
+    # community channel's own feature, not a leftover. Every other tool description is the
+    # official one — the storage disclosure lives in the search tool's text.
     assert community.get("card") is not None, "the community manifest must keep its card declaration"
+    official_tools = {t["name"]: t for t in official["tools"]}
+    community_tools = {t["name"]: t for t in community["tools"]}
+    for name, tool in community_tools.items():
+        if name == "misakanet_submit_intake":
+            continue
+        assert name in official_tools, f"{name} is not in the official manifest"
+        tool["description"] = official_tools[name]["description"]
     (TARGET / "ghost.json").write_text(
         json.dumps(community, ensure_ascii=False, indent=2) + "\n", encoding="utf-8", newline=""
     )
@@ -393,9 +417,12 @@ def main() -> None:
         shutil.rmtree(TARGET)
     TARGET.mkdir(parents=True)
     shutil.copytree(COMMUNITY_SRC / "assets", TARGET / "assets")
+    # The locale files are the official ones: every wording they share (the storage disclosure,
+    # the trust_notice sentence, the tool descriptions) must not be able to drift. Only
+    # `misakanet_submit_intake` is the community channel's own text, and build_locales() puts it back.
     (TARGET / "locales").mkdir()
     for lang in ("zh-CN", "en", "ja", "ko"):
-        shutil.copy2(COMMUNITY_SRC / "locales" / f"{lang}.json", TARGET / "locales" / f"{lang}.json")
+        shutil.copy2(OFFICIAL / "locales" / f"{lang}.json", TARGET / "locales" / f"{lang}.json")
     (TARGET / "manual" / "misakanet").mkdir(parents=True)
     shutil.copy2(
         COMMUNITY_SRC / "manual" / "misakanet" / "MANUAL.md",

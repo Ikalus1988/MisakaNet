@@ -21,7 +21,7 @@ const FETCH_TIMEOUT_MS = 45000;
 // 它按不可逆外发处理，不确定态只能提示先核对远端状态。
 const READ_TIMEOUT_MS = 20000;
 const READ_RETRY_BACKOFF_MS = 400;
-const PLUGIN_VERSION = '1.5.5';
+const PLUGIN_VERSION = '1.5.6';
 
 /* 客户端标识：每台机器一个稳定 id。
  * 端点会把 X-MisakaNet-Client salt-hash 进 search_signals.client_hint，而 client_hint 是
@@ -599,7 +599,9 @@ function shapeSearch(payload, args) {
   // A `kind` filter that emptied the list is not a corpus miss: the lessons are there, the
   // filter excluded them. Calling that "no match" pushes the agent down the knowledge-gap
   // route — it can publish a duplicate of a lesson that already exists.
-  const kindFilteredEmpty = results.length === 0 && !!filteredByKind;
+  const kindFilteredEmpty =
+    results.length === 0 && !!filteredByKind && typeof matchedBeforeFilter === 'number'
+    && matchedBeforeFilter > 0;
   const noMatch = !kindFilteredEmpty && (payload.no_match === true || results.length === 0);
   const note = kindFilteredEmpty
     ? '按 kind=' + filteredByKind + ' 过滤后没有命中' +

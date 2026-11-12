@@ -45,7 +45,7 @@ npx @misaka-net/misakanet-setup --only cindy
 市场里的**社区投稿通道**（同一个插件 id `misakanet`，由发布者自己签名）用的是同一份源码加两项
 官方通道没有的能力：**只读调用的一次保守重试**，和**上报前的交互卡确认闸门**。它在
 [`.cindy-plugin-community/`](https://github.com/Ikalus1988/MisakaNet/tree/main/.cindy-plugin-community)，
-当前版本 1.5.5；官方随包通道那份在 [`.cindy-plugin/`](https://github.com/Ikalus1988/MisakaNet/tree/main/.cindy-plugin)，
+当前版本 1.5.6；官方随包通道那份在 [`.cindy-plugin/`](https://github.com/Ikalus1988/MisakaNet/tree/main/.cindy-plugin)，
 当前版本 1.6.0。两个版本号刻意错开，免得互相占掉对方的版本位。
 
 社区变体**不是**另一份 fork：它由官方那份重新构建，官方通道修过的每个修复都会带过去。
@@ -53,6 +53,33 @@ npx @misaka-net/misakanet-setup --only cindy
 `trust_notice` 标注、await 回包和 `new_lesson_candidate` 分类；官方那份则一直没有卡闸门。
 现在由 `tests/test_cindy_plugin_community_package.py` 的漂移守卫盯着：官方有的标记，社区变体少一个就红。
 两项社区能力本身由 `workers/misakanet-cindy-plugin-community.test.mjs` 的行为用例守住。
+
+### 1.2 发布者签名与公钥（社区投稿通道）
+
+市场投稿通道的包带**发布者签名**：包内 `cindy-signatures.json` 记录这份包的文件清单
+（每个文件的 SHA256 与字节数）、发布者 keyId 与公钥，以及对清单的 Ed25519 签名。
+Cindy 安装时会按同一口径**复算清单并验签**——清单对不上、或文件在签名后被改过的包直接拒装，
+不会静默降级成未签名包。
+
+| 项 | 值 |
+|---|---|
+| 算法 | Ed25519 |
+| keyId | `ed25519:7ea71fcd12e457221aefc33b05ee9da9` |
+| 发布者公钥（base64 SPKI DER） | `MCowBQYDK2VwAyEA3wVdEJk80b7jo1QqTEpK+AAlKKmlFapl5zuzRilgJjY=` |
+| 机器可读副本 | [`cindy-publisher-key.json`](cindy-publisher-key.json) |
+
+签名证明「文件没被改、还是同一把钥匙」，**不证明发布者的现实身份**。本机的发布者信任表为空，
+所以界面显示的是「有签名，发布者身分未验」；官方把这个公钥加入发布者信任表后，才会变成「发布者已验」。
+
+自己核对（签名工具在本仓 [`scripts/sign-plugin-package.mjs`](https://github.com/Ikalus1988/MisakaNet/blob/main/scripts/sign-plugin-package.mjs)，
+只用 Node 内置模块（不装任何第三方包），口径与客户端逐字对齐）：
+
+```bash
+node scripts/sign-plugin-package.mjs verify --package misakanet-<版本>.cindy
+```
+
+私钥只在本机（`~/.cindy/publisher-keys/`），从未进仓库、`.cindy` 包或聊天记录；公钥是公开印章样本。
+官方随包通道那份不含本节的发布者签名——它的签名由平台发布流水线写入。
 
 ## 2. 工具面
 
