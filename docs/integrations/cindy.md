@@ -72,7 +72,7 @@ Cindy 安装时会按同一口径**复算清单并验签**——清单对不上�
 所以界面显示的是「有签名，发布者身分未验」；官方把这个公钥加入发布者信任表后，才会变成「发布者已验」。
 
 自己核对（签名工具在本仓 [`scripts/sign-plugin-package.mjs`](https://github.com/Ikalus1988/MisakaNet/blob/main/scripts/sign-plugin-package.mjs)，
-零依赖 Node，口径与客户端逐字对齐）：
+只用 Node 内置模块（不装任何第三方包），口径与客户端逐字对齐）：
 
 ```bash
 node scripts/sign-plugin-package.mjs verify --package misakanet-<版本>.cindy
