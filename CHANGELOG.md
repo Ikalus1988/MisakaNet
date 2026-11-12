@@ -7,6 +7,24 @@ All notable changes to the Misaka Network project are documented here.
 
 ---
 
+## [3.12.0](https://github.com/Ikalus1988/MisakaNet/compare/v3.11.3...v3.12.0) (2026-11-12)
+
+
+### Features
+
+* **leaderboard:** the contribution ladder — arithmetic, table, write points and endpoint ([#4757](https://github.com/Ikalus1988/MisakaNet/issues/4757)) ([5758bad](https://github.com/Ikalus1988/MisakaNet/commit/5758bad3a59e5434651638c55fee83cd9c032641))
+* **panel:** the contribution ladder gets a section in the sidebar ([#4761](https://github.com/Ikalus1988/MisakaNet/issues/4761)) ([4778599](https://github.com/Ikalus1988/MisakaNet/commit/477859920275e3042fdb68da2bfb29aa8a4a3aa6))
+
+
+### Bug Fixes
+
+* **cindy-plugin:** 发送前失败报 not_sent、工具名固定、会话状态有上限（社区 1.5.9） ([#4740](https://github.com/Ikalus1988/MisakaNet/issues/4740)) ([9232b77](https://github.com/Ikalus1988/MisakaNet/commit/9232b77e1db5caa1f0379ec3694928e85ece6ebf))
+
+
+### Documentation
+
+* **readme:** E4 is observed, not declared — the page said "empty" for the wrong reason ([#4750](https://github.com/Ikalus1988/MisakaNet/issues/4750)) ([6ef4a13](https://github.com/Ikalus1988/MisakaNet/commit/6ef4a1331b397357ffb42c9299be9b534952e421))
+
 ## [3.11.3](https://github.com/Ikalus1988/MisakaNet/compare/v3.11.2...v3.11.3) (2026-11-12)
 
 
