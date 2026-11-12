@@ -19,7 +19,12 @@ const { GITHUB_API, REPO, PUBLIC_DATA_BASE } = _handlers;
 
 // The contributor ranking and its exclusion rule (#1919). Pure — no env, no clock, no network.
 const _leaderboard = await import("./lib/contributor-leaderboard.js");
-const { scoreBoard, boardMoved, shouldNotifyTopChange } = _leaderboard;
+const { scoreBoard, boardMoved, shouldNotifyTopChange, isAutomationLogin } = _leaderboard;
+
+// The sidebar's contribution ladder: four counters, three windows, one self-hit cap. Pure — the
+// cron, this endpoint and the panel share it so none of them can disagree about a score.
+const _ladder = await import("./lib/contribution-ladder.js");
+const { rankRows, windowSince } = _ladder;
 
 // 30s meant the corpus cache expired every half minute of traffic and each expiry
 // cost a KV write of the whole lesson list. The corpus changes at most daily (the
@@ -5121,6 +5126,19 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx, 
   if (toolName === "misakanet_submit_intake") {
     if (!args.problem) return { error: "problem is required" };
 
+    // Attribution for the ladder, and *only* attribution: intake stays open to anonymous callers.
+    // A presenter with a registered token gets a row; a presenter without one files the report and
+    // simply does not appear on the board. The KV read is affordable against a 10/hour budget.
+    let intakeNode = "";
+    if (authToken && String(authToken).startsWith("mcp_")) {
+      try {
+        const presented = await storeGet(env, `mcp_token:${authToken}`, "json");
+        if (presented && new Date(presented.expires) >= new Date()) {
+          intakeNode = String(presented.node_id || "");
+        }
+      } catch (_) { /* attribution is optional; never fail an intake over it */ }
+    }
+
     // Same budget as the HTTP route above (#2939). That route has had `rate_intake` at 10/hour
     // since 2026-10-07; this branch — the one the MCP tool advertises as "open, rate-limited" —
     // had no limit at all, so the documented sentence was false and the unauthenticated path to
@@ -5455,6 +5473,12 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx, 
           }));
         }
       }
+      if (intakeNode) {
+        const recorded = recordContribution(
+          env, intakeNode, kind === "question" ? "question" : "intake", `issue-${data.number}`,
+        );
+        if (ctx) ctx.waitUntil(recorded); else await recorded;
+      }
       return {
         submitted: true,
         intake_id: `issue-${data.number}`,
@@ -5588,6 +5612,9 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx, 
         return { submitted: false, error: `GitHub API error: ${resp.status} ${err.slice(0, 200)}` };
       }
       const issue = await resp.json();
+      // The ladder counts the submission, best-effort: a scoreboard row must never cost the
+      // submitter the issue they just filed.
+      await recordContribution(env, nodeId, "lesson", `issue-${issue.number}`);
       // Reported back only when it happened: a submitter whose credential was scrubbed should be told
       // (it is their text), and silence about a flagged submission would be the same "looks accepted"
       // problem this guard exists to prevent.
@@ -7181,6 +7208,82 @@ function buildReputationLeaderboard(source, period = "all-time", now = Date.now(
   return rows.slice(0, REPUTATION_MAX_ENTRIES).map((row, index) => ({ ...row, rank: index + 1 }));
 }
 
+/**
+ * GET /api/leaderboard/ladder — the sidebar's contribution ladder.
+ *
+ * The board is `top 10 + the caller's own row`, scored by `lib/contribution-ladder.js`. The
+ * counters come from `contributions` (ops), one row per contribution, so the query is an
+ * aggregate rather than a scan of the corpus.
+ *
+ * **"used" is 0 and the reply says why.** No lesson file carries a `contributor`/`author` field
+ * (measured 2026-11-12: 0 of 978), so "somebody else retrieved a lesson you wrote" cannot be
+ * attributed yet. The response carries `coverage` rather than an empty column, because a silent
+ * zero reads as "nobody used anything" — the opposite of the fact that nobody is attributable.
+ * "lessons" here counts *submissions*, not retrievals; the two become separate numbers when lesson
+ * attribution lands.
+ *
+ * Identity is the registered node's pseudonym (`node_id`), which is public by construction. The
+ * token never leaves the agent, so this endpoint has nothing to authenticate: it ranks pseudonyms
+ * and returns the caller's requested `node` row if it exists.
+ */
+async function handleContributionLadder(request, env) {
+  const url = new URL(request.url);
+  const requested = String(url.searchParams.get("window") || "week");
+  const windowName = Object.prototype.hasOwnProperty.call({ week: 1, month: 1, all: 1 }, requested)
+    ? requested : "week";
+  const { days, since } = windowSince(windowName, new Date());
+  const node = String(url.searchParams.get("node") || "").trim().slice(0, 64);
+
+  const d1 = opsD1(env);
+  if (!d1) return jsonResponse({ error: "D1 not configured" }, 503);
+
+  let rows = [];
+  try {
+    await ensureContributionsTable(d1);
+    const sql = since
+      ? "SELECT node_id, kind, COUNT(*) AS n, MAX(created_at) AS last FROM contributions WHERE created_at >= ?1 GROUP BY node_id, kind"
+      : "SELECT node_id, kind, COUNT(*) AS n, MAX(created_at) AS last FROM contributions GROUP BY node_id, kind";
+    const stmt = d1.prepare(sql);
+    const result = since ? await stmt.bind(since).all() : await stmt.all();
+    rows = (result && result.results) || [];
+  } catch (error) {
+    return jsonResponse({ error: "ladder unavailable", detail: String((error && error.message) || error).slice(0, 200) }, 503);
+  }
+
+  const byNode = new Map();
+  for (const row of rows) {
+    const id = String(row.node_id || "");
+    if (!id || isAutomationLogin(id) || /^misakanet[-_]/i.test(id)) continue;
+    const entry = byNode.get(id) || {
+      node: id, name: id, lessons: 0, questions: 0, used: 0, self: 0, solved: 0, lastActive: "",
+    };
+    const n = Number(row.n) || 0;
+    if (row.kind === "lesson") entry.lessons += n;
+    else if (row.kind === "question" || row.kind === "intake") entry.questions += n;
+    if (String(row.last || "") > entry.lastActive) entry.lastActive = String(row.last || "");
+    byNode.set(id, entry);
+  }
+
+  const board = rankRows([...byNode.values()], { days, top: 10, node: node || null, since });
+  const publicRow = (row) => ({
+    rank: row.rank, node: row.node, identity: row.identity, name: row.name,
+    score: row.score, hits: row.hits, used: row.used, self: row.self,
+    lessons: row.lessons, questions: row.questions, solved: row.solved,
+  });
+  return jsonResponse({
+    window: windowName,
+    days,
+    since,
+    total: board.total,
+    top: board.top.map(publicRow),
+    me: board.me ? publicRow(board.me) : null,
+    coverage: {
+      lesson_authors: 0,
+      note: "No lesson file carries a contributor/author field yet, so 'used' is 0 and 'lessons' counts submissions rather than retrievals; the two separate when lesson attribution lands.",
+    },
+  });
+}
+
 async function handleReputationLeaderboard(request, env) {
   const requested = new URL(request.url).searchParams.get("period") || "all-time";
   const period = normalizeReputationPeriod(requested);
@@ -7536,6 +7639,57 @@ const SEARCH_SIGNAL_MAX_GROUPS = 2000;
 // otherwise fail every insert. Idempotent, one statement per isolate (the flag
 // is per-isolate module state, so a cold start re-runs a no-op).
 let searchSignalsTableReady = false;
+
+// ── The contribution ladder's write side (sidebar, 2026-11-12) ───────────────────────
+//
+// One row per `(node_id, kind, ref)`: the primary key *is* the dedupe rule, so re-submitting the
+// same intake or re-sending the same lesson cannot inflate a score. Created lazily, the same way
+// `search_signals` is — the table lives in the telemetry database, and shipping the ladder must not
+// depend on someone remembering to apply a schema by hand.
+let contributionsTableReady = false;
+
+async function ensureContributionsTable(d1) {
+  if (contributionsTableReady) return;
+  await d1.prepare(
+    `CREATE TABLE IF NOT EXISTS contributions (
+       node_id    TEXT NOT NULL,
+       kind       TEXT NOT NULL,
+       ref        TEXT NOT NULL,
+       created_at TEXT NOT NULL DEFAULT (datetime('now')),
+       PRIMARY KEY (node_id, kind, ref)
+     )`
+  ).run();
+  await d1.prepare(
+    "CREATE INDEX IF NOT EXISTS idx_contributions_kind_created ON contributions(kind, created_at)"
+  ).run();
+  contributionsTableReady = true;
+}
+
+/**
+ * Record one contribution, best-effort.
+ *
+ * Never throws, never fails the caller: a lesson submission that reached GitHub must not be lost
+ * because a scoreboard row could not be written, and an intake that was filed must stay filed.
+ * Kinds: `lesson` (structured submission accepted by `misakanet_write_lesson`), `question` and
+ * `intake` (reports filed by a caller that presented a token).
+ */
+async function recordContribution(env, nodeId, kind, ref) {
+  const node = String(nodeId || "").trim();
+  const target = String(ref || "").trim();
+  if (!node || !target || !kind) return false;
+  const d1 = opsD1(env);
+  if (!d1) return false;
+  try {
+    await ensureContributionsTable(d1);
+    await d1.prepare(
+      "INSERT OR IGNORE INTO contributions (node_id, kind, ref) VALUES (?1, ?2, ?3)"
+    ).bind(node, kind, target).run();
+    return true;
+  } catch (error) {
+    logInternal(`contribution write failed: ${(error && error.message) || error}`);
+    return false;
+  }
+}
 
 async function ensureSearchSignalsTable(d1) {
   if (searchSignalsTableReady) return;
@@ -10110,6 +10264,13 @@ export default {
     // GET /api/insights/reputation-leaderboard — public points leaderboard (#908)
     if (request.method === "GET" && url.pathname === "/api/insights/reputation-leaderboard") {
       return handleReputationLeaderboard(request, env);
+    }
+
+    // GET /api/leaderboard/ladder — the sidebar's contribution ladder: top 10 + the caller's row.
+    // Read-only by construction: rows are written by the MCP tools (a token-authenticated lesson
+    // submission or intake), never over HTTP, so there is no public write surface here.
+    if (request.method === "GET" && url.pathname === "/api/leaderboard/ladder") {
+      return handleContributionLadder(request, env);
     }
 
     // GET /api/leaderboard/state — the contributor ranking this worker computes on its own cron.
