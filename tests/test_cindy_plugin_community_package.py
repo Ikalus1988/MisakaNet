@@ -140,3 +140,38 @@ def test_every_locale_file_the_manifest_names_exists():
             assert len(value["description"]) <= 1024, (
                 f"{lang}.tools.{tool['name']}.description is {len(value['description'])} characters"
             )
+
+
+def test_the_storage_disclosure_reaches_both_channels():
+    """The market review asked for the private directory to be described as it is.
+
+    `did-turn-end` writes a per-session turn counter and the announcement state into
+    `checkpoint.json` next to the client id. Wherever the copy says the private directory
+    holds "only a client id" — the manifest description and every locale's search tool text —
+    it has to name the counter as well, in that language.
+    """
+    counters = {
+        "zh-CN": "轮次计数",
+        "en": "turn counter",
+        "ja": "ターン数",
+        "ko": "턴 수",
+    }
+    for base in (OFFICIAL, COMMUNITY):
+        description = manifest(base)["description"]
+        assert "私有目录" in description, f"{base.name}: the manifest description must disclose it"
+        assert counters["zh-CN"] in description, f"{base.name}: the manifest must name the counter"
+        for lang, word in counters.items():
+            doc = json.loads((base / "locales" / f"{lang}.json").read_text(encoding="utf-8"))
+            tools = doc["tools"]
+            entry = tools["misakanet_search"] if isinstance(tools, dict) else [
+                t for t in tools if t["name"] == "misakanet_search"
+            ][0]
+            text = entry["description"] if isinstance(entry, dict) else entry
+            assert word in text, f"{base.name}/{lang}: the search tool text must name the counter"
+
+
+def test_the_kind_filter_only_hides_hits_when_there_were_hits():
+    """`kind_filtered_empty` must not swallow a genuine zero hit (the market review's finding)."""
+    for base in (OFFICIAL, COMMUNITY):
+        source = (base / "main.js").read_text(encoding="utf-8")
+        assert "matchedBeforeFilter > 0" in source, f"{base.name}: the kind filter lost its condition"

@@ -396,7 +396,13 @@ function shapeSearch(payload, args) {
   // A `kind` filter that emptied the list is not a corpus miss: the lessons are there, the
   // filter excluded them. Calling that "no match" pushes the agent down the knowledge-gap
   // route — it can publish a duplicate of a lesson that already exists.
-  const kindFilteredEmpty = results.length === 0 && !!filteredByKind;
+  //
+  // Only when the endpoint says there *were* hits before the filter: a `kind` filter that
+  // matched nothing at all is a real zero hit, and calling it "filtered empty" would hide a
+  // genuine miss behind a hint to change the filter.
+  const kindFilteredEmpty =
+    results.length === 0 && !!filteredByKind && typeof matchedBeforeFilter === 'number'
+    && matchedBeforeFilter > 0;
   const noMatch = !kindFilteredEmpty && (payload.no_match === true || results.length === 0);
   const note = kindFilteredEmpty
     ? '按 kind=' + filteredByKind + ' 过滤后没有命中' +
@@ -712,7 +718,7 @@ async function handleToolCall(msg) {
 
     if (tool === TOOLS.misakanet_submit_intake) {
       if (args.user_confirmed !== true) {
-        return fail(
+        return await fail(
           callId,
           'CONFIRM_REQUIRED',
           'misakanet_submit_intake 会把内容公开发布到 MisakaNet 的 GitHub 仓库。只有用户明确要求上报这次故障或提问后，才带 user_confirmed=true 重新调用。',
@@ -737,7 +743,7 @@ async function handleToolCall(msg) {
       const intakeId = asString(args.intake_id).trim();
       const dedupKey = asString(args.dedup_key).trim();
       if (!intakeId && !dedupKey) {
-        return fail(
+        return await fail(
           callId,
           'MISSING_INTAKE_REF',
           'misakanet_me_inbox 需要 intake_id（如 issue-4238 或 4238）或 dedup_key（8 位）——二选一。',
@@ -748,7 +754,7 @@ async function handleToolCall(msg) {
       return await sendResult(callId, true, shapeInbox(payload));
     }
 
-    return fail(callId, 'UNKNOWN_TOOL', '未知工具 ' + String(tool) + '。本插件只提供 misakanet_search / misakanet_get_lesson / misakanet_preflight / misakanet_submit_intake / misakanet_me_inbox。');
+    return await fail(callId, 'UNKNOWN_TOOL', '未知工具 ' + String(tool) + '。本插件只提供 misakanet_search / misakanet_get_lesson / misakanet_preflight / misakanet_submit_intake / misakanet_me_inbox。');
   } catch (error) {
     const code = (error && error.code) || 'MISAKANET_ERROR';
     const hint = (error && error.hint) || '调用 MisakaNet 失败。';

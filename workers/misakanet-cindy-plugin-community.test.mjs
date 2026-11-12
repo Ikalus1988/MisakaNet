@@ -870,3 +870,21 @@ test('drift guard: the community package carries every fix the official one has'
   assert.match(solveLine, /kind="new_lesson_candidate"/);
   assert.doesNotMatch(solveLine, /kind="missing_lesson"/);
 });
+
+test('search: a kind filter that matched nothing at all is still a real zero hit', async () => {
+  // The filtered-empty branch is only for "there were hits, the filter hid them". If the
+  // endpoint says there were none before the filter, the query really found nothing, and
+  // calling it "filtered empty" would hide a genuine miss behind a hint to change the filter.
+  const load = await loadPlugin({
+    respond: () => ({
+      results: [],
+      matched_before_filter: 0,
+      filtered_by_kind: 'evidence',
+      no_match: true,
+    }),
+  });
+  const answer = await callTool(load, 'misakanet_search', { query: 'nothing matches', kind: 'evidence' });
+  assert.equal(answer.result.kind_filtered_empty, undefined);
+  assert.equal(answer.result.no_match, true);
+  assert.match(answer.result.note, /没有命中任何教训/);
+});

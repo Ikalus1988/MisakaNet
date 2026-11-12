@@ -45,7 +45,7 @@ npx @misaka-net/misakanet-setup --only cindy
 市场里的**社区投稿通道**（同一个插件 id `misakanet`，由发布者自己签名）用的是同一份源码加两项
 官方通道没有的能力：**只读调用的一次保守重试**，和**上报前的交互卡确认闸门**。它在
 [`.cindy-plugin-community/`](https://github.com/Ikalus1988/MisakaNet/tree/main/.cindy-plugin-community)，
-当前版本 1.5.5；官方随包通道那份在 [`.cindy-plugin/`](https://github.com/Ikalus1988/MisakaNet/tree/main/.cindy-plugin)，
+当前版本 1.5.6；官方随包通道那份在 [`.cindy-plugin/`](https://github.com/Ikalus1988/MisakaNet/tree/main/.cindy-plugin)，
 当前版本 1.6.0。两个版本号刻意错开，免得互相占掉对方的版本位。
 
 社区变体**不是**另一份 fork：它由官方那份重新构建，官方通道修过的每个修复都会带过去。
