@@ -7,6 +7,24 @@ All notable changes to the Misaka Network project are documented here.
 
 ---
 
+## [3.11.0](https://github.com/Ikalus1988/MisakaNet/compare/v3.10.1...v3.11.0) (2026-11-12)
+
+
+### Features
+
+* **cindy-plugin:** 社区通道变体入仓——官方源 + 两项社区能力，双向漂移收口 ([#4698](https://github.com/Ikalus1988/MisakaNet/issues/4698)) ([1a0a4c2](https://github.com/Ikalus1988/MisakaNet/commit/1a0a4c2226a1caa5f5253cbba37ecfe2027e1183))
+* **lessons:** review-band batch 3 — nine intakes with real titles ([#4688](https://github.com/Ikalus1988/MisakaNet/issues/4688)) ([f3190a0](https://github.com/Ikalus1988/MisakaNet/commit/f3190a0b2276c69d2ae5a6f441e4675e28d77b3e))
+
+
+### Bug Fixes
+
+* **cindy-plugin:** preflight 的 note 不再让模型照做第三方 guard；kind 过滤空不当成零命中 ([#4695](https://github.com/Ikalus1988/MisakaNet/issues/4695)) ([ff11ef5](https://github.com/Ikalus1988/MisakaNet/commit/ff11ef541bb040e32fc60555e80f749063199a91))
+* **cindy-plugin:** 官方通道的两处修正同步到镜像与社区变体（社区 1.5.6） ([#4721](https://github.com/Ikalus1988/MisakaNet/issues/4721)) ([527208a](https://github.com/Ikalus1988/MisakaNet/commit/527208adbbf451d688324423ae8799ceaf655a62))
+* **home:** the terminal widget no longer advertises an unrunnable register command ([#4694](https://github.com/Ikalus1988/MisakaNet/issues/4694)) ([f0a3541](https://github.com/Ikalus1988/MisakaNet/commit/f0a3541a5039c7b3acaac1299b4d0837270540ab))
+* **measurement:** E4 reads the table the worker writes, and four decisions get their repo half ([#4697](https://github.com/Ikalus1988/MisakaNet/issues/4697)) ([9cac518](https://github.com/Ikalus1988/MisakaNet/commit/9cac5188f823ba9c65b858b6403120dc9b7b93da))
+* **measurement:** the counters panels read the database the worker writes ([#4696](https://github.com/Ikalus1988/MisakaNet/issues/4696)) ([#4716](https://github.com/Ikalus1988/MisakaNet/issues/4716)) ([f39520c](https://github.com/Ikalus1988/MisakaNet/commit/f39520c3321ee631f0129d34d1816cb55e097232))
+* **triage:** the label audit allows `approval-watch` trackers ([#4699](https://github.com/Ikalus1988/MisakaNet/issues/4699)) ([57a6c4f](https://github.com/Ikalus1988/MisakaNet/commit/57a6c4f8b3e7fcb52f3b2e478dd8e887b8961672))
+
 ## [3.10.1](https://github.com/Ikalus1988/MisakaNet/compare/v3.10.0...v3.10.1) (2026-11-11)
 
 
