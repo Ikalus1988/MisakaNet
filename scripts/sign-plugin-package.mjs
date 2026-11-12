@@ -142,11 +142,25 @@ function loadKey(keyPath) {
 }
 
 function generateKey(keyPath) {
-  if (fs.existsSync(keyPath)) throw new Error(`私钥已存在，不覆盖：${keyPath}`);
+  // Create-exclusive ('wx'): the write fails atomically if the path already exists.
+  //
+  // The earlier version checked `fs.existsSync(keyPath)` and then wrote — a
+  // check-then-write window in which a key created by someone else in between would be
+  // *overwritten*. Overwriting a private key is the one thing this function must never do,
+  // so the protection has to be in the write itself, not in a check before it.
   const { privateKey } = crypto.generateKeyPairSync('ed25519');
   const pem = privateKey.export({ type: 'pkcs8', format: 'pem' });
   fs.mkdirSync(path.dirname(keyPath), { recursive: true });
-  fs.writeFileSync(keyPath, pem, { mode: 0o600 });
+  try {
+    fs.writeFileSync(keyPath, pem, { mode: 0o600, flag: 'wx' });
+  } catch (error) {
+    if (error && error.code === 'EEXIST') {
+      const err = new Error(`私钥已存在，不覆盖：${keyPath}`);
+      err.code = 'KEY_EXISTS';
+      throw err;
+    }
+    throw error;
+  }
   try { fs.chmodSync(keyPath, 0o600); } catch { /* Windows 上可能不支持 */ }
   const spkiDer = crypto.createPublicKey(privateKey).export({ type: 'spki', format: 'der' });
   return { privateKey, spkiDer, publicKeyB64: spkiDer.toString('base64'), keyId: publicKeyId(spkiDer) };
@@ -275,9 +289,16 @@ function cmdRelease(args) {
   if (!name || name === true) throw new Error('缺少 --name');
 
   let created = false;
-  if (keyPath !== '-' && !fs.existsSync(path.resolve(keyPath))) {
-    generateKey(path.resolve(keyPath));
-    created = true;
+  if (keyPath !== '-') {
+    const resolved = path.resolve(keyPath);
+    try {
+      generateKey(resolved);
+      created = true;
+    } catch (error) {
+      // The key already existed (or appeared between the check and the write) — use it,
+      // never overwrite it. generateKey's create-exclusive write is what makes that safe.
+      if (!error || error.code !== 'KEY_EXISTS') throw error;
+    }
   }
   const key = loadKey(keyPath === '-' ? '-' : path.resolve(keyPath));
 
@@ -353,8 +374,15 @@ function cmdVerify(args) {
     level = 'signed-unverified';
     label = '有签名，然发布者身分未验';
     const trustPath = args.trust && args.trust !== true ? path.resolve(args.trust) : null;
-    if (trustPath && fs.existsSync(trustPath)) {
-      const trust = JSON.parse(fs.readFileSync(trustPath, 'utf8'));
+    if (trustPath) {
+      // Read it directly instead of checking first: the check-then-read window lets the file
+      // change in between, and a trust file that changed in between is not the one we read.
+      let trust = null;
+      try {
+        trust = JSON.parse(fs.readFileSync(trustPath, 'utf8'));
+      } catch (error) {
+        if (!error || error.code !== 'ENOENT') throw error;
+      }
       const entry = trust?.publishers?.[doc.publisher.keyId];
       if (entry && entry.publicKey === doc.publisher.publicKey) {
         level = 'verified-publisher';
