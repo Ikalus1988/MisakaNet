@@ -98,3 +98,27 @@ def test_the_report_table_carries_both_timings():
               "verdict": {"status": "pass", "reasons": [], "checks": []}}
     text = bt.render(report)
     assert "800 ms" in text and "4000 ms" in text
+
+
+def test_every_probe_identifies_itself_as_the_benchmark():
+    """The probe's calls land in the same funnel as everyone else's; the tag makes them subtractable.
+
+    Measured 2026-11-12: 200 of that day's 256 funnel searches were this script (10 runs × 20 calls).
+    Without the header those calls are anonymous, so a funnel reading counts a measurement of the
+    measurement as traffic — and a reader cannot tell the two apart.
+    """
+    request = bt.request_bytes("misakanet.org", "tools/call", "application/json",
+                               {"name": "misakanet_search", "arguments": {"query": "x"}})
+    assert b"X-MisakaNet-Client: misakanet-ttfb-bench\r\n" in request
+    assert request.startswith(b"POST /mcp HTTP/1.1\r\n")
+    # The header must be part of the request, not a second one: Content-Length still describes the body.
+    body = request.split(b"\r\n\r\n", 1)[1]
+    assert json_body_matches_length(request, body)
+
+
+def json_body_matches_length(request: bytes, body: bytes) -> bool:
+    head = request.split(b"\r\n\r\n", 1)[0].decode()
+    for line in head.split("\r\n"):
+        if line.lower().startswith("content-length:"):
+            return int(line.split(":", 1)[1].strip()) == len(body)
+    return False

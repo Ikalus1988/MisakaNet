@@ -48,6 +48,14 @@ TIMEOUT_SECONDS = 20.0
 BASELINE_METHOD = "tools/list"
 SEARCH_QUERY = "wsl2 landlock 文件系统沙箱"
 
+#: The client identity every probe presents. The worker hashes `X-MisakaNet-Client` into
+#: `search_signals.client_hint`, so this benchmark's calls are attributable — and therefore
+#: subtractable — instead of counting as anonymous traffic. Measured 2026-11-12: **200 of that day's
+#: 256 funnel searches were this script** (10 runs × 20 calls, one per release PR), so a funnel read
+#: without this tag is mostly a measurement of the benchmark. 18 chars of `[A-Za-z0-9._:-]`, the
+#: shape the worker accepts.
+BENCH_CLIENT_ID = "misakanet-ttfb-bench"
+
 #: A baseline slower than this (or flakier than the rate below) makes every other number meaningless.
 BASELINE_MAX_FIRST_MS = 5_000
 BASELINE_MIN_OK_RATE = 0.6
@@ -68,15 +76,22 @@ class Probe:
     error: str = ""
 
 
+def request_bytes(host: str, method: str, accept: str, params: dict | None = None) -> bytes:
+    """The raw request, split out so the headers — including the client tag — are testable offline."""
+    body = json.dumps({"jsonrpc": "2.0", "id": 1, "method": method, "params": params or {}}).encode()
+    head = (
+        f"POST /mcp HTTP/1.1\r\nHost: {host}\r\nContent-Type: application/json\r\n"
+        f"Accept: {accept}\r\nMCP-Protocol-Version: 2025-06-18\r\nOrigin: https://misakanet.org\r\n"
+        f"X-MisakaNet-Client: {BENCH_CLIENT_ID}\r\n"
+        f"Content-Length: {len(body)}\r\nConnection: close\r\n\r\n"
+    )
+    return head.encode() + body
+
+
 def probe(host: str, method: str, accept: str, params: dict | None = None,
           timeout: float = TIMEOUT_SECONDS) -> Probe:
     """One HTTPS request, timing the first body byte and the last one."""
-    body = json.dumps({"jsonrpc": "2.0", "id": 1, "method": method, "params": params or {}}).encode()
-    request = (
-        f"POST /mcp HTTP/1.1\r\nHost: {host}\r\nContent-Type: application/json\r\n"
-        f"Accept: {accept}\r\nMCP-Protocol-Version: 2025-06-18\r\nOrigin: https://misakanet.org\r\n"
-        f"Content-Length: {len(body)}\r\nConnection: close\r\n\r\n"
-    ).encode() + body
+    request = request_bytes(host, method, accept, params)
     started = time.monotonic()
     first = None
     received = 0
