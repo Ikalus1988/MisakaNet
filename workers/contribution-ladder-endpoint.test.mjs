@@ -11,7 +11,7 @@ import test from 'node:test';
 
 import worker from './register-proxy-sw.js';
 
-function fakeOps(rows, usedRows = []) {
+function fakeOps(rows, usedRows = [], authorCount = 0) {
   const statements = [];
   return {
     _statements: statements,
@@ -23,6 +23,7 @@ function fakeOps(rows, usedRows = []) {
           statements.push({ sql, bound: stmt._bound });
           if (sql.includes('FROM contributions')) return { results: rows };
           if (sql.includes('JOIN lesson_authors')) return { results: usedRows };
+          if (sql.includes('COUNT(*) AS n FROM lesson_authors')) return { results: [{ n: authorCount }] };
           return { results: [] };
         },
         async run() { return { success: true }; },
@@ -32,8 +33,8 @@ function fakeOps(rows, usedRows = []) {
   };
 }
 
-function envWith(rows) {
-  const ops = fakeOps(rows);
+function envWith(rows, usedRows = [], authorCount = 0) {
+  const ops = fakeOps(rows, usedRows, authorCount);
   return { env: { MISAKANET_OPS_D1: ops }, ops };
 }
 
@@ -141,11 +142,11 @@ test('a GitHub handle is the display name, and the pseudonym stays on the row', 
   // The agreed design: two identity methods on one board — a GitHub name when the contributor has
   // one, the node pseudonym otherwise. The node id is never dropped: it is what `?node=` matches.
   const { env } = envWith([
-    { node_id: "MisakaX", kind: "lesson", login: "octocat", n: 2, last: "2026-11-11T00:00:00Z" },
+    { node_id: "gh:octocat", kind: "lesson", login: "octocat", n: 2, last: "2026-11-11T00:00:00Z" },
     { node_id: "MisakaY", kind: "question", login: null, n: 1, last: "2026-11-11T00:00:00Z" },
   ]);
   const { body } = await ladder(env);
-  const github = body.top.find((row) => row.node === "MisakaX");
+  const github = body.top.find((row) => row.node === "gh:octocat");
   const pseudonym = body.top.find((row) => row.node === "MisakaY");
   assert.equal(github.login, "octocat");
   assert.equal(github.name, "octocat");
@@ -153,6 +154,21 @@ test('a GitHub handle is the display name, and the pseudonym stays on the row', 
   assert.equal(pseudonym.login, "");
   assert.equal(pseudonym.name, "MisakaY");
   assert.equal(pseudonym.identity, "node");
+});
+
+test('a handle on a pseudonym row is not a verified identity', async () => {
+  // Observed on the live board 2026-11-14: `Misaka38084` rendered as `GH claude-code`, because the
+  // intake's `contributor` argument (documented as "GitHub username, agent name, or email") was
+  // written straight into `contributions.login`. Only the sweep's `gh:<login>` rows are verified —
+  // it writes the `user.login` of a merged lesson PR — so a login elsewhere must not badge a row.
+  const { env } = envWith([
+    { node_id: "Misaka38084", kind: "question", login: "claude-code", n: 3, last: "2026-11-12T00:00:00Z" },
+  ]);
+  const { body } = await ladder(env);
+  const row = body.top.find((entry) => entry.node === "Misaka38084");
+  assert.equal(row.login, "");
+  assert.equal(row.name, "Misaka38084");
+  assert.equal(row.identity, "node");
 });
 
 test('used counts retrievals of lessons whose author is known', async () => {
@@ -168,4 +184,37 @@ test('used counts retrievals of lessons whose author is known', async () => {
   assert.equal(body.top[0].used, 5);
   assert.equal(body.top[0].score, 2); // 1 lesson (1.0) + 5 retrievals (0.2 each)
   assert.equal(body.coverage.used_source, "lesson_authors + search_signals");
+});
+
+test('coverage reports how many lessons have a recorded author', async () => {
+  // The field was hardcoded to 0 while the table held 424 rows — the same false zero the join had,
+  // and the panel printed it as fact (2026-11-14). The count is now read, and `null` (not 0) says
+  // "could not read it", which the panel renders as a different sentence.
+  const { env } = envWith(
+    [{ node_id: "gh:octocat", kind: "lesson", login: "octocat", n: 1, last: "2026-11-11T00:00:00Z" }],
+    [],
+    424,
+  );
+  const { body } = await ladder(env);
+  assert.equal(body.coverage.lesson_authors, 424);
+});
+
+test('an unreadable author count is null, not zero', async () => {
+  const d1 = {
+    prepare(sql) {
+      return {
+        bind() { return this; },
+        async all() {
+          if (sql.includes('FROM contributions')) return { results: [] };
+          if (sql.includes('JOIN lesson_authors')) return { results: [] };
+          throw new Error('D1_ERROR: no such table: lesson_authors');
+        },
+        async run() { return { success: true }; },
+      };
+    },
+  };
+  const res = await worker.fetch(new Request("https://misakanet.org/api/leaderboard/ladder"), { MISAKANET_OPS_D1: d1 });
+  const body = await res.json();
+  assert.equal(body.coverage.lesson_authors, null);
+  assert.equal(body.coverage.used_source, "unavailable");
 });
