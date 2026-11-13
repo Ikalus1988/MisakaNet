@@ -7266,9 +7266,10 @@ async function handleContributionLadder(request, env) {
   let usedSource = "unavailable";
   try {
     await ensureLessonAuthorsTable(d1);
+    const join = "JOIN lesson_authors la ON la.path = ss.top_id OR la.lesson_id = ss.top_id OR la.slug = ss.top_id";
     const usedSql = sinceSql
-      ? "SELECT la.node_id AS node_id, COUNT(*) AS n, MAX(ss.created_at) AS last FROM search_signals ss JOIN lesson_authors la ON la.path = ss.top_id WHERE ss.created_at >= ?1 GROUP BY la.node_id"
-      : "SELECT la.node_id AS node_id, COUNT(*) AS n, MAX(ss.created_at) AS last FROM search_signals ss JOIN lesson_authors la ON la.path = ss.top_id GROUP BY la.node_id";
+      ? `SELECT la.node_id AS node_id, COUNT(*) AS n, MAX(ss.created_at) AS last FROM search_signals ss ${join} WHERE ss.created_at >= ?1 GROUP BY la.node_id`
+      : `SELECT la.node_id AS node_id, COUNT(*) AS n, MAX(ss.created_at) AS last FROM search_signals ss ${join} GROUP BY la.node_id`;
     const usedStmt = d1.prepare(usedSql);
     const usedResult = sinceSql ? await usedStmt.bind(sinceSql).all() : await usedStmt.all();
     for (const row of (usedResult && usedResult.results) || []) {
@@ -7744,6 +7745,8 @@ async function ensureLessonAuthorsTable(d1) {
   await d1.prepare(
     `CREATE TABLE IF NOT EXISTS lesson_authors (
        path       TEXT PRIMARY KEY,
+       lesson_id  TEXT,
+       slug       TEXT,
        node_id    TEXT,
        login      TEXT,
        updated_at TEXT NOT NULL DEFAULT (datetime('now'))
@@ -7752,6 +7755,15 @@ async function ensureLessonAuthorsTable(d1) {
   await d1.prepare(
     "CREATE INDEX IF NOT EXISTS idx_lesson_authors_node ON lesson_authors(node_id)"
   ).run();
+  // `search_signals.top_id` is sometimes a lesson's own `id`, sometimes the file path, sometimes the
+  // basename — measured 2026-11-13 across 16k signals. The extra columns let the join match whichever
+  // shape that row used; they are added here for tables created before this change.
+  for (const sql of [
+    "ALTER TABLE lesson_authors ADD COLUMN lesson_id TEXT",
+    "ALTER TABLE lesson_authors ADD COLUMN slug TEXT",
+  ]) {
+    try { await d1.prepare(sql).run(); } catch (error) { /* already present */ }
+  }
   lessonAuthorsTableReady = true;
 }
 
