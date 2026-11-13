@@ -573,8 +573,8 @@ if (env.posts.length) throw new Error("the no-match row posted something: " + JS
 // Read off the realized tree by `key`, so they are the panel's own children and not a re-render: the
 // localization gate compares them against the dictionary the same bundle registered.
 const stripText = text(env.find("strip"));
-const activityRow = env.find("s4r");
-const activityText = activityRow ? childrenOf(activityRow).slice(0, 2).map(text) : [];
+const activityRow = env.find("s4");
+const activityText = activityRow ? [text(activityRow)] : [];
 
 // The vote button's label is a dictionary entry, so the lookup is too: a harness that only knew the
 // English word would report "no one-click vote" for a Chinese panel that has one.
