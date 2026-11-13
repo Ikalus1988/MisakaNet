@@ -5476,7 +5476,6 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx, 
       if (intakeNode) {
         const recorded = recordContribution(
           env, intakeNode, kind === "question" ? "question" : "intake", `issue-${data.number}`,
-          args.contributor,
         );
         if (ctx) ctx.waitUntil(recorded); else await recorded;
       }
@@ -5615,7 +5614,7 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx, 
       const issue = await resp.json();
       // The ladder counts the submission, best-effort: a scoreboard row must never cost the
       // submitter the issue they just filed.
-      await recordContribution(env, nodeId, "lesson", `issue-${issue.number}`, args.contributor);
+      await recordContribution(env, nodeId, "lesson", `issue-${issue.number}`);
       // Reported back only when it happened: a submitter whose credential was scrubbed should be told
       // (it is their text), and silence about a flagged submission would be the same "looks accepted"
       // problem this guard exists to prevent.
@@ -7264,6 +7263,9 @@ async function handleContributionLadder(request, env) {
   // the board — and `coverage.used_source` says which of the two states the caller is seeing.
   let usedByNode = new Map();
   let usedSource = "unavailable";
+  // `null` until the count is actually read. A hardcoded 0 here was the same false zero the join had:
+  // the board claimed no lesson had a recorded author while 424 of them did (2026-11-14).
+  let lessonAuthorCount = null;
   try {
     await ensureLessonAuthorsTable(d1);
     const join = "JOIN lesson_authors la ON la.path = ss.top_id OR la.lesson_id = ss.top_id OR la.slug = ss.top_id";
@@ -7277,6 +7279,8 @@ async function handleContributionLadder(request, env) {
       if (!id) continue;
       usedByNode.set(id, Number(row.n) || 0);
     }
+    const countResult = await d1.prepare("SELECT COUNT(*) AS n FROM lesson_authors").all();
+    lessonAuthorCount = Number(countResult && countResult.results && countResult.results[0] && countResult.results[0].n) || 0;
     usedSource = "lesson_authors + search_signals";
   } catch (error) {
     logInternal("ladder used-read", error);
@@ -7290,7 +7294,13 @@ async function handleContributionLadder(request, env) {
       node: id, login: "", name: id, lessons: 0, questions: 0, used: 0, self: 0, solved: 0,
       lastActive: "",
     };
-    if (!entry.login && row.login) {
+    // A handle is an identity only on a row the author sweep wrote, and those carry `gh:<login>` as
+    // the node id. A login sitting on a pseudonym row came from a caller's own `contributor` field,
+    // which is documented as "GitHub username, agent name, or email"; badging it `GH` claims a
+    // verification nobody performed. The board showed `Misaka38084` as `claude-code` — an agent type
+    // rendered as a GitHub account — so the read side refuses the pairing as well as the write side
+    // (2026-11-14).
+    if (!entry.login && row.login && /^gh:/i.test(id)) {
       entry.login = String(row.login);
       entry.name = entry.login;
     }
@@ -7317,7 +7327,7 @@ async function handleContributionLadder(request, env) {
     me: board.me ? publicRow(board.me) : null,
     coverage: {
       used_source: usedSource,
-      lesson_authors: 0,
+      lesson_authors: lessonAuthorCount,
       note: "'lessons' counts submissions; 'used' counts retrievals of lessons whose author is known from a merged lesson PR. A lesson with no recorded author contributes submissions but no retrievals.",
     },
   });
@@ -7715,22 +7725,6 @@ async function ensureContributionsTable(d1) {
   contributionsTableReady = true;
 }
 
-/**
- * Record one contribution, best-effort.
- *
- * Never throws, never fails the caller: a lesson submission that reached GitHub must not be lost
- * because a scoreboard row could not be written, and an intake that was filed must stay filed.
- * Kinds: `lesson` (structured submission accepted by `misakanet_write_lesson`), `question` and
- * `intake` (reports filed by a caller that presented a token).
- */
-const GITHUB_LOGIN_SHAPE = /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})$/;
-
-/** A GitHub handle, or "" — a display name is not an identity and must not be shown as one. */
-function normalizeLogin(value) {
-  const name = String(value || "").trim().replace(/^@/, "");
-  return GITHUB_LOGIN_SHAPE.test(name) ? name : "";
-}
-
 let lessonAuthorsTableReady = false;
 
 /**
@@ -7767,7 +7761,15 @@ async function ensureLessonAuthorsTable(d1) {
   lessonAuthorsTableReady = true;
 }
 
-async function recordContribution(env, nodeId, kind, ref, login) {
+/**
+ * Record one contribution, best-effort.
+ *
+ * Never throws, never fails the caller: a lesson submission that reached GitHub must not be lost
+ * because a scoreboard row could not be written, and an intake that was filed must stay filed.
+ * Kinds: `lesson` (structured submission accepted by `misakanet_write_lesson`), `question` and
+ * `intake` (reports filed by a caller that presented a token).
+ */
+async function recordContribution(env, nodeId, kind, ref) {
   const node = String(nodeId || "").trim();
   const target = String(ref || "").trim();
   if (!node || !target || !kind) return false;
@@ -7775,10 +7777,17 @@ async function recordContribution(env, nodeId, kind, ref, login) {
   if (!d1) return false;
   try {
     await ensureContributionsTable(d1);
+    // `login` is deliberately not written here. It is the board's *verified* half: it only ever holds
+    // a handle GitHub itself vouched for, which means the `user.login` of a merged lesson PR — the
+    // sweep in `.github/workflows/lesson-authors.yml`, which writes its own `gh:<login>` rows. The
+    // intake's `contributor` argument is a self-declared string documented as "GitHub username, agent
+    // name, or email"; writing it here gave the board rows like `Misaka38084` shown with a `GH` badge
+    // reading `claude-code`, i.e. an agent type rendered as a GitHub account. A badge that means
+    // "verified" must not be fed by an unverified field (2026-11-14).
     await d1.prepare(
-      `INSERT INTO contributions (node_id, kind, ref, login) VALUES (?1, ?2, ?3, ?4)
-       ON CONFLICT(node_id, kind, ref) DO UPDATE SET login = COALESCE(excluded.login, contributions.login)`
-    ).bind(node, kind, target, normalizeLogin(login) || null).run();
+      `INSERT INTO contributions (node_id, kind, ref) VALUES (?1, ?2, ?3)
+       ON CONFLICT(node_id, kind, ref) DO NOTHING`
+    ).bind(node, kind, target).run();
     return true;
   } catch (error) {
     logInternal(`contribution write failed: ${(error && error.message) || error}`);
