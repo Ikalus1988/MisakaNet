@@ -7,6 +7,18 @@ All notable changes to the Misaka Network project are documented here.
 
 ---
 
+## [3.12.1](https://github.com/Ikalus1988/MisakaNet/compare/v3.12.0...v3.12.1) (2026-11-13)
+
+
+### Bug Fixes
+
+* **panel:** the ladder is a headline, not the last line on the page ([#4776](https://github.com/Ikalus1988/MisakaNet/issues/4776)) ([f35f0b8](https://github.com/Ikalus1988/MisakaNet/commit/f35f0b8e42aa184d970e03acdb7b64d67b104ec2))
+
+
+### Documentation
+
+* **integrations:** the canonical blurb, and the three directory pages still quoting a stale count ([#4762](https://github.com/Ikalus1988/MisakaNet/issues/4762)) ([8170887](https://github.com/Ikalus1988/MisakaNet/commit/8170887046bcdc5e28729cab6e16b53e8e8c7734))
+
 ## [3.12.0](https://github.com/Ikalus1988/MisakaNet/compare/v3.11.3...v3.12.0) (2026-11-12)
 
 
