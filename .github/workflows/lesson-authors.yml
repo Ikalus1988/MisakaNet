@@ -74,9 +74,11 @@ jobs:
             case "$login" in
               *"[bot]"|"misakanet-bot"|"misakanet-doctor") echo "skip #$number: $login"; skipped=$((skipped + 1)); continue ;;
             esac
-            # Only PRs that touch a lesson file count as a lesson contribution.
-            touched=$(gh api --paginate "repos/${REPO}/pulls/${number}/files?per_page=100" --jq '[.[].filename] | map(select(startswith("lessons/"))) | length' || echo 0)
-            if [ "${touched:-0}" -eq 0 ]; then skipped=$((skipped + 1)); continue; fi
+            # Only PRs that *add* a lesson file count. A PR that edits an existing lesson is not an
+            # authorship claim, and `status == "added"` is the only evidence GitHub gives us.
+            added=$(gh api --paginate "repos/${REPO}/pulls/${number}/files?per_page=100" \
+              --jq '.[] | select(.status == "added") | .filename | select(startswith("lessons/"))' || true)
+            if [ -z "$added" ]; then skipped=$((skipped + 1)); continue; fi
 
             # node_id keeps the pseudonym column truthful (`gh:<login>`), login carries the verified
             # handle, ref is the PR the lesson arrived in.
@@ -85,6 +87,15 @@ jobs:
             wrangler d1 execute misakanet-ops --remote --command \
               "INSERT INTO contributions (node_id, kind, ref, login, created_at) VALUES ('gh:${login}', 'lesson', 'pr-${number}', '${login}', '${landed}') ON CONFLICT(node_id, kind, ref) DO UPDATE SET login = excluded.login, created_at = excluded.created_at;" \
               >/dev/null
+            # Path → author, so a later retrieval of this file can be attributed. The path is
+            # repo-controlled; single quotes are the only character that can break the SQL string.
+            while IFS= read -r path; do
+              [ -n "$path" ] || continue
+              safe=${path//\'/\'\'}
+              wrangler d1 execute misakanet-ops --remote --command \
+                "INSERT INTO lesson_authors (path, node_id, login) VALUES ('${safe}', 'gh:${login}', '${login}') ON CONFLICT(path) DO UPDATE SET node_id = excluded.node_id, login = excluded.login;" \
+                >/dev/null
+            done <<< "$added"
             recorded=$((recorded + 1))
           done < /tmp/merged.tsv
 

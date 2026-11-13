@@ -454,8 +454,10 @@ def scenario_settings_to_panel(page) -> dict:
         if panel_tab.count():
             panel_tab.first.click(timeout=8000)
             page.wait_for_timeout(2500)
-        panel_opened = bool(re.search(r"Voice cues: (on|off)", page.inner_text("body")))
-        found = re.search(r"Voice cues: (on|off)", page.inner_text("body"))
+        # The panel's switch reads "Voice: off" since the row was compacted (2026-11-13); the old
+        # "Voice cues: off" label is still accepted so this assertion does not pin one phrasing.
+        found = re.search(r"Voice(?: cues)?: (on|off)", page.inner_text("body"))
+        panel_opened = bool(found)
         chip = found.group(1) if found else ""
     except Exception as error:                     # the panel is the assertion, not the navigation
         log(f"panel step: {type(error).__name__}: {error}")
