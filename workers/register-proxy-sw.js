@@ -7247,7 +7247,11 @@ async function handleContributionLadder(request, env) {
     const result = since ? await stmt.bind(since).all() : await stmt.all();
     rows = (result && result.results) || [];
   } catch (error) {
-    return jsonResponse({ error: "ladder unavailable", detail: String((error && error.message) || error).slice(0, 200) }, 503);
+    // The D1 message names tables and SQL; it goes to Workers Logs, not to the caller — the rule
+    // this file states at `errorResponse` applies to every handler, including this one (CodeQL
+    // js/stack-trace-exposure #258, 2026-09-12).
+    logInternal("contribution ladder read", error);
+    return jsonResponse({ error: "ladder unavailable", code: "storage_unavailable" }, 503);
   }
 
   const byNode = new Map();

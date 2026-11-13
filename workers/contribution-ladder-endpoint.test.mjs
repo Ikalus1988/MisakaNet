@@ -112,3 +112,23 @@ test('an unknown window falls back to a week rather than failing', async () => {
   assert.equal(status, 200);
   assert.equal(body.window, 'week');
 });
+
+test('a broken store answers 503 without echoing the D1 error', async () => {
+  // CodeQL js/stack-trace-exposure #258: the D1 message names tables and SQL, so it goes to Workers
+  // Logs and the caller gets a stable code. The first version of this handler returned `detail`.
+  const d1 = {
+    prepare() {
+      return {
+        bind() { return this; },
+        async all() { throw new Error("D1_ERROR: no such table: contributions (SQL: SELECT node_id...)"); },
+        async run() { throw new Error("D1_ERROR: no such table: contributions"); },
+      };
+    },
+  };
+  const res = await worker.fetch(new Request("https://misakanet.org/api/leaderboard/ladder"), { MISAKANET_OPS_D1: d1 });
+  const body = await res.json();
+  assert.equal(res.status, 503);
+  assert.equal(body.code, "storage_unavailable");
+  assert.equal(body.detail, undefined);
+  assert.ok(!JSON.stringify(body).includes("no such table"), "the D1 message must not reach the caller");
+});
