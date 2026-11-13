@@ -7,6 +7,19 @@ All notable changes to the Misaka Network project are documented here.
 
 ---
 
+## [3.15.0](https://github.com/Ikalus1988/MisakaNet/compare/v3.14.0...v3.15.0) (2026-11-13)
+
+
+### Features
+
+* **ladder:** record lesson PR authors as verified GitHub identities ([#4795](https://github.com/Ikalus1988/MisakaNet/issues/4795)) ([3f4bd26](https://github.com/Ikalus1988/MisakaNet/commit/3f4bd26e831213e0594cccbfd305f7fd20576f6e))
+* **ladder:** score the retrievals you earned, and let a reader claim their row ([#4800](https://github.com/Ikalus1988/MisakaNet/issues/4800)) ([f822501](https://github.com/Ikalus1988/MisakaNet/commit/f8225013cc6d89d3f856a2f80505d78ba678fcb4))
+
+
+### Bug Fixes
+
+* **ladder:** the window compares one timestamp format, and a contribution keeps its merge date ([#4799](https://github.com/Ikalus1988/MisakaNet/issues/4799)) ([2bca34c](https://github.com/Ikalus1988/MisakaNet/commit/2bca34ce47c31da6eb605ce1fdf95831cefdb89d))
+
 ## [3.14.0](https://github.com/Ikalus1988/MisakaNet/compare/v3.13.0...v3.14.0) (2026-11-13)
 
 
