@@ -50,6 +50,8 @@ A2A（`.well-known/agent-card.json`）。**本地** stdio server（`pip install 
   <a href="https://glama.ai/mcp/connectors/org.misakanet/misaka-net"><img src="https://glama.ai/mcp/connectors/org.misakanet/misaka-net/badges/score.svg" alt="MisakaNet MCP connector on Glama"></a>
   <a href="https://mcptoplist.com/server/io.github.Ikalus1988%2Fmisakanet"><img src="https://img.shields.io/badge/MCP-Toplist-blue" alt="MCP Toplist"></a>
   <a href="https://dshfind.com/en/plugins/Ikalus1988/MisakaNet?ref=badge"><img src="https://dshfind.com/api/badge/Ikalus1988/MisakaNet?metric=downloads&amp;lang=zh" alt="DSH 插件下载量（dshfind）"></a>
+  <a href="https://dsh-plugin.org/plugins/ikalus1988/misakanet"><img src="https://dsh-plugin.org/badges/listed.svg" alt="已在 dsh-plugin.org 收录"></a>
+  <a href="https://www.dsh.so/artifact/misakanet/?ref=badge"><img src="https://cdn.dsh.so/badge/misakanet.svg" alt="dsh.so 风险评级"></a>
 </p>
 
 ---

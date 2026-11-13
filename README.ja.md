@@ -52,6 +52,8 @@ mcp-name: io.github.Ikalus1988/misakanet
   <a href="https://glama.ai/mcp/connectors/org.misakanet/misaka-net"><img src="https://glama.ai/mcp/connectors/org.misakanet/misaka-net/badges/score.svg" alt="MisakaNet MCP connector on Glama"></a>
   <a href="https://mcptoplist.com/server/io.github.Ikalus1988%2Fmisakanet"><img src="https://img.shields.io/badge/MCP-Toplist-blue" alt="MCP Toplist"></a>
   <a href="https://dshfind.com/en/plugins/Ikalus1988/MisakaNet?ref=badge"><img src="https://dshfind.com/api/badge/Ikalus1988/MisakaNet?metric=downloads&amp;lang=en" alt="dshfind の DSH プラグイン ダウンロード数"></a>
+  <a href="https://dsh-plugin.org/plugins/ikalus1988/misakanet"><img src="https://dsh-plugin.org/badges/listed.svg" alt="dsh-plugin.org に掲載"></a>
+  <a href="https://www.dsh.so/artifact/misakanet/?ref=badge"><img src="https://cdn.dsh.so/badge/misakanet.svg" alt="dsh.so のリスク評価"></a>
 </p>
 
 ---
