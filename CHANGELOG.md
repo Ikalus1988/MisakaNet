@@ -7,6 +7,16 @@ All notable changes to the Misaka Network project are documented here.
 
 ---
 
+## [3.14.0](https://github.com/Ikalus1988/MisakaNet/compare/v3.13.0...v3.14.0) (2026-11-13)
+
+
+### Features
+
+* **ladder:** two identity methods on one board, and a reward flash for each act ([#4794](https://github.com/Ikalus1988/MisakaNet/issues/4794)) ([1777c4d](https://github.com/Ikalus1988/MisakaNet/commit/1777c4d3d3c248f54789a935c9fd3898cad95724))
+* **panel:** fold the corpus rankings away from the default view ([#4787](https://github.com/Ikalus1988/MisakaNet/issues/4787)) ([8edef28](https://github.com/Ikalus1988/MisakaNet/commit/8edef283d73627687fbf0936c398a63f69611ce1))
+* **panel:** one line per thing — activity merged, voice is a switch, empty is one sentence ([#4792](https://github.com/Ikalus1988/MisakaNet/issues/4792)) ([ac899c5](https://github.com/Ikalus1988/MisakaNet/commit/ac899c541fb1c8fd1d21572c43b0af981bff472b))
+* **panel:** the browser keeps its last searches after a session closes ([#4785](https://github.com/Ikalus1988/MisakaNet/issues/4785)) ([ca25678](https://github.com/Ikalus1988/MisakaNet/commit/ca25678c611a66236fef5be9934e85adab8d7b49))
+
 ## [3.13.0](https://github.com/Ikalus1988/MisakaNet/compare/v3.12.2...v3.13.0) (2026-11-13)
 
 
