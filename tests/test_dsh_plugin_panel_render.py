@@ -567,9 +567,9 @@ def test_section_7_says_how_it_differs_from_the_ranking_above(locale, coverage_p
     # Red proof 2: the contrast sentence is dropped from the rule, which is what "one sorted twice" looks
     # like — the numbers stay right and the reader is left to guess what they are.
     dropped = source.replace(*{
-        "en": ("The ranking above counts what searches brought back; this one counts what they did not find. ",
+        "en": ("The ranking above counts what searches brought back; this one counts what they did not find — unanswered searches, not retrievals.",
                ""),
-        "zh": ("上面那一节数的是检索带回来了什么；这一节数的是没找到什么。", ""),
+        "zh": ("上面那一节数的是检索带回来了什么；这一节数的是没找到什么——没有拿到答案的检索，不是取用。", ""),
     }[locale])
     assert dropped != source, "the contrast mutation did not take — update it with the dictionary"
     assert _coverage_contrast_problems(
