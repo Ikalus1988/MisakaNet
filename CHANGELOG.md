@@ -7,6 +7,14 @@ All notable changes to the Misaka Network project are documented here.
 
 ---
 
+## [3.12.2](https://github.com/Ikalus1988/MisakaNet/compare/v3.12.1...v3.12.2) (2026-11-13)
+
+
+### Bug Fixes
+
+* **panel:** fewer paragraphs — the page should be scannable, not read ([#4778](https://github.com/Ikalus1988/MisakaNet/issues/4778)) ([ef31190](https://github.com/Ikalus1988/MisakaNet/commit/ef3119037ff4317499413041cc26319dc01f77a3))
+* **worker:** the ladder's 503 no longer echoes the D1 error ([#4779](https://github.com/Ikalus1988/MisakaNet/issues/4779)) ([fbfe91c](https://github.com/Ikalus1988/MisakaNet/commit/fbfe91c461ecb006fffe890b1deca4900ade4b2b))
+
 ## [3.12.1](https://github.com/Ikalus1988/MisakaNet/compare/v3.12.0...v3.12.1) (2026-11-13)
 
 

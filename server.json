@@ -6,12 +6,12 @@
     "url": "https://github.com/Ikalus1988/MisakaNet",
     "source": "github"
   },
-  "version": "3.12.1",
+  "version": "3.12.2",
   "packages": [
     {
       "registryType": "pypi",
       "identifier": "misakanet",
-      "version": "3.12.1",
+      "version": "3.12.2",
       "transport": {
         "type": "stdio"
       },
