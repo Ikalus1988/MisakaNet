@@ -33,11 +33,11 @@
 | 语料 | 940 篇 · 有作者记录 **424（45%）** | `data/lessons.json` / D1 |
 | `search_signals` | 17237 行；`top_id` 非空 15290；`faq-*` 2556 | D1 |
 | 可归因的取用 | **970 条**（占挂在真实课程上的 12734 条的 7.6%） | D1 + `data/lessons.json` |
-| `used`（all） | `gh:Ikalus1988` **943**（score 73 → **261.6**）· `gh:zsxh1990` **27**（5 → **10.4**） | `GET /api/leaderboard/ladder?window=all` |
+| `used`（all） | `gh:Ikalus1988` **945**（部署后复测；修复前 0，score 73 → **262**）· `gh:zsxh1990` **27**（5 → **10.4**） | `GET /api/leaderboard/ladder?window=all` |
 | `used`（week） | `gh:Ikalus1988` **411**（score **92.2** = 411×0.2 + 10） | 同上 `?window=week` |
 | 认领行 | `?node=Misaka38084` → `me.rank=2`；`?node=gh:Ikalus1988` → `me.rank=1` | 同上 |
 | `contributions` | 已验证行 80（`gh:*`）· 伪名行 10，其中自报 login 1 条已置 NULL | D1 |
-| PR #4810 | 三处假话的修复，含 2 条新测试 | `gh pr view 4810` |
+| 线上校验 | `coverage.lesson_authors` 424（修复前 0）· `Misaka38084` 的 `identity` 从 `both` 变 `node` | 部署后 `curl` |
 
 **归因天花板要说清楚**：12734 条挂在真实课程上的取用里，只有 970 条（7.6%）落在有作者的课程上。
 其余 11764 条挂在**没有作者记录**的课程上——那些是 bootstrap 时期就没有经过 lesson PR 的老课，
@@ -48,8 +48,7 @@ GitHub 从来没有过它们的作者。这不是 bug，是「只认合并 PR �
 
 | 谁 | 项 | 状态 / 下一步 |
 |---|---|---|
-| 仓库 | **#4810** 徽章=已验证 + 覆盖率不再假零 + 面板文案 | CI 中，已 arm auto-merge；合并后**必须部署 worker**（批准 `release` env） |
-| 仓库 | 面板文案要用户能看到，得等 release-please 出下一个 patch 版本，再让 DSH host 重启/升级（第 35 卷坑 3：客户端包按版本缓存） | 合并后查 `npm view` / 重启 host |
+| 仓库 | 面板文案要用户真看到，得等 release-please 从 #4810 出 patch 版本，再让 DSH host 重启/升级（第 35 卷坑 3：客户端包按版本缓存） | worker 已部署、API 已生效；`npm view` 出新版本后重启 host 验证 |
 | 仓库 | `lesson_authors.lesson_id` 只有这次回填写过；`lesson-authors.yml` 不写它，join 里那一支等价于 `slug` | 下轮二选一：让 sweep 也写 `lesson_id`，或删掉那一支——不要让它一直半空 |
 | 仓库 | `lesson-authors.yml` 全量回填仍会超 15 分钟（上次 dispatch 在 15m17s 被取消） | 历史已补齐，不急；真需要再跑时把 `timeout-minutes` 提到 30 或按月拆 `since` |
 | owner | 三个目录简介仍是旧数字：Glama 连接器 **385+**、Glama server **500+**、dsh-plugin.org **310+**（语料已 940） | 仓库侧文案与规则已就绪（`docs/integrations/directory-blurbs.md` §2）；只能后台 paste，**不要 paste 带数字的版本** |
@@ -58,20 +57,11 @@ GitHub 从来没有过它们的作者。这不是 bug，是「只认合并 PR �
 ## 4. 下一轮入口
 
 ```bash
-# 1) #4810 合并（CI 慢：admin merge 在有检查 in-progress 时也会被规则拒）
-gh pr view 4810 --json state,mergeStateStatus
-
-# 2) 部署 worker（合并后）
-gh run list --workflow=deploy-worker.yml --limit 2
-#    批准待部署（注意：environment_ids 必须是整数，见 §5）
-printf '{"environment_ids":[22298828230],"state":"approved","comment":"..."}' \
-  | gh api --method POST "repos/Ikalus1988/MisakaNet/actions/runs/<id>/pending_deployments" --input -
-
-# 3) 验证覆盖率不再是假零
+# 1) 确认线上仍是已修复的口径（#4810 已合并并部署，这三条是回归检查，不是待办）
 curl -sS "https://misakanet.org/api/leaderboard/ladder?window=all" | jq '.coverage, .top[0]'
-#    期望：coverage.lesson_authors = 424（不再是 0）；top[0].used = 943
+#    期望：coverage.lesson_authors = 424（不再是 0）；top[0].used 随真实取用只增不减（01:29 为 945）
 
-# 4) 验证徽章只给已验证身份
+# 2) 验证徽章只给已验证身份
 curl -sS "https://misakanet.org/api/leaderboard/ladder?window=week" \
   | jq '.top[] | select(.node=="Misaka38084") | {node, login, name, identity}'
 #    期望：login="" · identity="node"（不再是 login="claude-code"）
