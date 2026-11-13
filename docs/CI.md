@@ -44,7 +44,7 @@
 | `reconcile-dco.yml` | Reconcile DCO status | 定时, 手动 | `17,47 * * * *` —— 对「head 提交上完全没有 DCO 状态」的开放 PR 补发 `dco-check.yml`（平台 startup failure 的兜底）；已有状态（含失败）的 PR 不动 |
 | `shadow-branch.yml` | Shadow Branch - External Agent Isolation | PR |  |
 
-## 数据/索引（25）
+## 数据/索引（26）
 
 | workflow | 用途 | 触发 | 定时 |
 |---|---|---|---|
@@ -65,6 +65,7 @@
 | `d1-backup.yml` | D1 backup（每周一次 `d1 export` 存档 + 打印 storage backend 与 Time Travel bookmark；artifact 保留 90 天）| 定时, 手动 | `10 4 * * 1` |
 | `apply-d1-schema.yml` | Apply D1 schema | 手动 |  |
 | `d1-counters-report.yml` | D1 counters report | 手动 |  |
+| `lesson-authors.yml` | Lesson Authors（每日扫已合并的 lesson PR，把 **GitHub 自己填的** `user.login` 写进 `misakanet-ops` 的 `contributions`：`node_id=gh:<login>`、`kind=lesson`、`ref=pr-<n>`。login 形状校验、跳过 bot 与本仓机器、幂等 upsert；选每日巡检而不是 `pull_request` 事件，因为 fork PR 拿不到 secrets）| 定时, 手动 | `20 3 * * *` |
 | `cf-diagnostics.yml` | CF diagnostics（只读运维视图：#2126 的 504/522 归因 + 区级 route 表与 KV namespace 清单 + D1 Time Travel 资格与 bookmark + durable store 健康）| 手动 |  |
 | `guarded-repository.yml` | Guarded Repository（仓库守卫巡检）| push, 定时, 手动 | `0 7 * * 1` |
 | `update-smithery-badge.yml` | Update Smithery Badge (daily) | 定时, 手动 | `0 6 * * *` |

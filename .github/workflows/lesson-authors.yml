@@ -72,7 +72,7 @@ jobs:
               *"[bot]"|"misakanet-bot"|"misakanet-doctor") echo "skip #$number: $login"; skipped=$((skipped + 1)); continue ;;
             esac
             # Only PRs that touch a lesson file count as a lesson contribution.
-            touched=$(gh api "repos/${REPO}/pulls/${number}/files?per_page=100" --jq '[.[].filename] | map(select(startswith("lessons/"))) | length' || echo 0)
+            touched=$(gh api --paginate "repos/${REPO}/pulls/${number}/files?per_page=100" --jq '[.[].filename] | map(select(startswith("lessons/"))) | length' || echo 0)
             if [ "${touched:-0}" -eq 0 ]; then skipped=$((skipped + 1)); continue; fi
 
             # node_id keeps the pseudonym column truthful (`gh:<login>`), login carries the verified
