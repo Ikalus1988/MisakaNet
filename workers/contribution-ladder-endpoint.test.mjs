@@ -11,7 +11,7 @@ import test from 'node:test';
 
 import worker from './register-proxy-sw.js';
 
-function fakeOps(rows) {
+function fakeOps(rows, usedRows = []) {
   const statements = [];
   return {
     _statements: statements,
@@ -22,6 +22,7 @@ function fakeOps(rows) {
         async all() {
           statements.push({ sql, bound: stmt._bound });
           if (sql.includes('FROM contributions')) return { results: rows };
+          if (sql.includes('JOIN lesson_authors')) return { results: usedRows };
           return { results: [] };
         },
         async run() { return { success: true }; },
@@ -152,4 +153,19 @@ test('a GitHub handle is the display name, and the pseudonym stays on the row', 
   assert.equal(pseudonym.login, "");
   assert.equal(pseudonym.name, "MisakaY");
   assert.equal(pseudonym.identity, "node");
+});
+
+test('used counts retrievals of lessons whose author is known', async () => {
+  // `search_signals.top_id` is the lesson path; `lesson_authors` maps that path to the PR author.
+  // Without the join, `used` is 0 and the 0.2 weight never applies — which is what the board showed
+  // before attribution landed.
+  const ops = fakeOps(
+    [{ node_id: "gh:octocat", kind: "lesson", login: "octocat", n: 1, last: "2026-11-11T00:00:00Z" }],
+    [{ node_id: "gh:octocat", n: 5, last: "2026-11-11T00:00:00Z" }],
+  );
+  const res = await worker.fetch(new Request("https://misakanet.org/api/leaderboard/ladder?window=week"), { MISAKANET_OPS_D1: ops });
+  const body = await res.json();
+  assert.equal(body.top[0].used, 5);
+  assert.equal(body.top[0].score, 2); // 1 lesson (1.0) + 5 retrievals (0.2 each)
+  assert.equal(body.coverage.used_source, "lesson_authors + search_signals");
 });

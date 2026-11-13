@@ -7259,6 +7259,28 @@ async function handleContributionLadder(request, env) {
     return jsonResponse({ error: "ladder unavailable", code: "storage_unavailable" }, 503);
   }
 
+  // Retrievals of lessons whose author is known: `used` is the "someone else fetched your lesson"
+  // signal the score weights at 0.2. A read that fails here leaves `used` at 0 rather than failing
+  // the board — and `coverage.used_source` says which of the two states the caller is seeing.
+  let usedByNode = new Map();
+  let usedSource = "unavailable";
+  try {
+    await ensureLessonAuthorsTable(d1);
+    const usedSql = sinceSql
+      ? "SELECT la.node_id AS node_id, COUNT(*) AS n, MAX(ss.created_at) AS last FROM search_signals ss JOIN lesson_authors la ON la.path = ss.top_id WHERE ss.created_at >= ?1 GROUP BY la.node_id"
+      : "SELECT la.node_id AS node_id, COUNT(*) AS n, MAX(ss.created_at) AS last FROM search_signals ss JOIN lesson_authors la ON la.path = ss.top_id GROUP BY la.node_id";
+    const usedStmt = d1.prepare(usedSql);
+    const usedResult = sinceSql ? await usedStmt.bind(sinceSql).all() : await usedStmt.all();
+    for (const row of (usedResult && usedResult.results) || []) {
+      const id = String(row.node_id || "");
+      if (!id) continue;
+      usedByNode.set(id, Number(row.n) || 0);
+    }
+    usedSource = "lesson_authors + search_signals";
+  } catch (error) {
+    logInternal("ladder used-read", error);
+  }
+
   const byNode = new Map();
   for (const row of rows) {
     const id = String(row.node_id || "");
@@ -7271,6 +7293,7 @@ async function handleContributionLadder(request, env) {
       entry.login = String(row.login);
       entry.name = entry.login;
     }
+    entry.used = usedByNode.get(id) || 0;
     const n = Number(row.n) || 0;
     if (row.kind === "lesson") entry.lessons += n;
     else if (row.kind === "question" || row.kind === "intake") entry.questions += n;
@@ -7292,8 +7315,9 @@ async function handleContributionLadder(request, env) {
     top: board.top.map(publicRow),
     me: board.me ? publicRow(board.me) : null,
     coverage: {
+      used_source: usedSource,
       lesson_authors: 0,
-      note: "No lesson file carries a contributor/author field yet, so 'used' is 0 and 'lessons' counts submissions rather than retrievals; the two separate when lesson attribution lands.",
+      note: "'lessons' counts submissions; 'used' counts retrievals of lessons whose author is known from a merged lesson PR. A lesson with no recorded author contributes submissions but no retrievals.",
     },
   });
 }
@@ -7704,6 +7728,31 @@ const GITHUB_LOGIN_SHAPE = /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})$/;
 function normalizeLogin(value) {
   const name = String(value || "").trim().replace(/^@/, "");
   return GITHUB_LOGIN_SHAPE.test(name) ? name : "";
+}
+
+let lessonAuthorsTableReady = false;
+
+/**
+ * Which author wrote which lesson file — the missing half of "被取用".
+ *
+ * `search_signals.top_id` is the lesson path, so a retrieval can be attributed the moment the path
+ * has an author. The author comes from the merged PR that *added* the file (the sweep in
+ * `.github/workflows/lesson-authors.yml`), never from the lesson body, which is data.
+ */
+async function ensureLessonAuthorsTable(d1) {
+  if (lessonAuthorsTableReady) return;
+  await d1.prepare(
+    `CREATE TABLE IF NOT EXISTS lesson_authors (
+       path       TEXT PRIMARY KEY,
+       node_id    TEXT,
+       login      TEXT,
+       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+     )`
+  ).run();
+  await d1.prepare(
+    "CREATE INDEX IF NOT EXISTS idx_lesson_authors_node ON lesson_authors(node_id)"
+  ).run();
+  lessonAuthorsTableReady = true;
 }
 
 async function recordContribution(env, nodeId, kind, ref, login) {
