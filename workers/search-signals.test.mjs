@@ -371,7 +371,11 @@ test('every column the insert names is declared in the worker-created table', ()
 test('the read endpoint returns solved and created_at, which the aggregator needs', () => {
   // `[^`]` keeps the match inside one template literal — a `[\s\S]*?` here would
   // start at the first SELECT in the file and swallow whole statements.
-  const select = WORKER_SOURCE.match(/SELECT([^`]*?)FROM search_signals/);
+  // Anchor on the SELECT that carries `solved` — the stats read — not on the first SELECT that
+  // happens to name the table. The ladder's used-join also selects from `search_signals`, and a
+  // first-match regex silently audited *that* one instead (measured: the stress leg went red on
+  // 2026-11-13 when the join landed).
+  const select = WORKER_SOURCE.match(/SELECT([^`]*?solved[^`]*?)FROM search_signals/);
   assert.ok(select, 'the stats endpoint must select from search_signals');
   const columns = select[1].split(',').map((c) => c.trim().toLowerCase());
   assert.ok(columns.includes('solved'));
