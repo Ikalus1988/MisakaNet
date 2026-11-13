@@ -7233,6 +7233,10 @@ async function handleContributionLadder(request, env) {
   const windowName = Object.prototype.hasOwnProperty.call({ week: 1, month: 1, all: 1 }, requested)
     ? requested : "week";
   const { days, since } = windowSince(windowName, new Date());
+  // `contributions.created_at` is written by SQLite's `datetime('now')` — "YYYY-MM-DD HH:MM:SS".
+  // Binding the ISO form here compared "2026-11-05 20:00:00" < "2026-11-05T16:02:52Z" on the
+  // boundary day (space sorts before "T"), so rows from that day silently left the week window.
+  const sinceSql = since ? since.replace("T", " ").replace("Z", "").slice(0, 19) : null;
   const node = String(url.searchParams.get("node") || "").trim().slice(0, 64);
 
   const d1 = opsD1(env);
@@ -7245,7 +7249,7 @@ async function handleContributionLadder(request, env) {
       ? "SELECT node_id, kind, login, COUNT(*) AS n, MAX(created_at) AS last FROM contributions WHERE created_at >= ?1 GROUP BY node_id, kind, login"
       : "SELECT node_id, kind, login, COUNT(*) AS n, MAX(created_at) AS last FROM contributions GROUP BY node_id, kind, login";
     const stmt = d1.prepare(sql);
-    const result = since ? await stmt.bind(since).all() : await stmt.all();
+    const result = sinceSql ? await stmt.bind(sinceSql).all() : await stmt.all();
     rows = (result && result.results) || [];
   } catch (error) {
     // The D1 message names tables and SQL; it goes to Workers Logs, not to the caller — the rule

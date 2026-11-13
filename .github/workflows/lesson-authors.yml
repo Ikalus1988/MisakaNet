@@ -57,12 +57,15 @@ jobs:
           # a SQL string or on the board.
           login_shape='^[A-Za-z0-9]([A-Za-z0-9-]{0,38})$'
 
+          # `merged_at` travels with the row: a contribution belongs to the day the lesson landed, not
+          # the day this sweep noticed it. Without it, a backfill would put a year of lessons into
+          # "this week" the moment it ran.
           gh api --paginate "search/issues?q=repo:${REPO}+is:pr+is:merged+merged:>=${since}&per_page=100" \
-            --jq '.items[] | [.number, .user.login] | @tsv' > /tmp/merged.tsv || true
+            --jq '.items[] | [.number, .user.login, .pull_request.merged_at] | @tsv' > /tmp/merged.tsv || true
 
           recorded=0
           skipped=0
-          while IFS=$'\t' read -r number login; do
+          while IFS=$'\t' read -r number login merged_at; do
             [ -n "${number:-}" ] || continue
             if ! printf '%s' "$login" | grep -Eq "$login_shape"; then
               echo "skip #$number: login shape $login"; skipped=$((skipped + 1)); continue
@@ -77,8 +80,10 @@ jobs:
 
             # node_id keeps the pseudonym column truthful (`gh:<login>`), login carries the verified
             # handle, ref is the PR the lesson arrived in.
+            # SQLite's `datetime('now')` format, so the ladder's window comparison stays one shape.
+            landed=$(date -u -d "$merged_at" +"%Y-%m-%d %H:%M:%S" 2>/dev/null || date -u +"%Y-%m-%d %H:%M:%S")
             wrangler d1 execute misakanet-ops --remote --command \
-              "INSERT INTO contributions (node_id, kind, ref, login) VALUES ('gh:${login}', 'lesson', 'pr-${number}', '${login}') ON CONFLICT(node_id, kind, ref) DO UPDATE SET login = excluded.login;" \
+              "INSERT INTO contributions (node_id, kind, ref, login, created_at) VALUES ('gh:${login}', 'lesson', 'pr-${number}', '${login}', '${landed}') ON CONFLICT(node_id, kind, ref) DO UPDATE SET login = excluded.login, created_at = excluded.created_at;" \
               >/dev/null
             recorded=$((recorded + 1))
           done < /tmp/merged.tsv
