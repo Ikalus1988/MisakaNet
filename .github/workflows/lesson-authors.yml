@@ -92,8 +92,10 @@ jobs:
             while IFS= read -r path; do
               [ -n "$path" ] || continue
               safe=${path//\'/\'\'}
+              slug=$(basename "$path" .md)
+              slug=${slug//\'/\'\'}
               wrangler d1 execute misakanet-ops --remote --command \
-                "INSERT INTO lesson_authors (path, node_id, login) VALUES ('${safe}', 'gh:${login}', '${login}') ON CONFLICT(path) DO UPDATE SET node_id = excluded.node_id, login = excluded.login;" \
+                "INSERT INTO lesson_authors (path, slug, node_id, login) VALUES ('${safe}', '${slug}', 'gh:${login}', '${login}') ON CONFLICT(path) DO UPDATE SET slug = excluded.slug, node_id = excluded.node_id, login = excluded.login;" \
                 >/dev/null
             done <<< "$added"
             recorded=$((recorded + 1))
