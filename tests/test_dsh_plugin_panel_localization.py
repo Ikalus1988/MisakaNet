@@ -95,7 +95,7 @@ def _counter_line(locale: str, client_file: Path = CLIENT) -> str:
 
 def _activity_lines(locale: str, client_file: Path = CLIENT) -> list[str]:
     lines = _render(locale, client_file)["activity"]
-    assert len(lines) == 2, "the activity section renders one line per scope: " + repr(lines)
+    assert len(lines) == 1, "the activity line renders the browser scope the strip does not carry: " + repr(lines)
     return lines
 
 
