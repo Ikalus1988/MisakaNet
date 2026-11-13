@@ -7,6 +7,13 @@ All notable changes to the Misaka Network project are documented here.
 
 ---
 
+## [3.13.0](https://github.com/Ikalus1988/MisakaNet/compare/v3.12.2...v3.13.0) (2026-11-13)
+
+
+### Features
+
+* **panel:** a hierarchy a reader can scan — hairline sections, badges, bars ([#4783](https://github.com/Ikalus1988/MisakaNet/issues/4783)) ([7ba0740](https://github.com/Ikalus1988/MisakaNet/commit/7ba0740ac71a79eada0c4561dc7e06861c4da683))
+
 ## [3.12.2](https://github.com/Ikalus1988/MisakaNet/compare/v3.12.1...v3.12.2) (2026-11-13)
 
 
