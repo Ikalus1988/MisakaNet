@@ -1,0 +1,88 @@
+name: Record lesson authors
+
+# The ladder's two identity methods, made verifiable for one of them.
+#
+# A node pseudonym is what an MCP caller has; a GitHub login is what a lesson PR author has, and the
+# login is authenticated by GitHub itself — the merge event carries `user.login`, and nobody can fake
+# it from a shell. So the *verified* half of "GitHub name when there is one" is recorded here, from
+# the only source that can prove it.
+#
+# Why a schedule rather than `pull_request: closed`: a `pull_request` run for a fork PR does not
+# receive repository secrets, so the D1 write would silently skip exactly the contributors who
+# matter. `pull_request_target` would have the secrets and would also run fork-controlled code paths;
+# a daily sweep avoids both. It is idempotent (the primary key is `(node_id, kind, ref)`), so a
+# missed day catches up on the next run.
+on:
+  schedule:
+    # Daily, 03:20 UTC — after the 03:00 corpus sync, before the 04:10 backup.
+    - cron: "20 3 * * *"
+  workflow_dispatch:
+    inputs:
+      since:
+        description: "ISO date (YYYY-MM-DD) to sweep merged PRs from; defaults to 3 days ago"
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: record-lesson-authors
+  cancel-in-progress: false
+
+jobs:
+  record:
+    # `automation`: no required reviewers, branch-restricted to `main`, D1:Edit scope. The same
+    # environment the scheduled corpus syncs use — a daily job behind a reviewer is not a daily job.
+    environment: automation
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: 6b92325b505f2b76aec49e9fe4195d31
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+      SINCE_INPUT: ${{ inputs.since }}
+    steps:
+      - name: Sweep merged lesson PRs and record their authors
+        run: |
+          set -euo pipefail
+          since="${SINCE_INPUT:-$(date -u -d '3 days ago' +%Y-%m-%d)}"
+          echo "sweeping merged PRs since $since"
+
+          npm install -g wrangler >/dev/null 2>&1
+
+          # GitHub logins are `[A-Za-z0-9-]`, 1-39 chars. Anything else is not a handle we may put in
+          # a SQL string or on the board.
+          login_shape='^[A-Za-z0-9]([A-Za-z0-9-]{0,38})$'
+
+          gh api --paginate "search/issues?q=repo:${REPO}+is:pr+is:merged+merged:>=${since}&per_page=100" \
+            --jq '.items[] | [.number, .user.login] | @tsv' > /tmp/merged.tsv || true
+
+          recorded=0
+          skipped=0
+          while IFS=$'\t' read -r number login; do
+            [ -n "${number:-}" ] || continue
+            if ! printf '%s' "$login" | grep -Eq "$login_shape"; then
+              echo "skip #$number: login shape $login"; skipped=$((skipped + 1)); continue
+            fi
+            # `[bot]` and this repository's own machinery are not contributors.
+            case "$login" in
+              *"[bot]"|"misakanet-bot"|"misakanet-doctor") echo "skip #$number: $login"; skipped=$((skipped + 1)); continue ;;
+            esac
+            # Only PRs that touch a lesson file count as a lesson contribution.
+            touched=$(gh api "repos/${REPO}/pulls/${number}/files?per_page=100" --jq '[.[].filename] | map(select(startswith("lessons/"))) | length' || echo 0)
+            if [ "${touched:-0}" -eq 0 ]; then skipped=$((skipped + 1)); continue; fi
+
+            # node_id keeps the pseudonym column truthful (`gh:<login>`), login carries the verified
+            # handle, ref is the PR the lesson arrived in.
+            wrangler d1 execute misakanet-ops --remote --command \
+              "INSERT INTO contributions (node_id, kind, ref, login) VALUES ('gh:${login}', 'lesson', 'pr-${number}', '${login}') ON CONFLICT(node_id, kind, ref) DO UPDATE SET login = excluded.login;" \
+              >/dev/null
+            recorded=$((recorded + 1))
+          done < /tmp/merged.tsv
+
+          echo "recorded=$recorded skipped=$skipped"
+          # Nothing to do is a success: a quiet day is not a broken job.
+          exit 0
