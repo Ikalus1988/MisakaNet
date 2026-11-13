@@ -132,3 +132,21 @@ test('a broken store answers 503 without echoing the D1 error', async () => {
   assert.equal(body.detail, undefined);
   assert.ok(!JSON.stringify(body).includes("no such table"), "the D1 message must not reach the caller");
 });
+
+test('a GitHub handle is the display name, and the pseudonym stays on the row', async () => {
+  // The agreed design: two identity methods on one board — a GitHub name when the contributor has
+  // one, the node pseudonym otherwise. The node id is never dropped: it is what `?node=` matches.
+  const { env } = envWith([
+    { node_id: "MisakaX", kind: "lesson", login: "octocat", n: 2, last: "2026-11-11T00:00:00Z" },
+    { node_id: "MisakaY", kind: "question", login: null, n: 1, last: "2026-11-11T00:00:00Z" },
+  ]);
+  const { body } = await ladder(env);
+  const github = body.top.find((row) => row.node === "MisakaX");
+  const pseudonym = body.top.find((row) => row.node === "MisakaY");
+  assert.equal(github.login, "octocat");
+  assert.equal(github.name, "octocat");
+  assert.equal(github.identity, "both");
+  assert.equal(pseudonym.login, "");
+  assert.equal(pseudonym.name, "MisakaY");
+  assert.equal(pseudonym.identity, "node");
+});

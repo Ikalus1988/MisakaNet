@@ -5476,6 +5476,7 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx, 
       if (intakeNode) {
         const recorded = recordContribution(
           env, intakeNode, kind === "question" ? "question" : "intake", `issue-${data.number}`,
+          args.contributor,
         );
         if (ctx) ctx.waitUntil(recorded); else await recorded;
       }
@@ -5614,7 +5615,7 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx, 
       const issue = await resp.json();
       // The ladder counts the submission, best-effort: a scoreboard row must never cost the
       // submitter the issue they just filed.
-      await recordContribution(env, nodeId, "lesson", `issue-${issue.number}`);
+      await recordContribution(env, nodeId, "lesson", `issue-${issue.number}`, args.contributor);
       // Reported back only when it happened: a submitter whose credential was scrubbed should be told
       // (it is their text), and silence about a flagged submission would be the same "looks accepted"
       // problem this guard exists to prevent.
@@ -7241,8 +7242,8 @@ async function handleContributionLadder(request, env) {
   try {
     await ensureContributionsTable(d1);
     const sql = since
-      ? "SELECT node_id, kind, COUNT(*) AS n, MAX(created_at) AS last FROM contributions WHERE created_at >= ?1 GROUP BY node_id, kind"
-      : "SELECT node_id, kind, COUNT(*) AS n, MAX(created_at) AS last FROM contributions GROUP BY node_id, kind";
+      ? "SELECT node_id, kind, login, COUNT(*) AS n, MAX(created_at) AS last FROM contributions WHERE created_at >= ?1 GROUP BY node_id, kind, login"
+      : "SELECT node_id, kind, login, COUNT(*) AS n, MAX(created_at) AS last FROM contributions GROUP BY node_id, kind, login";
     const stmt = d1.prepare(sql);
     const result = since ? await stmt.bind(since).all() : await stmt.all();
     rows = (result && result.results) || [];
@@ -7259,8 +7260,13 @@ async function handleContributionLadder(request, env) {
     const id = String(row.node_id || "");
     if (!id || isAutomationLogin(id) || /^misakanet[-_]/i.test(id)) continue;
     const entry = byNode.get(id) || {
-      node: id, name: id, lessons: 0, questions: 0, used: 0, self: 0, solved: 0, lastActive: "",
+      node: id, login: "", name: id, lessons: 0, questions: 0, used: 0, self: 0, solved: 0,
+      lastActive: "",
     };
+    if (!entry.login && row.login) {
+      entry.login = String(row.login);
+      entry.name = entry.login;
+    }
     const n = Number(row.n) || 0;
     if (row.kind === "lesson") entry.lessons += n;
     else if (row.kind === "question" || row.kind === "intake") entry.questions += n;
@@ -7270,7 +7276,7 @@ async function handleContributionLadder(request, env) {
 
   const board = rankRows([...byNode.values()], { days, top: 10, node: node || null, since });
   const publicRow = (row) => ({
-    rank: row.rank, node: row.node, identity: row.identity, name: row.name,
+    rank: row.rank, node: row.node, login: row.login || "", identity: row.identity, name: row.name,
     score: row.score, hits: row.hits, used: row.used, self: row.self,
     lessons: row.lessons, questions: row.questions, solved: row.solved,
   });
@@ -7659,6 +7665,7 @@ async function ensureContributionsTable(d1) {
        node_id    TEXT NOT NULL,
        kind       TEXT NOT NULL,
        ref        TEXT NOT NULL,
+       login      TEXT,
        created_at TEXT NOT NULL DEFAULT (datetime('now')),
        PRIMARY KEY (node_id, kind, ref)
      )`
@@ -7666,6 +7673,16 @@ async function ensureContributionsTable(d1) {
   await d1.prepare(
     "CREATE INDEX IF NOT EXISTS idx_contributions_kind_created ON contributions(kind, created_at)"
   ).run();
+  // The table first shipped without `login` (2026-11-12). A board that only knows pseudonyms is
+  // still a board, so a store that cannot report or alter its columns keeps serving; it just never
+  // shows the GitHub chip.
+  try {
+    const info = await d1.prepare("PRAGMA table_info(contributions)").all();
+    const columns = (info && info.results) || [];
+    if (!columns.some((column) => column && column.name === "login")) {
+      await d1.prepare("ALTER TABLE contributions ADD COLUMN login TEXT").run();
+    }
+  } catch (error) { /* see above */ }
   contributionsTableReady = true;
 }
 
@@ -7677,7 +7694,15 @@ async function ensureContributionsTable(d1) {
  * Kinds: `lesson` (structured submission accepted by `misakanet_write_lesson`), `question` and
  * `intake` (reports filed by a caller that presented a token).
  */
-async function recordContribution(env, nodeId, kind, ref) {
+const GITHUB_LOGIN_SHAPE = /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})$/;
+
+/** A GitHub handle, or "" — a display name is not an identity and must not be shown as one. */
+function normalizeLogin(value) {
+  const name = String(value || "").trim().replace(/^@/, "");
+  return GITHUB_LOGIN_SHAPE.test(name) ? name : "";
+}
+
+async function recordContribution(env, nodeId, kind, ref, login) {
   const node = String(nodeId || "").trim();
   const target = String(ref || "").trim();
   if (!node || !target || !kind) return false;
@@ -7686,8 +7711,9 @@ async function recordContribution(env, nodeId, kind, ref) {
   try {
     await ensureContributionsTable(d1);
     await d1.prepare(
-      "INSERT OR IGNORE INTO contributions (node_id, kind, ref) VALUES (?1, ?2, ?3)"
-    ).bind(node, kind, target).run();
+      `INSERT INTO contributions (node_id, kind, ref, login) VALUES (?1, ?2, ?3, ?4)
+       ON CONFLICT(node_id, kind, ref) DO UPDATE SET login = COALESCE(excluded.login, contributions.login)`
+    ).bind(node, kind, target, normalizeLogin(login) || null).run();
     return true;
   } catch (error) {
     logInternal(`contribution write failed: ${(error && error.message) || error}`);
