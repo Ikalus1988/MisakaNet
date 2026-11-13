@@ -98,6 +98,9 @@ test('the window is cut in SQL, and all-time binds no cut', async () => {
   const weekly = ops._statements.find((s) => s.sql.includes('FROM contributions'));
   assert.ok(weekly.sql.includes('created_at >='));
   assert.equal(weekly.bound.length, 1);
+  // SQLite writes `created_at` as "YYYY-MM-DD HH:MM:SS"; binding the ISO form compared space < "T"
+  // on the boundary day and silently dropped that day's rows from the window.
+  assert.match(weekly.bound[0], /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
 
   const all = envWith([]);
   await ladder(all.env, '?window=all');
