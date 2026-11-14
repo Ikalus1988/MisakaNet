@@ -193,3 +193,37 @@ def test_a_file_that_is_not_a_service_account_key_says_so(tmp_path):
     with pytest.raises(SystemExit) as exc:
         gsc.service_account_token(wrong, opener=FakeOpener({"access_token": "x"}))
     assert "client_email" in str(exc.value)
+
+
+# ── the user-consent path: what an org that forbids service-account keys still allows ──────────
+# `iam.disableServiceAccountKeyCreation` blocks the key download, not the API. A refresh token from
+# a real consent carries the same scope and needs no key, so this is the path that survives the
+# policy — and the two things that go wrong (a consent without `access_type=offline`, a stored file
+# that is world-readable) both fail quietly.
+
+
+def test_the_consent_url_asks_for_a_refresh_token_and_the_scope():
+    url = gsc.build_consent_url("cid.apps.googleusercontent.com", "http://127.0.0.1:9/", "state123")
+    parsed = urllib.parse.parse_qs(urllib.parse.urlparse(url).query)
+    assert parsed["access_type"] == ["offline"], "without offline there is no refresh token to store"
+    assert parsed["prompt"] == ["consent"], "a silent re-approval returns no refresh token"
+    assert parsed["scope"] == [gsc.SCOPES]
+    assert parsed["redirect_uri"] == ["http://127.0.0.1:9/"]
+    assert parsed["state"] == ["state123"], "the state is what makes the loopback response ours"
+
+
+def test_a_refresh_token_is_minted_from_the_stored_file_and_never_echoed(tmp_path, capsys):
+    opener = FakeOpener({"access_token": "fresh-token", "expires_in": 3599})
+    store = tmp_path / "oauth-credentials.json"
+    store.write_text(json.dumps({
+        "client_id": "cid", "client_secret": "csecret", "refresh_token": "rtoken",
+        "scope": gsc.SCOPES,
+    }), encoding="utf-8")
+
+    assert gsc.refresh_access_token(store, opener=opener) == "fresh-token"
+    request = opener.calls[0]
+    body = urllib.parse.parse_qs(request.data.decode("utf-8"))
+    assert body["grant_type"] == ["refresh_token"]
+    assert body["refresh_token"] == ["rtoken"]
+    assert request.full_url == gsc.TOKEN_URI
+    assert "fresh-token" not in capsys.readouterr().out
