@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.3](https://github.com/Ikalus1988/MisakaNet/compare/fatal-guard-v0.3.2...fatal-guard-v0.3.3) (2026-11-14)
+
+
+### Documentation
+
+* **readme:** the language switcher offers the fourth language ([#4752](https://github.com/Ikalus1988/MisakaNet/issues/4752)) ([35addda](https://github.com/Ikalus1988/MisakaNet/commit/35addda33b68ca84e411c2e340d3068e7fa777c6))
+
 ## [0.3.2](https://github.com/Ikalus1988/MisakaNet/compare/fatal-guard-v0.3.1...fatal-guard-v0.3.2) (2026-10-29)
 
 
