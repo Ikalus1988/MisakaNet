@@ -121,6 +121,22 @@ def _cases() -> list[dict]:
             "expect_added": ["decision"],
         },
         {
+            # A thin report is not a spec. `issue-quality-gate.yml` exempts every intake from the AC
+            # requirement ("requiring acceptance criteria from a reporter marks every report as
+            # incomplete work", 2026-09-13), but this classifier re-added `needs-ac` whenever the
+            # body lacked the four sections and nothing removed it later — measured 2026-11-14: 24
+            # open intakes carried it. #4910 is the shape: stamped 9 seconds after creation, on an
+            # issue the same function had just labelled `intake`.
+            "name": "a report that is thin, which still does not owe acceptance criteria",
+            "title": "[Intake] 仿真机器人控制器崩溃后无法冷启动",
+            "body": "## Problem\n控制器崩溃后启动卡死。\n",
+            "labels": ["intake", "mcp-intake", "pending-review"],
+            "expect_classification": "lesson-candidate",
+            "expect_type": "unknown",   # a one-line report names no failure class, which is the point
+            "expect_removed": [],
+            "expect_not_added": ["needs-ac"],
+        },
+        {
             "name": "a failure report, which must keep its route",
             "title": "[Intake] pip install ReadTimeoutError behind a corporate proxy",
             "body": LESSON_BODY,
