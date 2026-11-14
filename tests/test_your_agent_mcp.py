@@ -24,7 +24,7 @@ def test_your_agent_mcp_register_search_and_write_envelopes():
         return {"jsonrpc": "2.0", "id": payload["id"], "result": {"dedup_key": "dk-1"}}
 
     agent = YourAgent("test-mcp-agent", transport=fake_transport)
-    reg = agent.register_mcp()
+    agent.register_mcp()  # the assertions below are on the agent's state, not on the return value
     assert agent.node_id == "Misaka10999"
     assert agent.token == "tok_test_123"
     assert recorded[0][2]["MCP-Protocol-Version"] == MCP_PROTOCOL_VERSION
