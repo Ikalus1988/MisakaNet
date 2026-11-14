@@ -30,6 +30,11 @@ LATENCY = {"data": [
     {"tool": "misakanet_get_lesson", "p95_ms": 41.2},
     {"tool": "misakanet_search", "p95_ms": 812.4},
 ]}
+PHASE = {
+    "data": [{"lessons_p95": 4100, "index_p95": 220, "score_p95": 35, "semantic_p95": 0}],
+    "meta": [],
+}
+
 TOP = {"data": [
     {"query_hash": "0123456789abcdef", "misses": 42},
     {"query_hash": "fedcba9876543210", "misses": 7},
@@ -136,7 +141,7 @@ class TestRun(unittest.TestCase):
 
 class TestMain(unittest.TestCase):
     def test_main_answers_three_questions_and_never_prints_the_token(self):
-        opener = FakeOpener([MISS, LATENCY, TOP])
+        opener = FakeOpener([MISS, LATENCY, TOP, PHASE])
         code, out, err = run_main(
             ["--days", "7"],
             {"CLOUDFLARE_API_TOKEN": TOKEN, "CLOUDFLARE_ACCOUNT_ID": ACCOUNT},
@@ -150,10 +155,10 @@ class TestMain(unittest.TestCase):
         self.assertIn("42 misses", out)
         self.assertNotIn(TOKEN, out)
         self.assertNotIn(TOKEN, err)
-        self.assertEqual(len(opener.requests), 3)
+        self.assertEqual(len(opener.requests), 4)
 
     def test_main_keeps_the_token_out_of_every_request_url_and_body(self):
-        opener = FakeOpener([MISS, LATENCY, TOP])
+        opener = FakeOpener([MISS, LATENCY, TOP, PHASE])
         run_main([], {"CLOUDFLARE_API_TOKEN": TOKEN, "CLOUDFLARE_ACCOUNT_ID": ACCOUNT}, opener)
         for request in opener.requests:
             self.assertNotIn(TOKEN, request.full_url)
@@ -171,7 +176,7 @@ class TestMain(unittest.TestCase):
         self.assertNotIn(TOKEN, err)
 
     def test_empty_dataset_report_is_explicit(self):
-        opener = FakeOpener([{"data": []}, {"data": []}, {"data": []}])
+        opener = FakeOpener([{"data": []}, {"data": []}, {"data": []}, {"data": []}])
         code, out, _ = run_main(
             [], {"CLOUDFLARE_API_TOKEN": TOKEN, "CLOUDFLARE_ACCOUNT_ID": ACCOUNT}, opener)
         self.assertEqual(code, 0)
@@ -208,3 +213,28 @@ def test_the_top_missed_query_orders_by_the_alias_not_the_aggregate():
     sql = ae_query.top_missed_sql(7)
     assert "AS misses" in sql and "ORDER BY misses DESC" in sql, (
         "ordering by SUM(...) fails the same way; the alias resolves")
+
+
+class TestPhaseSection(unittest.TestCase):
+    """Question 4: which phase the milliseconds are in — the reason this instrumentation exists."""
+
+    def test_the_report_names_each_phase(self):
+        out = ae_query.build_report(MISS["data"], LATENCY["data"], TOP["data"], days=7, phase_rows=[{
+            "lessons_p95": 4100, "index_p95": 220, "score_p95": 35, "semantic_p95": 0}])
+        self.assertIn("corpus read", out)
+        self.assertIn("4100 ms", out)
+        self.assertIn("BM25 index", out)
+        self.assertIn("220 ms", out)
+
+    def test_a_window_without_phase_data_says_so_instead_of_printing_zeros(self):
+        # Rows written before the deploy carry zeros; printing "0 ms" for them would read as a
+        # measurement rather than as an absence.
+        out = ae_query.build_report(MISS["data"], LATENCY["data"], TOP["data"], days=7, phase_rows=[{
+            "lessons_p95": 0, "index_p95": 0, "score_p95": 0, "semantic_p95": 0}])
+        self.assertIn("no phase data yet", out)
+
+    def test_the_phase_query_asks_for_the_four_columns(self):
+        sql = ae_query.phase_sql(7)
+        for column in ("double4", "double5", "double6", "double7"):
+            self.assertIn(column, sql)
+        self.assertIn("blob1 = 'misakanet_search'", sql)

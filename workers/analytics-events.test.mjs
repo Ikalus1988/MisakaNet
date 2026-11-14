@@ -305,3 +305,18 @@ test('a writeDataPoint that throws leaves the answer unchanged', async () => {
   const payload = await callTool(env, 'misakanet_search', { query: QUERY });
   assert.ok(payload.results.length >= 1, 'telemetry must not be able to fail a search');
 });
+
+test('a search point carries the four phase durations as doubles 4..7', async () => {
+  // The endpoint is bimodal from the outside (1.1 s warm vs 4–8.6 s cold, measured 2026-11-15) and
+  // the three candidate causes — memoised corpus read, KV BM25 index, scoring — are indistinguishable
+  // from a client. These four columns are what makes the next measurement answer instead of guess.
+  const { env, points } = createEnv();
+  await callTool(env, 'misakanet_search', { query: 'pip install timeout' });
+  assert.equal(points.length, 1);
+  const doubles = points[0].doubles;
+  assert.equal(doubles.length, 7, `expected latency, results, miss flag and four phases: ${JSON.stringify(doubles)}`);
+  for (const [i, name] of ['lessons', 'index', 'score', 'semantic'].entries()) {
+    const value = doubles[3 + i];
+    assert.ok(Number.isInteger(value) && value >= 0, `${name} must be a whole millisecond: ${value}`);
+  }
+});
