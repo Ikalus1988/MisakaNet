@@ -7,6 +7,30 @@ All notable changes to the Misaka Network project are documented here.
 
 ---
 
+## [3.15.1](https://github.com/Ikalus1988/MisakaNet/compare/v3.15.0...v3.15.1) (2026-11-14)
+
+
+### Bug Fixes
+
+* **bench:** the embedder's token comes from the environment, and its default path stops naming one machine ([#4831](https://github.com/Ikalus1988/MisakaNet/issues/4831)) ([2112388](https://github.com/Ikalus1988/MisakaNet/commit/21123881cdac6b0be97b9dfc6ee9f5b8102a69c3))
+* **intake:** remove the archive feature that could never persist, and the claim that it did ([#4833](https://github.com/Ikalus1988/MisakaNet/issues/4833)) ([b87b070](https://github.com/Ikalus1988/MisakaNet/commit/b87b0707c671ec1ec800ecb8713b8a0c28684dc1))
+* **ladder:** a badge means verified, and coverage stops printing a false zero ([#4810](https://github.com/Ikalus1988/MisakaNet/issues/4810)) ([5bcff5f](https://github.com/Ikalus1988/MisakaNet/commit/5bcff5f8748f13474899a9646ec563c633e2ad72))
+* **ladder:** join `used` on whichever shape `top_id` stored ([#4806](https://github.com/Ikalus1988/MisakaNet/issues/4806)) ([fb3a01d](https://github.com/Ikalus1988/MisakaNet/commit/fb3a01dd44372a2a9367bed0bd0b6a8f5e5ff7aa))
+
+
+### Documentation
+
+* **cleanup:** remove sixteen pages that describe a repository that no longer exists ([#4830](https://github.com/Ikalus1988/MisakaNet/issues/4830)) ([a0d82fa](https://github.com/Ikalus1988/MisakaNet/commit/a0d82faf1d8e86f5844c18e5f0fada0438ed399e))
+* **index:** the published guide list drops the page about the feature removed in [#4833](https://github.com/Ikalus1988/MisakaNet/issues/4833) ([#4834](https://github.com/Ikalus1988/MisakaNet/issues/4834)) ([daa37c4](https://github.com/Ikalus1988/MisakaNet/commit/daa37c4ccdb729cd09b45b59cc9a6f31ad5c99a2))
+* **readme:** list the two DSH directory badges ([#4805](https://github.com/Ikalus1988/MisakaNet/issues/4805)) ([3fdbce7](https://github.com/Ikalus1988/MisakaNet/commit/3fdbce742ba9554a0bc3b382e69cd6e5470436f4))
+* three pages that were correct but unreachable now have a link ([#4878](https://github.com/Ikalus1988/MisakaNet/issues/4878)) ([3e15d67](https://github.com/Ikalus1988/MisakaNet/commit/3e15d6712b72c4af8c51cdb36e362f26a9f66280))
+* two statements that were not true, and the rule that disagreed with its own gate ([#4839](https://github.com/Ikalus1988/MisakaNet/issues/4839)) ([4dfb4e3](https://github.com/Ikalus1988/MisakaNet/commit/4dfb4e38fdeafd3805773b4713be09a175d6e79a))
+
+
+### Tests
+
+* **assets:** a check that ended in `or True` could never fail; give it a real invariant ([#4871](https://github.com/Ikalus1988/MisakaNet/issues/4871)) ([050d39e](https://github.com/Ikalus1988/MisakaNet/commit/050d39e859bdac3a6630d314268cd4534a881878))
+
 ## [3.15.0](https://github.com/Ikalus1988/MisakaNet/compare/v3.14.0...v3.15.0) (2026-11-13)
 
 
