@@ -159,3 +159,43 @@ def test_the_fatal_guard_release_can_be_merged_without_the_root_release():
     assert config().get("separate-pull-requests") is True, (
         "without separate-pull-requests, every package release is bundled with the root package — "
         "which is how a fatal-guard patch turned into a major PyPI release")
+
+
+def test_a_dispatch_that_fails_cannot_strand_the_release():
+    """The tag is a *skip* record, so the publish must be requested before it exists.
+
+    Measured on 0.3.3 (2026-11-14): the release step created `fatal-guard-v0.3.3` and its GitHub
+    Release, and then `gh workflow run` answered
+
+        could not create workflow dispatch event: HTTP 403: Resource not accessible by personal
+        access token
+
+    because the step handed `gh` the PAT, which carries no `actions: write`. Three facts made that
+    failure permanent instead of momentary: `scripts/release_tags.py` reports merged *untagged*
+    releases (so the now-tagged release stopped being reported), the loop `continue`d on an existing
+    tag before reaching the dispatch, and nothing else dispatches a package publish. npm stayed at
+    0.3.2 with 0.3.3 tagged and released — a release that never happened, visible in three places
+    that all said it had.
+
+    Both halves are asserted as *position* in the step, because that is what a future edit to the YAML
+    can silently undo: dispatching must not sit behind the tag, and the token must be the one that can
+    dispatch.
+    """
+    yaml = pytest.importorskip("yaml", reason="PyYAML parses the workflow")
+    workflow = yaml.safe_load(
+        (REPO / ".github" / "workflows" / "release-please.yml").read_text(encoding="utf-8"))
+    step = next(s for s in workflow["jobs"]["release"]["steps"]
+                if s.get("name") == "Tag merged package releases, and dispatch their publish")
+    run = step["run"]
+
+    assert step["env"]["GH_TOKEN"] == "${{ secrets.GITHUB_TOKEN }}", (
+        "the PAT has no `actions: write`; `secrets.X || secrets.Y` falls back only when X is empty, "
+        "so a dispatch behind the PAT fails 403 on every package release")
+
+    dispatch_at = run.index("gh workflow run")
+    assert dispatch_at < run.index('verify "refs/tags/$TAG"'), (
+        "the existing-tag branch `continue`s before the dispatch — a release whose tag exists but "
+        "whose publish run never happened then has no path back")
+    assert dispatch_at < run.index('push origin "$TAG"'), (
+        "the tag is created before the dispatch is asked for; a failed dispatch leaves a tagged, "
+        "unpublished release that this workflow skips forever")
