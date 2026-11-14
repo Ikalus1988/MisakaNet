@@ -39,6 +39,18 @@ to be queried in production.
 
 Exit codes: `0` the file was written (or a dry run printed the summary), `1` the API or the
 credential failed — with a message that is safe to paste into an issue.
+
+**When the organization forbids service-account keys.** `iam.disableServiceAccountKeyCreation` is a
+common org policy; it blocks downloading a key, and nothing on the client can work around that. The
+compliant alternative is a **user-consent refresh token** with the same scope:
+
+    python3 scripts/gsc_pull.py --login --client ~/Downloads/client_secret_*.json
+    python3 scripts/gsc_pull.py --oauth-credentials data/gsc/oauth-credentials.json
+
+`--login` prints one URL (open it in a browser, on the machine or beside it), listens on loopback for
+the redirect, and stores the refresh token at `--store` (default `data/gsc/oauth-credentials.json`,
+mode 0600, git-ignored). It is a *user* credential, not a service account: the consenting account must
+already be able to see the property in Search Console.
 """
 from __future__ import annotations
 
@@ -48,8 +60,13 @@ import json
 import os
 import subprocess
 import sys
+import http.server
+import secrets
+import socket
 import tempfile
+import threading
 import time
+import webbrowser
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -61,6 +78,8 @@ DEFAULT_SITE = "https://misakanet.org/"
 ENDPOINT = "https://searchconsole.googleapis.com/webmasters/v3/sites/{site}/searchAnalytics/query"
 OPENER = urllib.request.build_opener()
 SCOPES = "https://www.googleapis.com/auth/webmasters.readonly"
+AUTH_URI = "https://accounts.google.com/o/oauth2/v2/auth"
+TOKEN_URI = "https://oauth2.googleapis.com/token"
 #: Search Console finalises data 2–3 days behind today; asking for fresher rows returns partials.
 LAG_DAYS = 2
 
@@ -89,6 +108,128 @@ def default_window(days: int, today: date | None = None) -> tuple[str, str]:
 
 def _b64url(raw: bytes) -> str:
     return base64.urlsafe_b64encode(raw).rstrip(b"=").decode("ascii")
+
+
+def build_consent_url(client_id: str, redirect_uri: str, state: str) -> str:
+    """The one URL the operator opens. `access_type=offline` is what yields a refresh token."""
+    params = {
+        "client_id": client_id,
+        "redirect_uri": redirect_uri,
+        "response_type": "code",
+        "scope": SCOPES,
+        "access_type": "offline",
+        "prompt": "consent",
+        "include_granted_scopes": "true",
+        "state": state,
+    }
+    return AUTH_URI + "?" + urllib.parse.urlencode(params)
+
+
+def exchange_code(client_id: str, client_secret: str, code: str, redirect_uri: str,
+                  opener=None) -> dict:
+    """Trade the authorization code for a refresh token. Raises SystemExit on refusal."""
+    opener = opener or OPENER
+    body = urllib.parse.urlencode({
+        "code": code, "client_id": client_id, "client_secret": client_secret,
+        "redirect_uri": redirect_uri, "grant_type": "authorization_code",
+    }).encode("utf-8")
+    request = urllib.request.Request(
+        TOKEN_URI, data=body, headers={"Content-Type": "application/x-www-form-urlencoded"})
+    try:
+        with opener.open(request, timeout=60) as response:
+            return json.loads(response.read().decode("utf-8"))
+    except urllib.error.HTTPError as error:
+        detail = error.read().decode("utf-8", "replace")[:300] if error.fp else ""
+        raise SystemExit(f"error: the consent exchange was refused ({error.code}): {detail}")
+
+
+def refresh_access_token(credentials: str | Path, opener=None) -> str:
+    """Mint an access token from a stored user credential. Never echoes it."""
+    opener = opener or OPENER
+    try:
+        saved = json.loads(Path(credentials).read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        raise SystemExit(f"error: could not read the stored credential at {credentials}: {error}")
+    body = urllib.parse.urlencode({
+        "client_id": saved["client_id"], "client_secret": saved["client_secret"],
+        "refresh_token": saved["refresh_token"], "grant_type": "refresh_token",
+    }).encode("utf-8")
+    request = urllib.request.Request(
+        TOKEN_URI, data=body, headers={"Content-Type": "application/x-www-form-urlencoded"})
+    try:
+        with opener.open(request, timeout=60) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+    except urllib.error.HTTPError as error:
+        detail = error.read().decode("utf-8", "replace")[:300] if error.fp else ""
+        raise SystemExit(f"error: the refresh was refused ({error.code}) — the consent may have been "
+                         f"revoked; run --login again. {detail}")
+    token = payload.get("access_token")
+    if not token:
+        raise SystemExit("error: the refresh returned no access_token")
+    return token
+
+
+def run_login(client_json: str | Path, store: str | Path, open_browser: bool = True) -> int:
+    """Loopback consent: print a URL, catch the redirect, store the refresh token (0600)."""
+    info = json.loads(Path(client_json).read_text(encoding="utf-8"))
+    client = info.get("installed") or info.get("web") or info
+    client_id, client_secret = client.get("client_id"), client.get("client_secret")
+    if not client_id or not client_secret:
+        raise SystemExit(f"error: {client_json} is not an OAuth client JSON (no client_id/client_secret)")
+
+    with socket.socket() as probe:
+        probe.bind(("127.0.0.1", 0))
+        port = probe.getsockname()[1]
+    redirect_uri = f"http://127.0.0.1:{port}/"
+    state = secrets.token_urlsafe(16)
+    url = build_consent_url(client_id, redirect_uri, state)
+    captured: dict[str, str] = {}
+
+    class Handler(http.server.BaseHTTPRequestHandler):
+        def do_GET(self):  # noqa: N802 — stdlib callback name
+            query = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+            captured.update({k: v[0] for k, v in query.items() if v})
+            ok = captured.get("state") == state and "code" in captured
+            body = (b"<h2>Done. You can close this tab.</h2>" if ok
+                    else b"<h2>That did not look like the redirect this script started.</h2>")
+            self.send_response(200 if ok else 400)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def log_message(self, *args):  # keep the token out of any log line
+            return
+
+    server = http.server.HTTPServer(("127.0.0.1", port), Handler)
+    thread = threading.Thread(target=server.handle_request, daemon=True)
+    thread.start()
+    print(f"open this URL and approve '{SCOPES}':\n\n{url}\n")
+    if open_browser:
+        try:
+            webbrowser.open(url)
+        except Exception:
+            pass
+    thread.join(timeout=300)
+    server.server_close()
+    if captured.get("state") != state or "code" not in captured:
+        raise SystemExit("error: no authorization code arrived (timed out, or the redirect was refused)")
+
+    payload = exchange_code(client_id, client_secret, captured["code"], redirect_uri)
+    refresh = payload.get("refresh_token")
+    if not refresh:
+        raise SystemExit("error: the exchange returned no refresh_token — revoke the app's access and "
+                         "run --login again (Google only issues one on a fresh consent)")
+    out = Path(store)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps({
+        "client_id": client_id, "client_secret": client_secret, "refresh_token": refresh,
+        "scope": payload.get("scope", SCOPES),
+    }, indent=2) + "\n", encoding="utf-8")
+    os.chmod(out, 0o600)
+    print(f"stored the refresh token at {out} (mode 0600)")
+    print("next: python3 scripts/gsc_pull.py --oauth-credentials " + str(out) + " --dry-run")
+    return 0
 
 
 def build_signed_jwt(client_email: str, private_key_pem: str, token_uri: str,
@@ -228,7 +369,20 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--gcloud", help="path to the gcloud binary")
     parser.add_argument("--credentials",
                         help="service-account JSON key (its email must be a user of the property)")
+    parser.add_argument("--oauth-credentials",
+                        help="a stored user credential from --login (refresh token, mode 0600)")
+    parser.add_argument("--login", action="store_true",
+                        help="run the loopback consent flow and store a refresh token")
+    parser.add_argument("--client", help="OAuth client JSON downloaded from the console (for --login)")
+    parser.add_argument("--store", default=str(REPO / "data" / "gsc" / "oauth-credentials.json"),
+                        help="where --login writes the refresh token")
+    parser.add_argument("--no-browser", action="store_true", help="print the URL, do not open it")
     args = parser.parse_args(argv)
+
+    if args.login:
+        if not args.client:
+            raise SystemExit("error: --login needs --client <client_secret_*.json>")
+        return run_login(args.client, args.store, open_browser=not args.no_browser)
 
     if args.end:
         end = args.end
@@ -237,7 +391,8 @@ def main(argv: list[str] | None = None) -> int:
     start = args.start or default_window(args.days)[0]
 
     body = build_body(start, end, args.dimension)
-    payload = query(args.site, body, load_token(gcloud=args.gcloud, credentials=args.credentials))
+    payload = query(args.site, body, (refresh_access_token(args.oauth_credentials) if args.oauth_credentials
+     else load_token(gcloud=args.gcloud, credentials=args.credentials)))
     print(f"property: {args.site}  window: {start} → {end}")
     print(summarise(payload))
     if args.dry_run:
