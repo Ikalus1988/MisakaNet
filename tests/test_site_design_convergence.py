@@ -618,3 +618,25 @@ def test_the_sticky_slug_map_is_not_changed_by_a_regeneration():
     lessons = json.loads((REPO / "data" / "lessons.json").read_text(encoding="utf-8"))
     _files, planned = plan_with_slugs(lessons, recorded, root=REPO)
     assert planned == recorded, "a regeneration moved a slug — a live URL would 404"
+
+
+def test_a_search_engine_verification_token_is_not_a_page():
+    """`docs/google<16 hex>.html` is served at the site root and holds one fixed line.
+
+    Search Console fetches the path and compares the bytes; the file has no markup, so it cannot
+    carry the design vocabulary, and treating it as a page made every page-oriented gate report
+    that it had lost its tokens (measured 2026-11-14, the day one was added). The exclusion is
+    narrow on purpose: a name that merely looks similar is still a page.
+    """
+    token = Path("googled7bffcd986dade3f.html")
+    assert site_page_scope.is_verification_token(token)
+    # The name is the contract: `google` + exactly 16 hex + `.html`, at the docs root.
+    for not_a_token in ("google.html", "googled7bffcd986dade3f.htm",
+                        "googled7bffcd986dade3fX.html", "start.html",
+                        "insights/googled7bffcd986dade3f.html"):
+        assert not site_page_scope.is_verification_token(Path(not_a_token)), not_a_token
+
+    # And the scope that every gate reads actually drops it, while keeping real pages.
+    pages = {p.name for p in site_page_scope.html_pages(REPO)}
+    assert token.name not in pages, "the token is still being read as a page"
+    assert "index.html" in pages and "start.html" in pages
