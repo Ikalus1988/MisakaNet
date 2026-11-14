@@ -18,10 +18,17 @@ The property is a URL-prefix property (`https://misakanet.org/`), verified by th
 
 Credentials
 -----------
-`GSC_ACCESS_TOKEN` if set, else `gcloud auth print-access-token` (`--gcloud`/`GCLOUD` picks the
-binary). The token is a bearer credential: it is never printed, never put in a URL, and never
-interpolated into an error. The account behind it must have access to the property in Search
-Console, and the token needs the `webmasters.readonly` scope.
+Three ways, in the order this script tries them:
+
+1. `--credentials <service-account.json>` — a service-account key. The script signs a JWT with
+   `openssl` (no Python dependency) and exchanges it for an access token. This is the only path that
+   works unattended, and the account's email must be added as a **user of the property** in Search
+   Console.
+2. `GSC_ACCESS_TOKEN` — a token the caller already holds (short-lived).
+3. `gcloud auth print-access-token` (`--gcloud`/`GCLOUD` picks the binary).
+
+Whatever the path, the credential is never printed, never put in a URL, and never written into the
+output file. The token needs the `webmasters.readonly` scope: read the property, nothing else.
 
 Output
 ------
@@ -36,10 +43,13 @@ credential failed — with a message that is safe to paste into an issue.
 from __future__ import annotations
 
 import argparse
+import base64
 import json
 import os
 import subprocess
 import sys
+import tempfile
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -50,6 +60,7 @@ REPO = Path(__file__).resolve().parent.parent
 DEFAULT_SITE = "https://misakanet.org/"
 ENDPOINT = "https://searchconsole.googleapis.com/webmasters/v3/sites/{site}/searchAnalytics/query"
 OPENER = urllib.request.build_opener()
+SCOPES = "https://www.googleapis.com/auth/webmasters.readonly"
 #: Search Console finalises data 2–3 days behind today; asking for fresher rows returns partials.
 LAG_DAYS = 2
 
@@ -76,8 +87,82 @@ def default_window(days: int, today: date | None = None) -> tuple[str, str]:
     return (end - timedelta(days=days - 1)).isoformat(), end.isoformat()
 
 
-def load_token(environ=None, gcloud: str | None = None) -> str:
-    """A bearer token from the environment, else from `gcloud`. Never echoed."""
+def _b64url(raw: bytes) -> str:
+    return base64.urlsafe_b64encode(raw).rstrip(b"=").decode("ascii")
+
+
+def build_signed_jwt(client_email: str, private_key_pem: str, token_uri: str,
+                     now: int | None = None, scope: str = SCOPES) -> str:
+    """A signed RS256 assertion, as the service-account flow wants it.
+
+    `openssl` does the signing (this repository keeps Python dependency-free). The key is written to
+    a 0600 temp file because `openssl dgst -sign` takes a path, and the file is removed before the
+    claim is returned — the key never lingers beside the output.
+    """
+    issued = int(time.time()) if now is None else now
+    header = {"alg": "RS256", "typ": "JWT"}
+    claims = {"iss": client_email, "scope": scope, "aud": token_uri,
+              "iat": issued, "exp": issued + 3600}
+    signing_input = (_b64url(json.dumps(header, separators=(",", ":")).encode()) + "." +
+                     _b64url(json.dumps(claims, separators=(",", ":")).encode()))
+    handle, key_path = tempfile.mkstemp(suffix=".pem")
+    try:
+        with os.fdopen(handle, "w", encoding="utf-8") as key_file:
+            key_file.write(private_key_pem)
+        os.chmod(key_path, 0o600)
+        proc = subprocess.run(["openssl", "dgst", "-sha256", "-sign", key_path],
+                              input=signing_input.encode("ascii"), capture_output=True)
+    finally:
+        try:
+            os.unlink(key_path)
+        except OSError:
+            pass
+    if proc.returncode != 0:
+        raise SystemExit("error: `openssl` could not sign the assertion — is openssl installed? "
+                         f"{(proc.stderr or b'').decode('utf-8', 'replace').strip()[:200]}")
+    return signing_input + "." + _b64url(proc.stdout)
+
+
+def service_account_token(credentials: str | Path, opener=None,
+                          now: int | None = None) -> str:
+    """Exchange a service-account key for an access token. Never echoes the key or the token."""
+    opener = opener or OPENER
+    try:
+        info = json.loads(Path(credentials).read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        raise SystemExit(f"error: could not read the service-account key at {credentials}: {error}")
+    client_email = info.get("client_email")
+    private_key = info.get("private_key")
+    if not client_email or not private_key:
+        raise SystemExit("error: that file is not a service-account key "
+                         "(no client_email/private_key)")
+    token_uri = info.get("token_uri") or "https://oauth2.googleapis.com/token"
+    assertion = build_signed_jwt(client_email, private_key, token_uri, now=now)
+    body = urllib.parse.urlencode({
+        "grant_type": "urn:ietf:params:oauth:grant-type:jwt-bearer",
+        "assertion": assertion,
+    }).encode("utf-8")
+    request = urllib.request.Request(
+        token_uri, data=body,
+        headers={"Content-Type": "application/x-www-form-urlencoded"})
+    try:
+        with opener.open(request, timeout=60) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+    except urllib.error.HTTPError as error:
+        detail = error.read().decode("utf-8", "replace")[:300] if error.fp else ""
+        raise SystemExit(f"error: the token endpoint answered {error.code}: {detail}")
+    except urllib.error.URLError as error:
+        raise SystemExit(f"error: could not reach the token endpoint: {error.reason}")
+    token = payload.get("access_token")
+    if not token:
+        raise SystemExit("error: the token endpoint returned no access_token")
+    return token
+
+
+def load_token(environ=None, gcloud: str | None = None, credentials: str | None = None) -> str:
+    """A bearer token from a service account, the environment, or `gcloud`. Never echoed."""
+    if credentials:
+        return service_account_token(credentials)
     env = os.environ if environ is None else environ
     token = (env.get("GSC_ACCESS_TOKEN") or "").strip()
     if token:
@@ -141,6 +226,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--out", default=str(REPO / "data" / "gsc"), help="output directory")
     parser.add_argument("--dry-run", action="store_true", help="print the digest, write nothing")
     parser.add_argument("--gcloud", help="path to the gcloud binary")
+    parser.add_argument("--credentials",
+                        help="service-account JSON key (its email must be a user of the property)")
     args = parser.parse_args(argv)
 
     if args.end:
@@ -150,7 +237,7 @@ def main(argv: list[str] | None = None) -> int:
     start = args.start or default_window(args.days)[0]
 
     body = build_body(start, end, args.dimension)
-    payload = query(args.site, body, load_token(gcloud=args.gcloud))
+    payload = query(args.site, body, load_token(gcloud=args.gcloud, credentials=args.credentials))
     print(f"property: {args.site}  window: {start} → {end}")
     print(summarise(payload))
     if args.dry_run:
