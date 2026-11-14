@@ -61,7 +61,7 @@ $ python3 scripts/ae_query.py --days 1        # 需要 CLOUDFLARE_API_TOKEN + CL
 | 崩溃墓碑 stderr | `misakanet/guard.py:_redact` | 同样只有密钥 |
 | 仓内课程文件 | `scripts/check_field_reports.py` FR3 | **只检测不改写**：`C:\Users\<name>`、`/mnt/<d>/Users/<name>`、`/home/<name>` |
 
-所以 owner 那个未跟踪课程文件里的 `/home/eric_jia` **不归任何自动脱敏管**：它走的是"文件"路径，
+所以 owner 那个未跟踪课程文件里的 `/home/<user>` **不归任何自动脱敏管**：它走的是"文件"路径，
 而文件路径只有检测器。它没被 CI 拦到的唯一原因是**未跟踪**（CI 看不到）。
 
 **要不要给 `redactSecrets` 加路径规则**是 owner 的决定：加了能拦在入口，代价是正文里本就有意义的
@@ -79,4 +79,4 @@ $ python3 scripts/ae_query.py --days 1        # 需要 CLOUDFLARE_API_TOKEN + CL
 | GSC 首拉 | 属性 2026-11-14 19:35 验证；**11-16 之后**才有行 |
 | Pages 双站点 | 待 owner 拍板（自定义域名或退役） |
 | 第二个 org owner | 迁移唯一前置 |
-| 未跟踪课程文件的 `/home/eric_jia` | 待 owner 脱敏或移出 `lessons/` |
+| 未跟踪课程文件的 `/home/<user>` | 待 owner 脱敏或移出 `lessons/` |
