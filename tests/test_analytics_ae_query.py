@@ -70,7 +70,9 @@ class TestSql(unittest.TestCase):
         sql = ae_query.latency_sql(7)
         self.assertIn("quantileExactWeighted(0.95)(double1, _sample_interval)", sql)
         self.assertIn("GROUP BY blob1", sql)
-        self.assertIn("ORDER BY blob1", sql)
+        # `ORDER BY blob1` after `SELECT blob1 AS tool` is rejected by the live API
+        # ("unable to find type of column: blob1"); the alias is what resolves.
+        self.assertIn("ORDER BY tool", sql)
 
     def test_top_missed_is_ten_hashed_queries_with_no_hits(self):
         sql = ae_query.top_missed_sql(30)
@@ -180,3 +182,29 @@ class TestMain(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+# ── the three forms the live API rejected ─────────────────────────────────────────────────────
+# Unit tests here assert substrings, which cannot prove SQL semantics — that is exactly how three
+# invalid queries shipped: `if(x = 0, 0, <double>)` (branch types differ), `ORDER BY blob1` after
+# `SELECT blob1 AS tool` (the original name no longer resolves), and `ORDER BY SUM(...)`. All three
+# were found by running the script against the real dataset on 2026-11-15, not by reading the docs.
+
+
+def test_the_miss_rate_fallback_is_a_float():
+    sql = ae_query.miss_rate_sql(7)
+    assert "if(SUM(_sample_interval) = 0, 0.0," in sql.replace("  ", " "), (
+        "the if() branches must have the same type; Analytics Engine rejects Integer vs Double")
+    assert ", 0, SUM(_sample_interval * double3)" not in sql
+
+
+def test_the_latency_query_orders_by_the_alias_it_selects():
+    sql = ae_query.latency_sql(7)
+    assert "AS tool" in sql and "ORDER BY tool" in sql, (
+        "`ORDER BY blob1` after `SELECT blob1 AS tool` fails with 'unable to find type of column: blob1'")
+
+
+def test_the_top_missed_query_orders_by_the_alias_not_the_aggregate():
+    sql = ae_query.top_missed_sql(7)
+    assert "AS misses" in sql and "ORDER BY misses DESC" in sql, (
+        "ordering by SUM(...) fails the same way; the alias resolves")

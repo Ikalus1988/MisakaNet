@@ -74,7 +74,10 @@ def miss_rate_sql(days: int = DEFAULT_DAYS) -> str:
         "SELECT "
         "SUM(_sample_interval) AS searches, "
         "SUM(_sample_interval * double3) AS misses, "
-        "if(SUM(_sample_interval) = 0, 0, "
+        # Both branches must be the same type: Analytics Engine rejects `if(x = 0, 0, <double>)`
+        # with "the 2nd and 3rd arguments to IF() must have the same type". Measured live
+        # 2026-11-15 against the real dataset, not inferred from the docs.
+        "if(SUM(_sample_interval) = 0, 0.0, "
         "SUM(_sample_interval * double3) / SUM(_sample_interval)) AS miss_rate "
         f"FROM {DATASET} "
         f"WHERE timestamp > NOW() - {_window(days)} "
@@ -90,7 +93,9 @@ def latency_sql(days: int = DEFAULT_DAYS) -> str:
         f"FROM {DATASET} "
         f"WHERE timestamp > NOW() - {_window(days)} "
         "GROUP BY blob1 "
-        "ORDER BY blob1"
+        # `ORDER BY blob1` after `SELECT blob1 AS tool` is rejected ("unable to find type of
+        # column: blob1"); the alias is what the planner can still resolve. Verified live.
+        "ORDER BY tool"
     )
 
 
@@ -105,7 +110,8 @@ def top_missed_sql(days: int = DEFAULT_DAYS) -> str:
         "AND double3 = 1 "
         "AND blob3 <> '' "
         "GROUP BY blob3 "
-        "ORDER BY SUM(_sample_interval) DESC "
+        # Same as the latency query: order by the alias, not by the aggregate expression.
+        "ORDER BY misses DESC "
         "LIMIT 10"
     )
 
