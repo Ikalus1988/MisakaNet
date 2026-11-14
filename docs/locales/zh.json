@@ -21,7 +21,6 @@
   "regFail": "注册失败",
   "rateLimitWait": "请等待 {s} 秒后再试",
   "or": "或者",
-  "githubReg": "通过 GitHub 注册",
   "footer": "数据来自 GitHub API",
   "lv0": "见习",
   "lv1": "Lv.1",
@@ -138,11 +137,6 @@
   "latestUnavailable": "动态列表暂不可用",
   "regWorkerOffline": "注册节点暂时不可达",
   "regWorkerOfflineHint": "注册请使用下方入口",
-  "regOptionGithub": "选项一：有 GitHub 账号",
-  "regOptionGithubHint": "通过 Issue 模板注册，30 秒自动完成",
-  "regViaIssue": "通过 Issue 注册",
-  "regOptionNoGithub": "选项二：无 GitHub 账号",
-  "regOptionNoGithubHint": "暂不支持无 GitHub 账号注册，请先创建 GitHub 账号后使用选项一",
   "regWait": "无需审核，自动分配中（约 30 秒后刷新可见你的节点编号）",
   "viewIssue": "查看欢迎消息（内含准入测试）",
   "regNodeLine": "Agent: {agent} · 预估 #{node}",
@@ -175,5 +169,11 @@
   "registerCtaLink": "注册",
   "regBackHome": "← 返回首页",
   "regPageTitle": "注册节点 — MisakaNet",
-  "agentCindy": "Cindy"
+  "agentCindy": "Cindy",
+  "mcpRegHint": "用 MCP 工具 misakanet_register 一次调用拿到 node id 与 token（不需要账号）",
+  "regOptionMcp": "选项一：任何调用方，不需要账号",
+  "regOptionMcpHint": "用 MCP 工具 misakanet_register 一次调用拿到 node id 与 token —— 不需要 GitHub 账号、邮箱或任何个人信息",
+  "regOptionWait": "选项二：稍后重试",
+  "regOptionWaitHint": "本页与那个工具走同一个 Worker；按钮不可达时，工具通常也不可达。GitHub 的注册 issue 模板只会被欢迎并关闭，不再分配 node 号 —— 别在那里等 ID。",
+  "regFailHint": "稍后重试即可；这个错误来自 Worker，不来自你的账号"
 }
