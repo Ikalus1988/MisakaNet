@@ -221,8 +221,8 @@
         "canonical_term": "timeout",
         "canonical_df": 62,
         "alias_evidence": {
-          "file": "archive/README.md",
-          "quote": "| `cc-haha-network-timeout.md` | 网络连接超时 |"
+          "file": "docs/agents/repo-operations.md",
+          "quote": "| `git push` 挂起 / `GnuTLS recv error (-110)` / 连接超时 |"
         },
         "canonical_evidence": {
           "file": "lessons/contrib/agent-manual-update-timeout.md",
