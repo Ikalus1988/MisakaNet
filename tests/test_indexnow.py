@@ -211,7 +211,11 @@ def test_the_post_is_json_to_the_indexnow_endpoint(monkeypatch) -> None:
 
 
 def test_the_key_live_probe_compares_the_body_with_the_key(monkeypatch) -> None:
-    def fake_urlopen(url, timeout=None):
+    def fake_urlopen(request, timeout=None):
+        # The probe must carry a User-Agent: Cloudflare answers urllib's default with 403, which
+        # makes the "wait for the key to go live" step unable to ever succeed.
+        assert request.get_header("User-agent") == ix.USER_AGENT, (
+            "the probe sent no User-Agent — Cloudflare will answer 403 and the wait can never pass")
         return _Response(200, b"a" * 32 + b"\n")
 
     monkeypatch.setattr(ix.urllib.request, "urlopen", fake_urlopen)
@@ -220,8 +224,8 @@ def test_the_key_live_probe_compares_the_body_with_the_key(monkeypatch) -> None:
 
 
 def test_the_key_live_probe_reports_a_404_instead_of_raising(monkeypatch) -> None:
-    def fake_urlopen(url, timeout=None):
-        raise ix.urllib.error.HTTPError(url, 404, "Not Found", {}, io.BytesIO(b""))
+    def fake_urlopen(request, timeout=None):
+        raise ix.urllib.error.HTTPError(request.full_url, 404, "Not Found", {}, io.BytesIO(b""))
 
     monkeypatch.setattr(ix.urllib.request, "urlopen", fake_urlopen)
     assert ix.key_is_live("https://misakanet.org/" + "a" * 32 + ".txt", "a" * 32) == (
