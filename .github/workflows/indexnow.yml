@@ -1,0 +1,85 @@
+name: IndexNow
+
+# Tells Bing, Yandex and Naver which pages a push to `docs/` changed.
+#
+# Why (2026-11-15): `https://misakanet.org` is static assets served out of `docs/`, so a regenerated
+# lesson page is live seconds after the push that writes it and unknown to a search engine until its
+# next crawl. Google Search Console was verified on 2026-11-15; Bing has never been verified and
+# sent 26 views in the previous 14 days. One IndexNow POST is the difference between "crawled next
+# week" and "queued now", and it costs a JSON body.
+#
+# The URL list comes from the push itself (`github.event.before`..`github.sha`), mapped to canonical
+# URLs by `scripts/indexnow_submit.py`. That mapping is measured against the live site rather than
+# guessed — `/foo.html` is not the form the site serves, and `/lessons/<slug>` answers 307 to the
+# slash form. Only when the range cannot answer (a manual run has no `before`; a force push can
+# carry the all-zero SHA) does the script fall back to the full `docs/sitemap.xml`. It is
+# deliberately not the normal path: on the daily corpus push it would submit 950+ URLs that did not
+# change.
+#
+# Exit codes: `0` means "attempted", including a 4xx/5xx from the endpoint, which is logged as a
+# warning — this workflow must never be the reason a deploy looks stuck. `2` means "never attempted"
+# (missing key file, empty URL list) and is meant to be red, because a submission pipeline that
+# silently stops submitting is the failure mode that looks like success.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "docs/**"
+      # `docs/data/**` is machine data written by `build-feed.yml` every three hours and by the
+      # daily corpus sync. It changes no page, so the submission list would be empty by
+      # construction — and an empty list is a hard failure in the script. Excluding it here keeps
+      # that failure meaningful instead of routine.
+      - "!docs/data/**"
+  # A manual run has no `before`, so it submits the sitemap's full set. That is the "re-announce the
+  # whole site" button, and the way to exercise this path without waiting for a docs push.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Two runs would submit overlapping sets and could trip the endpoint's 429 rate limit, and a
+# cancelled run could be cancelled between two batches. Serialise instead.
+concurrency:
+  group: indexnow
+  cancel-in-progress: false
+
+jobs:
+  submit:
+    runs-on: ubuntu-latest
+    # A job without a bound holds its runner until the platform default (six hours).
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+        with:
+          # `before` is not in a depth-1 checkout, and without it the script would fall back to the
+          # full sitemap on every push instead of submitting the handful of pages that changed.
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7
+        with:
+          # Stdlib only (`argparse`/`json`/`subprocess`/`urllib`/`ElementTree`); 3.11 is the
+          # repository's floor, so this pin does not need revisiting on its own.
+          python-version: "3.11"
+
+      - name: Submit the changed pages
+        # The key file is `docs/fd318189c7e480a7fb85c9141f159fa8.txt`: 32 lowercase hex, and its
+        # content equals its name because the protocol requires the file to contain the key. The
+        # name is repeated here on purpose — `tests/test_indexnow.py` derives it from the file by
+        # pattern and fails if this line and the file disagree, so a rename cannot go half-done.
+        # `--wait-for-key` covers the deploy race: Workers Builds publishes `docs/` asynchronously
+        # (~45s), so the push that introduces this file is submitted before the key file answers.
+        # The wait is best-effort and only warns — the endpoint's 202 means "validation pending".
+        env:
+          # Hashes, not free text — but they still cross the boundary through `env:` so the shell
+          # receives a value rather than script text, which is this repository's standing rule.
+          BEFORE_SHA: ${{ github.event.before }}
+          AFTER_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          python3 scripts/indexnow_submit.py \
+            --before "${BEFORE_SHA:-}" \
+            --after "${AFTER_SHA:-}" \
+            --wait-for-key 90 \
+            --key-file "docs/fd318189c7e480a7fb85c9141f159fa8.txt"
