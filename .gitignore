@@ -103,6 +103,10 @@ data/search_gaps.jsonl
 
 # Benchmark results (local only)
 bench_results/
+# Search Console pulls (`scripts/gsc_pull.py`): a weekly series of dated snapshots is the shape
+# `tests/test_benchmark_snapshot_retention.py` exists to stop — each copy doubles the bytes and
+# adds no measurement. Keep them local, or push them to D1 if production ever needs to query them.
+data/gsc/
 # `bench/self-healing/run_benchmark.py` writes one directory per run here. One of those
 # outputs was committed in 2026-08 and read as a real measurement (`attempts: 1`,
 # `duration_ms: 0.0` — a simulated run, see docs/maintainer/capability-inventory-new-user-2026-09-18.md §51).
