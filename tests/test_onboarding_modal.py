@@ -19,6 +19,8 @@ so the modal now points at the entry points instead of re-teaching the README.
 from __future__ import annotations
 
 import re
+
+import pytest
 from html.parser import HTMLParser
 from pathlib import Path
 
@@ -112,8 +114,14 @@ def test_the_modal_points_at_entry_points_that_exist():
             target = REPO / href[len(BLOB):]
             assert target.exists(), f"{href} points at a file that is not in the repository"
         elif href.startswith("/") and not href.startswith("//"):
-            target = REPO / "docs" / (href.lstrip("/") + ".html")
-            assert target.exists(), f"{href} has no page in docs/ (looked for {target.name})"
+            # Three shapes are all served: `X.html`, `X/index.html` (a section landing page) and a
+            # real file at the path. `/install/` — used by the modal since 2026-11-14 — is the middle
+            # one, and the old single-shape check called it a dead CTA while the site answered 200.
+            rel = href.lstrip("/").rstrip("/")
+            candidates = [REPO / "docs" / (rel + ".html"), REPO / "docs" / rel / "index.html",
+                          REPO / "docs" / rel]
+            assert any(c.exists() for c in candidates), (
+                f"{href} has no page in docs/ (looked for {rel}.html, {rel}/index.html, {rel})")
 
 
 def test_the_modal_says_a_miss_is_an_answer():
@@ -150,3 +158,18 @@ def test_the_modal_text_is_localized():
     assert not parser.untranslated, (
         "these strings have no data-i18n ancestor, so an English reader sees the fallback markup: "
         f"{parser.untranslated[:3]}")
+
+def test_the_entry_point_check_can_still_go_red(monkeypatch):
+    """Widening a resolver is how a gate stops being a gate.
+
+    The check above now accepts three shapes, so this pins that a path matching none of them is
+    still refused — otherwise "the modal points at entry points that exist" would be true by
+    construction.
+    """
+    from tests import test_onboarding_modal as mod
+
+    fake = '<div><a href="/no-such-page/">x</a></div>'
+    monkeypatch.setattr(mod, "modal", lambda: fake)
+    with pytest.raises(AssertionError) as exc:
+        mod.test_the_modal_points_at_entry_points_that_exist()
+    assert "/no-such-page/" in str(exc.value)
