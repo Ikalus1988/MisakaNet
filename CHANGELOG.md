@@ -7,6 +7,22 @@ All notable changes to the Misaka Network project are documented here.
 
 ---
 
+## [3.16.0](https://github.com/Ikalus1988/MisakaNet/compare/v3.15.1...v3.16.0) (2026-11-14)
+
+
+### Features
+
+* **gsc:** a puller for the one signal the repository cannot produce itself ([#4895](https://github.com/Ikalus1988/MisakaNet/issues/4895)) ([e3838ba](https://github.com/Ikalus1988/MisakaNet/commit/e3838ba23ceacec9031b716c6ab32df437389b71))
+* **gsc:** the service-account route, because it is the only one that works unattended ([#4896](https://github.com/Ikalus1988/MisakaNet/issues/4896)) ([a159eaf](https://github.com/Ikalus1988/MisakaNet/commit/a159eafbb7689f0c092256fdba3cf3049033fb6a))
+* **site:** serve a Search Console verification token, without letting it look like a page ([#4893](https://github.com/Ikalus1988/MisakaNet/issues/4893)) ([2043e9f](https://github.com/Ikalus1988/MisakaNet/commit/2043e9f8a795ebd9d9a91893718f3afae782e9e7))
+* **site:** verify the Search Console property with a meta tag ([#4894](https://github.com/Ikalus1988/MisakaNet/issues/4894)) ([bee2a8f](https://github.com/Ikalus1988/MisakaNet/commit/bee2a8fcf95947f9b7362fd725fd723a755a18ec))
+
+
+### Documentation
+
+* **bench:** a reproduction notebook that nothing linked is now one click away ([#4891](https://github.com/Ikalus1988/MisakaNet/issues/4891)) ([e056cd5](https://github.com/Ikalus1988/MisakaNet/commit/e056cd5788cc46e870d1554b92ea1c1088301c17))
+* **register:** the join-issue form has not assigned a node id since 2026-09-23 — stop saying it does ([#4870](https://github.com/Ikalus1988/MisakaNet/issues/4870)) ([2aa30e1](https://github.com/Ikalus1988/MisakaNet/commit/2aa30e1cac77ce4ebd3c7df202b96b2992fcb068))
+
 ## [3.15.1](https://github.com/Ikalus1988/MisakaNet/compare/v3.15.0...v3.15.1) (2026-11-14)
 
 
