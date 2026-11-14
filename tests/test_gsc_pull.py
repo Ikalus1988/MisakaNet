@@ -227,3 +227,57 @@ def test_a_refresh_token_is_minted_from_the_stored_file_and_never_echoed(tmp_pat
     assert body["refresh_token"] == ["rtoken"]
     assert request.full_url == gsc.TOKEN_URI
     assert "fresh-token" not in capsys.readouterr().out
+
+
+# ── the listener-free path: what actually rescued the flow ────────────────────────────────────
+# On this host the browser could not reach the WSL listener, and the code sat in the address bar of
+# an error page. Pasting that URL into `--code` finished the consent with no socket involved — which
+# is why these three cases carry the weight: an error URL, a URL without a code, and a good one.
+
+
+def test_a_pasted_url_exchanges_the_code_and_stores_the_token(tmp_path):
+    client_json = tmp_path / "client.json"
+    client_json.write_text(json.dumps({"installed": {
+        "client_id": "cid.apps.googleusercontent.com", "client_secret": "csecret"}}), encoding="utf-8")
+    store = tmp_path / "oath.json"
+    monkeypatched = gsc.exchange_code
+    captured = {}
+
+    def fake_exchange(client_id, client_secret, code, redirect_uri, opener=None):
+        captured.update(code=code, redirect_uri=redirect_uri)
+        return {"refresh_token": "refresh-1", "scope": gsc.SCOPES}
+
+    gsc.exchange_code = fake_exchange
+    try:
+        url = "http://localhost:45365/?state=s&iss=https://accounts.google.com&code=4/0A-REAL&scope=x"
+        assert gsc.exchange_pasted_url(client_json, url, "http://localhost:45365/", store) == 0
+    finally:
+        gsc.exchange_code = monkeypatched
+
+    assert captured["code"] == "4/0A-REAL"
+    assert captured["redirect_uri"] == "http://localhost:45365/", (
+        "the exchange must reuse the exact redirect_uri the code was issued for")
+    saved = json.loads(store.read_text(encoding="utf-8"))
+    assert saved["refresh_token"] == "refresh-1" and saved["client_secret"] == "csecret"
+    assert "4/0A-REAL" not in store.read_text(encoding="utf-8"), "the code is single-use; do not keep it"
+
+
+def test_a_pasted_error_page_is_reported_as_google_reported_it(tmp_path):
+    client_json = tmp_path / "client.json"
+    client_json.write_text(json.dumps({"installed": {"client_id": "c", "client_secret": "s"}}),
+                           encoding="utf-8")
+    url = "http://localhost:1/?error=access_denied&error_description=The+user+denied+the+request"
+    with pytest.raises(SystemExit) as exc:
+        gsc.exchange_pasted_url(client_json, url, "http://localhost:1/", tmp_path / "o.json")
+    text = str(exc.value)
+    assert "access_denied" in text and "The user denied" in text
+
+
+def test_a_pasted_url_without_a_code_says_what_to_copy(tmp_path):
+    client_json = tmp_path / "client.json"
+    client_json.write_text(json.dumps({"installed": {"client_id": "c", "client_secret": "s"}}),
+                           encoding="utf-8")
+    with pytest.raises(SystemExit) as exc:
+        gsc.exchange_pasted_url(client_json, "http://localhost:1/?state=only",
+                                "http://localhost:1/", tmp_path / "o.json")
+    assert "whole URL" in str(exc.value), "the failure has to name the thing to copy"
