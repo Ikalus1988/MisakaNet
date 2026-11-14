@@ -42,3 +42,15 @@ turn it into a working agent:
   switching conventions.
 - `lessons/contrib/misakanet-refactor-v2-review.md` — how the package
   was trimmed down; `your_agent.py` predates that refactor.
+
+## 60-Second MCP Failure-Memory Quickstart (#1258)
+
+`YourAgent` in `agents/your_agent.py` now includes built-in MCP JSON-RPC 2.0 helpers targeting `https://misakanet.org/mcp` (`MCP-Protocol-Version: 2025-06-18`):
+
+```python
+from agents.your_agent import YourAgent
+
+agent = YourAgent("satoshinakamoto666666-fullstack-agent")
+agent.register_mcp()
+search_envelope = agent.search_mcp("ASGI sub-mount Forwarded host authority")
+```
