@@ -211,7 +211,7 @@ This is the full page index (llms-full.txt). For the curated summary, see llms.t
 - [Lesson: 注册链路设计-worker-只创建-issue其余交给-workflow](https://misakanet.org/lessons/注册链路设计-worker-只创建-issue其余交给-workflow/)
 - [Lesson: 磁盘空间不足-chroma-db-v4-cachecleanup](https://misakanet.org/lessons/磁盘空间不足-chroma-db-v4-cachecleanup/)
 
-## Guides & articles (59)
+## Guides & articles (58)
 
 - [Guide: CONCEPTS](https://misakanet.org/CONCEPTS/)
 - [Guide: LIMITATIONS](https://misakanet.org/LIMITATIONS/)
@@ -239,7 +239,6 @@ This is the full page index (llms-full.txt). For the curated summary, see llms.t
 - [Guide: glossary](https://misakanet.org/glossary/)
 - [Guide: hardening-field-report](https://misakanet.org/hardening-field-report/)
 - [Guide: index](https://misakanet.org/index/)
-- [Guide: intake-archiving-design](https://misakanet.org/intake-archiving-design/)
 - [Guide: json-ld-schema](https://misakanet.org/json-ld-schema/)
 - [Guide: label-system](https://misakanet.org/label-system/)
 - [Guide: lesson-checklist](https://misakanet.org/lesson-checklist/)
