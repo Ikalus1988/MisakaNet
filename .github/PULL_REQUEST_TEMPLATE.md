@@ -51,6 +51,6 @@ python3 scripts/lesson_gate.py lessons/contrib/your-lesson.md
 - [Secret scan / token fix](https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/core/codeql-alert-dismissal-false-positive.md)
 - [pip install timeout/SSL](https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/pip-install-timeout-ssl.md)
 - [GitHub API 401](https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/core/github-401-credential-lookup.md)
-- [🔍 Search all lessons](https://ikalus1988.github.io/MisakaNet/search/)
+- [🔍 Search all lessons](https://misakanet.org/search/)
 
 <!-- Don't worry about perfection. Small fixes are welcome too. -->

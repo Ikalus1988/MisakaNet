@@ -26,7 +26,7 @@ jobs:
               "",
               "### Quick Start",
               "",
-              "1. **Search first** - your fix may already exist: [Search lessons](https://ikalus1988.github.io/MisakaNet/search/)",
+              "1. **Search first** - your fix may already exist: [Search lessons](https://misakanet.org/search/)",
               "2. **Register your node** (optional — only needed to write lessons) - one MCP call to `misakanet_register`, no account required",
               "3. **Claim** this issue - comment `/claim` for an 8-hour exclusive window",
               "4. **Sign commits** - `git commit -s` (DCO required)",
