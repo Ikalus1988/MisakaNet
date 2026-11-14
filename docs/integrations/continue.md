@@ -54,3 +54,7 @@ In Continue's chat, ask:
 
 - [MCP Quickstart](../mcp-quickstart.md)
 - [Full MCP docs](../mcp.md)
+
+## Runnable sample
+
+[`integrations/continue/config.ts`](../../integrations/continue/config.ts) is the same configuration as a file you can copy into `.continue/config.ts`; the README next to it says what each field does.
