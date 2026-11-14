@@ -1,0 +1,178 @@
+#!/usr/bin/env python3
+"""Tests for `scripts/ae_query.py` — the Analytics Engine read side, with no network.
+
+The script's contract is narrow on purpose: three questions (miss rate, p95 latency, top hashed
+no-hit queries), credentials from the environment, and the token never printed. These tests pin both
+halves — the SQL that answers the questions and the privacy boundary around the credential — by
+driving the real functions with a stubbed opener. Nothing here opens a socket.
+"""
+from __future__ import annotations
+
+import io
+import json
+import sys
+import unittest
+from contextlib import redirect_stderr, redirect_stdout
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
+import ae_query  # noqa: E402
+
+ACCOUNT = "0123456789abcdef0123456789abcdef"
+TOKEN = "test-token-not-a-real-credential"
+
+MISS = {"data": [{"searches": 1000, "misses": 125, "miss_rate": 0.125}]}
+LATENCY = {"data": [
+    {"tool": "misakanet_get_lesson", "p95_ms": 41.2},
+    {"tool": "misakanet_search", "p95_ms": 812.4},
+]}
+TOP = {"data": [
+    {"query_hash": "0123456789abcdef", "misses": 42},
+    {"query_hash": "fedcba9876543210", "misses": 7},
+]}
+
+
+class FakeOpener:
+    """Records each request and returns canned SQL API answers, in order."""
+
+    def __init__(self, payloads):
+        self.payloads = list(payloads)
+        self.requests = []
+
+    def __call__(self, request, timeout=None):
+        self.requests.append(request)
+        if not self.payloads:
+            raise AssertionError("unexpected extra request")
+        return io.BytesIO(json.dumps(self.payloads.pop(0)).encode("utf-8"))
+
+
+def run_main(argv, environ, opener):
+    out, err = io.StringIO(), io.StringIO()
+    with redirect_stdout(out), redirect_stderr(err):
+        code = ae_query.main(argv, environ=environ, opener=opener)
+    return code, out.getvalue(), err.getvalue()
+
+
+class TestSql(unittest.TestCase):
+    def test_miss_rate_counts_search_no_match_rows(self):
+        sql = ae_query.miss_rate_sql(7)
+        self.assertIn(ae_query.DATASET, sql)
+        self.assertIn("SUM(_sample_interval * double3)", sql)
+        self.assertIn("miss_rate", sql)
+        self.assertIn("blob1 = 'misakanet_search'", sql)
+        self.assertIn("INTERVAL '7' DAY", sql)
+
+    def test_latency_uses_the_weighted_percentile(self):
+        sql = ae_query.latency_sql(7)
+        self.assertIn("quantileExactWeighted(0.95)(double1, _sample_interval)", sql)
+        self.assertIn("GROUP BY blob1", sql)
+        self.assertIn("ORDER BY blob1", sql)
+
+    def test_top_missed_is_ten_hashed_queries_with_no_hits(self):
+        sql = ae_query.top_missed_sql(30)
+        self.assertIn("blob3 AS query_hash", sql)
+        self.assertIn("double3 = 1", sql)
+        self.assertIn("blob3 <> ''", sql)
+        self.assertIn("GROUP BY blob3", sql)
+        self.assertIn("LIMIT 10", sql)
+        self.assertIn("INTERVAL '30' DAY", sql)
+
+    def test_days_window_is_bounded(self):
+        for bad in (0, -1, 91, True):
+            with self.assertRaises(ae_query.AnalyticsError):
+                ae_query.miss_rate_sql(bad)
+
+
+class TestRequest(unittest.TestCase):
+    def test_token_is_only_in_the_authorization_header(self):
+        sql = ae_query.miss_rate_sql(7)
+        request = ae_query.build_request(sql, account_id=ACCOUNT, token=TOKEN)
+        self.assertEqual(request.get_method(), "POST")
+        self.assertEqual(request.data, sql.encode("utf-8"))
+        self.assertNotIn(TOKEN, request.full_url)
+        self.assertNotIn(TOKEN.encode("utf-8"), request.data)
+        headers = {name.lower(): value for name, value in request.header_items()}
+        self.assertEqual(headers["authorization"], f"Bearer {TOKEN}")
+        self.assertNotIn("token", request.full_url.lower())
+
+    def test_account_id_must_be_the_32_character_form(self):
+        with self.assertRaises(ae_query.AnalyticsError):
+            ae_query.build_request("SELECT 1", account_id="not-an-account", token=TOKEN)
+
+    def test_missing_token_is_refused_before_a_request(self):
+        with self.assertRaises(ae_query.AnalyticsError):
+            ae_query.build_request("SELECT 1", account_id=ACCOUNT, token="")
+
+
+class TestRun(unittest.TestCase):
+    def test_stubbed_opener_returns_rows(self):
+        opener = FakeOpener([MISS])
+        rows = ae_query.run_query(
+            ae_query.miss_rate_sql(7), account_id=ACCOUNT, token=TOKEN, opener=opener)
+        self.assertEqual(rows, MISS["data"])
+        self.assertEqual(len(opener.requests), 1)
+
+    def test_missing_data_key_is_an_error(self):
+        opener = FakeOpener([{"errors": [{"message": "bad query"}]}])
+        with self.assertRaises(ae_query.AnalyticsError):
+            ae_query.run_query(
+                ae_query.miss_rate_sql(7), account_id=ACCOUNT, token=TOKEN, opener=opener)
+
+    def test_transport_failure_is_safe_to_print(self):
+        def broken(_request, timeout=None):
+            raise TimeoutError("timed out")
+
+        with self.assertRaises(ae_query.AnalyticsError) as caught:
+            ae_query.run_query(
+                ae_query.miss_rate_sql(7), account_id=ACCOUNT, token=TOKEN, opener=broken)
+        self.assertNotIn(TOKEN, str(caught.exception))
+
+
+class TestMain(unittest.TestCase):
+    def test_main_answers_three_questions_and_never_prints_the_token(self):
+        opener = FakeOpener([MISS, LATENCY, TOP])
+        code, out, err = run_main(
+            ["--days", "7"],
+            {"CLOUDFLARE_API_TOKEN": TOKEN, "CLOUDFLARE_ACCOUNT_ID": ACCOUNT},
+            opener,
+        )
+        self.assertEqual(code, 0, err)
+        self.assertIn("12.50%", out)
+        self.assertIn("125 misses / 1000 searches", out)
+        self.assertIn("812 ms", out)
+        self.assertIn("0123456789abcdef", out)
+        self.assertIn("42 misses", out)
+        self.assertNotIn(TOKEN, out)
+        self.assertNotIn(TOKEN, err)
+        self.assertEqual(len(opener.requests), 3)
+
+    def test_main_keeps_the_token_out_of_every_request_url_and_body(self):
+        opener = FakeOpener([MISS, LATENCY, TOP])
+        run_main([], {"CLOUDFLARE_API_TOKEN": TOKEN, "CLOUDFLARE_ACCOUNT_ID": ACCOUNT}, opener)
+        for request in opener.requests:
+            self.assertNotIn(TOKEN, request.full_url)
+            self.assertNotIn(TOKEN.encode("utf-8"), request.data)
+            headers = {name.lower(): value for name, value in request.header_items()}
+            self.assertEqual(headers["authorization"], f"Bearer {TOKEN}")
+
+    def test_missing_credentials_exit_2_without_a_request(self):
+        def forbidden(*_args, **_kwargs):
+            raise AssertionError("no network call may happen without credentials")
+
+        code, _, err = run_main([], {}, forbidden)
+        self.assertEqual(code, 2)
+        self.assertIn("CLOUDFLARE_API_TOKEN", err)
+        self.assertNotIn(TOKEN, err)
+
+    def test_empty_dataset_report_is_explicit(self):
+        opener = FakeOpener([{"data": []}, {"data": []}, {"data": []}])
+        code, out, _ = run_main(
+            [], {"CLOUDFLARE_API_TOKEN": TOKEN, "CLOUDFLARE_ACCOUNT_ID": ACCOUNT}, opener)
+        self.assertEqual(code, 0)
+        self.assertIn("no completed searches", out)
+        self.assertIn("no completed tool calls", out)
+        self.assertIn("no no-match searches", out)
+
+
+if __name__ == "__main__":
+    unittest.main()

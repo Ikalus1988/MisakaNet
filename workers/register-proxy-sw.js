@@ -4187,7 +4187,132 @@ async function deliverAnswerNoticesImpl(env) {
   return { sent };
 }
 
-async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx, identityVerified = false) {
+// ── Analytics Engine event surface (2026-11-15) ────────────────────────────────────────────────
+//
+// One data point per completed call to the three measured tools, written to the `misakanet_events`
+// dataset bound as `EVENTS` (workers/wrangler.toml). This is the measurement layer the heartbeat
+// panel was missing: the D1 counters answer "how many", Workers Logs expire after three days, and
+// neither can answer "which queries missed, and how slow was the tool".
+//
+// **The schema is the privacy promise.** A data point is a stored row, so the row carries no query
+// text and no caller identity:
+//
+//   blob1 tool            misakanet_search | misakanet_get_lesson | misakanet_submit_intake
+//   blob2 caller_bucket   mcp | agent | crawler | pageview (the worker's existing classification)
+//   blob3 query_hash      first 16 hex chars of SHA-256(query); empty for tools with no query
+//   blob4 outcome         hit | miss (search/get_lesson), new | dedup (intake)
+//   blob5 lesson_id       normalized public lesson slug (get_lesson only, "" otherwise)
+//   blob6 intake_kind     question | missing_lesson | proposal | … (intake only, "" otherwise)
+//   double1 latency_ms    whole milliseconds, measured inside the tool handler
+//   double2 result_count  search results served (0 for the other tools)
+//   double3 miss_flag     1 = no_match / lesson miss / intake dedup, 0 otherwise
+//
+// The raw query is deliberately absent. SHA-256 is one-way and stable across deploys, so the
+// dataset can still group "the same query missed again" without ever storing the words — the
+// privacy page promises no query text leaves the machine, and a data point is a stored row. No IP,
+// User-Agent, token, client_id or intake problem text is written either.
+//
+// A missing binding (local dev, an older deploy) is a no-op rather than a crash. A write is issued
+// through `ctx.waitUntil` at the call site, so it is off the response's critical path, and every
+// helper swallows its own errors: telemetry may never change or break an answer.
+const AE_SEARCH = "misakanet_search";
+const AE_GET_LESSON = "misakanet_get_lesson";
+const AE_INTAKE = "misakanet_submit_intake";
+
+function analyticsEngine(env) {
+  const binding = env && env.EVENTS;
+  return binding && typeof binding.writeDataPoint === "function" ? binding : null;
+}
+
+/** First `hexChars` of SHA-256(text), or "" when the runtime cannot hash it. Never the text. */
+async function sha256HexPrefix(text, hexChars = 16) {
+  try {
+    const bytes = new TextEncoder().encode(String(text == null ? "" : text));
+    const digest = await crypto.subtle.digest("SHA-256", bytes);
+    return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, "0"))
+      .join("")
+      .slice(0, hexChars);
+  } catch (_) {
+    return "";
+  }
+}
+
+/** The worker's own request classification. `/mcp` is the only path that reaches a tool call. */
+function analyticsCallerBucket(request) {
+  try {
+    return (request && classifyRequest(request, new URL(request.url))) || "mcp";
+  } catch (_) {
+    return "mcp";
+  }
+}
+
+function writeAnalyticsPoint(env, blobs, doubles) {
+  const ae = analyticsEngine(env);
+  if (!ae) return false;
+  try {
+    ae.writeDataPoint({
+      blobs: blobs.map((value) => String(value == null ? "" : value).slice(0, 96)),
+      doubles: doubles.map((value) => (typeof value === "number" && Number.isFinite(value) ? value : 0)),
+    });
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+async function recordSearchAnalytics(env, { query, resultCount, noMatch, latencyMs, bucket }) {
+  if (!analyticsEngine(env)) return false;
+  const queryHash = await sha256HexPrefix(query);
+  // No hash, no row: an unhashed row would be useless, and falling back to the text would break
+  // the promise this feature exists to keep.
+  if (!queryHash) return false;
+  return writeAnalyticsPoint(
+    env,
+    [AE_SEARCH, bucket, queryHash, noMatch ? "miss" : "hit", "", ""],
+    [latencyMs, resultCount, noMatch ? 1 : 0],
+  );
+}
+
+async function recordLessonAnalytics(env, { lessonId, hit, latencyMs, bucket }) {
+  // One microtask of deferral: the caller has already built the answer, and `waitUntil` keeps the
+  // rest of this off the response path. `writeDataPoint` itself is a buffered local write.
+  await Promise.resolve();
+  return writeAnalyticsPoint(
+    env,
+    [AE_GET_LESSON, bucket, "", hit ? "hit" : "miss", lessonId, ""],
+    [latencyMs, 0, hit ? 0 : 1],
+  );
+}
+
+async function recordIntakeAnalytics(env, { kind, outcome, latencyMs, bucket }) {
+  await Promise.resolve();
+  return writeAnalyticsPoint(
+    env,
+    [AE_INTAKE, bucket, "", outcome, "", kind],
+    [latencyMs, 0, outcome === "dedup" ? 1 : 0],
+  );
+}
+
+/**
+ * The public slug of a **resolved** lesson, or "".
+ *
+ * Called only on a hit, where the reference is the server's validated `lesson.path` / `lesson.id`
+ * and names a public file. The caller's raw `path`/`id` arguments are never passed here: on a miss
+ * they are free-form text and may be a token or a client_id, so the miss point stores no lesson id
+ * at all (see the catch branch of `misakanet_get_lesson`).
+ */
+function analyticsLessonId({ id, path } = {}) {
+  const rawPath = typeof path === "string" ? path.trim() : "";
+  if (/^lessons\/[A-Za-z0-9._/-]+\.md$/.test(rawPath) && !rawPath.includes("..")) {
+    const slug = rawPath.split("/").pop().replace(/\.md$/i, "");
+    return /^[a-z0-9][a-z0-9._-]{0,79}$/i.test(slug) ? slug : "";
+  }
+  const slug = (typeof id === "string" ? id.trim() : "").replace(/\.md$/i, "");
+  return /^[a-z0-9][a-z0-9._-]{0,79}$/i.test(slug) ? slug : "";
+}
+
+async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx, identityVerified = false, request = null) {
+  const callerBucket = analyticsCallerBucket(request);
   if (toolName === "misakanet_register") {
     const agentType = args.agent_type || "unknown";
     if (!hasDurableStore(env)) return { error: "no storage configured" };
@@ -4746,6 +4871,15 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx, 
         // assistant; a client that sends none of this is still served.
         agent: args.agent || "", version: args.client_version || "", os: args.os || "",
       }));
+      // Analytics Engine: one point per completed search, with the query hashed inside the
+      // waitUntil closure. The miss count lives in `double3`; the denominator is every search point.
+      if (ctx) ctx.waitUntil(recordSearchAnalytics(env, {
+        query: args.query,
+        resultCount: 0,
+        noMatch: true,
+        latencyMs: Date.now() - searchStartedAt,
+        bucket: callerBucket,
+      }).catch(() => {}));
       return {
         results: [],
         no_match: true,
@@ -4792,6 +4926,15 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx, 
       // assistant; a client that sends none of this is still served.
       agent: args.agent || "", version: args.client_version || "", os: args.os || "",
     }));
+    // Analytics Engine: the hit half of the same table. `resultCount` is the served count after
+    // the kind filter and the FAQ merge — the answer the caller actually received.
+    if (ctx) ctx.waitUntil(recordSearchAnalytics(env, {
+      query: args.query,
+      resultCount: results.length,
+      noMatch: false,
+      latencyMs: Date.now() - searchStartedAt,
+      bucket: callerBucket,
+    }).catch(() => {}));
     // `voice` is the MCP voice-hook cue (see docs/integrations/mcp-voice-hooks.md): the local
     // stdio server has always sent it, the rate-limit refusal below sends it, and the
     // streamable-http endpoint now does too so the opt-in PostToolUse hook works from an
@@ -4802,6 +4945,8 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx, 
   }
 
   if (toolName === "misakanet_get_lesson") {
+    // Covers the whole served request, the same boundary the search timer uses.
+    const lessonStartedAt = Date.now();
     // Same anonymous read burst window as search (one counter, per address per minute).
     if (!identityVerified) {
       const ip = clientIp || "unknown";
@@ -4843,6 +4988,14 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx, 
       const statusMarker = lessonStatusMarker(lesson);
       const returnedChars = (body.content || "").length;
       const truncated = Number(fullLength) > returnedChars;
+      // Analytics Engine: the hit. `lesson_id` is the resolved public slug, never the requested
+      // path — on this branch the worker already holds a validated reference.
+      if (ctx) ctx.waitUntil(recordLessonAnalytics(env, {
+        lessonId: analyticsLessonId({ id: lesson?.id, path: lesson?.path }),
+        hit: true,
+        latencyMs: Date.now() - lessonStartedAt,
+        bucket: callerBucket,
+      }).catch(() => {}));
       return {
         ...body,
         ...plain,
@@ -4869,6 +5022,15 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx, 
       // reports MisakaNet as down for a caller typo. Anything else is genuinely internal, including a
       // GitHub answer that is not a 404, and keeps the message that says so.
       if (e && (e.code === "lesson_not_found" || e.code === "invalid_lesson_path")) {
+        // Analytics Engine: the miss. Deliberately no `lesson_id`: a miss reference is whatever the
+        // caller typed, and `lessonReferenceProblem` accepts any slash-free string — so an `id` can
+        // be a token or a client_id. The miss count is the signal; the words are not stored.
+        if (ctx) ctx.waitUntil(recordLessonAnalytics(env, {
+          lessonId: "",
+          hit: false,
+          latencyMs: Date.now() - lessonStartedAt,
+          bucket: callerBucket,
+        }).catch(() => {}));
         return { error: e.message, code: e.code };
       }
       logInternal("tool call failed", e);
@@ -5124,6 +5286,8 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx, 
   }
 
   if (toolName === "misakanet_submit_intake") {
+    // Covers the whole served request: quota, dedup read, and (on a new intake) the GitHub call.
+    const intakeStartedAt = Date.now();
     if (!args.problem) return { error: "problem is required" };
 
     // Attribution for the ladder, and *only* attribution: intake stays open to anonymous callers.
@@ -5172,6 +5336,20 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx, 
     const inferredKind = inferIntakeKind(args);
     const kind = inferredKind.kind;
     const kindAutoDetected = inferredKind.autoDetected;
+
+    // Analytics Engine: every *completed* intake decision gets one point — a duplicate answered
+    // from the store, a submission covered by an existing lesson, or a filing that created an
+    // issue. Validation refusals above return before `kind` exists and are not intakes. The
+    // problem text is never a field; `kind` and "did this create a new issue" are the signal.
+    const finishIntake = (result, outcome) => {
+      if (ctx) ctx.waitUntil(recordIntakeAnalytics(env, {
+        kind,
+        outcome,
+        latencyMs: Date.now() - intakeStartedAt,
+        bucket: callerBucket,
+      }).catch(() => {}));
+      return result;
+    };
 
     const SPAM_KEYWORDS = ["buy now", "click here", "free money", "casino", "viagra", "crypto pump"];
     const textLower = ((args.problem || "") + " " + (args.error || "")).toLowerCase();
@@ -5235,7 +5413,7 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx, 
         dupIssue, dupIssue ? await lookupIntakeConversion(env, dupIssue) : []);
       if (dupRow) {
         if (dupRow.status === "answered" && dupRow.answer) {
-          return {
+          return finishIntake({
             submitted: false,
             duplicate: true,
             answered: true,
@@ -5246,9 +5424,9 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx, 
             dedup_key: dedupContentHash,
             ...conversionFields,
             note: "This question was already answered — the maintainer's answer is returned above (PRD ⑤ pull-based delivery).",
-          };
+          }, "dedup");
         }
-        return {
+        return finishIntake({
           submitted: false,
           duplicate: true,
           pending: true,
@@ -5257,10 +5435,10 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx, 
           dedup_key: dedupContentHash,
           ...conversionFields,
           note: "This question is already open and pending a maintainer answer. Re-submit the same problem later to pull the answer once it is answered.",
-        };
+        }, "dedup");
       }
       if (existingDedup) {
-        return {
+        return finishIntake({
           submitted: false,
           duplicate: true,
           previous_issue: existingDedup,
@@ -5268,7 +5446,7 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx, 
           dedup_key: dedupContentHash,
           ...conversionFields,
           error: "Duplicate intake — this problem was already submitted. See the linked issue.",
-        };
+        }, "dedup");
       }
     }
 
@@ -5293,7 +5471,7 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx, 
               await storePut(env, ck, String(cn + 1), { expirationTtl: 86400 * 30 });
             } catch (_) { /* best-effort ledger (feeds #1528) */ }
           }
-          return {
+          return finishIntake({
             submitted: false,
             already_have: true,
             lesson: {
@@ -5303,7 +5481,7 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx, 
               similarity: Number(cover.ratio.toFixed(2)),
             },
             note: "This failure appears already covered by an existing lesson — no new intake issue was created. If that lesson does not solve your case, re-submit with what_tried.",
-          };
+          }, "dedup");
         }
       } catch (_) { /* corpus unavailable → normal intake */ }
     }
@@ -5479,7 +5657,7 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx, 
         );
         if (ctx) ctx.waitUntil(recorded); else await recorded;
       }
-      return {
+      return finishIntake({
         submitted: true,
         intake_id: `issue-${data.number}`,
         status: attention.file ? "pending_review" : "closed_on_arrival",
@@ -5511,7 +5689,7 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx, 
           recheck_after_seconds: kind === "question" ? 21600 : 86400,
         },
         receipt: `GitHub issue ${data.number} created. No account or email required.`,
-      };
+      }, "new");
     } catch (e) {
       clearTimeout(timeoutId);
       return { error: `Submit failed: ${e.message}` };
@@ -6126,7 +6304,7 @@ async function handleMcpRequest(request, env, useSse = false, ctx) {
       // `token` (raw) because the register-renewal lineage check and the identity aura need to
       // see what the caller presented; `authed` separately, because only a *verified* token may
       // exempt a call from the anonymous burst window (#2939).
-      const result = await handleMcpToolCall(env, toolName, args, token, clientIp, ctx, identityVerified);
+      const result = await handleMcpToolCall(env, toolName, args, token, clientIp, ctx, identityVerified, request);
 
       // Log tool call result at debug level 2
       debugLog(env, 2, "MCP tool result", {
