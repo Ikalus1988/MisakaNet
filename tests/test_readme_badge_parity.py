@@ -46,7 +46,7 @@ REPO = Path(__file__).resolve().parent.parent
 
 # README.md is the canonical one; the others are translations of it.
 CANONICAL = "README.md"
-TRANSLATIONS = ("README.ja.md", "README.zh-CN.md")
+TRANSLATIONS = ("README.ja.md", "README.zh-CN.md", "README.es.md")
 
 # A badge is a link wrapping an image. Anchoring on `<a href=` followed by `<img src=` is what
 # separates a badge from every other image on the page: the promotional hero art is a bare
