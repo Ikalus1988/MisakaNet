@@ -48,9 +48,12 @@ compliant alternative is a **user-consent refresh token** with the same scope:
     python3 scripts/gsc_pull.py --oauth-credentials data/gsc/oauth-credentials.json
 
 `--login` prints one URL (open it in a browser, on the machine or beside it), listens on loopback for
-the redirect, and stores the refresh token at `--store` (default `data/gsc/oauth-credentials.json`,
-mode 0600, git-ignored). It is a *user* credential, not a service account: the consenting account must
-already be able to see the property in Search Console.
+the redirect, and stores the refresh token at `--store` (default `.cache/misakanet/gsc-oauth.json`,
+which is git-ignored). Two measured caveats: this checkout may sit on a filesystem where POSIX modes
+do not apply (2026-11-14: on a Windows drive a `0600` write came out `rwxrwxrwx`, so the mode is not
+a control there), and an agent inside a file sandbox cannot write outside the working directory at all
+— so the credential lives here, ignored, and `--store` is there for an operator who wants it elsewhere. It is a *user* credential, not a service account: the consenting
+account must already be able to see the property in Search Console.
 """
 from __future__ import annotations
 
@@ -169,7 +172,55 @@ def refresh_access_token(credentials: str | Path, opener=None) -> str:
     return token
 
 
-def run_login(client_json: str | Path, store: str | Path, open_browser: bool = True) -> int:
+def store_refresh_token(store: str | Path, client_id: str, client_secret: str,
+                       payload: dict) -> Path:
+    """Persist the refresh token, 0600 where the filesystem honours it."""
+    refresh = payload.get("refresh_token")
+    if not refresh:
+        raise SystemExit("error: the exchange returned no refresh_token — revoke the app's access and "
+                         "run --login again (Google only issues one on a fresh consent)")
+    out = Path(store)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps({
+        "client_id": client_id, "client_secret": client_secret, "refresh_token": refresh,
+        "scope": payload.get("scope", SCOPES),
+    }, indent=2) + "\n", encoding="utf-8")
+    try:
+        os.chmod(out, 0o600)
+    except OSError:
+        pass  # a Windows drive ignores POSIX modes; the location still matters more than the mode
+    print(f"stored the refresh token at {out}")
+    return out
+
+
+def exchange_pasted_url(client_json: str | Path, pasted: str, redirect_uri: str,
+                        store: str | Path) -> int:
+    """Finish a consent whose redirect never reached this machine.
+
+    Some browsers cannot reach a listener inside WSL. When that happens the *browser* still shows the
+    final URL, and that URL carries the code — so the operator pastes it and the exchange happens
+    here, with no listener involved.
+    """
+    info = json.loads(Path(client_json).read_text(encoding="utf-8"))
+    client = info.get("installed") or info.get("web") or info
+    client_id, client_secret = client.get("client_id"), client.get("client_secret")
+    if not client_id or not client_secret:
+        raise SystemExit(f"error: {client_json} is not an OAuth client JSON")
+    query = urllib.parse.parse_qs(urllib.parse.urlparse(pasted).query)
+    if "error" in query:
+        raise SystemExit(f"error: the consent page reported {query['error'][0]}"
+                         f"{': ' + query['error_description'][0] if 'error_description' in query else ''}")
+    code = (query.get("code") or [pasted.strip() if pasted.strip() and "://" not in pasted else ""])[0]
+    if not code:
+        raise SystemExit("error: no code in what was pasted — copy the whole URL from the browser's "
+                         "address bar after approving (it starts with http://localhost:<port>/)")
+    payload = exchange_code(client_id, client_secret, code, redirect_uri)
+    store_refresh_token(store, client_id, client_secret, payload)
+    return 0
+
+
+def run_login(client_json: str | Path, store: str | Path, open_browser: bool = True,
+              wait_seconds: int = 900) -> int:
     """Loopback consent: print a URL, catch the redirect, store the refresh token (0600)."""
     info = json.loads(Path(client_json).read_text(encoding="utf-8"))
     client = info.get("installed") or info.get("web") or info
@@ -180,7 +231,9 @@ def run_login(client_json: str | Path, store: str | Path, open_browser: bool = T
     with socket.socket() as probe:
         probe.bind(("127.0.0.1", 0))
         port = probe.getsockname()[1]
-    redirect_uri = f"http://127.0.0.1:{port}/"
+    # `localhost`, not 127.0.0.1: a Desktop client registers `http://localhost`, and Google
+    # matches the loopback host literally while allowing any port. The socket still binds 127.0.0.1.
+    redirect_uri = f"http://localhost:{port}/"
     state = secrets.token_urlsafe(16)
     url = build_consent_url(client_id, redirect_uri, state)
     captured: dict[str, str] = {}
@@ -201,35 +254,68 @@ def run_login(client_json: str | Path, store: str | Path, open_browser: bool = T
         def log_message(self, *args):  # keep the token out of any log line
             return
 
-    server = http.server.HTTPServer(("127.0.0.1", port), Handler)
-    thread = threading.Thread(target=server.handle_request, daemon=True)
+        def do_POST(self):  # noqa: N802 — some browsers/proxies probe with POST
+            self.do_GET()
+
+    # Declared after the class so a request that arrives is visible even if it is malformed: "the
+    # callback never came" and "the callback came without a code" need different fixes.
+    _orig = Handler.do_GET
+
+    def logged(self):
+        query = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+        _code = query.get("code", [""])[0]
+        print(f"[callback] path={urllib.parse.urlparse(self.path).path!r} "
+              f"has_code={bool(_code)} code_len={len(_code)} "
+              f"state_ok={query.get('state', [''])[0] == state}",
+              file=sys.stderr, flush=True)
+        return _orig(self)
+    Handler.do_GET = logged
+    Handler.do_POST = logged
+
+    server = http.server.HTTPServer(("0.0.0.0", port), Handler)
+    # Serve in a loop, not once: a browser (or a proxy in front of it) may issue the same redirect
+    # twice, and a single `handle_request` throws the second one away — then the only code we ever
+    # saw is the one that was already redeemed elsewhere. Measured 2026-11-14: one callback arrived,
+    # the exchange said `invalid_grant`, and the run was lost for a reason this loop removes.
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
-    print(f"open this URL and approve '{SCOPES}':\n\n{url}\n")
+    print(f"open this URL and approve '{SCOPES}':\n\n{url}\n", flush=True)
+    print("listening on 0.0.0.0:%d — if the browser cannot reach it after you approve, copy the\n"
+          "whole URL from its address bar and re-run with --code <that-url> --redirect-uri "
+          "%s" % (port, redirect_uri), flush=True)
     if open_browser:
         try:
             webbrowser.open(url)
         except Exception:
             pass
-    thread.join(timeout=300)
+    deadline = time.time() + wait_seconds
+    tried: set[str] = set()
+    while time.time() < deadline:
+        time.sleep(0.5)
+        code = captured.get("code")
+        if not code or code in tried:
+            continue
+        tried.add(code)
+        if captured.get("state") != state:
+            print("[callback] ignored: state did not match", file=sys.stderr, flush=True)
+            continue
+        try:
+            payload = exchange_code(client_id, client_secret, code, redirect_uri)
+        except SystemExit as error:
+            # Keep listening: a second navigation may carry a fresh code, and that is exactly the
+            # case this loop exists for.
+            print(f"[callback] exchange failed ({error}); still listening", file=sys.stderr, flush=True)
+            continue
+        out = store_refresh_token(store, client_id, client_secret, payload)
+        print("next: python3 scripts/gsc_pull.py --oauth-credentials " + str(out) + " --dry-run")
+        server.shutdown()
+        server.server_close()
+        return 0
+    server.shutdown()
     server.server_close()
-    if captured.get("state") != state or "code" not in captured:
-        raise SystemExit("error: no authorization code arrived (timed out, or the redirect was refused)")
-
-    payload = exchange_code(client_id, client_secret, captured["code"], redirect_uri)
-    refresh = payload.get("refresh_token")
-    if not refresh:
-        raise SystemExit("error: the exchange returned no refresh_token — revoke the app's access and "
-                         "run --login again (Google only issues one on a fresh consent)")
-    out = Path(store)
-    out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps({
-        "client_id": client_id, "client_secret": client_secret, "refresh_token": refresh,
-        "scope": payload.get("scope", SCOPES),
-    }, indent=2) + "\n", encoding="utf-8")
-    os.chmod(out, 0o600)
-    print(f"stored the refresh token at {out} (mode 0600)")
-    print("next: python3 scripts/gsc_pull.py --oauth-credentials " + str(out) + " --dry-run")
-    return 0
+    raise SystemExit(f"error: no usable authorization code arrived within {wait_seconds}s "
+                     "(codes are single-use and expire fast; re-run --login and approve the "
+                     "printed URL while this window is open)")
 
 
 def build_signed_jwt(client_email: str, private_key_pem: str, token_uri: str,
@@ -343,6 +429,28 @@ def query(site: str, body: dict, token: str, opener=None) -> dict:
         raise SystemExit(f"error: could not reach Search Console: {error.reason}")
 
 
+def list_sites(token: str, opener=None) -> list[dict]:
+    """The properties this credential can see — the check that separates "no data" from "wrong site".
+
+    A URL-prefix property is the whole URL including the trailing slash; asking for
+    `https://misakanet.org` (no slash) is a different property and answers with zero rows rather
+    than an error, which is why this exists as a command and not as advice.
+    """
+    opener = opener or OPENER
+    request = urllib.request.Request(
+        "https://searchconsole.googleapis.com/webmasters/v3/sites",
+        headers={"Authorization": f"Bearer {token}"})
+    try:
+        with opener.open(request, timeout=60) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+    except urllib.error.HTTPError as error:
+        detail = error.read().decode("utf-8", "replace")[:300] if error.fp else ""
+        raise SystemExit(f"error: could not list properties ({error.code}): {detail}")
+    except urllib.error.URLError as error:
+        raise SystemExit(f"error: could not reach Search Console: {error.reason}")
+    return payload.get("siteEntry") or []
+
+
 def summarise(payload: dict, top: int = 10) -> str:
     """A readable digest: totals, then the queries people actually used."""
     rows = payload.get("rows") or []
@@ -374,15 +482,38 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--login", action="store_true",
                         help="run the loopback consent flow and store a refresh token")
     parser.add_argument("--client", help="OAuth client JSON downloaded from the console (for --login)")
-    parser.add_argument("--store", default=str(REPO / "data" / "gsc" / "oauth-credentials.json"),
-                        help="where --login writes the refresh token")
+    parser.add_argument("--store", default=str(REPO / ".cache" / "misakanet" / "gsc-oauth.json"),
+                        help="where --login writes the refresh token (default: a git-ignored cache dir)")
     parser.add_argument("--no-browser", action="store_true", help="print the URL, do not open it")
+    parser.add_argument("--wait", type=int, default=900,
+                        help="how long --login waits for the redirect, in seconds (default 900)")
+    parser.add_argument("--list-sites", action="store_true",
+                        help="print the properties this credential can see, then stop")
+    parser.add_argument("--code",
+                        help="finish a consent without a listener: paste the browser URL (or the code)")
+    parser.add_argument("--redirect-uri", help="the redirect_uri that URL was issued for")
     args = parser.parse_args(argv)
 
     if args.login:
         if not args.client:
             raise SystemExit("error: --login needs --client <client_secret_*.json>")
-        return run_login(args.client, args.store, open_browser=not args.no_browser)
+        return run_login(args.client, args.store, open_browser=not args.no_browser,
+                             wait_seconds=args.wait)
+
+    if args.code:
+        if not (args.client and args.redirect_uri):
+            raise SystemExit("error: --code needs --client and --redirect-uri "
+                             "(the same values the printed URL used)")
+        return exchange_pasted_url(args.client, args.code, args.redirect_uri, args.store)
+
+    if args.list_sites:
+        token = (refresh_access_token(args.oauth_credentials) if args.oauth_credentials
+                 else load_token(gcloud=args.gcloud, credentials=args.credentials))
+        sites = list_sites(token)
+        print(f"{len(sites)} propert{'y' if len(sites) == 1 else 'ies'} visible to this credential:")
+        for site in sites:
+            print(f"  {site.get('siteUrl')}  [{site.get('permissionLevel')}]")
+        return 0
 
     if args.end:
         end = args.end
