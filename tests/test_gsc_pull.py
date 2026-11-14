@@ -240,7 +240,6 @@ def test_a_pasted_url_exchanges_the_code_and_stores_the_token(tmp_path):
     client_json.write_text(json.dumps({"installed": {
         "client_id": "cid.apps.googleusercontent.com", "client_secret": "csecret"}}), encoding="utf-8")
     store = tmp_path / "oath.json"
-    opener = FakeOpener({"refresh_token": "refresh-1", "scope": gsc.SCOPES})
     monkeypatched = gsc.exchange_code
     captured = {}
 
