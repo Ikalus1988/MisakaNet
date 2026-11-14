@@ -22,6 +22,7 @@ provenance:
   evidence: "post-publication"
 summary_plain: "从中国大陆抓取 Reddit/StackOverflow 等站点时，所有工具层方案（curl、Playwright、scrapling、Safari MCP、WebFetch、Agent-Reach Jina…"
 trigger: "GFW TLS SNI 阻断：工具层全部无效，只有代理能解. 从中国大陆抓取 Reddit/StackOverflow 等站点时，所有工具层方案（curl、Playwright、scrapling、Safari…"
+verify: "在无代理环境下 `curl --noproxy '*' --max-time 12 https://www.reddit.com/` 在 12 秒内超时（curl: (28)），而同一主机经代理返回 200 —— 阻塞在网络层，换工具无用。若直连能完成 TLS 握手，本课不适用。"
 ---
 
 ## Problem
@@ -75,9 +76,34 @@ curl -x http://ip:port https://www.reddit.com/...
 
 ## Verification
 
+**The check must fail when the network is blocked** — that is the whole claim. The previous version of
+this section did not: it ran `curl` **through** whatever proxy the machine has, so it printed
+`Verification passed` on a machine where the direct path is blocked (measured 2026-11-14, this
+machine: through the proxy the handshake completes; with `--noproxy '*'` it times out). A check that
+passes in both states is a comment.
+
 ```bash
-curl -v --max-time 5 "https://www.reddit.com/" 2>&1 | grep -E "Connected|TLS|timeout"
-echo "Verification passed: fix command exited 0"
+# 1) the discriminating run: no proxy, so only the raw TCP+TLS path is exercised
+curl -sS -v --noproxy '*' --max-time 12 https://www.reddit.com/ -o /dev/null 2>&1 \
+  | grep -E 'Trying|Connected to|Client hello|Server hello|timed out'
+
+# 2) the control: the same host through the proxy still answers
+curl -sS --max-time 12 -o /dev/null -w 'proxied: %{http_code}\n' https://www.reddit.com/
 ```
 
-**Expected Output:** command completes without error, then `Verification passed` is printed. (Checks: `curl -v --max-time 5 https://www.reddit.com/ 2>&1 | grep -E Connected|TLS|timeou`)
+**Expected output on a blocked network** (measured 2026-11-14):
+
+```
+*   Trying 157.240.7.20:443...
+*   Trying [2001::1]:443...
+* Connection timed out after 12000 milliseconds
+curl: (28) Connection timed out after 12000 milliseconds
+proxied: 200
+```
+
+Reading it: DNS answers with `157.240.7.20` (a Facebook range) **and** `2001::1` — both are poisoning,
+not Reddit — and the direct attempt never reaches `Server hello`. The control succeeding is what proves
+the failure is in the network path rather than in the tool.
+
+**If your machine shows `Server hello` on the direct run**, this lesson does not apply to you: the
+network is not blocking it, and another cause is in play.
