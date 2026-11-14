@@ -32,7 +32,7 @@ import re
 
 REPO = pathlib.Path(__file__).resolve().parents[1]
 
-READMES = ["README.md", "README.zh-CN.md", "README.ja.md"]
+READMES = ["README.md", "README.zh-CN.md", "README.ja.md", "README.es.md"]
 
 # 1 MB. The only image referenced by any README is 111 KB (promotional/misakanet-scope-comic.webp).
 # See the module docstring for why this is a rendered-page budget and not a clone-size budget.
