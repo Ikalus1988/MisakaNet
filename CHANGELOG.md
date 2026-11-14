@@ -7,6 +7,34 @@ All notable changes to the Misaka Network project are documented here.
 
 ---
 
+## [3.16.0](https://github.com/Ikalus1988/MisakaNet/compare/v3.15.1...v3.16.0) (2026-11-14)
+
+
+### Features
+
+* **agents:** MCP JSON-RPC 2.0 failure-memory integration for YourAgent ([#1258](https://github.com/Ikalus1988/MisakaNet/issues/1258)) ([#4912](https://github.com/Ikalus1988/MisakaNet/issues/4912)) ([ec34da5](https://github.com/Ikalus1988/MisakaNet/commit/ec34da59f217ecf988f45d2282779c02ac46534c))
+* **gsc:** a consent flow that survives a listener nobody can reach ([#4901](https://github.com/Ikalus1988/MisakaNet/issues/4901)) ([97b0a66](https://github.com/Ikalus1988/MisakaNet/commit/97b0a6646a0742d40332ecba873b24b34ee6cb7b))
+* **gsc:** a puller for the one signal the repository cannot produce itself ([#4895](https://github.com/Ikalus1988/MisakaNet/issues/4895)) ([e3838ba](https://github.com/Ikalus1988/MisakaNet/commit/e3838ba23ceacec9031b716c6ab32df437389b71))
+* **gsc:** the service-account route, because it is the only one that works unattended ([#4896](https://github.com/Ikalus1988/MisakaNet/issues/4896)) ([a159eaf](https://github.com/Ikalus1988/MisakaNet/commit/a159eafbb7689f0c092256fdba3cf3049033fb6a))
+* **gsc:** the user-consent route, for the organizations that forbid service-account keys ([#4897](https://github.com/Ikalus1988/MisakaNet/issues/4897)) ([a19bd59](https://github.com/Ikalus1988/MisakaNet/commit/a19bd59df7ed8e838ff7ac0c19e4fdde6b765135))
+* **site:** announce changed docs/ pages to IndexNow on push to main ([#4918](https://github.com/Ikalus1988/MisakaNet/issues/4918)) ([7f94cdf](https://github.com/Ikalus1988/MisakaNet/commit/7f94cdf144b57710724ca59ee1dc7194434189af))
+* **site:** serve a Search Console verification token, without letting it look like a page ([#4893](https://github.com/Ikalus1988/MisakaNet/issues/4893)) ([2043e9f](https://github.com/Ikalus1988/MisakaNet/commit/2043e9f8a795ebd9d9a91893718f3afae782e9e7))
+* **site:** verify the Search Console property with a meta tag ([#4894](https://github.com/Ikalus1988/MisakaNet/issues/4894)) ([bee2a8f](https://github.com/Ikalus1988/MisakaNet/commit/bee2a8fcf95947f9b7362fd725fd723a755a18ec))
+
+
+### Bug Fixes
+
+* **lesson:** a verification that passed while the failure was present now discriminates ([#4887](https://github.com/Ikalus1988/MisakaNet/issues/4887)) ([c2eeca0](https://github.com/Ikalus1988/MisakaNet/commit/c2eeca0e0ba4526b059fdbe45e006205b93bd71b))
+* **site:** stop sending the product site's own links to a second site ([#4909](https://github.com/Ikalus1988/MisakaNet/issues/4909)) ([2d1b099](https://github.com/Ikalus1988/MisakaNet/commit/2d1b0997ca0b8a42cf5300ec4350b749a965590f))
+* **triage:** a report does not owe acceptance criteria ([#4914](https://github.com/Ikalus1988/MisakaNet/issues/4914)) ([b872579](https://github.com/Ikalus1988/MisakaNet/commit/b872579cd7d28c117e9fb8abe56d7721bf99321c))
+
+
+### Documentation
+
+* **bench:** a reproduction notebook that nothing linked is now one click away ([#4891](https://github.com/Ikalus1988/MisakaNet/issues/4891)) ([e056cd5](https://github.com/Ikalus1988/MisakaNet/commit/e056cd5788cc46e870d1554b92ea1c1088301c17))
+* **readme:** add Spanish translation ([#4890](https://github.com/Ikalus1988/MisakaNet/issues/4890)) ([8e2eaf7](https://github.com/Ikalus1988/MisakaNet/commit/8e2eaf77c6360c6a2fd04e39d50af95c489b8278))
+* **register:** the join-issue form has not assigned a node id since 2026-09-23 — stop saying it does ([#4870](https://github.com/Ikalus1988/MisakaNet/issues/4870)) ([2aa30e1](https://github.com/Ikalus1988/MisakaNet/commit/2aa30e1cac77ce4ebd3c7df202b96b2992fcb068))
+
 ## [3.15.1](https://github.com/Ikalus1988/MisakaNet/compare/v3.15.0...v3.15.1) (2026-11-14)
 
 
