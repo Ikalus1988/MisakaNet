@@ -199,7 +199,9 @@ python3 scripts/queue_lesson.py \
 python3 scripts/misaka_verify.py
 ```
 
-Validates protocol configuration against `misaka-protocol.json`.
+Runs the verification command recorded in each `tasks/*.json`, locally. It does not read
+`misaka-protocol.json` — that file is served as the MCP resource `misaka://protocol/overview`
+(`misakanet/server/resources.py`) and has no validator in the repository today.
 
 ### `scripts/validate_lessons.py`
 
