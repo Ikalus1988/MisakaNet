@@ -26,6 +26,8 @@
    issue 里评论「📁 Archived to: `badcase/<n>`」。删掉的是这句话——不是待归档的证据，那句话本身
    就是唯一的产物。
 
+6. **一份「显式豁免清单」会把「看着像死文件」变成「已作决定」。** `.github/actions/classify-failure/` 没有任何 workflow 调用，它的消费者 `ci-self-heal.yml` 早在 #1984 就当孤儿删了——我据此删了它并**撤回**：`tests/test_workflow_inventory.py` 的 `UNWIRED_ACTIONS` 里写着「kept as a tested library; no workflow calls it yet」，而且门禁断言这条理由非空。**删之前先搜它是否已在某张豁免表里；在表里就说明有人想过，要删得先推翻那条理由。**
+
 ## 2. 数字（截至 #4863 合并）
 
 | 项 | 值 |
@@ -45,7 +47,7 @@
 | 仓库 | `docs/reviews/`（14 个）+ `docs/roadmap/90-day-strategy-2026-07.md` 判 ARCHIVE 但未执行 | 牵动 `tests/test_doc_line_citations.py` 的 `ARCHIVE_PREFIXES`（`docs/reviews/` 是豁免前缀，搬走就不再豁免）——单独一轮，先读门禁再动 |
 | 仓库 | `docs/onboarding/agent-intake.md` 与 `docs/agents/retrieval-and-contribution.md` 内容重复 | 是**合并**不是删除（前者 2026-10-15 才写），需要一次编辑 |
 | 仓库 | `docs/mcp-protocol.md`、`docs/agent-benchmark.md` 无入链 | 是**链接缺口**不是过期：补链接或合并，见 §1.1 |
-| 本地 | 21 个 `/tmp` worktree（重启后成为待 prune 的孤儿）、13 个从未推送的本地分支；`feat/pr-shape-guard-internal-artifact` **未并入 main**，是那些提交唯一的引用 | 需要 owner 确认哪些可弃；本轮只报告未动 |
+| 本地 | **4 个 worktree 里有真东西**（2026-11-14 逐个体检）：`/tmp/wt-crash` 改 `scripts/compare_site_pixels.py` + 新文件 `tests/test_pixel_scoped_gate.py`；`/tmp/wt-main` 改 `check_page_scripts.py` 与它的测试 + 新文件 `docs/_partials/site-helpers.js`；`/tmp/wt-guard` 改 design-convergence 与两份 handoff（并删了 part3）；`/home/eric_jia/wt/les` 是 398 文件 / ±92300 行的整体改写。其余 `/tmp` worktree 无跟踪改动 | 这四个需要 owner 认领或丢弃；**删之前先 `git -C <wt> diff > /tmp/<wt>.patch`**（都没提交）。另：`feat/pr-shape-guard-internal-artifact` **未并入 main**，是那些提交唯一的引用 |
 | owner | 工作区里两个未跟踪文件：`lessons/contrib/rag-chunk-coarse-cover-page-pollution.md`（完整课程草稿）、`salvage-worksheet-2026-11-04.md`（44 条 intake 的工作单） | 课程草稿走 `lesson_gate` 提 PR；工作单已被每日 `intake-salvage-digest.yml` 取代，可删 |
 
 ## 4. 下一轮入口
@@ -76,5 +78,6 @@ grep -n 'ARCHIVE_PREFIXES' tests/test_doc_line_citations.py
   而且修起来比"删之前看一眼"贵。
 - **本机 worker 全量测试固定 5 条红**：`UNDICI-EHPA` 代理警告污染了"stderr 必须为空"的断言，
   加一个残留 `update-check.json`。四个都在 `workers/agent-autostart-hook.test.mjs`，与改动无关。
+- **批量回填结构化字段之前，先量「源内容是不是判据」。** 想把 359 篇缺 `verify:` 的课程里的 `## Verification` 段搬进字段：334 篇确有这样一段，但格式规整（单命令+单行输出）的只有 **14 篇**，且一半是 `echo 'Verification passed'` 这类占位——照搬会把占位符升级成结构化字段，比空着更糟。**源内容存在 ≠ 源内容是判据。**
 - **本机 git 协议会整段断**（`gnutls_handshake failed`，连 api.github.com 也 SSL_ERROR_SYSCALL）。
   断的时候 `gh` 与 `git push` 一起失败；恢复后一次推三支正常——**是本地网络，不是 GitHub**。
