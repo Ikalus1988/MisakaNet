@@ -174,8 +174,8 @@ jobs:
           # rebuilds on it exactly as often as it builds on `main` today.
           #
           # No `[skip ci]` in this message, deliberately — and this is the one place the `data`-branch
-          # precedents (`update-badges.yml`, `update-smithery-badge.yml`) must not be copied. They
-          # skip because nothing builds `data`; `dist` exists *to be built*, since Cloudflare Workers
+          # precedent (`update-badges.yml`) must not be copied. It skips because nothing builds
+          # `data`; `dist` exists *to be built*, since Cloudflare Workers
           # Builds deploys from it. A skip marker in the commit that is supposed to trigger the deploy
           # would suppress the only thing it is for. Nothing here needs suppressing anyway: a push
           # made with `GITHUB_TOKEN` starts no workflow runs, and this workflow triggers on
