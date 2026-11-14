@@ -4260,16 +4260,21 @@ function writeAnalyticsPoint(env, blobs, doubles) {
   }
 }
 
-async function recordSearchAnalytics(env, { query, resultCount, noMatch, latencyMs, bucket }) {
+async function recordSearchAnalytics(env, { query, resultCount, noMatch, latencyMs, bucket, phaseMs }) {
   if (!analyticsEngine(env)) return false;
   const queryHash = await sha256HexPrefix(query);
   // No hash, no row: an unhashed row would be useless, and falling back to the text would break
   // the promise this feature exists to keep.
   if (!queryHash) return false;
+  // double1 total, double2 results, double3 miss flag, then the four phases that the outside
+  // cannot separate: the memoised corpus read, the KV BM25 index, scoring, and the semantic
+  // fallback (0 when it did not run). Read them with `scripts/ae_query.py`.
+  const phases = phaseMs || {};
   return writeAnalyticsPoint(
     env,
     [AE_SEARCH, bucket, queryHash, noMatch ? "miss" : "hit", "", ""],
-    [latencyMs, resultCount, noMatch ? 1 : 0],
+    [latencyMs, resultCount, noMatch ? 1 : 0,
+     phases.lessons || 0, phases.index || 0, phases.score || 0, phases.semantic || 0],
   );
 }
 
@@ -4603,6 +4608,12 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx, 
     // before the quota read, so it covers the whole served request — quota D1 read, lesson load,
     // cold index load, scoring — which is what the client measures, not just the scorer.
     const searchStartedAt = Date.now();
+    // Where the seconds go. The endpoint is bimodal (measured 2026-11-15 from outside:
+    // 1.1 s warm vs 4–8.6 s cold, hits and misses alike), and the three candidates — the
+    // memoised corpus read, the KV BM25 index, and scoring — are indistinguishable from the
+    // outside. Recording them costs three clock reads and rides the analytics point that
+    // already exists; guessing which one it is has already cost one round.
+    const phaseMs = { lessons: 0, index: 0, score: 0, semantic: 0 };
 
     // #3692: the query is the one thing that carries the caller's machine into our storage.
     // Today the raw text reached five places — `search_signals.query` (80 chars), `lesson_usage.query`
@@ -4641,10 +4652,13 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx, 
     }
 
     let lessons;
+    const lessonsT0 = Date.now();
     try {
       lessons = await loadLessons(env);
     } catch (e) {
       return { error: `Failed to load lessons: ${e.message}` };
+    } finally {
+      phaseMs.lessons = Date.now() - lessonsT0;
     }
 
     // Try BM25 search first (if index available), fall back to naive search
@@ -4661,21 +4675,27 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx, 
         query: args.query, scored: scoringQuery, aliasVersion: QUERY_ALIAS_VERSION,
       });
     }
+    const indexT0 = Date.now();
     const bm25Index = await loadBM25Index(env);
+    phaseMs.index = Date.now() - indexT0;
     if (bm25Index) {
       // `args.query` is also passed as the floor query: the expansion may add score, but
       // the relevance floor keeps judging what the user typed (see searchLessonsBM25).
       // The status map is what keeps a superseded lesson below every live one — the index
       // docs carry no status, so it comes from the records already loaded here.
+      const scoreT0 = Date.now();
       results = searchLessonsBM25(
         bm25Index, scoringQuery, args.domain, args.top || 5, args.query, null,
         lessonStatusMap(lessons),
       );
+      phaseMs.score = Date.now() - scoreT0;
       source = "worker-bm25";
       noteSearchBackend(env, "bm25");
       debugLog(env, 2, "BM25 search", { query: scoringQuery, results: results.length });
     } else {
+      const scoreT0 = Date.now();
       results = searchLessons(lessons, scoringQuery, args.domain, args.top || 5, args.query);
+      phaseMs.score = Date.now() - scoreT0;
       noteSearchBackend(env, "fallback");
       debugLog(env, 2, "Fallback search", { query: scoringQuery, results: results.length });
     }
@@ -4694,7 +4714,9 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx, 
     // existing no_match answer — the fallback must not turn a working search into an error.
     if ((!results || results.length === 0) && env.MISAKANET_SEMANTIC !== "0") {
       try {
+        const semanticT0 = Date.now();
         const semanticHits = await semanticFallbackHits(env, args.query, args.top || 5);
+        phaseMs.semantic = Date.now() - semanticT0;
         if (semanticHits.length) {
           results = enrichSearchHits(semanticHits, lessons);
           source = bm25Index ? "worker-bm25+semantic" : "semantic";
@@ -4879,6 +4901,7 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx, 
         noMatch: true,
         latencyMs: Date.now() - searchStartedAt,
         bucket: callerBucket,
+        phaseMs,
       }).catch(() => {}));
       return {
         results: [],
@@ -4934,6 +4957,7 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx, 
       noMatch: false,
       latencyMs: Date.now() - searchStartedAt,
       bucket: callerBucket,
+      phaseMs,
     }).catch(() => {}));
     // `voice` is the MCP voice-hook cue (see docs/integrations/mcp-voice-hooks.md): the local
     // stdio server has always sent it, the rate-limit refusal below sends it, and the

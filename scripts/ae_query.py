@@ -116,6 +116,27 @@ def top_missed_sql(days: int = DEFAULT_DAYS) -> str:
     )
 
 
+def phase_sql(days: int = DEFAULT_DAYS) -> str:
+    """Question 4: where a search spends its milliseconds, as p95 per phase.
+
+    The endpoint is bimodal from the outside — 1.1 s warm against 4–8.6 s cold, hits and misses
+    alike (measured 2026-11-15) — and a client cannot tell the memoised corpus read from the KV
+    BM25 index from scoring. `double4..double7` are those phases, written by `recordSearchAnalytics`
+    since that measurement; rows from before the deploy carry zeros, so a window that starts too
+    early reads as "free", which is why the caller sees the window in the output.
+    """
+    return (
+        "SELECT "
+        "quantileExactWeighted(0.95)(double4, _sample_interval) AS lessons_p95, "
+        "quantileExactWeighted(0.95)(double5, _sample_interval) AS index_p95, "
+        "quantileExactWeighted(0.95)(double6, _sample_interval) AS score_p95, "
+        "quantileExactWeighted(0.95)(double7, _sample_interval) AS semantic_p95 "
+        f"FROM {DATASET} "
+        f"WHERE timestamp > NOW() - {_window(days)} "
+        "AND blob1 = 'misakanet_search'"
+    )
+
+
 def build_request(sql: str, *, account_id: str, token: str) -> urllib.request.Request:
     """The POST the SQL API expects. The token lives in the header and nowhere else."""
     account = str(account_id or "").strip()
@@ -205,8 +226,9 @@ def build_report(
     top_rows: list[dict],
     *,
     days: int = DEFAULT_DAYS,
+    phase_rows: list[dict] | None = None,
 ) -> str:
-    """The three answers as text. No credential, no account id, no raw query."""
+    """The four answers as text. No credential, no account id, no raw query."""
     lines = [f"{DATASET} — last {days} day(s)", ""]
 
     misses = miss_rows[0] if miss_rows else {}
@@ -231,7 +253,20 @@ def build_report(
             p95 = _as_float(row.get("p95_ms"))
             lines.append(f"   {tool:<22} {'n/a' if p95 is None else f'{p95:.0f} ms'}")
 
-    lines.extend(["", "3. Top 10 hashed queries with no hits"])
+    lines.extend(["", "3. Where a search spends its milliseconds (p95 per phase)"])
+    phase = (phase_rows or [{}])[0] if phase_rows else {}
+    if not phase_rows or not any(_as_float(phase.get(k)) for k in
+                                 ("lessons_p95", "index_p95", "score_p95", "semantic_p95")):
+        lines.append("   no phase data yet — it is only written by searches after the 2026-11-15 deploy")
+    else:
+        for key, label in (("lessons_p95", "corpus read (memo/KV/D1)"),
+                           ("index_p95", "BM25 index (KV)"),
+                           ("score_p95", "scoring"),
+                           ("semantic_p95", "semantic fallback")):
+            value = _as_float(phase.get(key))
+            lines.append(f"   {label:<26} {'n/a' if value is None else f'{value:.0f} ms'}")
+
+    lines.extend(["", "4. Top 10 hashed queries with no hits"])
     if not top_rows:
         lines.append("   no no-match searches in the window")
     else:
@@ -282,11 +317,15 @@ def main(argv: list[str] | None = None, environ: dict | None = None, opener=None
         top_rows = run_query(
             top_missed_sql(args.days), account_id=account_id, token=token, opener=client
         )
+        phase_rows = run_query(
+            phase_sql(args.days), account_id=account_id, token=token, opener=client
+        )
     except AnalyticsError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
 
-    print(build_report(miss_rows, latency_rows, top_rows, days=args.days))
+    print(build_report(miss_rows, latency_rows, top_rows, days=args.days,
+                   phase_rows=phase_rows))
     return 0
 
 

@@ -57,6 +57,7 @@ def _run(sql: str) -> dict:
     ("miss_rate", ae_query.miss_rate_sql),
     ("latency", ae_query.latency_sql),
     ("top_missed", ae_query.top_missed_sql),
+    ("phases", ae_query.phase_sql),
 ])
 def test_the_live_api_accepts_every_query(builder):
     name, build = builder
