@@ -1,53 +1,29 @@
-# ⚠️ Legacy Hub configuration example.
-# The Hub was an early private-LAN knowledge reuse prototype.
-# Current recommended usage: docs/search, MCP server, and Cloudflare Workers.
-# See hub/README.md for details.
+# MisakaNet configuration example.
 #
-# MisakaNet Hub 配置示例
-# 复制本文件为 config.yaml 并填入实际值
-# config.yaml 已在 .gitignore 中，不会提交到 Git
+# Copy this file to `config.yaml` (git-ignored — never commit it) and edit. Every key below is
+# read by code in this repository; a key that is not listed here is not read anywhere, and a
+# key listed in the wrong place is silently ignored. `tests/test_config_example_is_honest.py`
+# pins both directions.
+#
+#   search:  → scripts/search_config.py         (env override: MISAKA_SEARCH_*)
+#   feishu:  → misakanet/scripts/draft_reminder.py (the only config.yaml reader there)
 
-# ── Hub 基本信息 ──
-hub:
-  name: "misaka-hub"              # Hub 实例名称（唯一标识）
-  protocol_version: "1.0.0"       # 协议版本
+# ── Search scoring ───────────────────────────────────────────────────────────────────────────
+# The three weights must sum to 1.0 (`SearchConfig.validate()` rejects anything within 0.01 of
+# that). They are also overridable per-process by env vars, which win over this file.
+#
+# Note what is deliberately absent: `cross_encoder_weight` and `bm25_rerank_weight` exist on
+# `SearchConfig` but the YAML loader does not apply them — only `MISAKA_SEARCH_CROSS_ENCODER_WEIGHT`
+# and `MISAKA_SEARCH_BM25_RERANK_WEIGHT` do. Listing them here would be a key that reads as
+# configuration and does nothing.
+search:
+  bm25_weight: 0.65        # keyword relevance (BM25)
+  metadata_weight: 0.20    # domain / tag / title match
+  baseline_weight: 0.15    # document baseline score
+  rrf_k: 60                # Reciprocal Rank Fusion constant, >= 1 (for the vector hybrid)
 
-# ── 同步配置（核心功能） ──
-sync:
-  interval_minutes: 30            # 同步轮询间隔（分钟）
-  # 推荐: 生产环境 30，开发环境 5
-
-# ── 存储 ──
-storage:
-  graph:
-    persist_path: "hub/storage/knowledge_graph/graph.gpickle"
-  vector:
-    persist_path: "hub/storage/vector_store/"
-    model: "BAAI/bge-base-zh-v1.5"
-  arbitration:
-    db_path: "hub/storage/arbitration.db"
-
-# ── 通知通道（可选，不配置则不启用） ──
-notifier:
-  # Discord（可选）
-  discord:
-    webhook_url: ""               # Discord Webhook URL
-    # 获取: Discord 服务器 → 频道设置 → 集成 → Webhook
-
-  # Slack（可选）
-  slack:
-    webhook_url: ""               # Slack Webhook URL
-    # 获取: Slack API → Incoming Webhooks → 创建
-
-  # 邮件（可选，通过环境变量配置，config.yaml 不存储密码）
-  # EMAIL_SMTP_HOST=smtp.gmail.com
-  # EMAIL_SMTP_PORT=587
-  # EMAIL_SENDER=misakanet@example.com
-  # EMAIL_PASSWORD=your-app-password
-  # EMAIL_RECIPIENT=admin@example.com
-
-# ── Master 节点配置（可选） ──
-master:
-  keyring_service: "misakanet-master"
-  token_ttl_hours: 24
-  audit_log_days: 90
+# ── Feishu draft reminder (optional) ────────────────────────────────────────────────────────
+# Without this key the reminder prints to stdout instead of posting: `draft_reminder.py` falls
+# back, it does not fail.
+feishu:
+  webhook_url: ""
