@@ -221,6 +221,10 @@ What to do with that knowledge:
 
 ## Resources
 
+The full wire-level specification — transports, JSON-RPC envelope, error codes and the
+compatibility rules a client must honour — is [MCP Protocol Specification](mcp-protocol.md).
+This page is the practical guide; that one is the contract.
+
 **Local stdio surface only** — the hosted endpoint exposes no resources (see *Which surface?*).
 
 | URI | Description |

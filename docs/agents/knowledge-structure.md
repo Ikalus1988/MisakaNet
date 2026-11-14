@@ -68,3 +68,8 @@ python3 search_knowledge.py "关键词" --titles
 | **原生 Claude Code** | 项目 CLAUDE.md | 在每个项目根目录放 CLAUDE.md |
 | **云 Agent** | 启动 prompt / SOUL.md | 每次会话开始 fetch lessons 并调用 search_knowledge.py |
 | **OpenClaw** | CLAUDE.md + cron | 同 Hermes |
+
+
+## Related
+
+- [Agent Benchmark — one-command smoke tests](../agent-benchmark.md): what a client can run to prove its MCP wiring works, and what each check is allowed to claim.
