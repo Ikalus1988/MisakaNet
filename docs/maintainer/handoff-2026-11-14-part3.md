@@ -47,7 +47,7 @@
 | 仓库 | `docs/reviews/`（14 个）+ `docs/roadmap/90-day-strategy-2026-07.md` 判 ARCHIVE 但未执行 | 牵动 `tests/test_doc_line_citations.py` 的 `ARCHIVE_PREFIXES`（`docs/reviews/` 是豁免前缀，搬走就不再豁免）——单独一轮，先读门禁再动 |
 | 仓库 | `docs/onboarding/agent-intake.md` 与 `docs/agents/retrieval-and-contribution.md` 内容重复 | 是**合并**不是删除（前者 2026-10-15 才写），需要一次编辑 |
 | 仓库 | `docs/mcp-protocol.md`、`docs/agent-benchmark.md` 无入链 | 是**链接缺口**不是过期：补链接或合并，见 §1.1 |
-| 本地 | **4 个 worktree 里有真东西**（2026-11-14 逐个体检）：`/tmp/wt-crash` 改 `scripts/compare_site_pixels.py` + 新文件 `tests/test_pixel_scoped_gate.py`；`/tmp/wt-main` 改 `check_page_scripts.py` 与它的测试 + 新文件 `docs/_partials/site-helpers.js`；`/tmp/wt-guard` 改 design-convergence 与两份 handoff（并删了 part3）；`/home/eric_jia/wt/les` 是 398 文件 / ±92300 行的整体改写。其余 `/tmp` worktree 无跟踪改动 | 这四个需要 owner 认领或丢弃；**删之前先 `git -C <wt> diff > /tmp/<wt>.patch`**（都没提交）。另：`feat/pr-shape-guard-internal-artifact` **未并入 main**，是那些提交唯一的引用 |
+| 本地 | **4 个 worktree 里有真东西**（2026-11-14 逐个体检）：`/tmp/wt-crash` 改 `scripts/compare_site_pixels.py` + 新文件 `tests/test_pixel_scoped_gate.py`；`/tmp/wt-main` 改 `check_page_scripts.py` 与它的测试 + 新文件 `docs/_partials/site-helpers.js`；`/tmp/wt-guard` 改 design-convergence 与两份 handoff（并删了 part3）；`/home/<user>/wt/les` 是 398 文件 / ±92300 行的整体改写。其余 `/tmp` worktree 无跟踪改动 | 这四个需要 owner 认领或丢弃；**删之前先 `git -C <wt> diff > /tmp/<wt>.patch`**（都没提交）。另：`feat/pr-shape-guard-internal-artifact` **未并入 main**，是那些提交唯一的引用 |
 | owner | 工作区里两个未跟踪文件：`lessons/contrib/rag-chunk-coarse-cover-page-pollution.md`（完整课程草稿）、`salvage-worksheet-2026-11-04.md`（44 条 intake 的工作单） | 课程草稿走 `lesson_gate` 提 PR；工作单已被每日 `intake-salvage-digest.yml` 取代，可删 |
 
 ## 4. 下一轮入口
