@@ -99,6 +99,10 @@
    （AI Overviews / AI Mode 的曝光）。
 - 它不设 cookie、不加载脚本，所以不违反 `docs/privacy/index.html` 的承诺——这点是选它而不是 GA4
   的唯一理由，也足够。
+- **2026-11-14 更新**：属性已建并通过验证（URL-prefix `https://misakanet.org/`，HTML 文件 +
+  元标签两法都在仓里），第 3 步的拉取脚本已落在 `scripts/gsc_pull.py`：`GSC_ACCESS_TOKEN` 或
+  `gcloud auth print-access-token` 取 token，输出到 git-ignored 的 `data/gsc/`（不随仓增长）。
+  sitemap 无需手动提交：`docs/robots.txt` 已声明它，954 条 URL 线上可取。
 
 ## 7. Colab：一个 notebook，换来"可引用"
 
