@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-11-14T18:18:05.044394+00:00",
+  "generated_at": "2026-11-14T22:34:59.467504+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 13,
   "items": [
     {
       "type": "merged_pr",
-      "title": "fix(analytics): three queries the live API rejected, and a test that can catch the next one",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4939",
-      "timestamp": "2026-11-14T17:42:17Z",
+      "title": "fix(release): ask for the publish before the tag makes the release unrepeatable",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4957",
+      "timestamp": "2026-11-14T19:37:47Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "docs(handoff): vol 38 — 16 PRs, and the four numbers that change decisions",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4935",
-      "timestamp": "2026-11-14T17:39:45Z",
+      "title": "docs(handoff): the addendum keeps the finding, not the path",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4952",
+      "timestamp": "2026-11-14T19:05:34Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(indexnow): the key-live probe must send a User-Agent, or the wait never ends",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4930",
-      "timestamp": "2026-11-14T17:23:51Z",
+      "title": "docs(handoff): addendum — the 4-second search, the marketplace answer, and a redaction scope",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4950",
+      "timestamp": "2026-11-14T18:44:00Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(workers): record search/lesson/intake events in Analytics Engine",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4927",
-      "timestamp": "2026-11-14T17:22:15Z",
+      "title": "feat(analytics): record where a search spends its milliseconds",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4948",
+      "timestamp": "2026-11-14T18:42:54Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(main): release 3.16.0",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4888",
-      "timestamp": "2026-11-14T17:19:40Z",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4946",
+      "timestamp": "2026-11-14T18:30:58Z",
       "source": "github"
     },
     {
