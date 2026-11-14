@@ -126,3 +126,37 @@ def test_the_cli_reads_the_shape_it_documents(tmp_path, monkeypatch, capsys):
                         "--token-file", str(token)])
     assert rc == 0
     assert "wrote 1 vectors" in capsys.readouterr().out
+
+
+# ── the token comes from the environment, not from one machine's cache directory ────────────
+# The script's docstring promised `CLOUDFLARE_API_TOKEN` for months while the code read only
+# `DEFAULT_TOKEN_FILE`, and that default was an absolute path under one user's checkout — so the
+# documented path could never work and the script could not run on any other machine (2026-11-14).
+
+
+def test_the_env_token_wins_over_the_file(tmp_path, monkeypatch):
+    token = tmp_path / "cf_api_token"
+    token.write_text("from-file", encoding="utf-8")
+    monkeypatch.setenv("CLOUDFLARE_API_TOKEN", "from-env")
+    assert embedder.load_token(token) == "from-env"
+
+
+def test_the_file_is_the_fallback(tmp_path, monkeypatch):
+    token = tmp_path / "cf_api_token"
+    token.write_text("from-file\n", encoding="utf-8")
+    monkeypatch.delenv("CLOUDFLARE_API_TOKEN", raising=False)
+    assert embedder.load_token(token) == "from-file"
+
+
+def test_a_missing_token_names_the_variable_it_wants(tmp_path, monkeypatch):
+    monkeypatch.delenv("CLOUDFLARE_API_TOKEN", raising=False)
+    with pytest.raises(SystemExit) as exc:
+        embedder.load_token(tmp_path / "absent")
+    assert "CLOUDFLARE_API_TOKEN" in str(exc.value)
+
+
+def test_the_default_token_path_is_inside_the_repository():
+    # A machine-specific absolute path is what made this script unrunnable everywhere else: it named
+    # one user's checkout. The property is "derived from the repository root", so assert exactly
+    # that rather than pattern-matching the host's own path.
+    assert embedder.DEFAULT_TOKEN_FILE == REPO / ".cache" / "cf_api_token"

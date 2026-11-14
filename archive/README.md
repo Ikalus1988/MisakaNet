@@ -1,40 +1,45 @@
 # Archive
 
-## conversation-dumps
+Retired material, kept because something still points at it or because it is the only record of a
+decision. Nothing here is indexed: `misakanet/search/engine.py` reads `lessons/` and `reference/`
+only, so a file in this directory can never surface in a search result.
 
-17 files moved from `lessons/_archive/conversation-dumps/`. These are raw conversation transcripts originally named in Chinese. Filenames have been translated to English; content is still in Chinese and needs translation.
+The bar for adding a file here is the same as the bar for keeping one: **name the consumer** —
+a test, a data file, a citation, a decision record. "We might want it later" is what git history is
+for, and this directory is not a diary.
 
-| File | Original Description |
-|------|---------------------|
-| `bot-pip-not-found.md` | Python pip 找不到的排查 |
-| `concurrency-control-setup.md` | 并发控制 WSL 第三 Agent 部署 |
-| `daily-work-log.md` | 日记/工作记录 |
-| `disaster-recovery-feishu.md` | 容灾方案输出为飞书云文档 |
-| `draft-cc-haha-network.md` | 草稿 — CC Haha 网络错误 |
-| `exam-setup-issue.md` | 考试环境 pip 找不到 |
-| `fanuc-kb-proposal.md` | Fanuc 知识库方案 v5 |
-| `feishu-doc-test.md` | 飞书文档测试 |
-| `feishu-skill-review.md` | 飞书技能复盘 |
-| `hermes-cli-work-sync.md` | Hermes CLI 工作同步 |
-| `hermes-mmx-config-issue.md` | Hermes MMX 配置问题 |
-| `poc-feishu-doc-records.md` | PoC 飞书记录 |
-| `poc-recall-test-answers.md` | Plain-text PoC 召回答案 |
-| `rag-assistant-work-summary.md` | RAG 助手工作汇总 |
-| `rag-kb-complete-docs.md` | RAG 知识库文档 |
-| `rag-wiki-progress.md` | RAG Wiki 进展 |
-| `wsl-modifications-review.md` | WSL 修改记录关联排查 |
+## `dead/`
 
-## hook-raw
+Code that was retired but that something still checks or cites.
 
-6 files moved from `lessons/_archive/hook-raw/`. Raw webhook outputs with Chinese filenames, renamed to English.
+- `scripts/batch_lesson_upgrade.py` is required by `tests/test_query_aliases.py`, which asserts the
+  file exists **and is tracked by git**, because `data/query-aliases.json` names it as the writer of
+  entries that would otherwise look unexplained.
+- `scripts/_fix.py` does not parse, deliberately — it is recorded as a broken state.
 
-| File | Original Description |
-|------|---------------------|
-| `cc-haha-model-output-error.md` | 模型输出异常 |
-| `cc-haha-network-git-error.md` | 网络连接错误（git clone） |
-| `cc-haha-network-timeout.md` | 网络连接超时 |
-| `cc-haha-network-ws-error.md` | 网络连接错误（WebSocket） |
-| `cc-haha-permission-denied.md` | 权限错误 |
-| `cc-haha-rag-docs-request.md` | RAG 知识库文档请求 |
+## `_merged/`
 
-> **TODO**: All 23 files contain Chinese content that should be translated to English.
+Lessons that were folded into the corpus. `data/query-aliases.json` cites
+`_merged/pip-install-failure-fix` as evidence for an alias, which is why these are not simply
+deleted with the rest.
+
+## `hub/`, `skills/`, `wiki/`
+
+Retired from the Hub prototype (deleted 2026-08-31), the skill-harvest import, and the pre-`docs/`
+wiki. Kept as the record of what those surfaces contained, not as material to restore.
+
+## `lessons-review-checklist.md`
+
+The functional-review checklist used when the corpus decided which contributed lessons were
+generalizable. A record of the criterion, not a live process.
+
+## What was removed, and why (2026-11-14)
+
+`conversation-dumps/` (17 files) and `hook-raw/` (6) were raw Chinese conversation transcripts moved
+out of `lessons/_archive/` and renamed. They carried a standing TODO — "all 23 files contain Chinese
+content that should be translated to English" — opened 2026-08-21, with no owner and no consumer:
+nothing links them, no test reads them, and the corpus could not index them even in principle (that
+import path was retired by the same product decision that emptied `lessons/_archive/`, see
+`docs/maintenance.md` §2). A TODO that will never be picked up is debt, not a plan, so the transcripts
+were removed rather than kept as a promise. Whatever they concluded, if it was generalizable, became
+a lesson; git history still has the files.

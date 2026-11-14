@@ -423,7 +423,7 @@ ruff format --check .
 
 ### TypeScript
 
-The VS Code extension (`vscode-extension/`) and Explorer (`explorer/`) follow the ESLint defaults configured in each package.
+The TypeScript entry points (`index.js`, `lib/`) follow the ESLint defaults configured in the package.
 
 - **Formatting**: Prettier defaults (2-space indent, single quotes, no semicolons where the config allows)
 - **Types**: strict typing — no `any` leaks; prefer explicit interfaces over inline object types

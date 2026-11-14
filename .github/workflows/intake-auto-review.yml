@@ -53,7 +53,7 @@ jobs:
           # Structured Kind wins: question/knowledge-gap intakes are NOT lesson
           # candidates — skip lesson scoring + badcase archiving entirely and
           # route them as questions. (Observed on #1396: a Portuguese question
-          # got scored 16.9/100, auto-rejected and archived as if it were a
+          # got scored 16.9/100 and auto-rejected as if it were a
           # malformed lesson, with no answer channel.)
           KIND=$(sed -n 's/^\*\*Kind:\*\*[[:space:]]*//p' /tmp/issue_body.txt | head -1 | tr '[:upper:]' '[:lower:]' | tr -d '[:space:]')
           echo "kind=$KIND" >> "$GITHUB_OUTPUT"
@@ -75,16 +75,14 @@ jobs:
             echo "lesson_title=" >> "$GITHUB_OUTPUT"
             echo "lesson_domain=" >> "$GITHUB_OUTPUT"
             echo "lesson_tags=" >> "$GITHUB_OUTPUT"
-            echo "archive_path=" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
-          # Run auto-review with archiving (exit code 1 = reject, not an error)
+          # Run auto-review (exit code 1 = reject, not an error)
           RESULT=$(python3 scripts/intake_auto_review.py \
             --issue $ISSUE_NUMBER \
             --title "$ISSUE_TITLE" \
             --file /tmp/issue_body.txt \
-            --archive \
             --json 2>&1) || true
 
           # Parse result
@@ -93,14 +91,12 @@ jobs:
           LESSON_TITLE=$(echo "$RESULT" | python3 -c "import sys,json; print(json.load(sys.stdin)['lesson_title'])")
           LESSON_DOMAIN=$(echo "$RESULT" | python3 -c "import sys,json; print(json.load(sys.stdin)['lesson_domain'])")
           LESSON_TAGS=$(echo "$RESULT" | python3 -c "import sys,json; print(','.join(json.load(sys.stdin)['lesson_tags']))")
-          ARCHIVE_PATH=$(echo "$RESULT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('archive',{}).get('archive_path',''))" 2>/dev/null || echo "")
 
           echo "decision=$DECISION" >> "$GITHUB_OUTPUT"
           echo "final_score=$FINAL_SCORE" >> "$GITHUB_OUTPUT"
           echo "lesson_title=$LESSON_TITLE" >> "$GITHUB_OUTPUT"
           echo "lesson_domain=$LESSON_DOMAIN" >> "$GITHUB_OUTPUT"
           echo "lesson_tags=$LESSON_TAGS" >> "$GITHUB_OUTPUT"
-          echo "archive_path=$ARCHIVE_PATH" >> "$GITHUB_OUTPUT"
 
           # Generate comment (exit code 1 = reject, not an error)
           COMMENT=$(python3 scripts/intake_auto_review.py \
@@ -119,7 +115,7 @@ jobs:
             <!-- misakanet-intake-proposal -->
             ## [PROPOSAL] Treated as a Decision, Not a Lesson
 
-            This intake carries Kind: `proposal` — a plan or product request that is explicitly **not** a failure report. It was not run through the lesson auto-review and not archived as a badcase.
+            This intake carries Kind: `proposal` — a plan or product request that is explicitly **not** a failure report. It was not run through the lesson auto-review.
 
             Its exit is a decision: **accept** (then split it into issues that each name the file, workflow or gate they change) or **decline** (and say what the proposal assumes the repository does not hold). No lesson is published from it.
 
@@ -128,7 +124,7 @@ jobs:
             <!-- misakanet-intake-question -->
             ## [QUESTION] Treated as a Question, Not a Lesson
 
-            This intake carries Kind: `question` (knowledge gap / how-to), so it was **not** run through the lesson auto-review and **not** archived as a badcase.
+            This intake carries Kind: `question` (knowledge gap / how-to), so it was **not** run through the lesson auto-review.
 
             To turn it into an actionable lesson — or to get a precise answer — please reply with:
 
@@ -142,7 +138,6 @@ jobs:
             _Automated routing only — no lesson was published or closed._
         run: |
           DECISION="${{ steps.review.outputs.decision }}"
-          ARCHIVE_PATH="${{ steps.review.outputs.archive_path }}"
 
           # Proposals and questions get a routing comment instead of a review verdict.
           if [ "$DECISION" = "proposal" ]; then
@@ -166,7 +161,6 @@ jobs:
           fi
 
           COMMENT=$(cat /tmp/review_comment.txt)
-          ARCHIVE_PATH="${{ steps.review.outputs.archive_path }}"
 
           # Idempotency guard: if a review comment already exists on this
           # issue, skip posting (prevents duplicates on re-runs).
@@ -174,13 +168,6 @@ jobs:
             | grep -q "## \[REVIEW\]"; then
             echo "Review comment already exists — skipping."
             exit 0
-          fi
-
-          # Add archive info to comment if applicable
-          if [ -n "$ARCHIVE_PATH" ]; then
-            COMMENT="$COMMENT
-
-          📁 **Archived to:** \`$ARCHIVE_PATH\`"
           fi
 
           gh issue comment $ISSUE_NUMBER --repo ${{ github.repository }} --body "$COMMENT"

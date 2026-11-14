@@ -44,7 +44,7 @@
 | `reconcile-dco.yml` | Reconcile DCO status | 定时, 手动 | `17,47 * * * *` —— 对「head 提交上完全没有 DCO 状态」的开放 PR 补发 `dco-check.yml`（平台 startup failure 的兜底）；已有状态（含失败）的 PR 不动 |
 | `shadow-branch.yml` | Shadow Branch - External Agent Isolation | PR |  |
 
-## 数据/索引（26）
+## 数据/索引（25）
 
 | workflow | 用途 | 触发 | 定时 |
 |---|---|---|---|
@@ -68,7 +68,6 @@
 | `lesson-authors.yml` | Lesson Authors（每日扫已合并的 lesson PR，把 **GitHub 自己填的** `user.login` 写进 `misakanet-ops` 的 `contributions`：`node_id=gh:<login>`、`kind=lesson`、`ref=pr-<n>`。login 形状校验、跳过 bot 与本仓机器、幂等 upsert；选每日巡检而不是 `pull_request` 事件，因为 fork PR 拿不到 secrets）| 定时, 手动 | `20 3 * * *` |
 | `cf-diagnostics.yml` | CF diagnostics（只读运维视图：#2126 的 504/522 归因 + 区级 route 表与 KV namespace 清单 + D1 Time Travel 资格与 bookmark + durable store 健康）| 手动 |  |
 | `guarded-repository.yml` | Guarded Repository（仓库守卫巡检）| push, 定时, 手动 | `0 7 * * 1` |
-| `update-smithery-badge.yml` | Update Smithery Badge (daily) | 定时, 手动 | `0 6 * * *` |
 | `sync-question-answers.yml` | Sync Question Answers | 定时, 手动 | `20 7 * * *` |
 | `question-autopilot.yml` | Question Autopilot（逐条 open `[Question]`：用**生产检索**判定「语料是否已覆盖」，把同一问题的多条聚簇，刷一条 digest；**只分级、只报告，从不写答复、从不打 `answered`、从不关单** —— `answered` 是「把文本送进 FAQ」的开关，必须来自真正踩过的人。**默认就写**（回执 + 每簇一条 `[Bounty]` 任务 + digest；`post: false` 才是演练）——因为"没人看的报告"就是要清掉的那个积压本身。每次写入都幂等：回执按内容哈希、任务按锚点标记、digest 原地更新）| 定时, 手动 | `40 6 * * *` |
 | `update-badges.yml` | Update Badge Counts | push, 定时, 手动 | `23 3 * * 1` |

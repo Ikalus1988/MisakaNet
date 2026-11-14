@@ -170,10 +170,14 @@ def test_the_checked_in_script_exists_and_its_self_test_passes() -> None:
 
     empty = "sha384-" + base64.b64encode(hashlib.sha384(b"").digest()).decode("ascii")
     assert module.sri_for(b"") == empty
-    assert module.sri_for(b"misakanet") == next(
-        asset["integrity"] for asset in module.load_manifest()
-        if asset["id"] == "dompurify"
-    ) or True  # the real hash is of the CDN file, not of this string
+    # Shape, not value: `sri_for()` hashes bytes we do not have (the CDN files), so comparing its
+    # output to a manifest entry is meaningless — the version that did so ended with `or True` and
+    # could therefore never fail (2026-11-14). What *is* checkable here is the format the writer
+    # produces and every manifest entry must carry, because a browser rejects anything else:
+    manifest = module.load_manifest()
+    assert module.sri_for(b"misakanet").startswith("sha384-")
+    bad = [a["id"] for a in manifest if not str(a.get("integrity", "")).startswith("sha384-")]
+    assert not bad, f"manifest entries whose integrity is not sha384: {bad}"
     assert [a["id"] for a in module.load_manifest()] == sorted(_manifest()), (
         "the two readers disagree on the list"
     )

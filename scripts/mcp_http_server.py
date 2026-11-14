@@ -272,7 +272,7 @@ def misakanet_submit_intake(
     # that arrives as the default missing_lesson (older guidance still points
     # there) is re-routed to "question" when it has clear question phrasing
     # and zero failure evidence — otherwise it was scored as a malformed
-    # lesson and auto-rejected to badcase.
+    # lesson and auto-rejected.
     if kind and kind not in INTAKE_KINDS:
         return {
             "error": f'Invalid kind: "{kind}". Supported: {", ".join(INTAKE_KINDS)}.',

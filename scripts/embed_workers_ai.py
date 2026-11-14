@@ -29,6 +29,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 import time
 import urllib.error
@@ -37,7 +38,11 @@ from pathlib import Path
 
 MODEL = "@cf/baai/bge-m3"
 DEFAULT_ACCOUNT = "6b92325b505f2b76aec49e9fe4195d31"
-DEFAULT_TOKEN_FILE = Path("/mnt/c/Users/Eric Jia/MisakaNet/.cache/cf_api_token")
+# Repo-relative, so a clone anywhere can run this. The file is git-ignored; a checkout that has no
+# local token simply has to set `CLOUDFLARE_API_TOKEN`. (It used to be one machine's absolute path,
+# which meant the script could never run on another machine or in CI — the docstring above said the
+# env var was read, and it was not.)
+DEFAULT_TOKEN_FILE = Path(__file__).resolve().parent.parent / ".cache" / "cf_api_token"
 # 10 texts of up to 6000 characters is what this endpoint accepts; 50 x 6000 is a 400 (measured
 # 2026-10-27). The cap is on the request, not the model, so batching is the only lever.
 BATCH = 10
@@ -47,9 +52,15 @@ OPENER = urllib.request.build_opener(urllib.request.ProxyHandler({}))
 
 
 def load_token(path: Path) -> str:
+    """`CLOUDFLARE_API_TOKEN` first, then the token file — and say which is missing."""
+    env_token = os.environ.get("CLOUDFLARE_API_TOKEN", "").strip()
+    if env_token:
+        return env_token
     value = (Path(path).read_text(encoding="utf-8").strip() if Path(path).exists() else "")
     if not value:
-        raise SystemExit(f"error: no token at {path} (or set it in the file)")
+        raise SystemExit(
+            f"error: no token — set CLOUDFLARE_API_TOKEN, or put one at {path}"
+        )
     return value
 
 
