@@ -1,8 +1,8 @@
 # MisakaNet CI Workflow 清单（docs/CI.md）
 
 > 审计 2026-09-05（T2.3）：`.github/workflows/` 当时共 **53 个** workflow，本页为其完整
-> 索引，之后新增的门禁按同一格式补录（最近一次：`misakanet-setup-ci.yml`，2026-09-18；
-> 目录现为 69 个文件，未逐条收录的以 `ARCHITECTURE.md` 的计数与目录本身为准）。
+> 索引，之后新增的门禁按同一格式补录（最近一次：`indexnow.yml`，2026-11-15；
+> 目录现为 92 个文件，`tests/test_workflow_inventory.py` 会使本页与目录逐条对齐）。
 > 触发条件建议以各
 > workflow 文件内的 `on:` 为准；分类是维护性归类，非强制。
 >
@@ -44,7 +44,7 @@
 | `reconcile-dco.yml` | Reconcile DCO status | 定时, 手动 | `17,47 * * * *` —— 对「head 提交上完全没有 DCO 状态」的开放 PR 补发 `dco-check.yml`（平台 startup failure 的兜底）；已有状态（含失败）的 PR 不动 |
 | `shadow-branch.yml` | Shadow Branch - External Agent Isolation | PR |  |
 
-## 数据/索引（25）
+## 数据/索引（26）
 
 | workflow | 用途 | 触发 | 定时 |
 |---|---|---|---|
@@ -53,6 +53,7 @@
 | `benchmark-workers-ai.yml` | Workers AI Lesson Benchmark（**2026-10-17 起暂停**：它测的是把课程贴进 prompt 后的复述率，不调用检索、不检查正确性；README 已把该节降为一条带日期的记录，`tests/test_benchmark_claims.py` 同时读 workflow 的 trigger 与 README 的那句话） | 手动 |  |
 | `dependency-vuln-audit.yml` | Dependency Vulnerability Audit（`pr-checks.yml` 的依赖审计**只在 PR 改了 manifest 时**跑，回答的是「这个 PR 有没有引入坏依赖」；新 CVE 针对已在树里的版本公布时，没有任何 PR 动 manifest，于是没有任何东西变红。这条每周定时补上另一半问题。另见 `data/README.md` 一类的"登记"惯例：它 find-or-update 一个 `dependency-vuln-audit` 摘要议题，不改 manifest、不开 PR；`requirements.txt` 是下界约束且无 lockfile，所以 PyPI 那一半审计的是**此刻解析到的版本**而非钉住的集合）| 定时, 手动 | `41 5 * * 2` |
 | `build-feed.yml` | Build Live Feed（并写 `docs/data/activity.json`：首页活动面板的**兜底**快照，由 `scripts/sync_site_activity.py` 生成。面板首选 `/api/activity`——同一批计数器的匿名边缘缓存投影，TTL 分钟级（2026-09-29 加）；三小时快照只在它不可达时兜底。起因：2026-09-29 实测首页显示 `total 5974` 而同日端点报 6645，日期相同、页面看不出陈旧；当年 17.4 秒冷路径理由是重测为 1.08–1.28 秒）| push, 定时, 手动 | `23 */3 * * *` |
+| `indexnow.yml` | IndexNow 收录提交（push 到 main 改了 `docs/` 页面后，把 `before..sha` 的变更页映射成规范 URL 提交给 `api.indexnow.org`——Bing/Yandex/Naver 共享同一份提交。`.html` 不是站点服务的形态：`/foo.html` 307 到 `/foo`，`/lessons/<slug>` 307 到带斜杠形态；映射不可用（手动运行、全零 `before`）才退回 `docs/sitemap.xml` 全量。POST 失败只记 warning、不挡部署；key 文件缺失或 URL 列表为空则 exit 2 显式失败）| push, 手动 |  |
 | `example-capture.yml` | Example Capture (not active) | 手动 |  |
 | `intake-auto-review.yml` | Intake Auto Review | issues, 手动 |  |
 | `intake-batch-convert.yml` | Intake Batch Convert（把 open `mcp-intake` 队列里**形状可转换**的报告批量转成课程，重新生成派生文件，开一个 PR；转不了的把 skip 直方图写进 job summary）| 定时, 手动 | `40 6 * * 1` |
