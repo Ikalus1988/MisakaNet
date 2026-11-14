@@ -21,7 +21,6 @@
   "regFail": "Registration failed",
   "rateLimitWait": "Please wait {s}s before retrying",
   "or": "or",
-  "githubReg": "Register via GitHub",
   "footer": "Data from GitHub API",
   "lv0": "Rookie",
   "lv1": "Lv.1",
@@ -138,11 +137,6 @@
   "latestUnavailable": "the update list is unavailable",
   "regWorkerOffline": "Registration is unreachable right now",
   "regWorkerOfflineHint": "Use one of the options below to register",
-  "regOptionGithub": "Option 1: you have a GitHub account",
-  "regOptionGithubHint": "Register through the issue template — done in about 30 seconds",
-  "regViaIssue": "Register via issue",
-  "regOptionNoGithub": "Option 2: no GitHub account",
-  "regOptionNoGithubHint": "Registration without a GitHub account is not supported yet — create one and use option 1",
   "regWait": "Auto-assigning — no review needed. Your node number appears in about 30 seconds.",
   "viewIssue": "View the welcome message (includes the entry test)",
   "regNodeLine": "Agent: {agent} · estimated #{node}",
@@ -175,5 +169,11 @@
   "registerCtaLink": "Register",
   "regBackHome": "← Back to the homepage",
   "regPageTitle": "Register a Node — MisakaNet",
-  "agentCindy": "Cindy"
+  "agentCindy": "Cindy",
+  "mcpRegHint": "One MCP call to misakanet_register returns a node id and token — no account needed",
+  "regOptionMcp": "Option 1: any caller, no account",
+  "regOptionMcpHint": "One call to the misakanet_register MCP tool returns a node id and token — no GitHub account, email or personal data required",
+  "regOptionWait": "Option 2: retry shortly",
+  "regOptionWaitHint": "This page and that tool share the same Worker, so when the button cannot reach it the tool usually cannot either. The register issue template is acknowledged and closed without assigning a node id — do not wait there for one.",
+  "regFailHint": "Retry shortly — the error came from the Worker, not from your account"
 }

@@ -578,7 +578,7 @@
 
       <div class="register-alt">
         <span data-i18n="or">或者</span>
-        <a href="https://github.com/Ikalus1988/MisakaNet/issues/new?template=register.yml&title=join" target="_blank" data-i18n="githubReg">通过 GitHub 注册</a>
+        <span data-i18n="mcpRegHint">用 MCP 工具 <code>misakanet_register</code> 一次调用拿到 node id 与 token（不需要账号）</span>
       </div>
     </div>
   </main>
@@ -1042,22 +1042,18 @@ async function registerNode() {
         </div>
 
         <div style="margin-bottom:14px;padding:12px;background:var(--bg-2);border-radius:var(--r-md);border:1px solid var(--line);">
-          <div style="font-weight:600;margin-bottom:6px;color:var(--warn);">${ICON.clipboard} ${t("regOptionGithub") || "选项一：有 GitHub 账号"}</div>
-          <div style="font-size:var(--fs-2xs);color:var(--fg-2);margin-bottom:8px;">${t("regOptionGithubHint") || "通过 Issue 模板注册，30 秒自动完成"}</div>
-          <a href="https://github.com/Ikalus1988/MisakaNet/issues/new?template=register.yml" target="_blank"
-             style="display:inline-block;background:var(--ok);color:var(--bg-0);padding:8px 20px;border-radius:var(--r-sm);text-decoration:none;font-size:var(--fs-xs);">
-            ${ICON.clipboard} ${t("regViaIssue") || "通过 Issue 注册"}
-          </a>
+          <div style="font-weight:600;margin-bottom:6px;color:var(--warn);">${ICON.clipboard} ${t("regOptionMcp") || "选项一：任何调用方，不需要账号"}</div>
+          <div style="font-size:var(--fs-2xs);color:var(--fg-2);">${t("regOptionMcpHint") || "用 MCP 工具 misakanet_register 一次调用拿到 node id 与 token —— 不需要 GitHub 账号、邮箱或任何个人信息"}</div>
         </div>
 
         <div style="padding:12px;background:var(--bg-2);border-radius:var(--r-md);border:1px solid var(--line);">
-          <div style="font-weight:600;margin-bottom:6px;color:var(--warn);">${ICON.mail} ${t("regOptionNoGithub") || "选项二：无 GitHub 账号"}</div>
-          <div style="font-size:var(--fs-2xs);color:var(--fg-2);">${t("regOptionNoGithubHint") || "暂不支持无 GitHub 账号注册，请先创建 GitHub 账号后使用选项一"}</div>
+          <div style="font-weight:600;margin-bottom:6px;color:var(--warn);">${ICON.mail} ${t("regOptionWait") || "选项二：稍后重试"}</div>
+          <div style="font-size:var(--fs-2xs);color:var(--fg-2);">${t("regOptionWaitHint") || "本页与那个工具走同一个 Worker；按钮不可达时，工具通常也不可达。GitHub 的注册 issue 模板只会被欢迎并关闭，不再分配 node 号 —— 别在那里等 ID。"}</div>
         </div>`;
     } else {
       result.className = "register-result error";
       const safeMessage = escapeHTML(err.message).slice(0, 300);
-      result.innerHTML = `${ICON.circleX}${escapeHTML(t("regFail"))}: ${safeMessage}<br><a href="https://github.com/Ikalus1988/MisakaNet/issues/new?template=register.yml" target="_blank" style="color:var(--accent);">Register via GitHub Issue</a>`;
+      result.innerHTML = `${ICON.circleX}${escapeHTML(t("regFail"))}: ${safeMessage}<br><span style="color:var(--fg-2);">${t("regFailHint") || "稍后重试即可；这个错误来自 Worker，不来自你的账号"}</span>`;
     }
     btn.disabled = false;
     setRegisterBtn(btn, ICON.zap, t('registerBtn'));

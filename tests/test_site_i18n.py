@@ -254,7 +254,9 @@ def test_quickstart_zh_values_are_chinese_not_english_copies(page):
 
 def test_a_key_used_only_through_t_is_caught(register_page):
     """The exact regression: a `t()`-only key, which the attribute-only gate could not see."""
-    dropped = "regOptionGithub"
+    # Any key reached only through `t()` works as the fixture; this one replaced the GitHub-option
+    # copy when the registration panel learned that the issue form assigns no node id (2026-11-14).
+    dropped = "regOptionMcp"
     assert dropped in dictionary("en") and dropped in dictionary("zh")
     without = {k: v for k, v in dictionary("en").items() if k != dropped}
     assert missing(register_page, set(without)) == [dropped]
@@ -273,12 +275,12 @@ def test_the_old_attribute_only_gate_would_have_missed_this(register_page):
     stands the two agree — the seven `t()`-only keys were fixed by adding them. So the difference is
     shown the only honest way: by removing one of them again and watching which rule notices.
     """
-    keys = set(dictionary("en")) - {"regViaIssue"}
-    assert missing(register_page, keys) == ["regViaIssue"], "the widened rule notices"
+    keys = set(dictionary("en")) - {"regOptionWait"}
+    assert missing(register_page, keys) == ["regOptionWait"], "the widened rule notices"
     # The attribute-only rule sees neither `t()` calls nor `${key}` placeholders, so it reports
     # nothing here — which is exactly why the previous gate passed while the panel shipped raw
     # identifiers.
-    assert "regViaIssue" not in ATTR.findall(register_page), (
+    assert "regOptionWait" not in ATTR.findall(register_page), (
         "the attribute-only rule cannot see a t()-only key"
     )
 
