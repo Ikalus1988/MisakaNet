@@ -124,7 +124,12 @@ jobs:
       # workflow publishes it); this step only does the git and `gh` work for each line it prints.
       - name: Tag merged package releases, and dispatch their publish
         env:
-          GH_TOKEN: ${{ secrets.SHELDON_PAT || secrets.GITHUB_TOKEN }}
+          # The built-in token, not the PAT — the same reason as `Dispatch the PyPI publish` below,
+          # which learned it on 2.30.0: the PAT carries no `actions: write`, so the dispatch answers
+          # "HTTP 403: Resource not accessible by personal access token", and `secrets.X || secrets.Y`
+          # falls back only when a secret is *empty*, never when it is merely insufficient. Measured
+          # again on fatal-guard 0.3.3 (2026-11-14): that 403 is what stranded the release.
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # A GITHUB_TOKEN push cannot trigger another workflow, which is why publishing is an explicit
           # dispatch rather than a reaction to the tag — the same rule as the PyPI dispatch below.
           GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -139,8 +144,25 @@ jobs:
           fi
           while read -r TAG COMPONENT VERSION WORKFLOW; do
             echo "::group::Tagging $TAG ($COMPONENT $VERSION)"
+            # Dispatch **first**, and never behind the tag's existence. The tag and the GitHub Release
+            # are the records that make this loop skip a release forever (`release_tags.py` reports
+            # merged *untagged* releases), so a dispatch that fails after they exist leaves nothing
+            # able to retry it. Measured on fatal-guard 0.3.3 (2026-11-14): the tag and the release
+            # were created 4 seconds before `gh workflow run` answered 403, npm stayed at 0.3.2, and
+            # every later run said "tag already exists — skipping" about a release nobody printed.
+            # The version the publish job reads is the one in `main`'s package.json — not the tag —
+            # so dispatching before the tag exists is the same request, only earlier.
+            if [ -n "$WORKFLOW" ]; then
+              # `gh workflow run` is one of the two events a GITHUB_TOKEN push can still create, so this
+              # is the single explicit publish path — the tag alone would publish nothing.
+              gh workflow run "$WORKFLOW" --ref main
+              echo "dispatched $WORKFLOW"
+            else
+              echo "::warning::$TAG has no publish workflow; the release exists but nothing will publish it"
+            fi
             if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
-              echo "tag $TAG already exists — skipping"
+              echo "tag $TAG already exists — nothing to tag"
+              echo "::endgroup::"
               continue
             fi
             # An annotated tag needs a committer identity, and a runner has none: measured on the
@@ -154,14 +176,6 @@ jobs:
               python3 scripts/release_notes.py --package "$COMPONENT" --version "$VERSION" \
                 > "$RUNNER_TEMP/notes-$COMPONENT.md"
               gh release create "$TAG" --notes-file "$RUNNER_TEMP/notes-$COMPONENT.md"
-            fi
-            if [ -n "$WORKFLOW" ]; then
-              # `gh workflow run` is one of the two events a GITHUB_TOKEN push can still create, so this
-              # is the single explicit publish path — the tag alone would publish nothing.
-              gh workflow run "$WORKFLOW" --ref main
-              echo "dispatched $WORKFLOW"
-            else
-              echo "::warning::$TAG has no publish workflow; the release exists but nothing will publish it"
             fi
             echo "::endgroup::"
           done < "$RUNNER_TEMP/package-releases.txt"
