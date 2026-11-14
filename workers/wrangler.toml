@@ -137,6 +137,21 @@ index_name = "misakanet-lessons-m3"
 [ai]
 binding = "AI"
 
+# Analytics Engine event surface (2026-11-15) — one data point per completed MCP tool call, written
+# by `register-proxy-sw.js`. This is the measurement layer the heartbeat panel was missing: the D1
+# counters answer "how many" but not "which queries missed, and how slow was the tool", and Workers
+# Logs expire after 3 days.
+#
+# Cost, stated because free-tier headroom is what this project plans against: the free plan includes
+# 10M data points/month; ~20k requests/day at one point per call is ~600k/month (6%).
+#
+# The dataset name is also the table name the SQL API queries (scripts/ae_query.py). A missing
+# binding is a no-op in code, so local dev and an older deploy keep working: the point is only
+# written when this binding is present, which is a deploy-time change, not a code switch.
+[[analytics_engine_datasets]]
+binding = "EVENTS"
+dataset = "misakanet_events"
+
 [[d1_databases]]
 binding = "MISAKANET_OPS_D1"
 database_name = "misakanet-ops"
