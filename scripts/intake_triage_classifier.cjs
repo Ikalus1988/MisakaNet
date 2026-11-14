@@ -184,12 +184,18 @@ module.exports = async function classifyIntake({ github, core, context }) {
     labelsToAdd.push('agent-friendly');
   }
 
-  // `needs-ac` means "the failure report lacks acceptance criteria". A proposal and a question are
-  // neither failure reports nor lesson candidates, so the rule does not apply to either and the
-  // label would be noise. (A question's queue is `needs-answer`; its exit is an answer.)
-  if (!hasCoreStructure && classification !== 'proposal' && classification !== 'question') {
-    labelsToAdd.push('needs-ac');
-  }
+  // A thin report does **not** get `needs-ac`. `issue-quality-gate.yml` exempts every intake on
+  // purpose — "intakes are *reports*, not specs: requiring acceptance criteria from a reporter marks
+  // every report as incomplete work and fills the tracker with phantom 'missing AC'" (2026-09-13,
+  // five of six `needs-ac` issues were intakes). This branch re-added the label anyway whenever the
+  // report lacked the four sections, and nothing removed it afterwards: measured 2026-11-14, **24
+  // open intakes** carried `needs-ac` while the gate's own rule said they must not, and #4910 shows
+  // the shape — `needs-ac` stamped 9 seconds after creation, on an issue the same function had just
+  // labelled `intake`.
+  //
+  // The thin-report signal is already `pending-review` plus the triage comment's "Core structure:
+  // absent"; a label that asks for something the repository has decided nobody owes is noise on the
+  // tracker, not a request.
 
   // Add priority and type labels
   labelsToAdd.push(priorityLabel);
