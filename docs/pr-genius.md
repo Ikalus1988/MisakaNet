@@ -2,6 +2,10 @@
 
 PR Genius analyzes pull requests for anti-patterns and generates actionable reports. Rules are configurable via `.pr-genius.yaml` in the repository root.
 
+The full rule reference — rule layers, path rules, custom patterns, and config precedence — is in
+[pr-genius-rules.md](pr-genius-rules.md). This page is the file itself and the usage; that one is
+the rules.
+
 ## Configuration File
 
 ```yaml

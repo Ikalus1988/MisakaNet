@@ -47,7 +47,7 @@ description).
 | MCP Toplist | <https://mcptoplist.com/server/io.github.Ikalus1988%2Fmisakanet> | current (reads `server.json`) | nothing to do |
 | dsh.so | <https://www.dsh.so/artifact/misakanet/> | no count | nothing to do |
 | dsh.directory | <https://dsh.directory/plugins/ikalus1988/misakanet> | page did not answer 2026-11-13 (20 s timeout) | re-check before editing |
-| Smithery | <https://smithery.ai/servers/misakanet/misakanet> | paused (pending upstream changes) | re-check when unpaused |
+| Smithery | <https://smithery.ai/servers/misakanet/misakanet> | **listing is gone — 404** (measured 2026-11-14; the host answers on `www.`, the server page does not) | nothing to do; `smithery.yaml` was removed with the listing |
 
 The three stale blurbs are **not editable from this repository**: Glama stores the strings on its side
 (the repo's `glama.json` only supplies name/version/remotes), and dsh-plugin.org has its own listing

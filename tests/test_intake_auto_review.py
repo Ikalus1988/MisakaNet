@@ -393,7 +393,7 @@ def test_inline_fix_and_root_cause_count_for_completeness():
 
 
 def test_a_report_with_inline_evidence_is_reviewed_not_rejected():
-    """The end-to-end outcome: #1637 must reach a human, not the badcase pile."""
+    """The end-to-end outcome: #1637 must reach a human, not the reject pile."""
     result = auto_review_issue(1637, "[Intake] hook silently returns {}", INLINE_EVIDENCE_REPORT)
     assert result.decision == "review", (
         f"a complete report ended as {result.decision} ({result.final_score:.1f}/100): "
