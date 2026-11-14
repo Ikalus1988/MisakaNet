@@ -174,6 +174,8 @@ large enough to show the fallback works, not large enough to call R@1 solved.
 This is 267 queries from the 300-entry pool, not the full 650; 33 pool entries yielded no query, 2 semantic requests
 errored, and the eval corpus was not refreshed. → [full report](docs/benchmarks/retrieval-l1-267-2026-10-27.md)
 
+Reproduce it yourself: the gate's 42 queries against the live endpoint, in a [Colab notebook](https://colab.research.google.com/github/Ikalus1988/MisakaNet/blob/main/docs/benchmarks/reproduce-in-colab.ipynb). It clones the repository, runs `scripts/bench_production_recall.py`, and prints both corpus sizes so a difference between the gate and production is not mistaken for a regression.
+
 ### What changed since: the gate, not the model
 
 The table above measures a configuration production no longer uses. Until 2026-10-28 the semantic path
