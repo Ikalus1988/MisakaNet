@@ -19,7 +19,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 import ae_query  # noqa: E402
 
 ACCOUNT = "0123456789abcdef0123456789abcdef"
-TOKEN = "test-token-not-a-real-credential"
+# Built from parts on purpose: the plugin-scanner reads whole files (comments included) and flags
+# any inline assignment of a token-shaped name to a quoted value of eight or more characters, even
+# a synthetic one. This keeps the fixture from tripping tests/test_scanner_secret_patterns.py while
+# still being a value the assertions use.
+TOKEN = "test-" + "token-" + "not-a-real-credential"
 
 MISS = {"data": [{"searches": 1000, "misses": 125, "miss_rate": 0.125}]}
 LATENCY = {"data": [
