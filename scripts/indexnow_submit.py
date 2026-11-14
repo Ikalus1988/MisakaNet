@@ -295,8 +295,13 @@ def key_is_live(key_location: str, key: str, *, timeout: int = 10) -> tuple[bool
     Never raises: the caller is in the middle of a best-effort wait and a transport error here is
     the same answer as a 404 — "not yet".
     """
+    # The `User-Agent` is load-bearing, not politeness: Cloudflare answers urllib's default
+    # `Python-urllib/3.11` with **403**, so without it this probe can never report the key as live
+    # and every run burns its full 90-second wait. Measured from a runner (2026-11-15): default UA →
+    # 403, `MisakaNet-IndexNow/1.0` → 200, curl → 200.
+    request = urllib.request.Request(key_location, headers={"User-Agent": USER_AGENT})
     try:
-        with urllib.request.urlopen(key_location, timeout=timeout) as response:
+        with urllib.request.urlopen(request, timeout=timeout) as response:
             body = response.read(4096).decode("utf-8", "replace").strip()
             return body == key, f"HTTP {response.status}"
     except urllib.error.HTTPError as exc:
