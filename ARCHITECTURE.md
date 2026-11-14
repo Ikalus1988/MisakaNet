@@ -16,11 +16,9 @@ misakanet/
 ├── __main__.py          # python3 -m misakanet
 ├── profile.py           # Node profile + referral
 ├── profile.json         # Persisted stage/referral
-├── search/
-│   ├── __init__.py
-│   └── engine.py        # BM25 + L1/L2 cache + metadata scoring
-└── node/                # Node scripts
-    └── __init__.py
+└── search/
+    ├── __init__.py
+    └── engine.py        # BM25 + L1/L2 cache + metadata scoring
 
 scripts/                  # a partial map, not an inventory — but every name here must exist
                           # (tests/test_architecture_map_paths.py enforces that)
