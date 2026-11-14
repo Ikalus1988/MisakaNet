@@ -1,9 +1,16 @@
 {
-  "generated_at": "2026-11-13T19:52:52.334047+00:00",
+  "generated_at": "2026-11-14T01:29:29.468845+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 13,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4815",
+      "timestamp": "2026-11-13T20:09:54Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "docs(handoff): vol 36 keeps only what is still open",
@@ -30,13 +37,6 @@
       "title": "docs(handoff): vol 35 — the ladder, from backend to identity",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/4807",
       "timestamp": "2026-11-13T16:39:31Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "fix(ladder): join `used` on whichever shape `top_id` stored",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4806",
-      "timestamp": "2026-11-13T16:25:01Z",
       "source": "github"
     },
     {
