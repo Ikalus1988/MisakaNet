@@ -6,7 +6,7 @@ rules). Used by :mod:`scripts.mcp_http_server` so that how-to / knowledge-gap
 submissions are routed as ``kind="question"`` instead of being treated as
 malformed failure lessons (see #1396: a PT-BR how-to arrived as
 ``kind=missing_lesson``, was scored 16.9/100 by the lesson auto-review and
-auto-rejected to badcase — a dead end for question-shaped content).
+auto-rejected — a dead end for question-shaped content).
 
 Conservative on purpose: only clear question phrasing with NO failure evidence
 (error/fix/verification fields or failure keywords) flips the kind; real
