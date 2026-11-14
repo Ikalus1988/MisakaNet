@@ -21,6 +21,10 @@ generator — not a hand edit — is what puts them there.
   pages themselves.
 * *generated* (`docs/lessons/`, `docs/topics/`) — written by `scripts/build_lesson_pages.py`. The
   generator is their only writer, so the sync scripts may **check** them but never rewrite them.
+* *verification tokens* — `docs/google<16 hex>.html` and friends. They are `.html` **by
+  protocol**, not by content: a search engine fetches the path and compares the exact bytes,
+  so the file carries no markup, no design tokens and no links. Treating one as a page made
+  every page-oriented gate report that it had lost its vocabulary (2026-11-14).
 * *scoped* — everything else under `docs/`: the hand-written pages.
 
 `gated_pages()` is the union of *scoped* and *generated*: every page a reader can reach, and
@@ -28,6 +32,7 @@ therefore every page the design gate reads.
 """
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
@@ -58,9 +63,27 @@ def is_scoped(rel: Path) -> bool:
     return not is_generated(rel)
 
 
+#: Site-verification tokens are served at the site root with a name the search engine dictates.
+#: `google` + 16 hex is what Search Console hands out; the content is a single fixed line.
+#: Matched by name rather than by content because the *name* is the contract.
+VERIFICATION_TOKEN = re.compile(r"^google[0-9a-f]{16}\.html$")
+
+
+def is_verification_token(rel: Path) -> bool:
+    """Whether this path (relative to `docs/`) is a machine-verification token, not a page."""
+    return len(rel.parts) == 1 and bool(VERIFICATION_TOKEN.match(rel.name))
+
+
 def html_pages(root: Path = REPO) -> list[Path]:
-    """Every `.html` file under `docs/`, partials included."""
-    return sorted((root / DOCS).rglob("*.html"))
+    """Every `.html` **page** under `docs/`, partials included.
+
+    Verification tokens are filtered here rather than in each gate: the four callers of this
+    module agree on one scope, and a `.html` whose content is `google-site-verification: …` is not
+    a page by any definition the other gates use.
+    """
+    docs = root / DOCS
+    return sorted(p for p in docs.rglob("*.html")
+                  if not is_verification_token(p.relative_to(docs)))
 
 
 def scoped_pages(root: Path = REPO) -> list[Path]:
