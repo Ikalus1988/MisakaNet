@@ -31,11 +31,16 @@ name: Publish dataset to R2
 # `release` and dropped the clicks from N to 1; `test_secret_scoping` was right to reject that, and the
 # rejection is the reason the credential moved instead of the rule.
 #
-# The cost is real and it is written down rather than absorbed: `automation`'s token was D1-only, and it
-# now also carries `Workers R2 Storage:Edit` for the `misakanet-dataset` bucket. Two boundaries become
-# one — a leak in any unattended job can now overwrite published dataset objects as well as lesson rows.
-# What it still cannot do is replace the code served at misakanet.org, which is the line `release`
-# exists to hold. See docs/maintainer/credentials-and-environments.md §3.
+# **No new permission was needed, and that is the part worth reading.** `automation`'s token
+# (`misakanet-automation-d1`) already carried `Workers R2 Storage:Edit` when this change was written
+# (confirmed by the owner, 2026-11-15). Every workflow header that said "D1:Edit only" was describing
+# its own job's need as if it were the token's scope, so this job is the first to *use* a permission the
+# environment has had since 2026-09-19.
+#
+# Those headers and docs/maintainer/credentials-and-environments.md §3 are corrected here, because a
+# reassuring note that is not true is worse than no note: the reviewer-free environment's real blast
+# radius is "any lesson row and any R2 object this token can reach", not "lesson rows only". What it
+# still cannot do is replace the code served at misakanet.org — that line stays with `release`.
 
 on:
   schedule:

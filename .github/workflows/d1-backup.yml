@@ -16,8 +16,10 @@ name: D1 backup
 # artifact store already has the retention and access control for it.
 #
 # Credential: `automation` (no required reviewers, branch-restricted to `main`), whose Cloudflare token
-# is scoped to **D1:Edit** — the same reviewer-free environment the two scheduled syncs use, and the
-# reason an unattended weekly job is acceptable here. That token's scope, and the rotation procedure,
+# carries **D1:Edit and Workers R2 Storage:Edit** — the same reviewer-free environment the two
+# scheduled syncs use, and the reason an unattended weekly job is acceptable here. Only the D1 half is
+# used; the other is listed because the scope has to be the token's, not this job's. That scope, and
+# the rotation procedure,
 # are documented in docs/maintainer/credentials-and-environments.md §4. A backup behind a required
 # reviewer is not a backup: it waits.
 on:

@@ -27,10 +27,12 @@ concurrency:
 
 jobs:
   sync:
-    # Credential: the `automation` environment holds `CF_API_TOKEN` — a Cloudflare token scoped to
-    # D1:Edit only (`misakanet-automation-d1`, expires 2027-03-01), not the deployment token. The
-    # distinction is the point: this job runs unattended, so the credential it carries can touch the
-    # lessons table and nothing else, and a leak cannot replace the code served at misakanet.org.
+    # Credential: the `automation` environment holds `CF_API_TOKEN` (`misakanet-automation-d1`, expires
+    # 2027-03-01), scoped to D1:Edit **and** Workers R2 Storage:Edit — the second one is unused here and
+    # was believed not to exist until the owner confirmed it on 2026-11-15
+    # (docs/maintainer/credentials-and-environments.md §3b). It is recorded because this note has to
+    # describe the token, not this job's wish list: an unattended leak cannot replace the code served at
+    # misakanet.org, and it *can* write lesson rows and R2 objects.
     #
     # `automation` has no required reviewers on purpose. An approval gate on a cron does not add
     # safety, it adds an outage: the run waits until a person notices, and the served corpus stops

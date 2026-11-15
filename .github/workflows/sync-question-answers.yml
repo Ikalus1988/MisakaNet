@@ -34,10 +34,10 @@ permissions:
 
 jobs:
   sync:
-    # Credential: the `automation` environment holds `CF_API_TOKEN` — a Cloudflare token scoped to
-    # D1:Edit only (`misakanet-automation-d1`, expires 2027-03-01), not the deployment token. The
-    # distinction is the point: this job also fires from `issues` events and the daily cron, so the
-    # credential it carries can touch the `questions` table and nothing else.
+    # Credential: the `automation` environment holds `CF_API_TOKEN` (`misakanet-automation-d1`, expires
+    # 2027-03-01), scoped to D1:Edit **and** Workers R2 Storage:Edit. This job uses only the D1 half,
+    # and the other half is recorded because the note describes the token rather than this job's needs
+    # (measurement and correction: docs/maintainer/credentials-and-environments.md §3b).
     #
     # `automation` has no required reviewers on purpose. An approval gate here would be worse than
     # useless: an `issues`-triggered run that waits for a person is an answer that never reaches D1.

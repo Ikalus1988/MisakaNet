@@ -16,10 +16,14 @@ cannot quietly rot, and the failure modes are not visible in the workflow files:
 * **an unattended job holding the deploy-capable token** would mean a leak in a job nobody watches
   can replace the code served at misakanet.org.
 
-So the split is asserted rather than remembered. The *scope* of a Cloudflare token (that
-`automation`'s token really is D1-only) cannot be asserted from this repository: GitHub never reveals
-a secret value, and only a green run proves the right value is installed. That check is a procedure,
-written down in `docs/maintainer/credentials-and-environments.md` §4.
+So the split is asserted rather than remembered. The *scope* of a Cloudflare token cannot be asserted
+from this repository: GitHub never reveals a secret value, and no test here can read Cloudflare. That
+check is a procedure, written down in `docs/maintainer/credentials-and-environments.md` §4 — and on
+2026-11-15 it turned out that the sentence this docstring used to carry, "`automation`'s token really
+is D1-only", was wrong: the token had `Workers R2 Storage:Edit` from the day it was created, because
+the per-job notes below describe each job's *need* and were read as the token's *scope*. Those notes
+now record the token (§3b of the document), and the gap between "what a test can prove" and "what an
+unread dashboard field says" is exactly the gap that opened.
 """
 from __future__ import annotations
 
@@ -54,7 +58,10 @@ KNOWN_ENVIRONMENTS = (APPROVED_ENVIRONMENT, UNATTENDED_ENVIRONMENT, PUBLISH_ENVI
 
 # Unattended workflows, and the credential scope their file has to record — the note is what makes
 # reviewer-free access a decision rather than an accident. One entry, one scope, so that a workflow
-# which needs a *different* permission cannot inherit the sentence that justified the last one:
+# which needs a *different* permission cannot inherit the sentence that justified the last one. The
+# entry is the scope that job *relies on*, not the token's full scope — `misakanet-automation-d1`
+# carries D1:Edit and Workers R2 Storage:Edit for all four (2026-11-15,
+# credentials-and-environments.md §3b), which is why "can only touch X" is not a claim this file makes:
 # `publish-dataset.yml` joined on 2026-11-15 (a cron behind `release` waits for a click every day, and
 # on the day nobody clicks it publishes nothing), and the price — R2 write inside the environment
 # whose token used to be D1-only — is recorded in that file's header and in
