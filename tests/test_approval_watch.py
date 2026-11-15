@@ -238,3 +238,30 @@ def test_the_comment_names_where_the_approval_is_actually_given():
         "the comment should carry the run's own URL, so the reader does not have to go looking "
         "for which of several waiting runs this is about"
     )
+
+
+def test_it_also_reports_runs_stuck_in_the_queue():
+    """A `queued` run is a third kind of wait, and the only one nothing watched.
+
+    Measured 2026-11-11 20:27–20:34Z: one burst created ~70 runs across 27 workflows and the
+    scheduler never picked any of them up — while runs of the *same* workflows created days later
+    completed normally. That contrast is the diagnosis: they are not waiting their turn, they are
+    wedged. The watcher that exists to make a wait visible did not see them, because it asks for
+    `status: 'waiting'` and these say `status: 'queued'`.
+    """
+    script = text()
+    assert "status: 'queued'" in script, "the watcher must look at the queue, not only at approvals"
+    assert "STUCK_H" in script, "an age threshold is what separates 'queued a minute ago' from 'wedged'"
+    assert "stuck in the queue" in script
+
+
+def test_it_never_tries_to_cancel_or_delete_a_stuck_run():
+    """Because both fail, and because a watcher that cancels is not a watcher.
+
+    `POST …/runs/{id}/cancel` answers `409 Cannot cancel a workflow run that has not been queued yet`
+    on exactly these runs, and `DELETE …/runs/{id}` answers `403`. Retrying either from a cron job
+    would be a new silent failure; reporting is the half that can succeed.
+    """
+    script = text()
+    assert "/cancel" not in script and "deleteWorkflowRun" not in script, (
+        "the stuck-run report must stay a report")

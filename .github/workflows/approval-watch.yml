@@ -71,6 +71,25 @@ jobs:
               owner: context.repo.owner, repo: context.repo.repo, status: 'waiting', per_page: 100,
             })).filter(r => r.status === 'waiting');
 
+            // A run can also wait with nobody looking: `queued` forever. Measured 2026-11-11 20:27–
+            // 20:34Z, one burst created ~70 runs across 27 workflows and the scheduler never picked
+            // any of them up — while runs of the *same* workflows created days later completed
+            // normally, which is how you can tell they are not queued but wedged. They cannot be
+            // cancelled (`409 Cannot cancel a workflow run that has not been queued yet`) and cannot
+            // be deleted (`403`), so the only thing left to do about them is make the next batch
+            // visible on the day it happens instead of four days later. That is this half.
+            const STUCK_H = 6;
+            const stuck = (await github.paginate(github.rest.actions.listWorkflowRunsForRepo, {
+              owner: context.repo.owner, repo: context.repo.repo, status: 'queued', per_page: 100,
+            })).filter(r => r.status === 'queued'
+              && Date.now() - Date.parse(r.created_at) > STUCK_H * 3600000);
+            const stuckAge = stuck.map(r => (Date.now() - Date.parse(r.created_at)) / 3600000);
+            const oldestStuck = stuckAge.length ? Math.max(...stuckAge).toFixed(1) : '0';
+            const stuckLines = stuck.length
+              ? stuck.slice(0, 20).map(r => `- **${r.name}** — queued since ${r.created_at} — ${r.html_url}`).join('\n')
+                + (stuck.length > 20 ? `\n- …and ${stuck.length - 20} more` : '')
+              : '_Nothing is stuck in the queue._';
+
             const lines = waiting.length
               ? waiting.map(r => `- **${r.name}** — waiting since ${r.created_at} — ${r.html_url}`).join('\n')
               : '_Nothing is waiting for approval right now._';
@@ -83,6 +102,10 @@ jobs:
               `**${waiting.length}** run(s) waiting for approval; oldest **${oldest} h**.`,
               '',
               lines,
+              '',
+              `**${stuck.length}** run(s) stuck in the queue — created, never picked up by a runner; oldest **${oldestStuck} h**.`,
+              '',
+              stuckLines,
               '',
               'Approve at Actions → the run → “Review pending deployments”, or on the environment page:',
               `https://github.com/${context.repo.owner}/${context.repo.repo}/deployments/activity_log?environments_filter=release`,
@@ -105,7 +128,8 @@ jobs:
             // a wait that nobody acts on still escalates instead of sitting there being edited.
             // The body stays the full current state (one issue, no comment spam) — this is the
             // push, not the record.
-            const fingerprint = waiting.map(r => `${r.id}`).sort().join(',');
+            const fingerprint = [...waiting.map(r => `w${r.id}`), ...stuck.map(r => `q${r.id}`)]
+              .sort().join(',');
             const newestId = waiting.length ? Math.max(...waiting.map(r => r.id)) : 0;
             const previous = existing ? (existing.body.match(/<!-- approval-watch:seen=(\S*) -->/) || [])[1] : undefined;
             const THRESHOLD_H = 6;
