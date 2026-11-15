@@ -7,6 +7,36 @@ All notable changes to the Misaka Network project are documented here.
 
 ---
 
+## [3.17.0](https://github.com/Ikalus1988/MisakaNet/compare/v3.16.0...v3.17.0) (2026-11-15)
+
+
+### Features
+
+* **analytics:** record where a search spends its milliseconds ([#4948](https://github.com/Ikalus1988/MisakaNet/issues/4948)) ([6322186](https://github.com/Ikalus1988/MisakaNet/commit/6322186f7beff7f9b88ca2f097b19b47c382ff31))
+* **autopilot:** the bounty body is a new surface, so it gets its own compliance gate ([#4990](https://github.com/Ikalus1988/MisakaNet/issues/4990)) ([1ef6541](https://github.com/Ikalus1988/MisakaNet/commit/1ef65411151e57bdfa00b82d9dd5aa4b0c9b15be))
+* **lessons:** adopt ten A-group drafts with two-sided evidence ([#4991](https://github.com/Ikalus1988/MisakaNet/issues/4991)) ([#5015](https://github.com/Ikalus1988/MisakaNet/issues/5015)) ([2013c4d](https://github.com/Ikalus1988/MisakaNet/commit/2013c4d1d80027aadfe1e0d0ceabe40942aadcad))
+* **lessons:** adopt the devops verify backfill ([#4975](https://github.com/Ikalus1988/MisakaNet/issues/4975)) ([#5017](https://github.com/Ikalus1988/MisakaNet/issues/5017)) ([bffe29b](https://github.com/Ikalus1988/MisakaNet/commit/bffe29b6b2b8c8af580cfb3b33006ead89bcf9b3))
+* **lessons:** adopt the retire/hold pass over four drafts ([#4992](https://github.com/Ikalus1988/MisakaNet/issues/4992)) ([#5016](https://github.com/Ikalus1988/MisakaNet/issues/5016)) ([73be6c3](https://github.com/Ikalus1988/MisakaNet/commit/73be6c3e6a441c58953502dc960a69597ff7e097))
+* **lessons:** the lock that outlives the process, and the zombies it hides behind ([#4947](https://github.com/Ikalus1988/MisakaNet/issues/4947)) ([#4974](https://github.com/Ikalus1988/MisakaNet/issues/4974)) ([cb916f5](https://github.com/Ikalus1988/MisakaNet/commit/cb916f57a5b81136c4668a2dafea113351d11bfd))
+* **lessons:** three intake bodies that were already evidence, and a frontmatter that was not ([#4982](https://github.com/Ikalus1988/MisakaNet/issues/4982)) ([855ffb0](https://github.com/Ikalus1988/MisakaNet/commit/855ffb0a506f3e150850d341b9024501454f8f3f))
+* **tooling:** one command for the lesson-PR rebuild I ran five times by hand ([#5021](https://github.com/Ikalus1988/MisakaNet/issues/5021)) ([f8d6f06](https://github.com/Ikalus1988/MisakaNet/commit/f8d6f0691991f85c0140baac807f740049f47c6a))
+* **watch:** a run stuck in the queue is a wait nobody was looking at ([#4987](https://github.com/Ikalus1988/MisakaNet/issues/4987)) ([93ab8f2](https://github.com/Ikalus1988/MisakaNet/commit/93ab8f23f94f816bd15a9fecfe66e2a54ee8e4db))
+* **workers:** record search/lesson/intake events in Analytics Engine ([#4927](https://github.com/Ikalus1988/MisakaNet/issues/4927)) ([a770101](https://github.com/Ikalus1988/MisakaNet/commit/a7701012fcc962f0f813a5d58ed96d1887f9cc7c))
+
+
+### Bug Fixes
+
+* **analytics:** the phase p95 was reading zero because most rows are pre-deploy ([#4979](https://github.com/Ikalus1988/MisakaNet/issues/4979)) ([fa2901e](https://github.com/Ikalus1988/MisakaNet/commit/fa2901e42419b55cb212b64752d38b199ceb609c))
+* **analytics:** three queries the live API rejected, and a test that can catch the next one ([#4939](https://github.com/Ikalus1988/MisakaNet/issues/4939)) ([3e5093e](https://github.com/Ikalus1988/MisakaNet/commit/3e5093e5b96977a171f4a7e8e138612141b758af))
+* **autopilot:** --limit bounds the probing, not just the printout ([#5009](https://github.com/Ikalus1988/MisakaNet/issues/5009)) ([cf75fb9](https://github.com/Ikalus1988/MisakaNet/commit/cf75fb93c3cb4a2c70019b5cf751a4edc1ddfdff))
+* **gsc:** the token file is 0600 from creation, not a moment later ([#405](https://github.com/Ikalus1988/MisakaNet/issues/405)) ([#4978](https://github.com/Ikalus1988/MisakaNet/issues/4978)) ([770a248](https://github.com/Ikalus1988/MisakaNet/commit/770a248f65a129aed9bada905fc2f62256a75199))
+* **indexnow:** the key-live probe must send a User-Agent, or the wait never ends ([#4930](https://github.com/Ikalus1988/MisakaNet/issues/4930)) ([0642aa1](https://github.com/Ikalus1988/MisakaNet/commit/0642aa1a60c6d75e8850cb7dc0c5bab0bb87f58e))
+* **intake:** the checklist asked for the opposite of the gate, and the converter said the title twice ([#4986](https://github.com/Ikalus1988/MisakaNet/issues/4986)) ([a22a169](https://github.com/Ikalus1988/MisakaNet/commit/a22a169fafe9dcdb0219c1249eae5968b174bc91))
+* **release:** ask for the publish before the tag makes the release unrepeatable ([#4957](https://github.com/Ikalus1988/MisakaNet/issues/4957)) ([b380302](https://github.com/Ikalus1988/MisakaNet/commit/b380302738e6fde2f35598c9e3515b27394d9ef4))
+* **shape-guard:** `submissions/` is the same dump as `solutions/` ([#5014](https://github.com/Ikalus1988/MisakaNet/issues/5014)) ([fda8680](https://github.com/Ikalus1988/MisakaNet/commit/fda86802969f410a6dc72006dcee44c9b7b3ad34))
+* **tooling:** compare against the merge base, and treat `docs/data/` as generated elsewhere ([#5027](https://github.com/Ikalus1988/MisakaNet/issues/5027)) ([31e7617](https://github.com/Ikalus1988/MisakaNet/commit/31e7617ef688f7ce131393c10274d1acb7f7d0fe))
+* **watch:** the stuck-queue list goes to the step summary, the tracker keeps the count ([#5024](https://github.com/Ikalus1988/MisakaNet/issues/5024)) ([ead7e25](https://github.com/Ikalus1988/MisakaNet/commit/ead7e25c52dda92136946c985b1099acd516d21a))
+
 ## [3.16.0](https://github.com/Ikalus1988/MisakaNet/compare/v3.15.1...v3.16.0) (2026-11-14)
 
 
