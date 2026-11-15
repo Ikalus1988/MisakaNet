@@ -13,16 +13,22 @@ name: Publish dataset to R2
 # That is why the version label is the date: daily versions are the point (a citation can pin one),
 # and the upload is ~3 MB. If that ever becomes noise, switch the trigger to `workflow_dispatch` plus
 # release tags — the version label is the only thing that has to move with it.
+#
+# **It became noise, and this is that switch (2026-11-15).** Measured over two days: eight runs, one
+# per corpus push — and because the job sits behind `release`, each one is a **click**. A lesson pull
+# request merges, and a person is asked to approve a 3 MB upload of a file the merge already
+# regenerated. The reviewer is not reviewing intent here either: the trigger is `push` to `main`, so
+# the code is what somebody already merged; the approval only says "yes, this is main".
+#
+# A daily schedule is the right cadence for one more reason written above: `data/okf/lessons.jsonl` is
+# already regenerated daily, and the version label is the date. So one run a day publishes exactly one
+# dated version, the dataset lags at most a day, and the traffic drops from N clicks to ≤1 — the
+# `automation`-environment rule `heartbeat.yml` states in its own header ("a cron job that needs a
+# click is not a cron job") without moving anybody's credential out of `release`.
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - "data/okf/lessons.jsonl"
-      - "data/lessons.json"
-      - "docs/benchmarks/**"
-      - "scripts/build_dataset_bundle.py"
-      - ".github/workflows/publish-dataset.yml"
+  schedule:
+    - cron: '20 5 * * *'
   workflow_dispatch:
 
 permissions:
