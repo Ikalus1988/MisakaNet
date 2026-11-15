@@ -409,3 +409,24 @@ def test_a_normal_contribution_is_not_flagged_by_the_new_rules():
              "workers/register-proxy-sw.js", "tests/test_quickstart_events.py"]
     out = findings(paths=paths, pr_text="feat: add a lesson", repo_dirs=REPO_DIRS)
     assert out == []
+
+
+def test_a_submissions_directory_is_the_same_shape_as_a_solutions_one():
+    """Measured 2026-11-15: four PRs, 20 minutes after two question bounties opened.
+
+    Each added `submissions/bounty_<n>_<author>/SOLUTION.md` — a new top-level directory nothing reads.
+    The rule knew this shape and only knew two of its spellings, so nothing flagged them; the content
+    also named a `misaka` CLI and an `MCP Python SDK v2.3.1` that do not exist, which is what a shape
+    gate is for: it cannot judge prose, but it can refuse to let prose pose as a deliverable.
+    """
+    found = root_solution_dump(["submissions/bounty_4997_RaoroniRonaldo/SOLUTION.md"])
+    assert found, "a submissions/ dump is the same artifact as solutions/ — unknown to every gate"
+    assert "submissions/bounty_4997_RaoroniRonaldo/SOLUTION.md" in found[0]
+    assert "comment on the question issue" in found[0], (
+        "the finding must name the deliverable a question bounty actually asks for")
+
+
+def test_ordinary_paths_that_merely_contain_the_word_are_still_ignored():
+    for paths in (["scripts/build_submissions_report.py"], ["docs/submissions.md"],
+                  ["tests/fixtures/submissions/expected.json"]):
+        assert root_solution_dump(paths) == [], paths

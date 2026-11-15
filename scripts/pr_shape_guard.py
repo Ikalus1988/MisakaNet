@@ -43,7 +43,12 @@ from pathlib import Path
 # or `workers/` that the issue asked for.
 ROOT_SOLUTION = re.compile(r"^(?:ai_|auto_)?solution[\w.-]*\.(?:py|ts|js|md)$", re.IGNORECASE)
 ROOT_SOLUTION_TEST = re.compile(r"^test_solution[\w.-]*\.py$", re.IGNORECASE)
-SOLUTION_DIR = re.compile(r"^solutions?/")
+# `submissions/` joined this rule on 2026-11-15: four pull requests arrived **20 minutes** after two
+# question bounties were opened, each adding `submissions/bounty_<n>_<author>/SOLUTION.md` — a new
+# top-level directory, invisible to the corpus and to every gate, holding content that named a
+# `misaka` CLI and an `MCP Python SDK v2.3.1` that do not exist. The rule already knew the shape; it
+# only knew two of its spellings.
+SOLUTION_DIR = re.compile(r"^(?:solutions?|submissions?)/")
 
 
 def root_solution_dump(paths) -> list[str]:
@@ -59,7 +64,9 @@ def root_solution_dump(paths) -> list[str]:
         + ". The task's own *Deliverable* section names the artifact — for a question bounty that is a "
         "lesson under `lessons/` (`## Problem` / `## Root Cause` / `## Solution` / `## Verification`, "
         "frontmatter, `python3 scripts/lesson_gate.py <file>` clean); for a code bounty it is the "
-        "script or worker the issue names. A root-level dump is invisible to the corpus and to every "
+        "script or worker the issue names; for a **question bounty it is a comment on the question "
+        "issue**, which is why the bounty body says \"No pull request is needed and none is "
+        "expected\"**. A root-level dump is invisible to the corpus and to every "
         "gate, so it cannot satisfy an acceptance criterion even when its content is right."
     ]
 
