@@ -640,8 +640,19 @@ def digest_body(items: list[dict], groups: list[dict], bounties: list[dict] | No
 
 # ── plan / post ─────────────────────────────────────────────────────────────
 
-def build_plan() -> dict:
+def build_plan(limit: int = 0) -> dict:
+    """The measured plan: one live coverage probe per open question.
+
+    `limit` truncates the **measurement**, not the report. Each item costs one search through the
+    production retrieval path, so a debugging run that still probes every open question is a debugging
+    run nobody waits for — measured 2026-11-15: 59 questions, ~4 min in CI and past five minutes from a
+    home connection, while the flag promised "only the first N questions". The truncation therefore
+    happens before the probes; clusters are then computed over the sample, which is what a debugging
+    run wants anyway.
+    """
     raw = open_questions()
+    if limit:
+        raw = raw[:limit]
     items = []
     for issue in raw:
         sig = signature(issue)
@@ -684,9 +695,7 @@ def main(argv: list[str] | None = None) -> int:
                              "dry run prints the bodies)")
     args = parser.parse_args(argv)
 
-    plan = build_plan()
-    if args.limit:
-        plan["items"] = plan["items"][: args.limit]
+    plan = build_plan(args.limit)
     if args.json:
         # `tokens` is a set (the clustering needs set algebra); JSON does not take sets, and the first
         # version of this flag therefore crashed instead of printing a plan.

@@ -507,3 +507,24 @@ def test_a_bounty_body_is_checked_against_redaction_before_it_is_published():
     torn = qa.compliance_findings("see token=ghp_" + "a" * 36)
     assert torn, "a secret-shaped string must stop the publish"
     assert "secret" in torn[0] or "redact" in torn[0], torn
+
+
+def test_limit_truncates_the_measurement_not_only_the_report(monkeypatch):
+    """`--limit N` has to bound the probing, or it is not a debugging flag.
+
+    Each open question costs one live search through the production retrieval path. Measured
+    2026-11-15: 59 questions took ~4 minutes in CI and over five from a home connection, and a
+    `--limit 3` run still probed all 59 before printing anything — the flag truncated the output
+    after the expensive part. The truncation now happens before the probes.
+    """
+    issues = [{"number": 900 + i, "title": f"[Question] item {i} about item{i}x", "tags": []}
+              for i in range(10)]
+    probed: list[str] = []
+
+    monkeypatch.setattr(qa, "open_questions", lambda: list(issues))
+    monkeypatch.setattr(qa, "corpus_answers", lambda sig: probed.append(sig) or {"ok": True, "lessons": []})
+    monkeypatch.setattr(qa, "distinctive", lambda items: None)
+
+    plan = qa.build_plan(limit=2)
+    assert len(plan["items"]) == 2
+    assert len(probed) == 2, f"build_plan probed {len(probed)} questions for a limit of 2"
