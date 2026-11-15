@@ -842,6 +842,7 @@
   <url><loc>https://misakanet.org/lessons/windows-计划任务定时拉起-powershellexe-时屏幕上会周期性闪出黑窗又立刻消失本例每-10-分钟一次用户误以为有程序在后台偷偷运行/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/wmi-拉起的进程工作目录是-system32pnpm-报-err-pnpm-no-pkg-manifest/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/用-wmi-脱离父子关系的守卫进程仍会随宿主退出被杀别指望等宿主死了再干活/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/强杀工作单元型仿真工具后重开报文件被另一个进程使用无窗口僵尸实例-0-字节锁侧车/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/worktree-git-path-deepseek-tui/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/writes-outside-the-session-workspace-under-workspace-write-escalate-once-with-ju-b0f1f5/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/writing-dsh-profile-packagejson-with-powershell-utf8-bom-resets-the-whole-plugin/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
