@@ -1,9 +1,30 @@
 {
-  "generated_at": "2026-11-15T10:57:36.203300+00:00",
+  "generated_at": "2026-11-15T11:35:43.529595+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 13,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "feat(lessons): three intake bodies that were already evidence, and a frontmatter that was not",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4982",
+      "timestamp": "2026-11-15T11:35:33Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5026",
+      "timestamp": "2026-11-15T11:19:20Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "fix(watch): the stuck-queue list goes to the step summary, the tracker keeps the count",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5024",
+      "timestamp": "2026-11-15T11:15:42Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "feat(lessons): adopt the devops verify backfill (#4975)",
@@ -19,25 +40,28 @@
       "source": "github"
     },
     {
-      "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5020",
-      "timestamp": "2026-11-15T10:24:50Z",
-      "source": "github"
+      "type": "lesson",
+      "title": "PySide6 6.12 在 CPython 3.10/3.11 上崩于 none_dealloc：每次普通 Qt 调用漏掉一个 None 引用",
+      "url": "lessons/contrib/pyside6-612-refcount-leak-aborts-on-cpython-311.md",
+      "timestamp": "2026-11-15",
+      "domain": "python",
+      "source": "lessons"
     },
     {
-      "type": "merged_pr",
-      "title": "feat(lessons): adopt the retire/hold pass over four drafts (#4992)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5016",
-      "timestamp": "2026-11-15T10:07:03Z",
-      "source": "github"
+      "type": "lesson",
+      "title": "except RecursionError 的单测在 CPython 3.12 上是假绿：5000 层嵌套 JSON 不再抛",
+      "url": "lessons/contrib/recursionerror-guard-test-passes-on-312-without-entering-it.md",
+      "timestamp": "2026-11-15",
+      "domain": "testing",
+      "source": "lessons"
     },
     {
-      "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5018",
-      "timestamp": "2026-11-15T09:40:21Z",
-      "source": "github"
+      "type": "lesson",
+      "title": "uv 的 UV_PROJECT_ENVIRONMENT 会被下一次不带 --python 的 uv run 静默重建",
+      "url": "lessons/contrib/uv-per-version-environment-rebuilt-by-a-bare-run.md",
+      "timestamp": "2026-11-15",
+      "domain": "python",
+      "source": "lessons"
     },
     {
       "type": "lesson",
@@ -72,30 +96,6 @@
       "url": "lessons/contrib/a-pull-request-gate-script-ran-a-bend-interpreter-over-its.md",
       "timestamp": "2026-11-11",
       "domain": "dsh",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "安装器 install 在 Windows 上因 github.com 不可达而失败：gh api 与 PyPI 却正常",
-      "url": "lessons/contrib/cli-hub-install-name-fails-on-windows-when-githubcom-is.md",
-      "timestamp": "2026-11-11",
-      "domain": "windows",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "dsh-mnemon 新增记忆空间后全部空间消失：Provider 字段 scope 用错导致整批 body 加载中断",
-      "url": "lessons/contrib/dsh-mnemon-新增记忆空间后全部空间消失provider-字段-scope-用错导致整批-body.md",
-      "timestamp": "2026-11-11",
-      "domain": "mcp",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "Vite/Rollup 构建报 is not exported by：CommonJS 文件被 ESM 命名导入",
-      "url": "lessons/contrib/problem-js-项目viterollup-打包-共享工具层构建报x-is-not-exported-by.md",
-      "timestamp": "2026-11-11",
-      "domain": "windows",
       "source": "lessons"
     },
     {
