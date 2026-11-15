@@ -23,6 +23,7 @@ provenance:
   evidence: "post-publication"
 summary_plain: "API 分页设计选择不当会导致性能问题（OFFSET 大偏移量慢）、数据重复/遗漏（并发写入时）、用户体验差。"
 trigger: "API 分页设计 — Cursor vs Offset vs Keyset. API 分页设计选择不当会导致性能问题（OFFSET 大偏移量慢）、数据重复/遗漏（并发写入时）、用户体验差。"
+verify: "深分页取同一页：OFFSET 版耗时必须大于 keyset（id>?）版，且两版 first_id 相同；两向输出见 ## Verification。"
 ---
 
 ## Problem

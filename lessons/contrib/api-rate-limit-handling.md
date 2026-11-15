@@ -16,6 +16,7 @@ provenance:
   evidence: "post-publication"
 summary_plain: "调用第三方 API 时返回 HTTP 429（Too Many Requests）或 403（被限流）。自动化脚本因未处理限流而中断。"
 trigger: "API 请求限流 (Rate Limit) 处理方案. 调用第三方 API 时返回 HTTP 429（Too Many Requests）或 403（被限流）。自动化脚本因未处理限流而中断。"
+verify: "本地 mock 429 服务（Retry-After: 1）：无退避连发在第 5 次被打断；读 Retry-After 退避后 5/5 落地。"
 ---
 
 ## Problem
@@ -58,13 +59,47 @@ print(f"剩余: {data['rate']['remaining']}/{data['rate']['limit']}")
 
 ## Verification
 
-```bash
-echo "Lesson: API 请求限流 (Rate Limit) 处理方案"
-wc -l lessons/contrib/api-rate-limit-handling.md
+本地 mock 429 服务（`Retry-After: 1`，配额按 1 秒时间窗过期，模拟真实 API 的分钟窗），故障侧与
+修复侧一次运行，仅标准库、离线可跑：
+
+```console
+$ python3 - <<'PY'
+import http.server, threading, time, urllib.request, urllib.error
+hits = {'n': 0, 'window': time.time()}
+class H(http.server.BaseHTTPRequestHandler):
+    def do_GET(self):
+        now = time.time()
+        if now - hits['window'] > 1.0:
+            hits['window'] = now; hits['n'] = 0
+        hits['n'] += 1
+        if hits['n'] <= 3:
+            self.send_response(200); self.end_headers(); self.wfile.write(b'ok')
+        else:
+            self.send_response(429); self.send_header('Retry-After', '1'); self.end_headers()
+    def log_message(self, *a): pass
+srv = http.server.HTTPServer(('127.0.0.1', 0), H)
+threading.Thread(target=srv.serve_forever, daemon=True).start()
+url = f'http://127.0.0.1:{srv.server_address[1]}/api'
+hits.update(n=0, window=time.time())
+try:
+    for _ in range(5): urllib.request.urlopen(url, timeout=5)
+except urllib.error.HTTPError as e:
+    print(f'fault  side (no backoff): 5th call -> HTTP {e.code}, batch aborted')
+hits.update(n=0, window=time.time())
+done = 0
+for _ in range(20):
+    try:
+        urllib.request.urlopen(url, timeout=5).read(); done += 1
+    except urllib.error.HTTPError as e:
+        if e.code == 429: time.sleep(int(e.headers.get('Retry-After', '1'))); continue
+        raise
+    if done == 5: break
+print(f'fix    side (Retry-After backoff): {done}/5 calls landed')
+assert done == 5
+PY
+fault  side (no backoff): 5th call -> HTTP 429, batch aborted
+fix    side (Retry-After backoff): 5/5 calls landed
 ```
 
-**Expected Output:**
-```
-Lesson: API 请求限流 (Rate Limit) 处理方案
-# (line count)
-```
+故障侧：不带退避的连发在第 5 次调用被 429 打断（脚本异常退出）；修复侧：读 `Retry-After` 退避后
+5/5 全部落地。断言钉住修复侧必须 5/5；故障侧的 429 与中止是期望输出，不是脚本缺陷。

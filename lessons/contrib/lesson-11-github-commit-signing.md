@@ -23,6 +23,7 @@ provenance:
   evidence: "post-publication"
 summary_plain: "任何人都可以用你的名字和邮箱设置 git config，推送提交，在 GitHub 上显示为你的作品。唯一的区别：没有 \"Verified\" 徽章。"
 trigger: "GitHub Commit Signing — GPG 防止提交伪造. 任何人都可以用你的名字和邮箱设置 git config，推送提交，在 GitHub 上显示为你的作品。唯一的区别：没有 \"Verified\" 徽章。"
+verify: "临时仓库中：无签名提交伪造作者名会被 git 接受而 verify-commit 拒绝；ssh 签名提交 verify-commit 打出 Good signature。"
 ---
 
 ## Problem
