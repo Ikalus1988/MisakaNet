@@ -95,3 +95,17 @@ def test_the_commit_keeps_the_contributor_and_adds_the_maintainer():
 def test_an_author_without_an_email_still_gets_a_valid_trailer():
     message = rebuild.commit_message("feat: x", "zsxh1990")
     assert "Co-authored-by: zsxh1990 <zsxh1990@users.noreply.github.com>" in message
+
+
+def test_the_generator_chain_refuses_to_run_on_windows():
+    """Both failure modes were measured on this checkout, not imagined.
+
+    2026-11-15: the same four generators on Windows produced **778** lessons instead of 940 — every
+    lesson whose filename is not ASCII vanished with no error. And when the chain did write from
+    Windows, 21 tracked files came out CRLF (`102549 insertions(+), 102549 deletions(-)`: same
+    content, every line changed), which `tests/test_tracked_text_files_are_lf.py` refuses.
+    """
+    refusal = rebuild.platform_refusal("nt")
+    assert refusal and "POSIX" in refusal
+    assert "778" in refusal, "the message must carry the measurement, or the next reader retries it"
+    assert rebuild.platform_refusal("posix") is None

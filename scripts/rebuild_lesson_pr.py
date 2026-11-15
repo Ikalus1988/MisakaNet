@@ -81,6 +81,29 @@ def is_generated(path: str) -> bool:
     return _matches(path, PUBLISHED) or path.startswith(ALSO_GENERATED)
 
 
+def platform_refusal(os_name: str) -> str | None:
+    """Why the generator chain must not run on Windows, or `None` when it may.
+
+    Two independent measurements, both from running this chain on the Windows checkout:
+
+    * **2026-11-15, non-ASCII filenames**: the same four generators produced **778** lessons instead of
+      940 — every lesson whose filename is not ASCII dropped out with no error, only a smaller corpus.
+      Under WSL the same run gives the correct count.
+    * **2026-11-15, line endings**: writing the artifacts from Windows rewrote 21 tracked files with
+      CRLF, which `tests/test_tracked_text_files_are_lf.py` refuses. The diff read
+      `102549 insertions(+), 102549 deletions(-)` — the same content, every line changed.
+
+    A rebuild script that quietly produces either of those is worse than no script, so the check is a
+    refusal with an escape hatch rather than a warning.
+    """
+    if os_name == "nt":
+        return ("refusing: the generator chain must run on POSIX. On Windows it drops lessons whose "
+                "filenames are not ASCII (measured: 940 → 778 with no error) and rewrites the "
+                "artifacts with CRLF. Run this under WSL, or pass --allow-windows if you have "
+                "checked the corpus size and `git diff --stat` yourself.")
+    return None
+
+
 def classify(paths: list[str]) -> dict[str, list[str]]:
     """Split a pull request's file list into the three things a rebuild can be asked about."""
     lessons, generated, other = [], [], []
@@ -159,7 +182,13 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--commit", action="store_true", help="build the branch and commit it")
     parser.add_argument("--push", action="store_true", help="also force-push the PR's head branch")
     parser.add_argument("--branch", default=None, help="scratch branch name (default: rebuild-<pr>)")
+    parser.add_argument("--allow-windows", action="store_true",
+                        help="run the generator chain on Windows anyway (see platform_refusal)")
     args = parser.parse_args(argv)
+
+    refusal = platform_refusal(os.name)
+    if refusal and not args.allow_windows:
+        raise SystemExit(refusal)
 
     # Untracked files are ignored here on purpose: the ones that matter — a lesson the generator reads
     # off the disk — are checked by name on the next line, and an untracked script or scratch note is
