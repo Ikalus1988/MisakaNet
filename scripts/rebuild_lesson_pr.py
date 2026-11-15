@@ -280,10 +280,14 @@ def main(argv: list[str] | None = None) -> int:
             print(f"  gate advisory: {Path(path).name} — {findings[:1]}")
 
     run(["git", "add", "-A", "data", "docs", "lessons", "tests/fixtures"])
-    message = commit_message(meta["title"], author)
-    run(["git", "commit", "-q", "-s", "-m", message, "-m",
-         f"Rebuilt on `origin/main` by `scripts/rebuild_lesson_pr.py` from #{args.pr} ({head[:9]}): "
-         "only the lesson files were taken, every generated artifact was produced here."])
+    note = (f"Rebuilt on `origin/main` by `scripts/rebuild_lesson_pr.py` from #{args.pr} ({head[:9]}): "
+            "only the lesson files were taken, every generated artifact was produced here.")
+    # The note goes **before** the trailer block. Git only reads trailers from the last paragraph, so
+    # appending it with a second `-m` moved `Co-authored-by` out of the block and it disappeared from
+    # the commit — measured on #4982, where the credit was silently dropped.
+    message = commit_message(meta["title"], author).replace(
+        "Co-authored-by: ", f"{note}\n\nCo-authored-by: ", 1)
+    run(["git", "commit", "-q", "-s", "-m", message])
     print(f"committed on {scratch}")
     if args.push:
         run(["git", "push", "--force-with-lease", "origin", f"{scratch}:{branch}"])

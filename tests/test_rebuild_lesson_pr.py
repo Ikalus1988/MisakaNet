@@ -112,3 +112,26 @@ def test_the_generator_chain_refuses_to_run_on_windows():
     assert refusal and "POSIX" in refusal
     assert "778" in refusal, "the message must carry the measurement, or the next reader retries it"
     assert rebuild.platform_refusal("posix") is None
+
+
+def test_the_rebuild_note_goes_before_the_trailers():
+    """Git only reads trailers from the last paragraph.
+
+    Measured on #4982: the note was appended with a second `-m`, which put a non-trailer paragraph
+    after `Co-authored-by` — so git stopped reading trailers there and the commit carried only
+    `Signed-off-by`. The contributor's credit vanished from the commit it was supposed to be attached
+    to, and nothing failed.
+    """
+    import subprocess, tempfile, os
+    with tempfile.TemporaryDirectory() as tmp:
+        subprocess.run(["git", "init", "-q"], cwd=tmp, check=True)
+        note = "Rebuilt on `origin/main` by the tool."
+        message = rebuild.commit_message("feat: x", "them <them@e>")
+        message = message.replace("Co-authored-by: ", f"{note}\n\nCo-authored-by: ", 1)
+        subprocess.run(["git", "commit", "-q", "--allow-empty", "-s", "-m", message], cwd=tmp,
+                       check=True, env={**os.environ, "GIT_AUTHOR_NAME": "t",
+                                        "GIT_AUTHOR_EMAIL": "t@e", "GIT_COMMITTER_NAME": "t",
+                                        "GIT_COMMITTER_EMAIL": "t@e"})
+        out = subprocess.run(["git", "log", "-1", "--format=%(trailers:key=Co-authored-by)"],
+                             cwd=tmp, capture_output=True, text=True, check=True).stdout
+        assert "them" in out, f"the trailers block lost the credit: {out!r}"
