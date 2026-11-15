@@ -60,6 +60,14 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
+# The two gates this file calls are repository scripts, so they are imported the way every other
+# repository script imports them (see `scripts/convert_intake_batch.py`): by path, after the shebang
+# block, once — not by mutating `sys.path` at each call site.
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+
+import injection_scan  # noqa: E402
+import intake_redact  # noqa: E402
+
 REPO_SLUG = os.environ.get("GITHUB_REPOSITORY", "Ikalus1988/MisakaNet")
 API = "https://api.github.com"
 ENDPOINT = os.environ.get("MISAKANET_ENDPOINT", "https://misakanet.org/mcp")
@@ -360,6 +368,34 @@ def _corpus_answers_once(query: str) -> dict:
 # one answer, and a bounty per question would recreate the pile in a new place.
 BOUNTY_MARKER = "<!-- misakanet-question-bounty:anchor-{} -->"
 BOUNTY_LABEL = "bounty"
+
+
+def compliance_findings(text: str) -> list[str]:
+    """What must be true of user-submitted text before it is republished in a *new* public artifact.
+
+    The bounty body is not a copy of one issue: it quotes several questions' titles and the vocabulary
+    that grouped them, which makes it a fresh surface — and a surface nothing watched. Redaction runs at
+    intake (`scripts/intake_redact.py`), so the issue text is usually clean; "usually" is not a gate, and
+    this body is where a secret that slipped through gets a second page of reach. The same reasoning
+    applies to commands: `injection_scan` is the repository's answer to "is this text safe to publish",
+    and a bounty is publication.
+
+    Empty list means publish; anything else is a reason to skip the cluster this run, not to sanitise it
+    — a bounty whose premise was rewritten is a bounty nobody can grade.
+    """
+    findings: list[str] = []
+    try:
+        redacted = intake_redact.redact_text(text, max_length=100_000)
+        if redacted != text:
+            findings.append("secret-shaped text (intake_redact would rewrite it)")
+    except Exception as error:                      # noqa: BLE001 — a gate that crashes must not pass
+        findings.append(f"redaction check unavailable: {error}")
+    try:
+        if injection_scan.has_high(injection_scan.scan_text(text, source="question-bounty")):
+            findings.append("high-severity injection finding")
+    except Exception as error:                      # noqa: BLE001
+        findings.append(f"injection check unavailable: {error}")
+    return findings
 
 
 def bounty_body(anchor_number: int, members: list[dict], shared: list[str]) -> str:
@@ -687,9 +723,14 @@ def main(argv: list[str] | None = None) -> int:
     print(f"receipts written: {written} (unchanged: {len(plan['items']) - written})")
 
     if args.bounties:
-        created = updated = 0
+        created = updated = core_skip = 0
         for entry in planned_bounties(plan):
             body = bounty_body(entry["anchor"], entry["members"], entry["shared"])
+            blocked = compliance_findings(body)
+            if blocked:
+                print(f"  bounty skipped for #{entry['anchor']}: {'; '.join(blocked)}")
+                core_skip += 1
+                continue
             found = existing_bounty(entry["anchor"])
             if found:
                 gh(f"/issues/{found['number']}", {"body": body}, method="PATCH")
@@ -700,7 +741,8 @@ def main(argv: list[str] | None = None) -> int:
                                        "body": body, "labels": [BOUNTY_LABEL]})
                 print(f"  bounty opened: #{issue['number']}")
                 created += 1
-        print(f"bounties: {created} created, {updated} refreshed")
+        print(f"bounties: {created} created, {updated} refreshed, {core_skip} withheld by the "
+              f"compliance gate")
 
     body = digest_body(plan["items"], plan["groups"], planned_bounties(plan))
     write_digest(body)
