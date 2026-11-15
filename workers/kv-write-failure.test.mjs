@@ -108,6 +108,33 @@ test('register still works when storage is healthy', async () => {
   assert.ok(result.node_id, JSON.stringify(result));
 });
 
+// Does this body echo the storage layer's own message, or the upstream status?
+//
+// The rule is about the *values the endpoint chose to include*, not about the bytes of the serialized
+// body. The first version asserted `doesNotMatch(JSON.stringify(body), /429|KV PUT failed/)`, which
+// also matches the milliseconds of an ISO timestamp: `/api/health` answered correctly with
+// `…T13:52:03.429Z` and the assertion failed on the clock (measured 2026-11-15, audit run 43720010324
+// for PR #5038). Three timestamp fields per body made that a ~1-in-330 chance per run, on every PR.
+const ISO_TIMESTAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/;
+
+function storageDetailLeaked(body) {
+  const found = [];
+  (function visit(node) {
+    if (Array.isArray(node) || (node && typeof node === 'object')) {
+      for (const value of Object.values(node)) visit(value);
+      return;
+    }
+    if (typeof node === 'number') {
+      if (node === 429) found.push('429');
+      return;
+    }
+    if (typeof node !== 'string') return;
+    if (ISO_TIMESTAMP.test(node)) return; // a clock reading is not a leak
+    if (/429/.test(node) || node.includes('KV PUT failed')) found.push(node);
+  })(body);
+  return found;
+}
+
 test('health reports KV write failures instead of answering a bare ok', async () => {
   const env = createEnv();
   await toolResult(env, 'misakanet_search', { query: 'anything' });
@@ -121,7 +148,25 @@ test('health reports KV write failures instead of answering a bare ok', async ()
   // to Workers Logs; a diagnostic I had put in the response is what CodeQL flagged.
   assert.equal(body.kv_writes.last_error, undefined,
     'an anonymous endpoint must not echo internal error text');
-  assert.doesNotMatch(JSON.stringify(body), /429|KV PUT failed/);
+  assert.deepEqual(storageDetailLeaked(body), [],
+    'an anonymous endpoint must not echo the storage layer message or the upstream status');
+});
+
+test('the leak check does not read a timestamp millisecond as a 429', () => {
+  // The body that actually went red: every value is clean, and `.429` is a clock reading.
+  const clean = {
+    status: 'ok',
+    kv_writes: {
+      attempts: 9, failures: 5,
+      last_failure_at: '2026-11-15T13:52:03.358Z', last_ok_at: '2026-11-15T13:52:03.356Z',
+    },
+    timestamp: '2026-11-15T13:52:03.429Z',
+  };
+  assert.deepEqual(storageDetailLeaked(clean), [], 'a correct health body must not fail this');
+  // …and what the rule exists for is still caught, in a message and as a bare number.
+  assert.deepEqual(storageDetailLeaked({ last_error: 'KV PUT failed: 429 Too Many Requests' }),
+    ['KV PUT failed: 429 Too Many Requests']);
+  assert.deepEqual(storageDetailLeaked({ upstream: 429 }), ['429']);
 });
 
 test('search-index reports a stale index rather than serving it as fresh', async () => {
