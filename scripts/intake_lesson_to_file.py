@@ -190,6 +190,36 @@ def slugify(title: str, number: int) -> str:
     return slug.rstrip("-")
 
 
+def _without_shared_opening(title: str, text: str) -> str:
+    """`text` with the words it shares with `title` as an opening removed.
+
+    An intake body opens with the sentence its title was cut from — that is how the client writes it —
+    so `${title}. ${problem}` produced a trigger whose second half was the first half again. Measured
+    on the 2026-11-15 batches: every generated draft's `trigger` read the same ~80 characters twice,
+    and the part `shorten()` cut off was exactly the distinctive one (the error string).
+
+    Three shared words is the floor: below that the two openings are coincidence ("A test…" /
+    "A tool…"), and cutting would remove real text.
+    """
+    title_words = re.findall(r"\w+", title.lower())
+    matches = list(re.finditer(r"\w+", text))
+    shared = 0
+    while (shared < len(title_words) and shared < len(matches)
+           and title_words[shared] == matches[shared].group(0).lower()):
+        shared += 1
+    if shared < 3 or shared >= len(matches):
+        return text
+    return text[matches[shared].start():].lstrip(" \t,;:.-—")
+
+
+def trigger_of(title: str, problem: str, limit: int) -> str:
+    """The matchable fragment: the title, then only the part of the problem the title does not say."""
+    tail = _without_shared_opening(title, one_line(problem, 160))
+    if not tail.strip():
+        return shorten(title, limit)
+    return shorten(f"{title}. {tail}", limit)
+
+
 def tags_of(body: str, title: str) -> list[str]:
     raw = field(body, "Tags")
     out: list[str] = []
@@ -197,12 +227,48 @@ def tags_of(body: str, title: str) -> list[str]:
         tag = re.sub(r"[^a-z0-9._-]+", "-", tag.lower()).strip("-")
         if len(tag) >= 2 and tag not in out:
             out.append(tag)
-    if not out:
-        # Some submissions carry no Tags line; derive three from the title so the gate's "≥1 tag" holds
-        # without inventing a classification.
+    if len(out) < 3:
+        # Some submissions carry no Tags line. Three candidates come from the **tools the lesson
+        # actually names** (single-token code spans: `uv`, `pyside6`, `json.loads`), because that is
+        # what a reader searches for — the 2026-11-15 batches tagged three lessons
+        # `while`/`testing`/`project` off the first sentence of a title, which names nothing.
+        #
+        # Additive, not either/or: one tool is not a tag set. `tests/test_intake_form_asks_for_a_cause`
+        # caught the first version refusing a report whose only span was `npm_config_registry` —
+        # "only 1 tag(s)" — and that report was perfectly convertible.
+        for span in re.findall(r"`([^`\n]{2,40})`", body):
+            token = span.strip()
+            if "\\" in token or "/" in token:
+                continue
+            parts = token.split()
+            if not parts:
+                continue
+            # `uv run` is a command, and `uv` is the name a reader searches for. A span of four or
+            # more words is prose or an error string (`Fatal Python error: none_dealloc …`), and its
+            # first word is not a tool.
+            if len(parts) > 3 or not parts[0][:1].islower():
+                continue
+            token = parts[0]
+            tag = re.sub(r"[^a-z0-9._-]+", "-", token.lower()).strip("-.")
+            # A UUID or a hex blob is an identifier the submitter's system handed them, not a topic:
+            # `e17ad3b9-e76` as a tag is a string nobody searches for. Same for the intake's own
+            # section words ("Problem …"), which are formatting that survived into the title.
+            if re.fullmatch(r"[0-9a-f]{2,8}(-[0-9a-f]{2,})+", tag):
+                continue
+            if tag in {"problem", "error", "issue", "symptom", "cause", "fix", "solution", "root"}:
+                continue
+            if len(tag) >= 2 and tag not in out and not tag.isdigit():
+                out.append(tag)
+            if len(out) >= 3:
+                break
+    if len(out) < 3:
         for word in re.findall(r"[a-zA-Z][a-zA-Z0-9]+", title.lower()):
             if word in {"the", "and", "for", "with", "from", "that", "when", "into", "your", "this",
-                        "not", "but", "are", "its", "can", "one", "two", "all"}:
+                        "not", "but", "are", "its", "can", "one", "two", "all", "while", "after",
+                        "before", "during", "which", "what", "how", "why", "was", "were", "has",
+                        "have", "does", "did", "then", "than", "them", "they", "there", "here",
+                        "problem", "error", "issue", "symptom", "cause", "fix", "solution", "root",
+                        "using", "shows", "appeared", "between", "because", "after", "under"}:
                 continue
             if word not in out:
                 out.append(word)
@@ -320,7 +386,7 @@ def convert(issue: dict, canonical: set[str],
         "tags": tags,
         "content": content,
         "summary_plain": one_line(problem, FIELDS_MAX["summary_plain"]),
-        "trigger": shorten(f"{title}. {one_line(problem, 90)}", FIELDS_MAX["trigger"]),
+        "trigger": trigger_of(title, problem, FIELDS_MAX["trigger"]),
         "verify": shorten(verify or fix, FIELDS_MAX["verify"]),
         "source": field(body, "Source") or "unknown",
     }, notes
