@@ -366,6 +366,7 @@
   <url><loc>https://misakanet.org/lessons/judge-a-fix-by-how-the-failure-degrades-not-by-whether-a-crash-remains-count-the/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/fractional-devicepixelratio-makes-1dpr-pens-anti-alias-and-breaks-pixel-exact-qt/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/frame-grid-validation-when-a-replacement-shot-is-shorter-than-its-montage-slot/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/frontmatter-parsing-edge-cases/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/game-mcp-end-turn-conflict-409/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/game-mcp-game-over-restart-flow/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/game-mcp-rare-relic-freeze/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -406,6 +407,7 @@
   <url><loc>https://misakanet.org/lessons/github-release-large-asset-download-cn/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/github-sudo-email-otp-wrong-input-field/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/github-token-cannot-push-workflow-files/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/squash-merge-makes-local-master-ahead-n-with-empty-diff-and-fully-diverged-shas/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/glama-mcp-server-deploy-lessons/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/clearing-a-go-linter-backlog-to-zero-revive-doc-comments-de-morgan-predicates-ca/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/go-scheduler-deadlock-lock-order/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -419,6 +421,7 @@
   <url><loc>https://misakanet.org/lessons/a-green-compile-says-nothing-about-reachability-the-fix-shipped-in-code-no-user/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/green-unit-tests-hid-a-build-only-type-error-because-the-test-runner-strips-type/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/griffe-docstring-parsers-return-empty-instead-of-raising-a-tryexcept-fall-throug/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/applying-a-review-computed-from-an-old-snapshot-as-a-blind-overwrite-silently-dr/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/headless-chrome-cdp-port-answers-but-the-page-target-is-hung-automation-fails-si/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/heartbeat-scan-improvement/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/hermes-model-switch-ccswitch/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -439,6 +442,7 @@
   <url><loc>https://misakanet.org/lessons/json-schema-boolean-subschema-means-any-value/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/kb-4sigma-quality-audit-pipeline/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/页面改-keep-alive-后-ui-自动化批量假红测试的重挂载清空和文本可见就绪两个隐式契约失效/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/killing-a-pid-by-has-a-connection-to-the-llm-api-inference-terminated-the-agents/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/knowledge-graph-ux-patterns-from-high-star-projects/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/kubernetes-crashloopbackoff-debugging/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/lesson-06-git-push-credential-helper-403/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -482,6 +486,7 @@
   <url><loc>https://misakanet.org/lessons/a-baseline-captured-before-the-log-rewrite-turns-crash-deltas-negative-and-hides/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/sanitizing-every-interpolated-value-is-not-enough-exc-infotrue-appends-the-raw-t/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/长上下文污染-独立任务优先派给子代理主上下文只留决策与验收/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/long-context-pollution-delegate-independent-tasks-to-subagents-keep-only-decisio/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/macos-app-tamper-protection-blocks-finder-copy-via-desktopserviceshelper/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/supervise-macos-chrome-headless-pdf-generation-and-handle-process-timeouts/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/macos-homebrew-python-pip-install-blocked-by-pep-668-externa/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -489,6 +494,7 @@
   <url><loc>https://misakanet.org/lessons/macos-oslistxattr-missing-and-ocr-returns-empty-for-transparent-png/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/macos-的-grep-是-bsd-版不支持-搜出来是空的看着像文件里没有/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/macos-自带-bash-32-两个雷set-u-下展开空数组变量后紧跟全角括号/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/maintainer-feedback-iteration/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/mamaptypenavinight-挂在普通-mamapview-上白屏只剩左下角-logo/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/mamapviewdelegaterendererfor-在-add-时同步回调先-add-再登记会让所有折线同色/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/mcp-context-mode-98-reduction/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -533,7 +539,9 @@
   <url><loc>https://misakanet.org/lessons/npm-e403-forbidden-is-three-failures-registry-auth-scope-routing-or-a-proxy-that/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/npm-eacces-permission-error-linux/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/npm-eresolve-is-a-dependency-graph-report-not-an-install-failure-read-the-chain/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/a-file-dependency-on-a-directory-omitted-from-the-tarball-installs-a-dangling-no/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/npm-native-build-arch-mismatch/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/npmjs-registry-unreachable-from-this-host-self-signedexpired-cert-pin-a-mirror-n/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/nsaccessibilityelement-children-report-as-disabled-until-accessibilityenabled-is/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/nsis-installer-refuses-in-place-upgrade-when-appid-differs-from-the-released-bui/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/nsis-silent-install-exits-2-inside-an-agent-job-electron-dies-with-status-breakp/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -564,6 +572,7 @@
   <url><loc>https://misakanet.org/lessons/path-上明明有-npm工具仍报没有找到-npm它拼的是-npm-clijs-文件路径不认-npmcmd/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/正则移植pcre-的-z-在-javascript-里是字面量-z一切含-z-的内容被静默截断/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/pdf-oxide-drops-compound-word-hyphen-when-pdf-wraps-at-that-hyphen/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/a-permission-denial-that-removes-the-deciding-evidence-is-a-stop-signal-not-an-o/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/permission-denied-fix/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/phase-0-output-gate/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/pierre-diffs-contenteditable-editor-dom-fillinnertext-looked-correct-but-nati/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -729,6 +738,7 @@
   <url><loc>https://misakanet.org/lessons/scrapling-installation-and-usage/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/sdk-持续回调-重建逻辑无条件清空-published用户点击每秒被抹掉一次/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/search-evaluation-rank-tracking-bias/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/search-quota-exhaustion-false-zero/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/search-ssot-data-source-pollution-fix/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/three-signals-that-lie-about-whether-a-security-software-exclusion-was-applied-p/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-clean-target-process-does-not-prove-a-security-software-exclusion-worked-measu/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>

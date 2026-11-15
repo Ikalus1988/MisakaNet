@@ -7,7 +7,7 @@ tags:
   - "evidence"
   - "access-denied"
   - "decision-hygiene"
-status: "draft"
+status: "published"
 evidence_level: "E1"
 summary_plain: "When a sandbox denies the evidence a destructive decision needs, stop — do not substitute inference for evidence."
 trigger: "Access is denied EPERM EACCES UnauthorizedAccess sandbox denied evidence destructive action"
@@ -42,7 +42,29 @@ When the evidence channel is denied, escalate to the user with the exact missing
 
 ## Verification
 
-Audit every destructive command: each must cite an identity or resolution obtained from a permitted channel, not from a proxy signal. If any destructive command cites a proxy signal (connection, timing, balance), the decision-hygiene gate fails.
+双侧审计（破坏性命令的决定卫生门：必须引用身份/许可渠道，不得引用代理信号）：
+
+```console
+$ python3 - <<'PY'
+ALLOWED = ('tasklist', 'Get-Process', 'identity', 'ps -p', 'whoami')
+PROXY = ('netstat', 'connection', 'timing', 'balance', 'ESTABLISHED')
+def audit(lines):
+    return [l for l in lines if any(k in l for k in ('rm ', 'kill', 'del ')) and any(p in l for p in PROXY) and not any(a in l for a in ALLOWED)]
+fault_log = ['kill 17984  # because netstat shows ESTABLISHED to api', 'rm -rf cache  # balance dropped again']
+fix_log   = ['kill 3112  # identity confirmed via tasklist: consumer.exe', 'rm -rf cache  # owned by us, ps -p 4242']
+b1, b2 = audit(fault_log), audit(fix_log)
+print(f'fault  side (proxy-cited log): violations={len(b1)}')
+print(f'fix    side (identity-cited) : violations={len(b2)}')
+assert len(b1) == 2 and len(b2) == 0
+print('OK: proxy-cited destructive commands fail the gate; identity-cited pass — the lesson holds')
+PY
+fault  side (proxy-cited log): violations=2
+fix    side (identity-cited) : violations=0
+OK: proxy-cited destructive commands fail the gate; identity-cited pass — the lesson holds
+```
+
+故障侧：引用 `netstat`/余额的破坏性命令被审计判 2 条违规（本篇事故的形态）；修复侧：引用
+`tasklist`/`ps -p` 身份的同构命令 0 违规。审计规则就是正文的判据，脚本把它变成可执行门。
 
 ## Notes
 

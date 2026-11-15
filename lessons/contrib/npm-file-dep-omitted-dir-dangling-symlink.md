@@ -8,7 +8,7 @@ tags:
   - "tarball"
   - "symlink"
   - "file-protocol"
-status: "draft"
+status: "published"
 created: "2026-10-22"
 updated: "2026-10-22"
 summary_plain: "发布 npm 包时用 file: 依赖指向一个没打进包里的目录，装完后 node_modules 里会留一个断掉的软链接。"
@@ -109,97 +109,39 @@ crash was not reproduced.
 
 ## Verification
 
-### 1. The failure precondition reproduces (npm 11.12.1 and npm 11.20.0)
+tarball 安装双侧复现（npm 11.12.1；`files` 省略依赖目录 vs 包含）：
 
-Fixture: parent package with `native-addon: "file:./packages/native-addon"` and
-`files: ["index.js", "package.json"]` (directory omitted).
-
-```bash
-cd <fixture>/pkg && npm pack --dry-run
+```console
+$ python3 - <<'PY'
+import json, os, subprocess, tempfile
+def build(omit):
+    d = tempfile.mkdtemp()
+    os.makedirs(os.path.join(d, 'packages', 'native-addon', 'build'))
+    open(os.path.join(d, 'packages', 'native-addon', 'package.json'), 'w').write(json.dumps({"name": "native-addon", "version": "1.0.0"}))
+    open(os.path.join(d, 'packages', 'native-addon', 'build', 'addon.node'), 'w').write('x')
+    files = ["index.js", "package.json"] if omit else ["index.js", "package.json", "packages"]
+    open(os.path.join(d, 'package.json'), 'w').write(json.dumps({"name": "repro-parent", "version": "1.0.0", "dependencies": {"native-addon": "file:./packages/native-addon"}, "files": files}))
+    open(os.path.join(d, 'index.js'), 'w').write('')
+    return d
+for omit, label in [(True, 'fault'), (False, 'fix ')]:
+    src = build(omit)
+    pack = subprocess.run(['npm', 'pack'], cwd=src, capture_output=True, text=True, timeout=120)
+    tgz = pack.stdout.strip().splitlines()[-1]
+    inst = tempfile.mkdtemp()
+    open(os.path.join(inst, 'package.json'), 'w').write(json.dumps({"name": "consumer", "version": "1.0.0", "dependencies": {"repro-parent": f"file:{os.path.join(src, tgz)}"}}))
+    subprocess.run(['npm', 'install', '--no-audit', '--no-fund'], cwd=inst, capture_output=True, text=True, timeout=120)
+    link = os.path.join(inst, 'node_modules', 'repro-parent', 'node_modules', 'native-addon')
+    if not os.path.exists(os.path.dirname(link)):
+        link = os.path.join(inst, 'node_modules', 'native-addon')
+    print(f'{label} side: symlink={os.path.islink(link)} target_resolves={os.path.exists(link)}')
+PY
+fault  side: symlink=True target_resolves=False
+fix   side: symlink=True target_resolves=True
 ```
 
-**Observed (npm 11.12.1):** the listing contains only `index.js` and `package.json` —
-`packages/native-addon` is absent:
-
-```
-npm notice Tarball Contents
-npm notice 20B index.js
-npm notice 241B package.json
-npm notice total files: 2
-```
-
-Install the packed tarball as a dependency:
-
-```bash
-npx -y npm@11.20.0 install --no-audit --no-fund
-ls -la node_modules/
-```
-
-**Observed (npm 11.20.0):** the dangling symlink forms exactly as reported:
-
-```
-drwxr-xr-x  4 ericjia  wheel  128 ... repro-parent
-lrwxr-xr-x  1 ericjia  wheel   34 ... native-addon -> repro-parent/packages/native-addon
-```
-
-`node_modules/repro-parent/` contains `index.js` and `package.json` only — the link target
-does not exist. The generated lockfile records the link and an empty target entry:
-
-```json
-"node_modules/native-addon": {
-  "resolved": "node_modules/repro-parent/packages/native-addon",
-  "link": true
-},
-"node_modules/repro-parent/packages/native-addon": {}
-```
-
-### 2. The reported crash does NOT reproduce on 11.12.1 or 11.20.0
-
-```bash
-npx -y npm@11.20.0 install --no-audit --no-fund   # exit 0
-npx -y npm@11.20.0 rebuild                        # "rebuilt dependencies successfully", exit 0
-npx -y npm@11.20.0 rebuild native-addon           # exit 0
-npx -y npm@11.20.0 ci --no-audit --no-fund        # "added 2 packages", exit 0
-```
-
-All succeed. Forcing the lockfile into the "link without target entry" shape (removing the
-`node_modules/repro-parent/packages/native-addon` entry) does not produce the destructure
-crash either — npm rejects it first with a different, explicit error:
-
-```bash
-npx -y npm@11.20.0 ci    # exit 1
-```
-
-```
-npm error code EMISSINGTARGET
-npm error Missing target in lock file: "node_modules/repro-parent/packages/native-addon"
-         is referenced by "node_modules/native-addon" but does not exist.
-```
-
-So on these versions the destructure at `node.target` is not reached by this layout. The
-crash claim stays **unconfirmed**.
-
-### 3. The publisher-side correction works (positive control)
-
-Same fixture with `"files": ["index.js", "package.json", "packages/native-addon"]`:
-
-```bash
-npm pack --dry-run          # listing now includes packages/native-addon/index.js and package.json
-npx -y npm@11.20.0 install --no-audit --no-fund
-node -e "console.log(require('native-addon'))"
-```
-
-**Observed:**
-
-```
-npm notice 21B packages/native-addon/index.js
-npm notice 67B packages/native-addon/package.json
-npm notice total files: 4
-...
-require ok: 42
-```
-
-The symlink resolves and the dependency loads. Dangling-link precondition: gone.
+故障侧：`files` 省略 `packages/` 时安装后 `node_modules` 链接悬空（`target_resolves=False`）；
+修复侧：把目录写进 `files` 后同一链接解析正常。注意本检查复现的是**悬空链接**，#3299 报告的
+Arborist 崩溃在 npm 11.12.1/11.20.0 上均未复现（见正文 Evidence status）。
 
 ## Notes
 
