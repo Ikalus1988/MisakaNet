@@ -14,6 +14,8 @@ summary_plain: "README said --profile web, but only a desktop profile existed, s
 trigger: "--profile name from README installs into a profile the running host never loads"
 verify: "list $DSH_HOME/profiles/ before install, confirm the profile name matches the running host, rewrite the command"
 ---
+> **keep-draft (2026-11-15, verdict for #4874).** Missing external condition: no DSH host (`$DSH_HOME`) to compare `dsh.profile.bundles` against `dsh tool list`. Promote when a `dsh` install can run both commands on the intended profile.
+
 
 # Following a README's --profile name verbatim installs into a profile the running host never loads
 

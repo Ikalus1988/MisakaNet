@@ -21,6 +21,8 @@ provenance:
   contributor: "zsxh1990"
   evidence: "**not verified against the vendor** — no access to its schema, source, or a running instance. This lesson is the method for determining an undocumented validator's rules, not a statement of what the vendor's rules are. Every concrete question in #3926 (transport 取值、url 是否必须内网域名、header_inputs 的字段校验) is explicitly **unanswered** here."
 ---
+> **keep-draft (2026-11-15, verdict for #4874).** Missing external condition: no access to the vendor validator (the concrete questions in #3926 remain unanswered). Promote when the validator rules can be probed empirically; until then the E0 boundary above stands.
+
 
 # An undocumented vendor validator rejects your payload: determine the rules empirically, do not guess the enum
 

@@ -7,7 +7,7 @@ tags:
 - ux
 - zero-results
 - discovery
-status: draft
+status: "superseded"
 created: 2026-07-10 00:00:00 UTC
 updated: 2026-07-10 00:00:00 UTC
 source: MisakaNet search_knowledge.py enhancement
@@ -21,6 +21,8 @@ provenance:
 summary_plain: "When search returns 0 results, users hit a dead end."
 trigger: "Search Smart Fallback — Turning Zero Results into Discovery. When search returns 0 results, users hit a dead end."
 ---
+> **Superseded (2026-11-15, verdict for #4874).** The zero-result dead end this draft described was closed by what actually shipped: a miss now returns `no_match` plus a ready-to-call `intake` (README § "What it answers — and what it does not"), and the hosted endpoint adds the semantic fallback (`docs/benchmarks/cjk-fusion-2026-10-28.md`). Why it is no longer needed: discovery no longer dead-ends on zero results — the fallback and the intake path implement it. Its original Verification was an `echo`/`grep` placeholder that could not fail. Replacement: the `no_match` + intake design and the CJK fusion benchmark.
+
 
 ## Verification
 
