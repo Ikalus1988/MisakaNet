@@ -265,3 +265,29 @@ def test_it_never_tries_to_cancel_or_delete_a_stuck_run():
     script = text()
     assert "/cancel" not in script and "deleteWorkflowRun" not in script, (
         "the stuck-run report must stay a report")
+
+
+def test_the_stuck_queue_is_reported_without_hijacking_the_approval_tracker():
+    """The measurement that forced this split: 190 wedged runs, one run worth a click.
+
+    On 2026-11-15 the tracker's body listed 190 runs that were created and never picked up — they
+    cannot be cancelled (`409`) or deleted (`403`), so nothing about them is actionable — and the
+    single run waiting for an approval sat below them on the page. A tracker someone opens in order to
+    click "approve" is the wrong place for a diagnostic.
+
+    So: the **list** goes to the step summary (no notification, attached to the run that measured it),
+    the tracker keeps a **count**, and the fingerprint — the thing that decides whether a comment is
+    posted — stays approvals-only.
+    """
+    script = text()
+    assert "core.summary.addHeading" in script, "the list belongs in the step summary"
+    assert "Stuck in the queue" in script
+
+    fingerprint = [line for line in script.splitlines() if line.strip().startswith("const fingerprint")]
+    assert fingerprint, "the fingerprint line moved; this test needs updating with it"
+    assert "stuck" not in fingerprint[0], (
+        "a stuck run cannot be acted on, so it must not trigger a comment on the approval tracker")
+
+    body = script.split("const body = [", 1)[1].split("].join", 1)[0]
+    assert "stuckLines" not in body, (
+        "the full list made the actionable run scroll off the page — keep only the count in the body")

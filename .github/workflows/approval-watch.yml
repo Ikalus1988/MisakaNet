@@ -90,6 +90,16 @@ jobs:
                 + (stuck.length > 20 ? `\n- …and ${stuck.length - 20} more` : '')
               : '_Nothing is stuck in the queue._';
 
+            // The list lives here, where a diagnostic belongs: no notification, no queue entry, and
+            // it stays attached to the run that measured it. `core.summary` is the channel this
+            // repository already uses for exactly this (`>> $GITHUB_STEP_SUMMARY` elsewhere).
+            core.summary.addHeading(`Stuck in the queue: ${stuck.length}`, 3)
+              .addRaw(`Oldest ${oldestStuck} h. Created, never picked up by a runner; cancel answers `
+                + `409 and delete answers 403, so there is nothing to do about them except notice the `
+                + `next batch sooner.\n\n`)
+              .addRaw(stuckLines + "\n");
+            await core.summary.write();
+
             const lines = waiting.length
               ? waiting.map(r => `- **${r.name}** — waiting since ${r.created_at} — ${r.html_url}`).join('\n')
               : '_Nothing is waiting for approval right now._';
@@ -103,9 +113,12 @@ jobs:
               '',
               lines,
               '',
-              `**${stuck.length}** run(s) stuck in the queue — created, never picked up by a runner; oldest **${oldestStuck} h**.`,
-              '',
-              stuckLines,
+              // Count only. The full list is a diagnostic, and this issue is one a person opens to
+              // click "approve" — measured 2026-11-15: 190 wedged runs pushed the single run that
+              // needed a human off the top of the page. The list belongs in the job summary.
+              `_Also **${stuck.length}** run(s) stuck in the queue, never picked up by a runner `
+                + `(oldest **${oldestStuck} h**). They cannot be cancelled or deleted; the list is in `
+                + `this run's step summary._`,
               '',
               'Approve at Actions → the run → “Review pending deployments”, or on the environment page:',
               `https://github.com/${context.repo.owner}/${context.repo.repo}/deployments/activity_log?environments_filter=release`,
@@ -128,8 +141,9 @@ jobs:
             // a wait that nobody acts on still escalates instead of sitting there being edited.
             // The body stays the full current state (one issue, no comment spam) — this is the
             // push, not the record.
-            const fingerprint = [...waiting.map(r => `w${r.id}`), ...stuck.map(r => `q${r.id}`)]
-              .sort().join(',');
+            // Approvals only. A stuck run cannot be acted on, so letting it into the fingerprint
+            // turns "somebody must click approve" into a comment stream nobody reads.
+            const fingerprint = waiting.map(r => `w${r.id}`).sort().join(',');
             const newestId = waiting.length ? Math.max(...waiting.map(r => r.id)) : 0;
             const previous = existing ? (existing.body.match(/<!-- approval-watch:seen=(\S*) -->/) || [])[1] : undefined;
             const THRESHOLD_H = 6;
