@@ -22,6 +22,7 @@ provenance:
   evidence: "post-publication"
 summary_plain: "微服务的承诺：可扩展、可维护、快速。现实：对大多数系统，微服务只增加了延迟、复杂度和故障点。"
 trigger: "微服务延迟成本分析 — 何时不该用微服务. 微服务的承诺：可扩展、可维护、快速。现实：对大多数系统，微服务只增加了延迟、复杂度和故障点。"
+verify: "本地 HTTP 每跳固定 20ms：5 跳顺序链总耗时必须大于单跳 3 倍；合并为一次调用后回落。"
 ---
 
 ## Problem
@@ -85,19 +86,34 @@ trigger: "微服务延迟成本分析 — 何时不该用微服务. 微服务的
 
 ## Verification
 
-```bash
-echo "Lesson: 微服务延迟成本分析 — 何时不该用微服务"
-wc -l lessons/contrib/lesson-10-microservices-latency-math.md
+本地 HTTP 每跳固定 20ms 服务时间，故障侧（5 跳顺序链）与修复侧（合并为一次调用）一次运行：
+
+```console
+$ python3 - <<'PY'
+import http.server, threading, time, urllib.request
+class H(http.server.BaseHTTPRequestHandler):
+    def do_GET(self):
+        time.sleep(0.02)  # 20ms service time per hop
+        self.send_response(200); self.end_headers(); self.wfile.write(b'ok')
+    def log_message(self, *a): pass
+srv = http.server.HTTPServer(('127.0.0.1', 0), H)
+threading.Thread(target=srv.serve_forever, daemon=True).start()
+url = f'http://127.0.0.1:{srv.server_address[1]}/x'
+def call():
+    urllib.request.urlopen(url, timeout=5).read()
+t0 = time.perf_counter()
+for _ in range(5): call()
+chain = (time.perf_counter() - t0) * 1000
+t0 = time.perf_counter()
+call()
+single = (time.perf_counter() - t0) * 1000
+print(f'fault  side (5-hop chain): total={chain:.0f}ms')
+print(f'fix    side (1 call)     : total={single:.0f}ms')
+assert chain > single * 3
+PY
+fault  side (5-hop chain): total=128ms
+fix    side (1 call)     : total=26ms
 ```
 
-**Expected Output:**
-```
-Lesson: 微服务延迟成本分析 — 何时不该用微服务
-# (line count)
-```
-
-## Notes
-
-- "对大多数系统，微服务只增加了延迟、复杂度和故障点"
-- 模块化单体是更务实的选择
-- Source: dev.to (2026-01-14, 151↑)
+故障侧：5 跳顺序调用链的墙钟时间（断言必须 > 单跳 3 倍，实测约 5×，正是本篇的延迟成本命题）；
+修复侧：合并成一次调用后耗时回落到单跳量级。
