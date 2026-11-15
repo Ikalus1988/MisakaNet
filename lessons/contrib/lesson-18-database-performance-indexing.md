@@ -22,6 +22,7 @@ provenance:
   evidence: "post-publication"
 summary_plain: "慢查询是大多数 Web 应用的性能瓶颈。缺少索引、全表扫描、N+1 查询是最常见的原因。"
 trigger: "数据库性能 — 索引与查询优化实践. 慢查询是大多数 Web 应用的性能瓶颈。缺少索引、全表扫描、N+1 查询是最常见的原因。"
+verify: "EXPLAIN QUERY PLAN 对点查必须出现 SEARCH ... USING INDEX（补索引后）；缺索引时必须是 SCAN——两向输出见 ## Verification。"
 ---
 
 ## Problem
