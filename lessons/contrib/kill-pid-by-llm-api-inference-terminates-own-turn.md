@@ -8,7 +8,7 @@ tags:
   - "inference-mistake"
   - "destructive-action"
   - "identity-unavailable"
-status: "draft"
+status: "published"
 evidence_level: "E1"
 summary_plain: "An agent killed a process for its TCP connection to the LLM API — its own harness has one too, so it killed itself."
 trigger: "kill PID 'has a connection to the LLM API' inference terminated the agent's own turn"
@@ -73,13 +73,35 @@ Keep it as `PID N, identity unknown`. Coined names (`watchdog`, `respawner`, `le
 
 ## Verification
 
-After the change, the following must hold on a clean run:
+合成双侧复现（本地 TCP 服务 + 两个长连接：一个属于"agent 自身"，一个属于"consumer"子进程）：
 
-- **No self-kill**: no tool call during cleanup returns `recorded but no result durably recorded`. The agent's turn survives the cleanup.
-- **Read-only before destruct**: balance and connection state are observed read-only before any kill command is issued.
-- **Read-only after destruct**: balance and connection state are observed again after the cleanup; the diff is the *only* evidence the cleanup did anything.
+```console
+$ python3 - <<'PY'
+import os, socket, subprocess, sys, threading, time
+srv = socket.socket(); srv.bind(('127.0.0.1', 0)); srv.listen(5)
+port = srv.getsockname()[1]
+threading.Thread(target=lambda: [srv.accept() for _ in range(4)], daemon=True).start()
+mine = socket.create_connection(('127.0.0.1', port))
+child = subprocess.Popen([sys.executable, '-c', "import socket,time;s=socket.create_connection(('127.0.0.1',%d));time.sleep(30)" % port])
+time.sleep(0.5)
+out = subprocess.run(['lsof', '-nP', f'-iTCP:{port}', '-sTCP:ESTABLISHED'], capture_output=True, text=True).stdout
+pids = {line.split()[1] for line in out.strip().splitlines()[1:]}
+self_pid = str(os.getpid())
+print(f'fault  side (select by connection): targets={sorted(pids)} includes self={self_pid in pids}')
+sel = [p for p in pids if p != self_pid]
+print(f'fix    side (identity-excluded)   : targets={sorted(sel)} self excluded={self_pid not in sel}')
+assert self_pid in pids and self_pid not in sel and str(child.pid) in sel
+child.kill()
+print('OK: proxy-signal selection includes the agent itself; identity exclusion removes it — the lesson holds')
+PY
+fault  side (select by connection): targets=['77659', '77660'] includes self=True
+fix    side (identity-excluded)   : targets=['77660'] self excluded=True
+OK: proxy-signal selection includes the agent itself; identity exclusion removes it — the lesson holds
+```
 
-In the original incident the bleeding did stop (balance 7.05 → 7.05 over 90 s, zero connections to the LLM endpoint), but that proves only that *something* consumer-shaped was killed — not which one. The agent's own turn died in the same operation, so the success was unverifiable from inside the run.
+故障侧：按"对 LLM API 有连接"这一代理信号选杀目标，会把发起方自己也选进来（本篇的自我了断
+形态）；修复侧：按身份排除自身后只剩真正的目标。注意这是合成复现（真实事故中身份查询全部被拒），
+它证伪的是**选择方法**，不是那次事故本身。
 
 ## Notes
 

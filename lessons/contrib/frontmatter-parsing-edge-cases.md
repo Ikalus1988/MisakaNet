@@ -7,7 +7,7 @@ tags:
 - validation
 - edge-cases
 - data-loss
-status: draft
+status: published
 created: 2026-07-10 00:00:00 UTC
 updated: 2026-07-10 00:00:00 UTC
 source: MisakaNet validate_lessons.py testing
@@ -19,17 +19,38 @@ provenance:
   merged_at: "2026-08-23"
   evidence: "post-publication"
 summary_plain: "Frontmatter parsing in MisakaNet has several edge cases that can cause silent data loss or misleading validation…"
-trigger: "Frontmatter Parsing Edge Cases — Silent Failures and Data Loss. Frontmatter parsing in MisakaNet has several edge cases that can cause silent data loss…"
+trigger: "Frontmatter Parsing Edge Cases — Silent Failures and Data Loss. Frontmatter parsing in MisakaNet has several edge cases that can cause silent data loss…
+verify: "双侧：BOM/畸形 frontmatter 静默丢字段(title=None)；干净 frontmatter 解析正常。另 pytest tests/test_frontmatter_parsing.py 防回归。""
 ---
 
 ## Verification
 
-```bash
-scripts/validate_lessons.py
-echo "Verification passed: fix command exited 0"
+双侧复现 + 既有测试防回归：
+
+```console
+$ python3 - <<'PY'
+import sys
+sys.path.insert(0, 'scripts')
+from lesson_gate import parse_frontmatter
+good = "---\ntitle: t\ndomain: devops\n---\n\n## Problem\nx\n"
+bom = "\ufeff" + good
+bad_json = '---\ntitle: "unterminated\ndomain: devops\n---\n\nbody\n'
+for label, text in [('fix    side (clean frontmatter)', good), ('fault  side (UTF-8 BOM)', bom), ('fault  side (malformed)', bad_json)]:
+    meta, body = parse_frontmatter(text)
+    print(f'{label}: title={meta.get("title") if meta else None}')
+PY
+fix    side (clean frontmatter): title=t
+fault  side (UTF-8 BOM): title=None
+fault  side (malformed): title=None
 ```
 
-**Expected Output:** command completes without error, then `Verification passed` is printed. (Checks: `scripts/validate_lessons.py`)
+```console
+$ python3 -m pytest tests/test_frontmatter_parsing.py -q
+39 passed, 1 skipped
+```
+
+故障侧：BOM / 畸形 frontmatter 被静默吞掉（`parsed=True` 但 `title=None`，正是本篇的静默丢数据
+主张）；修复侧：干净 frontmatter 解析出字段。注意故障侧输出刻意展示"静默"——解析器不抛异常。
 
 ## Frontmatter Parsing Edge Cases — Silent Failures and Data Loss
 

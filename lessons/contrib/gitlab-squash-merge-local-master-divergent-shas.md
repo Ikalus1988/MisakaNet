@@ -8,7 +8,7 @@ tags:
   - "divergent-history"
   - "reflog"
   - "reset-hard"
-status: "draft"
+status: "published"
 created: "2026-10-28"
 updated: "2026-10-28"
 summary_plain: "MR 被 squash 合并后本地 master 显示 ahead N、SHA 全分叉，但 git diff 为空。正确同步是 reset --hard origin/master——树一致时它不丢东西，旧提交还能从 reflog 取回。"
@@ -111,19 +111,43 @@ If the diff is **not** empty you have real local work and this recipe will destr
 
 ## Verification
 
-Reproduced end-to-end in a scratch repo (macOS, git 2.x):
+临时仓库双侧复现（`git merge --squash` 模拟 GitLab squash 语义；同一棵树，两条历史）：
 
-1. 3 commits on a `feature` branch, merged into local `master`
-2. `git merge --squash feature` on the "remote" to simulate GitLab's squash
-3. Symptom reproduced exactly: `4  1`, empty diff, diverged SHAs
-4. All three syncs run; `reset --hard` clean, `merge` double-history, `rebase` conflict
-5. Reflog recovery exercised: `git cat-file` returns `commit`, `git checkout -b recover`
-   restores all 3 commits
+```console
+$ python3 - <<'PY'
+import subprocess, tempfile, os
+def sh(c, cwd): return subprocess.run(c, cwd=cwd, shell=True, capture_output=True, text=True)
+d = tempfile.mkdtemp()
+sh('git init -q --initial-branch=master repo', d)
+repo = os.path.join(d, 'repo')
+sh('git config user.email a@b.c && git config user.name t', repo)
+open(os.path.join(repo, 'f.txt'), 'w').write('base\n')
+sh('git add -A && git commit -q -m base', repo)
+base = sh('git rev-parse HEAD', repo).stdout.strip()
+sh('git checkout -q -b feature', repo)
+for i in (1, 2, 3):
+    open(os.path.join(repo, 'f.txt'), 'w').write(f'base\nline{i}\n')
+    sh('git add -A && git commit -q -m f%d' % i, repo)
+sh('git checkout -q master && git merge -q --no-ff feature -m merge-mr', repo)
+sh(f'git checkout -q -b remote-master {base}', repo)
+sh('git merge -q --squash feature && git commit -q -m squashed', repo)
+out = sh('git rev-list --left-right --count master...remote-master', repo).stdout.strip()
+diff = sh('git diff master remote-master', repo).stdout.strip()
+trees = sh('git rev-parse "master^{tree}" "remote-master^{tree}"', repo).stdout.split()
+print(f'fault  side (after squash): rev-list = {out.replace(chr(9), " ")}; empty diff = {diff == ""}; same tree = {len(set(trees)) == 1}')
+sh('git checkout -q master && git reset -q --hard remote-master', repo)
+out2 = sh('git rev-list --left-right --count master...remote-master', repo).stdout.strip()
+print(f'fix    side (reset --hard): rev-list = {out2.replace(chr(9), " ")}')
+assert out == '4\t1' and diff == '' and len(set(trees)) == 1 and out2 == '0\t0'
+print('OK: squash leaves "4 ahead 1 behind" with empty diff and equal trees; reset --hard syncs — the lesson holds')
+PY
+fault  side (after squash): rev-list = 4 1; empty diff = True; same tree = True
+fix    side (reset --hard): rev-list = 0 0
+OK: squash leaves "4 ahead 1 behind" with empty diff and equal trees; reset --hard syncs — the lesson holds
+```
 
-**Honest boundary:** this simulates GitLab's squash with `git merge --squash`. It was not
-run against a real GitLab instance. The semantics GitLab applies ("take the branch's tree,
-commit it as one") are what `--squash` does, so the reproduction is faithful — but it is a
-simulation, not a GitLab run.
+断言钉住三件事：squash 后计数必须是 `4 1`、diff 必须为空、两棵树必须相同；`reset --hard` 后
+计数必须归零。任何一侧不满足脚本即非零退出。
 
 ## Note
 

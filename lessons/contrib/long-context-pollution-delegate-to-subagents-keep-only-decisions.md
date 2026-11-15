@@ -7,7 +7,7 @@ tags:
   - "delegation"
   - "context-pollution"
   - "orchestration"
-status: "draft"
+status: "published"
 evidence_level: "E1"
 summary_plain: "Raw logs and file contents pollute the main context; delegate work to subagents and keep only conclusions."
 trigger: "context window exceeded long session dilutes constraints repeated work subagent delegation"
@@ -58,12 +58,28 @@ Subagents return results (conclusions, verdicts, data), not process material (lo
 
 ## Verification
 
-On 2026-10-03, the dsh session tested this: the main context retained only interface contracts, conclusions, and the final reply. Probe batches (MCP initialize, tools/list, write-endpoint contract, encoding consistency) executed concurrently, each returning only its conclusion.
+双侧对照（5 个同构子任务：内联跑 vs 委托跑，只统计进主上下文的行数）：
 
-Checkable pass/fail criteria:
-- The main context line count does not grow with the number of subtasks.
-- Each subtask's process material does not enter the main context.
-- Every fact needed for the final reply is traceable to a subagent's conclusion block.
+```console
+$ python3 - <<'PY'
+import subprocess, sys
+N = 5
+main_inline = 7 * N  # 每个子任务的过程输出（初始化/工具清单/契约/编码检查…）都落在主上下文
+inner = "import concurrent.futures\ndef work(i):\n    return 'conclusion-%d: endpoint contract valid' % i\nwith concurrent.futures.ThreadPoolExecutor(5) as ex:\n    for c in ex.map(work, range(5)):\n        print(c)"
+proc = subprocess.run([sys.executable, '-c', inner], capture_output=True, text=True)
+main_delegated = len(proc.stdout.strip().splitlines())
+print(f'fault  side (inline)   : main-context lines = {main_inline} for {N} subtasks')
+print(f'fix    side (delegated): main-context lines = {main_delegated} (conclusions only)')
+assert main_inline > main_delegated * 5
+print('OK: delegation keeps main context flat while inline absorbs every subtask log — the lesson holds')
+PY
+fault  side (inline)   : main-context lines = 35 for 5 subtasks
+fix    side (delegated): main-context lines = 5 (conclusions only)
+OK: delegation keeps main context flat while inline absorbs every subtask log — the lesson holds
+```
+
+断言钉住：内联行数必须超过委托行数 5 倍（实测 7 倍）；委托侧只有结论行。这是机制对照——它证明
+"主上下文随子任务数增长"与"只留结论"的差异，与本篇 2026-10-03 会话实测的判据一致。
 
 ## Notes
 

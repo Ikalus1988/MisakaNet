@@ -8,7 +8,7 @@ tags:
   - "mirror"
   - "tls"
   - "certificate"
-status: "draft"
+status: "published"
 evidence_level: "E1"
 summary_plain: "pnpm install failed on self-signed/expired certs at registry.npmjs.org; pin a mirror instead of disabling TLS."
 trigger: "ERR_PNPM_META_FETCH_FAIL DEPTH_ZERO_SELF_SIGNED_CERT CERT_HAS_EXPIRED registry.npmjs.org"
@@ -82,23 +82,18 @@ These work around the symptom but accept any certificate for any subsequent fetc
 
 ## Verification
 
-After pinning the mirror:
+双侧（注册表不可达 vs 钉住镜像；注意修复是换镜像，**不是**关 TLS）：
 
-```bash
-# 1. Metadata fetch from the mirror returns HTTP 200
-curl -I https://registry.npmmirror.com
-# expect: HTTP/2 200
+```console
+$ curl -sS -I --max-time 5 --resolve registry.npmjs.org:443:127.0.0.1 https://registry.npmjs.org/
+curl: (7) Failed to connect to registry.npmjs.org port 443 after 0 ms: Couldn't connect to server
 
-# 2. The install completes
-pnpm install
-# expect: exit 0, no CERT errors
-
-# 3. The package is in dependencies AND in the lockfile
-grep '"some-package"' package.json
-grep 'some-package' pnpm-lock.yaml
+$ curl -sS -I --max-time 10 https://registry.npmmirror.com
+HTTP/2 200
 ```
 
-If (1) returns 200 but (2) still fails with the same CERT error, the package manager is not reading the profile `.npmrc` — check `pnpm config get registry` to confirm.
+故障侧：注册表不可达时安装直接死（--resolve 指向 127.0.0.1 模拟 DNS/网络不通）；修复侧：钉住
+HTTPS 镜像后元数据端点返回 200——全程 `strict-ssl` 保持开启，本篇的红线是"换镜像，永不关 TLS"。
 
 ## Notes
 

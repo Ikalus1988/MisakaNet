@@ -8,7 +8,7 @@ tags:
   - "handoff"
   - "code-review"
   - "three-way"
-status: "draft"
+status: "published"
 created: "2026-10-22"
 updated: "2026-10-22"
 summary_plain: "别人基于旧版本改的文档提案，若整文件覆盖回来，会把这段时间里别人新改的内容悄悄抹掉。"
@@ -87,73 +87,41 @@ to combine them — but the tooling surfaces that as a conflict instead of silen
 
 ## Verification
 
-Reproduced locally in a throwaway git repo (2026-10-22). Setup: `handoff.md` at base
-`0f8cf7a` with a `## Notes` section and an `## Open items` section. Main then edits a Notes
-line (`note line 8 (edited by main)`), while `reviewer-snapshot` — branched from the same
-base, never rebased — edits an Open items line (`item A (reviewer proposal)`).
+临时仓库双侧复现（stale 快照的审阅提案 vs 并发编辑）：
 
-### A) Blind overwrite — the concurrent edit is lost
-
-```bash
-git checkout main
-git show reviewer-snapshot:handoff.md > handoff.md
-grep 'edited by main' handoff.md        # no match
-grep 'reviewer proposal' handoff.md     # matches
+```console
+$ python3 - <<'PY'
+import subprocess, tempfile, os
+def sh(c, cwd): return subprocess.run(c, cwd=cwd, shell=True, capture_output=True, text=True)
+d = tempfile.mkdtemp()
+sh('git init -q --initial-branch=main repo', d)
+repo = os.path.join(d, 'repo')
+sh('git config user.email a@b.c && git config user.name t', repo)
+open(os.path.join(repo, 'handoff.md'), 'w').write('## Notes\nnote line 1\nnote line 8\n\n## Open items\nitem A\n')
+sh('git add -A && git commit -q -m base', repo)
+sh('git checkout -q -b reviewer-snapshot', repo)
+open(os.path.join(repo, 'handoff.md'), 'w').write('## Notes\nnote line 1\nnote line 8\n\n## Open items\nitem A (reviewer proposal)\n')
+sh('git add -A && git commit -q -m review', repo)
+sh('git checkout -q main', repo)
+open(os.path.join(repo, 'handoff.md'), 'w').write('## Notes\nnote line 1\nnote line 8 (edited by main)\n\n## Open items\nitem A\n')
+sh('git add -A && git commit -q -m main-edit', repo)
+sh('git show reviewer-snapshot:handoff.md > handoff.md', repo)
+body = open(os.path.join(repo, 'handoff.md')).read()
+lost = 'edited by main' not in body and 'reviewer proposal' in body
+print(f'fault  side (blind overwrite): main edit lost = {lost}')
+sh('git checkout -q main -- handoff.md && git merge -q --no-commit reviewer-snapshot', repo)
+merged = open(os.path.join(repo, 'handoff.md')).read()
+both = 'edited by main' in merged and 'reviewer proposal' in merged
+print(f'fix    side (three-way merge): both edits present = {both}')
+assert lost and both
+print('OK: blind overwrite drops the concurrent edit; three-way merge keeps both — the lesson holds')
+PY
+fault  side (blind overwrite): main edit lost = True
+fix    side (three-way merge): both edits present = True
+OK: blind overwrite drops the concurrent edit; three-way merge keeps both — the lesson holds
 ```
 
-**Observed:** `edited by main` is gone (0 lines), the reviewer's marker is present. The
-file now says `- note line 8` — main's concurrent edit has been silently reverted.
-
-### B) Three-way merge — both edits survive
-
-Starting from a clean `main` with main's Notes edit still in place:
-
-```bash
-git merge --no-edit reviewer-snapshot
-grep 'edited by main' handoff.md        # matches
-grep 'reviewer proposal' handoff.md     # matches
-```
-
-**Observed:**
-
-```
-Auto-merging handoff.md
-Merge made by the 'ort' strategy.
- handoff.md | 2 +-
-```
-
-and the file contains both:
-
-```
-- note line 8 (edited by main)
-...
-- item A (reviewer proposal)
-```
-
-### C) Overlapping edits — conflict raised, nothing dropped
-
-When the two edits touch adjacent lines (the same `## Open items` block), the three-way
-apply refuses to guess:
-
-```bash
-git diff <base>..reviewer-snapshot -- handoff.md | git apply -3 -
-```
-
-**Observed:** exit 1, `Applied patch to 'handoff.md' with conflicts.`, and the file carries
-markers on both sides:
-
-```
-<<<<<<< ours
-- item A
-- item B (reworded by main)
-=======
-- item A (reviewer proposal)
-- item B
->>>>>>> theirs
-```
-
-Both edits are still present in the working file and must be combined by hand. The
-overwriting approach in (A) produced no markers and no error — that silence is the bug.
+双侧断言：故障侧必须丢失主线编辑、修复侧必须两者皆存；只过一侧脚本非零退出。
 
 ## Notes
 

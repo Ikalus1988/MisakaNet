@@ -305,7 +305,7 @@
 - [Judge a fix by how the failure degrades, not by whether a crash remains: count the trigger signature](contrib/fix-acceptance-is-a-degradation-not-a-crash-count.md) | development | "fix-verification", "crash-triage", "trigger-signature", "soft-fault", "endpoint-security", "acceptance" | intake-3481
 - [Fractional devicePixelRatio makes 1/DPR pens anti-alias and breaks pixel-exact Qt render tests](contrib/fractional-devicepixelratio-makes-1-dpr-pens-anti-alias-and.md) | frontend | "qt", "pyside6", "highdpi", "devicepixelratio", "antialiasing", "pixel-testing", "rendering" | intake-4046
 - [Frame-grid validation when a replacement shot is shorter than its montage slot](contrib/frame-grid-validation-replacement-shorter-than-slot.md) | video | "video", "montage", "ffmpeg", "frame-timing", "frame-grid", "validation", "timebase" | intake-3388
-- [Frontmatter Parsing Edge Cases — Silent Failures and Data Loss](contrib/frontmatter-parsing-edge-cases.md) | devops | "frontmatter", "parsing", "validation", "edge-cases", "data-loss" | MisakaNet validate_lessons.py testing
+- [frontmatter-parsing-edge-cases](contrib/frontmatter-parsing-edge-cases.md) |  |  | 
 - [Game MCP: End Turn Returns 409 Conflict](contrib/game-mcp-end-turn-conflict-409.md) | mcp | "mcp", "game", "turn", "conflict" | hanged-man
 - [Game MCP: GAME OVER Restart Flow](contrib/game-mcp-game-over-restart-flow.md) | mcp | "mcp", "game", "over", "restart", "flow" | hanged-man
 - [game mcp rare relic freeze](contrib/game-mcp-rare-relic-freeze.md) | mcp | "mcp", "game", "rare", "relic", "freeze" | hanged-man
@@ -435,7 +435,7 @@
 - [macOS: os.listxattr missing and OCR returns empty for transparent PNG](contrib/macos-xattr-ocr-transparent-png.md) | python | "macos", "xattr", "ocr", "tesseract", "png", "transparent", "python" | 
 - [macOS 的 grep 是 BSD 版不支持 `\|`：搜出来是空的，看着像「文件里没有」](contrib/macos-的-grep-是-bsd-版不支持-搜出来是空的看着像文件里没有.md) | devops | "bash", "grep", "bsd", "regex", "macos", "posix", "bre" | intake-4158
 - [macOS 自带 bash 3.2 两个雷：set -u 下展开空数组、变量后紧跟全角括号](contrib/macos-自带-bash-32-两个雷set-u-下展开空数组变量后紧跟全角括号.md) | devops | "bash", "macos", "bash3", "set-u", "array", "unbound-variable", "encoding" | intake-4157
-- [Maintainer Feedback Iteration — Address Blockers, Not Just Comments](contrib/maintainer-feedback-iteration.md) | meta | "contrib", "maintainer", "feedback", "iteration", "pr" | Multiple PR review cycles
+- [maintainer-feedback-iteration](contrib/maintainer-feedback-iteration.md) |  |  | 
 - [MAMapType.naviNight 挂在普通 MAMapView 上白屏，只剩左下角 logo](contrib/mamaptypenavinight-挂在普通-mamapview-上白屏只剩左下角-logo.md) | mobile | "amap", "ios", "mkmapview", "maptype", "blank-screen", "enum-misuse" | intake-4146
 - [MAMapViewDelegate.rendererFor 在 add() 时同步回调：先 add 再登记会让所有折线同色](contrib/mamapviewdelegaterendererfor-在-add-时同步回调先-add-再登记会让所有折线同色.md) | mobile | "amap", "ios", "mkmapview", "overlay", "renderer", "synchronous-callback" | intake-4142
 - [MCP Context Mode — 98% Context Window Reduction for Claude Code](contrib/mcp-context-mode-98-reduction.md) | mcp | "mcp", "claude-code", "context-window", "optimization", "token-efficiency" | mksg.lu/blog/context-mode
@@ -682,7 +682,7 @@
 - [Scrapling — Web Scraping Library with Anti-Detection](contrib/scrapling-installation-and-usage.md) | devops | "scrapling", "scraping", "curl-cffi", "playwright", "anti-detection" | github.com/D4Vinci/Scrapling
 - [SDK 持续回调 + 重建逻辑无条件清空 @Published：用户点击每秒被抹掉一次](contrib/sdk-持续回调-重建逻辑无条件清空-published用户点击每秒被抹掉一次.md) | mobile | "amap", "ios", "idempotent", "published-state", "sdk-callback", "state-reset" | intake-4143
 - [搜索评估陷阱：评估函数先检查标题再检查内容导致 rank 偏差](contrib/search-evaluation-rank-tracking-bias.md) | search | "search", "evaluation", "rank", "recall", "bias" | mcp-intake-1113
-- [A zero-result search is not proof of absence — check what swallowed the query](contrib/search-quota-exhaustion-false-zero.md) | devops | "search", "quota", "rate-limit", "misleading-error", "debugging" | MisakaNet local search testing
+- [search-quota-exhaustion-false-zero](contrib/search-quota-exhaustion-false-zero.md) |  |  | 
 - [Search Smart Fallback — Turning Zero Results into Discovery](contrib/search-smart-fallback-implementation.md) | devops | "search", "fallback", "ux", "zero-results", "discovery" | MisakaNet search_knowledge.py enhancement
 - [Search SSOT: Fixing Data Source Pollution in Static-Deployed Sites](contrib/search-ssot-data-source-pollution-fix.md) | devops | "search", "ssot", "data-source", "static-site", "worker", "github-pages", "frontend" | misakanet
 - [Three signals that lie about whether a security-software exclusion was applied, plus the 8.3 short-name trap](contrib/security-exclusion-applied-module-table-short-name-trap.md) | security | "endpoint-security", "exclusion", "dlp", "dll-injection", "windows", "verification", "short-name", "process-modules" | intake-3321
