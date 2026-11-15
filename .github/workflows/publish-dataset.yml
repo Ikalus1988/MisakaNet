@@ -4,8 +4,8 @@ name: Publish dataset to R2
 # artifacts) and has never published it anywhere but inside a git checkout. `build_dataset_bundle.py`
 # assembles it; this workflow is what makes it a URL.
 #
-# Why CI and not a local script: publishing needs write credentials, and the only place this account
-# keeps a write token is the `release` environment. A maintainer's laptop holding a write-all
+# Why CI and not a local script: publishing needs write credentials, and the only copy of them this
+# account keeps is in a protected environment. A maintainer's laptop holding a write-capable
 # Cloudflare token to upload 3 MB of JSON would be a worse trade than a workflow.
 #
 # Why not on every lesson commit: `data/okf/lessons.jsonl` is regenerated daily by `update-lessons.yml`,
@@ -22,9 +22,20 @@ name: Publish dataset to R2
 #
 # A daily schedule is the right cadence for one more reason written above: `data/okf/lessons.jsonl` is
 # already regenerated daily, and the version label is the date. So one run a day publishes exactly one
-# dated version, the dataset lags at most a day, and the traffic drops from N clicks to ≤1 — the
-# `automation`-environment rule `heartbeat.yml` states in its own header ("a cron job that needs a
-# click is not a cron job") without moving anybody's credential out of `release`.
+# dated version, and the dataset lags at most a day.
+#
+# **Which is why this job moved to `automation` (2026-11-15), and not merely to a cron.** A cron behind
+# `release` is two failures at once: it waits for a click every day, and on the day nobody clicks it
+# publishes nothing — which is the `automation`-environment rule `heartbeat.yml` states in its own
+# header ("a cron job that needs a click is not a cron job"). The first draft of this change kept
+# `release` and dropped the clicks from N to 1; `test_secret_scoping` was right to reject that, and the
+# rejection is the reason the credential moved instead of the rule.
+#
+# The cost is real and it is written down rather than absorbed: `automation`'s token was D1-only, and it
+# now also carries `Workers R2 Storage:Edit` for the `misakanet-dataset` bucket. Two boundaries become
+# one — a leak in any unattended job can now overwrite published dataset objects as well as lesson rows.
+# What it still cannot do is replace the code served at misakanet.org, which is the line `release`
+# exists to hold. See docs/maintainer/credentials-and-environments.md §3.
 
 on:
   schedule:
@@ -40,8 +51,17 @@ concurrency:
 
 jobs:
   publish:
-    # Write credentials live here, not at repository level — same rule as deploy-worker.yml.
-    environment: release
+    # Credential: the `automation` environment holds `CF_API_TOKEN` — the unattended Cloudflare token
+    # (`misakanet-automation-d1`), scoped to D1:Edit **and** Workers R2 Storage:Edit for
+    # `misakanet-dataset`, which is what the upload below needs. It cannot deploy a worker, replace the
+    # served code, or touch DNS.
+    #
+    # `automation` has no required reviewers on purpose: a scheduled job behind an approval gate is not
+    # a safer job, it is a job that stops on the day nobody is around. It is branch-restricted to
+    # `main` instead — so a `workflow_dispatch` from a feature branch is rejected by the environment,
+    # and testing this file means merging first or pushing to `main`.
+    # See docs/maintainer/credentials-and-environments.md.
+    environment: automation
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
@@ -83,7 +103,7 @@ jobs:
             # The likeliest first-run failure, named so nobody has to decode it: the deploy token
             # carries Workers Scripts:Edit and may not carry Workers R2 Storage:Edit. The fix is a
             # scope on the token, not a code change.
-            echo "::error::CF_API_TOKEN cannot write R2 (403). Add the \"Workers R2 Storage:Edit\" permission to the release environment's token, then re-run this workflow. Response: $(cat /tmp/bucket.json)"
+            echo "::error::CF_API_TOKEN cannot write R2 (403). The `automation` environment's token must carry \"Workers R2 Storage:Edit\" for the misakanet-dataset bucket; add the permission on the token, not in this file. Response: $(cat /tmp/bucket.json)"
             exit 1
           else
             echo "::error::bucket create failed ($code): $(cat /tmp/bucket.json)"

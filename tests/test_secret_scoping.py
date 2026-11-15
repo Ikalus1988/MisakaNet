@@ -11,7 +11,8 @@ cannot quietly rot, and the failure modes are not visible in the workflow files:
 * **a job that reads a credential without declaring an environment** reads the repository-level
   secret instead — readable by any run on any branch, which is the thing the migration removed;
 * **a scheduled job behind required reviewers does not become safer, it becomes unavailable** — the
-  cron stops until a person approves it, which is how the served corpus quietly goes stale;
+  cron stops until a person approves it, which is how the served corpus quietly goes stale, and —
+  since 2026-11-15 — how a daily dataset publish would go stale one day at a time;
 * **an unattended job holding the deploy-capable token** would mean a leak in a job nobody watches
   can replace the code served at misakanet.org.
 
@@ -52,8 +53,23 @@ PUBLISH_ENVIRONMENT = "npm-release"
 KNOWN_ENVIRONMENTS = (APPROVED_ENVIRONMENT, UNATTENDED_ENVIRONMENT, PUBLISH_ENVIRONMENT)
 
 # Unattended workflows, and the credential scope their file has to record — the note is what makes
-# reviewer-free access a decision rather than an accident.
-UNATTENDED_WORKFLOWS = ("sync-d1.yml", "sync-question-answers.yml", "d1-backup.yml")
+# reviewer-free access a decision rather than an accident. One entry, one scope, so that a workflow
+# which needs a *different* permission cannot inherit the sentence that justified the last one:
+# `publish-dataset.yml` joined on 2026-11-15 (a cron behind `release` waits for a click every day, and
+# on the day nobody clicks it publishes nothing), and the price — R2 write inside the environment
+# whose token used to be D1-only — is recorded in that file's header and in
+# credentials-and-environments.md §3.
+UNATTENDED_SCOPES = {
+    "sync-d1.yml": "D1:Edit",
+    "sync-question-answers.yml": "D1:Edit",
+    "d1-backup.yml": "D1:Edit",
+    "publish-dataset.yml": "Workers R2 Storage:Edit",
+}
+
+# The subset that writes the whole lesson corpus into D1: each is a full import, so two at once is
+# the same table imported twice. `publish-dataset.yml` is unattended but is not one of these — it
+# uploads objects to R2, and its runs supersede each other.
+D1_WRITERS = ("sync-d1.yml", "sync-question-answers.yml", "d1-backup.yml")
 
 # Jobs that can change what is served in production. These must sit behind a human.
 REVIEWED_JOBS = {"deploy-worker.yml": "deploy"}
@@ -150,12 +166,12 @@ def test_the_unattended_workflows_record_the_scope_they_rely_on():
     If someone swaps in a wider token, or deletes the note, the reason a reviewer-free environment is
     tolerable leaves with it.
     """
-    for name in UNATTENDED_WORKFLOWS:
+    for name, scope in UNATTENDED_SCOPES.items():
         text = (WORKFLOWS / name).read_text(encoding="utf-8")
         assert "environment: automation" in text, f"{name} is no longer unattended"
-        assert "D1:Edit" in text, (
+        assert scope in text, (
             f"{name} relies on unattended access but no longer records that its Cloudflare token is "
-            "scoped to D1:Edit — the note is what makes `automation` reviewer-free on purpose "
+            f"scoped to {scope} — the note is what makes `automation` reviewer-free on purpose "
             "rather than by accident"
         )
         assert "credentials-and-environments.md" in text, (
@@ -201,7 +217,7 @@ def test_the_unattended_d1_writers_serialize():
     """
     import yaml
 
-    for name in UNATTENDED_WORKFLOWS:
+    for name in D1_WRITERS:
         data = yaml.safe_load((WORKFLOWS / name).read_text(encoding="utf-8"))
         concurrency = data.get("concurrency")
         assert isinstance(concurrency, dict) and concurrency.get("group"), (
