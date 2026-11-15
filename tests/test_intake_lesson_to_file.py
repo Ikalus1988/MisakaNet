@@ -245,3 +245,61 @@ def test_a_symptom_heading_is_accepted_as_the_problem():
     lesson, notes = conv.convert({**full, "body": body}, CANONICAL)
     assert lesson is not None, notes
     assert "ERR_PNPM_META_FETCH_FAIL" in lesson["content"]
+
+
+def test_the_trigger_does_not_say_the_title_twice():
+    """An intake body opens with the sentence its title was cut from.
+
+    So `f"{title}. {problem}"` produced a trigger whose second half repeated the first, and the part
+    `shorten()` then cut off was the distinctive one — the error string. Measured on the 2026-11-15
+    batches: all ten drafts had a trigger that read the same 80 characters twice, and every one of
+    them had to be rewritten by hand before the lesson could ship.
+    """
+    title = "PySide6 GUI app aborts at an arbitrary moment with a Fatal Python error"
+    problem = ("PySide6 GUI app aborts at an arbitrary moment with a Fatal Python error "
+               "none_dealloc: deallocating None, and the stack names innocent paint code.")
+    trigger = conv.trigger_of(title, problem, conv.FIELDS_MAX["trigger"])
+    assert trigger.count(title[:40]) == 1, f"the title's opening appears more than once: {trigger!r}"
+    assert "none_dealloc" in trigger, (
+        "the distinctive half — the error text — is what a reader searches for, and it is what the "
+        f"duplicated-title version cut off: {trigger!r}")
+
+
+def test_an_unrelated_title_still_gets_the_problem_after_it():
+    trigger = conv.trigger_of("uv rebuilds a per-version environment",
+                              "A bare `uv run` resolved another interpreter and recreated the path.",
+                              conv.FIELDS_MAX["trigger"])
+    assert trigger.startswith("uv rebuilds a per-version environment.")
+    assert "bare `uv run`" in trigger
+
+
+def test_tags_come_from_the_tools_when_the_submission_has_none():
+    """`while`/`testing`/`project` is what a first-sentence title produces, and it names nothing.
+
+    The tools a lesson actually shows (`uv`, `pyside6`, `json`) are what a reader searches for, and
+    they are already in the text as single-token code spans.
+    """
+    body = ("## Problem\nA bare `uv run` rebuilt `pyside6`'s environment and `json.loads` behaved "
+            "differently.\n## Root Cause\nBecause the interpreter moved.\n")
+    tags = conv.tags_of(body, "While testing one project on multiple Python versions")
+    assert tags[:2] == ["uv", "pyside6"], tags
+    assert "while" not in tags and "project" not in tags
+
+
+def test_a_submission_without_tags_or_tools_falls_back_to_title_words_minus_connectives():
+    tags = conv.tags_of("## Problem\nx\n", "While testing one project with pnpm on windows")
+    assert "while" not in tags and "with" not in tags, tags
+    assert tags, "the gate needs at least one tag"
+
+
+def test_a_uuid_is_not_a_tag():
+    """`e17ad3b9-e76` is what the submitter's system handed them, not a topic a reader searches for.
+
+    Measured on the 2026-11-15 queue: two of five drafts were tagged with a hex fragment of a request
+    id, and one with the intake's own formatting word (`problem`) because it survived into the title.
+    """
+    body = ("## Problem\nStore ids like `e17ad3b9-e76a-4c` and `abdffc0e-acd` leaked into the log.\n"
+            "## Root Cause\nTwo stores.\n")
+    tags = conv.tags_of(body, "Problem stdio server used two stores")
+    assert not any("e17ad3b9" in t or "abdffc0e" in t for t in tags), tags
+    assert "problem" not in tags, tags

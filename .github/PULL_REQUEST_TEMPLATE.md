@@ -41,16 +41,16 @@ python3 scripts/lesson_gate.py lessons/contrib/your-lesson.md
 
 - [ ] My commit has `Signed-off-by:` (DCO required)
 - [ ] I have tested that the changes work correctly
-- [ ] I have NOT modified generated files (data/lessons.json, docs/data/*, feeds) — maintainer will regenerate after merge
+- [ ] If this PR adds or changes a lesson: I re-ran the generators and committed their output — `update_lessons_json.py`, `build_lesson_pages.py`, `sync_lesson_count.py`, `export_okf.py`, `rebuild_lessons_index.py`, `export_public_vocabulary.py`, `gen_ranking_snapshot.py`; the list and its order live in `docs/agents/repo-operations.md` — **both** `gate` and the `test` matrix fail without them
 
 ## Before submitting — check related lessons
 
 <!-- If your PR fixes a known issue, check if a lesson already covers it: -->
 
 - [DCO sign-off fix](https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/core/dco-auto-fix-workflow.md)
-- [Secret scan / token fix](https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/core/codeql-alert-dismissal-false-positive.md)
+- [Secret scan / token fix](https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/codeql-alert-dismissal-false-positive.md)
 - [pip install timeout/SSL](https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/pip-install-timeout-ssl.md)
-- [GitHub API 401](https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/core/github-401-credential-lookup.md)
+- [GitHub API 401](https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/github-401-credential-lookup.md)
 - [🔍 Search all lessons](https://misakanet.org/search/)
 
 <!-- Don't worry about perfection. Small fixes are welcome too. -->
