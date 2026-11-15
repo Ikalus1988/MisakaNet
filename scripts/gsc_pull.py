@@ -174,17 +174,32 @@ def refresh_access_token(credentials: str | Path, opener=None) -> str:
 
 def store_refresh_token(store: str | Path, client_id: str, client_secret: str,
                        payload: dict) -> Path:
-    """Persist the refresh token, 0600 where the filesystem honours it."""
+    """Persist the refresh token, 0600 where the filesystem honours it.
+
+    Clear text is the design, not an oversight: an unattended `--oauth-credentials` run has to mint
+    an access token from something on disk, and encrypting this file would put its key on the same
+    disk. CodeQL's `py/clear-text-storage-sensitive-data` (#405, 2026-11-14) describes what this
+    function is for; the part of it this file can answer is *where* and *with what mode*.
+    """
     refresh = payload.get("refresh_token")
     if not refresh:
         raise SystemExit("error: the exchange returned no refresh_token — revoke the app's access and "
                          "run --login again (Google only issues one on a fresh consent)")
     out = Path(store)
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps({
+    saved = json.dumps({
         "client_id": client_id, "client_secret": client_secret, "refresh_token": refresh,
         "scope": payload.get("scope", SCOPES),
-    }, indent=2) + "\n", encoding="utf-8")
+    }, indent=2) + "\n"
+    # Created with 0o600 **at creation**. `write_text` would make the file with the process umask
+    # (0644 on a default runner) and the `os.chmod` that used to follow only closed the door
+    # afterwards — a window in which the refresh token was world-readable. A caller can also point
+    # this at a file that already exists with a wider mode, which is what the chmod after the write
+    # is still for.
+    handle = os.fdopen(os.open(out, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600), "w",
+                       encoding="utf-8")
+    with handle:
+        handle.write(saved)
     try:
         os.chmod(out, 0o600)
     except OSError:

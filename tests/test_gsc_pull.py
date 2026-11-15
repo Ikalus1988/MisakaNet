@@ -18,6 +18,7 @@ from __future__ import annotations
 import base64
 import io
 import json
+import stat
 import subprocess
 import sys
 import tempfile
@@ -281,3 +282,24 @@ def test_a_pasted_url_without_a_code_says_what_to_copy(tmp_path):
         gsc.exchange_pasted_url(client_json, "http://localhost:1/?state=only",
                                 "http://localhost:1/", tmp_path / "o.json")
     assert "whole URL" in str(exc.value), "the failure has to name the thing to copy"
+
+
+def test_the_token_file_is_not_readable_by_anyone_else_at_any_moment(tmp_path):
+    """0o600 has to hold *while* the file is being written, not a moment later.
+
+    `write_text` creates with the process umask — 0644 on a default runner — and the `os.chmod` that
+    followed only narrowed it afterwards, so a refresh token was world-readable for the duration of
+    one write. CodeQL flagged the store itself on 2026-11-14 (`py/clear-text-storage-sensitive-data`,
+    alert 405); clear text is the design for an unattended client, the mode is not.
+
+    The mode is read the way `tests/test_agent_autostart.py` reads it: `os.chmod` on Windows only
+    toggles the read-only attribute, so this asserts the POSIX contract and says so instead of
+    pretending the Windows number means the same thing.
+    """
+    if sys.platform == "win32":
+        pytest.skip("os.chmod on Windows only toggles the read-only attribute; 0o600 is POSIX")
+    store = tmp_path / "oauth.json"
+    gsc.store_refresh_token(store, "cid", "csecret",
+                            {"refresh_token": "refresh-1", "scope": gsc.SCOPES})
+    assert stat.S_IMODE(store.stat().st_mode) == 0o600, (
+        "the refresh token must be 0600 from the moment the file exists")
