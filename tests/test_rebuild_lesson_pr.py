@@ -52,6 +52,9 @@ def test_the_vocabulary_export_and_the_evidence_table_count_as_generated():
     """
     assert rebuild.is_generated("data/public-vocabulary.json")
     assert rebuild.is_generated("docs/trust-semantics.md")
+    # `docs/data/` is written by `build-feed.yml`, not by this chain: a rebuild leaves `main`'s copy
+    # alone, but the file is still not the pull request's change.
+    assert rebuild.is_generated("docs/data/feed.json")
     assert not rebuild.is_generated("scripts/rebuild_lesson_pr.py")
 
 
