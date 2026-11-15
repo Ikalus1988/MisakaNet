@@ -73,6 +73,27 @@ PLAIN = """# Changelog
 * **site:** the older thing
 """
 
+# v3.17.1 (2026-11-15) as it actually shipped: one merged pull request, `lessons(contrib)`, so the
+# section carries `### Lessons` and nothing else. Copy of the live shape, not a hypothetical — the
+# release PR that carried it was red on `test_the_rendered_root_body_carries_the_changelog_categories`
+# for ten hours because that assertion named two categories by hand.
+LESSONS_ONLY = """# Changelog
+
+## [3.17.1](https://github.com/owner/repo/compare/v3.17.0...v3.17.1) (2026-11-15)
+
+
+### Lessons
+
+* **contrib:** convert five intakes — Douyin dead-end, ROBOGUIDE wedge ([#5031](https://github.com/owner/repo/issues/5031)) ([50a9eb5](https://github.com/owner/repo/commit/50a9eb5))
+
+## [3.17.0](https://github.com/owner/repo/compare/v3.16.0...v3.17.0) (2026-11-15)
+
+
+### Features
+
+* **analytics:** record where a search spends its milliseconds ([#4948](https://github.com/owner/repo/issues/4948))
+"""
+
 # What the root changelog looked like before release-please owned it
 # (`grep -n '^## v' CHANGELOG.md`).
 LEGACY = """# Changelog
@@ -116,14 +137,21 @@ def test_a_partial_version_does_not_match_a_heading():
     assert release_notes.section(LINKED, "9.9.9") == ""
 
 
-def test_the_rendered_root_body_carries_the_changelog_categories():
-    """The defect (#3836) on the live files: the body must show the categories, not a PR list."""
-    version = json.loads(MANIFEST.read_text(encoding="utf-8"))["."]
-    body = release_notes.render(release_notes.ROOT, CHANGELOG.read_text(encoding="utf-8"), version)
+def _assert_reads_as_categories(body: str, version: str) -> list[str]:
+    """#3836's rule, in the shape it has to be written: categories — whose, not which.
 
+    The assertion this replaced named `### Bug Fixes` / `### Features` by hand. v3.17.1 was
+    lessons-only, so on 2026-11-15 the release PR that carried it was red on all nine legs plus
+    `audit` for ten hours — while the tag job's own live check (`grep -qE '^### '`) and the workflow
+    gate that reads the published body back were both green. A release whose only section is
+    `### Lessons` is a normal release here: `lesson` and `lessons` are two of the eight sections
+    this repository configures.
+
+    What the rule must still catch is the defect itself: no category at all, or headings that came
+    from somewhere other than this repository's config.
+    """
     headings = re.findall(r"^### (.+)$", body, re.M)
     assert headings, f"the release body for {version} has no `### <category>` heading"
-    assert "### Bug Fixes" in body or "### Features" in body, headings
     assert "What's Changed" not in body, (
         "this is the `--generate-notes` shape #3836 is about: a flat PR list with no categories"
     )
@@ -138,6 +166,38 @@ def test_the_rendered_root_body_carries_the_changelog_categories():
         f"the body's headings {headings} are not the categories this repository configures "
         f"({sorted(configured)}), so the section was probably read from the wrong place"
     )
+    return headings
+
+
+def test_the_rendered_root_body_carries_the_changelog_categories():
+    """The defect (#3836) on the live files: the body must show the categories, not a PR list."""
+    version = json.loads(MANIFEST.read_text(encoding="utf-8"))["."]
+    body = release_notes.render(release_notes.ROOT, CHANGELOG.read_text(encoding="utf-8"), version)
+    _assert_reads_as_categories(body, version)
+
+
+def test_a_release_whose_only_commit_was_a_lesson_is_still_a_release():
+    """v3.17.1, replayed: `### Lessons` alone satisfies the rule; naming categories does not."""
+    body = release_notes.render(release_notes.ROOT, LESSONS_ONLY, "3.17.1", "owner/repo")
+    assert _assert_reads_as_categories(body, "3.17.1") == ["Lessons"]
+    assert "the older thing" not in body, "the section leaked the version below it"
+
+
+def test_a_body_with_no_category_is_still_rejected():
+    """The negative half, so relaxing the pair above cannot quietly drop #3836's rule."""
+    flat = "## [3.17.1](https://example/compare) (2026-11-15)\n\n## What's Changed\n* a PR\n"
+    with pytest.raises(AssertionError, match="no `### <category>` heading"):
+        _assert_reads_as_categories(flat, "3.17.1")
+
+
+def test_a_body_built_from_another_repositorys_categories_is_rejected():
+    """Read the wrong section and the headings say so: they are not this repo's vocabulary."""
+    foreign = (
+        "## [3.17.1](https://example/compare) (2026-11-15)\n\n"
+        "### Added\n\n* keep-a-changelog calls it `Added`\n"
+    )
+    with pytest.raises(AssertionError, match="not the categories this repository configures"):
+        _assert_reads_as_categories(foreign, "3.17.1")
 
 
 def test_the_root_body_says_where_to_get_that_version():
