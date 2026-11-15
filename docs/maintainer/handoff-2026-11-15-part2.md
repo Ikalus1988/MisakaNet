@@ -104,7 +104,7 @@ tag → `gh workflow run <publish>` → `environment: release` 审批 → regist
 
 ```console
 # lesson PR 冲突：一条命令重建（必须 POSIX）
-$ wsl -e bash -lc "cd '/mnt/c/Users/Eric Jia/MisakaNet' && python3 scripts/rebuild_lesson_pr.py <pr> --commit"
+$ wsl -e bash -lc "cd '/mnt/c/Users/<user>/MisakaNet' && python3 scripts/rebuild_lesson_pr.py <pr> --commit"
 $ git push --force origin rebuild-<pr>:<head-branch>
 
 # 陈旧 needs-dco 标签（先看 dco 是否自己重跑过）
