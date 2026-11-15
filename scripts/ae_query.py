@@ -122,18 +122,26 @@ def phase_sql(days: int = DEFAULT_DAYS) -> str:
     The endpoint is bimodal from the outside — 1.1 s warm against 4–8.6 s cold, hits and misses
     alike (measured 2026-11-15) — and a client cannot tell the memoised corpus read from the KV
     BM25 index from scoring. `double4..double7` are those phases, written by `recordSearchAnalytics`
-    since that measurement; rows from before the deploy carry zeros, so a window that starts too
-    early reads as "free", which is why the caller sees the window in the output.
+    since that measurement.
+
+    **`AND double4 > 0` is load-bearing, not tidiness.** Pre-deploy rows carry zeros in all four
+    columns, and a p95 over a day where those rows are the overwhelming majority is 0 — so the
+    query as first shipped answered "0 ms" for all four phases while five rows in the same window
+    carried real numbers (measured 2026-11-15, minutes after the deploy). A percentile cannot say
+    "this row has no measurement"; `count() AS phased_rows` is how the report says how many rows
+    the percentiles are standing on.
     """
     return (
         "SELECT "
+        "count() AS phased_rows, "
         "quantileExactWeighted(0.95)(double4, _sample_interval) AS lessons_p95, "
         "quantileExactWeighted(0.95)(double5, _sample_interval) AS index_p95, "
         "quantileExactWeighted(0.95)(double6, _sample_interval) AS score_p95, "
         "quantileExactWeighted(0.95)(double7, _sample_interval) AS semantic_p95 "
         f"FROM {DATASET} "
         f"WHERE timestamp > NOW() - {_window(days)} "
-        "AND blob1 = 'misakanet_search'"
+        "AND blob1 = 'misakanet_search' "
+        "AND double4 > 0"
     )
 
 
@@ -255,10 +263,11 @@ def build_report(
 
     lines.extend(["", "3. Where a search spends its milliseconds (p95 per phase)"])
     phase = (phase_rows or [{}])[0] if phase_rows else {}
-    if not phase_rows or not any(_as_float(phase.get(k)) for k in
-                                 ("lessons_p95", "index_p95", "score_p95", "semantic_p95")):
+    phased = _as_float(phase.get("phased_rows")) or 0.0
+    if not phase_rows or not phased:
         lines.append("   no phase data yet — it is only written by searches after the 2026-11-15 deploy")
     else:
+        lines.append(f"   {int(phased)} of {int(searches)} searches in the window carry phases")
         for key, label in (("lessons_p95", "corpus read (memo/KV/D1)"),
                            ("index_p95", "BM25 index (KV)"),
                            ("score_p95", "scoring"),
