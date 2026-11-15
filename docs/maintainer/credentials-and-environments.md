@@ -21,7 +21,7 @@ credential without declaring a known environment.
 |---|---|---|---|
 | env `release` | `CF_API_TOKEN` (deploy-capable) | `apply-d1-schema`, `d1-bootstrap`, `d1-counters-report`, `deploy-worker`, `intake-pipeline-test` | branch policy `main` + required reviewer |
 | env `npm-release` | **trusted publishing (OIDC)** — preferred; `NPM_TOKEN` transitional | `misakanet-publish` | branch policy `main` + `v*`, **no reviewer** (unattended, 2026-09-30 — intake #2486 D1). OIDC needs no stored secret at all; see §4.1 |
-| env `automation` | `CF_API_TOKEN` = `misakanet-automation-d1`, **D1:Edit only** | `sync-d1`, `sync-question-answers` | branch policy `main`, **no reviewers** |
+| env `automation` | `CF_API_TOKEN` = `misakanet-automation-d1`, **D1:Edit + Workers R2 Storage:Edit** (created 2026-09-19; the second scope was in the token from the start and first recorded 2026-11-15 — §3b) | `sync-d1`, `sync-question-answers`, `d1-backup`, `publish-dataset` | branch policy `main`, **no reviewers** |
 | repo level | `SHELDON_PAT` | `auto-sync-prs`, `pr-checks`, `pr-shape-guard`, `release-please`, `auto-merge-docs` | none (see §5) |
 | env `release` | `CF_OBSERVABILITY_TOKEN` (optional) | `cf-diagnostics` | branch policy `main` + required reviewer — **read-only**: `Workers Observability: Read` + `Account Analytics: Read`, no `Workers Scripts: Edit` |
 | env `release` | `CF_BUILDS_TOKEN` (optional) | `cf-diagnostics` | branch policy `main` + required reviewer — **read-only and user-scoped**: `Workers Builds Configuration` (read), no deploy. Created 2026-09-24, see §4.4 |
@@ -60,10 +60,17 @@ worker. A required reviewer there costs nothing — the run was going to wait fo
 
 A cron is the opposite case. An approval gate on a scheduled job does not make it safer; it makes it
 stop. So `automation` exists with **no reviewers**, and the safety comes from somewhere else: the
-credential inside it can only do one small thing. The token there is scoped to **D1:Edit on the
-misakanet account** — it cannot deploy a worker, cannot read KV, cannot touch DNS. If it leaks, the
-blast radius is "someone can read and write lesson rows", not "someone can replace the code served at
-misakanet.org".
+credential inside it can only do one small thing. The token there is scoped to **D1:Edit and Workers R2 Storage:Edit on the misakanet account** — it
+cannot deploy a worker, cannot read KV, cannot touch DNS. If it leaks, the blast radius is "someone can
+read and write lesson rows, and overwrite R2 objects this token can reach", not "someone can replace
+the code served at misakanet.org".
+
+**Read the paragraph above as corrected, not as planned (2026-11-15).** It used to say D1:Edit only,
+because every workflow header described the *need of its job* and that got read as the token's scope.
+The owner confirmed the token has carried `Workers R2 Storage:Edit` since it was created. So the
+`automation` boundary has been wider than this document claimed for two months, and the guarantee that
+made reviewer-free access tolerable was the wrong guarantee. Nothing about the token changed; what
+changed is that a job now uses the R2 half (§3b), which is how the error came to light.
 
 Both environments are branch-restricted to `main`. That is not a substitute for review — a merged
 change on `main` can still reach these secrets. It only means a *feature branch* cannot.
@@ -82,17 +89,53 @@ gate moved from memory to a visible click), and the **`npm-release`** environmen
 
 `misakanet-automation-d1` was created 2026-09-19 with a **TTL ending 2027-03-01**. To rotate:
 
-1. Cloudflare dashboard → My Profile → API Tokens → create a custom token: Account / **D1** / **Edit**,
-   account resource = misakanet. Nothing else.
+1. Cloudflare dashboard → My Profile → API Tokens → create a custom token: Account / **D1** / **Edit**
+   **and** Account / **Workers R2 Storage** / **Edit**. Account resource = misakanet. Nothing else.
+   Both halves are required: the token that is being replaced has both, and a rotation that quietly
+   drops one is a `publish-dataset` run that fails at *Ensure the bucket exists* a day later (§3b § 3).
 2. GitHub → Settings → Environments → `automation` → update `CF_API_TOKEN`.
 3. **Prove it with a run**, because GitHub never reveals a secret's value — a green run is the only
    evidence that the right value is installed: `gh workflow run sync-d1.yml` (or Actions →
    *Sync Lessons to D1* → Run workflow) and check that the upsert step succeeded.
 4. Update the expiry date in this file and in the note at the top of `sync-d1.yml` /
-   `sync-question-answers.yml`.
+   `sync-question-answers.yml` (and `publish-dataset.yml`, which shares the token since 2026-11-15).
 
 The expiry is also tracked as issue **#1886**, labelled `keep` so the stale bot leaves it alone, because
 a date in a document is easy to miss.
+
+### 3b. How the note and the token came apart (2026-11-15)
+
+`publish-dataset.yml` moved from `push` to a daily cron. That is the case this document says must not
+sit behind `release`: a cron that waits for a click is a cron that stops on the day nobody is there.
+`tests/test_secret_scoping.py` refused the first version of that change for exactly this reason, so the
+job moved to `automation` rather than the rule being relaxed.
+
+**What that surfaced is bigger than the change.** Writing the credential note for the new job forced
+the question "what is this token actually scoped to?" — and the answer is not what three workflow
+headers and the table above had been saying: `misakanet-automation-d1` has carried
+`Workers R2 Storage:Edit` since it was created on 2026-09-19. Every one of those notes described the
+*need of its own job* ("can touch the lessons table and nothing else") and that sentence got read as
+the token's scope.
+
+**The correction, stated plainly**: since 2026-09-19 the reviewer-free environment has been able to
+write R2 objects, and this document said otherwise. A leak in any unattended job could have
+overwritten published dataset objects; the argument in §3 ("the credential inside can only do one small
+thing") was therefore resting on a fact nobody had checked. The blast radius is real but still bounded:
+lesson rows and R2 objects, not served code, not KV, not DNS.
+
+**What follows from it**, in the order it matters:
+
+1. **The other two unattended workflows keep the same credential**, so they hold the same permission
+whether or not their notes mention it — corrected in those files too. Narrowing means a new token, not
+a new sentence.
+2. **Splitting the boundary is now worth doing on its own merits**, not "if the scope ever grows": the
+R2 half exists for exactly one job (`publish-dataset`), so a fourth environment (`dataset-release`)
+holding only that permission would put the reviewer-free surface back to what this document promised.
+It is deferred, not rejected — the trigger to do it is the next time anyone touches the token.
+3. **The first scheduled run is not evidence of the scope.** It was the plan for this section; it is
+now redundant, because the permission was never the open question. What the run does prove is that the
+workflow can use it — a 403 at *Ensure the bucket exists* would mean the token is narrower than the
+owner says, and that step names the permission and the environment.
 
 ### 4.1 npm authentication — trusted publishing (OIDC) first, `NPM_TOKEN` transitional
 

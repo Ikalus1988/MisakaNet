@@ -4,8 +4,8 @@ name: Publish dataset to R2
 # artifacts) and has never published it anywhere but inside a git checkout. `build_dataset_bundle.py`
 # assembles it; this workflow is what makes it a URL.
 #
-# Why CI and not a local script: publishing needs write credentials, and the only place this account
-# keeps a write token is the `release` environment. A maintainer's laptop holding a write-all
+# Why CI and not a local script: publishing needs write credentials, and the only copy of them this
+# account keeps is in a protected environment. A maintainer's laptop holding a write-capable
 # Cloudflare token to upload 3 MB of JSON would be a worse trade than a workflow.
 #
 # Why not on every lesson commit: `data/okf/lessons.jsonl` is regenerated daily by `update-lessons.yml`,
@@ -13,16 +13,38 @@ name: Publish dataset to R2
 # That is why the version label is the date: daily versions are the point (a citation can pin one),
 # and the upload is ~3 MB. If that ever becomes noise, switch the trigger to `workflow_dispatch` plus
 # release tags — the version label is the only thing that has to move with it.
+#
+# **It became noise, and this is that switch (2026-11-15).** Measured over two days: eight runs, one
+# per corpus push — and because the job sits behind `release`, each one is a **click**. A lesson pull
+# request merges, and a person is asked to approve a 3 MB upload of a file the merge already
+# regenerated. The reviewer is not reviewing intent here either: the trigger is `push` to `main`, so
+# the code is what somebody already merged; the approval only says "yes, this is main".
+#
+# A daily schedule is the right cadence for one more reason written above: `data/okf/lessons.jsonl` is
+# already regenerated daily, and the version label is the date. So one run a day publishes exactly one
+# dated version, and the dataset lags at most a day.
+#
+# **Which is why this job moved to `automation` (2026-11-15), and not merely to a cron.** A cron behind
+# `release` is two failures at once: it waits for a click every day, and on the day nobody clicks it
+# publishes nothing — which is the `automation`-environment rule `heartbeat.yml` states in its own
+# header ("a cron job that needs a click is not a cron job"). The first draft of this change kept
+# `release` and dropped the clicks from N to 1; `test_secret_scoping` was right to reject that, and the
+# rejection is the reason the credential moved instead of the rule.
+#
+# **No new permission was needed, and that is the part worth reading.** `automation`'s token
+# (`misakanet-automation-d1`) already carried `Workers R2 Storage:Edit` when this change was written
+# (confirmed by the owner, 2026-11-15). Every workflow header that said "D1:Edit only" was describing
+# its own job's need as if it were the token's scope, so this job is the first to *use* a permission the
+# environment has had since 2026-09-19.
+#
+# Those headers and docs/maintainer/credentials-and-environments.md §3 are corrected here, because a
+# reassuring note that is not true is worse than no note: the reviewer-free environment's real blast
+# radius is "any lesson row and any R2 object this token can reach", not "lesson rows only". What it
+# still cannot do is replace the code served at misakanet.org — that line stays with `release`.
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - "data/okf/lessons.jsonl"
-      - "data/lessons.json"
-      - "docs/benchmarks/**"
-      - "scripts/build_dataset_bundle.py"
-      - ".github/workflows/publish-dataset.yml"
+  schedule:
+    - cron: '20 5 * * *'
   workflow_dispatch:
 
 permissions:
@@ -34,8 +56,17 @@ concurrency:
 
 jobs:
   publish:
-    # Write credentials live here, not at repository level — same rule as deploy-worker.yml.
-    environment: release
+    # Credential: the `automation` environment holds `CF_API_TOKEN` — the unattended Cloudflare token
+    # (`misakanet-automation-d1`), scoped to D1:Edit **and** Workers R2 Storage:Edit for
+    # `misakanet-dataset`, which is what the upload below needs. It cannot deploy a worker, replace the
+    # served code, or touch DNS.
+    #
+    # `automation` has no required reviewers on purpose: a scheduled job behind an approval gate is not
+    # a safer job, it is a job that stops on the day nobody is around. It is branch-restricted to
+    # `main` instead — so a `workflow_dispatch` from a feature branch is rejected by the environment,
+    # and testing this file means merging first or pushing to `main`.
+    # See docs/maintainer/credentials-and-environments.md.
+    environment: automation
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
@@ -77,7 +108,7 @@ jobs:
             # The likeliest first-run failure, named so nobody has to decode it: the deploy token
             # carries Workers Scripts:Edit and may not carry Workers R2 Storage:Edit. The fix is a
             # scope on the token, not a code change.
-            echo "::error::CF_API_TOKEN cannot write R2 (403). Add the \"Workers R2 Storage:Edit\" permission to the release environment's token, then re-run this workflow. Response: $(cat /tmp/bucket.json)"
+            echo "::error::CF_API_TOKEN cannot write R2 (403). The `automation` environment's token must carry \"Workers R2 Storage:Edit\" for the misakanet-dataset bucket; add the permission on the token, not in this file. Response: $(cat /tmp/bucket.json)"
             exit 1
           else
             echo "::error::bucket create failed ($code): $(cat /tmp/bucket.json)"

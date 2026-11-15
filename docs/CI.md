@@ -92,7 +92,7 @@
 | `misakanet-publish.yml` | Publish misakanet（npm；`package.json`/`.codex-plugin/plugin.json` 自 2026-09-30 归 release-please，发布前用版本守卫拒绝对不上的树；release 事件 + release-please 派发 + 手动 tag 三条入口，已在 npm 上的版本直接跳过）| release, tag push, 手动 |  |
 | `misakanet-setup-publish.yml` | Publish @misaka-net/misakanet-setup | tag push, 手动 |  |
 | `publish-mcp-registry.yml` | Publish to MCP Registry（等 PyPI 落地后发布）| 手动 |  |
-| `publish-dataset.yml` | Publish dataset to R2（把 `data/okf/lessons.jsonl` + benchmark 产物打成带 manifest 的版本，推到 `misakanet-dataset`，`v<日期>/` 不可变、`latest.json` 可变；上传后回读远端 manifest 与本地比对才算成功。用 `release` 环境，因为写凭据只放在那里）| push, 手动 |  |
+| `publish-dataset.yml` | Publish dataset to R2（把 `data/okf/lessons.jsonl` + benchmark 产物打成带 manifest 的版本，推到 `misakanet-dataset`，`v<日期>/` 不可变、`latest.json` 可变；上传后回读远端 manifest 与本地比对才算成功。用 `automation` 环境（无审批，凭据 = `misakanet-automation-d1` + R2 写；此前在 `release`，每次都要人点一下，2026-11-15 改为每日 cron）| 每日 cron, 手动 | `20 5 * * *` |
 
 ## 社区/机器人（14）
 
