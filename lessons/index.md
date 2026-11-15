@@ -801,6 +801,7 @@
 - [Windows 计划任务定时拉起 powershell.exe 时，屏幕上会周期性闪出黑窗又立刻消失（本例每 10 分钟一次），用户误以为有程序在后台偷偷运行。](contrib/windows-计划任务定时拉起-powershellexe.md) | windows | "windows", "powershell", "exe" | intake-4562
 - [WMI 拉起的进程工作目录是 system32：pnpm 报 ERR_PNPM_NO_PKG_MANIFEST](contrib/wmi-拉起的进程工作目录是-system32pnpm-报-err-pnpm-no-pkg-manifest.md) | devops | "windows", "wmi", "powershell", "pnpm", "working-directory" | intake-4548
 - [用 WMI 脱离父子关系的守卫进程，仍会随宿主退出被杀：别指望"等宿主死了再干活](contrib/wmi-脱离父子关系的守卫进程仍随宿主退出被杀.md) | devops | "windows", "wmi", "job-object", "process-lifecycle", "powershell" | intake-4551
+- [强杀工作单元型仿真工具后重开报「文件被另一个进程使用」：无窗口僵尸实例 + 0 字节锁侧车](contrib/work-unit-lock-file-in-use-after-force-kill.md) | windows | "simulation-tooling", "file-lock", "zombie-process", "taskkill" | intake-4947
 - [Writes outside the session workspace under workspace-write: escalate once with justification, don't retry other APIs](contrib/workspace-write-policy-denial-escalate-once-not-retry-apis.md) | devops | "sandbox", "workspace-write", "escalation", "file-access", "acl" | 
 - [deepseek tui write file sandbox worktree git path](contrib/worktree-git-path-deepseek-tui.md) | wsl | "deepseek-tui", "agent-mode", "write-file", "worktree", "wsl", "git", "lesson-written" | hermes_wsl2
 - [Writes outside the session workspace under workspace-write: escalate once with justification, do not retry through…](contrib/writes-outside-the-session-workspace-under-workspace-write.md) | devops | "sandbox", "workspace-write", "escalation", "file-access", "acl" | intake-2867

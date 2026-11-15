@@ -220,21 +220,37 @@ class TestPhaseSection(unittest.TestCase):
 
     def test_the_report_names_each_phase(self):
         out = ae_query.build_report(MISS["data"], LATENCY["data"], TOP["data"], days=7, phase_rows=[{
-            "lessons_p95": 4100, "index_p95": 220, "score_p95": 35, "semantic_p95": 0}])
+            "phased_rows": 5, "lessons_p95": 4100, "index_p95": 220, "score_p95": 35,
+            "semantic_p95": 0}])
         self.assertIn("corpus read", out)
         self.assertIn("4100 ms", out)
         self.assertIn("BM25 index", out)
         self.assertIn("220 ms", out)
 
+    def test_the_report_says_how_many_rows_the_percentiles_stand_on(self):
+        # A p95 over five rows and a p95 over five thousand look identical on the page, and the
+        # first one is not a measurement of the endpoint. Measured 2026-11-15, minutes after the
+        # deploy: five rows carried phases, the window held ~180 searches.
+        out = ae_query.build_report(MISS["data"], LATENCY["data"], TOP["data"], days=7, phase_rows=[{
+            "phased_rows": 5, "lessons_p95": 1340, "index_p95": 320, "score_p95": 0,
+            "semantic_p95": 175}])
+        self.assertIn("5 of", out)
+        self.assertIn("carry phases", out)
+
     def test_a_window_without_phase_data_says_so_instead_of_printing_zeros(self):
         # Rows written before the deploy carry zeros; printing "0 ms" for them would read as a
         # measurement rather than as an absence.
         out = ae_query.build_report(MISS["data"], LATENCY["data"], TOP["data"], days=7, phase_rows=[{
-            "lessons_p95": 0, "index_p95": 0, "score_p95": 0, "semantic_p95": 0}])
+            "phased_rows": 0, "lessons_p95": 0, "index_p95": 0, "score_p95": 0,
+            "semantic_p95": 0}])
         self.assertIn("no phase data yet", out)
 
-    def test_the_phase_query_asks_for_the_four_columns(self):
+    def test_the_phase_query_counts_rows_and_excludes_the_pre_deploy_zeros(self):
         sql = ae_query.phase_sql(7)
         for column in ("double4", "double5", "double6", "double7"):
             self.assertIn(column, sql)
         self.assertIn("blob1 = 'misakanet_search'", sql)
+        # Without this filter the p95 of a day whose rows are mostly pre-deploy zeros is 0, and the
+        # report says "no phase data yet" while real rows sit in the same window.
+        self.assertIn("double4 > 0", sql)
+        self.assertIn("count() AS phased_rows", sql)

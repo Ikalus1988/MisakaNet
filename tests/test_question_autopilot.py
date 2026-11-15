@@ -491,3 +491,19 @@ def test_a_run_with_no_digest_creates_exactly_one(monkeypatch):
     assert qa.write_digest("BODY") == "created #77"
     created = [c for c in calls if c[0] == "/issues" and c[2] is None]
     assert len(created) == 1 and created[0][1]["labels"] == [qa.DIGEST_LABEL]
+
+
+def test_a_bounty_body_is_checked_against_redaction_before_it_is_published():
+    """The bounty body is a *new* surface, so it gets its own check.
+
+    It quotes several questions' titles and the vocabulary that grouped them. Redaction runs at intake,
+    so the issue text is usually clean — and "usually" is exactly what a gate is for: this artifact is
+    where a secret that slipped through would reach a second page. The answer is to withhold the cluster,
+    not to sanitise it, because a bounty whose premise was rewritten cannot be graded.
+    """
+    clean = qa.compliance_findings("Answer the 2 linked question(s) about KB5034441 and BitLocker")
+    assert clean == [], clean
+
+    torn = qa.compliance_findings("see token=ghp_" + "a" * 36)
+    assert torn, "a secret-shaped string must stop the publish"
+    assert "secret" in torn[0] or "redact" in torn[0], torn
