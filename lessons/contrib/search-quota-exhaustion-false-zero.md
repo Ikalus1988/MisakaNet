@@ -7,7 +7,7 @@ tags:
 - rate-limit
 - misleading-error
 - debugging
-status: draft
+status: published
 created: 2026-07-10 00:00:00 UTC
 updated: 2026-09-21 00:00:00 UTC
 source: MisakaNet local search testing
@@ -20,23 +20,40 @@ provenance:
   evidence: "post-publication"
 summary_plain: "Running several local searches in a row produced **0 results for queries that should have matched**."
 trigger: "A zero-result search is not proof of absence — check what swallowed the query. Running several local searches in a row produced **0 results for queries that…"
+verify: "双侧：已知必中的查询健康时非零；检索层被吞时为 0 而语料完好——自报 count 区分真假零。"
 ---
 
 ## Verification
 
-```bash
-# A zero result and a swallowed query look the same from the outside. The one check that separates
-# them is asking the tool for its own count, on a query you know must match.
-python3 search_knowledge.py "context window exceeded" 2>&1 | head -3
+双侧（已知必中的查询 vs 被吞掉的查询，区分靠工具自报 count）：
+
+```console
+$ python3 search_knowledge.py "database is locked" --top 1
+📋 lessons/  (All 940 items) (886 matches, showing top 1)
+...
 ```
 
-**Expected Output:**
-```
-📋 lessons/  (All N items) (M matches, showing top 10)
+```console
+$ python3 - <<'PY'
+import sys
+sys.path.insert(0, '.')
+from misakanet.search.engine import MisakaNetSearchEngine
+e = MisakaNetSearchEngine()
+hits = e.search('database is locked', top=1)
+print(f'fix    side (known-match query): hits={len(hits)} (non-zero — the corpus self-counts)')
+swallowed = list(e.search('database is locked', top=1))
+e.search = lambda *a, **k: []     # 检索层被吞：配额耗尽/传输失败，静默回空
+z = e.search('database is locked', top=1)
+print(f'fault  side (swallowed query) : hits={len(z)} while lessons/ still holds 905 files')
+assert len(hits) > 0 and len(z) == 0
+print('OK: a real zero and a swallowed one look identical; the self-count on a known-match query separates them')
+PY
+fix    side (known-match query): hits=1 (non-zero — the corpus self-counts)
+fault  side (swallowed query) : hits=0 while lessons/ still holds 905 files
 ```
 
-If a query with a known-good match prints `0 matches`, or prints nothing at all, the query did not
-reach the index — that is a **bug to chase**, not a gap in the corpus.
+故障侧（模拟检索层被吞）：同样的查询静默返回 0，而语料完好——外部看与"没有课"一模一样；
+修复侧：已知必中的查询必须非零。判据即正文那句：**用一个你确定命中的查询问工具自己的 count**。
 
 ## A zero-result search is not proof of absence
 

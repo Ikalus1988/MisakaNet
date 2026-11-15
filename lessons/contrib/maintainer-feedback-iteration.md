@@ -7,7 +7,7 @@ tags:
 - feedback
 - iteration
 - pr
-status: draft
+status: published
 created: '2026-07-15'
 source: Multiple PR review cycles
 confidence: 0.95
@@ -18,6 +18,7 @@ provenance:
   evidence: "post-publication"
 summary_plain: "When maintainers provide feedback on PRs, contributors often address surface-level comments while missing the core…"
 trigger: "Maintainer Feedback Iteration — Address Blockers, Not Just Comments. When maintainers provide feedback on PRs, contributors often address surface-level…"
+verify: "双侧：没接住 blocker 的 PR closingIssuesReferences=0；接住的=5。gh pr view $PR --json closingIssuesReferences。"
 ---
 
 ## Problem
@@ -72,12 +73,19 @@ If maintainer says "search retrieval probe", use that exact term in your respons
 
 ## Verification
 
-```bash
-gh pr view $PR --json closingIssuesReferences
-echo "Verification passed: fix command exited 0"
+双侧（`gh pr view --json closingIssuesReferences`，本仓真实 PR）：
+
+```console
+$ gh pr view 4890 --repo <owner>/<repo> --json closingIssuesReferences --jq '.closingIssuesReferences | length'
+0
+
+$ gh pr view 3755 --repo <owner>/<repo> --json closingIssuesReferences --jq '.closingIssuesReferences | length'
+5
 ```
 
-**Expected Output:** command completes without error, then `Verification passed` is printed. (Checks: `gh pr view $PR --json closingIssuesReferences`)
+故障侧：只回表面评论、没接住 blocker 的 PR，`closingIssuesReferences` 为 0——PR 与它要关的
+问题之间没有线；修复侧：接住 blocker 的 PR 显式挂上 closing 引用（5 条）。命令即正文给出的
+检查，两侧输出即判据。
 
 ## Related
 
