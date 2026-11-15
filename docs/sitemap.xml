@@ -668,6 +668,7 @@
   <url><loc>https://misakanet.org/lessons/prompt-injection-what-s-the-worst-that-can-happen/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/pronoun-misidentified-as-npc-in-roleplay-extraction/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/instalacao-pip-timeout-proxy/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/pyside6-612-在-cpython-310311-上崩于-none-dealloc每次普通-qt-调用漏掉一个-none-引用/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-pytest-k-mask-deselects-more-tests-than-you-meant-and-hides-that-it-did/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-module-scoped-pytest-fixture-shares-one-mutable-clone-so-execution-order-decid/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/zsh-command-not-found-python-the-interpreter-exists-just-not-under-that-name/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -701,6 +702,7 @@
   <url><loc>https://misakanet.org/lessons/react-组件渲染回归测试react-domserver-rendertostaticmarkup打不到-antd-collapse-折叠面板里的内容/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/readme-seven-traps-fix-checklist/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/ffmpeg-screen-recording-to-mp4-killed-mid-way-moov-atom-not-found-record-mkv-or/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/except-recursionerror-的单测在-cpython-312-上是假绿5000-层嵌套-json-不再抛/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/reflecthas-on-a-proxy-service-facade-answers-the-declaration-set-not-existence-o/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/regex-escaped-quotes-source-parsing/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/regex-greedy-matching/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -809,6 +811,7 @@
   <url><loc>https://misakanet.org/lessons/usdc-base-units-vs-human-amounts-agent-marketplaces-ru/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/usdc-ethereum-instead-of-base-zero-eth-gas/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/utf-8-编码的-bat-含中文时cmd-逐行解码错位吞掉下一行行首字符/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/uv-的-uv-project-environment-会被下一次不带-python-的-uv-run-静默重建/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/v100-strata-moe-serving-sm70-decode-kernels-cpu-prefill-share-and-iq3-xxs-quant/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-hand-written-allowed-set-verification-that-feeds-its-own-assumption-back-to-it/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/an-agents-fix-was-verified-in-a-working-tree-and-never-committed-so-the-push-car/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
