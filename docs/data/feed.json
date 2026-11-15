@@ -1,43 +1,51 @@
 {
-  "generated_at": "2026-11-14T22:34:59.467504+00:00",
+  "generated_at": "2026-11-15T06:19:45.941569+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 13,
   "items": [
     {
       "type": "merged_pr",
-      "title": "fix(release): ask for the publish before the tag makes the release unrepeatable",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4957",
-      "timestamp": "2026-11-14T19:37:47Z",
+      "title": "feat(lessons): the lock that outlives the process, and the zombies it hides behind (#4947)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4974",
+      "timestamp": "2026-11-15T06:19:09Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "docs(handoff): the addendum keeps the finding, not the path",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4952",
-      "timestamp": "2026-11-14T19:05:34Z",
+      "title": "feat(autopilot): the bounty body is a new surface, so it gets its own compliance gate",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4990",
+      "timestamp": "2026-11-15T06:04:00Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "docs(handoff): addendum — the 4-second search, the marketplace answer, and a redaction scope",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4950",
-      "timestamp": "2026-11-14T18:44:00Z",
+      "title": "docs(triage): a request for a credential is a close reason, not a judgement call",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4988",
+      "timestamp": "2026-11-15T05:26:32Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(analytics): record where a search spends its milliseconds",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4948",
-      "timestamp": "2026-11-14T18:42:54Z",
+      "title": "fix(analytics): the phase p95 was reading zero because most rows are pre-deploy",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4979",
+      "timestamp": "2026-11-15T04:26:02Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4946",
-      "timestamp": "2026-11-14T18:30:58Z",
+      "title": "fix(gsc): the token file is 0600 from creation, not a moment later (#405)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4978",
+      "timestamp": "2026-11-15T04:04:06Z",
       "source": "github"
+    },
+    {
+      "type": "lesson",
+      "title": "强杀工作单元型仿真工具后重开报「文件被另一个进程使用」：无窗口僵尸实例 + 0 字节锁侧车",
+      "url": "lessons/contrib/work-unit-lock-file-in-use-after-force-kill.md",
+      "timestamp": "2026-11-15",
+      "domain": "windows",
+      "source": "lessons"
     },
     {
       "type": "challenge",
@@ -88,14 +96,6 @@
       "url": "lessons/contrib/problem-js-项目viterollup-打包-共享工具层构建报x-is-not-exported-by.md",
       "timestamp": "2026-11-11",
       "domain": "windows",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "工业机器人 ASCII↔二进制编译器：两级判据全绿，补缺口语句的编码却是错的",
-      "url": "lessons/contrib/problem-为工业机器人-ascii-源码.md",
-      "timestamp": "2026-11-11",
-      "domain": "fanuc",
       "source": "lessons"
     },
     {
