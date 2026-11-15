@@ -1,9 +1,37 @@
 {
-  "generated_at": "2026-11-15T11:35:43.529595+00:00",
+  "generated_at": "2026-11-15T12:39:44.115569+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 13,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "lessons(contrib): convert five intakes — Douyin dead-end, ROBOGUIDE wedge, deploy 502, 37MB stdout, UIA scope",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5031",
+      "timestamp": "2026-11-15T12:39:30Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(main): release 3.17.0",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4936",
+      "timestamp": "2026-11-15T12:01:19Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5029",
+      "timestamp": "2026-11-15T11:51:56Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "fix(tooling): compare against the merge base, and treat `docs/data/` as generated elsewhere",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5027",
+      "timestamp": "2026-11-15T11:42:34Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "feat(lessons): three intake bodies that were already evidence, and a frontmatter that was not",
@@ -12,32 +40,20 @@
       "source": "github"
     },
     {
-      "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5026",
-      "timestamp": "2026-11-15T11:19:20Z",
-      "source": "github"
+      "type": "lesson",
+      "title": "抖音分享链接无法被任何自动化路径解析：yt-dlp 缺 JS 签名、页面不再内嵌视频数据，改用 App 导出文件直传",
+      "url": "lessons/contrib/douyin-share-link-defeats-automated-extractors-send-file-not-link.md",
+      "timestamp": "2026-11-15",
+      "domain": "scraping",
+      "source": "lessons"
     },
     {
-      "type": "merged_pr",
-      "title": "fix(watch): the stuck-queue list goes to the step summary, the tracker keeps the count",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5024",
-      "timestamp": "2026-11-15T11:15:42Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat(lessons): adopt the devops verify backfill (#4975)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5017",
-      "timestamp": "2026-11-15T10:54:58Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat(tooling): one command for the lesson-PR rebuild I ran five times by hand",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5021",
-      "timestamp": "2026-11-15T10:48:05Z",
-      "source": "github"
+      "type": "lesson",
+      "title": "插件清单初始化成功却被小 stdout 收集器藏住结果：一次 plugin/list 是单行 37MB JSON，按元数据大小设的行上限会静默截断",
+      "url": "lessons/contrib/plugin-list-single-37mb-line-overflows-small-stdout-collector-limits.md",
+      "timestamp": "2026-11-15",
+      "domain": "development",
+      "source": "lessons"
     },
     {
       "type": "lesson",
@@ -49,26 +65,18 @@
     },
     {
       "type": "lesson",
+      "title": "轻舟部署任务 SUCCESS 不等于共享入口可达：应用处于停止态时入口无后端、健康检查一直等，启动实例才恢复",
+      "url": "lessons/contrib/qingzhou-deploy-success-still-502-until-app-instance-started.md",
+      "timestamp": "2026-11-15",
+      "domain": "devops",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
       "title": "except RecursionError 的单测在 CPython 3.12 上是假绿：5000 层嵌套 JSON 不再抛",
       "url": "lessons/contrib/recursionerror-guard-test-passes-on-312-without-entering-it.md",
       "timestamp": "2026-11-15",
       "domain": "testing",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "uv 的 UV_PROJECT_ENVIRONMENT 会被下一次不带 --python 的 uv run 静默重建",
-      "url": "lessons/contrib/uv-per-version-environment-rebuilt-by-a-bare-run.md",
-      "timestamp": "2026-11-15",
-      "domain": "python",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "强杀工作单元型仿真工具后重开报「文件被另一个进程使用」：无窗口僵尸实例 + 0 字节锁侧车",
-      "url": "lessons/contrib/work-unit-lock-file-in-use-after-force-kill.md",
-      "timestamp": "2026-11-15",
-      "domain": "windows",
       "source": "lessons"
     },
     {
@@ -89,14 +97,6 @@
       ],
       "timestamp": "2026-11-12T13:55:20Z",
       "source": "github"
-    },
-    {
-      "type": "lesson",
-      "title": "PR 门禁用 Bend 解释器跑判定程序：memory fault（机器栈溢出），门禁永远等不到结果",
-      "url": "lessons/contrib/a-pull-request-gate-script-ran-a-bend-interpreter-over-its.md",
-      "timestamp": "2026-11-11",
-      "domain": "dsh",
-      "source": "lessons"
     },
     {
       "type": "challenge",
