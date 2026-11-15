@@ -1,9 +1,23 @@
 {
-  "generated_at": "2026-11-15T16:27:19.298151+00:00",
+  "generated_at": "2026-11-15T22:58:37.939291+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 13,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "fix(dataset): publish on a schedule instead of on every corpus push",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5030",
+      "timestamp": "2026-11-15T17:18:07Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5044",
+      "timestamp": "2026-11-15T16:46:08Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "fix(tests): a lessons-only release is still a release",
@@ -23,20 +37,6 @@
       "title": "fix(docs): the vol 39 copy-paste block republished a home path",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/5037",
       "timestamp": "2026-11-15T13:50:07Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "docs(handoff): vol 39 — the wedged queue, the Windows generator, and the rebuild",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5035",
-      "timestamp": "2026-11-15T13:09:34Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5033",
-      "timestamp": "2026-11-15T12:53:16Z",
       "source": "github"
     },
     {
