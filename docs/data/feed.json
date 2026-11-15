@@ -1,9 +1,23 @@
 {
-  "generated_at": "2026-11-15T06:19:45.941569+00:00",
+  "generated_at": "2026-11-15T07:00:12.304152+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 13,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "feat(watch): a run stuck in the queue is a wait nobody was looking at",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4987",
+      "timestamp": "2026-11-15T06:57:55Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4995",
+      "timestamp": "2026-11-15T06:37:47Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "feat(lessons): the lock that outlives the process, and the zombies it hides behind (#4947)",
@@ -23,20 +37,6 @@
       "title": "docs(triage): a request for a credential is a close reason, not a judgement call",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/4988",
       "timestamp": "2026-11-15T05:26:32Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "fix(analytics): the phase p95 was reading zero because most rows are pre-deploy",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4979",
-      "timestamp": "2026-11-15T04:26:02Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "fix(gsc): the token file is 0600 from creation, not a moment later (#405)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/4978",
-      "timestamp": "2026-11-15T04:04:06Z",
       "source": "github"
     },
     {
