@@ -210,13 +210,14 @@ with smtplib.SMTP('smtp.gmail.com', 587) as server:
     server.login(SENDER_EMAIL, APP_PASSWORD)
     server.sendmail(SENDER_EMAIL, RECEIVER_EMAIL, message.encode('utf-8'))</code></pre><h3>Step 2: Установка пакета <code>certifi</code> (Корректное решение для локальной разработки)</h3><p>Если требуется сохранить полную безопасность SSL-соединения:</p><ol><li>Установите модуль <code>certifi</code>:<pre><code class="language-bash">pip install certifi</code></pre></li><li>Укажите путь к CA-сертификатам при создании SSL-контекста:<pre><code class="language-python">import smtplib
 import ssl
-import certifi</code></pre></li></ol><p>context = ssl.create_default_context(cafile=certifi.where())</p><p>with smtplib.SMTP('smtp.gmail.com', 587) as server:</p><pre><code>   server.starttls(context=context)
-   server.login("your.email@gmail.com", "your_16_char_app_password")
-   server.sendmail("your.email@gmail.com", "target@example.com", "Test body")</code></pre><pre><code>
-## Verification
+import certifi
 
-```bash
-pip install certifi
+context = ssl.create_default_context(cafile=certifi.where())
+
+with smtplib.SMTP('smtp.gmail.com', 587) as server:
+    server.starttls(context=context)
+    server.login("your.email@gmail.com", "your_16_char_app_password")
+    server.sendmail("your.email@gmail.com", "target@example.com", "Test body")</code></pre></li></ol><h2>Verification</h2><pre><code class="language-bash">pip install certifi
 echo "Verification passed: fix command exited 0"</code></pre><p><strong>Expected Output:</strong> command completes without error, then <code>Verification passed</code> is printed. (Checks: <code>pip install certifi</code>)</p><h2>Notes</h2><ul><li>Для аутентификации в Gmail с 2022 года <strong>обязательно</strong> требуется использовать 16-значный <strong>App Password</strong> (Пароль приложения), а не основной пароль аккаунта Google.</li><li>Использование <code>ssl._create_unverified_context()</code> рекомендуется использовать только в защищенных или контроллируемых средах автоматизации, где сеть изолирована или проксируется доверенными корпоративными шлюзами.</li><li>Источник и связанная документация: <a href="https://docs.python.org/3/library/smtplib.html">Python smtplib Docs</a>.</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/python-smtplib-ssl-certificate-verify-failed-fix.md">View on GitHub →</a></p></div>

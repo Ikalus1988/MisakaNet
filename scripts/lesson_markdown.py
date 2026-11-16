@@ -88,24 +88,43 @@ def _link_target(raw: str) -> str | None:
     return target
 
 
-def inline(text: str) -> str:
-    """Inline markdown (code, links, emphasis) for one already-escaped run of text."""
+def inline(text: str, resolve=None) -> str:
+    """Inline markdown (code, links, emphasis) for one already-escaped run of text.
+
+    `resolve` decides what a link points at. Without one, `_link_target` is the whole policy: http(s),
+    mailto and site paths. With one, the caller owns it — the page generator passes a resolver that
+    maps the corpus's cross-lesson links (`./other-lesson.md`, `../../lessons/en/x.md`) onto the URL
+    the other lesson is actually served at, and returns `None` for a target it cannot place. A `None`
+    leaves the label as text: a link to nothing is worse than no link, and the internal-link gate says
+    so chapter and verse.
+    """
 
     def code(match: re.Match[str]) -> str:
         return f"<code>{match.group(1)}</code>"
 
+    def target_of(raw: str) -> tuple[str | None, bool]:
+        """(href, the target was a real one). The second flag separates "no page for it" from "not a URL"."""
+        reserved = _link_target(_html.unescape(raw))
+        if reserved is None:
+            return None, False
+        return (reserved if resolve is None else resolve(reserved)), True
+
     def image(match: re.Match[str]) -> str:
-        alt, target = match.group(1), _link_target(_html.unescape(match.group(2)))
+        alt, (target, real) = match.group(1), target_of(match.group(2))
+        if not real:
+            return match.group(0)  # quoted markdown stays quoted rather than disappearing
         if target is None:
-            return match.group(0)
+            return alt or match.group(1)
         # Rendered as a link rather than an <img>: the only image in the corpus is a badge example,
         # and a remote image on a generated page is a request this site does not need to make.
         return f'<a href="{_escape(target)}">{alt or _escape(target)}</a>'
 
     def link(match: re.Match[str]) -> str:
-        target = _link_target(_html.unescape(match.group(2)))
-        if target is None:
+        target, real = target_of(match.group(2))
+        if not real:
             return match.group(0)
+        if target is None:
+            return match.group(1)
         return f'<a href="{_escape(target)}">{match.group(1)}</a>'
 
     text = _CODE_SPAN.sub(code, text)
@@ -159,7 +178,7 @@ def _fence(lines: list[str], start: int) -> tuple[str, int]:
     return f"<pre><code{attribute}>{_escape(chr(10).join(body))}</code></pre>", index
 
 
-def _table(lines: list[str], start: int) -> tuple[str, int] | None:
+def _table(lines: list[str], start: int, resolve=None) -> tuple[str, int] | None:
     """A pipe table, when the line after the header is a separator row."""
     header = lines[start].strip()
     if start + 1 >= len(lines):
@@ -176,18 +195,18 @@ def _table(lines: list[str], start: int) -> tuple[str, int] | None:
             row = row[:-1]
         return [cell.strip() for cell in row.split("|")]
 
-    head = "".join(f"<th>{inline(_escape(cell))}</th>" for cell in cells(header))
+    head = "".join(f"<th>{inline(_escape(cell), resolve)}</th>" for cell in cells(header))
     rows: list[str] = []
     index = start + 2
     while index < len(lines) and lines[index].strip().startswith("|"):
-        body = "".join(f"<td>{inline(_escape(cell))}</td>" for cell in cells(lines[index]))
+        body = "".join(f"<td>{inline(_escape(cell), resolve)}</td>" for cell in cells(lines[index]))
         rows.append(f"<tr>{body}</tr>")
         index += 1
     body_html = f"<tbody>{''.join(rows)}</tbody>" if rows else ""
     return f"<table><thead><tr>{head}</tr></thead>{body_html}</table>", index
 
 
-def _list(lines: list[str], start: int) -> tuple[str, int]:
+def _list(lines: list[str], start: int, resolve=None) -> tuple[str, int]:
     """A bullet or ordered list, nested by indentation, one level at a time and recursively."""
     first = _BULLET.match(lines[start]) or _ORDERED.match(lines[start])
     assert first is not None
@@ -196,8 +215,29 @@ def _list(lines: list[str], start: int) -> tuple[str, int]:
     pattern = _ORDERED if ordered else _BULLET
     items: list[tuple[list[str], list[str]]] = []  # (own text lines, nested lines)
     index = start
+    fence = ""
     while index < len(lines):
         line = lines[index]
+        # A fenced block inside an item is one unit, whatever its content's own indentation is. The
+        # corpus does this: item 2 of a checklist opens ```markdown at three spaces and the code inside
+        # sits at column zero, so a rule that ended the item on any unindented line cut the fence in
+        # half — the body was then read as headings and bullets, and the *closing* fence opened a new
+        # code block that swallowed the next list item (measured 2026-11-16 on
+        # `lessons/contrib/version-management-multiple-files.md`).
+        if fence:
+            if items:
+                items[-1][1].append(line)
+            candidate = line.strip()
+            if candidate.startswith(fence * 3) and set(candidate.split(" ")[0]) <= {fence}:
+                fence = ""
+            index += 1
+            continue
+        opener = _FENCE.match(line)
+        if opener and items:
+            fence = opener.group(1)[0]
+            items[-1][1].append(line)
+            index += 1
+            continue
         if _is_blank(line):
             # A blank line ends the list unless the next non-blank line is still part of it.
             lookahead = index + 1
@@ -230,7 +270,7 @@ def _list(lines: list[str], start: int) -> tuple[str, int]:
     for own, nested in items:
         text = " ".join(part.strip() for part in own)
         if not nested:
-            rendered.append(f"<li>{inline(_escape(text))}</li>")
+            rendered.append(f"<li>{inline(_escape(text), resolve)}</li>")
             continue
         # A continuation of the same sentence is prose; anything that starts a block is content. The
         # distinction matters: rendering an indented wrap of one sentence as its own <p> splits a
@@ -239,15 +279,15 @@ def _list(lines: list[str], start: int) -> tuple[str, int]:
         depth = min((_indent(line) for line in nested if line.strip()), default=0)
         dedented = [line[depth:] if line.strip() else "" for line in nested]
         if any(_starts_block(line) for line in dedented if line.strip()):
-            inner = render("\n".join(dedented))
-            rendered.append(f"<li>{inline(_escape(text))}{inner}</li>")
+            inner = render("\n".join(dedented), resolve=resolve)
+            rendered.append(f"<li>{inline(_escape(text), resolve)}{inner}</li>")
         else:
             joined = " ".join(line.strip() for line in dedented if line.strip())
-            rendered.append(f"<li>{inline(_escape(f'{text} {joined}'))}</li>")
+            rendered.append(f"<li>{inline(_escape(f'{text} {joined}'), resolve)}</li>")
     return f"<{tag}>{''.join(rendered)}</{tag}>", index
 
 
-def _blockquote(lines: list[str], start: int) -> tuple[str, int]:
+def _blockquote(lines: list[str], start: int, resolve=None) -> tuple[str, int]:
     body: list[str] = []
     index = start
     while index < len(lines):
@@ -259,7 +299,7 @@ def _blockquote(lines: list[str], start: int) -> tuple[str, int]:
         else:
             body.append(stripped[1:].lstrip())
         index += 1
-    inner, _ = _blocks(body)
+    inner, _ = _blocks(body, resolve)
     return f"<blockquote>{inner}</blockquote>", index
 
 
@@ -281,7 +321,7 @@ def _indented_code(lines: list[str], start: int) -> tuple[str, int]:
     return f"<pre><code>{_escape(chr(10).join(body))}</code></pre>", index
 
 
-def _blocks(lines: list[str]) -> tuple[str, int]:
+def _blocks(lines: list[str], resolve=None) -> tuple[str, int]:
     """Render a run of lines as blocks. Returns the HTML and the index it stopped at."""
     out: list[str] = []
     index = 0
@@ -301,7 +341,7 @@ def _blocks(lines: list[str]) -> tuple[str, int]:
             # A level-1 heading inside the body is demoted: the page already carries the lesson title
             # as its <h1>, and two of them is a structure a crawler has to guess at.
             level = max(2, len(heading.group(1)))
-            out.append(f"<h{level}>{inline(_escape(heading.group(2)))}</h{level}>")
+            out.append(f"<h{level}>{inline(_escape(heading.group(2)), resolve)}</h{level}>")
             index += 1
             continue
 
@@ -311,19 +351,19 @@ def _blocks(lines: list[str]) -> tuple[str, int]:
             continue
 
         if line.strip().startswith("|"):
-            table = _table(lines, index)
+            table = _table(lines, index, resolve)
             if table:
                 html, index = table
                 out.append(html)
                 continue
 
         if line.strip().startswith(">"):
-            html, index = _blockquote(lines, index)
+            html, index = _blockquote(lines, index, resolve)
             out.append(html)
             continue
 
         if _BULLET.match(line) or _ORDERED.match(line):
-            html, index = _list(lines, index)
+            html, index = _list(lines, index, resolve)
             out.append(html)
             continue
 
@@ -338,15 +378,15 @@ def _blocks(lines: list[str]) -> tuple[str, int]:
         while index < len(lines) and not _is_blank(lines[index]) and not _starts_block(lines[index]):
             paragraph.append(lines[index].strip())
             index += 1
-        out.append(f"<p>{inline(_escape(' '.join(paragraph)))}</p>")
+        out.append(f"<p>{inline(_escape(' '.join(paragraph)), resolve)}</p>")
     return "".join(out), index
 
 
-def render(markdown_text: str) -> str:
+def render(markdown_text: str, resolve=None) -> str:
     """Render a lesson body to HTML. Frontmatter is stripped first, if it is still attached."""
     text = FRONTMATTER.sub("", markdown_text.replace("\r\n", "\n").replace("\r", "\n"))
     text = _COMMENT.sub("", text)
-    html, _ = _blocks(text.split("\n"))
+    html, _ = _blocks(text.split("\n"), resolve)
     return html
 
 

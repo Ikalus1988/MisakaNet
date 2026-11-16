@@ -207,7 +207,7 @@ echo $GITHUB_TOKEN
 # 5. git credential helper 配置
 git config --global --list | grep credential</code></pre><p><strong>只有以上全部失败才让用户提供新 token。</strong></p><p><strong>从 git-credentials 提取 token：</strong></p><pre><code class="language-bash">grep -oP 'https://[^:]+:([^@]+)@' ~/.git-credentials | sed 's/https:\/\/[^:]\+://;s/@$//'</code></pre><h2>Verification</h2><pre><code class="language-bash">git status --short | head -5
 git log --oneline -3</code></pre><p><strong>Expected Output:</strong></p><pre><code># (status)
-# (recent)</code></pre><h2>Related经验</h2><p>本教训与 <code>git-credentials-automation</code> 互补：后者解决 push/pull 时的交互式认证，本条解决 API 调用时的编程式认证。</p><blockquote><p>English: <a href="../../lessons/en/github-401-credential-lookup.md"><code>lessons/en/github-401-credential-lookup.md</code></a></p></blockquote>
+# (recent)</code></pre><h2>Related经验</h2><p>本教训与 <code>git-credentials-automation</code> 互补：后者解决 push/pull 时的交互式认证，本条解决 API 调用时的编程式认证。</p><blockquote><p>English: <a href="/lessons/github-401-credential-lookup/"><code>lessons/en/github-401-credential-lookup.md</code></a></p></blockquote>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/github-401-credential-lookup.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=GitHub API 401 后本地凭证查找顺序">Find related lessons →</a></p></div>

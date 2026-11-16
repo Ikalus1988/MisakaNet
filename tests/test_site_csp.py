@@ -176,13 +176,30 @@ def _pages() -> list[tuple[str, str]]:
     ]
 
 
+TAG = re.compile(r"<[a-zA-Z][^>]*>")
+
+
+def _tags(source: str) -> str:
+    """Every real tag in this markup, joined — the only place an attribute can matter.
+
+    Both predicates below scan this rather than the raw source, because a lesson page quotes code:
+    `onerror="…"` and `<img src="https://img.shields.io/…">` inside a fenced block reach the page as
+    escaped *text* (`&lt;img src=…&gt;`), from which a browser executes nothing and fetches nothing.
+    Measured 2026-11-16, the day the lesson pages started carrying their corpus: two pages were
+    reported as script-running and two as reaching for a foreign host, and all four were prose. An
+    attribute outside a tag is data — this is the difference between reading markup and reading text
+    that looks like markup.
+    """
+    return " ".join(TAG.findall(source))
+
+
 def _runs_script(source: str) -> bool:
     """True when this markup can execute script without a `src=` fetch.
 
     That is exactly the set a `default-src 'none'` policy would break, so it is
     the predicate both direction tests turn on.
     """
-    if HANDLER.search(source):
+    if HANDLER.search(_tags(source)):
         return True
     for match in SCRIPT_TAG.finditer(source):
         attrs = match.group("attrs")
@@ -197,6 +214,9 @@ def _runs_script(source: str) -> bool:
 def _external_hosts(source: str) -> set[str]:
     """Hosts this markup asks the *browser to fetch a subresource* from.
 
+    Real tags only: `&lt;img src="https://…"&gt;` is a lesson quoting markup, not a fetch (see
+    `_tags`). Everything below still reads exactly the attribute shapes it always did.
+
     Only attributes that load something are listed. `<a href="https://github.com/…">`
     is a hyperlink: navigation is not a fetch, `default-src` does not govern it, and
     counting it produced 496 false offenders on the first run of this file. The
@@ -204,6 +224,7 @@ def _external_hosts(source: str) -> set[str]:
     icon, preload) and `<object data>`; `form action` belongs to `form-action` and
     `<base href>` to `base-uri`, both of which the policy sets explicitly.
     """
+    source = _tags(source)
     urls: list[str] = []
     urls += [m.group("url") for m in re.finditer(
         r"""\b(?:src|data)\s*=\s*["'](?P<url>(?:https?:)?//[^"']+)["']""", source, re.IGNORECASE
@@ -413,3 +434,32 @@ def test_the_measured_shape_of_the_site_matches_what_the_policy_assumes() -> Non
                 f"{path} fetches something from its inline CSS; `default-src 'none'` "
                 "would block it, so the page is no longer self-contained"
             )
+
+
+# ── reading markup, not text that looks like markup ────────────────────────────────────────────
+# The lesson pages carry the corpus now, and the corpus quotes code. These are the two predicates'
+# teeth: the escaped forms must be invisible to them, and the real forms must not be.
+
+def test_a_real_handler_on_a_real_tag_is_script():
+    assert _runs_script('<div onclick="x()">a</div>')
+
+
+def test_an_inline_script_tag_is_script():
+    assert _runs_script("<script>alert(1)</script>")
+
+
+def test_an_escaped_handler_in_quoted_code_is_not_script():
+    """`&lt;img onerror=…&gt;` is a lesson quoting markup; nothing in it can execute."""
+    assert not _runs_script('&lt;img src="x" onerror="alert(1)"&gt;')
+
+
+def test_a_handler_in_plain_text_inside_a_pre_is_not_a_handler():
+    assert not _runs_script('<pre><code>onerror="alert(1)"</code></pre>')
+
+
+def test_a_real_subresource_fetch_names_its_host():
+    assert _external_hosts('<img src="https://cdn.example.com/a.png">') == {"cdn.example.com"}
+
+
+def test_an_escaped_subresource_fetch_names_no_host():
+    assert _external_hosts('&lt;img src="https://cdn.example.com/a.png"&gt;') == set()

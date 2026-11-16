@@ -17,6 +17,7 @@ Two properties matter more than any single construct:
 """
 from __future__ import annotations
 
+import re
 import sys
 from pathlib import Path
 
@@ -28,8 +29,8 @@ sys.path.insert(0, str(REPO / "scripts"))
 import lesson_markdown  # noqa: E402
 
 
-def render(text: str) -> str:
-    return lesson_markdown.render(text)
+def render(text: str, resolve=None) -> str:
+    return lesson_markdown.render(text, resolve=resolve)
 
 
 # ── escaping ────────────────────────────────────────────────────────────────────────────────────
@@ -177,3 +178,78 @@ def test_a_file_that_is_mostly_metadata_still_renders(filename):
     """The thinnest lesson in the corpus used to render 112 bytes; it must still render something."""
     html = render((REPO / "lessons" / filename).read_text(encoding="utf-8"))
     assert html and "<p>" in html
+
+
+# ── the resolver: the corpus links lessons by file, the site serves them by slug ───────────────
+def _resolver(mapping: dict[str, str]):
+    def resolve(target: str) -> str | None:
+        if target.startswith(("http://", "https://", "mailto:", "#")):
+            return target
+        if not target.endswith(".md"):
+            return target if target.startswith("/") else None
+        stem = target.rsplit("/", 1)[-1][: -len(".md")]
+        slug = mapping.get(stem)
+        return f"/lessons/{slug}/" if slug else None
+
+    return resolve
+
+
+def test_a_cross_lesson_file_link_becomes_the_page_it_names():
+    html = render("[other](./other-lesson.md)", resolve=_resolver({"other-lesson": "other-lesson"}))
+    assert html == '<p><a href="/lessons/other-lesson/">other</a></p>'
+
+
+def test_an_en_mirror_link_finds_the_page_that_exists():
+    """`../../lessons/en/x.md` is a mirror; the page lives at the canonical lesson's slug."""
+    html = render("[x](../../lessons/en/x.md)", resolve=_resolver({"x": "the-real-slug"}))
+    assert 'href="/lessons/the-real-slug/"' in html
+
+
+def test_a_link_the_resolver_cannot_place_keeps_its_label_and_loses_its_href():
+    html = render("[gone](./nothing-here.md)", resolve=_resolver({}))
+    assert html == "<p>gone</p>"
+
+
+def test_an_unsafe_scheme_is_left_visible_as_quoted_text():
+    """Dropping it silently would hide what the lesson actually wrote."""
+    html = render("[x](javascript:alert(1))", resolve=_resolver({}))
+    assert "[x](javascript:alert(1))" in html
+    assert "href=" not in html
+
+
+def test_an_external_link_survives_the_resolver():
+    html = render("[docs](https://example.com/a)", resolve=_resolver({}))
+    assert html == '<p><a href="https://example.com/a">docs</a></p>'
+
+
+def test_a_fenced_block_inside_a_checklist_item_stays_one_block():
+    """The corpus's shape: a fence at three spaces whose code sits at column zero.
+
+    Before 2026-11-16 this ended the list item at the first unindented line, re-read the code
+    as headings and bullets, and then treated the *closing* fence as an opener — the reader
+    saw backticks and the next list item was swallowed into a code block
+    (`lessons/contrib/version-management-multiple-files.md`).
+    """
+    html = render(
+        "1. **first**\n"
+        "   ```toml\n"
+        "   a = 1\n"
+        "\n"
+        "## not a heading, it is inside the fence\n"
+        "   ```\n"
+        "\n"
+        "2. **second**\n"
+    )
+    assert "<h2>" not in html, html
+    assert html.count("<pre><code") == 1, html
+    assert "<li><strong>second</strong></li>" in html, html
+
+
+def test_no_fence_marker_leaks_outside_a_code_block():
+    """A coarse sweep over the corpus: a marker in prose means the parser lost a fence."""
+    leaks = []
+    for path in sorted((REPO / "lessons").glob("*/*.md")):
+        prose = re.sub(r"<pre>[\s\S]*?</pre>", "", render(path.read_text(encoding="utf-8")))
+        if "```" in prose or "~~~" in prose:
+            leaks.append(path.name)
+    assert not leaks, f"these lessons render a fence marker in prose: {leaks[:10]}"

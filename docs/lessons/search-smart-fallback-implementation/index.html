@@ -195,7 +195,7 @@
 <div class="lesson-body">
 <blockquote><p><strong>Superseded (2026-11-15, verdict for #4874).</strong> The zero-result dead end this draft described was closed by what actually shipped: a miss now returns <code>no_match</code> plus a ready-to-call <code>intake</code> (README § "What it answers — and what it does not"), and the hosted endpoint adds the semantic fallback (<code>docs/benchmarks/cjk-fusion-2026-10-28.md</code>). Why it is no longer needed: discovery no longer dead-ends on zero results — the fallback and the intake path implement it. Its original Verification was an <code>echo</code>/<code>grep</code> placeholder that could not fail. Replacement: the <code>no_match</code> + intake design and the CJK fusion benchmark.</p></blockquote><h2>Verification</h2><pre><code class="language-bash">grep -i 'bm25\|chunk\|embed' lessons/contrib/rag-*.md 2&gt;/dev/null | head -3
 echo Search verified</code></pre><p><strong>Expected Output:</strong></p><pre><code># (refs)
-Search verified</code></pre><h2>Search Smart Fallback — Turning Zero Results into Discovery</h2><h3>Problem</h3><p>When search returns 0 results, users hit a dead end. They don't know if:</p><ul><li>The content doesn't exist</li><li>Their query was too specific</li><li>There are related lessons they should check</li></ul><p>This leads to:</p><ul><li>Duplicate lesson creation for content that exists</li><li>User frustration and abandonment</li><li>Missed discovery of related content</li></ul><p><strong>Root Cause:</strong></p><p>The original search implementation returned nothing on zero results:</p><pre><code>❌ No exact match for 'query'</code></pre><p>No suggestions, no alternatives, no guidance.</p><h3>Solution</h3><p>Implemented smart fallback with 4 components:</p><ol><li><strong>Closest matches by keyword overlap:</strong></li></ol><pre><code class="language-python">def _find_closest_matches(query, docs, top_n=3):
+Search verified</code></pre><h2>Search Smart Fallback — Turning Zero Results into Discovery</h2><h3>Problem</h3><p>When search returns 0 results, users hit a dead end. They don't know if:</p><ul><li>The content doesn't exist</li><li>Their query was too specific</li><li>There are related lessons they should check</li></ul><p>This leads to:</p><ul><li>Duplicate lesson creation for content that exists</li><li>User frustration and abandonment</li><li>Missed discovery of related content</li></ul><p><strong>Root Cause:</strong></p><p>The original search implementation returned nothing on zero results:</p><pre><code>❌ No exact match for 'query'</code></pre><p>No suggestions, no alternatives, no guidance.</p><h3>Solution</h3><p>Implemented smart fallback with 4 components:</p><ol><li><strong>Closest matches by keyword overlap:</strong><pre><code class="language-python">def _find_closest_matches(query, docs, top_n=3):
     query_words = set(re.findall(r'\w+', query.lower()))
     scored = []
     for doc in docs:
@@ -203,18 +203,18 @@ Search verified</code></pre><h2>Search Smart Fallback — Turning Zero Results i
         overlap = len(query_words &amp; doc_words)
         if overlap &gt; 0:
             scored.append((overlap / len(query_words), doc))
-    return sorted(scored, key=lambda x: -x[0])[:top_n]</code></pre><ol><li><strong>"Did you mean" with relaxed query:</strong></li></ol><pre><code class="language-python">def _suggest_relaxed_query(query):
+    return sorted(scored, key=lambda x: -x[0])[:top_n]</code></pre></li><li><strong>"Did you mean" with relaxed query:</strong><pre><code class="language-python">def _suggest_relaxed_query(query):
     stop_words = {"the", "a", "an", "is", "are", ...}
     words = query.lower().split()
     meaningful = [w for w in words if w not in stop_words]
-    return [" ".join(meaningful[:-1])] if len(meaningful) &gt;= 2 else []</code></pre><ol><li><strong>Zero-result telemetry logging:</strong></li></ol><pre><code class="language-python">def _log_zero_result(query):
+    return [" ".join(meaningful[:-1])] if len(meaningful) &gt;= 2 else []</code></pre></li><li><strong>Zero-result telemetry logging:</strong><pre><code class="language-python">def _log_zero_result(query):
     log_file = Path.home() / ".misakanet" / "search_telemetry.jsonl"
     entry = {"query": query, "timestamp": datetime.now().isoformat(), "result": "zero"}
     with open(log_file, "a") as f:
-        f.write(json.dumps(entry) + "\n")</code></pre><ol><li><strong>Auto-issue suggestion after 3+ failures:</strong></li></ol><pre><code class="language-python">count = sum(1 for l in lines if f'"query": "{query}"' in l)
+        f.write(json.dumps(entry) + "\n")</code></pre></li><li><strong>Auto-issue suggestion after 3+ failures:</strong><pre><code class="language-python">count = sum(1 for l in lines if f'"query": "{query}"' in l)
 if count &gt;= 3:
     print(f"⚠️ This query has returned 0 results {count} times.")
-    print(f"   Consider creating an issue for a missing lesson.")</code></pre><h3>Impact</h3><ul><li><strong>Before</strong>: Zero results = dead end</li><li><strong>After</strong>: Zero results = discovery opportunity<ul><li>Shows top-3 related lessons</li><li>Suggests relaxed query</li><li>Logs for gap analysis</li><li>Auto-suggests creating issue after repeated failures</li></ul></li></ul><h3>Verification</h3><pre><code class="language-bash"># Test smart fallback
+    print(f"   Consider creating an issue for a missing lesson.")</code></pre></li></ol><h3>Impact</h3><ul><li><strong>Before</strong>: Zero results = dead end</li><li><strong>After</strong>: Zero results = discovery opportunity<ul><li>Shows top-3 related lessons</li><li>Suggests relaxed query</li><li>Logs for gap analysis</li><li>Auto-suggests creating issue after repeated failures</li></ul></li></ul><h3>Verification</h3><pre><code class="language-bash"># Test smart fallback
 python3 search_knowledge.py "xylophone purple elephant dancing"
 # Expected: Shows closest matches + "Did you mean" + available domains
 

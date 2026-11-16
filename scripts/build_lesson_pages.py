@@ -97,6 +97,7 @@ import argparse
 import json
 import sys
 from pathlib import Path
+from typing import Callable
 
 REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO))
@@ -350,7 +351,8 @@ def _comparable(title: str) -> str:
     return "".join(ch for ch in title.casefold() if ch.isalnum())
 
 
-def lesson_body_html(lesson: dict, root: Path = REPO) -> str:
+def lesson_body_html(lesson: dict, root: Path = REPO,
+                     resolve: "Callable[[str], str | None] | None" = None) -> str:
     """The lesson's own text, rendered for the page.
 
     Why the page carries the body at all (2026-11-16)
@@ -400,11 +402,52 @@ def lesson_body_html(lesson: dict, root: Path = REPO) -> str:
         if heading.startswith("# ") and _comparable(heading[2:]) == _comparable(lesson.get("title", "")):
             lines = lines[:index] + lines[index + 1:]
         break
-    return lesson_markdown.render("\n".join(lines))
+    return lesson_markdown.render("\n".join(lines), resolve=resolve)
+
+
+def lesson_link_resolver(assigned: dict[str, str], lessons: list) -> "Callable[[str], str | None]":
+    """Map a lesson's cross-lesson links onto the URL the target is actually served at.
+
+    The corpus links lessons to each other by **file**: `./opire-bounty-hunting.md`,
+    `../../lessons/en/github-401-credential-lookup.md`, … — 78 such links. On the site those paths are
+    404s: a lesson's page lives at `/lessons/<slug>/`, and the markdown file is not served at all
+    (only `troubleshooting.md` and `skill.md` are). Rendering them unchanged put dead links on ten
+    pages, and `tests/test_site_pages_are_reachable.py` named every one of them.
+
+    Anything the resolver cannot place becomes plain text instead of a link: a click that 404s is
+    worse than no click, and the reachability gate is right to say so.
+
+    `http(s)`/`mailto`/`#` pass through, and so do site paths the worker answers (`/api/...`) — those
+    are the site's own routes. This function's job is the corpus's relative-file links.
+    """
+
+    by_stem: dict[str, str] = {}
+    for lesson in lessons:
+        slug = assigned.get(str(lesson.get("id") or ""))
+        if not slug:
+            continue
+        if lesson.get("id"):
+            by_stem.setdefault(str(lesson["id"]), slug)
+        reference = str(lesson.get("url") or "")
+        if reference:
+            by_stem.setdefault(Path(reference).stem, slug)
+        by_stem.setdefault(slug, slug)
+
+    def resolve(target: str) -> str | None:
+        if target.startswith(("http://", "https://", "mailto:", "#")):
+            return target
+        if not target.endswith(".md"):
+            return target if target.startswith("/") else None
+        stem = Path(target).name[: -len(".md")]
+        slug = by_stem.get(stem)
+        return f"/lessons/{slug}/" if slug else None
+
+    return resolve
 
 
 def build_lesson_page(lesson: dict, root: Path = REPO,
-                      markup: dict[str, str] | None = None) -> str:
+                      markup: dict[str, str] | None = None,
+                      resolve: "Callable[[str], str | None] | None" = None) -> str:
     """Generate HTML for a single lesson.
 
     `markup` is the shared token block and link row (see `shared_markup`). It is passed in so a
@@ -485,7 +528,7 @@ def build_lesson_page(lesson: dict, root: Path = REPO,
         # emits its newline, which put a blank line after <body> on all 434 published pages.
         body = banner_html + "\n" + body
 
-    lesson_html = lesson_body_html(lesson, root=root)
+    lesson_html = lesson_body_html(lesson, root=root, resolve=resolve)
     if lesson_html:
         body += f'\n<div class="lesson-body">\n{lesson_html}\n</div>'
     if source_url:
@@ -760,6 +803,7 @@ def plan_with_slugs(lessons: list, known_slugs: dict[str, str] | None = None,
 
     lesson_pages: dict[str, str] = {}
     lesson_slugs: list[str] = []
+    resolve_link = lesson_link_resolver(assigned, lessons)
     for lesson in lessons:
         lesson_id = lesson.get("id", "")
         slug = assigned.get(lesson_id)
@@ -782,7 +826,8 @@ def plan_with_slugs(lessons: list, known_slugs: dict[str, str] | None = None,
         # lessons (score < 0.5) are not indexed." Maintainer decision, 2026-10-04.
         if is_published_status(lesson.get("status")):
             lesson_slugs.append(slug)
-        lesson_pages[slug] = build_lesson_page(lesson, root=root, markup=blocks)
+        lesson_pages[slug] = build_lesson_page(lesson, root=root, markup=blocks,
+                                               resolve=resolve_link)
 
     topics = topic_plan(lessons, root=root, markup=blocks)
     index_entries = []
