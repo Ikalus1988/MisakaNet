@@ -7,6 +7,25 @@ All notable changes to the Misaka Network project are documented here.
 
 ---
 
+## [3.18.0](https://github.com/Ikalus1988/MisakaNet/compare/v3.17.0...v3.18.0) (2026-11-16)
+
+
+### Features
+
+* **seo:** the lesson page carries the lesson ([#5062](https://github.com/Ikalus1988/MisakaNet/issues/5062)) ([4daed6f](https://github.com/Ikalus1988/MisakaNet/commit/4daed6f11a75e91563a0186c0c1f459d8302b354))
+
+
+### Bug Fixes
+
+* **dataset:** publish on a schedule instead of on every corpus push ([#5030](https://github.com/Ikalus1988/MisakaNet/issues/5030)) ([ba68a59](https://github.com/Ikalus1988/MisakaNet/commit/ba68a59fadda4f4828d2b2a282676ab8f328e724))
+* **tests:** a lessons-only release is still a release ([#5038](https://github.com/Ikalus1988/MisakaNet/issues/5038)) ([15f9728](https://github.com/Ikalus1988/MisakaNet/commit/15f97282a83f341ac8b4f7f0d66492830f57b58e))
+* **tests:** the health leak check was matching its own timestamps ([#5039](https://github.com/Ikalus1988/MisakaNet/issues/5039)) ([e8feda1](https://github.com/Ikalus1988/MisakaNet/commit/e8feda1a52572b3d318099d8bee5afc2d72d233c))
+
+
+### Lessons
+
+* **contrib:** convert five intakes — Douyin dead-end, ROBOGUIDE wedge, deploy 502, 37MB stdout, UIA scope ([#5031](https://github.com/Ikalus1988/MisakaNet/issues/5031)) ([50a9eb5](https://github.com/Ikalus1988/MisakaNet/commit/50a9eb5e73baeb2a6ea88bfe91601436f3493908))
+
 ## [3.17.0](https://github.com/Ikalus1988/MisakaNet/compare/v3.16.0...v3.17.0) (2026-11-15)
 
 
