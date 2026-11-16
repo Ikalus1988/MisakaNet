@@ -139,7 +139,13 @@ jobs:
           and closes the issue on the next daily run, so the loop ends without a person.
           The derived files are here because \`lesson-gate.yml\` requires them; that is also why this
           PR cannot take the auto-merge path (it is not lessons-only) and needs one click."
-          git push -u origin "$BRANCH"
+          # `--force`, because the branch name is the date and it is machine-owned: a second run on the
+          # same day (a closed batch, a re-dispatch after a fix) rebuilt the branch from scratch and
+          # the plain push was rejected — measured twice on 2026-11-16 (runs 43875789523 and
+          # 43885216486), each time after the lessons and the derived files were already committed.
+          # `--force-with-lease` is not enough here: the workflow never fetches that branch, so the
+          # lease has no expected value to compare against and the push stays rejected.
+          git push --force -u origin "$BRANCH"
           gh pr create --base main --head "$BRANCH" \
             --title "feat(lessons): intake batch $(date -u +%Y-%m-%d)" \
             --body "$(printf '%s\n\n' \
