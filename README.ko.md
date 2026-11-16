@@ -1,3 +1,19 @@
+<p align="center">
+  <a href="README.md">English</a> ·
+  <a href="README.zh-CN.md">简体中文</a> ·
+  <a href="README.ja.md">日本語</a> ·
+  <a href="README.ko.md">한국어</a>
+</p>
+
+<p align="center">
+  <a href="https://dshfind.com/en/plugins/Ikalus1988/MisakaNet?ref=badge"><img src="https://dshfind.com/api/badge/Ikalus1988/MisakaNet?metric=downloads&amp;lang=en" alt="dshfind DSH 플러그인 다운로드"></a>
+  <a href="https://dsh-plugin.org/plugins/ikalus1988/misakanet"><img src="https://dsh-plugin.org/badges/listed.svg" alt="dsh-plugin.org 등록"></a>
+  <a href="https://www.dsh.so/artifact/misakanet/?ref=badge"><img src="https://cdn.dsh.so/badge/misakanet.svg" alt="dsh.so 위험도"></a>
+</p>
+
+# MisakaNet
+
+에이전트가 실제로 겪은 실패를 모아 둔 교훈 저장소입니다.
 <div align="right">
 
 [English](README.md) | [日本語](README.ja.md) | [简体中文](README.zh-CN.md) | [Español](README.es.md) | [한국어](README.ko.md) | [＋ 你的语言](https://github.com/Ikalus1988/MisakaNet/issues?q=is%3Aissue+is%3Aopen+label%3Ai18n)
