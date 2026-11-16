@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-11-15T22:58:37.939291+00:00",
+  "generated_at": "2026-11-16T06:49:01.646132+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 13,
   "items": [
     {
       "type": "merged_pr",
-      "title": "fix(dataset): publish on a schedule instead of on every corpus push",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5030",
-      "timestamp": "2026-11-15T17:18:07Z",
+      "title": "chore(ci): retire pr-agent",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5080",
+      "timestamp": "2026-11-16T06:14:56Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5044",
-      "timestamp": "2026-11-15T16:46:08Z",
+      "title": "docs(maintainer): what the 198-item review queue is made of",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5075",
+      "timestamp": "2026-11-16T05:41:09Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(tests): a lessons-only release is still a release",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5038",
-      "timestamp": "2026-11-15T14:41:49Z",
+      "title": "fix(seo): the sitemap lists pages, and one dead lesson URL gets its 301 back",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5074",
+      "timestamp": "2026-11-16T05:31:20Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(tests): the health leak check was matching its own timestamps",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5039",
-      "timestamp": "2026-11-15T14:20:59Z",
+      "title": "chore(main): release 3.18.0",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5034",
+      "timestamp": "2026-11-16T05:13:49Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(docs): the vol 39 copy-paste block republished a home path",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5037",
-      "timestamp": "2026-11-15T13:50:07Z",
+      "title": "chore(deps): bump Codium-ai/pr-agent from 0.49.0 to 0.50.0 in the github-actions group",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5047",
+      "timestamp": "2026-11-16T05:10:50Z",
       "source": "github"
     },
     {
