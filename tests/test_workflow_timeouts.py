@@ -49,8 +49,9 @@ PLATFORM_DEFAULT = 360
 #: The bound the 54 previously-unbounded jobs were given. Four bounds that already existed were
 #: checked against their own jobs' measurements instead of this one — see `OBSERVED_JOB_MINUTES`,
 #: which is the rule that can redden. Measured 2026-10-07: the longest legitimate job in this
-#: repository is a `windows-latest` test leg at 452.50s (7.5 min) including runner setup, the full
-#: suite on the ext4 bench takes 363.77s, and `pr-agent` on a healthy run takes 3m15s.
+#: repository is a `windows-latest` test leg at 452.50s (7.5 min) including runner setup, and the
+#: full suite on the ext4 bench takes 363.77s. (`pr-agent`, retired 2026-11-16, was the other long
+#: one at 6.4 minutes; its row went with the workflow.)
 ADDED_BOUND = 30
 OBSERVED_MAX_JOB_MINUTES = 7.5
 
@@ -58,12 +59,6 @@ OBSERVED_MAX_JOB_MINUTES = 7.5
 #: `(workflow file, job name, longest completed run in the window, sample count)`. These are what
 #: make a per-job bound checkable at all. A job with no completed run in the window is deliberately
 #: absent rather than estimated.
-#:
-#: `pr-agent` needs a note. Its 15-minute bound *fired* within an hour of landing, on a run where
-#: the upstream `openai/minimax-M3` call hung: `litellm.Timeout … time taken=362.47 seconds`, and
-#: the job was cut at 15:00. That 15.2-minute figure is a hang the bound caught, not a duration
-#: the job needs, so it is not what the row records. Its two healthy runs are 3m15s and a review
-#: that completed 6.4 minutes in; the slowest of those is the number a bound must clear.
 #:
 #: `codeql.yml`'s `analyze` is a matrix, so its 24 samples are 12 runs of each of its two
 #: languages; the row records the slowest leg across both, because a matrix adds legs rather than
@@ -74,7 +69,6 @@ OBSERVED_JOB_MINUTES = (
     ("nightly-mirror-consistency.yml", "check", 0.13, 12),
     ("benchmark-workers-ai.yml", "benchmark", 4.7, 16),
     ("codeql.yml", "analyze", 1.73, 24),
-    ("pr-agent-review.yml", "pr-agent", 6.4, 2),
 )
 
 

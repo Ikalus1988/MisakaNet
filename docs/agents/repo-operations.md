@@ -117,7 +117,7 @@ python3 scripts/bench_production_recall.py --json     # 机器可读
 | **tests** | 所有 PR | ubuntu/macos/windows × 3.11–3.13 任一失败——**但只有 `test (ubuntu-latest, 3.11)` 是硬阻断**，其余腿红不拦合并 |
 | **unit / e2e**（`misakanet-setup-ci.yml`） | 变更 `packages/misakanet-setup/**`、`workers/misakanet-setup.test.mjs`、`integrations/agent-autostart/**` | 安装器单测或打包产物 e2e 任一失败；某个 `--inject` 没能让对应检查变红 |
 | **CodeQL** | push main + PR + 每周 | 安全查询命中——**不阻断合并**（soft gate）|
-| `pr-agent` / `pr-genius` | 所有 PR | **非阻断**（评审参考） |
+| `pr-genius` | 所有 PR | **非阻断**（评审参考）。`pr-agent` 2026-11-16 退役 |
 
 ### 加 CI 之前：三问（2026-10-17 起）
 

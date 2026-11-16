@@ -4,7 +4,8 @@
 Measured 2026-10-02: **15 of the last 100 pull requests** were `bot/leaderboard-watch` snapshot chores —
 median gap **84 minutes** over that window (mean 121), roughly one every hour and a half. They are merged
 by `scripts/ci/land_change.py` through GitHub's native auto-merge, so nobody reads them, but each one still
-triggers **PR-Agent** (`Codium-ai/pr-agent`), the one paid model call in the set. Measured, not assumed:
+triggers a model call — at the time **PR-Agent** (`Codium-ai/pr-agent`), which was retired on 2026-11-16
+and is why the rule below is written against *markers* rather than against one action. Measured, not assumed:
 
 * `./.github/actions/score-agent` is 118 lines of `gh api`, `grep`, `bc` and `date` — **no model, no API
   key** (0 matches for any provider marker);

@@ -199,7 +199,7 @@ $ curl -sS -H "Authorization: Bearer $GITHUB_TOKEN" \
 | `lesson-security` | `lesson-security.yml` | lesson 里的危险命令、注入扫描 |
 | `unit` / `e2e` | `misakanet-setup-ci.yml` | 安装器单测 + 打包产物 e2e（`--inject` 必须让它变红） |
 | `CodeQL` | `codeql.yml` | 安全查询 |
-| `pr-agent` / `pr-genius` | `pr-agent-review.yml` / `pr-genius-check.yml` | **明确非阻断**，只做评审参考 |
+| `pr-genius` | `pr-genius-check.yml` | **明确非阻断**，只做评审参考。`pr-agent` 于 2026-11-16 退役（key 早已失效，红了两天没人知道）|
 
 **没有任何一条是必需的。** 门禁的完整清单与失败示例在 `docs/agents/repo-operations.md` §2。
 
