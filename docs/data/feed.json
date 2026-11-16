@@ -1,9 +1,16 @@
 {
-  "generated_at": "2026-11-16T18:28:43.818679+00:00",
+  "generated_at": "2026-11-16T19:42:33.239627+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 13,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5136",
+      "timestamp": "2026-11-16T18:43:48Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "feat(lessons): intake batch 2026-11-16, rebuilt on current main",
@@ -30,13 +37,6 @@
       "title": "fix(intake): stage the batch's lessons before regenerating",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/5111",
       "timestamp": "2026-11-16T14:21:53Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "fix(intake): the batch asks the gate's two questions it was skipping",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5109",
-      "timestamp": "2026-11-16T13:25:00Z",
       "source": "github"
     },
     {
