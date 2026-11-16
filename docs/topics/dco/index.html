@@ -168,7 +168,7 @@
 </head>
 <body>
 <h1>DCO Sign-off Failures</h1>
-<div class="count">11 lessons in this domain</div>
+<div class="count">12 lessons in this domain</div>
 
 <div class="lesson">
   <a href="/lessons/auto-merge-ci-pipeline/">Auto-Merge CI Pipeline — DCO, Quality Score, Shadow Branch, Dynamic Deps, Auto-Merge</a>
@@ -205,6 +205,10 @@
 <div class="lesson">
   <a href="/lessons/从旧副本整文件拷回主工程会静默回退期间的修复密钥又变回硬编码明文/">从「旧副本」整文件拷回主工程会静默回退期间的修复（密钥又变回硬编码明文）</a>
   <div class="summary">功能看起来没变，但某个已经修好的细节退回旧样子。实例：落地 v1.20 时 `LingboBridge.token` 又变回硬编码明文，而 main 上前一天已经改成 `BuiltinConfig` 注入了。</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/桌面应用遥测出现混血事件同一设备的部分事件带新契约的-uuid-v4-幂等键但-dataversion-停在旧版号如-6200版本维度因此不/">桌面应用遥测出现「混血」事件：同一设备的部分事件带新契约的 UUID v4 幂等键，但 data.version 停在旧版号（如 6.20.0），版本维度因此不</a>
+  <div class="summary">桌面应用遥测出现「混血」事件：同一设备的部分事件带新契约的 UUID v4 幂等键，但 data.version 停在旧版号（如 6.20.0），版本维度因此不可信。二进制 strings 扫描旧版号 0 命中，被误判为「版本是运行时读取」</div>
 </div>
 <div class="lesson">
   <a href="/lessons/ci-dco-failures-on-fork-prs-sign-off-and-pythonpath-traps/">CI DCO failures on fork PRs — sign-off and PYTHONPATH traps</a>
