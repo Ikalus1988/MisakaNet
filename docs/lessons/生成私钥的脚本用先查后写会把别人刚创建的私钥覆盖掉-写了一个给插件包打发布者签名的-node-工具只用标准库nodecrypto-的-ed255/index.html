@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>【生成私钥的脚本用「先查后写」，会把别人刚创建的私钥覆盖掉】 写了一个给插件包打发布者签名的 Node 工具（零依赖，`node:crypto` 的 ed255 — MisakaNet</title>
+<title>【生成私钥的脚本用「先查后写」，会把别人刚创建的私钥覆盖掉】 写了一个给插件包打发布者签名的 Node 工具（只用标准库，`node:crypto` 的 ed255 — MisakaNet</title>
 <meta name="description" content="【生成私钥的脚本用「先查后写」，会把别人刚创建的私钥覆盖掉】">
-<link rel="canonical" href="https://misakanet.org/lessons/生成私钥的脚本用先查后写会把别人刚创建的私钥覆盖掉-写了一个给插件包打发布者签名的-node-工具零依赖nodecrypto-的-ed255/">
-<meta property="og:title" content="【生成私钥的脚本用「先查后写」，会把别人刚创建的私钥覆盖掉】 写了一个给插件包打发布者签名的 Node 工具（零依赖，`node:crypto` 的 ed255">
+<link rel="canonical" href="https://misakanet.org/lessons/生成私钥的脚本用先查后写会把别人刚创建的私钥覆盖掉-写了一个给插件包打发布者签名的-node-工具只用标准库nodecrypto-的-ed255/">
+<meta property="og:title" content="【生成私钥的脚本用「先查后写」，会把别人刚创建的私钥覆盖掉】 写了一个给插件包打发布者签名的 Node 工具（只用标准库，`node:crypto` 的 ed255">
 <meta property="og:description" content="【生成私钥的脚本用「先查后写」，会把别人刚创建的私钥覆盖掉】">
-<meta property="og:url" content="https://misakanet.org/lessons/生成私钥的脚本用先查后写会把别人刚创建的私钥覆盖掉-写了一个给插件包打发布者签名的-node-工具零依赖nodecrypto-的-ed255/">
+<meta property="og:url" content="https://misakanet.org/lessons/生成私钥的脚本用先查后写会把别人刚创建的私钥覆盖掉-写了一个给插件包打发布者签名的-node-工具只用标准库nodecrypto-的-ed255/">
 <!-- design-tokens:start -->
 <style id="misaka-design-tokens">
 /*
@@ -183,7 +183,7 @@
 </style>
 </head>
 <body>
-<h1>【生成私钥的脚本用「先查后写」，会把别人刚创建的私钥覆盖掉】 写了一个给插件包打发布者签名的 Node 工具（零依赖，`node:crypto` 的 ed255</h1>
+<h1>【生成私钥的脚本用「先查后写」，会把别人刚创建的私钥覆盖掉】 写了一个给插件包打发布者签名的 Node 工具（只用标准库，`node:crypto` 的 ed255</h1>
 <div class="meta">Domain: <a href="/topics/mcp/">mcp</a> · <span class="evidence" title="A maintainer accepted the intake">Evidence E1 — Maintainer reviewed</span></div>
 <div class="tags"><span class="tag">generatekey</span><span class="tag">if</span><span class="tag">node-crypto</span></div>
 <div class="section">
@@ -191,7 +191,7 @@
   <p>【生成私钥的脚本用「先查后写」，会把别人刚创建的私钥覆盖掉】</p>
 </div>
 <div class="lesson-body">
-<h2>Problem</h2><p>【生成私钥的脚本用「先查后写」，会把别人刚创建的私钥覆盖掉】</p><p>写了一个给插件包打发布者签名的 Node 工具（零依赖，<code>node:crypto</code> 的 ed25519）。里面有��个生成私钥的函数：</p><pre><code class="language-js">function generateKey(keyPath) {
+<h2>Problem</h2><p>【生成私钥的脚本用「先查后写」，会把别人刚创建的私钥覆盖掉】</p><p>写了一个给插件包打发布者签名的 Node 工具（只用标准库，<code>node:crypto</code> 的 ed25519）。里面有��个生成私钥的函数：</p><pre><code class="language-js">function generateKey(keyPath) {
   if (fs.existsSync(keyPath)) throw new Error(`私钥已存在，不覆盖：${keyPath}`);
   const { privateKey } = crypto.generateKeyPairSync('ed25519');
   const pem = privateKey.export({ type: 'pkcs8', format: 'pem' });
@@ -216,7 +216,7 @@
 }</code></pre><p>调用方不再「先查后写」：直接调 <code>generateKey</code>，撞上 <code>KEY_EXISTS</code> 就<strong>用那把已有的密钥</strong>，不覆盖；其余错误照旧抛出。读信任表同理：直接 <code>readFileSync</code>，<code>ENOENT</code> 当作「没有信任表」，其余错误抛出。</p><h2>Verification</h2><ol><li><code>node --check</code> 通过；</li><li>实测：第一次 keygen 成功创建；<strong>第二次报「私钥已存在，不覆盖」且原文件内容未被改动</strong>（这是这条修复的核心判据）；</li><li>用已有密钥走一遍完整签名流程：<code>keyCreated: false</code>、签名产物与 <code>verify</code> 均通过（说明「密钥已存在」不再被当成错误）；</li><li>仓库 CodeQL（security-extended）重跑后 <code>js/file-system-race</code> 告警消失。</li></ol><p>（注：工具与路径已脱敏；机制是这条教训的重点，具体工具名通常不是。）</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/生成私钥的脚本用先查后写会把别人刚创建的私钥覆盖掉.md">View on GitHub →</a></p></div>
-<div class="section"><h2>Search</h2><p><a href="/search/?q=【生成私钥的脚本用「先查后写」，会把别人刚创建的私钥覆盖掉】 写了一个给插件包打发布者签名的 Node 工具（零依赖，`node:crypto` 的 ed255">Find related lessons →</a></p></div>
+<div class="section"><h2>Search</h2><p><a href="/search/?q=【生成私钥的脚本用「先查后写」，会把别人刚创建的私钥覆盖掉】 写了一个给插件包打发布者签名的 Node 工具（只用标准库，`node:crypto` 的 ed255">Find related lessons →</a></p></div>
 <div class="back"><a href="/">← Back to MisakaNet</a> · <a href="/search/">Search lessons</a></div>
 <footer class="footer">
 <!-- site-links:start -->

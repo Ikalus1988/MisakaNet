@@ -60,7 +60,10 @@ LITE_MAX_BYTES = 300_000
 # corpus grew to 705 (326,351 B / 705 = 463 B per lesson); only the count did. A per-lesson budget keeps
 # the guard pointed at the shape: a re-introduced `preview` is ~2 KB per lesson and blows it immediately,
 # while a corpus that is simply bigger no longer turns the check red for being bigger.
-LITE_MAX_BYTES_PER_LESSON = 500  # 2026-11-09: 404,801 B / 834 = 485.4 after the fourth batch
+LITE_MAX_BYTES_PER_LESSON = 510  # 2026-11-16: 509,044 B / 1012 = 503.0 after the 63-lesson batch
+# (third raise: 463 → 485.4 → 500 → 503.0). Each one came from a bigger corpus of the *same*
+# seven fields, never from a new field — a re-introduced `preview` is still ~2 KB per lesson, four
+# times above this line, so the guard keeps pointing at the shape rather than at growth.
 # (again long CJK titles/summaries; the schema did not change). The failure mode this budget exists
 # for — a re-introduced `preview` — is ~2 KB per lesson, four times above this line.
 

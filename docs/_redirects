@@ -567,7 +567,7 @@
 /lessons/杀进程前有安全校验用-queryfullprocessimagenamew-查镜像名与白名单比对防止/ /lessons/杀进程前有安全校验用-queryfullprocessimagenamew-查镜像名与白名单比对防止-servicestxt-账本里的旧-pid-被系统复/ 301
 /lessons/桌面应用遥测出现混血事件同一设备的部分事件带新契约的-uuid-v4/ /lessons/桌面应用遥测出现混血事件同一设备的部分事件带新契约的-uuid-v4-幂等键但-dataversion-停在旧版号如-6200版本维度因此不/ 301
 /lessons/独立校验脚本报出-16/ /lessons/独立校验脚本报出-16-个计数不符追查后发现是校验器自己错了不是被测代码错-场景校验一段行式文本输出的mn-段语句行数-声明的-line/ 301
-/lessons/生成私钥的脚本用先查后写会把别人刚创建的私钥覆盖掉/ /lessons/生成私钥的脚本用先查后写会把别人刚创建的私钥覆盖掉-写了一个给插件包打发布者签名的-node-工具零依赖nodecrypto-的-ed255/ 301
+/lessons/生成私钥的脚本用先查后写会把别人刚创建的私钥覆盖掉/ /lessons/生成私钥的脚本用先查后写会把别人刚创建的私钥覆盖掉-写了一个给插件包打发布者签名的-node-工具只用标准库nodecrypto-的-ed255/ 301
 /lessons/用-cdp/ /lessons/用-cdp-驱动网页编辑器改完一篇文章并提交后读回同一篇文章页面拿到的是旧版正文关键小标题没变差点据此判定更新没生效并反复重试同一个提交动作/ 301
 /lessons/用-egoagent/ /lessons/用-egoagent-浏览器做扫码登录流程时二维码截图给用户扫用户回来时二维码永远已失效再想复用那个标签页时报-no-active-tab-to/ 301
 /lessons/用-p5brush-做逐帧无头渲染cdp-里调/ /lessons/用-p5brush-做逐帧无头渲染cdp-里调-windowrenderatt输出帧序列字幕等叠加层通过引擎的-letter-队列绘制短跑/ 301
