@@ -1036,6 +1036,41 @@ def detect_placeholder_fixture(body: str) -> tuple[bool, str]:
 
 # === Decision Maker ===
 
+def lesson_complete(body: str, sections: dict[str, str]) -> tuple[bool, str]:
+    """Is this a lesson in substance, whatever its length score says? Returns (complete, missing).
+
+    A submission with a root cause, a fix, a verification step and a trigger has done the whole job a
+    lesson asks for. It can still score low, because most of the score is *shape* — word count, code
+    blocks, bullet lists — and a short precise report loses on all three.
+
+    Measured 2026-11-16: an `#5088`-shaped submission carrying all four fields scored 31.7/100 and was
+    routed to `reject`, i.e. the `auto-rejected` label and the daily salvage sweep, which puts it back
+    in `needs-human-review` the next morning. The round trip bought nothing: the only thing standing
+    between that submission and a usable lesson was a human reading it.
+
+    Questions and proposals are not candidates — their exit is an answer or a decision, not a lesson.
+    """
+    kind = re.search(r"^\*\*Kind:\*\*[\s](\w+)", body or "", re.IGNORECASE | re.MULTILINE)
+    if kind and kind.group(1).strip().lower() in ("question", "proposal"):
+        return False, "a question or a proposal is not a lesson candidate"
+
+    def has(*names: str) -> bool:
+        return any(sections.get(name, "").strip() for name in names)
+
+    trigger_field = re.search(r"^\*\*Trigger:\*\*\s(.+)$", body or "", re.IGNORECASE | re.MULTILINE)
+    missing = [
+        label
+        for label, present in (
+            ("root cause", has("root cause", "原因", "根因")),
+            ("fix", has("fix", "fix (if known)", "solution", "修复", "解决方案")),
+            ("verification", has("verification", "verify", "验证")),
+            ("trigger", has("trigger") or bool(trigger_field and trigger_field.group(1).strip())),
+        )
+        if not present
+    ]
+    return (not missing), ", ".join(missing)
+
+
 def make_decision(final_score: float, confidence: float) -> str:
     """Make approve/review/reject decision."""
     # Adjust thresholds based on confidence
@@ -1215,6 +1250,21 @@ def auto_review_issue(
     if injected:
         result.decision = "payload"
         result.reasons.append(f"✗ Payload-shaped submission, not a failure report: {injected_why}")
+
+    # Step 8.5 — the completeness floor (2026-11-16). A submission that carries all four fields has
+    # done the work; `reject` would send it through `auto-rejected` → salvage digest →
+    # `needs-human-review`, a round trip whose only effect is to delay a human reading it. Hard content
+    # signals (an ad, a submission written to game the scorer) still win: those are about what the text
+    # *is*, not how long it is, and `payload`/`placeholder` are about what it is too.
+    if result.decision == "reject" and not hard and not placeholder and not injected:
+        complete, missing = lesson_complete(body, sections)
+        if complete:
+            result.decision = "review"
+            result.reasons.append(
+                "✓ Raised to `review`: root cause, fix, verification and a trigger are all present; "
+                "the low score is shape, and the shape is what a person should judge")
+        else:
+            result.reasons.append(f"· Not raised to `review`: missing {missing}")
 
     # Step 9: Collect reasons and suggestions
     for dim in result.dimensions:

@@ -1071,3 +1071,104 @@ def test_the_workflow_routes_the_payload_decision():
     assert '--add-label "auto-rejected"' not in payload_branch, (
         "the payload branch must not ADD auto-rejected: the salvage digest sweeps that label, so the "
         "issue would be handed back to the human queue the next morning")
+
+
+# === The completeness floor (2026-11-16) ===
+# A submission can carry all four fields and still score low, because most of the score is shape. Routing
+# it to `reject` means `auto-rejected` + the salvage sweep, which hands it back to `needs-human-review`
+# the next morning — a round trip that buys nothing except a day of delay.
+
+TINY_COMPLETE = """**Kind:** lesson_submission
+**Domain:** devops
+
+## Problem
+
+push denied.
+
+## Root Cause
+
+role is Developer.
+
+## Fix
+
+raise the role.
+
+## Verification
+
+push succeeds.
+
+## Trigger
+
+git push denied clone works
+"""
+
+
+COMPLETE = """**Kind:** lesson_submission
+**Source:** codex
+**Domain:** devops
+
+## Problem
+
+GitLab push denied on a project whose remote is configured.
+
+## Root Cause
+
+The protected branch allows Maintainers; the account is a Developer.
+
+## Fix
+
+Ask for the role, or push from a fork.
+
+## Verification
+
+re-run `git push origin HEAD`: it creates the commit instead of 403
+
+## Trigger
+
+git push denied but clone works protected branch role
+"""
+
+
+def review_threshold() -> float:
+    """The raw review threshold; `make_decision` scales it by confidence, so this is an upper bound."""
+    import intake_auto_review as review
+
+    return review.THRESHOLD_REVIEW
+
+
+def test_a_complete_submission_is_not_rejected_for_being_short():
+    """31–37/100 is below the review threshold, and this is exactly the shape that used to land there.
+
+    The score is mostly *shape* — word count, code blocks, bullet lists — so a short, precise report
+    loses on all three while having done the whole job.
+    """
+    result = auto_review_issue(0, "[Lesson] push denied", TINY_COMPLETE)
+    assert result.final_score < review_threshold(), (
+        f"this test is only meaningful below the review threshold; it scored {result.final_score}")
+    assert result.decision == "review", (
+        f"a submission with root cause, fix, verification and trigger was sent to {result.decision!r} — "
+        "the salvage sweep would hand it back tomorrow")
+    assert any("Raised to `review`" in reason for reason in result.reasons), result.reasons
+
+
+def test_the_floor_does_not_rescue_an_incomplete_submission():
+    """No verification: the thing a reader would need is absent, and that is not shape."""
+    body = COMPLETE.replace("## Verification\n\nre-run `git push origin HEAD`: it creates the commit instead of 403\n", "")
+    result = auto_review_issue(0, "[Lesson] push denied", body)
+    assert result.decision == "reject", result.decision
+    assert any("missing verification" in reason for reason in result.reasons)
+
+
+def test_the_floor_does_not_rescue_a_payload():
+    body = COMPLETE.replace("GitLab push denied on a project whose remote is configured.",
+                            "../../../../etc/passwd")
+    result = auto_review_issue(0, "[Lesson] ../../../../etc/passwd", body)
+    assert result.decision == "payload", result.decision
+
+
+def test_the_floor_does_not_rescue_a_question():
+    """A question is routed by `Kind:` before scoring; the floor must never be the thing that puts it
+    in the lesson queue — its exit is an answer."""
+    body = "**Kind:** question" + TINY_COMPLETE[TINY_COMPLETE.index(chr(10)):]
+    result = auto_review_issue(0, "[Question] how do I push", body)
+    assert not any("Raised to `review`" in reason for reason in result.reasons), result.reasons
