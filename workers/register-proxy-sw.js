@@ -449,7 +449,7 @@ const MCP_TOOLS = [
   },
   {
     name: "misakanet_submit_intake",
-    description: "[OPEN TRIAGE / INTAKE] Use misakanet_submit_intake when you only have a partial failure description or want to ask a question; use misakanet_write_lesson (Bearer required) once you already have structured title/domain/problem/root_cause/fix. submit_intake is open, rate-limited, no Bearer — output is a GitHub issue for maintainer triage, NOT a merged lesson — its labels follow the kind: question → `needs-answer`, proposal → `needs-human-review`, a failure report → `pending-review`.\nRouting: if you are ASKING a how-to / knowledge question (not reporting a failure), set kind=\"question\" — it opens a [Question] issue that maintainers answer/FAQ instead of scoring it as a lesson. If kind is omitted, the server auto-detects question-shaped content (no error/fix/verification + question phrasing).\nPull answers later: questions are answered asynchronously (hours to days). Re-call this tool with the SAME problem text later and follow the returned poll_hint — the dedup response returns the maintainer's answer once it exists ({answered:true, answer}), and once your report has become a lesson it returns a conversion receipt ({converted:true, receipt, events}) naming the lesson, its path and its evidence_level; or re-run misakanet_search on the topic for FAQ hits. Every response also carries dedup_key, and poll_hint.recheck_after_seconds says when re-checking is worth it (21600s for questions, 86400s for failure reports).\nReturns: object {submitted: boolean, intake_id, status, dedup_key, poll_hint, redactions_applied, quality_score, receipt, routing:{kind, auto_detected}, follow_up?}; `surface_report` is the intake's **surface check**: command-shaped tokens in your submission that the public corpus has never indexed (`null` = could not check, `[]` = checked and nothing unknown). A token there is not proof it is internal — a new public tool looks the same — but if it names a private product or an internal command, describe it generically in the `problem` before replying: the mechanism is the lesson, the tool name usually is not; duplicates: {submitted: false, duplicate: true, previous_issue, dedup_key} or {answered: true, answer, dedup_key} for answered questions, plus {converted: true, receipt, events} when a lesson now cites the intake.\nShape: write `problem` as sections — the symptom, then `## Root Cause` and `## Fix` when you know them (`## Verification` if you have it). A report without a root cause is still filed, but it cannot become a lesson automatically: it waits for a person, and the queue is long.\nExample: misakanet_submit_intake(kind='missing_lesson', problem='pip install times out behind corporate proxy', source='claude-code'); misakanet_submit_intake(kind='question', problem='How do I configure MCP auth in production?', source='claude-code')",
+    description: "[OPEN TRIAGE / INTAKE] Use misakanet_submit_intake when you only have a partial failure description or want to ask a question; use misakanet_write_lesson (Bearer required) once you already have structured title/domain/problem/root_cause/fix. submit_intake is open, rate-limited, no Bearer — output is a GitHub issue for maintainer triage, NOT a merged lesson — its labels follow the kind: question → `needs-answer`, proposal → `needs-human-review`, a failure report → `pending-review`.\nRouting: if you are ASKING a how-to / knowledge question (not reporting a failure), set kind=\"question\" — it opens a [Question] issue that maintainers answer/FAQ instead of scoring it as a lesson. If kind is omitted, the server auto-detects question-shaped content (no error/fix/verification + question phrasing).\nPull answers later: questions are answered asynchronously (hours to days). Re-call this tool with the SAME problem text later and follow the returned poll_hint — the dedup response returns the maintainer's answer once it exists ({answered:true, answer}), and once your report has become a lesson it returns a conversion receipt ({converted:true, receipt, events}) naming the lesson, its path and its evidence_level; or re-run misakanet_search on the topic for FAQ hits. Every response also carries dedup_key, and poll_hint.recheck_after_seconds says when re-checking is worth it (21600s for questions, 86400s for failure reports).\nReturns: object {submitted: boolean, intake_id, status, dedup_key, poll_hint, redactions_applied, quality_score, receipt, routing:{kind, auto_detected}, follow_up?}; `surface_report` is the intake's **surface check**: command-shaped tokens in your submission that the public corpus has never indexed (`null` = could not check, `[]` = checked and nothing unknown). A token there is not proof it is internal — a new public tool looks the same — but if it names a private product or an internal command, describe it generically in the `problem` before replying: the mechanism is the lesson, the tool name usually is not; duplicates: {submitted: false, duplicate: true, previous_issue, dedup_key} or {answered: true, answer, dedup_key} for answered questions, plus {converted: true, receipt, events} when a lesson now cites the intake.\nShape: write `problem` as sections — the symptom, then `## Root Cause` and `## Fix` when you know them (`## Verification` if you have it). A report without a root cause is still filed, but it cannot become a lesson automatically: it waits for a person, and the queue is long. **If you do have a root cause or a fix, the submission is lesson-shaped and needs two more fields**, because every new lesson in this corpus must carry them (`lessons/TEMPLATE.md`): `trigger` — the error fragment or keywords a future search would use, <=160 chars, not the title again; and `verification` — how a reader confirms the fix, as a checkable pass/fail. Without them nothing is filed (and nothing is deduped), and the response names what is missing; with them the intake is convertible.\nExample: misakanet_submit_intake(kind='missing_lesson', problem='pip install times out behind corporate proxy', source='claude-code'); misakanet_submit_intake(kind='question', problem='How do I configure MCP auth in production?', source='claude-code')",
     inputSchema: {
       type: "object",
       properties: {
@@ -458,7 +458,8 @@ const MCP_TOOLS = [
         error: { type: "string", description: "Optional: short error message (auto-redacted)." },
         what_tried: { type: "string", description: "Optional: what was attempted." },
         fix: { type: "string", description: "Optional: how it was resolved." },
-        verification: { type: "string", description: "Optional: how to confirm the fix works." },
+        trigger: { type: "string", description: "Required for a lesson-shaped submission (one with a `## Root Cause`/`## Fix`, or a `fix`): the error fragment or keywords a future search would use, <= 160 chars. This is the lesson's `trigger:` frontmatter (`lessons/TEMPLATE.md`, #1783) — what makes it findable rather than a story about one project. The server refuses a lesson-shaped submission without it instead of filing one the corpus can never accept." },
+        verification: { type: "string", description: "Required for a lesson-shaped submission: how a reader confirms the fix worked, as a checkable pass/fail (<= 200 chars). This becomes the lesson's `verify:` field; without it the claim is unverifiable and the corpus will not take it." },
         matched_lesson_id: { type: "string", description: "Optional: lesson ID that was checked but didn't help." },
         source: { type: "string", description: "Calling client: codex, claude-code, cursor, dsh, curl, cindy, or other." },
         contributor: { type: "string", description: "Optional: contributor identity (GitHub username, agent name, or email). Included in issue body for attribution." },
@@ -5361,6 +5362,45 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx, 
     const kind = inferredKind.kind;
     const kindAutoDetected = inferredKind.autoDetected;
 
+    // ── The two fields that separate a lesson from a story (2026-11-16) ───────────────────
+    // Every NEW lesson in this corpus must carry `trigger:` (the error fragment or keywords a future
+    // search would use) and `verify:` (a checkable pass/fail) — `lessons/TEMPLATE.md`, #1783. The
+    // intake path satisfied both by *synthesis*: `intake_lesson_to_file.trigger_of()` builds a trigger
+    // out of `title + problem`, so a project-specific story with no transferable hook scored 58/100
+    // and went to `needs-human-review` (measured on #5088's shape, 2026-11-16) while being, by the
+    // submitter's own account, not a knowledge point at all.
+    //
+    // So the check moves to where the submitter can still answer it. Only *lesson-shaped* submissions
+    // are asked: a question has no root cause by design, and a partial report is explicitly allowed
+    // to arrive without one (`Shape:` in the tool description). "Lesson-shaped" is the same test the
+    // converter applies — a root cause/fix section in `problem`, or a `fix` argument.
+    const problemText = String(args.problem || "");
+    const lessonShaped = kind !== "question" && kind !== "proposal"
+      && (Boolean(args.fix) || /^#{2,3}\s*(root cause|fix|修复|根因)/im.test(problemText));
+    if (lessonShaped) {
+      const triggerText = String(args.trigger || "").trim();
+      const verifyText = String(args.verification || "").trim();
+      const missing = [];
+      if (triggerText.length < 12) missing.push("trigger");
+      if (verifyText.length < 12) missing.push("verification");
+      if (missing.length) {
+        return {
+          submitted: false,
+          error: `Not filed: this reads as a lesson submission (it has a root cause or a fix), so it needs the two fields that make a lesson a lesson — missing or too short: ${missing.join(", ")}.`,
+          missing,
+          retry: true,
+          hint: missing.includes("trigger")
+            ? "trigger = the error fragment or keywords a future search would use, e.g. \"pip install timeout corporate proxy SSL\" (<=160 chars). Not the title again: what a stranger would type."
+            : undefined,
+          hint_verification: missing.includes("verification")
+            ? "verification = how a reader confirms the fix worked, as a checkable pass/fail, e.g. \"re-run `pip install -e .` behind the proxy: it completes instead of timing out\" (<=200 chars)."
+            : undefined,
+          example: "misakanet_submit_intake(kind='missing_lesson', problem='...## Root Cause...## Fix...', trigger='pip install timeout corporate proxy', verification='re-run the install behind the proxy: completes', source='claude-code')",
+          note: "Nothing was filed and no dedup entry was stored, so a corrected submission is not treated as a duplicate. A report without a root cause is still welcome: file it with the symptom only, and it waits in the queue for a person.",
+        };
+      }
+    }
+
     // Analytics Engine: every *completed* intake decision gets one point — a duplicate answered
     // from the store, a submission covered by an existing lesson, or a filing that created an
     // issue. Validation refusals above return before `kind` exists and are not intakes. The
@@ -5523,6 +5563,12 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx, 
       "## Problem",
       problemBody,
     ];
+    if (lessonShaped && String(args.trigger || "").trim()) {
+      // A `## Trigger` section, not a `**Trigger:**` line: `strip_pipeline_boilerplate` drops every
+      // `**Field:**` line before scoring (it exists to remove the pipeline's own header), so a
+      // metadata line would be invisible to the scorer and to the converter both.
+      bodyParts.push("", "## Trigger", String(args.trigger).trim().slice(0, 160));
+    }
     if (safeError) bodyParts.push("", "## Error", safeError);
     if (args.what_tried) bodyParts.push("", "## What was tried", redactIntake(args.what_tried));
     if (safeFix) bodyParts.push("", "## Fix (if known)", safeFix);
