@@ -1,82 +1,82 @@
 {
-  "generated_at": "2026-11-16T06:49:01.646132+00:00",
+  "generated_at": "2026-11-16T18:28:43.818679+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 13,
   "items": [
     {
       "type": "merged_pr",
-      "title": "chore(ci): retire pr-agent",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5080",
-      "timestamp": "2026-11-16T06:14:56Z",
+      "title": "feat(lessons): intake batch 2026-11-16, rebuilt on current main",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5135",
+      "timestamp": "2026-11-16T18:28:28Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "docs(maintainer): what the 198-item review queue is made of",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5075",
-      "timestamp": "2026-11-16T05:41:09Z",
+      "title": "fix(tests): a ranking score that lands on the tolerance boundary is rounding, not drift",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5134",
+      "timestamp": "2026-11-16T17:41:00Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(seo): the sitemap lists pages, and one dead lesson URL gets its 301 back",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5074",
-      "timestamp": "2026-11-16T05:31:20Z",
+      "title": "fix(intake): a re-run on the same day must rebuild its branch",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5112",
+      "timestamp": "2026-11-16T14:50:26Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(main): release 3.18.0",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5034",
-      "timestamp": "2026-11-16T05:13:49Z",
+      "title": "fix(intake): stage the batch's lessons before regenerating",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5111",
+      "timestamp": "2026-11-16T14:21:53Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(deps): bump Codium-ai/pr-agent from 0.49.0 to 0.50.0 in the github-actions group",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5047",
-      "timestamp": "2026-11-16T05:10:50Z",
+      "title": "fix(intake): the batch asks the gate's two questions it was skipping",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5109",
+      "timestamp": "2026-11-16T13:25:00Z",
       "source": "github"
     },
     {
       "type": "lesson",
-      "title": "抖音分享链接无法被任何自动化路径解析：yt-dlp 缺 JS 签名、页面不再内嵌视频数据，改用 App 导出文件直传",
-      "url": "lessons/contrib/douyin-share-link-defeats-automated-extractors-send-file-not-link.md",
-      "timestamp": "2026-11-15",
-      "domain": "scraping",
+      "title": "A CI failure classifier mapped failure logs to categories by bare substring matc",
+      "url": "lessons/contrib/a-ci-failure-classifier-mapped-failure-logs-to-categories.md",
+      "timestamp": "2026-11-16",
+      "domain": "dsh",
       "source": "lessons"
     },
     {
       "type": "lesson",
-      "title": "插件清单初始化成功却被小 stdout 收集器藏住结果：一次 plugin/list 是单行 37MB JSON，按元数据大小设的行上限会静默截断",
-      "url": "lessons/contrib/plugin-list-single-37mb-line-overflows-small-stdout-collector-limits.md",
-      "timestamp": "2026-11-15",
-      "domain": "development",
+      "title": "A container PaaS update task reports SUCCESS and app metadata shows the new vers",
+      "url": "lessons/contrib/a-container-paas-update-task-reports-success-and-app.md",
+      "timestamp": "2026-11-16",
+      "domain": "mcp",
       "source": "lessons"
     },
     {
       "type": "lesson",
-      "title": "PySide6 6.12 在 CPython 3.10/3.11 上崩于 none_dealloc：每次普通 Qt 调用漏掉一个 None 引用",
-      "url": "lessons/contrib/pyside6-612-refcount-leak-aborts-on-cpython-311.md",
-      "timestamp": "2026-11-15",
-      "domain": "python",
+      "title": "A contribution leaderboard showed `used: 0` for every row and `coverage.lesson_a",
+      "url": "lessons/contrib/a-contribution-leaderboard-showed-used-0-for-every-row-and.md",
+      "timestamp": "2026-11-16",
+      "domain": "dsh",
       "source": "lessons"
     },
     {
       "type": "lesson",
-      "title": "轻舟部署任务 SUCCESS 不等于共享入口可达：应用处于停止态时入口无后端、健康检查一直等，启动实例才恢复",
-      "url": "lessons/contrib/qingzhou-deploy-success-still-502-until-app-instance-started.md",
-      "timestamp": "2026-11-15",
-      "domain": "devops",
+      "title": "A PySide6 Flatpak app that pins its dependencies in pyproject.toml still ships t",
+      "url": "lessons/contrib/a-pyside6-flatpak-app-that-pins-its-dependencies-in.md",
+      "timestamp": "2026-11-16",
+      "domain": "dsh",
       "source": "lessons"
     },
     {
       "type": "lesson",
-      "title": "except RecursionError 的单测在 CPython 3.12 上是假绿：5000 层嵌套 JSON 不再抛",
-      "url": "lessons/contrib/recursionerror-guard-test-passes-on-312-without-entering-it.md",
-      "timestamp": "2026-11-15",
-      "domain": "testing",
+      "title": "A QSettings INI sanitizer that strips lines starting with `@Variant(` and contai",
+      "url": "lessons/contrib/a-qsettings-ini-sanitizer-that-strips-lines-starting-with.md",
+      "timestamp": "2026-11-16",
+      "domain": "dsh",
       "source": "lessons"
     },
     {
