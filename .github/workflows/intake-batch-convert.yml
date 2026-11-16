@@ -74,6 +74,21 @@ jobs:
 
       # Same generators `lesson-gate.yml` checks and `update-lessons.yml` runs. Omitting one is what
       # made a previous batch fail the "main-side generated files" step.
+      # **Stage before regenerating.** `update_lessons_json.py` reads the corpus through
+      # `canonical_lessons`, which only sees *tracked* files — so a lesson the batch has just
+      # written is invisible to it until it is staged. (The command itself lives there; naming it
+      # here would trip `test_workflow_git_quotepath`, which reads every occurrence.) Measured 2026-11-16 on #5110: the converter wrote 63
+      # lessons, this step reported "Loaded 949 lessons / already consistent", and the pull request
+      # shipped 63 lessons with the previous count and stale okf/index/llms.txt — which the PR gate
+      # then caught as "main-side generated files" drift.
+      #
+      # The asymmetry is the trap: `export_public_vocabulary.py` walks the **disk** (so untracked
+      # files inflate it locally), while `update_lessons_json.py` walks **git** (so unstaged files
+      # vanish from it). Staging first satisfies both.
+      - name: Stage the new lessons
+        if: steps.changed.outputs.any == 'true'
+        run: git add -A lessons/
+
       - name: Regenerate the derived files
         if: steps.changed.outputs.any == 'true'
         run: |
