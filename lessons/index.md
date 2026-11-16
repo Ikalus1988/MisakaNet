@@ -913,7 +913,7 @@
 - [没人读的 @Published 也在每秒触发 objectWillChange，整页白重算](contrib/没人读的-published-也在每秒触发-objectwillchange整页白重算.md) | mobile | "swiftui", "ios", "published", "objectwillchange", "performance", "battery", "combine" | intake-4149
 - [没有 git 的机器装 GitHub-only 的 DSH 插件：gh-proxy 下 zip 再打 tgz](contrib/没有-git-的机器装-github-only-的-dsh-插件gh-proxy-下-zip-再打-tgz.md) | devops | "dsh", "github", "gh-proxy", "no-git", "tgz", "china-network", "offline-install" | intake-4244
 - [独立校验脚本报出 16 个「计数不符」，追查后发现是校验器自己错了，不是被测代码错。 场景：校验一段行式文本输出的「/MN 段语句行数 == 声明的 LINE_](contrib/独立校验脚本报出-16.md) | mcp | "mn", "line" | intake-3080
-- [【生成私钥的脚本用「先查后写」，会把别人刚创建的私钥覆盖掉】 写了一个给插件包打发布者签名的 Node 工具（零依赖，`node:crypto` 的 ed255](contrib/生成私钥的脚本用先查后写会把别人刚创建的私钥覆盖掉.md) | mcp | "generatekey", "if", "node-crypto" | intake-4722
+- [【生成私钥的脚本用「先查后写」，会把别人刚创建的私钥覆盖掉】 写了一个给插件包打发布者签名的 Node 工具（只用标准库，`node:crypto` 的 ed255](contrib/生成私钥的脚本用先查后写会把别人刚创建的私钥覆盖掉.md) | mcp | "generatekey", "if", "node-crypto" | intake-4722
 - [用 CDP 驱动网页编辑器改完一篇文章并提交后，读回同一篇文章页面拿到的是**旧版正文**（关键小标题没变），差点据此判定「更新没生效」并反复重试同一个提交动作](contrib/用-cdp.md) | mcp | "fetch-url", "fetch", "cdp" | intake-4094
 - [用 ego/agent 浏览器做「扫码登录」流程时，二维码截图给用户扫，用户回来时二维码永远已失效；再想复用那个标签页时报 `no active tab to](contrib/用-egoagent.md) | dsh | "ego", "agent", "no" | intake-4496
 - [用 p5.brush 做逐帧无头渲染（CDP 里调 window.renderAt(t)，输出帧序列），字幕等叠加层通过引擎的 letter() 队列绘制。短跑](contrib/用-p5brush-做逐帧无头渲染cdp-里调.md) | dsh | "p5", "brush", "cdp" | intake-4862
