@@ -26,7 +26,7 @@ credential without declaring a known environment.
 | env `release` | `CF_OBSERVABILITY_TOKEN` (optional) | `cf-diagnostics` | branch policy `main` + required reviewer — **read-only**: `Workers Observability: Read` + `Account Analytics: Read`, no `Workers Scripts: Edit` |
 | env `release` | `CF_BUILDS_TOKEN` (optional) | `cf-diagnostics` | branch policy `main` + required reviewer — **read-only and user-scoped**: `Workers Builds Configuration` (read), no deploy. Created 2026-09-24, see §4.4 |
 | repo level | `AI_GATEWAY_TOKEN` | `benchmark-workers-ai` | none |
-| repo level | `OPENAI_KEY` | `pr-agent-review` | none |
+| repo level | `OPENAI_KEY` | **nothing** | none — `pr-agent-review` was its only reader and was retired 2026-11-16; the secret can be deleted |
 | repo level | `CLOUDFLARE_API_TOKEN` | **nothing** | none — deleted 2026-09-20, see §6 |
 
 Environment secrets shadow repository secrets **by name**: a job in `automation` that reads
@@ -294,8 +294,9 @@ is the finding rather than a failure of the run.
 `SHELDON_PAT` is the token that lets the branch sync push to `main` as a user rather than as
 `github-actions[bot]` (a bot-authenticated push does not trigger workflows — see
 `docs/maintainer/branch-sync-and-ci.md`). It is used non-interactively by scheduled and event-driven
-workflows, so it cannot move into an environment with reviewers. `AI_GATEWAY_TOKEN` and `OPENAI_KEY`
-are model-provider keys used by workflows that also must run unattended. Moving any of them would break
+workflows, so it cannot move into an environment with reviewers. `AI_GATEWAY_TOKEN` is a model-provider key used by workflows that also must run unattended.
+(`OPENAI_KEY` used to sit next to it for `pr-agent-review`; that workflow was retired 2026-11-16 and
+nothing reads the key now, so it should be deleted rather than left to rot into a false assurance.) Moving any of them would break
 the automation that needs them; the mitigation is that they cannot deploy anything.
 
 ## 6. When a credential has been published (2026-09-25, #1982)

@@ -1,13 +1,19 @@
 #!/usr/bin/env python3
 """A comment on an issue must not be able to spend a model call or borrow the bot's token.
 
-`pr-agent-review.yml` answers four slash commands — `/review`, `/describe`, `/improve`, `/ask` — and
-matches them with `contains(body, …)` on **any** `issue_comment`. Until 2026-10-07 the `issue_comment`
-branch carried no `author_association` check, so any GitHub account could post `/review` on any issue
-in the repository and the job would run `Codium-ai/pr-agent` against `OPENAI_KEY` while holding
-`pull-requests: write` and `issues: write` (workflow lines 9-11). Its two sibling commands already
-carried the gate — `fix-dco.yml:22` and `adopt-pr.yml:35` — which is what made the omission a
-one-line diff rather than a design question.
+The defect this file was written for: `pr-agent-review.yml` answered four slash commands —
+`/review`, `/describe`, `/improve`, `/ask` — and matched them with `contains(body, …)` on **any**
+`issue_comment`. Until 2026-10-07 that branch carried no `author_association` check, so any GitHub
+account could post `/review` on any issue and the job would run a paid model call while holding
+`pull-requests: write` and `issues: write`. Its two sibling commands already carried the gate —
+`fix-dco.yml:22` and `adopt-pr.yml:35` — which is what made the omission a one-line diff rather than
+a design question.
+
+**pr-agent was retired on 2026-11-16** (`docs/maintainer/pr-agent-retirement-2026-11-16.md`): its
+key had been dead for days and the reviews it produced were the wrong ones to keep. The rule below
+outlives it, because the shape does — any workflow that can act on a comment someone else posted and
+holds write scope or a model key must check who commented, and the remaining ones (`fix-dco.yml`,
+`adopt-pr.yml`, `newbie-welcome.yml`) are still measured by it.
 
 **Why this file evaluates the expression instead of grepping for `author_association`.**
 
@@ -41,7 +47,6 @@ yaml = pytest.importorskip("yaml", reason="PyYAML parses the workflow")
 
 REPO = Path(__file__).resolve().parent.parent
 WORKFLOWS = REPO / ".github" / "workflows"
-PR_AGENT_REVIEW = WORKFLOWS / "pr-agent-review.yml"
 
 #: The same list, in the same spelling, as `fix-dco.yml:22` and `adopt-pr.yml:35`. Held as a constant
 #: so a future edit that switches to a different association set has to change it here too.
@@ -302,110 +307,6 @@ def pull_request_context(*, draft=False, labels=(), head_ref="fix/dsh-panel",
                                                   "head": {"repo": {"full_name": head_repo}}}}}}
 
 
-def pr_agent_review_condition() -> str:
-    jobs = workflow_jobs(PR_AGENT_REVIEW)
-    assert "pr-agent" in jobs, "the pr-agent job disappeared from pr-agent-review.yml"
-    condition = jobs["pr-agent"].get("if")
-    assert condition, "the pr-agent job lost its `if:` — every event would run a paid model call"
-    return condition.strip()
-
-
-# ── 1. The gate is in place, and it is on the right branch ─────────────────────────────────────────
-
-def test_the_slash_commands_are_closed_to_unprivileged_commenters():
-    """The reported defect: `author_association` appeared 0 times in this file.
-
-    Reproduced rather than asserted by text: evaluate the real `if:` with a `/review` comment from an
-    account with no association, which is the cheapest way to spend `OPENAI_KEY` in the repository.
-    """
-    condition = pr_agent_review_condition()
-    for association in ("NONE", "CONTRIBUTOR", "FIRST_TIME_CONTRIBUTOR", "FIRST_TIMER"):
-        for command in ("/review", "/describe", "/improve", "/ask"):
-            assert evaluate(condition, comment_context(f"{command} please", association)) is False, (
-                f"a `{command}` comment from a `{association}` account runs the paid model call and "
-                "posts with `pull-requests: write`. Either the job needs a `runs-on`-time "
-                f"`github.event.comment.author_association` check, or the command must be documented "
-                "as maintainer-only — right now it is neither.")
-
-
-def test_maintainers_keep_the_commands_they_had():
-    """The gate must not be the "switch it off for everyone" fix.
-
-    `contributor-points.json` records outside contributors shipping merged work, and the reason the
-    association lists exist at all is to keep a *known* person in; cutting the three roles above
-    would have been an equally green way to make the previous test pass.
-    """
-    condition = pr_agent_review_condition()
-    for association in PRIVILEGED:
-        for command in ("/review", "/describe", "/improve", "/ask"):
-            assert evaluate(condition, comment_context(command, association)) is True, (
-                f"a `{command}` comment from a `{association}` account is now refused — the gate is "
-                "suppressing the roles it is meant to keep")
-
-
-def test_the_gate_sits_on_the_comment_branch_and_not_on_the_pull_request_branch():
-    """`pull_request` has no `comment.author_association` to read.
-
-    Conjoining the check to the whole expression would either skip every pull request (the `&&`
-    binding to the wrong branch) or evaluate against a property that does not exist. Both directions
-    are asserted: the five `pull_request` guards still hold, and the comment gate still holds.
-    """
-    condition = pr_agent_review_condition()
-    kept = (
-        (pull_request_context(), True, "a normal pull request"),
-        (pull_request_context(draft=True), False, "a draft"),
-        (pull_request_context(labels=["docs-only"]), False, "a docs-only pull request"),
-        (pull_request_context(labels=["bug"]), True, "a pull request with an unrelated label"),
-        (pull_request_context(head_ref="bot/build-feed"), False, "an automation branch"),
-        (pull_request_context(title="chore(main): release 2.46.0"), False, "a release pull request"),
-        (pull_request_context(head_repo="zsxh1990/MisakaNet"), False,
-         "a pull request from a fork, which receives no OPENAI_KEY"),
-    )
-    for context, expected, label in kept:
-        assert evaluate(condition, context) is expected, (
-            f"the association gate changed the `pull_request` branch: {label} now evaluates to "
-            f"{evaluate(condition, context)!r}, expected {expected!r}")
-
-
-def test_synchronize_is_not_a_trigger_because_pr_agent_never_reviewed_it():
-    """#2972: the green check on a `synchronize` push meant "skipped", not "reviewed".
-
-    Measured 2026-11-03 on one unchanged fork PR (`zsxh1990/MisakaNet`):
-
-        02:20 opened       -> failure  ("OPENAI_KEY not set", the model call 401s)
-        02:23 synchronize  -> success  (log: `Skipping action: synchronize`)
-        02:35 synchronize  -> success
-
-    Same code, three colours, and the two greens are the events that provably reviewed nothing.
-    A re-review after a push is a `/review` comment, which runs here with the key.
-    """
-    workflow = yaml.safe_load(PR_AGENT_REVIEW.read_text(encoding="utf-8"))
-    triggers = workflow.get("on", workflow.get(True))  # PyYAML 1.1 reads bare `on:` as True
-    types = triggers["pull_request"]["types"]
-    assert "synchronize" not in types, (
-        "re-adding `synchronize` re-creates a green check for pushes pr-agent never reviews "
-        "(it logs `Skipping action: synchronize` and exits 0)"
-    )
-    assert "opened" in types, "an opened PR still has to get a review — removing the trigger is not the fix"
-    assert "2972" in PR_AGENT_REVIEW.read_text(encoding="utf-8"), (
-        "the workflow must keep the measurement that justifies dropping `synchronize`, or the next "
-        "reader re-adds it as an obvious improvement"
-    )
-
-
-def test_a_comment_with_no_command_is_refused_even_for_an_owner():
-    """`contains` is a substring test, so the trigger side is loose on purpose — pre-existing, and
-    the reason the association gate matters. This pins that it is only the *author* that is checked,
-    not the body, so the file is not quietly claiming the commands are exact-matched."""
-    condition = pr_agent_review_condition()
-    assert evaluate(condition, comment_context("looks good to me", "OWNER")) is False
-    # …and the pre-existing substring behaviour, recorded so a future exact-match change is a
-    # deliberate act rather than an accident someone reads as a security fix.
-    assert evaluate(condition, comment_context("could you /review this?", "OWNER")) is True
-
-
-# ── 2. The rule generalises, so the next workflow added is caught too ───────────────────────────────
-
 def privileged_comment_workflows(directory: Path) -> list[tuple[Path, bool, set[str]]]:
     """The `(path, spends_a_model, write_scopes)` triples in `directory` the rule applies to.
 
@@ -450,9 +351,13 @@ def test_every_privileged_issue_comment_workflow_gates_on_association():
                 f"{' and spending a model call' if spends else ''}, and its `if:` never reads "
                 f"`{ASSOCIATION_CONTEXT}`. Any GitHub account can reach it by commenting. Copy the "
                 f"gate from `fix-dco.yml:22`.")
-    assert "pr-agent-review.yml" in privileged, (
-        "the rule stopped seeing the workflow it exists for — the file was renamed or its trigger "
-        "changed, and this test would otherwise pass on an empty set")
+    # The set must not be empty, and it must contain the workflow whose gate is the reference the
+    # others copy (`fix-dco.yml:22`). `pr-agent-review.yml` was the fourth until it was retired on
+    # 2026-11-16 (docs/maintainer/pr-agent-retirement-2026-11-16.md); the rule outlives its subject,
+    # so this is what "the rule still sees something" means now.
+    assert "fix-dco.yml" in privileged and len(privileged) >= 2, (
+        f"the rule stopped seeing the workflows it exists for: {privileged}. An empty or single-item "
+        "set means this test would pass without measuring anything")
 
 
 @pytest.mark.parametrize(
@@ -490,24 +395,6 @@ def test_the_rule_covers_the_permission_shapes_that_grant_write(
     found = privileged_comment_workflows(tmp_path)
     assert bool(found) is expected_privileged, (
         f"{label}: the rule {'required' if found else 'skipped'} a gate on this workflow")
-
-
-# ── 3. The runner must not be held open by a job nobody is waiting on ───────────────────────────────
-
-def test_the_pr_agent_job_has_a_timeout():
-    """No `timeout-minutes` means the platform default: six hours of runner time.
-
-    That is the same note `fix-dco.yml:24` and `adopt-pr.yml:37` carry. The model call is minutes,
-    so a 15-minute bound loses no legitimate run and stops a hung one from occupying a runner.
-    """
-    job = workflow_jobs(PR_AGENT_REVIEW)["pr-agent"]
-    timeout = job.get("timeout-minutes")
-    assert timeout is not None, (
-        "the pr-agent job has no `timeout-minutes`, so a hung model call holds its runner for the "
-        "six-hour platform default")
-    assert 1 <= timeout <= 30, (
-        f"timeout-minutes is {timeout}; the call takes minutes, and a bound this loose is the same "
-        "as no bound")
 
 
 # ── 4. The evaluator is checked against two workflows already running in production ─────────────────

@@ -208,7 +208,7 @@ worth knowing before treating a green page as coverage.
 | **CodeQL (python / javascript-typescript)** | GitHub default | Security queries; findings do not block |
 | **Agent Quality Score / Validate Lesson Schema** | `pr-checks.yml` | `continue-on-error: true` |
 | **Lesson Quality Score (the 0.5 threshold)** | `lesson-quality.yml` (`quality-check`) | Advisory **by decision**, and the job says so. The `lint-check` job in the same workflow *does* block — it could not before 2026-10-07, when `grep -n 'exit 1'` over the file returned nothing and the lint's own `--fail-on high` was discarded by both `\|\| true` and a job-level `continue-on-error` (#2940). The score half is left advisory because the threshold fails 5% of the corpus (3 of 60 sampled 2026-10-07, `scripts/quality_scorer.py --json`, lowest 0.46) and it scores the whole changed *file*, not the diff — so blocking it would reject unrelated edits to a pre-existing low-scoring lesson. Its result is reported in a PR comment. |
-| **pr-agent / pr-genius** | external | Review helpers |
+| **pr-genius** | external | Review helper — `pr-agent` was retired 2026-11-16 (its key had been dead for days); nothing LLM-driven reviews a PR now, and this row says so |
 | **Workers Builds: misakanet-web** | Cloudflare bot | The site build; external, and noisy on bot PRs |
 
 **Why the other legs stay advisory, and what keeps them from being ignored.** They are advisory *by
