@@ -78,12 +78,17 @@ jobs:
         if: steps.changed.outputs.any == 'true'
         run: |
           set -euo pipefail
+          # **This order is load-bearing** (`docs/maintainer/handoff-2026-11-15-part2.md` §4:
+          # "顺序不能反"). The batch used to run `export_okf` and `rebuild_lessons_index` before
+          # `sync_lesson_count`, which left both artifacts carrying the previous count — and the
+          # PR's own suite said so (`test_okf_export_freshness`, `test_export_okf_frontmatter`,
+          # `test_template_named_lessons_are_visible`), measured 2026-11-16 on #5104.
           python3 scripts/update_lessons_json.py
+          python3 scripts/build_lesson_pages.py
+          python3 scripts/sync_lesson_count.py
           python3 scripts/export_okf.py
           python3 scripts/rebuild_lessons_index.py
           python3 scripts/export_public_vocabulary.py
-          python3 scripts/sync_lesson_count.py
-          python3 scripts/build_lesson_pages.py
           python3 scripts/gen_ranking_snapshot.py
           # NOT `build_feed.py`: its `generated_at` and "newest merged PRs" change on every run, so a
           # batch PR that carried it would conflict with main by construction — measured on the first

@@ -83,6 +83,36 @@ def open_intakes(limit: int = 300) -> list[dict]:
     return [row for row in json.loads(out.stdout or "[]") if is_convertible(row)]
 
 
+def precheck_skip(issue: dict, record: dict, repo: Path = REPO) -> str | None:
+    """The reason this candidate must not be written, or None when it may be.
+
+    Gate **before** writing, with the gate's own rules. A batch that skipped this step opened a pull
+    request carrying a lesson CI refuses — measured twice: 2026-11-02 (a body under the 400-character
+    floor) and 2026-11-16 (`#5104`, 23 files, two rules this list did not ask about):
+
+    * **one intake, one lesson.** A lesson converted from an intake another lesson already cites makes
+      the conversion receipt ambiguous (`scripts/intake_receipt.py` reads `provenance.issue`).
+    * **public surface.** `validate_public_surface` compares the lesson's command names against the
+      vocabulary **from the base ref**, so a new lesson's own words never enter its own answer key.
+
+    Both are the gate's functions, not a reimplementation: the two checkers drifted apart precisely
+    because this module used to ask a shorter list of questions.
+    """
+    if not lesson_gate.validate_content_len(record["content"], lesson_gate.MIN_NEW_LESSON_CHARS):
+        return "would fail the lesson gate"
+    if lesson_gate.validate_sections(record["content"]):
+        return "would fail the lesson gate"
+    if lesson_gate.validate_section_content(record["content"]):
+        return "would fail the lesson gate"
+    if lesson_gate.find_duplicate_intake_claim(str(issue["number"]), repo):
+        return "intake already cited by a lesson"
+    rendered = conv.render(record, created="2026-11-16")
+    frontmatter, _body = lesson_gate.parse_frontmatter(rendered)
+    if lesson_gate.validate_public_surface(frontmatter, rendered, repo):
+        return "would fail the lesson gate (public surface)"
+    return None
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--write", action="store_true", help="write the lesson files")
@@ -102,19 +132,9 @@ def main(argv: list[str] | None = None) -> int:
         if record is None:
             skips[notes[0].split("(")[0][:60]] += 1
             continue
-        # Gate **before** writing. The converter's own floors are looser than the gate's (120 vs 400
-        # characters of body), so a batch that skipped this step opened a pull request carrying a
-        # lesson CI would refuse — measured 2026-11-02, the same ASAR report was dropped by hand in
-        # batch 5 and re-added by the first automated batch. `convert()` cannot know the gate's rules;
-        # this module can, so it asks.
-        gate_problems = []
-        if not lesson_gate.validate_content_len(record["content"], lesson_gate.MIN_NEW_LESSON_CHARS):
-            gate_problems.append(
-                f"body too short for the gate (< {lesson_gate.MIN_NEW_LESSON_CHARS} chars)")
-        gate_problems += [f"missing section: {name}" for name in lesson_gate.validate_sections(record["content"])]
-        gate_problems += [f"empty section: {name}" for name in lesson_gate.validate_section_content(record["content"])]
-        if gate_problems:
-            skips["would fail the lesson gate"] += 1
+        reason = precheck_skip(issue, record)
+        if reason:
+            skips[reason] += 1
             continue
         overrides[str(issue["number"])] = {"domain": record["domain"]}
         writable.append(issue)
