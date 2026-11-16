@@ -123,6 +123,22 @@ MANIFEST = Path("docs") / ".generated-pages.json"
 REDIRECTS = Path("docs") / "_redirects"
 SITE_URL = "https://misakanet.org"
 
+#: Lessons that once had a page and no longer have a row in the corpus, so nothing in `data/` can
+#: produce their rule any more. Every other dead URL is covered automatically: an `id -> slug` rule is
+#: emitted whenever a live lesson's id differs from its slug, which after a rename is exactly the old
+#: URL. These are the leftovers — measured 2026-11-16 by walking the deleted page directories in git
+#: history (`git log --diff-filter=D --name-only -- docs/lessons/`): 113 lesson slugs have ceased to
+#: exist, 111 are covered that way, and these are the ones that are not.
+#:
+#: `/lessons/readme/` is deliberately **not** here. That lesson was titled "README"; the corpus now has
+#: three unrelated README lessons, and a 301 to a plausible-but-wrong one is worse than an honest 404 —
+#: the reader would land on a page about something else and trust it. It stays a 404 until someone can
+#: say where it went.
+LEGACY_LESSON_ALIASES: tuple[tuple[str, str], ...] = (
+    ("hermes-state-database-lock-issues-cleanup-protocol-72b152",
+     "hermes-state-database-lock-issues-cleanup-protocol"),
+)
+
 # Prune guard: a directory is only deleted if its page carries this marker, so a
 # hand-written page that happens to live under the generated tree is never lost.
 GENERATOR_MARK = "Back to MisakaNet"
@@ -607,13 +623,21 @@ def generate_sitemap(lesson_slugs: list, domains: list) -> str:
     lines = ['<?xml version="1.0" encoding="UTF-8"?>',
              '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
 
-    # Static pages.
-    # The path shape has to match how each one is actually served, and the two differ in this repo:
-    # `/search/` is a directory (`docs/search/index.html`), while `docs/troubleshooting.md` is a
-    # markdown file served verbatim at `/troubleshooting.md` — the same as `docs/agents/repo-operations.md`.
-    # Advertising the directory form of the `.md` page gave a 404 that no check caught: measured
-    # 2026-10-04, `https://misakanet.org/troubleshooting/` → 404 while `/troubleshooting.md` → 200.
-    # `tests/test_sitemap_urls_resolve.py` now asserts each entry maps to a real file.
+    # Static **pages**. Two constraints pull against each other and the second won (2026-11-16).
+    #
+    # The path shape has to match how each one is served: `/search/` is a directory
+    # (`docs/search/index.html`), while `docs/troubleshooting.md` is a markdown file served verbatim at
+    # `/troubleshooting.md` — different routes, and advertising the directory form of a `.md` page gave a
+    # 404 that no check caught (measured 2026-10-04: `/troubleshooting/` → 404, `/troubleshooting.md` → 200).
+    #
+    # The second constraint is what the format is *for*: a sitemap is a list of pages a crawler can index.
+    # `troubleshooting.md` (`text/markdown`), `llms.txt` (`text/plain`), `skill.md` and
+    # `.well-known/mcp.json` are entry points for agents, not pages — they were added on 2026-10-29 so
+    # that "an entry point nobody can discover is not an entry point", and they are still discoverable
+    # where it matters: `llms.txt` names them, and `docs/_headers` sends `Link: rel="alternate"` and
+    # `rel="describedby"` for the two that have a header form. In a sitemap they are not an invitation,
+    # they are four URLs Google will refuse to index and report back as noise — the same bucket that put
+    # "soft 404" in front of a maintainer who then had to read 973 URLs to find out why.
     static = [
         ("https://misakanet.org/", "weekly", "1.0"),
         ("https://misakanet.org/search/", "weekly", "0.9"),
@@ -622,20 +646,6 @@ def generate_sitemap(lesson_slugs: list, domains: list) -> str:
         # repository document rather than a web page. A published artefact nobody can find is not
         # published.
         ("https://misakanet.org/dataset/", "weekly", "0.7"),
-        ("https://misakanet.org/troubleshooting.md", "weekly", "0.8"),
-        # The machine-readable entry points were the last URLs the site served without ever naming:
-        # they are what an agent fetches *before* it reads a page (`llms.txt`), the protocol manual
-        # (`skill.md`), and the MCP discovery document (`/.well-known/mcp.json`) — all three were
-        # reachable only if someone already knew their names. They go in the sitemap for the same
-        # reason `/dataset/` did: an entry point nobody can discover is not an entry point.
-        #
-        # `skill.md` is lowercase on purpose. Static assets are case-sensitive and `docs/skill.md`
-        # is the tracked file; `https://misakanet.org/SKILL.md` answers 404 (measured 2026-10-29),
-        # while the lowercase URL answers 200. Advertising the uppercase spelling would be the
-        # `troubleshooting/` 404 again, one case up.
-        ("https://misakanet.org/llms.txt", "weekly", "0.6"),
-        ("https://misakanet.org/skill.md", "weekly", "0.6"),
-        ("https://misakanet.org/.well-known/mcp.json", "weekly", "0.6"),
     ]
     for url, freq, prio in static:
         lines.append(f"  <url><loc>{url}</loc><changefreq>{freq}</changefreq><priority>{prio}</priority></url>")
@@ -858,6 +868,13 @@ def plan_with_slugs(lessons: list, known_slugs: dict[str, str] | None = None,
             continue
         alias_rules.append((lesson_id, slug))
         aliases += 1
+    for lesson_id, slug in LEGACY_LESSON_ALIASES:
+        # Only when the target is still generating a page: a legacy rule whose lesson was itself
+        # retired would be a 301 to a 404, which ships as a working-looking redirect because nothing
+        # renders a `Location` header.
+        if f"docs/lessons/{slug}/index.html" in files and f"docs/lessons/{lesson_id}/index.html" not in files:
+            alias_rules.append((lesson_id, slug))
+            aliases += 1
     # Unconditional on purpose. The prune guard only deletes a file that carries GENERATOR_MARK, and a
     # `_redirects` table has no reason to carry it, so a table that stopped being emitted would sit on
     # disk forever, stale and still live, rather than being cleaned up with the rest of the output.
