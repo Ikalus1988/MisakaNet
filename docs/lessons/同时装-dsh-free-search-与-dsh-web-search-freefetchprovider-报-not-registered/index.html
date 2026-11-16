@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>同时安装 dsh-free-search 和 dsh-web-search-free 两个搜索插件后，设置 fetchProvider: web-search-free 时报：</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>同时安装 dsh-free-search 和 dsh-web-search-free 两个搜索插件后，设置 fetchProvider: web-search-free 时报：</p><pre><code>configured web provider "web-search-free" is not registered</code></pre><p>dsh-web-search-free 的 patch 里明确写了它注册的 provider id 就是 web-search-free，但运行时找不到。</p><h2>Root Cause</h2><p>两个插件的 cordis.patch.yml 都注册了<strong>同一条目 id = web-search-free</strong>：</p><ul><li>dsh-web-search-free：name: dsh-web-search-free，注册 provider id=web-search-free</li><li>dsh-free-search：name: dsh-free-search，注册 provider id=ddg + fs-quality-fetch</li></ul><p>DSH 的 bundle patch 按 dsh.profile.bundles 顺序叠加，<strong>同 id 条目后者整段覆盖前者 config</strong>。dsh-free-search 在 bundles 列表中排在 dsh-web-search-free 之后，所以 dsh-web-search-free 的条目被覆盖，它的 search/fetch provider（id=web-search-free）从未注册。</p><h2>Fix</h2><p>二选一：</p><ol><li>卸载功能较弱的 dsh-web-search-free（它搜索必须配 API Key，且无 keyless 引擎；dsh-free-search 有 10 个 keyless 免费引擎 + platform_search/domain_search/research 等工具，功能完全覆盖）。</li><li>或在 dsh.profile.bundles 中把 dsh-web-search-free 放到 dsh-free-search 之后，并只给其中一个插件的 web-search-free 条目配 config。</li></ol><h2>Verification</h2><p>卸载 dsh-web-search-free 后，web.searchProvider=ddg + web.fetchProvider=fs-quality-fetch 均验证正常。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/problem-同时安装-dsh-free-search-和-dsh-web-search-free.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=同时装 dsh-free-search 与 dsh-web-search-free：fetchProvider 报 not registered">Find related lessons →</a></p></div>

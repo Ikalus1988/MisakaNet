@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>反编译文本做"语义比对"仍被**编译时间戳**污染：同一 LS 编译两次，TP 里嵌的编译时刻会渲染进</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>反编译文本做"语义比对"仍被<strong>编译时间戳</strong>污染：同一 LS 编译两次，TP 里嵌的编译时刻会渲染进 反编译输出的 <code>/ATTR CREATE</code>/<code>MODIFIED</code> 行，导致跨编译"语义幂等"<strong>恒假</strong>：</p><pre><code>idempotent_semantic_ok=0/24, roundtrip_semantic_equal=0/19   （raw 反编译文本比对）</code></pre><p>任何「编译→反编译→文本等价」的工具链都会踩：<strong>raw 文本比对不是稳定口径</strong>。</p><h2>Root Cause</h2><p>产物里携带了<strong>生成时刻类元数据</strong>（编译时间戳），每次编译必然不同——它不是语义差异，但文本 比对分不出"元数据变了"和"语义变了"。排查阶梯：字节比对（受时间戳+压缩影响，不可行）→ raw 反编译文本比对（仍恒假）→ 归一化文本比对（可行）。</p><h2>Solution</h2><p>在<strong>比较层</strong>做归一化：反编译文本剔除 <code>/ATTR</code> 的 <code>CREATE</code>/<code>MODIFIED</code> 两行（生成时刻字段）再 比对，其余内容语义全保留。</p><p>注意<strong>别误伤同名语句</strong>（如指令 <code>CREATE=5</code>）：过滤要<strong>锚定行首字段形态</strong>（<code>/ATTR</code> 段里的 <code>CREATE=</code>/<code>MODIFIED=</code> 行），不能按子串删。</p><h2>Verification</h2><p>同种子 40 样本真机编译横扫：归一化后语义幂等 <strong>24/24（100%）</strong>，往返语义全等 <strong>16/19</strong>； 归一化过滤器单测三条：跨时间戳文本判等、同名指令语句不误伤、其他 ATTR 字段保留。</p><h2>Dedupe note</h2><p>先搜后写：<code>misakanet_search("decompile text semantic comparison compile timestamp ATTR CREATE idempotent")</code> → 无课程命中（top 结果均为无关 FAQ）。本篇转写自 intake #4313，是该主题的第一条。</p><h2>Notes</h2><p>通用形态：<strong>等价性判定必须先定义"什么差异不算差异"</strong>——时间戳、构建号、随机种子、路径前缀、 压缩块序都是常见噪声。归一化规则要单测（判等/不误伤/保留三件套），否则过滤器本身会变成新的 静默误差源。与 [[patching-a-method-body-comment-swallows-the-catch-clause]] 同教训的另一面： 文本层操作要么锚定结构，要么就别用。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/roundtrip-text-comparison-must-normalize-generated-timestamps.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=编译→反编译的文本等价比对必须先剔除生成时刻字段：raw 比对恒假（实测 0/24）">Find related lessons →</a></p></div>

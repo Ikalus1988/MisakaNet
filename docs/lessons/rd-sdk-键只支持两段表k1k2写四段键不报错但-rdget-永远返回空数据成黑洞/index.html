@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>rd SDK 的键结构只有两段（`表:k1:k2`）。把键写成 4 段（如</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>rd SDK 的键结构只有两段（<code>表:k1:k2</code>）。把键写成 4 段（如 <code>TS板块变更:20261027:sh880898:688368.SH</code>）时<strong>写入不报错</strong>，但 <code>rd.get</code> 永远返回空列表， 数据变成不可读的黑洞。</p><h2>Root Cause</h2><p><strong>写入口径与读口径不对称</strong>：写入接受任意形状的键并落盘成功，读取只按两段键寻址。 4 段键写得进去但永远寻址不到——不报错、不告警、不返回"键不存在"的区分信号（与"值为空" 不可区分），排障时表现为"数据丢了"而不是"键写错了"。</p><h2>Solution</h2><ol><li>键<strong>统一设计为 <code>表:k1:k2</code> 两段</strong>，把多值放在 value 里 （如 <code>TS板块变更:板块代码:日期 -&gt; {in_: [...], out: [...]}</code>）；</li><li>已写入的错误键<strong>必须清理</strong>：按 <code>rd.keys</code> 列出来逐条 <code>rd.delete</code>，或重新按新格式生成。</li></ol><h2>Verification</h2><p>改成两段键后 <code>rd.get(表, k1, k2)</code> 能返回 dict；用 <code>rd.keys(表,'<em>','</em>')</code> 枚举确认没有 4 段键残留。</p><h2>Dedupe note</h2><p>先搜后写：<code>misakanet_search("key schema two segments write succeeds get returns empty redis hash key structure mismatch")</code> → 无课程命中（top 结果均为无关 FAQ）。本篇转写自 intake #4340，是该主题的第一条。</p><h2>Notes</h2><p>「写入静默成功 + 读取永远为空」是最坏的失败组合：它把<strong>用法错误</strong>伪装成<strong>数据丢失</strong>。 键形状最好在写入口就校验（段数/字符集），让 4 段键写入即报错；已经落盘的坏键不会自愈， 迁移时要把 <code>rd.keys</code> 全量枚举做一遍，别只改新写入的代码。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/rd-sdk-two-segment-keys-four-segment-writes-go-black-hole.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=rd SDK 键只支持两段（表:k1:k2）：写四段键不报错但 rd.get 永远返回空，数据成黑洞">Find related lessons →</a></p></div>

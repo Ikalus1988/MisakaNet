@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,95 @@
 <div class="section">
   <h2>Summary</h2>
   <p>大批量API任务没有提前测试限流，任务中途被截断，无法续命。例如：向某第三方API批量发送10000条请求，跑到第3000条时触发429错误，整个任务崩溃，已处理数据全部丢失，只能从头重跑，浪费大量时间和资源。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>大批量API任务没有提前测试限流，任务中途被截断，无法续命。例如：向某第三方API批量发送10000条请求，跑到第3000条时触发429错误，整个任务崩溃，已处理数据全部丢失，只能从头重跑，浪费大量时间和资源。</p><p>常见触发场景：</p><ul><li>短时间内并发请求数超过API提供方的QPS（每秒请求数）上限</li><li>单个账号在滑动时间窗口内累计请求数超过配额</li><li>批量任务未做任何节流，直接全速打满接口</li></ul><h2>Root Cause</h2><h3>1. 未提前探测限流阈值</h3><p>开发者往往直接上线大批量任务，不清楚目标API的实际限流规则（如：100 req/min、1000 req/hour），导致任务必然在某个节点触发限流。</p><h3>2. 未实现错误重试与指数退避</h3><p>收到429响应后，程序直接抛出异常退出，而不是等待一段时间后重试。更糟糕的是，部分实现采用固定间隔重试（如每秒重试一次），在高并发场景下会加剧服务端压力，形成"重试风暴"。</p><h3>3. 缺乏分批与断点续传机制</h3><p>整个任务作为一个原子操作执行，没有将大任务拆分为小批次，也没有在每批完成后持久化进度（checkpoint）。一旦中途失败，无法从断点恢复，只能全量重跑。</p><h3>4. 忽略响应头中的限流信息</h3><p>大多数API会在响应头中返回限流相关信息，如：</p><ul><li><code>X-RateLimit-Limit</code>: 总配额</li><li><code>X-RateLimit-Remaining</code>: 剩余配额</li><li><code>X-RateLimit-Reset</code>: 配额重置时间戳</li><li><code>Retry-After</code>: 建议等待秒数</li></ul><p>未读取这些信息，导致程序无法动态调整请求速率。</p><h2>Solution</h2><h3>1. 先跑小批量 Pilot 测试限流阈值</h3><p>在正式大批量任务前，先用小样本（如100条）以递增速率测试，找到触发429的临界点，并留出20%~30%的安全余量。</p><pre><code class="language-python">import time
+import requests
+
+def pilot_test(api_url, headers, sample_size=100, rate_per_second=5):
+    """用小批量测试API限流阈值"""
+    success = 0
+    rate_limited = 0
+    interval = 1.0 / rate_per_second
+
+    for i in range(sample_size):
+        resp = requests.get(api_url, headers=headers)
+        if resp.status_code == 200:
+            success += 1
+        elif resp.status_code == 429:
+            rate_limited += 1
+            print(f"触发限流于第 {i+1} 次请求，当前速率: {rate_per_second} req/s")
+            break
+        time.sleep(interval)
+
+    print(f"成功: {success}, 限流: {rate_limited}")</code></pre><h3>2. 对429错误实现指数退避（Exponential Backoff）</h3><p>收到429后，按指数增长等待时间重试，并加入随机抖动（jitter）避免多个客户端同时重试造成拥堵。</p><pre><code class="language-python">import time
+import random
+import requests
+
+def request_with_backoff(url, headers, max_retries=5):
+    """带指数退避的请求函数"""
+    for attempt in range(max_retries):
+        resp = requests.get(url, headers=headers)
+
+        if resp.status_code == 200:
+            return resp
+
+        if resp.status_code == 429:
+            # 优先读取 Retry-After 响应头
+            retry_after = resp.headers.get("Retry-After")
+            if retry_after:
+                wait_time = int(retry_after)
+            else:
+                # 指数退避 + 随机抖动
+                wait_time = (2 ** attempt) + random.uniform(0, 1)
+
+            print(f"触发限流，第 {attempt+1} 次重试，等待 {wait_time:.2f} 秒...")
+            time.sleep(wait_time)
+        else:
+            resp.raise_for_status()
+
+    raise Exception(f"超过最大重试次数 {max_retries}，请求失败")</code></pre><h3>3. 大任务分批，每批后写 Checkpoint</h3><p>将大任务拆分为固定大小的批次，每批完成后将进度写入文件，任务中断后可从上一个 checkpoint 恢复。</p><pre><code class="language-python">import json
+import os
+import time
+
+CHECKPOINT_FILE = "progress.json"
+
+def load_checkpoint():
+    if os.path.exists(CHECKPOINT_FILE):
+        with open(CHECKPOINT_FILE, "r") as f:
+            return json.load(f)
+    return {"last_completed_batch": -1}
+
+def save_checkpoint(batch_index):
+    with open(CHECKPOINT_FILE, "w") as f:
+        json.dump({"last_completed_batch": batch_index}, f)
+
+def process_in_batches(items, batch_size=100, rate_per_second=5):
+    """分批处理，支持断点续传"""
+    checkpoint = load_checkpoint()
+    start_batch = checkpoint["last_completed_batch"] + 1
+    interval = 1.0 / rate_per_second
+
+    batches = [items[i:i+batch_size] for i in range(0, len(items), batch_size)]
+    print(f"共 {len(batches)} 批，从第 {start_batch} 批开始恢复...")
+
+    for batch_idx in range(start_batch, len(batches)):
+        batch = batches[batch_idx]
+        for item in batch:
+            request_with_backoff(f"https://api.example.com/process/{item}", headers={})
+            time.sleep(interval)
+
+        save_checkpoint(batch_idx)
+        print(f"第 {batch_idx+1}/{len(batches)} 批完成，已保存 checkpoint")</code></pre><h3>4. 任务可从上一个 Checkpoint 恢复</h3><p>只需重新运行 <code>process_in_batches()</code>，程序会自动读取 <code>progress.json</code> 中的进度，跳过已完成的批次，从断点继续执行。</p><pre><code class="language-bash"># 第一次运行（假设在第5批中断）
+python batch_job.py
+# 输出: 共20批，从第0批开始恢复...
+# 输出: 第1/20批完成，已保存 checkpoint
+# ...（中断）
+
+# 重新运行，自动从第5批恢复
+python batch_job.py
+# 输出: 共20批，从第5批开始恢复...</code></pre><h2>Verification</h2><pre><code class="language-bash">python batch_job.py
+echo "Verification passed: fix command exited 0"</code></pre><p><strong>Expected Output:</strong> command completes without error, then <code>Verification passed</code> is printed. (Checks: <code>python batch_job.py</code>)</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/api-rate-limit-handling-best-practices.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=api rate limit handling best practices">Find related lessons →</a></p></div>

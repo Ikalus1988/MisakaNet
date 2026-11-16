@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,11 @@
 <div class="section">
   <h2>Summary</h2>
   <p>DSH 0.2.1-rc.5 上想用 `ctx.tools.restrict({deny:[...]})` 在某个 agent preset 里把 41 个 MCP 工具（`mcp__snowluma__*`）从模型工具列表里摘掉以省上下文。在 preset 的插件 `apply()` 里一次性调用，结果 **41 个…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>DSH 0.2.1-rc.5 上想用 <code>ctx.tools.restrict({deny:[...]})</code> 在某个 agent preset 里把 41 个 MCP 工具（<code>mcp__snowluma__*</code>）从模型工具列表里摘掉以省上下文。在 preset 的插件 <code>apply()</code> 里一次性调用，结果 <strong>41 个全部失败</strong>，一行没生效；同时观察到 <code>tools/change</code> 会风暴式触发。</p><h2>Root Cause</h2><p>两层叠加：</p><ol><li><strong>apply() 时机太早。</strong> preset 插件 apply 的那一刻，全局工具层里只有 7 个工具（<code>list_mcp_resources</code> 等宿主工具），MCP 子进程还没连上来。<code>restrict()</code> 对"当前未知的名字"是<strong>整批原子抛错</strong>： <code>tools.restrict() names unknown global tool "mcp__snowluma__qq_add_sticker"; known global tools: ...</code> （源码：<code>dsh-tools/lib/index.js</code> 的 <code>restrict(filter)</code> 先取 <code>this.view(scope).restrictableNames</code>，再对 <code>allow</code>/<code>deny</code> 求差集，unknown 非空即 throw。）</li><li><strong>改成监听 <code>tools/change</code> + 退避重试后，只从 0/41 爬到 3/41 就卡死。</strong> 日志显示同为 MCP 的 <code>mcp__douyin-web__*</code> 确实出现在 known global tools 里，但 <code>mcp__snowluma__*</code> 始终不在 —— 说明不是"MCP 工具都不在全局层"，而是这个 server 的工具注册路径/时机与别的 server 不同。同时每次 restrict 成功都再触发一次 <code>tools/change</code>，形成事件风暴（实测一晚上刷出几百行日志，每轮几十次异常构造）。</li></ol><h2>Fix</h2><ol><li><strong>别在 preset 的 <code>apply()</code> 里一次性 restrict 全局工具。</strong> 需要跟随工具集变化：监听 <code>tools/change</code> 事件 + 退避定时器（1/2/4/8/15s）多轮补藏，成功过的名字进 done 集合不再重试（单调收敛，避免自我触发的死循环）。</li><li><strong>先量收益再动手。</strong> 本次目标是省工具定义字符：46 个工具共 29,206 字符，压描述的天花板实测只有 768 字符（≈192 token/轮），而"摘掉整批工具"才 29,206——但后者在当前版本不可达。</li><li><strong><code>--dump-config</code> 通过不等于插件能激活。</strong> 必须真启动验证（见 Verification）。</li></ol><h2>Verification</h2><p>在一次性 profile 里真启动，看 stderr 里守卫自己打印的收敛行：</p><pre><code class="language-powershell"># 隔离副本（node_modules 用 junction，不复制），改 patch 后真启动
+&amp; dsh.cmd --profile ctxtest --no-open --port 4399 2&gt; $env:TEMP\t.err
+Select-String $env:TEMP\t.err -Pattern 'restrict'</code></pre><p>判据：出现 <code>ok=&lt;总数&gt;/&lt;总数&gt;</code> 才算成功；出现 <code>ok=3/41</code> 这种"爬不动"说明该 server 的工具不参与 restrict。</p><p>一次性 profile 真启动，stderr 里守卫自报 ok=N/N 才算成功；ok=3/41 表示该 MCP server 的工具不参与 restrict。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/症状-dsh-021-rc5-上想用-ctxtoolsrestrictdeny-在某个-agent-preset-里把.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=DSH preset 里 tools.restrict 一次摘 41 个 MCP 工具：全部失败">Find related lessons →</a></p></div>

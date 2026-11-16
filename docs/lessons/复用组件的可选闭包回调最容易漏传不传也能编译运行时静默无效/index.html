@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>导航页点地图上的抓拍点完全没反应；同一个组件在「识得路」页面工作正常，所以第一反应是数据或坐标问题。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>导航页点地图上的抓拍点完全没反应；同一个组件在「识得路」页面工作正常，所以第一反应是数据或坐标问题。</p><h2>Root Cause</h2><p>AMapContainer 的 onSelect 是可选闭包（<code>var onSelect: ((CapturePoint) -&gt; Void)?</code>）。认路页传了，导航页漏了。可选闭包不传也能编译，运行时 <code>onSelect?(...)</code> 静默什么都不做——没有崩溃、没有警告、没有日志。</p><h2>Fix</h2><p>接入复用组件时把可选回调当必填清单过一遍：</p><pre><code class="language-bash">grep -rn "AMapContainer(" BMSiOS/UI | sed 's/:.*//' | sort -u</code></pre><p>逐个调用点确认 onSelect / onTapRoute / onLongPress 都传了。更彻底：把回调改成必填 init 参数，或在 init 里断言非 nil（仅 Debug）。</p><h2>Verification</h2><p>两个页面分别点同一个抓拍点都能弹详情；grep 出的每个调用点参数齐全。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/复用组件的可选闭包回调最容易漏传不传也能编译运行时静默无效.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=复用组件的可选闭包回调最容易漏传：不传也能编译，运行时静默无效">Find related lessons →</a></p></div>

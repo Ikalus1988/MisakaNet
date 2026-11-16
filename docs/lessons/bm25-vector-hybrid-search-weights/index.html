@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,22 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Search uses only BM25, missing semantic similarity from vector embeddings. Pure keyword search fails on paraphrased queries, synonyms, and conceptually related …</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Search uses only BM25, missing semantic similarity from vector embeddings. Pure keyword search fails on paraphrased queries, synonyms, and conceptually related content that doesn't share exact terms.</p><h2>Root Cause</h2><p>BM25 relies solely on term frequency and inverse document frequency (TF-IDF) statistics. It cannot capture semantic meaning — two documents discussing the same concept with different vocabulary will score poorly. Vector embeddings encode semantic similarity but lack precision for exact keyword matches. Neither approach alone is optimal:</p><ul><li><strong>BM25 weakness</strong>: "automobile" vs "car" — no match despite identical meaning</li><li><strong>Vector weakness</strong>: exact product codes or proper nouns may be diluted in embedding space</li><li><strong>Hybrid solution</strong>: blending both scores captures both lexical precision and semantic relevance</li></ul><p>The blending weight determines which signal dominates. A poorly chosen weight (e.g., 100% vector on a keyword-heavy corpus) degrades precision. Configurable weights allow tuning per use case without code changes.</p><h2>Solution</h2><p>Configurable BM25 + vector blending via <code>config.yaml</code> or env vars. Default 50/50 with RRF blending.</p><h3>config.yaml Example</h3><pre><code class="language-yaml">search:
+  hybrid:
+    enabled: true
+    bm25_weight: 0.5       # weight for BM25 score (0.0 - 1.0)
+    vector_weight: 0.5     # weight for vector score (0.0 - 1.0)
+    blend_method: rrf      # options: rrf | linear
+    rrf_k: 60              # RRF constant (default 60, higher = smoother ranking)
+    normalize_scores: true # normalize both scores to [0,1] before blending</code></pre><h3>Environment Variable Override</h3><pre><code class="language-bash"># Override weights at runtime without changing config file
+export SEARCH_BM25_WEIGHT=0.3
+export SEARCH_VECTOR_WEIGHT=0.7
+export SEARCH_BLEND_METHOD=rrf
+export SEARCH_RRF_K=60</code></pre><h3>Recommended Weight Profiles</h3><table><thead><tr><th>Use Case</th><th>BM25 Weight</th><th>Vector Weight</th><th>Rationale</th></tr></thead><tbody><tr><td>General Q&amp;A</td><td>0.5</td><td>0.5</td><td>Balanced default</td></tr><tr><td>Code search</td><td>0.7</td><td>0.3</td><td>Exact tokens matter</td></tr><tr><td>Semantic FAQ</td><td>0.3</td><td>0.7</td><td>Meaning over keywords</td></tr><tr><td>Product catalog</td><td>0.6</td><td>0.4</td><td>SKUs + descriptions</td></tr></tbody></table><h2>Key Points</h2><ul><li>Normalize scores to [0,1] before blending to prevent scale mismatch</li><li>RRF (reciprocal rank fusion) recommended over linear blending — more robust to outlier scores</li><li>Weights must sum to 1.0 when using linear blend mode</li><li>RRF mode ignores raw score magnitude; only rank position matters</li><li>Tune weights using offline evaluation (e.g., NDCG, MRR) against a labeled query set</li><li>Changes to weights take effect on next query; no re-indexing required</li></ul><h2>Verification</h2><pre><code class="language-bash">grep -i 'bm25\|chunk\|embed' lessons/contrib/rag-*.md 2&gt;/dev/null | head -3
+echo Search verified</code></pre><p><strong>Expected Output:</strong></p><pre><code># (refs)
+Search verified</code></pre>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/bm25-vector-hybrid-search-weights.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=BM25 + Vector Hybrid Search: configurable blending weights">Find related lessons →</a></p></div>

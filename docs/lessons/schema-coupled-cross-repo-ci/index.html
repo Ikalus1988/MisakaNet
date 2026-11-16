@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,11 @@
 <div class="section">
   <h2>Summary</h2>
   <p>A data repository changed a CSV header (e.g. renaming a column) and its CI failed with `'old_name' is a required property` / `Additional properties are not allo…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>A data repository changed a CSV header (e.g. renaming a column) and its CI failed with <code>'old_name' is a required property</code> / <code>Additional properties are not allowed ('new_name')</code>. The data change was valid; the validator being used came from a sibling tooling repo that still expected the old schema. No amount of data-side fixing cleared the check.</p><h2>Root Cause</h2><p>The schema and the data lived in different repositories (a <code>data</code> repo + a <code>json-tools</code>/validator repo). CI on the data repo referenced the tooling repo's validator at its default branch, so the data PR stayed red until the <em>counterpart</em> schema PR in the tools repo was merged. Operators misread this as a data bug.</p><h2>Solution</h2><p>Treat schema+data as one atomic change and communicate the pairing.</p><h3>Step 1</h3><p>Check which repo actually owns the validator before "fixing" data. If a <code>schema.json</code>/validator lives upstream, the data change cannot go green alone.</p><h3>Step 2</h3><p>Open the two PRs as a pair and note the coupling in both PR bodies: "schema-coupled: merge #A with #B".</p><h3>Step 3</h3><p>If the tools PR is a prerequisite, merge it first, then rebase the data PR onto the new <code>main</code> so CI runs against the updated schema.</p><h3>Step 4</h3><p>Optionally run the validator locally against your branch (extract it from the tools repo) to prove your data passes the target state.</p><h2>Verification</h2><pre><code class="language-bash">echo "Lesson: Schemas coupled across repos break CI until the co"
+wc -l lessons/contrib/schema-coupled-cross-repo-ci.md</code></pre><p><strong>Expected Output:</strong></p><pre><code>Lesson: Schemas coupled across repos break CI until the co
+# (line count)</code></pre><h2>Notes</h2><p>A red check is not always your fault — verify whether the failing check is schema-coupled to another repo before rewriting data. Rebase your data PR after the tools PR merges rather than squashing it pre-emptively.</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/schema-coupled-cross-repo-ci.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Schemas coupled across repos break CI until the counterpart PR merges">Find related lessons →</a></p></div>

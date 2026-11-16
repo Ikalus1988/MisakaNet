@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,53 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Manual merge is the bottleneck in zero-bounty open-source workflows. Maintainers must review every PR, click merge, post thank-you comments — repetitive work th…</p>
+</div>
+<div class="lesson-body">
+<h2>Root Cause</h2><p>Manual merge is the bottleneck in zero-bounty open-source workflows. Maintainers must review every PR, click merge, post thank-you comments — repetitive work that doesn't scale when AI agents submit PRs at high velocity.</p><h2>Solution</h2><p>Build a fully automated CI pipeline that handles the entire PR lifecycle from submission to merge:</p><pre><code>PR opened → Shadow Branch mirror → DCO check (standalone)
+  → Quality Score (noise ratio + title heuristics)
+  → Dynamic Dependency Discovery (find -name requirements.txt)
+  → Test Suite → Audit Report → Auto-Merge Gate
+  → Thank-you comment posted → Issue closed</code></pre><h3>1. Heuristic Quality Score (anti-spam)</h3><p>Reject low-effort agent submissions before running expensive tests:</p><pre><code class="language-yaml"># Auto-Merge CI Pipeline — DCO, Quality Score, Shadow Branch, Dynamic Deps, Auto-Merge
+- name: Agent Quality Score
+  run: |
+    DIFF=$(gh api repos/owner/repo/pulls/$PR/files --paginate --jq '[.[].patch // ""] | join("\n")')
+    TOTAL=$(echo "$DIFF" | grep -c '^[+-]')
+    NOISE=$(echo "$DIFF" | grep -cE '^[+-]\s*$|^[+-]\s*[}\]&gt;\]]')
+    SCORE=100
+    RATIO=$(awk -v n="$NOISE" -v t="$TOTAL" 'BEGIN { print (t &gt; 0) ? n/t : 0 }')
+    [ "$(echo "$RATIO &gt; 0.5" | bc)" -eq 1 ] &amp;&amp; SCORE=$((SCORE - 50))
+    # Title pattern check
+    echo "$TITLE" | grep -qi "automated.*submit\|auto.*pr" &amp;&amp; SCORE=$((SCORE - 20))
+    [ "$SCORE" -lt 40 ] &amp;&amp; gh pr close "$PR" --comment "Quality Score Failed"</code></pre><p>Threshold: score &gt;= 40 passes. Below that → auto-close with explanation.</p><h3>2. Dynamic Dependency Discovery</h3><p>Instead of manually tracking which subdirectories need <code>pip install</code>, scan recursively:</p><pre><code class="language-yaml">- name: Install Dependencies
+  run: |
+    pip install -r requirements.txt 2&gt;/dev/null || true
+    find . -path ./venv -prune -o -name "requirements.txt" \
+      -print0 | xargs -0 pip install -r 2&gt;/dev/null || true
+    pip install pytest pytest-cov</code></pre><p>Prevents the "ModuleNotFoundError on new submodule deps" class of CI failures.</p><h3>3. Shadow Branch Isolation</h3><p>External contributor PRs get mirrored to <code>shadow/pr-N</code> branches automatically:</p><pre><code class="language-yaml"># shadow-branch.yml
+on: pull_request
+jobs:
+  isolate:
+    if: github.event.pull_request.author_association != 'OWNER'
+    steps:
+      - run: |
+          gh api repos/owner/repo/git/refs --method POST \
+            --field ref="refs/heads/shadow/pr-$PR_NUM" \
+            --field sha="$HEAD_SHA"</code></pre><p><strong>Important:</strong> <code>GITHUB_TOKEN</code> lacks git write permission on fork PRs. Use <code>secrets.GITHUB_TOKEN</code> and gracefully skip when 403:</p><pre><code class="language-bash">gh api repos/owner/repo/git/refs --method POST ... &amp;&gt;/dev/null || {
+  echo "SKIP: GITHUB_TOKEN lacks git write permission (fork PR)"
+  exit 0
+}</code></pre><h3>4. Auto-Merge Gate</h3><p>When all checks pass, set auto-merge automatically:</p><pre><code class="language-yaml">- name: Auto-Merge Gate
+  if: success() &amp;&amp; github.event_name == 'pull_request'
+  env:
+    GH_TOKEN: ${{ secrets.PAT || secrets.GITHUB_TOKEN }}
+  run: |
+    [ -z "$GH_TOKEN" ] &amp;&amp; { echo "SKIP: no token for fork PR"; exit 0; }
+    MERGEABLE=$(gh api repos/owner/repo/pulls/$PR --jq '.mergeable')
+    [ "$MERGEABLE" != "true" ] &amp;&amp; exit 0
+    BODY=$(gh api repos/owner/repo/pulls/$PR --jq '.body')
+    UNCHECKED=$(echo "$BODY" | grep -c "\[ \]" || true)
+    [ "$UNCHECKED" -gt 0 ] &amp;&amp; exit 0
+    gh pr merge "$PR" --repo owner/repo --merge --auto \
+      --subject "Auto-merge #$PR: $TITLE"</code></pre><h3>5. DCO Pre-flight Removal</h3><p>Standalone DCO check (<code>dco-check.yml</code>) is authoritative. The audit workflow's internal DCO pre-flight for fork PRs uses <code>git log origin/main..HEAD</code> which produces false positives on GitHub's merge commits. <strong>Remove it</strong> — let the standalone DCO check own that gate.</p><h2>Lesson</h2><h2>Verification</h2><ol><li>Submit a quality-scored PR (score ≥ threshold) that passes all CI — confirm auto-merge triggers</li><li>Submit a low-quality PR (score below threshold) — confirm it is rejected before test suite runs</li><li>Submit a fork PR with all CI green — confirm manual merge is required (auto-merge skipped)</li><li>Verify the shadow branch auto-syncs with base branch after merge</li><li>Check <code>deps.lock</code> is updated alongside the shadow branch diff</li></ol><ul><li>Manual merge doesn't scale with AI agent contributors — automate everything after the test suite</li><li>Fork PR secrets restriction means auto-merge only works for same-repo PRs; fork PRs fall back to manual merge</li><li>Quality scoring before tests saves CI minutes on low-effort submissions</li><li>Shadow branch is "nice to have" — the probe-and-skip pattern prevents fork PR failures</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/core/auto-merge-ci-pipeline.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Auto-Merge CI Pipeline — DCO, Quality Score, Shadow Branch, Dynamic Deps, Auto-Merge">Find related lessons →</a></p></div>

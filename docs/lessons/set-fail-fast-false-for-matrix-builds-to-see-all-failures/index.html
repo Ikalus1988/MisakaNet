@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,21 @@
 <div class="section">
   <h2>Summary</h2>
   <p>GitHub Actions matrix builds default to `fail-fast: true`, which cancels all remaining jobs after the first failure. In a 3×5 matrix (3 Python versions × 5 test…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>GitHub Actions matrix builds default to <code>fail-fast: true</code>, which cancels all remaining jobs after the first failure. In a 3×5 matrix (3 Python versions × 5 test groups = 15 jobs), this means 13 jobs are cancelled after the first failure, hiding whether other configurations also fail.</p><p>This wastes CI compute (you re-run to find all failures) and hides the full scope of breakage.</p><h2>Root Cause</h2><p>The <code>strategy.matrix</code> block in GitHub Actions defaults <code>fail-fast</code> to <code>true</code>:</p><pre><code class="language-yaml">strategy:
+  matrix:
+    python-version: ["3.10", "3.11", "3.12"]
+    test-group: ["unit", "integration", "e2e", "smoke", "regression"]
+  # fail-fast: true is implicit — first failure cancels rest</code></pre><p>This is sensible for fast feedback on single-configuration repos, but wrong for matrix builds where you want to know the full compatibility picture.</p><h2>Solution</h2><h3>Step 1: Add explicit fail-fast: false</h3><pre><code class="language-yaml">strategy:
+  fail-fast: false
+  matrix:
+    python-version: ["3.10", "3.11", "3.12"]
+    test-group: ["unit", "integration", "e2e", "smoke", "regression"]</code></pre><h3>Step 2: Verify all matrix jobs run</h3><p>After pushing, check that all jobs completed (not just the first failure):</p><pre><code class="language-bash">gh run view &lt;RUN_ID&gt; --json jobs --jq '.jobs[] | {name: .name, conclusion: .conclusion}'</code></pre><p>Expected output should show all 15 jobs with their individual conclusions, not 1 failure + 14 cancelled.</p><h2>Verification</h2><p>Check the setting on every matrix job, then compare the before/after:</p><pre><code class="language-bash"># Every matrix workflow that depends on seeing all cells must say `fail-fast: false`:
+grep -rn "fail-fast" .github/workflows/</code></pre><p>Expected result: each matrix job prints <code>fail-fast: false</code> — this repository has five such lines (<code>ci-cross-platform.yml</code>, <code>codeql.yml</code>, <code>fatal-guard.yml</code> and <code>misakanet-setup-ci.yml</code> twice).</p><p>Compare the before/after on a run that has one failing cell:</p><ul><li><strong>Before</strong>: 1 failure, 14 cancelled (wasted compute, incomplete data — the other cells never report)</li><li><strong>After</strong>: 15 jobs completed, showing the full failure/success matrix</li></ul><h2>Notes</h2><ul><li><code>fail-fast: false</code> increases CI time when there are failures (all jobs run to completion)</li><li>Use <code>fail-fast: true</code> only when you want quick feedback and don't care about the full matrix</li><li>For large matrices (50+ combinations), consider <code>max-parallel</code> to limit concurrent jobs:<pre><code class="language-yaml">strategy:
+  fail-fast: false
+  max-parallel: 5
+  matrix: ...</code></pre></li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/ci-workflow-fail-fast-matrix.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Set fail-fast: false for Matrix Builds to See All Failures">Find related lessons →</a></p></div>

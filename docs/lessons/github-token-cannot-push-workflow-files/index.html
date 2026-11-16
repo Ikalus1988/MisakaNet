@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,36 @@
 <div class="section">
   <h2>Summary</h2>
   <p>A daily "keep the docs in sync" job had been green for weeks. The first day its output actually</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>A daily "keep the docs in sync" job had been green for weeks. The first day its output actually changed, the run failed at the very last step:</p><pre><code class="language-text">! [remote rejected]   main -&gt; main (refusing to allow a GitHub App to create or update workflow
+  `.github/workflows/pr-thank-you.yml` without `workflows` permission)
+error: failed to push some refs to 'https://github.com/owner/repo'</code></pre><p>Nothing in the job's own logic was wrong: it regenerated its artifacts, committed them, and pushed. GitHub rejected the push because <strong>one file in the commit was a workflow file</strong>.</p><h2>Root Cause</h2><p>A syncer had a registry of "places that quote the number it maintains", and one entry pointed at a count written <em>inside</em> <code>.github/workflows/pr-thank-you.yml</code> (a bot comment: "part of X's 298+ lessons"). GitHub restricts writes under <code>.github/workflows/**</code> to tokens holding the <code>workflows</code> permission. <code>GITHUB_TOKEN</code> — the default token of a workflow run — never has it, by design: otherwise any workflow edit could grant itself more privileges.</p><p>The failure is invisible until the day the value changes:</p><ul><li>the job was green every day the number stayed the same (nothing to commit → nothing to push);</li><li>the first real change made the commit touch <code>pr-thank-you.yml</code>, so the push was rejected <strong>and the entire regeneration was thrown away</strong> (the commit never left the runner);</li><li>the rejection names only <em>one</em> file — if you scan the log too quickly you blame that workflow rather than the syncer that keeps writing to it.</li></ul><p><code>.github/ISSUE_TEMPLATE/<strong></code>, <code>.github/PULL_REQUEST_TEMPLATE.md</code>, <code>README.md</code> and anything under <code>docs/</code> are all fine. Only <code>.github/workflows/</strong></code> is gated.</p><h2>Solution</h2><p><strong>Never let a bot commit be the thing that keeps a workflow file up to date.</strong> Move the value out of the workflow, or read it at runtime:</p><pre><code class="language-yaml"># The count used to be hardcoded here, which meant the daily "refresh counts" job
+# could never push its own commit. Read the canonical file at runtime instead.
+permissions:
+  contents: read     # added: the read below needs it (the job otherwise grants none)
+  issues: write
+steps:
+  - uses: actions/github-script@v9
+    with:
+      script: |
+        let lessons = "";
+        try {
+          const file = await github.rest.repos.getContent({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            path: "docs/_lessons_count.txt",
+            ref: context.payload.repository.default_branch,
+          });
+          const count = Buffer.from(file.data.content, "base64").toString("utf8").trim();
+          if (/^\d+$/.test(count)) lessons = " (now " + count + " lessons)";
+        } catch (e) {
+          lessons = "";   // decorative — never fail the comment over it
+        }</code></pre><p>If the value genuinely must be <em>written</em> into a workflow file by automation, that job needs a PAT or GitHub App token with the <code>workflows</code> permission (and that is a security decision, not a default).</p><p>While fixing this, make the bot's push resilient, because <code>main</code> moves under long-lived jobs:</p><pre><code class="language-bash">git add -A
+git commit -m "chore: auto-update generated artifacts"
+# A rejected push throws away the whole regeneration. Retry through a rebase once,
+# but let a real conflict fail loudly — a `|| true` here hides a detached HEAD.
+git push || { git pull --rebase origin main &amp;&amp; git push; }</code></pre><p>Add <code>concurrency: {group: &lt;job&gt;, cancel-in-progress: false}</code> so two runs cannot race each other, and <strong>run the job on demand</strong> (<code>workflow_dispatch</code>) after changing it: a scheduled-only job gives you no signal until the next cron tick.</p><h2>Verification</h2><ul><li>Dispatch the job and read the <strong>step-level</strong> result, not just the workflow conclusion — the failure is in the last step ("Commit and push"), and the job may not have run for days.</li><li>Inspect what the push actually contained: <code>git status --porcelain</code> before committing tells you which files the job touches. Any <code>.github/workflows/**</code> in that list is this bug.</li><li>After the fix, confirm the value in the workflow still renders correctly (here: the PR comment shows the count) — the failure mode of the fix is a silently missing number, which try/catch swallows by design.</li></ul><h2>Detection Heuristics</h2><ul><li>A syncer/registry/bot that writes into <code>.github/workflows/**</code> is a time bomb: it stays green as long as the value does not change, then fails exactly when it finally works.</li><li><code>refusing to allow a GitHub App to create or update workflow</code> = permission, not syntax. Do not go edit the workflow it names; go find who is committing it.</li><li>Repeated values in generated commit lists are the tell: if the same fact lives in a workflow file, you cannot keep it "single source of truth" from a bot. Prefer reading it at runtime.</li><li>Any two-statement shell idiom like <code>cmd || true</code> around <code>git push</code>/<code>git rebase</code> hides exactly this class of state corruption; make failures loud.</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/github-token-cannot-push-workflow-files.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=GITHUB_TOKEN cannot push changes to .github/workflows/** — your bot job will fail at push time">Find related lessons →</a></p></div>

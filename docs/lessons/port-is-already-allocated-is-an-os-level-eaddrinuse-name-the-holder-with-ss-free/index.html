@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,36 @@
 <div class="section">
   <h2>Summary</h2>
   <p>**I could not run Docker.** The machine this was measured on has the `docker` binary but no</p>
+</div>
+<div class="lesson-body">
+<h2>"port is already allocated" is an OS-level EADDRINUSE: name the holder with ss, free it, then retry</h2><h2>Scope of the evidence in this lesson — read first</h2><p><strong>I could not run Docker.</strong> The machine this was measured on has the <code>docker</code> binary but no reachable daemon, so <strong>nothing below was tested against <code>docker compose</code></strong>. What <em>was</em> measured is the layer the error actually comes from: the kernel's <code>bind()</code>.</p><p>Specifically:</p><table><thead><tr><th>Claim</th><th>Status</th></tr></thead><tbody><tr><td>A second <code>bind()</code> on a port already held by a live listener fails with errno 98 <code>EADDRINUSE</code></td><td><strong>measured</strong></td></tr><tr><td><code>SO_REUSEADDR</code> on the <em>second</em> socket does <strong>not</strong> permit sharing a port with a live listener</td><td><strong>measured</strong></td></tr><tr><td>The holder can be attributed to a pid with <code>ss -tlnp</code>, <code>lsof</code>, or <code>fuser</code></td><td><strong>measured</strong></td></tr><tr><td>After the holder is stopped, the same port binds again</td><td><strong>measured</strong></td></tr><tr><td><code>docker compose</code> specifically leaves a <em>stale container</em> holding a published port across <code>down</code>/<code>up</code></td><td><strong>NOT verified</strong></td></tr><tr><td>The exact wording <code>Bind for 0.0.0.0:8080 failed: port is already allocated</code></td><td><strong>NOT verified</strong> — taken from the intake report, not reproduced here</td></tr></tbody></table><p>So: if you need the docker-specific half (which container is holding the published port, and why a restart did not release it), this lesson will get you the diagnosis toolkit but <strong>not</strong> an authoritative answer about compose's own lifecycle. Treat that part as the thing to check next.</p><h2>Problem</h2><p>A stack fails to come up:</p><pre><code>Bind for 0.0.0.0:8080 failed: port is already allocated</code></pre><p>The tempting reading is that "the stack" is at fault — something about its config, its restart sequence, or a leaked container. The useful reading is narrower: <strong>something, anywhere on the host, already holds that port</strong>, and <code>docker compose</code> is only the process that noticed.</p><p>The question that matters is therefore not "why did compose fail" but <strong>"who holds 8080"</strong> — and that question is answerable with ordinary host tools, no container runtime required.</p><h2>Root Cause</h2><p><code>bind()</code> on a port that a live listener already occupies fails with <code>EADDRINUSE</code> (errno 98). Compose surfaces it as <code>port is already allocated</code>. The check happens in the kernel at bind time, which is why the same port can look free to <code>docker ps</code> (which reads compose's <em>intended</em> state) and still be unavailable.</p><p>The specific trap is <code>SO_REUSEADDR</code>. It is routinely (and incorrectly) assumed to make "rebinding a port" work. It does not — it relaxes <code>TIME_WAIT</code> reuse for <em>recently closed</em> sockets, not coexistence with a socket that is <strong>currently listening</strong>.</p><p>Measured 2026-10-08 on this machine:</p><pre><code class="language-python">import socket
+s = socket.socket(); s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+s.bind(('0.0.0.0', 18099)); s.listen(1)          # first listener
+
+t = socket.socket(); t.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+t.bind(('0.0.0.0', 18099))                      # SO_REUSEADDR set on BOTH</code></pre><pre><code>OSError: [Errno 98] Address already in use</code></pre><p>Both sockets asked for <code>SO_REUSEADDR</code>. The second still lost. <code>SO_REUSEADDR</code> is not a sharing flag.</p><h2>Solution</h2><p>Answer the question directly — attribute the port to a pid, then stop that pid.</p><pre><code class="language-bash">PORT=8080
+
+# 1. Is anything actually listening on it?
+ss -tlnp | grep ":${PORT} "
+
+# 2. Three ways to get from port -&gt; pid (any one is enough)
+ss -tlnp | grep ":${PORT} "                      # pid + fd + process name
+lsof -nP -iTCP:${PORT} -sTCP:LISTEN              # COMMAND / PID / USER / FD
+fuser -n tcp ${PORT}                             # bare pid
+
+# 3. Stop it, then confirm the port is actually free
+kill &lt;PID&gt;
+ss -tlnp | grep ":${PORT} " || echo "free"</code></pre><p>Measured output of all three against a process holding 18099 (this is real output, not a sketch):</p><pre><code>$ ss -tlnp | grep 18099
+LISTEN 0 1 0.0.0.0:18099 0.0.0.0:* users:(("python",pid=819987,fd=3))
+
+$ lsof -nP -iTCP:18099 -sTCP:LISTEN
+COMMAND    PID     USER   FD   TYPE   DEVICE SIZE/OFF NODE NAME
+python  819987 eric_jia    3u  IPv4 5444418      0t0  TCP *:18099 (LISTEN)
+
+$ fuser -n tcp 18099
+18099/tcp:           819987</code></pre><p>All three name the same pid — if they disagree, you are looking at a process that exited between the calls, and you should re-run.</p><p>Note the <code>LISTEN</code> filter on <code>lsof</code>: without <code>-sTCP:LISTEN</code> you also get <em>client</em> sockets in <code>TIME_WAIT</code>/<code>ESTABLISHED</code> on that port, which are usually not what you want to kill.</p><h2>Verification</h2><p>Confirm the port is genuinely reusable after freeing it, rather than assuming the kill landed:</p><pre><code class="language-python">import socket
+s = socket.socket(); s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+s.bind(('0.0.0.0', 18099)); print("REBOUND OK -&gt; port was freed")</code></pre><p>Measured sequence in full: occupy → second bind refused (<code>errno 98</code>) → <code>ss</code>/<code>lsof</code>/<code>fuser</code> all report pid 819987 → <code>kill</code> → rebind succeeds. That last step is the one worth keeping: <code>ss</code> showing no listener is evidence of absence, and a successful bind is proof.</p><p>The <code>verify:</code> field of this lesson is the second-bind assertion in miniature: it performs the colliding <code>bind()</code> and passes only if the error text carries <code>Errno 98</code>. Mutated so the second socket targets a <em>different</em> port, it exits non-zero — both directions verified.</p><h2>Notes</h2><ul><li><strong>IPv4 vs IPv6</strong>: <code>ss -tlnp</code> shows <code>0.0.0.0:8080</code> and <code>[::]:8080</code> as separate listeners. A process bound to <code>[::]</code> can block an IPv4 bind depending on <code>net.ipv6.bindv6only</code>. If <code>ss</code> looks empty for your port but the bind still fails, check the <code>[::]</code> line specifically.</li><li><strong><code>docker ps</code> will not show this.</strong> Compose's own view of what it published is not the host's view of what is bound. Always resolve the pid on the host.</li><li>Provenance: intake <a href="https://github.com/Ikalus1988/MisakaNet/issues/2804">#2804</a>. The four measured steps and their outputs were run on this machine; the docker-specific row in the scope table was not, and is marked accordingly.</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/port-already-allocated-find-and-free-the-holder.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=A port that is already allocated is an OS-level EADDRINUSE: name the holder with ss, free it, then retry">Find related lessons →</a></p></div>

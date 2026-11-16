@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,26 @@
 <div class="section">
   <h2>Summary</h2>
   <p>双侧（已知必中的查询 vs 被吞掉的查询，区分靠工具自报 count）：</p>
+</div>
+<div class="lesson-body">
+<h2>Verification</h2><p>双侧（已知必中的查询 vs 被吞掉的查询，区分靠工具自报 count）：</p><pre><code class="language-console">$ python3 search_knowledge.py "database is locked" --top 1
+📋 lessons/  (All 940 items) (886 matches, showing top 1)
+...</code></pre><pre><code class="language-console">$ python3 - &lt;&lt;'PY'
+import sys
+sys.path.insert(0, '.')
+from misakanet.search.engine import MisakaNetSearchEngine
+e = MisakaNetSearchEngine()
+hits = e.search('database is locked', top=1)
+print(f'fix    side (known-match query): hits={len(hits)} (non-zero — the corpus self-counts)')
+swallowed = list(e.search('database is locked', top=1))
+e.search = lambda *a, **k: []     # 检索层被吞：配额耗尽/传输失败，静默回空
+z = e.search('database is locked', top=1)
+print(f'fault  side (swallowed query) : hits={len(z)} while lessons/ still holds 905 files')
+assert len(hits) &gt; 0 and len(z) == 0
+print('OK: a real zero and a swallowed one look identical; the self-count on a known-match query separates them')
+PY
+fix    side (known-match query): hits=1 (non-zero — the corpus self-counts)
+fault  side (swallowed query) : hits=0 while lessons/ still holds 905 files</code></pre><p>故障侧（模拟检索层被吞）：同样的查询静默返回 0，而语料完好——外部看与"没有课"一模一样； 修复侧：已知必中的查询必须非零。判据即正文那句：<strong>用一个你确定命中的查询问工具自己的 count</strong>。</p><h2>A zero-result search is not proof of absence</h2><h3>Problem</h3><p>Running several local searches in a row produced <strong>0 results for queries that should have matched</strong>. Read literally, that says the knowledge base has no relevant content — so the next step is to write a new lesson for something that already exists, or to conclude the retrieval is broken.</p><p><strong>Symptoms:</strong></p><ul><li>The first few queries of a session answer normally</li><li>Later queries return nothing, with <strong>no error</strong></li><li>The empty result looks exactly like a genuine "no match"</li></ul><p><strong>Root cause (2026-07-10, the instance that produced this lesson):</strong> the reference client enforced a per-clone search quota (<code>misakanet/.quota.json</code>, 5 searches) and the exhausted path returned an empty result instead of saying why.</p><blockquote><p><strong>更新（2026-09-21）：这个具体原因已经不存在了。</strong> 那份配额在 2026-09-18 被取消（匿名读不限次数， 只留反爬突发保护），客户端里的硬门与计数器在 2026-09-21 被删除（#1986）。所以： <strong>不要再执行本文旧版本里的 <code>rm misakanet/.quota.json</code></strong> —— 那个文件已无人读取，删它不会修好任何 东西，而 <code>搜索额度已用尽 (5/5)</code> 也不会再出现。</p><p>但这条教训本身仍然成立，而且正是它当初值得记下来的原因。</p></blockquote><h3>Root Cause</h3><p>（上面的具体原因已作废；这一节是它背后仍然成立的那部分。）</p><p><strong>一个空结果从来不是"没有"的证据，它只是"这次查询没有产出"的证据。</strong> 从外面看，"真的没有匹配"与 "查询在到达索引之前被某个东西吞掉了"长得一模一样。所以遇到空结果时，先问一句：<strong>是谁把这次查询 变成了空？</strong></p><p>值得按这个顺序排查：</p><ol><li><strong>本地的门/限制</strong>：配额、节流、feature flag、缓存未命中——它们都会把输入丢掉而不报错。 （本文的原始实例就是这一类；见 #1986。）</li><li><strong>输入本身</strong>：查询是否被 shell 改写（未加引号的 <code>$VAR</code>、通配符展开、编码），是否是整句自然语言 而索引按错误原文/关键词建（AGENTS.md §2 的口径）。</li><li><strong>工具自己报的计数</strong>：像上面 Verification 那样，用一个<strong>已知能命中</strong>的查询对照。<code>M matches</code> 为 0 而对照有命中 ⇒ 路径问题；两者都为 0 ⇒ 语料问题。</li><li><strong>只在最后</strong>才考虑"语料里真的没有"。</li></ol><h3>Solution</h3><ul><li>用一个<strong>已知命中</strong>的查询作为对照，别只看那一条查不到的。</li><li>任何"静默返回空"的路径都是缺陷：它能跑、它绿着、它什么都没做。要么让它报错，要么让它说出原因 （本仓把这个形状单独归档：<code>ci-manual-dispatch-whole-corpus-false-red</code>、#1825、#1984）。</li><li>检索前不要先假定语料缺口——先证明它。</li></ul><h3>Related</h3><ul><li>Issue #429: SAG-Lite search QA field report</li><li>PR #442: Field report with false zero-result findings</li><li>#1986: the retired local quota (this lesson's original root cause), removed 2026-09-21</li><li><code>misakanet/profile.py</code>: node profile (the quota code is gone)</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/search-quota-exhaustion-false-zero.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=A zero-result search is not proof of absence — check what swallowed the query">Find related lessons →</a></p></div>

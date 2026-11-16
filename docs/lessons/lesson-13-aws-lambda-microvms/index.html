@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,34 @@
 <div class="section">
   <h2>Summary</h2>
   <p>AI 编码助手、交互式代码环境、漏洞扫描器等需要为每个用户提供隔离的执行环境。VM 隔离强但启动慢（分钟级），容器快但共享内核需要大量加固。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>AI 编码助手、交互式代码环境、漏洞扫描器等需要为每个用户提供隔离的执行环境。VM 隔离强但启动慢（分钟级），容器快但共享内核需要大量加固。</p><h2>Root Cause</h2><p>没有既安全隔离又快速启动的执行环境。传统选择是安全（VM）和速度（容器）的二选一。</p><h2>Solution</h2><h3>AWS Lambda MicroVMs</h3><p>基于 Firecracker（Lambda 底层技术）的轻量 VM：</p><table><thead><tr><th>特性</th><th>VM</th><th>容器</th><th>MicroVM</th></tr></thead><tbody><tr><td>隔离级别</td><td>强</td><td>弱（共享内核）</td><td>强（独立内核）</td></tr><tr><td>启动时间</td><td>分钟</td><td>秒</td><td>毫秒</td></tr><tr><td>状态管理</td><td>有状态</td><td>无状态</td><td>有状态</td></tr><tr><td>暂停/恢复</td><td>不支持</td><td>不支持</td><td>支持</td></tr></tbody></table><h3>使用场景</h3><pre><code class="language-python"># Lambda MicroVM 函数示例
+import boto3
+
+lambda_client = boto3.client('lambda')
+
+# 创建 MicroVM 函数
+response = lambda_client.create_function(
+    FunctionName='user-code-sandbox',
+    Runtime='python3.12',
+    Handler='index.handler',
+    Code={'ZipFile': open('code.zip', 'rb').read()},
+    Architectures=['arm64'],
+    # MicroVM 配置
+    SnapStart={'ApplyOn': 'PublishedVersions'},
+    Timeout=300,
+    MemorySize=512,
+)
+
+# 用户代码在隔离环境中执行
+def handler(event, context):
+    # 这段代码在独立的 MicroVM 中运行
+    # 即使恶意代码也无法逃逸
+    user_code = event['code']
+    exec(user_code)</code></pre><h3>Firecracker 技术</h3><ul><li>15 万亿+ 月度 Lambda 调用使用的底层技术</li><li>轻量 VMM（Virtual Machine Monitor）</li><li>毫秒级启动，最小内存 128MB</li><li>REST API 控制生命周期</li></ul><h2>Verification</h2><pre><code class="language-bash">echo "Lesson: AWS Lambda MicroVMs — 隔离沙箱与 Firecracker"
+wc -l lessons/contrib/lesson-13-aws-lambda-microvms.md</code></pre><p><strong>Expected Output:</strong></p><pre><code>Lesson: AWS Lambda MicroVMs — 隔离沙箱与 Firecracker
+# (line count)</code></pre><h2>Notes</h2><ul><li>MicroVMs 是 Lambda 的新原语，不是独立产品</li><li>适合多租户场景：AI Agent、代码沙箱、游戏服务器</li><li>Source: aws.amazon.com/blogs (2026-06-22)</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/lesson-13-aws-lambda-microvms.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=AWS Lambda MicroVMs — 隔离沙箱与 Firecracker">Find related lessons →</a></p></div>

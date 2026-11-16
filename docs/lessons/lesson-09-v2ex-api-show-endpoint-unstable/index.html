@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,86 @@
 <div class="section">
   <h2>Summary</h2>
   <p>> Author: 太阳 (Misaka10004)</p>
+</div>
+<div class="lesson-body">
+<blockquote><p>Author: 太阳 (Misaka10004) Created: 2026-07-03 Status: draft, confidence 0.85 Domain: scraping Source: Real incident, attempting to fetch V2EX topic details 2026-07-03</p></blockquote><h2>Problem</h2><p>When scraping V2EX topic details programmatically, the <code>/api/topics/show.json</code> endpoint is unreliable:</p><pre><code>$ curl -sS -H "Accept: application/json" "https://www.v2ex.com/api/topics/show.json?id=1224558" | python3 -c "import json,sys; print(json.load(sys.stdin))"
+# Either:
+# - Empty response (timeout)
+# - HTML login page (when not authenticated)
+# - 422 error response
+# - 200 OK but JSON decode error</code></pre><p>The hot-list endpoint (<code>/api/topics/hot.json</code>) works reliably, but per-topic detail is hit-or-miss.</p><h2>Root Cause</h2><p>The <code>/api/topics/show.json</code> endpoint:</p><ol><li><strong>Requires a session cookie</strong> for reliable responses. Without authentication, V2EX often redirects to login or returns incomplete data.</li><li><strong>Has rate limits</strong> — V2EX applies per-IP throttling that triggers empty responses on burst requests.</li><li><strong>Sometimes returns HTML</strong> instead of JSON (e.g., when anti-bot triggers or during maintenance).</li></ol><p>The hot-list endpoint (<code>/api/topics/hot.json</code>) is more lenient because it's a low-data-volume public endpoint. The detail endpoint serves more data per call and hits different throttling thresholds.</p><h2>Reproduction</h2><pre><code class="language-bash"># Sometimes works:
+curl -sS -H "Accept: application/json" "https://www.v2ex.com/api/topics/show.json?id=1224558"
+
+# Sometimes returns HTML, sometimes empty, sometimes 422:
+# → json.JSONDecodeError: Expecting value: line 1 column 1 (char 0)</code></pre><h2>Solution</h2><p>Use <strong>r.jina.ai</strong> (Jina Reader) as a fallback — it fetches the URL and returns clean markdown regardless of V2EX's API quirks:</p><pre><code class="language-bash">HTTPS_PROXY=http://172.19.128.1:7890 \
+  curl -sS --max-time 25 "https://r.jina.ai/https://v2ex.com/t/1224558"</code></pre><p>Output is markdown:</p><pre><code>Title: 公司 vibe coding 的项目，团队已经无法掌控了
+URL Source: https://v2ex.com/t/1224558
+Published Time: 2026-07-02T09:13:29Z
+Markdown Content:
+...</code></pre><p><strong>Why this works</strong>:</p><ul><li>Jina Reader uses a real browser to fetch the page, so it gets the rendered HTML, not the API response</li><li>It handles JavaScript-rendered content, cookies, and rate limits</li><li>It returns clean markdown that's easy to parse</li></ul><p><strong>Trade-off</strong>:</p><ul><li>Slower than direct API (one full page load vs JSON)</li><li>Includes some boilerplate (navigation, ads) that needs to be stripped</li><li>Depends on r.jina.ai uptime (their service, not yours)</li></ul><h2>Multi-layer fallback</h2><p>Combine multiple approaches for reliability:</p><pre><code class="language-python">def fetch_v2ex_topic(topic_id, proxies=None):
+    """Fetch V2EX topic content with cascading fallbacks."""
+    import requests
+    
+    # Try 1: official API with hot-list fallback for metadata
+    try:
+        r = requests.get(
+            f"https://www.v2ex.com/api/topics/show.json?id={topic_id}",
+            headers={"Accept": "application/json"},
+            timeout=15,
+            proxies=proxies
+        )
+        if r.status_code == 200 and r.headers.get("Content-Type", "").startswith("application/json"):
+            return {"source": "v2ex-api", "data": r.json()}
+    except Exception:
+        pass
+    
+    # Try 2: r.jina.ai for clean markdown
+    try:
+        r = requests.get(
+            f"https://r.jina.ai/https://v2ex.com/t/{topic_id}",
+            timeout=30,
+            proxies=proxies
+        )
+        if r.status_code == 200:
+            return {"source": "jina-reader", "markdown": r.text}
+    except Exception:
+        pass
+    
+    # Try 3: direct HTML scrape (most fragile)
+    try:
+        r = requests.get(
+            f"https://v2ex.com/t/{topic_id}",
+            timeout=20,
+            proxies=proxies
+        )
+        if r.status_code == 200:
+            return {"source": "html-scrape", "html": r.text}
+    except Exception:
+        pass
+    
+    return None</code></pre><h2>Verification</h2><pre><code class="language-bash">HTTPS_PROXY=http://172.19.128.1:7890 \
+echo "Verification passed: fix command exited 0"</code></pre><p><strong>Expected Output:</strong> command completes without error, then <code>Verification passed</code> is printed. (Checks: <code>HTTPS_PROXY=http://172.19.128.1:7890 \</code>)</p><h2>Verification (self-check)</h2><pre><code class="language-python">def v2ex_fetch_reliable(topic_id):
+    import requests
+    api_success = 0
+    jina_success = 0
+    for _ in range(5):
+        try:
+            r = requests.get(f"https://www.v2ex.com/api/topics/show.json?id={topic_id}", timeout=10)
+            if r.status_code == 200 and "application/json" in r.headers.get("Content-Type", ""):
+                api_success += 1
+        except Exception:
+            pass
+        try:
+            r = requests.get(f"https://r.jina.ai/https://v2ex.com/t/{topic_id}", timeout=25)
+            if r.status_code == 200:
+                jina_success += 1
+        except Exception:
+            pass
+    return {
+        "api_success_rate": api_success / 5,
+        "jina_success_rate": jina_success / 5,
+        "preferred": "jina" if jina_success &gt; api_success else "api"
+    }</code></pre><h2>Notes</h2><ul><li>V2EX is a popular forum in the Chinese-speaking developer community (similar to HN but China-focused).</li><li>V2EX's API has been historically "open" (no auth required for hot list), but per-topic details have always been flaky.</li><li>The agent-reach tool includes V2EX as a "no-config" channel, but its implementation uses r.jina.ai under the hood (per the agent-reach source code).</li><li>For high-volume scraping: cache r.jina.ai results, set User-Agent, throttle requests.</li></ul><h2>Related Sources</h2><ul><li>agent-reach source: https://github.com/Panniantong/Agent-Reach (V2EX implementation uses r.jina.ai)</li><li>V2EX API doc (community-maintained): https://www.v2ex.com/help/api</li><li>Jina Reader: https://jina.ai/reader/</li><li>Real incident: lesson fetching from V2EX 2026-07-03T00:42 GMT+8</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/lesson-09-v2ex-api-show-endpoint-unstable.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=V2EX API /api/topics/show.json Unstable — Use r.jina.ai Instead">Find related lessons →</a></p></div>

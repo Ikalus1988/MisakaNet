@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,19 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Upgrading `vitest` and `@vitest/coverage-v8` from 3.x to 4.x dropped branch coverage from 81.30% to 74.96%, causing the `npm run test:coverage` gate to fail at …</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Upgrading <code>vitest</code> and <code>@vitest/coverage-v8</code> from 3.x to 4.x dropped branch coverage from 81.30% to 74.96%, causing the <code>npm run test:coverage</code> gate to fail at the 75% threshold — even though no test code changed.</p><h2>Root Cause</h2><p>Vitest 4's V8 provider uses an updated AST-based coverage remapping that counts <em>implicit</em> AST branch fallbacks:</p><ul><li>optional chaining (<code>?.</code>) branches</li><li>nullish coalescing (<code>??</code>) branches</li><li>unexecuted <code>else</code> branches</li></ul><p>These implicit branches did not count against coverage in Vitest 3.x, so the same test suite now reports lower branch coverage purely from the provider's stricter instrumentation — a measurement change, not a regression in test quality.</p><h2>Solution</h2><p>Re-baseline the coverage thresholds in <code>vitest.config.ts</code> immediately below the Vitest 4 measurements, then update <code>CONTRIBUTING.md</code> so the documented expectations match.</p><h3>Step 1 — Measure under Vitest 4</h3><pre><code class="language-bash">npm run test:coverage</code></pre><p>Record the actual Vitest 4 percentages (example: 89% lines, 90% functions, 74% branches, 84% statements).</p><h3>Step 2 — Re-baseline thresholds</h3><pre><code class="language-ts">// vitest.config.ts — set thresholds just below measured Vitest 4 values
+coverage: {
+  thresholds: {
+    lines: 88,
+    functions: 89,
+    branches: 73,
+    statements: 83,
+  },
+}</code></pre><p>Choose values <em>below</em> the measured numbers so the gate passes with a small safety margin, not above them.</p><h3>Step 3 — Update CONTRIBUTING.md</h3><p>Replace any "coverage must be ≥ 75% branches" style guidance with the new thresholds, and note that Vitest 4 counts implicit AST branches (the numbers are not directly comparable to Vitest 3.x).</p><h2>Verification</h2><pre><code class="language-bash">npm run test:coverage
+# Coverage gate passes (no threshold violation)
+git diff vitest.config.ts  # shows the re-baselined thresholds only</code></pre><h2>Notes</h2><ul><li>The drop is a provider measurement change, not lost test quality — do not add tests just to chase the old number.</li><li>When upgrading Vitest again, expect another threshold shift; re-measure before re-baselining.</li><li>Related: any coverage gate tied to a single composite threshold is fragile — prefer per-metric thresholds (<code>lines</code> / <code>functions</code> / <code>branches</code> / <code>statements</code>).</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/vitest-v8-ast-coverage-threshold-shift.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Vitest 4 V8 AST Coverage Remapping Shifts Branch Coverage Below Threshold">Find related lessons →</a></p></div>

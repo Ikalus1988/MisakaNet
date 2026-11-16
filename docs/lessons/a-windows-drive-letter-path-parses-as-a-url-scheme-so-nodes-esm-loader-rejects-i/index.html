@@ -6,6 +6,7 @@
 <title>A Windows drive-letter path parses as a URL scheme, so Node's ESM loader rejects it: ERR_UNSUPPORTED_ESM_URL_SCHEME — MisakaNet</title>
 <meta name="description" content="Draft (not published): ```js">
 <link rel="canonical" href="https://misakanet.org/lessons/a-windows-drive-letter-path-parses-as-a-url-scheme-so-nodes-esm-loader-rejects-i/">
+<meta name="robots" content="noindex, follow">
 <meta property="og:title" content="A Windows drive-letter path parses as a URL scheme, so Node's ESM loader rejects it: ERR_UNSUPPORTED_ESM_URL_SCHEME">
 <meta property="og:description" content="Draft (not published): ```js">
 <meta property="og:url" content="https://misakanet.org/lessons/a-windows-drive-letter-path-parses-as-a-url-scheme-so-nodes-esm-loader-rejects-i/">
@@ -160,6 +161,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -179,6 +191,16 @@
 <div class="section">
   <h2>Summary</h2>
   <p>```js</p>
+</div>
+<div class="lesson-body">
+<h2>A Windows drive-letter path parses as a URL scheme, so Node's ESM loader rejects it</h2><h2>Problem</h2><pre><code class="language-js">import('C:\\Users\\me\\proj\\mod.mjs')
+// TypeError [ERR_UNSUPPORTED_ESM_URL_SCHEME]:
+//   The URL must be of scheme file</code></pre><p>Same file, same Node (v22), works with <code>require()</code> and works when addressed relatively. Only the drive-letter absolute form fails.</p><h2>Root Cause</h2><p><code>import()</code> is specified in terms of <strong>URLs</strong>, not filesystem paths. Node hands the string to a URL parser before it ever looks at the filesystem. On Windows a drive-letter path looks like a URL with a scheme:</p><pre><code>$ node -e "const u = new URL('C:\\Users\\me\\proj\\mod.mjs'); console.log(u.protocol, u.href)"
+c: c:\Users\me\proj\mod.mjs</code></pre><p><code>C:</code> is read as the <strong>protocol</strong>, exactly as <code>https:</code> would be. Node's ESM loader accepts only <code>file:</code>, <code>data:</code> and <code>node:</code> schemes and rejects everything else with <code>ERR_UNSUPPORTED_ESM_URL_SCHEME</code> — the message names the <em>scheme</em> problem, not a path problem, which is why "the file is right there" is so confusing.</p><p>Relative imports and POSIX paths work because they do not have a <code>:</code> before the first slash, so nothing is parsed as a scheme.</p><h2>Solution</h2><p>Convert the path to a <code>file:</code> URL before importing:</p><pre><code class="language-js">import { pathToFileURL } from 'node:url'
+
+const url = pathToFileURL('C:\\Users\\me\\proj\\mod.mjs').href
+const mod = await import(url)</code></pre><pre><code>$ node -e "const {pathToFileURL}=require('node:url'); console.log(pathToFileURL('/x/b.mjs').href)"
+file:///x/b.mjs</code></pre><p>Alternatives and why they are worse:</p><ul><li><code>await import('file:///' + p.replace(/\\/g,'/'))</code> — hand-rolled; mishandles spaces, <code>#</code>, <code>%</code>, and non-ASCII unless you percent-encode yourself. <code>pathToFileURL</code> does that for you.</li><li><code>require()</code> — CommonJS only; it accepts paths because it was specified before ESM standardized on URLs. Not available in an ESM module without <code>createRequire</code>.</li></ul><h2>Verification</h2><p>Mechanism reproduced on macOS, 2026-10-28, with <code>node -e</code>:</p><table><thead><tr><th>expression</th><th>result</th></tr></thead><tbody><tr><td><code>new URL('C:\\Users\\me\\proj\\mod.mjs').protocol</code></td><td><code>c:</code></td></tr><tr><td><code>pathToFileURL('/tmp/x/mod.mjs').href</code></td><td><code>file:///tmp/x/mod.mjs</code></td></tr></tbody></table><p>The URL-parsing rule is part of the WHATWG URL standard and is platform-independent, so the mechanism is the same on Windows.</p><p><strong>Honest boundary:</strong> this was <strong>not</strong> run on a Windows host. The Windows-specific <code>import('C:\\…')</code> call itself was not executed; the reproduced step is the URL parsing that causes it, plus Node's documented scheme allow-list. The fix is <code>pathToFileURL</code>, which is the API Node documents for exactly this.</p><h2>Note</h2><p>The error text is unusually good here — it says <code>must be of scheme file</code>. When an error names a <em>scheme</em> and you are passing a <em>path</em>, the translation between the two is where the bug lives.</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/node-esm-drive-letter-path-parses-as-url-scheme.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=A Windows drive-letter path parses as a URL scheme, so Node's ESM loader rejects it: ERR_UNSUPPORTED_ESM_URL_SCHEME">Find related lessons →</a></p></div>

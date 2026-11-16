@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,72 @@
 <div class="section">
   <h2>Summary</h2>
   <p>When building character creator assistants using LLMs, models tend to produce repetitive names and archetypes across runs. Typical symptoms:</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>When building character creator assistants using LLMs, models tend to produce repetitive names and archetypes across runs. Typical symptoms:</p><pre><code>Run 1: Luna — curiosa, teimosa, adora explorar
+Run 2: Luna — criativa, teimosa, sonhadora
+Run 3: Luna — Determined, stubborn, loves the stars</code></pre><p>The name "Luna" and the trait "teimosa/stubborn" recur in every generation. Over dozens of runs, the output converges to a small set of ~5 names and ~3 archetype bundles, even when the prompt asks for "unique, diverse characters."</p><p>This is caused by two compounding factors:</p><ol><li><strong>Isolation from existing catalog</strong> — the model has no visibility into characters it already generated, so it cannot avoid repeating itself.</li><li><strong>Static example anchors in prompt instructions</strong> — examples like <code>ex: Luna</code> or <code>ex: curiosa, teimosa</code> in the system prompt act as attention anchors. Instruction-following LLMs overfit to these examples, treating them as prototypical rather than illustrative.</li></ol><p>The combination creates a <strong>self-reinforcing loop</strong>: the prompt example biases the model toward a specific name/trait cluster, the model generates similar output, and without catalog awareness there is no signal to break the cycle.</p><h2>Root Cause</h2><p>Three mechanisms interact:</p><h3>1. Prompt anchor overfitting</h3><p>Instruction-tuned LLMs treat examples in the system prompt as high-priority templates. When the prompt contains:</p><pre><code>Generate a unique character. ex: Luna, curiosa e teimosa</code></pre><p>The model interprets "Luna" and "curiosa, teimosa" as the <em>intended</em> output shape, not merely an illustration. The attention mechanism assigns disproportionate weight to these tokens during decoding, making them statistically likely to reappear.</p><h3>2. Absence of catalog-aware deduplication</h3><p>Without injecting a summary of previously generated characters, the model has no negative signal to avoid repetition. Each generation starts from a blank slate, and the same prompt anchors produce the same outputs.</p><h3>3. Sampling parameter amplification</h3><p>Default sampling settings compound the problem:</p><table><thead><tr><th>Parameter</th><th>Default</th><th>Effect on repetition</th></tr></thead><tbody><tr><td><code>temperature</code></td><td>0.7</td><td>Moderate diversity, but anchor tokens dominate the distribution</td></tr><tr><td><code>top_p</code></td><td>1.0</td><td>No filtering — high-probability anchor tokens always included</td></tr><tr><td><code>frequency_penalty</code></td><td>0.0</td><td>No penalty for repeating tokens across turns</td></tr><tr><td><code>presence_penalty</code></td><td>0.0</td><td>No penalty for reusing concepts already mentioned</td></tr></tbody></table><p>With <code>frequency_penalty=0</code> and <code>presence_penalty=0</code>, the model freely reuses the same names and traits across runs.</p><h2>Solution</h2><p>Separate <strong>stable context</strong> (catalog awareness, anti-redundancy rules) from <strong>variable context</strong> (generation parameters, creativity), and tune sampling to break the self-reinforcing loop.</p><h3>1. Inject existing catalog summaries into the prompt</h3><p>Before each generation, query the character database and inject a condensed summary:</p><pre><code class="language-python">def build_generation_prompt(catalog: list[dict], max_chars: int = 500) -&gt; str:
+    """Build prompt with anti-redundancy context from existing catalog."""
+    existing_names = [c["name"] for c in catalog]
+    existing_archetypes = list({c["archetype"] for c in catalog})
+
+    catalog_block = (
+        f"EXISTING CHARACTERS (do NOT reuse these names): "
+        f"{', '.join(existing_names[:20])}\n"
+        f"EXISTING ARCHETYPES (avoid repeating these): "
+        f"{', '.join(existing_archetypes[:10])}\n"
+    )
+
+    return f"""You are a character creator assistant.
+{catalog_block}
+RULES:
+- Generate a UNIQUE character with a name not in the list above.
+- Use a different archetype from those listed above.
+- Do NOT use example names from previous instructions as your output.
+- Vary personality traits, backstory, and visual description.
+"""</code></pre><h3>2. Remove static single-example anchors</h3><p><strong>Before</strong> (creates anchor):</p><pre><code>Generate a unique character. ex: Luna, curiosa e teimosa</code></pre><p><strong>After</strong> (no anchor):</p><pre><code>Generate a unique character. The name and traits must be different from
+all existing characters. Do not use placeholder examples as templates.</code></pre><p>If examples are necessary for formatting clarity, use <strong>multiple diverse examples</strong> and mark them explicitly:</p><pre><code>Example outputs (for format reference ONLY — do not copy names or traits):
+1. Kai — restless inventor who speaks to machines
+2. Mira — archivist of forgotten languages
+3. Tavo — ex-gardener turned storm chaser</code></pre><h3>3. Tune sampling parameters</h3><pre><code class="language-python">generation_params = {
+    "temperature": 0.9,        # higher than default 0.7 for more variety
+    "top_p": 0.92,             # slightly filtered to exclude tail anchors
+    "frequency_penalty": 0.4,  # penalize repeated token usage
+    "presence_penalty": 0.3,   # penalize reusing already-mentioned concepts
+    "max_tokens": 300,
+}</code></pre><table><thead><tr><th>Parameter</th><th>Recommended</th><th>Rationale</th></tr></thead><tbody><tr><td><code>temperature</code></td><td>0.85–1.0</td><td>Higher temperature increases name/trait diversity</td></tr><tr><td><code>top_p</code></td><td>0.9–0.95</td><td>Filters the long tail where anchor tokens cluster</td></tr><tr><td><code>frequency_penalty</code></td><td>0.3–0.5</td><td>Directly penalizes token repetition across runs</td></tr><tr><td><code>presence_penalty</code></td><td>0.2–0.4</td><td>Penalizes concept reuse (e.g., "stubborn" appearing again)</td></tr></tbody></table><h3>4. Post-generation deduplication check</h3><pre><code class="language-python">def is_duplicate(new_char: dict, catalog: list[dict], threshold: float = 0.8) -&gt; bool:
+    """Check if generated character is too similar to existing ones."""
+    new_traits = set(new_char["traits"])
+    for existing in catalog:
+        existing_traits = set(existing["traits"])
+        overlap = len(new_traits &amp; existing_traits) / max(len(new_traits), 1)
+        if new_char["name"] == existing["name"] or overlap &gt; threshold:
+            return True
+    return False
+
+# Retry with fresh seed if duplicate detected
+for attempt in range(3):
+    char = generate_character(catalog)
+    if not is_duplicate(char, catalog):
+        break</code></pre><h2>Verification</h2><h3>Repetition rate comparison</h3><p>Run 50 generations with the same prompt, before and after the fix:</p><pre><code class="language-python">import json
+from collections import Counter
+
+def measure_repetition(generations: list[dict]) -&gt; dict:
+    names = [g["name"] for g in generations]
+    archetypes = [g["archetype"] for g in generations]
+    name_counts = Counter(names)
+    archetype_counts = Counter(archetypes)
+    return {
+        "unique_names": len(set(names)),
+        "total_generations": len(names),
+        "name_repetition_rate": 1 - (len(set(names)) / len(names)),
+        "top_name": name_counts.most_common(1)[0],
+        "unique_archetypes": len(set(archetypes)),
+    }
+
+# Before fix: expect high repetition
+# After fix: expect name_repetition_rate &lt; 0.1 (fewer than 10% repeats)</code></pre><p><strong>Expected results:</strong></p><table><thead><tr><th>Metric</th><th>Before fix</th><th>After fix</th></tr></thead><tbody><tr><td>Unique names / 50 runs</td><td>8–12</td><td>45–50</td></tr><tr><td>Name repetition rate</td><td>0.76–0.84</td><td>0.0–0.10</td></tr><tr><td>Top name count</td><td>30+ ("Luna")</td><td>1–2</td></tr><tr><td>Unique archetypes / 50 runs</td><td>4–6</td><td>20+</td></tr></tbody></table><h3>Automated verification</h3><pre><code class="language-bash">python3 scripts/lesson_gate.py lessons/contrib/character-assistant-repetition-loop.md
+python3 scripts/injection_scan.py lessons/contrib/character-assistant-repetition-loop.md</code></pre><p>Both must pass with 0 high-severity findings.</p><h2>Related</h2><ul><li>Issue <a href="https://github.com/Ikalus1988/MisakaNet/issues/1499">#1499</a> — In roleplay chat, third-person narrative or pronoun "Ele" was interpreted by the model as a character name (entity disambiguation failure in the same roleplay domain).</li><li>Issue <a href="https://github.com/Ikalus1988/MisakaNet/issues/1501">#1501</a> — In multi-turn character roleplay with prompt caching, static/stable context drifts when cached prompts are reused across sessions (related to the stable/variable context separation this lesson prescribes).</li><li>Issue <a href="https://github.com/Ikalus1988/MisakaNet/issues/1630">#1630</a> — Roleplay chat app: user wrote "Arlete, vá até a loja da Ana" and the protagonist spoke as the NPC (vocative vs mention disambiguation failure — same domain, different failure mode).</li><li><code>lessons/contrib/agent-roleplay-time-consistency-hallucination.md</code> — time consistency hallucinations in roleplay agents (different failure class, same domain).</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/character-assistant-repetition-loop.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Character Creator Assistants — Repetitive Name and Archetype Loop from Prompt Anchors">Find related lessons →</a></p></div>

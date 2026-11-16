@@ -6,6 +6,7 @@
 <title>A lock that yields on ImportError is a silent no-op on Windows: lost updates in concurrent writes — MisakaNet</title>
 <meta name="description" content="Draft (not published): A shared counter's read-modify-write was guarded with a lock that gives up when the">
 <link rel="canonical" href="https://misakanet.org/lessons/a-lock-that-yields-on-importerror-is-a-silent-no-op-on-windows-lost-updates-in-c/">
+<meta name="robots" content="noindex, follow">
 <meta property="og:title" content="A lock that yields on ImportError is a silent no-op on Windows: lost updates in concurrent writes">
 <meta property="og:description" content="Draft (not published): A shared counter's read-modify-write was guarded with a lock that gives up when the">
 <meta property="og:url" content="https://misakanet.org/lessons/a-lock-that-yields-on-importerror-is-a-silent-no-op-on-windows-lost-updates-in-c/">
@@ -160,6 +161,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -179,6 +191,72 @@
 <div class="section">
   <h2>Summary</h2>
   <p>A shared counter's read-modify-write was guarded with a lock that gives up when the</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>A shared counter's read-modify-write was guarded with a lock that gives up when the platform primitive cannot be imported:</p><pre><code class="language-python">try:
+    import fcntl
+except ImportError:   # non-POSIX: best-effort, still atomic-rename on save
+    yield
+    return</code></pre><p>On a platform without <code>fcntl</code> (Windows) the lock <strong>does nothing at all</strong>. Of 40 concurrent increments, 39 survived — one update vanished. CI showed it as an intermittent red on <code>windows-latest</code>:</p><pre><code>AssertionError: lost updates: expected 40 concurrent increments to survive, got 39</code></pre><p>It passed on macOS (where <code>fcntl</code> exists and the lock is real) and flapped with the schedule on Windows, which made it very hard to attribute.</p><p>The same test's verification stand-in had a second trap: the stub <code>msvcrt</code> only <strong>recorded</strong> <code>locking()</code> calls and never excluded anyone. Under that stub both a correct lock envelope and a bare <code>yield</code> lost updates (40 → 2), so the stub could not tell them apart.</p><h2>Root Cause</h2><p>Two independent mistakes meet here:</p><ol><li><strong><code>os.replace</code> does not prevent lost updates.</strong> The comment justified the silent skip with "still atomic-rename on save". An atomic rename prevents a <em>torn</em> write; it does nothing for two callers that both read <code>count: 0</code>, both compute <code>1</code>, and drop one increment. Preventing exactly that is the lock's only job.</li><li><strong>A silent no-op lock is worse than no lock.</strong> With no lock, the race is an obvious suspect. With a lock that <em>looks</em> present but never excludes, nobody goes looking for the race again — the failure gets blamed on scheduling or flakiness.</li></ol><p>The stand-in trap is the test-side version of the same mistake: a stub that records calls but does not enforce the contract (<code>mutual exclusion</code>) cannot distinguish the correct implementation from the bug, so it produces false greens and false reds that prove nothing.</p><h2>Solution</h2><p>The fix that landed (PR #3538, <code>misakanet/profile.py</code>) uses the <strong>real primitive of the platform</strong> and fails loudly when neither exists. The lock body only — the surrounding structure is untouched:</p><pre><code class="language-python"># How long `_acquire_fd` waits for the lock before giving up. `flock` blocks
+# indefinitely; `msvcrt.locking` does not, so the Windows side gets an explicit
+# ceiling rather than an unbounded loop.
+_LOCK_TIMEOUT_SECONDS = 60.0
+
+# Bound once at import. Read via the module so tests can force either backend
+# without rewriting `os.name`, which would make pathlib try to build a WindowsPath.
+_WINDOWS = os.name == "nt"
+
+
+def _acquire_fd(fd: int) -&gt; None:
+    """Hold an exclusive lock on `fd` until `_release_fd`.
+
+    POSIX: `fcntl.flock`. Windows: `msvcrt.locking`. There is deliberately **no**
+    silent fallback — this used to `yield` unlocked whenever `fcntl` was missing,
+    which is exactly how concurrent increments lost updates on Windows while the
+    code looked healthy (#3536). A platform with neither primitive must fail
+    loudly, because an unenforced lock is worse than no lock: it removes the
+    reason to look for the race.
+    """
+    if _WINDOWS:
+        import msvcrt
+
+        # msvcrt.locking locks `nbytes` starting at the current file position.
+        os.lseek(fd, 0, os.SEEK_SET)
+        deadline = time.monotonic() + _LOCK_TIMEOUT_SECONDS
+        while True:
+            try:
+                msvcrt.locking(fd, msvcrt.LK_NBLCK, 1)
+                return
+            except OSError:
+                if time.monotonic() &gt;= deadline:
+                    raise TimeoutError(
+                        f"could not lock the profile after {_LOCK_TIMEOUT_SECONDS:.0f}s "
+                        f"(fd={fd}); another process is holding it"
+                    ) from None
+                time.sleep(0.02)
+    else:
+        import fcntl
+
+        fcntl.flock(fd, fcntl.LOCK_EX)
+
+
+def _release_fd(fd: int) -&gt; None:
+    if _WINDOWS:
+        import msvcrt
+
+        os.lseek(fd, 0, os.SEEK_SET)
+        msvcrt.locking(fd, msvcrt.LK_UNLCK, 1)
+    else:
+        import fcntl
+
+        fcntl.flock(fd, fcntl.LOCK_UN)</code></pre><p>Four rules the fix encodes, in order of importance:</p><ol><li><strong>Missing primitive → use the platform's real equivalent</strong> (<code>msvcrt.locking</code> on Windows, <code>fcntl.flock</code> on POSIX), never degrade to a no-op.</li><li><strong>No backend at all → raise.</strong> A lock that is not enforced is worse than no lock.</li><li><strong>Blocking semantics differ; the wrapper must adapt.</strong> <code>flock</code> blocks indefinitely, <code>msvcrt.locking</code> is non-blocking and fails immediately when held — so the Windows side needs a retry loop with a timeout ceiling (<code>_LOCK_TIMEOUT_SECONDS = 60.0</code>) instead of a single attempt or an unbounded wait.</li><li><strong>Test doubles must enforce the contract, not just record calls.</strong> The stand-in <code>msvcrt</code> in <code>tests/test_profile_lock_backend.py</code> holds a real <code>threading.Lock</code>, so a bare <code>yield</code> loses updates and the test fails.</li></ol><h2>Verification</h2><p>Fix test suite, run locally on the fix tree (commit <code>42d748e5</code>, the PR #3538 change):</p><pre><code class="language-bash">python3 -m pytest tests/test_profile_lock_backend.py tests/test_issue_1775_severe.py -v</code></pre><p><strong>Observed output (2026-10-22, macOS, Python 3.14.6, pytest 9.1.1):</strong></p><pre><code>tests/test_profile_lock_backend.py::test_the_windows_branch_uses_msvcrt_locking_not_a_bare_yield PASSED
+tests/test_profile_lock_backend.py::test_an_increment_holds_the_lock_around_the_read_modify_write PASSED
+tests/test_profile_lock_backend.py::test_with_no_usable_lock_backend_the_lock_fails_loudly_instead_of_unlocking PASSED
+tests/test_profile_lock_backend.py::test_the_lock_waits_for_a_contended_lock_rather_than_dropping_the_update PASSED
+tests/test_profile_lock_backend.py::test_concurrent_increments_do_not_lose_updates_under_the_windows_backend PASSED
+tests/test_profile_lock_backend.py::test_the_recording_standin_is_honest_about_refusals PASSED
+...
+============================== 17 passed in 0.61s ==============================</code></pre><p>What each contract test pins (from <code>tests/test_profile_lock_backend.py</code>):</p><table><thead><tr><th>test</th><th>pins</th></tr></thead><tbody><tr><td><code>test_the_windows_branch_uses_msvcrt_locking_not_a_bare_yield</code></td><td>the Windows path acquires <strong>and</strong> releases</td></tr><tr><td><code>test_an_increment_holds_the_lock_around_the_read_modify_write</code></td><td>the lock brackets the whole RMW, not just open/close</td></tr><tr><td><code>test_with_no_usable_lock_backend_the_lock_fails_loudly_instead_of_unlocking</code></td><td><code>sys.modules["fcntl"]=None</code> + <code>sys.modules["msvcrt"]=None</code> → the lock context <strong>raises</strong>, never yields unlocked</td></tr><tr><td><code>test_the_lock_waits_for_a_contended_lock_rather_than_dropping_the_update</code></td><td>the non-blocking primitive is actually retried past refusals</td></tr><tr><td><code>test_concurrent_increments_do_not_lose_updates_under_the_windows_backend</code></td><td>40 threads, all increments survive under the Windows backend</td></tr><tr><td><code>test_the_recording_standin_is_honest_about_refusals</code></td><td>the fixture really refuses, so it cannot hide a broken retry</td></tr></tbody></table><p>The behavioural proof of the original bug is the pre-existing <code>test_concurrent_profile_increments_all_survive</code> on the <code>windows-latest</code> CI leg — that is where the intermittent red was caught. These local tests run on any platform (they force the Windows branch via the <code>_WINDOWS</code> module flag and a stand-in <code>msvcrt</code>); they are forward-looking contract tests that fail if the silent no-op is ever reintroduced.</p><h2>Notes</h2><ul><li>The lock is on a <strong>sidecar</strong> (<code>.profile.lock</code>), not on the data file itself: an atomic <code>os.replace</code> swaps the inode on every save and would drop a lock held on the old one.</li><li>The lock is released if the process dies (both <code>flock</code> and <code>msvcrt.locking</code> release on process exit), so a crash cannot wedge the file.</li><li><code>sys.modules[name] = None</code> makes <code>import name</code> raise <code>ImportError</code> on every platform — that is how the "no usable backend" path is tested without needing a real Windows box.</li><li>When reviewing such a test, check what the stub <em>enforces</em>. A recording stub proved nothing here (40 → 2 under both the correct and the broken implementation); the stub was rewritten to hold a real <code>threading.Lock</code> before the test could mean anything.</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/lock-yield-on-importerror-silent-noop-loses-updates.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=A lock that yields on ImportError is a silent no-op on Windows: lost updates in concurrent writes">Find related lessons →</a></p></div>

@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>用户上英语课（iShow L8 Making Wishes），给了 6 页课件截图 + 听力原文 docx，只说「根据 l8 文档写出一份 PPT 的答案」。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>用户上英语课（iShow L8 Making Wishes），给了 6 页课件截图 + 听力原文 docx，只说「根据 l8 文档写出一份 PPT 的答案」。</p><p>agent 把这句读成「把答案做成 PPT」：写了 36KB 的 python-pptx 脚本、改版 4 轮、用 WPS COM 导出 12 页 PNG 逐页校对、再导 PDF。用户说「全部删掉」之后，又重建了一套 docx 答案册。两次交付物全部作废。</p><p>用户实际只要聊天里的文字答案，随后明确说「只要文字，别乱搞什么 ppt」「这很消耗 token」。</p><h2>Root Cause</h2><p>把「答案是给 PPT 上的题用的」误读成「答案要装进 PPT」——<strong>交付形态在开工前没有确认</strong>。四层叠加：</p><ol><li>用户原话里出现的容器（“PPT 上的题”）被当成了输出格式；</li><li>套了没人要的模板（封面 / 用法 / 45 分钟节奏 / 板书 / 速查表）；</li><li>用渲染验证代替了「先问一句」，把一段文字的回答变成脚本 + 渲染 + 校对流水线；</li><li>用户说「全部删掉」时理解成「换一种文件重做」，第二次踩同一个坑——<strong>删除通常等于「别做文件」</strong>。</li></ol><p><strong>这课为什么可泛化</strong>：把用户的名词（英语课、iShow、PPT、docx）全部拿掉，根因仍然成立——「请求里提到的容器 ≠ 要求的输出格式」「删除 = 停止产出，不是换容器重做」。任何 agent 面对交付形态不明的任务都会踩，与具体学科和文件格式无关。</p><p><strong>这不是「要更懂用户」。</strong> 那句话听起来永远对，但不可检验——每个失败都能这么总结。这课真正可检验的只有三条，每条都能在交付前回答：</p><ol><li>用户那句话里的容器，是<strong>答案将要用在哪里</strong>，还是<strong>要产出的东西</strong>？「PPT 上的题」是前者（答案服务于 PPT 上的题），不是后者（把答案做成一个 PPT 文件）。</li><li>我是否在<strong>没有一句确认</strong>的情况下，把一段文字的回答变成了脚本 + 渲染 + 校对流水线？</li><li>用户说「全部删掉」之后，我是否又产出了<strong>另一种</strong>文件？</li></ol><p>代价结构决定了这三问的顺序：确认只要一句话，构建要几小时——<strong>便宜的提问必须发生在昂贵的构建之前</strong>；而删除是「停止产出」的信号，不是「换个容器重做」的邀请。任何一条答错，这课里描述的浪费就会重演。</p><h2>Fix</h2><p>默认输出 = 聊天里的文字。只有用户原话出现「文档 / Word / PPT / 表格 / 图片 / 导出」才生成文件；再加「要好看 / 要投屏 / 要打印」才做渲染与视觉校验。</p><p>形态不明时先问一句「要文字，还是要文件？」，<strong>不要用产出物去猜</strong>。已经做错时先删干净再按文字重答，不要换成另一种文件继续投入。</p><p>学习 / 学生场景：答案是给自己看的，直接给可照读的句子 + 一句中文提示即可。</p><h2>Verification</h2><p>交付前自检三问：</p><ol><li>用户原话里有没有「文档 / PPT / 表格 / 图片 / 导出」？</li><li>我接下来要跑的是生成脚本，还是回一段文字？</li><li>跑脚本之前，是否有一句明确同意？</li></ol><p>任何一个是「否」，就只回文字。一条回答能说完的内容，不应出现构建脚本、渲染目录、导出 PDF 中的任何一样。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/把答案是给-ppt-用的读成把答案做成-ppt交付形态要在开工前确认.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=把「答案是给 PPT 用的」读成「把答案做成 PPT」：交付形态要在开工前确认">Find related lessons →</a></p></div>

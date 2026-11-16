@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,39 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Web scraping tools (curl, Playwright, scrapling, Safari MCP) all fail to connect to certain domains (e.g., reddit.com, stackoverflow.com) from networks behind t…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Web scraping tools (curl, Playwright, scrapling, Safari MCP) all fail to connect to certain domains (e.g., reddit.com, stackoverflow.com) from networks behind the GFW, even though DNS resolves correctly.</p><h2>Root Cause</h2><p>GFW performs TLS SNI (Server Name Indication) sniffing:</p><ol><li>DNS resolves normally → CDN IP</li><li>TCP three-way handshake succeeds</li><li>TLS Client Hello is sent with SNI field (e.g., <code>reddit.com</code>)</li><li>GFW identifies the SNI and drops the Server Hello</li><li>Connection hangs for 10-30s then times out</li></ol><p><strong>Key insight</strong>: All tool-layer solutions (curl, Playwright, scrapling, Safari MCP, Agent-Reach) use the same TCP+TLS path. No tool can bypass a network-layer block.</p><h2>Diagnosis</h2><pre><code class="language-bash"># Check if a domain is SNI-blocked
+curl -v --max-time 5 "https://target.com/" 2&gt;&amp;1 | grep -E "Connected|TLS|timeout"
+
+# Expected pattern for SNI block:
+#   Connected to target.com (x.x.x.x) port 443
+#   TLS handshake, Client hello:
+#   (hangs here...)
+#   Connection timed out</code></pre><h2>⚠️ Whitelist: Sites Accessible from China (Do NOT Misdiagnose)</h2><p>The following sites are <strong>directly accessible</strong> from mainland China. Agents must NOT report "GFW blocked" for these domains — scrape them directly.</p><table><thead><tr><th>Site</th><th>Access</th><th>Method</th></tr></thead><tbody><tr><td>robot-forum.com</td><td>✅ Direct</td><td>Playwright (WoltLab)</td></tr><tr><td>bbs.gongkong.com</td><td>✅ Direct</td><td>Playwright</td></tr><tr><td>GitHub</td><td>✅ Direct</td><td>gh CLI / REST API</td></tr><tr><td>Dev.to</td><td>✅ Direct</td><td>REST API</td></tr><tr><td>Juejin 掘金</td><td>✅ Direct</td><td>Playwright</td></tr><tr><td>SegmentFault</td><td>✅ Direct</td><td>Playwright</td></tr></tbody></table><p><strong>Check flow (two-layer validation)</strong>:</p><pre><code>receive URL
+  → Layer 1: Network reachability (whitelist / curl TLS test)
+  → Layer 2: Environment readiness (tool dependencies satisfied?)
+  → Both pass → scrape directly
+  → Network OK but env missing → use fallback ladder
+  → Network blocked → proxy or skip</code></pre><h3>Layer 2: Environment Prerequisites</h3><p>Whitelist means "network accessible", NOT "can scrape on this machine". Playwright needs system libraries:</p><pre><code class="language-bash"># Check headless Chrome availability
+npx playwright install --dry-run 2&gt;&amp;1 | grep -i "missing\|error"
+# Or direct test
+node -e "const {chromium}=require('playwright');chromium.launch().then(b=&gt;b.close()).catch(e=&gt;console.error(e.message))"
+# Common missing: libnspr4, libnss3, libnssutil3 (Linux apt)</code></pre><h3>Fallback Ladder (When Environment Not Ready)</h3><table><thead><tr><th>Priority</th><th>Method</th><th>Prerequisite</th><th>Best For</th></tr></thead><tbody><tr><td>1</td><td>Site REST API</td><td>None</td><td>HN/Dev.to/GitHub</td></tr><tr><td>2</td><td>curl + CSS selectors</td><td>None</td><td>Static pages</td></tr><tr><td>3</td><td>r.jina.ai mirror</td><td>None</td><td>General, but thread pages often fail</td></tr><tr><td>4</td><td>Safari MCP</td><td>macOS</td><td>Has browser env</td></tr><tr><td>5</td><td>Remote Chrome CDP</td><td>Chrome --remote-debugging-port</td><td>Has desktop Chrome</td></tr><tr><td>6</td><td>Browser Use API</td><td>API key</td><td>Paid solution</td></tr><tr><td>7</td><td>Fix local env</td><td>sudo</td><td>Most thorough</td></tr></tbody></table><h2>Solution</h2><h3>Tool-Layer (Won't Work)</h3><table><thead><tr><th>Tool</th><th>Why It Fails</th></tr></thead><tbody><tr><td>curl</td><td>Same TCP+TLS path</td></tr><tr><td>Playwright</td><td>Chromium uses same network stack</td></tr><tr><td>scrapling</td><td>curl_cffi underneath, same TLS path</td></tr><tr><td>Safari MCP</td><td>Safari uses same network path</td></tr><tr><td>Agent-Reach</td><td>Routes to upstream tools, same path</td></tr><tr><td>Reddit JSON API</td><td>curl underneath</td></tr><tr><td>Reddit RSS</td><td>curl underneath</td></tr></tbody></table><h3>Network-Layer (Required)</h3><table><thead><tr><th>Solution</th><th>Pros</th><th>Cons</th></tr></thead><tbody><tr><td>HTTP/HTTPS proxy</td><td>Works for all tools</td><td>Needs proxy server</td></tr><tr><td>VPN</td><td>Transparent to all tools</td><td>May affect all traffic</td></tr><tr><td>SOCKS5 proxy</td><td>Flexible</td><td>Tool-specific config</td></tr></tbody></table><h3>Configuration</h3><pre><code class="language-bash"># Environment variable (works for most tools)
+export HTTPS_PROXY=http://proxy:port
+export HTTP_PROXY=http://proxy:port
+
+# curl specific
+curl -x http://proxy:port https://target.com/
+
+# Playwright
+const browser = await chromium.launch({
+  proxy: { server: 'http://proxy:port' }
+});
+
+# Agent-Reach
+agent-reach install --channels reddit --proxy http://proxy:port</code></pre><h2>Verification</h2><pre><code class="language-bash">export HTTPS_PROXY=http://proxy:port
+echo "Verification passed: fix command exited 0"</code></pre><p><strong>Expected Output:</strong> command completes without error, then <code>Verification passed</code> is printed. (Checks: <code>export HTTPS_PROXY=http://proxy:port</code>)</p><h2>Notes</h2><ul><li>This pattern applies to any GFW-blocked domain, not just Reddit</li><li>Some networks have transparent proxies at the gateway level — check with your network admin</li><li>DNS-over-HTTPS does NOT help — the SNI field is still visible in the TLS Client Hello</li><li>ESNI/ECH (Encrypted Client Hello) would help but adoption is limited</li><li>Source: practical experience from scraping multiple forums</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/gfw-tls-sni-block-pattern.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=GFW TLS SNI Block Pattern — Why Tool-Layer Solutions Fail">Find related lessons →</a></p></div>

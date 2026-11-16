@@ -6,6 +6,7 @@
 <title>Ka-Boost: 8-Layer KAREL Module Architecture and Build System — MisakaNet</title>
 <meta name="description" content="Draft (not published): KAREL 是 FANUC 机器人控制器上的类 Pascal 编译语言，缺乏泛型、关联数组、原生字符串操作、标准库等现代编程基础设施。开发大型项目（如 5 轴 DLP 3D 打印切片器）时，代码复用困难，模块化程度低，构建和部署流程复杂。">
 <link rel="canonical" href="https://misakanet.org/lessons/fanuc-karel-ka-boost-architecture/">
+<meta name="robots" content="noindex, follow">
 <meta property="og:title" content="Ka-Boost: 8-Layer KAREL Module Architecture and Build System">
 <meta property="og:description" content="Draft (not published): KAREL 是 FANUC 机器人控制器上的类 Pascal 编译语言，缺乏泛型、关联数组、原生字符串操作、标准库等现代编程基础设施。开发大型项目（如 5 轴 DLP 3D 打印切片器）时，代码复用困难，模块化程度低，构建和部署流程复杂。">
 <meta property="og:url" content="https://misakanet.org/lessons/fanuc-karel-ka-boost-architecture/">
@@ -160,6 +161,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -179,6 +191,32 @@
 <div class="section">
   <h2>Summary</h2>
   <p>KAREL 是 FANUC 机器人控制器上的类 Pascal 编译语言，缺乏泛型、关联数组、原生字符串操作、标准库等现代编程基础设施。开发大型项目（如 5 轴 DLP 3D 打印切片器）时，代码复用困难，模块化程度低，构建和部署流程复杂。</p>
+</div>
+<div class="lesson-body">
+<h2>Ka-Boost: 8-Layer KAREL Module Architecture and Build System</h2><h3>Problem描述</h3><p>KAREL 是 FANUC 机器人控制器上的类 Pascal 编译语言，缺乏泛型、关联数组、原生字符串操作、标准库等现代编程基础设施。开发大型项目（如 5 轴 DLP 3D 打印切片器）时，代码复用困难，模块化程度低，构建和部署流程复杂。</p><h3>Root Cause分析</h3><p>KAREL 语言的先天限制：</p><ul><li>无泛型支持 → 无法编写类型无关的容器（队列、哈希表等）</li><li>无标准库 → 字符串操作、数学运算、文件 I/O 都需从零实现</li><li>无命名空间 → 大型项目容易函数名冲突</li><li>无包管理 → 依赖关系手动管理</li><li>无 OOP → 无法封装状态和方法</li></ul><p>Ka-Boost 通过工具链组合解决这些问题：</p><ul><li><strong>GPP 预处理器</strong>：C 风格宏系统，实现泛型（<code>.klc</code> 类模板）和命名空间</li><li><strong>rossum 包管理器</strong>：解析 <code>package.json</code> 依赖图，生成 <code>build.ninja</code></li><li><strong>ninja 构建系统</strong>：并行编译</li><li><strong>kpush 部署工具</strong>：FTP 推送 <code>.pc</code> 文件到控制器</li></ul><h3>Solution方法/技术要点</h3><h4>1. 工具链</h4><table><thead><tr><th>工具</th><th>作用</th></tr></thead><tbody><tr><td>rossum</td><td>KAREL 包管理器，解析依赖，生成 build.ninja</td></tr><tr><td>ktransw</td><td>KAREL 转译器/预处理器（封装 GPP）</td></tr><tr><td>GPP</td><td>C 风格预处理器，实现泛型（.klc 类文件，.m 宏文件）</td></tr><tr><td>TP-Plus</td><td>高级 DSL，编译为 FANUC TP (.ls) 程序</td></tr><tr><td>ninja</td><td>构建系统</td></tr><tr><td>kpush</td><td>FTP 部署 .pc 到控制器</td></tr></tbody></table><h4>2. 文件扩展名约定</h4><table><thead><tr><th>扩展名</th><th>含义</th></tr></thead><tbody><tr><td><code>.kl</code></td><td>KAREL 源文件</td></tr><tr><td><code>.klc</code></td><td>KAREL 类模板（GPP 展开）</td></tr><tr><td><code>.klt</code></td><td>类型/常量定义</td></tr><tr><td><code>.klh</code></td><td>头文件（函数声明）</td></tr><tr><td><code>.m</code></td><td>GPP 宏定义</td></tr><tr><td><code>.tpp</code></td><td>TP-Plus 源文件</td></tr><tr><td><code>.ls</code></td><td>FANUC TP 源文件（ASCII）</td></tr><tr><td><code>.pc</code></td><td>编译后的 KAREL 二进制</td></tr></tbody></table><h4>3. 8 层模块架构</h4><p>每层只依赖下层，依赖关系自底向上：</p><table><thead><tr><th>Layer</th><th>模块</th><th>功能</th></tr></thead><tbody><tr><td>0</td><td>ktransw-macros</td><td>GPP 宏 — 命名空间、泛型、头文件保护</td></tr><tr><td>1</td><td>errors, system, Strings</td><td>错误处理、系统类型、字符串操作</td></tr><tr><td>2</td><td>math, matrix</td><td>扩展数学、线性代数、4x4 变换矩阵</td></tr><tr><td>3</td><td>hash, queue, iterator, graph</td><td>容器和算法（KAREL 原生缺失）</td></tr><tr><td>4</td><td>files, csv, xmlib, socket</td><td>文件 I/O、CSV、XML、TCP socket</td></tr><tr><td>5</td><td>registers, display, multitask, TPE, forms, KUnit</td><td>寄存器 IO、TP 显示、并发、TP 程序、测试</td></tr><tr><td>6</td><td>shapes, pose, sensors</td><td>3D 几何、XYZWPR 运动学、ToF 传感器</td></tr><tr><td>7</td><td>draw, layout, paths</td><td>2D 切片器、文件缓冲、UV→XYZWPR 全流水线</td></tr></tbody></table><h4>4. 依赖图</h4><pre><code>ktransw-macros
+    └── errors, system, Strings, math
+            └── matrix, hash, queue, iterator
+                    └── files, csv, xmlib, socket
+                            └── registers, display, multitask
+                                    └── shapes, pose, sensors
+                                            └── draw, graph, layout
+                                                    └── paths</code></pre><h4>5. 关键架构模式</h4><p><strong>泛型（GPP 宏）：</strong></p><pre><code>%define class_name myqueue
+%include default_queue.klt     -- 定义 QUEUE_INDEX_TYPE, QUEUETYPE 等
+%class myqueue(queue.klc)      -- 展开类模板</code></pre><p><strong>命名空间：</strong> 所有公开函数遵循 <code>modulename__routine</code> 命名（双下划线），由 <code>funcname</code>/<code>classfunc</code> 宏自动生成。</p><p><strong>OOP 类（.klc）：</strong> 对象状态存储在 KAREL PATH 结构或全局变量中，方法通过 <code>declare_member</code> 宏绑定到类实例。</p><h4>6. 构建流程</h4><pre><code class="language-shell">cd lib/&lt;module_name&gt;
+del /f robot.ini &amp;&amp; setrobot    # 配置目标机器人/ROBOGUIDE
+mkdir build &amp;&amp; cd build
+rossum .. -w -o                 # 解析依赖 + 生成 build.ninja
+ninja                           # 编译
+kpush                           # 部署到控制器</code></pre><p>常用选项：</p><ul><li><code>-t</code>：包含测试程序</li><li><code>-b</code>：构建所有依赖</li></ul><h4>7. 控制器清理</h4><pre><code class="language-shell">kpush --delete                          # 删除 build 目录下所有程序
+cd scripts &amp;&amp; ./master_del.bat          # 删除所有 Ka-Boost 程序
+cd scripts &amp;&amp; ./master_test_del.bat     # 删除所有测试程序</code></pre><p><strong>注意：</strong> <code>draw</code> 和 <code>paths</code> 之间的交叉依赖可能导致 <code>MEMO-128 parameters are different</code> 错误。重新部署前应先运行 <code>master_del.bat</code> + <code>master_test_del.bat</code> 清理。</p><h4>8. 仓库结构</h4><pre><code>Ka-Boost/
+├── lib/                 # 所有库子模块（每个是独立 git repo）
+├── docs/                # 生成的 HTML 文档
+├── scripts/             # Windows 批处理脚本
+├── .claude/rules/       # 各层模块详细文档
+└── readme.md</code></pre><p>每个 <code>lib/</code> 子模块包含 <code>package.json</code>（rossum 清单），定义 <code>name</code>、<code>version</code>、<code>depends</code>（其他 Ka-Boost 包）和可选的 <code>tp-interfaces</code>（暴露给 TP 程序的函数）。</p><h3>Verification方式</h3><ol><li><code>rossum .. -w -o</code> 成功生成 <code>build.ninja</code>，无依赖解析错误</li><li><code>ninja</code> 编译所有源文件无错误，生成 <code>.pc</code> 二进制</li><li><code>kpush</code> 成功将 <code>.pc</code> 文件推送到控制器</li><li>各模块的 KUnit 测试在 <code>http://robot_ip/KAREL/test_name</code> 通过</li><li>无 <code>MEMO-128</code> 参数冲突错误（清理后重新部署）</li></ol><h3>来源</h3><ul><li>GitHub: kobbled/ka-boost — CLAUDE.md 项目架构文档</li><li>相关工具：rossum (包管理)、ktransw (转译器)、GPP (预处理器)、TP-Plus (DSL)</li></ul><h2>Verification</h2><pre><code class="language-bash">grep -i fanuc lessons/contrib/fanuc-*.md 2&gt;/dev/null | wc -l
+echo FANUC verified</code></pre><p><strong>Expected Output:</strong></p><pre><code># (count)
+FANUC verified</code></pre>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/fanuc-karel-ka-boost-architecture.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Ka-Boost: 8-Layer KAREL Module Architecture and Build System">Find related lessons →</a></p></div>

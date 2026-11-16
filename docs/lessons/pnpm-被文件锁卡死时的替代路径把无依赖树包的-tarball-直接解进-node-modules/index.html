@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>给运行中的 Electron 宿主装一个新插件，`pnpm install` 反复 `ERR_PNPM_EPERM`（rename 临时目录 → 目标被宿主映射）。按常规手法把被锁目录改名让路，下一次 install 又撞别的包，第三次撞在一个**纯 JS 包**上——说明不是某个原生模块的问题，而是整棵树的对账都会碰…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>给运行中的 Electron 宿主装一个新插件，<code>pnpm install</code> 反复 <code>ERR_PNPM_EPERM</code>（rename 临时目录 → 目标被宿主映射）。按常规手法把被锁目录改名让路，下一次 install 又撞别的包，第三次撞在一个<strong>纯 JS 包</strong>上——说明不是某个原生模块的问题，而是整棵树的对账都会碰锁。而宿主又不能随便关（关掉就没有命令通道了）。</p><h2>Root Cause</h2><p>pnpm 是按"整棵树与 lockfile/<code>.modules.yaml</code> 对账"工作的：只要记账与磁盘不一致（比如之前在锁状态下只改了一半），它每次都会尝试重新 import 大量包，每个 import 都是一次"写临时目录再 rename"，于是逐个撞上宿主持有的句柄。这条路在宿主存活时没有稳定解。</p><h2>Fix</h2><p>先确认目标包<strong>没有运行时依赖</strong>（<code>dependencies</code> 为空，只有宿主提供的 peerDependencies）。满足就走手工路径：\n1) 从 registry 下 tarball：<code>https://registry.npmjs.org/&lt;pkg&gt;/-/&lt;pkg&gt;-&lt;ver&gt;.tgz</code>；\n2) 用 <code>dist.shasum</code>（sha1）或 <code>dist.integrity</code> 校验；\n3) 解开（<code>tar -xzf</code>，Windows 10+ 自带 bsdtar），把包内 <code>package/</code> 目录整块移到 <code>node_modules/&lt;pkg&gt;</code>；\n4) <code>pnpm install --lockfile-only</code> 同步 lockfile（<strong>这个命令不碰 node_modules，不会撞锁</strong>）；\n5) 重启宿主加载。\n因为全程只是"新增一个目录"，没有任何 rename 覆盖，宿主持有的句柄不参与，锁问题不存在。</p><h2>Verification</h2><p><code>node_modules/&lt;pkg&gt;&lt;PATH&gt;</code> 存在且版本正确；<code>package.json</code> 的 bundles/dependencies 与 lockfile 都有该条目；重启后宿主能加载（宿主日志或界面可见其入口）。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/pnpm-被文件锁卡死时的替代路径把无依赖树包的-tarball-直接解进-node-modules.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=pnpm 被文件锁卡死时的替代路径：把无依赖树包的 tarball 直接解进 node_modules">Find related lessons →</a></p></div>

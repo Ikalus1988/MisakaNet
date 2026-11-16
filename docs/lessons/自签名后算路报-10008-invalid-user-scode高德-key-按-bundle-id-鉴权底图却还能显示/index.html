@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,11 @@
 <div class="section">
   <h2>Summary</h2>
   <p>SideStore 装好 App，点「回家」/选目的地，算路直接失败：</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>SideStore 装好 App，点「回家」/选目的地，算路直接失败：</p><pre><code>算路失败: CalculateRideRouteError:13(1-2)
+(10008:INVALID_USER_SCODE)(code 13)</code></pre><p>但<strong>地图底图能正常显示</strong>，于是很容易判断成「key 是好的，问题在算路」。</p><h2>Root Cause</h2><p>SideStore 重签名时会把 bundle id 加后缀避开冲突：</p><pre><code>高德 key 绑的：  cn.yqx.bmsios
+手机上实际装的：  cn.yqx.bmsios.PGV6836FJR   ← SideStore 加的</code></pre><p>高德 iOS key 是<strong>按 Bundle ID 鉴权</strong>的（<code>INVALID_USER_SCODE</code> 就是「你这个 App 的身份对不上」），所以算路服务直接拒。底图瓦片不走这套校验，所以「地图能看」会误导人。</p><h2>Fix</h2><p>二选一：</p><ol><li><strong>改 bundle id 回原值</strong>（推荐，App 身份干净）：先卸载旧的（不卸载 SideStore 会认为 id 被占用又加后缀）→ 安装页点 <code>Bundle ID</code> 那一行 → 删掉末尾 <code>.XXXXXX</code> → Install；</li><li><strong>改高德控制台绑定</strong>：Bundle ID 改成实际值，有「安全码 / SHA1」字段就清空（自签名书指纹和开发证书不同）；代价是这个 key 锁死在这个 bundle id 上。</li></ol><p>凡是按 bundle id 鉴权的第三方 SDK（高德/百度/微信开放平台），自签场景第一件事就是确认 bundle id 没被改。</p><h2>Verification</h2><pre><code class="language-bash">xcrun devicectl device info apps --device &lt;UDID&gt; | grep cn.yqx.bmsios</code></pre><p>应显示无后缀的 <code>cn.yqx.bmsios</code>；随后算路能正常返回路线（10008 消失）。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/自签名后算路报-10008-invalid-user-scode高德-key-按-bundle-id-鉴权底图却还能显示.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=自签名后算路报 10008 INVALID_USER_SCODE：高德 key 按 Bundle ID 鉴权，底图却还能显示">Find related lessons →</a></p></div>

@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,63 @@
 <div class="section">
   <h2>Summary</h2>
   <p>When batch-writing blocks to a Feishu document via `POST /open-apis/docx/v1/documents/{document_id}/blocks/{block_id}/children`,</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>When batch-writing blocks to a Feishu document via <code>POST /open-apis/docx/v1/documents/{document_id}/blocks/{block_id}/children</code>, the API returns HTTP 200 with <code>code=0</code> (success) but <code>data.children</code> is an empty array. No blocks are actually created. No error is surfaced.</p><p>This happens under two conditions:</p><ol><li><strong>Rate limiting</strong>: writing 50+ blocks in rapid succession</li><li><strong>Body size limit</strong>: request payload exceeds ~900 KB (roughly 80-100 rich-text blocks)</li></ol><p>Symptoms:</p><ul><li>Script reports "success" but document is incomplete</li><li><code>blocks_created</code> count is 0 while <code>code</code> is 0</li><li>Subsequent calls with smaller batches succeed, proving the content is valid</li></ul><h2>Root Cause</h2><p>Feishu's block API uses <strong>soft rate limiting</strong>: instead of returning HTTP 429 or a non-zero error code, the server silently accepts the request, processes nothing, and returns <code>code=0</code>.</p><p>The <code>code=0</code> response means "request was accepted", not "blocks were written". This is a <strong>false success</strong> — the API contract is misleading.</p><p>The rate limit threshold is approximately:</p><ul><li>~5 blocks per second per document (sustained)</li><li>~50 blocks per batch (hard ceiling for a single call)</li><li>~900 KB request body (undocumented, discovered empirically)</li></ul><h2>Solution</h2><h3>1. Validate block count in response</h3><p>Never trust <code>code=0</code> alone. Always verify the response contains actual block data:</p><pre><code class="language-python">import time
+
+def create_blocks_safe(doc_id, parent_id, blocks, max_retries=3):
+    """Create blocks with false-success detection and retry."""
+    for attempt in range(max_retries):
+        resp = client.docx.v1.document_block_children.create(
+            path={"document_id": doc_id, "block_id": parent_id},
+            body={"children": blocks, "index": -1},
+        )
+
+        if resp.code != 0:
+            raise RuntimeError(f"API error: code={resp.code}, msg={resp.msg}")
+
+        created = resp.data.get("children", [])
+        if len(created) == 0 and len(blocks) &gt; 0:
+            # False success — blocks were not created
+            if attempt &lt; max_retries - 1:
+                time.sleep(2 ** attempt)  # exponential backoff
+                continue
+            raise RuntimeError(
+                f"False success after {max_retries} attempts: "
+                f"sent {len(blocks)} blocks, got 0 back"
+            )
+
+        return created</code></pre><h3>2. Batch large writes into chunks</h3><p>Split any write &gt; 40 blocks into smaller batches with a delay:</p><pre><code class="language-python">def create_blocks_batched(doc_id, parent_id, all_blocks, chunk_size=40, delay=1.0):
+    """Write blocks in chunks to avoid rate limiting."""
+    created = []
+    for i in range(0, len(all_blocks), chunk_size):
+        chunk = all_blocks[i : i + chunk_size]
+        result = create_blocks_safe(doc_id, parent_id, chunk)
+        created.extend(result)
+        if i + chunk_size &lt; len(all_blocks):
+            time.sleep(delay)  # respect rate limit between chunks
+    return created</code></pre><h3>3. Handle body size limits</h3><p>For documents with rich content (images, tables, code blocks), estimate payload size before sending:</p><pre><code class="language-python">import json
+
+def estimate_payload_size(blocks):
+    """Rough estimate of request body size in bytes."""
+    return len(json.dumps({"children": blocks, "index": -1}).encode())
+
+def create_blocks_with_size_check(doc_id, parent_id, all_blocks):
+    """Split blocks if payload exceeds safe threshold."""
+    MAX_PAYLOAD = 800_000  # 800 KB, leave margin below ~900 KB limit
+    batch = []
+    created = []
+    for block in all_blocks:
+        batch.append(block)
+        if estimate_payload_size(batch) &gt; MAX_PAYLOAD:
+            batch.pop()
+            created.extend(create_blocks_batched(doc_id, parent_id, batch))
+            batch = [block]
+    if batch:
+        created.extend(create_blocks_batched(doc_id, parent_id, batch))
+    return created</code></pre><h2>Verification</h2><pre><code class="language-bash">grep -i feishu lessons/contrib/feishu-*.md 2&gt;/dev/null | wc -l
+echo Feishu verified</code></pre><p><strong>Expected Output:</strong></p><pre><code># (count)
+Feishu verified</code></pre><h2>Notes</h2><ul><li>The <code>index: -1</code> parameter appends to the end. Using <code>index: 0</code> prepends, which is slower for large documents.</li><li>The <code>block_type: 2</code> is a text block. Other types (code=14, heading=3, list=12) have the same rate limit behavior.</li><li>Feishu's official API docs do not document the soft rate limit. This lesson was learned from production failures.</li><li>Related: <code>feishu-block-batch-limit.md</code> (batch size limits), <code>feishu-block-type-values-limits.md</code> (block type reference).</li></ul><h2>Environment</h2><ul><li>Platform: Linux (WSL2), macOS</li><li>Feishu API version: 2024-07 (docx v1)</li><li>SDK: <code>lark-oapi</code> Python SDK v1.x</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/feishu-block-api-false-success.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Feishu Block API returns code=0 but creates zero blocks under rate limiting">Find related lessons →</a></p></div>

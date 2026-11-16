@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,32 @@
 <div class="section">
   <h2>Summary</h2>
   <p>在飞书 IM 消息中使用 `post` 类型的富文本消息发送 Markdown 表格，表格显示为空白或原始分隔线（`|------|`），而不是渲染后的表格。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>在飞书 IM 消息中使用 <code>post</code> 类型的富文本消息发送 Markdown 表格，表格显示为空白或原始分隔线（<code>|------|</code>），而不是渲染后的表格。</p><h2>Root Cause</h2><p>飞书 <code>post</code> 消息类型中 <code>&lt;tag&gt;md&lt;/tag&gt;</code> 标签内的 Markdown 表格在客户端不解析。飞书 post 格式不支持原生 Markdown 表格渲染，无论是直接发送表格还是放在代码块里。</p><h2>Solution</h2><p>在发送前，用 <code>&lt;br&gt;</code> 标签替换表格的分隔符 <code>|</code>，打断表格行连续性，使飞书客户端能够渲染：</p><pre><code class="language-python">import re
+
+def _optimize_markdown_style(content: str) -&gt; str:
+    """飞书 post 中表格渲染修复：用 &lt;br&gt; 替换 | 分隔"""
+    lines = content.split('\n')
+    result = []
+    in_table = False
+    
+    for line in lines:
+        is_table_line = bool(re.match(r'^\s*\|.*\|\s*$', line))
+        if is_table_line:
+            # 表格行：替换 | 为 &lt;br&gt; 分隔符
+            line = re.sub(r'\|', '&lt;br&gt;', line)
+            # 清理多余的 &lt;br&gt; 前后空格
+            line = re.sub(r'\s*&lt;br&gt;\s*', ' | ', line).strip()
+            line = f'&lt;br&gt;{line}&lt;br&gt;'
+            in_table = True
+        else:
+            in_table = False
+        result.append(line)
+    
+    return '\n'.join(result)</code></pre><h2>Verification</h2><pre><code class="language-bash">grep -i feishu lessons/contrib/feishu-*.md 2&gt;/dev/null | wc -l
+echo Feishu verified</code></pre><p><strong>Expected Output:</strong></p><pre><code># (count)
+Feishu verified</code></pre><h2>限制</h2><ul><li>此修复适用于飞书 post 消息，其他平台不适用</li><li>如果表格出现在消息开头（前无换行），<code>&lt;br&gt;</code> 注入逻辑需要额外处理边界情况</li><li>飞书官方暂无原生的 Markdown 表格支持，此为权宜之计</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/feishu-markdown-table-not-rendered.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=feishu markdown table not rendered">Find related lessons →</a></p></div>

@@ -6,6 +6,7 @@
 <title>FANUC Handling Robot Unexpected Auto Mode Dropout Diagnosis — MisakaNet</title>
 <meta name="description" content="Draft (not published): FANUC 搬运机器人负责搬运车顶零件。零件到位后，销式快换耦合器（pin-type quick-change coupler）断开；点焊完成后重新连接。在此过程中，机器人**偶尔掉出自动模式**，需要手动按下电气控制面板上的复位和启动按钮才能恢复。">
 <link rel="canonical" href="https://misakanet.org/lessons/fanuc-handling-robot-auto-drop-diagnosis/">
+<meta name="robots" content="noindex, follow">
 <meta property="og:title" content="FANUC Handling Robot Unexpected Auto Mode Dropout Diagnosis">
 <meta property="og:description" content="Draft (not published): FANUC 搬运机器人负责搬运车顶零件。零件到位后，销式快换耦合器（pin-type quick-change coupler）断开；点焊完成后重新连接。在此过程中，机器人**偶尔掉出自动模式**，需要手动按下电气控制面板上的复位和启动按钮才能恢复。">
 <meta property="og:url" content="https://misakanet.org/lessons/fanuc-handling-robot-auto-drop-diagnosis/">
@@ -160,6 +161,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -179,6 +191,23 @@
 <div class="section">
   <h2>Summary</h2>
   <p>FANUC 搬运机器人负责搬运车顶零件。零件到位后，销式快换耦合器（pin-type quick-change coupler）断开；点焊完成后重新连接。在此过程中，机器人**偶尔掉出自动模式**，需要手动按下电气控制面板上的复位和启动按钮才能恢复。</p>
+</div>
+<div class="lesson-body">
+<h2>FANUC 搬运机器人掉自动模式诊断</h2><h3>Problem描述</h3><p>FANUC 搬运机器人负责搬运车顶零件。零件到位后，销式快换耦合器（pin-type quick-change coupler）断开；点焊完成后重新连接。在此过程中，机器人<strong>偶尔掉出自动模式</strong>，需要手动按下电气控制面板上的复位和启动按钮才能恢复。</p><ul><li><strong>频率</strong>：约每天一次，有时数天不出现</li><li><strong>影响</strong>：产线停机，需人工干预恢复</li><li><strong>场景</strong>：搬运→焊接→放件的断连循环中</li></ul><h3>Root Cause分析</h3><p>所有社区回复指向同一根因：<strong>快换耦合器电气触点的间歇性接触故障</strong>。</p><pre><code>正常流程：
+  抓件 → 快换断开 → 焊接 → 快换重连 → 放件
+                    ↑
+              信号瞬间丢失 → 控制器退出 AUTO</code></pre><table><thead><tr><th>根因</th><th>机制</th><th>检查方法</th></tr></thead><tbody><tr><td>触点磨损/污染</td><td>断连时接触面氧化或异物导致瞬断</td><td>目视检查触点表面</td></tr><tr><td>机械对位偏差</td><td>耦合器对接不精确，连接不稳固</td><td>检查定位销和导向机构</td></tr><tr><td>信号线虚焊</td><td>焊接点在振动中断开</td><td>万用表逐线通断测试</td></tr><tr><td>线束老化</td><td>线缆内部断丝，弯折时接触不良</td><td>晃动线束观察信号变化</td></tr></tbody></table><h3>Solution方法/技术要点</h3><h4>Solution一：清洁与检查（优先）</h4><ol><li>拆卸快换耦合器，检查所有电气触点</li><li>用酒精清洁触点表面氧化层和油污</li><li>检查触点弹簧压力是否足够</li><li>验证耦合器机械对位精度</li></ol><h4>Solution二：信号监控定位</h4><p>编写一个监控程序，实时记录每个信号线的状态：</p><pre><code>-- 伪代码：信号监控程序
+-- 在后台循环运行，记录信号状态变化
+WHILE TRUE DO
+  IF DI[n] = OFF AND DI[n]_PREV = ON THEN
+    -- 记录信号瞬断时间戳和信号编号
+    R[n] = R[n] + 1  -- 累计瞬断次数
+  ENDIF
+  DI[n]_PREV = DI[n]
+  WAIT 0.1 sec
+ENDWHILE</code></pre><p>通过监控程序可以精确定位哪根信号线存在瞬断问题。</p><h4>Solution三：更换线束</h4><p>若无法通过监控定位具体故障点，最直接的方案是<strong>更换整条线束</strong>。</p><h3>Verification方式</h3><ol><li>清洁/更换触点后连续运行 <strong>3 天以上</strong>无掉自动现象</li><li>监控程序记录的信号瞬断次数降为 <strong>0</strong></li><li>更换线束后问题彻底消失</li><li>长期观察：每周检查一次耦合器触点状态</li></ol><h3>来源</h3><ul><li>帖子：<a href="https://bbs.gongkong.com/d/202603/974683/974683_1.shtml">发那科搬运机器人掉自动</a></li><li>作者：不羁一生，2026-03-05</li><li>回复者：Allen010、JSdanzi、未来。</li></ul><h2>Verification</h2><pre><code class="language-bash">grep -i fanuc lessons/contrib/fanuc-*.md 2&gt;/dev/null | wc -l
+echo FANUC verified</code></pre><p><strong>Expected Output:</strong></p><pre><code># (count)
+FANUC verified</code></pre>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/fanuc-handling-robot-auto-drop-diagnosis.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=FANUC Handling Robot Unexpected Auto Mode Dropout Diagnosis">Find related lessons →</a></p></div>

@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,23 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Earn agents log full HTTP headers, cookies, or env dumps. Tokens leak into chat transcripts and public gists.</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Earn agents log full HTTP headers, cookies, or env dumps. Tokens leak into chat transcripts and public gists.</p><h2>Root Cause</h2><p>Debug logging prints raw <code>Authorization</code>, <code>Cookie</code>, and wallet keys. No central redactor.</p><h2>Solution</h2><pre><code class="language-python">import re
+
+SECRET_RE = re.compile(
+    r"(?i)(authorization|cookie|api[_-]?key|token|secret|private[_-]?key)\s*[:=]\s*\S+"
+)
+BEARER_RE = re.compile(r"(?i)bearer\s+[a-z0-9._\-]+")
+
+def redact(text: str) -&gt; str:
+    text = SECRET_RE.sub(r"\1: [REDACTED]", text)
+    text = BEARER_RE.sub("Bearer [REDACTED]", text)
+    return text
+
+def log(msg: str) -&gt; None:
+    print(redact(msg), flush=True)</code></pre><p>Never log:</p><ul><li>private keys / seed phrases</li><li>full cookie jars</li><li>raw PAT files</li></ul><h2>Verification</h2><pre><code class="language-python">assert "[REDACTED]" in redact("Authorization: Bearer abc.def")
+assert "abc.def" not in redact("Authorization: Bearer abc.def")</code></pre><h2>Notes</h2><ul><li>Prefer structured logs with explicit allow-listed fields.</li><li>Mode 600 on secret files; never commit them.</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/en/log-redaction-secrets.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Redact secrets from agent logs before they leave the machine">Find related lessons →</a></p></div>

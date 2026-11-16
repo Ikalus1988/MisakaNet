@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,21 @@
 <div class="section">
   <h2>Summary</h2>
   <p>为 MisakaNet 添加无 GitHub 账号的注册通道，选用 Cloudflare Email Routing + Workers + KV 架构。用户发邮件到注册地址 → Worker 自动分配节点 ID → 存入 KV。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>为 MisakaNet 添加无 GitHub 账号的注册通道，选用 Cloudflare Email Routing + Workers + KV 架构。用户发邮件到注册地址 → Worker 自动分配节点 ID → 存入 KV。</p><h2>Solution</h2><pre><code>用户发邮件 → Cloudflare Email Routing → Worker email 事件
+  → 分配节点 ID → 写入 KV → message.reply() 回复确认</code></pre><h2>踩坑记录</h2><h3>坑1：message.text 不存在</h3><p><strong>现象：</strong> Worker 部署后始终收不到邮件内容，<code>message.text</code> 为 undefined。</p><p><strong>根因：</strong> Cloudflare Email Workers 的 <code>email</code> 事件处理函数没有 <code>text</code> 属性。邮件正文需要从 <code>message.raw</code>（ReadableStream）流式读取并解码。</p><p><strong>修复：</strong></p><pre><code class="language-javascript">let rawText = '';
+const reader = message.raw.getReader();
+const decoder = new TextDecoder();
+while (true) {
+  const { done, value } = await reader.read();
+  if (done) break;
+  rawText += decoder.decode(value, { stream: true });
+}</code></pre><h3>坑2：Node.js crypto 模块不可用</h3><p><strong>现象：</strong> <code>import { randomBytes } from 'node:crypto'</code> 在 Workers 运行时抛出错误。</p><p><strong>根因：</strong> Workers 不完全兼容 Node.js 的 <code>crypto</code> 模块。即使开启了 <code>nodejs_compat</code> 标志，<code>randomBytes</code> 仍可能失败。</p><p><strong>修复：</strong> 改用 Web Crypto API。</p><pre><code class="language-javascript">const array = new Uint8Array(16);
+crypto.getRandomValues(array);
+const token = Array.from(array, b =&gt; b.toString(16).padStart(2, '0')).join('');</code></pre><h3>坑3：回复邮件被 QQ/163/ Foxmail 拒收</h3><p><strong>现象：</strong> Worker 的 <code>message.reply()</code> 执行成功（无报错），但用户收不到验证邮件。</p><p><strong>根因：</strong> Cloudflare 的邮件服务器 IP 不在主流国内邮箱的 SPF 白名单中，回复邮件被拒收或打入垃圾箱。这不是代码层面的错误，而是基础设施的信任问题。</p><p><strong>修复：</strong> 去掉验证环节，改为"发邮件即注册"。用户发送邮件时 Worker 直接分配节点 ID 并写入 KV，回复邮件变为纯通知（收不到也不影响注册）。</p><h3>坑4：Turnstile 与表单集成</h3><p><strong>现象：</strong> Web 表单添加 Turnstile 后，验证始终失败。</p><p><strong>根因：</strong> Turnstile 需要 page URL 的白名单配置。开发阶段的 workers.dev 域名和生产域名需要同时在 Cloudflare Turnstile Dashboard 中添加。</p><p><strong>修复：</strong> 在 Turnstile 管理界面添加所有可能的前端域名（包括 workers.dev 子域名）。</p><h2>Verification</h2><pre><code class="language-bash">echo "Lesson: Cloudflare Email Worker 邮件注册踩坑Notes — message.raw、"
+wc -l lessons/contrib/cloudflare-email-worker-registration-trap.md</code></pre><p><strong>Expected Output:</strong></p><pre><code>Lesson: Cloudflare Email Worker 邮件注册踩坑Notes — message.raw、
+# (line count)</code></pre><h2>Lesson Learned</h2><ul><li>Cloudflare Email Workers 的 API 与标准 HTTP Workers 不同：无 <code>fetch</code> 事件中的 <code>request</code>，而是 <code>email</code> 事件中的 <code>message</code> 对象。<code>message.raw</code> 是唯一的正文获取方式。</li><li>邮件基础设施的可靠性不能假设。<code>message.reply()</code> 能否到达取决于收件方邮箱的 SPF 策略，不要把它作为关键路径。</li><li>Workers 环境下优先使用 Web 标准 API（<code>crypto.getRandomValues</code>）而非 Node.js API。</li><li>双通道（邮件 + Web 表单）互补：Agent 用邮件自动化，人类用表单，同一套 KV 后端。</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/cloudflare-email-worker-registration-trap.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Cloudflare Email Worker 邮件注册踩坑Notes — message.raw、MIME 与 SPF">Find related lessons →</a></p></div>

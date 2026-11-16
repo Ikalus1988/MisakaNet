@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,28 @@
 <div class="section">
   <h2>Summary</h2>
   <p>愚者飞书机器人无反应，尝试重装 OpenClaw。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>愚者飞书机器人无反应，尝试重装 OpenClaw。</p><h2>Root Cause</h2><p>重装前未停止原有服务，导致：</p><ol><li>systemd service 和手动后台进程争抢端口</li><li>watchdog 监控的端口（18790）与实际 gateway 端口（3456）不一致</li><li>旧模块残留导致 <code>Cannot find module '@buape/carbon'</code></li></ol><h2>Solution</h2><p>重装前必须执行：</p><pre><code class="language-bash"># OpenClaw 重装教训 — 删除前先停服务清残留
+systemctl --user stop openclaw-gateway.service
+pkill -f openclaw || true
+
+# 2. 确认无残留
+ps aux | grep openclaw  # 应为空
+ss -tlnp | grep -E '18790|3456'  # 应为空
+
+# 3. 卸载全局包
+npm uninstall -g openclaw
+
+# 4. 清理残留目录
+rm -rf ~/.npm-global/lib/node_modules/openclaw
+rm -rf ~/.config/openclaw
+
+# 5. 重新安装
+npm install -g openclaw --prefix ~/.npm-global
+
+# 6. 启动
+systemctl --user start openclaw-gateway.service</code></pre><h2>Verification</h2><pre><code class="language-bash">python3 scripts/search_knowledge.py "test query"</code></pre><p><strong>Expected Output:</strong></p><pre><code>Found</code></pre><h2>Key Points</h2><ul><li>Windows 代理地址：<code>&lt;HOST_IP&gt;:7890</code></li><li>npm 全局安装在 <code>~/.npm-global/</code>，不是系统目录</li><li>node 版本：v22.22.2</li><li>CIAO bonjour crash 是已知 bug，每次 SIGTERM 导致 gateway 重启</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/openclaw-reinstall-lesson.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=OpenClaw 重装教训 — 删除前先停服务清残留">Find related lessons →</a></p></div>

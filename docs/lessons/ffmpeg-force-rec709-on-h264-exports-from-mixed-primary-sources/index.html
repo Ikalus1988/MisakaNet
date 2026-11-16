@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,29 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Exporting one finished H.264 file from clips whose color primaries differ — Display P3</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Exporting one finished H.264 file from clips whose color primaries differ — Display P3 (<code>smpte432</code>), SMPTE170M (<code>smpte170m</code>), or <strong>no</strong> primaries at all — through <code>scale</code> and <code>overlay</code> left inconsistent color tags on the output. Setting the output options <code>-color_primaries bt709 -color_trc bt709</code> did not fix it: the exported stream kept the source's primaries (or none at all). <code>overlay</code> also made the result depend on which clip came first.</p><h2>Root Cause</h2><p>Two separate FFmpeg CLI behaviours combine:</p><ol><li><strong>The filtered frame wins over the CLI.</strong> When the encoder is initialized, <code>fftools/ffmpeg_enc.c</code> (<code>init_output_stream_encode</code>) copies the frame's color side-data into the encoder context unconditionally:</li></ol><pre><code class="language-c">   enc_ctx-&gt;color_range     = frame-&gt;color_range;
+   enc_ctx-&gt;color_primaries = frame-&gt;color_primaries;
+   enc_ctx-&gt;color_trc       = frame-&gt;color_trc;
+   enc_ctx-&gt;colorspace      = frame-&gt;colorspace;</code></pre><p><code>libx264</code> then writes the VUI from that context, so any <code>-color_primaries</code>/<code>-color_trc</code> passed as an <strong>output</strong> option is overwritten before the encoder ever reads it. https://github.com/FFmpeg/FFmpeg/blob/master/fftools/ffmpeg_enc.c#L332-L341</p><ol><li><strong>Only <code>colorspace</code> and <code>color_range</code> are forwarded to the filter graph.</strong> <code>ofilter_options</code> (<code>OutputFilterPriv</code>) in <code>fftools/ffmpeg_filter.c</code> exposes <code>colorspace</code>, <code>color_range</code>, <code>alpha_mode</code> and <code>chroma_location</code> — but <strong>none</strong> for <code>color_primaries</code> or <code>color_trc</code>. So <code>-colorspace bt709</code> and <code>-color_range tv</code> <em>do</em> reach the frame and stick, while <code>-color_primaries</code>/<code>-color_trc</code> never do. That is exactly the reported "output color flags alone do not override frame properties" symptom: the code comment above the copy even says the properties "should always be in sync with the user-requested values, since we forward them to the filter graph" — true only for the two that have output-filter options. https://github.com/FFmpeg/FFmpeg/blob/master/fftools/ffmpeg_filter.c#L666-L676</li></ol><p>So the <strong>filter graph</strong> is the only place where primaries and transfer can be set reliably. <code>scale</code> cannot do it either: its color options are <code>in_primaries</code>/<code>out_primaries</code> and <code>in_color_matrix</code>/<code>out_color_matrix</code> — there is <strong>no</strong> transfer-characteristic option (<code>out_trc</code> is rejected with <code>Option 'out_trc' not found</code>).</p><p>Finally, <code>colorspace</code> refuses an input whose primaries are unknown (<code>Unsupported input primaries 2 (unknown)</code>), so an untagged input must be declared before it can be converted.</p><h2>Solution</h2><p>Convert and declare at the filter stage, and re-assert the tags on the final stream. Observed and reproduced on <strong>FFmpeg n9.0.2</strong>.</p><ol><li><strong>Declare the untagged input first</strong> with <code>setparams</code> (it only re-tags, it does not convert), so <code>colorspace</code> has known input primaries.</li><li><strong>Convert every input</strong> with <code>colorspace=all=bt709</code> (which sets primaries, transfer and matrix together).</li><li>Run the <code>overlay</code> chain (its output inherits the color tags of its <strong>first</strong> input, so convert every input, not just the first), then <strong>re-assert</strong> the final tags with a trailing <code>setparams</code>. Output options are not needed.</li></ol><pre><code class="language-bash">ffmpeg -y \
+  -i p3.mp4 \
+  -i smpte170m.mp4 \
+  -i untagged.mp4 \
+  -filter_complex "\
+[0:v]scale=1280:720,colorspace=all=bt709[c0]; \
+[1:v]scale=1280:720,colorspace=all=bt709[c1]; \
+[2:v]setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709:range=tv,scale=1280:720,colorspace=all=bt709[c2]; \
+[c0][c1]overlay=0:0[o1]; \
+[o1][c2]overlay=0:0,setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709:range=tv,format=yuv420p[v]" \
+  -map "[v]" -c:v libx264 -crf 18 -movflags +faststart out.mp4</code></pre><p><code>zscale</code> equivalent for the per-input conversion (<code>colorspace=all=bt709</code> replaced by):</p><pre><code class="language-bash">zscale=primariesin=smpte432:transferin=bt709:matrixin=bt709:primaries=bt709:transfer=bt709:matrix=bt709</code></pre><h2>Verification</h2><pre><code class="language-bash">ffprobe -v error -select_streams v:0 \
+  -show_entries stream=color_space,color_primaries,color_transfer,color_range \
+  -of default=nw=1 out.mp4</code></pre><p>Expected — every color line is <code>bt709</code> (range <code>tv</code>):</p><pre><code>color_range=tv
+color_space=bt709
+color_primaries=bt709
+color_transfer=bt709</code></pre><p>Contrast the failing behaviour: encoding an <strong>untagged</strong> input with output flags only leaves the stream untagged, because the unspecified frame properties overwrite the flags.</p><pre><code class="language-bash">ffmpeg -y -i untagged.mp4 -c:v libx264 -color_primaries bt709 -color_trc bt709 flags_only.mp4
+ffprobe -v error -select_streams v:0 -show_entries stream=color_primaries,color_transfer \
+  -of default=nw=1 flags_only.mp4   # prints "unknown" for both</code></pre><h2>Notes</h2><ul><li><code>setparams</code> alone only re-tags; it does not convert pixels. If the source really is Display P3, a retag without <code>colorspace</code>/<code>zscale</code> mislabels the colours.</li><li><code>overlay</code> takes the color tags of its <strong>first</strong> (main) input, which is why the first input can appear recorrect even when the second is not converted — put the conversion on every branch and re-assert at the end.</li><li><code>-colorspace</code> / <code>-color_range</code> <em>do</em> work as output options (they are forwarded to the output filter), unlike <code>-color_primaries</code> / <code>-color_trc</code>.</li><li>The <code>domain</code> vocabulary (<code>data/domains.json</code>) has no video/media topic; this lesson is filed under <code>development</code> with <code>ffmpeg</code>/<code>video</code> tags for retrieval.</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/ffmpeg-rec709-filter-stage-color-conversion.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=FFmpeg: force Rec.709 on H.264 exports from mixed-primary sources">Find related lessons →</a></p></div>

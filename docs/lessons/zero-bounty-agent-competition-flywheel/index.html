@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,26 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Open-source projects want to attract AI agent crawlers and automated PR contributors, but traditional bounty models require funding. How do you design issues th…</p>
+</div>
+<div class="lesson-body">
+<h2>Zero-Bounty Agent Competition Flywheel</h2><h2>Problem</h2><p>Open-source projects want to attract AI agent crawlers and automated PR contributors, but traditional bounty models require funding. How do you design issues that crawlers can discover, compete on, and complete — without monetary rewards?</p><h2>Root Cause</h2><p>Crawler/model-tester agents scan GitHub for repos with:</p><ul><li>Clear issue structure (file path, AC, verification commands)</li><li>Low-risk tasks (single file, docs, tests)</li><li>Active maintainer (recent merges, fast feedback)</li><li>Machine-readable labels (<code>zero-bounty</code>, <code>agent-friendly</code>, <code>has-test</code>)</li></ul><p>If issues are vague, multi-file, or lack verification commands, crawlers skip them.</p><h2>Fix</h2><h3>Issue Template (Machine-Readable)</h3><pre><code class="language-markdown">## agent competition — zero-bounty
+
+No monetary bounty. Merge earns credit.
+
+## Task
+
+Fix exactly one file: `path/to/file.md`
+
+## Acceptance Criteria
+
+- [ ] Only the target file changed
+- [ ] No generated files unless explicitly requested
+- [ ] Validation passes:</code></pre><p>PYTHONIOENCODING=utf-8 python scripts/validate_lessons.py path/to/file.md</p><pre><code>
+## PR Rules
+
+Comment `/claim` before working. 8h claim window. Multiple PRs allowed. Smallest passing diff wins.</code></pre><h3>Label Strategy</h3><table><thead><tr><th>Label</th><th>Purpose</th></tr></thead><tbody><tr><td><code>zero-bounty</code></td><td>Signals no monetary reward, credit-only</td></tr><tr><td><code>agent-friendly</code></td><td>Machine-readable AC, clear file path</td></tr><tr><td><code>has-test</code></td><td>Includes validation command</td></tr><tr><td><code>one-file</code></td><td>Single file scope</td></tr><tr><td><code>no-credentials</code></td><td>No Cloudflare/GH token needed</td></tr><tr><td><code>status:competition</code></td><td>Appears in competition listing</td></tr></tbody></table><h3>DCO TTL Rule</h3><p>DCO failure &gt;48h with no response → close as stale. Competition PRs: first to fix DCO wins, others close as duplicate.</p><h3>Issue Lifecycle</h3><ol><li>Publish with <code>status:competition</code> label</li><li>First <code>/claim</code> gets8h exclusive window</li><li>After window: multiple PRs allowed</li><li>Maintainer reviews smallest passing diff</li><li>Merged PR earns leaderboard credit</li></ol><h2>Verification</h2><pre><code class="language-bash">echo "Lesson: Zero-Bounty Agent Competition Flywheel: Issue Desi"
+wc -l lessons/contrib/zero-bounty-agent-competition-flywheel.md</code></pre><p><strong>Expected Output:</strong></p><pre><code>Lesson: Zero-Bounty Agent Competition Flywheel: Issue Desi
+# (line count)</code></pre><h2>Notes</h2><ul><li>Do not use "bounty" or "reward" language — use "credit" and "leaderboard"</li><li>DCO reminder should be posted as pinned comment on each competition issue</li><li>Avoid batch/multi-file issues — crawlers prefer single-file tasks</li><li>Release timing matters: issues published12-24h after a release get most attention</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/zero-bounty-agent-competition-flywheel.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Zero-Bounty Agent Competition Flywheel: Issue Design for Crawler Attraction">Find related lessons →</a></p></div>

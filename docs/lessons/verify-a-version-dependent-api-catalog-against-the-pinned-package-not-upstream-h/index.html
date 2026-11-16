@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,17 @@
 <div class="section">
   <h2>Summary</h2>
   <p>"权威" API 清单有两个来源，它们互相矛盾，而选错来源会**把结论反过来**：</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>"权威" API 清单有两个来源，它们互相矛盾，而选错来源会<strong>把结论反过来</strong>：</p><table><thead><tr><th>来源</th><th>条目数</th><th>key <code>A</code></th><th>key <code>B</code></th></tr></thead><tbody><tr><td>锁定的 npm 包（用户实际安装的东西）</td><td>42</td><td>存在</td><td><strong>不存在</strong></td></tr><tr><td>SDK 仓库的 upstream <code>master</code></td><td>92</td><td><strong>不存在</strong></td><td>存在</td></tr></tbody></table><p>一位维护者报告"key <code>A</code> 不存在，用 <code>B</code>"——这句话对锁定包是真的。开发者却去拉了 upstream <code>master</code>，在里面找到了 <code>A</code>、没找到 <code>B</code>，于是回复维护者说人家错了。两个人都在核对同一个"单一事实来源"，却得到了相反的答案。</p><p>之后开发者又用 upstream 的集合搭了一套验证 harness，并据此确认代码是"对的"——这是第四个错误判断，因为安装锁定包的用户根本没有那个位置。</p><h2>Root Cause</h2><p>"权威清单"不是单一的物件，它是<strong>依赖版本</strong>的：</p><ul><li><strong>锁定的包</strong>是用户宿主里实际存在的东西；</li><li><strong>upstream HEAD</strong> 是 SDK 仓库今天包含的东西。</li></ul><p>对着 upstream HEAD 验证，证明的是代码匹配一个<strong>还没有任何用户拥有</strong>的未来；对着锁定包验证，证明的是代码匹配实际会运行的东西。当两者漂移时，一个判断可以对其一为真、对其二为假——而用户永远只拿到锁定包。</p><p>两个人都没错，是"清单"这个词省掉了版本，才让双方各自都既对又错。</p><h2>Solution</h2><p><strong>说清楚你是对着哪个版本验证的，并优先用用户安装的那个版本。</strong></p><pre><code class="language-bash"># 用户实际拥有的
+node -e "const p=require('./node_modules/&lt;sdk&gt;/package.json'); console.log(p.version)"
+grep -oE "\"[a-z][a-z0-9._]+\"" node_modules/&lt;sdk&gt;/lib/*.js | sort -u | wc -l
+
+# 上游拥有的（用于判断漂移，不是用于判断真相）
+gh api repos/&lt;org&gt;/&lt;repo&gt;/contents/&lt;path-to-catalog&gt; --jq .content | base64 -d | grep -cE "^  key: '"</code></pre><p><strong>报告漂移，而不是把两个列表合并。</strong> 合并出来的清单会让代码对着一个没有任何宿主拥有的目录去验证——那正是"第四个错误判断"的形态。</p><p><strong>更好的做法：干脆不要硬编码 key。</strong> 当集合本身依赖版本时，在运行时探测，只注册宿主接受的东西：</p><pre><code class="language-js">const accepted = Object.keys(host?.slots ?? {})
+for (const key of CANDIDATE_KEYS) {
+  if (accepted.includes(key)) register(key)
+}</code></pre><h2>Verification</h2><ul><li><strong>漂移的判据</strong>：锁定的包有 key <code>B</code>、没有 key <code>A</code>；上游 <code>master</code> 有 <code>A</code>、没有 <code>B</code>。同一个探测产生相反结果，这就是漂移——报告它，不要取平均，也不要合并成"超集"。</li><li><strong>修复后</strong>：改为运行时探测而不是硬编码 key，发布门禁落在 <code>B</code> 上并通过，<code>FAIL=0</code>。</li><li><strong>通过判据</strong>：代码注册的每一个 key 都在锁定安装里存在；两个清单不一致时，结论必须点名两个版本，而不是只说"清单里有/没有"。</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/api-catalog-version-drift-pinned-vs-upstream-head.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Verify a version-dependent API catalog against the pinned package, not upstream HEAD">Find related lessons →</a></p></div>

@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,12 @@
 <div class="section">
   <h2>Summary</h2>
   <p>A pull request description goes stale the moment you force-push a fix, and nothing signals it.</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>A pull request description goes stale the moment you force-push a fix, and nothing signals it. The reviewer reads a body that describes an earlier, worse version of the change — including, in the worst case, a version that never had the bug the code now carefully avoids.</p><p>Observed on a PR that accumulated three rounds of fixes. The body was written for round one. By round three it described a status filter that no longer existed and omitted a correctness bug that had been found and fixed in the same PR. A reviewer would have had no way to know either fact, and the commit messages alone do not carry the rationale a body is supposed to give.</p><pre><code class="language-text">PR description described an earlier version of the change after three rounds of force-pushed fixes</code></pre><p>The repository and PR number were not given by the reporter; reproduce against a live PR.</p><h2>Root Cause</h2><p>Force-push replaces commits; the description is a separate artifact and is not versioned with them. Everything that drives the change — review findings, CI failures, adversarial verification — happens <em>after</em> the body is written, and each fix is a local commit plus a push. The body is only ever updated when someone remembers to.</p><p>It is worst exactly when the work is good: a PR that absorbs review feedback and gets <em>better</em> is the one whose body is furthest from its code.</p><h2>Solution</h2><p><strong>Treat "push a fix" as a trigger to re-read the body.</strong> Before every push that changes behaviour, ask: what does this PR's body claim that is no longer true?</p><p>Two mechanical habits:</p><ul><li><strong>Append, do not rewrite.</strong> Add a dated section for each round of fixes, naming the defect, the reason and the verification output. That keeps the history honest and is far cheaper than re-deriving the whole description.</li><li><strong>Quote the numbers that changed.</strong> If a test count, a coverage figure or a measured result moved, the body must move with it. A body quoting <code>80 passed</code> when the suite says <code>92</code> is not a typo — it is a different claim.</li></ul><pre><code class="language-bash"># before pushing a fix, diff the claims against reality
+gh pr view "$N" --repo owner/repo --json body -q .body &gt; /tmp/body.md
+grep -nE 'pass [0-9]+|fail [0-9]+|coverage|exits [0-9]' /tmp/body.md
+# then re-run each claim and compare it with the actual output</code></pre><p>The reporter's command block is cut off after this point (<code># t…</code>); the remaining procedure was not given and needs to be reproduced.</p><h2>Verification</h2><p>Reporter's criterion: grep the body for the symbols and counts it claims, re-run them, and confirm that every identifier named in the body appears in the current diff. A body that names a symbol the diff no longer contains, or quotes a count the suite no longer produces, is stale — and it is stale in the direction that wastes a reviewer's attention, because the reviewer will look for code that is not there.</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/pr-body-stale-after-force-push.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=A pull request body goes stale the moment you force-push a fix, and nothing signals it">Find related lessons →</a></p></div>

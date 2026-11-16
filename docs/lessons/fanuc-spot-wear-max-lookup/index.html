@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,10 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Need to find the maximum electrode tip wear amount (最大磨损量) for a FANUC spot welding robot. The value is stored in the `sysspot.sv` system variable file, which u…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Need to find the maximum electrode tip wear amount (最大磨损量) for a FANUC spot welding robot. The value is stored in the <code>sysspot.sv</code> system variable file, which uses FANUC's proprietary binary format and cannot be read with standard text editors.</p><h2>Root Cause</h2><p>FANUC stores spot welding configuration in <code>sysspot.sv</code> (not <code>sysvars.sv</code>). This file contains <code>$SPOTEQSETUP</code> arrays with electrode parameters. Like other <code>.sv</code> files, it requires the <code>kconvars.exe</code> tool from WinOLPC to decode the binary format.</p><p>Key parameter path:</p><pre><code>$SPOTEQSETUP[1].$EPAF_TRGDST = 5.00mm  ← 最大磨损量（可动侧电极）
+$SPOTEQSETUP[2-5].$EPAF_TRGDST = 5.00mm  ← 其他设备</code></pre><h2>Fix</h2><h3>Step 1: Locate the file</h3><pre><code>&lt;backup_dir&gt;/sysspot.sv</code></pre><h3>Step 2: Convert with kconvars</h3><pre><code class="language-bash">kconvars.exe sysspot.sv &gt; sysspot_decoded.txt</code></pre><p>Note: kconvars requires <code>robot.ini</code> in the same directory or parent. If it crashes, check path encoding (non-ASCII paths cause failures).</p><h3>Step 3: Find the wear parameter</h3><p>Search the decoded output for:</p><pre><code>$SPOTEQSETUP[1].$EPAF_TRGDST</code></pre><p>This value is the maximum wear amount in mm.</p><h2>Verification</h2><pre><code class="language-bash">python3 scripts/search_knowledge.py "test query"</code></pre><p><strong>Expected Output:</strong></p><pre><code>Found</code></pre><h2>Related Parameters</h2><table><thead><tr><th>Parameter</th><th>Description</th></tr></thead><tbody><tr><td><code>$SPOTEQSETUP[x].$EPAF_TRGDST</code></td><td>最大磨损量 (max wear threshold)</td></tr><tr><td><code>$SPOTEQSETUP[x].$TD_LIMIT</code></td><td>修磨次数限制 (tip dress count limit)</td></tr><tr><td><code>$SPOTCONFIG.$TD_AFTER_CC</code></td><td>焊后修磨 (tip dress after current cycle)</td></tr><tr><td><code>R[32]</code></td><td>Gun1 原始电极磨损 (original tip wear)</td></tr><tr><td><code>R[33]</code></td><td>Gun1 当前电极磨损 (current tip wear)</td></tr><tr><td><code>R[36]</code></td><td>修磨磨损量 (tip dress wear amount)</td></tr></tbody></table><h2>Important Notes</h2><ul><li><strong>Only max wear amount is in the backup.</strong> Other electrode detection parameters (load margin, electrode speed, pressure calibration) are stored in the weld controller, not in the robot backup.</li><li><code>$SPOTEQSETUP</code> array size depends on the number of guns configured (typically 1–5).</li><li>User registers R[32], R[33], R[36] are runtime values — they change during operation and are not in the backup.</li></ul><h2>Related Memories</h2><ul><li>[[fanuc-backup-payload-extraction]] — .VR/.SV binary parsing and kconvars usage</li><li>[[reference_dcs_parsing]] — DCS safety configuration parsing</li><li>[[reference_diocfgsv_parsing]] — IO signal configuration parsing</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/fanuc-spot-wear-max-lookup.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=FANUC Spot Weld Tip Max Wear Amount — sysspot.sv Variable Lookup via kconvars">Find related lessons →</a></p></div>

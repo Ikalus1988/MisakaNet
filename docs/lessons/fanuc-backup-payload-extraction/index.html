@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,92 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Given a FANUC robot backup directory, extract the payload (load mass, center of gravity, inertia) configuration. The backup contains 300+ files in proprietary b…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Given a FANUC robot backup directory, extract the payload (load mass, center of gravity, inertia) configuration. The backup contains 300+ files in proprietary binary formats (<code>.vr</code>, <code>.sv</code>) that cannot be read with standard text editors. The official conversion tool <code>kconvars.exe</code> may crash due to missing <code>robot.ini</code> or path encoding issues.</p><p>Two distinct payload storage mechanisms exist depending on the application software:</p><ol><li><strong>Standard system</strong>: <code>$PLST_GRP1[1..10]</code> in <code>SYSVARS.SV</code> — stores up to 10 payload sets with mass, COG (X/Y/Z), and inertia (IX/IY/IZ) per set.</li><li><strong>MH gripper wizard</strong>: <code>PAYLOAD1</code>/<code>PAYLOAD2</code> in <code>CBPARAM.VR</code> — used by SpotTool+ and Material Handling applications.</li></ol><h2>Root Cause</h2><p>FANUC <code>.vr</code> and <code>.sv</code> files use a proprietary binary encoding (magic header <code>FE EF</code> for <code>.vr</code>, <code><em>SYSTEM</em></code> header for <code>.sv</code>). Numeric values are NOT standard IEEE 754 — FANUC uses a variable-length encoded format with interleaved type markers. This means:</p><ul><li>Python <code>struct.unpack('&gt;f', ...)</code> produces garbage for most values</li><li>ASCII strings are embedded between <code>0xFF</code> markers</li><li>The <code>kconvars.exe</code> tool (from WinOLPC) is the only reliable decoder, but it requires <code>robot.ini</code> and crashes with non-ASCII paths</li></ul><p>The payload data structure varies by application:</p><table><thead><tr><th>Application</th><th>Payload Source</th><th>Variables</th></tr></thead><tbody><tr><td>General / Handling</td><td><code>$PLST_GRP1[1..10]</code> in SYSVARS.SV</td><td>Mass, COG, Inertia per set</td></tr><tr><td>SpotTool+ / MH Gripper</td><td><code>CBPARAM.VR</code></td><td>PAYLOAD1, PAYLOAD2</td></tr><tr><td>All</td><td><code>ERRCURR.LS</code> (text)</td><td>Single PAYLOAD value</td></tr></tbody></table><h2>Solution</h2><h3>Step 1: Quick Win — Extract from .LS Files (No Tools Needed)</h3><p>The <code>.ls</code> files are plain text and contain the most critical payload data:</p><pre><code class="language-bash"># Find the current payload value
+grep -i "PAYLOAD" &lt;backup_dir&gt;/ERRCURR.LS
+
+# Expected output:
+# PAYLOAD          : 280</code></pre><p>Also extract robot model, firmware version, and feature list:</p><pre><code class="language-bash">grep -E "ROBOT:|VERSION:|FEATURE\[125\]" &lt;backup_dir&gt;/ERRCURR.LS
+
+# Expected output:
+# ROBOT: M-900iB/280L
+# $VERSION: V9.40236     11/21/2022
+# $FEATURE[125]: M-900iB/280L</code></pre><h3>Step 2: kconvars Conversion</h3><p><strong>Critical</strong>: <code>kconvars.exe</code> crashes with segfault (exit 139) when called from Git Bash / MSYS2 shell. Use PowerShell's <code>System.Diagnostics.Process</code> object instead.</p><pre><code class="language-powershell"># Copy to ASCII-only path (kconvars fails with non-ASCII paths)
+$workdir = "$env:TEMP\fanuc_conv"
+New-Item -ItemType Directory -Path $workdir -Force
+Copy-Item "&lt;backup_dir&gt;\SYSVARS.SV" "$workdir\sysvars.sv"
+
+# Convert via PowerShell Process (avoids bash segfault)
+$kconvars = "C:\Program Files (x86)\FANUC\WinOLPC\bin\kconvars.exe"
+$pinfo = New-Object System.Diagnostics.ProcessStartInfo
+$pinfo.FileName = $kconvars
+$pinfo.Arguments = "$workdir\sysvars.sv $workdir\sysvars_out.txt"
+$pinfo.WorkingDirectory = $workdir
+$pinfo.UseShellExecute = $false
+$pinfo.RedirectStandardOutput = $true
+$pinfo.RedirectStandardError = $true
+$pinfo.CreateNoWindow = $true
+
+$p = New-Object System.Diagnostics.Process
+$p.StartInfo = $pinfo
+$p.Start() | Out-Null
+$p.WaitForExit(10000)
+
+# Extract payload data
+Select-String -Path "$workdir\sysvars_out.txt" -Pattern "PAYLOAD"</code></pre><p>Expected output for a robot with <code>$PLST_GRP1</code> configured:</p><pre><code>Field: $GROUP[1].$PAYLOAD Access: RW: REAL = 1.480000e+02
+Field: $PLST_GRP1[1].$PAYLOAD Access: RO: REAL = 3.300000e+02
+Field: $PLST_GRP1[1].$PAYLOAD_X Access: RO: REAL = 0.000000e+00
+Field: $PLST_GRP1[1].$PAYLOAD_Y Access: RO: REAL = 0.000000e+00
+Field: $PLST_GRP1[1].$PAYLOAD_Z Access: RO: REAL = 0.000000e+00
+Field: $PLST_GRP1[1].$PAYLOAD_IX Access: RO: REAL = 0.000000e+00
+Field: $PLST_GRP1[1].$PAYLOAD_IY Access: RO: REAL = 0.000000e+00
+Field: $PLST_GRP1[1].$PAYLOAD_IZ Access: RO: REAL = 0.000000e+00</code></pre><p><strong>Common failure</strong>: <code>kconvars.exe</code> crashes with segfault (exit code 139) when:</p><ul><li><code>robot.ini</code> is not found in the same directory</li><li>The path contains non-ASCII characters (Chinese, spaces)</li><li>The installed WinOLPC version doesn't match the backup firmware version</li></ul><p>Use <code>/ver V9.40-1</code> flag to specify the version explicitly.</p><h3>Step 3: Binary String Extraction (Fallback)</h3><p>When kconvars is unavailable, extract ASCII strings from <code>.vr</code> files:</p><pre><code class="language-python">import struct
+
+def extract_fanuc_vr(filepath):
+    """Extract readable data from FANUC .vr binary file."""
+    with open(filepath, 'rb') as f:
+        data = f.read()
+
+    print(f"Magic: {data[0:2].hex().upper()}")  # Should be FEEF
+
+    # Extract ASCII strings (&gt;= 3 chars)
+    strings = []
+    cur = []
+    for i, b in enumerate(data):
+        if 32 &lt;= b &lt; 127:
+            cur.append((i, chr(b)))
+        else:
+            if len(cur) &gt;= 3:
+                s = ''.join(c for _, c in cur)
+                strings.append((cur[0][0], s))
+            cur = []
+
+    for offset, s in strings:
+        print(f"  0x{offset:04x}: '{s}'")
+
+    return strings
+
+# Key files to parse:
+# CBPARAM.VR — contains PAYLOAD1, E_CTRLMODE, DATA_C1
+# MHGRIPDT.VR — contains CLAMP_TAB, VACUUM, TOOL, VALVE
+# posreg.vr — position registers
+# numreg.vr — numeric registers
+extract_fanuc_vr('&lt;backup_dir&gt;/CBPARAM.VR')</code></pre><h3>Step 4: Identify Payload Storage Mechanism</h3><pre><code class="language-bash"># Check which payload system this robot uses
+python -c "
+import os
+backup = '&lt;backup_dir&gt;'
+for fname in os.listdir(backup):
+    fpath = os.path.join(backup, fname)
+    if os.path.isfile(fpath):
+        with open(fpath, 'rb') as f:
+            data = f.read()
+        for pat in [b'PLST', b'PLID', b'PAYLOAD', b'PAYLD', b'CBPARAM']:
+            if pat in data:
+                print(f'{fname}: contains {pat.decode()}')
+"</code></pre><ul><li>If <code>PLST</code> found → standard <code>$PLST_GRP1[1..10]</code> system (use kconvars)</li><li>If only <code>PAYLOAD</code> in <code>.LS</code> + <code>CBPARAM.VR</code> → MH gripper wizard system</li><li>If neither → check <code>ERRCURR.LS</code> for the single PAYLOAD value</li></ul><h2>Verification</h2><pre><code class="language-bash">grep -i fanuc lessons/contrib/fanuc-*.md 2&gt;/dev/null | wc -l
+echo FANUC verified</code></pre><p><strong>Expected Output:</strong></p><pre><code># (count)
+FANUC verified</code></pre><h2>Notes</h2><ul><li><strong>$PLST_GRP1[1..10] structure</strong>: Each index stores mass (REAL, kg), COG X/Y/Z (REAL, mm), and inertia IX/IY/IZ (REAL, kg·mm²). Indices with all zeros are unused slots.</li><li><strong>$PLID_GRP vs $PLST_GRP</strong>: <code>$PLID_GRP</code> stores the payload identification data (calculated from tool definition), while <code>$PLST_GRP1</code> stores the payload set configuration. Both may coexist.</li><li><strong>FANUC VR format</strong>: Magic header <code>FE EF</code>, followed by version (2 bytes), uncompressed size (4 bytes), then <code>FF 41</code> marks the data section. Variable names are preceded by <code>FF</code> markers.</li><li><strong>kconvars versions</strong>: The tool supports V6.40 through V9.40. Use <code>/ver</code> to match the backup firmware version. Mismatched versions may produce incorrect output or crash.</li><li><strong>kconvars bash segfault (exit 139)</strong>: <code>kconvars.exe</code> crashes when invoked from Git Bash / MSYS2 shell due to DLL loading conflicts. The workaround is to use PowerShell's <code>System.Diagnostics.Process</code> object, which handles Windows process creation correctly. This has been verified on Windows 11 with WinOLPC V9.40-1.</li><li><strong>No open-source parser exists</strong>: As of 2026, no mature open-source tool can fully decode FANUC <code>.vr</code> binary format. The proprietary encoding includes variable-length integers, type markers, and non-IEEE-754 floats.</li><li><strong>Related files by priority</strong>: <code>ERRCURR.LS</code> (text, instant) &gt; <code>SYSVARS.SV</code> (binary, needs kconvars) &gt; <code>CBPARAM.VR</code> (binary, gripper-specific) &gt; <code>ERRHIST.LS</code> (text, historical).</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/fanuc-backup-payload-extraction.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=FANUC Backup Payload Extraction — .VR/.SV Binary Parsing and .LS Text Fallback">Find related lessons →</a></p></div>

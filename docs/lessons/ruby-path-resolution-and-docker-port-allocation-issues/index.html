@@ -6,6 +6,7 @@
 <title>Ruby Path Resolution and Docker Port Allocation Issues — MisakaNet</title>
 <meta name="description" content="Draft (not published): > **CORRECTION (this lesson is `status: superseded`; do not follow its Ruby steps).**">
 <link rel="canonical" href="https://misakanet.org/lessons/ruby-path-resolution-and-docker-port-allocation-issues/">
+<meta name="robots" content="noindex, follow">
 <meta property="og:title" content="Ruby Path Resolution and Docker Port Allocation Issues">
 <meta property="og:description" content="Draft (not published): > **CORRECTION (this lesson is `status: superseded`; do not follow its Ruby steps).**">
 <meta property="og:url" content="https://misakanet.org/lessons/ruby-path-resolution-and-docker-port-allocation-issues/">
@@ -160,6 +161,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -179,6 +191,15 @@
 <div class="section">
   <h2>Summary</h2>
   <p>> **CORRECTION (this lesson is `status: superseded`; do not follow its Ruby steps).**</p>
+</div>
+<div class="lesson-body">
+<blockquote><p><strong>CORRECTION (this lesson is <code>status: superseded</code>; do not follow its Ruby steps).</strong> The Root Cause line for Issue 1 below is correct — <code>require_relative</code> resolves against the file that contains the call — but the Issue 1 <em>Solution</em> (Steps 1–3: <code>pwd</code>, <code>cd</code> into the script's directory, and the <code>File.expand_path(File.dirname(__FILE__), …)</code> rewrite) is wrong and cannot repair the failure: a <code>cd</code> does not change a file-anchored lookup, and the <code>File.expand_path</code> form is semantically what <code>require_relative</code> already does. The corrected diagnosis and fix live in <code>lessons/core/ruby-require-relative-resolves-against-the-requiring-file.md</code>, which supersedes this lesson. The Docker port half of this lesson is unaffected and is covered by <code>lessons/contrib/port-already-allocated-find-and-free-the-holder.md</code>. This file is kept as-is for history; lessons are immutable once merged.</p></blockquote><h2>Problem</h2><p>This lesson addresses two distinct but commonly encountered issues in development environments:</p><ol><li>A Ruby shell helper script (<code>try.rb</code>) fails during initialization with a LoadError indicating that <code>require_relative</code> cannot find the <code>lib/tui</code> directory. Ruby version and standalone code work fine, suggesting the issue is related to the script's working directory or path resolution.</li><li>After restarting a Docker stack, <code>docker compose up</code> fails with a port allocation error indicating that port 8080 is already in use on the host system.</li></ol><h2>Root Cause</h2><h3>Issue 1: Ruby Path Resolution</h3><p>The <code>require_relative</code> directive in Ruby loads files relative to the file containing the directive, not relative to the current working directory. When the script is run from a different directory than where it's located, the relative path to <code>lib/tui</code> becomes invalid, causing the LoadError.</p><h3>Issue 2: Docker Port Allocation</h3><p>When a Docker stack is restarted, containers may not immediately release the host ports they were bound to. This can happen if the container process doesn't shut down cleanly or if there's a delay in releasing network resources. As a result, when attempting to restart the stack, Docker cannot bind to the already allocated port.</p><h2>Solution</h2><h3>Issue 1: Ruby Path Resolution</h3><h4>Step 1: Verify Current Working Directory</h4><p>Before running the script, ensure you're in the correct directory:</p><pre><code class="language-bash">pwd</code></pre><h4>Step 2: Run Script from Correct Directory</h4><p>Execute the script from its containing directory:</p><pre><code class="language-bash">cd /path/to/script/directory
+ruby try.rb</code></pre><h4>Step 3: Modify Script for Flexibility (Optional)</h4><p>If you need to run the script from other directories, modify it to use absolute paths or adjust the relative path:</p><pre><code class="language-ruby"># At the top of try.rb
+require File.expand_path(File.join(File.dirname(__FILE__), 'lib', 'tui'))</code></pre><h3>Issue 2: Docker Port Allocation</h3><h4>Step 1: Identify Process Using the Port</h4><p>Find which process is using port 8080:</p><pre><code class="language-bash">lsof -i :8080
+# On Linux
+sudo netstat -tulpn | grep :8080</code></pre><h4>Step 2: Terminate the Conflicting Process</h4><p>Kill the process that's holding the port:</p><pre><code class="language-bash"># Using PID from previous command
+kill -9 &lt;PID&gt;</code></pre><h4>Step 3: Clean Up Docker Resources</h4><p>Remove any stopped containers and networks that might be holding resources:</p><pre><code class="language-bash">docker-compose down -v --remove-orphans
+docker system prune -f</code></pre><h2>Verification</h2><h3>Issue 1: Ruby Path Resolution</h3><p>After implementing the solution, verify the script runs correctly:</p><pre><code class="language-bash">cd &lt;LOCAL_DIR&gt; &amp;&amp; ruby try.rb</code></pre><h3>Issue 2: Docker Port Allocation</h3><p>After resolving the port conflict, verify the stack starts successfully:</p><pre><code class="language-bash">docker compose up</code></pre><p>Check that the container is running and accessible on port 8080:</p><pre><code class="language-bash">docker ps | grep -E '8080/tcp'</code></pre><h2>Notes</h2><ul><li>For Ruby path issues, consider using a gem or bundler for better dependency management in larger projects.</li><li>When working with Docker, always use <code>docker-compose down</code> before restarting to ensure clean resource release.</li><li>Port conflicts can also occur if multiple Docker Compose files are targeting the same host port.</li><li>The <code>require_relative</code> vs <code>require</code> distinction is important: <code>require</code> searches in the load path while <code>require_relative</code> uses relative paths from the file's location.</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/en/ruby-require-relative-and-docker-port-allocation.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Ruby Path Resolution and Docker Port Allocation Issues">Find related lessons →</a></p></div>

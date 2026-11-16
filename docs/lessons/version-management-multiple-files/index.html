@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,27 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Version number appears in multiple files that need to be updated together:</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Version number appears in multiple files that need to be updated together:</p><ul><li><code>pyproject.toml</code> — Python package version</li><li><code>CHANGELOG.md</code> — Release notes</li><li><code>README.md</code> — Badge and metrics</li><li><code>README.zh-CN.md</code> — Chinese README</li><li><code>docs/index.html</code> — Frontend version badge</li><li><code>docs/integrations/README.md</code> — Integration docs</li><li><code>scripts/mcp_server.py</code> — MCP server version</li></ul><p>Missing any file causes inconsistent version display.</p><h2>Root Cause</h2><p>No single source of truth for version number. Each file hardcodes the version independently, requiring manual synchronization.</p><p>The same failure mode applies to public metrics such as lesson counts, node counts, download counts, or leaderboard totals. A partial fix that removes hardcoded numbers can still be wrong if different frontend widgets fetch different data sources:</p><ul><li>hero copy derives from a generated static index</li><li>stats cards derive from a cached API endpoint</li><li>README or join docs keep a manually rounded number</li><li>release notes keep a historical number without labeling it as historical</li></ul><p>When those sources drift, users see inconsistent totals even though each individual component is "dynamic".</p><h2>Fix</h2><h3>Checklist for Version Bump</h3><ol><li><strong>pyproject.toml</strong><pre><code class="language-toml">version = "X.Y.Z"</code></pre></li><li><strong>CHANGELOG.md</strong><pre><code class="language-markdown">## vX.Y.Z — YYYY-MM-DD</code></pre></li></ol><h3>Highlights</h3><ul><li>Feature 1</li><li>Feature 2</li></ul><h3>Fixes</h3><ul><li>Fix 1</li><li>Fix 2</li></ul><pre><code>
+3. **README.md**
+   ```markdown
+   &lt;a href="..."&gt;&lt;img src="https://img.shields.io/badge/lessons-NNN+-blue" /&gt;&lt;/a&gt;</code></pre><p>For volatile metrics, prefer rounded claims (<code>200+</code>) or generated markers instead of exact hand-edited counts.</p><ol><li><strong>README.zh-CN.md</strong><ul><li>Same updates as README.md</li></ul></li><li><strong>docs/index.html</strong><pre><code class="language-html">&lt;span&gt;vX.Y.Z&lt;/span&gt;
+&lt;span&gt;YYYY-MM-DD&lt;/span&gt;
+&lt;span id="lesson-count"&gt;...&lt;/span&gt;  </code></pre></li><li><strong>docs/integrations/README.md</strong><pre><code class="language-markdown">Search NNN+ lessons directly from your workflow.</code></pre></li><li><strong>scripts/mcp_server.py</strong><pre><code class="language-python">"version": "X.Y.Z"</code></pre></li></ol><h3>Checklist for Public Metric SSOT</h3><ol><li><strong>Choose one canonical source per metric.</strong><ul><li>Good: <code>const count = lessons.length</code> from one loaded index, then fan out to all DOM nodes.</li><li>Good: CI writes <code>site-stats.json</code>, then README/docs/homepage use generated markers.</li><li>Risky: homepage card uses one API endpoint, search uses one static JSON file, README uses manual text.</li></ul></li><li><strong>Hydrate every visible copy from the same in-memory value.</strong><pre><code class="language-js">const lessons = await loadCanonicalLessons();
+const lessonCount = lessons.length;
+for (const id of ["lesson-count-hero", "lesson-count-card", "lesson-count-search"]) {
+  document.getElementById(id).textContent = String(lessonCount);
+}</code></pre></li><li><strong>Do not keep a second dynamic source just for the same count.</strong> If a cached API endpoint and a static JSON index disagree, either make the API the canonical source for all consumers or stop using it for that metric. Treat API branch synchronization as a separate public-contract issue.</li><li><strong>Label historical numbers explicitly.</strong> Release notes may say "vX.Y.Z snapshot: N lessons", but live product copy should not show snapshot counts beside real-time counters without context.</li></ol><h3>Verification</h3><pre><code class="language-bash"># Check all version references
+grep -rn "old.version" --include="*.md" --include="*.py" --include="*.toml" --include="*.html"
+
+# Verify no stale references remain
+grep -rn "OLD_COUNT_A\|OLD_COUNT_B\|OLD_COUNT_C" README*.md docs
+
+# Verify volatile metrics do not have split sources
+grep -rn "metric-count\|/api/\|data/.*\\.json" docs README*.md</code></pre><p>For frontend metric fixes, also inspect the code path: every visible count should be assigned from the same variable or generated artifact. A grep that finds no old number is not enough; a page can still drift when two dynamic loaders return different lengths.</p><h2>Notes</h2><ul><li>Consider using <code>bump2version</code> or similar tool for automated version bumping</li><li>Keep public metrics derived from one source instead of manually syncing many strings</li><li>Update frontend stats by changing the canonical data flow, not by patching each displayed number independently</li></ul><h2>Verification</h2><pre><code class="language-bash">echo "Lesson: Version Management Across Multiple Files"
+wc -l lessons/contrib/version-management-multiple-files.md</code></pre><p><strong>Expected Output:</strong></p><pre><code>Lesson: Version Management Across Multiple Files
+# (line count)</code></pre>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/version-management-multiple-files.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Version Management Across Multiple Files">Find related lessons →</a></p></div>

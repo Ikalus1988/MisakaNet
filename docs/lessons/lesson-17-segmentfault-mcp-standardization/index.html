@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,38 @@
 <div class="section">
   <h2>Summary</h2>
   <p>AI Agent 调用外部工具时，每个 LLM 提供商的 function calling 格式不同，每个工具需要单独适配。工具越多，维护成本越高。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>AI Agent 调用外部工具时，每个 LLM 提供商的 function calling 格式不同，每个工具需要单独适配。工具越多，维护成本越高。</p><h2>Root Cause</h2><p>没有标准化的 Agent↔工具 通信协议。类似 Web 早期没有 HTTP 标准。</p><h2>Solution</h2><h3>MCP 协议架构</h3><pre><code>AI Agent (Claude/GPT/Gemini)
+    ↓ MCP Client
+MCP Protocol (JSON-RPC)
+    ↓
+MCP Server A (数据库)
+MCP Server B (API)
+MCP Server C (文件系统)</code></pre><h3>核心概念</h3><table><thead><tr><th>概念</th><th>说明</th><th>类比</th></tr></thead><tbody><tr><td>MCP Server</td><td>暴露工具的服务</td><td>REST API 服务器</td></tr><tr><td>MCP Client</td><td>调用工具的 Agent</td><td>HTTP 客户端</td></tr><tr><td>Tool</td><td>可调用的函数</td><td>API 端点</td></tr><tr><td>Resource</td><td>可读取的数据</td><td>GET 端点</td></tr></tbody></table><h3>实现示例</h3><pre><code class="language-python"># MCP Server（工具提供方）
+from mcp import Server, Tool
+
+server = Server("my-db-tools")
+
+@server.tool("query_database")
+async def query_database(sql: str) -&gt; list:
+    """Execute a SQL query."""
+    return await db.execute(sql)
+
+@server.tool("get_schema")
+async def get_schema(table: str) -&gt; dict:
+    """Get table schema."""
+    return await db.get_schema(table)
+
+# MCP Client（Agent 端）
+from mcp import Client
+
+client = Client("my-db-tools")
+result = await client.call_tool("query_database", {
+    "sql": "SELECT * FROM users LIMIT 10"
+})</code></pre><h3>与 Function Calling 对比</h3><table><thead><tr><th>特性</th><th>Function Calling</th><th>MCP</th></tr></thead><tbody><tr><td>标准化</td><td>各厂商不同</td><td>统一协议</td></tr><tr><td>工具发现</td><td>手动配置</td><td>自动发现</td></tr><tr><td>跨模型</td><td>不兼容</td><td>兼容</td></tr><tr><td>生态</td><td>封闭</td><td>开放</td></tr></tbody></table><h2>Verification</h2><pre><code class="language-bash">grep -i mcp lessons/contrib/mcp-*.md 2&gt;/dev/null | head -3
+echo MCP verified</code></pre><p><strong>Expected Output:</strong></p><pre><code># (refs)
+MCP verified</code></pre><h2>Notes</h2><ul><li>MCP 最重要的价值：工具提供方与应用研发者解耦</li><li>类似 Web 前后端分离的范式转移</li><li>Source: segmentfault.com (2026-03-13)</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/lesson-17-segmentfault-mcp-standardization.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=MCP — AI Agent 工具调用标准化协议">Find related lessons →</a></p></div>

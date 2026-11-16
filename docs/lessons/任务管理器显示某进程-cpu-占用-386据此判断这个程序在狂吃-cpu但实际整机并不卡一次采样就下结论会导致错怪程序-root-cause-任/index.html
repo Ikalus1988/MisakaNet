@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>任务管理器显示某进程 CPU 占用 38.6%，据此判断"这个程序在狂吃 CPU"，但实际整机并不卡；一次采样就下结论会导致错怪程序。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>任务管理器显示某进程 CPU 占用 38.6%，据此判断"这个程序在狂吃 CPU"，但实际整机并不卡；一次采样就下结论会导致错怪程序。</p><h2>Root Cause</h2><p>任务管理器给的是<strong>瞬时百分比</strong>（采样窗口很短、且按当前刷新间隔抖动），对 Electron/CEF 这类会在切歌、封面加载、页面动效时短时冲高的进程，瞬时值极易误读。肉眼看到的一个数字不等于持续负载。</p><h2>Fix</h2><p>用进程累计 CPU 时间的<strong>差值采样</strong>替代截图读数：</p><ul><li>PowerShell：<code>(Get-Process &lt;name&gt;).TotalProcessorTime</code> 取两次，间隔 10-30 秒，差值 ÷ 间隔 ÷ 逻辑核心数 × 100 得真实平均占用；</li><li>采样期间保持工况稳定（例如后台静置播放、不要开窗口操作），否则测的是你的操作而不是程序；</li><li>同时对照整机：若进程加起来远小于任务管理器总和，说明是其他程序/系统在占用。</li></ul><h2>Verification</h2><p>实例：某 Electron 音乐播放器任务管理器显示 38.6%，10 秒窗口差值采样实测仅 0.3%，整机 28.1% 由其他进程贡献；连续 30 秒静置采样稳定在低位，判定为瞬时峰值而非持续高占用。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/任务管理器显示某进程-cpu-占用-386据此判断这个程序在狂吃.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=任务管理器显示某进程 CPU 占用 38.6%，据此判断"这个程序在狂吃 CPU"，但实际整机并不卡；一次采样就下结论会导致错怪程序。 Root Cause 任">Find related lessons →</a></p></div>

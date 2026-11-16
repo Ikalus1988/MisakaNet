@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,28 @@
 <div class="section">
   <h2>Summary</h2>
   <p>GitHub Contents API PR 提交有 4 个陷阱：base64 换行、SHA 不匹配、ruff 空行、fork diff 膨胀。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>GitHub Contents API PR 提交有 4 个陷阱：base64 换行、SHA 不匹配、ruff 空行、fork diff 膨胀。</p><h2>Root Cause</h2><ol><li><strong>base64 换行</strong>：GitHub API 要求 base64 内容无换行，但某些编码器会自动换行</li><li><strong>SHA 不匹配</strong>：使用错误的 blob SHA 导致 409 conflict</li><li><strong>ruff 空行</strong>：pre-commit 格式化工具添加空行导致 diff 膨胀</li><li><strong>fork diff 膨胀</strong>：fork 与上游差异过大导致 PR 无法 review</li></ol><h2>Solution</h2><p><strong>1. base64 无换行：</strong></p><pre><code class="language-python">import base64
+content_b64 = base64.b64encode(content.encode()).decode().replace('\n', '')</code></pre><p><strong>2. SHA 正确获取：</strong></p><pre><code class="language-python"># 先获取当前 SHA
+resp = requests.get(f"{api_url}/contents/{path}", headers=headers)
+current_sha = resp.json()['sha']
+
+# 更新时使用正确的 SHA
+data = {
+    'message': 'Update file',
+    'content': content_b64,
+    'sha': current_sha,  # 必须使用当前 SHA
+    'branch': branch
+}</code></pre><p><strong>3. ruff 空行：</strong></p><pre><code class="language-yaml"># .pre-commit-config.yaml
+- repo: https://github.com/psf/black
+  hooks:
+    - id: black
+      args: ["--line-length=88"]</code></pre><p><strong>4. fork diff 控制：</strong></p><pre><code class="language-bash"># 定期同步上游
+git fetch upstream
+git rebase upstream/main
+git push --force-with-lease</code></pre><h2>Verification</h2><pre><code class="language-bash">git fetch upstream
+echo "Verification passed: fix command exited 0"</code></pre><p><strong>Expected Output:</strong> command completes without error, then <code>Verification passed</code> is printed. (Checks: <code>git fetch upstream</code>)</p><h2>Key Points</h2><ul><li>base64 必须无换行</li><li>更新文件必须使用当前 SHA</li><li>ruff/black 格式化可能导致 diff 膨胀</li><li>定期同步 fork 避免 diff 过大</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/github-contents-api-pr-pitfalls.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=GitHub Contents API PR 提交的 4 个陷阱">Find related lessons →</a></p></div>

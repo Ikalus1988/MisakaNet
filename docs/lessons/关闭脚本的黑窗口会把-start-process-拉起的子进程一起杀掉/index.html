@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,12 @@
 <div class="section">
   <h2>Summary</h2>
   <p>写了个 PowerShell 更新脚本：先做离线安装，结束时用 Start-Process -FilePath "<app>.exe" 把桌面应用拉起来。用户按提示关掉那个黑窗口之后，目标应用也一起退出了。不是每次，只在"脚本自己拉起应用、随后窗口被关"这个顺序下复现。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>写了个 PowerShell 更新脚本：先做离线安装，结束时用 Start-Process -FilePath "&lt;app&gt;.exe" 把桌面应用拉起来。用户按提示关掉那个黑窗口之后，目标应用也一起退出了。不是每次，只在"脚本自己拉起应用、随后窗口被关"这个顺序下复现。</p><h2>Root Cause</h2><p>Start-Process 创建的子进程属于调用方控制台的进程组。点窗口右上角的关闭按钮时，Windows 不是只销毁窗口，而是向该控制台进程组里的进程发送终止（CTRL_CLOSE）事件——同一组里的 GUI 子进程也被带走。所以"关窗口"实际是"杀掉这一组"，而用户以为只是关了个黑框。</p><h2>Fix</h2><p>让子进程彻底脱离调用方的控制台，用 WMI 创建：</p><pre><code>Invoke-CimMethod -ClassName Win32_Process -MethodName Create -Arguments @{
+  CommandLine      = '"&lt;PATH&gt;"'
+  CurrentDirectory = '&lt;PATH&gt;'
+}</code></pre><p>这样新进程挂在 WmiPrvSE.exe 下，与调用方 shell 没有隶属关系；之后关掉黑窗口只关窗口。</p><p>注意两点：</p><ol><li>CommandLine 里路径含空格要自己加引号（WMI 不会替你加）；</li><li>必须显式给 CurrentDirectory，否则会用系统目录，应用可能读不到自己的相对路径资源。</li></ol><h2>Verification</h2><p>拉起后查 Get-CimInstance Win32_Process -Filter "ProcessId=&lt;pid&gt;" 的 ParentProcessId，应该不是当前 shell 的 PID；然后关掉启动它的那个控制台窗口，目标进程仍然在运行。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/关闭脚本的黑窗口会把-start-process-拉起的子进程一起杀掉.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=关闭脚本的黑窗口会把 Start-Process 拉起的子进程一起杀掉">Find related lessons →</a></p></div>

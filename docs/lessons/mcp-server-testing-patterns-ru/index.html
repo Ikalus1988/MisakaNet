@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,27 @@
 <div class="section">
   <h2>Summary</h2>
   <p>MCP сервер использует stdio транспорт (stdin/stdout JSON-RPC). Тестирование требует запуска подпроцесса, записи в stdin и парсинга stdout. Это:</p>
+</div>
+<div class="lesson-body">
+<h2>Проблема</h2><p>MCP сервер использует stdio транспорт (stdin/stdout JSON-RPC). Тестирование требует запуска подпроцесса, записи в stdin и парсинга stdout. Это:</p><ol><li>Медленно (требуется fork процесса)</li><li>Сложно для отладки (stdout смешивает протокольные сообщения и логи)</li><li>Зависит от полного окружения (индекс поиска, база данных и т.д.)</li></ol><h2>Корневая причина</h2><p>Основная логика MCP сервера находится в функции <code>handle_request()</code>. stdio — это только транспортный слой. Прямой вызов обработчика пропускает весь транспортный слой.</p><h2>Решение</h2><p><strong>Вызов JSON-RPC обработчика напрямую, без запуска подпроцесса:</strong></p><pre><code class="language-python">from scripts.mcp_server import handle_request
+
+def rpc(method: str, params: dict = None) -&gt; dict:
+    """Отправить JSON-RPC запрос обработчику напрямую."""
+    return handle_request({
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": method,
+        "params": params or {}
+    })
+
+# Тест поиска
+result = rpc("tools/call", {
+    "name": "misakanet.search",
+    "arguments": {"query": "database locked", "limit": 3}
+})
+print(result)</code></pre><h2>Проверка</h2><ol><li>Импортируйте <code>handle_request</code> из модуля MCP сервера</li><li>Создайте вспомогательную функцию, оборачивающую JSON-RPC формат</li><li>Вызовите инструменты напрямую без подпроцесса</li><li>Проверьте структуру ответа</li></ol><h2>Примечания</h2><ul><li>Это работает только для серверов с stdio транспортом</li><li>Для SSE/HTTP серверов используйте HTTP API напрямую</li><li>Пропустите тестирование транспорта, если нужно протестировать только логику инструментов</li><li>Используйте тестирование через подпроцесс для интеграционных тестов</li></ul><h2>Источник</h2><p>Перевод с китайского урока, автор &lt;user&gt;.</p><h2>Verification</h2><pre><code class="language-bash">grep -i mcp lessons/contrib/mcp-*.md 2&gt;/dev/null | head -3
+echo MCP verified</code></pre><p><strong>Expected Output:</strong></p><pre><code># (refs)
+MCP verified</code></pre>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/mcp-server-testing-patterns-ru.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Паттерны тестирования MCP серверов — прямой вызов обработчика">Find related lessons →</a></p></div>

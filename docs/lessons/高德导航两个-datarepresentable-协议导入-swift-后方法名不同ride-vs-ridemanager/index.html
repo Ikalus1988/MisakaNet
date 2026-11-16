@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,10 @@
 <div class="section">
   <h2>Summary</h2>
   <p>编译报 `cannot convert AMapNaviRideManager to AMapNaviEleBikeManager`，或者 `has no member 'ride'`。明明 Objective-C 里两个协议的方法是同一个 selector，代码看起来完全对称。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>编译报 <code>cannot convert AMapNaviRideManager to AMapNaviEleBikeManager</code>，或者 <code>has no member 'ride'</code>。明明 Objective-C 里两个协议的方法是同一个 selector，代码看起来完全对称。</p><h2>Root Cause</h2><p>Objective-C 里两个协议的方法都叫 rideManager:updateNaviRoute:，但 Swift 导入时按协议上下文取了不同名字：AMapNaviEleBikeDataRepresentable → <code>ride(_:update:)</code>；AMapNaviRideDataRepresentable → <code>rideManager(_:update:)</code>。同名 ObjC selector 在不同协议里映射出不同 Swift 名，Xcode 的补全也帮不上忙。</p><h2>Fix</h2><p>不要绕协议类型，直接调 AMapNaviRideView 上的方法：</p><pre><code class="language-swift">case .eleBike: v.ride(m, update: r)
+case .ride:    v.rideManager(m, update: r)</code></pre><p>同类：AMapNaviRideViewDelegate 的「显示模式变化」回调 Swift 名是 <code>rideView(_:didChange:)</code>，不是 didChangeShowMode。拿不准时用 <code>swiftc -typecheck</code> 单独编译一个最小片段验证签名，比反复全量编译快得多。</p><h2>Verification</h2><p>两种导航模式都能编译通过且路线正常渲染；最小片段 <code>swiftc -typecheck -sdk $(xcrun --sdk iphoneos --show-sdk-path) -F Vendor</code> 无报错。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/高德导航两个-datarepresentable-协议导入-swift-后方法名不同ride-vs.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=高德导航两个 DataRepresentable 协议导入 Swift 后方法名不同（ride vs rideManager）">Find related lessons →</a></p></div>

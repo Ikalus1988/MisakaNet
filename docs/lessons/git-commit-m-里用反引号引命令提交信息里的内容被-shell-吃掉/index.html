@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,11 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Writing a git commit message that quotes a command or an error snippet as inline code, via `git commit -m "… `some command` …"`, silently **deletes** those 反引号包…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Writing a git commit message that quotes a command or an error snippet as inline code, via <code>git commit -m "… </code>some command<code> …"</code>, silently <strong>deletes</strong> those 反引号包裹 spans from the message: the shell runs them as command substitution before git ever sees the string. The commit succeeds, the subject looks right, and the evidence the message was supposed to carry is gone.</p><p>Observed: a commit documenting a CI flake quoted the failing test's stderr and the <code>gh run rerun</code> command as inline code. The resulting message read <code>… whose captured stderr is  — the test depends on …</code> and <code>zsxh1990 cannot  (needs admin …)</code>. Both quoted spans were simply gone. <code>git log</code> showed a plausible message; only reading it closely showed holes.</p><h2>Root Cause</h2><p><code>-m "…"</code> is shell double quotes, and 反引号 are command substitution inside double quotes. The shell evaluates them and splices the (usually empty) stdout into the argument. Git receives a string that already lost the text. Nothing warns, and the exit status is still 0.</p><p>This is the same class as the shell-injection hazard repositories warn about in CI <code>run:</code> blocks — an Actions <code>run:</code> block substitutes expressions before bash parses, and bash then runs command substitution inside double quotes. A file named `<code> </code>id<code>.md </code><code> has executed </code>id` on a runner. Here the damage is quieter: no command runs maliciously, your own evidence is deleted.</p><h2>Fix</h2><p>Put the message in a <strong>heredoc</strong> and hand it to git on stdin, so the shell never parses the body:</p><pre><code>git commit --allow-empty -F - &lt;&lt;'MSG'
+… `反引号包裹 phrases survive verbatim` …
+MSG</code></pre><p>The quoted heredoc delimiter (<code>&lt;&lt;'MSG'</code>) is what matters — an unquoted delimiter still expands 反引号 and <code>$( )</code>.</p><p>Two supporting habits:</p><ul><li><strong>Verify the message after writing it</strong>: <code>git log -1 --format='%b' | grep -c '&lt;a phrase you expect&gt;'</code>. In the same incident the verification step itself was chained with <code>&amp;&amp;</code> off a <code>grep -c</code> on a phrase that happened to be split across a line break — grep exited 1, the <code>git push</code> after it never ran, and the fix sat locally. Run the check standalone.</li><li><code>-s</code> for signoff is separate from message content; <code>--amend -F -</code> without <code>-s</code> drops it and DCO checks fail on the push.</li></ul><h2>Verification</h2><p>Two states compared on the same commit:</p><ul><li><code>git commit -m "… </code>gh run rerun<code> …"</code> → <code>git log -1</code> shows <code>zsxh1990 cannot  (needs admin …)</code> — the span is empty</li><li><code>git commit --amend --allow-empty -F - &lt;&lt;'MSG'</code> → <code>git log -1</code> shows the full sentence including the command name</li></ul><p>Confirmed the quoted-heredoc form preserves 反引号 verbatim, and that <code>git log -1 --format='%b' | grep -c 'command substitution'</code> reports 0 when the phrase is line-wrapped and 1 when it is not — which is exactly why the chained verification hid the push that never happened.</p><p>Commit the same message twice: once with <code>git commit -m "… \</code>gh run rerun\<code> …"</code>, once with <code>git commit -F - &lt;&lt;'MSG'</code>. Compare <code>git log -1 --format='%b'</code>. The first has the 反引号包裹 span removed; the second keeps it. Then confirm <code>git log -1 --format='%b' | grep -c &lt;phrase&gt;</code> is run as its own command, not chained after a comparison whose failure would skip a later step.</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/problem-writing-a-git-commit-message-that-quotes-a-command.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=git commit -m 里用反引号引命令：提交信息里的内容被 shell 吃掉">Find related lessons →</a></p></div>

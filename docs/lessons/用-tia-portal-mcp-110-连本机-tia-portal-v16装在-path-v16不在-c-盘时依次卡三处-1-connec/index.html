@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>用 tia-portal-mcp 1.1.0 连本机 TIA Portal V16（装在 <PATH> V16，不在 C 盘）时依次卡三处：</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>用 tia-portal-mcp 1.1.0 连本机 TIA Portal V16（装在 &lt;PATH&gt; V16，不在 C 盘）时依次卡三处：</p><ol><li>connect_tia 报 <code>OpennessAccessException: No matching TIA Portal version could be found.</code> —— 注册表 <code>HKLM\SOFTWARE\Siemens\Automation\Openness</code> 键存在但完全为空，无子键无值。</li><li>补齐注册表后变成 <code>TypeInitializationException: "Siemens.Engineering.TiaPortal"的类型初始值设定项引发异常</code>。</li><li>由 agent 后台启动 TIA 时弹「该应用程序无法启动。&lt;PATH&gt;&lt;user&gt;\AppData\Roaming\Siemens\Automation\Portal V16\Settings\Settings.xml 写保护。请联系您的系统管理员。」，或几个实例一起卡在 <code>Siemens</code> 启动画面、托盘冒红点。</li></ol><h2>Root Cause</h2><ol><li>Openness 注册表未登记：缺 <code>Openness\16.0</code> 下的 <code>InstallDir</code>，也缺 <code>Openness\16.0\PublicAPI\16.0</code> 下的 <code>Siemens.Engineering</code>。</li><li><code>TypeInitializationException</code> 只是外壳，内层真实异常是 <code>System.IO.FileLoadException: Cannot load assembly. Check your openness environment or contact your administrator.</code> 堆栈在 <code>Siemens.Engineering.Private.LocationProvider.Validation()</code> 与 <code>Siemens.Engineering.TiaPortal..cctor()</code>。原因是 MCP 的 <code>_internal\</code> 自带的 Siemens 程序集与 TIA 安装目录 <code>PublicAPI\V16\</code> 的同名 DLL 字节不同（<code>Siemens.Engineering.dll</code> 1336832 vs 1281536 字节；<code>Siemens.Automation.Opns.ObjectModel.Impl.dll</code> 3971072 vs 3936256），两边 <code>FileVersion</code> 都写 <code>1600.0.3102.1</code>，光看版本号看不出来。西门子按文件内容做完整性校验，不看路径也不看版本号。</li><li>Settings.xml 写保护不是 NTFS 权限问题：该文件 Attributes=Archive、ACL 有 FullControl、<code>[System.IO.File]::Open($f,'Open','ReadWrite','None')</code> 能独占打开成功。真因是 agent 托管子进程（沙箱/作业对象）叠加已有 TIA 实例，导致新实例初始化失败。</li></ol><h2>Fix</h2><ol><li>管理员权限写两项注册表：<code>Openness\16.0</code> → <code>InstallDir = &lt;PATH&gt; V16</code>；<code>Openness\16.0\PublicAPI\16.0</code> → <code>Siemens.Engineering = &lt;PATH&gt; V16\PublicAPI\V16\Siemens.Engineering.dll</code>。</li><li>停掉 MCP，备份后把安装目录 <code>PublicAPI\V16</code> 的 5 个文件覆盖到 <code>_internal</code>：<code>Siemens.Engineering.dll</code>、<code>Siemens.Engineering.Contract.dll</code>、<code>Siemens.Engineering.ClientAdapter.Interfaces.dll</code>、<code>Siemens.Engineering.Hmi.dll</code>、<code>Siemens.Automation.Opns.ObjectModel.Impl.dll</code>，再启动 MCP。MCP 必须从 Openness 白名单登记的路径启动（<code>Openness\16.0\Whitelist\tia-portal-mcp.exe\Entry</code> 的 Path/DateModified/FileHash 三项全匹配），换路径会崩 <code>0xE0434352</code> 或报「未发现可附加的 TIA Portal V16 实例」。</li><li>TIA 由用户手动双击 <code>Bin\Siemens.Automation.Portal.exe</code> 启动，不要从 agent 后台拉；有残留实例先全杀再开一个。命令行带 <code>-Name=SearchReplaceBackgroundProcess</code> 的是后台子进程，不算第二个实例。</li><li>排查提速：用 Windows PowerShell 5.1（.NET Framework，不是 pwsh 7）加载指定目录的 <code>Siemens.Engineering.dll</code> 并调 <code>TiaPortal.GetProcesses()</code>，能把内层异常链打出来；同样的探针在 pwsh 7 下复现不出来。</li></ol><h2>Verification</h2><p><code>connect_tia(version="16.0", portal_mode="any-ui")</code> 返回 <code>connected: true</code>，带 <code>project</code>（实测 项目10）与 <code>plcs: [{name: PLC_1, online_state: Offline}]</code>；<code>get_plc_inventory</code> 能列出 <code>Main</code> 块。预检脚本（检查主实例数、两项注册表、5 个 DLL 的 SHA256、8000 端口）输出 <code>problems: 0</code>、退出码 0。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/用-tia-portal-mcp-110-连本机-tia-portal-v16装在-path-v16不在-c.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=用 tia-portal-mcp 1.1.0 连本机 TIA Portal V16（装在 <PATH> V16，不在 C 盘）时依次卡三处： 1. connec">Find related lessons →</a></p></div>

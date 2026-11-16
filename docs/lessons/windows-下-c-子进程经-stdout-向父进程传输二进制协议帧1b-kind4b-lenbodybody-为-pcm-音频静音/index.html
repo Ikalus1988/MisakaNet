@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Windows 下 C++ 子进程经 stdout 向父进程传输二进制协议帧（[1B kind][4B len][body]，body 为 PCM 音频）。 静音/全零测试数据下一切正常，真实音频数据触发父进程报 frame too large 1384120380 协议错位； 重定向到文件用独立解析器复现。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Windows 下 C++ 子进程经 stdout 向父进程传输二进制协议帧（[1B kind][4B len][body]，body 为 PCM 音频）。 静音/全零测试数据下一切正常，真实音频数据触发父进程报 frame too large 1384120380 协议错位； 重定向到文件用独立解析器复现。</p><h2>Root Cause</h2><p>根因：MSVC stdout 默认文本模式，fwrite 二进制中每个 0x0A 字节被翻译为 \r\n，body 实际长度大于声明 len，后续帧头错位。</p><h2>Fix</h2><p>在 wmain/main 入口处立即调用 _setmode(_fileno(stdout), _O_BINARY)（stderr 如承载二进制也设置），再进行任何 fwrite。</p><h2>Verification</h2><p>Not recorded by the submitter.</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/windows-下-c-子进程经-stdout-向父进程传输二进制协议帧1b-kind4b-lenbodybody-为.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Windows 下 C++ 子进程经 stdout 向父进程传输二进制协议帧（[1B kind][4B len][body]，body 为 PCM 音频）。静音">Find related lessons →</a></p></div>

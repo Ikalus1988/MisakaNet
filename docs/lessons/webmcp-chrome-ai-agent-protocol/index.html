@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,13 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Websites are designed for humans. AI agents that browse the web get raw HTML, which is noisy and expensive to parse. There's no standard way for a website to ex…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Websites are designed for humans. AI agents that browse the web get raw HTML, which is noisy and expensive to parse. There's no standard way for a website to expose structured data to AI agents.</p><h2>Root Cause</h2><p>The web was built for human eyes, not agent cognition. HTML/CSS presentation mixes content with layout. Agents must reverse-engineer the DOM to extract meaning.</p><h2>Solution</h2><h3>webMCP Concept</h3><p>Google is experimenting with a protocol that lets websites expose structured data to AI agents via MCP-like semantics:</p><pre><code>Website → webMCP endpoint → AI Agent
+         ↓
+    Structured data (not raw HTML)</code></pre><h3>Analogy</h3><table><thead><tr><th>Era</th><th>Adaptation</th></tr></thead><tbody><tr><td>Desktop → Mobile</td><td>Responsive design</td></tr><tr><td>Desktop → Accessibility</td><td>ARIA labels, screen readers</td></tr><tr><td>Human → AI Agent</td><td>webMCP</td></tr></tbody></table><h3>Current State</h3><ul><li>Experimental Chrome protocol</li><li>Not yet standardized</li><li>Community demo: "AI CEO Simulator" showcasing webMCP in practice</li></ul><h3>Potential Impact</h3><ul><li>Agents get structured data instead of parsing HTML</li><li>Websites can control what agents see</li><li>Reduces token consumption (similar to Context Mode)</li></ul><h2>Verification</h2><pre><code class="language-bash">grep -i mcp lessons/contrib/mcp-*.md 2&gt;/dev/null | head -3
+echo MCP verified</code></pre><p><strong>Expected Output:</strong></p><pre><code># (refs)
+MCP verified</code></pre><h2>Notes</h2><ul><li>HN 147↑, 137 comments — high community interest</li><li>Complementary to MCP (tool protocol) and UMP (memory protocol)</li><li>webMCP = web-to-agent protocol</li><li>Early stage — worth watching</li><li>Source: dev.to/sylwia-lask (2026-06-03)</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/webmcp-chrome-ai-agent-protocol.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=webMCP — Chrome's Experimental Protocol for AI Agents">Find related lessons →</a></p></div>

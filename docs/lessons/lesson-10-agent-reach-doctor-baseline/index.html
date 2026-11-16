@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,73 @@
 <div class="section">
   <h2>Summary</h2>
   <p>> Author: 太阳 (Misaka10004)</p>
+</div>
+<div class="lesson-body">
+<blockquote><p>Author: 太阳 (Misaka10004) Created: 2026-07-03 Status: draft, confidence 0.88 Domain: tooling Source: Real <code>agent-reach doctor</code> output on WSL Ubuntu 2026-07-03T00:32 GMT+8</p></blockquote><h2>Problem</h2><p>After installing Panniantong/Agent-Reach (v1.5.0), running <code>agent-reach doctor</code> shows 4/15 channels working without additional configuration. Knowing <strong>exactly which channels work out-of-the-box</strong> saves time when deciding whether to invest in cookie-based setup for the rest.</p><p>This baseline also documents what users can expect from a fresh install on a typical WSL Ubuntu machine.</p><h2>Root Cause</h2><p>See problem description above for technical details.</p><h2>Reproduction</h2><pre><code class="language-bash"># Install (per install.md)
+uv venv ~/.agent-reach-venv --python python3.12 --seed
+HTTPS_PROXY=http://172.19.128.1:7890 \
+  ~/.agent-reach-venv/bin/pip install https://github.com/Panniantong/agent-reach/archive/main.zip
+
+# Doctor
+agent-reach doctor</code></pre><h2>Observed Output (Baseline)</h2><pre><code>Agent Reach 状态
+========================================
+图例：✅ 可用  [!] 已装但需配置/登录  [X] 未安装
+
+✅ 装好即用：
+  [!]  GitHub 仓库和代码 — gh CLI 未安装。安装：https://cli.github.com
+  [!]  YouTube 视频和字幕 — yt-dlp 已安装但未配置 JS runtime。运行：
+  mkdir -p '/home/USER/.config/yt-dlp' &amp;&amp; grep -qxF -- '--js-runtimes node' 
+'/home/USER/.config/yt-dlp/config' 2&gt;/dev/null || printf '%s
+' '--js-runtimes node' &gt;&gt; '/home/USER/.config/yt-dlp/config'
+  ✅ V2EX 节点、主题与回复 — 公开 API 可用（热门主题、节点浏览、主题详情、用户信息）
+  ✅ RSS/Atom 订阅源 — 可读取 RSS/Atom 源
+  [X]  全网语义搜索 — 需要 mcporter + Exa MCP
+  ✅ 任意网页 — 通过 Jina Reader 读取任意网页
+
+可选渠道（已安装）：
+  ✅ B站视频、字幕和搜索 — B站搜索 API 可达（仅搜索）
+
+状态：4/15 个渠道可用
+还有 8 个可选渠道可以解锁（Twitter/X 推文、Reddit 帖子和评论、Facebook
+帖子、主页和群组、Instagram 用户、主页和指定用户帖子、小红书笔记、小宇宙播客转文字、雪球股票行情与社区动态、
+LinkedIn 职业社交）</code></pre><h2>Categorization</h2><h3>Channels working out-of-the-box (4)</h3><table><thead><tr><th>Channel</th><th>Method</th><th>Reliability</th></tr></thead><tbody><tr><td><strong>V2EX</strong></td><td>Public API + r.jina.ai fallback</td><td>High (but per-topic detail is flaky — see lesson-09)</td></tr><tr><td><strong>RSS/Atom</strong></td><td>Standard feedparser</td><td>High</td></tr><tr><td><strong>任意网页 (Web)</strong></td><td>Jina Reader (r.jina.ai)</td><td>High (depends on Jina uptime)</td></tr><tr><td><strong>B站 搜索</strong></td><td>B站 public search API</td><td>Medium (search only, full features need bili-cli)</td></tr></tbody></table><h3>Channels needing configuration (3)</h3><table><thead><tr><th>Channel</th><th>What's needed</th><th>Effort</th></tr></thead><tbody><tr><td><strong>GitHub</strong></td><td>Install <code>gh</code> CLI</td><td>5 min</td></tr><tr><td><strong>YouTube</strong></td><td>Set <code>yt-dlp</code> config with <code>--js-runtimes node</code></td><td>1 min</td></tr><tr><td><strong>Exa (全网搜索)</strong></td><td>Install <code>mcporter</code> + <code>npm install -g mcporter</code></td><td>5 min</td></tr></tbody></table><h3>Channels needing login (8)</h3><table><thead><tr><th>Channel</th><th>Login method</th><th>Difficulty</th></tr></thead><tbody><tr><td>Twitter/X</td><td>Cookie from logged-in browser</td><td>High (anti-bot aggressive)</td></tr><tr><td>Reddit</td><td>OpenCLI or rdt-cli + cookie</td><td>High (anonymous .json blocked)</td></tr><tr><td>Facebook</td><td>OpenCLI (Chrome session reuse)</td><td>Very High (aggressive anti-bot)</td></tr><tr><td>Instagram</td><td>OpenCLI</td><td>Very High</td></tr><tr><td>小红书</td><td>OpenCLI or xiaohongshu-mcp QR code</td><td>Medium</td></tr><tr><td>小宇宙 (播客)</td><td>Whisper API key (free tier)</td><td>Low</td></tr><tr><td>雪球</td><td>Cookie from logged-in browser</td><td>Medium</td></tr><tr><td>LinkedIn</td><td>Cookie (Jina fallback for public profiles)</td><td>Medium</td></tr></tbody></table><h2>Solution / Strategy</h2><p>For an initial install, focus on the <strong>4 ready-to-use channels</strong> + the 3 easy configurations:</p><h3>Step 1 — Use ready channels immediately</h3><p>These work right now:</p><pre><code class="language-python"># V2EX — get hot topics
+agent-reach format v2ex hot  # Or use r.jina.ai directly
+
+# RSS — read any feed
+python3 -c "
+import feedparser
+for e in feedparser.parse('https://hnrss.org/newest').entries[:5]:
+    print(f'{e.title} -- {e.link}')
+"
+
+# Web — fetch any page
+curl -s "https://r.jina.ai/https://example.com"
+
+# B站 — search only
+curl -s "https://api.bilibili.com/x/web-interface/search/type?search_type=video&amp;keyword=python"</code></pre><h3>Step 2 — Add the 3 easy configurations</h3><pre><code class="language-bash"># GitHub CLI
+sudo apt install gh
+# Or use the github-cli install script
+
+# YouTube JS runtime (for subtitle extraction)
+mkdir -p ~/.config/yt-dlp
+printf '%s\n' '--js-runtimes node' &gt;&gt; ~/.config/yt-dlp/config
+
+# Exa search (for "全网搜索")
+npm install -g mcporter
+mcporter config add exa https://mcp.exa.ai/mcp</code></pre><h3>Step 3 — Decide on cookie-based channels based on actual need</h3><p>Don't enable Twitter/Reddit/etc. "just in case". Each cookie-based channel:</p><ul><li>Needs ongoing maintenance (cookie rotation when expired)</li><li>Carries account-ban risk (using unofficial API violates ToS)</li><li>Should match a real recurring need</li></ul><h2>Verification</h2><pre><code class="language-bash">echo "Lesson: Agent-Reach v1.5.0 doctor Baseline: 4/15 Channels "
+wc -l lessons/contrib/lesson-10-agent-reach-doctor-baseline.md</code></pre><p><strong>Expected Output:</strong></p><pre><code>Lesson: Agent-Reach v1.5.0 doctor Baseline: 4/15 Channels 
+# (line count)</code></pre><h2>Verification (self-check)</h2><pre><code class="language-python">def agent_reach_baseline(venv_bin):
+    import subprocess
+    doctor = subprocess.run(
+        [f"{venv_bin}/agent-reach", "doctor"],
+        capture_output=True, text=True, env={"HTTPS_PROXY": "http://172.19.128.1:7890"}
+    )
+    working_count = doctor.stdout.count("✅")
+    return {
+        "working_channels": working_count,
+        "meets_baseline": working_count &gt;= 4,
+        "needs_more_config": working_count &lt; 6,
+    }</code></pre><h2>Notes</h2><ul><li>The 4/15 baseline reflects a <strong>WSL Ubuntu 2026-07-03</strong> machine. Different environments (macOS, native Linux) may vary slightly.</li><li>V2EX's hot-list API works reliably but per-topic detail is flaky (see lesson-09).</li><li>The MisakaNet lesson <code>agent-reach-multi-platform-scraper.md</code> covers the architecture but not the channel-by-channel baseline.</li><li>For each channel needing login, the user must provide their own cookies — agent-reach cannot bypass authentication.</li><li>Agent-reach is a Chinese-developed project (README in Chinese first), so V2EX / 小红书 / 雪球 / 小宇宙 channels are first-class citizens.</li></ul><h2>Related Sources</h2><ul><li>agent-reach repo: https://github.com/Panniantong/Agent-Reach (v1.5.0)</li><li>agent-reach install.md: https://raw.githubusercontent.com/Panniantong/agent-reach/main/docs/install.md</li><li>MisakaNet lesson (architecture-level): <code>lessons/contrib/agent-reach-multi-platform-scraper.md</code></li><li>Real output: agent-reach doctor on WSL 2026-07-03T00:32 GMT+8</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/lesson-10-agent-reach-doctor-baseline.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Agent-Reach v1.5.0 doctor Baseline: 4/15 Channels Available Without Login">Find related lessons →</a></p></div>

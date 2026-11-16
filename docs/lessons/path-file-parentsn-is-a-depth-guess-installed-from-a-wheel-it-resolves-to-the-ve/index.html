@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,12 @@
 <div class="section">
   <h2>Summary</h2>
   <p>一个 Python 包的 "find my repo root" 辅助函数用了位置式 fallback：</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>一个 Python 包的 "find my repo root" 辅助函数用了位置式 fallback：</p><pre><code class="language-python">REPO_ROOT = Path(__file__).resolve().parents[3]</code></pre><p>这个表达式是针对<strong>源码布局</strong>调好的。从 wheel 安装后，它解析到类似 <code>&lt;venv&gt;/lib</code> 的地方——一个看起来很像、但完全不是仓库根目录的路径。于是 CLI 报告它的知识库 "missing at /…/lib"，这句话既不是事实，也无法据以行动。</p><h2>Root Cause</h2><p><code>parents[N]</code> 编码的是<strong>目录深度，不是身份</strong>。</p><ul><li>在 <code>pkg/pkg_mod/utils.py</code> 里，仓库根确实在上面 3 层；</li><li>在 <code>&lt;venv&gt;/lib/python3.X/site-packages/pkg_mod/utils.py</code> 里，同一个表达式落在 venv 的 <code>lib/</code>。</li></ul><p>表达式本身无法区分这两种布局，于是它安静地给出一个"错但可信"的答案。</p><p>更值得注意的是：代码甚至<strong>先</strong>向上查找内容标记（content markers），然后才落回这个未经校验的位置猜测。fallback 的缺陷就在这里——一个永远不会失败的 fallback 不是 fallback，它只是把"没找到"伪装成"找到了"。</p><h2>Solution</h2><p><strong>永远不要从路径启发式返回未经校验的猜测。</strong></p><ol><li><strong>位置捷径只有在那个目录确实包含预期内容标记时才可用。</strong> 猜测必须由内容验证，而不是由位置验证：</li></ol><pre><code class="language-python">   candidate = Path(__file__).resolve().parents[3]
+   if (candidate / "data" / "knowledge").is_dir():
+       return candidate, "found"</code></pre><ol><li><strong>路径旁边同时返回来源</strong>（<code>env</code> / <code>found</code> / <code>dev-layout</code> / <code>none</code>）。当来源是 <code>none</code> 时，调用方必须说"什么都没找到"，并指出真正的原因和修法——在这个例子里：wheel 只装代码，语料在 git 仓库里，用 <code>--repo-root</code> 或环境变量指过去。</li><li><strong>让 <code>none</code> 分支在测试里可达。</strong> 还有一个应该做的事：用<strong>已发布的产物</strong>在一个空 venv 里走一遍新用户路径，而不是在自己的工作树里走。在工作树里内容标记永远存在，所以这个 bug 完全不可见。</li></ol><p>可行动的报错长这样：</p><pre><code class="language-text">knowledge base not found — the wheel ships code only; point at the corpus in the git
+checkout with --repo-root &lt;clone&gt; or set &lt;PKG&gt;_REPO_ROOT</code></pre><p>而不是：</p><pre><code class="language-text">knowledge base not readable at &lt;venv&gt;/lib</code></pre><h2>Verification</h2><ul><li><strong>复现条件</strong>：干净 venv + <code>pip install</code> 构建出的 wheel，然后跑自检命令。<ul><li>修复前：<code>repo_root: &lt;venv&gt;/lib</code> 加上 <code>knowledge base not readable at &lt;venv&gt;/lib</code>；</li><li>修复后：<code>repo_root: .../site-packages/pkg_mod</code> 加上 <code>knowledge base not found — the wheel ships code only … point at it with --repo-root</code>。</li></ul></li><li><strong>两条补救路径都实测</strong>：<code>--repo-root &lt;clone&gt;</code> 和环境变量分别执行，输出 <code>overall: OK</code> 且完整语料被加载。</li><li><strong>回归</strong>：全量测试 689 passed。</li><li><strong>失败判据</strong>：在空 venv 里，若 <code>repo_root</code> 仍解析到 <code>&lt;venv&gt;/lib</code>（一个不含内容标记的目录），说明位置猜测还在裸奔；若报错只说 "not readable at &lt;path&gt;" 而不给出 <code>--repo-root</code>／环境变量，同样不算修好——报错本身也是产品。</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/path-parents-depth-wheel-venv-installed-layout.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=`Path(__file__).parents[N]` is a depth guess: installed from a wheel it resolves to the venv's lib/">Find related lessons →</a></p></div>

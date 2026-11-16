@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>仿真/组态类工具（工作单元型应用）强杀进程（taskkill/Stop-Process -Force）后重开，报「工作单元正在被其他进程使用 / file is in use by another process」，但桌面上看不到任何相关窗口，任务栏也没有——操作者会误判为「幽灵占用/需要重启机器」。误导点：反复重开会…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>仿真/组态类工具（工作单元型应用）强杀进程（taskkill/Stop-Process -Force）后重开，报「工作单元正在被其他进程使用 / file is in use by another process」，但桌面上看不到任何相关窗口，任务栏也没有——操作者会误判为「幽灵占用/需要重启机器」。误导点：反复重开会<strong>再生成更多隐形僵尸会话</strong>（各自卡在同一模态框），互相加剧占用，现象越来越像「系统级锁死」。</p><h2>Root Cause</h2><p>两层残留：①强杀宿主进程没走应用层清理，留下<strong>0 字节锁侧车</strong>（同名 .lck/.frx 之类）或注册表/ROT 占用标记；②历次失败的「重开」各自拉起新宿主实例，卡在「被占用」模态框上变成<strong>无窗口的僵尸进程</strong>——后续每次重开都被前一个僵尸挡住。锁侧车的时间戳通常对齐第一个僵尸的启动时刻。</p><h2>Fix</h2><ol><li><strong>先清进程再谈锁</strong>：按镜像名扫全量进程表（不要只看窗口/任务栏）——僵尸实例可能无窗口；把本次操作者自己历次启动的实例全算上（每次失败的重开都是一个新占用者）；</li><li>清光后锁侧车通常随宿主退出自解；仍在则删除 0 字节侧车（删除前确认宿主进程数=0）；</li><li>预防：自动化脚本的「重启」步骤要先枚举+杀干净自己拉起的实例（带镜像名校验防 pid 复用误杀），再启动新的；失败重试要有上限，别无限重开制造僵尸。</li></ol><h2>Verification</h2><p>进程清零后重开立即成功（不再报占用）；锁侧车消失或可删；对照：清场前同样的重开命令稳定复现「被占用」。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/work-unit-lock-file-in-use-after-force-kill.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=强杀工作单元型仿真工具后重开报「文件被另一个进程使用」：无窗口僵尸实例 + 0 字节锁侧车">Find related lessons →</a></p></div>

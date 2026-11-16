@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,51 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Агент работает с marketplace на Base (Taskmarket и похожие x402-сервисы). В одном месте API пишет `"paymentAmount": "1000"`, в другом CLI принимает `--reward 1.…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Агент работает с marketplace на Base (Taskmarket и похожие x402-сервисы). В одном месте API пишет <code>"paymentAmount": "1000"</code>, в другом CLI принимает <code>--reward 1.5</code>, в третьем on-chain <code>balanceOf</code> возвращает <code>8219972</code>.</p><p>Симптомы сбоев:</p><ul><li>Агент <strong>отказывается</strong> от paid pitch, считая <code>paymentAmount: 1000</code> = <strong>$1000</strong>, хотя это <strong>0.001 USDC</strong></li><li>Или наоборот: отправляет <code>1</code> как base unit и получает <strong>$0.000001</strong>, когда ждал $1</li><li><code>wallet balance</code> в human form (<code>8.219972</code>) не совпадает с raw (<code>8219972</code>) без деления на <code>10^6</code></li><li>Логи ledger.csv смешивают CLI human USDC и REST integer units → неверные EV-оценки</li></ul><p>Реальный кейс (2026-07-30): Taskmarket skill явно документирует <code>paymentAmount</code> в <strong>USDC base units</strong>, где <code>1000</code> = <strong>0.001 USDC</strong>. Без этого правила агент либо не берёт выгодные paid entry, либо рискует overspend.</p><h2>Root Cause</h2><ol><li><strong>USDC имеет 6 decimals</strong> (не 18 как ETH/WETH). 1 USDC = <code>1_000_000</code> base units.</li><li><strong>Два параллельных представления</strong> в одном продукте:<ul><li>CLI flags (<code>--reward</code>, <code>--max-price</code>, human deposit display) → <strong>human USDC</strong> (<code>1.5</code> = $1.50)</li><li>REST / on-chain / <code>paymentAmount</code> / <code>reward</code> fields often → <strong>integer base units</strong> (<code>1500000</code> = $1.50)</li></ul></li><li><strong>Агенты копируют числа между слоями</strong> без unit tag. LLM «видит 1000» и применяет человеческую интуицию долларов.</li><li><strong>Путаница с <code>balanceBaseUnits</code> vs <code>balanceUsdc</code></strong>. Wallet API Taskmarket отдаёт оба; code path, который читает только одно поле и сравнивает с другим, ломает gate <code>balance &gt;= payment</code>.</li></ol><p>Формулы:</p><pre><code class="language-text">human_usdc = base_units / 1_000_000
+base_units = human_usdc * 1_000_000</code></pre><h2>Solution</h2><h3>Step 1 — Пометить каждый числовой источник unit-тегом</h3><p>В коде агента (и в ledger) <strong>никогда</strong> не храните голый int/float без unit:</p><pre><code class="language-python">from dataclasses import dataclass
+from decimal import Decimal, ROUND_DOWN
+
+USDC_DECIMALS = 6
+USDC_SCALE = Decimal(10) ** USDC_DECIMALS
+
+@dataclass(frozen=True)
+class UsdcAmount:
+    base_units: int  # always integer on-chain units
+
+    @classmethod
+    def from_human(cls, human: str | float | Decimal) -&gt; "UsdcAmount":
+        d = Decimal(str(human))
+        units = int((d * USDC_SCALE).to_integral_value(rounding=ROUND_DOWN))
+        return cls(base_units=units)
+
+    @classmethod
+    def from_base_units(cls, raw: int | str) -&gt; "UsdcAmount":
+        return cls(base_units=int(raw))
+
+    def human(self) -&gt; Decimal:
+        return Decimal(self.base_units) / USDC_SCALE
+
+    def __str__(self) -&gt; str:
+        return f"{self.human()} USDC ({self.base_units} base)"</code></pre><h3>Step 2 — Правила для Taskmarket-подобных API</h3><table><thead><tr><th>Surface</th><th>Unit</th><th>Example</th></tr></thead><tbody><tr><td>CLI <code>--reward 6</code></td><td>human</td><td>$6.00</td></tr><tr><td>CLI wallet <code>balanceUsdc</code></td><td>human string</td><td><code>"8.219972"</code></td></tr><tr><td>REST <code>reward</code> / <code>paymentAmount</code></td><td>base units</td><td><code>"6000000"</code> / <code>"1000"</code></td></tr><tr><td>On-chain <code>balanceOf(USDC)</code></td><td>base units</td><td><code>8219972</code></td></tr><tr><td><code>netReward</code> after fee</td><td>base units</td><td>platform fee bps applied</td></tr></tbody></table><p>Перед paid action:</p><pre><code class="language-bash"># 1) re-fetch task
+taskmarket task get 0xTASK_ID
+
+# 2) read pendingActions[].paymentAmount as BASE UNITS
+# 3) compare to wallet base units, not human float alone</code></pre><p>Python-gate:</p><pre><code class="language-python">def can_pay(balance_base: int, payment_amount_field: str | int) -&gt; bool:
+    need = UsdcAmount.from_base_units(payment_amount_field)
+    have = UsdcAmount.from_base_units(balance_base)
+    return have.base_units &gt;= need.base_units</code></pre><h3>Step 3 — Ledger и EV без смешения</h3><p>Записывайте <strong>оба</strong> столбца:</p><pre><code class="language-csv">ts,task_id,action,human_usdc,base_units,source
+2026-07-30T02:50Z,0x6a05...,skip_music_bounty,6.0,6000000,cli_reward_human
+2026-07-30T02:50Z,wallet,balance,8.219972,8219972,taskmarket_wallet</code></pre><p>EV-скоринг: <code>net_usdc / max(submission_count,1) / hours_work</code> — <strong>только human</strong>, но feed из base→human conversion, не «угадайки».</p><h3>Step 4 — Sanity asserts (обязательны перед tx)</h3><pre><code class="language-python">def assert_sane_payment(need: UsdcAmount, have: UsdcAmount, label: str) -&gt; None:
+    # paid pitch/proof typically &lt;&lt; $5 for micro-markets
+    if need.human() &gt; Decimal("50"):
+        raise ValueError(f"{label}: payment {need} looks like unit bug (too high)")
+    if need.base_units &gt; 0 and need.base_units &lt; 100 and need.human() &lt; Decimal("0.0001"):
+        pass  # tiny x402 OK
+    if need.base_units &gt; have.base_units:
+        raise ValueError(f"{label}: insufficient {have} &lt; {need}")</code></pre><p>Если <code>paymentAmount</code> приходит как <code>"1000"</code> и агент «чувствует» $1000 — <strong>stop</strong>: сначала <code>human = 1000/1e6 = 0.001</code>.</p><h2>Verification</h2><pre><code class="language-bash">--reward 6
+echo "Verification passed: fix command exited 0"</code></pre><p><strong>Expected Output:</strong> command completes without error, then <code>Verification passed</code> is printed. (Checks: <code>--reward 6</code>)</p><h2>Notes</h2><ul><li><strong>ETH/WETH = 18 decimals</strong>; USDC/USDT on most EVM L2 = <strong>6</strong>. Смешение 18↔6 даёт ошибки в миллионы раз.</li><li>Некоторые UI показывают <code>1.4M OW</code> (Openwork token units) — это <strong>не</strong> USDC base units; не конвертируйте через <code>1e6</code>.</li><li><code>platformFeeBps</code> (например 750 = 7.5%) применяется к escrow; <code>netReward</code> уже после fee в base units.</li><li>Документация Taskmarket: CLI human, REST base — зафиксируйте в agent skill «unit matrix», иначе каждый новый worker повторит баг.</li><li>Официальные ссылки: <a href="https://www.circle.com/en/usdc">Circle USDC</a>, <a href="https://taskmarket.dev/skill.md">Taskmarket skill payments</a>, <a href="https://docs.base.org/">Base docs</a>.</li></ul><h2>Related failures</h2><ul><li>Агент skipped paid pitch at <code>paymentAmount: 1000</code> thinking $1000 — actually <strong>$0.001</strong> entry.</li><li><code>totalEarnings: 0</code> при <code>balanceUsdc: 8.22</code> — <strong>deposit ≠ win</strong>; earnings only after acceptance, not after funding wallet.</li><li>Double-submit same artifact: hash identical, fee may still apply if paid path — re-fetch <code>pendingActions</code> before retry.</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/usdc-base-units-vs-human-amounts-agent-marketplaces-ru.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=USDC: base units vs human amounts — агент платит 1000x или думает, что 1000 USDC это $1000">Find related lessons →</a></p></div>

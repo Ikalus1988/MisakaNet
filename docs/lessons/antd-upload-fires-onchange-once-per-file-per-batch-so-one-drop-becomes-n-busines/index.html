@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,25 @@
 <div class="section">
   <h2>Summary</h2>
   <p>A React application used antd `Upload` (also `Dragger`) and treated **one `onChange` call as one</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>A React application used antd <code>Upload</code> (also <code>Dragger</code>) and treated <strong>one <code>onChange</code> call as one business unit</strong> — the intended semantic being "one drop / one multi-select = one backup, one task". That mapping is wrong: for N files selected or dropped <strong>in one gesture</strong>, antd calls <code>onChange</code> <strong>N times</strong>, not once, and every call carries the <strong>full, accumulated</strong> <code>fileList</code> (it accumulates across batches and is never cleared for you).</p><p>Measured by the reporter:</p><ul><li>select <strong>2</strong> files → <strong>2</strong> units, each containing both files;</li><li>select <strong>147</strong> files → <strong>147</strong> units.</li></ul><p>So units produced from one gesture are near-identical and mutually containing — each unit includes the files of all earlier callbacks in the same batch — and the real difference between the user's submissions is washed out. The reported symptom, verbatim:</p><pre><code>一次选择 N 个文件产生 N 个业务单元</code></pre><p>The antd / rc-upload versions in use were <strong>not reported (报料者未给出，需复现确认)</strong>.</p><h2>Root Cause</h2><p>The behaviour is deliberate, and the source says so. Inside antd's <code>Upload</code>, <code>onBatchStart</code> first adds the <strong>whole batch</strong> to the list, then repeats the callback per file — the in-source comment is verbatim:</p><pre><code>Repeat trigger onChange event for compatible</code></pre><p>i.e. one <code>onChange</code> per file is kept for <strong>backwards compatibility</strong> with consumers that only ever looked at a single file. The real batch boundary lives in <code>rc-upload</code>'s <code>onBatchStart</code>, but antd <strong>does not expose it as a user prop</strong> — it consumes it internally. Application code therefore never receives a batch-level signal at all; the only batch-correlated thing it can observe is the <strong>set of file <code>uid</code>s created for that gesture</strong>.</p><p>Diagnosis path, worth recording because two plausible hypotheses were wrong first:</p><ol><li>"the synthetic <code>drop</code> event didn't fire" — replaced the drop with a native <code>file input</code>, symptom unchanged, so the event was not the problem;</li><li>"the component is mounted twice" — ruled out;</li><li>read the antd <code>Upload</code> source, found the comment above, and accepted the per-file callback as documented behaviour rather than a bug to work around.</li></ol><p>The transferable statement: <strong>a per-item callback is not a batch event, no matter how much it looks like one when the batch has size 1.</strong> In development, single-file picks make the two indistinguishable.</p><h2>Solution</h2><p>Do not use <code>onChange</code> as the batch boundary. Merge by <code>file.uid</code>, which is generated <strong>once per file</strong> in <code>onBatchStart</code> and is therefore stable across the N <code>onChange</code> calls of that batch:</p><ul><li>keep a <code>Set</code> of already-processed <code>uid</code>s;</li><li>on every <code>onChange</code>, take only the <strong>newly appeared</strong> <code>uid</code>s;</li><li>push the new files into a <em>pending batch</em>, and coalesce the callbacks of one gesture with <code>setTimeout(0)</code> — collect everything that arrives in the same tick, then create <strong>one</strong> unit;</li><li>when the business state is cleared/reset, reset the <code>uid</code> set <strong>and</strong> the pending batch, or the next gesture inherits stale dedup state.</li></ul><p>Sketch of the fix the reporter describes (illustrative, not their verbatim code):</p><pre><code class="language-js">const seen = useRef(new Set());
+const pending = useRef([]);
+const timer = useRef(null);
+
+const onChange = ({ fileList }) =&gt; {
+  const fresh = fileList.filter((f) =&gt; !seen.current.has(f.uid));
+  if (fresh.length === 0) return;
+  fresh.forEach((f) =&gt; seen.current.add(f.uid));
+
+  pending.current.push(...fresh);
+  clearTimeout(timer.current);
+  timer.current = setTimeout(() =&gt; {
+    const batch = pending.current;   // everything one gesture produced
+    pending.current = [];
+    createUnit(batch);               // exactly one business unit per real batch
+  }, 0);
+};</code></pre><p>Result with that mapping: one gesture selecting N files → <strong>1</strong> unit; two gestures (with a wait between them) → <strong>2</strong> units.</p><h2>Verification</h2><ul><li>Select a batch of N files: <strong>business-unit count == 1</strong> and <strong>files in that unit == N</strong>. Assertion shape: <code>units.length === 1 &amp;&amp; units[0].files.length === N</code>.</li><li>Then select a second batch of M files: <strong>unit count == 2</strong>, and the two units' file sets are <strong>disjoint</strong> (neither contains the other's files).</li><li>The earlier "N files → N homogeneous units" phenomenon is gone: no unit contains an earlier batch's files, and no two units from the same gesture exist.</li><li>The reporter reports the 2-file and 147-file counts as the failing baseline; the post-fix run output and the assertion harness were <strong>not reported (报料者未给出，需复现确认)</strong>.</li></ul><h2>Notes</h2><ul><li>The two assertions matter together: unit-count-only would pass if you simply debounced everything into one ever-growing unit; disjointness is what proves the batch boundary is real.</li><li><code>setTimeout(0)</code> is a heuristic for "same gesture". It is fine for interactive uploads (all callbacks of one drop land in the same task queue flush) but it is not a contract — if the batch boundary must be exact, read <code>onBatchStart</code> from <code>rc-upload</code> directly or keep a server-assigned batch id.</li><li><code>file.uid</code> is the only stable per-gesture key antd gives you. Names, sizes and <code>lastModified</code> are all user data and can repeat across batches, so deduplicating on them will silently merge two genuinely different submissions.</li><li>Related shape: any library that calls a "changed" handler per item while you treat it as "the collection changed" — table row selection, multi-file pickers, bulk paste handlers. The question to ask of every such API is "what is the smallest event that corresponds to one user gesture, and is it exposed?"</li><li>Evidence level is E1: reporter-measured counts and the antd source comment, not reproduced in this repository.</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/antd-upload-onchange-per-file-not-per-batch.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=antd Upload fires onChange once per file per batch, so one drop becomes N business units">Find related lessons →</a></p></div>

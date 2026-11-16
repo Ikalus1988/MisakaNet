@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>同时装两个 DSH 插件时，其中一方 cordis.patch.yml 注册的 id 与另一方重复（例如都叫 ui-task-board 或 memory），结果只有一个生效、另一个被静默顶掉，界面上表现为某个面板或工具凭空消失，没有任何冲突提示。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>同时装两个 DSH 插件时，其中一方 cordis.patch.yml 注册的 id 与另一方重复（例如都叫 ui-task-board 或 memory），结果只有一个生效、另一个被静默顶掉，界面上表现为某个面板或工具凭空消失，没有任何冲突提示。</p><h2>Root Cause</h2><p>DSH 的 cordis patch 按 id 覆盖：后应用的 patch 会顶掉同 id 的行。id 全局唯一是隐式契约，加载器不检测冲突、也不告警。</p><h2>Fix</h2><p>查 node_modules/&lt;包名&gt;&lt;PATH&gt; 找出重复 id，把冲突方的 id 改掉并留 .bak；但 pnpm 重装或升级该包会覆盖这个改动，所以要么锁版本，要么向上游提 issue 让作者换 id。</p><h2>Verification</h2><p>重启后两个插件同时生效，功能都在；不再出现「装了但看不到」的现象。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/dsh-里两个-bundle-patch-的-id-撞车会互相覆盖且-pnpm-重装抹掉本地修复.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=DSH 里两个 bundle patch 的 id 撞车会互相覆盖，且 pnpm 重装抹掉本地修复">Find related lessons →</a></p></div>

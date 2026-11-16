@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,11 @@
 <div class="section">
   <h2>Summary</h2>
   <p>MisakaNet 早期架构照搬了"中心协调网络"的设计——A2A 实时通信、飞书 WebSocket 长连接、交互式卡片仲裁、中心化 Hub。这些功能听起来高级，但实际使用中暴露了三个问题：</p>
+</div>
+<div class="lesson-body">
+<h2>Root Cause</h2><p>MisakaNet 早期架构照搬了"中心协调网络"的设计——A2A 实时通信、飞书 WebSocket 长连接、交互式卡片仲裁、中心化 Hub。这些功能听起来高级，但实际使用中暴露了三个问题：</p><ol><li><strong>噪音 &gt; 信号</strong> —— 飞书实时消息 90% 是噪音，真正的冲突管理走 Issue 就够了</li><li><strong>假设节点全在线</strong> —— A2A 实时通信假设所有节点随时在线，但 MisakaNet 的真实使用场景是"图书馆"（离线检索、偶尔同步）</li><li><strong>功能优先级错位</strong> —— 中心化 Hub 还没人用，搜索体验却一直很原始（纯文本列表，没有预览和高亮）</li></ol><h2>Solution方案</h2><p>做了三轮重构，每轮独立推进，不交叉施工：</p><p><strong>第一轮：砍噪音</strong></p><ul><li>HermesHub → MisakaHub（类名+文件名）</li><li>归档 a2a_server.py、feishu_ws_client.py、graph_builder.py</li><li>Hub 从 363 行精简到 172 行，只保留同步调度 + 图谱 + GitHub Issue 冲突通知</li></ul><p><strong>第二轮：建基础设施</strong></p><ul><li>分层缓存 L1（内存）→ L2（SQLite）→ L3（磁盘），冷启动速度 3x</li><li><code>__main__.py</code> 让 <code>python3 -m misakanet</code> 可运行</li><li>profile.py 三段渐进式解锁（newcomer → active → contributor）</li><li>scripts/referral.py 推荐链 + credit 记账</li><li>scripts/score_lessons.py 质量评分器</li><li>scripts/contribute.py GitHub API 一键贡献（替代 git push）</li><li>scripts/update_status.py STATUS.md 自动生成</li></ul><p><strong>第三轮：品牌 + 演示</strong></p><ul><li>广告语重构："零依赖的 Agent 图书馆"</li><li>像素风 SVG banner（御坂妹头像 + Press Start 2P 字体）</li><li>VHS 终端演示 GIF</li><li>docs/wiki/Home.md 统一指回根目录文档</li></ul><h2>Verification</h2><pre><code class="language-bash">echo "Lesson: misakanet refactor v2 review"
+wc -l lessons/contrib/misakanet-refactor-v2-review.md</code></pre><p><strong>Expected Output:</strong></p><pre><code>Lesson: misakanet refactor v2 review
+# (line count)</code></pre><h2>Completed（搜索结果质量评分）</h2><p>分数条（██████░░ 78%）、关键词高亮（ANSI 黄色）、内容预览——在 v2 重构第三轮已全部实现。当前 search_knowledge.py 的输出包含这三项。</p><h2>Results</h2><ul><li>hub/misaka_hub.py：363→172 行</li><li>新增 10 个脚本（contribute / setup / score_lessons / referral / profile 等）</li><li>归档 3 个死模块</li><li>README 新增演示 GIF + SVG banner</li><li>lessons 从 9→185 篇</li></ul><h2>Lessons Learned</h2><ol><li><strong>先砍后加</strong> —— 减法比加法更能提升项目档次。砍掉 A2A/飞书 WS 后，MisakaNet 的定位反而更清晰了</li><li><strong>搜索体验是图书馆的生命线</strong> —— 从纯文本列表到预览+高亮+进度条，用户感知的变化最大，改动量却最小</li><li><strong>像素画不要手写 SVG</strong> —— 用现成素材或专业工具</li><li><strong>VHS 录屏比 GIF 工具好用</strong> —— 精确、可复现、Git 可跟踪，适合开源项目演示</li></ol>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/misakanet-refactor-v2-review.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=misakanet refactor v2 review">Find related lessons →</a></p></div>

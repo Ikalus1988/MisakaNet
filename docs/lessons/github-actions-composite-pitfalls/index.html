@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,35 @@
 <div class="section">
   <h2>Summary</h2>
   <p>GitHub Actions composite action 有 3 个常见陷阱：重复 YAML inputs、shell 注入、diff_stat 在单 commit 时为空。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>GitHub Actions composite action 有 3 个常见陷阱：重复 YAML inputs、shell 注入、diff_stat 在单 commit 时为空。</p><h2>Root Cause</h2><ol><li><strong>重复 YAML inputs</strong>：同名 input 被多次定义，导致 "inputs is already defined" 错误</li><li><strong>Shell 注入</strong>：PR body 直接拼接到 shell 命令中，可能导致命令注入</li><li><strong>diff_stat 空</strong>：单 commit PR 的 diff_stat 为空，导致后续逻辑失败</li></ol><h2>Solution</h2><p><strong>1. 避免重复 inputs：</strong></p><pre><code class="language-yaml"># 错误
+inputs:
+  token:
+    description: "Token"
+inputs:  # 重复！
+  token:
+    description: "Token"
+
+# 正确
+inputs:
+  token:
+    description: "GitHub token"
+  # 只定义一次</code></pre><p><strong>2. 防止 shell 注入：</strong></p><pre><code class="language-yaml"># 错误：直接拼接 PR body
+- run: echo "${{ github.event.pull_request.body }}"
+
+# 正确：使用环境变量
+- run: echo "$PR_BODY"
+  env:
+    PR_BODY: ${{ github.event.pull_request.body }}</code></pre><p><strong>3. 处理空 diff_stat：</strong></p><pre><code class="language-yaml"># 正确：检查 diff_stat 是否为空
+- name: Check diff
+  run: |
+    if [ -z "${{ steps.diff.outputs.stat }}" ]; then
+      echo "No changes detected"
+      exit 0
+    fi</code></pre><h2>Verification</h2><pre><code class="language-bash">git status --short | head -5
+git log --oneline -3</code></pre><p><strong>Expected Output:</strong></p><pre><code># (status)
+# (recent)</code></pre><h2>Key Points</h2><ul><li>YAML inputs 只能定义一次</li><li>永远不要直接拼接用户输入到 shell 命令</li><li>diff_stat 在单 commit 时可能为空，需要处理</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/github-actions-composite-pitfalls.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=GitHub Actions composite action 3 个常见陷阱">Find related lessons →</a></p></div>

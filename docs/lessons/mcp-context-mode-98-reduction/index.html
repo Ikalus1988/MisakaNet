@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,13 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Every MCP tool call in Claude Code dumps raw data into the 200K context window. A Playwright snapshot costs 56 KB. Twenty GitHub issues cost 59 KB. One access l…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Every MCP tool call in Claude Code dumps raw data into the 200K context window. A Playwright snapshot costs 56 KB. Twenty GitHub issues cost 59 KB. One access log — 45 KB. After 30 minutes, 40% of context is consumed by tool outputs alone.</p><p>With 81+ tools active, 143K tokens (72%) are consumed by tool definitions before the first message.</p><h2>Root Cause</h2><p>MCP's design has a tension: every tool interaction fills the context window from both sides — definitions on the way in, raw output on the way out. Tool outputs are unoptimized, returning full data when summaries would suffice.</p><h2>Solution</h2><h3>Context Mode Architecture</h3><p>An MCP server that sits between Claude Code and tool outputs, compressing responses:</p><pre><code>Claude Code → MCP Context Mode → Actual MCP Server
+              ↓
+         315 KB → 5.4 KB (98% reduction)</code></pre><h3>Compression Strategies</h3><table><thead><tr><th>Strategy</th><th>Example</th></tr></thead><tbody><tr><td><strong>Summarize</strong></td><td>Full page snapshot → key elements only</td></tr><tr><td><strong>Filter</strong></td><td>20 GitHub issues → only titles + labels</td></tr><tr><td><strong>Truncate</strong></td><td>45 KB log → error lines only</td></tr><tr><td><strong>Structure</strong></td><td>Raw HTML → semantic JSON</td></tr></tbody></table><h3>Results</h3><table><thead><tr><th>Tool</th><th>Raw Output</th><th>After Context Mode</th><th>Reduction</th></tr></thead><tbody><tr><td>Playwright snapshot</td><td>56 KB</td><td>~1 KB</td><td>98%</td></tr><tr><td>gh issue list (20)</td><td>59 KB</td><td>~1 KB</td><td>98%</td></tr><tr><td>Access log</td><td>45 KB</td><td>~0.5 KB</td><td>99%</td></tr></tbody></table><h2>Verification</h2><pre><code class="language-bash">grep -i mcp lessons/contrib/mcp-*.md 2&gt;/dev/null | head -3
+echo MCP verified</code></pre><p><strong>Expected Output:</strong></p><pre><code># (refs)
+MCP verified</code></pre><h2>Notes</h2><ul><li>Cloudflare showed tool definitions can be compressed 99.9% with Code Mode</li><li>Context Mode addresses the other direction: tool output compression</li><li>HN 570↑, 107 comments — high community interest</li><li>Source: https://mksg.lu/blog/context-mode (2026-02-26)</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/mcp-context-mode-98-reduction.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=MCP Context Mode — 98% Context Window Reduction for Claude Code">Find related lessons →</a></p></div>

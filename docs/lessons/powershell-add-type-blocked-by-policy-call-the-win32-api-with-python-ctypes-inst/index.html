@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,54 @@
 <div class="section">
   <h2>Summary</h2>
   <p>On Windows, `Add-Type` was blocked by the machine's security policy, so PowerShell could no longer</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>On Windows, <code>Add-Type</code> was blocked by the machine's security policy, so PowerShell could no longer compile and load C# at runtime. Every Win32 route that depends on that step died with it: creating a <code>.lnk</code> shortcut, reading a window title, and anything else going through <code>user32</code> / <code>shell32</code> P/Invoke.</p><h2>Root Cause</h2><h3>First: establish which policy, because the three behave differently</h3><p>The symptom is not "PowerShell is broken". Three distinct mechanisms produce it, and the discriminator is the session's language mode and the policy state — <strong>not</strong> the error text, whose wording varies by policy build and by localized install.</p><pre><code class="language-powershell"># 1. Is this session in Constrained Language?
+$ExecutionContext.SessionState.LanguageMode</code></pre><ul><li><code>FullLanguage</code> — no CLM / WDAC / AppLocker lockdown applies to this session. Look elsewhere; the block is some other control, and the Python route below is not the answer either.</li><li><code>ConstrainedLanguage</code> — the Constrained Language lockdown, the case that blocks <code>Add-Type</code>. Runtime C# compilation is not allowed in this environment, and type/method invocation outside the allowed set is restricted. This is what AppLocker's language-mode restriction and Windows Defender Application Control (Intelligent Security Graph) put in place.</li></ul><pre><code class="language-powershell"># 2. AppLocker (file-based policy)
+Get-AppLockerPolicy -Effective -Xml | Select-Object -ExpandProperty RuleCollections
+Get-AppLockerFileRule -Policy (Get-AppLockerPolicy -Effective) |
+  Select-Object Executable, Action, Exceptions</code></pre><p>AppLocker events: <code>Applications and Services Logs/Microsoft/Windows/AppLocker/EXE and DLL</code>.</p><pre><code class="language-powershell"># 3. WDAC (code integrity, not a file allowlist)
+Get-CimInstance -ClassName Win32_DeviceGuard -Namespace root\Microsoft\Windows\DeviceGuard |
+  Select-Object CodeIntegrityPolicyEnforcementStatus, UsermodeCodeIntegrityPolicyEnforcementStatus</code></pre><p>WDAC events: <code>Microsoft-Windows-CodeIntegrity/Operational</code>.</p><p>Read your own event log rather than pattern-matching a string. Which of the three is in force decides whether the Python route is even open (see the caveat under Fix).</p><h3>Second: COM is not the fallback</h3><p><code>New-Object -ComObject WScript.Shell</code> was blocked too, on the grounds that COM object instantiation can run arbitrary code. <code>Add-Type</code> and COM are <em>both</em> arbitrary-code paths in the eyes of such a policy, so neither is a way around the other. <code>mklink</code> and forwarding through <code>cmd</code> were also tried and did not help.</p><h2>Fix</h2><p>Move the call out of PowerShell and into Python's standard-library <code>ctypes</code>, which binds to functions that a loaded DLL already exports. It adds no compile-and-load step, so a policy that blocks runtime code generation has nothing to fire on — and <code>ctypes</code> ships with Python, so nothing is installed.</p><pre><code class="language-python">import ctypes
+from ctypes import wintypes
+
+SEE_MASK_NOCLOSEPROCESS = 0x00000040
+SW_SHOWNORMAL = 1
+
+SHELLEXECUTEINFOW = ctypes.Structure(
+    [
+        ("cbSize", wintypes.DWORD),
+        ("fMask", wintypes.ULONG),
+        ("hwnd", wintypes.HWND),
+        ("lpVerb", wintypes.LPCWSTR),
+        ("lpFile", wintypes.LPCWSTR),
+        ("lpParameters", wintypes.LPCWSTR),
+        ("lpDirectory", wintypes.LPCWSTR),
+        ("nShow", ctypes.c_int),
+        ("hInstApp", wintypes.HINSTANCE),
+        ("lpIDList", wintypes.LPVOID),
+        ("lpClass", wintypes.LPCWSTR),
+        ("hKeyClass", wintypes.HKEY),
+        ("dwHotKey", wintypes.DWORD),
+        ("hIcon", wintypes.HICON),
+        ("hProcess", wintypes.HANDLE),
+    ]
+)
+
+info = SHELLEXECUTEINFOW()
+info.cbSize = ctypes.sizeof(SHELLEXECUTEINFOW)   # a zeroed struct is a no-op, not an error
+info.fMask = SEE_MASK_NOCLOSEPROCESS
+info.lpVerb = "open"
+info.lpFile = r"C:\Windows\System32\notepad.exe"
+info.nShow = SW_SHOWNORMAL
+
+if not ctypes.windll.shell32.ShellExecuteExW(ctypes.byref(info)):
+    raise ctypes.WinError(ctypes.get_last_error())</code></pre><p><code>user32</code> (window lookup, <code>GetWindowText</code>, screen capture) has the same shape:</p><pre><code class="language-python">import ctypes
+from ctypes import wintypes
+
+user32 = ctypes.WinDLL("user32", use_last_error=True)   # stdcall
+user32.GetWindowTextLengthW.argtypes = [wintypes.HWND]
+user32.GetWindowTextLengthW.restype = ctypes.c_int</code></pre><p>Details that cost the most time when the prototype is written by hand:</p><ul><li>Use <code>ctypes.WinDLL</code> for the stdcall Win32 DLLs (<code>user32</code>, <code>shell32</code>, <code>kernel32</code>). <code>ctypes.windll</code> assumes cdecl and corrupts the stack against a real Win32 prototype.</li><li>Declare <code>argtypes</code> / <code>restype</code>. Without them ctypes defaults arguments to <code>c_int</code>, which truncates 64-bit handles.</li><li>Struct fields must come from <code>ctypes.wintypes</code> on Windows; this code is Windows-only.</li></ul><p><strong>The caveat that decides whether this works at all:</strong> <code>ctypes</code> gets through because the <em>Python process itself</em> is allowed to run and to call functions in already-loaded DLLs. It is a different path, not a defeat of the policy. If the same policy also blocks <code>python.exe</code> (AppLocker executable rules, WDAC allowlisting), this route is closed too, and the honest answer is a policy change rather than another language. On a machine that blocks more than PowerShell, check that first.</p><h2>Verification</h2><p>On the same machine, under the same security policy, all of the following were run:</p><ol><li>PowerShell <code>Add-Type</code> with a <code>user32</code> / <code>shell32</code> P/Invoke signature → blocked by policy.</li><li><code>New-Object -ComObject WScript.Shell</code> to create a shortcut → also blocked, with the message about COM object instantiation running arbitrary code.</li><li><code>mklink</code>, and forwarding the call through <code>cmd</code> → no help.</li><li>Python <code>ctypes</code> calling <code>shell32</code> (creating a <code>.lnk</code> via <code>ShellExecuteExW</code>) and <code>user32</code> (window lookup, <code>GetWindowText</code>) → returned normally, and the shortcut was created.</li></ol><p>Steps 1–2 against step 4 are the contrast that carries the lesson: same machine, same policy, same target API — the PowerShell route is blocked and the <code>ctypes</code> route works. Step 3 is recorded so the dead ends are not retried.</p><p>Applying this elsewhere: run the <code>LanguageMode</code> check first. The fix is the same, but whether the Python route is also open is machine-specific.</p><h2>Notes</h2><ul><li><strong>Scope of the evidence.</strong> The report does not record which of CLM / WDAC / AppLocker was in force, so the discrimination procedure above is the general one, not a finding about that machine. Treat the mechanism as portable and the specific policy as unknown.</li><li>The portable part is the <em>shape</em> of the block, not Windows itself: runtime C# compilation and COM instantiation are both arbitrary-code paths, so a policy that closes one closes the other and a fix that only reaches for the other one fails. Look for a path that adds no code-generation step — here, binding to a function that is already exported.</li><li><code>ctypes</code> is a standard-library module, so this adds no dependency to an existing environment.</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/powershell-add-type-blocked-use-python-ctypes-instead.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=PowerShell Add-Type blocked by policy: call the Win32 API with Python ctypes instead">Find related lessons →</a></p></div>

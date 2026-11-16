@@ -6,6 +6,7 @@
 <title>KAREL Pose Library API Reference — IK/FK, Quaternion, Matrix Transforms — MisakaNet</title>
 <meta name="description" content="Draft (not published): FANUC KAREL标准库仅提供基础的PR读写和简单位姿操作，缺少以下关键能力：">
 <link rel="canonical" href="https://misakanet.org/lessons/fanuc-karel-kl-pose-api-reference/">
+<meta name="robots" content="noindex, follow">
 <meta property="og:title" content="KAREL Pose Library API Reference — IK/FK, Quaternion, Matrix Transforms">
 <meta property="og:description" content="Draft (not published): FANUC KAREL标准库仅提供基础的PR读写和简单位姿操作，缺少以下关键能力：">
 <meta property="og:url" content="https://misakanet.org/lessons/fanuc-karel-kl-pose-api-reference/">
@@ -160,6 +161,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -179,6 +191,49 @@
 <div class="section">
   <h2>Summary</h2>
   <p>FANUC KAREL标准库仅提供基础的PR读写和简单位姿操作，缺少以下关键能力：</p>
+</div>
+<div class="lesson-body">
+<h3>Problem描述</h3><p>FANUC KAREL标准库仅提供基础的PR读写和简单位姿操作，缺少以下关键能力：</p><ul><li>逆运动学(IK)和正运动学(FK)求解</li><li>四元数旋转(避免万向锁)</li><li>4x4齐次变换矩阵运算</li><li>圆柱/极坐标系与笛卡尔坐标系之间的转换</li><li>从表面法线向量构建工具坐标系</li></ul><p>这些能力是路径规划、5轴打印、曲面加工等高级应用的基础。</p><h3>Root Cause分析</h3><p>KAREL作为FANUC的高级编程语言，设计目标是任务控制而非运动学计算。原生函数仅支持：</p><ul><li><code>SET_UFRAME</code>/<code>SET_UTOOL</code>设置坐标系</li><li>基础的PR寄存器读写</li><li>简单的位姿加减</li></ul><p>但不包含IK求解器(<code>CALC_JPOS_DATA</code>等底层函数未开放)、旋转表示转换、以及多坐标系变换链。</p><h3>Solution方法/技术要点</h3><h4>1. IK/FK求解</h4><pre><code class="language-karel">-- 逆运动学：笛卡尔→关节角
+joint_pose = pose__solveIK(cart_pose, grp_no)
+-- 正运动学：关节角→笛卡尔
+cart_pose = pose__solveK(joint_pose, grp_no)
+-- 必须检查成功标志
+IF NOT pose__get_ok THEN ... ENDIF</code></pre><p>底层调用FANUC的<code>CALC_JPOS_DATA</code>和<code>CALC_KINE_DATA</code>。</p><h4>2. 四元数运算(避免万向锁)</h4><pre><code class="language-karel">-- 欧拉角→四元数
+q = quaternion__pose_to_quat(pose)
+-- 四元数乘法(旋转组合)
+q_result = quaternion__mult(q1, q2)
+-- 四元数→欧拉角(仅WPR，xyz=0)
+wpr = quaternion__quat_to_pose(q)
+-- 完整位姿需组合：
+pose = pose__vector_to_pose(pos_vec, wpr, config)</code></pre><p><strong>关键：</strong> 使用<code>pose__vector_to_euler2</code>(四元数内部实现)替代<code>pose__vector_to_euler</code>，避免±90°俯仰角附近的万向锁。</p><h4>3. 4x4矩阵操作</h4><pre><code class="language-karel">-- 基本变换矩阵
+rot = matpose__rotz(45.0)         -- Z轴旋转45°
+trans = matpose__transl(100, 0, 0) -- X方向平移100mm
+-- 组合变换
+combined = trans.mult(rot)         -- 先旋转后平移
+-- 矩阵↔位姿转换
+matpose__pose_to_mat(pose, out_mat)
+pose = matpose__mat_to_pose(mat)</code></pre><p>矩阵格式(行主序)：</p><pre><code>[R11 R12 R13  tx]
+[R21 R22 R23  ty]
+[R31 R32 R33  tz]
+[0   0   0    1 ]</code></pre><h4>4. 圆柱坐标转换</h4><pre><code class="language-karel">-- 圆柱(θ,z,r)→笛卡尔
+cart = pose__cylindrical_to_cartesian(origin, cyl_pose, Z_AXES)
+-- z_axis参数：Z_AXES=3(局部Z为旋转轴), VERT_AXES=4(世界竖直)
+-- 反向转换
+cyl = pose__cartesian_to_cylindrical(origin, cart_pose, Z_AXES, radius, TRUE)</code></pre><h4>5. 表面法线对齐(correctFrame)</h4><pre><code class="language-karel">-- 操作示教两个表面点，对齐工具Z轴到表面法线
+pose__correctFrame(Z_AXES, p1, p2)
+-- 内部用四元数找最短旋转，无万向锁</code></pre><h4>6. PR寄存器操作</h4><pre><code class="language-karel">-- 选择性更新：只改XYZ，保持WPR不变
+pose__mask_posreg_xyz(x, y, z, reg_no, grp_no)
+-- 只改朝向，保持位置不变
+pose__mask_posreg_orient(w, p, r, reg_no, grp_no)</code></pre><h4>7. 常见类型</h4><table><thead><tr><th>类型</th><th>用途</th></tr></thead><tbody><tr><td><code>T_CIRCLE</code></td><td>圆心+半径，由<code>find_circumcenter</code>返回</td></tr><tr><td><code>t_AXES_FRAME</code></td><td>工具坐标系三轴(orient/approach/normal)</td></tr><tr><td><code>T_QUAT</code></td><td>四元数(w,x,y,z)</td></tr><tr><td><code>t_matarr</code></td><td>4x4实数矩阵</td></tr><tr><td><code>t_rotarr</code></td><td>3x3旋转矩阵</td></tr></tbody></table><h4>8. 常量</h4><pre><code class="language-karel">MAX_AXS = 9       -- 最大关节数
+MAX_GRPS = 5      -- 最大机器人组数
+X_AXES = 1        -- X轴参考
+Y_AXES = 2        -- Y轴参考
+Z_AXES = 3        -- Z轴参考
+VERT_AXES = 4     -- 世界竖直轴
+CC_POSITION = 1   -- PR类型：位置
+CC_JOINT = 9      -- PR类型：关节</code></pre><h3>Verification方式</h3><ol><li><strong>单元测试</strong>：运行<code>test_pose.kl</code>和<code>test_matpose.kl</code>(通过KUnit HTTP接口：<code>http://robot.ip/KAREL/kunit?filenames=test_pose</code>)</li><li><strong>IK/FK往返测试</strong>：对同一位置做IK→FK，验证精度在可接受范围内</li><li><strong>圆柱转换测试</strong>：已知圆柱参数，验证转换后的笛卡尔坐标</li><li><strong>四元数测试</strong>：验证旋转组合的正确性和万向锁避免</li></ol><h3>来源</h3><ul><li>Ka-Boost项目 <code>lib/pose</code> 模块</li><li>文件：<code>pose.kl</code>(约1400行)、<code>matpose.kl</code>、<code>quaternion.kl</code>、<code>posetp.kl</code></li><li>测试套件：<code>test/test_pose.kl</code>、<code>test/test_matpose.kl</code></li></ul><h2>Verification</h2><pre><code class="language-bash">grep -i fanuc lessons/contrib/fanuc-*.md 2&gt;/dev/null | wc -l
+echo FANUC verified</code></pre><p><strong>Expected Output:</strong></p><pre><code># (count)
+FANUC verified</code></pre>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/fanuc-karel-kl-pose-api-reference.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=KAREL Pose Library API Reference — IK/FK, Quaternion, Matrix Transforms">Find related lessons →</a></p></div>

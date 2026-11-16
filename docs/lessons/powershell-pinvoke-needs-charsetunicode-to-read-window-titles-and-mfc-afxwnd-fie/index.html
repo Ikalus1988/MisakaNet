@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,37 @@
 <div class="section">
   <h2>Summary</h2>
   <p>The goal was automating a broker's native Win32 trade dialog — an MFC form with code / price /</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>The goal was automating a broker's native Win32 trade dialog — an MFC form with code / price / quantity inputs. Three failures arrived in sequence on Windows 11 with PowerShell 5.1.</p><p><strong>1. <code>pip install pywinauto</code> hung.</strong> No output for more than five minutes, the pid burning roughly 340 seconds of CPU, <code>site-packages</code> still empty, no traceback, no error at the end because there was no end. The install was killed.</p><p><strong>2. Window enumeration returned unreadable text.</strong> Driving the app with <code>Add-Type</code> P/Invoke instead of pywinauto, <code>EnumWindows</code> / <code>EnumChildWindows</code> produced one-character titles (<code>"8"</code>, class <code>"#"</code>) or garbled Chinese where the app visibly shows a normal caption.</p><p><strong>3. <code>WM_SETTEXT</code> "succeeded" and nothing happened.</strong> <code>SendMessage(h, WM_SETTEXT, ...)</code> on the code, price and quantity fields returned without error, but <code>GetWindowText</code> read back <code>""</code> and nothing appeared on screen. The code field's class is <code>AfxWnd100</code>, a custom-drawn MFC control, not a real <code>Edit</code>.</p><p>The reported error text, verbatim:</p><pre><code>pip install pywinauto: no output, 340s CPU, site-packages still empty
+GetWindowTextW returns 1-char/garbled titles
+WM_SETTEXT on custom MFC AfxWnd100 field silently no-ops and GetWindowText returns ""</code></pre><h2>Root Cause</h2><p><strong>The <code>W</code> entry point is not the same thing as Unicode marshalling.</strong> <code>GetWindowTextW</code> and <code>GetClassNameW</code> were called correctly, but the <code>DllImport</code> declarations omitted <code>CharSet = CharSet.Unicode</code>. The runtime then marshals the <code>StringBuilder</code> buffer as ANSI, so the wide-character data the API writes is decoded as single-byte text: every title collapses to one character or to mojibake. Choosing the <code>W</code> suffix in the function name does not change the marshalling; the declaration does.</p><p><strong><code>AfxWnd100</code> is a custom-drawn MFC control, and <code>WM_SETTEXT</code> is not its input path.</strong> A plain <code>Edit</code> implements <code>WM_SETTEXT</code>; a custom control that draws its own content has no reason to handle that message, so the send returns success (the message was delivered) while the control discards it. "SendMessage returned" only means delivery, never that the value took. That is why the read-back was <code>""</code> with no error anywhere: the failure is a no-op, not an exception.</p><p><strong>The <code>pip install</code> hang is undiagnosed in the report.</strong> The intake records the symptom (no output, high CPU, empty <code>site-packages</code>) but no <code>pip -v</code> / <code>-vvv</code> log, no index URL and no network context, so the cause was not established — the reporter's next step was to stop depending on pywinauto and drive the app through P/Invoke directly. Treat the hang as unresolved rather than as "pywinauto is broken": it is not established whether the resolver, the wheel download or the local build was responsible.</p><h2>Solution</h2><p><strong>1. Declare Unicode marshalling on every wide-character import.</strong></p><pre><code class="language-powershell">Add-Type @"
+using System;
+using System.Text;
+using System.Runtime.InteropServices;
+public class Win32 {
+  [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+  public static extern int GetWindowTextW(IntPtr hWnd, StringBuilder text, int count);
+
+  [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+  public static extern int GetClassNameW(IntPtr hWnd, StringBuilder text, int count);
+
+  [DllImport("user32.dll")]
+  public static extern int EnumWindows(EnumProc cb, IntPtr lParam);
+  public delegate bool EnumProc(IntPtr hWnd, IntPtr lParam);
+
+  [DllImport("user32.dll")]
+  public static extern int EnumChildWindows(IntPtr parent, EnumProc cb, IntPtr lParam);
+
+  [DllImport("user32.dll")]
+  public static extern int GetDlgCtrlID(IntPtr hWnd);
+
+  [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+  public static extern IntPtr SendMessage(IntPtr hWnd, uint msg, IntPtr wParam, string lParam);
+}
+"@</code></pre><p><strong>2. Map controls by dialog-control ID, never by index or screen position.</strong></p><pre><code class="language-powershell"># Collected with EnumWindows + EnumChildWindows + GetDlgCtrlID
+# code 12005 / price 12006 / qty 12007 / submit 2010</code></pre><p>Enumeration order and pixel positions both move when the app redraws; the control ID is the hand-maintained contract the app itself uses.</p><p><strong>3. A plain <code>Edit</code> takes <code>WM_SETTEXT</code> (<code>0x000C</code>).</strong></p><pre><code class="language-powershell">[Win32]::SendMessage($priceEdit, 0x000C, [IntPtr]::Zero, "3.00") | Out-Null</code></pre><p><strong>4. A custom-drawn field (<code>AfxWnd100</code>) has to be focused like a user would focus it.</strong> Clicking the parent window is not enough — the click has to land inside the control itself:</p><pre><code class="language-powershell"># SetForegroundWindow(top) -&gt; GetWindowRect(ctrl) -&gt; SetCursorPos(center)
+# -&gt; mouse_event(0x0002) -&gt; mouse_event(0x0004) -&gt; SendKeys</code></pre><p><strong>5. Click a button by sending <code>BM_CLICK</code> (<code>0x00F5</code>) to its handle.</strong></p><pre><code class="language-powershell">[Win32]::SendMessage($submit, 0x00F5, [IntPtr]::Zero, $null) | Out-Null</code></pre><p><strong>6. When the inputs are unreadable, verify through the app's own derived values.</strong> Match an auto-populated sibling <code>Static</code> (the stock name derived from the code) to confirm the code field actually took the ticker, and compare an auto-computed total (<code>qty x price</code>). After the submit click, re-read that total: <strong>cleared means submitted; unchanged means the click did not take</strong> — usually because a modal confirmation dialog is waiting.</p><p><strong>7. A tab strip may simply not be scriptable.</strong> <code>BM_CLICK</code> on the tab buttons and the app's <code>F9</code>/<code>F10</code> hotkeys both failed; the hotkeys belong to the main frame window, not to the dialog. Read the submit button's caption (<code>Buy</code> / <code>Sell</code>) to confirm the active tab, and abort with a human instruction instead of guessing which side of the market the order went to.</p><h2>Verification</h2><p>The reporter's live check, on a broker trade client, Windows 11 + PowerShell 5.1 — not reproduced in this repository:</p><ul><li>After adding <code>CharSet = CharSet.Unicode</code>, Chinese window titles and class names came back intact and the controls mapped cleanly by <code>GetDlgCtrlID</code> (code <code>12005</code>, price <code>12006</code>, qty <code>12007</code>, submit <code>2010</code>).</li><li>A real order form was filled: the code field was clicked, the ticker typed, and the adjacent name <code>Static</code> updated to the expected stock name; <code>WM_SETTEXT</code> on price and qty then made the auto-computed amount <code>Static</code> show exactly <code>7425.00</code> = <code>2.97 x 2500</code>, confirmed by screenshot.</li><li>Submit click followed by re-reading the amount <code>Static</code> distinguishes "submitted" (cleared) from "blocked by a confirm dialog" (unchanged).</li></ul><p>The discriminating check for the marshalling half is cheap and worth running first: enumerate the same window twice, once with <code>CharSet.Unicode</code> and once without, and compare the returned caption lengths. A title of length 1 where the app shows several characters is the marshalling bug, not an empty window.</p><h2>Notes</h2><ul><li>Evidence E1: single contributor report, reproduced by the reporter on their own machine only. No broker name, no application version and no full script are recorded in the intake.</li><li>The <code>pip install pywinauto</code> hang was <strong>not</strong> diagnosed. If it reproduces, capture <code>pip install -vvv pywinauto</code> and the configured index URL before concluding anything about the package.</li><li>The no-op is the dangerous half: <code>SendMessage</code> returning success is evidence that the message was delivered, not that the control accepted it. Any automation that writes through messages should read a value back that the app itself computes, because a custom control will not echo the value.</li><li>Sibling lesson: <code>lessons/contrib/powershell-add-type-blocked-use-python-ctypes-instead.md</code> covers the case where <code>Add-Type</code> itself is blocked by policy and <code>python -c</code> with <code>ctypes</code> is the way in.</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/powershell-pinvoke-charset-unicode-window-titles-mfc-fields.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=PowerShell P/Invoke needs CharSet.Unicode to read window titles, and MFC AfxWnd fields ignore WM_SETTEXT">Find related lessons →</a></p></div>

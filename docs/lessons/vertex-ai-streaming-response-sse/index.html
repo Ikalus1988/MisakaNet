@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,99 @@
 <div class="section">
   <h2>Summary</h2>
   <p>When consuming the Vertex AI `streamGenerateContent` API over HTTP or via custom middleware, client applications frequently encounter stream truncation, deseria…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>When consuming the Vertex AI <code>streamGenerateContent</code> API over HTTP or via custom middleware, client applications frequently encounter stream truncation, deserialization failures (<code>json.JSONDecodeError: Unterminated string</code>), and multi-byte encoding corruption (<code>UnicodeDecodeError: 'utf-8' codec can't decode byte</code>). These errors trigger abruptly during large payload transfers or when streaming non-ASCII multi-byte tokens (such as CJK characters or technical Unicode symbols).</p><h2>Root Cause</h2><p>TCP packet fragmentation does not respect application-layer boundaries:</p><ol><li><strong>Multi-byte Boundary Splits</strong>: UTF-8 characters span between 1 and 4 bytes. Network read operations return arbitrary chunk boundaries that split a multi-byte sequence across two consecutive read buffers. Calling <code>chunk.decode('utf-8')</code> immediately on arbitrary chunks fails with <code>UnicodeDecodeError</code>.</li><li><strong>Incomplete JSON Frames</strong>: Server-Sent Events (SSE) delineate messages with double newlines (<code>\n\n</code>) and prefix payloads with <code>data: </code>. When payload chunks contain complex JSON objects (such as nested function call arguments), single lines can exceed socket buffer sizes. Attempting to parse lines before the full event delimiter arrives leads to syntax errors.</li><li><strong>Control Frames and Ping Keep-Alives</strong>: Upstream reverse proxies and Google Cloud load balancers transmit empty lines (<code>\r\n</code>) and comment frames (<code>: ping</code>) to prevent HTTP idle timeouts. Parsers without state validation crash when encountering these control frames.</li></ol><h2>Fix</h2><p>Implement a streaming processor using an incremental decoder (<code>codecs.getincrementaldecoder</code>) combined with an event boundary accumulator.</p><pre><code class="language-python">import codecs
+import json
+from typing import Any, Dict, Generator, Iterator
+
+
+def process_vertex_sse_stream(
+    byte_chunks: Iterator[bytes],
+) -&gt; Generator[Dict[str, Any], None, None]:
+    """Decodes raw SSE byte stream from Vertex AI into parsed JSON payloads.
+
+    Args:
+        byte_chunks: An iterator yielding raw byte chunks from the HTTP response.
+
+    Yields:
+        Parsed dictionary corresponding to each complete SSE data payload.
+
+    Raises:
+        ValueError: If an event line fails JSON parsing after boundary assembly.
+    """
+    decoder = codecs.getincrementaldecoder("utf-8")(errors="strict")
+    line_buffer = ""
+
+    for chunk in byte_chunks:
+        line_buffer += decoder.decode(chunk, final=False)
+        while "\n" in line_buffer:
+            line, line_buffer = line_buffer.split("\n", 1)
+            line = line.strip("\r")
+
+            if not line or line.startswith(":"):
+                continue
+
+            if line.startswith("data:"):
+                payload_str = line[5:].strip()
+                if not payload_str:
+                    continue
+                if payload_str == "[DONE]":
+                    break
+                parsed = json.loads(payload_str)
+                yield parsed
+
+    trailing = decoder.decode(b"", final=True)
+    if trailing:
+        line_buffer += trailing
+        line = line_buffer.strip("\r")
+        if line.startswith("data:"):
+            payload_str = line[5:].strip()
+            if payload_str and payload_str != "[DONE]":
+                yield json.loads(payload_str)
+
+
+def extract_candidate_text(payload: Dict[str, Any]) -&gt; str:
+    """Extracts text content from a Vertex AI GenerateContentResponse dictionary.
+
+    Args:
+        payload: Decoded response dictionary from the Vertex AI API.
+
+    Returns:
+        Concatenated text string contained within candidate parts.
+    """
+    candidates = payload.get("candidates", [])
+    if not candidates:
+        return ""
+    parts = candidates[0].get("content", {}).get("parts", [])
+    return "".join(part.get("text", "") for part in parts if "text" in part)</code></pre><h2>Verification</h2><p>Run the verification script to validate handling of split multi-byte characters and segmented JSON payloads:</p><pre><code class="language-bash">python3 -c "
+import codecs
+import json
+
+def test_stream_assembly():
+    decoder = codecs.getincrementaldecoder('utf-8')(errors='strict')
+    buffer = ''
+    emitted = []
+
+    test_json = json.dumps({'candidates': [{'content': {'parts': [{'text': '测试流式'}]}}]})
+    full_line = f'data: {test_json}\n\n'
+    raw_bytes = full_line.encode('utf-8')
+
+    chunks = [raw_bytes[:7], raw_bytes[7:18], raw_bytes[18:]]
+
+    for chunk in chunks:
+        buffer += decoder.decode(chunk, final=False)
+        while '\n' in buffer:
+            line, buffer = buffer.split('\n', 1)
+            line = line.strip('\r')
+            if line.startswith('data:'):
+                data = json.loads(line[5:].strip())
+                emitted.append(data['candidates'][0]['content']['parts'][0]['text'])
+
+    assert emitted == ['测试流式']
+
+test_stream_assembly()
+"</code></pre>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/vertex-ai-streaming-response-sse.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Vertex AI Streaming: Robust SSE Chunk Assembly and Buffer Handling">Find related lessons →</a></p></div>

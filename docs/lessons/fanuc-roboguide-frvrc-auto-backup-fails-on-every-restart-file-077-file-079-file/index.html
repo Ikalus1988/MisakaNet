@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,18 @@
 <div class="section">
   <h2>Summary</h2>
   <p>A FANUC ROBOGUIDE virtual robot controller (FRVRC) tries to auto-backup on every</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>A FANUC ROBOGUIDE virtual robot controller (FRVRC) tries to auto-backup on every startup and always fails. Each cold start leaves a fixed triplet in <code>&lt;workcell&gt;/Robot_1/logfile.txt</code>:</p><pre><code>FILE-077 Auto backup start (FRA:\)
+FILE-079 Error Auto backup
+FILE-031 Illegal path name</code></pre><p>The signal is the <strong>group of three</strong>, with the target device shown as <code>FRA:\</code> inside <code>FILE-077</code>. One cold start in the reported baseline produced <code>F077=1 / F079=1 / F031=1</code>.</p><p>The failure is not just noise. Retrying the backup amplifies socket pressure, and when a separate terminal-security injection conflict is also present on the host (see <code>fanuc-rgcore-hang-endpoint-security-injection</code>), the failed backup is followed by a PMON → TP reconnect storm and a <code>frsock.dll</code> crash.</p><h2>Root Cause</h2><p>FANUC option <strong>J545 (Automatic Backup)</strong> is controlled by the system variable <code>[<em>SYSTEM</em>]$AUTOBACKUP_T</code>. Its <code>$DEVICE</code> field is set to <code>FRA:</code>, and that target is <strong>not a legal path</strong> in the current virtual-controller configuration — hence <code>FILE-031 Illegal path name</code>. Auto backup starts (<code>FILE-077</code>), cannot open the destination, and aborts (<code>FILE-079</code>).</p><p>The structure is readable from the product media definition file, so it does not have to be guessed:</p><pre><code>&lt;FRVRC Media&gt;/&lt;version&gt;/product/j545/tpatbdef.sv
+
+[*SYSTEM*]$AUTOBACKUP_T
+  ├─ $ENABLE      ← master switch
+  ├─ $DEVICE      ← backup destination device, default FRA:
+  ├─ $TIME / $INTERVAL
+  ├─ $OFF_COUNT / $DEL_LOG / $LOG / $LAST_ATB
+  └─ ...</code></pre><p>The UI string file <code>product/j545/tpfatbeg.tx</code> confirms the on-controller options: <code>Auto Backup</code>, <code>DISABLE</code>/<code>ENABLE</code>, and a <code>[ TYPE ]</code> selector for the destination device (<code>FR A:</code> / <code>Mem card (MC)</code> / <code>USB Disk (UD1)</code>).</p><p><strong>Do not confuse this with a missing-file cause.</strong> Another FANUC experience blames backup failure on a missing <code>PNIO.SV</code>. Here <code>PNIO.SV</code> is also absent, but the actual error is an illegal <em>path</em>, not a missing <em>file</em>. The two failure modes have different evidence and must not be merged.</p><h2>Solution</h2><p>Pick one of the two fixes.</p><p><strong>A. Disable automatic backup (recommended — smallest change).</strong></p><p>Set <code>[<em>SYSTEM</em>]$AUTOBACKUP_T.$ENABLE</code> to <code>FALSE</code> / <code>OFF</code>. Two ways in:</p><ol><li><strong>ROBOGUIDE workcell tree →「Variables」node</strong> — edit the system variable directly and never touch the teach pendant. Use this path when pendant operation itself is a known crash trigger.</li><li>Teach pendant: <code>MENU</code> → <code>6 SETUP</code> → <code>Auto Backup</code> → <code>DISABLE</code>.</li></ol><p><strong>B. Point it at a legal destination.</strong></p><p>Change <code>$DEVICE</code> from <code>FRA:</code> to an available device. In the UI, <code>[ TYPE ]</code> switches to <code>Mem card (MC)</code> or <code>USB Disk (UD1)</code>. Whether MC/UD1 are actually usable on a virtual controller has to be verified per setup.</p><h2>Verification</h2><p>Failing state — the triplet is present with a non-zero count:</p><pre><code class="language-powershell">Select-String -Path ".\Robot_1\logfile.txt" -Pattern "FILE-077|FILE-079|FILE-031"</code></pre><p>Fixed state:</p><ul><li>In the same <code>logfile.txt</code>, the <code>FILE-077</code> / <code>FILE-079</code> / <code>FILE-031</code> counts <strong>stop growing</strong> after a restart (they stay at their previous value).</li><li>If <code>$DEVICE</code> was changed, the device name inside the <code>FILE-077</code> parentheses changes and is no longer followed by <code>FILE-079</code> / <code>FILE-031</code>.</li><li>The variable browser shows <code>[<em>SYSTEM</em>]$AUTOBACKUP_T.$ENABLE</code> as <code>FALSE</code> / <code>OFF</code>.</li></ul><h2>Notes</h2><ul><li>The definition file and UI strings live under <code>&lt;FRVRC Media&gt;/&lt;version&gt;/product/j545/</code> (<code>tpatbdef.sv</code>, <code>tpfatbeg.tx</code>); read them rather than guessing the variable layout.</li><li>Reported against FRVRC V9.40 / ROBOGUIDE V9.40179.0.4.</li><li>Related: <code>fanuc-backup-restore-guide</code> (backup types) and <code>fanuc-rgcore-hang-endpoint-security-injection</code> (the injection-conflict failure mode that this backup failure can precede).</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/fanuc-frvrc-auto-backup-illegal-path.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=FANUC ROBOGUIDE FRVRC auto backup fails on every restart — FILE-077 / FILE-079 / FILE-031">Find related lessons →</a></p></div>

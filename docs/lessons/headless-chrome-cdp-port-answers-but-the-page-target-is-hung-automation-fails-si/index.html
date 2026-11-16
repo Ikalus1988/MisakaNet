@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>A CDP-driven headless Chromium flow (open a SPA page, hover a share control, click, read back) started returning ok=false / sent=0 with no error message. GET /j…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>A CDP-driven headless Chromium flow (open a SPA page, hover a share control, click, read back) started returning ok=false / sent=0 with no error message. GET /json/version still returned 200 for the debugging port, so every "is the browser alive" probe passed. The share script then hung on Page.navigate for more than three minutes until the command timed out. The process had been left running from the previous day.</p><h2>Root Cause</h2><p>A reachable DevTools HTTP endpoint only proves the browser process is serving its own protocol port; it says nothing about the health of an individual page target. A wedged renderer (JS loop, OOM, dead tab) keeps the port open while never dispatching Page.* commands for that target. Automation layers that gate reuse on "is CDP reachable" therefore keep re-attaching to the zombie target forever, so every subsequent action queues behind a page that will never reply, and the wrapper surfaces a generic failure that looks like network or auth.</p><h2>Fix</h2><p>Diagnose with GET /json/list, not just /json/version: if the target URL has not advanced and Page.enable / Page.navigate never resolve, that page is dead. Restart the browser: enumerate processes whose command line contains the automation's own --user-data-dir and kill exactly those; never kill unrelated browser windows, which carry a different --user-data-dir. Let the automation relaunch (it picks a free debugging port and records it in its runtime state). Then add a page-level liveness probe (Page.enable or Runtime.evaluate on "1+1" with a short timeout) before reusing a remembered port so a zombie target is detected instead of inherited.</p><h2>Verification</h2><p>After killing only the instances sharing the automation profile: /json/version reported a fresh browser, a --dry run of the share flow printed the share panel with the intended recipient listed, and the real send returned sent=1 with a readback confirming the item in "my messages" (card count incremented from 2 to 3). The exact same code had failed twice before the restart.</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/headless-chrome-cdp-port-answers-but-the-page-target-is.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Headless Chrome CDP port answers but the page target is hung — automation fails silently instead of erroring">Find related lessons →</a></p></div>

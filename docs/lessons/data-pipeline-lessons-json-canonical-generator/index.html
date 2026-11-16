@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,28 @@
 <div class="section">
   <h2>Summary</h2>
   <p>改 `data/lessons.json` 时如果误用 `misakanet-index.py` 重新生成：</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>改 <code>data/lessons.json</code> 时如果误用 <code>misakanet-index.py</code> 重新生成：</p><ul><li>新格式带 <code>evidence_level/trust_score</code> 字段，但<strong>丢失</strong> <code>preview/triggers/verified</code> 等老字段。</li><li>规范的生成器是 <code>scripts/update_lessons_json.py</code>（由 <code>.github/workflows/update-lessons.yml</code> 每日 0 点 UTC+8 自动跑）。</li><li>几小时内 <code>update-lessons.yml</code> 会把 <code>data/lessons.json</code> 打回旧格式（无 evidence 字段）。</li><li>加上 <code>.github/workflows/build-feed.yml</code> 每 3 小时 <code>cp data/lessons.json docs/data/lessons.json</code>，会把 <code>docs/data/</code> 也覆盖成旧格式。</li><li>线上搜索页的 evidence 统计（E3+/E4、trust_score）被静默回滚为全 E0，且两份 JSON 不再同构（317 vs 315）。</li></ul><h2>Error</h2><pre><code># 现象 1：evidence_level 字段消失
+$ python3 -c "import json; d=json.load(open('data/lessons.json')); print(d[0].get('evidence_level','MISSING'))"
+MISSING
+
+# 现象 2：两份 JSON 不同构
+$ diff &lt;(python3 -c "import json; print(len(json.load(open('data/lessons.json'))))") \
+       &lt;(python3 -c "import json; print(len(json.load(open('docs/data/lessons.json')))") || echo "MISMATCH"
+MISMATCH</code></pre><h2>What was tried</h2><p>先用 <code>misakanet-index.py</code> 重新生成 lessons.json（只改了消费方搜索页 + 一个生成器，没找到规范生成器）。</p><h2>Solution</h2><p><strong>改数据文件前先 grep <code>.github/workflows</code> 找规范生成器：</strong></p><pre><code class="language-bash"># 1. 找谁负责生成 lessons.json
+grep -rn "lessons.json" .github/workflows/ scripts/
+
+# 2. 确认当前线上格式
+python3 -c "import json; d=json.load(open('data/lessons.json')); print(d[0].keys())"</code></pre><p><strong>修复方案（把 evidence 字段加进规范生成器）：</strong></p><ol><li>在 <code>scripts/update_lessons_json.py</code> 写入 <code>evidence_level</code>（frontmatter 优先 + 内容推断）、<code>evidence_source</code>、<code>trust_score</code> 三个新字段。</li><li>同时保留 <code>preview/triggers/verified</code> 字段，供 <code>mcp_preflight.py</code> / <code>lesson_reuse_agent.py</code> 消费。</li><li>让 <code>data/</code> 与 <code>docs/data/</code> 两份 JSON 重新生成同构。</li><li>让 <code>build-feed.yml</code> 不再覆盖 <code>docs/data/lessons.json</code>（或至少用新格式覆盖）。</li></ol><p><strong>为什么必须用 <code>update_lessons_json.py</code>：</strong></p><ul><li><code>update_lessons_json.py</code> 走 frontmatter 解析 + 字段映射，兼容 E0–E4 证据等级。</li><li><code>misakanet-index.py</code> 是早期索引脚本，不写 evidence 字段，会被下次 <code>update-lessons.yml</code> 跑回旧格式。</li></ul><h2>Verification</h2><pre><code class="language-bash"># 两份 JSON 必须同构 + 同长 + 含 evidence_level
+python3 -c "import json; d=json.load(open('data/lessons.json')); print(len(d), d[0].get('evidence_level'))"
+python3 -c "import json; d=json.load(open('docs/data/lessons.json')); print(len(d), d[0].get('evidence_level'))"
+
+# 相关测试
+python3 -m pytest tests/test_add_provenance.py tests/test_intake_classify.py tests/test_clean_pipeline.py -x
+
+# 线上统计（应有非零 E3+/E4）
+curl -sS https://misakanet.org/api/lessons | python3 -c "import json,sys,collections; print(collections.Counter(l.get('evidence_level','') for l in json.load(sys.stdin)))"</code></pre><p><strong>Expected Output:</strong> <code>317 E0</code> (或类似数字，核心是有 E3/E4 项)，两份 JSON 行数一致。</p><h2>Related经验</h2><ul><li>任何改 <code>data/lessons.json</code> 的 PR 都会被 <code>update-lessons.yml</code> 在下次调度时回滚，除非同步改 <code>scripts/update_lessons_json.py</code>。</li><li><code>docs/data/lessons.json</code> 是 <code>data/lessons.json</code> 的镜像，只读副本，由 <code>build-feed.yml</code> 每 3 小时同步。</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/data-pipeline-lessons-json-canonical-generator.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=数据管道 lessons.json 必须用规范生成器 update_lessons_json.py">Find related lessons →</a></p></div>

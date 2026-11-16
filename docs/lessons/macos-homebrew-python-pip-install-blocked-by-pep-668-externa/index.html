@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,32 @@
 <div class="section">
   <h2>Summary</h2>
   <p>> Author: <user></p>
+</div>
+<div class="lesson-body">
+<blockquote><p>Author: &lt;user&gt; Created: 2026-07-09 Status: draft Domain: devops Source: Real incident, running <code>python3 validate.py --strict</code> on macOS with Homebrew Python 3.14</p></blockquote><h2>Problem</h2><p>On macOS with Homebrew-installed Python (3.12+), <code>pip install</code> is blocked by PEP 668:</p><pre><code>$ pip3 install pyyaml
+error: externally-managed-environment
+
+× This environment is externally managed
+╰─&gt; To install Python packages system-wide, try brew install
+    xyz, where xyz the Homebrew formulae.
+
+    If you wish to install a Python library that's not in Homebrew,
+    use a virtual environment:
+    python3 -m venv path/to/venv
+    source path/to/venv/bin/activate
+    python3 -m pip install xyz</code></pre><p><strong>Root cause</strong>: Homebrew Python includes an <code>EXTERNALLY-MANAGED</code> marker file (PEP 668) that prevents system-wide pip installs to protect the Homebrew-managed Python environment from corruption.</p><h2>Diagnostic</h2><pre><code class="language-bash"># Check if your Python has the marker
+python3 -c "import sysconfig; print(sysconfig.get_paths()['stdlib'])"
+# Look for EXTERNALLY-MANAGED file in that directory
+
+# Confirm it's Homebrew Python
+which python3
+# Expected: /opt/homebrew/bin/python3 (Apple Silicon) or /usr/local/bin/python3 (Intel)</code></pre><h2>Solutions (ranked)</h2><h3>1. Virtual environment (recommended)</h3><pre><code class="language-bash">python3 -m venv .venv
+source .venv/bin/activate
+pip install pyyaml</code></pre><h3>2. pipx (for CLI tools)</h3><pre><code class="language-bash">brew install pipx
+pipx install some-tool</code></pre><h3>3. User install with override (quick fix, not ideal)</h3><pre><code class="language-bash">pip3 install --user --break-system-packages pyyaml</code></pre><p><strong>Warning</strong>: <code>--break-system-packages</code> bypasses the safety check. Use only for quick debugging, not in production.</p><h3>4. uv (fastest, modern)</h3><pre><code class="language-bash">brew install uv
+uv pip install pyyaml  # respects venvs, no PEP 668 issue</code></pre><h2>Prevention</h2><ul><li>Always use a virtual environment for project dependencies</li><li>Add <code>.venv/</code> to <code>.gitignore</code></li><li>For CI: ensure the CI environment uses a venv or container</li></ul><h2>Key Insight</h2><p>PEP 668 is <strong>not a bug</strong> — it's a protection mechanism. The correct fix is always to use a venv. The <code>--break-system-packages</code> flag is an escape hatch, not a solution.</p><h2>Related</h2><ul><li>lesson-07: Ubuntu WSL Python venv Missing pip (similar PEP 668 context, different OS)</li><li><a href="https://peps.python.org/pep-0668/">PEP 668 spec</a></li></ul><h2>Verification</h2><pre><code class="language-bash">python3 --version
+python3 -c 'import sys; print(sys.version)'</code></pre><p><strong>Expected Output:</strong></p><pre><code>Python 3.
+3.</code></pre>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/macos-homebrew-python-pip-install-blocked-by-pep-668-externa.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=macOS Homebrew Python: pip install Blocked by PEP 668 externally-managed-environment">Find related lessons →</a></p></div>

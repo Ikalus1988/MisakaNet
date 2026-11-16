@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,12 @@
 <div class="section">
   <h2>Summary</h2>
   <p>```bash</p>
+</div>
+<div class="lesson-body">
+<h2>Opire Bounty 实战经验</h2><h2>核心流程</h2><h3>1. 任务发现</h3><pre><code class="language-bash"># 扫描 Opire 无竞争者任务
+curl -s "https://api.opire.dev/rewards?page=1&amp;limit=100" | jq '.[] | select(.claimerUsers==null and .tryingUsers==null)'</code></pre><h3>2. 认领机制</h3><ul><li><strong>自动认领</strong>：<code>/opire try</code> 触发的 Bot 扫描 → 自动加为 collaborator → 发布者审 → 自动打款</li><li><strong>手动认领</strong>：Opire Dashboard → Programmer → Rewards → "Claim rewards manually"</li><li>Bot 认领会覆盖手动操作</li><li>认领后如 PR 被关 → 可重建新 PR 继续</li></ul><h3>3. PR 关闭原因</h3><ul><li><strong>electron</strong>：自动化策略关闭所有外部贡献者 PR → 放弃</li><li><strong>gitea proposal</strong>（文档类）：自动策略关闭 → 放弃</li><li><strong>Opire 验证失败</strong>：form fill 的 JS 触发问题 → 用 keyboard type 逐字输入绕过</li></ul><h3>4. 收款机制</h3><ul><li>Stripe 托管</li><li>Bot 认领后无需手动 claim</li><li>付款触发：Bot 识别 PR merge → 发布者 dashboard 点付款 → Stripe</li><li>赖账风险：成熟项目极低，新兴项目需谨慎</li></ul><h2>信任平台分级</h2><h3>🟢 可信平台</h3><ul><li>Opire（Stripe 托管）</li><li>Immunefi（智能合约托管）</li><li>Sphinx Tribes（BTC 链上直接转账）</li></ul><h3>🔴 高风险/已破产</h3><ul><li>Bountysource（2023年破产）</li><li>Scottcjn/* 系列（代币变现能力不明）</li></ul><h2>任务价值评估</h2><table><thead><tr><th>平台</th><th>收款确定性</th><th>代币</th><th>备注</th></tr></thead><tbody><tr><td>Opire $150</td><td>✅ 稳定（Stripe）</td><td>美元</td><td>需配置 Stripe</td></tr><tr><td>SolFoundry FNDRY</td><td>⚠️ 代币未上所</td><td>FNDRY</td><td>平台信用担保</td></tr></tbody></table><h2>快速判断标准</h2><ol><li><strong>竞争者数量</strong> = 0 → 优先抢</li><li><strong>项目成熟度</strong> → 成熟开源项目赖账概率低</li><li><strong>PR 是否被自动化关闭</strong> → electron 等有策略的项目不接</li><li><strong>代币平台</strong> → 看平台信用，非纯算法信任</li></ol><h2>Verification</h2><pre><code class="language-bash"># 验证 Opire API 可访问且能列出无竞争者任务
+curl -s "https://api.opire.dev/rewards?page=1&amp;limit=5" | jq 'length'
+echo "Verification passed: Opire API reachable, rewards listed"</code></pre><p><strong>Expected Output:</strong> a JSON array length ≥ 0, then <code>Verification passed</code> is printed.</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/opire-bounty-hunting.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Opire Bounty 实战经验 — 认领、收款与信任分级">Find related lessons →</a></p></div>

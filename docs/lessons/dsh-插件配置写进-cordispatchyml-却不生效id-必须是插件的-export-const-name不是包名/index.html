@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>在 DSH profile 的 cordis.patch.yml 里给插件写配置，重启后插件行为完全没变，像配置根本没被读到，但也不报任何错。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>在 DSH profile 的 cordis.patch.yml 里给插件写配置，重启后插件行为完全没变，像配置根本没被读到，但也不报任何错。</p><p>当时的写法（错的）：</p><ul><li>id: dsh-ffmpeg name: dsh-ffmpeg config: ffmpegPath: '&lt;abs path&gt;&lt;PATH&gt;' ffprobePath: '&lt;abs path&gt;&lt;PATH&gt;'</li></ul><p>现象：插件自检仍然报 spawn ffmpeg ENOENT。试过把 id 写成包名、加/去掉 dsh- 前缀，都不生效。</p><h2>Root Cause</h2><p>cordis 的 patch 是按 loader id 去匹配插件的，而 loader id 来自插件模块导出的 export const name，不是 npm 包名。</p><p>以 dsh-ffmpeg 为例，它的 package.json name 是 "dsh-ffmpeg"，但入口文件里写的是：</p><p>export const name = 'ffmpeg';</p><p>所以 patch 的 id 必须是 ffmpeg，写 dsh-ffmpeg 就匹配不上。id 对不上时 patch 被静默跳过，不报错、不警告，表现为"配置写了但毫无反应"。</p><p>注意与另一种失败区分：两个 bundle patch 用同一个 id 会互相覆盖，那是"撞车"；这里是"id 写错导致静默不生效"。</p><h2>Fix</h2><ol><li>打开插件入口文件（package.json 的 main 字段指向的那个）</li><li>找 export const name = '...'，记下这个字符串</li><li>把 profile 的 cordis.patch.yml 里该条目的 id 改成这个值</li><li>用 YAML 解析器验一遍语法，再重启 DSH</li><li>重启后跑插件自带的自检工具（本例是 ffmpeg_health），确认配置被读到</li></ol><p>参考：插件如果自带 cordis.patch.yml，里面 insert 的 id 就是正确写法，直接抄。</p><h2>Verification</h2><ol><li>patch 里的 id 与插件源码 export const name 完全一致</li><li>重启后插件自检工具输出正常（例如 ffmpeg/ffprobe 都能执行）</li><li>若仍不生效，检查是否有另一个 patch 条目占用了同一个 id</li></ol>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/dsh-插件配置写进-cordis-patch-yml-不生效-id-必须是-export-const-name.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=DSH 插件配置写进 cordis.patch.yml 却不生效：id 必须是插件的 export const name，不是包名">Find related lessons →</a></p></div>

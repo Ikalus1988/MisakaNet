@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,33 @@
 <div class="section">
   <h2>Summary</h2>
   <p>批量抓取前不知道哪些论坛可达。盲目尝试浪费时间，需要系统化的可达性测试。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>批量抓取前不知道哪些论坛可达。盲目尝试浪费时间，需要系统化的可达性测试。</p><h2>Root Cause</h2><p>不同论坛有不同的反爬策略（Cloudflare、登录墙、API 限制），网络环境也影响可达性（GFW、DNS 污染）。</p><h2>Solution</h2><h3>三级测试流程</h3><pre><code class="language-bash"># Level 1: HTTP 状态码
+for site in "news.ycombinator.com" "dev.to" "lobste.rs" "juejin.cn" "reddit.com"; do
+  code=$(curl -sL --max-time 5 -o /dev/null -w "%{http_code}" "https://$site/" -H "User-Agent: Mozilla/5.0")
+  echo "$site: $code"
+done
+
+# Level 2: API 可用性
+curl -sL --max-time 8 "https://hn.algolia.com/api/v1/search?query=test&amp;hitsPerPage=1" | head -100
+curl -sL --max-time 8 "https://dev.to/api/articles?per_page=1" -H "User-Agent: Mozilla/5.0" | head -100
+curl -sL --max-time 8 "https://lobste.rs/hottest.json" | head -100
+
+# Level 3: Playwright 渲染
+node -e "
+const { chromium } = require('playwright');
+(async () =&gt; {
+  const browser = await chromium.launch({ headless: true });
+  const page = await browser.newPage();
+  await page.goto('https://target-site.com', { waitUntil: 'domcontentloaded', timeout: 15000 });
+  await page.waitForTimeout(3000);
+  const text = await page.evaluate(() =&gt; document.body.innerText.substring(0, 500));
+  console.log(text);
+  await browser.close();
+})().catch(e =&gt; console.error(e.message));
+"</code></pre><h3>可达性分类</h3><table><thead><tr><th>分类</th><th>HTTP Code</th><th>API</th><th>Playwright</th><th>处理方式</th></tr></thead><tbody><tr><td>完全可达</td><td>200</td><td>✅</td><td>✅</td><td>优先用 API</td></tr><tr><td>API 可达</td><td>200</td><td>✅</td><td>—</td><td>用 API</td></tr><tr><td>爬虫可达</td><td>200</td><td>❌</td><td>✅</td><td>用 Playwright</td></tr><tr><td>反爬阻断</td><td>403/429</td><td>❌</td><td>❌</td><td>需要代理或绕过</td></tr><tr><td>网络阻断</td><td>000/timeout</td><td>❌</td><td>❌</td><td>需要代理</td></tr><tr><td>需登录</td><td>200</td><td>❌</td><td>需登录</td><td>提取 cookie 或跳过</td></tr></tbody></table><h3>常见阻断模式</h3><table><thead><tr><th>模式</th><th>诊断</th><th>解决</th></tr></thead><tbody><tr><td>GFW SNI 阻断</td><td>TLS 握手超时</td><td>代理</td></tr><tr><td>Cloudflare</td><td>403 + challenge page</td><td>Playwright + 等待</td></tr><tr><td>API 限流</td><td>429 Too Many Requests</td><td>降低频率</td></tr><tr><td>登录墙</td><td>200 但内容为空</td><td>提取浏览器 cookie</td></tr></tbody></table><h2>Verification</h2><pre><code class="language-bash">for site in "news.ycombinator.com" "dev.to" "lobste.rs" "juejin.cn" "reddit.com"; do
+echo "Verification passed: fix command exited 0"</code></pre><p><strong>Expected Output:</strong> command completes without error, then <code>Verification passed</code> is printed. (Checks: <code>for site in news.ycombinator.com dev.to lobste.rs juejin.cn reddit.com; do</code>)</p><h2>Notes</h2><ul><li>先测试可达性，再写抓取逻辑</li><li>Reddit/SO/V2EX 在中国大陆被墙，不要浪费时间尝试</li><li>Source: practical-experience</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/session-lesson-2-forum-accessibility-testing.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Forum Accessibility Testing — Systematic Reachability Check">Find related lessons →</a></p></div>

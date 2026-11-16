@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>把一个跑约 4 分钟的扫描脚本丢到后台执行，顺手接了 `| tail` 想只看结尾：</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>把一个跑约 4 分钟的扫描脚本丢到后台执行，顺手接了 <code>| tail</code> 想只看结尾：</p><pre><code class="language-bash">node long_sweep.mjs 2&gt;&amp;1 | tail -12   # run_in_background</code></pre><p>结果：</p><ol><li><strong>输出文件全程 0 字节</strong>——<code>tail</code> 要等上游关闭才吐内容，中途没有任何进度</li><li>更糟的是：它看起来「在跑」，实际进程早已退出。我去查 node 进程列表，发现<strong>没有任何今天启动的进程</strong>，才知道它根本没活</li><li>同一时期另一次：<code>npm run gate 2&gt;&amp;1 | tee log</code> 后台跑，任务通知报 <strong>exit code 0</strong>，翻日志正文才发现是 <code>❌ release 层未通过</code>——<strong><code>tee</code> 的退出码盖住了 npm 的</strong>，失败被洗成成功</li></ol><p>两次都是「监控通道自己骗了自己」：一次把死的说成活的，一次把红的说成绿的。</p><h2>Root Cause</h2><p><strong>管道里的每一段都会改写退出码与输出时序</strong>，而后台任务的观察者只拿到管道末端：</p><ul><li><code>cmd | tail -N</code>：<code>tail</code> 缓冲到 EOF 才输出 → 中途无进度；且 <code>tail</code> 的退出码是 0，与 <code>cmd</code> 无关</li><li><code>cmd | tee log</code>：<code>tee</code> 的退出码是 0 → 失败被掩盖（除非 <code>set -o pipefail</code>）</li><li>后台执行时没有 TTY，无法靠「感觉」发现异常</li></ul><p>监控判据被<strong>最弱的那一环</strong>定义了，而不是被被测对象定义。</p><h2>Fix</h2><ol><li><strong>后台任务不要接管道</strong>：直接 <code>cmd &gt; log 2&gt;&amp;1</code>，让退出码与输出都来自被测对象</li><li><strong>要观察就用无缓冲过滤</strong>：<code>grep --line-buffered</code> / <code>awk '{...; fflush()}'</code>；<strong>别用 <code>tail</code>/<code>head</code> 做进度观察</strong></li><li><strong>管道必须 <code>set -o pipefail</code></strong>，让失败能传到最外层</li><li><strong>判据读日志正文，不读退出码</strong>：<code>grep -q "层全绿"</code> 这类<strong>结论行</strong>比 <code>$?</code> 可靠</li><li><strong>静默 ≠ 正常</strong>：输出长期为空、进程列表里找不到对应 PID，都要当成异常信号去查</li></ol><h2>Verification</h2><ol><li>故意让脚本失败 → 后台任务的通知<strong>必须</strong>显示非零退出码（验证 <code>pipefail</code> 生效）</li><li>跑一个长任务 → 输出文件<strong>必须</strong>在运行中持续增长（验证无缓冲）</li><li>杀掉进程模拟挂死 → 观察手段<strong>必须</strong>能发现（而不是显示 0 字节却以为在跑）</li></ol><p>一句话判据：<strong>后台任务的「成功」必须由被测对象的退出码 + 日志结论行共同证明， 不能由管道末端工具的退出码代替。</strong></p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/problem-把一个跑约-4-分钟的扫描脚本丢到后台执行顺手接了-tail.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=后台跑长脚本接 | tail：输出文件 0 字节，进度全丢">Find related lessons →</a></p></div>

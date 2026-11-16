@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>想给某仿真/工程软件的「系统选项」做自动化变更，直接改配置文件后发现**只改了一层**：运行时认为已变更（重启后配置被读回并保留），但工程主配置里还是旧值。结果是两处状态不一致——运行时按新选项跑，工程界面/下次打开仍显示旧选项。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>想给某仿真/工程软件的「系统选项」做自动化变更，直接改配置文件后发现<strong>只改了一层</strong>：运行时认为已变更（重启后配置被读回并保留），但工程主配置里还是旧值。结果是两处状态不一致——运行时按新选项跑，工程界面/下次打开仍显示旧选项。</p><p>实测现场（报料者描述）：某离线仿真软件的选项状态存在两个层级。</p><ol><li><strong>工程层</strong>：工作单元主配置（序列化二进制），记录工程认为该机器人有哪些选项。</li><li><strong>运行时层</strong>：虚拟控制器的选项清单与密钥文件（纯 ASCII 文本，定宽对齐），控制器引导时读取。</li></ol><p>直接编辑 ASCII 文本只改了运行时层，工程层主配置未同步。而且这两个文件会在控制器启动时被<strong>重写</strong>——重写时保留了手工改的值，说明运行时层确实认了；但工程层完全不知道。</p><p>报料者未给出：软件名称与版本、两层文件的路径、权威清单的生成命令，需复现确认。</p><h2>Root Cause</h2><p>选项这类「配置」在带虚拟控制器的工程软件里，往往<strong>同时存在工程态与运行态</strong>。厂商提供的 GUI 向导会一次性写两层；绕过 GUI 直接改文件，就只能碰到其中一层。</p><p>更隐蔽的是：<strong>被改的那一层会「看起来成功」</strong>——配置文件被读回、值被保留、相关功能也能产出数据。这会让验证停留在「我改的文件还在」，从而漏掉另一层不同步。只有去看工程层的主配置，才会发现不一致。</p><p>所以真正的根因不是「改错了文件」，而是<strong>验收判据选错了</strong>：拿「我改的那份文件仍有新值」当成功，而它恰恰是本次操作唯一必然成立的事实。</p><h2>Solution</h2><p>改选项前先摸清状态分几层、各在哪：</p><table><thead><tr><th>层</th><th>典型形态</th><th>能否直接改</th></tr></thead><tbody><tr><td>工程/项目层</td><td>序列化主配置（二进制，含选项编码）</td><td>建议不改，走厂商 GUI</td></tr><tr><td>运行时/控制器层</td><td>选项清单 + 密钥文件（常为纯文本、定宽对齐）</td><td>可改，但要字节级精确替换保留对齐</td></tr></tbody></table><p>配套三条：</p><ol><li><strong>验证要看「最终生效清单」，不是「我改的文件」</strong>。多数系统有一份权威清单（如导出的配置摘要里带「特性名 + 订购号」两列）。以那一列为准，而不是以手改的文件是否还在为准。</li><li><strong>区分「运行时生效」与「工程一致」两种验收</strong>。只满足前者时必须明说，否则下次别人打开工程会看到旧状态。</li><li><strong>改定宽对齐的文本配置必须字节级替换</strong>：字段按定宽空格填充，用普通文本编辑或正则易破坏对齐，导致解析失败。先 dump 原始字节确认格式，再做精确替换，改完核对文件字节数不变。</li></ol><h2>Verification</h2><ul><li>改完后取一份<strong>新生成的</strong>权威配置清单（注意生成时间须晚于改动时刻），确认目标项出现、被替换项消失。</li><li>同时确认工程层主配置是否需要另行同步。若只有运行时清单变了而工程层未变，须明确标注「仅运行时生效」。</li><li>字节级检查：改动前后文件字节数不变，定宽列仍对齐、字段不错位。</li><li>反例基准：如果验收只看「手改的那份文件里还有新值」，那么本次改动在工程层未同步的情况下也会被判为成功——这就是漏判点。</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/config-change-hits-only-one-of-two-state-layers.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=A config edit changes only the runtime layer; the project layer keeps the old option">Find related lessons →</a></p></div>

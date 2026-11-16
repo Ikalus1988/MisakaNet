@@ -640,3 +640,52 @@ def test_a_search_engine_verification_token_is_not_a_page():
     pages = {p.name for p in site_page_scope.html_pages(REPO)}
     assert token.name not in pages, "the token is still being read as a page"
     assert "index.html" in pages and "start.html" in pages
+
+
+# ── a generated lesson page quotes the corpus ──────────────────────────────────────────────────
+# The renderer put the lesson's own markdown on the page (2026-11-16), and the corpus is full of
+# things the gate reads as chrome: "✅ works / ❌ fails" tables, and issue numbers written `#429`,
+# `#203`, `#479` — three hex digits, which `COLOUR_LITERAL` reads as a violet. Both were reported as
+# violations on every generated page the day the body landed. The rule is about what the *site*
+# chose, so criterion 13 and the colour scan read the page outside `<div class="lesson-body">`.
+
+
+def _lesson_page(tmp_path, body: str, chrome: str = ""):
+    page = tmp_path / "docs" / "lessons" / "example" / "index.html"
+    page.parent.mkdir(parents=True, exist_ok=True)
+    page.write_text(
+        "<style>"
+        " .lesson-body { margin-top: 32px; }"
+        "</style>"
+        f"{chrome}"
+        f'<div class="lesson-body">{body}</div>',
+        encoding="utf-8",
+    )
+    return tmp_path
+
+
+def test_a_lesson_body_may_keep_the_corpus_emoji(tmp_path):
+    """A lesson tabulating "✅ works / ❌ fails" is writing about software, not choosing an icon."""
+    root = _lesson_page(tmp_path, "<p>✅ works · ❌ fails</p>")
+    problems = cdc.check(root)
+    assert not [p for p in problems if "pictograph" in p], problems
+
+
+def test_the_same_emoji_in_the_page_chrome_is_still_a_violation(tmp_path):
+    """Narrowing the rule must not delete it: the tag row and the summary are still scanned."""
+    root = _lesson_page(tmp_path, "<p>plain</p>", chrome="<p>✅ shipped</p>")
+    problems = cdc.check(root)
+    assert any("pictograph" in p for p in problems), problems
+
+
+def test_an_issue_number_in_a_lesson_body_is_not_a_palette(tmp_path):
+    """`#429` is a pull request, not a violet — the same shape as the emoji, one rule over."""
+    root = _lesson_page(tmp_path, "<p>Fixed in #429 and #203.</p>")
+    problems = cdc.check(root)
+    assert not [p for p in problems if "violet" in p or "primary colour" in p], problems
+
+
+def test_a_colour_literal_in_the_page_chrome_is_still_a_violation(tmp_path):
+    root = _lesson_page(tmp_path, "<p>plain</p>", chrome='<p style="color: #a855f7">x</p>')
+    problems = cdc.check(root)
+    assert any("purple" in p or "violet" in p for p in problems), problems

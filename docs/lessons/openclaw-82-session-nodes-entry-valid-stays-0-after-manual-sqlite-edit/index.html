@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,74 @@
 <div class="section">
   <h2>Summary</h2>
   <p>On OpenClaw 8.2.x, manually editing `session_nodes.entry_json` (e.g. to clear</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>On OpenClaw 8.2.x, manually editing <code>session_nodes.entry_json</code> (e.g. to clear <code>mainRestartRecovery</code> fields) leaves <code>entry_valid=0</code> permanently, even after restarting the gateway. Every subsequent <code>openclaw agent --agent main</code> call returns:</p><pre><code>SessionCanonicalKeyMigrationRequiredError: invalid persisted session row
+requires repair for agent:main:main; stop the Gateway and run
+openclaw doctor --fix: code=SESSION_CANONICAL_KEY_MIGRATION_REQUIRED</code></pre><p>Feishu DM inbound messages hit the same error during <code>feishu[default]: dispatching to agent</code>, so the bot stops replying. The reported symptom is "channel connected, works, but no reply arrives."</p><p>Manual <code>UPDATE session_nodes SET entry_valid=1</code> does NOT stick — three <code>AFTER INSERT/UPDATE</code> triggers on the table re-set it back to 0:</p><ul><li><code>session_nodes_entry_valid_after_insert</code></li><li><code>session_nodes_entry_valid_after_entry_update</code></li><li><code>session_nodes_entry_valid_after_identity_update</code></li></ul><p>The triggers fire because <code>entry_valid=1</code> is only ever set as a side effect of OpenClaw's own internal re-validation pass, which the gateway runs once at startup and which checks two invariant conditions on the row.</p><h2>Root Cause</h2><p>The OpenClaw 8.2 validator function <code>scanCanonicalSqliteSessionEntries</code> (in <code>session-accessor.sqlite-transcript-state-*.js</code>) inspects every <code>session_nodes</code> row and throws <code>SessionCanonicalKeyMigrationRequiredError</code> when any of:</p><ol><li><code>row.entry_valid !== 1</code>, OR</li><li><code>parseSqliteSessionEntryRecord(row)</code> returns <code>null</code>, OR</li><li>lineage columns drift from <code>entry.parentSessionKey</code> / <code>spawnedBy</code>.</li></ol><p><code>parseSqliteSessionEntryRecord</code> returns <code>null</code> when:</p><pre><code class="language-js">(row.current_session_id !== record.sessionId)
+|| (row.updated_at !== record.updatedAt)</code></pre><p>In other words <code>entry_json.sessionId === session_nodes.current_session_id</code> AND <code>entry_json.updatedAt === session_nodes.updated_at</code> must BOTH be exact integers. Naive manual edits that touch only <code>entry_json</code> (or only <code>updated_at</code>) break this invariant and the next validator pass refuses to mark <code>entry_valid=1</code>.</p><p>The skill <code>openclaw-gateway-troubleshooting</code> section C.3 mentions <code>SessionCanonicalKeyMigrationRequired</code> and prescribes "DELETE then INSERT minimal row" — but a blanket delete also drops <code>transcript_events</code>, <code>conversations</code>, <code>session_windows</code>, and <code>session_pending_inputs</code> linked by session_id, which means losing the entire direct-DM history. A targeted fix is preferable when the only broken invariant is the entry ↔ row match.</p><h2>Solution</h2><p>Stop the gateway, then run a single SQL update that aligns the row's <code>current_session_id</code> / <code>updated_at</code> with the <code>sessionId</code> / <code>updatedAt</code> values inside <code>entry_json</code>. Restart the gateway — the validator will pass the row and set <code>entry_valid=1</code> itself.</p><h3>Step 1 — stop gateway and back up</h3><pre><code class="language-bash">ps -ef | grep -E 'openclaw.*gateway' | grep -v grep | awk '{print $2}' \
+  | xargs -r kill -9
+sleep 3
+ss -ltn | grep 18789 || echo "gateway down"
+
+# Full sqlite backup before any edit
+cp -a &lt;agent-sqlite&gt; /tmp/openclaw-agent-full-backup-$(date +%s).sqlite</code></pre><h3>Step 2 — align entry_json with row columns</h3><pre><code class="language-bash">python3 - &lt;&lt;'PY'
+import sqlite3, json, time
+DB = "&lt;agent-sqlite&gt;"
+c = sqlite3.connect(DB)
+key = "agent:main:main"
+r = c.execute(
+  "SELECT current_session_id, updated_at, entry_json "
+  "FROM session_nodes WHERE session_key=?", (key,)
+).fetchone()
+current_sid, updated_at, entry_json = r
+e = json.loads(entry_json)
+
+# The two fields parseSqliteSessionEntryRecord demands equality on:
+e["sessionId"]   = current_sid
+e["updatedAt"]   = updated_at
+# Canonical identity fields used by 8.2 validator downstream:
+e.setdefault("canonicalKey", key)
+e.setdefault("agentId",      "main")
+
+now_ms = int(time.time() * 1000)
+new_json = json.dumps(e, ensure_ascii=False)
+
+c.execute(
+  "UPDATE session_nodes SET entry_json=?, updated_at=?, status='running' "
+  "WHERE session_key=?",
+  (new_json, updated_at, key),  # keep updated_at unchanged; equality matters
+)
+c.commit()
+PY</code></pre><p>Notes:</p><ul><li>Do NOT set <code>entry_valid=1</code> in the UPDATE — the trigger fires on UPDATE OF <code>current_session_id, updated_at</code> and resets it; setting it to 1 here is wasted. The validator will set it to 1 at startup if the row is internally consistent.</li><li>Do NOT change <code>current_session_id</code> — <code>transcript_events.session_id</code> FKs point at it. Keep it stable.</li></ul><h3>Step 3 — restart gateway and smoke-test</h3><pre><code class="language-bash">openclaw gateway --port 18789 &amp;
+sleep 15
+openclaw channels status --probe    # expect "connected, works"
+
+# Smoke-test the dispatch path that previously failed:
+timeout 90 openclaw agent --agent main -m 'ping pong' --deliver</code></pre><p>Expected reply: a real model response (e.g. "pong 🏓"), NOT the <code>SessionCanonicalKeyMigrationRequiredError</code> and NOT the <code>settled-turn finalization completed without a visible answer: using terminal fallback reply</code> chain that was the secondary symptom.</p><h2>Verification</h2><pre><code class="language-bash"># 1. Row invariant landed
+python3 -c "
+import sqlite3
+DB='&lt;agent-sqlite&gt;'
+c=sqlite3.connect(DB)
+r=c.execute(\"SELECT entry_valid FROM session_nodes WHERE session_key='agent:main:main'\").fetchone()
+print('entry_valid:', r[0])  # expect: 1
+"
+
+# 2. Feishu channel probe
+openclaw channels status --probe
+# Expected output: "Feishu default: enabled, configured, running, connected, works"
+
+# 3. Dispatch path smoke-test
+timeout 90 openclaw agent --agent main -m 'ping pong' --deliver
+# expect: a real model reply (e.g. "pong"), NOT
+#         "SessionCanonicalKeyMigrationRequiredError" and NOT
+#         "settled-turn finalization completed without a visible answer".
+
+# 4. Log fingerprint (no dispatch error paired with dispatching log)
+grep -E 'dispatching to agent|failed to dispatch message' \
+  /tmp/openclaw/openclaw-$(date +%Y-%m-%d).log | tail -5
+# expect: every "dispatching to agent" line is followed by an assistant
+#         message, NOT a "failed to dispatch message: ..." error.</code></pre><h3>Why the secondary "no final summary" symptom went away</h3><p>The <code>failed to dispatch</code> / <code>attempts=2/2 using terminal fallback reply</code> chain was downstream of the canonical-key throw — once the validator accepted the row, dispatch resumed normally and the model returned a real answer on the first attempt. Same fix, two symptoms.</p><h2>Related</h2><ul><li>Skill <code>openclaw-gateway-troubleshooting</code> section C.3 — covers the nuclear "DELETE+INSERT" path that loses transcript_events; this lesson is the targeted alternative when only the entry ↔ row match is broken.</li><li>Skill section B.1 — when the same symptom is caused by <code>mainRestartRecovery.tombstone</code>, follow the python sqlite script in the skill first; check whether the tombstone-clear also caused the entry_json ↔ row drift this lesson describes.</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/openclaw-session-row-entry-updatedat-mismatch.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=OpenClaw 8.2 — session_nodes entry_valid stays 0 after manual sqlite edit">Find related lessons →</a></p></div>

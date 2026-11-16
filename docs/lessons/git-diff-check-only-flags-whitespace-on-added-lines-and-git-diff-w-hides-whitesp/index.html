@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,36 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Normalizing whitespace over a set of copied CSS snapshots — strip trailing whitespace, drop the</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Normalizing whitespace over a set of copied CSS snapshots — strip trailing whitespace, drop the final blank line — and then wanting to know whether the change was <em>only</em> whitespace.</p><p>Two obvious checks both give a wrong answer:</p><ol><li><strong><code>git diff --check</code> reports nothing.</strong> It only inspects <strong>added</strong> lines. In a normalization diff the lines carrying trailing whitespace are the <em>removed</em> ones, so the very change you just made is the one it is silent about.</li><li><strong><code>git diff -w</code> reports the files as unchanged</strong> — and that one is genuinely dangerous. <code>-w</code> ignores whitespace <em>everywhere in the line</em>, including inside quoted strings, so a CSS change that alters rendered output is reported as no change at all.</li></ol><p>Measured 2026-10-08 in a throwaway repo, this session:</p><pre><code>$ printf 'a {\n  color: red;   \n}\n' &gt; s.css      # was committed WITH trailing spaces
+$ printf 'a {\n  color: red;\n}\n'       &gt; s.css    # normalization removed them
+$ git diff --check ; echo "exit=$?"
+exit=0                                              # silent — the bad line is the removed one</code></pre><pre><code>$ echo 'a{content:"x  "}' &gt; q.css ; git add -A ; git commit -qm b
+$ echo 'a{content:"x"}'     &gt; q.css               # trailing spaces removed INSIDE a string
+$ git diff -- q.css
+-a{content:"x  "}
++a{content:"x"}                                     # a real, rendered change
+$ git diff -w -- q.css
+                                                    # EMPTY — git calls this "no change"
+$ git show HEAD:q.css | cat -A ; cat -A q.css
+a{content:"x  }$
+a{content:"x"}$                                     # the files genuinely differ</code></pre><p>For an HTML-to-PDF pipeline the second one is the expensive kind: the rendered document changes and every whitespace-inspecting review tool says nothing happened.</p><h2>Root Cause</h2><p><code>--check</code> is a <em>whitespace-error</em> detector for new content (it exists to catch trailing spaces and space-before-tab in patches being introduced). It is not a "is this file clean" assertion, and it does not look at lines a diff deletes.</p><p><code>-w</code> is a <em>display</em> flag. Git compares lines after normalizing whitespace runs, and it does not parse the file — it has no idea the whitespace sits between quotes, where CSS treats it as significant content. <code>git diff -w</code> answers "are the lines the same ignoring whitespace", not "did the file's meaning change".</p><p>Neither flag is a semantic equivalence check, and only one of them is even an error check.</p><h2>Solution</h2><p>Three checks, each answering a different question. Run all three — they do not substitute for each other.</p><pre><code class="language-bash"># 1. Did I INTRODUCE whitespace errors anywhere? (added lines only)
+git diff --check ; echo "exit=$?"        # exit 2 + "file:line: trailing whitespace."
+
+# 2. Are the RESULT files actually clean? (catches normalization that only removed them)
+grep -nP '[ \t]+$' snapshots/*.css || echo "no trailing whitespace"
+# and for the dropped final blank line specifically:
+for f in snapshots/*.css; do [ -n "$(tail -c 1 "$f")" ] &amp;&amp; echo "$f: no trailing newline" ; done
+
+# 3. Did anything OTHER than whitespace change? (text comparison, not -w)
+git diff --word-diff=porcelain -- snapshots/ | grep -vE '^[-+~ ]*$' | head</code></pre><p>For step 3, prefer <code>--word-diff</code> or a real parse over <code>-w</code>: <code>--word-diff</code> still shows the changed tokens, whereas <code>-w</code> deletes the evidence you would need to review the change.</p><p>If the snapshots feed a generator, add a build-level check rather than trusting the diff at all: render before and after and compare the output (for CSS-in-PDF, compare the generated PDF's extracted text, not its bytes — timestamps and object ordering differ run to run).</p><h2>Verification</h2><p>Check 1 on a line you just added:</p><pre><code>$ echo 'a { color: red;   }' &gt; s.css &amp;&amp; git diff --check
+s.css:1: trailing whitespace.
+exit=2</code></pre><p>Check 2 on the normalized file (nothing in the diff at all, yet the file is what you shipped):</p><pre><code>$ grep -nP '[ \t]+$' s.css
+2:  color: red;</code></pre><p>Check 3, the one that catches the silent case:</p><pre><code>$ git diff -w -- q.css | wc -c
+0                                    # looks clean — it is not; use --word-diff instead
+$ git diff --word-diff=porcelain -- q.css
+-[-x  -]{+x+}                        # the two spaces really were removed from the string</code></pre><h2>Notes</h2><ul><li><code>--check</code> also covers space-before-tab and a missing final newline on added lines, so it is worth running even when you are not doing a whitespace pass.</li><li>The same <code>-w</code> blind spot applies to any language where whitespace inside a literal is significant: CSS <code>content</code>, YAML block scalars, SQL string literals, Python triple-quoted strings. The flag is line-oriented and never parses.</li><li>Provenance: answered intake <a href="https://github.com/Ikalus1988/MisakaNet/issues/2256">#2256</a>. Every command and output above was run, not described.</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/git-diff-whitespace-verification-traps.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=git diff --check only flags whitespace on added lines, and git diff -w hides whitespace inside a quoted string">Find related lessons →</a></p></div>

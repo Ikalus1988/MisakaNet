@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,32 @@
 <div class="section">
   <h2>Summary</h2>
   <p>AI एजेंट बाहरी सेवाओं (API, MCP सर्वर, डेटाबेस) को कॉल करते समय विफल हो सकते हैं। बिना उचित त्रुटि हैंडलिंग के, एक विफलता पूरे कार्य को रोक सकती है।</p>
+</div>
+<div class="lesson-body">
+<h2>समस्या</h2><p>AI एजेंट बाहरी सेवाओं (API, MCP सर्वर, डेटाबेस) को कॉल करते समय विफल हो सकते हैं। बिना उचित त्रुटि हैंडलिंग के, एक विफलता पूरे कार्य को रोक सकती है।</p><h2>मूल कारण</h2><p>एजेंट आमतौर पर "खुश पथ" (happy path) के लिए लिखे जाते हैं। त्रुटि मार्ग (error paths) को अनदेखा किया जाता है, जिससे:</p><ul><li>अनंत लूप (infinite loops)</li><li>डेटा हानि (data loss)</li><li>संसाधन रिसाव (resource leaks)</li></ul><h2>समाधान</h2><p><strong>तीन-स्तरीय त्रुटि हैंडलिंग:</strong></p><pre><code class="language-python">import asyncio
+from typing import Optional
+
+async def resilient_call(func, *args, max_retries=3, fallback=None):
+    """पुनर्प्रयास और फॉलबैक के साथ लचीला कॉल।"""
+    last_error = None
+    
+    for attempt in range(max_retries):
+        try:
+            return await func(*args)
+        except Exception as e:
+            last_error = e
+            if attempt &lt; max_retries - 1:
+                # एक्सपोनेंशियल बैकऑफ
+                wait_time = 2 ** attempt
+                await asyncio.sleep(wait_time)
+    
+    # सभी प्रयास विफल - फॉलबैक का उपयोग करें
+    if fallback:
+        return await fallback(*args)
+    
+    raise last_error</code></pre><h2>सत्यापन</h2><ol><li>पुनर्प्रयास तर्क का परीक्षण करें</li><li>फॉलबैक व्यवहार का सत्यापन करें</li><li>बैकऑफ समय की जांच करें</li></ol><h2>नोट्स</h2><ul><li>हमेशा अधिकतम पुनर्प्रयास सेट करें</li><li>एक्सपोनेंशियल बैकऑफ का उपयोग करें</li><li>फॉलबैक हमेशा प्रदान करें</li><li>त्रुटियों को लॉग करें</li></ul><h2>स्रोत</h2><p>चीनी पाठ से अनुवाद, लेखक &lt;user&gt;।</p><h2>Verification</h2><pre><code class="language-bash">echo "Lesson: एजेंट त्रुटि हैंडलिंग — पुनर्प्रयास और फॉलबैक पैटर"
+wc -l lessons/contrib/agent-error-handling-hi.md</code></pre><p><strong>Expected Output:</strong></p><pre><code>Lesson: एजेंट त्रुटि हैंडलिंग — पुनर्प्रयास और फॉलबैक पैटर
+# (line count)</code></pre>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/agent-error-handling-hi.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=एजेंट त्रुटि हैंडलिंग — पुनर्प्रयास और फॉलबैक पैटर्न">Find related lessons →</a></p></div>

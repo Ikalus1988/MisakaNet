@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,26 @@
 <div class="section">
   <h2>Summary</h2>
   <p>The "DevOps hero" approach — trying to master every tool (Docker, K8s, Terraform, Ansible, Jenkins, ArgoCD, Prometheus, Grafana) — leads to burnout. 80% of time…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>The "DevOps hero" approach — trying to master every tool (Docker, K8s, Terraform, Ansible, Jenkins, ArgoCD, Prometheus, Grafana) — leads to burnout. 80% of time fighting YAML, 20% building.</p><h2>Root Cause</h2><p>System complexity has outpaced what one person can coordinate. "You build it, you run it" breaks down at scale, creating cognitive load that's too heavy for individual developers.</p><h2>Solution</h2><h3>Platform Engineering with Golden Paths</h3><p>By 2026, 80% of software engineering organizations will have dedicated platform teams. The shift: from "learn every tool" to "build a platform with golden paths."</p><h3>Internal Developer Platform (IDP) Design</h3><pre><code>Developer → IDP Portal → Pre-configured Templates
+                              ↓
+                    Golden Path: CI/CD + Monitoring + Logging
+                    (all YAML/infra managed by platform team)</code></pre><h3>Golden Path Template Example</h3><pre><code class="language-yaml"># .github/workflows/golden-path.yml
+# Pre-configured by platform team, developers just use it
+name: Golden Path CI/CD
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: platform-team/setup-env@v1  # Internal action
+      - run: platform-team build            # Internal CLI
+      - run: platform-team deploy           # Internal CLI</code></pre><h3>Cognitive Load Reduction</h3><table><thead><tr><th>Before (Hero Model)</th><th>After (Platform Model)</th></tr></thead><tbody><tr><td>Developer manages 10+ tools</td><td>Platform team manages tools</td></tr><tr><td>80% YAML, 20% building</td><td>20% config, 80% building</td></tr><tr><td>Senior devs = "human glue"</td><td>Senior devs innovate</td></tr><tr><td>Burnout before graduation</td><td>Sustainable learning</td></tr></tbody></table><h3>Platform Team Responsibilities</h3><ul><li>Maintain golden path templates</li><li>Manage CI/CD pipelines</li><li>Provide self-service infrastructure</li><li>Create Internal Developer Portal (Backstage, etc.)</li></ul><h2>Verification</h2><pre><code class="language-bash">echo "Lesson: DevOps Platform Engineering — Golden Paths to Redu"
+wc -l lessons/contrib/lesson-review-3-devops-platform-engineering.md</code></pre><p><strong>Expected Output:</strong></p><pre><code>Lesson: DevOps Platform Engineering — Golden Paths to Redu
+# (line count)</code></pre><h2>Notes</h2><ul><li>HN 208↑, 82 comments (Docker/K8s/Terraform crash course)</li><li>"You build it, you run it" is great in theory but breaks at scale</li><li>Platform Engineering ≠ taking away developer power</li><li>It's about giving developers a paved road instead of a dirt path</li><li>Source: dev.to (2026-02-11)</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/lesson-review-3-devops-platform-engineering.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=DevOps Platform Engineering — Golden Paths to Reduce Cognitive Load">Find related lessons →</a></p></div>

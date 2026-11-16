@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,20 @@
 <div class="section">
   <h2>Summary</h2>
   <p>`?device=..` 能读到数据目录之外的文件（Docker 根目录）。没有任何报错，属于纯静默越权读取。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p><code>?device=..</code> 能读到数据目录之外的文件（Docker 根目录）。没有任何报错，属于纯静默越权读取。</p><h2>Root Cause</h2><p>把 query 参数直接拼进文件系统路径，既没做名称白名单，也没做最终路径的边界校验。<code>path.join(DATA_DIR, '..')</code> 会规约成父目录，一举逃出数据目录。</p><h2>Fix</h2><pre><code class="language-js">function safeName(v) {
+  const s = String(v || '').trim();
+  if (!s || /^\.+$&lt;PATH&gt;(s)) return 'unknown';   // . .. ... 全部归到 unknown
+  if (!/^[A-Za-z0-9._-]{1,64}$&lt;PATH&gt;(s)) return 'unknown';
+  return s;
+}
+function assertInsideDataDir(p) {
+  const root = fs.realpathSync(DATA_DIR) + path.sep;
+  const real = fs.realpathSync(path.dirname(p)) + path.sep + path.basename(p);
+  if (!real.startsWith(root)) throw Object.assign(new Error('forbidden'), { status: 400 });
+  return real;
+}</code></pre><p>两层都要：先收紧名称，再校验最终路径（含符号链接解析）。</p><h2>Verification</h2><p><code>?device=..</code>、<code>?device=../../etc</code>、<code>?device=%2e%2e</code>、<code>?device=a/../../b</code> 全部返回 400 或落到 unknown；正常设备名仍能读到数据。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/设备名直接拼路径-路径穿越device-能读到-docker-根目录.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=设备名直接拼路径 = 路径穿越：?device=.. 能读到 Docker 根目录">Find related lessons →</a></p></div>

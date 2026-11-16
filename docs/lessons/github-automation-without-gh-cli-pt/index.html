@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,62 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Um job agendado precisava consultar uma issue, publicar um comentário e depois criar uma pull request. O fluxo pressupunha que o GitHub CLI estivesse disponível…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Um job agendado precisava consultar uma issue, publicar um comentário e depois criar uma pull request. O fluxo pressupunha que o GitHub CLI estivesse disponível e começou com:</p><pre><code class="language-bash">gh issue view 656 --repo proprietario/projeto --comments</code></pre><p>A execução falhou imediatamente:</p><pre><code class="language-text">/bin/bash: gh: command not found</code></pre><p>Repetir o comando não ajudou. Instalar pacotes durante o job também não era uma boa saída: a imagem era mínima, o tempo era limitado e adicionar um repositório de pacotes só para obter <code>gh</code> aumentaria a superfície de falha. Apesar disso, <code>git</code>, Python e acesso HTTPS ao GitHub estavam disponíveis. O token já existia em uma variável de ambiente e não deveria aparecer em argumentos, logs ou URLs.</p><p>O problema é comum em contêineres, runners efêmeros e servidores enxutos. Um script que depende exclusivamente de <code>gh</code> pode parar antes de executar qualquer trabalho, mesmo quando todas as operações necessárias estão disponíveis pela API REST.</p><h2>Root Cause</h2><p>O erro não era de autenticação nem da issue. O executável <code>gh</code> simplesmente não fazia parte da imagem, o que foi confirmado sem expor segredos:</p><pre><code class="language-bash">command -v gh || printf '%s\n' 'gh ausente'
+command -v git
+command -v python3</code></pre><p>A causa de projeto era uma dependência implícita: o script tratava a interface de linha de comando como se fosse parte do sistema operacional. Na realidade, <code>gh</code> é um cliente opcional. Consultar issues, comentar, criar forks e abrir pull requests são operações HTTP documentadas. Portanto, a ausência do binário não precisava bloquear o fluxo.</p><p>Também havia um risco secundário: passar o token em <code>https://TOKEN@github.com/...</code> ou na linha de comando poderia gravá-lo no histórico do shell, na lista de processos ou em mensagens de erro. A alternativa precisava manter a credencial somente no ambiente e no cabeçalho <code>Authorization</code>.</p><h2>Solution</h2><p>Foi usado um pequeno cliente com apenas a biblioteca padrão do Python. Ele centraliza os cabeçalhos, envia JSON e preserva o corpo de erros HTTP para diagnóstico, sem imprimir o token:</p><pre><code class="language-python">import json
+import os
+import urllib.error
+import urllib.request
+
+TOKEN = os.environ["GITHUB_TOKEN"]
+API = "https://api.github.com"
+
+
+def github(method, path, payload=None):
+    data = None if payload is None else json.dumps(payload).encode("utf-8")
+    request = urllib.request.Request(
+        API + path,
+        data=data,
+        method=method,
+        headers={
+            "Accept": "application/vnd.github+json",
+            "Authorization": f"Bearer {TOKEN}",
+            "Content-Type": "application/json",
+            "User-Agent": "scheduled-github-job",
+            "X-GitHub-Api-Version": "2022-11-28",
+        },
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=30) as response:
+            raw = response.read()
+            return response.status, json.loads(raw) if raw else None
+    except urllib.error.HTTPError as error:
+        detail = error.read().decode("utf-8", errors="replace")
+        raise RuntimeError(f"GitHub API retornou HTTP {error.code}: {detail}") from error
+
+
+repo = "proprietario/projeto"
+status, issue = github("GET", f"/repos/{repo}/issues/656")
+status, comment = github(
+    "POST",
+    f"/repos/{repo}/issues/656/comments",
+    {"body": "Iniciando o trabalho."},
+)
+print(issue["state"], comment["html_url"])</code></pre><p>Para abrir uma pull request depois de enviar o branch ao fork, usa-se o mesmo cliente:</p><pre><code class="language-python">status, pull = github(
+    "POST",
+    "/repos/proprietario/projeto/pulls",
+    {
+        "title": "docs: adiciona lição de recuperação",
+        "head": "meu-usuario:docs/licao",
+        "base": "main",
+        "body": "Resumo e verificação da mudança.",
+    },
+)
+print(pull["html_url"])</code></pre><p>O fluxo corrigido seguiu estes passos:</p><ul><li>Detectar <code>gh</code> com <code>command -v</code> antes de usá-lo.</li><li>Usar a API REST como fallback, sem instalar dependências no job.</li><li>Manter o token em <code>GITHUB_TOKEN</code> e nunca registrar seu valor.</li><li>Usar um token com o menor conjunto de permissões possível.</li><li>Aplicar timeout e falhar claramente em respostas HTTP inesperadas.</li><li>Usar <code>git</code> somente para clone, commit e push; usar HTTP para objetos do GitHub.</li></ul><p>A documentação oficial dos endpoints fica em https://docs.github.com/en/rest/issues/comments e https://docs.github.com/en/rest/pulls/pulls.</p><h2>Verification</h2><pre><code class="language-bash">git status --short | head -5
+git log --oneline -3</code></pre><p><strong>Expected Output:</strong></p><pre><code># (status)
+# (recent)</code></pre><h2>Notes</h2><ul><li>Uma resposta <code>401</code> indica token ausente, expirado ou inválido; não é sinal para repetir indefinidamente.</li><li>Uma resposta <code>403</code> pode indicar permissão insuficiente ou limite de requisições; examine os cabeçalhos e o corpo antes de tentar novamente.</li><li>Uma resposta <code>422</code> ao abrir a pull request geralmente significa branch inexistente, campos inválidos ou PR equivalente já aberto.</li><li>Em produção, use backoff apenas para falhas transitórias (<code>429</code> e alguns <code>5xx</code>), não para erros permanentes de validação.</li><li>Se <code>gh</code> estiver instalado, ele continua sendo conveniente. O aprendizado é evitar que sua ausência seja um ponto único de falha.</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/github-automation-without-gh-cli-pt.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Automação do GitHub quando o comando gh não está instalado">Find related lessons →</a></p></div>

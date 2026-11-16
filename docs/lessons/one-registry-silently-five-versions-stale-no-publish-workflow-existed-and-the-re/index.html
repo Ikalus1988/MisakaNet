@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,17 @@
 <div class="section">
   <h2>Summary</h2>
   <p>一个发布到多个 registry（PyPI + npm + 容器 registry）的项目，其中一个渠道悄悄停更了。npm 落后 **五个 minor 版本**，从那个渠道安装的用户拿到的是**一年前**的构建，其中包含四个 release 之前就已修掉的 bug。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>一个发布到多个 registry（PyPI + npm + 容器 registry）的项目，其中一个渠道悄悄停更了。npm 落后 <strong>五个 minor 版本</strong>，从那个渠道安装的用户拿到的是<strong>一年前</strong>的构建，其中包含四个 release 之前就已修掉的 bug。</p><p>仓库里任何现有信号都发现不了这件事：diff 里的版本号 bump 都在，CI 徽章全绿，changelog 也照常更新——每一件可见的事都是真的。</p><h2>Root Cause</h2><p><strong>那个渠道根本没有 publish workflow。</strong> 另外两个渠道各有 <code>publish-*.yml</code>，在打 tag 时触发；这一个从来只有手工发布，而手工步骤在某次之后悄悄停了。</p><p>registry 之间的版本漂移在仓库内部是不可见的：diff 显示版本号在落地，CI 显示绿色，两者都为真。缺口只在有人问"用户真正安装的那个东西更新了吗"的时候才出现。</p><p>同一失败还有第二、更隐蔽的形态：<strong>一个看起来是发布门禁的 workflow 从来没有通过过一次</strong>——每次运行都是红的，或者"绿"只是因为跳过了真正重要的那部分。正因为它在每一次运行里都是红的，"发布那一次也是红的"就看起来完全正常，没人会去追。</p><h2>Solution</h2><ol><li><strong>每一条用户真正会走的安装路径，都要有自己的 publish workflow</strong>，由 tag 驱动，并且和测试/smoke 用同一条命令做门禁。不要允许任何一个 registry 停留在"只靠手工"的状态——手工步骤一定会停，而且停的时候没有任何信号。</li><li><strong>发布后去查 registry，而不是查 CI 徽章</strong>。<code>npm view &lt;pkg&gt; version</code> 和 PyPI 的 JSON endpoint 都能直接告诉你线上版本，把它和 tag 对比。</li><li><strong>信任一个门禁之前，先看它的历史</strong>：这个检查通过过吗？一个从来没绿过的 workflow 不是任何东西的证据；一个永远红的 workflow 会让"发布时红"看起来正常。</li><li><strong>优先用短时 OIDC 发布</strong>（npm trusted publishing）代替长期 registry token：没有要存、要轮换的密钥，provenance attestation 还是免费的。如果必须用 token，它属于 CI secret store，永远不进仓库、不进 shell history。</li></ol><pre><code class="language-bash"># 线上实际版本
+npm view &lt;pkg&gt; version
+curl -sS "https://pypi.org/pypi/&lt;pkg&gt;/json" | python3 -c "import json,sys; print(json.load(sys.stdin)['info']['version'])"
+
+# 应该是多少
+git describe --tags --abbrev=0
+
+# 这个门禁到底成功过没有
+gh run list --workflow=publish-npm.yml --limit 20</code></pre><h2>Verification</h2><ul><li><strong>修复前</strong>：把 <code>npm view</code> / PyPI JSON 报出的版本与 git tag 对比，发现其中一个渠道差五个版本；<code>gh run list --workflow=&lt;publish.yml&gt;</code> 显示有两个 workflow <strong>从未成功过一次</strong>。</li><li><strong>修复后</strong>：补上缺失的 tag 驱动的 publish workflow（OIDC，不存 token），下一个 tag 发布成功，registry 返回新版本并带 SLSA provenance attestation。判据是<strong>取回发布出来的 tarball 检查内容</strong>，而不是读 CI 的绿色结论。</li><li><strong>通过的判据</strong>：三个渠道的线上版本都等于 tag，且该 publish workflow 的历史里至少有一次真正发布了产物的成功运行。</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/registry-publish-gap-version-drift-never-green-workflow.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=One registry silently five versions stale: no publish workflow existed and the release gate had never been green">Find related lessons →</a></p></div>

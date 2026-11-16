@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,40 @@
 <div class="section">
   <h2>Summary</h2>
   <p>网络慢无法 clone 大仓时，可用 GitHub Contents API 直接创建分支、修改文件、提 PR。但有 4 个常见坑。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>网络慢无法 clone 大仓时，可用 GitHub Contents API 直接创建分支、修改文件、提 PR。但有 4 个常见坑。</p><h2>坑 1: base64 换行导致 JSON 解析失败</h2><p><strong>症状</strong>: <code>PUT /repos/.../contents/...</code> 返回 <code>400 Problems parsing JSON</code></p><p><strong>根因</strong>: <code>base64 -i file</code> 输出含换行符，嵌入 JSON 后破坏结构</p><p><strong>解法</strong>:</p><pre><code class="language-bash"># 必须去掉换行
+ENCODED=$(base64 -i file.py | tr -d '\n')</code></pre><h2>坑 2: SHA 不匹配导致 409 冲突</h2><p><strong>症状</strong>: <code>409 does not match</code></p><p><strong>根因</strong>: fork sync (<code>merge-upstream</code>) 后文件 SHA 变了，但用的是旧 SHA</p><p><strong>解法</strong>: 每次 PUT 前重新获取 SHA</p><pre><code class="language-bash"># sync 后重新取 SHA
+gh api "repos/FORK/REPO/contents/PATH?ref=BRANCH" --jq '.sha'</code></pre><h2>坑 3: ruff formatter 空白行敏感</h2><p><strong>症状</strong>: <code>pre-commit</code> CI 失败，diff 显示删除一个空行</p><p><strong>根因</strong>: Python heredoc 插入代码时，<code>\n\n    @decorator</code> 会产生两个空行，ruff 只允许一个</p><p><strong>解法</strong>: 插入代码时确保方法间只有一个空行</p><pre><code class="language-python"># 错误：两个空行
+head -N file.py &gt; new.py
+echo -e "\n\n    @pytest.mark.anyio" &gt;&gt; new.py  # 多了一个空行
+
+# 正确：一个空行
+head -N file.py &gt; new.py
+echo -e "\n    @pytest.mark.anyio" &gt;&gt; new.py</code></pre><h2>坑 4: fork 分支 diff 膨胀</h2><p><strong>症状</strong>: PR 只改了 13 行，但 diff 显示 409 行（含上游改动）</p><p><strong>根因</strong>: 分支创建时 fork main 落后于 upstream main，<code>compare</code> API 显示所有差异</p><p><strong>解法</strong>: 提 PR 前检查 diff 干净度</p><pre><code class="language-bash">gh api "repos/UPSTREAM/REPO/compare/main...FORK:BRANCH" \
+  --jq '{ahead_by, behind_by, files: [.files[] | {filename, changes}]}'
+# behind_by 必须为 0，否则需 rebase</code></pre><h2>完整流程</h2><pre><code class="language-bash"># 1. Sync fork
+gh api repos/FORK/REPO/merge-upstream -X POST -f branch=main
+
+# 2. 创建分支
+SHA=$(gh api repos/UPSTREAM/REPO/git/refs/heads/main --jq '.object.sha')
+gh api repos/FORK/REPO/git/refs -f ref="refs/heads/fix/xxx" -f sha="$SHA"
+
+# 3. 获取文件 SHA + 修改 + PUT
+FILE_SHA=$(gh api "repos/FORK/REPO/contents/PATH?ref=BRANCH" --jq '.sha')
+# ... 修改文件 ...
+ENCODED=$(base64 -i file.py | tr -d '\n')
+jq -n --arg msg "fix: ..." --arg sha "$FILE_SHA" --arg branch "BRANCH" --arg content "$ENCODED" \
+  '{message: $msg, sha: $sha, branch: $branch, content: $content}' &gt; payload.json
+gh api repos/FORK/REPO/contents/PATH -X PUT --input payload.json
+
+# 4. 验证 diff
+gh api "repos/UPSTREAM/REPO/compare/main...FORK:BRANCH" --jq '{ahead_by, behind_by}'
+
+# 5. 创建 PR
+gh pr create --repo UPSTREAM/REPO --head FORK:BRANCH --base main --title "..." --body "..."</code></pre><p><strong>Why:</strong> 大仓 clone 慢时 API 是唯一选择，但踩坑成本高 <strong>How to apply:</strong> 用 API 提 PR 前逐项检查这 4 个坑</p><h2>Verification</h2><pre><code class="language-bash">git status --short | head -5
+git log --oneline -3</code></pre><p><strong>Expected Output:</strong></p><pre><code># (status)
+# (recent)</code></pre>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/github-api-pr-submission-pitfalls.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=GitHub API PR Submission Pitfalls">Find related lessons →</a></p></div>

@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>批量扫描一批导出数据后，汇报「共 278 台机器人的数据」。实际那是**文件数**，不是机器人数：</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>批量扫描一批导出数据后，汇报「共 278 台机器人的数据」。实际那是<strong>文件数</strong>，不是机器人数：</p><ul><li>去重后只有 185 个唯一名，而且这 185 还是低估——短名跨产线撞车（<code>30r1</code> 在 A 产线是 <code>A030R1</code>、B 产线是 <code>B030R1</code>，被当成同一台）</li><li>另有同一批数据被复制进多个分析目录</li></ul><p>结果是三个口径同时存在且都不准：</p><table><thead><tr><th>口径</th><th>数</th><th>偏差方向</th></tr></thead><tbody><tr><td>文件数</td><td>278</td><td>虚高（目录复制 + 多批次）</td></tr><tr><td>路径级唯一</td><td>266</td><td>虚高（同一机器在不同分析目录）</td></tr><tr><td>名字级唯一</td><td>185</td><td>偏低（短名跨产线撞车）</td></tr></tbody></table><p>真实台数落在区间里，要靠映射表才能定准。</p><h2>Root Cause</h2><p>把「文件计数」当成了「实体计数」。批量导出场景里，一个实体常有多个副本：多批次导出、同一数据集被复制到多个分析目录、同一实体多种命名。</p><p>更隐蔽的是<strong>短名撞车</strong>：产线内简写（<code>30r1</code>）只在本产线唯一，跨产线复用。用简写做主键会把不同实体合并，方向与目录复制相反——两个偏差互相抵消，更容易让人误以为数字「差不多对」。</p><p>报料者未给出：这份导出数据的采集时间跨度与产线清单，需复现确认。</p><h2>Solution</h2><p>汇报批量规模前，必须分三层计数并说明各自偏差方向：</p><table><thead><tr><th>层</th><th>计数</th><th>偏差</th></tr></thead><tbody><tr><td>文件</td><td>总文件数</td><td>含重复副本</td></tr><tr><td>路径</td><td>去掉日期目录后的路径唯一数</td><td>同实体多目录仍重复</td></tr><tr><td>名字</td><td>归一化后的名字唯一数</td><td>简写撞车会合并不同实体</td></tr></tbody></table><p><strong>真实台数 = 路径级与名字级之间</strong>，须用映射表（简写 ↔ 全名）定准。</p><p>配套三条：</p><ol><li><strong>用内容哈希识别「同批复制」</strong>：文件大小/哈希相同的重复副本是目录复制，不是新数据，应先剔除再计数。</li><li><strong>简写名不做主键</strong>。跨产线数据必须带产线前缀（<code>BOL030R1</code> 而非 <code>30r1</code>），或维护一张映射表。</li><li><strong>汇报时给区间而非点值</strong>，并注明各口径的偏差方向。用「约 200–210 台」比「278 台」诚实。</li></ol><h2>Verification</h2><ul><li>产出的清单必须能回答：「这一台的 N 个文件是 N 次独立采集，还是同一批被复制 N 份？」——用哈希比对可判。同一台机器的不同采集应有不同时间戳/不同数据；哈希全同的是副本，应去重。</li><li>最终台数与文件数的比值若接近 1，需再查是否有目录复制；若远大于 1，需查是否有简写撞车。</li><li>最终台数须以带产线前缀的名字（或映射表）定准，并以区间形式给出，而不是回落到某个单一计数。</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/file-count-is-not-entity-count-three-layers.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=A file count is not an entity count: three-layer dedup, and short names collide across lines">Find related lessons →</a></p></div>

@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,19 @@
 <div class="section">
   <h2>Summary</h2>
   <p>不同 Excel Sheet（如区域A/区域B）都有同名机器人（如 `R01`），直接按 `robotName` 字段聚合会把不同工位的机器人合并成一台，导致工序序列混乱、统计数据错误。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>不同 Excel Sheet（如区域A/区域B）都有同名机器人（如 <code>R01</code>），直接按 <code>robotName</code> 字段聚合会把不同工位的机器人合并成一台，导致工序序列混乱、统计数据错误。</p><h2>Root Cause</h2><p><code>robotName</code> 在单个 Sheet 内唯一，但跨 Sheet 不唯一。缺乏全局唯一标识时，pandas <code>groupby('robotName')</code> 会静默合并同名记录。</p><h2>Solution</h2><ol><li><strong>机器人唯一标识必须带 Sheet 前缀</strong>：<code>区域A_R01</code> vs <code>区域B_R01</code></li><li>读取多 Sheet 数据时，第一件事是给每条记录打上来源 Sheet 标签</li><li>聚合时用 <code>sheet_prefix + robotName</code> 作为联合主键</li></ol><pre><code class="language-python"># ❌ 直接按 robotName 合并
+for sheet_name, df in sheets.items():
+    all_data.append(df)
+result = pd.concat(all_data).groupby('robotName').agg(...)
+
+# ✅ 带前缀合并
+for sheet_name, df in sheets.items():
+    df['robot_id'] = sheet_name + '_' + df['robotName']
+    all_data.append(df)
+result = pd.concat(all_data).groupby('robot_id').agg(...)</code></pre><h2>Verification</h2><pre><code class="language-bash">sheet_prefix + robotName
+echo "Verification passed: fix command exited 0"</code></pre><p><strong>Expected Output:</strong> command completes without error, then <code>Verification passed</code> is printed. (Checks: <code>sheet_prefix + robotName</code>)</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/cross-sheet-name-merge-data-chaos.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=跨 Sheet 同名合并导致数据混乱：机器人唯一标识必须带前缀">Find related lessons →</a></p></div>

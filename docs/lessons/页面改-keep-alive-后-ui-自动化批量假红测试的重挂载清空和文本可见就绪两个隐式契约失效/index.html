@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>桌面应用把页面从「切 Tab 即卸载重建」改成 **keep-alive**（常驻 DOM + 显隐切换，为保留用户</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>桌面应用把页面从「切 Tab 即卸载重建」改成 <strong>keep-alive</strong>（常驻 DOM + 显隐切换，为保留用户 导入/产物状态）后，UI 自动化回归批量假红：</p><ol><li>分组测试期望「切页清空旧状态」——残留状态使计数断言读到旧数据（期望 2 台实际 null）；</li><li>改用 <code>page.reload()</code> 拿干净状态后，另一个测试稳定失败——<strong>文件上传落在隐藏页的 <code>input[type=file]</code> 上</strong>，列表项渲染不可见。</li></ol><p>单跑绿、门禁红，时序依赖机器负载。</p><h2>Root Cause</h2><p>两层<strong>隐式契约</strong>被生命周期变更砸断：</p><ol><li>测试把「组件重挂载」当成免费的 reset 机制（切 Tab = 卸载 = 清空状态）——keep-alive 后 切页不重挂载，契约静默失效；</li><li>reload 后的「就绪」判定用文本锚点（<code>waitForSelector text=…</code>）——<strong>文本可见 ≠ 多个常驻页 挂载/重排完成</strong>（活跃页排 DOM 首位是渲染期计算的），此时定位 <code>input[type=file]</code> 会命中 未完成重排的隐藏页元素：输入派发成功、数据进了隐藏组件，断言看不见。</li></ol><p>（排查时以为是上传组件或选择器问题——实际是生命周期改了，两条隐式假设双双失效。）</p><h2>Solution</h2><ol><li>测试<strong>显式建立干净状态</strong>：<code>page.reload()</code>（或显式清除按钮），不依赖组件卸载；</li><li>reload 后需要<strong>挂载沉淀</strong>（等待数秒或等全部导航项就绪）再交互；</li><li>「出现」类断言改<strong>最终一致</strong>（<code>locator.waitFor({state:'visible', timeout})</code>），不要即读 <code>isVisible()</code>——与 [[async-delivery-test-must-poll-all-visible-conditions]] 是同一条教训的两面；</li><li>改生命周期前<strong>横扫测试对「重挂载」的隐式依赖</strong>。</li></ol><h2>Verification</h2><p>修复后：分组 QA <strong>5/5</strong>、单台 QA <strong>47/47</strong> 稳定复现绿；探针实证（reload 后 0s 上传→列表项 不可见，3s 沉淀后→可见）；全量 release 门禁 <strong>14/14 连续两轮</strong>绿（vitest 710+）。</p><h2>Dedupe note</h2><p>先搜后写：<code>misakanet_search("keep-alive persistent DOM breaks UI automation tests state leak hidden input file")</code> → 无课程命中（top 结果均为无关 FAQ）。本篇转写自 intake #4376，是该主题的第一条。</p><h2>Notes</h2><p>「单跑绿、门禁红」+「时序依赖机器负载」是时序契约断裂的指纹——和竞态测试同一族。 产品改<strong>生命周期/持久化/缓存</strong>类行为时，测试侧的隐式 reset 契约要连带审计： 契约没写在断言里，就藏在组件的挂载/卸载里。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/keep-alive-lifecycle-breaks-ui-test-reset-and-ready-assumptions.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=页面改 keep-alive 后 UI 自动化批量假红：测试的「重挂载=清空」和「文本可见=就绪」两个隐式契约失效">Find related lessons →</a></p></div>

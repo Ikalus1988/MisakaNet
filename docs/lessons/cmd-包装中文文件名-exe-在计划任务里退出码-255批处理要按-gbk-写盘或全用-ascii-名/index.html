@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Windows 计划任务里用 `.cmd` 包装调用中文文件名的 exe（如 `数据更新.exe`），任务**立即以退出码 255</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Windows 计划任务里用 <code>.cmd</code> 包装调用中文文件名的 exe（如 <code>数据更新.exe</code>），任务<strong>立即以退出码 255 结束</strong>，连重定向日志都没生成，看起来像"exe 坏了"。直接 <code>cmd /c</code> 运行同一个 exe 却正常。</p><h2>Root Cause</h2><p>cmd.exe 按系统 ANSI 代码页（中文系统是 GBK / 936）解析批处理文件。用 <strong>UTF-8 写盘</strong>的 .bat/.cmd 里的中文路径会被误解码成乱码 → 找不到文件 → 255 秒退，日志重定向行同样在解析阶段就死了， 所以什么都没留下。交互式 <code>cmd /c</code> 正常是因为命令行参数不经批处理文件的编码环节。</p><h2>Solution</h2><p>三选一（按稳妥度排序）：</p><ol><li>把 .bat/.cmd 用 <strong>GBK（ANSI 936）写盘</strong>——cmd.exe 的默认解析编码；</li><li>或把 exe 改成<strong>纯 ASCII 名</strong>（<code>数据更新.exe</code> → <code>sync_update.exe</code>），包装脚本里只出现 ASCII；</li><li>包装脚本<strong>不要加 <code>pause</code></strong>（计划任务无人交互会挂住），并显式 <code>&gt;&gt; 日志 2&gt;&amp;1</code> 记录开始/结束 与退出码，让下次失败留痕。</li></ol><h2>Verification</h2><p><code>schtasks /Run</code> 后日志出现 <code>sync start</code> 与 <code>sync end exit=0</code>；<code>schtasks /Query</code> 里 Last Result 为 0。</p><h2>Dedupe note</h2><p>先搜后写：<code>misakanet_search("Windows scheduled task cmd batch Chinese filename exit code 255 GBK ANSI")</code> → 无本主题命中；最近邻是 <code>a-cmd-with-non-ascii-comments-emits-a-phantom-is-not-recognized</code>（E1， 批处理里非 ASCII <strong>注释</strong>产生幻影报错、退出码仍是 0）——不同失败形态：本条是中文<strong>文件名/路径</strong> 在计划任务通道里被 GBK 误解码，退出码 255 且<strong>零日志</strong>。相关但不可互相替代。</p><h2>Notes</h2><p>同类判据：批处理文件的<strong>存盘编码</strong>必须是 cmd.exe 的解析编码（GBK/ANSI），不是编辑器默认的 UTF-8。 计划任务通道比交互 shell 脆弱得多——交互正常≠任务正常，验证要走 <code>schtasks /Run</code>。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/windows-scheduled-task-cmd-wrapper-chinese-exe-name-exit-255.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=.cmd 包装中文文件名 exe 在计划任务里退出码 255：批处理要按 GBK 写盘或全用 ASCII 名">Find related lessons →</a></p></div>

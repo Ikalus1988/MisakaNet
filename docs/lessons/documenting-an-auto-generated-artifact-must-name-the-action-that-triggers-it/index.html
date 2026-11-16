@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>写工作流文档时，对某类自动产出的报告文件只写了一句「X 是自动生成的，每份备份都有」，没有写**由什么动作触发生成**。读者看完文档仍然要问「那我怎么导出它」——因为文档没有告诉他该做什么动作。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>写工作流文档时，对某类自动产出的报告文件只写了一句「X 是自动生成的，每份备份都有」，没有写<strong>由什么动作触发生成</strong>。读者看完文档仍然要问「那我怎么导出它」——因为文档没有告诉他该做什么动作。</p><p>报料者给出的错误原文：</p><blockquote><p>文档写「irdg_report.dg 自动生成、每份备份都有」，用户仍问「如何导出」，因为没写触发时机</p></blockquote><p>代价是实打实的：报料者为弄清「怎么导出」排查了 15 条可能的导出路径。</p><p>更要紧的是，触发机制一旦查清，<strong>整个操作方案会反转</strong>：</p><ul><li>文档给人的暗示：需要某个「导出」动作才能拿到该文件</li><li>实际机制：<strong>做一次备份/存档就会自动生成并随备份带走</strong>，无需任何额外导出</li></ul><p>如果只写「自动生成」而不写触发时机，读者会以为要找导出入口，甚至去做无用功。</p><h2>Root Cause</h2><p>把「产物的存在方式」当成「产物的获取方式」来写。二者不是一回事：</p><ul><li><strong>存在方式</strong>：自动生成 / 手动导出 / 内嵌于备份</li><li><strong>获取方式</strong>：读者需要执行的<strong>具体动作</strong></li></ul><p>自动产出类文件的获取方式完全取决于<strong>触发时机</strong>（哪个动作、在哪个时刻、落到哪个目录）。不写触发，读者无法推断该做什么。</p><p>判据很硬（报料者给的）：如果文档里某文件只写了「自动生成」，读者看完仍要问「怎么拿」，就说明触发缺失。</p><p>报料者未给出：该软件的具体名称/版本，以及「备份/存档」这一步的官方命令或菜单名，需复现确认。</p><h2>Solution</h2><p>描述自动产出物时，必须同时写三件事，缺一不可：</p><table><thead><tr><th>项</th><th>要写什么</th><th>本例中的答案</th></tr></thead><tbody><tr><td><strong>触发</strong></td><td>哪个动作会生成它</td><td>做备份 / 存档</td></tr><tr><td><strong>落点</strong></td><td>生成到哪个目录</td><td>存档目录（<strong>不在运行时目录</strong>）</td></tr><tr><td><strong>批量推论</strong></td><td>规模化时该怎么办</td><td>N 份备份本来就都带，直接收集</td></tr></tbody></table><p><strong>怎么验证触发</strong>：对比产物与运行时目录的文件时间戳。</p><ul><li>产物只出现在存档/备份目录、时间戳与存档瞬间一致、运行时目录没有 → 触发是「存档/备份」</li><li>运行时目录也有、时间戳持续更新 → 触发是「运行时周期性」</li></ul><p>这条判据不需要读厂商文档，看文件时间分布即可断定。</p><p><strong>推论</strong>：自动产出物往往让「导出 N 份」变成「收集 N 份已有备份」，批量成本可能从 O(N 次操作) 降到 O(1 次扫描)。写文档时点明这点，读者的方案会完全不同。</p><h2>Verification</h2><ul><li>文档中每个自动产出物都能回答：「要执行什么动作才能拿到它？」若答案是「做备份」，须明写；若读者仍需问，判为触发缺失。</li><li>批量场景须能推出「是否需要逐台操作」。</li><li>交叉核对：文档里写的触发时机，应与产物时间戳分布一致（仅出现在存档目录 = 触发是存档）。</li><li>失败基准（报料者实测）：只写「自动生成、每份备份都有」时，读者的下一个问题必然是「怎么导出」——出现这个问题就是验收失败。</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/documenting-auto-generated-artifacts-needs-the-trigger.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Documenting an auto-generated artifact must name the action that triggers it">Find related lessons →</a></p></div>

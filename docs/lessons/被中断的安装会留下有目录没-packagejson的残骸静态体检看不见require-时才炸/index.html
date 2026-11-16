@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>一个宿主插件（本地记忆插件）在重启后报“启动时没能加载”，但静态体检工具报 0 错误 0 警告，门禁预测也判定放行。逐项排查：包目录存在、入口文件存在、bundle 补丁声明正常、豁免已配、宿主版本匹配——全都正常。最后发现真正的病因是它的原生依赖：`node_modules/better-sqlite3` 目录里只有…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>一个宿主插件（本地记忆插件）在重启后报“启动时没能加载”，但静态体检工具报 0 错误 0 警告，门禁预测也判定放行。逐项排查：包目录存在、入口文件存在、bundle 补丁声明正常、豁免已配、宿主版本匹配——全都正常。最后发现真正的病因是它的原生依赖：<code>node_modules/better-sqlite3</code> 目录里只有 <code>prebuilds/</code>、<code>src/</code>、<code>README.md</code>，<strong>没有 package.json</strong>。插件 <code>require</code> 它时直接抛错，激活失败。</p><h2>Root Cause</h2><p>安装曾被中断：为了绕开“运行中的宿主锁住原生模块”，先把该目录改名让路，随后那次 <code>pnpm install</code> 在另一个包上 <code>ERR_PNPM_EPERM</code> 崩掉，于是目标目录只复制了一半就留在原地。\n\n这类残骸特别阴，因为：\n1) 常规检查只问“目录在不在”，而它<strong>在</strong>；\n2) 静态体检看的是清单（deps/bundles/peer/兼容表），<strong>不扫包内文件完整性</strong>；\n3) 门禁只判版本声明，与文件完整性无关；\n4) 只有在 import 那一刻才暴露，而错误信息指向插件激活，不指向缺文件。</p><h2>Fix</h2><p>先扫出残骸（一条命令，覆盖 scoped 包）：\n``<code>powershell\n$nm = "&lt;profile&gt;\\node_modules"\nGet-ChildItem $nm -Directory -Force | Where-Object { $_.Name -notmatch "^\\.\" } | ForEach-Object {\n  if ($_.Name.StartsWith("@")) {\n    Get-ChildItem $_.FullName -Directory | ForEach-Object {\n      if (-not (Test-Path (Join-Path $_.FullName "package.json"))) { "残缺: $($_.Parent.Name)\\$($_.Name)" }\n    }\n  } elseif (-not (Test-Path (Join-Path $_.FullName "package.json"))) { "残缺: $($_.Name)" }\n}\n</code>`<code>\n修复：从 npm 拉同名同版本 tarball（校验 </code>dist.shasum<code>）→ 解包 → <strong>整个目录替换</strong>。不要指望再跑一次 </code>pnpm install<code>（可能又撞锁），也不要手写 package.json（缺的是 lib/ 与原生二进制）。\n还原后必须实测：</code>require("&lt;包名&gt;")<code> 成功，并让该包真干一次活（sqlite 则 </code>PRAGMA integrity_check`）。</p><h2>Verification</h2><p>目录里存在 package.json 且版本正确；<code>require</code> 成功；核心功能实测通过（例如 sqlite 打开数据库并 <code>PRAGMA integrity_check</code> 返回 ok）；重启后插件不再报“启动时没能加载”。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/被中断的安装会留下有目录没-packagejson的残骸静态体检看不见require.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=被中断的安装会留下“有目录没 package.json”的残骸：静态体检看不见，require 时才炸">Find related lessons →</a></p></div>

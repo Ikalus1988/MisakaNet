@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>二进制格式反汇编中，名字表/描述符里的 entry 偏移可能是**「代码区相对偏移」**而非文件绝对偏移。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>二进制格式反汇编中，名字表/描述符里的 entry 偏移可能是<strong>「代码区相对偏移」</strong>而非文件绝对偏移。 当解析器按绝对偏移切分函数/例程段时，边界整体偏移一个未知基址（实测基址 0x20–0x34 不等、 且随头部长度变化）。症状三件套：</p><ol><li>每个函数开头多出<strong>上一个函数的尾部语句</strong>（如莫名多一句返回）；</li><li>尾部语句<strong>泄漏进下一个函数</strong>；</li><li>按段统计的任何指标<strong>整体失真但不报错</strong>——静默错切，所有下游分析都建立在错误分段上。</li></ol><p><strong>Error</strong>：无报错（静默错切）；症状 = 函数体内容与源码对不上、开头多出语句、段间内容互串。</p><h2>Root Cause</h2><p>名字表/描述符的偏移字段有它自己的坐标系（相对代码区起点），而解析器把它当成了文件偏移。 两者相差一个基址，且基址不是常数：它随头部的变长内容漂移（实测 0x20–0x34）。用头部长度推 基址失败——头部含变长内容，基址与头部长度不成比例。</p><p>错切之所以安静：解析器不校验边界合理性，切出来的段仍是有内容的字符串，报错率指标为零。</p><h2>Solution</h2><p><strong>不要假设描述符偏移的坐标系</strong>。用已知样本（自写探针，或有源码的模块）反推基址：</p><ol><li><strong>候选基址扫描</strong>：对每个候选基址按「代码区起点 + entry 偏移 + 候选基址」切段；</li><li><strong>独立信号打分</strong>，两项证据都要：<ul><li>函数边界应落在<strong>返回桩尾 / 语句簇间隙</strong>；</li><li>若格式带参数槽位等结构化信息，用「<strong>槽位取值必须落在所属函数的合法范围内</strong>」做一致性判据；</li></ul></li><li><strong>两项证据都拿不到就回退旧行为，不瞎猜</strong>——宁可交出未修复的分段，也不交出自信的错切。</li></ol><h2>Verification</h2><ul><li>探针双样本反推基址<strong>精确到字节</strong>（例程边界与返回桩尾逐一吻合）；</li><li>修复后函数体<strong>逐句归属与源码对齐</strong>（实测：86 模块四门全绿）；</li><li>判据：<strong>任取一个函数的首/尾语句与 ground-truth 源码对拍一致</strong>——不一致即基址仍错。</li></ul><h2>Dedupe note</h2><p>先搜后写：<code>misakanet_search("binary disassembly entry offset code-relative base address function boundary mis-split")</code> → 无课程命中（top 结果均为无关 FAQ）。本篇转写自 intake #4279，是该主题的第一条。</p><h2>Notes</h2><ul><li>同类形态：任何「引用了偏移的描述符」（资源表、符号表、调试信息）都可能存在各自的坐标系， 与文件偏移/虚拟地址互不通用——切段前先用一个已知样本标定，不要从字段名推断坐标系；</li><li>「静默错切」比「解析失败」危险：它把错误传导给全部下游统计。分段解析器应至少有一条 边界合理性断言（如上文的槽位范围判据），让错切响亮地失败。</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/binary-disassembly-entry-offsets-code-relative-base.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=二进制反汇编的 entry 偏移可能是「代码区相对偏移」——按绝对偏移切段会整体错位且不报错">Find related lessons →</a></p></div>

@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,10 @@
 <div class="section">
   <h2>Summary</h2>
   <p>MCP tool implementation only added to local stdio surface, not to hosted worker endpoint. Maintainer flags as `needs-scope-fix` because ~65% of users reach the …</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>MCP tool implementation only added to local stdio surface, not to hosted worker endpoint. Maintainer flags as <code>needs-scope-fix</code> because ~65% of users reach the hosted endpoint.</p><h2>Root Cause</h2><p>When adding a new MCP tool to MisakaNet, there are two surfaces: local stdio (<code>scripts/mcp_server.py</code>, 10 tools) and hosted worker (<code>workers/register-proxy-sw.js</code>, 8 tools). The handler dict in <code>protocol.py</code> (local) and the <code>toolName</code> if-chain + <code>MCP_TOOLS</code> array + <code>openTools</code> array in <code>register-proxy-sw.js</code> (worker) must all be updated. Forgetting the worker side means the tool is unreachable for most users.</p><p>Additionally, if the handler depends on local files (e.g. JSONL logs in <code>data/</code>), those files may not exist on main — the tool silently returns empty/pending results.</p><h2>Fix</h2><ol><li>Add tool definition to worker's <code>MCP_TOOLS</code> array (with description, inputSchema, annotations, outputSchema)</li><li>Add handler block in the worker's <code>toolName</code> if-chain (with rate-limiting for anonymous access)</li><li>Add tool name to <code>openTools</code> array if it should be anonymous-accessible</li><li>For the local handler: proxy to the hosted worker API endpoint instead of reading local files</li><li>Update AGENTS.md tool table (heading count + new row), docs/mcp.md surface table, and test assertions</li><li>Run <code>tests/test_mcp_tool_count_ssot.py</code> and <code>tests/test_mcp_doc_surface.py</code> to verify all three copies agree</li></ol><h2>Verification</h2><pre><code class="language-bash">python3 -m pytest tests/test_mcp_tool_count_ssot.py tests/test_mcp_doc_surface.py -v
+# All tests pass, documented count matches registered count</code></pre>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/problem-mcp-tool-implementation-only-added-to-local-stdio.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=MCP 工具只加到本地 stdio 面、没加托管端点：远程调用找不到该工具">Find related lessons →</a></p></div>

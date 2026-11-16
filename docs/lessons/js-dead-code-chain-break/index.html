@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,13 @@
 <div class="section">
   <h2>Summary</h2>
   <p>JavaScript 是单线程事件驱动模型。同步执行线程中任何一个未捕获的异常（TypeError、ReferenceError 等）都会导致**整个执行线程中断**，该线程后续所有代码不再执行。常见场景：</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>JavaScript 是单线程事件驱动模型。同步执行线程中任何一个未捕获的异常（TypeError、ReferenceError 等）都会导致<strong>整个执行线程中断</strong>，该线程后续所有代码不再执行。常见场景：</p><ul><li>页面加载时有一段脚本抛出异常 → 后续所有事件绑定、DOM 操作、异步调用全部跳过</li><li>多个看似独立的功能同时失效 → 可能是一个根因阻断执行链</li><li>错误发生在脚本末尾而非开头 → 更容易被忽视，因为前面的功能正常</li></ul><h2>Root Cause</h2><pre><code class="language-js">// 例：引用了不存在的 DOM 元素
+document.getElementById('non-existent-btn').addEventListener('click', handler);
+//                 ↑ 返回 null          ↑ TypeError: Cannot read properties of null</code></pre><p>JavaScript 引擎执行到这一步抛出 TypeError，<strong>后续所有同步代码不再执行</strong>：</p><ul><li>后续的 <code>addEventListener</code> 绑定全部跳过</li><li>后续的变量声明、函数调用全部跳过</li><li>包括异步初始化 IIFE（即使 <code>async</code> 也不会执行，因为解析到这一行就崩溃了）</li></ul><h2>Solution方法</h2><ol><li><strong>优先使用可选链操作符 <code>?.</code></strong> 防御性地访问可能为 <code>null</code>/<code>undefined</code> 的属性<pre><code class="language-js">document.getElementById('btn')?.addEventListener('click', handler);</code></pre></li><li><strong>将事件绑定放在 try/catch 中</strong>或包裹在 DOMContentLoaded 回调内，确保各自独立</li><li><strong>全局错误监听</strong>兜底：<code>window.addEventListener('error', ...)</code> 至少让开发者知道出了问题</li><li><strong>删除或注释掉不再使用的 DOM 引用代码</strong>——遗留代码是不确定性的最大来源</li></ol><h2>Verification</h2><pre><code class="language-bash">echo "Lesson: JavaScript 执行链断裂：一个未捕获 TypeError 如何让整个页面静默失效"
+wc -l lessons/contrib/js-dead-code-chain-break.md</code></pre><p><strong>Expected Output:</strong></p><pre><code>Lesson: JavaScript 执行链断裂：一个未捕获 TypeError 如何让整个页面静默失效
+# (line count)</code></pre><h2>反思</h2><p>一个与视觉功能完全无关的遗留代码行（例如一个已被删除的语言切换按钮的 DOM 引用），可以通过 TypeError 让<strong>整个页面所有 JS 增强功能</strong>全部静默失效。这种 bug 的隐蔽之处在于：</p><ol><li><strong>"看起来像多个独立问题"</strong>——用户报告 A、B、C 三个功能坏了，工程师分开排查，浪费大量时间</li><li><strong>执行链模型容易被忽视</strong>——前端开发者习惯模块化思维，但 JS 的同步执行是线性的，一个断点就是全断</li><li><strong>现代框架（React/Vue）用错误边界解决了这个问题</strong>，但纯静态页面和 jQuery 风格代码仍暴露在这种风险下</li></ol><p>静态页面调试第一原则：<strong>打开 Console，先看有没有红色报错</strong>。一个红色的 TypeError 解释了"为什么所有功能都坏了"。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/js-dead-code-chain-break.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=JavaScript 执行链断裂：一个未捕获 TypeError 如何让整个页面静默失效">Find related lessons →</a></p></div>

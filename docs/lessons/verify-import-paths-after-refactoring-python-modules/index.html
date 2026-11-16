@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,28 @@
 <div class="section">
   <h2>Summary</h2>
   <p>After refactoring Python modules (moving functions between files, renaming modules), import statements in test files and other modules become stale, causing `Im…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>After refactoring Python modules (moving functions between files, renaming modules), import statements in test files and other modules become stale, causing <code>ImportError</code> or <code>ModuleNotFoundError</code> at CI time.</p><p>Common symptoms:</p><ul><li><code>ImportError: cannot import name 'ClassName' from 'old.module'</code></li><li><code>ModuleNotFoundError: No module named 'old.module'</code></li><li>Tests pass locally (cached imports) but fail in CI (fresh environment)</li></ul><h2>Root Cause</h2><p>When you move a function from <code>src/module_a.py</code> to <code>src/module_b.py</code>, any file that does <code>from src.module_a import function</code> will break. The IDE may auto-update imports in the same file, but test files and other modules often get missed.</p><p>Additionally, Python's import caching (<code>sys.modules</code>) means stale imports may work locally but fail in CI's fresh environment.</p><h2>Solution</h2><h3>Step 1: Find all references to the old import path</h3><pre><code class="language-bash"># Search for old import path across the entire repo
+grep -r "from old.module import" --include="*.py" .
+grep -r "from old.module import" --include="*.py" tests/
+
+# Also check for direct module references
+grep -r "old\.module\." --include="*.py" .</code></pre><h3>Step 2: Update all import statements</h3><p>Replace old imports with new paths:</p><pre><code class="language-python"># Before (broken)
+from mcp_memory_service.harvest.models import RewriteResult
+
+# After (correct)
+from mcp_memory_service.harvest.rewriter import RewriteResult</code></pre><h3>Step 3: Verify imports work in a fresh Python process</h3><pre><code class="language-bash"># Clear Python cache and test import
+find . -type d -name __pycache__ -exec rm -rf {} + 2&gt;/dev/null
+python -c "from new.module import ClassName; print('OK')"</code></pre><h3>Step 4: Run tests to catch any remaining stale imports</h3><pre><code class="language-bash">python -m pytest tests/ -x --tb=short 2&gt;&amp;1 | grep -i "import\|module"</code></pre><h2>Verification</h2><p>After fixing, run the two checks that a passing CI run is made of:</p><pre><code class="language-bash"># 1. the new path resolves — no output and exit 0 means the import works
+python -c "import new.module"
+
+# 2. no stale reference to the old path is left behind
+if grep -rn "from old.module" tests/ ; then
+  echo "STALE: the old path is still referenced (see the lines above)"
+else
+  echo "clean: no stale references to the old module path"
+fi</code></pre><p>Expected output of a correct fix: the first command prints nothing, and the second prints <code>clean: no stale references to the old module path</code>. A <code>ModuleNotFoundError</code> from the first, or any <code>from old.module</code> line from the second, is the failure this lesson is about — and both are exactly what CI reports as an import error rather than as a test failure, which is why they are worth running locally before pushing.</p><h2>Notes</h2><ul><li>This is especially common when working on multiple branches that refactor the same module</li><li>Use <code>git diff main..HEAD --name-only</code> to see all changed files and check their imports</li><li>For complex refactors, consider using <code>rope</code> or <code>jedi</code> for automated import updates</li><li>Test files are the most common source of stale imports because they're often updated separately from source code</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/import-path-verification-after-refactor.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Verify Import Paths After Refactoring Python Modules">Find related lessons →</a></p></div>

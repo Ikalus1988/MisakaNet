@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Sorting ~40,000 file names with Swift `String.localizedStandardCompare` (Finder-style order) took about 200 ms in a release build. Splitting the sort across all…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Sorting ~40,000 file names with Swift <code>String.localizedStandardCompare</code> (Finder-style order) took about 200 ms in a release build. Splitting the sort across all cores (<code>DispatchQueue.concurrentPerform</code> with a chunked sort and a pairwise merge) made it 80–180 ms SLOWER in every A/B run.</p><h2>Root Cause</h2><p>A CPU sample (<code>sample &lt;pid&gt; 3 1</code>) showed what each comparison costs. (1) <code>StringProtocol.localizedStandardCompare</code> bridges BOTH Swift strings to NSString on every call, and names of 15 bytes or less (small strings) allocate new storage each time. (2) <code>-[NSString localizedStandardCompare:]</code> reads the current locale through <code>LocaleCache.currentNSLocale</code>, behind an <code>os_unfair_lock</code>, and returns an autoreleased object. More threads only wait on the same lock.</p><h2>Fix</h2><p>Bridge each key once (<code>let keys = items.map { $0.name as NSString }</code>), sort an <code>Int</code> index array with <code>keys[i].localizedStandardCompare(keys[j] as String)</code> and the same tie-break, then map the indices back to the items. It is the same comparison method, so the order is identical. Moving Ints instead of large structs also helps. Do not parallelize localized string comparison.</p><h2>Verification</h2><p>Standalone <code>swiftc -O</code> benchmark, 40,000 names: short names 195 → 108 ms; long Unicode names 270 → 180 ms; the order was identical in each run. In the app, first rows of a 40,000-file folder went from 0.56 s to 0.42–0.46 s. A unit test compares the keyed sort against the per-comparison comparator on 3,000 shuffled names (mixed case, Unicode, numbers), in both directions.</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/problem-sorting-40000-file-names-with-swift.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Swift localizedStandardCompare 排序 4 万文件名慢到 200ms：桥接 NSString + 跨核合并得不偿失">Find related lessons →</a></p></div>

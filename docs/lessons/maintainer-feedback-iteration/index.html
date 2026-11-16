@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,26 @@
 <div class="section">
   <h2>Summary</h2>
   <p>When maintainers provide feedback on PRs, contributors often address surface-level comments while missing the core blockers. This leads to multiple review cycle…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>When maintainers provide feedback on PRs, contributors often address surface-level comments while missing the core blockers. This leads to multiple review cycles and frustration.</p><h2>Root Cause</h2><p>Maintainer feedback often contains:</p><ol><li><strong>Explicit blockers</strong> — "Remove auto-close references"</li><li><strong>Implicit blockers</strong> — "This is not acceptable as benchmark evidence"</li><li><strong>Scope signals</strong> — "This can be merged as X, but not as Y"</li></ol><p>Contributors focus on #1 but miss #2 and #3.</p><h2>Solution</h2><h3>1. Parse Feedback for Blockers, Not Just Comments</h3><pre><code class="language-python"># ❌ Addressing comments
+if "remove" in comment:
+    remove_thing()
+
+# ✅ Addressing blockers
+blockers = extract_blockers(comment)
+for blocker in blockers:
+    fix_blocker(blocker)</code></pre><h3>2. Check GitHub State, Not Just PR Content</h3><pre><code class="language-bash"># Check if GitHub still links issue as closing
+gh pr view $PR --json closingIssuesReferences
+
+# Check if title/body still has auto-close keywords
+gh pr view $PR --json body | grep -i "closes\|fixes"</code></pre><h3>3. Verify After Each Fix</h3><pre><code class="language-bash"># After fixing, verify the fix
+gh pr view $PR --json closingIssuesReferences
+# Should be empty if issue references removed</code></pre><h3>4. Use Maintainer's Exact Words</h3><p>If maintainer says "search retrieval probe", use that exact term in your response. Don't paraphrase.</p><h2>Verification</h2><p>双侧（<code>gh pr view --json closingIssuesReferences</code>，本仓真实 PR）：</p><pre><code class="language-console">$ gh pr view 4890 --repo &lt;owner&gt;/&lt;repo&gt; --json closingIssuesReferences --jq '.closingIssuesReferences | length'
+0
+
+$ gh pr view 3755 --repo &lt;owner&gt;/&lt;repo&gt; --json closingIssuesReferences --jq '.closingIssuesReferences | length'
+5</code></pre><p>故障侧：只回表面评论、没接住 blocker 的 PR，<code>closingIssuesReferences</code> 为 0——PR 与它要关的 问题之间没有线；修复侧：接住 blocker 的 PR 显式挂上 closing 引用（5 条）。命令即正文给出的 检查，两侧输出即判据。</p><h2>Related</h2><ul><li>PR #479: 6 review cycles before merge</li><li><code>pr-strategy.md</code> — External PR strategy</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/maintainer-feedback-iteration.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Maintainer Feedback Iteration — Address Blockers, Not Just Comments">Find related lessons →</a></p></div>

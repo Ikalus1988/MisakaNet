@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,37 @@
 <div class="section">
   <h2>Summary</h2>
   <p>MCP SSE transport works locally but returns no streaming data when accessed through a reverse proxy (nginx, Caddy, Cloudflare). The connection opens, the initia…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>MCP SSE transport works locally but returns no streaming data when accessed through a reverse proxy (nginx, Caddy, Cloudflare). The connection opens, the initial endpoint event arrives, but tool-call responses never stream back — they either arrive all at once when the connection closes or not at all.</p><h2>Root Cause</h2><p><strong>Proxy buffering vs client parsing mismatch.</strong> The proxy buffers SSE chunks (holding partial <code>data:</code> lines) while the client waits for complete <code>data:</code> lines before parsing. Neither side advances:</p><ul><li><strong>nginx</strong>: <code>proxy_buffering on</code> (default) holds chunks in memory buffers until the response ends</li><li><strong>Cloudflare</strong>: buffers first 4KB of response before forwarding</li><li><strong>Client</strong>: SSE spec says wait for complete <code>data:</code> line (terminated by <code>\n\n</code>), so partial chunks are invisible</li></ul><p>The symptom looks like "no data" but the connection is alive — both sides are waiting on each other.</p><h2>Solution</h2><p>Disable buffering at the proxy level:</p><pre><code class="language-nginx"># nginx — disable proxy buffering for SSE endpoints
+location /sse {
+    proxy_pass http://backend:8000;
+    proxy_buffering off;           # critical: don't buffer SSE chunks
+    proxy_cache off;               # don't cache streaming responses
+    proxy_read_timeout 86400s;     # SSE connections are long-lived
+    chunked_transfer_encoding on;  # pass chunks through as-is
+    proxy_set_header Connection ''; # disable keepalive pooling
+}</code></pre><p>For Caddy, use <code>flush_interval -1</code> to disable buffering.</p><p>Diagnose with curl to isolate the issue:</p><pre><code class="language-bash"># Should show streaming data incrementally
+curl -N http://localhost:8000/sse
+
+# If local works but proxy doesn't, the proxy is buffering
+curl -N https://your-proxy.example.com/sse</code></pre><h2>Verification</h2><pre><code class="language-bash"># 1. Local SSE works
+curl -N http://localhost:8000/sse &amp;
+LOCAL_PID=$!
+sleep 3
+kill $LOCAL_PID 2&gt;/dev/null
+# Should have received at least one event
+
+# 2. Proxied SSE works (after nginx config change)
+curl -N https://your-proxy.example.com/sse &amp;
+PROXY_PID=$!
+sleep 3
+kill $PROXY_PID 2&gt;/dev/null
+# Should receive events incrementally, not all at once
+
+# 3. Verify nginx config
+nginx -t
+# Should show "syntax is ok"</code></pre><h2>Prevention</h2><ul><li>Test SSE through the production proxy path, not just locally</li><li>Add monitoring: if an SSE connection sends no data for &gt;30s, flag it</li><li>Document proxy requirements in the SSE transport README</li><li>Consider WebSocket fallback for environments where proxy config can't be changed</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/sse-streaming-failure-via-proxy.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=SSE streaming returns no data through reverse proxy">Find related lessons →</a></p></div>

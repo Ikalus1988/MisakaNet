@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,34 @@
 <div class="section">
   <h2>Summary</h2>
   <p>After running `codex mcp remove <server>` to remove an MCP server registration,</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>After running <code>codex mcp remove &lt;server&gt;</code> to remove an MCP server registration, the already-running Codex desktop app-server continues to spawn the removed server. The TOML config file is updated (verified via <code>codex mcp get</code>), but the running process does not re-read it. There is no named control socket or reload signal for the desktop app-server's stdio-based MCP transport.</p><h2>Root Cause</h2><p>The Codex desktop app-server reads MCP configuration at startup and caches it for the lifetime of the process. <code>codex mcp remove</code> writes the TOML file but does not signal the running app-server. The stdio transport has no reload mechanism — unlike HTTP-based servers, there is no endpoint to POST a reload command to.</p><h2>Solution</h2><p>Restart the app-server process after modifying MCP configuration:</p><pre><code class="language-bash"># 1. Remove the MCP server
+codex mcp remove &lt;server-name&gt;
+
+# 2. Verify the config file is updated
+codex mcp get &lt;server-name&gt;
+# Expected: error or empty — server no longer in config
+
+# 3. Restart the Codex desktop app
+# macOS: Cmd+Q the app, then reopen
+# Or kill the app-server process:
+pkill -f "codex.*app-server"
+
+# 4. Verify the running instance no longer spawns the removed server
+codex mcp list
+# Expected: removed server is absent</code></pre><p>For CLI-only usage (no desktop app), changes take effect on the next <code>codex</code> invocation since the CLI reads config fresh each time.</p><h2>Verification</h2><pre><code class="language-bash"># List current MCP servers
+codex mcp list 2&gt;/dev/null | head -5
+# Note the servers listed
+
+# Remove one (if any exist)
+# codex mcp remove &lt;name&gt;
+
+# Restart and verify
+pkill -f "codex.*app-server" 2&gt;/dev/null || true
+sleep 2
+codex mcp list 2&gt;/dev/null | head -5
+# Expected: removed server no longer appears</code></pre>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/codex-desktop-mcp-config-reload.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Codex desktop: reload MCP config without restarting the app">Find related lessons →</a></p></div>

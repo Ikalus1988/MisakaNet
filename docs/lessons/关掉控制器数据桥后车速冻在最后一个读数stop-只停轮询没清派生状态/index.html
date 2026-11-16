@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,12 @@
 <div class="section">
   <h2>Summary</h2>
   <p>骑行中把「数据桥」关掉（或桥自己 stop），界面速度不再变化、里程也几乎不涨，但 GPS 明明在跳；行程记录的极速/均速跟着失真，看起来像「卡了」而不是「没数据」。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>骑行中把「数据桥」关掉（或桥自己 stop），界面速度不再变化、里程也几乎不涨，但 GPS 明明在跳；行程记录的极速/均速跟着失真，看起来像「卡了」而不是「没数据」。</p><h2>Root Cause</h2><p><code>LingboBridge.stop()</code> 只停了轮询和定时器，<strong>没有清 <code>focAt</code> / <code>focSpeedKmh</code></strong>。RootView 用 <code>focSpeedKmh.combineLatest(focAt)</code> 去喂 <code>feedMotorSpeed(kmh, live: at != nil)</code>，<code>focAt</code> 还留着上次的时间 → 下游一直以为电机在线，<code>speedKmh</code> 就冻住了。<code>flush()</code> 里那句「断流 3 秒清零」只在桥<strong>还在跑</strong>时执行，桥停了根本轮不到它。</p><h2>Fix</h2><p>抽出 <code>clearMotorLive()</code>（清 <code>focAt</code> / <code>motorRpm</code> / <code>focSpeedKmh</code>），在 <code>stop()</code> 第一行调用：</p><pre><code class="language-swift">func stop() {
+    clearMotorLive()   // 先清派生状态，再停定时器
+    timer?.invalidate(); timer = nil
+}</code></pre><p>通用规则：任何「停掉数据源」的路径，都要同时把<strong>派生状态</strong>（live 标志、最后一次读数、时间戳）清掉，否则消费者会永远停在旧值上。</p><h2>Verification</h2><p>骑行中关桥：速度立刻回落到 GPS 速度并继续变化，里程继续涨；再开桥，电机速度恢复接管且无跳变。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/关掉控制器数据桥后车速冻在最后一个读数stop-只停轮询没清派生状态.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=关掉控制器数据桥后车速冻在最后一个读数：stop() 只停轮询没清派生状态">Find related lessons →</a></p></div>

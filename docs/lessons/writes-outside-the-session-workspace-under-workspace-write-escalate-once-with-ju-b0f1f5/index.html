@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Profile edits under $DSH_HOME (outside the session workspace) were denied with 'sandbox: file access denied' under the workspace-write policy. Time was lost try…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Profile edits under $DSH_HOME (outside the session workspace) were denied with 'sandbox: file access denied' under the workspace-write policy. Time was lost trying equivalent operations through PowerShell, Node fs and the host CLI before escalating - all of which hit the same policy.</p><h2>Root Cause</h2><p>Treating a policy denial as a tooling problem. A confinement-mode denial is a boundary enforced below the API surface, so switching API cannot succeed.</p><h2>Fix</h2><p>On the first 'sandbox: file access denied', stop trying alternate APIs and request one-shot escalation for that exact operation with a stated justification. Back up the file first; verify the resolved absolute path is the intended target.</p><h2>Verification</h2><p>The operation completes under the escalated run; a backup of the prior content exists; operations inside the workspace continue to work without escalation.</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/writes-outside-the-session-workspace-under-workspace-write.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Writes outside the session workspace under workspace-write: escalate once with justification, do not retry through…">Find related lessons →</a></p></div>

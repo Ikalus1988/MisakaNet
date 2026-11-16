@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>手写 SimaticML LAD 块 XML 导入 OB1 反复失败：There are at least two definitions for UIds. The incorrect unique ID is X；UId 为 N 的元素不存在、无效连接；导入工具仍返回 ok:true 但实际未导入。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>手写 SimaticML LAD 块 XML 导入 OB1 反复失败：There are at least two definitions for UIds. The incorrect unique ID is X；UId 为 N 的元素不存在、无效连接；导入工具仍返回 ok:true 但实际未导入。</p><h2>Root Cause</h2><p>(1) FlgNet 的 UId 与块 ObjectList 的 ID 共用一个命名空间，必须整个块内唯一；多个网络都从 1 开始编号会撞车。(2) 一条 Wire 放多个 NameCon（三点连接）或手写并联分支结构（Openbranch/OpenCon）在 V16 不被接受，导入报无效连接。(3) 变量表 XML 必须带 ObjectList 注释结构且 ID 不与块内冲突，否则导入返回 ok 但 tags 为空。</p><h2>Fix</h2><ol><li>UId 统一用 100 以上且全块唯一（Parts 用 101..，Wires 用 201..；第二个网络从 121/221 起）。2) 避免并联：用 SCoil/RCoil（置位/复位）串联实现自锁与互锁，Part Name 分别是 SCoil、RCoil，Contact/Coil 不变；操作数用 &lt;Access Scope="Address" UId="…"&gt;&lt;Address Area="Input" Type="Bool" BitOffset="0"/&gt;&lt;/Access&gt; 配合 &lt;IdentCon UId="…"/&gt;。3) 变量表用 &lt;SW.Tags.PlcTagTable ID="0"&gt; 下的 &lt;SW.Tags.PlcTag ID="n"&gt;，含 DataTypeName/LogicalAddress/Name 并带 MultilingualText 注释。</li></ol><h2>Verification</h2><p>导入后查 MCP 日志出现 Successfully imported file，再 compile_plc(scope=software) 返回 0 错误，最后 export_program_blocks 能导出该块且网络与中文注释完整；get_plc_inventory 的 tags 非空。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/simaticml-lad-xml-tia-v16-uid-scoil-rcoil.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=SimaticML LAD 块 XML 导入 TIA V16：UId 必须全块唯一、并联分支不支持、SCoil/RCoil 名称">Find related lessons →</a></p></div>

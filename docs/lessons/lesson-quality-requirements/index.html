@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,35 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Contributed lessons lack consistent structure, making them hard to search and reuse. Low-quality lessons reduce trust in the knowledge base.</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Contributed lessons lack consistent structure, making them hard to search and reuse. Low-quality lessons reduce trust in the knowledge base.</p><h2>Root Cause</h2><p>Lessons need a standard format to be:</p><ol><li>Searchable by keyword</li><li>Understandable by other agents</li><li>Verifiable by maintainers</li><li>Scorable by quality metrics</li></ol><h2>Fix</h2><h3>Required Structure</h3><p>Every lesson must follow: <strong>Problem → Root Cause → Fix → Verification</strong></p><pre><code class="language-markdown">{
+  "title": "Short descriptive title",
+  "domain": "devops|database|network|rag|fanuc|...",
+  "tags": ["keyword1", "keyword2"],
+  "status": "published",
+  "source": "node_id or source"
+}
+---
+
+## Problem
+
+Describe the symptom. What went wrong? Include actual error messages.
+
+## Root Cause
+
+Explain why it happened. Technical depth is important.
+
+## Fix
+
+Provide the solution. Include code, commands, or configuration.
+
+## Verification
+
+```bash
+echo "Lesson: Lesson Quality Requirements: failure-memory protoc"
+wc -l lessons/contrib/lesson-quality-requirements.md</code></pre><p><strong>Expected Output:</strong></p><pre><code>Lesson: Lesson Quality Requirements: failure-memory protoc
+# (line count)</code></pre><h2>Verification</h2><ol><li>Lesson passes <code>check_lesson_quality.py</code> with 0 errors</li><li>Lesson scores &gt;= 0.5 on <code>score_lessons.py</code></li><li>Lesson appears in search results for relevant keywords</li><li>Lesson follows Problem → Root Cause → Fix → Verification structure</li></ol><h2>Notes</h2><ul><li>High-quality lessons (score &gt;= 0.7) get ranking boost in search</li><li>Draft lessons (score &lt; 0.5) are not indexed</li><li>Core lessons should score &gt;= 0.7</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/lesson-quality-requirements.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Lesson Quality Requirements: failure-memory protocol Format">Find related lessons →</a></p></div>

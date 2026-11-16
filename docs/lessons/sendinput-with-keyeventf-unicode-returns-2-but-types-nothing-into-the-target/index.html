@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,10 @@
 <div class="section">
   <h2>Summary</h2>
   <p>用 `SendInput` 配合 `KEYEVENTF_UNICODE` 模拟输入 Unicode 字符（例如给中文编辑器输入）时，</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>用 <code>SendInput</code> 配合 <code>KEYEVENTF_UNICODE</code> 模拟输入 Unicode 字符（例如给中文编辑器输入）时， 函数<strong>返回 2 并报告成功</strong>，但目标窗口里一个字都没有。同一环境下剪贴板 <code>Ctrl+V</code> 粘贴 340 字符中英混排完全正常。</p><p>Reporter's error line:</p><pre><code>SendInput returns 2 (success) but no characters appear in the target</code></pre><p>This is a silent failure: no exception, no non-zero return, no error dialog — the only evidence is a missing effect in the target application.</p><h2>Root Cause</h2><p><code>SendInput</code> 的返回值是<strong>已入队投递的事件条数</strong>，不是目标应用处理过的字符数。它回答的是 "这两条事件有没有被塞进系统输入队列"，而不是"字符有没有出现在控件里"。于是返回 2 被读成 "输入成功"，实际只证明了投递这一步。</p><p>报料者在排查中先误判方向：一开始认为字符被输入法（IME）吞掉，转去排查窗口焦点和输入法切换， 绕了很大一圈；最后用 <code>GetCursorPos</code> 回读才确认是 <code>SendInput</code> 这条路径本身不落地。</p><p>The intake does not name the underlying reason the Unicode path fails on that target — IME composition handling, the target control's input stack, or the injection being filtered are all consistent with what was measured. So the specific mechanism is <code>报料者未给出，需复现确认</code>; what <em>is</em> established is the measurement: the call reports success, the target text does not change, and the clipboard path works on the same characters at the same time.</p><h2>Solution</h2><p>所有文字输入统一走剪贴板 <code>Ctrl+V</code>。</p><ul><li><code>Ctrl+V</code> 是组合键，在 IME 管道之前被消费，对中英文一视同仁——因此根本<strong>不需要</strong>"切换输入法" 这个动作，中英混排直接粘。</li><li>裸字符键 <code>keybd_event</code> 可用于 ASCII，但中文和符号一律走剪贴板。</li><li>关键纪律：<code>SendInput</code> 的返回值不能作为成功依据，它只代表事件已入队投递，不代表目标应用处理了。</li></ul><p>每次粘贴后必须回读可观测状态（字数计数器 / 文本内容）来断言，而不是看返回值。</p><p>The reporter's own rule, restated as a decision table:</p><table><thead><tr><th>content</th><th>path</th></tr></thead><tbody><tr><td>ASCII only</td><td>bare character keys (<code>keybd_event</code>) acceptable</td></tr><tr><td>any CJK or symbol</td><td>clipboard + <code>Ctrl+V</code></td></tr><tr><td>success check</td><td>read the target state back after the action, never the API return value</td></tr></tbody></table><h2>Verification</h2><p>粘贴前后各读一次目标控件的字符计数：</p><pre><code>after &gt; before   → success
+after &lt;= before  → silent failure: abort, do not fall back to the return value</code></pre><p>The reporter's stated criterion, verbatim:</p><pre><code>粘贴前后各读一次目标控件的字符计数，after &lt;= before 即判定静默失败并中止，不要靠返回值判断</code></pre><p>A stronger version of the same check reads the control's text content and asserts it now contains the expected substring, not just that it is longer.</p><h2>Notes</h2><ul><li>报料者未给出具体代码（<code>SendInput</code> 的调用参数、目标控件类型、<code>GetCursorPos</code> 回读的具体实现）， 也未给出目标应用的名称或版本——需复现确认。</li><li>剪贴板路径的代码也没有随报料提供；本课只保留判据，不补写未经验证的实现。</li><li>相关但不同的问题：坐标/DPI 混用导致的点击偏移（另一篇课），以及 <code>Ctrl+V</code> 依赖前台焦点， 所以粘贴前仍需确认目标窗口已获得焦点。</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/sendinput-unicode-returns-success-no-text.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=SendInput with KEYEVENTF_UNICODE returns 2 but types nothing into the target">Find related lessons →</a></p></div>

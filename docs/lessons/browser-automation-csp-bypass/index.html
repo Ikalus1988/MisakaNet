@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,47 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Browser automation tools (Puppeteer, Playwright, CDP-based tools) fail silently</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Browser automation tools (Puppeteer, Playwright, CDP-based tools) fail silently when injecting JavaScript into pages with strict Content Security Policy headers.</p><p>Symptoms:</p><ul><li><code>page.evaluate()</code> returns <code>null</code> or throws <code>EvalError</code></li><li>Injected scripts execute but have no visible effect</li><li><code>Runtime.evaluate</code> via CDP returns <code>{"result":{"type":"undefined"}}</code></li><li>The page works fine in manual browsing; only automation fails</li><li>Some sites work on first load but fail after login (CSP set per-route)</li></ul><p>Common CSP headers that cause this:</p><pre><code>Content-Security-Policy: script-src 'self' 'nonce-abc123'
+Content-Security-Policy: script-src 'self' 'sha256-...'
+Content-Security-Policy: default-src 'self'; script-src 'self'</code></pre><p>When <code>script-src</code> does not include <code>'unsafe-inline'</code> or <code>'unsafe-eval'</code>, any dynamically injected script without a matching nonce or hash is blocked.</p><h2>Root Cause</h2><p>Browser automation tools inject JavaScript in two ways:</p><ol><li><strong><code>eval()</code> / <code>Function()</code></strong>: Creates scripts from strings. Blocked by CSP unless <code>'unsafe-eval'</code> is allowed.</li><li><strong>Inline script injection</strong>: Creates <code>&lt;script&gt;</code> elements with text content. Blocked by CSP unless <code>'unsafe-inline'</code> or a matching nonce is present.</li></ol><p>Most production sites (banking, enterprise SaaS, government portals) use strict CSP specifically to prevent XSS. This security measure also blocks legitimate automation.</p><p>The CSP check happens at the browser level, not the server level. Even CDP (Chrome DevTools Protocol) respects CSP for <code>Runtime.evaluate</code>.</p><h2>Solution</h2><h3>1. Use CDP <code>Page.addScriptToEvaluateOnNewDocument</code> (recommended)</h3><p>This method injects a script that runs before any page scripts, bypassing CSP because it executes in the browser's privileged context:</p><pre><code class="language-python"># CDP direct call — works even with strict CSP
+await client.send("Page.addScriptToEvaluateOnNewDocument", {
+    "source": """
+        // This runs before CSP is applied
+        window.__automationReady = true;
+        window.__extractData = () =&gt; {
+            return document.querySelector('.data-table')?.innerText;
+        };
+    """
+})
+await client.send("Page.navigate", {"url": target_url})
+# After navigation, call window.__extractData() via Runtime.evaluate</code></pre><p><strong>Why it works</strong>: <code>addScriptToEvaluateOnNewDocument</code> injects at the browser level, before the page's CSP header is parsed. The injected code becomes part of the page's initial script context.</p><h3>2. Use Chrome flags to disable CSP (development only)</h3><pre><code class="language-bash"># Launch Chrome with CSP disabled — NEVER use in production
+chrome --disable-web-security --user-data-dir=/tmp/chrome-automation</code></pre><p>Or via Puppeteer/Playwright:</p><pre><code class="language-python">browser = await puppeteer.launch({
+    args: ['--disable-web-security'],
+    headless: true,
+})</code></pre><p><strong>Warning</strong>: This disables ALL security protections, not just CSP. Only use for testing on pages you control.</p><h3>3. Extract data via DOM APIs instead of eval</h3><p>When you only need to read data (not execute logic), use DOM traversal which is not subject to CSP:</p><pre><code class="language-python"># Instead of: page.evaluate("document.querySelector('.price').innerText")
+# Use CDP DOM API directly:
+result = await client.send("DOM.getDocument", {"depth": 3})
+node_id = await client.send("DOM.querySelector", {
+    "nodeId": result["root"]["nodeId"],
+    "selector": ".price"
+})
+text = await client.send("DOM.getOuterHTML", {"nodeId": node_id["nodeId"]})</code></pre><h3>4. Use the page's own nonce (advanced)</h3><p>Some pages expose their CSP nonce in a meta tag or global variable. You can reuse it for injected scripts:</p><pre><code class="language-python">nonce = await page.evaluate("""
+    // Try to find the nonce from existing script tags
+    document.querySelector('script[nonce]')?.nonce
+    || document.querySelector('meta[http-equiv="Content-Security-Policy"]')
+        ?.content?.match(/nonce-([a-zA-Z0-9+/=]+)/)?.[1]
+""")
+
+if nonce:
+    await page.evaluate(f"""
+        const script = document.createElement('script');
+        script.nonce = '{nonce}';
+        script.textContent = 'window.__extractData = () =&gt; document.body.innerText';
+        document.head.appendChild(script);
+    """)</code></pre><h2>Verification</h2><pre><code class="language-bash">chrome --disable-web-security --user-data-dir=/tmp/chrome-automation
+echo "Verification passed: fix command exited 0"</code></pre><p><strong>Expected Output:</strong> command completes without error, then <code>Verification passed</code> is printed. (Checks: <code>chrome --disable-web-security --user-data-dir=/tmp/chrome-automation</code>)</p><h2>Notes</h2><ul><li><code>addScriptToEvaluateOnNewDocument</code> is the most reliable bypass because it runs before CSP parsing. It works in headless Chrome, Chromium, and all Playwright/Puppeteer versions.</li><li>CDP's <code>Runtime.evaluate</code> respects CSP. <code>Page.addScriptToEvaluateOnNewDocument</code> does not. This is by design — the latter is a browser-level injection, not a page-level eval.</li><li>Some sites use CSP <code>report-uri</code> or <code>report-to</code> to log violations. Your automation may trigger violation reports even if the script executes successfully.</li><li>For scraping authenticated pages, prefer reading cookies/session from the automation tool's context rather than injecting scripts to extract auth tokens.</li><li>Related: <code>browser-harness-cdp-browser-automation.md</code> (CDP basics), <code>feishu-block-api-false-success.md</code> (API false success patterns).</li></ul><h2>Environment</h2><ul><li>Browsers: Chromium 120+, Chrome 120+, Firefox 120+ (partial CSP bypass support)</li><li>Tools: Puppeteer 21+, Playwright 1.40+, raw CDP via WebSocket</li><li>Platform: Linux, macOS, Windows</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/browser-automation-csp-bypass.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=CSP blocks JavaScript injection in browser automation of authenticated pages">Find related lessons →</a></p></div>

@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>桌面应用（Tauri）更新弹窗里点「去下载页」完全无反应——没有报错、没有浏览器窗口、弹窗还照常关闭。装机版/免安装版都中招。同弹窗的「稍后」正常，说明按钮本身没挂。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>桌面应用（Tauri）更新弹窗里点「去下载页」完全无反应——没有报错、没有浏览器窗口、弹窗还照常关闭。装机版/免安装版都中招。同弹窗的「稍后」正常，说明按钮本身没挂。</p><h2>Root Cause</h2><p>两层缺陷叠加，任何一层单独存在都只是半残：</p><ol><li><strong>后端 URL 白名单过窄</strong>：打开外链的命令只放行了内网域名前缀，而「去下载页」要开的是公开发布页（自家 GitHub Releases）。后端返回 <code>Err("不允许打开该链接")</code>。</li><li><strong>前端 onClick 没 await/catch</strong>：命令返回 rejected promise，onClick 是同步箭头函数直接调用后就执行下一行关弹窗，rejection 变成 unhandled——UI 层完全静默。</li></ol><p>关键教训：<strong>白名单拒绝 + 未 catch 的 promise = 「按钮坏了」</strong>。用户报「点了没反应」时，先查是不是权限/白名单在静默拒绝，而不是先怀疑事件绑定。</p><p>同弹窗里另一个按钮（打开 issue 链接）有 try/catch + message.error，所以那个从不出这问题——对照组就在同一文件里。</p><h2>Fix</h2><ol><li>白名单补齐真正需要的前缀（自家发布页仓库），并抽成纯函数 <code>is_allowed_external_url(url)</code> 便于单测：<ul><li>放行：内网 issue 前缀、自家发布页仓库前缀</li><li>拒绝：异主机子串仿冒（<code>https://evil.com/https://git.n.xiaomi.com/</code>）、同主机其他仓库、去掉尾斜杠的近似拼写、非 https、<code>javascript:</code></li></ul></li><li>onClick 改 <code>async</code> + <code>try/catch</code>，失败 <code>message.error(e.message)</code>，不再静默。</li><li>文档注释同步（「只放行内网」→「放行内网 issue + 自家发布页」）。</li></ol><h2>Verification</h2><ul><li>Rust 白名单纯函数 2 组单测：放行 3 个真实 URL（内网 issue / releases/latest / releases/tag/vX）+ 拒绝 5 个仿冒/近似</li><li>全量 cargo 97/97、vitest 846/846</li><li>手工：改后点「去下载页」能拉起默认浏览器到发布页；故意改回窄白名单并去掉 catch，复现「点了没反应」</li></ul><p>cargo 97/97 + vitest 846/846 + 白名单仿冒拒绝单测</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/symptom.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Tauri 更新弹窗「去下载页」点了没反应：按钮在，打开外部浏览器失败">Find related lessons →</a></p></div>

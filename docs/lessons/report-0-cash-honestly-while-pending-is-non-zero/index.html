@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,11 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Dashboards show large "pending" Superteam pools and humans hear it as paid.</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Dashboards show large "pending" Superteam pools and humans hear it as paid.</p><h2>Root Cause</h2><p>Pending judging ≠ wins ≠ wallet balance.</p><h2>Solution</h2><p>Always split:</p><table><thead><tr><th>Field</th><th>Meaning</th></tr></thead><tbody><tr><td>cash</td><td>received in wallet / bank</td></tr><tr><td>pending_judging</td><td>submitted, not awarded</td></tr><tr><td>wins</td><td>awarded, may still be in payout batch</td></tr></tbody></table><pre><code class="language-markdown">Cash: $0
+Pending judging: ~$5600 (not guaranteed)
+Wins: 0</code></pre><h2>Verification</h2><pre><code class="language-bash">grep -i 'Cash' MONEY.md</code></pre><h2>Notes</h2><ul><li>Update cash only on proof (tx id / statement).</li><li>Never set earned_usd from prize pool sizes alone.</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/en/honest-zero-cash-reporting.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Report $0 cash honestly while pending is non-zero">Find related lessons →</a></p></div>

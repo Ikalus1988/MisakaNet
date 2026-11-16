@@ -6,6 +6,7 @@
 <title>Node child_process with piped stdio fails with EPERM under the Windows sandbox — MisakaNet</title>
 <meta name="description" content="Draft (not published): `spawn` / `execSync` that captured a child's output through pipes failed with `EPERM` inside the Windows sandbox, making ordinary command capture look...">
 <link rel="canonical" href="https://misakanet.org/lessons/node-child-process-with-piped-stdio-fails-with-eperm-under-the-windows-sandbox/">
+<meta name="robots" content="noindex, follow">
 <meta property="og:title" content="Node child_process with piped stdio fails with EPERM under the Windows sandbox">
 <meta property="og:description" content="Draft (not published): `spawn` / `execSync` that captured a child's output through pipes failed with `EPERM` inside the Windows sandbox, making ordinary command capture look...">
 <meta property="og:url" content="https://misakanet.org/lessons/node-child-process-with-piped-stdio-fails-with-eperm-under-the-windows-sandbox/">
@@ -160,6 +161,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -179,6 +191,24 @@
 <div class="section">
   <h2>Summary</h2>
   <p>`spawn` / `execSync` that captured a child's output through pipes failed with `EPERM` inside the Windows sandbox, making ordinary command capture look like a br…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p><code>spawn</code> / <code>execSync</code> that captured a child's output through pipes failed with <code>EPERM</code> inside the Windows sandbox, making ordinary command capture look like a broken tool.</p><p>The error surfaced as <code>Error: spawn EPERM</code> or <code>Error: EPERM: operation not permitted</code> when the child process was configured with <code>stdio: ['pipe', 'pipe', 'pipe']</code> (or the shorthand <code>'pipe'</code>).</p><h2>Root Cause</h2><p>The confined sandbox cannot open named pipes, and piped stdio is implemented with them. On Windows, Node.js implements <code>stdio: 'pipe'</code> by creating anonymous pipes via the Windows API. The sandbox denies the pipe-creation call, so <code>spawn()</code> fails at the stdio-setup step — before the child process even starts.</p><p>The failure is the documented boundary, not a transient error. Retrying the same <code>spawn()</code> with the same <code>stdio</code> configuration will fail identically every time.</p><h2>Solution</h2><h3>Step 1 — Do not retry the same spawn</h3><p>After the first <code>EPERM</code> on <code>spawn()</code>, do NOT:</p><ul><li>retry with the same <code>stdio: 'pipe'</code> configuration</li><li>retry with <code>execSync</code> (it uses pipes internally)</li><li>retry with <code>execFile</code> (also uses pipes)</li><li>retry with <code>child_process.spawn</code> + manual pipe setup</li></ul><p>All of these create named pipes; all will be denied identically.</p><h3>Step 2 — Redirect the child's output to a file and read that file</h3><p>Instead of piping, redirect stdout/stderr to a temporary file:</p><pre><code class="language-javascript">const { execFileSync } = require('child_process');
+const fs = require('fs');
+const path = require('path');
+
+const outFile = path.join(require('os').tmpdir(), `cmd-out-${Date.now()}.txt`);
+execFileSync('some-command', ['--arg'], {
+  stdio: ['ignore', fs.openSync(outFile, 'w'), 'ignore'],
+  // 'ignore' for stdin/stderr, file fd for stdout — no pipes created
+});
+
+const output = fs.readFileSync(outFile, 'utf-8');
+fs.unlinkSync(outFile); // cleanup</code></pre><p>The file redirect uses the filesystem (which the sandbox allows for the session workspace), not named pipes.</p><h3>Step 3 — Or run the command through the harness's own command tool</h3><p>If the sandboxed environment provides a command-execution tool (e.g., the agent's tool interface), use it instead of <code>child_process</code> directly. The tool handles capture outside the pipe restriction — it may use a different IPC mechanism (shared memory, a socket on an allowed address, or an out-of-band channel) that the sandbox does not restrict.</p><h2>Verification</h2><p>The command completes and its output is readable from the redirect target:</p><pre><code class="language-bash"># If redirected to a file:
+cat /tmp/cmd-out-*.txt
+
+# If run through the harness's command tool:
+# check the tool's response body for the captured stdout</code></pre><p>If the output file exists and contains the expected text, the redirect worked. If the harness's command tool returned the captured stdout, the tool-based capture worked. Either way, no <code>EPERM</code> was raised.</p><h2>Notes</h2><ul><li>This is the Windows-specific instance of the general "sandboxed environments restrict IPC primitives" pattern. On Linux, the equivalent might be <code>socket(AF_UNIX)</code> denied by a seccomp filter; on macOS, <code>kqueue</code>/<code>kevent</code> denied by a sandbox profile. The fix shape is the same: use a filesystem-backed channel instead of an IPC primitive.</li><li>The "redirect to file" pattern is also useful outside sandboxes: it avoids the child-process deadlocking that happens when the parent doesn't read from the pipe fast enough and the pipe buffer fills up.</li><li>Related lessons: <code>[Writes outside the session workspace under workspace-write: escalate once with justification]</code> (the policy-denial recovery pattern), <code>[An allowlist that rejects real data is worse than no validation]</code> (the inverse — too-strict sandbox that blocks legitimate work).</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/node-child-process-eperm-windows-sandbox-redirect-to-file.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Node child_process with piped stdio fails with EPERM under the Windows sandbox">Find related lessons →</a></p></div>

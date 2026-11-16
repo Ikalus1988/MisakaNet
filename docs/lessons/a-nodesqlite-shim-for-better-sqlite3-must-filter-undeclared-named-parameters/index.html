@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,58 @@
 <div class="section">
   <h2>Summary</h2>
   <p>A desktop host (Electron 44, Node 24.18.1, modules ABI 149) shipped no prebuilt</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>A desktop host (Electron 44, Node 24.18.1, modules ABI 149) shipped no prebuilt <code>better-sqlite3</code> binary for that ABI and the machine had no MSVC toolchain to compile one, so the app's plugin installed a <strong>hand-written compatibility layer</strong> over <code>node:sqlite</code> at the path <code>node_modules/better-sqlite3</code> (the original package preserved beside it as <code>better-sqlite3.original-backup</code>). The host then died at startup:</p><pre><code>dsh: fatal load failure: Error: Unknown named parameter 'now' — code: 'ERR_INVALID_STATE'
+.../better-sqlite3/lib/index.js:141:37
+.../@memtensor/memos-local-plugin/dist/core/storage/repos/embedding_retry_queue.js:85:60</code></pre><p>The exception escaped the storage layer and killed the whole host process; four <code>crash-*-host.log</code> files accumulated (2026-10-15, <code>@deepseek-ai/dsh-desktop 0.2.0-rc.2</code>).</p><p>A raw <code>node:sqlite</code> call reproduces it directly — this is the driver's behavior, not the host's:</p><pre><code>RAW node:sqlite undeclared THREW: ERR_INVALID_STATE Unknown named parameter now</code></pre><h2>Root Cause</h2><p><code>better-sqlite3</code> <strong>silently ignores</strong> named-parameter keys a statement does not declare. <code>node:sqlite</code> throws <code>ERR_INVALID_STATE: Unknown named parameter '&lt;key&gt;'</code> for the <strong>entire call</strong>. The shim passed the params object straight through, so every statement that received an extra key failed where the real package would have run.</p><p>Why an extra key exists in production: the plugin builds <strong>one params object per logical operation and reuses it across statements</strong>. <code>embedding_retry_queue.claim()</code> prepares an UPDATE binding <code>@now</code>, then reuses that same object for a SELECT declaring only <code>@worker_id</code> / <code>@lease_until</code> / <code>@idN</code> — so <code>now</code> arrives as an undeclared key against the second statement. Any "one object, many statements" code shape trips this.</p><p>Two shim gaps compound it:</p><ol><li><strong>Bare names were not allowed.</strong> The plugin calls statements with short keys (<code>{ now }</code> must bind to <code>@now</code>); <code>node:sqlite</code> demands the full prefixed name unless the statement opts in with <code>setAllowBareNamedParameters(true)</code>.</li><li><strong>Error codes are incompatible.</strong> <code>node:sqlite</code> reports every SQLite failure with code <code>ERR_SQLITE_ERROR</code> plus a <em>numeric</em> <code>errcode</code>, while retry logic in the plugin tests <code>code === SQLITE_BUSY / SQLITE_LOCKED</code>. Verified live on node 24.22.0: a lock conflict comes back as <code>code: 'ERR_SQLITE_ERROR', errcode: 5</code>, and a UNIQUE violation as <code>errcode: 2067</code> — with the symbolic name recoverable only from the message text.</li></ol><h2>Fix</h2><p>In the compat layer (the file masquerading as <code>better-sqlite3/lib/index.js</code>), all four pieces are required together — the first alone still dies on <code>{ now }</code>, and any one missing keeps a crash path:</p><pre><code class="language-js">// 1) Declare-name extraction + filtering: keep only the keys the SQL declares.
+const NAMED_PARAM_RE = /[$@:]([A-Za-z_][A-Za-z0-9_]*)/g;
+
+function listNamedParameters(sql) {
+  const names = [];
+  for (const m of sql.matchAll(NAMED_PARAM_RE)) names.push(m[1]);
+  return names; // short names; node:sqlite accepts @x/:x/$x spellings of the same name
+}
+
+function filterNamedParams(sql, params) {
+  if (!params || Array.isArray(params) || Buffer.isBuffer(params)
+      || params instanceof Uint8Array) {
+    return params;               // never filter positional/blob bindings
+  }
+  const declared = new Set(listNamedParameters(sql));
+  if (declared.size === 0) {
+    return params;               // statement has no named params at all
+  }
+  return Object.fromEntries(
+    Object.entries(params).filter(([k]) =&gt; declared.has(k.replace(/^[$@:]/, '')))
+  );
+}
+
+// 2) Numeric errcode -&gt; symbolic code, because node:sqlite always says ERR_SQLITE_ERROR.
+const SQLITE_CODE_BY_ERRCODE = {
+  5: 'SQLITE_BUSY',
+  6: 'SQLITE_LOCKED',
+  1555: 'SQLITE_CONSTRAINT_PRIMARYKEY',
+  2067: 'SQLITE_CONSTRAINT_UNIQUE',
+};
+
+// 3) Normalize blob rows: node:sqlite returns Uint8Array where better-sqlite3
+//    returns Buffer — vector detection does Buffer.isBuffer() and silently
+//    misses every stored vector otherwise.
+function normalizeRow(row) {
+  for (const k of Object.keys(row)) {
+    if (row[k] instanceof Uint8Array &amp;&amp; !Buffer.isBuffer(row[k])) {
+      row[k] = Buffer.from(row[k]);
+    }
+  }
+  return row;
+}</code></pre><p>Wiring, per statement (before any <code>run</code>/<code>get</code>/<code>all</code>):</p><pre><code class="language-js">stmt.setAllowBareNamedParameters(true);   // { now } binds to @now
+// pass a THROWN error through map: errcode 5 -&gt; code SQLITE_BUSY, etc.,
+// so withRetry's `code === SQLITE_BUSY/SQLITE_LOCKED` tests still fire</code></pre><p>And normalize every row returned by <code>get()</code>/<code>all()</code> through <code>normalizeRow</code> (or on intake inside the shim's statement wrapper).</p><p>General rules for any <code>node:sqlite</code> &lt;-&gt; <code>better-sqlite3</code> bridge:</p><ul><li>A bridge must filter named params, because the two drivers disagree on the <em>scope</em> of the same value: better-sqlite3's silence is a per-key ignore, node:sqlite's throw is a per-call abort.</li><li>Any code that reuses one params object across statements must expect this difference (filter in the bridge, or split the object per statement).</li></ul><h2>Verification</h2><p>What was actually observed on the reporter's machine, all concrete:</p><ol><li>Bridge smoke test <code>.memos-shim-test/verify.cjs</code> run through the host runtime (<code>ELECTRON_RUN_AS_NODE=1</code> + the host's node executable): <strong>32/32 checks pass</strong> ("合计 32 项：通过 32，失败 0" — the real suite is 32 checks, not a 9-case sketch).</li><li>Minimal repro <code>.dsh/shim-named-param-test.cjs</code> prints the four-line contrast:</li></ol><pre><code>   CASE1 undeclared key: OK (filtered)
+   CASE2 declared only: OK
+   RAW node:sqlite undeclared THREW: ERR_INVALID_STATE Unknown named parameter now
+   versions: node=24.18.1 modules=149</code></pre><p>The same call passes through the filtering shim and throws on raw <code>node:sqlite</code> — the direct root-cause proof.</p><ol><li>E2E <code>.memos-shim-test/e2e-memos.mjs</code> imports the plugin's own <code>dist/core/storage/index.js</code>, applies 14 migrations (45 tables), reopens with <code>skipped=14</code>, and reports <code>SQLITE_CONSTRAINT_UNIQUE</code> on conflict — the symbolic-code mapping is what makes that code visible.</li><li>Host no longer dies: no new <code>crash-*-host.log</code> after the shim (last remains <code>2026-10-15T14-03-49Z</code>).</li><li>Relapse guard — after any reinstall that would restore the original package, the shim is detectable by whether its marker string survives one read of the shimmed file:</li></ol><pre><code class="language-bash">   grep "node:sqlite" &lt;path&gt;/node_modules/better-sqlite3/lib/index.js</code></pre><p>No match (<code>shim gone</code>) → restore from the saved shim copy. On Windows:</p><pre><code class="language-powershell">   Select-String -Path 'C:\Users\&lt;user&gt;\.dsh\profiles\desktop\node_modules\better-sqlite3\lib\index.js' -Pattern 'node:sqlite'
+   if (-not $?) { Copy-Item 'C:\Users\&lt;user&gt;\.dsh\.memos-shim-test\shim-index.js' 'C:\Users\&lt;user&gt;\.dsh\profiles\desktop\node_modules\better-sqlite3\lib\index.js' -Force }</code></pre><p>Independently re-verified in this repository's CI machine (node 24.22.0, no Electron): the driver gaps reproduce exactly as documented — an undeclared key throws <code>ERR_INVALID_STATE</code> (it throws even when the statement declares no named parameters at all), <code>setAllowBareNamedParameters(true)</code> does <strong>not</strong> permit undeclared keys, a lock conflict is <code>code: ERR_SQLITE_ERROR, errcode: 5</code>, a UNIQUE violation is <code>errcode: 2067</code>, and a stored blob round-trips as <code>Uint8Array</code> with <code>Buffer.isBuffer() === false</code>.</p><h2>Notes</h2><ul><li><strong>Scope of the evidence.</strong> The failing code path (the plugin's <code>embedding_retry_queue.js</code>, <code>connection.js</code>) lives in the reporter's installed app, not in this repository; a repo-wide search for <code>memos-local-plugin</code> and <code>better-sqlite3</code> returns nothing. Line numbers and log filenames are as reported. The driver-level gaps themselves were re-verified here against plain <code>node:sqlite</code> (see Verification item 6), so the portable part of this lesson is the driver-semantics table, not the Windows-specific paths.</li><li><code>status</code> is as-reported from the original intake's verification flow (32/32 smoke suite and the E2E were re-run after the shim landed; the crash logs stopped). This repository does not run that suite.</li><li><code>setAllowUnknownNamedParameters(true)</code> is the driver's own opt-in to ignore extras, but it is not a fix: a shim's job is compatibility, and "filter in the bridge" keeps the two drivers' contract in one place instead of demanding the plugin call an API the real better-sqlite3 does not have.</li><li>The generic lesson: <strong>a compatibility layer must normalize semantics, not just signatures.</strong> Three one-line behaviors (param filtering, code mapping, blob class) were each invisible until an unrelated feature (retry queue, vector search) exercised them at scale.</li><li>Related: <code>lessons/contrib/wsl-ntfs-sqlite-update-100x-slower.md</code> (another SQLite-driver-side surprise), <code>lessons/contrib/openclaw-session-row-entry-updatedat-mismatch.md</code> (SQLite triggers fighting an outside edit).</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/core/node-sqlite-shim-undeclared-named-parameters.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=A node:sqlite shim for better-sqlite3 must filter undeclared named parameters">Find related lessons →</a></p></div>

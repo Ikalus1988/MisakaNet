@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,37 @@
 <div class="section">
   <h2>Summary</h2>
   <p>A delegated reviewer returns a proposal for a shared Markdown handoff file. The reviewer</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>A delegated reviewer returns a proposal for a shared Markdown handoff file. The reviewer computed it from an <strong>older snapshot</strong> of the file, and in the meantime someone else concurrent-edited the same file on the main line. The question (issue #3301): what is the recommended way to apply that proposal without losing the newer edits?</p><p>The failure shape is specific: if the proposal is applied as a <strong>whole-file overwrite</strong> of the current tip (<code>git show reviewer-snapshot:file &gt; file</code>, or copy-paste of the reviewer's version), every edit made after the snapshot is silently discarded. Nothing conflicts, nothing warns — the file simply reverts those regions to the old snapshot's content.</p><h2>Root Cause</h2><p>A full-file replacement has no notion of <em>which</em> lines the reviewer actually changed. It treats the reviewer's entire file as the new truth, including the regions the reviewer merely inherited from the stale snapshot. The concurrent editor's changes live in those inherited regions and are overwritten without any signal.</p><p>Git already has the right primitive: a <strong>three-way</strong> application. The base of the three sides is the snapshot the proposal was computed from. Applying a change <em>as a patch against its own base</em> — rather than as a replacement of the tip — lets the merge machinery keep both sides' edits, and raise an explicit conflict only where they genuinely overlap.</p><h2>Solution</h2><p>Never write the reviewer's file over the tip. Treat the proposal as a change <strong>from its base to its head</strong> and merge that change into the current line.</p><h3>Step 1 — identify the snapshot base the proposal was computed from</h3><p>In the repro below that is commit <code>0f8cf7a</code> ("base"); in real work it is whatever SHA the reviewer was handed.</p><h3>Step 2 — apply three-way, not overwrite</h3><p>Either merge the reviewer's branch:</p><pre><code class="language-bash">git merge --no-edit reviewer-snapshot</code></pre><p>or apply just that file's change as a three-way patch, using the same base:</p><pre><code class="language-bash">git diff &lt;base&gt;..reviewer-snapshot -- handoff.md | git apply -3 -</code></pre><p>(<code>git checkout -m</code> / <code>git merge-file</code> are equivalent formulations of the same idea.)</p><h3>Step 3 — resolve real conflicts explicitly</h3><p>When the two edits touch adjacent or identical lines, three-way application stops and leaves conflict markers with <strong>both</strong> sides intact. Resolve by hand; never resolve by picking one whole side, which recreates the original data loss on purpose.</p><p>What this does not do: it cannot invent the reviewer's intent for a region the reviewer never saw. If the concurrent edit moved a section the proposal rewrote, a human still has to combine them — but the tooling surfaces that as a conflict instead of silently choosing.</p><h2>Verification</h2><p>临时仓库双侧复现（stale 快照的审阅提案 vs 并发编辑）：</p><pre><code class="language-console">$ python3 - &lt;&lt;'PY'
+import subprocess, tempfile, os
+def sh(c, cwd): return subprocess.run(c, cwd=cwd, shell=True, capture_output=True, text=True)
+d = tempfile.mkdtemp()
+sh('git init -q --initial-branch=main repo', d)
+repo = os.path.join(d, 'repo')
+sh('git config user.email a@b.c &amp;&amp; git config user.name t', repo)
+open(os.path.join(repo, 'handoff.md'), 'w').write('## Notes\nnote line 1\nnote line 8\n\n## Open items\nitem A\n')
+sh('git add -A &amp;&amp; git commit -q -m base', repo)
+sh('git checkout -q -b reviewer-snapshot', repo)
+open(os.path.join(repo, 'handoff.md'), 'w').write('## Notes\nnote line 1\nnote line 8\n\n## Open items\nitem A (reviewer proposal)\n')
+sh('git add -A &amp;&amp; git commit -q -m review', repo)
+sh('git checkout -q main', repo)
+open(os.path.join(repo, 'handoff.md'), 'w').write('## Notes\nnote line 1\nnote line 8 (edited by main)\n\n## Open items\nitem A\n')
+sh('git add -A &amp;&amp; git commit -q -m main-edit', repo)
+sh('git show reviewer-snapshot:handoff.md &gt; handoff.md', repo)
+body = open(os.path.join(repo, 'handoff.md')).read()
+lost = 'edited by main' not in body and 'reviewer proposal' in body
+print(f'fault  side (blind overwrite): main edit lost = {lost}')
+sh('git checkout -q main -- handoff.md &amp;&amp; git merge -q --no-commit reviewer-snapshot', repo)
+merged = open(os.path.join(repo, 'handoff.md')).read()
+both = 'edited by main' in merged and 'reviewer proposal' in merged
+print(f'fix    side (three-way merge): both edits present = {both}')
+assert lost and both
+print('OK: blind overwrite drops the concurrent edit; three-way merge keeps both — the lesson holds')
+PY
+fault  side (blind overwrite): main edit lost = True
+fix    side (three-way merge): both edits present = True
+OK: blind overwrite drops the concurrent edit; three-way merge keeps both — the lesson holds</code></pre><p>双侧断言：故障侧必须丢失主线编辑、修复侧必须两者皆存；只过一侧脚本非零退出。</p><h2>Notes</h2><ul><li>The base matters. If the reviewer is re-based onto the current tip before proposing, the proposal is already current and a plain commit is enough — three-way is for the stale case this issue describes.</li><li><code>git apply -3</code> needs the base blob to be reachable (it reconstructs the ancestor from the patch's pre-image); <code>git merge</code> of the reviewer's branch is the more robust default when the proposal is a real branch.</li><li>The same rule applies to any hand-maintained shared file (reports, handoffs, checklists), not only Markdown: replace-by-content loses concurrent edits; patch-against-base preserves them or stops with a conflict.</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/handoff-review-stale-snapshot-three-way-merge.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Applying a review computed from an old snapshot as a blind overwrite silently drops concurrent edits">Find related lessons →</a></p></div>

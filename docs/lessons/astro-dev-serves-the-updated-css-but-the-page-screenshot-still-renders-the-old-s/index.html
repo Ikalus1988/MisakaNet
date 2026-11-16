@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,11 @@
 <div class="section">
   <h2>Summary</h2>
   <p>修改 Astro 项目的 `src/styles/global.css` 之后，`astro dev` 的页面**截图**仍是旧样式。整个过程没有任何报错，失败形态是"纯视觉不一致"：</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>修改 Astro 项目的 <code>src/styles/global.css</code> 之后，<code>astro dev</code> 的页面<strong>截图</strong>仍是旧样式。整个过程没有任何报错，失败形态是"纯视觉不一致"：</p><ul><li>改动后的 dev 截图 <code>sha256</code> 与改动前<strong>完全相同</strong>；</li><li>但服务端侧全都已经是新内容：<code>curl</code> 拿到的页面 HTML 与 <code>/src/styles/global.css</code> 都含新规则（<code>grep 2.4rem</code> 命中，旧的 <code>position: static</code> 已消失）；</li><li>在 URL 上加 <code>?v=2</code> 破缓存<strong>无效</strong>；</li><li>重新截图、换输出目录重截，结果不变。</li></ul><p>危险就在这里：<strong>按截图验收的人会判定"改动没生效"，然后去改一个其实已经改对的文件</strong>。反过来，如果这次改动本身就是错的，一张不更新的截图也可能让你误以为已经修好了。</p><h2>Root Cause</h2><p>报料者未给出根因，需复现确认。以下是从证据能收窄到的范围，而非已证实的机制。</p><p>证据排除了三件事：</p><ol><li><strong>不是源文件没写进去</strong>——<code>/src/styles/global.css</code> 的响应体里已经有新规则，旧规则已消失。</li><li><strong>不是 HTML 文档层面的 HTTP 缓存</strong>——加 <code>?v=2</code> 这种查询串破缓存对结果毫无影响。</li><li><strong>不是截图工具没跑</strong>——重截、换输出目录，得到的仍是同一个字节流（sha256 相同），说明采到的画面是稳定的旧画面，不是随机失败。</li></ol><p>剩下的是"浏览器最终渲染所用的 CSS 模块"这条路径：dev server 把 CSS 作为模块发给浏览器，浏览器按模块渲染；模块没被重新下发、或页面早已加载完而采集发生在 HMR 更新之前，都会得到"响应体是新的、画面是旧的"。究竟是哪一种，报料者没有定位。</p><p>一个具体的陷阱值得单独记下：<code>?v=2</code> 只影响<strong>文档</strong>的请求，不能强制浏览器重新请求一个已经加载的 CSS <strong>模块</strong>。所以"破缓存无效"不能推出"缓存不是原因"。</p><h2>Solution</h2><p><strong>判据换成构建产物</strong>，不要拿 dev 截图当验收依据：</p><pre><code class="language-bash">pnpm build
+# dist 里构建时已把 CSS 内联进页面，页面自包含
+ls dist/&lt;id&gt;/index.html</code></pre><p>然后把截图工具指向 <code>dist/&lt;id&gt;/index.html</code>（用 <code>file://</code> 或本地静态服务都行）。构建输出里 CSS 是内联的，不存在"dev server 的 CSS 模块没刷新"这条路径。</p><p>必须用 dev server 时：</p><ol><li><strong>停掉再启动</strong> <code>astro dev</code>（不是只刷新页面），让 Vite 重新生成 CSS 模块，然后再截图；</li><li>截图前确认页面是<strong>重启后重新加载</strong>的，而不是复用已有的标签页；</li><li>把截图的 <code>sha256</code> 一起写进验收记录——"改了 CSS 但截图字节没变"本身就是一个红灯，不该被当成"看错了"。</li></ol><p>配套规则：<strong>验收要断言可测量的量，而不是断言"看起来对了"</strong>。本例里可测量的量是"首行因 <code>padding-top: 2.4rem</code> 下移"和"复制按钮位于代码块右上角"。</p><h2>Verification</h2><ul><li><strong>dist 判据（主路径）</strong>：dist 截图里复制按钮位于代码块右上角、首行因 <code>padding-top: 2.4rem</code> 下移，且其 <code>sha256</code> 与 dev 截图不同——报料者实测如此。</li><li><strong>dev 判据（辅路径）</strong>：重启 dev server 后，dev 渲染与 dist 一致（报料者实测）。</li><li><strong>反例判据</strong>：如果改完 CSS 后截图 <code>sha256</code> 与改动前完全相同，则这张截图没有反映改动，<strong>不能</strong>作为"已生效"或"未生效"的任何证据。</li><li><strong>注意区分</strong>：<code>grep 2.4rem</code> 在 <code>curl</code> 到的 HTML 与 <code>/src/styles/global.css</code> 上都命中，这<strong>在改动前后都成立</strong>（改动前是旧规则消失、新规则已在响应体里），所以它不能证明渲染已更新。报料者的这次诊断在动手修复前就已经"通过"了。</li></ul><h2>Notes</h2><ul><li>同类误判的通用形态：<strong>服务端说改了，客户端看起来没改</strong>。先分清是"响应体没变"（服务端问题）还是"响应体变了但画面没变"（渲染/模块/采集问题），两者要查的东西完全不同。</li><li>若截图工具与待测页面同机，别忘了它可能也带自己的缓存/复用浏览器实例；换输出目录不等于换浏览器进程。</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/astro-dev-stale-css-screenshot.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Astro dev serves the updated CSS but the page screenshot still renders the old style">Find related lessons →</a></p></div>

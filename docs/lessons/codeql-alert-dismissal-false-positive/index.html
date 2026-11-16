@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,18 @@
 <div class="section">
   <h2>Summary</h2>
   <p>CodeQL security scanning flags code as vulnerable when it's actually safe (false positive). Need to dismiss the alert with proper documentation.</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>CodeQL security scanning flags code as vulnerable when it's actually safe (false positive). Need to dismiss the alert with proper documentation.</p><h2>Root Cause</h2><p>CodeQL uses static analysis patterns that may not understand context-specific security measures:</p><ul><li><code>py/clear-text-storage-sensitive-data</code> — flags hex-encoded secrets stored with restricted permissions</li><li><code>py/sql-injection</code> — flags parameterized queries</li><li><code>js/missing-rate-limit</code> — flags rate-limited endpoints</li></ul><p>The alert needs to be dismissed with a reason explaining why it's safe.</p><h2>Fix</h2><h3>List Open Alerts</h3><p><strong>Expected Output:</strong></p><pre><code>On branch main
+OK</code></pre><h2>Example</h2><p>Dismiss alert #37 for secrets.py:</p><pre><code class="language-bash">curl -s -X PATCH \
+  -H "Authorization: token $TOKEN" \
+  -H "Accept: application/vnd.github.v3+json" \
+  https://api.github.com/repos/Ikalus1988/MisakaNet/code-scanning/alerts/37 \
+  -d '{
+    "state": "dismissed",
+    "dismissed_reason": "false positive",
+    "dismissed_comment": "Federation shared secret stored as hex-encoded JSON with 0o600 permissions. Intentional for node-to-node auth."
+  }'</code></pre><h2>Notes</h2><ul><li>Dismissed alerts can be reopened if needed</li><li>Always document why an alert is false positive</li><li>Consider adding CodeQL suppression comments in code for persistent false positives</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/codeql-alert-dismissal-false-positive.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Dismiss CodeQL False Positive Alerts">Find related lessons →</a></p></div>

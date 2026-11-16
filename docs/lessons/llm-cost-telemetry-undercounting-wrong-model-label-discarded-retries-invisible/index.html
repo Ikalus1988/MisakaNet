@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,29 @@
 <div class="section">
   <h2>Summary</h2>
   <p>LLM cost telemetry undercounts by approximately 2× due to two independent bugs:</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>LLM cost telemetry undercounts by approximately 2× due to two independent bugs:</p><ol><li><strong>Wrong model label</strong>: The trace's <code>model</code> column records the <em>requested</em> model, not the model the provider actually served. When OpenRouter's <code>models</code> fallback chain activates (e.g., requested <code>gpt-4</code> → served <code>claude-3-opus</code>), the cost metric is labeled with the wrong model.</li><li><strong>Discarded retries invisible</strong>: Attempts that trigger retry (finish_reason=length, degeneration, mid-stream cutoff) return an error <em>before</em> the point where tokens/cost are recorded. The provider charges for both attempts, but only the second (successful) attempt appears in telemetry.</li></ol><p>The net effect: cost metrics show roughly half the actual spend, with no runtime errors — a silent telemetry failure.</p><h2>Root Cause</h2><h3>Model label mismatch</h3><p>The Go client reads <code>ChatResult.Model</code> / <code>ChatStreamChunk.Model</code> from the SDK response, but the code never actually reads these fields. It uses the <em>requested</em> model name for the trace column and cost label. When the provider serves a different model from a fallback list, the label is wrong.</p><p>The fix is to add a separate <code>model_served</code> field and use it for cost metrics when it differs from the requested model.</p><h3>Cost recorded after error discard</h3><p>The telemetry path records tokens/cost <em>after</em> the retry decision point. When a retry is triggered:</p><pre><code>attempt 1: call → finish_reason=length → RETRY (error returned before cost recorded)
+attempt 2: call → finish_reason=stop → cost recorded (only this attempt)</code></pre><p>The provider charges for both attempts, but only attempt 2 appears in telemetry. The discarded attempt's tokens are lost.</p><p>Similarly for stream cutoff: the stream error handler returns before reaching the cost recording code.</p><h3>Condition bug: <code>callErr != nil</code> zeros cost</h3><p>The existing code had <code>if callErr != nil { cost = 0 }</code>, which zeros the cost line even when <code>usage != nil</code> (meaning the provider DID charge). The correct condition is <code>callErr != nil &amp;&amp; usage == nil</code> — only zero when there's truly no usage data.</p><h2>Solution</h2><h3>1. Separate <code>model_served</code> field</h3><pre><code class="language-go">// Before: only requested model
+trace.Model = requestedModel
+costLabel := requestedModel
+
+// After: track served model separately
+trace.Model = requestedModel
+trace.ModelServed = result.Model  // from SDK response
+if trace.ModelServed != "" &amp;&amp; trace.ModelServed != requestedModel {
+    costLabel = trace.ModelServed
+}</code></pre><h3>2. Record cost at every discard point</h3><p>Create a single helper that records both the cost metric and trace line with available usage and finish_reason. Call it at ALL discard points:</p><ul><li>Retry by finish_reason=length</li><li>Retry by degeneration</li><li>Final error</li><li>Empty stream</li><li>Partial stream cutoff</li></ul><pre><code class="language-go">func recordAttempt(usage *Usage, finishReason string, err error) {
+    if usage != nil {
+        metrics.RecordLLMCost(model, usage.TotalTokens, usage.Cost)
+        trace.Log(tokens=usage.TotalTokens, cost=usage.Cost, status=finishReason)
+    }
+}</code></pre><h3>3. Per-attempt dedup flag</h3><p>Add a flag per attempt so the external error handler doesn't write a second zeroed cost line for the same attempt.</p><h3>4. Fix the zeroing condition</h3><pre><code class="language-go">// Before (wrong): zeros cost even when provider charged
+if callErr != nil { cost = 0 }
+
+// After (correct): only zero when no usage data
+if callErr != nil &amp;&amp; usage == nil { cost = 0 }</code></pre><h2>Verification</h2><p>Deterministic tests with a fake HTTP server:</p><ol><li><strong>Fallback model</strong>: Server responds with <code>"model": "other-model"</code> → trace records served model in separate field, cost metric labeled with served model.</li><li><strong>Retry by length</strong>: First attempt <code>finish_reason=length</code>, second attempt <code>finish_reason=stop</code> → TWO trace lines (discarded one with its tokens/status <code>error</code>), cost metric = sum of both.</li><li><strong>Stream cutoff</strong>: Stream cuts mid-way with partial usage → trace records partial tokens/cost, exactly ONE line per attempt.</li></ol><pre><code class="language-bash"># Run tests
+go test ./internal/telemetry/ -v -run TestCostTracking</code></pre>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/llm-cost-telemetry-undercount.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=LLM cost telemetry undercounting: wrong model label + discarded retries invisible">Find related lessons →</a></p></div>

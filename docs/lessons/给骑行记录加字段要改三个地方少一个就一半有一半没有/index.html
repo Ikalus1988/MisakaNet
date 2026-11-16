@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,13 @@
 <div class="section">
   <h2>Summary</h2>
   <p>给「控制器最高/平均温度」加字段，只改 App 侧会出现三种不一致：</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>给「控制器最高/平均温度」加字段，只改 App 侧会出现三种不一致：</p><table><thead><tr><th>漏掉的地方</th><th>症状</th></tr></thead><tbody><tr><td>服务端落盘白名单</td><td>本机 <code>trips.json</code> 有温度，NAS 那条 <code>rides.jsonl</code> 没这个 key，换机/重装恢复后全变成 <code>--</code></td></tr><tr><td><code>TripStore.trip(from:)</code> 手工映射</td><td>从 NAS 读回来的记录永远是 <code>--</code>（同 P28：漏 <code>movingMs</code> 时均速永远 <code>--</code>）</td></tr><tr><td><code>RideSessionSnapshot</code></td><td>App 被杀后恢复的行程统计从 0 重算（温度最高值只剩恢复之后那段）</td></tr></tbody></table><h2>Root Cause</h2><p>骑行记录是「本地 JSON + NAS JSONL + 快照」<strong>三份序列化</strong>，字段集合必须一模一样，但三处都是手工维护（白名单 + 逐字段映射 + 可选属性），编译器不会提醒：新增字段漏了就是 nil，能编译、能跑、只是数据缺一半。</p><h2>Fix</h2><p>当成<strong>一个改动</strong>做，顺序固定：</p><pre><code>UplinkRide 加字段
+  → server.js 落盘白名单同步
+  → TripStore.trip(from:) 补映射
+  → Trip 加 Optional 字段（默认 nil，老记录照旧能解码）
+  → 需要跨重启的统计再进 RideSessionSnapshot（同样给默认值，别抬 schema 版本）</code></pre><p>另配一个自检脚本：grep 新字段名应该命中 4~5 个文件，少于这个数就是漏了。</p><h2>Verification</h2><p>走完一轮「记录 → 上传 → 删本地 → 从 NAS 恢复」：三个来源的字段值一致；<code>grep -rn ctrlTempMaxC</code> 覆盖 4~5 个文件；老记录（没有该字段）仍能正常解码。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/给骑行记录加字段要改三个地方少一个就一半有一半没有.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=给骑行记录加字段要改三个地方，少一个就「一半有、一半没有」">Find related lessons →</a></p></div>

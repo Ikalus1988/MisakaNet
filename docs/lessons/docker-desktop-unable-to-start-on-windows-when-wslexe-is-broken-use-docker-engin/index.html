@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,26 @@
 <div class="section">
   <h2>Summary</h2>
   <p>On a Windows host, Docker Desktop refused to start:</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>On a Windows host, Docker Desktop refused to start:</p><pre><code>Error response from daemon: Docker Desktop is unable to start</code></pre><p>It repeated indefinitely, and the guest VM's init log was always <strong>completely empty</strong> — the reporter's <code>vm/init.log</code> never contained a single line of boot output. On the same host, <code>wsl.exe</code> subcommands failed:</p><pre><code>&gt; wsl --status
+The file cannot be accessed by the system.
+
+&gt; wsl --list
+The file cannot be accessed by the system.
+
+&gt; wsl --update
+The file cannot be accessed by the system.</code></pre><p>None of the usual repairs changed either symptom:</p><ul><li>enabling the <code>HypervisorPlatform</code> Windows optional feature (it was Disabled, while <code>VirtualMachinePlatform</code> and the WSL feature were Enabled);</li><li>multiple reboots;</li><li>disabling Credential Guard and Memory Integrity (HVCI) through Core Isolation;</li><li>a full clean uninstall and reinstall of Docker Desktop, including deleting <code>%APPDATA%\Docker</code>, <code>%LOCALAPPDATA%\Docker</code>, the <code>%ProgramData%</code> Docker data, and the install directory.</li></ul><p>The observation that separated the layers: <code>wsl -d Ubuntu-24.04 -u root</code> still dropped into a working Linux shell on that same machine, at the same time that <code>wsl --status</code> and <code>wsl --list</code> failed.</p><h2>Root Cause</h2><p><strong>The <code>wsl.exe</code> launcher/CLI was broken at the OS level</strong> — the reporter's conclusion from the asymmetry above, not a Docker Desktop setting. Docker Desktop's WSL2 backend provisions its VM through that <code>wsl.exe</code> path, so when the launcher is broken the VM is never created. That is why <code>vm/init.log</code> is empty rather than showing a failed boot: there was no boot to log. Feature toggles, HVCI changes and a full reinstall do not repair a corrupted <code>wsl.exe</code>, which is why none of them moved the needle.</p><p>Launching a named distro directly still works (<code>wsl -d &lt;DistroName&gt;</code> reaches a working Linux shell), so the Linux side of WSL is usable even though the subcommand path Docker Desktop relies on is not. That asymmetry is what makes a bypass possible: run the engine <em>inside</em> the distro instead of asking Docker Desktop to build a VM on the Windows side.</p><h2>Solution</h2><h3>Step 1: prove the asymmetry before changing anything</h3><pre><code class="language-powershell">wsl --status
+wsl --list
+wsl -d Ubuntu-24.04 -u root</code></pre><p>If the third command gives you a Linux shell while the first two fail, the rest of this lesson applies. If <code>wsl -d &lt;DistroName&gt;</code> also fails, this is a different failure — the distro or the WSL subsystem itself — and the bypass below will not work.</p><h3>Step 2: install Docker Engine inside the distro</h3><pre><code class="language-powershell">wsl --install -d Ubuntu-24.04     # only if the distro does not exist yet
+wsl -d Ubuntu-24.04 -u root</code></pre><p>Inside the distro, install the engine from that distro's packages:</p><pre><code class="language-bash">apt-get update
+apt-get install -y docker.io        # or the docker-ce packages from Docker's apt repo</code></pre><h3>Step 3: fix the socket permission inside the distro</h3><p>If <code>docker ps -a</code> returns <code>permission denied ... unix:///var/run/docker.sock</code>, either add your user to the <code>docker</code> group and start a fresh WSL session:</p><pre><code class="language-bash">sudo usermod -aG docker "$USER"
+# exit the distro and re-enter it: wsl -d Ubuntu-24.04</code></pre><p>or run as root, which is what the reporter used for the verification:</p><pre><code class="language-powershell">wsl -d Ubuntu-24.04 -u root docker ps -a</code></pre><p>The group change needs a new session; re-entering the distro is the step people skip.</p><h3>Step 4: use the distro as the container host, not Docker Desktop</h3><p>Run <code>docker</code> through <code>wsl -d &lt;DistroName&gt;</code> from PowerShell/cmd, and stop treating Docker Desktop's Windows-side VM management as the thing to repair. Windows-side <code>docker</code> talks to Docker Desktop's named pipe; while Docker Desktop cannot start, that pipe has nothing behind it, and no Docker-side configuration change can alter that. Anything that hardcodes the Windows-side <code>docker.exe</code> (IDE extensions, scripts that assume Docker Desktop's named pipe) keeps failing until Docker Desktop itself is repaired.</p><h2>Verification</h2><p>At the same moment, from the same machine:</p><pre><code class="language-powershell"># Windows side — still broken
+docker ps -a
+
+# WSL distro side — the workaround
+wsl -d Ubuntu-24.04 -u root docker ps -a
+wsl -d Ubuntu-24.04 -u root docker compose version</code></pre><p>Expected from the reporter's run: the Windows-side command still failed with "Docker Desktop is unable to start", while the WSL-side <code>docker ps -a</code> returned a normal (empty) container table and <code>docker compose version</code> printed <code>Docker Compose version v5.6.1</code>.</p><p>That divergence <strong>is</strong> the pass criterion. This fix is a bypass, not a repair, so the Windows-side failure is expected to remain; the containers are managed by the distro's own daemon from now on.</p><h2>Notes</h2><ul><li>Evidence E1: the reporter measured the divergence on their own machine; it was not reproduced in this repository.</li><li>Opposite case of <code>wsl-status-fails-but-docker-desktop-works</code> (intake #3767): there the same <code>wsl.exe</code> error appeared while Docker's CLI still answered, and the conclusion was "do not fix a working Docker". Probe the Docker side first — if <code>docker ps</code> from Windows works, you do not need this migration.</li><li>Do not reinstall Docker Desktop again on the strength of this lesson. The reporter already did a full clean reinstall, and it changed neither <code>wsl.exe</code> nor the daemon error.</li><li>The report does not record a successful repair of <code>wsl.exe</code> itself, and it does not name the corrupted Windows component. The lesson covers the bypass, not the OS repair.</li><li>Containers started through <code>wsl -d &lt;DistroName&gt;</code> are managed by the distro's own daemon; Docker Desktop's WSL integration and named pipe are not part of that path.</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/docker-desktop-error-response-from-daemon-no-engine.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Docker Desktop "unable to start" on Windows when wsl.exe is broken: use Docker Engine inside a WSL2 distro">Find related lessons →</a></p></div>

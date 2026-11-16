@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>在 Adobe Illustrator CC 2019（23.1.0）里用 ExtendScript 排中文海报。文字块只设了一种西文展示字体 Archivo Black（或 Anton），内容里同时含中文和英文/数字。画面上看着像是那个字体，屏幕无任何警告；但导出的 PDF 里中文实际用 AdobeSongStd-L…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>在 Adobe Illustrator CC 2019（23.1.0）里用 ExtendScript 排中文海报。文字块只设了一种西文展示字体 Archivo Black（或 Anton），内容里同时含中文和英文/数字。画面上看着像是那个字体，屏幕无任何警告；但导出的 PDF 里中文实际用 AdobeSongStd-Light（宋体衬线）渲染并被嵌入。因为字体被嵌入，别人打开也看不出异常，很容易漏掉。</p><h2>Root Cause</h2><p>Archivo Black、Anton 这类西文展示字体只含拉丁字形，没有 CJK 码位。Illustrator 遇到当前字体缺字形时不报错、不弹窗，而是静默回退到系统里的某个中文字体来显示和导出，这台机器上是 AdobeSongStd-Light。回退发生在排版引擎内部，所以脚本侧 app.textFonts.getByName() 查询、characterAttributes.textFont 赋值都会成功，从脚本完全看不出来。判据：PDF 里出现 /BaseFont /XXXXXX+AdobeSongStd-Light 而你没指定过宋体。</p><h2>Fix</h2><p>把中英文拆成两个独立文字块，不要靠字体回退：1) 中文单独成块，指定中文字体（实测可用 SourceHanSansCN-Heavy / SourceHanSansCN-Medium）；2) 英文数字单独成块，才用 Archivo Black / Anton；3) 两块分别用 geometricBounds 对齐基线。注意 app.textFonts.getByName('Archivo Black') 只查字体名，查得到不等于能排中文。</p><h2>Verification</h2><p>导出 PDF 后 grep /BaseFont：python -c "import re;d=open('out.pdf','rb').read();print(sorted(set(re.findall(rb'/BaseFont\s*/([A-Za-z0-9+,\-]+)',d))))"  期望只列出你真正指定的字体（去掉 XXXXXX+ 子集前缀），例如 ['SourceHanSansCN-Heavy']。出现 AdobeSongStd-Light 或任何你没指定的字体即为回退。肉眼看：中文若是细宋体、西文是粗黑展示体，风格打架就是回退了。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/illustrator-pdf.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Illustrator 中西文字体混排：中文静默回退宋体并嵌入 PDF">Find related lessons →</a></p></div>

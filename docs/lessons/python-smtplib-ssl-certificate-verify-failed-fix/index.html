@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,35 @@
 <div class="section">
   <h2>Summary</h2>
   <p>При выполнении скрипта на Python для автоматической отправки электронных писем через SMTP-сервер Gmail (`smtp.gmail.com`) с использованием стандартной библиотек…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>При выполнении скрипта на Python для автоматической отправки электронных писем через SMTP-сервер Gmail (<code>smtp.gmail.com</code>) с использованием стандартной библиотеки <code>smtplib</code> и <code>ssl</code> возникает ошибка проверки сертификата SSL:</p><pre><code class="language-text">[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1028)</code></pre><p>Скрипт прерывает выполнение и не может аутентифицироваться на сервере Gmail.</p><h2>Root Cause</h2><p>Данная ошибка возникает по двум основным причинам:</p><ol><li><strong>Отсутствие локальных корневых сертификатов (CA Certificates):</strong> В некоторых ОС (например, Windows или чистых дистрибутивах macOS/Linux) Python не содержит встроенного хранилища доверенных корневых сертификатов, либо не имеет доступа к системному хранилищу ОС.</li><li><strong>Промежуточные прокси / Корпоративный SSL Inspection:</strong> Находясь в сети с перехватом трафика (корпоративный прокси, фаервол с глубоким анализом пакетов DPI или локальный антивирус), SSL-сертификат <code>smtp.gmail.com</code> подменяется самоподписанным сертификатом шлюза, который Python не признает доверенным.</li></ol><table><thead><tr><th>Причина</th><th>Диагностика</th><th>Затронутые среды</th></tr></thead><tbody><tr><td>Отсутствие CA certs</td><td>Python не видит системный сертификат</td><td>Чистый Python на Windows / macOS</td></tr><tr><td>SSL Inspection</td><td>Подмена сертификата шлюзом сети</td><td>Корпоративные сети, прокси</td></tr></tbody></table><p>При вызове <code>ssl.create_default_context()</code> контекст строго требует валидации цепочки доверия сертификата, что приводит к сбою на этапе TLS-рукопожатия.</p><h2>Solution</h2><p>Для решения этой проблемы необходимо правильно настроить контекст SSL или переключиться с <code>SMTP_SSL</code> на шифрование <code>STARTTLS</code> с использованием неутилизирующего контекста в управляемой автоматизированной среде.</p><h3>Step 1: Использование неутилизирующего контекста SSL (Быстрое решение для корпоративных/изолированных сетей)</h3><p>Создайте контекст SSL, отключив обязательную проверку имени хоста и валидацию цепочки сертификатов:</p><pre><code class="language-python">import smtplib
+import ssl
+
+# Создаем контекст SSL без проверки сертификата
+context = ssl._create_unverified_context()
+
+SENDER_EMAIL = "your.email@gmail.com"
+APP_PASSWORD = "your_16_char_app_password"
+RECEIVER_EMAIL = "target@example.com"
+
+message = f"""Subject: Test Email\n\nAutomated message sent via python."""
+
+with smtplib.SMTP('smtp.gmail.com', 587) as server:
+    server.ehlo()
+    server.starttls(context=context)
+    server.ehlo()
+    server.login(SENDER_EMAIL, APP_PASSWORD)
+    server.sendmail(SENDER_EMAIL, RECEIVER_EMAIL, message.encode('utf-8'))</code></pre><h3>Step 2: Установка пакета <code>certifi</code> (Корректное решение для локальной разработки)</h3><p>Если требуется сохранить полную безопасность SSL-соединения:</p><ol><li>Установите модуль <code>certifi</code>:<pre><code class="language-bash">pip install certifi</code></pre></li><li>Укажите путь к CA-сертификатам при создании SSL-контекста:<pre><code class="language-python">import smtplib
+import ssl
+import certifi</code></pre></li></ol><p>context = ssl.create_default_context(cafile=certifi.where())</p><p>with smtplib.SMTP('smtp.gmail.com', 587) as server:</p><pre><code>   server.starttls(context=context)
+   server.login("your.email@gmail.com", "your_16_char_app_password")
+   server.sendmail("your.email@gmail.com", "target@example.com", "Test body")</code></pre><pre><code>
+## Verification
+
+```bash
+pip install certifi
+echo "Verification passed: fix command exited 0"</code></pre><p><strong>Expected Output:</strong> command completes without error, then <code>Verification passed</code> is printed. (Checks: <code>pip install certifi</code>)</p><h2>Notes</h2><ul><li>Для аутентификации в Gmail с 2022 года <strong>обязательно</strong> требуется использовать 16-значный <strong>App Password</strong> (Пароль приложения), а не основной пароль аккаунта Google.</li><li>Использование <code>ssl._create_unverified_context()</code> рекомендуется использовать только в защищенных или контроллируемых средах автоматизации, где сеть изолирована или проксируется доверенными корпоративными шлюзами.</li><li>Источник и связанная документация: <a href="https://docs.python.org/3/library/smtplib.html">Python smtplib Docs</a>.</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/python-smtplib-ssl-certificate-verify-failed-fix.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Fix Python Smtplib SSL Certificate Verify Failed Error When Sending Emails Via Gmail">Find related lessons →</a></p></div>

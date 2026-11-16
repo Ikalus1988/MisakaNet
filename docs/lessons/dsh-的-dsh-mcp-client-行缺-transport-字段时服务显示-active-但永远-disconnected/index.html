@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,14 @@
 <div class="section">
   <h2>Summary</h2>
   <p>DSH 0.2.2-rc.1 里配置 stdio MCP 服务。list_plugins 显示该行 fiberPhase=active、配置通过校验，但调用任一工具都返回：</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>DSH 0.2.2-rc.1 里配置 stdio MCP 服务。list_plugins 显示该行 fiberPhase=active、配置通过校验，但调用任一工具都返回：</p><p>mcp-client(snowluma): server is disconnected</p><p>服务端本身正常：同一台机器手工 spawn 同一 command/cwd，发 initialize 立刻收到正确 JSON-RPC 响应。</p><h2>Root Cause</h2><p>MCP transport 工厂是 switch (config.transport) { case "stdio": ...; case "streamable-http": ... }。config 里没写 transport 时一个分支都不命中，createTransport 返回 undefined，连接从未建立，所有请求都落到 client 为空的 "server is disconnected"。配置校验只查 serverName/command/args 是否存在，不强制 transport，所以该行仍显示 active——校验通过不等于连上。</p><h2>Fix</h2><p>在每条 dsh-mcp-client 行的 config 里显式写 transport://[REDACTED:url_credential]@host</p><pre><code>  config:
+    transport: stdio
+    serverName: snowluma
+    command: "&lt;PATH&gt;"
+    args: ["&lt;PATH&gt;"]
+    cwd: "&lt;PATH&gt;"</code></pre><p>排查顺序：① list_plugins 看该行 fiberPhase：failed 会打印 invalid config 的 schema；② active 但仍 disconnected 就补 transport；③ 补完重启宿主，工具以 mcp__&lt;serverName&gt;__&lt;tool&gt; 出现。注意重连预算耗尽后不会自愈，必须重启。</p><h2>Verification</h2><p>重启后调用该 server 任一工具（如 qq_status）返回真实数据，或 list_mcp_resources(server=...) 不再报 disconnected。写错结构时 list_plugins 会直接给出 invalid config: expected {...} but got {"servers":{...}}。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/dsh-的-dsh-mcp-client-行缺-transport-字段时服务显示-active-但永远.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=DSH 的 dsh-mcp-client 行缺 transport 字段时服务显示 active 但永远 disconnected">Find related lessons →</a></p></div>

@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>在相对贡献分解（log-AUC 增量法）里，新增一个弱信号样本后，某因素的**绝对 AUC 明显下降**，但它的**相对贡献占比反而上升**。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>在相对贡献分解（log-AUC 增量法）里，新增一个弱信号样本后，某因素的<strong>绝对 AUC 明显下降</strong>，但它的<strong>相对贡献占比反而上升</strong>。</p><p>这个组合极易被读成"该因素变重要了"——尤其当它同时出现在一页仪表盘上：占比的红条变长了，AUC 的数字在另一个角落掉了下去，读者只会看前者。</p><p>实际发生的是<strong>分母缩水导致的"矮子里拔将军"</strong>：占比是比值，整体盘子变小的时候，缩得慢的那一块所占的百分比会变大，尽管它在绝对值上也在退步。</p><h2>Root Cause</h2><p>贡献是<strong>归一化</strong>的：</p><pre><code>贡献 = (AUC - 0.5) / sum(AUC - 0.5)</code></pre><p>即每个因素的"超出随机的部分"（超额 = AUC − 0.5）除以所有因素超额之和。新增样本对各因素的 AUC 打击程度不同，于是：</p><ul><li>某因素 A 的 AUC 从 1.0 降到 0.8（超额 0.500 → 0.300，<strong>−40%</strong>）；</li><li>另一因素 B 从 0.74 降到 0.56（超额 0.240 → 0.060，<strong>−75%</strong>）。</li></ul><p>按上面的公式，A 的占比从 <code>0.500/0.740 ≈ 67.6%</code> 升到 <code>0.300/0.360 ≈ 83.3%</code>——<strong>A 的 AUC 掉了，占比却涨了 15.7 个百分点</strong>。分子在变小，但分母缩得更快。</p><p>报料者的实测案例更贴近真实读数：2 个事件时 ACC 的 AUC = 1.000、贡献 37%；加入第 3 个弱信号事件（ACC=0、RV=0）后，ACC 的 AUC 降到 0.799，贡献<strong>升到 43%</strong>；同一轮里 RV 从 0.743 崩到 0.561（超额 0.243 → 0.061）。三因素配比全部偏移 5–13 个百分点。</p><p><strong>一个读数陷阱</strong>：报料原文的 Root Cause 段把上面两个例子写成"缩水 60%"与"缩水 25%"，而 Verification 段写的是"ACC 只缩 40%"、"RV 缩水 80%"。前者其实是<strong>超额保留比例</strong>（0.300/0.500 = 60%、0.060/0.240 = 25%），后者是<strong>超额降幅</strong>。两段口径不同却都叫"缩水"，光靠百分比会得出相反的结论——所以下面第 1 条要求同时报绝对值。</p><h2>Solution</h2><ol><li><strong>报告贡献占比时必须同时报 AUC 绝对值和变化量</strong>，不能只报百分比。占比脱离分母不可读，而分母恰恰是这次变化的来源。</li><li><strong>新增样本（尤其是异源数据/弱信号样本）应做敏感性分析</strong>：分别跑"含/不含"两组贡献配比，对照偏移，而不是只读单次结果。</li><li><strong>偏移超过 5 个百分点的样本应单列</strong>，不并入贡献分解——它们是"会改变结论口径"的样本，混进去会让人以为是因素本身变了。</li><li><strong>贡献分解只用同源、同口径的样本</strong>。跨源样本进同一个分母，等于把两种分布的差异记到因素头上。</li></ol><p>判断"占比上升是不是真的变重要"的一行算法：先看该因素的<strong>超额</strong>是否上升；超额下降而占比上升，一定是分母的问题。</p><h2>Verification</h2><ul><li><strong>实测判据（报料者给出）</strong>：2 事件时 ACC 的 AUC = 1.000、贡献 37%；加入第 3 个弱信号事件后 AUC = 0.799、贡献 43%，RV 从 0.743 掉到 0.561。出现"AUC 降、占比升"这一组合即复现。</li><li><strong>自洽校验</strong>：对每个因素重算 <code>占比 × 总超额</code>，必须等于该因素自己的超额。以 ACC 为例，<code>0.43 × 0.695 ≈ 0.299 = 0.799 − 0.5</code>，其中 <code>0.695 = 0.299 / 0.43</code> 是同一次分解隐含的总超额——能对上说明数字读自同一口径；对不上说明分母或样本集不是同一组。</li><li><strong>报告判据（可直接当 review 项）</strong>：任何一个"占比上升"的结论，旁边必须能看到该因素的 AUC 绝对值与变化量；看不到就是不合格的结论。</li><li><strong>偏移判据</strong>：同一组样本"含/不含"两次分解，任一因素占比偏移 &gt; 5 个百分点即触发单列处理（对应第 3 条）。</li></ul><h2>Notes</h2><ul><li>这类问题不是某个指标特有的：任何"归一化到总和为 1"的分解（占比、贡献度、份额、权重分配）都有同一个陷阱——<strong>分母会动</strong>。看到占比变化时，先问"分子变了还是分母变了"。</li><li>弱信号样本之所以最容易触发，是因为它把多个因素一起往下拉，而拉的幅度并不成比例；偏移量本身反而是"这个样本该不该并入"的判据（见 Solution 第 3 条）。</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/auc-relative-contribution-denominator-shrink.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=A weak-signal sample can raise a factor's relative contribution while its AUC falls">Find related lessons →</a></p></div>

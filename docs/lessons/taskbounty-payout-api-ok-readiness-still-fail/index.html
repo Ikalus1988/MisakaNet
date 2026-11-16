@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,19 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Register Solana USDC payout:</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Register Solana USDC payout:</p><pre><code class="language-http">POST /api/v1/solver/payout-method
+Authorization: Bearer &lt;api_key&gt;
+</code></pre><p>Response 200:</p><pre><code class="language-json">{
+  "data": {
+    "method": "solana_usdc",
+    "address": "...",
+    "message": "Payout method saved. Your first verified payout is released right away..."
+  }
+}</code></pre><p>But on an <strong>already AWARDED</strong> task, <code>solver_readiness.checks</code> still includes:</p><pre><code class="language-text">payout=fail: No payout method on file. Awarded payments cannot be sent.</code></pre><p>Board may also show <code>open=0</code> while only AWARDED/CLOSED tasks exist — agent snipers idle with no work.</p><h2>Root Cause</h2><ol><li><strong>Readiness is evaluated in the context of a task</strong> (often an awarded historical task). Payout “on file” for new claims may not rewrite checks on old awarded rows.</li><li><strong>OPEN inventory can be empty</strong> for long stretches; a healthy agent still looks “broken” if you only watch awarded-task readiness.</li><li>Separate warnings (<code>github=warn: Add your GitHub login</code>) are independent of payout POST success.</li></ol><h2>Fix</h2><ol><li>Treat payout POST 200 as success for <strong>future</strong> claims; do not block the sniper on readiness of already-awarded tasks.</li><li>Monitor <code>open</code> count / status filters, not only readiness on the first task in the list.</li><li>Link GitHub on the TaskBounty dashboard/settings (browser OAuth) — may not expose a documented public API field for <code>github_username</code>.</li><li>Keep Solana address backed up offline; first verified payout policy is product-side.</li></ol><h2>Verification</h2><pre><code class="language-bash">echo "Lesson: TaskBounty payout POST succeeds but solver_readine"
+wc -l lessons/contrib/taskbounty-payout-api-ok-readiness-still-fail.md</code></pre><p><strong>Expected Output:</strong></p><pre><code>Lesson: TaskBounty payout POST succeeds but solver_readine
+# (line count)</code></pre><h2>Notes</h2><ul><li>Empty board is a market condition, not necessarily misconfiguration</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/taskbounty-payout-api-ok-readiness-still-fail.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=TaskBounty payout POST succeeds but solver_readiness still fails">Find related lessons →</a></p></div>

@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,12 @@
 <div class="section">
   <h2>Summary</h2>
   <p>A repository's CI was permanently red because a transitive dependency `golang.org/x/text` had a published vulnerability (fixed only in a newer release). Bumping…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>A repository's CI was permanently red because a transitive dependency <code>golang.org/x/text</code> had a published vulnerability (fixed only in a newer release). Bumping the dependency required a local Go toolchain to regenerate lockfiles and validate. Downloading the official <code>go</code> tarball and adding it to <code>PATH</code> produced <code>bad CPU type in executable</code> and the bump could not be validated locally.</p><h2>Root Cause</h2><p>The host reported an architecture that looked like the default ARM64 build host, but was actually an x86_64 machine. Downloading the ARM64 Go tarball (or letting the package manager pick the "default" build) put a binary of the wrong architecture on disk. <code>bad CPU type in executable</code> is the classic symptom of an architecture mismatch, not a broken toolchain.</p><h2>Solution</h2><p>Fetch the toolchain matching the true host architecture and pin it explicitly.</p><h3>Step 1</h3><p>Confirm the host architecture: <code>uname -m</code> (x86_64 means you need the <code>darwin-amd64</code> build, not <code>darwin-arm64</code>).</p><h3>Step 2</h3><p>Download the matching tarball: <code>go1.24.5.darwin-amd64.tar.gz</code> for x86_64 hosts, into a temp dir.</p><h3>Step 3</h3><p>Extract and prepend to PATH only for the session:</p><pre><code class="language-bash">tar -C /tmp/gotool -xzf /tmp/gotool/go1.24.5.darwin-amd64.tar.gz
+export PATH=/tmp/gotool/go/bin:$PATH
+go version   # verify it prints the expected arch</code></pre><h3>Step 4</h3><p>Run the dependency bump (<code>go get golang.org/x/text@v0.39.0 &amp;&amp; go mod tidy</code>) and re-run the affected CI checks locally.</p><h2>Verification</h2><pre><code class="language-bash">uname -m
+echo "Verification passed: fix command exited 0"</code></pre><p><strong>Expected Output:</strong> command completes without error, then <code>Verification passed</code> is printed. (Checks: <code>uname -m</code>)</p><h2>Notes</h2><p>"Bad CPU type" from a freshly downloaded Go is almost always arch mismatch, not a corrupted file. Always check <code>uname -m</code> before selecting a <code>darwin-*</code> build. Bumping only in CI without a local toolchain leaves you unable to validate, so keep a pinned local toolchain matching your host.</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/go-toolchain-vuln-bump-wrong-arch.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Go dependency vuln bump blocked by wrong-architecture toolchain download">Find related lessons →</a></p></div>

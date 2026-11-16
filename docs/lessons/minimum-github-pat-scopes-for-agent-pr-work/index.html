@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,15 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Agent cannot push to a fork or open PRs; or a PAT is over-scoped (`admin:org`) and risky if leaked.</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Agent cannot push to a fork or open PRs; or a PAT is over-scoped (<code>admin:org</code>) and risky if leaked.</p><h2>Root Cause</h2><p>Classic PAT created with no scopes, or with kitchen-sink scopes. Fine-grained tokens missing Contents/PRs write on the fork.</p><h2>Solution</h2><p>For fork + PR on public repos, classic PAT minimum:</p><ul><li><code>repo</code> (public_repo alone is not enough for private forks)</li><li><code>read:org</code> if org SSO</li><li><code>workflow</code> only if editing Actions workflows</li></ul><pre><code class="language-bash"># store mode 600
+printf '%s\n' "$PAT" &gt; ~/hermes-moneymaker/secrets/github-pat.txt
+chmod 600 ~/hermes-moneymaker/secrets/github-pat.txt
+gh auth login --with-token &lt; ~/hermes-moneymaker/secrets/github-pat.txt
+gh auth status
+gh api user -q .login</code></pre><p>Google-SSO accounts use <strong>email OTP</strong> for sudo mode, not password.</p><h2>Verification</h2><pre><code class="language-bash">gh auth status
+git ls-remote git@github.com:USER/FORK.git || git ls-remote https://github.com/USER/FORK.git</code></pre><h2>Notes</h2><ul><li>Rotate on leak suspicion.</li><li>Prefer deploy keys for single-repo write bots.</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/en/github-pat-scopes-minimum.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Minimum GitHub PAT scopes for agent PR work">Find related lessons →</a></p></div>

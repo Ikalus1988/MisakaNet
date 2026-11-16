@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,38 @@
 <div class="section">
   <h2>Summary</h2>
   <p>`curl https://example.com` 返回空、报错或超时。不知道是 DNS、代理、证书还是目标服务的问题。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p><code>curl https://example.com</code> 返回空、报错或超时。不知道是 DNS、代理、证书还是目标服务的问题。</p><h2>Root Cause</h2><p>网络请求的故障链路有多层，每一层都会产生不同错误。需要逐层排查。</p><h2>Solution</h2><pre><code class="language-bash"># curl / wget 请求失败通用Diagnosis
+nslookup example.com
+dig example.com
+# 正常返回 IP 地址 → DNS OK
+# 返回 NXDOMAIN / server can't find → DNS 问题
+
+# 2. 网络连通性（跳过代理）
+curl -v --noproxy "*" https://example.com
+# 能连接但超时 → 防火墙/代理问题
+
+# 3. 证书验证
+curl -v https://example.com
+# SSL certificate problem → 证书问题
+# 临时跳过（仅测试）：
+curl -k https://example.com
+
+# 4. 代理验证
+echo $http_proxy
+echo $https_proxy
+# 查看当前代理配置
+
+# 5. 指定超时（默认无超时）
+curl --connect-timeout 5 --max-time 10 https://example.com
+
+# 6. 只看响应头（不下载内容）
+curl -I https://example.com
+
+# 7. 完整的排查命令
+curl -v --trace-ascii /dev/stderr https://example.com 2&gt;&amp;1 | head -30</code></pre><h2>Verification</h2><pre><code class="language-bash">echo $http_proxy
+echo "Verification passed: fix command exited 0"</code></pre><p><strong>Expected Output:</strong> command completes without error, then <code>Verification passed</code> is printed. (Checks: <code>echo $http_proxy</code>)</p><h2>错误速查</h2><table><thead><tr><th>错误</th><th>原因</th><th>方向</th></tr></thead><tbody><tr><td><code>Could not resolve host</code></td><td>DNS 故障</td><td>检查 <code>/etc/resolv.conf</code> / 代理</td></tr><tr><td><code>Connection refused</code></td><td>目标端口未开放</td><td>确认服务是否运行</td></tr><tr><td><code>Connection timed out</code></td><td>防火墙/网络不通</td><td>检查代理或换源</td></tr><tr><td><code>SSL certificate problem</code></td><td>证书过期/自签</td><td><code>-k</code> 临时跳过</td></tr><tr><td><code>Failed to connect</code></td><td>网络不可达</td><td>先 ping 确认</td></tr></tbody></table>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/curl-request-troubleshoot.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=curl / wget 请求失败通用Diagnosis">Find related lessons →</a></p></div>

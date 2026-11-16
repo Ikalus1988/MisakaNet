@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,36 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Production code adds a new attribute access (e.g. `self.paths.config_path`), and every test that mocks that object with `SimpleNamespace` (or a hand-rolled stub…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Production code adds a new attribute access (e.g. <code>self.paths.config_path</code>), and every test that mocks that object with <code>SimpleNamespace</code> (or a hand-rolled stub) crashes with <code>AttributeError</code> — even though those tests aren't testing the new code path.</p><pre><code class="language-python"># Production code adds:
+config = load(self.paths.config_path)  # NEW
+
+# Existing test mock:
+trial.paths = SimpleNamespace(trial_dir=tmp_path)  # BOOM: no config_path</code></pre><p>The mock object is an <strong>implicit interface contract</strong>. Every new attribute access on the real object must be mirrored in every mock of that object.</p><h2>Root Cause</h2><p>Tests create mock objects with only the attributes they need at the time. When production code later adds a new attribute access on the same object, the mock doesn't have it → <code>AttributeError</code> at runtime. This is a cascade: one code change breaks N unrelated tests.</p><h2>Fix</h2><h3>1. Add missing attributes with sentinel paths</h3><pre><code class="language-python"># ❌ Old: only mock what the test directly needs
+trial.paths = SimpleNamespace(trial_dir=tmp_path)
+
+# ✅ New: add all attributes the production code now touches
+trial.paths = SimpleNamespace(
+    trial_dir=tmp_path,
+    config_path=tmp_path / "_config_sentinel.json",
+    result_path=tmp_path / "_result_sentinel.json",
+)</code></pre><p>Use <code>_xxx_sentinel.json</code> naming — signals "placeholder, not part of test logic".</p><h3>2. Use <code>spec=</code> for auto-enforcement (unittest.mock)</h3><pre><code class="language-python">from unittest.mock import Mock
+
+# Mock enforces the real object's attribute surface
+trial.paths = Mock(spec=RealPaths)
+trial.paths.trial_dir = tmp_path
+# Now accessing .config_path on a mock without spec raises AttributeError
+# immediately at the mock call site — not buried in a test 3 files away</code></pre><h3>3. Grep before you commit</h3><pre><code class="language-bash"># Find all mock/stub sites for the object you're changing
+rg "SimpleNamespace\(.*paths\b" tests/
+rg "Mock\(.*paths" tests/
+rg "trial\.paths\s*=" tests/</code></pre><h2>Verification</h2><pre><code class="language-bash"># Before fix: N tests fail with AttributeError
+pytest tests/ -x -q 2&gt;&amp;1 | grep AttributeError
+# Expected: "AttributeError: SimpleNamespace has no attribute 'config_path'"
+
+# After fix: all pass
+pytest tests/ -x -q
+# Expected: all green</code></pre><h2>Key Insight</h2><p>Mock objects are <strong>implicit interface contracts</strong>. Adding an attribute access to production code is a <strong>breaking change</strong> for every mock of that object. Treat it like an API change — grep all consumers before merging.</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/mock-attribute-cascade-test-breakage.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Mock attribute cascade — adding attribute access breaks existing tests">Find related lessons →</a></p></div>

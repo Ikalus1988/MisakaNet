@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,29 @@
 <div class="section">
   <h2>Summary</h2>
   <p>中文 BM25 搜索长查询召回率低，标准 BM25 对中文分词后的短 token 敏感度不足。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>中文 BM25 搜索长查询召回率低，标准 BM25 对中文分词后的短 token 敏感度不足。</p><h2>Root Cause</h2><ol><li>中文查询经 jieba 分词后产生短 token（2-3字），BM25 对短 token 的 IDF 权重不够</li><li>稀有词（仅匹配1个文档）的 IDF 没有额外加权</li><li>全局 DF 表缺失词的 IDF 回退策略不当</li></ol><h2>Solution</h2><p><strong>滑动窗口子串加分：</strong></p><ul><li>对 4-6 字的子串窗口进行额外加分</li><li>设置 10 字门槛防止噪声（太短的子串不加分）</li><li>提升长查询中连续语义片段的召回</li></ul><p><strong>唯一候选加分：</strong></p><ul><li>当一个词仅匹配 1 个文档时，IDF × 2.0</li><li>限制仅对纯中文词生效，避免英文回归</li><li>提升稀有专有名词的精确匹配</li></ul><pre><code class="language-python"># 滑动窗口加分示例
+def sliding_window_boost(query, doc, window_min=4, window_max=6, threshold=10):
+    if len(query) &lt; threshold:
+        return 0
+    boost = 0
+    for w in range(window_min, window_max + 1):
+        for i in range(len(query) - w + 1):
+            substring = query[i:i+w]
+            if substring in doc:
+                boost += 1
+    return boost
+
+# 唯一候选加分示例
+def unique_candidate_boost(df, doc_freq, is_chinese=True):
+    if not is_chinese:
+        return 1.0  # 英文不加分
+    if doc_freq == 1:
+        return 2.0  # 仅匹配1个文档，IDF翻倍
+    return 1.0</code></pre><h2>Verification</h2><pre><code class="language-bash">grep -i 'bm25\|chunk\|embed' lessons/contrib/rag-*.md 2&gt;/dev/null | head -3
+echo Search verified</code></pre><p><strong>Expected Output:</strong></p><pre><code># (refs)
+Search verified</code></pre><h2>Key Points</h2><ul><li>滑动窗口需设 10 字门槛防噪声</li><li>唯一候选需限制纯中文词防英文回归</li><li>全局 DF 表缺失词需要 IDF 回退策略</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/bm25-chinese-sliding-window-tuning.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=中文 BM25 搜索：滑动窗口子串加分与唯一候选加分">Find related lessons →</a></p></div>

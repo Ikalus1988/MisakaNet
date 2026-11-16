@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,11 @@
 <div class="section">
   <h2>Summary</h2>
   <p>用 edge-tts 的 WordBoundary 事件生成字幕：遍历 stream()，收集 type=="WordBoundary" 的 offset/duration，再按累计字数每 12 字切一组，生成 SRT。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>用 edge-tts 的 WordBoundary 事件生成字幕：遍历 stream()，收集 type=="WordBoundary" 的 offset/duration，再按累计字数每 12 字切一组，生成 SRT。</p><p>结果：一段 40 多字的中文口播只生成 1 条字幕，一条显示 40+ 字，竖屏上根本读不完。检查发现 words 数组里只有寥寥几个元素，而不是预期的十几二十个。</p><p>同样的代码处理英文文本时粒度正常。</p><h2>Root Cause</h2><p>中文的 WordBoundary 粒度不可靠：它按"词"返回，而不同语音、不同文本下，一个"词"可能直接是一整句。把 WordBoundary 当成"字级时间戳"来用，就会得到几十字一条的字幕。</p><p>英文按空格分词粒度细得多，所以这个坑在中文上才明显——同一套代码在英文上测不出来。</p><h2>Fix</h2><p>不要用 WordBoundary 做字幕切分依据。改成自切句 + 按时长比例分配：</p><ol><li>人工/按语义把口播稿切成短句，每句 ≤15 字（按逗号、句号、意群切）</li><li>用 ffprobe 量每段配音的真实时长 dur</li><li>按字数比例分配时间：<p>usable = dur - LEAD - TAIL      # LEAD 0.06s, TAIL 0.10s weights = [len(line) for line in lines] t = start + LEAD for line, w in zip(lines, weights):</p><pre><code>span = usable * w / sum(weights)
+emit(t, t + span - 0.04, line)
+t += span</code></pre></li></ol><p>段首延后、段尾提前，是为了不让切点的爆音/气口被算进这一句。</p><h2>Verification</h2><ol><li>字幕条数 ≈ 总字数/12，不是 ≈ 配音段数</li><li>最长一条 ≤15 字</li><li>抽帧看：字幕在句子说完前后切换，不早不晚</li></ol>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/edge-tts-的-wordboundary-在中文上粒度很粗拿它切字幕会得到一行-40-多字.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=edge-tts 的 WordBoundary 在中文上粒度很粗，拿它切字幕会得到一行 40 多字">Find related lessons →</a></p></div>

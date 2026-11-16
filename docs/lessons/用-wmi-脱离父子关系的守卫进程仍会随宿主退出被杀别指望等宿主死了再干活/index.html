@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>要给一个运行中的 Electron 宿主（它会锁住 node_modules 里的原生模块）做离线安装，思路是：起一个守卫进程，等宿主完全退出后自动跑安装、装完再把宿主拉起来。守卫用 WMI `Win32_Process.Create` 创建（不是调用方的子进程），进程确实起来了、也写日志了、也检测到宿主退出并记了一行…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>要给一个运行中的 Electron 宿主（它会锁住 node_modules 里的原生模块）做离线安装，思路是：起一个守卫进程，等宿主完全退出后自动跑安装、装完再把宿主拉起来。守卫用 WMI <code>Win32_Process.Create</code> 创建（不是调用方的子进程），进程确实起来了、也写日志了、也检测到宿主退出并记了一行「DSH 进程已清空（等了 40 秒）」。<strong>紧接着就没了</strong>——下一条日志（"开始 pnpm install"）再也没出现，进程列表里也查不到它。</p><h2>Root Cause</h2><p>WMI 创建只解决了"父子关系"，没解决"任务归属"。Windows 的 Job Object 是按 Job 记账的，宿主（或它的宿主链）在启动时把派生进程放进同一个 Job，最后一个进程退出时 Job 关闭，属主设置了 <code>JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE</code> 就会把 Job 里剩下的进程一起杀掉。守卫进程在 Job 里、又不是宿主的父子，所以"宿主退出"这个事件既等于它被唤起的时机，也等于它的死期——两件事撞在同一毫秒。前端表现就是"日志停在宿主退出那一行，之后什么都没有"。</p><h2>Fix</h2><p>不要用"等宿主退出"作为离线任务的触发条件。可用的替代（按可靠度排）：① 用一个真正独立的宿主来跑——计划任务/服务/另一个已登录会话的 shell，它不属于宿主的 Job；② 反过来做：先让宿主退出，再由人（或另一个已存在的入口）启动安装；③ 若只是想改依赖树，改用不触发 rename 的路线（新增目录而非替换，例如零依赖包直接解 tarball 到 node_modules，再用 <code>pnpm install --lockfile-only</code> 只同步账本），这样根本不需要宿主退出。</p><h2>Verification</h2><p>在宿主退出后 check：安装日志里出现了本该由它写的下一条记录；进程在宿主退出后仍然存活（任务管理器能看到）；最终 node_modules 里目标包版本正确。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/wmi-脱离父子关系的守卫进程仍随宿主退出被杀.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=用 WMI 脱离父子关系的守卫进程，仍会随宿主退出被杀：别指望"等宿主死了再干活">Find related lessons →</a></p></div>

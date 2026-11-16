@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>PySide6 GUI app aborts at an arbitrary moment with `Fatal Python error: none_dealloc: deallocating None: bug likely caused by a refcount error in a C extension`…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>PySide6 GUI app aborts at an arbitrary moment with <code>Fatal Python error: none_dealloc: deallocating None: bug likely caused by a refcount error in a C extension</code> (or <code>bool_dealloc</code> on finalization). The stack names innocent widget paint code, so the traceback misleads. Only CPython 3.10/3.11 is affected; 3.12+ looks healthy.</p><h2>Root Cause</h2><p>PySide6 6.12.0 wheels leak one ref to the <code>None</code> singleton on every ordinary <code>void</code> Qt call and one ref to <code>True</code> on every <code>Signal.emit()</code> (PYSIDE-3474; PYSIDE-3424 moved the 6.12 build machines to Python &gt;=3.12, so Py_RETURN_* assumes immortal singletons — CPython GH-134989). On CPython 3.12+ the singletons are immortal (PEP 683) and the corrupting Py_DECREF is a no-op; on 3.10/3.11 the refcount hits zero and the interpreter aborts. Wheels are still <code>cp310-abi3</code> and declare Python &gt;=3.10,&lt;3.16, so pip installs them on 3.11 without warning. No application-code workaround exists: every void Qt call leaks.</p><h2>Fix</h2><p>Pin the PySide6 family below 6.12 on CPython &lt; 3.12 with environment markers (<code>pyside6-essentials~=6.11.0; python_version &lt; '3.12'</code> / <code>~=6.12.0; python_version &gt;= '3.12'</code>, same for a dev <code>pyside6</code>), relock, and leave the project's declared Python range unchanged; remove the split once 6.12.1+ ships (upstream fix is build-only).</p><h2>Verification</h2><p>CPython 3.11.14 + PySide6 6.12.0: 100 calls each of QLabel.setText / QColor.setAlpha / QWidget.resize each lose exactly 100 None refs; 100 Signal.emit() lose exactly 100 True refs; animated painted QLabel aborts with SIGABRT (exit 134) in 1-2 s. Same code on 6.11.3: zero deltas, clean exit. 3.12.3 + 6.12.0: clean exit, stable refcounts (immortal singletons). Regression tests: an in-process sys.getrefcount canary (delta 0, warm-up + GC paused, retained QObject) plus an offscreen subprocess animating the painted widget that must exit 0 with non-negative deltas; assert the installed version satisfies the pyproject marker branch. Verified 2026-11 on Linux; PyPI had no 6.12.1 yet at that time.</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/pyside6-612-refcount-leak-aborts-on-cpython-311.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=PySide6 6.12 在 CPython 3.10/3.11 上崩于 none_dealloc：每次普通 Qt 调用漏掉一个 None 引用">Find related lessons →</a></p></div>

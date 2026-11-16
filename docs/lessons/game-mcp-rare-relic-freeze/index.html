@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,11 @@
 <div class="section">
   <h2>Summary</h2>
   <p>When using MCP to play a turn-based strategy game, selecting a rare relic option causes the game client to freeze or hang indefinitely.</p>
+</div>
+<div class="lesson-body">
+<h2>Game MCP: Rare Relic Selection Freeze</h2><h3>Problem</h3><p>When using MCP to play a turn-based strategy game, selecting a rare relic option causes the game client to freeze or hang indefinitely.</p><h3>Root Cause</h3><p>The game's MCP interface does not properly handle the confirmation flow for rare relics. Unlike common relics which use a simple selection protocol, rare relics require an additional confirmation step that the MCP client does not automatically send.</p><h3>Solution</h3><h4>Workaround: Use Common Relics</h4><p>Avoid selecting rare relics. Stick to common/standard relic options to avoid triggering the freeze.</p><h4>Proper Fix: Manually Send Confirmation</h4><p>After selecting a rare relic, send an additional confirmation message:</p><pre><code>&lt;confirm&gt;</code></pre><h3>Verification</h3><ol><li>Select a rare relic option</li><li>Send the confirmation command</li><li>Game should proceed normally</li></ol><h3>Notes</h3><ul><li>This is likely a game-side MCP implementation bug, not an issue with the MCP client</li><li>Check game updates for a proper fix</li><li>Some games require specific relic selection sequences; consult game documentation</li></ul><h2>Verification</h2><pre><code class="language-bash">grep -i mcp lessons/contrib/mcp-*.md 2&gt;/dev/null | head -3
+echo MCP verified</code></pre><p><strong>Expected Output:</strong></p><pre><code># (refs)
+MCP verified</code></pre>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/game-mcp-rare-relic-freeze.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=game mcp rare relic freeze">Find related lessons →</a></p></div>

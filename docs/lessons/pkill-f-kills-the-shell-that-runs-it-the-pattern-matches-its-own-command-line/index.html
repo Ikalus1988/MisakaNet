@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,23 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Cleanup commands of the shape `pkill -f "<pattern>"` and `pgrep -f "<pattern>" | head -1` **kill the</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Cleanup commands of the shape <code>pkill -f "&lt;pattern&gt;"</code> and <code>pgrep -f "&lt;pattern&gt;" | head -1</code> <strong>kill the shell that is executing them</strong>, silently:</p><pre><code>$ pkill -f "http.server 8877" &amp;&amp; python3 scripts/check.py
+[killed by signal: SIGTERM]        # no output at all; check.py never ran</code></pre><p>The intended target may or may not have been stopped, the rest of the <code>&amp;&amp;</code> chain never executed, and nothing in the output says why. For an agent that batches several steps into one shell call, the whole remaining call vanishes — a cleanup step can leave the host half-cleaned with a log that looks like a timeout.</p><h2>Root cause</h2><p><code>pkill -f</code> and <code>pgrep -f</code> match against the <strong>full command line of every process on the machine</strong>, including the shell that is running the command. That shell's own command line <em>contains the pattern string</em> — the pattern is right there in <code>bash -c '… pkill -f "http.server 8877" …'</code> — so the pattern selects its own parent, and SIGTERM goes to the shell before the kill is reported.</p><p>Two details that make it worse than it looks:</p><ul><li><strong><code>|| true</code> does not protect you.</strong> The signal arrives at the shell itself, so the fallback branch never runs. Existing guidance that recommends <code>pkill -f "&lt;pattern&gt;" || true</code> is recommending the unsafe form.</li><li><strong><code>| head -1</code> does not protect you either.</strong> The pattern still matches the invoking shell; picking one PID out of the result only changes <em>which</em> of the matches you kill, not whether you are one of them.</li></ul><p><code>pgrep</code> alone is not safe when its output feeds a kill in the same call, for the same reason.</p><h2>Fix</h2><p>Match on something that cannot appear in your own command line — the listening port, a PID file, or a recorded PID — instead of on a command-line substring:</p><pre><code class="language-bash"># Stop a server by the port it owns (recommended)
+PID=$(ss -ltnp 2&gt;/dev/null | sed -n 's/.*:8899 .*pid=\([0-9]*\).*/\1/p' | head -1)
+[ -n "$PID" ] &amp;&amp; kill "$PID" &amp;&amp; echo "stopped $PID"
+
+# Confirmation that does not depend on the process name
+curl -s -o /dev/null -w '%{http_code}\n' --max-time 3 http://127.0.0.1:8899/   # 000 = stopped</code></pre><p>If you genuinely must pattern-match, keep the pattern from matching itself by bracketing one character — the regex <code>[h]ttp.server</code> matches the text <code>http.server</code> but <strong>does not</strong> match the literal text <code>[h]ttp.server</code>, which is what your own command line contains:</p><pre><code class="language-bash">pgrep -af "[h]ttp.server"        # never lists the shell running this line
+pkill -f "[h]ttp.server"</code></pre><p>The same bracket trick is why <code>ps aux | grep [p]attern</code> works; here it is the difference between stopping the server and stopping yourself. Better still, start the process with its PID recorded (<code>server &amp; echo $! &gt; /tmp/server.pid</code>) and kill <code>$(cat /tmp/server.pid)</code> later — no matching at all.</p><h2>Verification</h2><pre><code class="language-bash"># Reproduce: the marker is never printed, because the shell dies first
+bash -c 'python3 -m http.server 8899 --bind 127.0.0.1 &amp; sleep 1; pkill -f "http.server 8899"; echo REACHED'
+# (no REACHED)
+
+# Fix: kill by port, then prove the port is closed
+PID=$(ss -ltnp 2&gt;/dev/null | sed -n 's/.*:8899 .*pid=\([0-9]*\).*/\1/p' | head -1)
+[ -n "$PID" ] &amp;&amp; kill "$PID"
+curl -s -o /dev/null -w '%{http_code}\n' --max-time 3 http://127.0.0.1:8899/   # 000</code></pre><h2>Notes</h2><ul><li>Seen twice in one session: <code>pkill -f "http.server 8877"</code> and <code>PID=$(pgrep -f "python3 -m http.server" | head -1) &amp;&amp; kill "$PID"</code> — both killed the invoking shell. The second one looks careful and is not.</li><li>When a tool call reports <code>[killed by signal: SIGTERM]</code> (or simply returns nothing) right after a pattern-based kill, this is the first thing to check — before suspecting the harness or the target.</li><li>Agent-specific consequence: because the kill takes out the shell, any <code>&amp;&amp;</code>-chained validation in the same call is skipped, so a failed cleanup can look like a failed check with no error text.</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/pkill-pattern-matches-its-own-shell.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=pkill -f kills the shell that runs it: the pattern matches its own command line">Find related lessons →</a></p></div>

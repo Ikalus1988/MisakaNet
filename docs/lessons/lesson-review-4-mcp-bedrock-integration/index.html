@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,39 @@
 <div class="section">
   <h2>Summary</h2>
   <p>AI Agent 调用外部工具（S3、DynamoDB、内部 API）时，每个工具都要写 function calling schema 和调用逻辑。工具一多，维护成本很高，没有标准化方案。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>AI Agent 调用外部工具（S3、DynamoDB、内部 API）时，每个工具都要写 function calling schema 和调用逻辑。工具一多，维护成本很高，没有标准化方案。</p><h2>Root Cause</h2><p>每个 LLM 提供商的 function calling 格式不同，工具提供方与应用研发者紧耦合。类似 Web 早期的前后端未分离。</p><h2>Solution</h2><h3>MCP 协议核心思想</h3><p>MCP 是一套让 Agent 连接外部资料和工具的通用方式，类似 USB-C 统一充电口：</p><pre><code>Agent → MCP Client → MCP Server → 外部工具
+         ↓
+    标准化协议（JSON-RPC）</code></pre><h3>Bedrock + MCP 集成步骤</h3><pre><code class="language-python"># 1. 定义 MCP Server（工具提供方）
+from mcp import Server, Tool
+
+server = Server("my-tools")
+
+@server.tool("read_s3_file")
+async def read_s3_file(bucket: str, key: str) -&gt; str:
+    """Read a file from S3."""
+    s3 = boto3.client('s3')
+    obj = s3.get_object(Bucket=bucket, Key=key)
+    return obj['Body'].read().decode()
+
+@server.tool("query_dynamodb")
+async def query_dynamodb(table: str, key: str) -&gt; dict:
+    """Query DynamoDB by partition key."""
+    dynamodb = boto3.resource('dynamodb')
+    table = dynamodb.Table(table)
+    return table.get_item(Key={'pk': key})['Item']
+
+# 2. Agent 通过 MCP Client 调用
+from mcp import Client
+
+client = Client("my-tools", transport="stdio")
+result = await client.call_tool("read_s3_file", {
+    "bucket": "my-bucket",
+    "key": "data.json"
+})</code></pre><h3>前后端分离类比</h3><table><thead><tr><th>Web 时代</th><th>Agent 时代</th></tr></thead><tbody><tr><td>前端（React/Vue）</td><td>Agent（Claude/GPT）</td></tr><tr><td>后端 API（REST）</td><td>MCP Server</td></tr><tr><td>HTTP 协议</td><td>MCP 协议（JSON-RPC）</td></tr><tr><td>前后端解耦</td><td>工具提供方与应用研发者解耦</td></tr></tbody></table><h2>Verification</h2><pre><code class="language-bash">grep -i mcp lessons/contrib/mcp-*.md 2&gt;/dev/null | head -3
+echo MCP verified</code></pre><p><strong>Expected Output:</strong></p><pre><code># (refs)
+MCP verified</code></pre><h2>Notes</h2><ul><li>MCP 最重要的点：通过标准化协议，将工具提供方与应用研发者解耦</li><li>这将带来 AI Agent 应用研发范式的转移（类似 Web 前后端分离）</li><li>Source: segmentfault.com (2026-03-13)</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/lesson-review-4-mcp-bedrock-integration.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=MCP 协议 + Bedrock 实战 — Agent 外部工具调用标准化">Find related lessons →</a></p></div>

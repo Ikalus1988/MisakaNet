@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,10 @@
 <div class="section">
   <h2>Summary</h2>
   <p>多方案预览时三条路线全是同一种蓝色，完全分不出哪条是哪条；点选高亮也看不出变化。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>多方案预览时三条路线全是同一种蓝色，完全分不出哪条是哪条；点选高亮也看不出变化。</p><h2>Root Cause</h2><p>rendererFor 不是延迟回调，而是在 <code>map.add(overlay)</code> 的那一刻同步调用。代码写成「先 map.add(line)、再 altLines.append(line)」，回调发生时数组还是空的，index 取不到 → 全部落到 else 的默认样式分支。</p><h2>Fix</h2><p>顺序必须是「先登记、再 add」：</p><pre><code class="language-swift">altLines.append(line)   // 先登记，rendererFor 里才查得到 index
+map.add(line)           // 再 add</code></pre><p>重建折线时同理：先把新数组整体准备好，再逐条 add，最后统一 remove 旧的。</p><h2>Verification</h2><p>三条方案显示三种颜色/线宽；在 rendererFor 里打日志，确认回调与 add 在同一个调用栈内（同步），并且 index 不是 -1。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/mamapviewdelegaterendererfor-在-add-时同步回调先-add-再登记会让所有折线同色.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=MAMapViewDelegate.rendererFor 在 add() 时同步回调：先 add 再登记会让所有折线同色">Find related lessons →</a></p></div>

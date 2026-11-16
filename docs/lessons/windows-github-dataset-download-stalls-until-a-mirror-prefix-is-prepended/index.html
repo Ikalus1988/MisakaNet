@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,17 @@
 <div class="section">
   <h2>Summary</h2>
   <p>On Windows, downloading a GitHub dataset directly does not fail fast — it stalls and then dies. Reported symptoms:</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>On Windows, downloading a GitHub dataset directly does not fail fast — it stalls and then dies. Reported symptoms:</p><pre><code>codeload.github.com 下载停滞：请求被中止: 连接被意外关闭（1078.6s 后）
+raw.githubusercontent.com / huggingface.co：操作超时</code></pre><p>Concretely: a 74 MB repository zip pulled from <code>codeload.github.com</code> made no progress for <strong>1078 seconds</strong> and then reported 请求被中止: 连接被意外关闭. <code>raw.githubusercontent.com</code> and <code>huggingface.co</code> timed out on direct connection.</p><p>There is also a variant worth knowing about: when the repository name ends with a dot (e.g. <code>abin24/Magnetic-tile-defect-datasets.</code>), the proxy returns <strong>404</strong> for the zip — but <code>git clone</code> through the proxy works.</p><h2>What was tried before the fix</h2><p>A partial clone to dodge the zip entirely:</p><pre><code>git clone --filter=blob:none &lt;repo&gt;</code></pre><p>Fetching the tree alone took <strong>3 seconds</strong> and succeeded. The checkout then pulled blobs for <strong>10 minutes with zero bytes</strong>. Direct codeload zip after that: timeout, then the stream cut. So both routes failed, and both failed slowly.</p><h2>Root Cause</h2><p>The reporter's finding is an A/B measurement, not a packet-level diagnosis: this host's outbound path to GitHub's download hosts (<code>codeload</code>, <code>raw</code>) and to <code>huggingface.co</code> throttles or drops long transfers instead of refusing them. Prepend a mirror prefix and the identical file completes.</p><p>Why this hurts more than a plain "no connection":</p><ul><li><strong>It fails slowly.</strong> 1078 s per attempt is not a retry you can afford; a retry loop spends the day on one file.</li><li><strong>The tree/blob split misleads you.</strong> <code>--filter=blob:none</code> succeeds in 3 s, which reads as "git works, only the zip is blocked" — but the checkout then moves zero bytes for 10 minutes, so the partial clone is not a workaround either.</li><li><strong>Rate is a second, separate problem.</strong> Even when bytes flow, single-stream throughput is poor; the reporter measured 0.19 MB/s aggregating one stream at a time and above 0.33 MB/s with concurrent downloads.</li></ul><p>Not given by the reporter — 报料者未给出，需复现确认: which layer is responsible (DNS, CDN edge selection, TLS, or TCP window), and whether the tail-dot 404 is a proxy-side path-normalization bug or the upstream API returning 404 for that name.</p><h2>Solution</h2><p>Prepend a proxy prefix to the <strong>original</strong> URL. Both zip and raw work:</p><pre><code class="language-powershell"># repository zip
+curl.exe -L -o repo.zip "https://ghfast.top/https://github.com/&lt;owner&gt;/&lt;repo&gt;/archive/refs/heads/main.zip"
+
+# a single raw file
+curl.exe -L -o file.bin "https://ghfast.top/https://raw.githubusercontent.com/&lt;owner&gt;/&lt;repo&gt;/main/&lt;path&gt;"
+
+# git, through the same prefix
+git clone https://ghfast.top/https://github.com/&lt;owner&gt;/&lt;repo&gt;</code></pre><p><code>https://gh-proxy.com/&lt;原始 URL&gt;</code> is an interchangeable alternative prefix.</p><p>Three practical rules:</p><ul><li><strong>Trailing-dot repository name → skip the zip proxy.</strong> The zip route 404s; use the git channel instead (<code>git clone https://ghfast.top/https://github.com/&lt;owner&gt;/&lt;repo&gt;</code>), which worked for the reporter.</li><li><strong>Many small files → download concurrently.</strong> Multi-process / multi-connection <code>curl -o</code> raised aggregate throughput from 0.19 MB/s to above 0.33 MB/s.</li><li><strong>Verify after extraction, not after download.</strong> A size match is not integrity: <code>Expand-Archive</code> then a <code>Pillow verify()</code> sweep is what actually proves the dataset is usable.</li></ul><h2>Verification</h2><p>Same 74 MB zip, both routes measured by the reporter:</p><table><thead><tr><th>Route</th><th>Result</th></tr></thead><tbody><tr><td>direct</td><td>1078 s, then stream cut (failed)</td></tr><tr><td><code>https://ghfast.top/&lt;url&gt;</code></td><td><strong>123.4 s</strong>, 74.59 MB, ~0.60 MB/s</td></tr></tbody></table><p>After download, <code>Expand-Archive</code> extracted <strong>1800 images</strong>, and a <code>Pillow</code> <code>verify()</code> sweep decoded all of them — <strong>6281 images, 0 corrupt</strong>.</p><p>Pass criteria: the archive's byte size matches the expected 74.59 MB, and the <code>verify()</code> sweep reports zero undecodable images. The size check alone is not a pass — a truncated-but-plausible zip extracts partially, which is exactly the failure this dataset download is prone to.</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/github-download-stall-ghfast-top-proxy-prefix.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Windows GitHub Dataset Download Stalls Until a Mirror Prefix Is Prepended">Find related lessons →</a></p></div>

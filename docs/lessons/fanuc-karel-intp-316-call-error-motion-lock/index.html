@@ -6,6 +6,7 @@
 <title>FANUC KAREL: INTP-316 调用TP程序触发动作锁定 — MisakaNet</title>
 <meta name="description" content="Draft (not published): 从 KAREL 调用 TP 程序时触发 **INTP-316**（呼叫错误 / Call Error），同时动作锁定被激活。KAREL 程序本身可正常运行，仅在调用 TP 程序时出错。">
 <link rel="canonical" href="https://misakanet.org/lessons/fanuc-karel-intp-316-call-error-motion-lock/">
+<meta name="robots" content="noindex, follow">
 <meta property="og:title" content="FANUC KAREL: INTP-316 调用TP程序触发动作锁定">
 <meta property="og:description" content="Draft (not published): 从 KAREL 调用 TP 程序时触发 **INTP-316**（呼叫错误 / Call Error），同时动作锁定被激活。KAREL 程序本身可正常运行，仅在调用 TP 程序时出错。">
 <meta property="og:url" content="https://misakanet.org/lessons/fanuc-karel-intp-316-call-error-motion-lock/">
@@ -160,6 +161,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -179,6 +191,12 @@
 <div class="section">
   <h2>Summary</h2>
   <p>从 KAREL 调用 TP 程序时触发 **INTP-316**（呼叫错误 / Call Error），同时动作锁定被激活。KAREL 程序本身可正常运行，仅在调用 TP 程序时出错。</p>
+</div>
+<div class="lesson-body">
+<h2>FANUC KAREL: INTP-316 调用TP程序触发动作锁定</h2><h3>Problem描述</h3><p>从 KAREL 调用 TP 程序时触发 <strong>INTP-316</strong>（呼叫错误 / Call Error），同时动作锁定被激活。KAREL 程序本身可正常运行，仅在调用 TP 程序时出错。</p><h3>Root Cause分析</h3><p>INTP-316 是 KAREL 运行时 <code>CALL</code> 或 <code>RUN_TPP</code> 的呼叫错误。常见根因：</p><table><thead><tr><th>根因</th><th>检查方法</th></tr></thead><tbody><tr><td>调用语法错误</td><td>程序名需用单引号括起并带 <code>.TP</code> 扩展名</td></tr><tr><td><code>$KAREL_ENB</code> 未启用</td><td>菜单 → 系统变量 → 确认值为 1</td></tr><tr><td>目标 TP 程序缺 CALL 权限</td><td>检查程序属性设置</td></tr><tr><td>运动组冲突</td><td>确认调用方与目标方的组配置一致</td></tr><tr><td>目标 TP 含冲突运动指令</td><td>检查 TP 程序中的运动语句</td></tr></tbody></table><h3>Solution方法</h3><ol><li><strong>验证调用语法</strong>：<pre><code class="language-karel">CALL 'PROGRAM.TP'   -- 正确：单引号 + .TP 扩展名
+CALL PROGRAM.TP     -- 错误：缺引号</code></pre></li><li><strong>确认系统变量</strong>：<ul><li><code>$KAREL_ENB = 1</code>（KAREL 使能）</li><li>检查运动组配置是否匹配</li></ul></li><li><strong>检查 TP 程序属性</strong>：<ul><li>确保 TP 程序允许被外部调用</li><li>排查程序内是否有冲突的运动指令或条件分支</li></ul></li><li><strong>动作锁定排查</strong>：<ul><li>如果调用后出现动作锁定，先 <code>ABORT</code> 所有任务</li><li>检查 TP 程序是否在运动指令前有未满足的条件等待</li></ul></li></ol><h3>Verification方式</h3><p>在 KAREL 中执行：</p><pre><code class="language-karel">CALL 'TEST.TP'</code></pre><p>确认无 INTP-316 报错且机器人正常运动。</p><h3>关键区分</h3><table><thead><tr><th>错误代码</th><th>含义</th><th>说明</th></tr></thead><tbody><tr><td>INTP-316</td><td>呼叫错误</td><td>CALL/RUN_TPP 调用失败</td></tr><tr><td>INTP-1086</td><td>行号（非错误码）</td><td>KTRANS 编译输出的行号</td></tr><tr><td>MOTN-023</td><td>动作锁定</td><td>运动组冲突或条件未满足</td></tr></tbody></table><h3>来源</h3><ul><li>帖子：<a href="https://bbs.gongkong.com/d/202503/934119/934119_1.shtml">FANUC KAREL调用TP程序时就报错了INTP-316</a></li><li>作者：monzer (2025-03-15)</li><li>回复：小肥猪123、默默言、Smile-lyc</li></ul><h2>Verification</h2><pre><code class="language-bash">grep -i fanuc lessons/contrib/fanuc-*.md 2&gt;/dev/null | wc -l
+echo FANUC verified</code></pre><p><strong>Expected Output:</strong></p><pre><code># (count)
+FANUC verified</code></pre>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/fanuc-karel-intp-316-call-error-motion-lock.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=FANUC KAREL: INTP-316 调用TP程序触发动作锁定">Find related lessons →</a></p></div>

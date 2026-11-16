@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,20 @@
 <div class="section">
   <h2>Summary</h2>
   <p>A recursive search over a Windows user profile failed part-way through on a path that the</p>
+</div>
+<div class="lesson-body">
+<h2>A Windows directory name ending in a dot breaks recursive IO</h2><h2>Problem</h2><p>A recursive search over a Windows user profile failed part-way through on a path that the parent directory listing had just displayed:</p><pre><code>rg: C:\Users\&lt;user&gt;\.dsh\profiles\desktop\.backup-memos-&lt;id&gt;.: IO error for operation on ...:
+系统找不到指定的路径。 (os error 3)</code></pre><p>The directory name ended with a literal dot (<code>.backup-memos-&lt;id&gt;.</code>). The parent enumerated the name correctly — including the trailing dot — but nothing that tried to <strong>open</strong> that name worked:</p><pre><code class="language-powershell">Test-Path -LiteralPath '&lt;parent&gt;\.backup-memos-&lt;id&gt;.'      # -&gt; False
+Get-ChildItem -LiteralPath '&lt;parent&gt;\.backup-memos-&lt;id&gt;.'  # -&gt; ItemNotFoundException: 找不到路径</code></pre><p>The tool impact is the real cost: ripgrep / a <code>glob</code> walk aborts the whole traversal, or silently loses that subtree, on a directory that has nothing to do with the query. An agent that discovers files by globbing a home or profile directory gets an IO error instead of results, and the error names a path the same listing says exists.</p><h2>Root Cause</h2><p>Win32 path normalization strips <strong>trailing dots and trailing spaces</strong> from each path component before the path is handed to the filesystem. A component literally named <code>dir.</code> is therefore opened as <code>dir</code>, which does not exist.</p><p>Directory <em>enumeration</em>, by contrast, uses <code>FindFirstFile</code> semantics and returns the on-disk name unchanged. That asymmetry is the whole trap: the same name is simultaneously <strong>listed</strong> and <strong>unopenable</strong>, so <code>stat</code>, <code>open</code> and any recursive descent into it fail with <code>ERROR_PATH_NOT_FOUND</code> (os error 3). Any walker that trusts the enumerated name and then opens it — ripgrep, <code>glob</code>, <code>Get-ChildItem -Recurse</code> — trips over it.</p><p>The ghost is usually tool-created. Some Win32 creation APIs strip a trailing dot at creation time while others do not, so a backup or scratch directory written by a script can end up in the state where it exists on disk under a name that normal path handling can no longer reach.</p><h2>Solution</h2><p>Any one of these, in order of preference:</p><pre><code class="language-powershell"># 1. Don't enter it at all: exclude the path, or narrow the search root to real project dirs
+rg --glob '!**/.backup-memos-*' "&lt;pattern&gt;" &lt;search-root&gt;
+
+# 2. Reach it with the extended-length prefix, which skips Win32 normalization entirely
+Get-ChildItem -LiteralPath "\\?\C:\Users\&lt;user&gt;\.dsh\profiles\desktop\.backup-memos-&lt;id&gt;."
+
+# 3. Rename it so the name no longer ends in a dot — the prefix is needed on BOTH sides
+Rename-Item -LiteralPath "\\?\C:\Users\&lt;user&gt;\.dsh\profiles\desktop\.backup-memos-&lt;id&gt;." `
+            -NewName 'backup-memos-&lt;id&gt;'</code></pre><p>And when <em>creating</em> directories programmatically:</p><pre><code class="language-powershell"># 4. Never emit a trailing dot or space in a path component you construct
+$name = $rawName.TrimEnd('.', ' ')</code></pre><p>Two boundaries of the <code>\\?\</code> prefix, both of which cause silent misbehavior if ignored: it disables all normalization (so <code>/</code> separators and <code>.</code>/<code>..</code> segments are passed through verbatim), and the path must be fully qualified — a relative path after <code>\\?\</code> is not resolved against the current directory.</p><h2>Verification</h2><p>The failure has a cheap two-command signature, and it is worth running both halves — either one alone is ambiguous:</p><ol><li><code>Test-Path -LiteralPath '&lt;parent&gt;\.backup-memos-&lt;id&gt;.'</code> returns <strong>False</strong>, while <code>Get-ChildItem '&lt;parent&gt;' -Force | Where-Object Name -like '.backup-memos*'</code> returns that exact name. "Listed but not testable" is the signature of the normalization strip.</li><li><code>Get-ChildItem -LiteralPath "\\?\&lt;same path&gt;"</code> returns the directory's contents (observed: a <code>package.json</code> / lockfile set), which confirms the name is real and reachable only through the prefix.</li></ol><p>After the rename in fix 3, the normal form <code>&lt;parent&gt;\backup-memos-&lt;id&gt;</code> is <code>Test-Path</code> True and a recursive search over the parent completes without <code>os error 3</code>.</p><h2>Notes</h2><ul><li>Domain note: the submitter labelled this <code>windows</code>, which is now part of the <code>data/domains.json</code> vocabulary, so the lesson keeps that domain.</li><li>The root cause is in Win32 path handling, so the same failure reaches any tool built on it — this is not a ripgrep bug. The fix that generalizes is fix 4: do not create such names, and do not assume a name that came out of a directory listing can be opened.</li><li>A directory that cannot be opened is also invisible to <code>Test-Path</code>-based existence checks, so a "directory exists" assertion will report the opposite of what the listing shows.</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/windows-directory-name-ending-in-dot-breaks-recursive-io.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=A Windows directory name ending in a dot breaks ripgrep, glob and recursive IO (os error 3)">Find related lessons →</a></p></div>

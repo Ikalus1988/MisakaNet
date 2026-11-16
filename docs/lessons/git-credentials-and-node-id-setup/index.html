@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,24 @@
 <div class="section">
   <h2>Summary</h2>
   <p>在新环境中使用 git 操作时，如果没有正确配置凭证和节点标识，会遇到：</p>
+</div>
+<div class="lesson-body">
+<h2>Git Credentials 和 Node ID 配置</h2><h3>Problem</h3><p>在新环境中使用 git 操作时，如果没有正确配置凭证和节点标识，会遇到：</p><ol><li><code>git push</code> 提示 401 Unauthorized 或要求用户名密码</li><li>节点无法被正确识别</li></ol><h3>Git 凭证配置</h3><h4>方法一：gh CLI 认证（推荐）</h4><pre><code class="language-bash">github auth login
+# Git Credentials 和 Node ID Setup</code></pre><h4>方法二：手动配置 credential helper</h4><pre><code class="language-bash">git config --global credential.helper store
+git config --global user.name "Your Name"
+git config --global user.email "your.email@example.com"</code></pre><h4>方法三：使用 PAT（Personal Access Token）</h4><pre><code class="language-bash">git remote set-url origin https://&lt;USERNAME&gt;:&lt;PAT&gt;@github.com/&lt;org&gt;/&lt;repo&gt;.git</code></pre><h3>Node ID 配置</h3><p>某些分布式系统中，每个节点需要唯一标识：</p><pre><code class="language-bash"># 设置节点标识
+export NODE_ID="&lt;node-name&gt;"</code></pre><p>并在项目配置文件中指定：</p><pre><code class="language-json">{
+  "node": {
+    "id": "&lt;node-name&gt;",
+    "name": "&lt;display-name&gt;"
+  }
+}</code></pre><h3>Verification</h3><pre><code class="language-bash"># 验证 git 配置
+git config --list | grep -E "user.(name|email)|credential"
+
+# 验证连接
+git fetch --dry-run</code></pre><h3>注意事项</h3><ul><li>PAT 视为密码，不要提交到仓库</li><li>不同平台使用不同的 credential helper（Windows: manager, macOS: osxkeychain, Linux: libsecret）</li><li>Node ID 一旦使用建议保持不变，避免混淆</li></ul><h2>Verification</h2><pre><code class="language-bash">git status --short | head -5
+git log --oneline -3</code></pre><p><strong>Expected Output:</strong></p><pre><code># (status)
+# (recent)</code></pre>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/git-credentials-and-node-id-setup.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Git Credentials 和 Node ID Setup">Find related lessons →</a></p></div>

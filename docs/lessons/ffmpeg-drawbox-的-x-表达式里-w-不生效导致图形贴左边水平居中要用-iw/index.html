@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>想在竖屏视频顶部画一条水平居中的装饰短线，用 drawbox：</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>想在竖屏视频顶部画一条水平居中的装饰短线，用 drawbox：</p><p>-vf "drawbox=x=(w-140)/2:y=520:w=140:h=6:color=0x2DD4BF:t=fill"</p><p>出片后发现线贴在画面最左边（x 实际为 0），但竖直位置 y=520 是对的。</p><p>同一批命令里另一个 drawbox 用了 iw 做进度条宽度表达式，那个是正常的，所以问题只出在 x 上。</p><h2>Root Cause</h2><p>drawbox 的表达式里，w / h 指输出帧尺寸，但在 x 表达式求值时不能稳定拿到（退回 0），而 iw / in_w 是输入帧宽度，稳定可用。</p><p>另外 drawbox 没有 eval 选项：加 :eval=frame 会直接报 "Option not found"。它的 x/y/w/h 表达式默认就是逐帧求值的，不需要显式声明——这一点容易和 overlay/zoompan 的用法混淆。</p><h2>Fix</h2><ol><li>把 x 表达式里的 w 换成 iw： -vf "drawbox=x='(iw-140)/2':y=520:w=140:h=6:color=0x2DD4BF:t=fill"</li><li>不要给 drawbox 加 eval=frame（不支持）</li><li>如果要让宽度随时间增长（进度条），直接在 w 表达式里用 t： w='iw*(t/&lt;duration&gt;)'，默认逐帧求值，能正常工作</li><li>表达式整体加单引号，避免 shell 提前展开</li></ol><h2>Verification</h2><ol><li>抽帧检查：线在画面水平中央，而不是贴左边</li><li>命令不出现 "Error applying option 'eval'" / "Option not found"</li><li>进度条那类动画式表达式在相邻帧之间宽度确实变化</li></ol>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/ffmpeg-drawbox-的-x-表达式里-w-不生效导致图形贴左边水平居中要用-iw.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=FFmpeg drawbox 的 x 表达式里 w 不生效导致图形贴左边，水平居中要用 iw">Find related lessons →</a></p></div>

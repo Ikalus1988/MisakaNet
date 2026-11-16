@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,39 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Web 30 年来的经济模式是"内容换注意力"（广告/订阅/电商）。AI Agent 时代，Agent 不看广告、不订阅、不浏览——传统变现模式失效。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Web 30 年来的经济模式是"内容换注意力"（广告/订阅/电商）。AI Agent 时代，Agent 不看广告、不订阅、不浏览——传统变现模式失效。</p><h2>Root Cause</h2><p>AI Agent 通过 API 访问内容，绕过了人类注意力经济。需要新的变现协议让 Agent 能直接付费。</p><h2>Solution</h2><h3>Cloudflare Monetization Gateway</h3><p>通过 x402 开放协议，让 Cloudflare 客户对任何资产收费：网页、数据集、API、MCP 工具。</p><pre><code>Agent → Cloudflare Edge → 验证支付 → 放行请求 → Origin
+         ↓
+    x402 协议（稳定币结算）</code></pre><h3>x402 协议设计</h3><pre><code class="language-http"># Agent 请求资源
+GET /api/data HTTP/1.1
+Host: api.example.com
+
+# 服务器返回 402 Payment Required
+HTTP/1.1 402 Payment Required
+X-Payment-Required: true
+X-Price: 0.01
+X-Currency: USDC
+
+# Agent 发送支付证明
+GET /api/data HTTP/1.1
+Host: api.example.com
+X-Payment: &lt;signed-payment-proof&gt;
+
+# 服务器验证后放行
+HTTP/1.1 200 OK</code></pre><h3>When to Use</h3><table><thead><tr><th>场景</th><th>示例</th></tr></thead><tbody><tr><td>API 按调用收费</td><td>每次 API 调用 $0.001</td></tr><tr><td>数据集按访问收费</td><td>每次下载 $0.01</td></tr><tr><td>MCP 工具按使用收费</td><td>每次工具调用 $0.005</td></tr><tr><td>网页按爬取收费</td><td>每次 Agent 爬取 $0.002</td></tr></tbody></table><h3>与 MCP 的关系</h3><p>MCP 工具可以通过 x402 协议收费：</p><pre><code class="language-json">{
+  "name": "search_documents",
+  "description": "Search enterprise documents",
+  "inputSchema": { ... },
+  "pricing": {
+    "x402": {
+      "amount": "0.005",
+      "currency": "USDC"
+    }
+  }
+}</code></pre><h2>Verification</h2><pre><code class="language-bash">grep -i mcp lessons/contrib/mcp-*.md 2&gt;/dev/null | head -3
+echo MCP verified</code></pre><p><strong>Expected Output:</strong></p><pre><code># (refs)
+MCP verified</code></pre><h2>Notes</h2><ul><li>x402 是开放协议，25+ 行业领导者共建</li><li>支付在 Cloudflare Edge 验证，保护 Origin 不被高支付量冲垮</li><li>稳币结算，非加密货币投机</li><li>Source: blog.cloudflare.com (2026-07-01)</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/lesson-review-6-cloudflare-x402-monetization.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Cloudflare Monetization Gateway — x402 API 支付协议">Find related lessons →</a></p></div>

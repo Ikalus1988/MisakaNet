@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,74 @@
 <div class="section">
   <h2>Summary</h2>
   <p>批量生成的内容质量参差不齐。人工审核效率低，无法规模化。需要自动化评估系统筛选合格内容。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>批量生成的内容质量参差不齐。人工审核效率低，无法规模化。需要自动化评估系统筛选合格内容。</p><h2>Root Cause</h2><p>没有标准化的质量评估标准。"好内容"是主观的，无法批量判断。</p><h2>Solution</h2><h3>100 分制评分维度</h3><table><thead><tr><th>维度</th><th>分值</th><th>检查项</th></tr></thead><tbody><tr><td>元数据完整性</td><td>20</td><td>frontmatter、JSON metadata、tags、source、date</td></tr><tr><td>结构完整性</td><td>25</td><td>Problem → Root Cause → Solution → Verification → Notes</td></tr><tr><td>内容质量</td><td>35</td><td>代码块、语言标注、问题具体性、可操作性、表格/列表、外部引用</td></tr><tr><td>去重与泛化</td><td>10</td><td>无重复、无敏感信息、通用性</td></tr><tr><td>来源可信度</td><td>10</td><td>URL 可访问、VIP 背书、问题已闭环</td></tr></tbody></table><h3>自动化评分脚本</h3><pre><code class="language-python">import json, re
+
+def score_lesson(filepath: str) -&gt; dict:
+    with open(filepath) as f:
+        content = f.read()
+    
+    score = 0
+    breakdown = {}
+    
+    # 1. Metadata (20)
+    meta_score = 0
+    json_match = re.search(r'\{[^}]*"title"[^}]*\}', content)
+    if json_match:
+        try:
+            meta = json.loads(json_match.group())
+            meta_score += 4
+            if len(meta.get("tags", [])) &gt;= 3: meta_score += 3
+            if meta.get("source"): meta_score += 2
+            if re.match(r'\d{4}-\d{2}-\d{2}', meta.get("created", "")): meta_score += 2
+        except: pass
+    breakdown["metadata"] = min(meta_score, 20)
+    score += breakdown["metadata"]
+    
+    # 2. Structure (25)
+    struct_score = 0
+    sections = re.findall(r'^## (.+)', content, re.MULTILINE)
+    section_names = [s.lower() for s in sections]
+    if any("problem" in s for s in section_names): struct_score += 5
+    if any("root cause" in s for s in section_names): struct_score += 5
+    if any("solution" in s for s in section_names): struct_score += 5
+    if any("verification" in s for s in section_names): struct_score += 5
+    if any("notes" in s for s in section_names): struct_score += 3
+    breakdown["structure"] = min(struct_score, 25)
+    score += breakdown["structure"]
+    
+    # 3. Content (35)
+    content_score = 0
+    code_blocks = re.findall(r'```(\w*)', content)
+    if code_blocks:
+        content_score += 8
+        if any(c for c in code_blocks if c): content_score += 3
+    if re.search(r'(error|fail|issue|bug|问题|错误)', content, re.I): content_score += 5
+    if re.search(r'^\|.*\|.*\|', content, re.MULTILINE): content_score += 5
+    if re.search(r'https?://', content): content_score += 3
+    if len(content.split()) &gt;= 300: content_score += 3
+    breakdown["content"] = min(content_score, 35)
+    score += breakdown["content"]
+    
+    # 4. Dedup (10)
+    dedup_score = 10
+    if re.search(r'(xiaomi|小米|mify|内部域名)', content, re.I):
+        dedup_score -= 3
+    breakdown["dedup"] = dedup_score
+    score += breakdown["dedup"]
+    
+    # 5. Trust (10)
+    trust_score = 0
+    if re.search(r'https?://', content): trust_score += 3
+    if re.search(r'(resolved|✅|merged|verified)', content, re.I): trust_score += 3
+    if re.search(r'(moderator|admin|版主)', content, re.I): trust_score += 4
+    breakdown["trust"] = min(trust_score, 10)
+    score += breakdown["trust"]
+    
+    grade = "A" if score &gt;= 85 else "B" if score &gt;= 75 else "D"
+    return {"score": score, "pass": score &gt;= 75, "breakdown": breakdown, "grade": grade}</code></pre><h3>评级标准</h3><table><thead><tr><th>等级</th><th>分数</th><th>说明</th></tr></thead><tbody><tr><td>A</td><td>≥ 85</td><td>优秀，可直接入库</td></tr><tr><td>B</td><td>75-84</td><td>良好，入库后可迭代</td></tr><tr><td>D</td><td>&lt; 75</td><td>不及格，需重写</td></tr></tbody></table><h3>批量评估</h3><pre><code class="language-bash">for f in lessons/*.md; do python3 score_lesson.py "$f"; done</code></pre><h2>Verification</h2><pre><code class="language-bash">for f in lessons/*.md; do python3 score_lesson.py "$f"; done
+echo "Verification passed: fix command exited 0"</code></pre><p><strong>Expected Output:</strong> command completes without error, then <code>Verification passed</code> is printed. (Checks: <code>for f in lessons/*.md; do python3 score_lesson.py $f; done</code>)</p><h2>Notes</h2><ul><li>评分是近似的，不能替代人工审核</li><li>泛化性需要人工判断（脚本无法判断内容是否可复用）</li><li>Source: practical-experience</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/session-lesson-1-content-quality-scoring.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Content Quality Scoring System — Automated Lesson Evaluation">Find related lessons →</a></p></div>

@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,33 @@
 <div class="section">
   <h2>Summary</h2>
   <p>在沙箱或受限环境中执行 Python 代码时，`import` 报 `ModuleNotFoundError`，或 import 的是宿主环境的包而非沙箱环境的。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>在沙箱或受限环境中执行 Python 代码时，<code>import</code> 报 <code>ModuleNotFoundError</code>，或 import 的是宿主环境的包而非沙箱环境的。</p><h2>Root Cause</h2><p>Python <code>sys.path</code> 继承自父进程，沙箱未正确隔离 <code>PYTHONPATH</code>、<code>PATH</code> 和 <code>sys.path</code>。</p><h2>Solution</h2><pre><code class="language-python">import sys
+import os
+
+# Python 沙箱/受限环境 — PATH 和 sys.path 隔离
+print("Python:", sys.executable)
+print("sys.path:", sys.path)
+
+# 2. 确认是否在正确的 venv 中
+import site
+print("site-packages:", site.getsitepackages())
+
+# 3. 强制指定解释器（在 shell 中）
+/path/to/venv/bin/python script.py
+
+# 4. 在沙箱中临时添加路径
+sys.path.insert(0, "/path/to/venv/lib/python3.12/site-packages")
+
+# 5. 检查 PATH（子进程会继承）
+os.environ["PATH"] = "/path/to/venv/bin:" + os.environ.get("PATH", "")
+
+# 6. 验证 import 来源
+import requests
+print(requests.__file__)  # 应指向正确的 venv</code></pre><h2>Verification</h2><pre><code class="language-bash">python3 --version
+python3 -c 'import sys; print(sys.version)'</code></pre><p><strong>Expected Output:</strong></p><pre><code>Python 3.
+3.</code></pre><h2>Pitfalls</h2><ul><li><code>subprocess.run("python script.py", ...)</code> 用的不是当前 Python——<code>python</code> 可能是系统默认的</li><li>总是用 <code>sys.executable</code> 来调用子进程：<code>subprocess.run([sys.executable, "script.py"])</code></li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/python-sandbox-path-isolation.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Python 沙箱/受限环境 — PATH 和 sys.path 隔离">Find related lessons →</a></p></div>

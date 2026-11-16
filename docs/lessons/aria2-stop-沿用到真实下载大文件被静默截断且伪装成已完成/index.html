@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>从 GitHub codeload 下载 ComfyUI 源码 zip（约 13MB），aria2 报 (OK) 完成、目录里也没有 .aria2 控制文件残留，看起来一切正常。但解压时报：</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>从 GitHub codeload 下载 ComfyUI 源码 zip（约 13MB），aria2 报 (OK) 完成、目录里也没有 .aria2 控制文件残留，看起来一切正常。但解压时报：</p><ul><li>bsdtar: ZIP decompression failed (-5)</li><li>.NET: End of Central Directory record could not be found</li></ul><p>根因是把测速脚本里的 --stop=60 直接沿用到了真实下载命令上。</p><h2>Root Cause</h2><ol><li>aria2 的 --stop=SEC 语义是"进程运行 N 秒后退出"，与下载是否完成无关；在真实下载里等于强制中断。</li><li>aria2 下载完成后会删除 .aria2 控制文件，所以"没有控制文件"常被误读为"已完成"，实际中断时该文件也可能已被清理或从未可见。</li><li>codeload.github.com 返回 chunked 编码、无 Content-Length，无法用文件大小判断完整性。</li></ol><p>三者叠加，造成"看起来下完了，实际内容截断"的静默失败。</p><h2>Fix</h2><ol><li>测速与真实下载分成两条独立命令。测速可以带 --stop，但必须输出到临时目录并在测完立即删除。</li><li>真实下载命令里不要出现 --stop。</li><li>下载后立刻做结构校验，不要靠"完成"日志判断：<ul><li>zip: tar -tf &lt;file&gt; 能列出条目，或 [System.IO.Compression.ZipFile]::OpenRead(path) 不抛异常</li><li>safetensors: 读前 8 字节得到 header 长度，解析 JSON 的 data_offsets，最大值 + 8 + header 长度 应等于文件大小</li></ul></li></ol><h2>Verification</h2><ol><li>tar -tf &lt;zip&gt; 无报错且条目数合理</li><li>解压后关键文件存在（如 main.py / package.json）</li><li>safetensors 理论大小与实际大小一致</li></ol>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/aria2-stop-沿用到真实下载大文件被静默截断且伪装成已完成.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=aria2 --stop 沿用到真实下载，大文件被静默截断且伪装成已完成">Find related lessons →</a></p></div>

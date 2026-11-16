@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,18 @@
 <div class="section">
   <h2>Summary</h2>
   <p>While reviewing a pull request, a maintainer fetched the PR into a local branch</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>While reviewing a pull request, a maintainer fetched the PR into a local branch and staged its files to read the diff in the working tree:</p><pre><code class="language-bash">git fetch origin pull/1656/head:pr1656
+git checkout pr1656 -- .        # stages the PR's files for inspection
+git checkout -                  # back to the previous branch
+git reset -q HEAD &amp;&amp; git checkout -q -- . &amp;&amp; rm -f &lt;the added file&gt;   # "clean up"</code></pre><p>The cleanup did remove the PR's files. It also removed the session's actual work — an uncommitted change to a script and its tests — which had been verified and passing minutes earlier. <code>git status</code> was clean afterwards: the change simply no longer existed. Nothing in the transcript could restore it, because the recovery had to be done from the text of earlier tool output.</p><h2>Root Cause</h2><p>Two Git behaviours combine into a silent data-loss trap:</p><ol><li><code>git checkout -- .</code> (and <code>git restore .</code>) <strong>does not discard changes that are in the index</strong> — it restores tracked files <em>from the index</em>. Anything staged therefore survives; anything only in the working tree is overwritten with the indexed version and is gone, because the working tree is not an object store: an unstaged edit has never been written into <code>.git/objects</code> and exists nowhere else.</li><li><code>git checkout &lt;branch&gt; -- .</code> writes the other branch's version into <strong>both</strong> the index and the working tree. So the stage used minutes earlier to inspect a foreign PR became the baseline that the "cleanup" restored from — that is how the PR's files were removed, and it is also why a subsequent blanket <code>checkout -- .</code> looked like a plain cleanup.</li></ol><p>The tempting mental model — "the file is on disk, so it is safe until I commit" — is exactly inverted: on disk means "not stored anywhere". Verified on Git 2.55:</p><pre><code class="language-bash">printf 'v1\n' &gt; f.txt &amp;&amp; git add f.txt &amp;&amp; git commit -m "f v1"
+printf 'v2 STAGED\n'   &gt; f.txt &amp;&amp; git add f.txt
+printf 'v3 UNSTAGED\n' &gt; f.txt
+git checkout -- .
+cat f.txt          # → v2 STAGED   (index copy survives)</code></pre><p>and after a <code>reset --hard</code> the staged content is still recoverable, because it reached the object store:</p><pre><code class="language-bash">printf 'v4 STAGED-THEN-RESET\n' &gt; f.txt &amp;&amp; git add f.txt &amp;&amp; git reset --hard
+git fsck --unreachable | awk '/blob/{print $3}' | while read b; do git cat-file -p "$b"; done
+# → v4 STAGED-THEN-RESET</code></pre><h2>Solution</h2><ul><li><strong>Commit before any operation that rewrites the working tree.</strong> A two-line WIP commit is the whole insurance policy: <code>git add -A &amp;&amp; git commit -m "wip: &lt;what&gt; --signoff"</code>. Amend or squash it later; nobody sees the intermediate state.</li><li>When inspecting a foreign PR, do it in a <strong>separate worktree</strong> rather than by moving files through the main working tree: <code>git worktree add /tmp/pr1656 pr1656</code> — the main checkout is then untouched and needs no cleanup at all.</li><li>If a cleanup is unavoidable, be specific about paths (<code>git restore path/to/file</code>) and never use a bare <code>git checkout -- .</code>, <code>git restore .</code>, or <code>git reset --hard</code> in a tree with uncommitted work.</li><li>Prefer <code>git stash push -m "..."</code> (or a WIP commit) to a naked reset: the stash is recoverable via <code>git stash list</code>, a discarded working-tree file is not.</li><li>Push work as soon as it is green. "It is only local for a moment" is how a verified change becomes a retyped one.</li></ul><h2>Verification</h2><ul><li>Reproduce the two behaviours in a scratch repository with the four-command sequence above: after <code>git checkout -- .</code> the staged version is present and the unstaged one is gone; after <code>git reset --hard</code> the staged blob is listed by <code>git fsck --unreachable</code> and its content can be printed with <code>git cat-file -p</code>.</li><li>In a repository with uncommitted work, run <code>git status --porcelain</code> before any branch switch or restore, and confirm it is either empty or intentionally stashed.</li><li>Recovery only works for content that entered the object store (staged or committed) and before <code>git gc</code> prunes unreachable objects: run <code>git fsck --lost-found</code> and check <code>.git/lost-found/</code> immediately, not later.</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/git-checkout-discards-uncommitted-work.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Uncommitted work has no undo: `git checkout -- .` and reset --hard during branch juggling">Find related lessons →</a></p></div>

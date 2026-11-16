@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>In mixed Node.js and Cloudflare Worker execution environments, fallback chains falling back to full `node:crypto` rather than `(await import("node:crypto")).web…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>In mixed Node.js and Cloudflare Worker execution environments, fallback chains falling back to full <code>node:crypto</code> rather than <code>(await import("node:crypto")).webcrypto</code> cause runtime exceptions (e.g. <code>crypto.subtle is undefined</code>) because legacy Node crypto does not export the WebCrypto standard API surface.</p><h2>Root Cause</h2><p>Node.js <code>node:crypto</code> default export provides the OpenSSL-style legacy API (<code>randomBytes</code>, <code>createHash</code>) whereas Cloudflare Workers and standard browsers implement the W3C WebCrypto API on <code>globalThis.crypto</code> (<code>crypto.subtle</code>, <code>crypto.getRandomValues</code>). A naive <code>import crypto from "node:crypto"</code> fallback therefore surfaces an API-inconsistent object: it works for hashing but throws when the caller expects the standard WebCrypto surface.</p><h2>Fix</h2><p>Consistently resolve WebCrypto across environments:</p><pre><code class="language-js">const crypto = globalThis.crypto || (await import("node:crypto")).webcrypto;</code></pre><p>This ensures <code>crypto.subtle</code> and <code>crypto.getRandomValues</code> are always available regardless of whether the code runs in a browser, a Cloudflare Worker, or Node.js — and that both legs of the fallback expose the same API surface.</p><h2>Verification</h2><p>Ran <code>node --test workers/*.test.mjs</code> ensuring all <code>crypto.subtle</code> digests and <code>getRandomValues</code> operations pass in the Node test runner. The dual-runtime tests (<code>workers/register-proxy-sw.js</code> + <code>workers/register-proxy.js</code>) exercise both branches of the fallback chain.</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/webcrypto-fallback-consistency-node-worker.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=WebCrypto API Fallback Consistency in Dual Node and Cloudflare Worker Runtimes">Find related lessons →</a></p></div>

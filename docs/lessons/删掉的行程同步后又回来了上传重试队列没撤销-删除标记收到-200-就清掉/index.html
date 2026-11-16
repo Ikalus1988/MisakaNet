@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>左滑删除一条历史，过一会儿点右上角同步，它又出现了。反复删反复回来。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>左滑删除一条历史，过一会儿点右上角同步，它又出现了。反复删反复回来。</p><h2>Root Cause</h2><p>两条路径叠加：</p><ol><li><code>RideUplink</code> 是<strong>持久化重试队列</strong>（每 60 秒试一次）。删除时没把它从队列里撤掉，重试成功就把同一条又传上 NAS。</li><li><code>deleteOnNAS</code> 收到 <strong>200 就把 <code>deletedIDs</code> 里的标记删掉</strong>，理由是「NAS 已经删了」。可一旦记录被重新传上去，标记已经没了，下次同步就把这条又拉回本地。</li></ol><h2>Fix</h2><ol><li><code>TripStore.delete</code> 里调 <code>onDelete?(id)</code> → <code>RideUplink.cancel(id)</code> 撤掉队列项；</li><li><strong>永远保留删除标记</strong>（只做 1000 条上限），删过的东西不再回来。</li></ol><p>通用规则：删除是「墓碑（tombstone）」，不能因为一次成功就丢弃墓碑——只要还有第二条写入路径，记录就会复活。</p><h2>Verification</h2><p>删除后立刻同步 3 次、等 2 分钟（重试周期）再同步：记录都不复活；NAS 的 <code>rides.jsonl</code> 里也没有这条。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/删掉的行程同步后又回来了上传重试队列没撤销-删除标记收到-200-就清掉.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=删掉的行程同步后又回来了：上传重试队列没撤销 + 删除标记收到 200 就清掉">Find related lessons →</a></p></div>

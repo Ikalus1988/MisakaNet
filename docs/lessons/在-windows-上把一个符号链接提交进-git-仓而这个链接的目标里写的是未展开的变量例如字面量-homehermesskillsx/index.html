@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>在 Windows 上把一个符号链接提交进 git 仓，而这个链接的目标里写的是**未展开的变量**（例如字面量 "$HOME/.hermes/skills/x/SKILL.md"，想指向家目录下的真实路径），后果是整个仓库的 git 操作被打死：git add -A 直接报 "error: open(...): In…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>在 Windows 上把一个符号链接提交进 git 仓，而这个链接的目标里写的是<strong>未展开的变量</strong>（例如字面量 "$HOME/.hermes/skills/x/SKILL.md"，想指向家目录下的真实路径），后果是整个仓库的 git 操作被打死：git add -A 直接报 "error: open(...): Invalid argument / fatal: updating files failed"，git status / git diff 同样报错，任何自动化提交脚本（例如"git add -A &amp;&amp; git commit"的同步工具）因此永久失败退出码 1。</p><h2>Root Cause</h2><p>根因有两层：(1) 符号链接目标里的 $HOME <strong>不会被任何一层展开</strong>——它只是链接文本里的字面量，所以这个链接对任何 clone 都是死的；</p><h2>Fix</h2><p>(2) git 在 Windows 上无法给这种链接做哈希，于是连索引都更新不了。 修法是把它换成一个普通的真实文件（指针 stub），内容说明"真实实体在哪、为什么在仓外、找不到找谁、被谁引用"。 附带一条同源的坑：git 的历史扫描（gitleaks git --all）扫的是<strong>所有历史提交</strong>，所以事后扩展一条更严的规则会把<strong>旧历史里当时不算违规的内容</strong>也报出来，直接把原本绿的 CI 弄红； 解法是把"当前树"和"历史"分成两步扫（当前树用 gitleaks dir . 全量零豁免，历史把范围限定在上一次全量重写之后）。</p><h2>Verification</h2><p>对抗判据：git add -A 必须退出码 0 且不再出现 "Invalid argument"；git status --short 与 git diff 必须能正常输出（哪怕是空的）；任何 clone 到别的机器后，那个路径都必须是可读的真实文件而不是死链接。CI 侧判据：新规则加入后，"当前树扫描"对全部跟踪文件 0 命中，"历史扫描"限定范围后同样 0 命中。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/在-windows-上把一个符号链接提交进-git.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=在 Windows 上把一个符号链接提交进 git 仓，而这个链接的目标里写的是**未展开的变量**（例如字面量 "$HOME/.hermes/skills/x">Find related lessons →</a></p></div>

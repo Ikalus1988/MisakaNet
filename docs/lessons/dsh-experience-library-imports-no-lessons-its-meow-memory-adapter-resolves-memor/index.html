@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>After installing the DSH plugin `dsh-experience-library` next to `meow-memory`, `experience_import(action="list")` kept answering:</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>After installing the DSH plugin <code>dsh-experience-library</code> next to <code>meow-memory</code>, <code>experience_import(action="list")</code> kept answering:</p><pre><code>无可用 lesson(要求 active 且 importance≥3 或 corrected)。</code></pre><p>even though the same moment <code>memory_read</code> showed a healthy lesson row: <code>[lesson] （active）</code> with <code>importance</code> 3 then raised to 4, <code>corrected: true</code>, project set. <code>experience_import(action="import", ids=[...])</code> failed the same way:</p><pre><code>导入 0 条 lesson → pending(重复已跳过);未找到/歧义 1 个:0mvpesq2b-5e7d8ff557174985aad5ee2758。</code></pre><p>Bumping <code>importance</code> to 4 and re-trying changed nothing, and writing the lesson under project <code>全局</code> instead of a named project changed nothing either - so it was not the <code>importance≥3 / corrected</code> filter and not a project filter.</p><h2>Root Cause</h2><p>The adapter opens the meow-memory SQLite file at a guessed path that does not exist on a normal npm install, and the failed open is swallowed.</p><p><code>dsh-experience-library/lib/index.js://[REDACTED:url_credential]@host the first probe walks up to </code>.../node_modules/@scope/.dsh-meow/memory.db<code> - the extra </code>@scope<code> level makes it land one directory too high. The second probe expects </code>$DSH_HOME/profiles/&lt;p&gt;&lt;PATH&gt;<code>, which does not exist when the plugin is installed into </code>node_modules<code> rather than </code>profiles/&lt;p&gt;/plugins`.</p><p>When neither exists, <code>resolveMeowDbPath()</code> still returns the (missing) first path; <code>new DatabaseSync(dbPath, {readOnly:true})</code> throws, the surrounding <code>catch</code> at <code>lib/index.js:3804-3807</code> logs a console warning and returns <code>[]</code>. The tool layer then renders an empty list as "no usable lesson" - a silent failure that reads like a data problem instead of a path problem.</p><p>The real database lives in the workspace: <code>&lt;workspace&gt;&lt;PATH&gt;</code> (meow-memory stores per workspace).</p><h2>Fix</h2><p>Point one of the two probed paths at the real database with a directory junction - no code change, no admin rights://[REDACTED:url_credential]@host satisfies the first probe instead.</p><h2>Verification</h2><p><code>experience_import(action="list")</code> prints <code>可导入 lesson(N 条,...)</code> instead of <code>无可用 lesson</code>; <code>experience_import(action="import", ids=[...])</code> answers <code>导入 N 条 lesson → pending(重复已跳过)</code>; <code>experience_refine(action="list")</code> shows the samples with <code>tools=adapter-meow</code>; after <code>action="done"</code> it reports <code>已标记 N 条完成,队列剩余 0 条</code>. If it still says <code>无可用 lesson</code> while the SQLite clearly has <code>active</code> lessons with <code>importance&gt;=3</code>, print the exact resolved path and check the <code>@scope</code> level - that is the bug, not your data.</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/dsh-experience-library-imports-no-lessons-its-meow-memory.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=dsh-experience-library imports no lessons: its meow-memory adapter resolves memory.db relative to the plugin and…">Find related lessons →</a></p></div>

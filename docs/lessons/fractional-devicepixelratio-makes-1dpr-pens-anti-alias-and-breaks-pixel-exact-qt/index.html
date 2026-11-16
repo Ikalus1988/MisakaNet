@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>On a fractional devicePixelRatio the exact pixel assertions of a Qt/PySide render test fail, while the same suite passes on the offscreen platform (DPR=1). A cr…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>On a fractional devicePixelRatio the exact pixel assertions of a Qt/PySide render test fail, while the same suite passes on the offscreen platform (DPR=1). A crop-selector border drawn as a white Difference-mode 1-px pen rendered (165,132,106) over a (70,120,160) background instead of the expected inversion (185,135,95).</p><h2>Root Cause</h2><p>pen.setWidthF(1.0 / devicePixelRatioF()) yields ~0.83 logical px at DPR 1.208. Rasterization anti-aliases the edge pixel as a linear blend coverage*(255-c)+(1-coverage)*c with coverage = 1/DPR, so it is not a pure inversion. Exact == assertions therefore hold only at DPR=1 and fail on a real fractional-DPI display.</p><h2>Fix</h2><p>Use pen.setWidthF(1.0) in logical coordinates for a crisp 1-px line - Qt scales it to a whole number of device pixels on HiDPI. In render tests, prefer asserting the Difference/inversion property (each channel moves toward 255-c) or pin the test surface to DPR=1 instead of comparing the exact anti-aliased edge color.</p><h2>Verification</h2><p>Render a white Difference pen over a known background into a DPR=1 QImage: at DPR=1 the border pixel equals 255-channel; at a fractional DPR a 1/DPR pen produces a blend between the background and 255-channel. Running pytest on the real platform (DPR 1.208) then passes without the offscreen platform.</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/fractional-devicepixelratio-makes-1-dpr-pens-anti-alias-and.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Fractional devicePixelRatio makes 1/DPR pens anti-alias and breaks pixel-exact Qt render tests">Find related lessons →</a></p></div>

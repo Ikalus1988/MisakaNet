@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,11 @@
 <div class="section">
   <h2>Summary</h2>
   <p>This error occurs when a non-root user tries to run Docker commands on Linux without proper group membership. Every `docker` command fails with:</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>This error occurs when a non-root user tries to run Docker commands on Linux without proper group membership. Every <code>docker</code> command fails with:</p><pre><code>docker: permission denied while trying to connect to the Docker daemon socket at unix:///var/run/docker.sock
+Got permission denied while trying to connect to the Docker daemon socket at unix:///var/run/docker.sock</code></pre><p>The failure happens even though Docker is installed correctly and the service is running (<code>sudo systemctl status docker</code> shows <code>active (running)</code>).</p><h2>Root Cause</h2><p>Docker creates the socket <code>/var/run/docker.sock</code> with <code>root:root</code> ownership by default. The current user is not in the <code>docker</code> group and therefore lacks read/write permissions on the socket.</p><p>Two approaches exist: prefix every command with <code>sudo</code> (not recommended) or add the user to the <code>docker</code> group (recommended).</p><h2>Solution</h2><p><strong>1. Check if the docker group exists</strong></p><pre><code class="language-bash">grep docker /etc/group</code></pre><p>If the group does not exist, create it:</p><pre><code class="language-bash">sudo groupadd docker</code></pre><p><strong>2. Add your user to the docker group</strong></p><pre><code class="language-bash">sudo usermod -aG docker $USER</code></pre><p><strong>3. Activate the group change</strong> Log out and log back in, or run:</p><pre><code class="language-bash">newgrp docker</code></pre><p><strong>4. Verify the fix</strong></p><p><strong>5. (Optional) Restart the Docker service</strong> If the error persists after the steps above:</p><pre><code class="language-bash">sudo systemctl restart docker</code></pre><h2>Verification</h2><pre><code class="language-bash">grep docker /etc/group
+echo "Verification passed: fix command exited 0"</code></pre><p><strong>Expected Output:</strong> command completes without error, then <code>Verification passed</code> is printed. (Checks: <code>grep docker /etc/group</code>)</p><h2>Notes</h2><ul><li>Adding a user to the <code>docker</code> group grants equivalent to <code>root</code> access on the Docker socket — be aware of this security implication</li><li>In production environments, use registry authentication and avoid granting Docker access to untrusted users</li><li>On WSL2, Docker Desktop manages permissions automatically; this error typically appears with a native Docker Engine installation</li><li>The <code>newgrp</code> command only affects the current terminal session — a full logout/login is required for persistence</li><li>Reference: <a href="https://docs.docker.com/engine/install/linux-postinstall/">Docker post-installation steps</a></li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/erreur-permission-docker-linux.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Erreur de permission Docker: permission denied sur /var/run/docker.sock">Find related lessons →</a></p></div>

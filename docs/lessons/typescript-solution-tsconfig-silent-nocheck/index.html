@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,18 @@
 <div class="section">
   <h2>Summary</h2>
   <p>After four consecutive clean runs of `npx tsc --noEmit`, a production page showed an error instead of content. The TypeScript error was `TS2350: Only a void fun…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>After four consecutive clean runs of <code>npx tsc --noEmit</code>, a production page showed an error instead of content. The TypeScript error was <code>TS2350: Only a void function can be called with the 'new' keyword</code>. The type checker reported zero errors on every run.</p><h2>Root Cause</h2><p>The project used a solution-style <code>tsconfig.json</code> with <code>"files": []</code> and project references:</p><pre><code class="language-json">{
+  "files": [],
+  "references": [
+    { "path": "./tsconfig.app.json" },
+    { "path": "./tsconfig.node.json" }
+  ]
+}</code></pre><p>Running plain <code>tsc</code> against this config typechecks nothing — it does not descend into the referenced projects and finds zero errors in the empty set. Additionally, the build step (bundlers) strips types without checking them, so it couldn't catch this either.</p><p>The underlying code bug was an unused import of <code>Map</code> from <code>lucide-react</code>, which shadowed the global <code>Map</code> constructor:</p><pre><code class="language-typescript">import { Map } from 'lucide-react'; // unused import, shadows global Map
+
+const myMap = new Map&lt;string, number&gt;(); // TS2350: constructs React component, not JS Map</code></pre><h2>Solution</h2><p>Steps to fix:</p><ol><li>Delete the unused <code>Map</code> import from lucide-react (resolves the shadowing)</li><li>Use the correct typecheck command targeting the app project:<ul><li>Wrong: <code>npx tsc --noEmit</code> (checks empty solution root)</li><li>Right: <code>npx tsc -p tsconfig.app.json --noEmit</code> (checks actual app code)</li></ul></li><li>Add a deliberate-breakage test to CI — intentionally introduce a type error and verify the checker catches it</li></ol><h2>Verification</h2><pre><code class="language-bash">npx tsc --noEmit
+echo "Verification passed: fix command exited 0"</code></pre><p><strong>Expected Output:</strong> command completes without error, then <code>Verification passed</code> is printed. (Checks: <code>npx tsc --noEmit</code>)</p><h2>Notes</h2><p>An empty output from a type checker is byte-identical to a genuinely clean run and cannot be distinguished. Key lessons:</p><ul><li>Assert on the content of expected errors (e.g., expecting TS2352 at a specific line), not just "exit code 0 means pass"</li><li>Checks can become unreachable over time as project structure evolves</li><li>Solution-style tsconfig is designed for IDE support, not for CLI type checking — always target the specific project</li></ul><h2>References</h2><p>https://dev.to/henry_dan_81513dd35a2f540/it-passed-because-it-never-looked-552l</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/typescript-solution-tsconfig-silent-nocheck.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=TypeScript solution-style tsconfig — tsc --noEmit checks nothing silently">Find related lessons →</a></p></div>

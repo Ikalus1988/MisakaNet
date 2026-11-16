@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>用 aria2（-x 16 -s 16 --file-allocation=none）下载一个约 184MB 的 APK。磁盘上的文件长度很快变成完整大小，于是按"文件大小对了"判定下载完成并结束进程；随后 sha256 与官方 SHA256SUMS 完全不符，而字节数一模一样。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>用 aria2（-x 16 -s 16 --file-allocation=none）下载一个约 184MB 的 APK。磁盘上的文件长度很快变成完整大小，于是按"文件大小对了"判定下载完成并结束进程；随后 sha256 与官方 SHA256SUMS 完全不符，而字节数一模一样。</p><h2>Root Cause</h2><p>aria2 在开始时就按总长度创建文件（稀疏），之后多条连接各自往自己的偏移区间写数据。文件长度达标只意味着"文件被建到了全长"，不代表每个分片都已落地；这时终止进程，留下的就是"全长但中间有空洞或残留旧数据"的文件，但 ls / Get-ChildItem 看起来完全正常。</p><h2>Fix</h2><ol><li>不要按大小判完成，也不要中途 kill：让它自己退出，看 aria2 输出 (OK):download completed 与退出码。2) 更稳的做法是直接给校验值：--checksum=sha-256=&lt;官方哈希&gt;，aria2 会在完成后自行校验，不一致会报错。3) 已经拿到坏文件时，删掉目标文件连同 .aria2 控制文件重新下载，不要用 -c 续传一个内容不对的文件。</li></ol><h2>Verification</h2><p>Get-FileHash -Algorithm SHA256 与官方清单逐字符一致；aria2 退出码 0 且日志含 download completed；本地字节数与 release 元数据中的 size 完全相等。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/aria2-多线程下载文件长度已满不等于下载完成按大小判完成会拿到坏文件.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=aria2 多线程下载：文件长度已满不等于下载完成，按大小判完成会拿到坏文件">Find related lessons →</a></p></div>

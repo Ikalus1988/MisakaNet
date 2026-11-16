@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,16 @@
 <div class="section">
   <h2>Summary</h2>
   <p>真机跑百度导航 SDK，日志里连着出现两个非 0 值：</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>真机跑百度导航 SDK，日志里连着出现两个非 0 值：</p><pre><code>地图授权状态 = -300
+地图网络状态 = 2（网络连接错误）
+...
+地图授权状态 = 230
+地图网络状态 = 0（正常）</code></pre><p>第一版把两个都标成「ak 校验没过」，排查方向被带偏一轮。</p><h2>Root Cause</h2><p>这是<strong>两件不同的事</strong>，别混成一个：</p><pre><code>E_PERMISSIONCHECK_CONNECT_ERROR = -300   // 链接服务器错误 ← 网络问题
+E_PERMISSIONCHECK_KEY_ERROR     = 101    // ak 不存在
+E_PERMISSIONCHECK_MCODE_ERROR   = 102    // Mcode 签名不正确
+E_PERMISSIONCHECK_UID_KEY_ERROR = 200    // APP 不存在，AK 有误</code></pre><p><code>230</code> 不在本地枚举里，在百度 webapi 附录：Mobile 类型（Android/iOS）的请求要做安全码校验；安全码 = APP 签名 SHA1 + ";" + <strong>包名</strong>，不带或带不一致都返回 230。iOS 没有 SHA1，所以 <strong>iOS 的安全码就是 Bundle ID</strong>，必须和手机上实际包名逐字符一致。</p><p>踩法：SideStore 会给包名加后缀，控制台填 <code>cn.yqx.baiduprobe</code>、实际装的是 <code>cn.yqx.baiduprobe.PGV6836FJR</code> → 230。</p><h2>Fix</h2><ol><li>控制台「修改」→ Bundle ID 填<strong>加了后缀的实际包名</strong>；或 SideStore 安装页把后缀删掉重装，让两边都是干净 ID。</li><li>查实际包名：<code>xcrun devicectl device info apps --device &lt;UDID&gt; | grep &lt;关键词&gt;</code>。</li></ol><p>两条附带教训：<strong>错误码要逐个映射，不要用「非 0 即失败」糊过去</strong>；<strong>不要凭旧截图断言第三方控制台的配置</strong>（配置类结论必须现看现值）；<code>authorizeNaviAppKey = 1</code> 不代表能用，那只是本地格式检查，真正鉴权结果是 <code>onGetPermissionState:</code>。</p><h2>Verification</h2><p>授权状态稳定为 0（<code>onGetPermissionState:</code> 回调）；把控制台 Bundle ID 改回不一致的值能复现 230，证明映射正确。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/百度导航-sdk-鉴权错误码-300-是网络错误230-才是包名安全码对不上.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=百度导航 SDK 鉴权错误码：-300 是网络错误，230 才是包名/安全码对不上">Find related lessons →</a></p></div>

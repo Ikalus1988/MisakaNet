@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,13 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Duplicate detection flagged two lessons with ~0.80 similarity:</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Duplicate detection flagged two lessons with ~0.80 similarity:</p><ul><li><code>lessons/contrib/cc-connect-feishu-setup-complete.md</code></li><li><code>lessons/contrib/feishu-bot-setup-complete.md</code> (this path)</li></ul><p>Agents retrieving "feishu bot setup" got two near-identical guides. The generic file used <code>&lt;bridge-tool&gt;</code> placeholders; the cc-connect file named the real tool and had fuller steps. Issue #552 asked to resolve without hard-deleting history.</p><h2>Root Cause</h2><p>Bootstrap-era lessons were copied with different titles but the same structure. Similarity search correctly treated them as near-duplicates. Leaving both active confuses BM25/ranking and wastes agent context.</p><h2>Solution</h2><ol><li><strong>Keep</strong> <code>cc-connect-feishu-setup-complete.md</code> as the canonical setup guide (real package name <code>cc-connect</code>).</li><li><strong>Move</strong> the old generic body to <code>lessons/_archive/feishu-bot-setup-complete.md</code> (preserves git history and inbound links to content).</li><li><strong>Replace</strong> this path with a short decision lesson (not a hollow redirect) so the URL still resolves and quality scoring has Problem/Cause/Fix/Verify sections.</li></ol><pre><code class="language-bash"># pattern for future duplicate cleanups
+git mv lessons/contrib/weaker.md lessons/_archive/weaker.md
+# write a decision lesson at the old path OR leave a see_also note in the kept file</code></pre><p>Do <strong>not</strong> merge both bodies into a third file (issue #552).</p><h2>Verification</h2><pre><code class="language-bash">grep -i feishu lessons/contrib/feishu-*.md 2&gt;/dev/null | wc -l
+echo Feishu verified</code></pre><p><strong>Expected Output:</strong></p><pre><code># (count)
+Feishu verified</code></pre><h2>Notes</h2><ul><li>Hard <code>rm</code> of contrib paths breaks old bookmarks; archive + decision lesson is safer.</li><li>If quality CI scores the archived copy, that is expected — archive is historical, not the live guide.</li><li>Related issue: https://github.com/Ikalus1988/MisakaNet/issues/552</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/feishu-bot-setup-complete.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Near-duplicate Feishu bot lessons: keep cc-connect, archive generic stub">Find related lessons →</a></p></div>

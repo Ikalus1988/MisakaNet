@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>功能看起来没变，但某个已经修好的细节退回旧样子。实例：落地 v1.20 时 `LingboBridge.token` 又变回硬编码明文，而 main 上前一天已经改成 `BuiltinConfig` 注入了。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>功能看起来没变，但某个已经修好的细节退回旧样子。实例：落地 v1.20 时 <code>LingboBridge.token</code> 又变回硬编码明文，而 main 上前一天已经改成 <code>BuiltinConfig</code> 注入了。</p><h2>Root Cause</h2><p>多 AI / 多目录并行时，另一份目录里的同名文件是几小时前的快照。<code>cp</code> 过去等于把中间所有修复覆盖掉。Git 不会报冲突——这是在<strong>工作区直接覆盖</strong>，提交时看起来只是「一处改动」，review 时极易漏掉。</p><h2>Fix</h2><ol><li>一律先 <code>git pull</code>，然后<strong>在当前仓库的文件上改</strong>，不要整文件覆盖；</li><li>必须借外部版本时，先 <code>git diff</code> 对比，只取需要的那几行；</li><li>提交前逐条看删掉的行：<code>git diff --cached -U0 | grep '^-'</code>，确认每一行都是自己有意删的；</li><li>密钥类改动尤其要查：<code>git grep --cached -nE 'lb_[a-z0-9]{16,}'</code>。</li></ol><p>根治办法是不要有多份副本目录——一个仓库只留一份代码。</p><h2>Verification</h2><p><code>git diff --cached -U0 | grep '^-'</code> 每一行都能解释来源；<code>git grep --cached -nE 'lb_[a-z0-9]{16,}'</code> 无命中；打出来的 ipa 里密钥仍来自注入配置。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/从旧副本整文件拷回主工程会静默回退期间的修复密钥又变回硬编码明文.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=从「旧副本」整文件拷回主工程会静默回退期间的修复（密钥又变回硬编码明文）">Find related lessons →</a></p></div>

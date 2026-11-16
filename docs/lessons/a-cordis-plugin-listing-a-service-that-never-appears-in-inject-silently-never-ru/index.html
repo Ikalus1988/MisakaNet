@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,23 @@
 <div class="section">
   <h2>Summary</h2>
   <p>A local DSH Web client plugin (`dsh-profile-dashboard`) loaded fine and showed its sidebar tab. Then</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>A local DSH Web client plugin (<code>dsh-profile-dashboard</code>) loaded fine and showed its sidebar tab. Then one word was added to its service list:</p><pre><code class="language-js">inject: ["betterSidebar"]              // before: sidebar tab visible
+inject: ["slots", "betterSidebar"]     // after:  everything disappears</code></pre><p>After the change <strong>both</strong> of the plugin's entry points vanished at once — the official slot (<code>conversation.view</code> view tab) and the <code>better-sidebar</code> tab. There was no error, no warning, and nothing in the console outside DevTools: the plugin neither reported a failure nor appeared to load.</p><p>Three rounds went into the wrong hypotheses, all of which were excluded:</p><ul><li>the slot name was wrong (<code>conversation.view</code>),</li><li>the registration arguments were wrong (<code>order</code>, <code>label</code>),</li><li>the slot did not exist in this client version,</li><li>and, at one point, that the host process needed a restart.</li></ul><h2>Root Cause</h2><p><code>inject</code> in cordis is not a hint list — it is a <strong>precondition</strong>: <code>apply()</code> runs only after <em>every</em> service named there is ready. A name that can never be resolved is not an error condition; it just means the precondition is never satisfied, so <code>apply()</code> is never called.</p><p>Nothing is logged because nothing failed. The plugin is "loaded" and simply never starts, which from the outside is indistinguishable from a wrong slot name or a broken registration — hence the three rounds spent on registration arguments.</p><p>The same silent whole-plugin death has a second reported cause: a client bundle that <code>require</code>s a module which is not declared in <code>package.json</code>'s <code>dsh.client.inject</code> throws during module load. On the reporter's machine that missing module was <code>react-dom</code>, absent from the profile's <code>node_modules</code> entirely — so the throw happens before any of the plugin's own code runs.</p><h2>Solution</h2><h3>1. List only services that are guaranteed to exist</h3><p>Keep <code>inject</code> to services the host always provides. <code>slots</code> was not one of them on this client version, and adding it disabled the plugin that had been working.</p><h3>2. Probe optional services at runtime and retry</h3><p>If you need a service that may arrive late (or may not exist), do not put it in <code>inject</code>. Ask the context for it and retry until it is there (reporter's code, verbatim):</p><pre><code class="language-js">function trySlots(n) {
+  const slots = ctx.get ? ctx.get("slots") : null;
+  if (slots &amp;&amp; slots.inject) {
+    ctx.effect(() =&gt; slots.inject("conversation.view", () =&gt; slots.register({
+      name: "conversation.view", id: "x", order: 40, label: () =&gt; "标题"
+    }, Comp)), "tag");
+    return;
+  }
+  if (n &lt; 20) setTimeout(() =&gt; trySlots(n + 1), 250);
+}
+trySlots(0);</code></pre><p>This makes "service absent" a bounded, visible retry instead of an invisible precondition that blocks the whole plugin.</p><h3>3. Log on the first line of <code>apply()</code></h3><pre><code class="language-js">apply(ctx, config) {
+  console.log("[profile-dashboard] apply");   // did it even start?
+  ...
+}</code></pre><p>One line splits the two cases that look identical from the UI: <strong>plugin not loaded</strong> (no log) versus <strong>loaded but registration rejected</strong> (log present). Without it, every hypothesis has the same symptom and you debug by guesswork.</p><h2>Verification</h2><ul><li>Reverting to <code>inject: ["betterSidebar"]</code> and refreshing restored <strong>both</strong> entry points at once.</li><li>The panel's top tab ("个人档案") appeared above the workspace, side by side with the official <code>dsh-context</code> plugin's tab — i.e. both the slot view and the sidebar tab were registered.</li><li>Diagnostic criterion, worth memorizing: <em>widgets disappear with no console output at all</em> ⇒ check <code>inject</code> before checking slot names and registration arguments.</li></ul><h2>Notes</h2><ul><li>The report's <code>dsh.client.inject</code> mechanism for missing modules is reporter-reported; confirm the key name against your plugin's <code>package.json</code> before relying on it. The check itself is cheap: every top-level <code>require</code> in the bundle should resolve inside the profile's <code>node_modules</code>.</li><li>Timeout/retry parameters in the snippet (20 attempts × 250 ms = 5 s) are the reporter's; adjust to your host's startup time. Silently giving up after the last attempt reproduces the original invisible failure, so log on exhaustion.</li><li>Related shape, same plugin tree, different cause: a duplicate Loader entry id also crashes the plugin tree before your code runs — <code>lessons/contrib/dsh-plugin-l5-web-smoke-cordis-duplicate-entry.md</code>.</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/cordis-inject-nonready-service-disables-plugin.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=A cordis plugin listing a service that never appears in inject() silently never runs">Find related lessons →</a></p></div>

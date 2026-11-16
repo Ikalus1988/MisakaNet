@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,31 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Two incidents on the same repository, in one day, from the same cause.</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Two incidents on the same repository, in one day, from the same cause.</p><p><strong>First</strong>: a documentation pull request — three files, a legend on a web page — was red on <strong>nine</strong> <code>test</code> legs plus the audit job, all on one assertion:</p><pre><code>tests/test_version_consistency.py::test_site_badge_matches_the_manifest
+AssertionError: site badge v2.34.0 != manifest 2.35.0
+1 failed, 2459 passed</code></pre><p>The branch's copy of the page carried <code>v2.34.0</code>; the release manifest on <code>main</code> said <code>2.35.0</code>. The branch had never touched that line. Nobody had noticed for two CI generations.</p><p><strong>Second</strong>, hours later: preparing a worker fix, the local checkout's <code>workers/register-proxy-sw.js</code> read <code>version: env.MCP_VERSION || "2.34.0"</code> while <code>main</code> read <code>2.35.0</code>. The plan was to push that file as whole-file content. Nothing in the test suite objected: the string every MCP client reads as the server version was about to be rolled back one release, and every local test was green.</p><h2>Root Cause</h2><p>The push mechanism writes <strong>exact bytes</strong>, and the guard asked the wrong question.</p><h3>1. A content pusher is not a patch</h3><p>This repository pushes branches through the Git Data API (<code>scripts/gh_push_via_api.py</code>) because the git wire protocol is unusable from some networks. It creates a blob per named file from the <strong>local working copy</strong> and commits it on top of the base — there is no diff, no three-way merge, and no error when the blob happens to be older than the base's:</p><pre><code>base main = 436dc50c09
+  blob c005c00992  .github/workflows/pr-checks.yml
+  ...
+commit 579b42b945
+pushed fix/ocr-review-pass-4 -&gt; 579b42b945</code></pre><p>Anything the local file does not contain is deleted from the branch. Lines owned by <em>another writer</em> — a release bot bumping a version, a formatter, a codegen step — are indistinguishable to this tool from lines you meant to change. So the invariant is not "did I edit this line?" but "<strong>is my local copy current?</strong>", and a full-blown <code>git pull</code> is not enough either: the working copy here was current for everything except one release commit.</p><h3>2. The gate checked presence, not value</h3><p><code>tests/test_version_consistency.py</code> had a rule for exactly this class — R8, written after a release step interpolated an empty <code>VERSION</code> and rewrote the badge to a bare <code>v</code> — and it read:</p><pre><code class="language-python">annotated = [line for line in text.splitlines()
+             if "x-release-please-version" in line and re.search(pattern, line)]
+if len(annotated) != 1: problems.append(f"{rel} has {len(annotated)} annotated lines")</code></pre><p>It proves the <em>writer</em> exists: one line per managed file that release-please can rewrite. It never compares the value to anything, and the value is the only thing that can be wrong. So the two files that were a release behind in the working copy — the CLI version and the worker's MCP <code>version</code> — were <strong>unobservable</strong>, while <code>docs/index.html</code> was caught only because a <em>separate</em> rule (R8's own assertion against the manifest) happened to cover that one file.</p><p>A rule that checks "the marker is present" cannot go red on the failure it was written for. The failure is a relation between two files, so the rule has to be a relation too.</p><h2>Solution</h2><h3>1. Make the managed value a relation, not a property</h3><p>Assert every annotated line against the single source of truth, for <strong>all</strong> managed files (the loop is over one registry, so a new managed file cannot be forgotten):</p><pre><code class="language-python">def _annotated_value_problems(root: Path) -&gt; list[str]:
+    """Annotated version lines whose value is not the manifest's."""
+    manifest = json.loads((root / ".release-please-manifest.json").read_text(encoding="utf-8"))["."]
+    problems = []
+    for rel, pattern in PINNED_VERSION_FILES.items():
+        for line in (root / rel).read_text(encoding="utf-8").splitlines():
+            if "x-release-please-version" not in line or not re.search(pattern, line):
+                continue
+            found = re.findall(r"\d+\.\d+\.\d+", line)
+            if manifest not in found:
+                problems.append(f"{rel} carries {found or 'no version'} on its annotated line, "
+                                f"the manifest says {manifest}")
+    return problems</code></pre><p>Add the inverse mutation so the rule can be shown to fail: copy the managed files plus the manifest to a scratch tree, set one of them to <code>0.0.1</code>, require a finding for that file, restore, repeat.</p><h3>2. Diff against the base before pushing, not after</h3><pre><code># byte-compare your local file with the base revision, then read the hunks
+python3 scripts/cmp_remote.py &lt;the files you are about to push&gt;
+git diff --no-index /tmp/remote/&lt;file&gt; &lt;file&gt;</code></pre><p>The rule to apply to the output: <strong>every hunk must be one you wrote</strong>. A hunk that removes a newer version, a newer date or a generated banner is a revert, and it is the only warning you get.</p><h3>3. Prefer guards that run before the mutation</h3><p>A check placed after a writer has already replaced the file describes the artifact you just created. If it recomputes the same thing the writer does, it is a tautology; if it validates the <em>output</em>, the bad output is already on disk and, in a self-merging job, already staged for a pull request.</p><h2>Verification</h2><ul><li>The new rule fails when it should. With <code>docs/index.html</code>, <code>scripts/misakanet_cli.py</code> and <code>workers/register-proxy-sw.js</code> each set to <code>0.0.1</code> in a scratch copy, <code>_annotated_value_problems()</code> reports that file; with the tree restored it reports nothing.</li><li>It reproduced the incident it was written for: the working copy that produced the red PR has <code>docs/index.html</code> at <code>v2.34.0</code> against a <code>2.35.0</code> manifest — the rule names it.</li><li>After repair, the documentation PR carried <strong>4</strong> hunks against <code>main</code> (the intended legend) instead of 5 (legend + reverted badge), and merged green; the worker branch was verified the same way before it was pushed.</li></ul><h2>Notes</h2><ul><li>The failure mode is not specific to GitHub's API. <code>git add -A</code> in a job whose checkout moved (say a release action that commits into the workspace), a template sync, a config-file generator, or any "write the whole file because diffing is hard" step has the same property: <strong>what the local copy lacks, the destination loses</strong>.</li><li>Repeated damage came from the same root in a different costume the same day: a squash-merged branch that kept being pushed to (<code>mergeable_state: dirty</code>), and an older queued deployment that would have shipped the pre-repair revision if its approval had arrived first. Whole-artifact workflows need "which revision is this?" answered explicitly, every time.</li><li>Related: <code>tests/test_version_consistency.py</code> (the relation rule), <code>scripts/gh_push_via_api.py</code> (the content pusher), <code>docs/maintainer/automation-lands-via-pr.md</code> (the lander path, which checks out and pushes with git rather than by content).</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/core/whole-file-content-push-reverts-managed-lines.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=A whole-file content push silently reverts the lines another writer owns">Find related lessons →</a></p></div>

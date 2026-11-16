@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,17 @@
 <div class="section">
   <h2>Summary</h2>
   <p>1) 三栏布局右侧日期被压成逐字换行（显示成「10-1 / 9 / 13:2 / 0」）；2) 想用 `ContentSizeCategory.isAccessibilitySize` 判断超大字号，编译不过；3) 系统字号调大后 46pt 的按钮变成 74pt，直接挤出屏幕。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><ol><li>三栏布局右侧日期被压成逐字换行（显示成「10-1 / 9 / 13:2 / 0」）；2) 想用 <code>ContentSizeCategory.isAccessibilitySize</code> 判断超大字号，编译不过；3) 系统字号调大后 46pt 的按钮变成 74pt，直接挤出屏幕。</li></ol><h2>Root Cause</h2><ol><li>lineLimit(1) 只限制行数，不阻止父容器在空间不足时把文本压缩到逐字换行，需要 fixedSize 或 minimumScaleFactor 才能真正锁宽；2) isAccessibilitySize 是 UIKit <code>UIContentSizeCategory</code> 的成员，SwiftUI 的 <code>ContentSizeCategory</code> 没有；3) 动态字体倍率是统一乘数，基数字号越大绝对增量越大，必须分档封顶。</li></ol><h2>Fix</h2><pre><code class="language-swift">// 1) 锁宽
+Text(dateText).lineLimit(1).fixedSize(horizontal: true, vertical: false)
+// 或允许缩字
+Text(label).lineLimit(1).minimumScaleFactor(0.7)
+
+// 2) 自己补扩展
+extension ContentSizeCategory { var bmsIsAccessibility: Bool { ... } }
+
+// 3) 按基准字号分档封顶：≤10pt→1.60×、21pt→1.40×、46pt→1.12×，默认档恒 1.0</code></pre><p>默认档必须恒为 1.0，保证不改系统字号时逐像素不变。</p><h2>Verification</h2><p>系统字号调到最大：首页三栏不换行、按钮不出屏、不裁字；默认字号下与改动前截图逐像素一致。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/swiftui-动态字体三个雷linelimit1-挡不住压缩contentsizecategory-没有.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=SwiftUI 动态字体三个雷：lineLimit(1) 挡不住压缩、ContentSizeCategory 没有 isAccessibilitySize、大字号必须分级封顶">Find related lessons →</a></p></div>

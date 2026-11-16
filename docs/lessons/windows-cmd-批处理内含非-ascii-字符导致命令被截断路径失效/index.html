@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,11 @@
 <div class="section">
   <h2>Summary</h2>
   <p>在中文 Windows 上，把一份 .cmd（或 .bat）放进某个目录后双击或执行，cmd 报：</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>在中文 Windows 上，把一份 .cmd（或 .bat）放进某个目录后双击或执行，cmd 报：</p><pre><code>'xxx' is not recognized as an internal or external command,
+operable program or batch file.</code></pre><p>同时能看到文件里的中文被解成了 <code>鎹竴寮?vbs</code> 这类乱码，原本的一条命令被拆成好几段分别报错，路径完全失效。</p><h2>Root Cause</h2><p>cmd.exe 解析批处理时按<strong>系统 ANSI 代码页</strong>（中文系统 = GBK/936）逐字节解码，而不是按 UTF-8。 UTF-8 的中文是多字节序列，被当成 GBK 双字节重新拼出来就成了另一个"汉字"；其中某些字节还会落进 cmd 的元字符（&amp; | &gt; " 之类）位置，于是命令被提前截断、参数错位，一行变多行。</p><p>补充：改用 <code>Set-Content -Encoding ASCII</code> 保存也不是绕法——中文会被直接替换成 <code>?</code>，路径同样失效，而且错得更隐蔽（不报解析错误，只是找不到文件）。</p><h2>Fix</h2><p>二选一。</p><p><strong>推荐：让 .cmd 里一个非 ASCII 字符都没有。</strong> 把中文路径挪到别处——例如 .cmd 只负责调一个 ASCII 文件名的启动器，由启动器用 <code>%~dp0</code>、<code>ScriptFullName</code>、<code>$PSScriptRoot</code> 自己定位，命令行里一个字的中文都不出现。</p><p><strong>确实要在 .cmd 里写中文：用 GBK(936) 编码保存。</strong></p><pre><code class="language-powershell">[System.IO.File]::WriteAllText($path, $content, [System.Text.Encoding]::GetEncoding(936))</code></pre><p>不要用 UTF-8（加不加 BOM 都不行：cmd 会把 BOM 也当成命令的一部分）。</p><h2>Verification</h2><ol><li>统计非 ASCII 字节应为 0：</li></ol><pre><code class="language-powershell">$b = [System.IO.File]::ReadAllBytes($path)
+($b | Where-Object { $_ -gt 127 }).Count</code></pre><ol><li>实跑一次，确认不再出现 <code>'xxx' is not recognized</code> 且路径被正确解析。</li><li>若坚持用 GBK，用 <code>Get-Content $path -Encoding Default</code>（或按代码页 936 读）能看到正常中文。</li></ol>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/windows-cmd-批处理内含非-ascii-字符导致命令被截断路径失效.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Windows .cmd 批处理内含非 ASCII 字符导致命令被截断、路径失效">Find related lessons →</a></p></div>

@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,22 @@
 <div class="section">
   <h2>Summary</h2>
   <p>首次贡献者提交 PR 后，`pr-welcome.yml`（使用 `pull_request_target` 事件）状态显示 **Skipped**，欢迎评论未发出。</p>
+</div>
+<div class="lesson-body">
+<h2>Root Cause</h2><p>首次贡献者提交 PR 后，<code>pr-welcome.yml</code>（使用 <code>pull_request_target</code> 事件）状态显示 <strong>Skipped</strong>，欢迎评论未发出。</p><p><strong>Error message</strong> from GitHub Actions log:</p><pre><code>Skipping pr-welcome.yml: condition 'contains(fromJSON('["FIRST_TIMER", "FIRST_TIME_CONTRIBUTOR"]'), github.event.pull_request.author_association)' evaluated to false</code></pre><p><strong>Config</strong> issue: <code>pr-welcome.yml</code> 的触发条件：</p><pre><code class="language-yaml">if: contains(fromJSON('["FIRST_TIMER", "FIRST_TIME_CONTRIBUTOR"]'),
+    github.event.pull_request.author_association)</code></pre><p>但该贡献者的 <code>author_association</code> 实际值为 <strong><code>NONE</code></strong>，不在 <code>["FIRST_TIMER", "FIRST_TIME_CONTRIBUTOR"]</code> 范围内。</p><h3>GitHub author_association 取值</h3><table><thead><tr><th>值</th><th>条件</th></tr></thead><tbody><tr><td><code>NONE</code></td><td>非仓库成员，但在 GitHub 上有过其他活动（如 fork 仓库推送）</td></tr><tr><td><code>FIRST_TIMER</code></td><td>首次与该仓库交互</td></tr><tr><td><code>FIRST_TIME_CONTRIBUTOR</code></td><td>提交过 issue 但无合并 PR</td></tr><tr><td><code>CONTRIBUTOR</code></td><td>有合并的贡献</td></tr><tr><td><code>COLLABORATOR</code></td><td>被添加为协作者</td></tr></tbody></table><p><strong>关键陷阱</strong>：贡献者在 fork 仓库有过推送活动后，association 从 <code>FIRST_TIMER</code> 升级为 <code>NONE</code>，恰好跳出欢迎工作流的 if 范围。</p><h3>复现条件</h3><ol><li>用户 fork 仓库后在其 fork 中创建分支并推送（即使未向主仓库提过 PR）</li><li>该用户首次向主仓库提 PR</li><li><code>author_association</code> = <code>NONE</code>，而非 <code>FIRST_TIMER</code></li></ol><h2>修复方案</h2><p>扩展 if 条件覆盖 <code>NONE</code>，或直接移除 author_association 限制：</p><pre><code class="language-yaml"># PR Welcome Not Triggering — author_association NONE vs FIRST_TIMER Trap
+if: contains(fromJSON('["FIRST_TIMER", "FIRST_TIME_CONTRIBUTOR", "NONE"]'),
+    github.event.pull_request.author_association)
+
+# 方案 B：只判断 opened 事件（最宽松）
+if: github.event_name == 'pull_request_target' &amp;&amp; github.event.action == 'opened'</code></pre><h2>验证</h2><p>PR 创建后 10 秒内检查 <code>gh api repos/owner/repo/issues/&lt;num&gt;/comments</code>，确认 bot 评论已发出。</p><h2>Verification</h2><ol><li>Open a PR from a brand-new GitHub user (no prior issues/PRs) — confirm <code>author_association</code> is <code>NONE</code></li><li>Check <code>pr-welcome.yml</code> triggers for <code>NONE</code> association — if not, add <code>NONE</code> to the condition</li><li>Open a second PR from the same user — confirm <code>author_association</code> changes to <code>FIRST_TIMER</code> or <code>CONTRIBUTOR</code></li><li>Verify welcome message still fires for the second PR if designed to</li></ol><pre><code class="language-bash"># Check author_association for a PR
+gh api repos/OWNER/REPO/pulls/&lt;PR_NUM&gt; --jq '.author_association'
+
+# Test: Create PR from new user, check if welcome comment appears
+gh api repos/OWNER/REPO/issues/&lt;PR_NUM&gt;/comments --jq '.[].body' | grep -i "welcome"
+
+# Verify the fix: Update pr-welcome.yml to include NONE
+# if: contains(fromJSON('["FIRST_TIMER", "FIRST_TIME_CONTRIBUTOR", "NONE"]'), ...)</code></pre><h2>关联</h2><ul><li><code>pull_request_target</code> 在首次贡献者 fork PR 时<strong>无需手动批准</strong>（与 <code>pull_request</code> 不同）</li><li>DCO 失败<strong>不会阻断</strong> <code>pull_request_target</code> 工作流（两者独立运行）</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/core/pull-request-welcome-trigger-trap.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=PR Welcome Not Triggering — author_association NONE vs FIRST_TIMER Trap">Find related lessons →</a></p></div>

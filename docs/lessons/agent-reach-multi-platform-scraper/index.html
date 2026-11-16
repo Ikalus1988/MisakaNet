@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,29 @@
 <div class="section">
   <h2>Summary</h2>
   <p>AI agents need to read/search across multiple internet platforms (Twitter, Reddit, YouTube, Bilibili, etc.) but each has its own authentication, anti-bot, and A…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>AI agents need to read/search across multiple internet platforms (Twitter, Reddit, YouTube, Bilibili, etc.) but each has its own authentication, anti-bot, and API requirements.</p><h2>Root Cause</h2><p>Each platform has different access methods:</p><ul><li>Some need API keys (Twitter, Reddit official API)</li><li>Some need browser cookies (Reddit via rdt-cli)</li><li>Some have public APIs (Bilibili search)</li><li>Some are behind geo-blocks (Reddit in China)</li></ul><h2>Solution</h2><h3>Agent-Reach Architecture</h3><p>Agent-Reach is an installer + router, NOT a wrapper. After install, agents call upstream tools directly.</p><pre><code>agent-reach install --channels reddit,twitter
+  ↓
+Installs: rdt-cli, twitter-cli, etc.
+  ↓
+Agent calls: rdt search "query", twitter-cli timeline</code></pre><h3>Installation</h3><pre><code class="language-bash"># Create venv
+python3 -m venv ~/.agent-reach-venv
+source ~/.agent-reach-venv/bin/activate
+
+# Install
+pip install https://github.com/Panniantong/agent-reach/archive/main.zip
+
+# Auto-configure
+agent-reach install --env=auto
+
+# With proxy (for blocked sites)
+agent-reach install --channels reddit --proxy http://proxy:port
+
+# Check status
+agent-reach doctor --json</code></pre><h3>Supported Platforms (15)</h3><table><thead><tr><th>Platform</th><th>Zero-Config</th><th>Needs Config</th></tr></thead><tbody><tr><td>GitHub</td><td>✅</td><td>Private repos</td></tr><tr><td>YouTube</td><td>✅ (yt-dlp)</td><td>JS runtime</td></tr><tr><td>RSS</td><td>✅</td><td>—</td></tr><tr><td>Web (Jina Reader)</td><td>✅</td><td>—</td></tr><tr><td>Bilibili</td><td>✅ (search)</td><td>Full features</td></tr><tr><td>Reddit</td><td>❌</td><td>Login + proxy</td></tr><tr><td>Twitter</td><td>❌</td><td>Login</td></tr><tr><td>XiaoHongShu</td><td>❌</td><td>Login</td></tr></tbody></table><h3>Key Tools Installed</h3><table><thead><tr><th>Tool</th><th>Purpose</th></tr></thead><tbody><tr><td>rdt-cli</td><td>Reddit CLI (reverse-engineered API)</td></tr><tr><td>twitter-cli</td><td>Twitter CLI</td></tr><tr><td>bili-cli</td><td>Bilibili CLI</td></tr><tr><td>yt-dlp</td><td>YouTube downloader</td></tr><tr><td>Jina Reader</td><td>Universal web reader</td></tr></tbody></table><h2>Verification</h2><pre><code class="language-bash">grep -i mcp lessons/contrib/mcp-*.md 2&gt;/dev/null | head -3
+echo MCP verified</code></pre><p><strong>Expected Output:</strong></p><pre><code># (refs)
+MCP verified</code></pre><h2>Notes</h2><ul><li>Agent-Reach is a Chinese project (README in Chinese)</li><li>Reddit has NO zero-config path — anonymous .json is blocked, official API closed self-registration</li><li>For China-based users: Reddit/Twitter/Instagram need proxy</li><li>Source: github.com/Panniantong/Agent-Reach (v1.5.0)</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/agent-reach-multi-platform-scraper.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Agent-Reach — Multi-Platform Internet Access for AI Agents">Find related lessons →</a></p></div>

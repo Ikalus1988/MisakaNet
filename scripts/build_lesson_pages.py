@@ -108,6 +108,10 @@ from misakanet.evidence import describe  # noqa: E402
 # instead of three.
 from sync_design_tokens import token_block  # noqa: E402
 from sync_site_partials import site_block  # noqa: E402
+# The lesson's own text, rendered by a stdlib-only renderer in this directory (`lesson_markdown.py`
+# says why it is not the `markdown` package: six workflows run this generator and each installs its
+# own package list).
+import lesson_markdown  # noqa: E402
 
 LESSONS_JSON = Path("data") / "lessons.json"
 LESSONS_DIR = Path("docs") / "lessons"
@@ -157,7 +161,7 @@ HTML_TEMPLATE = """\
 <title>{title} — MisakaNet</title>
 <meta name="description" content="{description}">
 <link rel="canonical" href="{canonical}">
-<meta property="og:title" content="{title}">
+{robots}<meta property="og:title" content="{title}">
 <meta property="og:description" content="{description}">
 <meta property="og:url" content="{canonical}">
 {tokens}
@@ -166,6 +170,17 @@ HTML_TEMPLATE = """\
   a {{ color: var(--accent); }}
   h1 {{ font-size: var(--fs-2xl); margin-bottom: 8px; }}
   .meta {{ color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }}
+  .lesson-body {{ margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }}
+  .lesson-body h2 {{ font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }}
+  .lesson-body h3 {{ font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }}
+  .lesson-body p, .lesson-body li {{ color: #c9d1d9; font-size: var(--fs-sm); }}
+  .lesson-body ul, .lesson-body ol {{ padding-left: 22px; }}
+  .lesson-body pre {{ background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }}
+  .lesson-body code {{ font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }}
+  .lesson-body blockquote {{ margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }}
+  .lesson-body table {{ border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }}
+  .lesson-body th, .lesson-body td {{ border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }}
+  .lesson-body hr {{ border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }}
   .evidence {{ background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }}
   .section {{ margin-bottom: 24px; }}
   .section h2 {{ font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }}
@@ -330,6 +345,64 @@ def is_published_status(status: str | None) -> bool:
     return (status or PUBLISHED_STATUS).strip().lower() == PUBLISHED_STATUS
 
 
+def _comparable(title: str) -> str:
+    """A title reduced to the part translation does not touch: letters and digits, no case."""
+    return "".join(ch for ch in title.casefold() if ch.isalnum())
+
+
+def lesson_body_html(lesson: dict, root: Path = REPO) -> str:
+    """The lesson's own text, rendered for the page.
+
+    Why the page carries the body at all (2026-11-16)
+    -----------------------------------------------
+    It did not. Every lesson page rendered the title, the evidence level, the tags and **one
+    paragraph of `summary`** — measured on the generated tree: 909 published pages at ~50 words each,
+    so the corpus that makes this site worth visiting was the one part of it Google could not see.
+    Search Console said so before anyone measured anything: soft 404 and "duplicate, Google chose a
+    different canonical" arrived together, which is the signature of 909 near-identical shells.
+
+    The body is the lesson's markdown minus frontmatter. A leading `# <title>` is dropped when it
+    repeats the page's own `<h1>` (336 of 988 files open that way); anywhere else a level-1 heading is
+    demoted to `<h2>` by the renderer, because a second `<h1>` is a structure a crawler has to guess
+    at rather than read.
+
+    A missing or unreadable file yields no body rather than a broken page. That is not a guess about
+    the corpus: `tests/test_lesson_page_generator.py` builds pages into a `tmp_path` that holds
+    `data/lessons.json` and no `lessons/**`, and a lesson's `url` can name a file that was removed
+    while the row stayed. A page without its body is also exactly the shape that shipped for months,
+    so the fallback is a known state rather than a new one.
+    """
+    reference = (lesson.get("url") or "").strip()
+    if not reference:
+        return ""
+    path = root / reference
+    if not path.is_file():
+        return ""
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError:
+        return ""
+
+    body = lesson_markdown.FRONTMATTER.sub("", text)
+    lines = body.split("\n")
+    # 48 files carry a stray `---` right after the frontmatter (a horizontal rule left over from the
+    # template they were converted from). At the top of a rendered body it draws a line under the
+    # summary for no reason, so it is dropped — the rule is about placement, not about the character.
+    head = 0
+    while head < len(lines) and not lines[head].strip():
+        head += 1
+    if head < len(lines) and lines[head].strip() == "---":
+        lines = lines[head + 1:]
+    for index, line in enumerate(lines):
+        if not line.strip():
+            continue
+        heading = line.lstrip()
+        if heading.startswith("# ") and _comparable(heading[2:]) == _comparable(lesson.get("title", "")):
+            lines = lines[:index] + lines[index + 1:]
+        break
+    return lesson_markdown.render("\n".join(lines))
+
+
 def build_lesson_page(lesson: dict, root: Path = REPO,
                       markup: dict[str, str] | None = None) -> str:
     """Generate HTML for a single lesson.
@@ -412,13 +485,23 @@ def build_lesson_page(lesson: dict, root: Path = REPO,
         # emits its newline, which put a blank line after <body> on all 434 published pages.
         body = banner_html + "\n" + body
 
+    lesson_html = lesson_body_html(lesson, root=root)
+    if lesson_html:
+        body += f'\n<div class="lesson-body">\n{lesson_html}\n</div>'
     if source_url:
         body += f'\n<div class="section"><h2>Source</h2><p><a href="{source_url}">View on GitHub →</a></p></div>'
 
     body += f'\n<div class="section"><h2>Search</h2><p><a href="/search/?q={title}">Find related lessons →</a></p></div>'
 
+    # A draft is not a search result. The sitemap has never listed one (2026-10-04), but sitemap
+    # omission is a request, not a control: Google reached
+    # `/lessons/benchmark-honesty-simulated-vs-real/` through `/topics/agent/` and reported it
+    # "Submitted and indexed" (URL Inspection, 2026-11-16). That is what `noindex` is for. `follow`
+    # stays on: the page's links are still worth crawling, and a draft that gets finished later is
+    # reachable through them.
+    robots = "" if is_published else '<meta name="robots" content="noindex, follow">\n'
     return HTML_TEMPLATE.format(title=title, description=description, canonical=canonical,
-                                 body=body, **blocks)
+                                 robots=robots, body=body, **blocks)
 
 
 def build_topic_page(domain: str, lessons: list, description: str = "", root: Path = REPO,

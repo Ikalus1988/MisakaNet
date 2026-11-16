@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,35 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Scraping multiple technical forums requires different approaches per site. Some have APIs, some require browser automation, some are behind anti-bot protection.…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Scraping multiple technical forums requires different approaches per site. Some have APIs, some require browser automation, some are behind anti-bot protection. Need a systematic way to choose and implement.</p><h2>Root Cause</h2><p>Each forum has different:</p><ul><li>API availability (HN has Algolia, Dev.to has REST, most don't)</li><li>Anti-bot protection (Cloudflare, login walls, rate limits)</li><li>HTML structure (WoltLab, IPS Community, custom)</li><li>Content format (structured Q&amp;A vs long-form articles)</li></ul><h2>Solution</h2><h3>Decision Tree</h3><pre><code>Is there an API?
+  ├─ Yes → Use API (JSON, structured, reliable)
+  │         Examples: HN Algolia, Dev.to REST, GitHub API
+  └─ No → Is the site behind anti-bot?
+              ├─ Yes → Need browser automation (Playwright)
+              │         Examples: robot-forum.com (WoltLab)
+              └─ No → Try curl first, fall back to Playwright
+                        Examples: Juejin, SegmentFault</code></pre><h3>Implementation Patterns</h3><h4>Pattern 1: API-Based (Preferred)</h4><pre><code class="language-python"># HN Algolia API
+import urllib.request, json
+url = "https://hn.algolia.com/api/v1/search?query=MCP&amp;tags=story&amp;hitsPerPage=10"
+req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+with urllib.request.urlopen(req, timeout=10) as resp:
+    data = json.loads(resp.read())
+    for hit in data["hits"]:
+        print(f"[{hit['points']}↑] {hit['title']}")</code></pre><p>Pros: Fast, structured, no browser overhead Cons: Not all sites have APIs</p><h4>Pattern 2: Playwright-Based</h4><pre><code class="language-javascript">const { chromium } = require('playwright');
+const browser = await chromium.launch({ headless: true });
+const page = await browser.newPage();
+await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
+await page.waitForTimeout(3000);  // Wait for JS rendering
+const text = await page.evaluate(() =&gt; {
+    const main = document.querySelector('#content, main');
+    return main ? main.innerText : '';
+});</code></pre><p>Pros: Works on any site, handles JS rendering Cons: Slower, needs browser binary, site-specific selectors</p><h4>Pattern 3: Hybrid (API + Playwright)</h4><p>Use API for listing/searching, Playwright for reading full content.</p><pre><code>API → Get list of URLs → Playwright → Read each URL's content</code></pre><h3>Site-Specific Findings</h3><table><thead><tr><th>Site</th><th>Method</th><th>Gotcha</th></tr></thead><tbody><tr><td>HN</td><td>Algolia API</td><td>Use <code>tags=story</code> filter</td></tr><tr><td>Dev.to</td><td>REST API</td><td>Needs <code>User-Agent</code> header (403 without)</td></tr><tr><td>robot-forum.com</td><td>Playwright</td><td>WoltLab <code>ol.wbbThread</code> selector, <code>data-is-done</code> for resolved</td></tr><tr><td>Juejin</td><td>Playwright</td><td>Search requires login for full results</td></tr><tr><td>Reddit</td><td>❌ Blocked</td><td>GFW SNI block, needs proxy</td></tr><tr><td>StackOverflow</td><td>❌ 403</td><td>Anti-bot</td></tr></tbody></table><h3>Rate Limiting</h3><pre><code>Between page loads:  2-3 seconds
+Between API calls:   1 second
+Per-site daily limit: ~500 pages (be respectful)</code></pre><h2>Verification</h2><pre><code class="language-bash">echo "Lesson: Multi-Forum Scraping Architecture — API vs Playwri"
+wc -l lessons/contrib/multi-forum-scraping-architecture.md</code></pre><p><strong>Expected Output:</strong></p><pre><code>Lesson: Multi-Forum Scraping Architecture — API vs Playwri
+# (line count)</code></pre><h2>Notes</h2><ul><li>Always check API availability before writing Playwright scrapers</li><li>Playwright <code>domcontentloaded</code> is faster than <code>networkidle</code> for most sites</li><li>Site-specific selectors change over time — build in fallback logic</li><li>Store raw HTML/JSON for re-parsing when selectors break</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/multi-forum-scraping-architecture.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Multi-Forum Scraping Architecture — API vs Playwright">Find related lessons →</a></p></div>

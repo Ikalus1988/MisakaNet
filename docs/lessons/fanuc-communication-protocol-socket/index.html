@@ -6,6 +6,7 @@
 <title>FANUC Robot TCP/IP Socket Communication Protocol and MAPPDK Setup — MisakaNet</title>
 <meta name="description" content="Draft (not published): 需要从外部 PC（Python/C++/其他）通过 TCP/IP 网络与 FANUC 机器人控制器建立 socket 通信，实现远程运动控制、变量读写、程序调用等功能。FANUC 控制器的通信配置涉及多个菜单层级和系统变量，初学者容易遗漏关键步骤。">
 <link rel="canonical" href="https://misakanet.org/lessons/fanuc-communication-protocol-socket/">
+<meta name="robots" content="noindex, follow">
 <meta property="og:title" content="FANUC Robot TCP/IP Socket Communication Protocol and MAPPDK Setup">
 <meta property="og:description" content="Draft (not published): 需要从外部 PC（Python/C++/其他）通过 TCP/IP 网络与 FANUC 机器人控制器建立 socket 通信，实现远程运动控制、变量读写、程序调用等功能。FANUC 控制器的通信配置涉及多个菜单层级和系统变量，初学者容易遗漏关键步骤。">
 <meta property="og:url" content="https://misakanet.org/lessons/fanuc-communication-protocol-socket/">
@@ -160,6 +161,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -179,6 +191,11 @@
 <div class="section">
   <h2>Summary</h2>
   <p>需要从外部 PC（Python/C++/其他）通过 TCP/IP 网络与 FANUC 机器人控制器建立 socket 通信，实现远程运动控制、变量读写、程序调用等功能。FANUC 控制器的通信配置涉及多个菜单层级和系统变量，初学者容易遗漏关键步骤。</p>
+</div>
+<div class="lesson-body">
+<h2>FANUC Robot TCP/IP Socket Communication Protocol and MAPPDK Setup</h2><h3>Problem描述</h3><p>需要从外部 PC（Python/C++/其他）通过 TCP/IP 网络与 FANUC 机器人控制器建立 socket 通信，实现远程运动控制、变量读写、程序调用等功能。FANUC 控制器的通信配置涉及多个菜单层级和系统变量，初学者容易遗漏关键步骤。</p><h3>Root Cause分析</h3><p>FANUC 控制器的网络通信能力依赖两个关键选件：</p><ul><li><strong>R632</strong> — KAREL 编程语言（服务端程序运行环境）</li><li><strong>R648</strong> — User Socket Messaging（TCP/IP socket 通信能力）</li></ul><p>通信架构：外部 PC（Python 客户端）→ TCP/IP → 控制器 Socket Server（KAREL 程序）→ 机器人运动/IO</p><p>MAPPDK（Manufacturing Application Platform Development Kit）是 FANUC 提供的标准化 socket 服务端实现，使用 S8 服务器 tag 和 18735 端口。</p><h3>Solution方法/技术要点</h3><h4>1. 选件兼容性检查</h4><p>MENU → NEXT → STATUS → Version ID → ORDER FI，确认列表中包含：</p><ul><li>R632 — KAREL</li><li>R648 — User Socket Messaging</li></ul><p>ROBOGUIDE 环境：编辑机器人选项时添加 R632 和 R648，然后序列化安装。</p><h4>2. 网络连接配置</h4><p><strong>路径：</strong> MENU → SETUP → Host Comm → TCP/IP</p><table><thead><tr><th>配置项</th><th>真实机器人</th><th>ROBOGUIDE</th></tr></thead><tbody><tr><td>Robot IP</td><td>192.168.234.2（同网段即可）</td><td>127.0.0.1</td></tr><tr><td>Subnet Mask</td><td>255.255.255.0</td><td>255.255.255.0</td></tr><tr><td>DHCP Enable</td><td>False</td><td>False</td></tr><tr><td>Host Name</td><td>主机电脑 IP</td><td>主机电脑 IP</td></tr></tbody></table><p>配置完成后按 <strong>INIT</strong> 激活。</p><h4>3. MAPPDK Server 配置（S8, 端口 18735）</h4><p><strong>步骤 1 — 设置端口系统变量：</strong> MENU → NEXT → SYSTEM → Variables → 选择 <code>$HOSTS_CFG</code> → 进入第 8 项 → 设置 <code>$SERVER_PORT = 18735</code></p><p><strong>步骤 2 — 配置服务器：</strong> MENU → SETUP → Host Comm → SHOW → Servers → 选择 S8</p><table><thead><tr><th>配置项</th><th>值</th></tr></thead><tbody><tr><td>Protocol</td><td>SM</td></tr><tr><td>Port</td><td>18735</td></tr><tr><td>Startup State</td><td>START</td></tr><tr><td>Current State</td><td>STARTED（需手动 ACTION → DEFINE → START）</td></tr></tbody></table><h4>4. MAPPDK Logger 配置（S7, 端口 18736）</h4><p>与 Server 配置相同流程，使用 S7 作为服务器 tag，端口 18736。</p><h4>5. MAPPDK 程序文件部署</h4><p>将以下文件通过 USB 或 FTP 复制到控制器：</p><table><thead><tr><th>文件</th><th>说明</th></tr></thead><tbody><tr><td>mappdk.ls</td><td>主程序，从示教器运行，启动 server + logger</td></tr><tr><td>mappdk_server.pc</td><td>KAREL 服务端程序</td></tr><tr><td>mappdk_logger.pc</td><td>KAREL 日志程序</td></tr><tr><td>mappdk_move.ls</td><td>运动控制 TP 程序</td></tr><tr><td>mappdk_movel.ls</td><td>直线运动 TP 程序</td></tr></tbody></table><p>运行方式：示教器按 SELECT → 找到 MAPPDK → 在 T1/T2 或 AUTO 模式运行。</p><h4>6. 保留资源</h4><table><thead><tr><th>资源</th><th>用途</th></tr></thead><tbody><tr><td>USER FRAME 8, TOOL FRAME 8</td><td>MAPPDK 专用坐标系</td></tr><tr><td>R[81]</td><td>速度</td></tr><tr><td>R[82]</td><td>加速度</td></tr><tr><td>R[83]</td><td>连续运动值</td></tr><tr><td>PR[81]</td><td>位置/关节值存储</td></tr></tbody></table><h4>7. 通信协议概要</h4><p>Python 客户端（fanucpy）与 MAPPDK 服务端之间的协议：</p><ul><li>连接：TCP socket 连接到 <code>host:18735</code></li><li>指令格式：结构化文本指令（命令名 + 参数）</li><li>响应格式：状态码 + 返回数据</li><li>支持的操作：move（joint/pose）、get_curpos、get_curjpos、set_rdo、get_rdo、call_prog 等</li></ul><h4>8. 故障排除</h4><p><strong>Python 脚本挂起或报错：</strong></p><ol><li>示教器按 FCTN → ABORT ALL 终止所有程序</li><li>重新运行 MAPPDK</li></ol><p><strong>常见问题：</strong></p><ul><li>IP 不在同一子网 → 检查网络配置</li><li>端口 18735 不通 → 检查 S8 服务器状态是否为 STARTED</li><li>KAREL 程序无法运行 → 检查 R632/R648 选件是否安装</li><li>连接后无响应 → 检查 MAPPDK 主程序是否在运行</li></ul><h3>Verification方式</h3><ol><li>从 PC ping 控制器 IP（如 192.168.234.2）通</li><li>控制器上 S8 服务器 Current State 显示 STARTED</li><li><code>telnet controller_ip 18735</code> 或 Python socket 连接成功</li><li>MAPPDK 程序在示教器 SELECT 列表中可见且可运行</li><li>Python 端 <code>robot.connect()</code> 返回成功，<code>robot.get_curpos()</code> 返回数据</li></ol><h3>来源</h3><ul><li>GitHub: torayeff/fanucpy — MAPPDK Driver 安装文档 (fanuc.md)</li><li>FANUC 控制器手册：Host Comm / Socket Messaging 配置章节</li></ul><h2>Verification</h2><pre><code class="language-bash">grep -i fanuc lessons/contrib/fanuc-*.md 2&gt;/dev/null | wc -l
+echo FANUC verified</code></pre><p><strong>Expected Output:</strong></p><pre><code># (count)
+FANUC verified</code></pre>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/fanuc-communication-protocol-socket.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=FANUC Robot TCP/IP Socket Communication Protocol and MAPPDK Setup">Find related lessons →</a></p></div>

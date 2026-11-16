@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,43 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Extracting an Apple-created `.tar.gz` — an iOS sysdiagnose archive in the reporter's case — with Python's `tarfile` raised no error, but the extracted tree held…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Extracting an Apple-created <code>.tar.gz</code> — an iOS sysdiagnose archive in the reporter's case — with Python's <code>tarfile</code> raised no error, but the extracted tree held far more files than the same archive opened with Finder / Archive Utility or <code>bsdtar</code>: about <strong>1,000 extra files in a 2,250-file archive</strong>, and every extra path was a file named <code>._&lt;name&gt;</code> (AppleDouble metadata).</p><p>The extras are not inert. Code that globs the extracted tree for data files — <code>*.ips</code> crash reports here — picks the <code>._</code> members up and parses binary metadata as if it were a record, so the failure shows up as bogus records rather than as an extraction error.</p><p>Finder and <code>bsdtar</code> do not show those files because they fold the <code>._</code> members back into extended attributes as they extract.</p><h2>Root Cause</h2><p>macOS <code>tar</code> stores extended attributes — resource forks, Finder info, quarantine flags — as separate archive members named <code>._&lt;name&gt;</code>, the AppleDouble representation. An archive created on a Mac can therefore contain, alongside <code>report.ips</code>, a second member <code>._report.ips</code>.</p><p><code>tarfile</code> implements the tar <em>format</em>, not the AppleDouble <em>convention</em>. A <code>._foo.ips</code> member is a legal regular-file member with a legal name, so the module extracts it as a regular file. There is no AppleDouble handling in <code>tarfile</code>, and <code>tarfile.data_filter</code> does not drop them either: <code>data_filter</code> is about unsafe paths (absolute, traversal, devices), not about macOS metadata. No default behavior in the module removes them.</p><p>So neither side is buggy: the archive is valid tar and the extraction is faithful. The wrong assumption is the caller's — "the tree I extract looks like the tree Finder shows".</p><h2>Solution</h2><p>Filter members at extraction time. A <code>tarfile</code> filter skips a member by returning <code>None</code>; drop the AppleDouble sidecars there and delegate everything else to <code>tarfile.data_filter</code> so unsafe paths are still refused:</p><pre><code class="language-python">import tarfile
+
+
+def _no_appledouble(member: tarfile.TarInfo, dest_path: str):
+    if member.name.rsplit("/", 1)[-1].startswith("._"):
+        return None          # skip AppleDouble sidecar
+    try:
+        return tarfile.data_filter(member, dest_path)
+    except tarfile.FilterError:
+        return None          # skip traversal / absolute / device members
+
+
+with tarfile.open(archive_path, "r:gz") as tf:
+    tf.extractall(dest_dir, filter=_no_appledouble)</code></pre><p><code>data_filter</code> and the <code>filter=</code> keyword are not available on every interpreter. Where they are missing, keep the same shape without them: iterate <code>tf.getmembers()</code>, return early for a <code>._</code> basename or a member that is neither a regular file nor a directory, then call <code>tf.extract(member, dest_dir)</code> for the rest. Omitting <code>filter=</code> is the only change; the skip rule is the load-bearing part.</p><p>The second half of the fix belongs on the consumer side, because a tree produced by some <em>other</em> tool can still carry the sidecars:</p><pre><code class="language-python">records = [p for p in dest_dir.glob("*.ips") if not p.name.startswith(".")]</code></pre><p>Do not rely on <code>.*</code> being absent from a directory you did not extract yourself; <code>.</code>-prefix filtering at the glob is one line and covers every producer.</p><h2>Verification</h2><p>The reporter's comparison, which is what separates "extra files" from "wrong bytes":</p><pre><code class="language-bash">(cd &lt;python-extracted&gt; &amp;&amp; find . -type f | sort) &gt; /tmp/py.txt
+(cd &lt;finder-extracted&gt; &amp;&amp; find . -type f | sort) &gt; /tmp/finder.txt
+comm -23 /tmp/py.txt /tmp/finder.txt      # nothing except Finder's own .DS_Store
+cmp &lt;python-extracted&gt;/&lt;data-file&gt; &lt;finder-extracted&gt;/&lt;data-file&gt;   # exit 0, byte-identical</code></pre><p>Plus a regression test that fails when the filter is removed: build a fixture archive containing <code>data/report.ips</code> <strong>and</strong> <code>data/._report.ips</code>, extract it through the filter, and assert the sidecar is absent while the data file is present.</p><pre><code class="language-python">import io
+import tarfile
+
+
+def test_appledouble_members_are_dropped(tmp_path):
+    archive = tmp_path / "fixture.tar.gz"
+    with tarfile.open(archive, "w:gz") as tf:
+        for name in ("data/report.ips", "data/._report.ips"):
+            info = tarfile.TarInfo(name)
+            info.size = 1
+            tf.addfile(info, io.BytesIO(b"x"))
+
+    out = tmp_path / "out"
+    out.mkdir()
+    with tarfile.open(archive, "r:gz") as tf:
+        tf.extractall(out, filter=_no_appledouble)
+
+    assert (out / "data" / "report.ips").exists()
+    assert not (out / "data" / "._report.ips").exists()</code></pre><h2>Notes</h2><ul><li>The diagnosis came from diffing two sorted <code>find</code> listings — the Python copy against the Finder copy — with <code>comm</code>; every extra path was a <code>._</code> file. Do that comparison <em>before</em> filtering anything, because it also proves there is no second discrepancy hiding behind the count.</li><li>Python version, the extraction call used (<code>extractall</code> vs per-member <code>extract</code>), and the archive's exact file count are 报料者未给出，需复现确认. The ~1,000-of-2,250 figure is the reporter's count for one archive; re-run the two listings above to get your own number.</li><li><code>.DS_Store</code> is created by Finder, not stored as an AppleDouble member, so a one-file difference in that direction is expected and is not a filter miss.</li><li>Domain choice: <code>python</code> — the failing component is a stdlib extraction API, and the searchable fragment is the Python call, not an archive tool name.</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/python-tarfile-extracts-appledouble-files.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Python tarfile extracts macOS AppleDouble ._ members as real files, inflating the extracted tree">Find related lessons →</a></p></div>

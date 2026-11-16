@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,17 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Tauri v1 应用里，前端 `invoke` 调用后端命令时报：</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Tauri v1 应用里，前端 <code>invoke</code> 调用后端命令时报：</p><pre><code>command extractArchiveBytes not found</code></pre><p>后端确实有这个命令，函数名是 snake_case 的 <code>extract_archive_bytes</code>，也在 <code>invoke_handler</code> 里注册了。报错只说"按这个名字没找到"，没有说明实际注册的名字是什么，所以看上去像命令不存在。</p><p>报料者的排查顺序是：1) 检查 <code>invoke_handler</code> 注册，确认命令在列表里；2) <code>cargo clean</code> 全量重编，排除构建缓存；3) 最后才定位到 <code>#[tauri::command(rename_all = "snake_case")]</code> 改变了命令名的映射规则。</p><h2>Root Cause</h2><p><code>invoke()</code> 的第一个参数不是"Rust 函数名"，而是<strong>注册表里的键</strong>。前端传什么字符串，Rust 侧就按这个字符串去 handler 注册表里找；找不到就报 <code>command &lt;name&gt; not found</code>。因此这个错误同时覆盖三种情况——命令没注册、名字拼错、两边命名约定不一致——它的文本无法区分这三者，这是排查走弯路的直接原因。</p><p>命名约定是这条契约里唯一可变的部分，而它有两层：</p><ul><li>默认约定下，Rust 侧的 snake_case 名字在前端按转换后的写法调用（报料者的说法是 v1 默认把 snake_case 转成 camelCase）；</li><li>一旦显式加上 <code>rename_all</code>，名字就按属性给的规则注册/查找，前端也必须用同一套写法调用。</li></ul><p>只要两边落在不同层——后端加了 <code>rename_all</code>、前端还按默认写法调，或者反过来——查的就是两个不同的键，症状统一是 <code>command not found</code>。报料者的结论是 <code>rename_all</code> 改变了命令名映射，而不是参数名；属性的具体语义见 Notes 里的复现建议。</p><h2>Solution</h2><p>选一套约定，全仓统一，不要混：</p><ul><li><strong>方案 A（报料者推荐）</strong>：Rust 函数名保持 snake_case，不加 <code>rename_all</code>，前端按默认约定调用。</li></ul><pre><code class="language-rust">  #[tauri::command]
+  fn extract_archive_bytes(name: String, content: Vec&lt;u8&gt;) -&gt; Result&lt;(), String&gt; {
+      // ...
+      Ok(())
+  }</code></pre><pre><code class="language-js">  await invoke('extractArchiveBytes', { name, content });   // 默认约定下的写法</code></pre><ul><li><strong>方案 B</strong>：显式 <code>rename_all = "snake_case"</code>，前端也用 snake_case 调。</li></ul><pre><code class="language-rust">  #[tauri::command(rename_all = "snake_case")]
+  fn extract_archive_bytes(name: String, content: Vec&lt;u8&gt;) -&gt; Result&lt;(), String&gt; {
+      // ...
+      Ok(())
+  }</code></pre><pre><code class="language-js">  await invoke('extract_archive_bytes', { name, content });</code></pre><p>关键不是选哪个，而是<strong>同一个命令只能有一套</strong>：加 <code>rename_all</code> 的命令和不加的命令，在前端的调用写法不同，一旦混在同一个应用里，就会出现"有的命令能调、有的报 not found"，而且错误信息一模一样。</p><p>排查顺序也要改：遇到 <code>command ... not found</code>，先确认这条命令有没有属性（<code>grep -rn "tauri::command" src-tauri/src</code>），再对一遍前端每个 <code>invoke(</code> 的字符串；不要先怀疑缓存或构建产物——报料者已经用 <code>cargo clean</code> 排除过，无效。</p><h2>Verification</h2><p>报料者的判据：前端 <code>invoke('extract_archive_bytes', ...)</code> 成功调用到后端 <code>extract_archive_bytes</code>，后端日志里出现 <code>Called with name=xxx, content_len=xxx</code>。</p><p>判据的要点是<strong>看功能真的发生了</strong>——后端拿到参数、打出那行日志、产物生成——而不是只看没抛异常。改对之前那次调用抛的是 <code>command not found</code>，改对之后必须能打出这行日志，两次调用可以直接对比，不需要猜。</p><h2>Notes</h2><ul><li>报料者没有说明最终落地的是方案 A 还是方案 B（问题描述里推荐 A，验证里给的却是 B 的 snake_case 调用），也没有给出 Tauri 的次版本号 —— 报料者未给出，需复现确认。<code>rename_all</code> 究竟改的是<strong>命令标识</strong>还是<strong>参数名</strong>，不同版本值得用一个最小 Demo 单独确认；本课只记录报料者的观察与结论，不替他做断言。</li><li>参数名层面的同名坑另有一课：[tauri-v1-camelcase-vs-snakecase-command-args.md](lessons/contrib/tauri-v1-camelcase-vs-snakecase-command-args.md)。那一篇讲的是 <code>invalid args ... missing required key</code>（参数键名不符），本篇是 <code>command ... not found</code>（命令标识不符）——两个不同的失败面，同一类根因。</li><li>domain 选 <code>frontend</code>：出错的一侧是 webview/JS 调用方；<code>data/domains.json</code> 里没有 rust / desktop 值，若维护者认为该归到其它 topic 可改。</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/tauri-command-not-found-naming-convention.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Tauri v1 reports command not found for a registered command when the JS invoke name uses the other convention">Find related lessons →</a></p></div>

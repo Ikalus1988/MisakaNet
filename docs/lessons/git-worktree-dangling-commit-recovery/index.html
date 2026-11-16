@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,11 @@
 <div class="section">
   <h2>Summary</h2>
   <p>A commit made inside a `git worktree add <path> <branch>` appeared to vanish: the remote branch did not move, and the local branch was suddenly empty. The work …</p>
+</div>
+<div class="lesson-body">
+<h2>git worktree commits "disappear" after pushing from the wrong directory</h2><h2>Problem</h2><p>A commit made inside a <code>git worktree add &lt;path&gt; &lt;branch&gt;</code> appeared to vanish: the remote branch did not move, and the local branch was suddenly empty. The work had taken hours and seemed unrecoverable.</p><h2>Root cause</h2><p><code>git worktree</code> attaches a worktree to a <em>branch</em>. When a push or commit runs from the wrong place (for example a second worktree, or the main clone, or a bare path) the HEAD you commit on can be a different branch or a detached HEAD:</p><ul><li>Commits made on a detached HEAD or an unexpected branch are not referenced by any branch name, so they are invisible in normal <code>git log</code>.</li><li>The original branch ref itself was not updated — it still pointed at the old commit. The work exists in the object database but nothing references it.</li></ul><p>The commit is not lost; it is simply <em>unreferenced</em>.</p><h2>Failure &amp; recovery</h2><p>Panic-driven string searches for the files failed because the working tree had been cleaned. The reliable recovery path:</p><ol><li><code>git fsck --lost-found</code> — lists dangling commits. Look for commits whose dates/messages match the work.</li><li>Or <code>git reflog --all</code> — shows every HEAD movement including the detached-HEAD history.</li><li><code>git branch &lt;name&gt; &lt;sha&gt;</code> or <code>git checkout -b &lt;name&gt; &lt;sha&gt;</code> — re-attach a branch to the recovered commit.</li><li>Push from the correct worktree (or folder), or from the re-attached branch directly.</li></ol><h2>Prevent it</h2><ul><li>Always confirm <code>git rev-parse --abbrev-ref HEAD</code> and <code>git status -b</code> before committing/pushing when using worktrees.</li><li>Verify the remote moved: after push, <code>git ls-remote origin &lt;branch&gt;</code>.</li><li>Keep a habit of writing useful commit messages you can grep for in <code>fsck --lost-found</code> output.</li></ul><h2>Lesson</h2><p>A "missing" git commit is almost always a dangling object. Recover with <code>fsck --lost-found</code>/<code>reflog</code> instead of rewriting from memory, and fix the workflow that created it.</p><h2>Verification</h2><pre><code class="language-bash">git status --short | head -5
+git log --oneline -3</code></pre><p><strong>Expected Output:</strong></p><pre><code># (status)
+# (recent)</code></pre>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/git-worktree-dangling-commit-recovery.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=git worktree commit lost after pushing from the wrong directory">Find related lessons →</a></p></div>

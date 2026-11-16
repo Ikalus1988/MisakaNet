@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,11 @@
 <div class="section">
   <h2>Summary</h2>
   <p>批量把补丁数据导入到一个 Git 仓库时，CHANGELOG 里的「版本号 → 文件」映射整体偏了一位：例如 `v2.0.8-11` 名下的文件，实际是 `v2.0.8-12` 对应的那个。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>批量把补丁数据导入到一个 Git 仓库时，CHANGELOG 里的「版本号 → 文件」映射整体偏了一位：例如 <code>v2.0.8-11</code> 名下的文件，实际是 <code>v2.0.8-12</code> 对应的那个。</p><p>导入过程本身没有报错——提交、文件都能写进仓库，是事后核对时才发现版本号和文件内容对不上。这类错位不会自己暴露：CHANGELOG 只是文本，不携带任何能自证"这个文件就是这一版"的信息，所以错位一旦发生，往往要等有人按版本号去取文件时才被发现。</p><p>报料者未给出偏移是从哪一条开始的，也未给出偏移了多少条。</p><h2>Root Cause</h2><p>同一批补丁有三个来源并存：xlsx 表格、邮件（OWA）、飞书文档。三者的信息结构不一样，可靠性也不一样：</p><ul><li><strong>xlsx</strong> 有明确的序号列和补丁号列，一行就是一条补丁，版本号和文件在同一行里，是唯一的<strong>结构化</strong>来源；</li><li><strong>邮件正文</strong>是散文。版本号要么在标题里，要么散在正文里，而回复链还会带进引用块和历史签名——"这个版本"、"上一版"、"见下"这类指代不携带绝对版本号，很容易把上一封邮件的版本号套到这一封的附件上；</li><li><strong>飞书文档</strong>是人工整理的说明，同样不是可机器校验的键值对。</li></ul><p>版本号一旦从非结构化来源推导，一次错位就会沿着导入顺序传下去：后面的版本号整体对应到相邻补丁的文件上。邮件的线程结构还让这个错误看起来"有据可依"——引用块里确实出现过一个版本号，只是那是上一封的。</p><h2>Solution</h2><ol><li><strong>把结构化来源定为唯一权威</strong>：版本号与文件的对应关系只从 xlsx 的补丁号列生成，邮件和飞书文档只用来补充说明，不用来生成键。这一步就把"从哪取版本号"从判断题变成了固定规则。</li><li><strong>用文件内部的版本串做第二判据</strong>。FANUC 的 <code>.pc</code> 补丁文件在 offset <code>0x20</code> 处写有版本编码，可以直接从文件里读出来，不依赖任何外部文档：</li></ol><pre><code class="language-bash">   xxd -s 0x20 -l 32 &lt;patch-file&gt;.pc</code></pre><ol><li><strong>交叉验证，差异一律以 xlsx 为准</strong>：把 CHANGELOG 与 xlsx、飞书文档、邮件逐条比对；每一条差异都记下来（哪一条、哪个来源、改成了什么），否则下一次导入会重犯同一处错误。</li></ol><p>把第 2 步写成导入脚本里的断言，错位会在写 CHANGELOG 之前就停下：</p><pre><code class="language-python">raw = path.read_bytes()
+field = raw[0x20:0x40]                        # 版本字段，偏移由报料者在 .pc 上确定
+assert expected_version in decode_version(field), (path.name, expected_version, field.hex())</code></pre><p><code>expected_version</code> 来自 xlsx 的那一行；<code>decode_version</code> 是这段代码里唯一没定下来的部分——版本字段的编码方式报料者未给出，见 Notes。</p><h2>Verification</h2><ul><li>对每个补丁文件跑 <code>xxd -s 0x20 -l 32</code>，把文件内的版本串与 xlsx 补丁号列逐条比较，必须条条相等。</li><li>飞书文档与 CHANGELOG 逐补丁比对，差异项全部以 xlsx 修正之后，CHANGELOG 里不再有"版本号与文件内版本串不一致"的行。</li></ul><p>判据（可脱离上面两条命令使用）：任取 CHANGELOG 的一行，其版本号必须能在对应文件自身的版本字段里读出来；读不出或对不上，就是映射错位。这个判据不看文件名、不看邮件标题，所以它不会跟着推导链条一起错。</p><h2>Notes</h2><ul><li>报料者未给出：补丁总数、偏移从哪一条开始、<code>.pc</code> 版本字段的编码方式（ASCII 字符串 / 压缩 BCD / 其它）、以及 xlsx 的具体列名 —— 需复现确认。上面 <code>decode_version</code> 就是留给这一步的空位，不要凭猜测定死它。</li><li>offset <code>0x20</code> 是报料者在这一批 <code>.pc</code> 文件上确定的；换机型或换补丁类型时先自己扫一遍确认偏移，不要假定它不变。</li><li>这一课的可泛化部分与 FANUC 无关：多个数据源并存时，键值只从有列名的结构化来源取；非结构化来源最多用来交叉验证，不能用来生成键。</li><li>domain 选 <code>fanuc</code>：检索时输入的会是厂牌名和补丁文件类型（<code>.pc</code>），而不是上位学科名。</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/fanuc-patch-changelog-version-file-offset.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=FANUC patch import: CHANGELOG version-to-file mapping derived from email bodies drifts by one patch">Find related lessons →</a></p></div>

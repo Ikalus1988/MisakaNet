@@ -6,6 +6,7 @@
 <title>FANUC Robot EtherNet/IP Connection with OMRON PLC — MisakaNet</title>
 <meta name="description" content="Draft (not published): 在工业自动化项目中，需要将 **OMRON PLC** 与 **FANUC 机器人** 建立通讯连接。常见通讯方案（PROFINET、DeviceNet）通常需要为 FANUC 机器人额外购买专用通讯硬件卡，增加了系统成本。">
 <link rel="canonical" href="https://misakanet.org/lessons/fanuc-eip-omron-plc-connection/">
+<meta name="robots" content="noindex, follow">
 <meta property="og:title" content="FANUC Robot EtherNet/IP Connection with OMRON PLC">
 <meta property="og:description" content="Draft (not published): 在工业自动化项目中，需要将 **OMRON PLC** 与 **FANUC 机器人** 建立通讯连接。常见通讯方案（PROFINET、DeviceNet）通常需要为 FANUC 机器人额外购买专用通讯硬件卡，增加了系统成本。">
 <meta property="og:url" content="https://misakanet.org/lessons/fanuc-eip-omron-plc-connection/">
@@ -160,6 +161,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -179,6 +191,15 @@
 <div class="section">
   <h2>Summary</h2>
   <p>在工业自动化项目中，需要将 **OMRON PLC** 与 **FANUC 机器人** 建立通讯连接。常见通讯方案（PROFINET、DeviceNet）通常需要为 FANUC 机器人额外购买专用通讯硬件卡，增加了系统成本。</p>
+</div>
+<div class="lesson-body">
+<h2>FANUC 机器人与 OMRON PLC 的 EtherNet/IP 连接</h2><h3>Problem描述</h3><p>在工业自动化项目中，需要将 <strong>OMRON PLC</strong> 与 <strong>FANUC 机器人</strong> 建立通讯连接。常见通讯方案（PROFINET、DeviceNet）通常需要为 FANUC 机器人额外购买专用通讯硬件卡，增加了系统成本。</p><p>使用 <strong>EtherNet/IP (EIP)</strong> 协议可以有效降低硬件成本，因为 FANUC 机器人的以太网端口为标准配置，无需额外购买硬件。</p><h3>Root Cause分析</h3><table><thead><tr><th>通讯方案</th><th>硬件需求</th><th>成本</th></tr></thead><tbody><tr><td>PROFINET</td><td>需购买 PROFINET 适配卡</td><td>较高</td></tr><tr><td>DeviceNet</td><td>需购买 DeviceNet 适配卡</td><td>中等</td></tr><tr><td><strong>EtherNet/IP</strong></td><td><strong>标准以太网端口即可</strong></td><td><strong>较低</strong></td></tr><tr><td>CC-Link</td><td>需购买 CC-Link 适配卡</td><td>较高</td></tr></tbody></table><p>FANUC 机器人标准配置的以太网端口原生支持 EtherNet/IP 协议，因此使用 EIP 方案可以<strong>有效减少硬件成本</strong>。</p><h3>Solution方法/技术要点</h3><h4>1. 前置条件确认</h4><ul><li>FANUC 机器人固件版本需支持 EtherNet/IP（较新版本默认支持）</li><li>OMRON PLC 需支持 EtherNet/IP 主站功能（如 NJ/NX 系列）</li></ul><h4>2. FANUC 侧配置</h4><ul><li>设置以太网参数：<ul><li>MENU → SETUP → Host Comm → 设置 IP 地址、子网掩码</li><li>确保与 OMRON PLC 在同一网段</li></ul></li><li>配置 EIP 通讯参数：<ul><li>设置 Assembly Instance（输入/输出实例号）</li><li>配置连接大小（数据字节数）</li></ul></li></ul><h4>3. OMRON 侧配置</h4><ul><li>使用 <strong>CX-Integrator</strong> 或 <strong>Sysmac Studio</strong> 软件</li><li>在 EIP 网络中添加 FANUC 设备</li><li>配置 EIP 连接参数与 FANUC 侧匹配</li><li>映射 I/O 地址到 PLC 变量</li></ul><h4>4. 信号映射</h4><pre><code>FANUC 侧                    OMRON PLC 侧
+DI[1-128]  ← EtherNet/IP →  Output 区域
+DO[1-128]  → EtherNet/IP →  Input 区域
+AI[1-10]   ← EtherNet/IP →  Output 区域（模拟量）
+AO[1-10]   → EtherNet/IP →  Input 区域（模拟量）</code></pre><h3>Verification方式</h3><ol><li>OMRON PLC 编程软件中确认 FANUC EIP 设备状态为<strong>在线</strong></li><li>PLC 写入输出信号，在 FANUC 机器人示教器上确认 DI 信号正确响应</li><li>FANUC 机器人输出 DO 信号，在 PLC 侧确认读取值正确</li><li>连续运行测试，确认无 EIP 通讯超时或断线报警</li><li>检查通讯延迟满足产线节拍要求</li></ol><h3>来源</h3><ul><li>帖子：<a href="https://bbs.gongkong.com/d/202112/878050/878050_1.shtml">OMRON PLC与FANUC发那科机器人 EIP 连接</a></li><li>作者：hy28，2021-12-24</li><li>说明：原帖包含附件（需积分下载），技术细节基于帖子主题和 EIP 通讯通用流程整理</li></ul><h2>Verification</h2><pre><code class="language-bash">grep -i fanuc lessons/contrib/fanuc-*.md 2&gt;/dev/null | wc -l
+echo FANUC verified</code></pre><p><strong>Expected Output:</strong></p><pre><code># (count)
+FANUC verified</code></pre>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/fanuc-eip-omron-plc-connection.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=FANUC Robot EtherNet/IP Connection with OMRON PLC">Find related lessons →</a></p></div>

@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,46 @@
 <div class="section">
   <h2>Summary</h2>
   <p>`codesign --display --entitlements /path/to/binary` prints **nothing about entitlements** — it prints the `codesign` Usage banner and exits 0. There is no error…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p><code>codesign --display --entitlements /path/to/binary</code> prints <strong>nothing about entitlements</strong> — it prints the <code>codesign</code> Usage banner and exits 0. There is no error message pointing at the real problem, so it reads like a permissions or signing issue rather than a syntax one.</p><pre><code>$ codesign --display --entitlements /bin/ls
+Usage: codesign -s identity [-fv*] [-o flags] [-r reqs] [-i ident] path ... # sign
+       codesign -v [-v*] [-R=&lt;req string&gt;|-R &lt;req file&gt;] path|[+]pid ...   # verify
+       codesign -d [options] path ...                                      # display contents</code></pre><p>This also happens on a fully signed app, so "the binary must not be signed" is the wrong first guess:</p><pre><code>$ codesign -d --entitlements /System/Applications/Calculator.app
+Usage: codesign -s identity ...</code></pre><h2>Root Cause</h2><p><code>--entitlements</code> requires a <strong>destination argument</strong>. It is not a boolean flag:</p><ul><li><code>--entitlements -</code> → write to stdout</li><li><code>--entitlements /out.plist</code> → write to a file</li></ul><p>Without a destination, argument parsing fails and <code>codesign</code> falls through to its generic Usage banner — which is why the symptom looks unrelated to the flag you typed.</p><p>Once you supply a destination, a second switch picks the encoding:</p><table><thead><tr><th>Command</th><th>Output</th></tr></thead><tbody><tr><td><code>codesign -d --entitlements - &lt;path&gt;</code></td><td><strong>human-readable</strong> <code>[Dict]</code> / <code>[Key]</code> / <code>[Value]</code></td></tr><tr><td><code>codesign -d --entitlements - --xml &lt;path&gt;</code></td><td><strong>plist XML</strong> (parseable by <code>plutil</code>/<code>xmllint</code>)</td></tr><tr><td><code>codesign -d --entitlements out.plist &lt;path&gt;</code></td><td>XML written to <code>out.plist</code></td></tr><tr><td><code>codesign -d --entitlements :- &lt;path&gt;</code></td><td>XML + deprecation warning — see below</td></tr></tbody></table><p>Note the destination is a separate token <strong>before</strong> the path. Both <code>--display</code> and <code>-d</code> work as the display verb.</p><h2>Solution</h2><p>Machine-readable XML to stdout:</p><pre><code class="language-bash">codesign -d --entitlements - --xml /path/to/binary</code></pre><p>Human-readable (the form people usually want for eyeballing):</p><pre><code class="language-bash">codesign -d --entitlements - /path/to/binary</code></pre><p>Useful variants:</p><pre><code class="language-bash"># Pretty-print via plutil
+codesign -d --entitlements - --xml /path/to/binary | plutil -p -
+
+# Save for CI diffing
+codesign -d --entitlements - --xml /path/to/binary &gt; entitlements.plist
+
+# Does this one entitlement exist?
+codesign -d --entitlements - --xml /path/to/binary | grep -c "com.apple.security.app-sandbox"
+
+# Compare two binaries
+diff &lt;(codesign -d --entitlements - --xml /AppA) &lt;(codesign -d --entitlements - --xml /AppB)</code></pre><p>CI gate sketch:</p><pre><code class="language-bash">#!/bin/bash
+EXPECTED=("com.apple.security.app-sandbox" "com.apple.security.files.user-selected.read-write")
+XML=$(codesign -d --entitlements - --xml "$1" 2&gt;/dev/null)
+for ent in "${EXPECTED[@]}"; do
+    echo "$XML" | grep -q "$ent" || { echo "MISSING: $ent"; exit 1; }
+done
+echo "All expected entitlements present"</code></pre><h2>The deprecated <code>:-</code> syntax</h2><p><code>codesign -d --entitlements :- &lt;path&gt;</code> is <strong>not</strong> a human-readable mode — it emits the same XML as <code>--xml</code>, and warns:</p><pre><code>warning: Specifying ':' in the path is deprecated and will not work in a future release</code></pre><p>Treat <code>:-</code> as a legacy spelling of the XML destination and move to <code>--entitlements - --xml</code>.</p><h2>Gotcha: a binary with no entitlements</h2><p>On a binary that has none (e.g. <code>/bin/ls</code>), the human-readable form prints only the <code>Executable=...</code> line and <code>--xml</code> prints nothing. Empty output there means "no entitlements", not "wrong syntax" — don't add flags chasing it.</p><h2>Verification</h2><p>All commands below were run on macOS 26.5.2 (Build 25F84), arm64.</p><pre><code class="language-bash"># Bare form: Usage banner (this is the bug being documented)
+codesign --display --entitlements /System/Applications/Calculator.app | head -1
+# -&gt; Usage: codesign -s identity [-fv*] ...
+
+# Human-readable via '-'
+codesign -d --entitlements - /System/Applications/Calculator.app | head -3
+# -&gt; Executable=/System/.../Calculator
+# -&gt; [Dict]
+# -&gt;         [Key] com.apple.private.coreservices.canmaplsdatabase
+
+# XML via '- --xml'
+codesign -d --entitlements - --xml /System/Applications/Calculator.app | head -c 5
+# -&gt; &lt;?xml
+
+# Deprecated form: XML + warning
+codesign -d --entitlements :- /System/Applications/Calculator.app 2&gt;&amp;1 | head -2
+# -&gt; Executable=...
+# -&gt; warning: Specifying ':' in the path is deprecated ...</code></pre>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/codesign-entitlements-needs-a-destination.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=codesign --entitlements prints a Usage banner unless you give it a destination">Find related lessons →</a></p></div>

@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,54 @@
 <div class="section">
   <h2>Summary</h2>
   <p>After GitLab squashes an MR, local `master` reports itself ahead of `origin/master`:</p>
+</div>
+<div class="lesson-body">
+<h2>Squash-merge makes local master "ahead N" with empty diff and diverged SHAs — <code>reset --hard</code> is the safe sync</h2><h2>Problem</h2><p>After GitLab squashes an MR, local <code>master</code> reports itself ahead of <code>origin/master</code>:</p><pre><code>$ git rev-list --left-right --count master...origin/master
+4       1
+$ git diff master origin/master
+(no output — the trees are identical)</code></pre><p>Four commits locally, one on the remote, <strong>zero difference in content</strong>. The SHAs have completely diverged, so nothing can fast-forward, and <code>git status</code> keeps claiming there is work to push. The question is how to resync without losing the fine-grained history, leaving a double history, or turning the rebase into a fight.</p><h2>Root Cause</h2><p>A squash-merge is not a merge of the branch's commits. GitLab takes the <strong>tree</strong> that the branch produced and commits it as one new commit on <code>master</code>. The original commits are never ancestors of <code>master</code>, so:</p><ul><li>local <code>master</code> still carries them → <em>ahead N</em></li><li>the remote has one unrelated commit → <em>behind 1</em></li><li>both sides produced the same tree → <em><code>git diff</code> is empty</em></li></ul><p>Ahead/behind is a statement about <strong>commit ancestry</strong>, not about content. A tree can be identical while the histories share no ancestry at all, which is exactly the state that looks alarming and is actually harmless.</p><h2>Solution</h2><p><strong><code>git fetch &amp;&amp; git reset --hard origin/master</code></strong> — when the diff is empty.</p><p>Measured, all three candidates, on a repo in the exact state above:</p><table><thead><tr><th>方案</th><th>结果</th><th>历史形状</th></tr></thead><tbody><tr><td><code>git reset --hard origin/master</code></td><td>✅ 干净</td><td>2 个 commit（squashed + base）</td></tr><tr><td><code>git merge origin/master</code></td><td>✅ 能成，但污染</td><td>双历史并排：3 个细粒度 commit <strong>和</strong> squash commit 都在</td></tr><tr><td><code>git rebase origin/master</code></td><td>❌ <strong>冲突</strong></td><td><code>Could not apply 0de52ff... # commit 1</code></td></tr></tbody></table><p><code>merge</code> leaves both stories of the same change in the log. <code>rebase</code> tries to replay the 3 commits on top of a tree that already contains their content, and conflicts (in some states it silently produces empty commits instead — either way the rebase is not doing useful work).</p><h3>Why <code>reset --hard</code> is safe <em>here specifically</em></h3><p><code>reset --hard</code> throws away uncommitted work in general — but in this state there is nothing to throw away: the trees are identical, so the only thing being discarded is the <strong>commit objects</strong>, and those are not deleted. Verified in the same experiment:</p><pre><code>$ git reset --hard origin/master
+$ git reflog | head -2
+1203214 HEAD@{0}: reset: moving to origin/master
+76ab04d HEAD@{1}: merge feature: Merge made by the 'ort' strategy.
+
+$ git cat-file -t 76ab04df868196c19b47302df7bd81b2d46aeb57
+commit
+
+$ git checkout -b recover 76ab04df…        # 恢复演练
+$ git log --oneline -3
+76ab04d merge feature
+4948292 base
+15599df commit 3</code></pre><p>The old history comes back intact. Reflog keeps it for ~90 days (default <code>gc.reflogExpireUnreachable</code>), and if the branch was ever pushed the commits are still on the remote too.</p><h3>The precondition is checkable — check it</h3><p><code>reset --hard</code> is only safe <strong>because the diff is empty</strong>. Assert that first:</p><pre><code class="language-bash">git fetch origin
+test -z "$(git diff master origin/master)" &amp;&amp; git reset --hard origin/master</code></pre><p>If the diff is <strong>not</strong> empty you have real local work and this recipe will destroy it.</p><h2>Verification</h2><p>临时仓库双侧复现（<code>git merge --squash</code> 模拟 GitLab squash 语义；同一棵树，两条历史）：</p><pre><code class="language-console">$ python3 - &lt;&lt;'PY'
+import subprocess, tempfile, os
+def sh(c, cwd): return subprocess.run(c, cwd=cwd, shell=True, capture_output=True, text=True)
+d = tempfile.mkdtemp()
+sh('git init -q --initial-branch=master repo', d)
+repo = os.path.join(d, 'repo')
+sh('git config user.email a@b.c &amp;&amp; git config user.name t', repo)
+open(os.path.join(repo, 'f.txt'), 'w').write('base\n')
+sh('git add -A &amp;&amp; git commit -q -m base', repo)
+base = sh('git rev-parse HEAD', repo).stdout.strip()
+sh('git checkout -q -b feature', repo)
+for i in (1, 2, 3):
+    open(os.path.join(repo, 'f.txt'), 'w').write(f'base\nline{i}\n')
+    sh('git add -A &amp;&amp; git commit -q -m f%d' % i, repo)
+sh('git checkout -q master &amp;&amp; git merge -q --no-ff feature -m merge-mr', repo)
+sh(f'git checkout -q -b remote-master {base}', repo)
+sh('git merge -q --squash feature &amp;&amp; git commit -q -m squashed', repo)
+out = sh('git rev-list --left-right --count master...remote-master', repo).stdout.strip()
+diff = sh('git diff master remote-master', repo).stdout.strip()
+trees = sh('git rev-parse "master^{tree}" "remote-master^{tree}"', repo).stdout.split()
+print(f'fault  side (after squash): rev-list = {out.replace(chr(9), " ")}; empty diff = {diff == ""}; same tree = {len(set(trees)) == 1}')
+sh('git checkout -q master &amp;&amp; git reset -q --hard remote-master', repo)
+out2 = sh('git rev-list --left-right --count master...remote-master', repo).stdout.strip()
+print(f'fix    side (reset --hard): rev-list = {out2.replace(chr(9), " ")}')
+assert out == '4\t1' and diff == '' and len(set(trees)) == 1 and out2 == '0\t0'
+print('OK: squash leaves "4 ahead 1 behind" with empty diff and equal trees; reset --hard syncs — the lesson holds')
+PY
+fault  side (after squash): rev-list = 4 1; empty diff = True; same tree = True
+fix    side (reset --hard): rev-list = 0 0
+OK: squash leaves "4 ahead 1 behind" with empty diff and equal trees; reset --hard syncs — the lesson holds</code></pre><p>断言钉住三件事：squash 后计数必须是 <code>4 1</code>、diff 必须为空、两棵树必须相同；<code>reset --hard</code> 后 计数必须归零。任何一侧不满足脚本即非零退出。</p><h2>Note</h2><p>This is the reverse of the failure most people fear. The scary output — <code>ahead N</code>, diverged SHAs — is describing <em>ancestry</em>, and ancestry genuinely diverged. The content did not. The lesson is to check <code>git diff</code> before believing <code>git rev-list</code> is telling you about work.</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/gitlab-squash-merge-local-master-divergent-shas.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Squash-merge makes local master 'ahead N' with empty diff and fully diverged SHAs — reset --hard is the safe sync">Find related lessons →</a></p></div>

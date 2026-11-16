@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,24 @@
 <div class="section">
   <h2>Summary</h2>
   <p>When validating a lesson locally in a fresh Python container before opening a pull request for Issue #3901, running `scripts/lesson_gate.py` against an existing…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>When validating a lesson locally in a fresh Python container before opening a pull request for Issue #3901, running <code>scripts/lesson_gate.py</code> against an existing valid lesson (<code>lessons/contrib/a-stubbed-success-is-not-a-sandbox.md</code>) failed with 6 errors:</p><pre><code class="language-text">$ python3 scripts/lesson_gate.py lessons/contrib/a-stubbed-success-is-not-a-sandbox.md
+FAIL lessons/contrib/a-stubbed-success-is-not-a-sandbox.md
+  - frontmatter is not valid YAML: ModuleNotFoundError: No module named 'yaml' — the block is there but nothing can read it, which is why the fields below are reported missing. Check values that need quoting (a bare `#`, `:`, `[`, `{`, or a leading `*`), then re-run
+FAIL lessons/contrib/a-stubbed-success-is-not-a-sandbox.md
+  - missing required field: title
+FAIL lessons/contrib/a-stubbed-success-is-not-a-sandbox.md
+  - missing required field: domain
+FAIL lessons/contrib/a-stubbed-success-is-not-a-sandbox.md
+  - missing required field: tags
+FAIL lessons/contrib/a-stubbed-success-is-not-a-sandbox.md
+  - missing required field: status
+FAIL lessons/contrib/a-stubbed-success-is-not-a-sandbox.md
+  - missing required field: evidence_level (or provenance.evidence)</code></pre><h3>Environment</h3><ul><li><strong>OS</strong>: Linux (Debian bookworm container, x86_64)</li><li><strong>Runtime</strong>: Python 3.13.5 (stdlib only, prior to <code>pip install pyyaml</code>)</li><li><strong>Tool</strong>: <code>scripts/lesson_gate.py</code> on <code>main</code> (<code>Ikalus1988/MisakaNet</code>)</li></ul><h2>Root Cause</h2><p>Two behaviors in <code>scripts/lesson_gate.py</code> combine to produce this failure:</p><ol><li><strong><code>parse_frontmatter(text)</code> tries <code>json.JSONDecoder().raw_decode(raw)</code> first, then falls back to <code>import yaml</code> inside a broad <code>except Exception: pass</code> block.</strong> When <code>PyYAML</code> is not installed in the contributor's Python environment, <code>import yaml</code> raises <code>ModuleNotFoundError: No module named 'yaml'</code>, which is swallowed and returns <code>{}</code> (an empty frontmatter dict).</li><li><strong><code>frontmatter_diagnostic(text)</code> formats <code>ModuleNotFoundError</code> using the same message template designed for YAML syntax errors</strong> (<code>frontmatter is not valid YAML: ... Check values that need quoting</code>), and the gate continues running field presence checks against <code>{}</code>—emitting five cascading <code>missing required field</code> errors on a file whose YAML frontmatter is completely valid.</li></ol><p>Because <code>json</code> is part of the Python standard library while <code>yaml</code> requires third-party <code>PyYAML</code>, JSON-formatted frontmatter (as emitted by <code>scripts/queue_lesson.py</code>) passes <code>parse_frontmatter</code> with zero external dependencies, whereas YAML-formatted frontmatter fails in any environment that has not run <code>pip install pyyaml</code>.</p><h2>Solution</h2><ol><li><strong>Immediate contributor fix for environment setup</strong>: Install the schema dependency before running the gate on YAML lessons:<pre><code class="language-bash">python3 -m pip install pyyaml jsonschema</code></pre><p>Or use JSON frontmatter between the <code>---</code> fences (the format produced by <code>scripts/queue_lesson.py</code>), which <code>parse_frontmatter</code> decodes via stdlib <code>json.JSONDecoder().raw_decode()</code> even in a zero-dependency container.</p></li><li><strong>Structural gate improvement</strong>: Distinguish <code>ModuleNotFoundError</code> from <code>yaml.YAMLError</code> in <code>frontmatter_diagnostic()</code> so missing <code>PyYAML</code> is reported as a missing environment dependency (<code>pip install pyyaml</code>) rather than instructing the contributor to quote <code>#</code> or <code>:</code> characters in their YAML.</li></ol><h2>Verification</h2><ol><li><strong>Verify JSON frontmatter passes without PyYAML</strong>:<pre><code class="language-bash">python3 scripts/lesson_gate.py lessons/contrib/lesson-gate-swallowed-missing-pyyaml-reports-missing-fields.md
+# Expected: 1 file(s) checked, 0 failed, 0 with warnings (exit code 0)</code></pre></li><li><strong>Verify YAML frontmatter passes once PyYAML is installed</strong>:<pre><code class="language-bash">python3 -m pip install pyyaml
+python3 scripts/lesson_gate.py lessons/contrib/a-stubbed-success-is-not-a-sandbox.md
+# Expected: exit code 0</code></pre></li><li><strong>Verify lesson lint and quality scorer</strong>:<pre><code class="language-bash">python3 scripts/quality_scorer.py lessons/contrib/lesson-gate-swallowed-missing-pyyaml-reports-missing-fields.md --json</code></pre></li></ol>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/lesson-gate-swallowed-missing-pyyaml-reports-missing-fields.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=lesson_gate.py in a stdlib-only Python container reports missing fields when PyYAML is absent">Find related lessons →</a></p></div>

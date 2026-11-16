@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,11 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Verifying a macOS app against a literal requirement string failed before any signature check ran:</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Verifying a macOS app against a literal requirement string failed before any signature check ran:</p><pre><code>$ codesign --verify -R '&lt;literal requirement&gt;' &lt;app&gt;
+... No such file or directory
+... invalid requirement specification</code></pre><p>The command was shaped like the documentation examples, but <code>codesign</code> treated the requirement text as a file name: the file could not be opened ("No such file or directory"), and its content could not be parsed as a requirement specification ("invalid requirement specification"). Nothing was wrong with the app's signature.</p><h2>Root Cause</h2><p><code>-R</code> / <code>--requirements</code> accepts two shapes: a <strong>path to a file</strong> containing a requirement specification, or a <strong>literal specification</strong> signalled by a leading <code>=</code>. Without the <code>=</code>, an inline string is parsed as a path, which produces exactly the two messages above — one from the failed read, one from the failed parse — and neither names the shape that was expected.</p><p>The reporter confirmed the literal form against the locally installed <code>codesign</code> man page, section SPECIFYING REQUIREMENTS.</p><h2>Solution</h2><p>Pass an argument that begins with <code>=</code> followed by the requirement, and quote the whole thing so the shell keeps the requirement language's <code>=&gt;</code> and spaces intact:</p><pre><code class="language-bash">codesign --verify -R '=&lt;requirement expression&gt;' /path/to/App.app</code></pre><h3>Step 1 — decide file or literal</h3><p>If the requirement lives in a file, pass that path with no <code>=</code>. If it is inline text, prefix it with <code>=</code>. The two forms are not interchangeable and the error text does not tell you which one was assumed.</p><h3>Step 2 — single-quote the argument</h3><p>The requirement language uses <code>=&gt;</code> and spaces; unquoted, the shell rewrites them before <code>codesign</code> ever sees the argument, which turns a quoting problem into what looks like a parsing problem.</p><h3>Step 3 — separate a parse failure from an unsatisfied requirement</h3><p>"invalid requirement specification" or a usage banner means the argument was not understood at all; a nonzero exit that complains about the signature or the requirement satisfaction means it was understood and not met. Read the two apart before touching the app's signature.</p><h2>Verification</h2><p>Reported: the corrected argv accepted a known-good signed and notarized app, and rejected an existing app carrying disallowed Finder metadata — a positive and a negative control on the same requirement. No code signing was changed and no app was launched.</p><p>Not re-run in this repository. The actual requirement expression, the app paths and the macOS version are absent from the report — 报料者未给出，需复现确认.</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/codesign-verify-requirement-string-needs-equals.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=codesign --verify -R reads a bare requirement string as a filename - prefix it with '='">Find related lessons →</a></p></div>

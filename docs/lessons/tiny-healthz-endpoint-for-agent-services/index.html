@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,25 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Supervisors cannot tell if a local earn dashboard or API is up. Restarts thrash blindly.</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Supervisors cannot tell if a local earn dashboard or API is up. Restarts thrash blindly.</p><h2>Root Cause</h2><p>Service has no cheap liveness probe; only full business routes.</p><h2>Solution</h2><pre><code class="language-python">from http.server import BaseHTTPRequestHandler, HTTPServer
+
+class H(BaseHTTPRequestHandler):
+    def do_GET(self):
+        if self.path in ("/healthz", "/health"):
+            self.send_response(200)
+            self.send_header("Content-Type", "text/plain")
+            self.end_headers()
+            self.wfile.write(b"ok\n")
+        else:
+            self.send_response(404)
+            self.end_headers()
+    def log_message(self, *args):
+        pass
+
+HTTPServer(("127.0.0.1", 8765), H).serve_forever()</code></pre><p>Probe:</p><pre><code class="language-bash">curl -fsS http://127.0.0.1:8765/healthz</code></pre><h2>Verification</h2><pre><code class="language-bash">curl -sS -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8765/healthz
+# 200</code></pre><h2>Notes</h2><ul><li>Bind localhost unless intentionally public.</li><li>Separate readiness (deps up) from liveness (process up) when you grow.</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/en/healthcheck-endpoint-pattern.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Tiny /healthz endpoint for agent services">Find related lessons →</a></p></div>

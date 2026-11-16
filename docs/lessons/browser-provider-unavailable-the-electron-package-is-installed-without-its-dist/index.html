@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,14 @@
 <div class="section">
   <h2>Summary</h2>
   <p>DSH Desktop 2.0.15（core 0.1.7-rc.2，profile `desktop`）对每一个 `browser_*` 工具都报</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>DSH Desktop 2.0.15（core 0.1.7-rc.2，profile <code>desktop</code>）对每一个 <code>browser_*</code> 工具都报 "no usable browser provider is registered"，而注册该 provider 的插件 <code>dsh-builtin-browser</code> 已经安装、并且在宿主日志里没有任何错误地加载了。它自己的探针返回 <code>false</code>。</p><p>Reporter's error line:</p><pre><code>no usable browser provider is registered; available() === false; dsh-builtin-browser: cannot locate a spawnable Electron binary</code></pre><p>插件是好的，环境不是——这是本课要区分的第一件事。</p><h2>Root Cause</h2><p>npm 的 <code>electron</code> 包在 tarball 里<strong>不带二进制</strong>：<code>install.js</code>（postinstall）才把它下载进 <code>dist/</code>。 这台机器上 hosts 文件把 <code>github.com</code> / <code>objects.githubusercontent.com</code> 映射到 <code>127.0.0.1</code>，那次下载 静默失败，留下的是一个纯 JS 的壳：</p><pre><code>&lt;profile&gt;/node_modules/electron/  (44.4.5)
+  abi_version  checksums.json  cli.js  electron.d.ts
+  index.js     install.js      LICENSE  package.json  README.md
+  ← no dist/, no path.txt</code></pre><p>（报料者列出的就是这 9 个文件，<code>dist/</code> 与 <code>path.txt</code> 都不在其中。）</p><p><code>RemoteElectronViewHost.available()</code>（<code>lib/browser-electron/remote-host.js:682</code>）调用 <code>resolveElectronPath()</code>，后者只看文件系统，并且只有当 <code>electronDistExe(pkgRoot)</code> 存在时才把该包算作 候选。没有 <code>dist/electron.exe</code> ⇒ provider 报不可用。这条链路里没有任何一步会去检查"下载是否曾经 失败"，所以错误信息指向 provider，而故障在安装阶段。</p><h2>Solution</h2><p>拿可达的镜像重跑这个包<strong>自己的</strong>安装器：</p><pre><code class="language-powershell">cd &lt;profile&gt;/node_modules/electron
+$env:ELECTRON_MIRROR = 'https://registry.npmmirror.com/-/binary/electron/'
+node install.js</code></pre><p>结果：<code>dist/electron.exe</code>（v44.4.5，246,032,896 字节）和 <code>path.txt</code>（内容为 <code>electron.exe</code>）。</p><p><strong>不要</strong>用 <code>dsh plugin add electron</code> 或重装插件来"修"它：两者都会重跑那个已经失败的 postinstall， 再次把 <code>dist/</code> 丢掉。</p><p>provider 自己的错误信息里还给了两个替代路径：<code>npx install-electron</code>，或者用 <code>ELECTRON_PATH</code> 直接 指向一个 <code>electron.exe</code>。</p><h2>Verification</h2><ol><li>探针返回 true：</li></ol><pre><code class="language-js">new RemoteElectronViewHost(defaultHostMainPath()).available()   // → true</code></pre><ol><li>走生产路径真实 spawn 一个子进程，它要完成带认证的 hello：</li></ol><pre><code>READY OK in 1348ms - Electron child spawned and authenticated</code></pre><ol><li>端到端：<code>createView()</code> → <code>presentView()</code> → <code>sendCommand('Page.navigate', {url})</code> → <code>capture()</code> 返回一张真实渲染的 489 KB PNG，<code>Runtime.evaluate</code> 能读回 <code>document.title</code>。</li></ol><p>The reporter's stated criteria, verbatim:</p><pre><code>available() -&gt; true; a real spawn through the production path completed the child's authenticated hello</code></pre><p>一个容易误判的边界：在沙箱 shell 里用 piped stdio 去 spawn 那个子进程会报 <code>spawn EPERM</code>——那是 沙箱，不是 provider；探针要在非沙箱环境里跑。</p><h2>Notes</h2><ul><li>报料者未给出 hosts 文件的具体条目、Electron 的确切安装时间，以及 DSH Desktop 的完整日志——需复现 确认。本课的路径已脱敏为 <code>&lt;profile&gt;</code>。</li><li>这类"包在、二进制不在"的静默安装失败不只发生在 Electron：任何 postinstall 下载二进制的包（ <code>esbuild</code>、<code>sharp</code>、<code>puppeteer</code> 等）在下载被墙或 hosts 被劫持时都会留下一个可导入但没有本体的壳。 判据始终是"二进制文件是否存在"，不是 <code>npm ls</code> 是否报错。</li><li>与 NSIS/electron-builder 的 TLS/镜像类课程相邻但不同：那两篇是<strong>构建安装包</strong>时失败，这一篇是 运行时依赖的包<strong>安装</strong>失败。</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/electron-dist-missing-browser-provider-unavailable.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Browser provider unavailable: the electron package is installed without its dist/ binary">Find related lessons →</a></p></div>

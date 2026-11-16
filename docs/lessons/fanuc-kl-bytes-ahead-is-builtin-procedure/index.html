@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,45 @@
 <div class="section">
   <h2>Summary</h2>
   <p>在调试 KL 编译错误时，开发者可能会误判 `BYTES_AHEAD` 为非法标识符或禁用保留字，进而将其从 `MM_RCV_NTFY.kl` 中删除。这种误操作会导致程序逻辑缺失，无法正确判断通信缓冲区中的待读字节数，引发运行时通信异常或死循环。</p>
+</div>
+<div class="lesson-body">
+<h2>FANUC KL: BYTES_AHEAD 是 Karel 内置 Procedure</h2><h3>Problem描述</h3><p>在调试 KL 编译错误时，开发者可能会误判 <code>BYTES_AHEAD</code> 为非法标识符或禁用保留字，进而将其从 <code>MM_RCV_NTFY.kl</code> 中删除。这种误操作会导致程序逻辑缺失，无法正确判断通信缓冲区中的待读字节数，引发运行时通信异常或死循环。</p><p>典型的错误场景：编译器报出某行附近的语法错误，开发者错误地将 <code>BYTES_AHEAD</code> 认定为问题根源并删除，而实际错误可能来自该行附近的其他语法问题（如缺少分号、变量未声明等）。</p><h3>Root Cause</h3><p><code>BYTES_AHEAD</code> 是 Karel 语言的<strong>内置系统调用（Built-in Procedure / Built-in Function）</strong>，由 FANUC 控制器固件提供，用于查询指定文件描述符（FILE）的输入缓冲区中尚未读取的字节数。其函数签名如下：</p><pre><code class="language-karel">-- 返回文件 file_var 缓冲区中待读取的字节数
+bytes_count = BYTES_AHEAD(file_var)</code></pre><p>Karel 语言的<strong>真正禁用标识符（Reserved Words）</strong>有明确列表，包括但不限于：</p><table><thead><tr><th>禁用标识符</th><th>说明</th></tr></thead><tbody><tr><td><code>SECONDS</code></td><td>系统时间函数，不可作为变量名</td></tr><tr><td><code>ENDDO</code></td><td>循环结束关键字</td></tr><tr><td><code>ELSEIF</code></td><td>条件分支关键字</td></tr><tr><td><code>PROGRAM</code></td><td>程序声明关键字</td></tr><tr><td><code>BEGIN</code></td><td>程序体开始关键字</td></tr><tr><td><code>END</code></td><td>程序体结束关键字</td></tr><tr><td><code>VAR</code></td><td>变量声明段关键字</td></tr><tr><td><code>ROUTINE</code></td><td>子程序声明关键字</td></tr></tbody></table><p><code>BYTES_AHEAD</code> <strong>不在禁用标识符列表中</strong>，它是合法的内置调用，可以在任何需要整数返回值的表达式中使用。</p><h3>Solution方法</h3><p><strong>正确做法：恢复 <code>MM_RCV_NTFY.kl</code> 中所有 <code>BYTES_AHEAD</code> 调用，不应删除。</strong></p><p>以下是 <code>BYTES_AHEAD</code> 的典型正确用法示例：</p><pre><code class="language-karel">-- 示例1：轮询等待缓冲区有数据再读取，避免阻塞
+ROUTINE wait_for_data(comm_file : FILE)
+VAR
+  byte_count : INTEGER
+BEGIN
+  REPEAT
+    byte_count = BYTES_AHEAD(comm_file)
+    -- 若缓冲区为空则短暂等待，避免 CPU 空转
+    IF byte_count = 0 THEN
+      DELAY 10
+    ENDIF
+  UNTIL byte_count &gt; 0
+END wait_for_data</code></pre><pre><code class="language-karel">-- 示例2：在 MM_RCV_NTFY.kl 中判断是否有完整消息帧可读
+VAR
+  pending : INTEGER
+  msg_buf : STRING[128]
+  status  : INTEGER
+BEGIN
+  pending = BYTES_AHEAD(notify_file)
+  IF pending &gt;= MIN_MSG_LEN THEN
+    READ notify_file(msg_buf::status)
+    -- 处理消息...
+  ENDIF
+END</code></pre><p><strong>排查真正编译错误的步骤：</strong></p><ol><li>仔细阅读 KTRANS 输出的错误行号和错误描述，不要仅凭关键字猜测。</li><li>检查报错行及其<strong>上下文</strong>（前后各 3 行）是否存在：未声明变量、缺少 <code>END</code> 配对、字符串未闭合等问题。</li><li>确认 <code>BYTES_AHEAD</code> 的参数类型为 <code>FILE</code>，返回值赋给 <code>INTEGER</code> 类型变量。</li><li>参考 FANUC Karel Reference Manual 中 "Built-in Procedures and Functions" 章节确认用法。</li></ol><p>禁用标识符的完整列表详见 <code>fanuc-kl-compile SKILL.md</code>。</p><h3>Verification方式</h3><p><strong>方法一：直接编译验证</strong></p><p>使用 KTRANS 编译包含 <code>BYTES_AHEAD</code> 的文件，确认无相关报错：</p><pre><code class="language-bash"># 在 FANUC 开发环境中编译
+ktrans MM_RCV_NTFY.kl
+
+# 预期输出：编译成功，0 errors，无 BYTES_AHEAD 相关警告或错误
+# 生成 MM_RCV_NTFY.pc 文件</code></pre><p><strong>方法二：确认文件中 BYTES_AHEAD 调用存在</strong></p><pre><code class="language-bash"># 检查源文件中 BYTES_AHEAD 是否被误删
+grep -i "BYTES_AHEAD" MM_RCV_NTFY.kl
+
+# 预期输出：应显示至少一行包含 BYTES_AHEAD 的代码
+# 若无输出，说明已被误删，需从版本控制中恢复</code></pre><p><strong>方法三：运行时功能验证</strong></p><pre><code class="language-bash"># 在机器人控制器上加载并运行程序
+# 触发通知消息，观察 MM_RCV_NTFY 是否能正确接收并处理
+# 若通信正常、无超时或死循环，则 BYTES_AHEAD 工作正常</code></pre><h2>Verification</h2><pre><code class="language-bash">grep -i fanuc lessons/contrib/fanuc-*.md 2&gt;/dev/null | wc -l
+echo FANUC verified</code></pre><p><strong>Expected Output:</strong></p><pre><code># (count)
+FANUC verified</code></pre>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/fanuc-kl-bytes-ahead-is-builtin-procedure.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=FANUC KL: BYTES_AHEAD 是 Karel 内置 Procedure">Find related lessons →</a></p></div>

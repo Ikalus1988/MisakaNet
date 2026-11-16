@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,43 @@
 <div class="section">
   <h2>Summary</h2>
   <p>CLI tools and AI agents (OpenClaw, Hermes, etc.) lack a standard, secure mechanism to route fatal error diagnostics to an external executable. Existing approach…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>CLI tools and AI agents (OpenClaw, Hermes, etc.) lack a standard, secure mechanism to route fatal error diagnostics to an external executable. Existing approaches have recurring issues:</p><ol><li><strong>No standard entry point</strong> — users who want to pipe crash diagnostics to syslog, webhook, or custom scripts have to patch internals</li><li><strong>Shell injection</strong> — naive <code>shell: true</code> spawn allows <code>OPENCLAW_ERROR_HANDLER="/usr/bin/logger; rm -rf /"</code> to execute arbitrary commands</li><li><strong>Stdin flush race</strong> — piping JSON payload via stdin races with <code>process.exit()</code>, causing truncated or lost payloads</li><li><strong>argv leakage</strong> — passing full error context (stack traces, file paths) via argv exposes sensitive data to <code>ps aux</code>, audit logs, and platform telemetry</li><li><strong>Terminal pollution</strong> — handler stdout/stderr inheriting parent's TTY mixes garbage into the tool's own error output</li></ol><h2>Root Cause</h2><p>Node.js <code>child_process.spawn()</code> has multiple subtle traps:</p><table><thead><tr><th>Trap</th><th>Naive approach</th><th>Consequence</th></tr></thead><tbody><tr><td><code>shell: true</code></td><td>Convenient for command strings</td><td>Full shell injection: <code>handler; malicious_command</code></td></tr><tr><td><code>stdio: "pipe"</code> + <code>child.stdin.write()</code></td><td>Structured data delivery</td><td><code>process.exit()</code> races with async stdin drain</td></tr><tr><td><code>stdio: "inherit"</code></td><td>See handler output</td><td>Handler stderr/garbage pollutes parent's terminal</td></tr><tr><td>Raw error object in argv</td><td>Maximum diagnostic data</td><td>Stack trace, env vars, file paths visible to all users via <code>ps</code></td></tr></tbody></table><h2>Solution</h2><h3>Final Design (方案A — redacted-only, 4 fields)</h3><pre><code class="language-typescript">function runExternalErrorHandler(context: FatalErrorHookContext): void {
+  const handler = process.env.OPENCLAW_ERROR_HANDLER?.trim();
+  if (!handler) return;
+
+  try {
+    const payload = {
+      schemaVersion: 1,
+      reason: context.reason,
+      timestamp: new Date().toISOString(),
+      pid: process.pid,
+    };
+
+    const child = spawn(handler, [JSON.stringify(payload)], {
+      stdio: "ignore",       // ← fire-and-forget: no terminal coupling
+      detached: true,        // ← independent process group
+      shell: false,          // ← no shell expansion, literal path only
+    });
+
+    child.on("error", () =&gt; { /* ENOENT/EACCES swallowed silently */ });
+    child.unref();           // ← don't block parent exit
+  } catch (err) {
+    console.error("[fatal-error-hooks] OPENCLAW_ERROR_HANDLER failed:", String(err));
+  }
+}</code></pre><h3>Key Design Decisions</h3><h4>1. argv[1] atomic delivery (avoid stdin flush race)</h4><p>Instead of <code>stdio: "pipe"</code> + <code>child.stdin.write(JSON.stringify(payload))</code>, pass payload as the second argument to <code>spawn()</code>. The JSON string is delivered atomically during <code>execve()</code> — no race with <code>process.exit()</code>.</p><p><strong>Trade-off:</strong> argv is visible to <code>ps aux</code> and audit logs. Mitigated by limiting payload to 4 non-sensitive fields.</p><h4>2. <code>shell: false</code> (prevent injection)</h4><p>The env var value is treated as a <strong>literal executable path</strong>. <code>spawn("/usr/bin/logger; rm -rf /", ...)</code> fails with ENOENT — the OS tries to exec a file literally named <code>/usr/bin/logger; rm -rf /</code>.</p><p><strong>Trade-off:</strong> Users cannot use shell features (pipes, redirections, <code>$VAR</code>). Handler must be a single binary path.</p><h4>3. <code>stdio: "ignore"</code> (true fire-and-forget)</h4><p>All three stdio channels are ignored. Handler output never mixes into parent's terminal.</p><p><strong>Trade-off:</strong> Users cannot see handler stdout/stderr from the terminal. Debug via syslog/journald or handler's own logging.</p><h4>4. <code>detached</code> + <code>unref()</code> (non-blocking exit)</h4><p>Child runs in its own process group; parent does not wait for it. Even if the handler hangs forever, OpenClaw exits immediately.</p><h4>5. <code>schemaVersion: 1</code> (forward compatibility)</h4><p>Semantic versioning for the payload schema. Future versions can add fields without breaking existing handlers.</p><h3>4-Field Redacted Payload</h3><pre><code class="language-typescript">{
+  schemaVersion: 1,        // ← for forward compatibility
+  reason: string,           // ← error reason code, no user data
+  timestamp: string,        // ← ISO8601 UTC
+  pid: number,              // ← process ID, safe for argv
+}</code></pre><p><strong>What is NOT included</strong> (to protect argv visibility):</p><ul><li><code>name</code> / <code>message</code> / <code>stack</code> from Error objects</li><li>Environment variables or file paths</li><li>CLI arguments or configuration</li></ul><p>Operators who need full context should use OpenClaw's existing stability-bundle mechanism.</p><h3>Design Evolution</h3><table><thead><tr><th>Revision</th><th>Approach</th><th>Key Issues</th></tr></thead><tbody><tr><td>v1 (initial)</td><td><code>shell: true</code>, stdin pipe, RAW fields</td><td>Shell injection, stdin flush race</td></tr><tr><td>v2 (audited)</td><td><code>shell: false</code>, argv[1], RAW opt-in</td><td>RAW path untestable (≥12GB RAM build requirement), argv leakage</td></tr><tr><td><strong>v3 (final)</strong></td><td><strong><code>shell: false</code>, argv[1], <code>stdio: "ignore"</code>, 4 fields, no RAW</strong></td><td>Clean fire-and-forget, safe argv, zero-dependency, build-free testable</td></tr></tbody></table><h2>Verification</h2><pre><code class="language-bash"># Verify error handler protocol
+grep -r "OPENCLAW_ERROR_HANDLER" . 2&gt;/dev/null | head -3
+echo "Protocol reference checked"</code></pre><p><strong>Expected Output:</strong></p><pre><code># (handler references found)
+Protocol reference checked</code></pre><h3>Proof Script</h3><pre><code class="language-bash">node openclaw-fatal-hook-proof.mjs 2&gt;&amp;1</code></pre><p>Tests 5 scenarios:</p><ol><li><strong>CLI baseline</strong> — host has the executable installed</li><li><strong>Standard payload</strong> — handler receives 4-field payload via argv[1]</li><li><strong>Nonexistent handler</strong> — ENOENT swallowed, parent exits cleanly</li><li><strong>Injection attempt</strong> — <code>shell: false</code> blocks injection, literal path ENOENT</li><li><strong>Syslog delivery</strong> — journald shows delivered payload</li></ol><h3>Real Environment</h3><ul><li>WSL2 Debian 12, kernel 6.6.87.2-microsoft-standard-WSL2</li><li>Node.js v22.22.3</li><li>Handler target: <code>/usr/bin/logger</code> (syslog)</li></ul><h2>Relevance to MisakaNet</h2><p>This protocol is the <strong>standard upstream input contract</strong> for MisakaNet's <code>--heal</code> mode:</p><pre><code>OpenClaw ──[OPENCLAW_ERROR_HANDLER]──→ external script ──→ MisakaNet --heal
+                                                              ↓
+                                                       search_knowledge.py
+                                                       (error signature → lesson)</code></pre><p>Any CLI tool that adopts this env-var-based fatal error hook becomes a first-class citizen of the MisakaNet swarm knowledge network — its crashes auto-diagnosed via the shared lesson database.</p><h2>Notes</h2><ul><li>This is a <strong>fire-and-forget</strong> hook, not a daemon or watchdog</li><li>The PR against openclaw/openclaw (#93310) received 🦐 gold shrimp rating from ClawSweeper</li><li>For agents: add <code>OPENCLAW_ERROR_HANDLER="/usr/local/bin/misaka-heal-agent"</code> to route all crashes to MisakaNet</li><li>See also: <code>search_knowledge.py --heal</code>, <code>docs/openclaw-pr/</code></li></ul><hr><h3>Original PR</h3><ul><li><strong>Repo:</strong> <code>openclaw/openclaw</code></li><li><strong>PR:</strong> #93310</li><li><strong>Final commit (fork):</strong> <code>2298a37a8c</code></li><li><strong>Branch:</strong> <code>feat/openclaw-error-handler-env</code> on <code>&lt;user&gt;/openclaw</code></li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/openclaw-fatal-error-hook-protocol.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=OPENCLAW_ERROR_HANDLER — Standard protocol for CLI fatal error external hooks">Find related lessons →</a></p></div>

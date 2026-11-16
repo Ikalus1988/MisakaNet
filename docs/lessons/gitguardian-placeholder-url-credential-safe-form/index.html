@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,35 @@
 <div class="section">
   <h2>Summary</h2>
   <p>文档、lesson、教程里写"凭证占位符"时如果用真实 URL 形状 `https://username:TOKEN@host`，GitGuardian 会报 `Secret type: Basic Auth String`，触发：</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>文档、lesson、教程里写"凭证占位符"时如果用真实 URL 形状 <code>https://username:TOKEN@host</code>，GitGuardian 会报 <code>Secret type: Basic Auth String</code>，触发：</p><ul><li>仓库的 Secret Scanning alert（false positive）。</li><li>PR 检查失败（如果开了 GitGuardian 检查）。</li><li>gitleaks pre-commit hook 拦截。</li><li>团队 / maintainer 收到噪音告警，必须人工 dismiss。</li></ul><p>典型场景：</p><pre><code class="language-markdown"># 错误示范（会被 GitGuardian 命中）
+git push https://[REDACTED:url_credential]@github.com/owner/repo.git
+#                       └──────── 即使脱敏，仍命中"Basic Auth String" pattern ────────┘</code></pre><pre><code class="language-json">// lessons.json previews 字段里也命中
+"preview": "git push https://username:TOKEN@github.com/..."</code></pre><h2>Error</h2><pre><code class="language-text">GitGuardian: Secret type: Basic Auth String detected at lessons/xxx.md:32
+Pattern: https?://[^:]+:[^@]+@</code></pre><p>实际扫描：</p><ul><li>4 个 lesson 文件 + 2 个 task JSON + lessons.json previews 全部命中。</li><li>全历史 40 位 <code>ghp_/gho_/github_pat_</code> token 扫描 0 命中 → 确认是<strong>误报</strong>。</li><li>但字面 <code>user:pass@host</code> URL 形状会持续触发扫描器噪音。</li></ul><h2>What was tried</h2><p>核实全历史无真实 token 后确认是误报；但保留字面形状会持续触发。</p><h2>Solution</h2><p><strong>统一占位符格式：用尖括号 + 抽象名字，不匹配 <code>user:pass@host</code> regex：</strong></p><pre><code class="language-markdown"># ✅ 推荐：用尖括号
+git push https://[REDACTED:url_credential]@github.com/owner/repo.git
+git push https://&lt;account&gt;:&lt;pat&gt;@github.com/owner/repo.git
+git push https://[REDACTED:url_credential]@github.com/owner/repo.git
+
+# ✅ 也可：拆开写
+git push https://github.com/owner/repo.git
+# 然后：
+#   username: &lt;your-github-username&gt;
+#   password: &lt;your-PAT&gt;</code></pre><p><strong>规则：</strong></p><ol><li><strong>任何 <code>https://xxx:yyy@</code> 形状的占位符必须用尖括号或 <code>&lt;placeholder&gt;</code> 标记。</strong></li><li><strong>截断的 PAT 示例也避免完整 user:<code>ghp_...</code>@host 形状</strong> —— 即使 <code>ghp_DqIF...</code> 是脱敏的，仍命中 regex。</li><li><strong>lesson 文件 frontmatter 的 <code>preview</code> 字段也要遵守</strong> —— 它进 <code>lessons.json</code>，等于把 pattern 扩散到 1 个文件之外。</li><li><strong>task JSON 的示例同样要改</strong>。</li></ol><p><strong>写完后用下面 grep 自检：</strong></p><pre><code class="language-bash"># 找出所有可能的 user:pass@host 形状（排除尖括号包围的）
+git grep -nE 'https://[^&lt;\s"]+:[^&lt;\s"]+@' \
+  -- '*.md' '*.json' ':!lessons/en/' ':!docs/'
+
+# gitleaks 本地扫一遍
+gitleaks detect --source . --no-banner</code></pre><h2>Verification</h2><pre><code class="language-bash"># 1. 全仓库扫不到 user:pass@host 形状（排除尖括号、占位符）
+git grep -nE 'https://[^&lt;\s"]+:[^&lt;\s"]+@' -- '*.md' '*.json'
+
+# 2. JSON 文件仍可解析
+python3 -c "import json; d=json.load(open('data/lessons.json')); print(f'{len(d)} lessons parsed')"
+
+# 3. gitleaks pre-commit 通过
+gitleaks detect --source . --no-banner --redact
+echo "Verification passed: gitleaks clean"</code></pre><p><strong>Expected Output:</strong> grep 无命中 + JSON 解析成功 + gitleaks <code>no leaks found</code>。</p><h2>Related经验</h2><ul><li>同样的占位符规则适用于 AWS key（<code>AKIA...</code>）、Slack token（<code>xoxb-...</code>）、OpenAI key（<code>sk-...</code>）—— 用尖括号 <code>&lt;aws_access_key&gt;</code>、<code>&lt;slack_bot_token&gt;</code>、<code>&lt;openai_key&gt;</code> 替代完整字符串。</li><li>如果团队已经积累了一堆历史 PR 触发 GitGuardian alert，可以用 <code>git filter-repo</code> 或 GitHub UI batch-dismiss 一次性清理（仅限确认 0 真实命中后）。</li><li>lesson preview 字段是扩散点：写一个 lesson 影响一个 lessons.json，影响整个搜索页 + MCP 索引，所以 preview 的脱敏比正文更严格。</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/gitguardian-placeholder-url-credential-safe-form.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=GitGuardian 误报 Basic Auth String：教程里凭证占位符必须用尖括号，不写完整 user:pass@host">Find related lessons →</a></p></div>

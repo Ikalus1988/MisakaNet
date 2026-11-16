@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,16 @@
 <div class="section">
   <h2>Summary</h2>
   <p>FANUC robot controllers support multiple backup types (full backup, mirror/image backup, auto backup) with different contents, restore procedures, and use cases…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>FANUC robot controllers support multiple backup types (full backup, mirror/image backup, auto backup) with different contents, restore procedures, and use cases. Engineers often confuse them or use the wrong type for their situation.</p><h2>Solution</h2><h3>Backup Type Comparison</h3><table><thead><tr><th>Item</th><th>Full Backup</th><th>Mirror/Image Backup</th></tr></thead><tbody><tr><td>System software</td><td>Not included</td><td>Included</td></tr><tr><td>User data</td><td>Included</td><td>Included</td></tr><tr><td>Restore method</td><td>Data restore</td><td>Full system restore</td></tr><tr><td>File size</td><td>Smaller</td><td>Larger</td></tr><tr><td>Use case</td><td>Daily data backup</td><td>System-level backup/migration</td></tr></tbody></table><h3>Full Backup (All of Above)</h3><p>Contains: TP/LS program files, system files, IO config, vision files, KAREL files. Does NOT include system software.</p><pre><code>MENU → File → Backup → "All of above" → Select storage (USB/PC) → Execute</code></pre><h3>Mirror/Image Backup</h3><p>Contains: complete system image (system software + all user data + config). Can restore to the exact state at backup time.</p><pre><code>MENU → File → Backup → "Image Backup" → Select storage → Execute (takes longer)</code></pre><h3>Auto Backup</h3><p>Scheduled automatic backup without manual intervention.</p><pre><code>MENU → File → Auto Backup → Enable</code></pre><p>Configuration options:</p><ul><li><strong>Period</strong>: Daily / Weekly / Monthly</li><li><strong>Time</strong>: Specific backup time</li><li><strong>Type</strong>: Full / Incremental</li><li><strong>Storage</strong>: USB / CF card / Network</li></ul><h3>Restore Procedures</h3><p><strong>Full backup restore:</strong></p><pre><code>MENU → File → Restore → Select backup file → Execute</code></pre><p><strong>Mirror/image restore:</strong></p><pre><code>1. Power on → Enter BOOT mode
+2. Select "Controlled Start"
+3. Select "Restore Image"
+4. Select image file
+5. Execute (system will restart)</code></pre><p><strong>Partial file restore:</strong></p><pre><code>MENU → File → Restore → Select source (USB/CF/Network) → Select specific files → Execute</code></pre><h3>Remote Image Import</h3><p>For batch deployment across multiple robots via network:</p><pre><code>MENU → File → Image Import → Select network import → Enter image server address</code></pre><p>Supports FTP, HTTP, and custom KAREL-based protocols.</p><h3>ASCII Program Import/Export</h3><p>ASCII format (.LS) programs can be edited with text editors and version-controlled:</p><pre><code>Export: MENU → File → Export → Select program → ASCII format → Select storage
+Import: MENU → File → Import → Select file → Overwrite/Append → Confirm</code></pre><p>Note: ASCII programs must be compiled after import.</p><h3>Cross-Version File Transfer</h3><p>When transferring files between different system versions:</p><ul><li>High→Low version may be incompatible</li><li>Specific option files may not transfer</li><li>System files may need reconfiguration</li><li>Always backup target system before import</li></ul><h3>Investigation Data Collection</h3><p>Types of data available for diagnostics:</p><ul><li><strong>System info</strong>: Software version, hardware config (MENU → Status → System)</li><li><strong>Alarm history</strong>: Alarm records, codes (MENU → Status → Alarm)</li><li><strong>Runtime data</strong>: Operating hours, cycle counts (MENU → Status → Runtime)</li><li><strong>IO status</strong>: Signal states (MENU → Status → IO)</li></ul><p>Export methods: USB, FTP to PC, or KAREL automated collection.</p><h2>Verification</h2><pre><code class="language-bash">grep -i fanuc lessons/contrib/fanuc-*.md 2&gt;/dev/null | wc -l
+echo FANUC verified</code></pre><p><strong>Expected Output:</strong></p><pre><code># (count)
+FANUC verified</code></pre><h2>Notes</h2><ul><li>Always verify storage device has sufficient space before backup</li><li>Mirror backup/restore takes significantly longer than full backup</li><li>Verify backup file integrity before relying on it</li><li>Keep multiple backup copies in different locations</li><li>Do not power off during mirror restore operations</li><li>Auto backup failures usually indicate insufficient storage space</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/fanuc-backup-restore-guide.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=FANUC Robot Backup and Restore — Full, Mirror, Auto, and File Restore">Find related lessons →</a></p></div>

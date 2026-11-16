@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,40 @@
 <div class="section">
   <h2>Summary</h2>
   <p>`alembic upgrade head` fails with various errors after updating mcp-memory-service or its dependencies. Common failure modes:</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p><code>alembic upgrade head</code> fails with various errors after updating mcp-memory-service or its dependencies. Common failure modes:</p><ul><li><code>Can't locate revision identified by 'abc123'</code> — alembic_version table references a revision not in the current migration chain</li><li><code>Multiple head revisions</code> — two or more migration branches exist without a merge point</li><li><code>Table already exists</code> — migration was partially applied but alembic recorded it as complete</li></ul><h2>Root Cause</h2><p>The migration chain in <code>alembic/versions/</code> diverges from what's recorded in the database's <code>alembic_version</code> table. This happens when:</p><ol><li><strong>Dependency update pulls new migrations</strong> that assume a different chain history than what your database has</li><li><strong>SQLite limitations</strong> — no transactional DDL means a failed migration leaves the schema half-applied but alembic may still stamp it</li><li><strong>Merge conflicts in migration files</strong> — two contributors create migrations from the same parent, resulting in two heads</li></ol><h2>Solution</h2><p>Diagnose first, then pick the right fix:</p><pre><code class="language-bash"># 1. See what alembic thinks the current state is
+alembic current
+
+# 2. See what migrations exist
+alembic history
+
+# 3. See what heads exist
+alembic heads
+
+# 4. If two heads, merge them
+alembic merge -m "merge heads" head1 head2
+
+# 5. If revision not found, stamp to a known-good state
+alembic stamp head  # trust current schema is correct
+
+# 6. If table exists error, check if table actually exists
+sqlite3 memory.db ".tables" | grep &lt;table_name&gt;
+# If it exists and schema is correct, stamp past that revision</code></pre><h2>Verification</h2><pre><code class="language-bash"># 1. Verify current state matches expected
+alembic current
+# Should show a single head revision, not error
+
+# 2. Verify no multiple heads
+alembic heads
+# Should show exactly one line
+
+# 3. Run upgrade dry-run
+alembic upgrade head --sql &gt; /dev/null
+# Should exit 0 with no errors
+
+# 4. Run application tests
+pytest tests/ -x -q
+# Should pass — schema matches application expectations</code></pre><h2>Prevention</h2><ul><li>After dependency updates, always run <code>alembic current</code> before <code>alembic upgrade</code></li><li>Use <code>alembic check</code> (alembic ≥1.12) to verify chain consistency without applying</li><li>For SQLite: back up <code>memory.db</code> before running migrations</li><li>CI should run migrations against a fresh DB to catch chain divergence early</li></ul><h2>Related</h2><ul><li>See [alembic-upgrade-head-failed](alembic-upgrade-head-failed.md) for exit code 255 / subprocess errors and model import side effects</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/alembic-upgrade-failure.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Alembic upgrade fails after dependency update">Find related lessons →</a></p></div>

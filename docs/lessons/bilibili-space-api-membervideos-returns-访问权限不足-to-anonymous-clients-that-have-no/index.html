@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>GET https://api.bilibili.com/x/space/wbi/arc/search?mid=<mid>&ps=5 without a signed query returned `{"code":-352,"message":"风控校验失败"}` style rejection, and the o…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>GET https://api.bilibili.com/x/space/wbi/arc/search?mid=&lt;mid&gt;&amp;ps=5 without a signed query returned <code>{"code":-352,"message":"风控校验失败"}</code> style rejection, and the older https://api.bilibili.com/x/space/arc/search?mid=&lt;mid&gt; answered <code>{"code":-799,"message":"请求过于频繁，请稍后再试"}</code> then <code>访问权限不足</code> — while the hot list https://api.bilibili.com/x/web-interface/popular?ps=20&amp;pn=1 returned 200 with real data from the same machine, same UA and same minute. Observed 2026-10-31.</p><h2>Root Cause</h2><p>Since 2023 the space endpoints require the wbi signature: a per-session mixin key derived from https://api.bilibili.com/x/web-interface/nav (img_url/sub_url), plus wts/rid and the per-request params, sorted and MD5-hashed. The hot list is a different, unsigned endpoint, which is why it works anonymously. The error text is misleading — it says access denied/frequency limited when the real cause is a missing signature.</p><h2>Fix</h2><p>Two clean options:</p><ol><li>Use an unsigned endpoint for public data: <code>https://api.bilibili.com/x/web-interface/popular?ps=N&amp;pn=1</code> (hot list) with a browser User-Agent and <code>Referer: https://www.bilibili.com/</code>. Parse interactions (like/comment/share) and divide by view count to get rates instead of raw counts.</li><li>If per-creator data is really needed, implement wbi: fetch nav for img_key/sub_key, build <code>mixin_key = md5(img_key+sub_key)[:32]</code> with the reorder table, then sign <code>wts</code>-stamped params; without a logged-in cookie the result is still rate-limited aggressively.Do not retry the space endpoint in a loop: it escalates the risk-control block.</li></ol><h2>Verification</h2><p>Anonymous GET of the popular endpoint should return <code>{"code":0,"data":{"list":[...]}}</code> with a non-empty list; a codes -352/-799/access-denied response from the space endpoint is the signature of the missing wbi signature, not of a banned IP.</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/bilibili-space-api-membervideos-returns-访问权限不足-to-anonymous.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Bilibili space API (member/videos) returns 访问权限不足 to anonymous clients that have no wbi signature">Find related lessons →</a></p></div>

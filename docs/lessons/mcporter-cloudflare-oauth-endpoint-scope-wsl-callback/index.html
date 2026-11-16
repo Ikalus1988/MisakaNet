@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,31 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Authorizing mcporter for Cloudflare MCP (`mcporter auth cloudflare`) failed in three distinct ways before success:</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Authorizing mcporter for Cloudflare MCP (<code>mcporter auth cloudflare</code>) failed in three distinct ways before success:</p><ol><li>Browser showed <code>路由 /oauth/error 不存在</code> (page not found) — wrong <strong>authorization endpoint</strong>.</li><li>Browser showed <code>无效范围 未知的 OAuth 范围: mcp:tools</code> (invalid scope) — the <strong>scope</strong> parameter was rejected.</li><li>After authorizing successfully in the browser, mcporter still timed out (<code>OAuthTimeoutError: timed out after 60s</code>) — the <strong>local callback</strong> never reached WSL.</li></ol><h2>Root Cause</h2><ol><li><strong>Wrong endpoint.</strong> The Cloudflare OAuth authorization endpoint is <strong><code>https://mcp.cloudflare.com/authorize</code></strong>, NOT <code>https://dash.cloudflare.com/oauth2/auth</code>. The discovery document at <code>https://mcp.cloudflare.com/.well-known/oauth-authorization-server</code> is authoritative:<pre><code class="language-json">{"authorization_endpoint": "https://mcp.cloudflare.com/authorize", "token_endpoint": "https://mcp.cloudflare.com/token", ...}</code></pre><p>(No <code>scopes_supported</code> key is present.)</p></li><li><strong>Invalid scope.</strong> Cloudflare MCP does <strong>not</strong> accept <code>mcp:tools</code> — there is no <code>scopes_supported</code> in its discovery, so <strong>omit the <code>scope</code> parameter entirely</strong>.</li><li><strong>WSL callback trap.</strong> mcporter's callback server listens on <code>127.0.0.1:&lt;port&gt;</code> inside WSL. When the user authorizes from a <strong>Windows browser</strong>, the redirect to <code>http://127.0.0.1:&lt;port&gt;/callback</code> hits <strong>Windows' own loopback</strong>, not WSL's — the callback never arrives and mcporter times out. WSL2's automatic <code>localhost</code> forwarding works for <code>localhost</code> but NOT for <code>127.0.0.1</code> in this direction.</li></ol><h2>Fix</h2><ol><li><strong>Build the authorize URL manually with the correct endpoint and NO scope</strong> (read the live PKCE values from mcporter's token cache while the auth process is running):</li></ol><pre><code class="language-python">   import hashlib, base64, urllib.parse, json
+   verifier = open('.tools/mcporter-tokens/cloudflare/code_verifier.txt').read().strip()
+   challenge = base64.urlsafe_b64encode(hashlib.sha256(verifier.encode()).digest()).rstrip(b'=').decode()
+   client = json.load(open('.tools/mcporter-tokens/cloudflare/client.json'))
+   params = {
+       "response_type": "code",
+       "client_id": client["client_id"],
+       "redirect_uri": client["redirect_uris"][0],
+       "code_challenge": challenge,
+       "code_challenge_method": "S256",
+       # NO scope — Cloudflare MCP rejects mcp:tools
+   }
+   url = "https://mcp.cloudflare.com/authorize?" + urllib.parse.urlencode(params)</code></pre><ol><li><strong>Keep the mcporter auth process running</strong> while the user opens the URL — it must listen for the callback. It times out after 60s; re-run if needed.</li><li><strong>For WSL</strong>: if the callback still doesn't arrive (Windows browser can't reach WSL's <code>127.0.0.1</code>), capture the redirect URL's <code>code=</code> from the browser address bar after a successful authorization, then exchange it manually:</li></ol><pre><code class="language-bash">   curl -sS -X POST https://mcp.cloudflare.com/token \
+     -H "Content-Type: application/x-www-form-urlencoded" \
+     -d "grant_type=authorization_code&amp;code=&lt;CODE&gt;&amp;redirect_uri=&lt;REDIRECT&gt;&amp;client_id=&lt;CLIENT_ID&gt;&amp;code_verifier=&lt;VERIFIER&gt;"</code></pre><p>Then write the returned <code>access_token</code>/<code>refresh_token</code> into <code>.tools/mcporter-tokens/cloudflare/tokens.json</code>.</p><h2>Verification</h2><pre><code class="language-bash"># tokens.json now exists with access_token + refresh_token
+ls .tools/mcporter-tokens/cloudflare/tokens.json
+
+# Model call succeeds (returns content, not empty/timeout)
+.tools/bin/mcporter call cloudflare.execute 'code=async () =&gt; { const r = await cloudflare.request({ method: "POST", path: "/accounts/&lt;ACCOUNT&gt;/ai/run/@cf/meta/llama-3.2-3b-instruct", body: { messages: [{ role: "user", content: "Reply with exactly: OK" }] } }); return r.result?.choices?.[0]?.message?.content || "EMPTY"; }' --config .tools/mcporter.json
+# → OK
+
+# Benchmark now produces real scores (len&gt;0, hit&gt;0), e.g. len=1051-1255, hit=16-100%
+python3 scripts/benchmark_workers_ai.py --output docs/benchmarks/benchmark-2026-09-02.json</code></pre><h2>Lesson</h2><ul><li>Always read the OAuth <strong>discovery document</strong> (<code>.well-known/oauth-authorization-server</code>) for the authoritative endpoints — don't guess <code>dash.cloudflare.com/oauth2/auth</code>.</li><li>If the server's discovery has no <code>scopes_supported</code>, <strong>omit scope</strong>.</li><li>In WSL + Windows-browser setups, the local callback server on <code>127.0.0.1</code> inside WSL is unreachable from the Windows browser; prefer <code>localhost</code> in <code>oauthRedirectUrl</code> or capture the <code>code=</code> from the address bar and exchange it manually.</li><li>A benchmark that returns <code>len=0 hit=0%</code> for every run usually means the model call is failing (auth/network), not that the lessons are bad — check the model call first.</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/mcporter-cloudflare-oauth-endpoint-scope-wsl-callback.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=mcporter Cloudflare OAuth: Correct Endpoint, No Scope, and WSL Callback Trap">Find related lessons →</a></p></div>

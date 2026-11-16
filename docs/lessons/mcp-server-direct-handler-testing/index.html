@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,48 @@
 <div class="section">
   <h2>Summary</h2>
   <p>MCP Server 使用 stdio 传输（stdin/stdout JSON-RPC），测试时需要启动子进程、写入 stdin、解析 stdout。这种方式：</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>MCP Server 使用 stdio 传输（stdin/stdout JSON-RPC），测试时需要启动子进程、写入 stdin、解析 stdout。这种方式：</p><ol><li>启动慢（需要 fork 进程）</li><li>调试难（stdout 混合协议消息和日志）</li><li>依赖完整环境（搜索索引、数据库等）</li></ol><h2>Root Cause</h2><p>MCP Server 的核心逻辑在 <code>handle_request()</code> 函数中，stdio 只是传输层。如果直接调用 handler，可以跳过整个传输层。</p><h2>Solution</h2><p><strong>直接调用 JSON-RPC handler，不启动子进程：</strong></p><pre><code class="language-python">from scripts.mcp_server import handle_request
+
+def rpc(method: str, params: dict = None) -&gt; dict:
+    """Send a JSON-RPC request to the handler directly."""
+    return handle_request({
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": method,
+        "params": params or {},
+    })
+
+# 测试 initialize
+resp = rpc("initialize")
+assert resp["result"]["serverInfo"]["name"] == "misakanet"
+
+# 测试 tools/list
+resp = rpc("tools/list")
+tool_names = {t["name"] for t in resp["result"]["tools"]}
+assert "misakanet_search" in tool_names
+
+# 测试 tools/call
+resp = rpc("tools/call", {
+    "name": "misakanet_search",
+    "arguments": {"query": "CI pipeline", "top": 3},
+})
+result = json.loads(resp["result"]["content"][0]["text"])
+assert "results" in result</code></pre><h3>处理搜索不可用的情况</h3><p>测试不应依赖外部服务。当搜索索引不存在时，gracefully 降级：</p><pre><code class="language-python">def test_search():
+    resp = rpc("tools/call", {
+        "name": "misakanet_search",
+        "arguments": {"query": "test"},
+    })
+    result = json.loads(resp["result"]["content"][0]["text"])
+    
+    if "error" in result:
+        print(f"  ⚠️ Search unavailable: {result['error']}")
+        return  # 不算失败，只是跳过
+    
+    assert len(result["results"]) &gt; 0</code></pre><h2>Verification</h2><pre><code class="language-bash">python3 --version
+python3 -c 'import sys; print(sys.version)'</code></pre><p><strong>Expected Output:</strong></p><pre><code>Python 3.
+3.</code></pre><h2>Why it matters</h2><p>MCP（Model Context Protocol）是 AI 工具集成的标准协议。直接测试 handler 比端到端测试快 10 倍，且不需要完整运行环境。这个模式适用于任何 JSON-RPC 服务：直接调用 dispatcher 函数，跳过传输层。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/mcp-server-direct-handler-testing.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=MCP Server 测试 — 直接调用 handler 跳过 stdio 传输">Find related lessons →</a></p></div>

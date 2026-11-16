@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,31 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Reddit's official API closed self-service registration in 2025-11. Anonymous .json endpoints are blocked (403). Need a way to access Reddit programmatically.</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Reddit's official API closed self-service registration in 2025-11. Anonymous .json endpoints are blocked (403). Need a way to access Reddit programmatically.</p><h2>Root Cause</h2><p>Reddit aggressively blocks automated access:</p><ul><li>Anonymous <code>.json</code> endpoints return 403</li><li>Official API requires manual approval for new apps</li><li>PRAW (Python Reddit API Wrapper) only works with existing credentials</li></ul><h2>Solution</h2><h3>rdt-cli</h3><p>A CLI that uses Reddit's reverse-engineered API with browser fingerprint impersonation.</p><pre><code class="language-bash"># Install
+pipx install rdt-cli
+
+# Login (extracts browser cookies)
+rdt login
+
+# Browse
+rdt sub python --sort hot
+rdt search "MCP agent" --sort top --time year
+rdt read t3_abc123
+
+# Export
+rdt search "query" --json -o results.json
+rdt search "query" --yaml</code></pre><h3>Anti-Detection Features</h3><ul><li>Chrome 133 fingerprint consistency</li><li><code>sec-ch-ua</code> header alignment</li><li>Gaussian jitter on requests</li><li>Exponential backoff on rate limits</li></ul><h3>Agent-Friendly Output</h3><pre><code class="language-bash"># Compact output (fewer tokens)
+rdt search "query" --compact
+
+# Structured output
+rdt search "query" --yaml
+rdt search "query" --json
+
+# Non-TTY defaults to YAML automatically</code></pre><h3>Status Check</h3><pre><code class="language-bash">rdt status --json
+# Returns: authenticated, cookie_count, capabilities</code></pre><h2>Verification</h2><pre><code class="language-bash">pipx install rdt-cli
+echo "Verification passed: fix command exited 0"</code></pre><p><strong>Expected Output:</strong> command completes without error, then <code>Verification passed</code> is printed. (Checks: <code>pipx install rdt-cli</code>)</p><h2>Notes</h2><ul><li>Requires login (browser cookies) — no anonymous access</li><li>v0.4.1 on PyPI, v0.4.2 on Git (use git source for latest)</li><li>For network-blocked regions: needs proxy (<code>HTTPS_PROXY</code> env var)</li><li>Agent-Reach installs this automatically for Reddit support</li><li>Source: github.com/public-clis/rdt-cli (445 stars)</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/rdt-cli-reddit-terminal.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=rdt-cli — Reddit in Your Terminal (Reverse-Engineered API)">Find related lessons →</a></p></div>

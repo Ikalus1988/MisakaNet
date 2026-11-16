@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,20 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Automating a WinForms desktop app (a FANUC ROBOGUIDE cell-controller UI) with pywinauto's UIA</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Automating a WinForms desktop app (a FANUC ROBOGUIDE cell-controller UI) with pywinauto's UIA backend, locating a toolbar button by <code>automation_id</code> failed:</p><pre><code>tbnPendant not found</code></pre><p>and yet enumerating every descendant showed the control right there:</p><pre><code>cand aid='' type='Button' title='tbnPendant'</code></pre><p>The control exists, its type is <code>Button</code>, the wanted name is present — but <code>automation_id</code> is the empty string, so <code>element_info.automation_id == "tbnPendant"</code> is never true. The first investigation round went the wrong way and blamed start-up timing, a window that "never came up", and permissions; the main window had in fact been ready for a long time.</p><h2>Root Cause</h2><p>Two independent facts, both reported:</p><ol><li><strong>WinForms controls do not reliably publish their name as <code>AutomationId</code>.</strong> The label can land on <code>window_text</code> (the accessible name) while <code>automation_id</code> stays empty. A locator whose only predicate is <code>automation_id</code> converts "control present, property unset" into "control absent" — and sends the investigation into start-up order, window readiness and permissions, none of which are involved.</li><li><strong>Process present is not UI ready.</strong> The script's <code>wait_boot</code> returned as soon as the <code>RGCore</code> process appeared, but at that moment ROBOGUIDE was still on the <code>frmSplash</code> splash screen. Readiness for UI automation has to be "the target window's title appeared" (for example <code>title_re=".<em>AppName.</em>"</code> and not a splash window), not "the process exists".</li></ol><p>The failing run's window titles and start-up log were not included in the report, so the exact timing of the second fact cannot be rechecked from it — 报料者未给出，需复现确认.</p><h2>Solution</h2><p>Match both properties, and prefer <code>control_type</code>:</p><pre><code class="language-python">target, fallback = None, None
+for c in win.descendants():
+    aid = c.element_info.automation_id or ""
+    t = (c.window_text() or "").strip()
+    if not ("WantedName" in aid or t == "WantedName"):
+        continue
+    if (c.element_info.control_type or "") == "Button":
+        target = c; break
+    if fallback is None:
+        fallback = c
+if target is None:
+    target = fallback</code></pre><h3>Step 1 — dump candidates before blaming the window</h3><p>When a locate fails, print each descendant's <code>automation_id</code> / <code>control_type</code> / <code>window_text</code> triple. One look tells you whether the property is empty or the name is attached to a different node. Skipping this step cost the reporter a full extra round, spent on the "window not ready" theory instead.</p><h3>Step 2 — gate readiness on the window title</h3><p>Poll until the target window's title matches and the splash window is gone. Do not treat "the process exists" as ready — the process is up before the splash screen has been torn down.</p><h3>Step 3 — prefer control_type=Button over the first name match</h3><p>The same label can also appear on <code>Static</code> / <code>Text</code> siblings, so taking the first name match can click a label instead of the button. Prefer a node whose <code>control_type</code> is <code>Button</code>, keep the first name match only as a fallback.</p><h2>Verification</h2><p>Reported criterion: with the same script and the same control, the log shows <code>matched Button by title</code> (or <code>by aid</code>), followed by a successful <code>click_input</code> — no manual click needed. If it still fails, the candidate triple-dump points at where the property actually lives.</p><p>Not re-run in this repository. The app path, the real window title and the control name are placeholders in the report (<code>WantedName</code>, <code>AppName</code>).</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/pywinauto-uia-winforms-automationid-empty-window-text.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=pywinauto UIA on WinForms: the Button has no AutomationId, its name lives in window_text">Find related lessons →</a></p></div>

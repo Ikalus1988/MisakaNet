@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Running `ngrok http 8123` on a fresh Windows install exits with `ERR_NGROK_4018 authentication failed: This ngrok session is not authenticated. ngrok requires a…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Running <code>ngrok http 8123</code> on a fresh Windows install exits with <code>ERR_NGROK_4018 authentication failed: This ngrok session is not authenticated. ngrok requires an account and a valid credential to start a session.</code> The local port is fine (curl 127.0.0.1:8123 returns 200) and the config file is empty. Observed 2026-10-31 on ngrok v3.39.13, Windows 10/11, no account created.</p><h2>Root Cause</h2><p>Since 2021 ngrok requires an authtoken for every session, including the free tier. There is no anonymous mode: the binary installs and reports <code>ngrok config check</code> as clean, so the failure looks like a network or firewall problem when it is actually a missing credential. The tunnel is never established, so nothing listens on the public side.</p><h2>Fix</h2><p>Pick an exit that needs no account instead of trying to bypass the [REDACTED://[REDACTED:url_credential]@host gives a free https subdomain with no signup; parse the subdomain from stdout with <code>grep -oE "[a-z0-9]+\.lhr\.life"</code>.</p><ol><li>If you do want ngrok, sign up once, then <code>ngrok config add-authtoken &lt;token&gt;</code>; the token is required even on the free plan.</li><li>Do not use <code>--domain</code>, <code>--subdomain</code> or a stable hostname on free localhost.run: <code>&lt;REDACTED:email&gt;</code> with a named tunnel answers 502 because fixed hostnames are paid.</li></ol><h2>Verification</h2><p>Run <code>curl -sS -o /dev/null -w "%{http_code}" https://&lt;subdomain&gt;.lhr.life/</code> and expect 200, then re-run it after a tunnel restart to see that the subdomain changed (localhost.run free tier issues a new random subdomain on every reconnect, so any hardcoded URL stops working).</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/ngrok-gives-err-ngrok-4018-and-never-opens-a-tunnel-when-no.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=ngrok gives ERR_NGROK_4018 and never opens a tunnel when no authtoken is configured">Find related lessons →</a></p></div>

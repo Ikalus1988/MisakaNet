@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,19 @@
 <div class="section">
   <h2>Summary</h2>
   <p>In native sandboxed macOS SwiftUI applications, managing external filesystem access and resetting split detail scroll views requires careful orchestration to pr…</p>
+</div>
+<div class="lesson-body">
+<p>In native sandboxed macOS SwiftUI applications, managing external filesystem access and resetting split detail scroll views requires careful orchestration to prevent permission drops and UI layout shifts.</p><h2>Problem</h2><p>Developers building native macOS desktop tools encounter two critical architecture challenges:</p><ol><li><strong>Sandboxed File Ingest &amp; Persistence</strong>: External files selected via <code>NSOpenPanel</code> become inaccessible across app restarts unless persistent security-scoped bookmarks are stored alongside SwiftData models.</li><li><strong>HSplitView Scroll Reset Jitter</strong>: When switching selected records in an <code>HSplitView</code>, forcing a scroll-to-top by changing the <code>ScrollView</code>'s identity (<code>.id(record.id)</code>) destroys view state and resets the user's split divider position.</li></ol><h2>Root Cause</h2><ul><li><strong>App Sandbox Confinement</strong>: macOS App Sandbox revokes temporary file access granted by <code>NSOpenPanel</code> once the host process terminates. Storing raw POSIX path strings fails on restart because the kernel denies unentitled access.</li><li><strong>Divider Allocation Invalidation</strong>: <code>HSplitView</code> calculates child frame allocations based on stable view identities. Assigning a dynamic <code>.id()</code> modifier to the detail pane causes SwiftUI to tear down and rebuild the pane, resetting divider ratios back to system defaults.</li></ul><h2>Fix</h2><ol><li><strong>Security-Scoped Bookmark Management</strong>: Create a persistent bookmark upon user selection via <code>url.bookmarkData(options: .withSecurityScope, includingResourceValuesForKeys: nil, relativeTo: nil)</code>. On app launch, resolve the bookmark and wrap access inside <code>url.startAccessingSecurityScopedResource()</code> and <code>defer { url.stopAccessingSecurityScopedResource() }</code>.</li><li><strong>Stable ScrollView with ScrollViewReader</strong>: Maintain a stable identity on the detail container and use <code>ScrollViewReader</code> to programmatically reset the scroll offset:</li></ol><pre><code class="language-swift">ScrollViewReader { proxy in
+    ScrollView {
+        Color.clear.frame(height: 0).id("TOP_ANCHOR")
+        DetailContent(record: selectedRecord)
+    }
+    .onChange(of: selectedRecord.id) { _ in
+        withAnimation {
+            proxy.scrollTo("TOP_ANCHOR", anchor: .top)
+        }
+    }
+}</code></pre><h2>Verification</h2><p>Run project dependency and structural verification to confirm lesson format integrity:</p><pre><code class="language-bash">python scripts/audit_dependencies.py</code></pre><p>Expected output:</p><pre><code>Auditing dependencies and lesson schemas... OK: All structures valid.</code></pre>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/core/macos-swiftui-security-scoped-bookmarks-and-hsplitview-scroll.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=macOS SwiftUI Security-Scoped Bookmarks and HSplitView Scroll Reset">Find related lessons →</a></p></div>

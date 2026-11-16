@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,23 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Describe the network-related issue encountered.</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Describe the network-related issue encountered.</p><p><strong>Symptoms:</strong></p><ul><li>What error messages appeared?</li><li>What behavior was observed?</li><li>What environment was affected?</li></ul><h2>Root Cause</h2><p>Explain the technical root cause.</p><p><strong>Network layer affected:</strong></p><ul><li>[ ] HTTP/HTTPS</li><li>[ ] DNS resolution</li><li>[ ] Proxy/VPN</li><li>[ ] SSL/TLS</li><li>[ ] WebSocket</li><li>[ ] TCP/UDP</li></ul><h2>Solution</h2><p>Step-by-step fix.</p><pre><code class="language-bash"># Diagnostic commands
+curl -v https://example.com
+nslookup example.com
+openssl s_client -connect example.com:443</code></pre><h3>Step 1: Identify the issue</h3><h3>Step 2: Apply the fix</h3><h3>Step 3: Verify the fix</h3><h2>Verification</h2><pre><code class="language-bash">echo "Lesson: Network Domain Lesson Template"
+wc -l lessons/contrib/lesson-template-network.md</code></pre><p><strong>Expected Output:</strong></p><pre><code>Lesson: Network Domain Lesson Template
+# (line count)</code></pre><h2>Example: SSL Certificate Verification Failure Behind Corporate Proxy</h2><p><strong>Problem:</strong> Agent fails to connect to external APIs behind corporate proxy with SSL inspection.</p><p><strong>Symptoms:</strong></p><pre><code>SSL: CERTIFICATE_VERIFY_FAILED</code></pre><p><strong>Root Cause:</strong> Corporate proxy performs SSL inspection (man-in-the-middle), replacing original certificates with its own. Python's certifi bundle doesn't include the corporate CA.</p><p><strong>Solution:</strong></p><pre><code class="language-bash"># 1. Export corporate CA certificate
+security find-certificate -a -p /Library/Keychains/System.keychain &gt; corporate-ca.pem
+
+# 2. Set SSL_CERT_FILE environment variable
+export SSL_CERT_FILE=/path/to/corporate-ca.pem
+
+# 3. Or add to Python certifi bundle
+python3 -c "import certifi; print(certifi.where())"
+# Append corporate-ca.pem to the bundle file</code></pre><p><strong>Verification:</strong></p><pre><code class="language-bash">python3 -c "import urllib.request; urllib.request.urlopen('https://example.com')"
+# Should succeed without SSL error</code></pre><h2>Related</h2><ul><li><a href="https://developer.mozilla.org/en-US/docs/Web/Security/Transport_Layer_Security">SSL/TLS basics</a></li><li><a href="https://docs.python.org/3/library/urllib.request.html#urllib.request.ProxyHandler">Corporate proxy configuration</a></li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/lesson-template-network.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Network Domain Lesson Template">Find related lessons →</a></p></div>

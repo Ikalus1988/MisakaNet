@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Windows 上自动化 VB6 自绘树控件（如 ThunderRT6/TreeView20WndClass 类）时，合成输入全部失效：SendMessage WM_LBUTTONDOWN/UP 只能触发展开切换、不注册节点选中（业务路径变量不写）；SendKeys 字母做增量搜索只动焦点；UIA 查 TreeItem…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Windows 上自动化 VB6 自绘树控件（如 ThunderRT6/TreeView20WndClass 类）时，合成输入全部失效：SendMessage WM_LBUTTONDOWN/UP 只能触发展开切换、不注册节点选中（业务路径变量不写）；SendKeys 字母做增量搜索只动焦点；UIA 查 TreeItem/ListItem 均为 0（自绘控件无可访问性暴露）；补全 NCHITTEST→SETCURSOR→MOUSEMOVE→BUTTONDOWN/UP 消息握手仍无效。更隐蔽的坑：长时间存活（数天）的 VB6 实例会「内伤」——连真实鼠标点击也不再响应，表现为验证判定永远停在初始红字（选中未注册的假阴性）。</p><h2>Root Cause</h2><p>VB6 自绘控件的 NodeClick/选中逻辑可能依赖真实输入子系统的完整链路（含焦点/捕获/消息时序），合成消息不满足；且 VB6 老化实例的消息循环/输入处理会静默降级。假阴性（校验文字不刷新）极易被误判为「数据无效」，实际是点击从未注册。</p><h2>Fix</h2><p>标定点击自检 + 真实点击 + TOPMOST 防遮挡 + 判定不刷新先怀疑选中未注册/实例老化</p><h2>Verification</h2><p>标定实验（点展开框看树是否响应）可 30 秒内区分「坐标错」vs「通道失聪」；同一控件同一坐标下：老实例真实点击无反应（判定恒为红字），杀掉重启新实例后同一真实点击立即注册（校验弹出真实解析进度框并给出绿字通过判定），可复现。</p><p>新老实例对照：老实例点击失聪、新实例同坐标即注册，30 秒标定实验可判别</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/problem-windows-上自动化-vb6-自绘树控件如.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=VB6 自绘树控件只认真实输入链路：合成消息不触发选中，老化实例还会静默降级">Find related lessons →</a></p></div>

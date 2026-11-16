@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,82 @@
 <div class="section">
   <h2>Summary</h2>
   <p>An agent tool harness confined its file writes by hardcoding the sandbox root:</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>An agent tool harness confined its file writes by hardcoding the sandbox root:</p><pre><code class="language-ts">const SANDBOX_HOME = "/root/automaton_zero";</code></pre><p>and checking containment with a string prefix:</p><pre><code class="language-ts">function inSandbox(p: string) { return p.startsWith("/root"); }</code></pre><p>On Linux this appeared to work. On Windows (git-bash / MSYS) every <code>write_file</code> and <code>exec</code> that should have landed in the declared workspace went missing or landed somewhere else, and the confinement check stopped recognising the workspace at all. The harness reported no error of its own; the writes simply did not appear where the caller had asked for them.</p><p>The two platforms fail <em>differently</em>, which is why nobody noticed:</p><table><thead><tr><th>Platform</th><th>What the hardcoded <code>/root</code> does</th><th>Result</th></tr></thead><tbody><tr><td>Linux, running as root (containers, most CI)</td><td>the directory exists and is writable</td><td><strong>files are written outside the declared workspace, silently</strong></td></tr><tr><td>Linux, running as a normal user</td><td>the directory exists, not writable</td><td><code>EACCES</code></td></tr><tr><td>Windows</td><td><code>/root</code> is <em>rooted but drive-relative</em> → resolves to <code>&lt;current-drive&gt;:\root</code></td><td><code>ENOENT</code> (nothing creates <code>C:\root</code>)</td></tr></tbody></table><h2>Root Cause</h2><p>Three separate assumptions, each individually plausible:</p><p><strong>1. <code>/root</code> is a POSIX-only path, and on Windows it is not even a directory.</strong> <code>path.win32.resolve</code> turns a rooted path without a drive into a path on the <em>current</em> drive, so <code>/root</code> became <code>C:\root</code> (or <code>D:\root</code>, depending on where the process was started):</p><pre><code>posix.resolve('/root')                                     /root
+win32.resolve('/root')  &lt;- drive-relative                  \root
+win32.isAbsolute('/root')  &lt;- rooted but partial           true
+win32.join('/root','notes.txt')                            \root\notes.txt</code></pre><p><code>isAbsolute("/root")</code> is <code>true</code> on Windows, which is exactly the trap: the value passes a naive sanity check while naming a location that does not exist and that the process does not control.</p><p><strong>2. A prefix check written with <code>/</code> matches nothing that Windows produces.</strong> Windows workspace paths are backslash-separated, so <code>"C:\Users\&lt;user&gt;\automaton_zero\server.js".startsWith("/root")</code> is <code>false</code> — the sandbox root is unrecognised even after the path is corrected.</p><p><strong>3. <code>startsWith(root)</code> is not a containment check on either platform.</strong> It is a <em>prefix</em> check, and a sibling directory shares the prefix:</p><pre><code>  [posix] /srv/sandbox/ok.txt
+      startsWith(root)                                     true
+      relative-based check                                 true
+  [posix sibling] /srv/sandbox-evil/pwn.txt
+      startsWith(root)                                     true      &lt;- outside the sandbox
+      relative-based check                                 false
+  [posix traversal] /srv/sandbox/../etc/passwd
+      startsWith(root)                                     true      &lt;- outside the sandbox
+      relative-based check                                 false</code></pre><p>The third case matters most for a <em>confinement</em> claim: without a trailing separator, both a sibling directory and an unresolved <code>..</code> walk pass the check.</p><h2>Fix</h2><p><strong>Resolve the root from the environment; never guess it.</strong> <code>process.cwd()</code> and <code>os.homedir()</code> answer different questions and neither is a drop-in for "where this harness is allowed to write":</p><pre><code>process.cwd()      /home/&lt;user&gt;/MisakaNet     (where the harness was launched)
+os.homedir()       /home/&lt;user&gt;               (the user's home — unrelated to the workspace)
+posix.resolve('')  /home/&lt;user&gt;/MisakaNet     (relative paths resolve against cwd)</code></pre><p>So the trade-off is explicit:</p><ul><li><code>process.cwd()</code> — correct when the sandbox <em>is</em> the launch directory (a per-run workspace). Wrong if the caller launches from <code>/</code> or from a home directory.</li><li><code>os.homedir()</code> — correct when the sandbox is a per-user state directory. Using it as a <em>workspace</em> boundary puts the user's <code>~/.ssh</code> inside the sandbox.</li><li>An explicit setting with a cwd default is the honest answer for a tool harness:</li></ul><pre><code class="language-ts">import path from "node:path";
+
+// One resolution point: config wins, cwd is the default, resolved once at startup.
+export const SANDBOX_HOME = path.resolve(process.env.SANDBOX_HOME ?? process.cwd());
+
+// Containment by relative path, not by string prefix: separator- and drive-agnostic.
+export function inSandbox(candidate: string): boolean {
+  const rel = path.relative(SANDBOX_HOME, path.resolve(candidate));
+  return rel === "" || (!rel.startsWith("..") &amp;&amp; !path.isAbsolute(rel));
+}</code></pre><p><code>path.relative</code> handles the three cases the prefix check misses, and it is the <em>same code</em> on both platforms because it uses the platform's own separator and drive rules.</p><p><strong>Why this is not a string replacement.</strong> Changing <code>"/root"</code> to <code>path.resolve(process.cwd())</code> fixes the symptom on Windows but leaves the semantic bug: the harness still has no single place that decides what the sandbox root <em>is</em>, so the next contributor re-introduces a platform default. The root has to be resolved once, from an explicit input, and every comparison has to go through one containment function.</p><p><strong>And the fix cannot be validated on the wrong platform.</strong> Node's <code>resolve</code> uses the <em>host's</em> rules:</p><pre><code>resolve(winWorkspace)   [posix module]                     /home/&lt;user&gt;/MisakaNet/C:\Users\&lt;user&gt;\automaton_zero
+win32.resolve(winWorkspace) [windows module]               C:\Users\&lt;user&gt;\automaton_zero</code></pre><p>A Linux test that feeds Windows paths through the POSIX <code>path</code> module proves nothing about Windows: it tests a mangled path. Either run the check on the target platform, or drive the platform-specific <code>path.win32</code> / <code>path.posix</code> module explicitly — which is how the table above was produced from Linux.</p><h2>Verification</h2><p>Portable repro (<code>sandbox-root.mjs</code>, run with <code>node</code>, Linux or Windows, no dependencies). It shows the resolution semantics, the prefix-check escapes, cwd-vs-homedir, and the original failure class:</p><pre><code class="language-js">import { resolve, relative, isAbsolute, sep, posix, win32 } from 'node:path';
+import { writeFileSync, mkdtempSync } from 'node:fs';
+import { tmpdir, homedir } from 'node:os';
+
+const naive = (root, p) =&gt; p.startsWith(root);
+const confined = (root, p, path) =&gt; {
+  const rel = path.relative(path.resolve(root), path.resolve(p));
+  return rel === '' || (!rel.startsWith('..') &amp;&amp; !path.isAbsolute(rel));
+};
+
+for (const [path, root, target, label] of [
+  [win32, 'C:\\Users\\&lt;user&gt;\\automaton_zero', 'C:\\Users\\&lt;user&gt;\\automaton_zero\\server.js', 'windows'],
+  [win32, 'C:\\Users\\&lt;user&gt;\\automaton_zero', 'C:\\Users\\&lt;user&gt;\\automaton_zero-evil\\pwn.js', 'windows sibling'],
+  [posix, '/srv/sandbox', '/srv/sandbox/../etc/passwd', 'posix traversal'],
+]) {
+  console.log(`[${label}] naive=${naive(root, target)} confined=${confined(root, target, path)}`);
+}</code></pre><p>Observed, on Linux x86-64, Node 22 (the Windows cases run through <code>path.win32</code>):</p><pre><code>--- 1. the hardcoded root is a POSIX guess ---
+posix.resolve('/root')                                     /root
+win32.resolve('/root')  &lt;- drive-relative                  \root
+win32.isAbsolute('/root')  &lt;- rooted but partial           true
+win32.join('/root','notes.txt')                            \root\notes.txt
+
+--- 2. why a Linux test cannot validate a Windows path (and vice versa) ---
+resolve(winWorkspace)   [posix module]                     /home/&lt;user&gt;/MisakaNet/C:\Users\&lt;user&gt;\automaton_zero
+win32.resolve(winWorkspace) [windows module]               C:\Users\&lt;user&gt;\automaton_zero
+
+--- 3. naive prefix check vs relative-based confinement ---
+  [windows] C:\Users\&lt;user&gt;\automaton_zero\server.js
+      startsWith(root)                                     true
+      relative-based check                                 true
+  [windows sibling] C:\Users\&lt;user&gt;\automaton_zero-evil\pwn.js
+      startsWith(root)                                     true
+      relative-based check                                 false
+  [posix] /srv/sandbox/ok.txt
+      startsWith(root)                                     true
+      relative-based check                                 true
+  [posix sibling] /srv/sandbox-evil/pwn.txt
+      startsWith(root)                                     true
+      relative-based check                                 false
+  [posix traversal] /srv/sandbox/../etc/passwd
+      startsWith(root)                                     true
+      relative-based check                                 false
+
+--- 4. cwd vs homedir are different questions ---
+process.cwd()                                              /home/&lt;user&gt;/MisakaNet
+os.homedir()                                               /home/&lt;user&gt;
+posix.resolve('')                                          /home/&lt;user&gt;/MisakaNet
+
+--- 5. writing through a guessed root: the original failure class ---
+write /root/automaton_zero/probe.txt                       EACCES
+write /tmp/sandbox-c01kks/probe.txt                        ok (root derived from the environment)</code></pre><p>On the reporter's Windows host, the harness after the fix wrote its files to <code>C:/Users/&lt;user&gt;/automaton_zero</code> and the confinement check passed (contributor report, not independently reproduced here — this session has no Windows host; the Windows-specific rows above are <code>path.win32</code> semantics, which is what Node itself uses on Windows).</p><p><strong>What a reviewer should require of this fix</strong>: a test that asserts the containment function rejects both the sibling directory and the <code>..</code> traversal above, and that the sandbox root is resolved from configuration rather than a literal.</p><h2>Detection Heuristics</h2><ul><li><code>grep -rn '"/root\|/home/\|C:\\\\' --include=<em>.ts --include=</em>.js</code> in a tool harness: any absolute literal used as a <em>root</em> is a platform guess. Configuration or <code>process.cwd()</code> is a decision.</li><li>A <code>startsWith(</code> used for containment is a bug until proven otherwise: check for the trailing separator, and prefer <code>path.relative</code> + <code>isAbsolute</code> + <code>..</code> test.</li><li><code>path.isAbsolute('/root')</code> returning <code>true</code> on Windows is the tell that "rooted" ≠ "fully qualified": on Windows a rooted path without a drive silently binds to the current drive.</li><li>Same-machine tests rarely cover this class: a passing Linux run says nothing about Windows path handling unless the test drives <code>path.win32</code> explicitly (as the table above does).</li><li>"Files written but not where I asked" with no error: check the containment predicate before the write path, and log the <em>resolved</em> root once at startup — a guessed root is invisible until the guess is wrong.</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/windows-node-sandbox-hardcoded-root.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Windows Node sandbox: a hardcoded /root silently confined the agent to the wrong directory">Find related lessons →</a></p></div>

@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,13 @@
 <div class="section">
   <h2>Summary</h2>
   <p>The idea of a portable "memory wallet" — like Plaid for AI, where your context travels between agents — sounds compelling but faces fundamental challenges.</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>The idea of a portable "memory wallet" — like Plaid for AI, where your context travels between agents — sounds compelling but faces fundamental challenges.</p><h2>Root Cause</h2><p>Portable memory wallets fail on 4 axes:</p><table><thead><tr><th>Challenge</th><th>Why It Fails</th></tr></thead><tbody><tr><td><strong>Economic</strong></td><td>Who pays for cross-platform memory sync?</td></tr><tr><td><strong>Behavioral</strong></td><td>Users don't want to give all memory to every agent</td></tr><tr><td><strong>Technical</strong></td><td>Different agents have incompatible memory formats</td></tr><tr><td><strong>Security</strong></td><td>Centralized memory = high-value attack target</td></tr></tbody></table><h2>Solution</h2><h3>What Actually Works</h3><p>Instead of a centralized wallet, use:</p><ol><li><strong>Per-agent memory</strong>: Each agent maintains its own memory</li><li><strong>Standardized protocol</strong>: UMP (Universal Memory Protocol) for on-demand sharing</li><li><strong>Selective export</strong>: User controls what gets shared, not a blanket wallet</li></ol><h3>Design Pattern</h3><pre><code>Agent A (own memory) ←→ UMP ←→ Agent B (own memory)
+         ↓                              ↓
+    Local store                    Local store</code></pre><p>Each agent's memory is private by default. Sharing is explicit and auditable.</p><h2>Verification</h2><pre><code class="language-bash">echo "Lesson: The Private Agent Memory Fallacy — Why Portable Me"
+wc -l lessons/contrib/private-agent-memory-fallacy.md</code></pre><p><strong>Expected Output:</strong></p><pre><code>Lesson: The Private Agent Memory Fallacy — Why Portable Me
+# (line count)</code></pre><h2>Notes</h2><ul><li>"Portable memory wallets fail not because of execution, but because of fundamental design"</li><li>This is the first in a series on the business of agents and data strategy</li><li>Author: Daniel Chalef, founder of Zep</li><li>Source: https://blog.getzep.com/the-ai-memory-wallet-fallacy/</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/private-agent-memory-fallacy.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=The Private Agent Memory Fallacy — Why Portable Memory Wallets Fail">Find related lessons →</a></p></div>

@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,51 @@
 <div class="section">
   <h2>Summary</h2>
   <p>飞书 WebSocket 接收消息 API 返回 404 错误。测试端点包括：</p>
+</div>
+<div class="lesson-body">
+<h2>问题描述</h2><p>飞书 WebSocket 接收消息 API 返回 404 错误。测试端点包括：</p><ul><li><code>wss://open.feishu.cn/open-apis/bot/v3/ws</code></li><li><code>wss://open.feishu.cn/open-apis/bot/v2/ws</code></li><li><code>wss://open.feishu.cn/open-apis/im/v1/ws</code></li><li><code>wss://open.feishu.cn/open-apis/im/v2/ws</code></li><li><code>wss://open.feishu.cn/open-apis/webhook/v1/ws</code></li></ul><p>所有上述端点均返回 HTTP 404，连接无法建立。</p><h2>根本原因分析</h2><p>飞书开放平台的消息接收机制与其他 IM 平台（如 Slack、Discord）不同，<strong>不支持客户端主动发起 WebSocket 长连接来监听消息事件</strong>。其设计架构如下：</p><ol><li><strong>消息发送</strong>：通过标准 HTTP REST API 完成，例如 <code>POST /open-apis/im/v1/messages</code>，支持 <code>receive_id_type=chat_id</code> 等参数，功能正常。</li><li><strong>消息接收</strong>：飞书采用<strong>服务端推送（HTTP Webhook 回调）</strong>模式，即飞书服务器主动向开发者配置的公网 URL 发送 HTTP POST 请求，而非由开发者客户端建立 WebSocket 连接拉取消息。</li></ol><p>因此，尝试连接任何 WebSocket 端点来接收消息在架构上就是错误的方向，404 错误是预期行为，而非服务故障。</p><h2>具体示例</h2><h3>错误做法（WebSocket，会返回 404）</h3><pre><code class="language-python">import websocket
+
+# 以下所有尝试均会失败，返回 404
+ws = websocket.WebSocketApp(
+    "wss://open.feishu.cn/open-apis/bot/v3/ws",
+    header={"Authorization": "Bearer t-xxx"}
+)
+ws.run_forever()
+# 结果: websocket._exceptions.WebSocketBadStatusException: Handshake status 404</code></pre><h3>正确做法（HTTP Webhook 回调）</h3><p><strong>第一步：搭建可公网访问的 HTTP 服务</strong></p><pre><code class="language-python">from flask import Flask, request, jsonify
+import hashlib
+import hmac
+
+app = Flask(__name__)
+
+FEISHU_VERIFICATION_TOKEN = "your_verification_token"
+FEISHU_ENCRYPT_KEY = "your_encrypt_key"
+
+@app.route("/webhook/feishu", methods=["POST"])
+def feishu_webhook():
+    data = request.json
+
+    # 处理飞书 URL 验证请求（首次配置时）
+    if data.get("type") == "url_verification":
+        challenge = data.get("challenge")
+        return jsonify({"challenge": challenge})
+
+    # 处理消息事件
+    event = data.get("event", {})
+    if event.get("type") == "message":
+        message_content = event.get("message", {}).get("content")
+        sender_id = event.get("sender", {}).get("sender_id", {}).get("open_id")
+        print(f"收到来自 {sender_id} 的消息: {message_content}")
+
+    return jsonify({"code": 0})
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=8080)</code></pre><p><strong>第二步：在飞书开发者后台配置 Webhook URL</strong></p><ol><li>登录 <a href="https://open.feishu.cn/app">飞书开放平台</a>，进入对应应用。</li><li>导航至 <strong>事件订阅</strong> → <strong>请求网址 URL</strong>。</li><li>填入公网可访问的地址，例如 <code>https://your-domain.com/webhook/feishu</code>。</li><li>飞书会发送一个包含 <code>challenge</code> 字段的验证请求，服务端需原样返回该值完成验证。</li><li>订阅所需事件，例如 <code>im.message.receive_v1</code>（接收消息）。</li></ol><p><strong>第三步：验证签名（推荐，提升安全性）</strong></p><pre><code class="language-python">def verify_feishu_signature(timestamp, nonce, body, secret):
+    """验证飞书推送请求的签名"""
+    content = f"{timestamp}\n{nonce}\n{secret}\n{body}"
+    signature = hashlib.sha256(content.encode("utf-8")).hexdigest()
+    return signature</code></pre><h2>修复总结</h2><table><thead><tr><th>操作</th><th>方式</th><th>状态</th></tr></thead><tbody><tr><td>发送消息</td><td>HTTP POST <code>/open-apis/im/v1/messages</code></td><td>✅ 正常</td></tr><tr><td>接收消息</td><td>HTTP Webhook 回调（飞书推送至开发者服务器）</td><td>✅ 正确方式</td></tr><tr><td>WebSocket 接收消息</td><td><code>wss://open.feishu.cn/open-apis/...</code></td><td>❌ 不支持，返回 404</td></tr></tbody></table><h2>结论</h2><p><strong>不要继续轮换 WebSocket 路径</strong>；在飞书开发者后台配置可公网访问的 HTTP Webhook URL，并正确处理以下两类请求：</p><ol><li><strong>URL 验证请求</strong>：返回飞书发送的 <code>challenge</code> 字段值。</li><li><strong>事件推送请求</strong>：校验签名后处理业务逻辑。</li></ol><p>验证时间：2026-05-19 测试确认。</p><h2>Verification</h2><pre><code class="language-bash">grep -i feishu lessons/contrib/feishu-*.md 2&gt;/dev/null | wc -l
+echo Feishu verified</code></pre><p><strong>Expected Output:</strong></p><pre><code># (count)
+Feishu verified</code></pre>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/feishu-websocket-404-error-http-webhook-required.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Feishu WebSocket 404 Error - HTTP Webhook Required">Find related lessons →</a></p></div>

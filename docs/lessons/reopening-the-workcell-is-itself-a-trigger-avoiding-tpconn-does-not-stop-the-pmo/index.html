@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,15 @@
 <div class="section">
   <h2>Summary</h2>
   <p>既有经验 `fanuc-rgcore-hang-endpoint-security-injection` 的根因判定是对的（用户态 DLP Detours 注入 + WFP 内核过滤 + EDR 驱动三层组合导致 `frsock.dll` 在 `connect()` 崩溃），按它定位一次命中。但它的**缓解建议不完整*…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>既有经验 <code>fanuc-rgcore-hang-endpoint-security-injection</code> 的根因判定是对的（用户态 DLP Detours 注入 + WFP 内核过滤 + EDR 驱动三层组合导致 <code>frsock.dll</code> 在 <code>connect()</code> 崩溃），按它定位一次命中。但它的<strong>缓解建议不完整</strong>，会让人误以为「避开操作就能用」。该经验 Fix 第四步第 1 条写：</p><blockquote><p>避开触发条件——运行中不要执行 <code>tpconn</code>、不要切换本地↔远程示教器</p></blockquote><p>实测这条不够：<strong>重开工作单元本身就会自动触发同一连接风暴</strong>，不需要任何人工操作。</p><h2>Root Cause</h2><p>PMON→TP 的 <code>127.0.0.1:50005</code> 重连风暴在<strong>工作单元加载 / 虚拟控制器 HOT START 时自动发生</strong>，不是只有 <code>tpconn</code> 或 UI 切换才触发。触发面比原文描述更宽。</p><p>实测时间线（干净断电复位后立即重开，全程无任何示教器操作）：</p><pre><code>09:42     杀 RGCore/frrobot/FRROBO~1，干净断电
+09:43     重新打开工作单元
+09:47:28  控制器 HOT START
+09:47:56  tpmains ready
+09:47     PMON Connected to TP 127.0.0.1:50005 ×15   ← 自动发生
+09:47     proxy/telnet/ftp/httpd/opcua/sytimque 连环 abort ×8
+09:47     OS -145 ×8</code></pre><p>即复位 + 重开后 <strong>4 分钟内复发</strong>。断电复位只是止血，不是修复；仅靠「避开 tpconn」无法在此类机器上稳定使用。</p><h2>Solution</h2><p>对既有经验的补充（不推翻其根因结论）：</p><ol><li><strong>缓解措施降级</strong>：「避开 tpconn / 不切换示教器」只能减少触发频率，<strong>不能消除</strong>。在未加白的三层防护工控站上，工作单元重开即可能复发。</li><li><strong>必须走根治</strong>：给 FANUC 目录加注入排除白名单 + 杀软对 <code>127.0.0.1</code> 回环加例外。原文称「本例没有完成这一步的闭环验证」，现在可以明确：<strong>没有白名单时，该机器不能用于任何 FANUC 仿真无人值守任务</strong>。</li><li><strong>看门狗判据改写</strong>：不要用 RGCore 进程存活判定健康。原文已提到「假活」，但实操中极易忽略——本例曾因此误报「复位后 59 分钟干净」，实际控制器 4 分钟就死了。看门狗必须盯 <code>&lt;工作单元&gt;/Robot_1/logfile.txt</code> 的签名增量，而不是进程表。</li></ol><h2>Verification</h2><p>判定复发（而非 UI 问题）：</p><ul><li><code>logfile.txt</code> 中 <code>Memory access violation</code> / <code>Module 'x' aborting</code> / <code>OS  -145</code> 计数<strong>增量 &gt; 0</strong>；</li><li><code>PMON Connected to TP 127.0.0.1:50005</code> 短时间出现 ≥3 次（重连风暴）；</li><li><code>SEC -004 FSAC SNPX deny connect 1.0.0.127</code> 出现。</li></ul><p>判定「假活」（不要被骗）：</p><ul><li>RGCore <code>Responding=True</code>、CPU 缓慢增长、窗口标题正常，但 logfile 已有崩溃签名 → 控制器已死；</li><li>3 秒 CPU 采样 dCPU ≤ 0.1 且内存不动（既有经验的判据）同样适用于 <code>frrobot</code> / <code>FRROBO~1</code>。</li></ul><p>判定缓解有效（加白后）：同一工作单元重开 + 主动 <code>tpconn 0</code>，logfile 中 <code>0x2745</code> / <code>0x2746</code> 消失，无 <code>Memory access violation</code>。</p><p>复测环境：ROBOGUIDE V9.40179.0.4 / FRVRC V9.40，三层防护含注入型 DLP + AMSI Provider EDR + WFP 过滤。该组合之外的机器上重开工作单元不会复现，不要据此判定环境正常；报料者未给出无防护对照机的复测结果，需复现确认。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/fanuc-workcell-reopen-retriggers-pmon-reconnect-storm.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Reopening the workcell is itself a trigger: avoiding tpconn does not stop the PMON reconnect storm">Find related lessons →</a></p></div>

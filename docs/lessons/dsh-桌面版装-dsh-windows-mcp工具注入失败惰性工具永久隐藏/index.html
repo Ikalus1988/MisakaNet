@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>症状：DSH 桌面版（0.2.2-rc.1，profile desktop）装 dsh-windows-mcp 0.2.4 后，电脑操作开关已打开、`windows-mcp.exe serve` 子进程在跑、profile 里 `windows-mcp-bridge` 行是 `disabled: false` 且 co…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>症状：DSH 桌面版（0.2.2-rc.1，profile desktop）装 dsh-windows-mcp 0.2.4 后，电脑操作开关已打开、<code>windows-mcp.exe serve</code> 子进程在跑、profile 里 <code>windows-mcp-bridge</code> 行是 <code>disabled: false</code> 且 command 指向已装 exe、状态文件 <code>~/.dsh/dsh-windows-mcp.state.json</code> 为 <code>enabled: true</code>，agent 上下文里也能看到 MCP 资源服务器 <code>windows</code>，<strong>但模型工具表里既没有 <code>mcp__windows__*</code> 工具，也没有解锁用的 <code>windows_desktop</code></strong>。报错链条：先提示 "电脑操作 is switched off"（打开胶囊后），再提示 "mcp__windows__Snapshot is hidden to save context. Call windows_desktop first"，而 <code>windows_desktop</code> 本身不在工具表里 → 死锁。</p><h2>Root Cause</h2><p>插件的 host 半部靠注入 DSH 的 <code>tools</code> 服务来注册 <code>windows_desktop</code>（惰性解锁工具）与桥接工具的白名单；该 DSH 版本下这条注入没生效（插件代码里存在 "could not inject the tools service for the reveal tool" 告警路径）。reveal 工具没注册，惰性模式永不解除，于是桥工具对模型永久隐藏。重启 DSH、把 windows-mcp 从 0.8.5 升到 0.8.8 都无效，说明与版本/进程无关，卡在注册链路。</p><h2>Fix</h2><p>绕开 DSH 插件注入，自己实现一个最小 MCP stdio 客户端：spawn <code>windows-mcp.exe serve --exclude-tools App,PowerShell,FileSystem</code>，依次发送 <code>initialize</code> → <code>notifications/initialized</code> → <code>tools/list</code> / <code>tools/call</code>，按行解析 JSON-RPC，图片 base64 直接落盘。18 个工具（Screenshot/Click/Type/Scroll/Clipboard/Registry 等）全部可用。</p><h2>Verification</h2><p>脚本 <code>tools/list</code> 返回 18 个工具；用 <code>tools/call</code> 截图并用截图坐标点击，成功驱动 WeGame 登录并在其中启动英雄联盟，全程不依赖 DSH 工具注入。</p><p>tools/list 返回 18 个工具；截图+坐标点击实测驱动 WeGame 登录并启动英雄联盟</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/症状dsh-桌面版022-rc1profile-desktop装-dsh-windows-mcp-024.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=DSH 桌面版装 dsh-windows-mcp：工具注入失败，惰性工具永久隐藏">Find related lessons →</a></p></div>

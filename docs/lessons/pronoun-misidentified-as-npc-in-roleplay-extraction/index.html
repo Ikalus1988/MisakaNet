@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,42 @@
 <div class="section">
   <h2>Summary</h2>
   <p>In roleplay chat, third-person narrative containing pronouns (e.g. Portuguese "Ele" = "He") is processed by the NPC extraction LLM, which registers the pronoun …</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>In roleplay chat, third-person narrative containing pronouns (e.g. Portuguese "Ele" = "He") is processed by the NPC extraction LLM, which registers the pronoun as a new character name. The system then:</p><ol><li>Constantly matches "Ele" in conversation text</li><li>Treats it as an active NPC that needs to respond</li><li>The model begins speaking/acting on behalf of the user (godmoding)</li></ol><pre><code>User: "Ele entrou na sala e sentou." (He entered the room and sat down.)
+→ Extraction LLM: "New NPC detected: 'Ele'"
+→ System: "Ele diz: ..." (Ele says: ...) ← speaking AS the user</code></pre><h2>Root Cause</h2><p>The NPC extraction prompt doesn't distinguish between:</p><ul><li><strong>Proper names</strong> ("Maria", "João") → valid NPC candidates</li><li><strong>Pronouns</strong> ("Ele", "Ela", "Ele/Ela", "He", "She") → should be excluded</li></ul><p>LLMs are biased toward treating capitalized words in narrative text as entity names.</p><h2>Fix</h2><h3>1. Deterministic blacklist filter (post-extraction)</h3><pre><code class="language-python">INVALID_NPC_NAMES = {
+    # Portuguese pronouns
+    "ele", "ela", "eles", "elas", "o", "a", "os", "as",
+    # English pronouns
+    "he", "she", "they", "him", "her", "them",
+    # Generic user terms
+    "user", "player", "you", "eu", "você", "tu",
+}
+
+def is_invalid_npc_name(name: str) -&gt; bool:
+    return name.lower().strip() in INVALID_NPC_NAMES
+
+def purge_invalid_npcs(npcs: list[dict]) -&gt; list[dict]:
+    return [npc for npc in npcs if not is_invalid_npc_name(npc["name"])]</code></pre><h3>2. Whole-word boundary matching</h3><pre><code class="language-python">import re
+
+def match_npc_in_text(npc_name: str, text: str) -&gt; bool:
+    # "Ele" should not match "Elefante"
+    pattern = rf'\b{re.escape(npc_name)}\b'
+    return bool(re.search(pattern, text, re.IGNORECASE))</code></pre><h3>3. Extraction prompt hardening</h3><p>Add to the extraction prompt:</p><pre><code>Rules:
+- NEVER extract pronouns (he/she/they/ele/ela/eles/elas) as character names
+- NEVER extract common nouns (man, woman, person, guy) as character names
+- Only extract proper names that refer to specific characters in the scene</code></pre><h2>Verification</h2><pre><code class="language-bash"># Unit test: pronouns rejected
+pytest tests/test_npc_extraction.py -k "pronoun" -v
+# Expected: "Ele", "He", "She" all rejected
+
+# Unit test: valid names still extracted
+pytest tests/test_npc_extraction.py -k "proper_name" -v
+# Expected: "Maria", "João" correctly identified
+
+# Integration: no godmoding with pronoun-heavy input
+pytest tests/test_chat_integration.py -k "third_person_narrative" -v
+# Expected: system does not speak on behalf of user</code></pre><h2>Key Insight</h2><p>NPC extraction LLMs are entity-recall-biased — they over-extract. A deterministic post-extraction filter is cheaper and more reliable than prompt tuning alone. Apply it as a safety net regardless of LLM quality.</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/pronoun-treated-as-instruction-roleplay.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Pronoun misidentified as NPC in roleplay extraction">Find related lessons →</a></p></div>

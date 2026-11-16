@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,37 @@
 <div class="section">
   <h2>Summary</h2>
   <p>ETL pipeline derives identifiers from source filenames (e.g., `robot_name` from Excel sheet names). Filenames are inherently inconsistent — the same physical ro…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>ETL pipeline derives identifiers from source filenames (e.g., <code>robot_name</code> from Excel sheet names). Filenames are inherently inconsistent — the same physical robot appears as <code>FE135R01</code>, <code>FE66135R01</code>, <code>UB&amp;FE135R01</code>, and <code>FE_处理后数据135R01</code> depending on which file it came from.</p><p>A single-point fix (e.g., only fixing the database) leaves the system vulnerable to regression when new data arrives through the same broken ETL.</p><h2>Root Cause</h2><p>No normalization layer exists between raw filename parsing and database insertion. The ETL trusts filenames as-is, and downstream queries assume identifiers are consistent.</p><p>The failure pattern:</p><ol><li>ETL inserts inconsistent names → database has duplicates</li><li>Query <code>GROUP BY robot_name</code> → inflated counts (11 robots instead of 1)</li><li>Dashboard shows wrong numbers → user loses trust</li></ol><h2>Solution</h2><p>Apply fixes at three layers, in order of permanence:</p><h3>Layer 1: ETL (prevent recurrence)</h3><p>Add a normalization function that runs at insert time:</p><pre><code class="language-python"># common.py — single source of truth
+ROBOT_NAME_PREFIXES = [
+    ('TGO_FEN_处理后数据', 'TGO'),
+    ('FEN&amp;TGO', 'TGO'),
+    ('TGO&amp;FEN', 'TGO'),
+    ('TGO FEN', 'TGO'),
+    ('FE_处理后数据', 'FE'),
+    ('UB&amp;FE', 'FE'),
+    ('FE66', 'FE'),
+]
+
+def normalize_robot_name(name):
+    for prefix, replacement in ROBOT_NAME_PREFIXES:
+        if name.startswith(prefix):
+            return replacement + name[len(prefix):]
+    return name</code></pre><p>In the ETL script:</p><pre><code class="language-python">from common import normalize_robot_name
+
+def process_record(rec):
+    robot_name = normalize_robot_name(rec['robot_name'])
+    # ... insert into DB</code></pre><h3>Layer 2: Database (fix historical data)</h3><p>Run a one-time migration script that normalizes existing data:</p><pre><code class="language-python"># fix_robot_names.py — uses the SAME normalize function as ETL
+from common import normalize_robot_name
+
+for old_name in dirty_names:
+    new_name = normalize_robot_name(old_name)
+    if old_name != new_name:
+        conn.execute("UPDATE table SET robot_name=? WHERE robot_name=?",
+                     (new_name, old_name))</code></pre><h3>Layer 3: Query (safety net)</h3><p>Keep a <code>CASE WHEN</code> in SQL as a defense-in-depth fallback:</p><pre><code class="language-sql">CASE WHEN t.line IN ('FEN&amp;TGO', 'FE66', 'FE_处理后数据') THEN 'FE'
+     ELSE t.line END as normalized_line</code></pre><p>This catches any edge case that slips through Layers 1 and 2.</p><h2>Verification</h2><pre><code class="language-bash">CASE WHEN
+echo "Verification passed: fix command exited 0"</code></pre><p><strong>Expected Output:</strong> command completes without error, then <code>Verification passed</code> is printed. (Checks: <code>CASE WHEN</code>)</p><h2>Notes</h2><ul><li><strong>The normalization function MUST be shared</strong> between ETL, migration script, and any other code that touches identifiers. If you copy-paste the prefix list, it will diverge.</li><li><strong>Prefix matching must be ordered by length (longest first)</strong> to avoid short-prefix false matches (e.g., <code>FE</code> matching before <code>FE66</code>).</li><li><strong>SELECT queries are not affected</strong> by this issue — only <code>GROUP BY</code> and <code>JOIN</code> on the inconsistent column produce wrong results.</li><li><strong>This pattern applies to any ETL that derives identifiers from filenames</strong>, not just robot names. Common cases: station names, line names, product codes.</li><li>The <code>CASE WHEN</code> in Layer 3 can be removed once Layer 1 is proven stable across multiple ETL runs.</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/data-quality-three-layer-fix-pattern.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Data Quality Fix: Always Keep Three Layers (DB + ETL + Query)">Find related lessons →</a></p></div>

@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,22 @@
 <div class="section">
   <h2>Summary</h2>
   <p>```bash</p>
+</div>
+<div class="lesson-body">
+<h2>Verification</h2><pre><code class="language-bash">echo "Lesson: Agent State Database Lock Issues — Cleanup Protoco"
+wc -l lessons/contrib/agent-state-database-lock-cleanup.md</code></pre><p><strong>Expected Output:</strong></p><pre><code>Lesson: Agent State Database Lock Issues — Cleanup Protoco
+# (line count)</code></pre><h2>Agent State Database Lock Issues — Cleanup Protocol</h2><h3>Problem</h3><p>Agent framework uses a SQLite-based state database to persist conversation context, session metadata, and operational state. Under certain conditions (forced termination, WSL snapshot restore, concurrent multi-session), the database can become locked or corrupted.</p><p>Symptoms:</p><ul><li><code>Error: database is locked</code></li><li>Agent fails to start with <code>OperationalError: unable to open database file</code></li><li>State inconsistency between sessions</li></ul><h3>Root Cause</h3><p>SQLite locking mechanism does not handle forced termination well. When the agent process is killed (SIGKILL, WSL shutdown, OOM), in-progress write transactions leave the database in a locked state.</p><h3>Solution: Cleanup Protocol</h3><h4>Step 1: Identify lock files</h4><pre><code class="language-bash">ls -la ~/.&lt;agent&gt;/
+# Agent State Database Lock Issues — Cleanup Protocol</code></pre><h4>Step 2: Remove lock artifacts</h4><pre><code class="language-bash"># Stop the agent first
+&lt;agent&gt; stop
+
+# Remove journal and WAL files
+rm -f ~/.&lt;agent&gt;/state.db-journal
+rm -f ~/.&lt;agent&gt;/state.db-wal
+rm -f ~/.&lt;agent&gt;/state.db-shm
+
+# Optional: reset the database (loses session history)
+rm -f ~/.&lt;agent&gt;/state.db</code></pre><h4>Step 3: Verify</h4><pre><code class="language-bash">&lt;agent&gt; --version
+&lt;agent&gt;  # Should start cleanly</code></pre><h3>Prevention</h3><ol><li>Always use proper shutdown (<code>&lt;agent&gt; stop</code>) instead of killing the process</li><li>Enable WAL mode for better concurrency</li><li>Increase SQLite busy timeout in config</li></ol><h3>Notes</h3><ul><li>This issue is not specific to any single agent framework — any application using SQLite with forced termination is susceptible</li><li>Docker containers with <code>--restart=always</code> may hit this on repeated crash loops</li><li>Consider using a connection pool wrapper with retry logic for production deployments</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/agent-state-database-lock-cleanup.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Agent State Database Lock Issues — Cleanup Protocol">Find related lessons →</a></p></div>

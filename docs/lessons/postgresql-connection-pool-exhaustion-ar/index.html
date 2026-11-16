@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,41 @@
 <div class="section">
   <h2>Summary</h2>
   <p>أثناء فترات الاستخدام الكثيف لبيئة الإنتاج، بدأت واجهة برمجة التطبيقات (API) في إرجاع أخطاء `500 Internal Server Error` مصحوبة بالرسالة التالية في سجلات النظام:</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>أثناء فترات الاستخدام الكثيف لبيئة الإنتاج، بدأت واجهة برمجة التطبيقات (API) في إرجاع أخطاء <code>500 Internal Server Error</code> مصحوبة بالرسالة التالية في سجلات النظام:</p><pre><code class="language-text">Error: fatal: sorry, too many clients already
+    at Connection.parseE (node_modules/pg/lib/connection.js:554:11)</code></pre><p>تسببت هذه المشكلة في تجميد الطلبات الجديدة وعدم قدرة الخوادم على الاتصال بقاعدة البيانات PostgreSQL، مما أدى إلى تعطيل الخدمة جزئيًا للمستخدمين due to connection pool leak exception timeout failure.</p><h2>Root Cause</h2><p>بعد تحليل سجلات التتبع ومراقبة الاتصالات، تبين وجود سببين رئيسيين لهذه المشكلة:</p><ol><li><strong>عدم تحرير الاتصالات (Connection Leaks):</strong> كانت هناك بعض الدوال التي تفتح اتصالاً مع قاعدة البيانات لإجراء المعاملات (Transactions) ولكنها لا تقوم بإغلاق الاتصال أو إعادة التجميع عند حدوث استثناء (Exception) داخل كتلة <code>try/catch</code>.</li><li><strong>غياب حد أقصى للتجميع (Pool Limits):</strong> لم يتم ضبط الحد الأقصى لعدد الاتصالات المسموح بها في كائن التجميع (<code>pg.Pool</code>) في التطبيق، مما جعل الخادم يحاول إنشاء اتصالات جديدة حتى تجاوز الحد الأقصى المسموح به في إعدادات PostgreSQL (<code>max_connections = 100</code>).</li></ol><h2>Solution</h2><p>تم حل المشكلة من خلال خطوتين أساسيتين:</p><h3>Step 1: إجبار تحرير الاتصال باستخدام كتل <code>finally</code></h3><p>تعديل كافة كود التعامل مع التجميع لضمان إرجاع الاتصال دائمًا إلى التجميع (<code>pool.release()</code>) بغض النظر عن نجاح الاستعلام أو فشله. قم بتنفيذ وإضافة الكود التالي وتحديث إعدادات التجميع:</p><pre><code class="language-javascript">const { Pool } = require('pg');
+
+const pool = new Pool({
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+  max: 20, // تحديد الحد الأقصى للاتصالات لكل خادم
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 2000,
+});
+
+async function executeTransaction(queryText, params) {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const result = await client.query(queryText, params);
+    await client.query('COMMIT');
+    return result.rows;
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    // إرجاع العميل دائمًا إلى التجميع لضمان عدم تسريب الاتصال
+    client.release();
+  }
+}</code></pre><h3>Step 2: تكوين PgBouncer لمدير التجميع (Connection Pooling)</h3><p>تم إضافة <strong>PgBouncer</strong> بين الخوادم وقاعدة البيانات لإدارة الاتصالات وتجميعها على مستوى الخادم:</p><table><thead><tr><th>الخاصية (Parameter)</th><th>القيمة قبل التعديل (Before)</th><th>القيمة بعد التعديل (After)</th><th>الوصف (Description)</th></tr></thead><tbody><tr><td><code>pool_mode</code></td><td><code>session</code></td><td><code>transaction</code></td><td>تجميع الاتصالات على مستوى المعاملة</td></tr><tr><td><code>max_client_conn</code></td><td><code>100</code></td><td><code>1000</code></td><td>الحد الأقصى لاتصالات العملاء المسموح بها</td></tr><tr><td><code>default_pool_size</code></td><td>Unset</td><td><code>20</code></td><td>عدد الاتصالات المفتوحة لكل قاعدة بيانات</td></tr></tbody></table><pre><code class="language-ini">[pgbouncer]
+pool_mode = transaction
+max_client_conn = 1000
+default_pool_size = 20</code></pre><p>للمزيد من التفاصيل حول إعدادات PostgreSQL يمكن مراجعة التوثيق الرسمي: <a href="https://docs.postgresql.org/current/runtime-config-connection.html">PostgreSQL Documentation</a></p><h2>Verification</h2><pre><code class="language-bash">echo "Lesson: حل مشكلة استنفاد تجميع اتصالات قاعدة البيانات Post"
+wc -l lessons/contrib/postgresql-connection-pool-exhaustion-ar.md</code></pre><p><strong>Expected Output:</strong></p><pre><code>Lesson: حل مشكلة استنفاد تجميع اتصالات قاعدة البيانات Post
+# (line count)</code></pre><h2>Notes</h2><ul><li>يُنصح دائمًا بربط PgBouncer مع نظام مراقبة مثل Prometheus للتنبيه عند اقتراب عدد الاتصالات من <code>max_client_conn</code>.</li><li>لمزيد من المعلومات حول مشكلات مكتبة <code>node-postgres</code> راجع مرجع البلاغ على GitHub: <a href="https://github.com/brianc/node-postgres/issues/1920">GitHub Issue #1920</a>.</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/postgresql-connection-pool-exhaustion-ar.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=حل مشكلة استنفاد تجميع اتصالات قاعدة البيانات PostgreSQL في بيئات الإنتاج">Find related lessons →</a></p></div>

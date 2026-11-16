@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,13 @@
 <div class="section">
   <h2>Summary</h2>
   <p>On Windows, DeepSeek Harness refused to start ANY shell tool for a workspace directory, before the command itself ran:</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>On Windows, DeepSeek Harness refused to start ANY shell tool for a workspace directory, before the command itself ran:</p><pre><code>DSH workspace preparation failed: the workspace root &lt;PATH&gt;&lt;workspace&gt; does not meet the sandbox
+prerequisite (the host needs WRITE_OWNER on it): Workspace is not owned by the current user;
+refusing automatic ACL preparation. Fix the folder's owner or permissions, open a workspace you own,
+or use danger-full-access. This is a folder permission problem, not a DSH [REDACTED:bearer_token]
+[COMMAND_FAILED; effects: none; retry: never]</code></pre><p>Both <code>ops_bash</code> and <code>pwsh</code> died identically. Raising <code>sandbox_permissions</code> on <code>pwsh</code> did not help, which makes it look like an [REDACTED:bearer_token] - but the error explicitly says it is NOT one. The workspace root's owner was a different account than the running user, so the folder gave the current user no <code>WRITE_OWNER</code> even though ordinary reads and writes inside it worked fine.</p><h2>Root Cause</h2><p>DSH prepares a workspace before running any shell command: it needs <code>WRITE_OWNER</code> on the workspace root in order to materialise its temporary ACL grant, and it refuses to "automatically prepare ACLs" on a directory it does not own. That check runs before the command, so the failure is identical for every shell tool, and no command-level retry or per-call permission escalation on the individual tool can pass it.</p><p>This is a distinct failure from the other known Windows shell blockers (PowerShell execution policy, then the sandbox ACL temp grant failing to materialise): here the workspace ACLs may be perfectly fine for the current user, but <em>ownership</em> is not, and the gate fires earlier.</p><p>The asymmetry is the operationally important part: <code>ops_bash</code> with <code>sandbox_permissions: danger-full-access</code> bypasses workspace preparation and does execute, while <code>pwsh</code> with the same flag still fails with the same <code>WRITE_OWNER</code> error. So the presence of danger-full-access does not imply every shell tool is usable.</p><h2>Fix</h2><p>Own the workspace, or run the command from a mode that does not prepare the workspace.</p><ol><li>Take ownership from an elevated shell outside DSH: <code>takeown /f &lt;dir&gt; /r /d y</code> then <code>icacls &lt;dir&gt; /grant %USERNAME%:(OI)(CI)F</code>. Or simply point DSH at a directory the current user already owns - the fastest fix.</li><li>Until then, use the asymmetry: <code>ops_bash</code> invoked with <code>danger-full-access</code> does run, <code>pwsh</code> with the same permission does not. Reach for <code>ops_bash</code> + <code>danger-full-access</code> rather than <code>pwsh</code>.</li><li>File read/write tools keep working throughout, so you can still script around the block - including writing a <code>.bat</code> into the workspace and launching it through <code>ops_bash</code> + <code>danger-full-access</code> (also a way around Git-Bash mangling <code>cmd.exe /c</code> argument quoting: the single-quoted form silently does nothing and still exits 0).</li></ol><h2>Verification</h2><p>After fixing ownership, a plain <code>echo ok</code> through <code>ops_bash</code> (no special permission) returns output instead of the preparation error. Ownership is visible with <code>dir /q &lt;dir&gt;</code> (owner column shows the current user) or <code>Get-Acl &lt;dir&gt;</code>. Negative check: while blocked, <code>pwsh</code> even with danger-full-access still fails - do not conclude from one <code>pwsh</code> failure that no shell on the machine can run.</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/dsh-on-windows-a-workspace-not-owned-by-the-current-user.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=DSH on Windows: a workspace not owned by the current user blocks every shell tool (WRITE_OWNER), while ops_bash with…">Find related lessons →</a></p></div>

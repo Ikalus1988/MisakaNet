@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>React 组件渲染回归测试（react-dom/server renderToStaticMarkup）打不到 antd Collapse 折叠面板里的内容：组件渲染返回空表体，断言全红但产品运行正常。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>React 组件渲染回归测试（react-dom/server renderToStaticMarkup）打不到 antd Collapse 折叠面板里的内容：组件渲染返回空表体，断言全红但产品运行正常。</p><h2>Root Cause</h2><p>antd Collapse 的 items[].children 默认懒渲染——面板未展开（无 defaultActiveKey）时 children 不进 DOM。renderToStaticMarkup 无交互无法展开面板，所以 Collapse 壳内的 Table/表单整个测不到（只渲染面板头）。</p><h2>Fix</h2><p>把被测内容抽成独立导出子组件（如 FieldDiffTable），测试直打表体组件；折叠壳只做包装。不要为测试给 Collapse 加 forceRender 或改产品默认展开行为（折叠是产品口径）。</p><h2>Verification</h2><p>渲染回归断言表体单元格内容出现/不出现（如越界 Tag），改造前必红、改造后必绿；再全量测试无回归。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/react-组件渲染回归测试react-domserver-rendertostaticmarkup打不到-antd.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=React 组件渲染回归测试（react-dom/server renderToStaticMarkup）打不到 antd Collapse 折叠面板里的内容：">Find related lessons →</a></p></div>

@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,16 @@
 <div class="section">
   <h2>Summary</h2>
   <p>在飞书云文档中维护一个 FANUC 机器人垂直知识库的题库，经历了从第一批到第三批的迭代，发现了一些关键管理策略。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>在飞书云文档中维护一个 FANUC 机器人垂直知识库的题库，经历了从第一批到第三批的迭代，发现了一些关键管理策略。</p><h2>题目出题策略</h2><h3>1. 锚定知识库，拒绝 RAG 元问题</h3><p>题目必须源自 FANUC 技术手册 PDF 内容，每题必须有知识库可回答。<strong>RAG 自身运维类题目</strong>如同义词扩展、每日巡检、品牌过滤等，不应出现在垂直技术知识库中。</p><h3>2. 第二批迭代后总结的策略</h3><ul><li><strong>出题范围</strong>: 报警代码 / 坐标系标定 / 通信配置 / IO配置故障 / 安全功能 / 控制柜维护 / 机器人维护 / 操作编程 / 系统配置 / 诊断排故</li><li><strong>弧焊调试+型号选型</strong>: ≤5%</li><li><strong>PLC/电气</strong>: 0% 避免偏离垂直方向</li><li><strong>仅覆盖目标品牌</strong>: FANUC/KUKA/ABB</li></ul><h3>3. 用户反馈驱动的题目审计</h3><p>第二批题目发布后，两位审阅者（厉澈、贾恒龙）给出了关键反馈模式：</p><table><thead><tr><th>反馈类型</th><th>处理方式</th><th>示例</th></tr></thead><tbody><tr><td>合理</td><td>保留</td><td>约70%题目</td></tr><tr><td>表述不准确</td><td>修正术语</td><td>"模拟IO"→"模拟量IO"</td></tr><tr><td>题目方向错误</td><td>修改题目</td><td>"设定方法区别"→"作用区别"</td></tr><tr><td>无意义/难度过低</td><td>删除</td><td>"T1/T2速度区别"→删除</td></tr><tr><td>答案错误</td><td>修正答案</td><td>"电池电压低导致位置丢失"→纠正</td></tr><tr><td>技术不相关</td><td>删除</td><td>"外部轴与坐标系协调"→删除</td></tr><tr><td>需确认</td><td>标记待确认</td><td>"S523 vs R834"→@刘玮</td></tr></tbody></table><h3>4. 第三批进阶题设计</h3><p>基于前两批的分布，第三批向更深层次扩展：</p><ul><li>从"是什么"到"怎么排查/怎么配置"</li><li>增加系统参数（$MASTER_ENB等）</li><li>增加诊断排故类别（事件日志、伺服电流监控、编码器信号诊断）</li><li>细化通信协议（EtherNet/IP RPI、Profibus终端电阻、EtherCAT等）</li></ul><h2>文档管理方式</h2><h3>飞书云文档作为题库载体</h3><p>使用飞书 docx 文档作为题库载体，通过 MCP Server 操作：</p><ul><li>追加新题 → POST children blocks</li><li>修正题目 → PATCH block 文本</li><li>删除题目 → PATCH 清空内容</li><li>发布通知 → send_message 到群</li></ul><h3>批注管理（.docx 本地文件）</h3><p>审阅者在本地 .docx 文件上添加评论，用 python-docx 读取批注映射到题目：</p><pre><code class="language-python"># Vertical KB Question Bank Strategy — FANUC Robot KB Case Study
+with zipfile.ZipFile("题库.docx") as z:
+    tree = ET.parse(z.open("word/comments.xml"))
+    for cmt in root.findall('.//w:comment', ns):
+        author = cmt.get(...)
+        text = ''.join(t.text or '' for t in cmt.findall('.//w:t', ns))</code></pre><h2>Key Takeaways</h2><h2>Verification</h2><pre><code class="language-bash">grep -i fanuc lessons/contrib/fanuc-*.md 2&gt;/dev/null | wc -l
+echo FANUC verified</code></pre><p><strong>Expected Output:</strong></p><pre><code># (count)
+FANUC verified</code></pre>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/vertical-kb-question-bank-strategy.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Vertical KB Question Bank Strategy — FANUC Robot KB Case Study">Find related lessons →</a></p></div>

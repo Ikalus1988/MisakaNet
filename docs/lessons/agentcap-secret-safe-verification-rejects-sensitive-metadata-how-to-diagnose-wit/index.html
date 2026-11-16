@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,59 @@
 <div class="section">
   <h2>Summary</h2>
   <p>AgentCap's capability registry verification includes a "secret-safe" check that</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>AgentCap's capability registry verification includes a "secret-safe" check that scans metadata fields (descriptions, labels, configuration) for patterns resembling secrets (API keys, tokens, passwords, private keys). When it finds a match, the verification reports <code>FAIL: secret-safe</code> with only the JSON field path (e.g., <code>capabilities[0].description</code>) — deliberately excluding the flagged content to avoid leaking sensitive data.</p><p>The challenge: how to identify and fix the offending field without being able to see what triggered the rejection.</p><h2>Root Cause</h2><p>The secret-safe scanner uses pattern matching (regex for common key formats like <code>sk-</code>, <code>ghp_</code>, <code>AKIA</code>, hex strings of 32+ chars, base64-like strings) against all text fields in capability metadata. False positives occur when:</p><ol><li>Documentation contains example API keys or placeholder tokens</li><li>Hash digests or commit SHAs in descriptions look like secrets</li><li>Test fixtures contain realistic-looking but fake credentials</li></ol><p>The verification intentionally does not echo the flagged content — this is a security design, not a bug.</p><h2>Solution</h2><h3>Step 1: Identify the affected field</h3><pre><code class="language-bash"># Run verification with verbose output
+agentcap verify --verbose 2&gt;&amp;1 | grep "secret-safe"
+# Output shows JSON paths like: capabilities[2].description
+# or: skills[name=deploy].config.endpoint</code></pre><h3>Step 2: Inspect the field (read-only)</h3><pre><code class="language-bash"># Export the capability metadata to a temp file
+agentcap export --format json &gt; /tmp/caps.json
+
+# Find the specific field by path
+python3 -c "
+import json
+with open('/tmp/caps.json') as f:
+    data = json.load(f)
+# Navigate to the path from the error, e.g., capabilities[0].description
+desc = data['capabilities'][0]['description']
+# Print length and first/last 10 chars (not the full content)
+print(f'length={len(desc)}, starts={desc[:10]!r}, ends={desc[-10:]!r}')
+"</code></pre><h3>Step 3: Fix the flagged content</h3><p>Common fixes:</p><ul><li>Remove example API keys from descriptions</li><li>Replace test tokens with <code>&lt;REDACTED&gt;</code> placeholders</li><li>Use environment variable references instead of inline values</li></ul><pre><code class="language-bash"># After fixing, re-verify
+agentcap verify 2&gt;&amp;1 | grep "secret-safe"
+# Expected: no output (no secret-safe failures)</code></pre><h3>Step 4: For bulk diagnosis</h3><pre><code class="language-bash"># Scan all capability descriptions for common secret patterns
+python3 -c "
+import json, re
+PATTERNS = [
+    r'sk-[a-zA-Z0-9]{20,}',
+    r'ghp_[a-zA-Z0-9]{36}',
+    r'AKIA[A-Z0-9]{16}',
+    r'[a-f0-9]{32,}',  # hex strings
+]
+with open('/tmp/caps.json') as f:
+    data = json.load(f)
+for i, cap in enumerate(data.get('capabilities', [])):
+    for key, val in cap.items():
+        if isinstance(val, str):
+            for pat in PATTERNS:
+                if re.search(pat, val):
+                    print(f'MATCH capabilities[{i}].{key} pattern={pat}')
+                    break
+"</code></pre><h2>Verification</h2><pre><code class="language-bash"># Check that agentcap verify passes without secret-safe failures
+agentcap verify 2&gt;&amp;1 | tee /tmp/verify_out.txt
+# Expected: no lines containing "FAIL: secret-safe"
+
+# Confirm: if there ARE failures, they show field paths only (no content)
+if grep -q "secret-safe" /tmp/verify_out.txt; then
+    # Verify no actual secret values are printed
+    python3 -c "
+with open('/tmp/verify_out.txt') as f:
+    for line in f:
+        if 'secret-safe' in line:
+            # Should contain a field path, not a secret value
+            assert 'capabilities[' in line or 'skills[' in line, f'Unexpected format: {line}'
+    print('PASS: secret-safe failures report paths only')
+"
+fi</code></pre>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/agentcap-secret-safe-verification-failure.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=AgentCap secret-safe verification rejects sensitive metadata — how to diagnose without leaking">Find related lessons →</a></p></div>

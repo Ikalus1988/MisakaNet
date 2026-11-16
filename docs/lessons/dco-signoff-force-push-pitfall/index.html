@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,31 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Force push 后 DCO (Developer Certificate of Origin) check 持续失败，即使本地 commit 有 `Signed-off-by`。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Force push 后 DCO (Developer Certificate of Origin) check 持续失败，即使本地 commit 有 <code>Signed-off-by</code>。</p><h2>Root Cause</h2><ol><li><code>git commit --amend --signoff</code> 只修改当前 commit，但 PR 可能包含多个 commit</li><li><code>git reset --soft main</code> 后 re-commit 会丢失之前的 signoff</li><li><code>git cherry-pick</code> 不保留 signoff，需要显式 <code>--signoff</code></li><li>GitHub PR 的 DCO check 检查 <strong>所有</strong> commit，不只是最新一个</li></ol><h2>Solution</h2><pre><code class="language-bash"># 正确做法：reset --hard 到干净 base，然后 cherry-pick --signoff
+git fetch upstream main
+git reset --hard upstream/main
+git cherry-pick &lt;your-commit&gt; --signoff
+git push fork branch --force
+
+# 验证：PR 应该只有 1 个 commit
+gh api repos/UPSTREAM/REPO/pulls/NUMBER/commits --jq 'length'</code></pre><p><strong>通用预防（合并自 intake #1099 同主题 lesson）：</strong></p><pre><code class="language-bash"># 方法1：rebase 时自动 signoff
+git rebase --signoff HEAD~N
+
+# 方法2：amend 当前 commit 补 signoff
+git commit --amend --signoff --no-edit
+
+# 方法3：检查所有 commit 是否有 signoff
+git log --format="%H %s" | while read hash msg; do
+  if ! git log -1 --format="%B" $hash | grep -q "Signed-off-by:"; then
+    echo "Missing signoff: $hash $msg"
+  fi
+done</code></pre><p><strong>预防措施：</strong></p><ul><li>在 <code>.gitconfig</code> 中设置 <code>git config format.signoff true</code></li><li>使用 <code>git commit -s</code> 而不是 <code>git commit</code></li><li>CI 中添加 DCO 检查 pre-commit hook</li></ul><h2>Key Points</h2><ul><li><code>git reset --soft main</code> 不够——soft reset 会保留旧 commit 的 parent 关系</li><li>必须用 <code>git reset --hard upstream/main</code> 彻底切断</li><li>Cherry-pick 后用 <code>git log --oneline main..branch</code> 确认只有 1 个 commit</li><li>DCO check 失败时，先查 <code>gh api pulls/NUMBER/commits</code> 确认 commit 数量</li><li>DCO 检查检查所有 commit，不只是最新的；force push 可能丢失 signoff</li></ul><p><strong>Why:</strong> DCO 是开源项目的硬性要求，signoff 丢失会导致 PR 无法合并 <strong>How to apply:</strong> Force push 后必须验证 PR commit 数量和 signoff 状态</p><h2>Verification</h2><pre><code class="language-bash"># 检查最新 commit 的 signoff
+git log --format="%b" -1 | grep -i "Signed-off-by" || echo none
+
+# 检查 PR 所有 commit 的 signoff（DCO 检查的是全部 commit）
+gh api repos/UPSTREAM/REPO/pulls/NUMBER/commits --jq 'length'</code></pre><p><strong>Expected Output:</strong></p><pre><code>Signed-off-by:</code></pre>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/dco-signoff-force-push-pitfall.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=DCO Signoff Lost During Force Push">Find related lessons →</a></p></div>

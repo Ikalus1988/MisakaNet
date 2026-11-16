@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,18 @@
 <div class="section">
   <h2>Summary</h2>
   <p>访问者问"fanuc r-2000ic 系列所有机器人的最大速度"，RAG 返回了 KUKA Series 2000 的数据。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>访问者问"fanuc r-2000ic 系列所有机器人的最大速度"，RAG 返回了 KUKA Series 2000 的数据。 根因：语义检索模型 bge-base-zh-v1.5 将查询中的 "2000" 字符串匹配到 KUKA 文档中的 "Series 2000"， 未区分车品牌。跨品牌的数字型号字符串是语义检索的常见陷阱。</p><h2>Solution</h2><p>在 rag_core.py 的 retrieve() 函数中加入关键词强制召回模块。</p><p>位置：rag_core.py 报警代码搜索之后、型号搜索之前</p><pre><code class="language-python">_KW = re.compile(r'上位机|robot interface|寄存器读|寄存器写|读写寄存器', re.I)
+if _KW.search(query):
+    kw_results = collection.get(
+        where_document={"$contains": "Robot Interface"},
+        limit=10,
+    )
+    for doc, meta in zip(kw_results["documents"], kw_results["metadatas"]):
+        score = 0.92 if "Robot Interface" in doc[:500] else 0.85</code></pre><p>打分原则：</p><ul><li>文档头部含特征词 0.92（插入到 Top）</li><li>文档尾部含特征词 0.85（进入前 10）</li></ul><h2>Verification</h2><pre><code class="language-bash">grep -i fanuc lessons/contrib/fanuc-*.md 2&gt;/dev/null | wc -l
+echo FANUC verified</code></pre><p><strong>Expected Output:</strong></p><pre><code># (count)
+FANUC verified</code></pre><h2>Related</h2><p>关键词映射表是可扩展的。每遇到新的语义鸿沟，只需要在 <code>_KW</code> 正则加规则， 不需要换 embedding 模型或重建向量库。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/fanuc-r-2000ic-retrieval-fix.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=FANUC R-2000iC 检索混淆Fix — 关键词强制召回">Find related lessons →</a></p></div>

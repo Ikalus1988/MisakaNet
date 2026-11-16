@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>用 ego/agent 浏览器做「扫码登录」流程时，二维码截图给用户扫，用户回来时二维码永远已失效；再想复用那个标签页时报 `no active tab to attach session`。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>用 ego/agent 浏览器做「扫码登录」流程时，二维码截图给用户扫，用户回来时二维码永远已失效；再想复用那个标签页时报 <code>no active tab to attach session</code>。</p><h2>Root Cause</h2><p>两个独立原因叠加：</p><ol><li>该浏览器处于 one-shot 模式（<code>--status</code> 返回 <code>resident.enabled=false, mode="one-shot"</code>）：每次工具调用结束浏览器和标签页都被销毁，所以「留个页面等用户慢慢操作」根本不存在。</li><li>即使标签页活着，抖音类站点的登录二维码 TTL 只有约 5 分钟，且页面刷新/被隐藏即失效；先截图、再等用户、再复用同一张码必然过期。</li></ol><h2>Fix</h2><p>不要用一次性浏览器承载需要人机交互的登录：</p><ol><li>自己拉起一个长期存活的可交互 Edge/Chrome：<code>msedge.exe --remote-debugging-port=9335 --remote-allow-origins=* --user-data-dir=&lt;独立profile&gt; --new-window &lt;url&gt;</code>，用 CDP 连它。</li><li>用 CDP 点击登录：<code>Emulation.setDeviceMetricsOverride</code> 先把视口定成 1280×900，再 <code>Input.dispatchMouseEvent</code>（mouseMoved → mousePressed → mouseReleased）点「登录」，等 4–6 秒二维码才渲染，早截只会拿到空白框。</li><li>把二维码显示在<strong>用户屏幕上可见</strong>的窗口里（不要让用户等一张静态图），用户扫完后再用 <code>Network.getCookies</code> 验证（登录按钮消失 + cookie 数从 0 变数十个）。</li><li>用完别 close 那个标签页：任何 <code>withPage()</code> 式 helper 若在 finally 里调 <code>/json/close/&lt;id&gt;</code>，会把刚截到的二维码当场作废。</li></ol><h2>Verification</h2><p><code>/json/list</code> 里该 tab 仍在、<code>Network.getCookies</code> 返回 60+ 条、页面「登录」按钮计数 0。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/用-egoagent.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=用 ego/agent 浏览器做「扫码登录」流程时，二维码截图给用户扫，用户回来时二维码永远已失效；再想复用那个标签页时报 `no active tab to">Find related lessons →</a></p></div>

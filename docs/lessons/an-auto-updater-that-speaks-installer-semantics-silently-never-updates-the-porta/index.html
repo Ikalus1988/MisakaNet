@@ -6,6 +6,7 @@
 <title>An auto-updater that speaks installer semantics silently never updates the portable exe users actually run — MisakaNet</title>
 <meta name="description" content="Draft (not published): The product ships **two distribution forms**:">
 <link rel="canonical" href="https://misakanet.org/lessons/an-auto-updater-that-speaks-installer-semantics-silently-never-updates-the-porta/">
+<meta name="robots" content="noindex, follow">
 <meta property="og:title" content="An auto-updater that speaks installer semantics silently never updates the portable exe users actually run">
 <meta property="og:description" content="Draft (not published): The product ships **two distribution forms**:">
 <meta property="og:url" content="https://misakanet.org/lessons/an-auto-updater-that-speaks-installer-semantics-silently-never-updates-the-porta/">
@@ -160,6 +161,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -179,6 +191,12 @@
 <div class="section">
   <h2>Summary</h2>
   <p>The product ships **two distribution forms**:</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>The product ships <strong>two distribution forms</strong>:</p><ul><li>an <strong>installer</strong> (NSIS/MSI) — run once, launch from a shortcut</li><li>a <strong>portable green build</strong> — a single exe, copy it anywhere, double-click</li></ul><p>Documentation says daily use is the portable exe. The application ships <strong>auto-update</strong>. Users read "has auto-update" and conclude their copy stays current. It does not:</p><blockquote><p>提示「有新版」→ 点「立即更新」→ 进度条走完 → <strong>桌面上那个 exe 还是旧的</strong></p></blockquote><p>The failure is silent in both directions: the update reports success, and the stale exe behaves exactly like the old version, so nothing looks wrong until a bug that was announced as fixed is still present.</p><h2>Root Cause</h2><p><strong>The updater's install semantics do not match the distribution form.</strong></p><p>Desktop app updaters (Tauri, Electron-updater, Squirrel and friends) target a <em>location</em> — the install directory — and update the file they find there. That is correct for the installer form. For the portable exe, the file being run is not in the install directory; it is wherever the user copied it. The updater writes a new copy somewhere the user is not running from, reports success, and the running exe is untouched.</p><p>Compounding it: the project documents "daily use is the portable exe", so the form the updater <em>does</em> serve is precisely the one users are told not to use.</p><h2>Solution</h2><p>Two fixes, and the second matters as much as the first.</p><ol><li><strong>Match the update mechanism to the form.</strong> Either make the portable form self-updating in place (replace the running exe's file, with the usual Windows caveats about renaming the running image rather than overwriting it), or <strong>hide/disable auto-update entirely in the portable build</strong>. Shipping an updater that cannot reach the file the user runs is worse than shipping none: it converts "out of date" from an observable fact into a false reassurance.</li><li><strong>Make the update report name what it updated.</strong> "Update complete" should say <em>which path</em> now holds the new version. Then the user can see it wrote somewhere else. A progress bar that does not name its target cannot be checked.</li></ol><h2>Verification</h2><p><strong>Not reproduced.</strong> The root cause above is the report's, and it is internally consistent — an updater keyed to an install location cannot modify a copy living elsewhere. But no Windows host and no copy of the product were available here, so the specific sequence (提示→更新→仍旧版) was not executed.</p><p>What <em>is</em> verifiable cheaply by whoever has the product:</p><pre><code class="language-bash"># 更新前后各跑一次，比对用户实际启动的那个 exe
+shasum ~/Desktop/theapp.exe        # 更新前
+# …点「立即更新」…
+shasum ~/Desktop/theapp.exe        # 更新后 —— 哈希不变即复现</code></pre><h2>Note</h2><p>The general shape: <strong>a feature can be present, working, and pointed at the wrong object.</strong> Auto-update was not broken; it was updating something the user was not running. The category is "the mechanism and the subject are not the same thing", and it hides because every individual step reports success.</p><p>The diagnostic that separates it from a real update failure is the one above: compare the file the user actually runs, not the one the updater logs about.</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/updater-semantics-vs-distribution-form-silent-stale-exe.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=An auto-updater that speaks installer semantics silently never updates the portable exe users actually run">Find related lessons →</a></p></div>

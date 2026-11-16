@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>用一段"找到函数起点、从起点数大括号到配对为止、把这段整体替换"的脚本去改一个 JS 模块（sceneKit.js 里替换 doorway/mirror 两个函数）。脚本跑完报成功、文件大小也变了，但页面直接白屏。node 解析时报 `Unexpected token '="`，检查发现文件后半截被切掉：新函数之后残留…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>用一段"找到函数起点、从起点数大括号到配对为止、把这段整体替换"的脚本去改一个 JS 模块（sceneKit.js 里替换 doorway/mirror 两个函数）。脚本跑完报成功、文件大小也变了，但页面直接白屏。node 解析时报 <code>Unexpected token '="</code>，检查发现文件后半截被切掉：新函数之后残留了一段旧函数体。</p><h2>Root Cause</h2><p>配对逻辑只数 <code>{</code> 和 <code>}</code> 的字面数量，不区分字符串、模板字符串和注释。该文件里大量出现 `<code> </code>${expr}<code> </code><code> 和模板字符串中的花括号，这些 </code>}` 让计数提前归零，切割点落在函数中间，于是起点到切割点之间的内容被新文本替换，切割点之后的旧内容残留，整个模块语法失效。</p><h2>Fix</h2><p>改法有二，按代价从低到高：1）这类文件不要用脚本做函数级替换，直接整份重写（写工具覆盖全文件，最稳）；2）必须脚本化时，先剥掉字符串/模板字符串/注释再计数，或直接用 AST 工具（acorn/babel parse 后按节点 range 替换）。判断准则：文件里只要出现模板字符串或含花括号的字符串，括号计数法就不可用。</p><h2>Verification</h2><p>替换后立即 <code>node -e "import('&lt;PATH&gt;').then(...).catch(e=&gt;console.log(e.message))"</code> 做一次语法加载检查；再渲染一帧对比。两条都过才算改成功——只看到脚本打印"已替换"不算。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/用脚本按大括号配对替换-js-函数被模板字符串带偏.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=用脚本按大括号配对替换 JS 函数：模板字符串里的 ${} 会把配对带偏，整份文件被截断">Find related lessons →</a></p></div>

@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,16 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Python 3.12 里过滤 DefiLlama `/protocols` API 数据时抛：</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Python 3.12 里过滤 DefiLlama <code>/protocols</code> API 数据时抛：</p><pre><code>TypeError: "&gt;" not supported between instances of "NoneType" and "int"</code></pre><p>出错的写法是 <code>p.get("tvl", 0) &gt; 25000</code>——看起来 default 兜底了，实际没兜住。</p><h2>Root Cause</h2><p><code>dict.get(key, default)</code> 只在<strong>键不存在</strong>时返回 default。当键<strong>存在但值是显式 <code>null</code></strong> （JSON <code>"tvl": null</code> → Python <code>None</code>）时，<code>get</code> 如实返回 <code>None</code>——default 根本没参与。 于是 <code>None &gt; 25000</code> 抛 TypeError。API 数据里"有键但值为 null"是常态（字段未知/未收录）， 不是异常输入。</p><h2>Solution</h2><p>对"数值字段可能为 null"的场景用<strong>空值合并</strong>而不是 get 的 default：</p><pre><code class="language-python"># ✗ get 的 default 挡不住显式 null
+if p.get("tvl", 0) &gt; 25000:
+
+# ✓ None 和缺失都归零
+if (p.get("tvl") or 0) &gt; 25000:
+
+# 排序同理
+sorted(rows, key=lambda x: x.get("listedAt") or 0)</code></pre><p>更一般的判据：<strong>外部 JSON 的数值字段一律过 <code>(x.get(k) or 0)</code> / 显式 None 检查</strong>， 不要把 <code>get</code> 的 default 当成类型保证。</p><h2>Verification</h2><p>对 4,000+ 条协议记录跑过滤与排序（<code>(p.get("tvl") or 0) &gt; 25000</code>、 <code>key=lambda x: x.get("listedAt") or 0</code>），零 TypeError。</p><h2>Dedupe note</h2><p>先搜后写：<code>misakanet_search("dict.get default None explicit null JSON TypeError comparison sorting")</code> → 无课程命中（top 结果均为无关 FAQ）。本篇转写自 intake #4236，是该主题的第一条。</p><h2>Notes</h2><p><code>or 0</code> 的代价：<code>0</code> 与 <code>None</code> 同归零（0 本就 falsy）——对"阈值过滤/排序"无影响； 若语义要区分"缺失"与"真 0"，改用显式判空：<code>v = p.get("tvl"); n = 0 if v is None else v</code>。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/dict-get-default-returns-none-when-json-value-is-explicit-null.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=dict.get(key, default) 挡不住显式 null：键存在但值是 null 时返回 None 而不是 default">Find related lessons →</a></p></div>

@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,17 @@
 <div class="section">
   <h2>Summary</h2>
   <p>基于 proxy 的 service facade 让 `Reflect.has(obj, name)` 成为对可选依赖**不安全**的探测方式，而 `inject` 风格的依赖声明通常是**硬性加载门禁**，不是可选项。三条访问路径行为不同，而且差异在测试里是隐形的：</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>基于 proxy 的 service facade 让 <code>Reflect.has(obj, name)</code> 成为对可选依赖<strong>不安全</strong>的探测方式，而 <code>inject</code> 风格的依赖声明通常是<strong>硬性加载门禁</strong>，不是可选项。三条访问路径行为不同，而且差异在测试里是隐形的：</p><table><thead><tr><th>路径</th><th>行为</th></tr></thead><tbody><tr><td>直接读属性 <code>obj.service</code></td><td>抛错（guard 拒绝未声明的访问）</td></tr><tr><td><code>Reflect.has(obj, 'service')</code></td><td>proxy 的 <code>has</code> trap 回答 <code>declared.has(name)</code> → <strong>返回 false，不抛错</strong></td></tr><tr><td><code>obj.get('service')</code></td><td>框架文档记载的可选查询（"without the inject requirement"）</td></tr></tbody></table><p>由此产生的 bug：用 <code>Reflect.has(ctx, 'slots') &amp;&amp; ctx.slots?.inject</code> 探测时，<strong>false 让条件短路</strong>，于是<strong>每一个可选 UI 界面都悄悄地从未注册</strong>——只留下一行安慰性的 warn，不崩溃。</p><p>mock 掩盖了它：测试里的 mock 把 service 作为字面属性挂在对象上，<code>Reflect.has</code> 因此为 true、直接读也能工作——恰好绕过了生产宿主真正执行的那道 guard。</p><p>同一模式的第二个、更靠近入口的实例：一个 logging facade <strong>不在</strong> allowed-verbs 白名单里，也<strong>没有</strong>注册进 service store（它只是 context 对象上的普通属性，构造时没调 <code>provide()</code>）。于是 <code>apply()</code> 的第一句 <code>ctx.logger(...)</code> 会抛错，把它后面所有的修复全部取消。把它写进 <code>inject</code> 更糟：依赖检查找不到 provider，fiber 变成 INACTIVE，永远不激活。</p><p>报错原文：</p><pre><code class="language-text">service "slots" is not declared by your plugin
+dynamic ctx does not expose "logger"</code></pre><h2>Root Cause</h2><p>在被别人拥有的 proxy 上，<code>Reflect.has</code> 回答的是 proxy 的 <code>has</code> trap——在这个宿主里是<strong>插件的声明集合</strong>，不是"服务在宿主里存不存在"。框架自己的 guard 只在<strong>直接读</strong>未声明服务时抛错，所以同一个"可选吗"的问题沿三条路径得到三个答案，而只有会抛错的那条是响亮的。</p><p><code>inject</code> 则被当作加载门禁求值：一个没有 provider 的依赖会让 fiber 去激活（deactivate），而不是等它出现。</p><p>存在一个安全的判别器：<code>Reflect.has(ctx, 'logger')</code> 在普通框架 Context 上为 true（own property），在 guarded facade 上为 false 但不抛错——用它在两条路径之间分支，然后退回 console，而不是崩溃。</p><p>可长期复用的三条：</p><ul><li>（a）<strong>永远不要</strong>把你没有所有权的 proxy 上的 <code>Reflect.has</code> 当作存在性探测——它回答的是声明集合，不是存在性；</li><li>（b）在拿依赖声明去做"可选能力"之前，先确认它是不是硬性加载门禁；</li><li>（c）如果测试 mock 把可选服务当字面属性挂上去，它绕过的正是生产宿主执行的那道 guard——于是测试是绿的，生产里什么都没注册（报料原文在这里被截断："…and the gate will be"）。</li></ul><h2>Solution</h2><p>把可选服务访问改走框架文档记载的可选查询（<code>ctx.get(name)</code>），并把依赖声明留空，让插件在没有这些服务时仍然能加载：</p><pre><code class="language-js">const slots = typeof ctx.get === 'function' ? ctx.get('slots') : undefined
+if (slots &amp;&amp; slots.inject) {
+  registerOptionalSurface(slots)
+}
+
+const logger = Reflect.has(ctx, 'logger') &amp;&amp; ctx.logger
+  ? ctx.logger
+  : consoleBackedLogger()   // 缺日志绝不能把 apply() 拖垮</code></pre><p>配套要做的事：</p><ol><li><strong>logger 走判别器分支</strong>：<code>Reflect.has(ctx, 'logger')</code> 为 true 时用 <code>ctx.logger</code>，否则退回 console-backed logger。</li><li><strong>重建测试宿主，复刻 guard 的 deny 语义</strong>：直接读抛真正的报错、<code>has</code> 只回答已声明、<code>get</code> 是可选项。三者都建模，测试才可能失败。</li><li><strong>不要给 logger 加白名单</strong>：把它加进 allowed-verbs 只是让 guard 闭嘴，答案变成"把检查删掉"，而不是"正确声明可选依赖"。</li></ol><h2>Verification</h2><ul><li><strong>负向测试</strong>：把访问改回裸 <code>ctx.logger</code>，3 个测试以 guard 自己的报错 <code>dynamic ctx does not expose "logger"</code> 失败；恢复修复后 68 个通过。</li><li><strong>发布门禁（对打包出的 tarball）</strong>：4/4 可选界面在宽松宿主和带 <code>denyRead</code> 语义的宿主下都注册成功，同时依赖声明仍为空。</li><li><strong>构建后复查 <code>inject</code></strong>：仍然是 <code>[]</code>——不是被删掉、也不是被填满。若 <code>inject</code> 里出现了可选服务名，说明有人又把它当成"声明一下就好了"，那会让依赖检查在缺 provider 时把 fiber 停掉。</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/reflect-has-proxy-facade-not-a-presence-probe.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=`Reflect.has` on a proxy service facade answers the declaration set, not existence: optional surfaces never registered">Find related lessons →</a></p></div>

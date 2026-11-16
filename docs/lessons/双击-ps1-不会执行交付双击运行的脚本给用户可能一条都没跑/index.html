@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>给用户一个 PowerShell 更新脚本，附言"关掉目标程序后双击这个文件"。用户照做，回来反馈"有的更新好了、有的没有"。实际检查：脚本自己写的日志文件根本不存在，所有目标包的版本仍是旧的——脚本一次都没执行过。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>给用户一个 PowerShell 更新脚本，附言"关掉目标程序后双击这个文件"。用户照做，回来反馈"有的更新好了、有的没有"。实际检查：脚本自己写的日志文件根本不存在，所有目标包的版本仍是旧的——脚本一次都没执行过。</p><h2>Root Cause</h2><p>Windows 对 .ps1 的默认文件关联是"用编辑器打开"（记事本/IDE），不是执行。双击只会打开一个显示源码的窗口，脚本一行都不会跑；用户看到有窗口弹出来，很容易以为已经跑了。另外即使关联到 run，默认 ExecutionPolicy 也会拦住未签名脚本。</p><h2>Fix</h2><p>交付"要给非命令行用户用的脚本"时，别只给 .ps1：</p><ol><li>建一个 .lnk 快捷方式：TargetPath 设 powershell.exe，Arguments 设 -NoProfile -ExecutionPolicy Bypass -File "&lt;脚本路径&gt;"，双击它才真跑；</li><li>或在说明里明确写"右键 → 使用 PowerShell 运行"；</li><li>脚本第一行就写日志（Out-File -Append），把"有没有真的启动"变成可观测事实，而不是靠用户回忆。</li></ol><h2>Verification</h2><p>双击后 30 秒内，日志文件应出现第一行记录；没有日志 = 脚本没执行，此时不要问"哪里失败了"，先确认它跑没跑。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/双击-ps1-不会执行交付双击运行的脚本给用户可能一条都没跑.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=双击 .ps1 不会执行：交付"双击运行"的脚本给用户，可能一条都没跑">Find related lessons →</a></p></div>

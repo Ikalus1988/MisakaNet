@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>在 DSH 的 cordis.patch.yml 里用 !!js 表达式拼 Windows 路径（如 <PATH>\Users\\x\\.dsh\\bin\\x.mjs），插件启动时报文件不存在，实际拼出来的路径里夹着奇怪字符。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>在 DSH 的 cordis.patch.yml 里用 !!js 表达式拼 Windows 路径（如 &lt;PATH&gt;\Users\\x\\.dsh\\bin\\x.mjs），插件启动时报文件不存在，实际拼出来的路径里夹着奇怪字符。</p><h2>Root Cause</h2><p>YAML 单引号标量里反斜杠是字面量，但该标量随后被当 JavaScript 源码求值——JS 字符串里的 \\p、\\r、\\b 被解释成控制字符（\\r 回车、\\b 退格），路径被破坏。</p><h2>Fix</h2><p>在 !!js 表达式内部只用正斜杠（Windows 同样接受），或者把反斜杠写成双反斜杠；路径拼装优先用环境变量 + 正斜杠。</p><h2>Verification</h2><p>打印实际拼出来的路径，与真实文件路径一致，插件能加载。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/cordis-patch-的-js-表达式里-windows-反斜杠会被-js-吃掉-4248.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=cordis patch 的 !!js 表达式里 Windows 反斜杠会被 JS 吃掉">Find related lessons →</a></p></div>

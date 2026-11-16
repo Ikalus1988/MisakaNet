@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,10 @@
 <div class="section">
   <h2>Summary</h2>
   <p>MisakaNet exposes verified failure-memory lessons via MCP (`misakanet_search`). The open question: does **injecting** a matching lesson into an LLM's context ac…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>MisakaNet exposes verified failure-memory lessons via MCP (<code>misakanet_search</code>). The open question: does <strong>injecting</strong> a matching lesson into an LLM's context actually improve its fix quality — and for which model sizes? A naive "always inject" approach may help small models but backfire on large ones.</p><h2>Root Cause</h2><p>Two compounding factors surfaced in a <code>--compare</code> ablation (plain vs with_lesson) over 4 scenarios × 2 models:</p><ol><li><strong>Reference-command extraction bug in the benchmark</strong> (<code>scripts/benchmark_workers_ai.py</code>): ASCII flow diagrams inside lessons (e.g. <code>PR opened → Shadow Branch → DCO check</code>) were treated as "reference commands". Feeding that prose as the expected answer skewed scores — the 8B model went 100% (plain, it answered correctly) → 50% (with_lesson, it echoed the injected prose instead of the real fix).</li><li><strong>Model-size asymmetry</strong>: even after fixing extraction, small models benefit strongly from injected context (they lack world knowledge to recover the fix), while large models can be <em>distracted</em> by an injected "reference answer" that conflicts with their own (better) reasoning.</li></ol><h2>Fix</h2><ol><li><strong>Fix extraction</strong>: only bash/sh/shell/zsh fenced blocks and <code>run:</code> lines in yaml blocks count as commands; skip multi-line backtick spans containing <code>-&gt;</code>/<code>→</code>; drop prose lines via a <code>_looks_like_command</code> heuristic. Fix/Solution sections must include <code>###</code> subsections (they hold the real commands).</li><li><strong>Measure, don't assume</strong>: run <code>python3 scripts/benchmark_workers_ai.py --compare</code> to quantify the injection effect instead of trusting intuition.</li><li><strong>Design the injector by model tier</strong>:<ul><li>Small/light models (3B, local): <strong>inject matching lessons aggressively</strong> — big gain.</li><li>Large models (8B+): inject as <strong>low-priority reference</strong> (or only when the model signals it's stuck), matching Claude-Code-style <code>PreToolUse</code> hooks that gate on actual failure, not every turn.</li></ul></li></ol><h2>Verification</h2><pre><code class="language-bash"># Fresh run (delete stale output first to avoid resume-cache from empty runs)
+python3 scripts/benchmark_workers_ai.py --compare --output docs/benchmarks/benchmark-2026-09-02-compare.json</code></pre><p>Result (2026-09-02): avg lesson_hit_rate <strong>46% → 58% (+12pp)</strong> with injection; 3B model <strong>+29pp</strong>, 8B model <strong>−4pp</strong>. Answers also got more focused (1125 → 1014 chars). Scenario detail: "GitHub Actions Script Injection" benefited most (+33 to +50pp); "Auto-Merge CI" hurt the 8B model (−50pp) when a prose "reference" was injected.</p><h2>Lesson</h2><ul><li><strong>RAG memory injection is a tiered lever</strong>: verify with an ablation per model size before defaulting to "always inject".</li><li>A benchmark returning <code>len=0 hit=0%</code> for every run usually means the model call is failing (OAuth/network), not that lessons are bad — check the model call first (see mcporter-cloudflare-oauth-endpoint-scope-wsl-callback).</li><li>Reference-answer extraction must not treat ASCII flow diagrams as commands; otherwise "with lesson" scores are meaningless.</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/rag-injection-benchmark-small-models-gain-large-distracted.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=RAG Memory Injection Benchmark: Small Models Gain, Large Models Can Be Distracted">Find related lessons →</a></p></div>

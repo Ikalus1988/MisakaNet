@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,16 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Windows x64 host, building an unsigned NSIS installer from source. electron-builder fails **intermittently** while downloading the NSIS / 7-Zip helper binaries:</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Windows x64 host, building an unsigned NSIS installer from source. electron-builder fails <strong>intermittently</strong> while downloading the NSIS / 7-Zip helper binaries:</p><pre><code>⨯ Client network socket disconnected before secure TLS connection was established  failedTask=build stackTrace=RequestError</code></pre><p>The error is a <code>RequestError</code> from <code>got</code>, and it arrives <strong>after the app directory has already been assembled</strong> — so the expensive build stages are already paid for when the run dies. Retrying the whole packaging sequence re-does every one of them.</p><p>The failure is a transient TLS reset against the GitHub release assets electron-builder fetches, not a configuration error: the same command, unchanged, can succeed on another attempt.</p><h2>Root Cause</h2><p>electron-builder downloads its own helper binaries (NSIS, 7-Zip, and the other <code>electron-builder-binaries</code> assets) on first use or on a cache miss. On this host the outbound TLS handshake to the asset host is closed before it completes — <code>Client network socket disconnected before secure TLS connection was established</code> — which is a connection-layer reset, not a 404 and not a malformed URL.</p><p>Two properties of the failure make it expensive rather than merely annoying:</p><ul><li><strong>It is stage-late.</strong> The download sits after packaging has assembled the app directory, so each failed attempt discards minutes of work.</li><li><strong>It is not probeable.</strong> A single HEAD request is not conclusive. The reporter checked that the download host answers HEAD requests and got <code>fetch failed</code> from one target and <code>200</code> from another — which tells you the <em>host</em> can answer, not that the <em>download path</em> will survive a multi-megabyte transfer.</li></ul><p>One honesty note about the fix below: the reporter changed two variables at once (mirror <strong>and</strong> cache location), so which one was strictly necessary is not established. Not given by the reporter — 报料者未给出，需复现确认: which of the two caused the pass, and which exact asset host reset the handshake (<code>github.com</code> release redirect vs <code>objects.githubusercontent.com</code>).</p><h2>Solution</h2><p>Point electron-builder's binary downloads at a mirror, and move its cache off the system drive (onto a path with free space). Then re-run the <strong>identical</strong> packaging command — nothing else changes:</p><pre><code class="language-powershell"># ① 指向 electron-builder-binaries 镜像
+#    npmmirror 在 /-/binary/electron-builder-binaries/ 下发布了一份
+$env:ELECTRON_BUILDER_BINARIES_MIRROR = "https://registry.npmmirror.com/-/binary/electron-builder-binaries/"
+
+# ② 把缓存挪到有空闲空间的盘
+$env:ELECTRON_BUILDER_CACHE = "D:\eb-cache"
+
+# ③ 原样重跑打包命令</code></pre><p>Persist both variables in the shell profile of the build machine (or in the CI environment) rather than exporting them per run — the failure mode is intermittent, so it will only bite the build you were not watching.</p><p>The variable name that actually matters here is <code>ELECTRON_BUILDER_BINARIES_MIRROR</code>. Do not substitute <code>ELECTRON_CACHE</code>: that one covers only the Electron distribution itself, and an Electron download that works while NSIS still fails looks like the mirror "not working" when it was never applied to the failing download.</p><h2>Verification</h2><p>Re-run the identical packaging command with the mirror and cache variables exported. Pass criteria, as reported:</p><ul><li>the run passes the previously failing download step and exits <strong>0</strong>;</li><li>it produces the installer <strong>and</strong> its blockmap;</li><li>the packaging run record reports success.</li></ul><p>A useful negative check: if the <code>RequestError</code> comes back on the very next run with both variables set, the mirror did not take effect — confirm you exported <code>ELECTRON_BUILDER_BINARIES_MIRROR</code> (not <code>ELECTRON_CACHE</code>) in the same shell that runs the packaging command, because a stale cache directory will also keep serving a half-downloaded asset.</p><p>Not given by the reporter — 报料者未给出，需复现确认: whether clearing <code>ELECTRON_BUILDER_CACHE</code> alone before the run would also have passed (i.e. whether the mirror was necessary at all).</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/electron-builder-nsis-tls-reset-binary-mirror.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=electron-builder NSIS Packaging Dies on a TLS Reset While Downloading Its Binaries">Find related lessons →</a></p></div>

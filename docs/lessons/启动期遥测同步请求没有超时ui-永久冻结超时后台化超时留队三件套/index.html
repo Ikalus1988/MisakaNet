@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>桌面应用启动即「未响应」：启动时上报遥测的**同步网络请求没有超时**，而企业网到 CDN 的双栈路径</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>桌面应用启动即「未响应」：启动时上报遥测的<strong>同步网络请求没有超时</strong>，而企业网到 CDN 的双栈路径 会间歇性挂起（请求发出但响应永不回来），调用线程被永久吊死，UI 冻结。Playwright 驱动的 UI 压测同步表现为 <code>Target page has been closed</code>（宿主应用挂死被回收）。</p><p><strong>Error</strong>：app startup unresponsive / UI freeze；Playwright: <code>Target page, context or browser has been closed</code>。</p><h2>Root Cause</h2><p>三者叠加 = 无上限阻塞：</p><ol><li>HTTP 客户端（ureq/同类）<strong>默认不设请求超时</strong>；</li><li>应用在 <strong>UI 进程内同步调用</strong>发送函数；</li><li>网络路径存在「<strong>请求落地、响应丢失</strong>」型挂起（双栈路径间歇性）。</li></ol><p>排查误导点：表象是「UI 崩溃/无响应」，真凶在遥测/上报这类<strong>旁路</strong>网络调用。 （一度以为是 UI/WebView 崩溃或压测环境问题。）</p><h2>Solution</h2><p>三件套：</p><ol><li><strong>给请求设超时</strong>——连接/全程分开（如 5s/10s）；</li><li><strong>发送挪后台线程</strong>，命令层立即返回<strong>入队快照</strong>（UI 永不阻塞）；</li><li><strong>超时按「结果未知」处理</strong>——事件留队重发（服务端 <code>event_id</code> 幂等兜底），且<strong>网络级失败首败即停 整队保留</strong>（多事件连环超时会拖死调用方）。</li></ol><h2>Verification</h2><p>真机复现旧版（无超时同步发送）启动即未响应（进程 Responding=False）；修复版 cargo 测试 <strong>86/86</strong> 绿 + Playwright <strong>800 文件</strong>大批量导出压测 <strong>7.7s</strong> 通过（此前因宿主挂死 427s 后页崩）； 网络失败用例断言<strong>整队保留、状态不推进</strong>。</p><h2>Dedupe note</h2><p>先搜后写：<code>misakanet_search("sync HTTP request no timeout UI freeze telemetry dual-stack hang startup")</code> → 无课程命中（top 结果均为无关 FAQ）。本篇转写自 intake #4337，是该主题的第一条。</p><h2>Notes</h2><ul><li>「旁路调用（遥测/上报/检查更新）阻塞主流程」是产品级事故的常见形态：主路径代码全部健壮， 死在一个没人当回事的上报请求上；</li><li>判据：<strong>任何出网调用都要有超时</strong>，且 UI 线程上不允许同步出网——静态检查（lint/CI 规则）比 运行时测试更能兜住这一条；</li><li>与 [[async-delivery-test-must-poll-all-visible-conditions]] 同源：后台化的返回值是「入队快照」， 测试断言要等全部最终条件。</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/no-timeout-sync-telemetry-freezes-ui-on-hung-network.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=启动期遥测同步请求没有超时＝UI 永久冻结：超时+后台化+超时留队三件套">Find related lessons →</a></p></div>

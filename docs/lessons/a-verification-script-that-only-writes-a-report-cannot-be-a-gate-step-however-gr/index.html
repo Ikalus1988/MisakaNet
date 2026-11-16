@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,26 @@
 <div class="section">
   <h2>Summary</h2>
   <p>A sample-verification script was wired into the CI / release pipeline as one gate step. The pipeline</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>A sample-verification script was wired into the CI / release pipeline as one gate step. The pipeline page showed 14 of 14 steps green. The report the same script wrote showed something else:</p><pre><code>7 verification classes
+  6 at 100%
+  1 at 8 failed / 85 samples   (91% pass)</code></pre><p>The ✅ on the step meant "the process exited 0", and the script exited 0 in every world, including this one. Nothing in the pipeline UI could tell that class apart from the six clean ones.</p><h2>Root Cause</h2><p><strong>Two contracts were sharing one artifact.</strong> A report producer succeeds when the report exists; a gate succeeds when a criterion is met. The script implemented the first contract and was installed in the second slot.</p><p><code>main()</code> wrote the report and returned. No branch computed pass/fail, so no path could produce a non-zero status:</p><pre><code class="language-python">def main():
+    report = run_checks()
+    write_report(report)
+    # falls off the end → the interpreter exits 0</code></pre><p>A pipeline can only read the exit status (or the step's process conclusion). "The script completed" therefore became "the criterion was met", and the step name received a checkmark. The defect is not that the threshold was set too low — it is that no threshold existed.</p><p><strong>A report-only tool in a gate table borrows the gate's authority.</strong> The ✅ attaches to the step name, not to any claim the script made. Whoever reads the table concludes the samples passed. That is a false green, and it is worse than a red: a red demands attention, a false green removes the demand and keeps the pipeline quiet until users find the problem.</p><h2>Solution</h2><h3>Step 1: Write the criterion down as a value</h3><p>Decide the pass condition before writing the check: <code>MAX_FAILED_SAMPLES = 0</code>, a per-class minimum, or a global pass rate. Print it in the report header so every number has a meaning.</p><h3>Step 2: Make the exit status the conclusion, and write the report first</h3><pre><code class="language-python">PASS_RATE = 1.0
+
+def main() -&gt; int:
+    report = run_checks()
+    write_report(report)                     # evidence exists in both worlds
+    total, failed = report.total, report.failed
+    passed = total &gt; 0 and (total - failed) / total &gt;= PASS_RATE
+    print(f"{failed}/{total} samples failed (threshold {PASS_RATE:.0%})")
+    return 0 if passed else 1
+
+if __name__ == "__main__":
+    raise SystemExit(main())</code></pre><p>Node is one line at the end of the run:</p><pre><code class="language-js">process.exitCode = failing.length &gt; 0 ? 1 : 0</code></pre><p>The report stays on disk when the gate fails; it is what the next person reads to see which class broke.</p><h3>Step 3: Refuse the empty denominator</h3><p><code>total == 0</code> must fail, not pass. A run that executed nothing has no pass rate; <code>0/0</code> is not 100%.</p><h3>Step 4: Put the threshold in the step name</h3><pre><code>verify-samples   python3 scripts/verify_samples.py --max-failed 0
+                 (non-zero exit if any sample fails)</code></pre><p>A step name that states what it asserts can be read as a claim. A step named only <code>verify_samples</code> cannot.</p><h3>Step 5: If it is a report-only tool, take it out of the gate table</h3><p>The report is still useful as an artifact. Link it from the pipeline; do not put a ✅ next to a step whose script never answered the question the ✅ implies.</p><h2>Verification</h2><p>Two directions, both automated:</p><ol><li><strong>Negative control</strong> — feed a fixture with one known-failing sample: <code>python3 scripts/verify_samples.py --fixture tests/fixtures/known-bad</code> must exit non-zero, and the report must still be written and name the failing class.</li><li><strong>Positive control</strong> — feed the all-pass fixture; the same command must exit 0.</li></ol><p>One direction is not enough: an unconditional <code>exit(1)</code> passes the negative control and fails the positive one, and an unconditional <code>exit(0)</code> does the reverse. Both cases belong in the gate's own test suite, because the gate is the component that can be wrong silently.</p><p>For the reported run the threshold had to be 100% for that class (8 failures, 91% pass). Whether a project wants 100% or a documented floor is a product decision; having no exit criterion is not.</p><h2>Notes</h2><ul><li>Related but opposite: <code>lessons/contrib/ci-manual-dispatch-whole-corpus-false-red.md</code> is a red that everyone learned to ignore. This is a green that was never a verdict. Both destroy the signal.</li><li>Also distinct from <code>lessons/contrib/a-green-test-suite-hid-a-module-a-bare-node-runtime-cannot-load.md</code>: there the gate could fail but was pointed at the wrong runtime; here it had no way to fail.</li><li>Evidence level E2: the 14-step run and the 8/85 report are the reporter's measurements on their own pipeline; they were not reproduced in this repository.</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/report-only-verification-script-cannot-be-a-gate-step.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=A verification script that only writes a report cannot be a gate step, however green the pipeline looks">Find related lessons →</a></p></div>

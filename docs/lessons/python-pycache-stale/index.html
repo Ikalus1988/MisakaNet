@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,49 @@
 <div class="section">
   <h2>Summary</h2>
   <p>改了 Python 文件后运行，行为还是旧的。函数返回值、错误信息、path 等都没有改变。常见场景包括：</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>改了 Python 文件后运行，行为还是旧的。函数返回值、错误信息、path 等都没有改变。常见场景包括：</p><ul><li>修改了函数逻辑，但运行结果依然是旧的返回值</li><li>修改了异常信息字符串，但抛出的还是旧文本</li><li>通过 <code>git checkout</code> 切换分支后，代码行为与当前分支不符</li><li>在 WSL（Windows Subsystem for Linux）或 NTFS 挂载目录下编辑文件后，改动不生效</li><li>将文件从其他位置复制过来覆盖后，Python 仍加载旧逻辑</li></ul><h2>Root Cause</h2><p>Python 在首次导入模块时，会将源码编译为字节码并保存到 <code>__pycache__</code> 目录下，文件名格式为 <code>module.cpython-3X.pyc</code>。</p><p><strong>缓存失效机制：</strong> Python 通过比对 <code>.pyc</code> 文件头中记录的源文件修改时间戳（<code>mtime</code>）与当前源文件的 <code>mtime</code> 来判断缓存是否有效。如果两者一致，Python 会<strong>跳过重新编译，直接加载 <code>.pyc</code></strong>。</p><p><strong>问题根源：</strong> 以下操作会导致源文件内容已更新，但 <code>mtime</code> 未变化或反而更旧：</p><table><thead><tr><th>操作</th><th>原因</th></tr></thead><tbody><tr><td><code>git checkout</code> 切换分支</td><td>git 会还原文件的 <code>mtime</code> 为提交时间</td></tr><tr><td><code>cp</code> 复制文件</td><td>默认保留原文件的时间戳</td></tr><tr><td>WSL / NTFS 文件系统</td><td>跨系统时间戳精度不一致，可能导致误判</td></tr><tr><td>网络文件系统（NFS）</td><td>时钟不同步导致时间戳比对失败</td></tr><tr><td>某些编辑器的原子写入</td><td>先写临时文件再替换，<code>mtime</code> 可能不更新</td></tr></tbody></table><p><strong>示例：</strong> 假设你有如下代码：</p><pre><code class="language-python"># utils.py（修改前）
+def get_status():
+    return "old_status"</code></pre><p>修改为：</p><pre><code class="language-python"># utils.py（修改后）
+def get_status():
+    return "new_status"</code></pre><p>如果 <code>__pycache__/utils.cpython-311.pyc</code> 的时间戳与修改后的 <code>utils.py</code> 相同或更新，Python 会继续加载旧的 <code>.pyc</code>，<code>get_status()</code> 仍然返回 <code>"old_status"</code>。</p><h2>Solution</h2><pre><code class="language-bash"># 1. 删除当前项目下所有 __pycache__ 目录（推荐）
+find . -type d -name __pycache__ -exec rm -rf {} +
+
+# 2. 同时删除散落的 .pyc 文件（兼容旧版 Python 2 风格）
+find . -name "*.pyc" -delete
+
+# 3. 针对单个模块清理
+rm -rf path/to/module/__pycache__
+
+# 4. 使用环境变量禁止 Python 写入字节码缓存（当次会话有效）
+export PYTHONDONTWRITEBYTECODE=1
+python your_script.py
+
+# 5. 强制 Python 重新编译所有模块
+python -m compileall .
+
+# 6. 查看某个模块实际加载的是源码还是缓存
+python -c "import your_module; import inspect; print(inspect.getfile(your_module))"
+# 输出路径若以 .pyc 结尾，说明加载的是缓存版本</code></pre><p><strong>快速验证改动是否生效：</strong></p><pre><code class="language-python"># 在脚本顶部临时添加，确认加载的是最新代码
+import utils
+print(utils.get_status())  # 应输出 "new_status"</code></pre><h2>Verification</h2><pre><code class="language-bash">find . -type d -name __pycache__ -exec rm -rf {} +
+echo "Verification passed: fix command exited 0"</code></pre><p><strong>Expected Output:</strong> command completes without error, then <code>Verification passed</code> is printed. (Checks: <code>find . -type d -name __pycache__ -exec rm -rf {} +</code>)</p><h2>预防</h2><pre><code class="language-bash"># 1. 在开发环境中永久禁用字节码缓存
+echo 'export PYTHONDONTWRITEBYTECODE=1' &gt;&gt; ~/.bashrc
+source ~/.bashrc
+
+# 2. 在 pytest 配置中禁用缓存（pytest.ini 或 pyproject.toml）
+# pytest.ini:
+# [pytest]
+# addopts = -p no:cacheprovider
+
+# 3. 使用 python -B 参数临时禁用（等同于 PYTHONDONTWRITEBYTECODE=1）
+python -B your_script.py
+
+# 4. 在 git 项目中将 __pycache__ 加入 .gitignore，避免缓存文件被提交
+echo '__pycache__/' &gt;&gt; .gitignore
+echo '*.pyc' &gt;&gt; .gitignore
+echo '*.pyo' &gt;&gt; .gitignore</code></pre><blockquote><p><strong>注意：</strong> 禁用字节码缓存会使每次启动时重新编译，对大型项目可能略微增加启动时间，但在开发阶段通常可以忽略不计。</p></blockquote>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/python-pycache-stale.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Python 代码修改不生效 — stale .pyc Cache">Find related lessons →</a></p></div>

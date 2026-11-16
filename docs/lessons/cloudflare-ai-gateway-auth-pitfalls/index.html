@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>When switching Workers AI benchmark calls to Cloudflare AI Gateway (for caching and neuron savings), every request fails with authentication or routing errors:</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>When switching Workers AI benchmark calls to Cloudflare AI Gateway (for caching and neuron savings), every request fails with authentication or routing errors:</p><ol><li>Using the account-level API token (My Profile → API Tokens, even with "AI Gateway: Run" permission) → <code>401</code> / error code <code>10000</code> Authentication error</li><li>Using the gateway token but calling <code>/workers-ai/{model}</code> → routing error <code>7003</code> or auth error <code>10000</code></li><li>Hours wasted debugging authentication when the real issue was token type AND path mismatch</li></ol><h2>Root Cause</h2><ol><li><strong>AI Gateway's Authenticated mode only accepts a "gateway token"</strong> — created in the specific gateway's Settings page. The token is shown only once at creation; navigating away to "manage API tokens" loses the full value. Account-level API tokens are NOT accepted even with the correct permission scope.</li><li><strong>The correct gateway path is <code>/workers-ai/run/{model}</code></strong>, not <code>/workers-ai/{model}</code>. The gateway proxies to Workers AI's <code>/ai/run/{model}</code> endpoint, so the <code>run</code> segment is mandatory.</li><li><strong>Error codes distinguish the failure direction</strong>: account token → <code>401/2009</code>; invalid gateway token → <code>10000</code>; wrong path → <code>7003</code>.</li></ol><h2>Fix</h2><ol><li>In the AI Gateway Settings page, create an authentication token with "Run" permission. <strong>Copy it immediately</strong> — it cannot be retrieved later.</li><li>Use the full gateway URL: <code>https://gateway.ai.cloudflare.com/v1/{account_id}/{gateway_id}/workers-ai/run/@cf/{model}</code></li><li>Set header: <code>Authorization: Bearer {gateway_token}</code></li><li>Enable "Cache Responses" in gateway settings — identical prompts hit the cache, making weekly benchmark reruns cost near-zero neurons.</li><li>Free plan: 10,000 neurons/day. Exhaustion returns <code>429</code>; resets daily.</li></ol><h2>Verification</h2><ul><li>Gateway token + <code>/workers-ai/run/</code> path → model response (not auth/routing error)</li><li>Second identical prompt → cache hit (response time &lt;50ms, no neuron cost)</li><li>Benchmark script switches via <code>AI_GATEWAY_ID</code> / <code>AI_GATEWAY_TOKEN</code> env vars successfully</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/cloudflare-ai-gateway-auth-pitfalls.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Cloudflare AI Gateway: gateway token ≠ account token, /workers-ai/run/ path required">Find related lessons →</a></p></div>

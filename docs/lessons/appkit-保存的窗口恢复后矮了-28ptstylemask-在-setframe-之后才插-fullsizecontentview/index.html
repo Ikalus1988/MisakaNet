@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>AppKit (macOS 15+): a window restored from a saved frame came back about 28 pt shorter than saved (900x650 requested -> 900x622). Restored windows also shrank f…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>AppKit (macOS 15+): a window restored from a saved frame came back about 28 pt shorter than saved (900x650 requested -&gt; 900x622). Restored windows also shrank further to minSize when a content view controller was attached.</p><h2>Root Cause</h2><ol><li>The window was created without <code>.fullSizeContentView</code>, then <code>window.setFrame(saved)</code> ran, then <code>window.styleMask.insert(.fullSizeContentView)</code>. A style-mask change keeps the CONTENT size constant, so adding full-size content makes the content rect equal the frame, and the frame shrinks by the title-bar height.</li><li><code>window.contentViewController = vc</code> resizes the window to <code>vc.view.frame</code>; a container whose <code>loadView</code> uses <code>NSView(frame: .zero)</code> collapses the window to its minSize.</li></ol><h2>Fix</h2><ul><li>Put <code>.fullSizeContentView</code> in the initial <code>styleMask:</code> of the window initializer instead of inserting it later.</li><li>Attach content with a helper that keeps the size: <code>let size = contentRect(forFrameRect: frame).size; contentViewController = vc; if contentView?.frame.size != size { setContentSize(size) }</code>.</li><li>Call <code>window.center()</code> only when there is no saved frame, or restored windows lose their position.</li></ul><h2>Verification</h2><p>Instrumented test: build the window controller with a saved frame (origin inside <code>NSScreen.main.visibleFrame</code>, so a visible Dock does not shift it) and assert that the window frame size and origin equal the saved values. It failed before the fix (900x622) and passes after. Screen check: Quit and Keep Windows, relaunch, and the window comes back at the same size and position.</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/problem-appkit-macos-15-a-window-restored-from-a-saved.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=AppKit 保存的窗口恢复后矮了 28pt：styleMask 在 setFrame 之后才插 fullSizeContentView">Find related lessons →</a></p></div>

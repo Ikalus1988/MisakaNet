@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,28 @@
 <div class="section">
   <h2>Summary</h2>
   <p>An API tool that fetches one document by repository path was given a guard: the path had to look like a</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>An API tool that fetches one document by repository path was given a guard: the path had to look like a lesson, because the same parameter had been interpolated into an upstream URL unvalidated and would happily return <em>any</em> file in the repository.</p><p>The guard shipped, and then this happened — for a published document, reachable by search, with the exact path the search API itself returns:</p><pre><code>$ curl -sS https://misakanet.org/mcp -d '{"…":"misakanet_get_lesson","arguments":{"path":"lessons/contrib/자바-버전-불일치-빌드-오류.md"}}'
+{"error":"Not a lesson path: path must look like lessons/&lt;topic&gt;/&lt;slug&gt;.md (got \"lessons/contrib/…\").",
+ "code":"invalid_lesson_path"}</code></pre><p>The document exists. It is one of 458. It was answered with <em>"your argument is malformed"</em>.</p><p>The pattern that did it:</p><pre><code class="language-js">const LESSON_PATH_RE = /^lessons\/[A-Za-z0-9][A-Za-z0-9._/-]*\.md$/;</code></pre><p>Requesting the same document by <strong>id</strong> failed the same way, because the id is the filename without <code>.md</code> and the id pattern was narrow in the same way:</p><pre><code class="language-js">const LESSON_ID_RE = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;   // ids in the index are not all ASCII</code></pre><h2>Root Cause</h2><h3>1. The rule was written from the author's idea of the corpus</h3><p><code>[A-Za-z0-9]</code> is what a path <em>usually</em> looks like on a machine where every filename is ASCII. The corpus is not that machine: it holds community contributions, and one of them is named in Korean. Nothing about the security property being protected needs an alphabet — what matters is the <strong>structure</strong>: it must be under <code>lessons/</code>, it must end in <code>.md</code>, and it must not contain <code>..</code>, a leading <code>/</code>, a doubled slash, or URL-significant characters that could escape the intended path.</p><p>An alphabet restriction adds no safety and one new failure mode: a valid request answered with an error about its own argument. That is strictly worse than the unvalidated version for every caller who was asking for something legitimate, and it fails <em>closed</em> in the direction that costs trust.</p><h3>2. The tests could not see it, for two independent reasons</h3><ul><li><strong>They tested the rule, not the data.</strong> Every case was invented next to the test — <code>lessons/core/x.md</code>, <code>docs/CI.md</code>, <code>lessons/../..</code>, an empty string. A fixture set written from the same assumption as the pattern agrees with the pattern by construction. The corpus was never the input.</li><li><strong>The test double could not express success either.</strong> The upstream stub answered <code>200</code> with <code>{content, encoding: 'utf-8'}</code> while the code only takes the body when <code>encoding === "base64"</code> — so "a document was found" was an answer the fixture was incapable of producing. It did not matter yet, because every assertion at that point was about a refusal or a 404. The first assertion on the happy path would have read <em>"the guard rejected a valid request"</em> out of its own fixture. (An external reviewer reading the diff noticed this before any test did.)</li></ul><p>Both are the same mistake at different levels: <strong>the test's world was smaller than the real world.</strong></p><h2>Solution</h2><h3>1. Constrain structure, not alphabet</h3><pre><code class="language-js">// Permissive about characters, strict about structure: `lessons/`, `.md`, no `..`, no leading `/`,
+// no `//`, nothing URL-significant.
+const LESSON_PATH_RE = /^lessons\/[^\\?#%\u0000-\u001f]+\.md$/;
+const LESSON_ID_RE = /^[^\\/?#%\u0000-\u001f]+$/;</code></pre><p>Traversal protection stays in the explicit checks (<code>..</code>, leading <code>/</code>, <code>//</code>), where it can be <em>named in the error message</em> instead of hidden inside a regex.</p><h3>2. Test the rule against the corpus, and make the probe count</h3><pre><code class="language-js">test('every lesson file in this checkout passes the path guard', async () =&gt; {
+  const files = lessonFiles();                       // walks lessons/**/*.md from the checkout
+  assert.ok(files.length &gt; 400, `the corpus probe found ${files.length} lessons — it is broken`);
+  const refused = [];
+  for (const rel of files) {
+    const { payload } = await withUpstream(200, { path: rel });
+    if (payload.code === 'invalid_lesson_path') refused.push(rel);
+  }
+  assert.deepEqual(refused, []);
+});</code></pre><p>The same test exists for every id in the public index. Two properties make it a rule rather than a gesture: it reads the dataset from the repository (so the dataset, not the author, defines the input space), and it <strong>asserts the size</strong> of what it read — a probe that silently finds nothing fails instead of passing.</p><h3>3. Make the fixture able to answer "yes"</h3><pre><code class="language-js">// The worker only uses `content` when `encoding === "base64"`, so a stub that answers
+// `{content, encoding: 'utf-8'}` returns no body for a document that exists.
+return new Response(JSON.stringify({
+  content: Buffer.from(LESSON_BODY, 'utf-8').toString('base64'),
+  encoding: 'base64',
+}), { status: 200 });</code></pre><p>…and then assert the success path, because an unasserted success path is what lets a wrong fixture survive: a valid path returns its body, with no error code, after exactly one upstream request.</p><h2>Verification</h2><ul><li>The corpus case fails when the pattern is narrowed again: restoring <code>[A-Za-z0-9]</code> makes <code>every lesson file in this checkout passes the path guard</code> red on the Korean filename — the mutation is the proof that the rule is about the data.</li><li>Counts on the same checkout: <strong>458</strong> <code>lessons/<strong>/*.md</code> files, **411</strong> ids in the index, 16 tests in the file, all green; the whole worker suite is 490 passed / 1 skipped.</li><li>Production after deploy, one call each way: an existing path and its id return content, a non-existent one returns <code>lesson_not_found</code>, and a repository file that is not a lesson returns <code>invalid_lesson_path</code>.</li></ul><h2>Notes</h2><ul><li>The same pattern appears wherever an id or slug is validated: an index that accepts community content will eventually hold non-ASCII names, emoji, or a leading digit, and none of those are security-relevant.</li><li>If the guard must fail closed on some <em>syntax</em>, make the failure about structure and say what the shape is. "Malformed" for a value that exists is the most expensive error a read API can return, because the caller has no way to tell that from a typo.</li><li>Related: <code>workers/get-lesson-guard.test.mjs</code> (corpus + index cases, success path), <code>lessons/core/an-error-code-that-says-retry-cannot-carry-a-not-found.md</code> (the companion defect in the same call), <code>lessons/contrib/benchmark-honesty-simulated-vs-real.md</code> (why a simulated scenario is not the corpus).</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/core/allowlist-must-be-tested-against-the-corpus.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=An allowlist that rejects real data is worse than no validation — test the rule against the corpus">Find related lessons →</a></p></div>

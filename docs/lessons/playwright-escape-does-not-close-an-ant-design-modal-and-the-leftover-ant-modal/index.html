@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,15 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Automating an Ant Design `<Modal>` with Playwright, `page.keyboard.press('Escape')` did **not**</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Automating an Ant Design <code>&lt;Modal&gt;</code> with Playwright, <code>page.keyboard.press('Escape')</code> did <strong>not</strong> close the dialog. Every subsequent click then failed, with a message that points nowhere near the actual problem:</p><pre><code class="language-text">&lt;div tabindex="-1" class="ant-modal-wrap"&gt;…&lt;/div&gt; from &lt;div&gt;…&lt;/div&gt; subtree intercepts pointer events</code></pre><p>Read literally, that says "this element is covered / not clickable", so the natural next move is to suspect the selector or the layout. Both are wrong: the previous step's modal was never closed, and its wrapper was covering the page. The misleading error repeats on <strong>every</strong> subsequent element, which is what makes it read like a page-wide selector problem rather than one stuck overlay.</p><h2>Root Cause</h2><p>Two layers stacked.</p><h3>1. Escape never reached the Modal's listener</h3><p>Ant Design's <code>keyboard</code> close depends on a React-side <code>keydown</code> listener. In a webview driven by Tauri WebView2 / Playwright, <code>keyboard.press()</code> frequently does not feed that listener — focus sits on <code>body</code> or on the webview's outer shell rather than inside the dialog's focus trap — and the Modal simply stays open. The keystroke is dispatched; nothing on the React side acts on it.</p><h3>2. The residual overlay disguises itself as a selector bug</h3><p>Once a Modal is left open, Playwright's actionability check runs on <strong>every</strong> later element and reports <code>intercepts pointer events</code> each time, because <code>.ant-modal-wrap</code> really does sit on top of the page. The failure is one stuck overlay; the error surface is "all my clicks are blocked". The report does not say whether the run had a competing overlay (for example a message/notification container) — 报料者未给出，需复现确认 — but the discriminator below settles it either way.</p><h2>Solution</h2><h3>1. Do not close Ant Design Modals with Escape in tests</h3><p>Click the close button, fall back to the mask, and <strong>wait for the wrapper to actually disappear</strong>:</p><pre><code class="language-js">async function closeModal(page) {
+  const b = page.locator('.ant-modal-close').first()
+  if (await b.isVisible().catch(() =&gt; false)) await b.click()
+  else await page.locator('.ant-modal-wrap').first().click({ position: { x: 8, y: 8 } }) // 点遮罩兜底
+  await page.waitForSelector('.ant-modal-wrap', { state: 'detached', timeout: 8000 }).catch(() =&gt; {})
+}</code></pre><h3>2. Assert it is gone — do not assume the close worked</h3><p><code>waitForSelector(..., { state: 'detached' })</code> is the assertion. A close helper that clicks and returns without checking is how the failure leaks into the next step.</p><h3>3. When you see <code>intercepts pointer events</code>, check for a stuck modal first</h3><p>Before touching selectors or layout:</p><pre><code class="language-js">const stuck = await page.locator('.ant-modal-wrap').count()
+if (stuck) console.log('弹窗残留', stuck, '个 —— 上一步没关掉')</code></pre><h3>4. Close cleanly before navigation</h3><p>Any step that navigates or forces a remount must start from zero open modals; otherwise the residual state pollutes the next assertions.</p><h2>Verification</h2><ul><li><strong>Reproduce</strong>: press Escape, then assert the <code>.ant-modal-wrap</code> count is 0 → fails as expected (count is still 1). This is the negative case that proves the diagnosis.</li><li><strong>Fix</strong>: close via <code>.ant-modal-close</code>, assert the count is 0 and <code>state: 'detached'</code> resolves; the following menu clicks succeed again.</li><li><strong>Regression</strong>: open and close the Modal three times in a row, asserting <code>detached</code> after each close. Then add one deliberate negative case — "click the menu with the modal still open" — which must report <code>弹窗残留</code> rather than the vague intercepts-pointer-events failure.</li></ul><h2>Notes</h2><ul><li>The message <code>... intercepts pointer events</code> is a symptom of hit-testing, not a statement about your locator. Any full-page overlay produces it; this lesson's overlay happens to be a modal.</li><li>If a future test genuinely needs Escape (a user-facing keyboard contract), assert the modal closes <em>inside the app's own test harness</em> rather than relying on it in the automation flow.</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/playwright-antd-modal-escape-intercepts-pointer-events.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Playwright: Escape does not close an Ant Design Modal, and the leftover .ant-modal-wrap intercepts pointer events">Find related lessons →</a></p></div>

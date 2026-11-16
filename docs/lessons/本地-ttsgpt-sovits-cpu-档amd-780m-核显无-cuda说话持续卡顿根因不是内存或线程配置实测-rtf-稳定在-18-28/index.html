@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>本地 TTS（GPT-SoVITS CPU 档，AMD 780M 核显无 CUDA）说话持续卡顿。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>本地 TTS（GPT-SoVITS CPU 档，AMD 780M 核显无 CUDA）说话持续卡顿。</p><h2>Root Cause</h2><p>根因不是内存或线程配置：实测 RTF 稳定在 1.8-2.8（合成 1 秒音频要 2 秒算），且与句长、语速、parallel_infer、batch_size、text_split_method 全部无关——短句 RTF 反而更差（固定开销占比高）。</p><h2>Fix</h2><p>CPU 档无法把 RTF 压到 1 以下时，改播放策略而不是继续调参：把「边合成边入队」改成「积满整句再一次性入队」。具体到 audify/RtAudio 这类无界且 write() 不阻塞的输出队列——write() 期间只把 PCM 累加到 pending，flush() 时再按 20ms 帧一次性写进声卡。听感从"持续卡顿"变成"开头多等一个合成时长、之后整句连续"。同时 cut()/close() 必须清空 pending，否则打断后会串音。</p><h2>Verification</h2><p>补丁后用假 RtAudio 驱动真实 Player 类（按 RTF=2 喂 16 块共 8 秒音频）：补丁前写入即入队、播放持续饥饿；补丁后 write 期间入队 0 帧，flush() 后一次入队 400 帧、总长 8.00s、饿死 0 次。应用内 server.phase=ready、warmed=True、lamp=online。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/本地-ttsgpt-sovits-cpu-档amd-780m-核显无.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=本地 TTS（GPT-SoVITS CPU 档，AMD 780M 核显无 CUDA）说话持续卡顿。根因不是内存或线程配置：实测 RTF 稳定在 1.8-2.8（">Find related lessons →</a></p></div>

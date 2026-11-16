@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,70 @@
 <div class="section">
   <h2>Summary</h2>
   <p>AI Agent 从 fork 仓库提交 PR 后，GitHub Actions CI 频繁报 `ModuleNotFoundError: No module named 'misakanet'`，且 DCO（Signed-off-by）门禁锁死整个测试管线。</p>
+</div>
+<div class="lesson-body">
+<h2>Root Cause</h2><p>AI Agent 从 fork 仓库提交 PR 后，GitHub Actions CI 频繁报 <code>ModuleNotFoundError: No module named 'misakanet'</code>，且 DCO（Signed-off-by）门禁锁死整个测试管线。</p><p>两个独立问题叠加：</p><ol><li><strong>ModuleNotFoundError</strong> — <code>pr-checks.yml</code> 用 <code>pip install -e .</code> 安装项目包，但 fork PR 分支的 <code>pyproject.toml</code> 使用了 <code>setuptools.backends._legacy</code> 构建后端（不兼容 runner 默认 setuptools 版本），导致 <code>pip install -e .</code> 崩溃。</li><li><strong>DCO gate 锁死测试</strong> — workflow 将所有测试步骤挂在 <code>if: steps.dco.outputs.dco_passed == 'true'</code> 后面。一旦 commits 缺 <code>Signed-off-by:</code>，全部测试被跳过，无法区分"代码质量问题"和"CI 配置问题"。</li></ol><h2>Solution方案</h2><h3>1. 用 PYTHONPATH 替代 pip install -e .</h3><pre><code class="language-yaml">- name: 📦 Install Dependencies
+  run: |
+    pip install -r requirements.txt 2&gt;/dev/null || true
+    pip install pytest pytest-cov
+    echo "PYTHONPATH=$(pwd):$PYTHONPATH" &gt;&gt; $GITHUB_ENV</code></pre><p>原理：将仓库根目录加入 <code>PYTHONPATH</code>，Python 直接发现顶层包（如 <code>misakanet/</code>），无需 PEP 517 构建。规避了 <code>pyproject.toml</code> 后端不兼容问题，且执行速度更快（秒级 vs 构建数秒）。</p><h3>2. 解耦 DCO 与测试执行</h3><p>移除所有测试步骤的 <code>if: steps.dco.outputs.dco_passed == 'true'</code> 门禁。DCO 依然作为独立检查运行和报告，但不阻塞测试。最终报告同时包含 DCO 状态和测试结果：</p><pre><code class="language-javascript">const dcoPassed = '...' === 'true';
+// 测试始终运行
+const body = `### 🤖 Audit Report\n\n${dcoLine}\n\n---\n\n${reportBody}`;
+if (!dcoPassed || suiteFailed) {
+  core.setFailed('Audit failed: DCO or test suite has issues.');
+}</code></pre><h3>3. coverage 阈值适配小 PR</h3><p>设置 <code>--cov-fail-under=20</code> 而非 70，避免小改动 PR（如单文件修复）被覆盖率门禁卡住。大改动 PR 自然会有更高覆盖率。</p><h3>4. 手动审计 workflow（workflow_dispatch）</h3><blockquote><p><strong>更新（2026-09-21）：本节描述的 <code>manual-audit.yml</code> 已删除。</strong> 它 18/18 次运行全失败（最后一次 2026-06-03），功能由 <code>pr-checks.yml</code> 的 <code>workflow_dispatch</code> + <code>pr_number</code> 入口取代（#1984）。 <strong>注意两者并不完全等价</strong>：<code>pr-checks</code> 的手动运行<strong>不会 checkout PR 的那份树</strong>（它明说 "No PR context — schema gate skipped"），而 <code>manual-audit.yml</code> 会取 <code>refs/pull/&lt;n&gt;/head</code>。所以 「用 PR 自己的树跑一遍审计」这个能力<strong>目前没有替代品</strong>；要恢复它，应该给 <code>pr-checks.yml</code> 的 dispatch 加上 checkout 目标 PR 的能力，而不是再建一个平行 workflow。</p></blockquote><p>对于已经跑过 CI 的 fork PR，<code>gh run rerun</code> 复用旧 workflow 定义，无法获取更新后的 workflow 文件。解决方案是创建一个独立的 <code>manual-audit.yml</code>：</p><pre><code class="language-yaml">on:
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        required: true
+        type: string
+
+jobs:
+  audit:
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: refs/pull/${{ github.event.inputs.pr_number }}/head
+          fetch-depth: 0
+      # ... 后续测试步骤与 pr-checks.yml 一致</code></pre><p>触发方式：</p><pre><code class="language-bash">gh workflow run 'Manual PR Audit' --repo owner/repo --ref main -f pr_number=142</code></pre><h2>Verification</h2><pre><code class="language-bash">git log --format="%b" -1 | grep -i "Signed-off-by" || echo none</code></pre><p><strong>Expected Output:</strong></p><pre><code>Signed-off-by:</code></pre><h2>进阶：工业级 DCO Bot 留言模板</h2><p>DCO 失败时，可以让 <code>github-actions[bot]</code> 自动在 PR 下发布结构化修复指引（非人工复制粘贴）。</p><h3>Solution</h3><p>在 <code>dco-check.yml</code> 中新增一个 step（仅在 DCO 检查失败时触发）：</p><pre><code class="language-yaml">      - name: Post Industrial DCO Comment
+        if: failure() &amp;&amp; steps.dco-check.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FAILED_COMMITS: ${{ steps.dco-check.outputs.failed_commits_log }}
+          BASE_REF: ${{ github.base_ref || 'main' }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref || env.HEAD_REF }}
+        run: |
+          {
+            echo '### AUTOMATED AUDIT SYSTEM: REGULATORY BLOCK'
+            echo ''
+            echo '**[STATUS]** AUTO-MERGE: PINNED (BLOCKED)'
+            echo '**[REASON]** Developer Certificate of Origin (DCO) validation failed.'
+            echo ''
+            echo '---'
+            echo ''
+            echo '#### 1. COMMIT SIGN-OFF SNAPSHOT'
+            echo 'The following commits in this Pull Request are missing the required `Signed-off-by` line:'
+            echo ''
+            echo '```'
+            echo "$FAILED_COMMITS"
+            echo '```'
+            echo ''
+            echo '#### 2. REMEDIATION PROTOCOL FOR AGENT / CONTRIBUTOR'
+            echo 'Execute the following commands locally...'
+            echo ''
+            echo '```bash'
+            echo '# Step 1: Rebase to add sign-off to all commits'
+            echo "git rebase -i origin/\${BASE_REF} --exec \"git commit --amend --no-edit --signoff\""
+            echo ''
+            echo '# Step 2: Force-push'
+            echo "git push --force origin \${HEAD_REF}"
+            echo '```'
+          } &gt; dco_comment.md
+          gh pr comment "$PR_NUM" --repo ${{ github.repository }} --body-file dco_comment.md</code></pre><h3>DCO commit 快照捕获</h3><p>在 DCO 扫描 step 中，将缺失签名的 commit 以结构化格式输出：</p><pre><code class="language-bash">FAILED_LOG="${FAILED_LOG}$(git log -1 --format='%h | %s | %an &lt;%ae&gt;' "$commit")\n"
+# GitHub Actions CI for AI Agent PRs — DCO decoupling &amp; PYTHONPATH fix
+echo "failed_commits_log&lt;&lt;DCO_EOF" &gt;&gt; "$GITHUB_OUTPUT"
+printf "%b" "$FAILED_LOG" &gt;&gt; "$GITHUB_OUTPUT"
+echo "DCO_EOF" &gt;&gt; "$GITHUB_OUTPUT"</code></pre><h3>关键技巧</h3><ol><li><strong>不用 heredoc 渲染模板</strong> — YAML <code>|</code> 块和 shell heredoc 的缩进要求冲突。改用 <code>{ echo ... } &gt; file</code> 逐行构建，规避缩进问题。</li><li><strong>模板变量注入</strong> — 使用 GitHub Actions <code>env:</code> 传入变量，shell 中 <code>echo "$VAR"</code> 展开。对需要动态替换的部分用双引号，纯文本部分用单引号。</li><li><strong>身份策略</strong> — <code>GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}</code> 以 <code>github-actions[bot]</code> 身份留言，不消耗人类账号。</li><li><strong>workflow_dispatch 兜底</strong> — PR 的首次触发使用旧 workflow，重跑也用旧定义。加 <code>workflow_dispatch</code> + <code>pr_number</code> 输入可强制使用 main 分支的最新 workflow 文件。</li><li><strong>fork PR 的 HEAD 获取</strong> — 在 <code>workflow_dispatch</code> 中需要用 <code>refs/pull/$NUM/head</code> 而非直接 fetch SHA，因为 fork 的 commit 不在 origin remote 中。</li></ol><h2>Key Takeaways</h2><ol><li><code>pip install -e .</code> 对 fork PR 不可靠（pyproject.toml 可能不兼容）— PYTHONPATH 更稳健</li><li>DCO 门禁应该报告而非阻塞 — 让贡献者同时看到所有失败原因</li><li><code>gh run rerun</code> 使用旧 workflow 定义 — 需要 <code>reopened</code> PR 事件或 <code>workflow_dispatch</code> 才能激活新 workflow</li><li><code>reopened</code> PR 事件可能被 path filter 阻挡 — 不设 path filter 或使用手动 dispatch</li></ol>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/ci-dco-decouple-pythonpath-fork-pr.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=GitHub Actions CI for AI Agent PRs — DCO decoupling & PYTHONPATH fix">Find related lessons →</a></p></div>

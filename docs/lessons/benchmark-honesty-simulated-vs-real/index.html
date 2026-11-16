@@ -6,6 +6,7 @@
 <title>Benchmark Honesty — Distinguishing Simulated vs Real Results — MisakaNet</title>
 <meta name="description" content="Draft (not published): When contributing benchmark results to open-source projects, presenting simulated or partial results as real evidence leads to maintainer rejection an...">
 <link rel="canonical" href="https://misakanet.org/lessons/benchmark-honesty-simulated-vs-real/">
+<meta name="robots" content="noindex, follow">
 <meta property="og:title" content="Benchmark Honesty — Distinguishing Simulated vs Real Results">
 <meta property="og:description" content="Draft (not published): When contributing benchmark results to open-source projects, presenting simulated or partial results as real evidence leads to maintainer rejection an...">
 <meta property="og:url" content="https://misakanet.org/lessons/benchmark-honesty-simulated-vs-real/">
@@ -160,6 +161,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -179,6 +191,13 @@
 <div class="section">
   <h2>Summary</h2>
   <p>When contributing benchmark results to open-source projects, presenting simulated or partial results as real evidence leads to maintainer rejection and lost tru…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>When contributing benchmark results to open-source projects, presenting simulated or partial results as real evidence leads to maintainer rejection and lost trust.</p><h2>Root Cause</h2><p>The line between "validation test" and "real benchmark" is often blurry. A script that searches for lessons is NOT the same as an agent that uses lessons to solve problems.</p><h2>Solution</h2><h3>1. Clearly Label What's Real vs Simulated</h3><pre><code class="language-json">{
+  "kind": "search_retrieval_probe",
+  "simulated_execution": true,
+  "note": "task_b_pass and ci_pr_compliance are simulated"
+}</code></pre><h3>2. Use Honest Framing</h3><ul><li>❌ "Benchmark shows +31% improvement with lessons"</li><li>✅ "Search retrieval probe shows lessons can be found for 5/5 scenarios"</li></ul><h3>3. Separate Concerns</h3><table><thead><tr><th>Component</th><th>Real</th><th>Simulated</th></tr></thead><tbody><tr><td>Lesson search</td><td>✅</td><td>—</td></tr><tr><td>Task execution</td><td>❌</td><td>Hardcoded</td></tr><tr><td>Result verification</td><td>❌</td><td>Hardcoded</td></tr></tbody></table><h3>4. Provide Path Forward</h3><p>"This is a search validation tool, not a real benchmark. To make it a real benchmark, you need sandboxed environment + agent execution framework + result verification."</p><h2>Verification</h2><pre><code class="language-bash">python3 scripts/search_knowledge.py "test query"</code></pre><p><strong>Expected Output:</strong></p><pre><code>Found</code></pre><h2>Related</h2><ul><li>PR #479 review feedback</li><li><code>pr-strategy.md</code> — External PR strategy</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/benchmark-honesty-simulated-vs-real.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Benchmark Honesty — Distinguishing Simulated vs Real Results">Find related lessons →</a></p></div>

@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>环境：MuMu 6.8.4（Android 15 / x86_64）、KernelSU（ksud 3.2.5）+ ZygiskNext 1.5.0 + Vector(LSPosed) v2.2，隐藏应用列表 HMA `com.tsng.hidemyapplist` V3.8.3.r520.9605640（API 101…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>环境：MuMu 6.8.4（Android 15 / x86_64）、KernelSU（ksud 3.2.5）+ ZygiskNext 1.5.0 + Vector(LSPosed) v2.2，隐藏应用列表 HMA <code>com.tsng.hidemyapplist</code> V3.8.3.r520.9605640（API 101）。 在 Vector 管理器里启用 HMA 模块、作用域勾选 System Framework (system_server)（该条目自带「由模块固定」标注）并点了「应用」，重启后打开 HMA：</p><ol><li>首页顶部横幅显示「模块已激活 [3.8.3-520] / <strong>系统服务未运行</strong>」；</li><li>界面<strong>完全冻结</strong>：弹出的「更新 V3.3.1」对话框点「确定」关不掉，<code>input keyevent 4</code> 也无效，连续 <code>screencap</code> 拿到的 PNG <strong>字节完全相同</strong>（SHA256 <code>61A5E49B…</code>，只有状态栏时钟在走），<code>am force-stop</code> 之后界面才恢复；冻结期间 <code>dumpsys window</code> 的 <code>mCurrentFocus</code> 始终是 <code>com.tsng.hidemyapplist/.MainActivityLauncher</code>；</li><li>HMA 配置根本没生成：<code>/data/data/com.tsng.hidemyapplist/files/config.json</code> 只有 <strong>128 B</strong>，<code>shared_prefs/</code> 为空，<code>/data/system</code> 下没有任何 hidemyapplist 目录。</li></ol><h2>Root Cause</h2><p>HMA 的「隐藏应用列表」能力依赖它自己的 Xposed 模块被注入 <strong>system_server</strong>（这正是那条 scope 项「由模块固定」的含义）。本机 Vector 框架本身是好的：<code>/data/adb/lspd/log/verbose_2026-10-13T12:02:50.451692.log</code> 里有 <code>I/VectorNative: Injected Vector framework into system_server.</code>、<code>I/VectorConfigCache: System services are ready. Mapping modules and scopes.</code>、<code>I/VectorManager: modules: scanned 79 packages in 14ms, opened 3</code>、以及 <code>D/VectorModuleAppService: Sent module binder to com.tsng.hidemyapplist</code>（只是把 binder 发给了 App 进程）。但<strong>整份 verbose 日志里没有任何 <code>Loading module com.tsng.hidemyapplist</code></strong>；同批拉取的 <code>modules_2026-10-13T12:02:50.45615.log</code> 里也只有 <code>com.suseoaa.locationspoofer</code> 注入 Keep 三个进程的记录。⇒ HMA 从未进入 system_server，它的系统服务自然「未运行」，UI 在等待该服务时把主线程卡死（无 ANR 日志、输入事件全丢——不是 adb 坐标算错，同一坐标在别的应用上正常）。</p><h2>Fix</h2><p>本 ROM 组合下 HMA 3.8.3 不可用，不要在它身上继续花时间：</p><ol><li>解冻：<code>adb shell am force-stop com.tsng.hidemyapplist</code>（进程退出后界面立刻恢复正常）。</li><li>隐藏需求改用 <strong>Shamiko</strong>：它是挂载命名空间级隐藏，实测在本机（KernelSU 3.2.5 + ZygiskNext 1.5.0）不影响 houdini 转译，也不影响 LSPosed 模块注入。</li><li>若一定要用 HMA：换更新的 HMA 版本、确认 Vector 里该模块作用域确实含 System Framework 后重启，或更换框架/ROM 组合再试；排查时先看 <code>/data/adb/lspd/log/verbose_*.log</code> 里有没有 <code>Loading module &lt;包名&gt;</code>。</li><li>决策依据：多数定位类靶应用（Keep 9.0.60、高德 17.01）并不枚举已装应用列表，缺 HMA 不影响模拟定位用途；真正需要隐藏 root/框架的场合优先考虑 Shamiko + 按包 Umount modules。</li></ol><h2>Verification</h2><p>① <code>adb shell "cat /data/adb/lspd/log/verbose_*.log" | grep -e "Injected Vector framework into system_server" -e "com.tsng.hidemyapplist"</code> → 只有前者命中、<strong>没有任何 <code>Loading module com.tsng.hidemyapplist</code></strong>； ② 打开 HMA 首页看横幅是否仍写「系统服务未运行」； ③ <code>ls -l /data/data/com.tsng.hidemyapplist/files/config.json</code> = 128 B（配置从未生成）、<code>ls /data/system | grep -i hidemy</code> 无输出； ④ 冻结判定技巧：连拍两张 <code>screencap</code> 比较 SHA256，若完全相同且只有状态栏时钟变化即为 UI 冻结（可再补发 <code>input keyevent 224</code> + <code>wm dismiss-keyguard</code> 排除「屏幕未唤醒」导致的假冻结）； ⑤ 隐藏是否真的生效要另找会枚举应用列表的检测应用来验证，不能只看 HMA 自己的横幅。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/hma-mumu-android-15-vector-system-server.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=HMA（隐藏应用列表）在 MuMu Android 15 上「模块已激活 / 系统服务未运行」且界面冻结：Vector 从未把它注入 system_server">Find related lessons →</a></p></div>

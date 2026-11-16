@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,31 @@
 <div class="section">
   <h2>Summary</h2>
   <p>A verifier walks the links in a generated document and asserts every target exists. One of those</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>A verifier walks the links in a generated document and asserts every target exists. One of those targets is <code>verification-results.json</code> — <strong>the verification report that the same run writes, and only writes, after all checks pass</strong>.</p><p>Checked before the report exists, the check fails:</p><pre><code>FAILED AssertionError: missing link targets ['./verification-results.json']
+exit=1</code></pre><p>The obvious response is to move the link check to the end of the run, after the report is written. That is worse. Measured, same inputs:</p><pre><code>link check result : FAIL ['./verification-results.json']
+artifact on disk  : {'checks': {'content': 'pass', 'pdf-structure': 'pass', 'fonts': 'pass',
+                                'pages': 'pass'}, 'all_passed': True}
+-&gt; the run is red, but a report asserting all_passed=true is already published</code></pre><p>The run correctly fails, and the artifact that says it passed is already on disk. A verifier that can publish a false receipt is worse than one that cannot run.</p><h2>Root Cause</h2><p>The link check makes one implicit assumption: <strong>every link target is an input that already exists</strong>. That assumption is what creates the circularity — the report's <em>content</em> depends on the checks, and the check depends on the report's <em>existence</em>. Neither ordering escapes it:</p><table><thead><tr><th>ordering</th><th>outcome</th></tr></thead><tbody><tr><td>check links → write report</td><td>false failure on a link that is about to become valid (#2258's symptom)</td></tr><tr><td>write report → check links</td><td>red run, but <code>all_passed: true</code> already published</td></tr></tbody></table><p>The resolution is not a different order. It is a different <strong>question</strong>: instead of "does this file exist?", ask "does this target exist <strong>or is it something this run is about to write</strong>?"</p><h2>Solution</h2><p>Split the check in two, with a declared output set between them.</p><pre><code class="language-python">import os, re, json
+
+DECLARED_OUTPUTS = {"verification-results.json"}          # what this run will write
+
+links = {t[2:] for t in re.findall(r"\]\((\./[^)]+)\)", doc_text)}
+
+# phase 1 — resolve against filesystem ∪ declared outputs
+missing = [n for n in links if not os.path.exists(n) and n not in DECLARED_OUTPUTS]
+assert not missing, missing
+
+# ... run the substantive checks, build the report from their results ...
+json.dump({"checks": checks, "all_passed": True}, open("verification-results.json", "w"))
+
+# phase 2 — resolve against the filesystem alone. Nothing is exempt now.
+missing = [n for n in links if not os.path.exists(n)]
+assert not missing, missing</code></pre><p>Phase 1 stops the false failure. Phase 2 is the one that has teeth, and it is the one that must not be skipped — it is the only assertion that the declared output was <em>actually</em> written.</p><p>Measured, both phases green:</p><pre><code>link check (pre-write) : OK []
+link check (post-write): OK []
+-&gt; the artifact exists now, and the check that mattered ran against the real file</code></pre><h2>Verification</h2><p>That phase 2 is not decoration — mutate it by simply not writing the artifact:</p><pre><code>pre-write  : OK []
+post-write : FAIL ['verification-results.json']</code></pre><p>The declared-output exemption is scoped to phase 1 on purpose. If <code>DECLARED_OUTPUTS</code> were consulted in phase 2 as well, a run that declared an output and never produced it would pass both phases. The exemption has to expire at the moment the file is supposed to exist.</p><p>The <code>verify:</code> field of this lesson is that discrimination in miniature: <code>a.json</code> is declared and absent (exempt), <code>b.json</code> is undeclared and absent (must be reported). Mutated so the declared set contains <code>b.json</code> instead, it exits non-zero.</p><h2>Notes</h2><ul><li><strong>A declared output should be a manifest, not a hard-coded name.</strong> Anything the run writes — a JSON report, a rendered PDF, an index — goes in one list, and phase 1 is written against the list. That way adding an output does not mean touching the checker.</li><li><strong>This generalises past links.</strong> Any check that runs before its own output exists has the same shape: schema validation of a file you are about to write, a "no empty results" assertion on a result set you have not populated yet. Declaring the output and re-checking is the general fix.</li><li><strong>Order is not the lever.</strong> Both single-phase orders fail, in opposite directions: one produces a false failure, the other a false receipt. Only the two-phase split gets both right.</li><li>Provenance: intake <a href="https://github.com/Ikalus1988/MisakaNet/issues/2258">#2258</a>. The two orderings, both phases, and the mutation were run on this machine; the outputs above are real.</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/self-referential-verification-link.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=A doc link to the run's own output is not a broken link: validate against declared outputs, then re-check after writing">Find related lessons →</a></p></div>

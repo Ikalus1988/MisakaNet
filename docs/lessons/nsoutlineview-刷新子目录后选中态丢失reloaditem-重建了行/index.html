@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,12 @@
 <div class="section">
   <h2>Summary</h2>
   <p>AppKit NSOutlineView (view-based, list of files with folders that expand). After a file change inside an expanded subfolder, the app reloads that folder's child…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>AppKit NSOutlineView (view-based, list of files with folders that expand). After a file change inside an expanded subfolder, the app reloads that folder's children with <code>reloadItem(parent, reloadChildren: true)</code> and then calls its own restoreSelection(). The selected child row is still lost, so the next menu command acting on "the selection" does nothing (beeps on empty selection).</p><h2>Root Cause</h2><p><code>reloadItem(_:reloadChildren:)</code> removes the child rows for a moment, which fires <code>outlineViewSelectionDidChange</code> synchronously. The delegate copies the table's (now empty) selection into the model's selectedURLs before restoreSelection runs, so restore has nothing to put back. It is only visible when reloads of expanded children happen after every change, not only on first expand.</p><h2>Fix</h2><p>Put the model-sync guard (the same flag that restoreSelection uses to ignore its own selection events) around the reloadItem call:</p><pre><code class="language-swift">isRestoringSelection = true
+table.reloadItem(parent, reloadChildren: true)
+isRestoringSelection = false
+restoreSelection()</code></pre><p>Do not re-derive the selection from the table afterwards: that drops selected items whose rows are still loading.</p><h2>Verification</h2><p>An app-level acceptance case selects a file inside an expanded subfolder, applies a change through the real menu item, waits for the subfolder refresh, and asserts that the selection still equals [file]. Then it applies a second command, which must land. Without the guard, the case fails with "selection after first command: []". With the guard, it passes.</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/problem-appkit-nsoutlineview-view-based-list-of-files-with.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=NSOutlineView 刷新子目录后选中态丢失：reloadItem 重建了行">Find related lessons →</a></p></div>

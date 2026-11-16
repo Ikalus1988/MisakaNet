@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,37 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Robot programs need systematic inspection before production to catch signal mapping errors, safety violations, and logic bugs. Without a structured methodology,…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Robot programs need systematic inspection before production to catch signal mapping errors, safety violations, and logic bugs. Without a structured methodology, inspectors miss critical issues or check inconsistently across different robots.</p><h2>Solution</h2><h3>Inspection Categories</h3><h4>1. Signal Check (All Robots)</h4><p>Verify all DI/DO/GI/GO signals against the configuration standard:</p><pre><code>Signal ranges:
+  DIDO-PLC:        1-512        (PLC communication)
+  DIDO-Connection:  513-2648     (ISV vision, etc.)
+  DIDO-Tool:        2649-4096    (end effector tools)</code></pre><p>For each signal:</p><ul><li>Verify signal number matches configuration standard</li><li>Verify signal name matches function</li><li>Flag undefined signals with suggested purpose</li></ul><h4>2. Collision Zone FINE Point Check</h4><p><strong>Critical safety check</strong>: The motion command BEFORE releasing a collision zone must use FINE positioning (not CNT).</p><p>Search pattern:</p><pre><code>Search: "CollZone Release" or "CollZone, Release"
+For each match:
+  → Find the last motion command BEFORE the release
+  → Verify it uses FINE (not CNT50, CNT100, etc.)</code></pre><p>Entering a collision zone (Request) does NOT require FINE — only exiting (Release) does.</p><h4>3. Program Logic Check</h4><p><strong>Initialization sequence:</strong></p><ul><li>TIMER_START present at program start</li><li>MI01_CMN Init call present</li><li>Proper HOME position setup</li></ul><p><strong>Decision Code handling:</strong></p><ul><li>WAIT GI[5] present for decision code</li><li>SELECT logic for multi-path branching</li><li>All branches lead to valid programs</li></ul><p><strong>Tool change check:</strong></p><ul><li>TIP_CHECK call present where needed</li><li>Tool change sequence correct (dock/undock pairs)</li></ul><p><strong>End sequence:</strong></p><ul><li>MOVE_HOME at program end</li><li>TIMER_STOP at program end</li><li>Proper signal cleanup</li></ul><h4>4. Fixture Check</h4><pre><code>Search: "Fixture IN" → verify corresponding "Fixture OUT"
+For each fixture:
+  → IN/OUT must be paired
+  → IN before entering work area
+  → OUT after leaving work area</code></pre><h4>5. Application-Specific Check</h4><p><strong>Spot welding:</strong></p><ul><li>SPOT instruction parameters (SD/P/t/S/ED)</li><li>SPOT instruction must be at FINE point</li><li>Non-weld motions can use CNT</li></ul><p><strong>Gluing:</strong></p><ul><li>Speed between SS[1] and SE ≤ 500mm/sec</li><li>SS[1] marker present at glue start</li><li>SE marker present at glue end</li><li>GO[22] parameter for glue switching</li></ul><p><strong>SPR (Self-Piercing Rivet):</strong></p><ul><li>RivetNo./NextRivetNo./GunOpen parameters correct</li><li>MI14_SPR instruction at FINE point</li><li>Magazine refill signal DI[1180] checked</li></ul><h3>Inspection Report Template</h3><pre><code class="language-markdown">## Inspection Summary
+| Category | Items | Passed | Rate |
+|----------|-------|--------|------|
+| Signal Check | X | X | X% |
+| Collision Zone FINE | X | X | X% |
+| Application Check | X | X | X% |
+| Program Logic | X | X | X% |
+| **Total** | **X** | **X** | **X%** |
+
+## Issues Found
+| # | Issue | Location | Severity |
+|---|-------|----------|----------|
+| 1 | ... | Line XX | Low/Med/High |</code></pre><h3>Program Naming Convention</h3><pre><code>Connection: RobotID_CarModel_ProcessOrder_Process_WorkStation
+Example: UB030R01_MS11_01_PICK_JR1
+
+Action: RobotID_ToolID_Process_ToolID
+Example: UB030R01_MS11_01_WELD_JR1</code></pre><h2>Verification</h2><pre><code class="language-bash">grep -i fanuc lessons/contrib/fanuc-*.md 2&gt;/dev/null | wc -l
+echo FANUC verified</code></pre><p><strong>Expected Output:</strong></p><pre><code># (count)
+FANUC verified</code></pre><h2>Notes</h2><ul><li>Always check collision zone FINE points first — this is the most common safety issue</li><li>Signal definitions change between projects — always use the current configuration standard</li><li>Program logic checks should be automated where possible (HTML checker tool)</li><li>Inspection results should be documented for traceability</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/fanuc-program-inspection-methodology.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=FANUC Robot Program Inspection Methodology — Systematic Check Guide">Find related lessons →</a></p></div>

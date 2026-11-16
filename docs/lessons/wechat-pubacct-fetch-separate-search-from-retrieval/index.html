@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,31 @@
 <div class="section">
   <h2>Summary</h2>
   <p>微信公众号文章抓取时，把"找文章URL"和"抓取正文"混在一起，失败模式不清晰，难以诊断。当整个流程作为单一步骤运行时，无法判断是搜索阶段失败（没找到URL）还是抓取阶段失败（找到了URL但无法提取正文），导致调试耗时且容易走弯路。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>微信公众号文章抓取时，把"找文章URL"和"抓取正文"混在一起，失败模式不清晰，难以诊断。当整个流程作为单一步骤运行时，无法判断是搜索阶段失败（没找到URL）还是抓取阶段失败（找到了URL但无法提取正文），导致调试耗时且容易走弯路。</p><h2>Root Cause</h2><p>搜索发现URL成功不代表正文提取能成功；两个阶段依赖不同的技术路径和UA策略，具体体现在以下几点：</p><ol><li><strong>依赖的接口不同</strong>：搜索阶段调用搜索引擎（如 Sogou 微信搜索、Bing）或公众号平台搜索接口，返回的是文章列表和链接；抓取阶段则需要直接请求 <code>mp.weixin.qq.com</code> 域名下的具体文章页面。</li><li><strong>UA 策略不同</strong>：搜索引擎接口对 UA 要求宽松，普通浏览器 UA 即可；而微信文章正文页面会校验请求来源，若 UA 不包含微信客户端标识（如 <code>MicroMessenger</code>），服务器会返回环境验证失败页面（"请在微信客户端打开"），而非真实正文。</li><li><strong>失败表现相似但原因不同</strong>：<ul><li>搜索失败：返回空列表，或搜索接口限流（HTTP 429）。</li><li>抓取失败：返回 HTML 但内容是错误提示页，正文选择器匹配不到任何内容。</li><li>混合处理时，两种失败都表现为"最终没有正文"，无法区分。</li></ul></li></ol><p><strong>具体示例</strong>：</p><pre><code># 错误做法：搜索+抓取混在一起
+def fetch_article(query):
+    url = search(query)       # 可能因限流失败
+    content = scrape(url)     # 可能因UA校验失败
+    return content            # 失败时不知道哪步出了问题
+
+# 正确做法：分阶段，各自捕获异常
+def search_phase(query):
+    try:
+        return search(query)
+    except RateLimitError:
+        log("搜索阶段限流，稍后重试")
+        raise
+
+def retrieval_phase(url):
+    headers = {"User-Agent": "Mozilla/5.0 ... MicroMessenger/8.0"}
+    try:
+        return scrape(url, headers=headers)
+    except ContentNotFoundError:
+        log("抓取阶段正文提取失败，检查UA或页面结构变更")
+        raise</code></pre><h2>Solution</h2><ol><li><strong>第一阶段：搜索发现文章URL</strong>（搜索引擎 / 公众号搜索）<ul><li>使用 Sogou 微信搜索或 Bing 搜索，携带普通浏览器 UA。</li><li>对限流错误（429）单独设置退避重试，最多重试 3 次，间隔指数增长。</li><li>成功后将 URL 列表持久化缓存，避免重复搜索消耗配额。</li></ul></li><li><strong>第二阶段：专用抓取引擎提取正文</strong><ul><li>使用微信客户端 UA（包含 <code>MicroMessenger</code> 标识）绕过环境验证。</li><li>对正文提取失败单独记录，区分"页面结构变更"和"网络错误"两类原因。</li><li>支持对单个 URL 独立重试，不影响其他 URL 的处理进度。</li></ul></li><li><strong>两个阶段分开处理失败，各自有独立的重试逻辑</strong><ul><li>搜索阶段失败 → 不进入抓取阶段，节省请求配额。</li><li>抓取阶段失败 → 保留已搜索到的 URL，下次直接从抓取阶段重试。</li><li>日志中明确标注失败阶段，便于快速定位问题。</li></ul></li></ol><h2>Verification</h2><pre><code class="language-bash">grep -i 'bm25\|chunk\|embed' lessons/contrib/rag-*.md 2&gt;/dev/null | head -3
+echo Search verified</code></pre><p><strong>Expected Output:</strong></p><pre><code># (refs)
+Search verified</code></pre>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/wechat-pubacct-fetch-separate-search-from-retrieval.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=wechat pubacct fetch separate search from retrieval">Find related lessons →</a></p></div>

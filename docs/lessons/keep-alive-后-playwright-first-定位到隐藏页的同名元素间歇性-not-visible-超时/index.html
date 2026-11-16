@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>UI 从「切页卸载重建」改成 keep-alive（多页常驻 DOM + display 显隐）后，Playwright 自动化出现一类**间歇性**假红：`.first()` 定位的按钮/输入框「element is not visible」持续 30s 超时——本地单跑连续全绿、CI 门禁连红两次，且两次挂在不同用…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>UI 从「切页卸载重建」改成 keep-alive（多页常驻 DOM + display 显隐）后，Playwright 自动化出现一类<strong>间歇性</strong>假红：<code>.first()</code> 定位的按钮/输入框「element is not visible」持续 30s 超时——本地单跑连续全绿、CI 门禁连红两次，且两次挂在不同用例的同名元素上（同一个「导出」按钮，一次在场景 A、一次在场景 B）。</p><h2>Root Cause</h2><p>多页常驻后同名元素（各页都有「清除/开始分析/导出」按钮、各自的 file input）同时存在于 DOM。测试写 <code>page.locator('button', { hasText: 'X' }).first()</code> 依赖 DOM 顺序恰好把活跃页排前面；在负载环境下（渲染/挂载时序波动）隐藏页的同名元素会抢到 first 匹配，Playwright 对隐藏元素的点击/可见断言就永远失败。单跑时序好 → 复现不了；门禁负载下 → 稳定踩中。</p><h2>Fix</h2><p>data-page 页容器标记 + 选择器定向到页容器；条件渲染按钮 waitFor visible 再点</p><h2>Verification</h2><p>三脚本（单台/批量/转换）选择器全部定向后：单跑 48/48、5/5、13/13；release 门禁 14/14 连续全绿（此前连红两轮同一类）。</p><p>三脚本 48/48、5/5、13/13；门禁 14/14 连续两轮绿</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/problem-ui-从切页卸载重建改成-keep-alive多页常驻-dom-display.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=keep-alive 后 Playwright .first() 定位到隐藏页的同名元素：间歇性 not visible 超时">Find related lessons →</a></p></div>

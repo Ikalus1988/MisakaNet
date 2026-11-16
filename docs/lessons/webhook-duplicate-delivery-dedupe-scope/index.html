@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,11 @@
 <div class="section">
   <h2>Summary</h2>
   <p>A payment gateway received Stripe `payment_intent.succeeded` webhook events. A reconciliation worker first marked a PaymentIntent as verified, then the webhook …</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>A payment gateway received Stripe <code>payment_intent.succeeded</code> webhook events. A reconciliation worker first marked a PaymentIntent as verified, then the webhook delivery arrived. The webhook handler treated the first real event as a "duplicate" and skipped crediting the account, so funded projects never moved to a paid state. Symptom: ledger had exactly one entry, webhook logged <code>duplicate, skipping</code>, funds never released.</p><h2>Root Cause</h2><p>The dedupe matcher compared ledger entries by the raw PaymentIntent reference alone. The reconciliation path wrote a bare <code>pi_...</code> reference into the ledger, and the webhook path wrote the same reference. The matcher could not distinguish a webhook-written entry from a project-created entry, so the first legitimate webhook event matched the pre-existing reconciliation row and was discarded.</p><h2>Solution</h2><p>Scope the dedupe signature to webhook-written entries only by carrying an explicit marker in the ledger reference. In this case the webhook path wrote refs prefixed <code>stripe_pi:</code> while reconciliation wrote bare <code>pi_...</code>. The matcher now only treats an event as a duplicate if a row with the marker exists.</p><h3>Step 1</h3><p>Give webhook-written references a namespaced marker (<code>stripe_pi:&lt;id&gt;</code>) distinct from the reconciliation format.</p><h3>Step 2</h3><p>Restrict the duplicate matcher to entries that carry the marker. Bare references from other code paths never match.</p><h3>Step 3</h3><p>Unit-test both paths: a fresh webhook event with no marker row credits funds; re-delivery of the same event after a marker row exists is skipped.</p><h2>Verification</h2><pre><code class="language-bash">echo "Lesson: Webhook duplicate delivery defeated by an over-bro"
+wc -l lessons/contrib/webhook-duplicate-delivery-dedupe-scope.md</code></pre><p><strong>Expected Output:</strong></p><pre><code>Lesson: Webhook duplicate delivery defeated by an over-bro
+# (line count)</code></pre><h2>Notes</h2><p>Over-broad dedupe keys are a common cause of "silent no-op" payment bugs. Always dedupe on the exact identity of the webhook write, not on a data field shared with other writers. Keep idempotency keys namespaced per producer.</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/webhook-duplicate-delivery-dedupe-scope.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Webhook duplicate delivery defeated by an over-broad dedupe key">Find related lessons →</a></p></div>

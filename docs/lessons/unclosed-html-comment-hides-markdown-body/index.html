@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,25 @@
 <div class="section">
   <h2>Summary</h2>
   <p>` anywhere in the file**. Per HTML, everything after it is a</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>A documentation pipeline extracted a one-line summary from each markdown file and published it as the page's <code>&lt;meta name="description"&gt;</code>. For 19 files the published description was literally:</p><pre><code class="language-text">
+
+` anywhere in the file**. Per HTML, everything after it is a
+comment — so every renderer that honours HTML comments (GitHub's markdown, most static site
+generators, the browser) hides the entire document from `## Problem` to EOF. The file is a valid
+markdown file; it just renders as nothing.
+
+The summary extractor made it worse in a second, subtler way. It walked the body lines and returned the
+first "meaningful" one, skipping `#` headings and known frontmatter keys. `", "", text, flags=re.DOTALL)
+
+for line in strip_html_comments(content).split("\n"):
+    line = line.strip()
+    if line.startswith(""):
+        continue          # fragment of a comment block
+    if line.startswith("#"):
+        continue
+    return line[:160]</code></pre><p><code>re.sub</code> alone is not enough: it only removes <em>balanced</em> comments, and the damage here came from an unbalanced one. Skipping the fragment is what makes the extractor robust to a broken document.</p><p><strong>Fix the documents</strong>: delete the stray opener (one line per file). Do not "close" it — the opener is an import artifact, and closing it would comment out the body for good.</p><p><strong>Add a cheap invariant</strong> so the next one is caught by a machine, not by a reader:</p><pre><code class="language-python">assert text.count(""), f"unbalanced comment markers: {path}"</code></pre><p>That single line found all 19 files in one pass.</p><h2>Verification</h2><ul><li>Count the markers per file and require them to balance (see the assertion above). Run it across the whole corpus: it found all 19 affected files in a single pass.</li><li>Render one affected file (GitHub preview / a static build) <strong>before and after</strong>: the body appearing is the proof, not the diff.</li><li>Re-run the extractor on the affected files and check the first sentence is prose, then re-publish the derived artifacts (index, pages, meta). The fix is incomplete until the generated output changes.</li></ul><h2>Detection Heuristics</h2><ul><li>A summary, preview or meta description that starts with <code>&lt;</code>, <code>&lt;!--</code> or an HTML tag is generated from raw markdown — the extractor needs comment handling.</li><li>"The page renders blank but the file has content" is almost always an unclosed HTML comment (or an unclosed fenced code block). Look for a bare <code>&lt;!--</code> in the first lines of the body.</li><li>Batch-imported corpora concentrate these artifacts: a provenance/attribution block prepended by a script, then a second comment opener that only existed in one code path.</li><li>Balanced pairs are the invariant to assert, because the failure is <em>silent</em> everywhere else — the file is valid, the linter passes, and only a human looking at a rendered page sees it.</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/unclosed-html-comment-hides-markdown-body.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=One stray `<!--` in a markdown body hides the whole document — and poisons extracted summaries">Find related lessons →</a></p></div>

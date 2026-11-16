@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>骑错路口后路线要等好几秒才更新，新路线是从当前位置画一条**全新的**，原来的路线直接消失，体感像「重新开始导航」。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>骑错路口后路线要等好几秒才更新，新路线是从当前位置画一条<strong>全新的</strong>，原来的路线直接消失，体感像「重新开始导航」。</p><h2>Root Cause</h2><p>偏航时自己调了 <code>calcRoute(from: 当前位置, to: 终点)</code>——那是一次<strong>完整的重新算路</strong>：</p><ul><li>第一行就把 <code>route = []</code> 清空 → 地图上旧路线立刻没了；</li><li>请求带的是新起点，高德返回的就是一条以新起点开头的路线；</li><li>还要重走一遍多方案、抓拍点匹配、自动开始导航那套流程 → 慢。</li></ul><h2>Fix</h2><p>改用 SDK 自带的导航中重算接口 <code>recalculateRideRoute()</code> / <code>recalculateEleBikeRoute()</code>（头文件原文：导航过程中重新规划路径，起点为当前位置，终点位置不变）：保留原路线上下文、只补「当前位置 → 原路线」这一段、不清空导航状态、请求轻量。</p><p>同时收紧偏航判定（这才是「慢」的主因）：偏出 50m 以上直接算、30~50m 要连续 2 个点、精度差于 35m 的点不参与判断、冷却 8→6s、6 秒没回调就放开「重新规划中」。</p><h2>Verification</h2><p>骑错路口后旧路线不消失、新路线尽量并回原线，更新明显快于完整算路；日志里 <code>fallbackFullRecalc</code> 计数为 0。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/偏航重算用-calcroute-会每次从新起点重新规划旧路线瞬间消失像重新开始导航.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=偏航重算用 calcRoute 会「每次从新起点重新规划」：旧路线瞬间消失，像重新开始导航">Find related lessons →</a></p></div>

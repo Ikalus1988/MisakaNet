@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,48 @@
 <div class="section">
   <h2>Summary</h2>
   <p>When running complex automation workflows in n8n (either self-hosted or n8n Cloud), HTTP Request nodes or Webhook nodes targeting external APIs intermittently f…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>When running complex automation workflows in n8n (either self-hosted or n8n Cloud), HTTP Request nodes or Webhook nodes targeting external APIs intermittently fail with the following execution error:</p><pre><code class="language-text">NodeApiError: read ECONNRESET
+    at ServiceError.NodeApiError (/usr/local/lib/node_modules/n8n/node_modules/n8n-workflow/dist/errors/node-api.error.js:20:16)
+    at Object.requestWithAuthentication (/usr/local/lib/node_modules/n8n/node_modules/n8n-core/dist/ExecutionEngine.js:145:12)
+    at processTicksAndRejections (node:internal/process/task_queues:95:5) {
+  code: 'ECONNRESET',
+  cause: Error: read ECONNRESET at TCP.onStreamRead (node:internal/stream_base_commons:217:20)
+}</code></pre><p>The workflow execution halts at the HTTP Request node, causing workflow failures and missing webhook deliveries.</p><h2>Root Cause</h2><p><code>ECONNRESET</code> occurs when the remote TCP peer forcibly closes the connection while n8n is sending data or waiting for a response. In n8n environments, this commonly stems from three causes:</p><ol><li><strong>Keep-Alive Socket Expiration:</strong> The remote HTTP server drops idle TCP keep-alive sockets, but n8n attempts to reuse the closed socket for a subsequent request.</li><li><strong>Reverse Proxy &amp; Firewall Timeouts:</strong> Reverse proxies (Nginx, Traefik, Cloudflare) sitting in front of n8n or the target API drop long-polling connections that exceed <code>keepalive_timeout</code> or <code>proxy_read_timeout</code>.</li><li><strong>Payload / Connection Spike Limits:</strong> Rate limiters on external APIs drop active sockets without sending a clean HTTP 429 response when hit by concurrent n8n node executions.</li></ol><table><thead><tr><th>Cause Component</th><th>Symptom</th><th>Trigger</th></tr></thead><tbody><tr><td>HTTP Keep-Alive</td><td>Socket closed by remote host</td><td>High-frequency polling workflows</td></tr><tr><td>Reverse Proxy Timeout</td><td>504 / ECONNRESET after 60s</td><td>Heavy payload transformations</td></tr><tr><td>Rate Limiter / WAF</td><td>Instant socket drop</td><td>Parallel branch execution in n8n</td></tr></tbody></table><h2>Solution</h2><p>To resolve <code>ECONNRESET</code> errors in n8n, apply retry policies at the node level, configure environment variables for HTTP request agents, and tune reverse proxy timeouts.</p><h3>Step 1: Enable Node-Level Retry Policies in n8n</h3><p>Inside the n8n Workflow Editor:</p><ol><li>Open the failing <strong>HTTP Request</strong> node.</li><li>Navigate to <strong>Settings</strong> (gear icon / tab).</li><li>Enable <strong>Retry On Fail</strong>.</li><li>Set <strong>Max Tries</strong> to <code>3</code> or <code>5</code>.</li><li>Set <strong>Wait Between Tries (ms)</strong> to <code>2000</code> (2 seconds).</li></ol><pre><code class="language-json">{
+  "parameters": {
+    "url": "https://api.target-service.com/v1/data",
+    "options": {}
+  },
+  "type": "n8n-nodes-base.httpRequest",
+  "typeVersion": 4.2,
+  "position": [450, 300],
+  "retryOnFail": true,
+  "maxTries": 3,
+  "waitBetweenTries": 2000
+}</code></pre><h3>Step 2: Configure Keep-Alive Environment Variables in n8n Docker/Self-Hosted</h3><p>If hosting n8n via Docker or environment files (<code>.env</code>), set Node.js HTTP agent parameters to manage idle socket timeouts:</p><pre><code class="language-bash"># Disable persistent keep-alive sockets for external HTTP requests if remote APIs drop connections
+N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
+EXECUTIONS_DATA_SAVE_ON_ERROR=all
+EXECUTIONS_DATA_SAVE_ON_SUCCESS=all</code></pre><p>In your custom n8n start script or Docker Compose environment, pass Node options to configure default HTTP agent behavior:</p><pre><code class="language-yaml">version: '3.8'
+services:
+  n8n:
+    image: n8nio/n8n:latest
+    environment:
+      - NODE_OPTIONS=--max-old-space-size=4096
+      - N8N_DEFAULT_BINARY_DATA_MODE=filesystem</code></pre><h3>Step 3: Adjust Reverse Proxy Timeout (Nginx Example)</h3><p>If running n8n behind Nginx, ensure timeouts match your longest execution node:</p><pre><code class="language-nginx">server {
+    listen 443 ssl http2;
+    server_name n8n.yourdomain.com;
+
+    location / {
+        proxy_pass http://127.0.0.1:5678;
+        proxy_set_header Connection "";
+        proxy_http_version 1.1;
+        proxy_read_timeout 300s;
+        proxy_connect_timeout 300s;
+        proxy_send_timeout 300s;
+    }
+}</code></pre><h2>Verification</h2><pre><code class="language-bash">N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
+echo "Verification passed: fix command exited 0"</code></pre><p><strong>Expected Output:</strong> command completes without error, then <code>Verification passed</code> is printed. (Checks: <code>N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true</code>)</p><h2>Notes</h2><ul><li>For high-throughput workflows targeting Cloudflare-protected APIs, adding a <strong>Wait</strong> node (500ms - 1000ms) between parallel requests prevents WAF socket termination.</li><li>Reference documentation: <a href="https://docs.n8n.io/workflows/execution-settings/">n8n Node Error Handling</a>.</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/n8n-nodejs-econnreset-connection-reset-fix.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Fix Node.js ECONNRESET Connection Reset Error in n8n Webhook HTTP Requests">Find related lessons →</a></p></div>

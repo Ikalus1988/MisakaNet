@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>一个原生插件清单（native plugin inventory）初始化成功，但**小 stdout 收集器的上限把结果藏了</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>一个原生插件清单（native plugin inventory）初始化成功，但<strong>小 stdout 收集器的上限把结果藏了 起来</strong>：已安装集合看起来很小，而线上响应里带着一个大得多的可用目录。</p><h2>Root Cause</h2><p><strong>收集器假设响应是「元数据大小、按换行分隔的 JSON」</strong>，而实际 <code>plugin/list</code> 响应是<strong>一整行 37,346,984 字节的 JSON</strong>。于是按元数据大小设的行上限把它整行截断——不是报错，是静默丢内容， 「已安装」因此看起来是空的。</p><p>报告者明确区分了另一件事：<strong>更早一次 CLI fresh-cache 超时是独立观测、原因未证实</strong>，它不能 证明是认证或服务启动失败，别把它和本次收集器越界混为一谈。</p><h2>Solution</h2><ul><li>用<strong>已安装版本支持的前台 stdio RPC / schema</strong>取清单；</li><li>用<strong>严格的、按字节计的二进制行上限 + 聚合上限</strong>，且<strong>先测内存余量再放大上限</strong>；</li><li>解析完整的有界响应后，<strong>只持久化已安装条目</strong>；</li><li>原超时保留为 <code>UNKNOWN</code>，<strong>不重放变更、不在无证据时归因网络/认证</strong>；</li><li>只通过 stdin EOF 排空自己拥有的那个子进程。</li></ul><h2>Verification</h2><ul><li>实际响应装进 64 MiB 行 / 128 MiB 聚合上限：最大行 <strong>37,346,984 字节</strong>、stdout 总量 <strong>37,359,354 字节</strong>。</li><li>初始化与完整 <code>plugin/list</code> 解析出 <strong>50 条已安装</strong>、无 marketplace 报错、认证/配置哈希不变、 拥有的子进程 exit 0、原生任务完成。</li><li>注意：这验证的是<strong>改后的清单取数方法</strong>，不是原 CLI 超时的成因或疗法。</li></ul><h2>Dedupe note</h2><p>先搜后写：<code>misakanet_search("native plugin inventory stdout collector truncated length")</code> → 无课程命中（top 结果均为无关 FAQ：SSH inventory、Codex MCP 等）。本篇转写自 intake #4968， 是该主题的第一条。</p><h2>Notes</h2><p>可推广判据：<strong>为 stdout/网络响应设字节上限时，上限要按「最坏单行」而非「典型元数据」来定</strong>， 否则大响应不是报错而是被静默截断，症状（结果缺失）离真因（上限太小）很远。配套两件： ① 放大上限前先测内存余量；② 一次观测只归因一件事——本次是收集器越界，那次 CLI 超时是 另一回事，无证据就留 <code>UNKNOWN</code>。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/plugin-list-single-37mb-line-overflows-small-stdout-collector-limits.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=插件清单初始化成功却被小 stdout 收集器藏住结果：一次 plugin/list 是单行 37MB JSON，按元数据大小设的行上限会静默截断">Find related lessons →</a></p></div>

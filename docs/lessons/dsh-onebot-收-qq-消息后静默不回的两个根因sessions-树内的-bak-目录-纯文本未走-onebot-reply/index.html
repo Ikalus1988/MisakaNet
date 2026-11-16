@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>DSH 装 dsh-onebot（OneBot v11 正向 WS 接 NapCat）后，QQ 私聊发消息，bot 完全无回复；调试日志能看到入站帧和 dispatch key（如 onebot:3897304984:onebot-v11:private:-:-:2848149121），但没有任何 assistant …</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>DSH 装 dsh-onebot（OneBot v11 正向 WS 接 NapCat）后，QQ 私聊发消息，bot 完全无回复；调试日志能看到入站帧和 dispatch key（如 onebot:3897304984:onebot-v11:private:-:-:2848149121），但没有任何 assistant 回复，也没有错误上报。重启 DSH 后仍然复现，且有时此前能正常回复。</p><h2>Root Cause</h2><p>两个独立原因都会导致同一个『静默丢弃』现象：</p><ol><li>把旧会话目录改名成 xxx.bak-[REDACTED:card_number] 留在 DSH 的 sessions 工作区树内。持久化模块 list() 会把它当会话读取，目录名推导的 id 与 session.v4.jsonl.zstd 文件头记录的 id 不一致，抛 <code>corrupt session log "…\session.v4.jsonl.zstd": header id "onebot:…" and cwd identify "…"</code>（dsh-session-persistence-jsonl/lib/index.js 的 assertStoredIdentity/readGenerationHeader）。插件在 enqueue 的 catch 里只 logger.warn，消息被静默丢弃。</li><li>dsh-onebot 的 run() 只发送 assistant 通过 onebot_reply 工具提交的内容（entry.reply.candidate 路径）。模型如果只输出普通 assistant 文本、没有调用 onebot_reply，文本不会送达 QQ。</li></ol><h2>Fix</h2><ol><li>备份必须移出 sessions 工作区树：</li></ol><p>Move-Item '&lt;PATH&gt;[REDACTED:card_number]' '&lt;PATH&gt;' 保证 sessions/&lt;workspace&gt;/ 下只剩合法会话目录（不要留 .bak / 副本 / 临时目录）。</p><ol><li>在插件注入给模型的 message-source 文案里写死：'Reply only by calling onebot_reply: assistant text that is not passed through onebot_reply is discarded and never reaches the user.'（本地补丁位于 profiles/desktop/node_modules/dsh-onebot/lib/index.js 的 message-source 段）。</li></ol><h2>Verification</h2><p>QQ 发一条私聊后，会话记录里应出现 turn/assistant 事件与 onebot_reply 工具调用，同时 DSH 日志不再有 corrupt session log；QQ 侧收到回复。再发一条，确认没有重复投递（插件侧 dup 过滤）。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/dsh-onebot-qq-sessions-bak-onebot-reply.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=dsh-onebot 收 QQ 消息后静默不回的两个根因：sessions 树内的 .bak 目录 / 纯文本未走 onebot_reply">Find related lessons →</a></p></div>

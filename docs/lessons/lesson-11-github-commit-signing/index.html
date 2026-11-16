@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,35 @@
 <div class="section">
   <h2>Summary</h2>
   <p>任何人都可以用你的名字和邮箱设置 git config，推送提交，在 GitHub 上显示为你的作品。唯一的区别：没有 "Verified" 徽章。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>任何人都可以用你的名字和邮箱设置 git config，推送提交，在 GitHub 上显示为你的作品。唯一的区别：没有 "Verified" 徽章。</p><h2>Root Cause</h2><p>Git 提交只包含作者名字和邮箱字符串，没有密码学验证。GitHub 不验证提交者身份。</p><h2>Solution</h2><h3>GPG 签名设置</h3><pre><code class="language-bash"># 1. 生成 GPG 密钥
+gpg --full-generate-key
+
+# 2. 获取密钥 ID
+gpg --list-secret-keys --keyid-format=long
+# sec   ed25519/XXXXXXXXXXXXXXXX 2026-01-01
+
+# 3. 导出公钥
+gpg --armor --export XXXXXXXXXXXXXXXX
+
+# 4. 添加到 GitHub Settings → SSH and GPG keys
+
+# 5. 配置 Git 使用 GPG
+git config --global user.signingkey XXXXXXXXXXXXXXXX
+git config --global commit.gpgsign true
+git config --global tag.gpgsign true</code></pre><h3>SSH 签名（更简单）</h3><pre><code class="language-bash"># GitHub 也支持 SSH 签名
+# 1. 使用现有 SSH 密钥
+git config --global gpg.format ssh
+
+# 2. 指定签名密钥
+git config --global user.signingkey ~/.ssh/id_ed25519.pub
+
+# 3. 添加到 GitHub Settings → SSH and GPG keys → Signing keys</code></pre><h3>Verification效果</h3><pre><code class="language-bash"># 提交后在 GitHub 上查看
+# 应该看到 "Verified" 徽章
+git log --show-signature</code></pre><h3>团队强制签名</h3><pre><code class="language-bash"># 仓库级强制（GitHub Settings → Branches → Branch protection rules）
+# 勾选 "Require signed commits"</code></pre><h2>Verification</h2><pre><code class="language-bash">gpg --full-generate-key
+echo "Verification passed: fix command exited 0"</code></pre><p><strong>Expected Output:</strong> command completes without error, then <code>Verification passed</code> is printed. (Checks: <code>gpg --full-generate-key</code>)</p><h2>Notes</h2><ul><li>提交伪造是真实的安全风险，尤其在开源项目中</li><li>GPG 和 SSH 签名效果相同，SSH 更简单</li><li>Source: dev.to (2025-10-26, 118↑)</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/lesson-11-github-commit-signing.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=GitHub Commit Signing — GPG 防止提交伪造">Find related lessons →</a></p></div>
