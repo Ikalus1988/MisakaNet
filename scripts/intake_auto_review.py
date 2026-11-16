@@ -830,6 +830,141 @@ def calculate_confidence(body: str, is_test: bool) -> float:
 PLACEHOLDER_SOLE_TOKEN = re.compile(r"^test[-_ ]?[a-z0-9][a-z0-9._-]*$", re.IGNORECASE)
 LIST_MARKER = re.compile(r"^\s*(?:[-*+]|\d+[.)])\s+")
 
+# ── payload submissions (2026-11-16) ──────────────────────────────────────────────────────────────────
+# A scanner pointed at the public intake files *lesson submissions*: `[Lesson] ' OR 1=1--`,
+# `../../../../etc/passwd`, `Scanner Payload`, `security_test_123`, `scan_request`. Sixteen of them landed
+# in `pending-review` in two batches (#4703–#4714, #4819–#4827), which is where a human looks for
+# lessons — measured 2026-11-16: `pending-review` went from 3 real items to 19, and the scanner will do
+# it again next week.
+#
+# Nothing broke. The payload was stored as text and never interpolated into SQL, a path or a response,
+# which is the correct behaviour and the reason this is a queue defect rather than an incident. So the
+# job here is not to sanitise anything — it is to notice that the submission is *not a report*, and say
+# so where a maintainer can read it, instead of serving it to a review queue that exists for lessons.
+#
+# Precision is the whole problem. 97 of 183 open intakes are already un-convertible because they lack
+# Problem/Root Cause/Fix (see `convert_intake_batch.py`'s histogram); a detector that also swallows real
+# reports about injection bugs would make the queue dishonest in a new way. So every rule below needs
+# **two** signals: something that says "this is attack input, not a symptom" *and* the absence of the
+# evidence a real report carries (a code fence, an error string, a version, a stack).
+
+#: The submission names itself as machine-generated test input.
+PAYLOAD_SOURCE = re.compile(r"^\*\*Source:\*\*\s*generated-payload\s*$", re.IGNORECASE | re.MULTILINE)
+
+#: Attack syntax in the *title* or in the structured `Domain:` / `Title:` fields — the three places a
+#: report states what it is about, as opposed to quoting a payload inside a reproduction.
+PAYLOAD_SYNTAX = (
+    re.compile(r"['\"]\s*(?:or|and)\s+\d+\s*=\s*\d+", re.IGNORECASE),      # ' OR 1=1
+    re.compile(r"\b(?:or|and)\s+1\s*=\s*1\b", re.IGNORECASE),               # the unquoted variant,
+                                                                                # `kind=question OR 1=1`
+    re.compile(r";\s*drop\s+table", re.IGNORECASE),
+    re.compile(r"\bunion\s+select\b", re.IGNORECASE),
+    re.compile(r"(?:^|\s)\.\.(?:/|\\)\.\."),                                  # ../../
+    re.compile(r"etc/passwd|%2e%2e", re.IGNORECASE),
+    re.compile(r"<script\b|javascript:\s*\w", re.IGNORECASE),
+    re.compile(r"\$\{[^}]*\}|\{\{[^}]*\}\}|\$\([^)]*\)"),                    # template / command injection
+)
+
+#: The submission calls itself a test, a scan or a payload. A real lesson may *mention* these words; it
+#: will also carry an error, a stack or a fence, which is what `_has_report_evidence` looks for.
+PAYLOAD_SELF_DESCRIPTION = re.compile(
+    # No trailing `\b`: `security_test_123` is one of the real payloads, and a boundary there rejects it
+    # because `_` is a word character. The leading `\b` is enough to stop `scanner` matching inside a
+    # longer word, and every branch below is distinctive enough not to need more.
+    r"\b(?:scanner(?:\s+payload)?|scan_request|security[_-]?tests?\w*|test[_-]?payload\w*|"
+    r"injection\s+tests?|payload\s+tests?|injected\s+\w+\s+payload|malformed\s+json\s+payload|"
+    # A bare acronym is not a self-description: #4348 is a real report whose title is a HITCON
+    # challenge name containing `RCE`, and closing it would be the detector doing harm. The
+    # acronym has to sit next to a test word, in either order.
+    r"(?:ssrf|xss|csrf|rce|lfi|xxe)[\s_-]*(?:test|payload|scan|probe)|"
+    r"(?:test|payload|scan|probe)[\s_-]*(?:ssrf|xss|csrf|rce|lfi|xxe)|"
+    r"path\s+injection)",
+    re.IGNORECASE,
+)
+
+#: What a report carries and a payload does not. Any one of these means "a person observed something".
+REPORT_EVIDENCE = (
+    re.compile(r"^\s{0,3}(?:```|~~~)", re.MULTILINE),                        # a code fence
+    re.compile(r"\bTraceback\b|\bException\b|\bError:\s|\berror code\b|"
+               r"\bHTTP\s*[45]\d\d\b|\bexit code\b", re.IGNORECASE),
+    # An alarm code (`E2034`, `INTP-222`) — case-sensitive on purpose: under IGNORECASE,
+    # `E[A-Z]{2,}` matches the word `etc`, which made every path-traversal payload look like a
+    # report that cites an error (measured 2026-11-16 on #4820 and #4826).
+    re.compile(r"\b[EF]\d{3,}\b|\b[A-Z]{2,5}-\d{2,}\b"),
+    re.compile(r"\bv?\d+\.\d+(?:\.\d+)?\b"),                                  # a version
+    # A stack frame, in either of the two shapes the tools print: Python's `File "x.py", line 42` and
+    # the JS/Node `at foo (/path/x.js:12:3)`. The first draft only knew the parenthesised shape and
+    # therefore read a Python traceback as "no evidence" (caught on 2026-11-16 before it shipped).
+    re.compile(r'File "[^"]+", line \d+|\b[\w./$-]+\.(?:py|js|mjs|ts|go|rs):\d+'),
+)
+
+
+#: A dotted quad is not a version. `http://169.254.169.254/latest/meta-data/` is exactly what a
+#: metadata-SSRF payload contains, and reading it as "the report cites a version" was the first
+#: version's false negative on #4821.
+IPV4 = re.compile(r"\b\d{1,3}(?:\.\d{1,3}){3}\b")
+
+
+def _has_report_evidence(body: str) -> bool:
+    """Does this body carry something only a person who saw the failure could write?"""
+    body = IPV4.sub(" ", body)
+    return any(pattern.search(body) for pattern in REPORT_EVIDENCE)
+
+
+def detect_payload_submission(title: str, body: str) -> tuple[bool, str]:
+    """True when this is injected test input rather than a failure report. Returns (hit, reason).
+
+    Called with the issue title because two of the sixteen real cases put the payload *in the title*
+    (`[Lesson] ' OR 1=1--`) and left the body almost empty — judging the body alone would have missed
+    them. `body` is stripped of the pipeline's own boilerplate first, so a `Source:` line the server
+    writes is read as metadata rather than as prose.
+    """
+    if not body and not title:
+        return False, ""
+
+    # A question or a proposal is not a lesson submission at all — `intake-auto-review.yml` routes
+    # both before the scorer runs. Checking it here too keeps the detector honest when it is called
+    # directly: `[Question] How do I resolve an SSRF issue?` matched on the acronym alone.
+    kind = re.search(r"^\*\*Kind:\*\*[\s](\w+)", body or "", re.IGNORECASE | re.MULTILINE)
+    if kind and kind.group(1).strip().lower() in ("question", "proposal"):
+        return False, ""
+
+    # Read the header off the **raw** body: `strip_pipeline_boilerplate` drops every `**Field:**` line,
+    # including the `**Source:** generated-payload` that the intake server itself writes — the strongest
+    # signal there is, and the one the first version accidentally deleted before looking for it.
+    declared = PAYLOAD_SOURCE.search(body or "")
+    if declared:
+        return True, "the submission declares `Source: generated-payload`"
+
+    stripped = strip_pipeline_boilerplate(body or "")
+
+    # The three fields that state what the report is about. Quoting a payload inside a `## Problem`
+    # reproduction is normal; *being* one is not.
+    declared_fields = " ".join(
+        match.group(1) for match in re.finditer(
+            r"^\*\*(?:Domain|Title):\*\*\s*(.+)$", body or "", re.IGNORECASE | re.MULTILINE)
+    )
+    surface = " ".join(part for part in (title or "", declared_fields) if part)
+
+    evidence = _has_report_evidence(stripped)
+    if any(pattern.search(surface) for pattern in PAYLOAD_SYNTAX) and not evidence:
+        return True, f"the submission's own title/fields are attack syntax ({surface.strip()[:60]!r})"
+
+    # A title that calls itself test input is the strongest self-declaration there is; a `Domain:` or
+    # `Title:` field that does is weaker (790 characters of real prose can contain the word `ssrf`), so
+    # that one also has to be short.
+    if not evidence and PAYLOAD_SELF_DESCRIPTION.search(title or ""):
+        return True, f"the submission's title describes test input ({(title or '').strip()[:60]!r})"
+    if not evidence and len(stripped.strip()) < 700 and PAYLOAD_SELF_DESCRIPTION.search(declared_fields):
+        return True, f"the submission's fields describe test input ({declared_fields.strip()[:60]!r})"
+
+    admitted = _section_text(stripped, ("problem", "问题"))
+    if not evidence and PAYLOAD_SELF_DESCRIPTION.search(admitted or ""):
+        return True, "the problem section describes an injected payload rather than a symptom"
+
+    return False, ""
+
+
 
 def _section_is_truncated(body: str, names: tuple[str, ...]) -> bool:
     """True when the named section ends because a `###` subheading cut it short.
@@ -1070,6 +1205,16 @@ def auto_review_issue(
     if placeholder:
         result.decision = "placeholder"
         result.reasons.append(f"✗ Detected a test fixture rather than a report: {why}")
+
+    # A payload is not a report that scored badly either, and it is not a fixture: a fixture is a
+    # placeholder someone left in a field, while a payload is attack input a scanner posted to the
+    # public intake. Sending it to `reject` would hand it to the salvage digest, which is the same
+    # round trip `placeholder` was carved out for; `payload` therefore gets its own decision and its
+    # own routing in `intake-auto-review.yml` (label + close, no review queue).
+    injected, injected_why = detect_payload_submission(title, body)
+    if injected:
+        result.decision = "payload"
+        result.reasons.append(f"✗ Payload-shaped submission, not a failure report: {injected_why}")
 
     # Step 9: Collect reasons and suggestions
     for dim in result.dimensions:
