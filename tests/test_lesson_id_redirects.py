@@ -268,6 +268,11 @@ def test_every_corpus_alias_is_represented_including_the_non_ascii_ones():
         if str(lesson.get("id")) != str(lesson.get("slug"))
         and not (REPO / "docs" / "lessons" / str(lesson.get("id")) / "index.html").exists()
     }
+    # Plus the legacy rows: lessons that used to have a page and no longer have a corpus row, so the loop
+    # above cannot produce them (`build_lesson_pages.LEGACY_LESSON_ALIASES` says which and why). They are
+    # still "what the generator emits" — a table that dropped them would 404 URLs that answered 200 for
+    # months, and this test is the only thing that would notice.
+    expected |= {f"/lessons/{legacy}/" for legacy, _slug in blp.LEGACY_LESSON_ALIASES}
     assert set(rules) == expected, (
         f"{len(rules)} rules but the generator would emit {len(expected)}. "
         f"Missing: {sorted(expected - set(rules))[:5]}. Extra: {sorted(set(rules) - expected)[:5]}. "
