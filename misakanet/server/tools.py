@@ -313,10 +313,22 @@ TOOLS = [
                         " if known."
                     ),
                 },
+                "trigger": {
+                    "type": "string",
+                    "description": (
+                        "Required when the submission is lesson-shaped"
+                        " (it has a ## Root Cause / ## Fix section, or a"
+                        " `fix`): the error fragment or keywords a future"
+                        " search would use, <= 160 chars. Becomes the"
+                        " lesson's `trigger:` field."
+                    ),
+                },
                 "verification": {
                     "type": "string",
                     "description": (
-                        "Optional: how to confirm the fix works."
+                        "Required when the submission is lesson-shaped:"
+                        " how a reader confirms the fix worked, as a"
+                        " checkable pass/fail, <= 200 chars."
                     ),
                 },
                 "matched_lesson_id": {

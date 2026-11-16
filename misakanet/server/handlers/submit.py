@@ -103,7 +103,10 @@ def handle_submit_usage(args: dict) -> dict:
 # The hosted endpoint's `misakanet_submit_intake` has a schema. Forwarding an unknown key is a
 # silent no-op at best, so the field list is explicit here.
 _INTAKE_FIELDS = (
-    "kind", "problem", "error", "what_tried", "fix", "verification",
+    # `trigger` (2026-11-16) is the sixth field the hosted surface requires of a lesson-shaped
+    # submission. Omitting it here would drop it on the floor between the stdio call and the worker —
+    # the caller would be told "trigger is required" by a server that had already received one.
+    "kind", "problem", "error", "what_tried", "fix", "verification", "trigger",
     "matched_lesson_id", "source", "contributor", "notify_email",
 )
 

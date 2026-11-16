@@ -303,3 +303,34 @@ def test_a_uuid_is_not_a_tag():
     tags = conv.tags_of(body, "Problem stdio server used two stores")
     assert not any("e17ad3b9" in t or "abdffc0e" in t for t in tags), tags
     assert "problem" not in tags, tags
+
+
+def test_the_submitters_own_trigger_wins_over_the_synthesised_one():
+    """`## Trigger` is the field the intake tool requires now. A synthesised trigger restated the
+    title instead of generalising it, so when the submitter wrote one the converter must keep it."""
+    body = (
+        "**Kind:** lesson_submission\n"
+        "**Domain:** devops\n"
+        "**Tags:** git, gitlab, permissions\n"
+        "\n## Problem\n"
+        "GitLab push denied on a project whose remote is already configured\n"
+        "\n## Trigger\n"
+        "git push denied but clone works protected branch role\n"
+        "\n## Root Cause\n"
+        "The protected branch allows Maintainers; the account is a Developer.\n"
+        "\n## Fix\n"
+        "Ask for the role, or push from a fork.\n"
+        "\n## Verification\n"
+        "re-run `git push origin HEAD`: it creates the commit instead of 403\n"
+    )
+    lesson, notes = conv.convert(issue(5088, "GitLab push denied", body), CANONICAL)
+    assert lesson is not None, notes
+    assert lesson["trigger"] == "git push denied but clone works protected branch role"
+    assert lesson["verify"].startswith("re-run `git push origin HEAD`")
+
+
+def test_an_issue_without_a_trigger_falls_back_to_the_old_synthesis():
+    """Older issues and hand-converted bodies carry no `## Trigger`; they must still convert."""
+    lesson, notes = conv.convert(sample(), CANONICAL)
+    assert lesson is not None, notes
+    assert lesson["trigger"].startswith("npm registry unreachable")

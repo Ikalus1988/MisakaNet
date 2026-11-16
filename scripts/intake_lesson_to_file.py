@@ -213,7 +213,14 @@ def _without_shared_opening(title: str, text: str) -> str:
 
 
 def trigger_of(title: str, problem: str, limit: int) -> str:
-    """The matchable fragment: the title, then only the part of the problem the title does not say."""
+    """The matchable fragment: the title, then only the part of the problem the title does not say.
+
+    This is the **fallback** since 2026-11-16. The intake tool asks a lesson-shaped submission for
+    `trigger` (the error fragment a future search would use) and requires it, because a trigger
+    synthesised from `title + problem` is a restatement of the title, not a generalisation — measured
+    on the 2026-11-15 batches, every generated draft read the same ~80 characters twice. Older issues
+    and hand-converted ones still land here, which is why the function stays.
+    """
     tail = _without_shared_opening(title, one_line(problem, 160))
     if not tail.strip():
         return shorten(title, limit)
@@ -386,7 +393,14 @@ def convert(issue: dict, canonical: set[str],
         "tags": tags,
         "content": content,
         "summary_plain": one_line(problem, FIELDS_MAX["summary_plain"]),
-        "trigger": trigger_of(title, problem, FIELDS_MAX["trigger"]),
+        # The submitter's own trigger wins: they are the only one who knows what a stranger would
+        # search for. `## Trigger` is what `misakanet_submit_intake` writes; `**Trigger:**` and
+        # `Trigger:` cover an issue written by hand or by an older client.
+        "trigger": shorten(
+            section(body, "Trigger") or field(body, "Trigger")
+            or trigger_of(title, problem, FIELDS_MAX["trigger"]),
+            FIELDS_MAX["trigger"],
+        ),
         "verify": shorten(verify or fix, FIELDS_MAX["verify"]),
         "source": field(body, "Source") or "unknown",
     }, notes
