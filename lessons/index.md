@@ -7,7 +7,10 @@
 | Lesson | Domain | Tags | Source |
 |--------|--------|------|--------|
 - [A child stat failure must not fail the whole parent directory listing](contrib/a-child-probe-failure-must-not-poison-the-parent-listing.md) | nodejs | "nodejs", "filesystem", "error-handling", "windows", "acl", "listing", "degradation" | intake-2314
+- [A CI failure classifier mapped failure logs to categories by bare substring matc](contrib/a-ci-failure-classifier-mapped-failure-logs-to-categories.md) | dsh | "race_condition", "race", "rate" | intake-4877
 - [A .cmd with non-ASCII comments emits a phantom "is not recognized" command: chcp inside the file is already too late](contrib/a-cmd-with-non-ascii-comments-emits-a-phantom-is-not.md) | windows | "windows", "batch", "cmd", "encoding", "codepage", "chcp" | intake-4299
+- [A container PaaS update task reports SUCCESS and app metadata shows the new vers](contrib/a-container-paas-update-task-reports-success-and-app.md) | mcp | "container", "paas", "update" | intake-4884
+- [A contribution leaderboard showed `used: 0` for every row and `coverage.lesson_a](contrib/a-contribution-leaderboard-showed-used-0-for-every-row-and.md) | dsh | "used", "coverage.lesson_authors", "lesson_authors.path" | intake-4814
 - [A corpus cached in one row has a ceiling, and the diagnosis cannot live in that row](contrib/a-corpus-cached-in-one-row-has-a-ceiling.md) | search | "search-index", "d1", "storage-limits", "observability", "silent-failure" | dsh agent session, 2026-09-26/27 (diagnosed from the live worker's own endpoints)
 - [A cross-platform recovery CLI emitted a POSIX-quoted executable and JSON argumen](contrib/a-cross-platform-recovery-cli-emitted-a-posix-quoted.md) | windows | "cross", "platform", "recovery" | intake-4469
 - [A migration that only renames when the destination is missing leaves orphan source files](contrib/a-file-migration-whose-only-condition-is-if-exists-dest-rena.md) | development | "migration", "filesystem", "idempotency", "rename", "startup", "state-reconciliation" | intake-3813
@@ -15,12 +18,18 @@
 - [A hit is not evidence of relevance — the boundary queries that must come back empty](contrib/a-hit-is-not-evidence-of-relevance.md) | search | "search", "relevance", "retrieval", "no-match", "relevance-floor", "boundary-queries", "trust" | issue-2615
 - [A port-bound session cookie minted per launch overflows the 16KB request header and breaks startup](contrib/a-port-bound-session-cookie-minted-per-launch-overflows-the.md) | network | "cookies", "http-header", "maxheadersize", "node-http", "electron", "port-binding" | intake-4290
 - [PR 门禁用 Bend 解释器跑判定程序：memory fault（机器栈溢出），门禁永远等不到结果](contrib/a-pull-request-gate-script-ran-a-bend-interpreter-over-its.md) | dsh | "pull", "request", "gate" | intake-4650
+- [A PySide6 Flatpak app that pins its dependencies in pyproject.toml still ships t](contrib/a-pyside6-flatpak-app-that-pins-its-dependencies-in.md) | dsh | "pip3", "pyside6", "flatpak" | intake-4797
 - [A pystray menu crash on macOS is an AppKit main-thread violation in a background thread, not a host-app bug](contrib/a-pystray-menu-thread-crash-is-an-appkit-main-thread-violation.md) | python | "pystray", "appkit", "macos", "main-thread", "crash-report", "serena", "mcp" | intake-2261
+- [A QSettings INI sanitizer that strips lines starting with `@Variant(` and contai](contrib/a-qsettings-ini-sanitizer-that-strips-lines-starting-with.md) | dsh | "model-variant", "qsettings", "ini" | intake-4796
+- [A repository staleness sweep flagged several directories and pages as "no refere](contrib/a-repository-staleness-sweep-flagged-several-directories.md) | dsh | "git", "glob-.json", "iterdir" | intake-4869
 - [A reviewed Python source bundle had identical file bytes on Windows and POSIX bu](contrib/a-reviewed-python-source-bundle-had-identical-file-bytes-on.md) | windows | "reviewed", "python", "source" | intake-4470
+- [A script needed to read a Google API (Search Console) for a project whose servic](contrib/a-script-needed-to-read-a-google-api-search-console-for-a.md) | windows | "iam.disableserviceaccountkeycreation", "org_internal", "chmod" | intake-4902
 - [A manually stacked pull request is closed, not retargeted, when the upstream branch is deleted](contrib/a-stacked-pr-downstream-is-closed-when-the-upstream-branch-is-deleted.md) | devops | "github", "pull-request", "stacked-pr", "gh-cli", "branch", "recovery", "verification" | intake-3762
+- [A stdio MCP recovery server and CLI/hooks used different SQLite state stores alt](contrib/a-stdio-mcp-recovery-server-and-clihooks-used-different.md) | mcp | "stdio", "mcp", "recovery" | intake-4919
 - [A stubbed success is not a sandbox — a faked `git push` let the suite rewrite the published index](contrib/a-stubbed-success-is-not-a-sandbox.md) | testing | "test-isolation", "stubs", "test-pollution", "false-failure", "generated-artifacts" | dsh agent session, 2026-09-26 (diagnosed from a red CI leg on a lesson-only pull request)
 - [A worksheet patch accepted XFE1 and produced an Excel workbook whose column exce](contrib/a-worksheet-patch-accepted-xfe1-and-produced-an-excel.md) | dsh | "worksheet", "patch", "accepted" | intake-4536
 - [Accidental __pycache__ artifacts committed to a data repository](contrib/accidental-pycache-commit.md) | development | "git", "pycache", "gitignore", "cleanup" | 
+- [Adding new lesson files to a corpus and running its generator suite leaves the t](contrib/adding-new-lesson-files-to-a-corpus-and-running-its.md) | mcp | "rglob", "and", "the" | intake-5032
 - [为什么 AI 编码代理的 API Key 用量是普通聊天的上百倍：上下文重放 + 缓存统计口径（附本地台账与官网余额对不上的原因）](contrib/agent-api-key-usage-vs-chat-context-replay-and-cache-accounting.md) | agent | "dsh", "deepseek", "token-usage", "prompt-cache", "cost-meter", "agent-loop", "context-replay", "subagent", "cost-optimization", "api-key" | intake-3312
 - [एजेंट त्रुटि हैंडलिंग — पुनर्प्रयास और फॉलबैक पैटर्न](contrib/agent-error-handling-hi.md) | agent | "agent", "error-handling", "hindi", "resilience", "tutorial" | practical-experience
 - [Agent-first node registration via MCP](contrib/agent-first-node-registration-via-mcp.md) | mcp | "mcp", "registration", "agent", "node", "token" | mcp-intake-53a0f3ec83
@@ -196,6 +205,7 @@
 - [DSH aborts every turn milliseconds after start when a plugin injects an unnamespaced event kind](contrib/dsh-turn-aborts-on-plugin-injected-event-kind.md) | dsh | "dsh", "plugin", "session-log", "interrupted", "turn-lifecycle", "zstd", "memos-cloud" | intake-3524
 - [DSH web_fetch reports 'TypeError: fetch failed', which names the wrapper and hides the real cause](contrib/dsh-web-fetch-typeerror-fetch-failed-cause.md) | dsh | "dsh", "web-fetch", "network", "undici", "proxy", "dns", "diagnostics" | intake-2964
 - [DSH Web GUI 每次启动端口都变，写死端口的脚本下次就连不上](contrib/dsh-web-gui-每次启动端口都变写死端口的脚本下次就连不上.md) | devops | "dsh", "port", "http", "localhost", "scripting", "random-port" | intake-4246
+- [DSH Web UI：`ctx.slots.register(options, component)` 传了「返回组件的工厂」时，标签页点开全白，且没有任何报错](contrib/dsh-web-uictxslotsregisteroptions-component.md) | dsh | "ctx.slots.register-options", "ctx.slots.register", "dsh" | intake-5041
 - [DSH Windows job runner exits 1 because the profile dependency closure is incomplete](contrib/dsh-windows-job-runner-exit-1-missing-subprocess-dep.md) | dsh | "dsh", "windows", "subprocess", "job-object", "pnpm", "dependency-resolution", "profile", "ripgrep" | intake-3156
 - [DSH shell tools on Windows fail in two stages: the PowerShell script policy, then a sandbox ACL temp grant](contrib/dsh-windows-shell-tools-blocked-two-stages.md) | dsh | "dsh", "windows", "powershell", "sandbox", "execution-policy", "acl" | intake-3484
 - [DSH workspace-write denies writes in workspace subdirectories while the root is writable](contrib/dsh-workspace-write-denies-workspace-subdirectories.md) | dsh | "dsh", "windows", "sandbox", "workspace-write", "file-policy", "flutter", "build-hang", "misdiagnosis" | intake-3125
@@ -214,6 +224,7 @@
 - [Editing a plugin source file has no effect because pnpm file: dependencies are copies in node_modules](contrib/editing-a-plugin-source-file-has-no-effect-because-pnpm.md) | nodejs | "pnpm", "nodejs", "plugin", "node_modules", "dsh" | intake-3786
 - [electron-builder NSIS Packaging Dies on a TLS Reset While Downloading Its Binaries](contrib/electron-builder-nsis-tls-reset-binary-mirror.md) | network | "electron-builder", "nsis", "windows", "tls", "mirror", "build-cache", "download" | intake-3089
 - [Browser provider unavailable: the electron package is installed without its dist/ binary](contrib/electron-dist-missing-browser-provider-unavailable.md) | dsh | "electron", "browser-provider", "postinstall", "electron-mirror", "windows" | intake-2535
+- [Electron 桌面壳里，「打开 Web UI」按钮点击后完全无反应：无报错、无新窗口、无进程变化。 现象细节 Web 插件面板内嵌的 iframe 显示正常](contrib/electron-桌面壳里打开-web.md) | dsh | "openexternal", "location", "streambaseurl" | intake-5040
 - [Elevated PowerShell 5.1 script exits 2 with no log when it contains a non-ASCII string literal](contrib/elevated-powershell-51-脚本以-exit-2-静默退出无日志.md) | windows | "powershell", "windows", "encoding", "gbk", "elevation", "mojibake" | intake-4528
 - [A tray icon is not evidence: test whether security software still injects into a newly started process](contrib/endpoint-security-disable-verify-by-fresh-process-injection.md) | security | "windows", "endpoint-security", "dll-injection", "verification", "false-belief", "troubleshooting", "it-support" | 
 - [A validator's error names the symptom, not the gate; and a check script must not write to disk](contrib/enum-error-was-the-symptom-not-the-gate.md) | ci | "gates", "json-schema", "required-fields", "enum", "check-script", "dirty-worktree", "exit-code" | intake-3688
@@ -268,12 +279,14 @@
 - [FANUC R-2000iC 检索混淆Fix — 关键词强制召回](contrib/fanuc-r-2000ic-retrieval-fix.md) | rag | "fanuc", "2000ic", "retrieval" | hermes_wsl
 - [FANUC 虚拟控制器诊断纪律：对回环端口的 TCP 探测会亲手把控制器弄崩](contrib/fanuc-rgcore-diagnostic-probe-triggers-controller-crash.md) | fanuc | "roboguide", "rgcore", "frvrc", "diagnostic-discipline", "tcp-probe", "loopback", "crash-triage", "endpoint-security", "virtual-controller", "windows" | MisakaNet intake issue #3316
 - [FANUC 客户端假活排查：装有 DLP/EDR 的工控站上分层定位注入与内核过滤](contrib/fanuc-rgcore-hang-endpoint-security-injection.md) | fanuc | "roboguide", "rgcore", "endpoint-security", "dll-injection", "wfp", "virtual-controller", "hang-triage", "windows" | MisakaNet intake issue #2704（提交者已脱敏：第三方安全产品以角色名代替）
+- [FANUC ROBOGUIDE V9.40「folder-mode 恢复/注入失效」是假阴性：恢复导入要跑几分钟，引导后立刻查 MD: 会看到 404/模板内容](contrib/fanuc-roboguide-v940folder-mode.md) | fanuc | "fanuc", "roboguide", "v9" | intake-5019
 - [FANUC RSR Program with OFFSET and SELECT Logic Sharing](contrib/fanuc-rsr-program-select-logic.md) | fanuc | "fanuc", "rsr", "tp-programming", "select", "offset", "register", "program-logic", "r-2000ib" | bbs.gongkong.com/d/201302/481940
 - [FANUC running time is $SYSTEM_TIME[n].RUN_TOT inside SYSVARS.SV, in minutes — not in .DG files](contrib/fanuc-running-time-system-time-run-tot.md) | fanuc | "fanuc", "sysvars", "kconvars", "system-time", "running-time", "utilization", "offline-extraction", "binary-backup" | intake-3675
 - [FANUC Spot Weld Tip Max Wear Amount — sysspot.sv Variable Lookup via kconvars](contrib/fanuc-spot-wear-max-lookup.md) | fanuc | "spot-weld", "electrode-wear", "sysspot", "kconvars", "spoteqsetup", "epaf-trgdst", "tip-dress" | colleague_memory_dump
 - [FANUC TCP and Tool Configuration — Standards for Automotive Applications](contrib/fanuc-tcp-tool-configuration-standards.md) | fanuc | "tcp", "tool", "utool", "uframe", "payload", "coordinate", "automotive", "welding", "gluing", "riveting" | internal-training
 - [A confirmed injection exclusion is not the fix: three security layers need three separate proofs](contrib/fanuc-vrc-exclusion-verified-still-crashes-three-layers.md) | fanuc | "roboguide", "rgcore", "endpoint-security", "dll-injection", "wfp", "edr", "acceptance-testing", "virtual-controller" | intake-3325
 - [Reopening the workcell is itself a trigger: avoiding tpconn does not stop the PMON reconnect storm](contrib/fanuc-workcell-reopen-retriggers-pmon-reconnect-storm.md) | fanuc | "roboguide", "rgcore", "pmon", "reconnect-storm", "watchdog", "endpoint-security", "virtual-controller", "mitigation-boundary" | intake-3305
+- [FANUC 机器人减速机/RV 超负荷数据分析：**数据源选错白干一场**。把诊断备份里的 `SUMMARY.DG`<PATH>` 当减速机原始数据来解析，结果](contrib/fanuc-机器人减速机rv.md) | fanuc | "fanuc", "rv", "summary" | intake-4782
 - [faster-whisper 1.x crashes on PyAV 19: av.open() got an unexpected keyword argument metadata_errors](contrib/faster-whisper-1-x-crashes-on-pyav-19-av-open-got-an.md) | python | "faster-whisper", "pyav", "av", "ctranslate2", "asr", "typeerror", "metadata_errors" | intake-4123
 - [Fatal-guard CLI: harden entry point with --help, --version, exit codes](contrib/fatal-guard-cli-hardening.md) | devops | "fatal-guard", "cli", "harden", "exit-codes" | closed-pr-1023
 - [ModuleNotFoundError in Python trotz pip install](contrib/fehler-python-modul-nicht-gefunden.md) | python | "python", "pip", "module", "path", "virtualenv" | https://docs.python.org/3/tutorial/venv.html
@@ -324,6 +337,7 @@
 - [Git 凭证Setup — Automation push 免密码](contrib/git-credentials-automation.md) | git | "git", "credentials", "automation" | unknown
 - [git diff --check only flags whitespace on added lines, and git diff -w hides whitespace inside a quoted string](contrib/git-diff-whitespace-verification-traps.md) | git | "git", "diff", "whitespace", "css", "snapshot", "verification", "content-hash" | 
 - [Git Push Force-With-Lease — Detached HEAD Recovery After Hash Change](contrib/git-force-with-lease-detached-head.md) | devops | "git", "force-push", "detached-head", "rebase", "recovery" | hermes-agent
+- [`git ls-remote` / `git push` 到 github.com 间歇性挂起 20–35 秒后失败，报 `Recv failure: Conn](contrib/git-ls-remote-git-push-到-githubcom-间歇性挂起-2035-秒后失败报-recv.md) | dsh | "git", "http.sslbackend-openssl", "schannel" | intake-4985
 - [Git 合并ConflictHandling — 手动解决最佳实践](contrib/git-merge-conflict-resolution.md) | git | "git", "merge", "conflict", "resolution" | unknown
 - [Git Push 的正确方式 — 在受限 Agent 环境中推送代码](contrib/git-push-without-shell-agent.md) | git | "git", "push", "agent", "gh-cli", "lesson" | unknown
 - [git stash is repository-wide, not worktree-local — a bare stash pop can apply another session's work](contrib/git-stash-is-repository-wide.md) | git | "git", "stash", "worktree", "multi-agent", "data-loss", "reflog", "recovery" | intake-2606
@@ -375,6 +389,7 @@
 - [Illustrator 中西文字体混排：中文静默回退宋体并嵌入 PDF](contrib/illustrator-pdf.md) | ux | "illustrator", "extendscript", "font-fallback", "cjk", "pdf", "adobe", "typography" | intake-3937
 - [An IM bot is a guest on someone else's stack: pin the client, the OS, and the install order](contrib/im-bot-environment-contracts.md) | wechat | "wechat", "wcferry", "wxauto", "openclaw", "version-lock", "wsl", "windows", "environment-contract" | discussion-2611
 - [Verify Import Paths After Refactoring Python Modules](contrib/import-path-verification-after-refactor.md) | python | "refactoring", "imports", "python", "testing" | mcp-memory-service PRs #1167, #1184, #1185
+- [In `workbuddy2api-panel`, setting `admin.audit_enabled: true` in `config.json` w](contrib/in-workbuddy2api-panel-setting-adminaudit-enabled-true-in.md) | dsh | "workbuddy2api-panel", "admin.audit_enabled", "config.json" | intake-5066
 - [Instrumentation that never reached the artifact: a silent probe is not evidence](contrib/instrumentation-that-never-reached-the-artifact.md) | development | "instrumentation", "root-cause", "verification", "build-artifacts", "silent-failure", "debugging" | intake #2566 — remote agent; measured 2026-10-01, corroborated by the maintainer's receipt
 - [Auto-Welcome Newcomers via issue_comment Event](contrib/issue-comment-newbie-welcome.md) | automation | "github-actions", "ci", "community", "newbie", "good-first-issue", "automation" | deepseek
 - [同义词扩展陷阱：jieba.add_word() 改变全局分词行为导致回归](contrib/jieba-synonym-expansion-pitfall.md) | search | "jieba", "synonym", "chinese", "segmentation", "regression" | mcp-intake-1114
@@ -490,6 +505,7 @@
 - [NSIS Installer Refuses In-Place Upgrade When appId Differs from the Released Build](contrib/nsis-installer-rejects-upgrade-appid-guid-mismatch.md) | windows | "windows", "nsis", "electron-builder", "appid", "registry", "installer", "upgrade" | intake-3093
 - [NSIS silent install exits 2 inside an agent Job; Electron dies with STATUS_BREAKPOINT when UAC is off](contrib/nsis-silent-install-exit-2-electron-status-breakpoint.md) | windows | "windows", "nsis", "electron", "status-breakpoint", "uac", "job-object", "no-sandbox", "silent-install" | intake-3546
 - [NSOpenPanel/NSSavePanel buttons stay disabled in sandboxed SwiftUI macOS app](contrib/nsopenpanel-nssavepanel-button-disabled-sandbox.md) | development | "swift", "macos", "appkit", "swiftui", "nsopenpanel", "nssavepanel", "sandbox", "file-panel" | 
+- [NVIDIA App (显示→颜色) reports 色彩准确度模式 (color accuracy mode) stuck at 增强 (Enhanced);](contrib/nvidia-app-显示颜色-reports-色彩准确度模式-color-accuracy-mode-stuck.md) | windows | "nvidia", "app", "reports" | intake-4911
 - [Obsidian Local REST API wraps note content in JSON — write-back without unwrapping nests a new layer per write](contrib/obsidian-local-rest-api-json-envelope-read-modify-write.md) | integrations | "obsidian", "rest-api", "json-envelope", "self-signed-cert", "read-modify-write" | Obsidian vault session (69MB vault, one note inflated to 139MB before diagnosis)
 - [On macOS, chrome-devtools-mcp1.12.0 autoConnect list_pages timed out while the n](contrib/on-macos-chrome-devtools-mcp1120-autoconnect-list-pages.md) | development | "on", "macos", "chrome" | intake-4473
 - [An on-chain payout has no retry: the checks an agent must pass before it signs](contrib/onchain-payout-preflight-checklist.md) | crypto-ops | "usdc", "base", "bounty", "payout", "decimals", "gas", "irreversible", "preflight" | intake-2629
@@ -558,6 +574,8 @@
 - [External PR Strategy via pr-genius](contrib/pr-strategy.md) | meta | "github-pr", "external-pr", "pr-genius", "federation" | pr-genius
 - [The Private Agent Memory Fallacy — Why Portable Memory Wallets Fail](contrib/private-agent-memory-fallacy.md) | agent | "memory-wallet", "portable-memory", "privacy", "interoperability", "zep" | blog.getzep.com
 - [扩展名白名单收口成单一声明表，收集层仍各写一份：存储器报告整列 N/A](contrib/problem-3942.md) | mcp | "problem", "io", "zi" | intake-3942
+- [Problem 自动化脚本按「另一台机器人解码出的下标」写控制器系统变量数组（例：$SERVENT[8]），本意是关掉 PMON 服务条目；写入成功、读回校验也](contrib/problem-4725.md) | mcp | "servent", "pmon" | intake-4725
+- [Problem 虚拟控制器仿真环境里用「杀进程+重启」的方式回收控制器后，每次启动都报 `SYST-302 Please power off. Power Fa](contrib/problem-5078.md) | fanuc | "syst", "please", "power" | intake-5078
 - [「声明了却没用」的变量名 lint 报出上万条噪声：共享 VAR 声明与 TYPE 块淹没 4 条真信号](contrib/problem-a-declared-but-unused-real-variable-name-lint-meant.md) | mcp | "problem", "declared", "unused" | intake-4608
 - [macOS 一键 Finder 颜色标签：菜单键位映射到调色板索引，全错一位](contrib/problem-a-macos-app-added-one-key-finder-color-tags-the.md) | development | "problem", "macos", "app" | intake-4018
 - [共享可预测工作目录被并行流程改写：产物中途消失，内容寻址照单全收](contrib/problem-a-multi-step-extractiondecompileingest-pipeline.md) | mcp | "problem", "multi", "step" | intake-4426
@@ -569,21 +587,28 @@
 - [AppKit 保存的窗口恢复后矮了 28pt：styleMask 在 setFrame 之后才插 fullSizeContentView](contrib/problem-appkit-macos-15-a-window-restored-from-a-saved.md) | development | "problem", "appkit", "macos" | intake-3848
 - [NSOutlineView 刷新子目录后选中态丢失：reloadItem 重建了行](contrib/problem-appkit-nsoutlineview-view-based-list-of-files-with.md) | development | "problem", "appkit", "nsoutlineview" | intake-4023
 - [窗口以 0 高度打开（不可见）：设置 contentViewController 时容器根视图还是 .zero](contrib/problem-appkit-window-opened-with-zero-height-invisible.md) | development | "problem", "appkit", "window" | intake-3843
+- [Problem cherry-pick 一个改了源文件（如 lessons/*.md）的提交到新分支时，仓库里提交过的派生物（data/lessons.json](contrib/problem-cherry-pick-一个改了源文件如.md) | mcp | "git", "cherry", "pick" | intake-4994
 - [对比 upstream 跑测试判断「有没有改坏」：editable install 让测试始终导入自己的源码树](contrib/problem-comparing-my-branch-against-upstream-to-decide.md) | mcp | "problem", "comparing", "my" | intake-3938
 - [@dsh-market/plugin 升级后侧边栏市场按钮消失：core 传递依赖停在旧版，client.js 不进 bundle](contrib/problem-dsh-marketplugin-升级后侧边栏插件市场按钮图标整个消失没有-ui.md) | dsh | "problem", "dsh", "market" | intake-4541
 - [dsh-session-groups 装好却调不通：apply() 取 webServer/tools 服务失败，桥接路由没注册](contrib/problem-dsh-session-groups-插件安装后session-groups-工具调用失败http.md) | dsh | "problem", "dsh", "session" | intake-4540
 - [DSH web_search 报 multiple usable web providers：seam 的 searchProvider 为空，多 provider 并存](contrib/problem-dsh-的-web-search-工具调用时报错-带-engine-参数的搜索如-advanced.md) | dsh | "problem", "dsh", "web" | intake-4538
 - [从 PDF 代码清单提取源码编译失败：折行与分页符把逻辑行拆开](contrib/problem-extracting-program-source-from-pdf-code-listings.md) | mcp | "problem", "extracting", "program" | intake-4607
+- [Problem feishu 文档 doc_update 的 `select_title` 按标题替换章节时返回 "No heading found match](contrib/problem-feishu-文档-doc-update-的-select-title-按标题替换章节时返回-no.md) | feishu | "no", "select_title", "feishu" | intake-5006
+- [Problem `gh pr create --base <fork-branch>` 想把 stacked PR 挂到上游仓库里另一个 PR 的 head 分](contrib/problem-gh-pr-create-base-fork-branch-想把-stacked-pr.md) | mcp | "user-branch", "update_lessons_json.py", "git" | intake-4993
+- [Problem GUI 自动化里注入鼠标点击（mouse_event 类）落在目标控件上却**毫无效果**：坐标几何正确（点位在列表行内）、控件枚举正常、点击](contrib/problem-gui-自动化里注入鼠标点击mouse-event.md) | windows | "gui", "mouse", "event" | intake-4733
 - [SwiftPM 新增 XCTest 方法后 --skip-build 报 No matching test cases](contrib/problem-in-a-swiftpm-package-after-adding-new-xctest.md) | mcp | "problem", "in", "swiftpm" | intake-4020
 - [AppKit 文档应用后台任务结束后菜单项灰着：菜单校验时机不对](contrib/problem-in-an-appkit-document-style-app-after-a-background.md) | development | "problem", "in", "an" | intake-4019
 - [Vite/Rollup 构建报 is not exported by：CommonJS 文件被 ESM 命名导入](contrib/problem-js-项目viterollup-打包-共享工具层构建报x-is-not-exported-by.md) | windows | "problem", "js", "vite" | intake-4672
 - [MCP 工具只加到本地 stdio 面、没加托管端点：远程调用找不到该工具](contrib/problem-mcp-tool-implementation-only-added-to-local-stdio.md) | mcp | "problem", "mcp", "tool" | intake-2559
 - [Windows Git Bash 里 python -c / heredoc 拿到 /d/ 路径报 FileNotFoundError](contrib/problem-on-windows-inline-python-c-python-eof-scripts.md) | windows | "problem", "on", "windows" | intake-4425
+- [Problem ROBOGUIDE（SimPRO GUI）里用「机器人菜单→关闭控制器电源→打开控制器电源」做正规断电时，点「关闭控制器电源」必然在几秒内弹出非](contrib/problem-roboguidesimpro.md) | mcp | "roboguide", "simpro", "gui" | intake-5106
 - [Swift localizedStandardCompare 排序 4 万文件名慢到 200ms：桥接 NSString + 跨核合并得不偿失](contrib/problem-sorting-40000-file-names-with-swift.md) | mcp | "problem", "sorting", "file" | intake-3861
 - [大仓的两个 issue 被「我来修」占位 6/10 周：占位评论不是承诺](contrib/problem-two-issues-on-a-large-upstream-repo-were-each-left.md) | mcp | "problem", "issues", "on" | intake-3248
 - [keep-alive 后 Playwright .first() 定位到隐藏页的同名元素：间歇性 not visible 超时](contrib/problem-ui-从切页卸载重建改成-keep-alive多页常驻-dom-display.md) | mcp | "problem", "ui", "keep" | intake-4381
 - [高缩放多窗口下 GUI 自动化连环踩坑：坐标语义、截图裁剪、z-order、锁屏句柄失效](contrib/problem-windows-gui-自动化在高缩放如.md) | windows | "problem", "windows", "gui" | intake-4601
 - [GUI 进程 spawn 控制台子进程：每次调用闪一个黑窗，诊断输出刷屏](contrib/problem-windows-gui.md) | windows | "problem", "windows", "gui" | intake-3972
+- [Problem Windows UI 自动化里给应用发**菜单加速键**（如 Alt+R 然后 T 触发菜单项「示教器(T)」），合成键事件被**中文输入法（I](contrib/problem-windows-ui-自动化里给应用发菜单加速键如-altr-然后-t.md) | windows | "windows", "ui", "alt" | intake-5077
+- [Problem Windows 上 COM 本地服务器崩溃导致客户端永久等待时，症状极具误导性：客户端界面只剩「正在连接/Connecting…」，进程活着但零](contrib/problem-windows-上-com.md) | windows | "windows", "com", "connecting" | intake-4872
 - [VB6 自绘树控件只认真实输入链路：合成消息不触发选中，老化实例还会静默降级](contrib/problem-windows-上自动化-vb6-自绘树控件如.md) | windows | "problem", "windows", "vb6" | intake-4600
 - [git commit -m 里用反引号引命令：提交信息里的内容被 shell 吃掉](contrib/problem-writing-a-git-commit-message-that-quotes-a-command.md) | mcp | "problem", "writing", "git" | intake-3976
 - [对拍 405 行 0 偏差仍全错：golden 与提取层同源，只锁公式层不锁输入](contrib/problem-一套数值引擎用与官方-excel-工具逐行对拍-405-行-0.md) | mcp | "problem", "excel", "bug" | intake-4490
@@ -591,6 +616,7 @@
 - [CI 敏感词黑名单把敏感词写进仓库：防泄密闸自己成了泄密源](contrib/problem-为防止敏感字面量口令序列号内部项目名等进入代码仓在-ci.md) | mcp | "problem", "ci", "grep" | intake-4670
 - [FANUC 负载组下标不是工具号：SET_TOOL/MI02_TCH 的 N 不能拿去查 $PLST_GRP1](contrib/problem-从-fanuc.md) | fanuc | "problem", "fanuc", "plst" | intake-3875
 - [ROBOGUIDE 版本代差：备份与媒体版本不一致时变量恢复违例、FTP 550、虚拟机器人起不来](contrib/problem-从机器人-md.md) | mcp | "problem", "md", "roboguide" | intake-4522
+- [Problem 仿真机器人控制器崩溃（OS -145「Power off controller to reset」）后，一切「重启控制器/冷启动」路径永久卡死在](contrib/problem-仿真机器人控制器崩溃os-145power-off-controller-to.md) | windows | "get-service", "os", "power" | intake-4910
 - [feishu CLI docx update 返回 write_error not found 但内容已写入：盲目重试会重复插入](contrib/problem-使用-feishu-climifeishu-docx-update修改飞书文档时命令返回-write.md) | feishu | "problem", "feishu", "cli" | intake-4084
 - [unified diff 的 added 行关键词扫描：包名提取把 flag 当包名](contrib/problem-写了一个对-unified-diff-的-added.md) | mcp | "problem", "unified", "diff" | intake-3673
 - [FANUC KAREL .pc 反编译：例程局部变量名在字节码里根本不存在](contrib/problem-反编译-fanuc-karel-的-pcp.md) | fanuc | "problem", "fanuc", "karel" | intake-4265
@@ -600,12 +626,18 @@
 - [打包目录累积历史产物：发布脚本 find 到旧 zip 发了出去](contrib/problem-打包目录会累积历史版本的产物例如-dist-或-bundle-里同时躺着-app.md) | mcp | "problem", "dist", "bundle" | intake-3872
 - [封装 FANUC LS→TP 编译器：robot.ini 私有格式 + GUI 错误框静默挂死](contrib/problem-把-fanuc-官方-lstp-编译器winolpc-工具链-maketpexe封装进-windows.md) | fanuc | "problem", "fanuc", "ls" | intake-4267
 - [后台跑长脚本接 | tail：输出文件 0 字节，进度全丢](contrib/problem-把一个跑约-4-分钟的扫描脚本丢到后台执行顺手接了-tail.md) | mcp | "problem", "tail" | intake-3890
+- [Problem 某飞书文档 MCP 的 doc_update（select 匹配 + replace/insert/delete）在改结构化文档时大面积「No](contrib/problem-某飞书文档-mcp-的-doc-updateselect-匹配.md) | feishu | "no", "mcp", "doc" | intake-5065
 - [UI 验收脚本一夜 13 条断言全红：不是回归，是测试数据被换了](contrib/problem-桌面应用的-ui-验收脚本一夜之间-13.md) | mcp | "problem", "ui", "ro" | intake-4659
+- [Problem 桌面应用的遥测单测偶红（入队快照断言 3≠2，队列里混进**别处铸的事件**），本机偶绿、门禁必现。异步家族：同一现象还有「状态被写进别人的目录](contrib/problem-桌面应用的遥测单测偶红入队快照断言.md) | mcp | "load_queue", "save_queue" | intake-4661
 - [验收冒烟「无配置=零采集」假红：exe 同目录的 bootstrap 模板污染了环境](contrib/problem-桌面应用的验收冒烟里有一条无配置.md) | mcp | "problem", "device", "id" | intake-4605
+- [Problem 用 feishu CLI `docx update` 做小范围文字替换时踩到两个叠加坑： 1. `--mode replace --select](contrib/problem-用-feishu-cli-docx-update-做小范围文字替换时踩到两个叠加坑-1-mode.md) | feishu | "docx", "success", "batch-update-blocks" | intake-4729
 - [feishu docx create 长文档（400+ 块）降级纯文本：Markdown convert API failed](contrib/problem-用-feishu-cli-的-docx-create-f-markdown-写入长文档400-块时响应.md) | feishu | "problem", "feishu", "cli" | intake-4682
 - [飞书 doc_append 往 callout 里写嵌套列表：success 但 degrade_code=1010](contrib/problem-用飞书文档-apidoc-update-doc-appendmarkdown-形式向-callout.md) | feishu | "problem", "api", "doc" | intake-3945
 - [飞书 doc_update 的选择器粒度太粗：静默丢内容](contrib/problem-用飞书文档-mcp-的-doc-update.md) | feishu | "problem", "mcp", "doc" | intake-3968
 - [容量水位分级：Number(null)=0 让「取不到」被判成告急](contrib/problem-给剩余容量做水位分级剩余-10-判告急红25-判偏低黄取不到判.md) | mcp | "problem", "unknown", "tp" | intake-3889
+- [Problem 自动化脚本在「虚拟控制器引导完成」后立刻发起 HTTP/RPC 读写，全部连接被拒（WinError 10061），实验整段报废；引导判据用的是](contrib/problem-自动化脚本在虚拟控制器引导完成后立刻发起-httprpc.md) | mcp | "http", "rpc", "winerror" | intake-4724
+- [Problem 自动化驱动「设备内置 Web TP」（浏览器形态的示教器）时三个连环陷阱，症状全是「命令发了、返回 0x0 成功、界面纹丝不动」：①登录接口是*](contrib/problem-自动化驱动设备内置-web.md) | fanuc | "web", "tp", "x0" | intake-4980
+- [Problem 驱动 WinForms/HTML 混合 GUI（仿真器示教器类）做自动化操作时连撞三个坑：①数字输入弹窗是灰底灰字渲染，OCR 词表**零命中*](contrib/problem-驱动-winformshtml-混合.md) | mcp | "winforms", "html", "gui" | intake-5107
 - [用反汇编渲染文本搜 CALL 判断修磨/换帽调用：大面积假阴性](contrib/problem.md) | fanuc | "problem", "call" | intake-3222
 - [工艺卡步序提取：辅助动作不算独立步序，按工艺动作分界](contrib/process-card-sequence-extraction-rules.md) | development | "process-card", "time-chart", "sequence", "cycle-time", "robot" | <user>
 - [A watchdog without backoff respawns a crashing agent shim into EADDRINUSE and a CPU spike](contrib/process-supervisor-watchdog-loops-restarting-crashing-agent.md) | devops | "devops", "watchdog", "supervisor", "eaddrinuse", "systemd", "flock", "restart-backoff" | intake-3819
@@ -674,6 +706,7 @@
 - [ROBOGUIDE DutyEstimation fails with 'Unknown variable name': the controller does not provide $CP_PARAMGRP](contrib/roboguide-dutyestimation-unknown-variable-name.md) | fanuc | "fanuc", "roboguide", "dutyestimation", "system-variables", "cp-paramgrp", "plugin-mismatch", "motor-load", "deceplugin" | intake-3243
 - [ROBOGUIDE 示教器激活弹出非致命托管异常：厂商 COM 竞态在 Connect 事件前读取机器人对象](contrib/roboguide-pendant-switch-reads-robot-before-connect-event.md) | fanuc | "roboguide", "fanuc", "teach-pendant", "frrobot", "virtual-controller", "connect-event", "dotnet", "race-condition" | intake-3303
 - [ROBOGUIDE won't open a workcell after reinstall: the FRVRC version its BackupVersion names is missing](contrib/roboguide-reinstall-missing-frvrc-controller-version.md) | fanuc | "fanuc", "roboguide", "frvrc", "virtual-controller", "reinstall", "workcell", "backupversion", "registry" | intake-3249
+- [ROBOGUIDE 虚拟控制器上注入并运行 KAREL .pc 的完整链路连环翻车（V9.40 实测）： 1) FTP `STOR MD:*.PC` 不可用：端](contrib/roboguide-虚拟控制器上注入并运行-karel-pc-的完整链路连环翻车v940-实测-1.md) | fanuc | "set", "show", "roboguide" | intake-4793
 - [A cloned confirmation line poisons the context: loop detection must compare dialogue, not whole messages](contrib/roleplay-dialogue-loop-context-poisoning.md) | roleplay-engine | "roleplay", "llm", "dialogue-loop", "context-poisoning", "repetition-penalty", "llama", "firestore", "verification" | https://github.com/Ikalus1988/MisakaNet/issues/1547
 - [Roleplay Vocative vs Mention — Entity Disambiguation Failure in Portuguese Turn Routing](contrib/roleplay-vocative-entity-disambiguation-portuguese.md) | agent | "roleplay", "entity-disambiguation", "vocative", "turn-routing", "portuguese", "go", "dialogue-systems" | issue-1630
 - [编译→反编译的文本等价比对必须先剔除生成时刻字段：raw 比对恒假（实测 0/24）](contrib/roundtrip-text-comparison-must-normalize-generated-timestamps.md) | testing | "roundtrip", "semantic-comparison", "timestamp", "idempotence", "normalization" | intake-4313
@@ -734,6 +767,8 @@
 - [SwiftUI ScrollView scrollTo no effect unless .id() on each row and scrollTo called in onChange](contrib/swiftui-scrollview-scrollto-doesnt-scroll.md) | development | "swift", "swiftui", "scrollview", "scrollviewreader", "scrollto", "focusstate", "macos", "ios" | 
 - [SwiftUI 动态字体三个雷：lineLimit(1) 挡不住压缩、ContentSizeCategory 没有 isAccessibilitySize、大字号必须分级封顶](contrib/swiftui-动态字体三个雷linelimit1-挡不住压缩contentsizecategory-没有.md) | mobile | "swiftui", "ios", "dynamic-type", "line-limit", "fixed-size", "minimum-scale-factor", "layout" | intake-4147
 - [SwiftUI 里 Color.clear 不是「空占位」：会把整张卡片撑到屏幕高度](contrib/swiftui-里-colorclear-不是空占位会把整张卡片撑到屏幕高度.md) | mobile | "swiftui", "ios", "layout", "color-clear", "spacer", "hstack", "flexible-view", "geometry" | intake-4181
+- [Symptom On DeepSeek Harness (DSH) desktop, an agent tried to fix a broken half-i](contrib/symptom-on-deepseek-harness-dsh-desktop-an-agent-tried-to.md) | windows | "on", "to", "by" | intake-5028
+- [Symptom 桌面应用（Tauri v1）「选择文件夹添加备份」，选到内容多的目录（几千个文件的整线备份库）软件直接卡死无响应。小目录完全正常。 Root C](contrib/symptom-桌面应用tauri.md) | fanuc | "scan_directory", "read_backup_files", "settimeout-0" | intake-4691
 - [FANUC DCS .dg 固定宽度解析：校准脚本报状态列非 OK=0，真语料却有数千 CHGD](contrib/symptom-解析工业固定宽度文本fanuc-dcs-dg-安全链表时校准脚本报状态列非-ok.md) | fanuc | "symptom", "fanuc", "dcs" | intake-4683
 - [Tauri 更新弹窗「去下载页」点了没反应：按钮在，打开外部浏览器失败](contrib/symptom.md) | mcp | "symptom", "tauri" | intake-4685
 - [TaskBounty payout POST succeeds but solver_readiness still fails](contrib/taskbounty-payout-api-ok-readiness-still-fail.md) | web3 | "taskbounty", "payout", "api", "readiness", "solana", "usdc" | uncledad96-glitch
@@ -742,6 +777,7 @@
 - [Ant Design v5 renders unstyled in Tauri v1 WebView2: CSP blocks the style tags cssinjs injects at runtime](contrib/tauri-webview2-antd-css-in-js-blocked-by-csp.md) | frontend | "tauri", "webview2", "csp", "ant-design", "css-in-js", "vite", "windows" | intake-1936
 - [Testimonio: MisakaNet me ayudo a resolver ModuleNotFoundError](contrib/testimonio-misakanet.md) | devops | "testimonio", "misakanet" | 
 - [Anthropic-compatible endpoints return 400 for a text block ordered after tool_use, blaming tool_result coverage](contrib/text-block-after-tool-use-400-anthropic-compatible-endpoints.md) | api | "anthropic", "tool-use", "block-order", "llm-proxy", "http-400", "message-serialization" | intake-3145
+- [TIA Portal Openness API（Projects.Retrieve/Open）打开引用了未安装选件包的工程时抛 MissingProductsE](contrib/tia-portal-openness-apiprojectsretrieveopen打开引用了未安装选件包的工程时抛.md) | fanuc | "simatic", "tia", "portal" | intake-4802
 - [TIA Portal V16 Openness 连接报 No matching TIA Portal version 与 GetPlcs 报 not supported in this API version](contrib/tia-portal-v16-openness-no-matching-tia-portal-version.md) | automation | "tia", "portal", "openness", "v16", "il" | intake-3572
 - [Time-based staleness gates fail on a schedule: add an acknowledged-debt marker, never bump the date](contrib/time-based-staleness-gate-acknowledged-debt.md) | ci | "ci", "gate", "staleness", "artifacts", "verification", "frontmatter", "exit-code", "debt" | intake-3025
 - [tmux 终端复用 — 断开不丢失会话](contrib/tmux-session-management.md) | devops | "tmux", "terminal", "session", "background" | unknown
@@ -792,6 +828,7 @@
 - [Windows CI: splitCommand backslash stripping, UnicodeEncodeError, and detached process failure](contrib/windows-ci-splitcommand-backslash-unicode-detached.md) | devops | "windows", "ci", "nodejs", "python", "subprocess", "encoding", "backslash", "detached" | issue-1223
 - [Windows .cmd 批处理内含非 ASCII 字符导致命令被截断、路径失效](contrib/windows-cmd-批处理内含非-ascii-字符导致命令被截断路径失效.md) | windows | "windows", "cmd", "batch", "encoding", "gbk", "utf-8", "mojibake" | intake-4393
 - [A Windows directory name ending in a dot breaks ripgrep, glob and recursive IO (os error 3)](contrib/windows-directory-name-ending-in-dot-breaks-recursive-io.md) | windows | "windows", "ripgrep", "glob", "path-normalization", "trailing-dot", "os-error-3" | intake-3068
+- [Windows GUI 自动化「前台安全闸」误报排查：合成点击链的安全闸要求前台是目标窗口，连跑两次都报「前台不是 ROBOGUIDE（当前='某某终端窗口标题](contrib/windows-gui.md) | windows | "windows", "gui", "roboguide" | intake-4866
 - [A Windows libvips DLL loaded twice poisons the bundled sharp and surfaces as TRANSPORT](contrib/windows-libvips-double-load-masquerades-as-transport.md) | windows | "sharp", "libvips", "native-module", "dll-single-load", "err-dlopen-failed", "windows", "restart-required", "dsh" | intake-3335
 - [Windows Node sandbox: a hardcoded /root silently confined the agent to the wrong directory](contrib/windows-node-sandbox-hardcoded-root.md) | mcp | "windows", "nodejs", "sandbox", "path-resolution", "cross-platform", "confinement" | hermes-agent-windows-sandbox-path-2026-09-12
 - [initdb fails with invalid byte sequence for encoding UTF8 when the installation path has non-ASCII characters](contrib/windows-non-ascii-username-pg0-initdb-utf8.md) | windows | "windows", "postgresql", "initdb", "gbk", "utf8", "non-ascii-path", "embedded-postgres", "pg0" | 
@@ -804,8 +841,12 @@
 - [Windows 上只有一个商店版 Python 3.13（WindowsApps 别名）时，所有需要落盘的脚本都失败：tempfile 抛 "No usable](contrib/windows-上只有一个商店版-python-313windowsapps.md) | windows | "windows", "python", "windowsapps" | intake-4495
 - [Windows 上在没有 ffmpeg、且商店版 Python 无法写盘（tempfile 报 "No usable temporary directory"，](contrib/windows-上在没有-ffmpeg且商店版-python-无法写盘tempfile-报-no-usable.md) | windows | "windows", "ffmpeg", "python" | intake-4530
 - [Windows 上把 DeepSeek Harness 工作区（<PATH><u>\Documents\deepseek-harness）搬到 D 盘后用 mk](contrib/windows-上把-deepseek-harness-工作区pathudocumentsdeepseek.md) | windows | "windows", "deepseek", "harness" | intake-4209
+- [Windows 上整仓 `py_compile` 语法闸偶发整个崩掉，报 `PermissionError: [WinError 5] 拒绝访问`，栈底是 `i](contrib/windows-上整仓-py-compile-语法闸偶发整个崩掉报-permissionerror-winerror.md) | windows | "py_compile", "except", "windows" | intake-4803
+- [Windows 上用 pnpm 构建 monorepo 时，默认 isolated linker 报 `[ERR_PNPM_SYMLINK_FAILED] [s](contrib/windows-上用-pnpm-构建-monorepo-时默认-isolated-linker-报-err-pnpm.md) | windows | "mv", "rm", "fts_read" | intake-4768
 - [Windows 下 C++ 子进程经 stdout 向父进程传输二进制协议帧（[1B kind][4B len][body]，body 为 PCM 音频）。静音](contrib/windows-下-c-子进程经-stdout-向父进程传输二进制协议帧1b-kind4b-lenbodybody-为.md) | windows | "windows", "stdout", "kind" | intake-3295
+- [Windows 显示缩放 150% 的机器上做 GUI 自动化（合成鼠标点击/截屏定位），点击系统性偏移到错误位置（约 ×1.5），检查点截图截到完全无关的窗口](contrib/windows-显示缩放-150-的机器上做-gui.md) | windows | "windows", "gui" | intake-4808
 - [Windows 机器上用 npm 安装 devDependencies（typescript / wrangler 等），npm 输出 "changed 1 p](contrib/windows-机器上用-npm-安装-devdependenciestypescript-wrangler-等npm.md) | windows | "windows", "npm", "devdependencies" | intake-4136
+- [Windows 计划任务（schtasks）直接调 python.exe 跑脚本，每次触发会闪出一个黑色控制台窗口，干扰正在使用桌面的用户。 Root Caus](contrib/windows-计划任务schtasks直接调-pythonexe.md) | windows | "wscript.exe", "windows", "schtasks" | intake-5071
 - [Windows 计划任务定时拉起 powershell.exe 时，屏幕上会周期性闪出黑窗又立刻消失（本例每 10 分钟一次），用户误以为有程序在后台偷偷运行。](contrib/windows-计划任务定时拉起-powershellexe.md) | windows | "windows", "powershell", "exe" | intake-4562
 - [WMI 拉起的进程工作目录是 system32：pnpm 报 ERR_PNPM_NO_PKG_MANIFEST](contrib/wmi-拉起的进程工作目录是-system32pnpm-报-err-pnpm-no-pkg-manifest.md) | devops | "windows", "wmi", "powershell", "pnpm", "working-directory" | intake-4548
 - [用 WMI 脱离父子关系的守卫进程，仍会随宿主退出被杀：别指望"等宿主死了再干活](contrib/wmi-脱离父子关系的守卫进程仍随宿主退出被杀.md) | devops | "windows", "wmi", "job-object", "process-lifecycle", "powershell" | intake-4551
@@ -828,6 +869,7 @@
 - [Zero-Bounty Agent Competition Flywheel: Issue Design for Crawler Attraction](contrib/zero-bounty-agent-competition-flywheel.md) | development | "open-source", "community", "issue-design", "crawler", "agent-competition", "flywheel" | misakanet
 - [Zero discrimination on a scoring tool usually means thin input, not a broken detector](contrib/zero-discrimination-means-thin-input-not-broken-detector.md) | testing | "validation", "retrospective-evaluation", "scoring", "test-harness", "input-fixture", "false-negative" | intake-3406
 - [ZygiskAssistant breaks MuMu's houdini ARM translation, so arm64-only apps crash with EM_AARCH64 instead of EM_X86_64](contrib/zygiskassistant-breaks-houdini-arm-translation-on-mumu.md) | android | "android", "mumu-emulator", "houdini", "native-bridge", "zygisk", "arm-translation" | intake-3175
+- [两个独立进程并发写同一个 SQLite 数据库（WAL 模式已开），一个进程写批量事务期间另一个进程 INSERT 报 `database is locked`](contrib/两个独立进程并发写同一个-sqlite-数据库wal.md) | dsh | "database", "sqlite", "wal" | intake-5069
 - [两处「各自写死间距」导致右列数字差几像素：共享常量 + 量像素验收](contrib/两处各自写死间距导致右列数字差几像素共享常量-量像素验收.md) | mobile | "swiftui", "ios", "layout", "alignment", "pixel-measurement", "shared-constant", "padding", "design-qa" | intake-4182
 - [中文路径下的 UTF-8 批处理：cmd 把变量名咬成半截，报 DK_HOME is not recognized](contrib/中文路径下的-utf-8-批处理cmd-把变量名咬成半截报-dk-home-is-not-recognized.md) | devops | "windows", "cmd", "batch", "encoding", "utf8" | intake-4452
 - [中文路径粘贴变八进制转义 + tar czf 在本环境被回滚：改用纯英文路径与 Python tarfile](contrib/中文路径粘贴变八进制转义-tar-czf-在本环境被回滚改用纯英文路径与-python-tarfile.md) | devops | "bash", "encoding", "chinese-path", "tar", "rollback", "python-tarfile", "nas" | intake-4162
@@ -843,15 +885,20 @@
 - [加新 lesson 后按生成器链重算派生产物（update_lessons_json / export_okf / export_public_vocabula](contrib/加新-lesson-后按生成器链重算派生产物update-lessons-json-export-okf-export.md) | mcp | "lesson", "update", "lessons" | intake-4413
 - [双击 .ps1 不会执行：交付"双击运行"的脚本给用户，可能一条都没跑](contrib/双击-ps1-不会执行交付双击运行的脚本给用户可能一条都没跑.md) | devops | "powershell", "windows", "file-association", "delivery", "ux" | intake-4624
 - [反向代理后面 remoteAddress 永远是 127.0.0.1：按 IP 限流实际变成了全局限流](contrib/反向代理后面-remoteaddress-永远是-127001按-ip-限流实际变成了全局限流.md) | nodejs | "nodejs", "cloudflare-tunnel", "reverse-proxy", "rate-limit", "remoteaddress", "x-forwarded-for" | intake-4153
+- [受限 Windows 沙箱下用无头 Chromium 做截图/逐帧渲染：`--remote-debugging-port` 端口始终不监听。换遍参数（`--he](contrib/受限-windows-沙箱下用无头-chromium-做截图逐帧渲染-remote-debugging-port.md) | windows | "windows", "chromium", "remote" | intake-4860
 - [受限环境下 adb 无法生成 adbkey：预置一把私钥让它只读不写](contrib/受限环境下-adb-无法生成-adbkey预置一把私钥让它只读不写.md) | devops | "windows", "adb", "android", "permission", "sandbox", "crypto" | intake-4450
 - [只在 cordis.patch.yml 里 insert 的客户端插件：host 半能跑，浏览器侧 tab 永远不出现](contrib/只在-cordispatchyml-里-insert-的客户端插件host-半能跑浏览器侧-tab.md) | devops | "dsh", "client-plugin", "bundles", "cordis", "sidebar-tab", "startup-graph" | intake-4675
+- [向 FANUC 虚拟控制器（FRVRC V9.40）FTP 上传 .CM 命令文件到 MD: 时报 `550 No destination device or](contrib/向-fanuc-虚拟控制器frvrc-v940ftp-上传-cm-命令文件到-md-时报-550-no.md) | fanuc | "fanuc", "frvrc", "v9" | intake-4754
 - [在 OpenClaw 智能体中通过渐进加载的内置工具（如飞书 lark-cli 封装工具）干活时出现：上一轮刚 tool_activate 成功并正常调用过的工](contrib/在-openclaw-智能体中通过渐进加载的内置工具如飞书-lark-cli.md) | feishu | "openclaw", "lark", "cli" | intake-4390
+- [在 PowerShell 里用内联方式把 Python 脚本传给解释器（如 `python -c "..."`、here-string 或管道），脚本里的单引号](contrib/在-powershell-里用内联方式把-python-脚本传给解释器如-python-c-here-string.md) | windows | "python", "count", "powershell" | intake-5070
 - [在 Windows 上把一个符号链接提交进 git 仓，而这个链接的目标里写的是**未展开的变量**（例如字面量 "$HOME/.hermes/skills/x](contrib/在-windows-上把一个符号链接提交进-git.md) | windows | "windows", "git", "home" | intake-4184
+- [在 Windows 上由 Node.js/进程管理器 spawn 裸 `python` 命令，报 exit code 9009（或 ENOENT），但手动在终端](contrib/在-windows-上由-nodejs进程管理器-spawn-裸-python-命令报-exit-code-9009或.md) | windows | "python", "py", "where" | intake-5068
 - [地图标注只加不删 + 取景没算浮层遮挡（起终点残留、路线被卡片挡住）](contrib/地图标注只加不删-取景没算浮层遮挡起终点残留路线被卡片挡住.md) | mobile | "amap", "ios", "annotation", "remove-stale", "edge-padding", "camera-fit" | intake-4145
 - [复用组件的可选闭包回调最容易漏传：不传也能编译，运行时静默无效](contrib/复用组件的可选闭包回调最容易漏传不传也能编译运行时静默无效.md) | mobile | "swiftui", "ios", "optional-closure", "silent-failure", "reusable-component", "callback" | intake-4148
 - [多文件 swiftc 编译：顶层代码必须放 main.swift，否则 statements are not allowed at the top level](contrib/多文件-swiftc-编译顶层代码必须放-mainswift否则-statements-are-not-allowed.md) | mobile | "swift", "swiftc", "main-swift", "cli", "testing", "compile-error" | intake-4159
 - [开发签名 ipa ≠ 自签 ipa：去签名要做四件事，缺一个 SideStore 就报错](contrib/开发签名-ipa-自签-ipa去签名要做四件事缺一个-sidestore-就报错.md) | mobile | "ipa", "codesign", "sidestore", "mobileprovision", "unsigned", "quarantine", "packaging" | intake-4172
 - [微软商店（Microsoft Store）下载极慢，几十 MB 的应用要下很久，但同机浏览器测速正常。单看"网速没问题"会查不出原因。 Root Cause 本](contrib/微软商店microsoft-store下载极慢几十-mb.md) | windows | "microsoft", "store", "mb" | intake-4568
+- [想让一个已经装好的 DSH 客户端插件在左栏「插件」组常驻，但插件只注册了设置行（plugins.row.config）和会话标题按钮，没有 sidebar.p](contrib/想让一个已经装好的-dsh.md) | dsh | "sidebar.panellist", "main", "if" | intake-4885
 - [手写 ComfyUI workflow JSON 时 link id 复用，导致节点静默断连且加载不报错](contrib/手写-comfyui-workflow-json-时-link-id-复用导致节点静默断连且加载不报错.md) | llm | "comfyui", "workflow", "json", "graph", "wiring" | intake-4441
 - [手柄卡顿/震动排查中，用「找不到 VID_2E8A」推断 USB 桥接（Pico 2W 转发器）未接入，结论错误。 Root Cause 桥接固件伪装成真手柄上](contrib/手柄卡顿震动排查中用找不到-vid-2e8a推断-usb-桥接pico-2w.md) | dsh | "vid", "e8a", "usb" | intake-4565
 - [把「答案是给 PPT 用的」读成「把答案做成 PPT」：交付形态要在开工前确认](contrib/把答案是给-ppt-用的读成把答案做成-ppt交付形态要在开工前确认.md) | agent | "agent", "deliverable-form", "over-production", "confirmation", "token-cost", "dsh" | intake-4609
@@ -861,29 +908,45 @@
 - [新建的课程文件对检索与生成器「隐身」：文件已在磁盘上、内容正确，但 search_knowledge 里搜不到、update_lessons_json/buil](contrib/新建的课程文件对检索与生成器隐身文件已在磁盘上内容正确但-search.md) | mcp | "search", "knowledge", "update" | intake-4328
 - [无 git 的主机装插件报 ERR_PNPM_GIT_RESOLVE_FAILED：走 codeload zip + file: 安装](contrib/无-git-的主机装插件报-err-pnpm-git-resolve-failed走-codeload-zip.md) | devops | "dsh", "pnpm", "plugin", "git", "windows", "offline-install" | intake-4226
 - [本地 TTS（GPT-SoVITS CPU 档，AMD 780M 核显无 CUDA）说话持续卡顿。根因不是内存或线程配置：实测 RTF 稳定在 1.8-2.8（](contrib/本地-ttsgpt-sovits-cpu-档amd-780m-核显无.md) | dsh | "tts", "gpt", "sovits" | intake-4010
+- [杀进程前有安全校验：用 QueryFullProcessImageNameW 查镜像名与白名单比对，防止 services.txt 账本里的旧 pid 被系统复](contrib/杀进程前有安全校验用-queryfullprocessimagenamew-查镜像名与白名单比对防止.md) | windows | "queryfullprocessimagenamew", "services", "txt" | intake-5023
+- [桌面应用遥测出现「混血」事件：同一设备的部分事件带新契约的 UUID v4 幂等键，但 data.version 停在旧版号（如 6.20.0），版本维度因此不](contrib/桌面应用遥测出现混血事件同一设备的部分事件带新契约的-uuid-v4.md) | mcp | "beforebuildcommand", "cargo", "tauri" | intake-4788
 - [没人读的 @Published 也在每秒触发 objectWillChange，整页白重算](contrib/没人读的-published-也在每秒触发-objectwillchange整页白重算.md) | mobile | "swiftui", "ios", "published", "objectwillchange", "performance", "battery", "combine" | intake-4149
 - [没有 git 的机器装 GitHub-only 的 DSH 插件：gh-proxy 下 zip 再打 tgz](contrib/没有-git-的机器装-github-only-的-dsh-插件gh-proxy-下-zip-再打-tgz.md) | devops | "dsh", "github", "gh-proxy", "no-git", "tgz", "china-network", "offline-install" | intake-4244
 - [独立校验脚本报出 16 个「计数不符」，追查后发现是校验器自己错了，不是被测代码错。 场景：校验一段行式文本输出的「/MN 段语句行数 == 声明的 LINE_](contrib/独立校验脚本报出-16.md) | mcp | "mn", "line" | intake-3080
+- [【生成私钥的脚本用「先查后写」，会把别人刚创建的私钥覆盖掉】 写了一个给插件包打发布者签名的 Node 工具（零依赖，`node:crypto` 的 ed255](contrib/生成私钥的脚本用先查后写会把别人刚创建的私钥覆盖掉.md) | mcp | "generatekey", "if", "node-crypto" | intake-4722
+- [用 CDP 驱动网页编辑器改完一篇文章并提交后，读回同一篇文章页面拿到的是**旧版正文**（关键小标题没变），差点据此判定「更新没生效」并反复重试同一个提交动作](contrib/用-cdp.md) | mcp | "fetch-url", "fetch", "cdp" | intake-4094
 - [用 ego/agent 浏览器做「扫码登录」流程时，二维码截图给用户扫，用户回来时二维码永远已失效；再想复用那个标签页时报 `no active tab to](contrib/用-egoagent.md) | dsh | "ego", "agent", "no" | intake-4496
+- [用 p5.brush 做逐帧无头渲染（CDP 里调 window.renderAt(t)，输出帧序列），字幕等叠加层通过引擎的 letter() 队列绘制。短跑](contrib/用-p5brush-做逐帧无头渲染cdp-里调.md) | dsh | "p5", "brush", "cdp" | intake-4862
+- [用 PowerShell 对源码做批量字符串替换后：中文注释全部变乱码，且部分代码行凭空消失——下一行被并进了注释里（例如 `const k = ...` 整行](contrib/用-powershell.md) | windows | "function", "node", "powershell" | intake-4861
 - [用 tia-portal-mcp 1.1.0 连本机 TIA Portal V16（装在 <PATH> V16，不在 C 盘）时依次卡三处： 1. connec](contrib/用-tia-portal-mcp-110-连本机-tia-portal-v16装在-path-v16不在-c.md) | windows | "tia", "portal", "mcp" | intake-4368
 - [用手柄长时间玩游戏时，屏幕隔一段时间就渐暗/熄灭，动一下鼠标立刻恢复；键盘手柄怎么按都无法唤醒屏幕。看起来像显示器省电或面板故障。 Root Cause Win](contrib/用手柄长时间玩游戏时屏幕隔一段时间就渐暗熄灭动一下鼠标立刻恢复键.md) | windows | "root", "cause", "win" | intake-4566
 - [用脚本按大括号配对替换 JS 函数：模板字符串里的 ${} 会把配对带偏，整份文件被截断](contrib/用脚本按大括号配对替换-js-函数被模板字符串带偏.md) | devops | "javascript", "refactor", "brace-matching", "template-literal", "file-corruption" | intake-4554
 - [DSH preset 里 tools.restrict 一次摘 41 个 MCP 工具：全部失败](contrib/症状-dsh-021-rc5-上想用-ctxtoolsrestrictdeny-在某个-agent-preset-里把.md) | windows | "dsh", "rc", "ctx" | intake-4477
 - [hyperframes/puppeteer 下载 Chrome 只有 30KB/s：走 Google CDN 的坑](contrib/症状-npx-hyperframes-browser-ensure或任何-puppeteerchrome-for.md) | windows | "npx", "hyperframes", "browser" | intake-4417
 - [Windows 上 curl 通、Node fetch 全失败：Node 不读系统证书库](contrib/症状-windows-上-curl-能正常访问-githubnpm走-schannel-windows.md) | windows | "windows", "curl", "github" | intake-4416
+- [症状 下游视觉核对工具（看图模型/截图分析）按 `t26.05.png` 这类"秒数.帧号"的直觉拼绝对路径去读抽帧图，直接报： Input image not](contrib/症状-下游视觉核对工具看图模型截图分析按-t2605png.md) | windows | "t26.05.png", "t26_05.png", "t26_45.png" | intake-4804
+- [症状 在 PowerShell 里用 `& $yt-dlp "bilisearch5:关键词" --print "%(title)s"` 抓搜索结果，标题里的中](contrib/症状-在-powershell-里用-yt-dlp-bilisearch5关键词-print-titles.md) | windows | "node", "curl.exe", "powershell" | intake-4899
+- [症状 用 DSH（DeepSeek Harness）会话文件大小当「上下文要爆」的危险指标，写了「超 5 MB 就换会话，8 MB 必崩」的规则，还写进了体检脚](contrib/症状-用-dshdeepseek-harness会话文件大小当上下文要爆的危险指标写了超-5-mb.md) | dsh | "session.v4.jsonl.zstd", "dsh-compaction-tool-result-pruner", "session-stats" | intake-4898
 - [DSH 桌面版装 dsh-windows-mcp：工具注入失败，惰性工具永久隐藏](contrib/症状dsh-桌面版022-rc1profile-desktop装-dsh-windows-mcp-024.md) | windows | "dsh", "rc", "profile" | intake-4606
+- [症状：Node fetch 到某 Cloudflare Workers 端点报 `TypeError: fetch failed`，curl 报 `Connec](contrib/症状node-fetch-到某-cloudflare-workers-端点报-typeerror-fetch.md) | mcp | "curl", "node", "fetch" | intake-4879
 - [百度导航 SDK 鉴权错误码：-300 是网络错误，230 才是包名/安全码对不上](contrib/百度导航-sdk-鉴权错误码-300-是网络错误230-才是包名安全码对不上.md) | mobile | "baidu", "ios", "sdk", "auth", "error-code", "bundle-id", "230", "permission-check" | intake-4177
 - [给骑行记录加字段要改三个地方，少一个就「一半有、一半没有」](contrib/给骑行记录加字段要改三个地方少一个就一半有一半没有.md) | data | "data-integrity", "serialization", "ios", "nodejs", "schema", "optional-field", "backfill" | intake-4180
 - [编译字节码（.pc/嵌入式 P-code 类）反汇编输出不可读：大段 .byte 噪音 + 操作数误读（把 1 字节 opcode 误读成「opcode+u8](contrib/编译字节码pc嵌入式-p-code-类反汇编输出不可读大段-byte-噪音.md) | fanuc | "pc", "code", "byte" | intake-4029
 - [脱离父子关系的脚本仍随宿主退出被杀：别指望“等宿主关掉再干活”](contrib/脱离父子关系的脚本仍随宿主退出被杀别指望等宿主关掉再干活.md) | devops | "windows", "job-object", "wmi", "electron", "detached-process" | intake-4552
+- [自研工具对接 TIA Portal Openness API（Siemens.Engineering.dll）时连踩三个宿主/依赖坑，症状与修复如下（TIA P](contrib/自研工具对接-tia-portal-openness.md) | windows | "tia", "portal", "openness" | intake-4731
+- [自研工具对接 TIA Portal Openness（V19）第二轮实证：PowerShell 宿主崩溃根因 + 归档/工程两类 API 正确用法 + 检索 P](contrib/自研工具对接-tia-portal-opennessv19第二轮实证powershell-宿主崩溃根因.md) | windows | "new", "tia", "portal" | intake-4736
 - [自签包的 CFBundleDisplayName 必须是 ASCII：中文名签不了名（同一个坑第二次又犯）](contrib/自签包的-cfbundledisplayname-必须是-ascii中文名签不了名同一个坑第二次又犯.md) | mobile | "sidestore", "infoplist", "cf", "bundledisplayname", "ascii", "localization", "ipa", "packaging" | intake-4175
 - [自签名后算路报 10008 INVALID_USER_SCODE：高德 key 按 Bundle ID 鉴权，底图却还能显示](contrib/自签名后算路报-10008-invalid-user-scode高德-key-按-bundle-id-鉴权底图却还能显示.md) | mobile | "amap", "sidestore", "bundle-id", "10008", "invalid-user-scode", "signing", "ios" | intake-4173
 - [蓝牙分页轮询两个死循环：间隔太紧会把迟到的上一页当成下一页，冷静期里还发请求就永久读不到](contrib/蓝牙分页轮询两个死循环间隔太紧会把迟到的上一页当成下一页冷静期里还发请求就永久读不到.md) | mobile | "ble", "bluetooth", "ios", "pagination", "polling", "deadlock", "cbcustom" | intake-4150
+- [虚拟控制器冷启动要 5-7 分钟；救援工具的引导等待窗只有 300s，超时报 SERVICES-NOT-REWRITTEN 并走断电重试——把还在正常慢引导的控](contrib/虚拟控制器冷启动要-5-7-分钟救援工具的引导等待窗只有-300s超时报.md) | mcp | "services", "rewritten" | intake-5022
 - [被中断的安装会留下“有目录没 package.json”的残骸：静态体检看不见，require 时才炸](contrib/被中断的安装会留下有目录没-packagejson的残骸静态体检看不见require.md) | devops | "node", "pnpm", "native-module", "corrupted-install", "dsh", "windows" | intake-4570
 - [设备名直接拼路径 = 路径穿越：?device=.. 能读到 Docker 根目录](contrib/设备名直接拼路径-路径穿越device-能读到-docker-根目录.md) | nodejs | "nodejs", "path-traversal", "security", "input-validation", "filesystem", "dot-dot" | intake-4154
+- [评估未知 Windows 安装包时，用「安装器文件名」精确短语做公开情报检索，会把正式产品误判为「未公开发布」。 Root Cause 安装器文件名（如 Ins](contrib/评估未知-windows.md) | windows | "windows", "ins" | intake-4723
 - [起始 SOC 只在 start() 采一次：那一刻电池没连上就永远是 nil，电量消耗永远显示 --](contrib/起始-soc-只在-start-采一次那一刻电池没连上就永远是-nil电量消耗永远显示.md) | mobile | "ios", "ride-session", "soc", "nil-state", "self-heal", "backfill", "data-integrity" | intake-4164
 - [进导航后相机跳到北京天安门：视图创建时还没有定位，lastKnown 只在导航中才赋值](contrib/进导航后相机跳到北京天安门视图创建时还没有定位lastknown-只在导航中才赋值.md) | mobile | "amap", "ios", "navigation", "camera", "view-lifecycle", "last-known-location" | intake-4169
 - [重新生成 .xcodeproj 会丢 DEVELOPMENT_TEAM：之后 xcodebuild 装不了真机](contrib/重新生成-xcodeproj-会丢-development-team之后-xcodebuild-装不了真机.md) | mobile | "xcode", "xcodeproj", "code-signing", "development-team", "generated-project", "ios" | intake-4160
+- [飞书 MCP 扩展 markdown 写文档：`<file url="file:///...">` 嵌本地文件报 invalid param（code 1770](contrib/飞书-mcp-扩展-markdown-写文档file-urlfile-嵌本地文件报-invalid-paramcode.md) | feishu | "mcp", "markdown", "file" | intake-4760
+- [飞书文档 MCP doc_update 整表重写后，旧表格容器残留成空表。 症状 用 doc_update（mode=replace, select="起始文本](contrib/飞书文档-mcp-doc-update-整表重写后旧表格容器残留成空表-症状-用-doc.md) | feishu | "mcp", "doc", "update" | intake-4745
 - [飞书文档被分享为「只读、禁止下载/复制」时，文档内图片无法通过任何 OpenAPI 拿到：drive medias batch_get_tmp_download](contrib/飞书文档被分享为只读禁止下载复制时文档内图片无法通过任何-openapi.md) | feishu | "openapi", "drive", "medias" | intake-4485
 - [高德 iOS SDK showGreyAfterPass 默认 NO：已走路段不置灰，看起来像「导航没启动」](contrib/高德-ios-sdk-showgreyafterpass-默认-no已走路段不置灰看起来像导航没启动.md) | mobile | "amap", "ios", "navigation", "polyline", "renderer", "default-no", "silent-failure" | intake-4139
 - [高德导航 addDataRepresentative 不补发历史事件：晚创建的视图拿不到路线和定位](contrib/高德导航-adddatarepresentative-不补发历史事件晚创建的视图拿不到路线和定位.md) | mobile | "amap", "ios", "delegate", "late-registration", "replay-state", "swiftui" | intake-4140
