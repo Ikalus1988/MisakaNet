@@ -120,6 +120,24 @@ jobs:
             Its exit is a decision: **accept** (then split it into issues that each name the file, workflow or gate they change) or **decline** (and say what the proposal assumes the repository does not hold). No lesson is published from it.
 
             _Automated routing only — the decision is a maintainer's._
+          PAYLOAD_COMMENT: |
+            <!-- misakanet-intake-payload -->
+            ## [PAYLOAD] Security Test Input, Not a Lesson
+
+            This submission's own title or fields are attack syntax (`' OR 1=1--`, `../../etc/passwd`,
+            `<script>`), or it describes itself as a scan or a test payload, and it carries none of
+            the evidence a report has: no error, no traceback, no version, no code block.
+
+            **Nothing went wrong.** The value was stored as text and never interpolated into SQL, a
+            path or a response, which is why the site answered normally. This is a queue problem
+            rather than a security one: `pending-review` exists for lessons, and sixteen of these in
+            two batches made it stop pointing at lessons.
+
+            A lesson needs what a payload cannot have: what you **observed**, what you **expected**,
+            the **root cause** you established, and the **verification** that proves the fix. Reopen
+            with those sections and it gets a normal review.
+
+            _Automated routing only — a maintainer decided nothing here._
           QUESTION_COMMENT: |
             <!-- misakanet-intake-question -->
             ## [QUESTION] Treated as a Question, Not a Lesson
@@ -157,6 +175,17 @@ jobs:
               exit 0
             fi
             gh issue comment $ISSUE_NUMBER --repo ${{ github.repository }} --body "$QUESTION_COMMENT"
+            exit 0
+          fi
+          # A payload is not a verdict about a lesson, so it gets no review comment: one sentence about
+          # what happened, and the label pass below closes the issue.
+          if [ "$DECISION" = "payload" ]; then
+            if gh issue view $ISSUE_NUMBER --repo ${{ github.repository }} --json comments --jq '.comments[].body' \
+              | grep -q "## \[PAYLOAD\]"; then
+              echo "Payload comment already exists — skipping."
+              exit 0
+            fi
+            gh issue comment $ISSUE_NUMBER --repo ${{ github.repository }} --body "$PAYLOAD_COMMENT"
             exit 0
           fi
 
@@ -243,6 +272,27 @@ jobs:
             gh issue edit $ISSUE_NUMBER --repo ${{ github.repository }} \
               --add-label "auto-rejected" \
               --add-label "needs-salvage"
+          elif [ "$DECISION" = "payload" ]; then
+            # Closed, not queued (2026-11-16). Measured: sixteen scanner payloads arrived through the
+            # public intake in two batches and every one landed in `pending-review`, which is where a
+            # human looks for lessons — the queue went from 3 real items to 19. `auto-rejected` was not
+            # an option either: the daily salvage digest sweeps that label and hands the issue back to
+            # `needs-human-review` the next morning (`intake-salvage-digest.yml`), the same round trip
+            # the `placeholder` branch below exists to avoid.
+            #
+            # `not-a-lesson` is created defensively for the reason `needs-answer` is: `--add-label` on
+            # an unknown label fails the step, and this job must not depend on a one-time click.
+            gh label create not-a-lesson \
+              --description "Not a failure report: test input, a scanner payload, or a form with no symptom" \
+              --color "BFD4F2" 2>/dev/null || true
+            gh issue edit $ISSUE_NUMBER --repo ${{ github.repository }} \
+              --remove-label "needs-human-review" \
+              --remove-label "needs-salvage" \
+              --remove-label "auto-rejected" \
+              --remove-label "pending-review" 2>/dev/null || true
+            gh issue edit $ISSUE_NUMBER --repo ${{ github.repository }} \
+              --add-label "not-a-lesson" 2>/dev/null || true
+            gh issue close $ISSUE_NUMBER --repo ${{ github.repository }} --reason "not planned"
           elif [ "$DECISION" = "placeholder" ]; then
             # Its own label, and deliberately NOT `auto-rejected`. The daily salvage
             # digest sweeps exactly that label and re-applies `needs-human-review`

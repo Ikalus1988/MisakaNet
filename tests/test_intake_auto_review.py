@@ -23,6 +23,7 @@ from intake_auto_review import (
     calculate_confidence,
     make_decision,
     detect_placeholder_fixture,
+    detect_payload_submission,
     generate_lesson_from_intake,
     AutoReviewResult,
     DimensionScore,
@@ -950,3 +951,123 @@ def test_a_verification_section_with_content_still_earns():
     result = score_verification(body, {})
     assert any("✓ Verification section present" in r for r in result.reasons), result.reasons
     assert result.score > 0
+
+
+# === Payload submissions (2026-11-16) ===
+# The sixteen that arrived through the public intake in two batches (#4703-#4714, #4819-#4827) and all
+# landed in `pending-review`, which is the queue a maintainer reads for lessons. The detector's job is to
+# route them out of that queue WITHOUT closing a real report, so the negative cases below are as important
+# as the positives — they are the three genuine submissions from the same two batches, plus a real lesson
+# about SQL injection.
+
+PAYLOAD_SUBMISSIONS = [
+    # (title, body) — abridged from the real issues; the shapes are what matter.
+    ("[Lesson] ' OR 1=1--", "## Problem\nSQL injection caused uncontrolled access to data.\n"
+                            "## Root Cause\nImproper user input sanitization in the 'title' field.\n"
+                            "## Fix\nImplement parameterized queries."),
+    ("[Lesson] ../../../../etc/passwd", "## Problem\nTraversed to a sensitive file.\n"
+                                        "## Root Cause\nNo path normalization.\n## Fix\nValidate paths."),
+    ("[Lesson] Scanner Payload", "**Source:** remote_tester\n## Problem\nVerifier SSRF Test\n"
+                                 "## Root Cause\nSSRF in callbacks\n## Fix\nSanitize user input"),
+    ("[Lesson] security_test_123", "## Problem\nInject malicious SQL commands to exploit database queries.\n"
+                                   "## Root Cause\nImproper input sanitization.\n## Fix\nParameterize."),
+    ("[Lesson] scan_request", "## Problem\nScanner request accepted.\n## Fix\nReject unknown callers."),
+    ("[Lesson] ' OR 1=1--", "**Kind:** lesson_submission\n**Source:** generated-payload\n"
+                            "**Domain:** devops\n**Title:** ' OR 1=1--\n## Problem\nSQL injection."),
+    ("[Intake] Able to traverse directories using payloads like ../../../etc/passwd",
+     "## Root Cause: Improper file access validation\n## Fix: Validate input"),
+    ("[Intake] Querying for `kind=question OR 1=1` and observing the response",
+     "## Problem\nQuery accepted an injection.\n## Fix\nParameterize."),
+]
+
+REAL_REPORTS = [
+    # The three genuine submissions from those same two batches.
+    ("[Lesson] 步道乐跑在 MuMu 安卓15(x86_64) 上闪退：加固壳被 houdini 翻译崩溃 + 可见 su 触发自毁",
+     "## Problem\n应用启动 3 秒闪退，logcat 里 FATAL EXCEPTION: main\n"
+     "```\njava.lang.UnsatisfiedLinkError: houdini\n```\n## Fix\n降级到 MuMu 12"),
+    ("[Intake] 【把服务端给的「下一步调用参数」原样转给 Agent】",
+     "## Problem\n看到 0 命中后按提示重调，等价于把用户的确认也交出去了。\n"
+     "```js\nconst next = resp.next_actions[0]\n```\n## Fix\n不许自动转发"),
+    ("[Intake] 【生成私钥的脚本用「先查后写」】",
+     "## Problem\nnode:crypto 的 ed25519 生成后先查后写，覆盖了别人刚建的文件。\n"
+     "Traceback (most recent call last):\n  File \"sign.js\", line 42, in mint\n## Fix\n用 O_EXCL"),
+    # A genuine lesson *about* SQL injection: it says the word, and it carries a real stack.
+    ("[Lesson] SQL injection in the search endpoint returns 500",
+     "## Problem\n`?q=' OR 1=1--` returned HTTP 500 with a stack:\n"
+     "```\nFile \"engine.py\", line 88, in search\n```\ndjango 4.2.1\n## Fix\nParameterize the query."),
+]
+
+
+@pytest.mark.parametrize(("title", "body"), PAYLOAD_SUBMISSIONS)
+def test_a_payload_is_not_a_lesson_and_says_why(title, body):
+    hit, why = detect_payload_submission(title, body)
+    assert hit, f"{title!r} was not recognised as a payload"
+    assert why, "a payload decision with no reason is a verdict nobody can review"
+    result = auto_review_issue(0, title, body)
+    assert result.decision == "payload", (
+        f"{title!r} got decision {result.decision!r}; `payload` is what "
+        "intake-auto-review.yml routes out of the review queue")
+    assert any("payload" in reason.lower() for reason in result.reasons)
+
+
+@pytest.mark.parametrize(("title", "body"), REAL_REPORTS)
+def test_a_real_report_is_never_closed_as_a_payload(title, body):
+    hit, why = detect_payload_submission(title, body)
+    assert not hit, f"{title!r} was misread as a payload ({why}) — closing it loses a submission"
+
+
+def test_the_title_alone_is_enough_because_two_payloads_left_the_body_empty():
+    hit, why = detect_payload_submission("[Lesson] ' OR 1=1--", "## Problem\nInjected SQL payload.")
+    assert hit and "attack syntax" in why
+
+
+def test_a_dotted_quad_is_not_a_version():
+    """`http://169.254.169.254/latest/meta-data/` is the payload, not evidence in the report."""
+    hit, _ = detect_payload_submission("[Lesson] Scanner Payload",
+                                       "**Source:** generated-payload\n## Problem\nSSRF test")
+    assert hit
+
+
+def test_a_question_kind_is_not_judged_as_a_payload():
+    """`[Question] How do I resolve an SSRF issue?` matched on the acronym alone."""
+    hit, _ = detect_payload_submission(
+        "[Question] How do I resolve an SSRF issue?",
+        "**Kind:** question\n## Problem\nAn SSRF scan flagged my endpoint.")
+    assert not hit
+
+
+def test_a_real_report_citing_an_alarm_code_keeps_its_evidence():
+    """`E[A-Z]{2,}` under IGNORECASE matches the word `etc`, which turned every traversal payload into
+    a "report that cites an error" — and would have passed every one of them through."""
+    hit, _ = detect_payload_submission("[Lesson] ../../../../etc/passwd",
+                                       "## Problem\ntraversed the etc directory\n## Fix\nvalidate")
+    assert hit, "the word `etc` must not count as an error code"
+
+
+def test_the_workflow_routes_the_payload_decision():
+    """A decision nothing routes is a decision that changes nothing.
+
+    `payload` is produced here and consumed in `.github/workflows/intake-auto-review.yml`: it posts one
+    comment and closes the issue with `not-a-lesson`. If either half is edited away, the payloads go
+    back to `pending-review` — silently, because nothing else reads this label.
+    """
+    import yaml
+
+    workflow = (
+        Path(__file__).parent.parent / ".github" / "workflows" / "intake-auto-review.yml"
+    ).read_text(encoding="utf-8")
+    spec = yaml.safe_load(workflow)
+    steps = spec["jobs"]["auto-review"]["steps"]
+
+    comment = next(s for s in steps if s.get("name") == "Post review comment")
+    labels = next(s for s in steps if s.get("name") == "Apply labels")
+    assert "PAYLOAD_COMMENT" in (comment.get("env") or {}), (
+        "the payload branch would post an empty comment")
+    assert 'DECISION" = "payload' in comment["run"], "the payload route lost its comment branch"
+    assert "gh issue close" in labels["run"], "a payload must be closed, not queued"
+    assert '"payload"' in labels["run"] and "not-a-lesson" in labels["run"], (
+        "the payload route lost its label/close branch in Apply labels")
+    payload_branch = labels["run"].split('"payload"')[1].split("elif")[0]
+    assert '--add-label "auto-rejected"' not in payload_branch, (
+        "the payload branch must not ADD auto-rejected: the salvage digest sweeps that label, so the "
+        "issue would be handed back to the human queue the next morning")

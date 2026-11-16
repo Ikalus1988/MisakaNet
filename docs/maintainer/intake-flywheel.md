@@ -15,6 +15,11 @@
 
 **结论：不是队列没人管，是形状对不上。** 每周进 100+ 条，能自动转的 0 条——队列只会更长。
 
+> **2026-11-16 更新：形状这一关已经过去了。** 同一份干跑对当时的 183 条 open intake 给出
+> **convertible 73**（40%），跳过 110 条里 97 条正是缺 Problem/Root Cause/Fix。所以 §2 的 ①
+> 仍然是瓶颈，但不再"一条都转不了"——现在的瓶颈换成了**每周一次 + 每批一刀人工**（见 §4 L2）。
+> 来源：`python3 scripts/convert_intake_batch.py --limit 300`。
+
 ## 2. 瓶颈在哪一段
 
 一条 intake 走到"成为课程 + 回执 + 关单"，有四段：
@@ -46,6 +51,23 @@
 到三节——164 条里只有 16 条达到标准。**能切分的是措辞，切不出来的是提交者压根没写的原因。**
 
 ## 4. 最优配置（按杠杆排序）
+
+### L0 · 先别让"不是报告的东西"进来（2026-11-16 已做）
+
+一个扫描器把 16 条 payload 当 lesson submission 提了进来（`' OR 1=1--`、`../../../../etc/passwd`、
+`Scanner Payload`、`security_test_123`…，两批：#4703–#4714、#4819–#4827）。它们**什么都没破坏**——
+值是文本，从没拼进 SQL、路径或响应——但全部落在 `pending-review`，那个队列于是从 3 条真实项变成 19 条。
+
+现在 `intake_auto_review.detect_payload_submission()` 给这类提交一个独立决定 `payload`：
+`intake-auto-review.yml` 发一条说明（值被当文本存了、没坏、要 reopen 就补上观测/根因/验证）、
+打 `not-a-lesson`、**关闭**。不进 `auto-rejected`，因为每日 salvage digest 会把那个标签捞回
+`needs-human-review`——同一个回环，`placeholder` 分支当初就是为这个才单独存在的。
+
+判据是两个信号同时成立：**攻击语法或自我声明**（标题/`Domain:`/`Title:` 字段里的 `' OR 1=1`、`../../`、
+`<script>`、`Source: generated-payload`…）**且**没有任何报告证据（代码块、traceback、版本号、堆栈、错误码）。
+实测：真实 payload 19 条抓 16 条，377 条 open intake 里**误判 0 条**——刻意放过的那 3 条没有攻击语句
+（`SSRF to Internal Metadata`、`Access to <PATH>`、`System unexpectedly allows unauthorized access`），
+宁可漏也不肯把真报告关掉。
 
 ### L1 · 改表单，让 ① 产出可转换的形状（0 成本，收益最大）
 
