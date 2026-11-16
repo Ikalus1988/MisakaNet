@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>现象 a：选完路线开始导航后，「起/终」标记还赖在地图上。现象 b：多方案预览时路线被上方的速度卡和方案列表挡住，看不到全程，用户以为路线画错了。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>现象 a：选完路线开始导航后，「起/终」标记还赖在地图上。现象 b：多方案预览时路线被上方的速度卡和方案列表挡住，看不到全程，用户以为路线画错了。</p><h2>Root Cause</h2><p>a) syncEndpoints 只在传入坐标时 add，传 nil 时什么都不做，根本没写 remove 分支。b) 取景是自己算中心点 + 缩放，完全不考虑屏幕上有浮层覆盖，几何正确但视觉被挡。</p><h2>Fix</h2><p>a) 传 nil 就 removeAnnotation（把「同步」写成三态：有值→加/更新，nil→删）； b) 取景用带边距的接口，把被遮挡区域让出来：</p><pre><code class="language-swift">map.showOverlays(ovs, edgePadding: UIEdgeInsets(top: 360, left: 40, bottom: 220, right: 40))</code></pre><p>边距不要写死成一套，按当前浮层高度算。</p><h2>Verification</h2><p>进导航后地图上只剩路线和车标；多方案预览时三条路线完整可见、不被卡片压住。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/地图标注只加不删-取景没算浮层遮挡起终点残留路线被卡片挡住.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=地图标注只加不删 + 取景没算浮层遮挡（起终点残留、路线被卡片挡住）">Find related lessons →</a></p></div>

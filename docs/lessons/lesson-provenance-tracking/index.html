@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,48 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Lessons lack provenance metadata — no way to trace who contributed, which PR, when edited, or who merged. This creates several downstream issues:</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Lessons lack provenance metadata — no way to trace who contributed, which PR, when edited, or who merged. This creates several downstream issues:</p><ul><li><strong>审计困难</strong>：当某条 lesson 内容出现错误或过时信息时，无法快速定位是谁在何时引入的。</li><li><strong>重复贡献</strong>：不同贡献者可能重复提交相似内容，因为无法判断某条 lesson 是否已由他人处理过。</li><li><strong>合并责任不清</strong>：在多人协作的仓库中，无法确认某条 lesson 是由谁审核并合并的，导致质量责任无法追溯。</li><li><strong>历史断层</strong>：lesson 经过多次编辑后，原始来源信息丢失，无法还原演变过程。</li></ul><h2>Root Cause Analysis</h2><p>根本原因在于 lesson schema 最初设计时仅关注内容本身（标题、标签、正文），未将贡献流程纳入数据模型。随着贡献者数量增长和 PR 数量增加，缺乏结构化元数据的问题逐渐暴露：</p><ol><li><strong>Schema 设计缺失</strong>：原始 frontmatter 只有 <code>title</code>、<code>tags</code>、<code>status</code> 等内容字段，没有 <code>author</code>、<code>pr</code>、<code>merged_by</code> 等流程字段。</li><li><strong>Git 历史未被利用</strong>：git log 中实际包含了作者、时间戳、commit message 等信息，但从未被提取并写入 lesson 文件本身。</li><li><strong>手动流程不可靠</strong>：依赖贡献者自行填写来源信息，容易遗漏或填写不规范。</li></ol><h2>Solution</h2><p>Extend lesson schema with provenance fields (author, pr, source, edited_at, merged_by). Use <code>scripts/backfill_provenance.py</code> to populate from git history.</p><h3>扩展后的 Schema 示例</h3><pre><code class="language-yaml">---
+{
+  "title": "Lesson Provenance Tracking: author, PR, source, merge history",
+  "domain": "devops",
+  "tags": ["provenance", "metadata", "audit", "tracking"],
+  "status": "published",
+  "evidence_level": "E2",
+  "source": "closed-pr-1031",
+  "created": "2026-08-22",
+  "provenance": {
+    "author": "alice@example.com",
+    "pr": 1031,
+    "merged_by": "bob@example.com",
+    "edited_at": "2026-08-22T14:35:00Z",
+    "edit_history": [
+      { "editor": "carol@example.com", "timestamp": "2026-09-01T09:10:00Z", "pr": 1045 }
+    ]
+  }
+}
+---</code></pre><h3>使用 backfill 脚本</h3><pre><code class="language-bash"># 第一步：dry-run 预览，不写入文件
+python scripts/backfill_provenance.py --dry-run lessons/contrib/
+
+# 第二步：确认输出无误后，执行写入
+python scripts/backfill_provenance.py --write lessons/contrib/
+
+# 针对单个文件操作
+python scripts/backfill_provenance.py --write lessons/contrib/lesson-provenance-tracking.md</code></pre><h2>Key Points</h2><ul><li><strong>Provenance 是只追加的（append-only）</strong>：永远不要覆盖已有的 <code>author</code> 或 <code>created</code> 字段，新的编辑记录应追加到 <code>edit_history</code> 数组中。</li><li><strong>先用 <code>--dry-run</code>，再用 <code>--write</code></strong>：在批量回填时务必先预览输出，避免误写入错误数据。</li><li><strong>合并信用依赖准确的 provenance</strong>：<code>merged_by</code> 字段用于统计各成员的合并贡献，数据不准确会导致贡献统计失真。</li><li><strong><code>edited_at</code> 使用 ISO 8601 UTC 格式</strong>：统一时区，避免跨时区协作时的时间歧义。</li><li><strong>PR 编号必须为整数</strong>：便于与 GitHub API 或 GitLab API 联动查询 PR 详情。</li></ul><h2>Concrete Examples</h2><h3>示例 1：新 lesson 首次提交</h3><p>贡献者 Alice 通过 PR #1031 提交了一条新 lesson，合并人为 Bob。backfill 脚本从 git log 中提取信息后，frontmatter 中将自动填充：</p><pre><code class="language-json">"provenance": {
+  "author": "alice@example.com",
+  "pr": 1031,
+  "merged_by": "bob@example.com",
+  "edited_at": "2026-08-22T14:35:00Z",
+  "edit_history": []
+}</code></pre><h3>示例 2：已有 lesson 被二次编辑</h3><p>Carol 通过 PR #1045 对该 lesson 进行了修订。脚本检测到文件已有 <code>provenance.author</code>，不会覆盖，而是向 <code>edit_history</code> 追加一条记录：</p><pre><code class="language-json">"edit_history": [
+  { "editor": "carol@example.com", "timestamp": "2026-09-01T09:10:00Z", "pr": 1045 }
+]</code></pre><h3>示例 3：查询某贡献者的所有 lesson</h3><pre><code class="language-bash"># 查找所有由 alice 创作的 lesson
+grep -rl '"author": "alice@example.com"' lessons/contrib/
+
+# 查找所有经过二次编辑的 lesson
+python scripts/query_provenance.py --edited-by carol@example.com</code></pre><h2>Verification</h2><pre><code class="language-bash">scripts/backfill_provenance.py
+echo "Verification passed: fix command exited 0"</code></pre><p><strong>Expected Output:</strong> command completes without error, then <code>Verification passed</code> is printed. (Checks: <code>scripts/backfill_provenance.py</code>)</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/lesson-provenance-tracking.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Lesson Provenance Tracking: author, PR, source, merge history">Find related lessons →</a></p></div>

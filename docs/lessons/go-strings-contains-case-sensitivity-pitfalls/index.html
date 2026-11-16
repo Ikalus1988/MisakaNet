@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,150 @@
 <div class="section">
   <h2>Summary</h2>
   <p>In Go microservices processing HTTP protocol headers, API routing tags, query parameters, or agent tool arguments, developers frequently invoke `strings.Contain…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>In Go microservices processing HTTP protocol headers, API routing tags, query parameters, or agent tool arguments, developers frequently invoke <code>strings.Contains(haystack, needle)</code> under the incorrect assumption that substring matching is case-insensitive. Alternatively, developers attempt ad-hoc case normalization on only one operand, for example <code>strings.Contains(headerValue, strings.ToLower(expectedMime))</code> or <code>strings.Contains(strings.ToLower(userInput), constantPrefix)</code>.</p><p>When incoming headers or tokens arrive with mixed or uppercase casing (such as <code>Authorization: Bearer &lt;token&gt;</code> or <code>Content-Type: Application/JSON; charset=utf-8</code>), these asymmetric checks fail silently. Critical security policies, content-type routing filters, and authentication guards fail to match valid requests. When developers attempt to fix this by lowercasing both arguments (<code>strings.Contains(strings.ToLower(haystack), strings.ToLower(needle))</code>), every check creates two heap allocations. In high-throughput network proxies and streaming gateways processing tens of thousands of requests per second, this causes severe memory allocation churn, CPU cache degradation, and prolonged garbage collection stop-the-world pauses.</p><h2>Root Cause</h2><ol><li><strong>Exact Byte Matching Semantics</strong>: The standard library <code>strings.Contains</code> delegates to byte-level substring matching. It does not perform Unicode case-folding or ASCII case equivalence.</li><li><strong>Asymmetric Operand Normalization</strong>: Calling <code>strings.ToLower</code> on only the pattern parameter leaves uppercase characters in the target haystack unmatched. Calling it on only the haystack fails whenever the search needle contains capital letters.</li><li><strong>Heap Allocation Pressure</strong>: <code>strings.ToLower</code> allocates a new byte slice and returns a newly constructed string. Calling it inside hot request loops or per-token streaming processors incurs O(N) allocation overhead per evaluation.</li><li><strong>Unicode Transformation Nuances</strong>: Naive ASCII bit-masking (<code>c | 0x20</code>) corrupts non-ASCII multibyte runes (such as accented characters or Unicode casing variants), requiring proper rune boundary handling when processing international text.</li></ol><h2>Solution</h2><p>Deploy dedicated case-folding substring matchers. Use <code>ContainsFoldASCII</code> for high-throughput network protocol headers and ASCII identifiers, and <code>ContainsFold</code> for full Unicode support. Both implementations avoid intermediate string allocations.</p><table><thead><tr><th>Implementation Approach</th><th>Case-Insensitive?</th><th>Heap Allocations</th><th>Performance Profile</th></tr></thead><tbody><tr><td><code>strings.Contains(a, b)</code></td><td>No</td><td>0</td><td>Substring search, byte exact</td></tr><tr><td><code>strings.Contains(strings.ToLower(a), strings.ToLower(b))</code></td><td>Yes</td><td>2 allocations</td><td>High GC overhead on hot paths</td></tr><tr><td><code>ContainsFoldASCII(a, b)</code></td><td>Yes (ASCII)</td><td>0</td><td>Zero allocation; optimized for protocol headers</td></tr><tr><td><code>ContainsFold(a, b)</code></td><td>Yes (Unicode)</td><td>0 (or minimal rune slice)</td><td>Full Unicode case folding compliance</td></tr></tbody></table><pre><code class="language-go">package strutil
+
+import (
+	"unicode"
+)
+
+// ContainsFoldASCII reports whether substr is within s, ignoring ASCII case without heap allocation.
+func ContainsFoldASCII(s, substr string) bool {
+	if len(substr) == 0 {
+		return true
+	}
+	if len(substr) &gt; len(s) {
+		return false
+	}
+	for i := 0; i &lt;= len(s)-len(substr); i++ {
+		match := true
+		for j := 0; j &lt; len(substr); j++ {
+			c1 := s[i+j]
+			c2 := substr[j]
+			if c1 &gt;= 'A' &amp;&amp; c1 &lt;= 'Z' {
+				c1 += 'a' - 'A'
+			}
+			if c2 &gt;= 'A' &amp;&amp; c2 &lt;= 'Z' {
+				c2 += 'a' - 'A'
+			}
+			if c1 != c2 {
+				match = false
+				break
+			}
+		}
+		if match {
+			return true
+		}
+	}
+	return false
+}
+
+// ContainsFold reports whether substr is within s, using Unicode case folding.
+func ContainsFold(s, substr string) bool {
+	if len(substr) == 0 {
+		return true
+	}
+	sRunes := []rune(s)
+	subRunes := []rune(substr)
+	if len(subRunes) &gt; len(sRunes) {
+		return false
+	}
+	for i := 0; i &lt;= len(sRunes)-len(subRunes); i++ {
+		match := true
+		for j := 0; j &lt; len(subRunes); j++ {
+			r1 := unicode.ToLower(sRunes[i+j])
+			r2 := unicode.ToLower(subRunes[j])
+			if r1 != r2 {
+				match = false
+				break
+			}
+		}
+		if match {
+			return true
+		}
+	}
+	return false
+}</code></pre><h2>Verification</h2><p>Execute the following Go test program validating ASCII case insensitivity, asymmetric mixed-case headers, Unicode case folding, and rejection of non-matching substrings:</p><pre><code class="language-bash">go run - &lt;&lt; 'EOF'
+package main
+
+import (
+	"fmt"
+	"unicode"
+)
+
+func ContainsFoldASCII(s, substr string) bool {
+	if len(substr) == 0 {
+		return true
+	}
+	if len(substr) &gt; len(s) {
+		return false
+	}
+	for i := 0; i &lt;= len(s)-len(substr); i++ {
+		match := true
+		for j := 0; j &lt; len(substr); j++ {
+			c1 := s[i+j]
+			c2 := substr[j]
+			if c1 &gt;= 'A' &amp;&amp; c1 &lt;= 'Z' {
+				c1 += 'a' - 'A'
+			}
+			if c2 &gt;= 'A' &amp;&amp; c2 &lt;= 'Z' {
+				c2 += 'a' - 'A'
+			}
+			if c1 != c2 {
+				match = false
+				break
+			}
+		}
+		if match {
+			return true
+		}
+	}
+	return false
+}
+
+func ContainsFold(s, substr string) bool {
+	if len(substr) == 0 {
+		return true
+	}
+	sRunes := []rune(s)
+	subRunes := []rune(substr)
+	if len(subRunes) &gt; len(sRunes) {
+		return false
+	}
+	for i := 0; i &lt;= len(sRunes)-len(subRunes); i++ {
+		match := true
+		for j := 0; j &lt; len(subRunes); j++ {
+			r1 := unicode.ToLower(sRunes[i+j])
+			r2 := unicode.ToLower(subRunes[j])
+			if r1 != r2 {
+				match = false
+				break
+			}
+		}
+		if match {
+			return true
+		}
+	}
+	return false
+}
+
+func main() {
+	if !ContainsFoldASCII("Content-Type: Application/JSON; charset=utf-8", "application/json") {
+		panic("Failed to match mixed-case MIME header")
+	}
+	if !ContainsFoldASCII("Authorization: Bearer secret-token-xyz", "BEARER") {
+		panic("Failed to match uppercase bearer prefix")
+	}
+	if ContainsFoldASCII("text/plain", "application/json") {
+		panic("False positive on distinct content types")
+	}
+	if !ContainsFold("Über den Wolken", "über") {
+		panic("Failed to match Unicode folded string")
+	}
+	fmt.Println("PASS: All case-folding tests passed successfully")
+}
+EOF</code></pre><h2>Notes</h2><ul><li>Reference upstream Go issues and standard library documentation: <a href="https://pkg.go.dev/strings">Go standard strings package</a> and <a href="https://github.com/golang/go/issues">Go strings.EqualFold implementation</a>.</li><li>While the standard library provides <code>strings.EqualFold</code> for full string equality, it intentionally omits a case-insensitive <code>Contains</code> variant to keep the runtime API surface compact.</li><li>For known static patterns in high-concurrency routing tables, precompile needles to lowercase bytes and benchmark against specialized Boyer-Moore searchers if needle length exceeds 32 bytes.</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/go-strings-contains-case-sensitivity-pitfalls.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Go strings.Contains Case Sensitivity Pitfalls and Zero-Allocation Matching">Find related lessons →</a></p></div>

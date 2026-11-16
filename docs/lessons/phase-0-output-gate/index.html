@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,11 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Agent 在 context 中看到了知识但不一定会用。即使指令写了"不可跳过"，Agent 的惯性行为是直接执行任务、跳过检索。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Agent 在 context 中看到了知识但不一定会用。即使指令写了"不可跳过"，Agent 的惯性行为是直接执行任务、跳过检索。</p><h2>Root Cause</h2><p>"搜 lessons/" "搜 reference/" 等指令是建议，Agent 可以跳过而不产生任何可见后果。</p><h2>Solution</h2><p>把知识检索从"建议"改为<strong>硬性 Output gate</strong>：</p><ol><li>列出可用知识并输出文件名</li><li>用搜索工具检索相关条目，读取匹配内容</li><li>输出检索结论（可复用内容、核心风险）</li><li><strong>未输出 = 不准进入下一步</strong></li></ol><h2>Verification</h2><pre><code class="language-bash">echo "Lesson: phase 0 output gate"
+wc -l lessons/contrib/phase-0-output-gate.md</code></pre><p><strong>Expected Output:</strong></p><pre><code>Lesson: phase 0 output gate
+# (line count)</code></pre><h2>原理</h2><p>Agent 可以忽略上下文的建议，但<strong>不能凭空编出完整的检索报告</strong>。用户能看到输出结果——如果没读文件，摘要就是空的。</p><h2>限制</h2><ul><li>依赖 Agent 加载规则后遵守 Output gate（但规则本身设计了可见的输出约束）</li><li>没有自动化验证（未来方向：post-task hook 检测是否引用了知识内容）</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/phase-0-output-gate.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=phase 0 output gate">Find related lessons →</a></p></div>

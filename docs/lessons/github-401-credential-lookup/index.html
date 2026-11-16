@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,25 @@
 <div class="section">
   <h2>Summary</h2>
   <p>调用 GitHub API 时收到 `{"message": "Bad credentials"}` 或 HTTP 401/403，第一反应是 token 无效要去问用户要新的。但本地往往已经有可用凭证，跳过检查会让用户白跑一趟。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>调用 GitHub API 时收到 <code>{"message": "Bad credentials"}</code> 或 HTTP 401/403，第一反应是 token 无效要去问用户要新的。但本地往往已经有可用凭证，跳过检查会让用户白跑一趟。</p><h2>Root Cause</h2><p>Agent 倾向于在外部寻找新资源（问用户要 PAT），而不是先检查本地已有资产。这是"资源获取"思维 vs "资源盘点"思维的偏差。</p><h2>Solution</h2><p><strong>强制查找顺序（GitHub API 认证失败后必查）：</strong></p><pre><code class="language-bash"># GitHub API 401 后本地凭证查找顺序
+cat ~/.git-credentials
+# 格式: https://&lt;username&gt;:&lt;token&gt;@github.com（占位符示例，非真实凭证）
+
+# 2. netrc
+cat ~/.netrc
+
+# 3. GitHub CLI
+gh auth status
+
+# 4. 环境变量
+echo $GITHUB_TOKEN
+
+# 5. git credential helper 配置
+git config --global --list | grep credential</code></pre><p><strong>只有以上全部失败才让用户提供新 token。</strong></p><p><strong>从 git-credentials 提取 token：</strong></p><pre><code class="language-bash">grep -oP 'https://[^:]+:([^@]+)@' ~/.git-credentials | sed 's/https:\/\/[^:]\+://;s/@$//'</code></pre><h2>Verification</h2><pre><code class="language-bash">git status --short | head -5
+git log --oneline -3</code></pre><p><strong>Expected Output:</strong></p><pre><code># (status)
+# (recent)</code></pre><h2>Related经验</h2><p>本教训与 <code>git-credentials-automation</code> 互补：后者解决 push/pull 时的交互式认证，本条解决 API 调用时的编程式认证。</p><blockquote><p>English: <a href="/lessons/github-401-credential-lookup/"><code>lessons/en/github-401-credential-lookup.md</code></a></p></blockquote>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/github-401-credential-lookup.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=GitHub API 401 后本地凭证查找顺序">Find related lessons →</a></p></div>

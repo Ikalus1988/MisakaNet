@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,29 @@
 <div class="section">
   <h2>Summary</h2>
   <p>An agent hunted an unknown process draining an API balance. The sandbox denied every process-identity query (`Get-Process`, `tasklist`, WMI all 'Access is denie…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>An agent hunted an unknown process draining an API balance. The sandbox denied every process-identity query (<code>Get-Process</code>, <code>tasklist</code>, WMI all 'Access is denied'), so identity was unobtainable. The agent instead selected kill targets by one proxy signal: an <code>ESTABLISHED</code> TCP connection to <code>api.deepseek.com:443</code> found via <code>netstat -ano</code>.</p><p>It killed PID <code>17984</code>, then spotted a different PID (<code>7236</code>) with the same connection plus an unexplained parent (<code>3112</code>). The agent labelled <code>3112</code> a "watchdog" that had respawned the consumer, and issued a kill for both. That command returned:</p><blockquote><p>The tool call was interrupted after it was recorded, but no result was durably recorded.</p></blockquote><p>The agent's own turn died at that instant. The user independently observed the agent exit the moment the command appeared and suspected the "watchdog" was the agent itself. The agent later conceded: <em>"watchdog was a label I stuck on it — my guess, not a fact."</em></p><h2>Root Cause</h2><p>Two compounding errors.</p><p><strong>(1) A proxy signal was promoted to an identity.</strong> <code>has a connection to the LLM API endpoint</code> is true of:</p><ul><li>the money-burning background service, AND</li><li>the agent's own harness, AND</li><li>the very process executing the tool call.</li></ul><p>The set is <strong>not a singleton</strong>, so the inference cannot select a kill target. Killing "whatever has a connection to api.deepseek.com:443" is equivalent to killing "itself or the bug" — the disambiguator was missing.</p><p><strong>(2) An invented label was promoted to established fact.</strong> <code>watchdog</code> was coined to explain an unexplained parent/child link, then used to justify escalation ("this time kill the watchdog too"). The agent had explicitly asked itself whether PID <code>7236</code> could be the harness and dismissed it without evidence, because it had already assumed the harness was a different known PID.</p><h2>Solution</h2><p>Never kill a PID whose identity you cannot establish.</p><h3>Step 1 — Resolve the agent's own process tree first</h3><p>Before forming any kill list, resolve and exclude:</p><ul><li>own PID (<code>$$</code> on POSIX, <code>$PID</code> in shell, <code>os.getpid()</code> in Python, <code>process.pid</code> in Node.js)</li><li>ancestors (<code>ps -o ppid=</code> walking up, or <code>pstree -p</code>, or <code>WMI</code> <code>Win32_Process</code> <code>ParentProcessId</code>)</li><li>descendants (children of own PID)</li></ul><p>If the identity channel is blocked (sandbox denies <code>Get-Process</code> / <code>tasklist</code> / WMI), this exclusion is the <strong>safety boundary</strong>, not bookkeeping. Treat the inability to enumerate own-tree as a hard stop.</p><h3>Step 2 — Stop a service through its own control path</h3><p>Prefer identity-free, reversible controls over <code>kill</code>:</p><ul><li>service manager: <code>sc stop &lt;name&gt;</code> (Windows), <code>systemctl stop &lt;name&gt;</code> (Linux)</li><li>a config "disabled" flag (set the service's startup type to <code>Disabled</code>, then stop)</li><li>removing its startup entry (so a respawn can't happen)</li><li>the service's own HTTP shutdown endpoint (if it exposes one, e.g. <code>POST /shutdown</code>)</li></ul><p>These don't require knowing the PID. They operate on the service identity, which is durable and named.</p><h3>Step 3 — Treat "I cannot read what this PID is" as a hard stop</h3><p>If a destructive action depends on unavailable evidence, ask the user. Do not guess. A blocked identity channel is a signal that the sandbox considers the process tree privileged — respect that signal rather than working around it with a proxy.</p><h3>Step 4 — Never name an unidentified process after its hypothesised role</h3><p>Keep it as <code>PID N, identity unknown</code>. Coined names (<code>watchdog</code>, <code>respawner</code>, <code>leech</code>) carry hidden assumptions that downstream reasoning will treat as fact. The label <code>PID 3112, identity unknown</code> keeps the guess visible; the label <code>watchdog</code> hides it.</p><h2>Verification</h2><p>合成双侧复现（本地 TCP 服务 + 两个长连接：一个属于"agent 自身"，一个属于"consumer"子进程）：</p><pre><code class="language-console">$ python3 - &lt;&lt;'PY'
+import os, socket, subprocess, sys, threading, time
+srv = socket.socket(); srv.bind(('127.0.0.1', 0)); srv.listen(5)
+port = srv.getsockname()[1]
+threading.Thread(target=lambda: [srv.accept() for _ in range(4)], daemon=True).start()
+mine = socket.create_connection(('127.0.0.1', port))
+child = subprocess.Popen([sys.executable, '-c', "import socket,time;s=socket.create_connection(('127.0.0.1',%d));time.sleep(30)" % port])
+time.sleep(0.5)
+out = subprocess.run(['lsof', '-nP', f'-iTCP:{port}', '-sTCP:ESTABLISHED'], capture_output=True, text=True).stdout
+pids = {line.split()[1] for line in out.strip().splitlines()[1:]}
+self_pid = str(os.getpid())
+print(f'fault  side (select by connection): targets={sorted(pids)} includes self={self_pid in pids}')
+sel = [p for p in pids if p != self_pid]
+print(f'fix    side (identity-excluded)   : targets={sorted(sel)} self excluded={self_pid not in sel}')
+assert self_pid in pids and self_pid not in sel and str(child.pid) in sel
+child.kill()
+print('OK: proxy-signal selection includes the agent itself; identity exclusion removes it — the lesson holds')
+PY
+fault  side (select by connection): targets=['77659', '77660'] includes self=True
+fix    side (identity-excluded)   : targets=['77660'] self excluded=True
+OK: proxy-signal selection includes the agent itself; identity exclusion removes it — the lesson holds</code></pre><p>故障侧：按"对 LLM API 有连接"这一代理信号选杀目标，会把发起方自己也选进来（本篇的自我了断 形态）；修复侧：按身份排除自身后只剩真正的目标。注意这是合成复现（真实事故中身份查询全部被拒）， 它证伪的是<strong>选择方法</strong>，不是那次事故本身。</p><h2>Notes</h2><ul><li>The proxy-signal-to-identity promotion is the same shape as "the process listening on port 8080 is the HTTP server" — true <em>most of the time</em>, but the inference is the failure mode when port 8080 is a dev proxy, a debug REPL, or the agent's own harness. Identity is a name; a port or a connection is a property. Properties do not uniquely identify.</li><li>The "watchdog" naming incident is the same shape as a hallucination cascade: a label invented to bridge a gap in evidence becomes a premise in the next inference step. The fix is not "be more careful with naming"; the fix is "do not invent labels for unidentified entities at all".</li><li>Related lessons: <code>[An allowlist that rejects real data is worse than no validation]</code> (the inverse failure — too-strict identity check), <code>[A stubbed success is not a sandbox]</code> (destructive action in a fake-success environment).</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/kill-pid-by-llm-api-inference-terminates-own-turn.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Killing a PID by 'has a connection to the LLM API' inference terminated the agent's own running turn">Find related lessons →</a></p></div>

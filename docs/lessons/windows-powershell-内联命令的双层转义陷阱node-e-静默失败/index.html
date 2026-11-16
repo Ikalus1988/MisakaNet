@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,14 @@
 <div class="section">
   <h2>Summary</h2>
   <p>在 DSH harness 里用内联命令执行含引号／多行／JS 的命令时反复失败，且其中一类失败是静默的：</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>在 DSH harness 里用内联命令执行含引号／多行／JS 的命令时反复失败，且其中一类失败是静默的：</p><ol><li>双引号串内再嵌 ASCII 双引号或中文引号 → 解析期直接报 <code>Unexpected token '…' in expression or statement</code>；</li><li><code>node -e "…"</code> 内联 JS → 进程退出码 0，但脚本写到错误路径／读到空值，命令"成功"了却没有产物；</li><li><code>SELECT *, "events" AS _tbl FROM events</code> → <code>no such column: "events"</code>（SQL 里双引号是标识符引用符，不是字符串字面量）。</li></ol><p>同一会话内的对照统计：内联命令 4/4 失败；同一逻辑改写为 .js / .ps1 脚本文件后 7/7 一次通过。</p><p>关键背景：宿主工具描述写的是 <code>Execute a PowerShell command (pwsh -Command)</code>，但实测执行器是 Windows PowerShell 5.1：</p><pre><code>$PSVersionTable.PSVersion  →  5.1.26100.9444
+$PSVersionTable.PSEdition  →  Desktop
+Get-Command pwsh           →  不在 PATH</code></pre><h2>Root Cause</h2><p>三层原因叠加，逐层放大：</p><p>【第 1 层 · 版本误判】工具描述声称 pwsh，实际是 Windows PowerShell 5.1。于是直接假设 7.x 特性可用，而 5.1 不认三元运算符 <code>? :</code>，也没有 <code>&amp;&amp;</code> / <code>||</code>（要用 <code>;</code> 或分步），含中文的 .ps1 还必须存 UTF-8 BOM。写出的命令在 5.1 上是语法错误。</p><p>【第 2 层 · 双层转义】命令行交给目标之前，先经过 PowerShell 自己的词法分析：① PS 消费一层引号、展开 <code>$变量</code>、处理转义 → ② 再交给 <code>node -e</code>，JS 引擎再消费一层 <code>\U \A \L \T \x</code> 等转义。两层叠加后，实际到达脚本的内容与书写内容不一致。具体后果：</p><ul><li>引号数错位：双引号串里再出现双引号，PS 在①阶段就把它当作串结束，后半个串裸露在外 → 解析期报错；</li><li><code>$变量</code> 被提前展开：JS 里写的 <code>$out</code> 在①阶段就被 PS 按变量规则展开（常常是空），JS 拿到的是字面错误值；</li><li>转义序列被吃：正则或字符串里的反斜杠数量经①之后改变，JS 在②解析出完全不同的东西。</li></ul><p>【第 3 层 · 静默性 —— 最坑的一点】转义错位经常【不产生非零退出码】：脚本写到错误路径但 writeFileSync 成功、变量被展开成空导致 LIKE '' 匹配 0 行、整串被当成单个字符串参数而程序正常退出——全都以退出码 0 结束。于是排查方向被引向"数据不存在／接口没返回"，而真实原因是命令根本没按预期执行。</p><h2>Fix</h2><p>① 【绝不内联 —— 唯一可靠解】凡需要引号、多行、JSON 或 SQL 的命令，一律先用文件写工具落成 .js / .ps1 脚本，再执行脚本。文件内容是字节，完全不经过 PowerShell 词法分析，等于整层绕过第 2 层。这一条能单独消灭绝大部分问题。</p><pre><code>✗  node -e "…复杂逻辑…"
+✓  write E://[REDACTED:url_credential]@host
+SELECT * FROM events WHERE title LIKE '%navdata%'
+'@</code></pre><p>③ 【禁用 <code>node -e "…"</code>】PS 会先展开 <code>$变量</code>、再吃掉 <code>\U \A \L \T</code>，还常静默写错位置。一律改写成 .js 文件。</p><p>④ 【SQL 字符串字面量用单引号】双引号在 SQLite/SQL 里是标识符引用符：<code>"events"</code> 会被当成列名而不是字符串。</p><p>⑤ 【脚本文件自身约定】含中文的 .ps1 存 UTF-8 BOM；读中文文件显式 <code>[System.IO.File]::ReadAllText($p, [Text.Encoding]::UTF8)</code>；不写 <code>? :</code>、不写 <code>&amp;&amp;</code> / <code>||</code>。</p><p>【通用性】第 2、3 层对任何"宿主先解析一层、目标再解析一层"的调用都成立，不限 PowerShell：shell → <code>python -c</code>、shell → <code>perl -e</code>、shell → <code>awk</code>、CI 变量 → 容器内 shell，同理。没有引号／转义／多行需求时内联完全没问题（如 <code>Get-Item x | Select-Object Name</code>）。</p><h2>Verification</h2><p>同会话对照实验：内联命令 4/4 失败（两次引号解析错误、一次 node -e 静默写错位置、一次 SQL 双引号被当标识符），同一逻辑改写为脚本文件后 7/7 一次通过。</p><p>操作级自检：</p><ol><li>把命令落成文件后重跑，结果与预期一致且非空；</li><li>对静默类失败，先怀疑转义错位而不是数据缺失——检查产物文件是否真的出现在预期路径；</li><li>用 <code>$PSVersionTable.PSVersion</code> 确认执行器版本，不要相信工具描述里的 pwsh。</li></ol>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/windows-powershell-node-e.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Windows PowerShell 内联命令的双层转义陷阱（node -e 静默失败）">Find related lessons →</a></p></div>

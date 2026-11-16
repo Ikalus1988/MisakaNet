@@ -74,6 +74,16 @@ def page_for(target: str) -> Path:
 #     is a gate that stays green while the route it exempts is deleted.
 
 LINK = re.compile(r'href="([^"]+)"')
+#: A real tag. `href=` is only a link inside one: a lesson page quotes code, and `&lt;a href="/gone/"&gt;`
+#: in a fenced block is markup *about* markup — no browser follows it. Measured 2026-11-16, the first
+#: run after the lesson pages started carrying their corpus: one page was reported for a link it merely
+#: displayed. `links_in` is the only reader of LINK below.
+TAG = re.compile(r"<[a-zA-Z][^>]*>")
+
+
+def links_in(source: str) -> list[str]:
+    """Every href on a real tag in this markup, in document order."""
+    return [match.group(1) for tag in TAG.findall(source) for match in LINK.finditer(tag)]
 # Not links: another origin, an in-page anchor, or a non-http scheme.
 _NON_LOCAL = ("http://", "https://", "//", "#", "mailto:", "tel:", "data:", "javascript:")
 # JavaScript building a URL at runtime (`${...}`, `' + x + '`): not a link until the page runs, and a
@@ -135,7 +145,7 @@ def broken_internal_links(docs: Path = DOCS) -> dict[str, list[str]]:
     broken: dict[str, list[str]] = {}
     for page in sorted(docs.rglob("*.html")):
         text = page.read_text(encoding="utf-8")
-        for raw in LINK.findall(text):
+        for raw in links_in(text):
             raw = raw.strip()
             if not raw or raw.startswith(_NON_LOCAL) or any(t in raw for t in _TEMPLATED):
                 continue
@@ -155,7 +165,7 @@ def test_the_link_scanner_sees_the_site_and_can_fail(tmp_path):
     """
     pages = list(DOCS.rglob("*.html"))
     assert len(pages) > 400, f"only {len(pages)} pages scanned — the glob moved"
-    assert sum(len(LINK.findall(p.read_text(encoding='utf-8'))) for p in pages) > 1000, (
+    assert sum(len(links_in(p.read_text(encoding='utf-8'))) for p in pages) > 1000, (
         "the href scan found implausibly few links — the pattern moved"
     )
 
@@ -269,3 +279,12 @@ def test_the_primary_entry_point_is_connecting_not_registering():
         assert "register" in dictionary["agentRegisterHint"].lower() or "注册" in dictionary["agentRegisterHint"], (
             f"{lang}: the register hint no longer scopes itself to the write tools"
         )
+
+
+def test_a_link_displayed_as_code_is_not_a_link():
+    """The corpus quotes markup; `&lt;a href="/gone/"&gt;` in a fenced block follows nothing."""
+    assert links_in('<pre><code>&lt;a href="/gone/"&gt;text&lt;/a&gt;</code></pre>') == []
+
+
+def test_a_link_on_a_real_tag_is_a_link():
+    assert links_in('<p><a href="/there/">ok</a></p>') == ["/there/"]

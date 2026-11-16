@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>导航时拖了一下地图，之后车骑出去几百米，镜头还停在他乡，必须手动点定位才回来。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>导航时拖了一下地图，之后车骑出去几百米，镜头还停在他乡，必须手动点定位才回来。</p><h2>Root Cause</h2><p>AMapNaviRideView.showMode 默认是 .carPositionLocked（锁车跟随）。用户一拖动，SDK 把它切成 .normal，之后不会自己切回来；而「显示模式变化」的回调并不保证每次都来，靠回调恢复不可靠。</p><h2>Fix</h2><p>主动轮询 + 条件恢复：</p><ul><li>每帧读 v.showMode 判断是否被拖走，不依赖回调；</li><li>速度 ≥5 km/h 持续 3 秒 → 设回 .carPositionLocked；</li><li>「定位」按钮 → 立刻设回；</li><li>刚拉回的 1.5 秒内不再判定，防止 SDK 属性滞后导致反复触发。</li></ul><h2>Verification</h2><p>拖图后正常骑行 3 秒，镜头自动回到车标；静止状态下拖图不会被强行拉回（不会跟用户抢操作）。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/amapnavirideviewshowmode-被拖图改掉后不会自动恢复镜头停在原处.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=AMapNaviRideView.showMode 被拖图改掉后不会自动恢复，镜头停在原处">Find related lessons →</a></p></div>

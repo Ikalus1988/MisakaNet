@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>分析入口的扩展名白名单已收敛成「单一声明表」（程序/二进制/蓝图/变量/存储器表/IO 六类），但收集与分组层仍各写各的手写白名单——批量 zip 分组只认其中三类，存储器报告文件全被挡在分析器外，对应容量列**整列 N/A**（数据明明在备份包里）。声明层的契约测试锁住了表本身，却没锁使用方。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>分析入口的扩展名白名单已收敛成「单一声明表」（程序/二进制/蓝图/变量/存储器表/IO 六类），但收集与分组层仍各写各的手写白名单——批量 zip 分组只认其中三类，存储器报告文件全被挡在分析器外，对应容量列<strong>整列 N/A</strong>（数据明明在备份包里）。声明层的契约测试锁住了表本身，却没锁使用方。</p><h2>Root Cause</h2><p>新增分析维度时只改了声明表和部分入口（文件夹导入、zip 解析器），其余入口（批量 zip/targz/rar 分组闸、tar 解析、单台逐文件分派、Rust 侧解压白名单）各留一份手写扩展名组合，没有横扫。「修一类入口必须横扫所有入口」在 UI 布局上犯过一次，收集层又犯——因为声明层测试给了「已锁住」的错觉。</p><h2>Fix</h2><ol><li>全部收口到单一声明判定函数（6 处手写白名单逐一替换）；</li><li>加<strong>使用方契约锁</strong>测试（源码级）：收集/分组层禁止出现手写扩展名布尔闸（<code>endsWith('.ls') &amp;&amp; / ||</code> 形态指纹）、关键闸口调用单一声明的次数下限、跨语言侧（Rust）白名单必须含全部分析扩展名。</li></ol><p>契约锁的要点：锁「使用方的写法」而不只锁「声明的内容」。</p><h2>Verification</h2><p>vitest 全量含 3 例契约锁；真机 173MB 备份包全量批量：目标列有值 187/187（修复前 0/187）；三入口一致性全量 3727 目录 0 不符；Rust 侧 77 测试全绿。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/problem-3942.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=扩展名白名单收口成单一声明表，收集层仍各写一份：存储器报告整列 N/A">Find related lessons →</a></p></div>

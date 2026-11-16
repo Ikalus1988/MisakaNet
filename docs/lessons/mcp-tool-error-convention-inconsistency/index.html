@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,12 @@
 <div class="section">
   <h2>Summary</h2>
   <p>An MCP tool `generate_commit_message` converts git diffs into Conventional Commit messages via `claude -p`. It had two distinct failure paths returning plain st…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>An MCP tool <code>generate_commit_message</code> converts git diffs into Conventional Commit messages via <code>claude -p</code>. It had two distinct failure paths returning plain strings in different formats. A caller checking for the <code>ERROR:</code> prefix would miss the timeout failure and silently use the timeout error message as a real commit message.</p><h2>Root Cause</h2><p>The timeout handling in <code>_claude()</code> was added on a different day from the empty-diff guard in <code>generate_commit_message</code>. Each fix addressed only the specific bug it targeted. The timeout branch returned <code>"claude -p timed out after 20s"</code> — lacking the <code>ERROR:</code> prefix convention that was later introduced for the empty-diff case.</p><p>This is a sequencing bug: two independent fixes each introduced a return-string convention, but they didn't agree on the format because they were written at different times.</p><h2>Solution</h2><p>Add the <code>ERROR: </code> prefix to the timeout return string in <code>_claude()</code>:</p><pre><code class="language-python">except subprocess.TimeoutExpired:
+    return "ERROR: claude -p timed out after 20s"</code></pre><p>This makes both failure paths consistent so <code>.startswith("ERROR:")</code> works as a complete contract.</p><h2>Verification</h2><pre><code class="language-bash">git status --short | head -5
+git log --oneline -3</code></pre><p><strong>Expected Output:</strong></p><pre><code># (status)
+# (recent)</code></pre><h2>Notes</h2><p>The broader lesson: when you establish a convention (like <code>ERROR:</code> prefix for failures), every failure path must follow it — including ones added before the convention existed. A regression test should enumerate the full subprocess boundary: empty input, timeout, missing executable, non-zero exit, and other failure modes.</p><h2>References</h2><p>https://dev.to/enjoy_kumawat/i-gave-my-mcp-tool-an-error-convention-i-only-taught-it-to-one-of-its-two-failure-paths-4619</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/mcp-tool-error-convention-inconsistency.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=MCP tool ERROR convention — inconsistency between failure paths causes silent data corruption">Find related lessons →</a></p></div>

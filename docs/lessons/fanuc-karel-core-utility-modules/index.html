@@ -6,6 +6,7 @@
 <title>KAREL Core Utility Modules: errors, system, Strings API Reference — MisakaNet</title>
 <meta name="description" content="Draft (not published): KAREL 是 FANUC 控制器上的类 Pascal 编译语言，没有标准库。开发者在每个项目中都要重复实现错误处理、字符串操作、类型转换等基础功能，导致代码冗余且质量参差不齐。">
 <link rel="canonical" href="https://misakanet.org/lessons/fanuc-karel-core-utility-modules/">
+<meta name="robots" content="noindex, follow">
 <meta property="og:title" content="KAREL Core Utility Modules: errors, system, Strings API Reference">
 <meta property="og:description" content="Draft (not published): KAREL 是 FANUC 控制器上的类 Pascal 编译语言，没有标准库。开发者在每个项目中都要重复实现错误处理、字符串操作、类型转换等基础功能，导致代码冗余且质量参差不齐。">
 <meta property="og:url" content="https://misakanet.org/lessons/fanuc-karel-core-utility-modules/">
@@ -160,6 +161,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -179,6 +191,70 @@
 <div class="section">
   <h2>Summary</h2>
   <p>KAREL 是 FANUC 控制器上的类 Pascal 编译语言，没有标准库。开发者在每个项目中都要重复实现错误处理、字符串操作、类型转换等基础功能，导致代码冗余且质量参差不齐。</p>
+</div>
+<div class="lesson-body">
+<h2>KAREL Core Utility Modules: errors, system, Strings API Reference</h2><h3>Problem描述</h3><p>KAREL 是 FANUC 控制器上的类 Pascal 编译语言，没有标准库。开发者在每个项目中都要重复实现错误处理、字符串操作、类型转换等基础功能，导致代码冗余且质量参差不齐。</p><h3>Root Cause分析</h3><p>KAREL 语言的核心缺陷：</p><ul><li>无错误码管理机制 → 每个项目自定义错误处理，不统一</li><li>无字符串操作函数 → 连 split、trim、类型转换都要手写</li><li>无统一的系统类型定义 → 数据类型和比较器散落各处</li><li>无时间/日期 API → 获取系统时间需要直接操作控制器接口</li></ul><p>Ka-Boost Layer 1 的三个模块（errors, system, Strings）是所有上层模块的共同基础，形成 KAREL 项目的"标准库"。</p><h3>Solution方法/技术要点</h3><h4>1. errors 模块 — 错误处理与变量初始化</h4><p><strong>核心 API：</strong></p><pre><code class="language-karel">-- 状态检查：非 SUCCESS 则中止
+CHK_STAT(rec_stat : INTEGER)
+
+-- 错误报告：errorType 0=警告, 1=警告+历史, 2=中止
+karelError(stat : INTEGER; errStr : STRING; errorType : INTEGER)
+
+-- 变量初始化（吞掉 error 12311）
+SET_UNINIT_I(progname, varname)   -- INTEGER
+SET_UNINIT_R(progname, varname)   -- REAL
+SET_UNINIT_B(progname, varname)   -- BOOLEAN
+SET_UNINIT_V(progname, varname)   -- VECTOR
+SET_UNINIT_F(progname, varname)   -- FRAME
+SET_UNINIT_S(progname, varname)   -- STRING
+
+-- 数组范围初始化
+SET_UNI_ARRS(progname, varname, start_i, stop_i)</code></pre><p><strong>命名错误码（errors.klt）：</strong></p><table><thead><tr><th>类别</th><th>典型错误码</th></tr></thead><tbody><tr><td>数组</td><td>ARR_LEN_MISMATCH, INVALID_INDEX</td></tr><tr><td>变量</td><td>VAR_UNINIT</td></tr><tr><td>文件</td><td>FILE_NOT_OPEN</td></tr><tr><td>程序</td><td>TPE_PROGRAM_DOES_NOT_EXIST</td></tr><tr><td>队列</td><td>QUEUE_IS_EMPTY</td></tr><tr><td>位置</td><td>POS_TYPE_MISMATCH</td></tr><tr><td>运动</td><td>SEARCH_MOTION_FAILED</td></tr></tbody></table><p><strong>依赖：</strong> Strings（用于 <code>str_parse</code> — 将长错误信息换行适配 TP 显示屏）。</p><h4>2. system 模块 — 系统接口与类型定义</h4><p><strong>时间日期：</strong></p><pre><code class="language-karel">system__date() : STRING    -- 返回 'DD-MMM-YYYY'
+system__time() : STRING    -- 返回 'HH:MM:SS'</code></pre><p><strong>Leader Frame（双臂机器人坐标系）：</strong></p><pre><code class="language-karel">system__set_leader_frame(cd_pair_no, ldr_frm_no, frm)
+system__get_leader_frame(cd_pair_no, ldr_frm_no) : XYZWPR
+system__mask_leader_frame(cd_pair_no, ldr_frm_no, axs, val)</code></pre><p><strong>工具函数：</strong></p><pre><code class="language-karel">system__pns_to_str() : STRING      -- 输入引脚 → 程序名映射
+system__int_to_bool(int) : BOOLEAN
+system__tdata_glte(data1, data2, typ, comparator) : BOOLEAN  -- 通用比较</code></pre><p><strong>向量构造：</strong></p><pre><code class="language-karel">VEC(x, y, z) : VECTOR              -- 3D 向量
+VEC2D(x, y) : VECTOR               -- 2D 向量（z=0）
+compare_VEC(v1, v2, tolerance) : BOOLEAN  -- 容差比较</code></pre><p><strong>重要类型（systemlib.datatypes.klt）：</strong></p><pre><code class="language-karel">t_DATA_TYPE   -- 联合体：可存储 INT, REAL, STRING, BOOL, VEC, POSE, CONFIG
+t_INTEGER, t_REAL, t_STRING16, t_BOOL, t_VECTOR, t_POSE  -- 原子类型包装
+VECTOR2D, VECTOR2Di  -- 2D 向量类型</code></pre><p><strong>系统变量宏（systemvars.klt）：</strong></p><table><thead><tr><th>宏</th><th>用途</th></tr></thead><tbody><tr><td>ZEROPOS(g)</td><td>零位姿</td></tr><tr><td>ZEROARR</td><td>零数组</td></tr><tr><td>TOTAL_GROUPS</td><td>运动组总数</td></tr><tr><td>GROUP_KINEMATICS(g)</td><td>运动学类型</td></tr><tr><td>CURRENT_UTOOL</td><td>当前工具坐标系</td></tr><tr><td>CURRENT_UFRAME</td><td>当前用户坐标系</td></tr><tr><td>DYNAMIC_LEADER(f,l)</td><td>动态 leader frame</td></tr></tbody></table><p><strong>常量（systemlib.codes.klt）：</strong></p><p>类型码：<code>C_INT</code>, <code>C_REAL</code>, <code>C_STR</code>, <code>C_BOOL</code>, <code>C_VEC</code>, <code>C_POS</code>, <code>C_POSEXT</code>, <code>C_CONFIG</code> 比较器：<code>C_GREATER</code>, <code>C_LESSER</code>, <code>C_EQUAL</code>, <code>C_GREATEREQL</code>, <code>C_LESSEREQL</code></p><h4>3. Strings 模块 — 字符串全操作</h4><p>KAREL 原生只有 STRING 类型赋值和简单拼接，Strings 模块补齐了所有常用操作。</p><p><strong>分割/解析：</strong></p><pre><code class="language-karel">split_str(str, delim, out_arr[])          -- 按分隔符分割
+extract_str(str, start_delim, stop_delim) : STRING  -- 提取子串
+rev_split(str, delim, out_arr[])          -- 反向分割
+char_index(str, chr) : INTEGER            -- 字符位置
+takeStr(str, chr) : STRING                -- 分隔符前部分
+takeNextStr(str, chr) : STRING            -- 分隔符后部分
+search_str(str, sub) : INTEGER            -- 子串搜索
+getIntInStr(str) : INTEGER                -- 提取字符串中的整数</code></pre><p><strong>裁剪/格式化：</strong></p><pre><code class="language-karel">lstrip(str) / rstrip(str)                 -- 去除首尾空格
+lstripChar(str, chr) / rstripChar(str, chr) -- 去除指定字符
+delim_strip(str, delim)                   -- 去除分隔符
+to_upper(str) : STRING                    -- 转大写
+str_parse(str, max_len, out_arr[])        -- 按最大行长换行（TP 显示用）</code></pre><p><strong>路径工具：</strong></p><pre><code class="language-karel">splitext(path) : STRING      -- 去扩展名的文件名
+get_ext(path) : STRING       -- 获取扩展名
+basename(path) : STRING      -- 文件名部分
+get_device(path) : STRING    -- 设备名
+get_progname(ref) : STRING   -- 从 '[progname]varname' 提取程序名
+get_varname(ref) : STRING    -- 从 '[progname]varname' 提取变量名</code></pre><p><strong>类型→字符串：</strong></p><pre><code class="language-karel">i_to_s(i) : STRING                    -- 整数转字符串
+r_to_s(r) : STRING                    -- 实数转字符串
+b_to_s(b) : STRING                    -- 布尔转字符串
+p_to_s(pose) : STRING                 -- 位姿转多行字符串
+pose_to_s(pose, delim) : STRING       -- 位姿转分隔字符串
+vec_to_s(v, delim) : STRING           -- 向量转字符串
+joint_to_s(jpos, delim) : STRING      -- 关节角转字符串
+rarr_to_s / iarr_to_s / sarr_to_s     -- 数组转字符串
+i_to_byte(i) : STRING                 -- 整数转二进制字符串</code></pre><p><strong>字符串→类型：</strong></p><pre><code class="language-karel">s_to_i(str) : INTEGER
+s_to_r(str) : REAL
+s_to_b(str) : BOOLEAN
+s_to_xyzwpr(str) : XYZWPR
+s_to_vec(str) : VECTOR
+s_to_joint(str) : JOINTPOS
+s_to_config(str) : CONFIG
+s_to_arr / s_to_rarr / s_to_iarr      -- 字符串转数组
+bin_to_i(bin_str) : INTEGER           -- 二进制字符串转整数</code></pre><p><strong>验证：</strong></p><pre><code class="language-karel">charisnum(c) : BOOLEAN          -- 字符是否为数字
+strisreal(str) : BOOLEAN        -- 字符串是否为实数
+strisint(str) : BOOLEAN         -- 字符串是否为整数
+delim_check(delim) : BOOLEAN    -- 分隔符是否有效</code></pre><h3>Verification方式</h3><ol><li><strong>errors 模块：</strong> 调用 <code>karelError(0, 'test error', 2)</code> 后 TP 显示屏显示错误信息，TP 历史记录中有对应条目</li><li><strong>system 模块：</strong> <code>system__date()</code> 返回格式如 '12-JUL-2026'，<code>system__time()</code> 返回格式如 '14:30:00'</li><li><strong>Strings 模块：</strong> <code>split_str('a,b,c', ',', arr)</code> 后 arr 包含 ['a', 'b', 'c']；<code>i_to_s(123)</code> 返回 '123'</li><li>所有模块的 KUnit 测试通过</li></ol><h3>来源</h3><ul><li>GitHub: kobbled/ka-boost — Layer 1 Core Utilities 文档 (.claude/rules/layer-1-core-utilities.md)</li><li>模块源码：lib/errors, lib/system, lib/Strings</li></ul><h2>Verification</h2><pre><code class="language-bash">grep -i fanuc lessons/contrib/fanuc-*.md 2&gt;/dev/null | wc -l
+echo FANUC verified</code></pre><p><strong>Expected Output:</strong></p><pre><code># (count)
+FANUC verified</code></pre>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/fanuc-karel-core-utility-modules.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=KAREL Core Utility Modules: errors, system, Strings API Reference">Find related lessons →</a></p></div>

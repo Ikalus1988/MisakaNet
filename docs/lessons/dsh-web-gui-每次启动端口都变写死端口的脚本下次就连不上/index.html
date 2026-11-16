@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>用脚本或插件去探测本机 DSH 的 HTTP 接口（例如插件的 /dsh-market/* 路由）时，把 http://127.0.0.1:PORT 写死，下次启动后全部失败，表现为连接被拒。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>用脚本或插件去探测本机 DSH 的 HTTP 接口（例如插件的 /dsh-market/* 路由）时，把 http://127.0.0.1:PORT 写死，下次启动后全部失败，表现为连接被拒。</p><h2>Root Cause</h2><p>DSH 每次启动随机选择监听端口，不是固定端口，端口只体现在运行时的注入变量/GUI 地址里。</p><h2>Fix</h2><p>不要写死端口：每次从运行时环境读取当前 GUI/服务地址；排查时先枚举进程的监听端口再拼 URL。</p><h2>Verification</h2><p>重启宿主后脚本仍能连上，不再出现 ECONNREFUSED。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/dsh-web-gui-每次启动端口都变写死端口的脚本下次就连不上.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=DSH Web GUI 每次启动端口都变，写死端口的脚本下次就连不上">Find related lessons →</a></p></div>

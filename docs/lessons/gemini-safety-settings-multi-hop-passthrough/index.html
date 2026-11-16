@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,106 @@
 <div class="section">
   <h2>Summary</h2>
   <p>In multi-tier enterprise environments where model traffic flows through API gateways, rate-limiting proxies, or security forwarders before reaching Gemini endpo…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>In multi-tier enterprise environments where model traffic flows through API gateways, rate-limiting proxies, or security forwarders before reaching Gemini endpoints, custom safety settings configurations frequently fail to take effect. Downstream calls revert silently to provider default thresholds (such as BLOCK_MEDIUM_AND_ABOVE), bypassing fine-grained enterprise compliance mandates or inadvertently dropping required safety audit metadata (safetyRatings and finishReason: SAFETY).</p><h2>Root Cause</h2><ol><li><strong>Serialization and Naming Mismatch</strong>: Client SDKs format requests using camelCase (safetySettings, harmCategory, threshold), whereas internal REST endpoints or intermediate proxies often deserialize into snake_case models (safety_settings). Strict schema validators discard unrecognized keys, stripping the safety array.</li><li><strong>Missing Guardrail Clamping</strong>: Forwarding layers treat caller-supplied safety parameters as unverified overrides. When downstream services omit safety thresholds, or when client applications submit permissive thresholds, multi-hop proxies without explicit policy enforcement fail to enforce organizational safety floors.</li><li><strong>Response Context Truncation</strong>: When a prompt triggers safety blocks, Gemini returns promptFeedback.blockReason or candidate items containing safetyRatings. Reverse proxies that project responses down to raw content parts drop these metadata fields, causing downstream logging and compliance services to record empty completions rather than explicit safety refusals.</li></ol><h2>Fix</h2><p>Implement gateway middleware that normalizes naming conventions, clamps safety thresholds against organizational compliance floors, and preserves safety metadata in responses:</p><pre><code class="language-python">from typing import Any, Dict, List
+
+STANDARD_CATEGORIES: List[str] = [
+    "HARM_CATEGORY_HARASSMENT",
+    "HARM_CATEGORY_HATE_SPEECH",
+    "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+    "HARM_CATEGORY_DANGEROUS_CONTENT",
+]
+
+THRESHOLD_SEVERITY: Dict[str, int] = {
+    "BLOCK_LOW_AND_ABOVE": 3,
+    "BLOCK_MEDIUM_AND_ABOVE": 2,
+    "BLOCK_ONLY_HIGH": 1,
+    "BLOCK_NONE": 0,
+}
+
+
+def normalize_safety_settings(
+    incoming_settings: List[Dict[str, str]],
+    organization_baseline_threshold: str = "BLOCK_LOW_AND_ABOVE",
+) -&gt; List[Dict[str, str]]:
+    """Enforces strict safety thresholds by normalizing input keys and clamping to baseline.
+
+    Args:
+        incoming_settings: List of safety setting dictionaries from client requests.
+        organization_baseline_threshold: Minimum allowed threshold string for compliance.
+
+    Returns:
+        List of normalized safety settings compliant with Gemini API schema.
+
+    Raises:
+        ValueError: If an unknown harm category or threshold is supplied.
+    """
+    baseline_level = THRESHOLD_SEVERITY.get(organization_baseline_threshold, 3)
+    resolved: Dict[str, str] = {}
+
+    for item in incoming_settings:
+        cat = item.get("category") or item.get("harmCategory") or item.get("harm_category")
+        thresh = item.get("threshold")
+        if not cat or not thresh:
+            continue
+        if cat not in STANDARD_CATEGORIES or thresh not in THRESHOLD_SEVERITY:
+            raise ValueError(f"Invalid safety setting: category={cat}, threshold={thresh}")
+
+        requested_level = THRESHOLD_SEVERITY[thresh]
+        effective_level = max(requested_level, baseline_level)
+        effective_threshold = [k for k, v in THRESHOLD_SEVERITY.items() if v == effective_level][0]
+        resolved[cat] = effective_threshold
+
+    for cat in STANDARD_CATEGORIES:
+        if cat not in resolved:
+            resolved[cat] = organization_baseline_threshold
+
+    return [{"category": cat, "threshold": thresh} for cat, thresh in resolved.items()]
+
+
+def preserve_compliance_response(
+    raw_response: Dict[str, Any],
+) -&gt; Dict[str, Any]:
+    """Preserves safety ratings, block reasons, and audit context in proxy responses.
+
+    Args:
+        raw_response: Deserialized response payload from Gemini API.
+
+    Returns:
+        Response dictionary containing both content and preserved safety metadata.
+    """
+    output: Dict[str, Any] = {
+        "candidates": raw_response.get("candidates", []),
+        "promptFeedback": raw_response.get("promptFeedback", {}),
+    }
+    return output</code></pre><h2>Verification</h2><p>Run the test suite ensuring that safety threshold relaxation is rejected, categories are preserved, and compliance response fields are maintained:</p><pre><code class="language-bash">python3 -c "
+from typing import Dict, List
+
+STANDARD = ['HARM_CATEGORY_HARASSMENT', 'HARM_CATEGORY_HATE_SPEECH', 'HARM_CATEGORY_SEXUALLY_EXPLICIT', 'HARM_CATEGORY_DANGEROUS_CONTENT']
+SEVERITY = {'BLOCK_LOW_AND_ABOVE': 3, 'BLOCK_MEDIUM_AND_ABOVE': 2, 'BLOCK_ONLY_HIGH': 1, 'BLOCK_NONE': 0}
+
+def clamp(incoming: List[Dict[str, str]], baseline: str) -&gt; List[Dict[str, str]]:
+    base_level = SEVERITY[baseline]
+    res = {}
+    for item in incoming:
+        c = item.get('category') or item.get('harmCategory')
+        t = item.get('threshold')
+        req_level = SEVERITY[t]
+        eff_level = max(req_level, base_level)
+        eff_thresh = [k for k, v in SEVERITY.items() if v == eff_level][0]
+        res[c] = eff_thresh
+    for c in STANDARD:
+        if c not in res:
+            res[c] = baseline
+    return [{'category': c, 'threshold': t} for c, t in res.items()]
+
+test_input = [{'category': 'HARM_CATEGORY_HARASSMENT', 'threshold': 'BLOCK_NONE'}]
+clamped = clamp(test_input, 'BLOCK_LOW_AND_ABOVE')
+harassment = [x for x in clamped if x['category'] == 'HARM_CATEGORY_HARASSMENT'][0]
+assert harassment['threshold'] == 'BLOCK_LOW_AND_ABOVE'
+assert len(clamped) == 4
+"</code></pre>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/gemini-safety-settings-multi-hop-passthrough.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Gemini Safety Settings: Multi-Hop Gateway Passthrough and Compliance Preservation">Find related lessons →</a></p></div>

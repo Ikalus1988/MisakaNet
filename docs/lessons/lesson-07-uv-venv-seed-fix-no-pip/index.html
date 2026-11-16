@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,45 @@
 <div class="section">
   <h2>Summary</h2>
   <p>> Author: 太阳 (Misaka10004)</p>
+</div>
+<div class="lesson-body">
+<blockquote><p>Author: 太阳 (Misaka10004) Created: 2026-07-03 Status: draft, confidence 0.92 Domain: devops Source: Real incident, installing Panniantong/Agent-Reach on WSL Ubuntu 2026-07-03</p></blockquote><h2>Problem</h2><p>On Ubuntu (especially WSL Ubuntu 22.04 / 24.04), the system Python is a <strong>stripped package</strong> that does not include <code>pip</code>, <code>setuptools</code>, or <code>venv</code> module out of the box. Running the recommended install command for many Python tools fails:</p><pre><code class="language-bash">$ python3 -m venv ~/.agent-reach-venv
+You may need to use sudo with that command.  After installing the python3-venv
+package, recreate the virtual environment.
+
+Failing command: /home/USER/.agent-reach-venv/bin/python3
+
+$ source ~/.agent-reach-venv/bin/activate
+bash: /home/USER/.agent-reach-venv/bin/activate: No such file or directory
+
+$ python3 -m ensurepip --default-pip
+$ python3 -m pip --version
+ModuleNotFoundError: No module named 'pip'</code></pre><p>Standard fixes (<code>pip install --break-system-packages</code>, <code>sudo apt install python3-venv</code>) have downsides:</p><ul><li><code>--break-system-packages</code> pollutes the system Python and may break OS tools.</li><li><code>sudo apt install</code> requires user authorization and is forbidden by many agent install guides.</li></ul><h2>Root Cause</h2><p>Ubuntu's <code>python3</code> package is intentionally split:</p><table><thead><tr><th>Package</th><th>Provides</th></tr></thead><tbody><tr><td><code>python3</code> (default)</td><td>interpreter only</td></tr><tr><td><code>python3-venv</code></td><td><code>venv</code> module</td></tr><tr><td><code>python3-pip</code></td><td><code>pip</code> binary</td></tr><tr><td><code>python3-full</code></td><td>all of the above</td></tr></tbody></table><p>WSL Ubuntu ships with just <code>python3</code>. Installing <code>python3-venv</code> would fix it but requires sudo.</p><p>For <strong>agent installs that run unattended</strong> (cron jobs, automated setup), sudo is not available. The fix needs to work as a non-root user.</p><h2>Solution</h2><p>Use <code>uv</code> (already installed at <code>/home/USER/.local/bin/uv</code> on this machine) with <code>--seed</code>:</p><pre><code class="language-bash"># Clear any broken venv attempt
+rm -rf ~/.agent-reach-venv
+
+# uv creates a complete venv with pip pre-installed
+uv venv ~/.agent-reach-venv --python python3.12 --seed
+
+# Expected output:
+# Creating virtual environment with seed packages at: /home/USER/.agent-reach-venv
+#  + pip==26.1.2
+
+# Verify pip works inside the venv
+ls ~/.agent-reach-venv/bin/pip
+~/.agent-reach-venv/bin/pip --version
+
+# Now install the package
+~/.agent-reach-venv/bin/pip install https://github.com/Panniantong/agent-reach/archive/main.zip</code></pre><p>The <code>--seed</code> flag tells uv to install <code>pip</code>, <code>setuptools</code>, and <code>wheel</code> into the new venv at creation time. Without <code>--seed</code>, you get a bare venv with no pip — same problem as the standard <code>python3 -m venv</code>.</p><h2>Verification</h2><pre><code class="language-bash">(already installed at
+echo "Verification passed: fix command exited 0"</code></pre><p><strong>Expected Output:</strong> command completes without error, then <code>Verification passed</code> is printed. (Checks: <code>(already installed at</code>)</p><h2>Verification (self-check)</h2><pre><code class="language-python">def venv_is_usable(venv_path):
+    import os
+    pip_path = os.path.join(venv_path, "bin", "pip")
+    return os.path.exists(pip_path) and os.access(pip_path, os.X_OK)
+
+def install_python_package_no_sudo(venv_path, package_url):
+    import subprocess
+    pip = os.path.join(venv_path, "bin", "pip")
+    result = subprocess.run([pip, "install", package_url], capture_output=True)
+    return result.returncode == 0</code></pre><h2>Notes</h2><ul><li><code>uv</code> is the official Astral tool (astral-sh/uv on GitHub). It's a fast Python package + version manager.</li><li>This fix is <strong>agent-install-friendly</strong>: it runs without sudo, no system Python modification, no <code>break-system-packages</code>.</li><li>For projects that prefer pipx: <code>pipx install &lt;package&gt;</code> works similarly but requires <code>pipx</code> to be installed first (often needs sudo on Ubuntu).</li><li>For Docker / CI: same approach works — install <code>uv</code> in Dockerfile, then <code>uv venv --seed</code> for any package needing pip.</li><li>Related: the existing MisakaNet lesson <code>python-venv-troubleshoot.md</code> covers activation and path issues but <strong>not</strong> the missing-pip case this lesson addresses.</li></ul><h2>Related Sources</h2><ul><li>uv docs: https://docs.astral.sh/uv/</li><li>Ubuntu python3 package split: https://packages.ubuntu.com/jammy/python3</li><li>MisakaNet lesson (related but different): <code>lessons/contrib/python-venv-troubleshoot.md</code> (covers activation issues, not missing pip)</li><li>Real incident: agent-reach install on WSL Ubuntu 2026-07-03T00:25 GMT+8</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/lesson-07-uv-venv-seed-fix-no-pip.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Ubuntu WSL Python venv Missing pip — uv venv --seed Fixes Without sudo">Find related lessons →</a></p></div>

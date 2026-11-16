@@ -6,6 +6,7 @@
 <title>压缩包打不开？先别急，试这 3 步 — MisakaNet</title>
 <meta name="description" content="Draft (not published): - 双击没反应">
 <link rel="canonical" href="https://misakanet.org/lessons/archive-open-failure/">
+<meta name="robots" content="noindex, follow">
 <meta property="og:title" content="压缩包打不开？先别急，试这 3 步">
 <meta property="og:description" content="Draft (not published): - 双击没反应">
 <meta property="og:url" content="https://misakanet.org/lessons/archive-open-failure/">
@@ -160,6 +161,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -179,6 +191,13 @@
 <div class="section">
   <h2>Summary</h2>
   <p>- 双击没反应</p>
+</div>
+<div class="lesson-body">
+<h2>你可能遇到的是：</h2><ul><li>双击没反应</li><li>提示"文件损坏"</li><li>解压到一半失败</li><li>文件名乱码</li><li>AI / 小龙虾读不了压缩包</li></ul><hr><h2>先试这 3 步</h2><h3>1. 先把文件移到桌面</h3><p>不要放在很深的文件夹里。 路径太长、中文太多，有时会导致解压失败。</p><h3>2. 换 7-Zip 打开</h3><p>不要只用系统自带解压。 推荐用 <a href="https://www.7-zip.org/">7-Zip</a> 重新打开一次。</p><h3>3. 重新下载一次</h3><p>如果提示"文件损坏"，很可能是下载不完整。 重新下载后再试。</p><hr><h2>还不行？</h2><p>不用解释太多，直接发这 3 样：</p><ol><li>报错截图</li><li>文件后缀：.zip / .rar / .7z / 不知道</li><li>你用的是 Windows / Mac / 不知道</li></ol><p>不会描述也没关系，发截图就行。</p><hr><h2>给 AI / 小龙虾看的版本</h2><p>你可以直接复制这段：</p><pre><code>我遇到的问题：压缩包打不开
+我已经试过：移动到桌面 / 换 7-Zip / 重新下载
+我的系统：Windows / Mac / 不知道
+文件类型：zip / rar / 7z / 不知道
+我会发报错截图，请帮我判断下一步怎么处理。</code></pre><hr><h2>给维护者/Agent 的结构化记录</h2><ul><li><strong>Root cause:</strong> 路径过长、中文路径编码、系统解压工具兼容性、下载不完整、文件本身损坏</li><li><strong>Fix:</strong> 移动到短路径 + 换 7-Zip + 重新下载</li><li><strong>Prevention:</strong> 小龙虾应自动识别格式、检查损坏、提示装 7-Zip、中文路径/超长路径给明确提示</li></ul><hr><h2>这张卡片来自哪里？</h2><p>来自 <a href="https://misakanet.org/">MisakaNet</a> 失败经验网络。</p><p>MisakaNet 收集真实开发、AI Agent、工具使用中的踩坑经验，把它们整理成可复用的 lesson / 急救卡：</p><blockquote><p>踩坑一次，全网受益。</p></blockquote><ul><li>GitHub 仓库：https://github.com/Ikalus1988/MisakaNet</li><li>搜索经验：https://misakanet.org/search/</li></ul><p>如果这张卡帮到了你，可以点个 Star，或者把你的报错截图发回来，我们会整理成下一张急救卡。</p><hr><p><em>MisakaNet 急救卡 #001</em> <em>压缩包打不开？先试 3 步。</em> <em>不会 GitHub 没关系，发截图也算贡献。</em> <em>https://github.com/Ikalus1988/MisakaNet</em></p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/user-rescue/archive-open-failure.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=压缩包打不开？先别急，试这 3 步">Find related lessons →</a></p></div>

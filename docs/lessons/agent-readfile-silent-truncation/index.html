@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,25 @@
 <div class="section">
   <h2>Summary</h2>
   <p>A three-brain AI meeting system (大乔 proposals → 小乔 review → main fusion) writes meeting</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>A three-brain AI meeting system (大乔 proposals → 小乔 review → main fusion) writes meeting agenda files to disk. When an agenda file gets corrupted mid-meeting, a repair agent reads the file to reconstruct it.</p><p>The repair agent called <code>read_file("path/to/agenda.md")</code> and processed the result. It produced a fused decision that looked correct — but was based on <strong>incomplete data</strong>. Content beyond ~15,000 characters was silently missing. The agent never noticed.</p><h2>Root Cause</h2><p><code>read_file()</code> has a built-in character cap, adjustable via <code>char_limit</code>, that truncates files larger than the limit. It returns a head+tail window with this footer:</p><blockquote><p>──────── [TRUNCATED] ──────── Showing 11,198 chars (head) + 3,500 chars (tail) of 86,825 total clean characters. Full text saved to: /tmp/cache/... To read the omitted middle: read_file offset=... ─────────────────────────────</p></blockquote><p>The repair agent's code read the result into a variable like <code>file_content = read_file(path).content</code> and began processing. It never checked for the TRUNCATED marker. The truncated result was still valid Markdown with all required sections (Problem / Root Cause / Fix / Verification) — just incomplete. The agent had no reason to suspect data loss.</p><p>Three contributing factors:</p><ol><li><strong>Silent success</strong>: The truncation isn't an error. <code>read_file</code> returns <code>exit_code: 0</code> and valid-looking content.</li><li><strong>No size prefetch</strong>: No one checked the file size before reading.</li><li><strong>Cursor blindness</strong>: The agent didn't scan the returned text for truncation markers before using it for decision-making.</li></ol><h2>Fix</h2><p>The fix has three layers:</p><h3>Layer 1 — Paginated reading (repair agent)</h3><p>Replace a single <code>read_file(path)</code> call with paginated reading:</p><pre><code class="language-python"># Before: reads truncated
+content = ""
+page = read_file(path, offset=1, limit=500)
+content += page.content
+total = page.total_lines
+
+offset = 501
+while offset &lt;= total:
+    page = read_file(path, offset=offset, limit=500)
+    content += page.content
+    offset += 500</code></pre><h3>Layer 2 — Size-aware prefetch</h3><p>Before reading the file, check its size. If it exceeds the char_limit threshold, paginate automatically.</p><pre><code class="language-python">import os
+size = os.path.getsize(path)
+# read_file default budget is ~15K chars; if file is bigger, paginate
+if size &gt; 14000:
+    # use paginated reading strategy</code></pre><h3>Layer 3 — Agent instruction hardening</h3><p>Add a system-level rule: <strong>When reading any file, always check the last 200 characters of the returned content for a TRUNCATED marker before using the data.</strong> If found, paginate and concatenate.</p><h2>Verification</h2><pre><code class="language-bash">echo "Lesson: Agent read_file Silent Truncation in Multi-Brain M"
+wc -l lessons/contrib/agent-readfile-silent-truncation.md</code></pre><p><strong>Expected Output:</strong></p><pre><code>Lesson: Agent read_file Silent Truncation in Multi-Brain M
+# (line count)</code></pre><h2>Scenario</h2><p>Any autonomous agent workflow where:</p><ul><li>Agenda, specification, or configuration files exceed ~15K characters</li><li>File content is read once and used for decision-making</li><li>The agent does not verify completeness before processing</li></ul><p>This is especially dangerous in multi-agent pipelines where agent A writes data that agent B reads, because neither agent knows about the truncation.</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/agent-readfile-silent-truncation.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Agent read_file Silent Truncation in Multi-Brain Meeting Recovery">Find related lessons →</a></p></div>

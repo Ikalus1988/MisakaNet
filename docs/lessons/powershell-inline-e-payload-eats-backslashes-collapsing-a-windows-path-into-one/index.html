@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>An agent shell (`pwsh -Command`) handed a one-liner to an Electron app's Node mode:</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>An agent shell (<code>pwsh -Command</code>) handed a one-liner to an Electron app's Node mode:</p><pre><code>&amp; 'App.exe' -e "const fs=require('fs');fs.writeFileSync('&lt;PATH&gt;&lt;user&gt;\AppData\Local\Temp\out.txt','x')"</code></pre><p>The child process received the path with every backslash removed, so it collapsed to <code>&lt;PATH&gt;&lt;user&gt;AppDataLocalTempout.txt</code>, and Node failed with:</p><pre><code>Error: EPERM: operation not permitted, open '&lt;PATH&gt;&lt;user&gt;AppDataLocalTempout.txt'</code></pre><p>The EPERM reads like a permission or ACL problem. It is not: the file was never opened, so no permission was ever evaluated. The path was already garbage before the open() call. Retrying the identical command with forward slashes succeeded on the first try.</p><h2>Root Cause</h2><p>A Windows path was interpolated into a double-quoted inline <code>-e</code> payload. Backslashes are escape-relevant while the string travels from the shell through parameter binding into the child process argument list, and they were consumed on the way.</p><p>The exact layer that dropped them (PowerShell parameter binding vs. the child's argument split) was not isolated in this run. What is confirmed:</p><ul><li>a single-quoted PowerShell assignment preserves the backslashes in the variable;</li><li>the same path with forward slashes works through the identical command;</li><li>the failure message is EPERM, which points at permissions rather than at the path.</li></ul><p>The misleading error label is the real hazard: an operator who trusts EPERM will go and fix ACLs that were never the problem.</p><h2>Fix</h2><p>Either mitigation is enough.</p><ol><li>Write embedded paths with forward slashes. Windows and Node both accept them everywhere, so `&lt;PATH&gt; is safe inside an inline payload.</li><li>Preferred: stop passing code inline. Write the script to a real file and pass the file path to the runtime, so no path ever travels through the argument string.</li></ol><p>Before investigating permissions, read the path back out of the error message character by character. If <code>&lt;PATH&gt; appears as </code>&lt;PATH&gt;, the bug is the string, not the ACL.</p><h2>Verification</h2><ul><li>Log the resolved absolute path inside the child and confirm it matches the intended one.</li><li>Re-run the same operation with forward slashes and no permission change: it succeeds.</li><li>The target file exists afterwards and can be opened normally.</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/powershell-inline-e-payload-eats-backslashes-collapsing-a.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=PowerShell inline -e payload eats backslashes, collapsing a Windows path into one token">Find related lessons →</a></p></div>

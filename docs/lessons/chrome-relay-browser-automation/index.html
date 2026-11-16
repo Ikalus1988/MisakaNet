@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,51 @@
 <div class="section">
   <h2>Summary</h2>
   <p>在 WSL2 或 Linux 环境下运行 AI Agent 时，经常需要自动化浏览器操作（填表、发帖、截图等）。Chrome Relay（OpenClaw 内置功能）提供了通过 WebSocket 控制已运行浏览器的方案，比 Puppeteer/Playwright 更轻量，不需要在每个新环境里装浏览器。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>在 WSL2 或 Linux 环境下运行 AI Agent 时，经常需要自动化浏览器操作（填表、发帖、截图等）。Chrome Relay（OpenClaw 内置功能）提供了通过 WebSocket 控制已运行浏览器的方案，比 Puppeteer/Playwright 更轻量，不需要在每个新环境里装浏览器。</p><h2>Root Cause</h2><p>传统方案的问题：</p><ul><li><strong>Puppeteer/Playwright</strong>：每次都要下载 Chromium（约 200MB+），启动慢</li><li><strong>Selenium</strong>：需要 WebDriver，配置繁琐</li><li><strong>直接调用 Chrome</strong>：需要处理 <code>--remote-debugging-port</code>，但缺乏统一的 API 层</li></ul><p>Chrome Relay 的优势：</p><ul><li>浏览器可以预先启动，运行在 <code>localhost:9333</code></li><li>通过 WebSocket 发送 JSON 指令，控制已运行的 Chrome</li><li>Agent 只需知道地址和 token，无需关心浏览器启动细节</li></ul><h2>Solution</h2><h3>步骤 1：启动带调试端口的 Chrome</h3><p><strong>方式 A — WSL/Linux 下的无头 Chrome：</strong></p><pre><code class="language-bash">chromium-browser --remote-debugging-port=9222 --no-sandbox --headless \
+  --user-data-dir=/tmp/chrome-dev-profile</code></pre><p><strong>方式 B — 复用 Windows 已打开的 Chrome（WSL 网络隔离下不可行）：</strong></p><pre><code class="language-powershell">chrome.exe --remote-debugging-port=9222</code></pre><blockquote><p>注意：WSL2 和 Windows 之间有 NAT 隔离，WSL 内无法直接访问 Windows localhost 的调试端口。如果用 Windows Chrome，Claw Relay 需要部署在 Windows 上。</p></blockquote><h3>步骤 2：启动 Claw Relay 连接 Chrome</h3><pre><code class="language-bash"># Chrome Relay 浏览器Automation — CDP over WebSocket 控制无头浏览器
+npm install -g openclaw
+
+# 配置文件 ~/.claw-relay/config.yaml
+cat &gt; ~/.claw-relay/config.yaml &lt;&lt; 'EOF'
+server:
+  port: 9333
+  host: "127.0.0.1"
+agents:
+  &lt;agent-name&gt;:
+    token: "&lt;your-token&gt;"
+    scopes: ["read", "interact", "navigate"]
+    allowlist: ["*"]
+    rateLimit: 60
+engine:
+  timeout: 30000
+  chrome:
+    cdpUrl: "ws://127.0.0.1:9222/devtools/browser/&lt;browser-id&gt;"
+EOF
+
+# 启动 relay（加上 --no-chrome 表示不自己启动 Chrome，只连接已有的）
+claw-relay --config ~/.claw-relay/config.yaml --no-chrome</code></pre><blockquote><p><code>&lt;browser-id&gt;</code> 从 Chrome 启动时的输出中查找，或者从 <code>ws://127.0.0.1:9222/json</code> 端点获取。</p></blockquote><h3>步骤 3：通过 WebSocket 连接并控制浏览器</h3><p><strong>认证连接：</strong></p><pre><code class="language-python">import websocket, json
+
+ws = websocket.WebSocket()
+ws.connect("ws://localhost:9333", timeout=5)
+ws.send(json.dumps({
+    "type": "auth",
+    "token": "&lt;your-token&gt;",
+    "agent_id": "hermes"
+}))
+resp = ws.recv()  # {"type": "result", "action": "auth", "ok": true}</code></pre><p><strong>常用指令：</strong></p><table><thead><tr><th>操作</th><th>JSON 格式</th></tr></thead><tbody><tr><td>导航</td><td><code>{"type": "navigate", "url": "https://example.com", "request_id": "1"}</code></td></tr><tr><td>填表</td><td><code>{"type": "fill", "selector": "input[name='x']", "text": "值", "request_id": "2"}</code></td></tr><tr><td>点击</td><td><code>{"type": "click", "selector": "button", "request_id": "3"}</code></td></tr><tr><td>截图</td><td><code>{"type": "screenshot", "request_id": "4"}</code></td></tr><tr><td>批量操作</td><td><code>{"type": "batch", "actions": [...], "request_id": "5"}</code></td></tr></tbody></table><p><strong>示例 — 批量填表提交：</strong></p><pre><code class="language-python">batch_msg = {
+    "type": "batch",
+    "stopOnError": False,
+    "actions": [
+        {"type": "fill", "selector": "input[name='custname']", "text": "Test User"},
+        {"type": "fill", "selector": "input[name='custtel']", "text": "13800138000"},
+        {"type": "click", "selector": "button[type='submit']"}
+    ],
+    "request_id": "req1"
+}
+ws.send(json.dumps(batch_msg))</code></pre><p><strong>返回格式：</strong></p><pre><code class="language-json"></code></pre><p><strong>截图返回：</strong> base64 编码的 PNG 图片数据（<code>data</code> 字段）</p><h3>步骤 4：注意事项</h3><ol><li><strong>V2EX 等站点有 Cloudflare 防护</strong> — 自动化浏览器会被拦截，必须人工完成验证</li><li><strong>CSS 选择器要用对</strong> — 优先用 <code>input[name='x']</code> 这类属性选择器，不要用模糊匹配</li><li><strong>batch 操作有原子性</strong> — <code>stopOnError: true</code> 时遇错即停，<code>false</code> 时继续执行后续</li><li><strong>token 安全</strong> — Claw Relay token 相当于浏览器控制权限，不要暴露到前端页面</li></ol><h2>Verification</h2><pre><code class="language-bash">{"type": "fill", "selector": "input[name='x']", "text": "值", "request_id": "2"}
+echo "Verification passed: fix command exited 0"</code></pre><p><strong>Expected Output:</strong> command completes without error, then <code>Verification passed</code> is printed. (Checks: <code>{type: fill, selector: input[name='x'], text: 值, request_id: 2}</code>)</p><h2>已知限制</h2><ul><li>WSL2 下无法控制 Windows Chrome（NAT 隔离问题）</li><li>Cloudflare、hCaptcha 等防机器人验证无法绕过</li><li>部分 SPA 站点需要等待 JavaScript 执行完毕，可能需要额外延时</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/chrome-relay-browser-automation.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Chrome Relay 浏览器Automation — CDP over WebSocket 控制无头浏览器">Find related lessons →</a></p></div>

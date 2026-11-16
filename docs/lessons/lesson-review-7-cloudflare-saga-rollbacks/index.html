@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,45 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Durable multi-step workflows (e.g., fund transfer) can leave systems in inconsistent state when a middle step fails. Step 1 succeeds (debit), Step 2 fails (cred…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Durable multi-step workflows (e.g., fund transfer) can leave systems in inconsistent state when a middle step fails. Step 1 succeeds (debit), Step 2 fails (credit) — money is lost in limbo.</p><h2>Root Cause</h2><p>External system operations are not atomic across services. Once a debit commits, it can't be "undone" — it must be reversed through a new compensating operation.</p><h2>Solution</h2><h3>Saga Pattern with Inline Rollback</h3><pre><code class="language-javascript">// Cloudflare Workflows saga rollback example
+export default {
+  async run(event, step) {
+    // Step 1: Debit with rollback
+    const debitResult = await step.do("debit-account-a", {
+      // rollback: compensating action if this step succeeds but later steps fail
+      rollback: async () =&gt; {
+        await step.do("credit-account-a-reversal", {
+          amount: debitResult.amount,
+          accountId: "A"
+        });
+      }
+    }, async () =&gt; {
+      return await debitFromAccount("A", 100);
+    });
+
+    // Step 2: Credit (may fail)
+    const creditResult = await step.do("credit-account-b", {
+      rollback: async () =&gt; {
+        // If credit fails after debit succeeded, reverse the debit
+        await step.do("credit-account-a-reversal", {
+          amount: debitResult.amount,
+          accountId: "A"
+        });
+      }
+    }, async () =&gt; {
+      return await creditToAccount("B", 100);
+    });
+
+    // Step 3: Notification (no rollback needed)
+    await step.do("send-confirmation", async () =&gt; {
+      await sendEmail("Transfer complete");
+    });
+  }
+};</code></pre><h3>Saga vs Traditional Transaction</h3><table><thead><tr><th>Aspect</th><th>Traditional DB Transaction</th><th>Saga Pattern</th></tr></thead><tbody><tr><td>Scope</td><td>Single database</td><td>Multiple services</td></tr><tr><td>Rollback</td><td>Automatic (RDBMS)</td><td>Manual compensating actions</td></tr><tr><td>Consistency</td><td>ACID</td><td>Eventual consistency</td></tr><tr><td>Failure handling</td><td>Abort entire transaction</td><td>Rollback completed steps</td></tr></tbody></table><h3>When to Use Sagas</h3><ul><li>Cross-service operations (bank transfers, order fulfillment)</li><li>Long-running processes (multi-day approvals)</li><li>External API calls that can't be rolled back atomically</li></ul><h2>Verification</h2><pre><code class="language-bash">echo "Lesson: Cloudflare Workflows Saga Rollback — Durable Multi"
+wc -l lessons/contrib/lesson-review-7-cloudflare-saga-rollbacks.md</code></pre><p><strong>Expected Output:</strong></p><pre><code>Lesson: Cloudflare Workflows Saga Rollback — Durable Multi
+# (line count)</code></pre><h2>Notes</h2><ul><li>Cloudflare Workflows provides built-in saga rollback support</li><li>Rollback logic is declared inline with the step, not in separate error handlers</li><li>Source: blog.cloudflare.com (2026-06-25)</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/lesson-review-7-cloudflare-saga-rollbacks.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Cloudflare Workflows Saga Rollback — Durable Multi-Step Compensation">Find related lessons →</a></p></div>

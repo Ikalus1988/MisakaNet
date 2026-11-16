@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>While an Electron desktop app is running, its cookie database (Network\Cookies, a plain SQLite file) cannot be read by any non-admin process. Every read path fa…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>While an Electron desktop app is running, its cookie database (Network\Cookies, a plain SQLite file) cannot be read by any non-admin process. Every read path fails with a different message, which makes it look like several unrelated problems:</p><ul><li>Copy-Item -&gt; "The process cannot access the file '&lt;path&gt;' because it is being used by another process."</li><li>[System.IO.File]::Open(path,'Open','Read','ReadWrite') -&gt; same sharing violation</li><li>CreateFile(...) with FILE_FLAG_BACKUP_SEMANTICS -&gt; Win32 error 32 (ERROR_SHARING_VIOLATION)</li><li>Python sqlite3.connect(path) -&gt; "sqlite3.OperationalError: unable to open database file", thrown at connect time, not at the first statement.</li></ul><p>A cleanup or inspection script that only guards its write transaction never reaches the guard at all.</p><h2>Root Cause</h2><p>Chromium (and therefore Electron) opens the cookie DB without granting FILE_SHARE_READ/WRITE, so the handle is effectively exclusive for the life of the process. Backup semantics bypass sharing violations only when the caller holds SeBackupPrivilege, which belongs to Administrators; an ordinary user token cannot use it. The conflict is a Windows sharing violation, not SQLite's own locking, so busy-timeout and retry settings change nothing.</p><h2>Fix</h2><p>Treat "app is running" as an absolute precondition: close the app, then operate.</p><p>For automation, make the guard detect the lock and skip quietly:</p><ul><li>wrap sqlite3.connect (or the equivalent open) inside the same try that handles the write attempt, because the failure surfaces at connect;</li><li>classify OperationalError as "app running - skip", not as an error, or a scheduled guard writes a failure line on every run;</li><li>do not attempt to work around it with a copy, a read-only URI, or backup semantics as a non-admin.</li></ul><h2>Verification</h2><ol><li>With the app running, the guard appends a "skip" line and changes nothing.</li><li>Close the app; the next run appends a "clean" line and the row count drops to zero.</li><li>PRAGMA integrity_check on the cookie DB returns ok, and the app still starts.</li></ol>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/an-electron-apps-cookie-sqlite-cannot-be-read-while-it-runs.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=An Electron app's cookie SQLite cannot be read while it runs, and no non-admin trick bypasses the lock">Find related lessons →</a></p></div>

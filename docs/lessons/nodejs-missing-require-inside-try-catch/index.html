@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,41 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Missing `require("node:os")` inside a `try/catch(_){}` block silently kills the entire Windows code path. `os.tmpdir()` throws `ReferenceError`, which is caught…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Missing <code>require("node:os")</code> inside a <code>try/catch(_){}</code> block silently kills the entire Windows code path. <code>os.tmpdir()</code> throws <code>ReferenceError</code>, which is caught by the blanket catch handler, the handler never spawns, and tests fail with a cryptic "marker: not found" error.</p><p>The <code>catch(_)</code> pattern is intentional fire-and-forget but masks real import bugs — the error is swallowed without logging.</p><h2>Root Cause</h2><p>The code uses a blanket <code>try/catch(_){}</code> for fire-and-forget process spawning:</p><pre><code class="language-javascript">try {
+  const os = require("node:os"); // &lt;-- BUG: this require is INSIDE the try
+  const tmpDir = os.tmpdir();
+  const marker = path.join(tmpDir, "marker.txt");
+  // spawn handler...
+} catch (_) {
+  // Swallows ALL errors, including ReferenceError from missing require
+}</code></pre><p>When <code>require("node:os")</code> is missing or misplaced:</p><ol><li><code>os</code> is <code>undefined</code> (or the require itself throws if the module path is wrong)</li><li><code>os.tmpdir()</code> throws <code>ReferenceError: os is not defined</code></li><li>The catch block swallows the error silently</li><li>The spawn never happens</li><li>Downstream code waiting for the marker file times out with "marker: not found"</li></ol><p>The real import bug is invisible because the catch block does not log or re-throw.</p><h2>Solution</h2><h3>Option A: Import modules at top level (preferred)</h3><p>Move all <code>require</code> statements outside the try/catch block. Module resolution happens once at load time, not inside the hot path:</p><pre><code class="language-javascript">const os = require("node:os");
+const path = require("node:path");
+
+// Now try/catch only wraps the spawn logic
+try {
+  const tmpDir = os.tmpdir();
+  const marker = path.join(tmpDir, "marker.txt");
+  // spawn handler...
+} catch (err) {
+  console.error("Spawn failed:", err.message);
+}</code></pre><h3>Option B: Narrow the try/catch scope</h3><p>If the try/catch must wrap everything, at minimum log the error:</p><pre><code class="language-javascript">try {
+  const os = require("node:os");
+  const tmpDir = os.tmpdir();
+  // spawn...
+} catch (err) {
+  // Do NOT silently swallow — at minimum log it
+  console.error("Fire-and-forget spawn failed:", err);
+}</code></pre><h3>Option C: Use optional import with explicit fallback</h3><pre><code class="language-javascript">let tmpDir;
+try {
+  const os = require("node:os");
+  tmpDir = os.tmpdir();
+} catch {
+  tmpDir = "/tmp"; // fallback for environments where node:os is unavailable
+}</code></pre><h2>Key Points</h2><ol><li><strong>Blanket <code>catch(_)</code> swallows ReferenceError from missing imports.</strong> If a module is required inside a try/catch, a missing or mistyped require becomes invisible.</li><li><strong>Import at top level.</strong> All <code>require()</code> / <code>import</code> statements should be at module scope so missing modules fail immediately at load time with a clear error.</li><li><strong>Never use bare <code>catch(_)</code> without logging.</strong> Even for fire-and-forget patterns, log the error to a debug channel at minimum.</li><li><strong>Cryptic downstream errors often point to swallowed upstream errors.</strong> "marker: not found" means the process never ran, not that the file is missing.</li><li><strong>The <code>node:</code> prefix requires Node.js 16+.</strong> <code>require("node:os")</code> is equivalent to <code>require("os")</code> but makes the core-module intent explicit.</li></ol><h2>Verification</h2><pre><code class="language-bash">echo "Lesson: Node.js missing require inside try/catch silently "
+wc -l lessons/contrib/nodejs-missing-require-inside-try-catch.md</code></pre><p><strong>Expected Output:</strong></p><pre><code>Lesson: Node.js missing require inside try/catch silently 
+# (line count)</code></pre>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/nodejs-missing-require-inside-try-catch.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Node.js missing require inside try/catch silently kills win32 code path">Find related lessons →</a></p></div>

@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,46 @@
 <div class="section">
   <h2>Summary</h2>
   <p>`pip install` 失败，常见报错信息包括：</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p><code>pip install</code> 失败，常见报错信息包括：</p><ul><li><code>ReadTimeoutError: HTTPSConnectionPool(host='files.pythonhosted.org', port=443): Read timed out.</code></li><li><code>SSL: CERTIFICATE_VERIFY_FAILED</code></li><li><code>Connection broken: IncompleteRead</code></li><li><code>Could not fetch URL https://pypi.org/simple/...</code></li><li><code>WARNING: Retrying (Retry(total=4, ...)) after connection broken by 'SSLError(...)'</code></li></ul><p>这类问题在中国大陆网络环境下尤为常见，严重影响开发效率。</p><h2>Root Cause</h2><h3>1. 网络超时（Timeout）</h3><p>PyPI 官方源服务器位于境外（<code>pypi.org</code> / <code>files.pythonhosted.org</code>），在中国大陆访问时延迟高、速度慢。pip 默认超时时间仅为 <strong>15 秒</strong>，下载 numpy、torch 等大包时极易触发超时。</p><h3>2. SSL 证书验证失败（SSL: CERTIFICATE_VERIFY_FAILED）</h3><p>原因可能有多种：</p><ul><li>企业/学校网络使用了中间人代理，替换了 TLS 证书</li><li>系统 CA 证书库过旧，不认识 PyPI 使用的证书链</li><li>macOS 上 Python 安装后未运行 <code>Install Certificates.command</code>，导致缺少根证书</li></ul><h3>3. 连接中断（Connection broken）</h3><p>网络不稳定或防火墙对长连接进行了截断，导致大文件下载到一半失败。</p><h3>4. DNS 污染</h3><p><code>pypi.org</code> 域名在部分网络环境下被 DNS 污染，解析到错误 IP，导致连接直接失败。</p><h2>Solution</h2><h3>方案一：永久切换国内镜像源（推荐）</h3><pre><code class="language-bash"># 切换到清华大学镜像（速度快、更新及时）
+pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
+
+# 也可选择阿里云镜像
+pip config set global.index-url https://mirrors.aliyun.com/pypi/simple/
+
+# 验证当前配置
+pip config list
+# 输出示例：global.index-url='https://pypi.tuna.tsinghua.edu.cn/simple'</code></pre><p>切换后，所有 <code>pip install</code> 命令都会自动走国内镜像，无需额外参数。</p><h3>方案二：临时指定镜像并加长超时</h3><pre><code class="language-bash"># 单次安装时临时指定镜像源，超时设为 120 秒
+pip install --default-timeout=120 -i https://pypi.tuna.tsinghua.edu.cn/simple &lt;包名&gt;
+
+# 示例：安装 numpy
+pip install --default-timeout=120 -i https://pypi.tuna.tsinghua.edu.cn/simple numpy
+
+# 示例：安装 torch（体积较大，建议超时设更长）
+pip install --default-timeout=300 -i https://pypi.tuna.tsinghua.edu.cn/simple torch</code></pre><h3>方案三：解决 SSL 证书验证失败</h3><pre><code class="language-bash"># 方法 A：信任指定主机（适用于企业代理环境，不推荐生产）
+pip install --trusted-host pypi.org \
+            --trusted-host files.pythonhosted.org \
+            --trusted-host pypi.tuna.tsinghua.edu.cn \
+            &lt;包名&gt;
+
+# 方法 B：macOS 用户修复根证书（一次性操作）
+# 找到 Python 安装目录并运行证书安装脚本
+/Applications/Python\ 3.x/Install\ Certificates.command
+
+# 方法 C：升级 certifi 包（更新 CA 证书库）
+pip install --upgrade certifi</code></pre><h3>方案四：禁用缓存重新下载</h3><pre><code class="language-bash"># 当本地缓存损坏或下载不完整时使用
+pip install --no-cache-dir &lt;包名&gt;
+
+# 示例
+pip install --no-cache-dir pandas</code></pre><h3>方案五：配置 pip.ini / pip.conf 文件（团队统一配置）</h3><p>在项目根目录或用户目录创建配置文件，方便团队共享：</p><pre><code class="language-ini"># Linux/macOS: ~/.pip/pip.conf 或 ~/.config/pip/pip.conf
+# Windows:     %APPDATA%\pip\pip.ini
+
+[global]
+index-url = https://pypi.tuna.tsinghua.edu.cn/simple
+trusted-host = pypi.tuna.tsinghua.edu.cn
+timeout = 120</code></pre><h2>Verification</h2><pre><code class="language-bash">pip install
+echo "Verification passed: fix command exited 0"</code></pre><p><strong>Expected Output:</strong> command completes without error, then <code>Verification passed</code> is printed. (Checks: <code>pip install</code>)</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/pip-install-timeout-ssl.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=pip install Network Timeout / SSL ErrorFix">Find related lessons →</a></p></div>

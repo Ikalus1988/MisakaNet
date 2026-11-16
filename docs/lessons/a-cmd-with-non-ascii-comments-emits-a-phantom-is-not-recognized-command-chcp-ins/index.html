@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,17 @@
 <div class="section">
   <h2>Summary</h2>
   <p>A batch wrapper ran correctly (exit code 0, it launched what it should) but wrote this to stderr on every single run://[REDACTED:url_credential]@host off</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>A batch wrapper ran correctly (exit code 0, it launched what it should) but wrote this to stderr on every single run://[REDACTED:url_credential]@host off</p><pre><code>chcp 65001 &gt;nul
+rem &lt;Chinese comment&gt;
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0some-script.ps1"</code></pre><p>Because the wrapper still worked, the stray line reads as harmless noise - and it is easy to blame it on a UTF-8 BOM. It is not: the first three bytes here were 40 65 63 ("@ec"), i.e. no BOM at all.</p><h2>Root Cause</h2><p>cmd.exe parses a .bat/.cmd file with the console's <em>current</em> code page. <code>chcp</code> is just another line in that file, so it only changes the code page once it executes - the parser has already been decoding, and keeps decoding, the file's bytes as though they were in the system ANSI/OEM code page (936/GBK on a Chinese Windows, 1252 on Western ones).</p><p>UTF-8 encoded Chinese comments therefore decode into garbage. When the resulting byte sequence maps onto a character cmd treats as meaningful, the line splits and the fragment is executed as a command - producing a phantom "is not recognized" error whose name is mojibake. Non-ASCII <code>rem</code> lines are exactly as dangerous as non-ASCII commands: the comment is only a comment if it is parsed as a comment.</p><h2>Fix</h2><p>Keep .bat/.cmd files pure ASCII - no non-ASCII comments, no non-ASCII text in echo lines.</p><pre><code>@echo off
+chcp 65001 &gt;nul
+rem Launch the helper and pass the arguments through.
+rem Keep this file pure ASCII: cmd parses it with the system code page
+rem before chcp takes effect, so non-ASCII here yields bogus command errors.
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0some-script.ps1"
+if errorlevel 1 pause</code></pre><p>Move every human-readable message and all non-ASCII output into the script the wrapper calls, and let that script own its encoding (for PowerShell, save it as UTF-8 with BOM). Do not try to fix it by adding a BOM to the .cmd - that only adds a different phantom error.</p><h2>Verification</h2><ol><li>Re-run the wrapper with stdout and stderr redirected to files: the exit code is unchanged and the stderr file is empty.</li><li>The .cmd contains zero non-ASCII bytes - e.g. <code>[regex]::Matches((Get-Content -Raw file.cmd), '[^\x00-\x7F]').Count</code> returns 0.</li><li>The wrapped output still shows Chinese correctly (it now comes from the child process after chcp, not from the batch text).</li></ol>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/a-cmd-with-non-ascii-comments-emits-a-phantom-is-not.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=A .cmd with non-ASCII comments emits a phantom "is not recognized" command: chcp inside the file is already too late">Find related lessons →</a></p></div>

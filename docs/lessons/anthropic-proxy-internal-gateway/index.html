@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,13 @@
 <div class="section">
   <h2>Summary</h2>
   <p>internal-gateway.local API 端点 (`https://api.internal-gateway.local/v1`) 只接受 OpenAI 格式 (`/v1/chat/compositions`)，不支持 Anthropic 原生格式 (`/v1/messages`)。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>internal-gateway.local API 端点 (<code>https://api.internal-gateway.local/v1</code>) 只接受 OpenAI 格式 (<code>/v1/chat/compositions</code>)，不支持 Anthropic 原生格式 (<code>/v1/messages</code>)。</p><p>这意味着：</p><ul><li>Hermes Agent → 直接连，因为 Hermes 用 OpenAI 格式 ✅</li><li>Claude Code / cc-haha 原生 → 连不上，因为发的是 <code>/v1/messages</code> ❌</li><li>Hermes + cc-haha 在同一台机器时 → cc-haha 不能直接用同一个 key</li></ul><h2>Solution</h2><p>需要在本地跑一个格式转换代理：</p><pre><code class="language-bash"># Internal Gateway — Incompatible with Anthropic Format, Requires OpenAI Proxy
+# 监听 localhost:8765
+# 把 Anthropic 格式转成 OpenAI 格式发到 internal-gateway.local</code></pre><h2>Verification</h2><pre><code class="language-bash">echo "Lesson: Internal Gateway — Incompatible with Anthropic For"
+wc -l lessons/contrib/anthropic-proxy-internal-gateway.md</code></pre><p><strong>Expected Output:</strong></p><pre><code>Lesson: Internal Gateway — Incompatible with Anthropic For
+# (line count)</code></pre><h2>Related</h2><p>Node 2 和 3 在同一台电脑时，Node 3 (cc-haha) 需要这个代理才能共用同一家的 API。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/anthropic-proxy-internal-gateway.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Internal Gateway — Incompatible with Anthropic Format, Requires OpenAI Proxy">Find related lessons →</a></p></div>

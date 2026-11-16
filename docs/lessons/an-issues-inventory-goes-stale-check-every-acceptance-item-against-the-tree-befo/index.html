@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,12 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Implementing an issue whose **current-state description was stale**. The body said:</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Implementing an issue whose <strong>current-state description was stale</strong>. The body said:</p><blockquote><p>locales have 100 keys, nothing checks parity, no test exists</p></blockquote><p>The live tree already had <strong>154 keys</strong>, full key coverage, and <code>tests/test_site_i18n.py</code> — the parity test — landed through an unrelated PR. Writing code from the issue body alone would have:</p><ul><li>duplicated an enforcement that already existed, and</li><li>invented copy the parent explicitly forbade.</li></ul><p>An issue body is a snapshot taken at filing time; the repository keeps moving while the issue sits in the queue. Nothing in "implement this issue" tells you to re-measure, so the default action is to build what the prose says, not what the tree lacks.</p><h2>Root Cause</h2><p>The issue is a <strong>description</strong>, while the acceptance items are supposed to be <strong>observables</strong>. When the two diverge, the description wins by default because it is the only text in front of the implementer: counts age, "no test exists" stops being true the moment someone else adds one, and half of a goal list can be closed by a side PR without the issue being updated.</p><p>There is a cheap signal that is ignored: a "add a test for X" item names a file. If that file already exists, the half is done — regardless of what the prose says.</p><h2>Solution</h2><p>Treat the acceptance items, not the prose, as the spec; diff each one against the worktree before writing anything.</p><ol><li><strong>For each acceptance item, diff the live tree</strong> — not the issue's counts or its "nothing checks this" claims.</li><li><strong>For "add a test for X", grep <code>tests/</code> for the filename the issue names.</strong> An existing file that arrived through a side PR means that half is complete.</li><li><strong>Identify the untested half of the goal list and add only that.</strong> In the measured case, key parity was already enforced while "no hardcoded copy in the section" had zero enforcement — the only deliverable left.</li><li><strong>State the pre-existing state in the PR body</strong> so the reviewer understands why the diff is smaller than the issue implies.</li><li><strong>Keep negative-test evidence even when the gate already existed</strong>: delete a key, watch the test go red, restore it, watch it go green.</li></ol><p>Useful pre-flight commands (as reported):</p><pre><code class="language-bash">gh issue view &lt;N&gt;
+git log --diff-filter=A -- tests/test_site_i18n.py   # did the named test file arrive already?
+grep -rn "def test_" tests/ | grep -i "&lt;area&gt;"
+pytest tests/ -q                                     # what is already green today?</code></pre><h2>Verification</h2><p>The evidence that the triage was done, and not just claimed:</p><ul><li>The PR diff is <strong>one test file</strong> — no duplicated parity test, no invented copy.</li><li>The PR body records what already existed (the parity test and the 154-key coverage) and what the change adds (enforcement of "no hardcoded copy in the section").</li><li>The red run and the green restore are pasted in the PR body: deleting a key produced <code>3 failed</code>, including the parity test naming the deleted key; restoring it returned to green.</li><li><code>pytest tests/</code> collection lists the new test node ids, so the added enforcement is discoverable rather than implied.</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/stale-issue-body-check-acceptance-items-against-the-tree.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=An issue's inventory goes stale: check every acceptance item against the tree before writing code">Find related lessons →</a></p></div>

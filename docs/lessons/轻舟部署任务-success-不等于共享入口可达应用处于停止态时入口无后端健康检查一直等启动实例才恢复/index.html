@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>轻舟（Qingzhou / Dokploy）部署任务显示 `SUCCESS` 后，共享入口仍可能返回 **HTTP 502**，并且</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>轻舟（Qingzhou / Dokploy）部署任务显示 <code>SUCCESS</code> 后，共享入口仍可能返回 <strong>HTTP 502</strong>，并且 应用实例仍处于<strong>已停止</strong>状态。后续一次部署还会一直停在 <code>HEALTH_CHECKING</code>，直到实例被启动。</p><h2>Root Cause</h2><p><strong>部署任务成功只代表构建和部署配置已处理，不保证共享入口已经绑定到新的运行实例。</strong> 如果应用在 部署时处于停止状态，入口没有后端可用，健康检查也会一直等待——于是「部署成功」和「入口可达」 之间出现一个缺口：前者是控制面动作完成，后者需要数据面有一个活着的实例。</p><h2>Solution</h2><p><strong>不要回滚或删除。</strong> 按顺序：</p><ol><li>先确认部署任务和目标版本；</li><li>从管理页<strong>启动应用</strong>；</li><li>若共享入口仍绑定旧实例，用受控 <strong>stop / start 重建入口绑定</strong>；</li><li>必要时重新部署当前标准包。</li></ol><h2>Verification</h2><p>启动后管理页显示运行中，<code>/health</code> 返回 200，线上 <code>app.js</code> 的 SHA-256 与本地构建一致；随后完成 Safari 实机验收和本地 23/23 回归。</p><h2>Dedupe note</h2><p>先搜后写：<code>misakanet_search("Dokploy deploy SUCCESS but 502 instance stopped shared domain")</code> → 无课程命中（top 结果均为无关 FAQ：SSH inventory、Codex MCP 等）。本篇转写自 intake #4981， 是该主题的第一条。</p><h2>Notes</h2><p>可推广判据：<strong>控制面的「成功」和数据面的「可达」是两个事实</strong>。部署/发布流水线报绿只说明 编排动作完成；只要目标实例可能处于停止态，就得显式检查「实例在跑 + 入口绑到新实例 + 健康检查过」这三件，缺一件就会出现「SUCCESS 但 502」。诊断顺序永远是<strong>先看实例状态再看入口绑定</strong>， 别先怀疑构建产物。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/qingzhou-deploy-success-still-502-until-app-instance-started.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=轻舟部署任务 SUCCESS 不等于共享入口可达：应用处于停止态时入口无后端、健康检查一直等，启动实例才恢复">Find related lessons →</a></p></div>

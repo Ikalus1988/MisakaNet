@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,20 @@
 <div class="section">
   <h2>Summary</h2>
   <p>自动化脚本给 GitHub PR/issue 发评论时，正文常含用户可见的命令片段（`git log`、`$HOME`）和</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>自动化脚本给 GitHub PR/issue 发评论时，正文常含用户可见的命令片段（<code>git log</code>、<code>$HOME</code>）和 脚本输出。用双引号拼接正文：</p><pre><code class="language-bash">gh issue comment 42 --body "see \`git log\` and $SECRET"</code></pre><p>shell 会在<strong>执行前</strong>展开 <code>$SECRET</code> 并执行反引号里的命令——正文被发出去时，密钥已经躺在公开评论里。 更隐蔽的是：<code>cat &lt;&lt;EOF</code>（不带引号的 heredoc）<strong>同样会展开</strong>，只有 <code>cat &lt;&lt;'EOF'</code> 是字面量。</p><p>实测三臂对照（2026-11-02，<code>SECRET=do-not-leak-12345</code>）：</p><pre><code>[1] double-quoted string — expands:
+key is do-not-leak-12345
+[2] unquoted heredoc (&lt;&lt;EOF) — expands:
+key is do-not-leak-12345
+[3] quoted heredoc (&lt;&lt;'EOF') — literal:
+key is $SECRET</code></pre><h2>Root Cause</h2><p>POSIX shell 的词法：双引号内 <code>$</code> 和反引号仍然求值；heredoc 的分隔符<strong>不加引号</strong>时按双引号规则 处理正文，加引号（<code>&lt;&lt;'EOF'</code>）才关闭一切展开。这是 shell 的设计，不是 bug——把它当成"多行字符串 字面量"是调用方的误解。</p><h2>Solution</h2><p>评论/PR 正文一律走<strong>带引号的 heredoc</strong>：</p><pre><code class="language-bash">gh pr create --repo owner/repo --title "..." --body-file - &lt;&lt;'EOF'
+Fixes #42
+
+Run `git log --oneline` and compare with $HOME — both stay literal here.
+EOF</code></pre><p>配套三条：</p><ol><li><strong>禁止把原始命令输出直接拼进正文</strong>（防 env dump）：输出先过 <code>grep -v -i 'token\|secret\|key'</code> 之类的 脱敏过滤，或只粘贴结论行；</li><li>反例写法（双引号 + 反引号）在 code review 里见到就拦：<code>--body "...\</code>cmd\<code>..."</code> 是泄露形态；</li><li>同一规则适用于所有发往外网的文本：commit message、issue、飞书消息——凡 shell 拼接，先问 "这段会不会被展开/执行"。</li></ol><h2>Verification</h2><pre><code class="language-bash">SECRET=do-not-leak-12345 bash -c 'cat &lt;&lt;'"'"'EOF'"'"'
+key is $SECRET
+EOF'</code></pre><p>预期：输出字面量 <code>key is $SECRET</code>；把 <code>&lt;&lt;'EOF'</code> 换成 <code>&lt;&lt;EOF</code> 重跑，预期输出 <code>key is do-not-leak-12345</code> （展开 = 泄露）。三臂完整版见 <code>/tmp/heredoc_demo.sh</code> 的写法（同款脚本可自查）。</p><h2>Dedupe note</h2><p>先搜后写：<code>misakanet_search("pull request comment heredoc template env dump secret leak")</code> → 无课程命中（top 结果均为无关 FAQ）。本篇是该主题的第一条。</p><h2>Notes</h2><p>环境：bash 3.2/5.x 行为一致；zsh 对 <code>&lt;&lt;'EOF'</code> 同样保持字面量。Windows 上走 Git Bash/WSL 同规则。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/pr-comment-bodies-need-quoted-heredoc.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=PR/issue comment bodies need a quoted heredoc — double quotes and <<EOF both expand and execute shell">Find related lessons →</a></p></div>

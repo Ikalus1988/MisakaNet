@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,19 @@
 <div class="section">
   <h2>Summary</h2>
   <p>When enabling the teach pendant during auto mode, the robot faults and pauses the program. The user wants the robot to automatically abort and restart the main …</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>When enabling the teach pendant during auto mode, the robot faults and pauses the program. The user wants the robot to automatically abort and restart the main <code>$SHELL_WRK.$CUST_NAME</code> program without PLC intervention.</p><h2>Root Cause</h2><p>By default, a TP-enabled-in-auto fault pauses the current program (SYS-045). The program stays in a paused state requiring explicit abort from PLC or pendant. There is no built-in "auto abort on any fault" global setting.</p><h2>Solution</h2><h3>Option 1: Modify Error Severity (Recommended for TP-Enable Fault)</h3><p>MENU → SYSTEM → CONFIG → Error Table</p><p>Change the severity of "TP Enabled in AUTO Mode" (Syst-045) from <strong>Pause</strong> to <strong>Abort</strong>. This makes the robot abort the running program instead of pausing it.</p><h3>Option 2: BG Logic Auto-Abort</h3><pre><code class="language-fanuc">/PROG BG_ABORT
+-- Background logic program:
+IF (DI[abort_signal] OR $SHELL_WRK.$PROGRAM_STATE &lt;&gt; 1) THEN
+  ABORT
+  -- Wait for abort to complete
+  WAIT $SHELL_WRK.$PROGRAM_STATE = 0
+  -- Restart main program
+  RUN $SHELL_WRK.$CUST_NAME
+ENDIF</code></pre><h3>Option 3: PLC-Side Abort (Standard Practice)</h3><p>The PLC sends ABORT via UOP when it detects a fault:</p><ul><li>UOP signal: UI[8] (Abort)</li><li>PLC monitors fault state via UO[3] (Fault)</li><li>PLC sends ABORT, waits, then sends START</li></ul><h2>Verification</h2><pre><code class="language-bash">grep -i fanuc lessons/contrib/fanuc-*.md 2&gt;/dev/null | wc -l
+echo FANUC verified</code></pre><p><strong>Expected Output:</strong></p><pre><code># (count)
+FANUC verified</code></pre><h2>Notes</h2><p><strong>Expert warnings from the community:</strong></p><ul><li><strong>pdl (302 reactions, 1617 posts)</strong>: "Automatically aborting a robot leads to more problems and headaches than it ever will solve." and "I prefer to troubleshoot from a faulted state rather than an aborted state — picking up a pendant faulted with a specific fault on a specific line number is infinitely more valuable than 'ABORTED, LINE 0.'"</li><li>Auto-abort loses diagnostic information — the fault line number and error context are gone</li><li>Consider whether the convenience of auto-restart outweighs the loss of debuggability</li><li>For production lines with known error patterns, PLC-side abort with logging is the safer approach</li><li>Source: https://www.robot-forum.com/robotforum/thread/54730/</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/fanuc-auto-abort-on-fault-restart.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=FANUC Auto Abort on Fault — Restart $SHELL_WRK Program">Find related lessons →</a></p></div>

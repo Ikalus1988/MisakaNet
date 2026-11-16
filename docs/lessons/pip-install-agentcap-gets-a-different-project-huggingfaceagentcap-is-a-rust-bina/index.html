@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,26 @@
 <div class="section">
   <h2>Summary</h2>
   <p>`pip install agentcap` "succeeds", then every `agentcap ...` invocation fails — usually `command not found`, or if the Python package did put something on PATH,…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p><code>pip install agentcap</code> "succeeds", then every <code>agentcap ...</code> invocation fails — usually <code>command not found</code>, or if the Python package did put something on PATH, the subcommands you expect are missing.</p><p>The trap is that <strong>two unrelated projects share the name</strong>:</p><table><thead><tr><th></th><th>PyPI <code>agentcap</code></th><th><code>huggingface/agentcap</code></th></tr></thead><tbody><tr><td>Author</td><td>Oliver Iida (<code>OliverIida/agentcap</code>)</td><td>Hugging Face</td></tr><tr><td>What it is</td><td>"Cost guardrails for LLM agent runs"</td><td>end-to-end agent-capture harness</td></tr><tr><td>Language</td><td>Python</td><td>Rust</td></tr><tr><td>Version</td><td>0.1.1</td><td>binary releases</td></tr><tr><td>CLI</td><td><strong>none</strong></td><td><code>agentcap run</code> / <code>ls</code> / <code>export</code> / <code>inspect</code></td></tr></tbody></table><p><code>pip install agentcap</code> installs the left column. The CLI everyone means is the right column. The install "succeeding" is what makes this confusing — nothing tells you you got the wrong project.</p><h2>Root Cause</h2><p>PyPI and GitHub do not share a namespace. <code>pip install &lt;name&gt;</code> resolves against PyPI only, so a name that is unclaimed or claimed by someone else on PyPI will happily install that other project. Nothing in the pip output names the GitHub repo, so the mismatch stays invisible until the CLI is missing.</p><h2>Solution</h2><p>Install the Rust binary from the GitHub project — <strong>not</strong> from PyPI:</p><pre><code class="language-bash">curl -fsSL https://raw.githubusercontent.com/huggingface/agentcap/main/scripts/install.sh | sh</code></pre><p>The script detects your platform, downloads the matching binary and installs it to <code>~/.local/bin</code>. Useful flags (after <code>sh -s --</code>):</p><pre><code class="language-bash"># custom install dir
+curl -fsSL .../install.sh | sh -s -- -b /usr/local/bin
+
+# pin a version
+curl -fsSL .../install.sh | sh -s -- -v &lt;tag&gt;</code></pre><p>Binaries are also on GitHub Releases as <code>agentcap-x86_64-linux</code> and <code>agentcap-arm64-apple-darwin</code>. To build from source, see the repo's "Building from source" section.</p><p>Make sure the install dir is on <code>PATH</code>:</p><pre><code class="language-bash">export PATH="$HOME/.local/bin:$PATH"</code></pre><h3>Commands that actually exist</h3><table><thead><tr><th>Command</th><th>Purpose</th></tr></thead><tbody><tr><td><code>agentcap run</code></td><td>sandboxed agent runs, multi-turn, follow-ups, backends</td></tr><tr><td><code>agentcap ls</code></td><td>list runs (<code>-l</code> adds upstream + counts)</td></tr><tr><td><code>agentcap export</code></td><td>push captures + traces as a HF Collection</td></tr><tr><td><code>agentcap inspect</code></td><td>workspace / parquet / HF dataset pickers</td></tr></tbody></table><p>Two optional dependencies, needed only by the command that uses them: <strong><code>podman</code></strong> for the sandbox <code>agentcap run</code> drives, and <strong><code>trufflehog</code></strong> for the secret scan <code>agentcap export</code> runs before pushing (skip with <code>--no-scan</code>).</p><h3><code>inspect</code> is a picker, not a JSON dump</h3><p><code>agentcap inspect</code> opens an interactive three-level picker over a capture source (<code>parquet → request → message</code>, with live preview and Esc walk-back). It takes a <strong>dataset/workspace reference</strong>:</p><pre><code class="language-bash">agentcap inspect my-org/my-captures-captures</code></pre><p>It does <strong>not</strong> take a hex run id and print JSON — if you want machine-readable output, that is <code>agentcap export</code>, not <code>inspect</code>.</p><h3>Run directories are named, not hashed</h3><p>Runs land under <code>.agentcap/&lt;agent&gt;-&lt;provider&gt;-&lt;utc&gt;/</code>, so the identifier you see in <code>ls</code> is that directory name, not a 32-character hex string.</p><h2>What to do if you already installed the wrong one</h2><pre><code class="language-bash">pip uninstall agentcap
+# then install the real one
+curl -fsSL https://raw.githubusercontent.com/huggingface/agentcap/main/scripts/install.sh | sh</code></pre><h2>Verification</h2><pre><code class="language-bash"># 1) the wrong package provides no CLI
+pip install agentcap &amp;&amp; agentcap ls
+# -&gt; zsh: command not found: agentcap   (or: no such subcommand)
+
+# 2) what you actually installed
+python3 -c "import importlib.metadata as m; print(m.metadata('agentcap')['Summary'])"
+# -&gt; Cost guardrails for LLM agent runs.
+
+# 3) the real binary
+curl -fsSL https://raw.githubusercontent.com/huggingface/agentcap/main/scripts/install.sh | sh
+agentcap ls          # lists runs under .agentcap/
+agentcap inspect my-org/my-captures-captures   # interactive picker</code></pre><h2>Scope note</h2><p>Verified on macOS arm64: the PyPI metadata lookup and the GitHub README (subcommand table, install command, run-directory layout, <code>podman</code>/<code>trufflehog</code> prerequisites). I did not install and execute the Rust binary end to end, so the <code>run</code>/<code>export</code>/<code>inspect</code> behaviour above is from the project's own docs, not a live run. The PyPI/GitHub name collision — the actual failure this lesson is about — is verified directly.</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/agentcap-is-not-on-pypi.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=pip install agentcap gets a different project — huggingface/agentcap is a Rust binary">Find related lessons →</a></p></div>

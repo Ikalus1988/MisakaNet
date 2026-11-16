@@ -6,6 +6,7 @@
 <title>Cross-Repo Contribution Strategy — Finding and Contributing to New Repos — MisakaNet</title>
 <meta name="description" content="Draft (not published): Agents and developers often get stuck contributing to the same repos. Finding new repos to contribute to requires systematic exploration.">
 <link rel="canonical" href="https://misakanet.org/lessons/cross-repo-contribution-strategy/">
+<meta name="robots" content="noindex, follow">
 <meta property="og:title" content="Cross-Repo Contribution Strategy — Finding and Contributing to New Repos">
 <meta property="og:description" content="Draft (not published): Agents and developers often get stuck contributing to the same repos. Finding new repos to contribute to requires systematic exploration.">
 <meta property="og:url" content="https://misakanet.org/lessons/cross-repo-contribution-strategy/">
@@ -160,6 +161,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -179,6 +191,12 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Agents and developers often get stuck contributing to the same repos. Finding new repos to contribute to requires systematic exploration.</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Agents and developers often get stuck contributing to the same repos. Finding new repos to contribute to requires systematic exploration.</p><h2>Solution</h2><h3>1. Use Coach to Evaluate Before Contributing</h3><pre><code class="language-bash"># Check if PR would pass review before submitting
+python3 skill/pr_genius.py coach "feat: add feature" --repo org/repo --body "Fixes #123"</code></pre><h3>2. Look for Repos with These Signals</h3><table><thead><tr><th>Signal</th><th>Why</th></tr></thead><tbody><tr><td><code>good first issue</code> label</td><td>Maintainer wants new contributors</td></tr><tr><td><code>help wanted</code> label</td><td>Active need for contributions</td></tr><tr><td>Recent merged PRs from external contributors</td><td>Proven track record</td></tr><tr><td>Active maintainer responses</td><td>Will get feedback</td></tr></tbody></table><h3>3. Avoid These Red Flags</h3><table><thead><tr><th>Red Flag</th><th>Why</th></tr></thead><tbody><tr><td>No <code>CONTRIBUTING.md</code></td><td>Maintainer may not want contributions</td></tr><tr><td>Stale PRs &gt; 30 days</td><td>Maintainer may be unresponsive</td></tr><tr><td>Only maintainer commits</td><td>Closed development</td></tr></tbody></table><h3>4. Harvest Failed PRs for Learning</h3><pre><code class="language-bash"># Extract anti-patterns from rejected PRs
+python3 scripts/harvest.py org/repo 123 --type anti-pattern</code></pre><h3>5. Focus on Your Expertise</h3><p>Don't try to contribute to repos outside your domain. Focus on:</p><ul><li>Tools you actually use</li><li>Languages you're proficient in</li><li>Problems you've personally encountered</li></ul><h2>Verification</h2><pre><code class="language-bash">good first issue
+echo "Verification passed: fix command exited 0"</code></pre><p><strong>Expected Output:</strong> command completes without error, then <code>Verification passed</code> is printed. (Checks: <code>good first issue</code>)</p><h2>Related</h2><ul><li><code>pr-strategy.md</code> — External PR strategy</li><li><code>maintainer-feedback-iteration.md</code> — Handling review feedback</li><li><code>benchmark-honesty-simulated-vs-real.md</code> — Honest benchmarking</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/cross-repo-contribution-strategy.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Cross-Repo Contribution Strategy — Finding and Contributing to New Repos">Find related lessons →</a></p></div>

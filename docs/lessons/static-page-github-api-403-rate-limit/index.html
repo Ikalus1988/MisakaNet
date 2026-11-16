@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,42 @@
 <div class="section">
   <h2>Summary</h2>
   <p>纯静态页面（无后端代理，HTML + JS 直接部署在 CDN/GitHub Pages 上）需要通过浏览器端 JavaScript 直接调用第三方 API。这种架构面临几个固有风险：</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>纯静态页面（无后端代理，HTML + JS 直接部署在 CDN/GitHub Pages 上）需要通过浏览器端 JavaScript 直接调用第三方 API。这种架构面临几个固有风险：</p><ul><li><strong>限流硬限制</strong>：未认证请求通常有严格的速率限制（如 GitHub REST API 60 req/hour）</li><li><strong>请求永久挂起</strong>：没有超时控制的 fetch 在网络故障时永远不会 resolve</li><li><strong>错误扩散</strong>：一个接口的失败通过 try/catch 或 Promise 链传播，连带阻断其他无关功能</li><li><strong>无中间层缓冲</strong>：不能使用 API key、缓存代理或请求合并等后端手段</li></ul><h2>核心设计原则</h2><h3>1. 每个外部请求都必须有超时</h3><p>浏览器 fetch 默认没有超时。一个慢请求可以永久挂起页面功能。</p><pre><code class="language-js">async function fetchWithTimeout(url, timeoutMs = 8000) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() =&gt; ctrl.abort(), timeoutMs);
+  try {
+    const r = await fetch(url, { signal: ctrl.signal });
+    clearTimeout(timer);
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    return r.json();
+  } catch (e) {
+    clearTimeout(timer);
+    throw e;
+  }
+}</code></pre><h3>2. 并行请求各自独立容错</h3><p>使用 <code>Promise.all</code> 时，任何一个 promise reject 会导致整体失败。改为每个请求独立 catch：</p><pre><code class="language-js">const [dataA, dataB] = await Promise.all([
+  fetchWithTimeout(urlA).catch(() =&gt; null),
+  fetchWithTimeout(urlB).catch(() =&gt; null),
+]);
+// dataA 失败不影响 dataB 的结果</code></pre><h3>3. 子功能永远独立执行</h3><p>不要用一个大的 try/catch 包裹多个功能模块：</p><pre><code class="language-js">// ❌ 错误：loadA 抛异常则 loadB、loadC 都不执行
+try {
+  await loadA();
+  await loadB();
+  await loadC();
+} catch (e) { /* 只捕获一个，丢失两个 */ }
+
+// ✅ 正确：各自独立执行
+loadA().catch(() =&gt; {});
+loadB().catch(() =&gt; {});
+loadC().catch(() =&gt; {});</code></pre><h3>4. 用户友好的错误降级</h3><p>不要把原始错误信息（<code>TypeError: Failed to fetch</code>、<code>HTTP 403</code>）直接展示给用户：</p><pre><code class="language-js">// 区分常见的错误类型
+if (e instanceof TypeError &amp;&amp; e.message.includes('aborted')) {
+  return '请求超时，请检查网络后重试';
+}
+if (e.message?.includes('403')) {
+  return 'API 频率限制，请稍后刷新重试';
+}
+return '数据加载失败，已使用缓存显示';</code></pre><h2>Verification标准</h2><ul><li>单个接口超时不影响其他接口的展示</li><li>触发限流时显示友好提示而非白屏或裸错误</li><li>所有功能模块各自独立加载、独立容错</li><li>网络恢复后刷新页面即可正常使用</li></ul><h2>反思</h2><p>静态页面直接消费第三方 API 时，容错不是可选项而是<strong>架构必选项</strong>。因为没有后端中间层兜底，每个接口调用都直接暴露在浏览器环境下：</p><ol><li><strong>任何外部请求都可能失败</strong>——网络断开、限流、服务端故障，不是 if 而是 when</li><li><strong>不要用 try/catch 包裹多个逻辑块</strong>——一个失败不应该连带其他功能一起失效</li><li><strong>非关键数据失败不应阻断关键数据展示</strong>——统计数字和主要内容应该互不影响</li><li><strong>没有超时的 fetch 是永久挂起的隐患</strong>——即使请求本地 JSON 文件也应有超时保护</li><li><strong>如果项目频繁遇到限流</strong>，考虑引入 GitHub Actions 定时缓存 + 静态 JSON 的 hybrid 架构，或使用代理后端</li></ol><blockquote><p>English: <a href="/lessons/fault-tolerance-for-static-pages-calling-external-apis/"><code>lessons/en/static-page-github-api-fault-tolerance.md</code></a></p></blockquote>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/static-page-github-api-403-rate-limit.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=static page github api 403 rate limit">Find related lessons →</a></p></div>

@@ -6,6 +6,7 @@
 <title>Search Smart Fallback — Turning Zero Results into Discovery — MisakaNet</title>
 <meta name="description" content="Draft (not published): > **Superseded (2026-11-15, verdict for #4874).** The zero-result dead end this draft described was closed by what actually shipped: a miss now return...">
 <link rel="canonical" href="https://misakanet.org/lessons/search-smart-fallback-implementation/">
+<meta name="robots" content="noindex, follow">
 <meta property="og:title" content="Search Smart Fallback — Turning Zero Results into Discovery">
 <meta property="og:description" content="Draft (not published): > **Superseded (2026-11-15, verdict for #4874).** The zero-result dead end this draft described was closed by what actually shipped: a miss now return...">
 <meta property="og:url" content="https://misakanet.org/lessons/search-smart-fallback-implementation/">
@@ -160,6 +161,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -179,6 +191,40 @@
 <div class="section">
   <h2>Summary</h2>
   <p>> **Superseded (2026-11-15, verdict for #4874).** The zero-result dead end this draft described was closed by what actually shipped: a miss now returns `no_matc…</p>
+</div>
+<div class="lesson-body">
+<blockquote><p><strong>Superseded (2026-11-15, verdict for #4874).</strong> The zero-result dead end this draft described was closed by what actually shipped: a miss now returns <code>no_match</code> plus a ready-to-call <code>intake</code> (README § "What it answers — and what it does not"), and the hosted endpoint adds the semantic fallback (<code>docs/benchmarks/cjk-fusion-2026-10-28.md</code>). Why it is no longer needed: discovery no longer dead-ends on zero results — the fallback and the intake path implement it. Its original Verification was an <code>echo</code>/<code>grep</code> placeholder that could not fail. Replacement: the <code>no_match</code> + intake design and the CJK fusion benchmark.</p></blockquote><h2>Verification</h2><pre><code class="language-bash">grep -i 'bm25\|chunk\|embed' lessons/contrib/rag-*.md 2&gt;/dev/null | head -3
+echo Search verified</code></pre><p><strong>Expected Output:</strong></p><pre><code># (refs)
+Search verified</code></pre><h2>Search Smart Fallback — Turning Zero Results into Discovery</h2><h3>Problem</h3><p>When search returns 0 results, users hit a dead end. They don't know if:</p><ul><li>The content doesn't exist</li><li>Their query was too specific</li><li>There are related lessons they should check</li></ul><p>This leads to:</p><ul><li>Duplicate lesson creation for content that exists</li><li>User frustration and abandonment</li><li>Missed discovery of related content</li></ul><p><strong>Root Cause:</strong></p><p>The original search implementation returned nothing on zero results:</p><pre><code>❌ No exact match for 'query'</code></pre><p>No suggestions, no alternatives, no guidance.</p><h3>Solution</h3><p>Implemented smart fallback with 4 components:</p><ol><li><strong>Closest matches by keyword overlap:</strong><pre><code class="language-python">def _find_closest_matches(query, docs, top_n=3):
+    query_words = set(re.findall(r'\w+', query.lower()))
+    scored = []
+    for doc in docs:
+        doc_words = set(re.findall(r'\w+', (doc.title + " " + doc.content[:500]).lower()))
+        overlap = len(query_words &amp; doc_words)
+        if overlap &gt; 0:
+            scored.append((overlap / len(query_words), doc))
+    return sorted(scored, key=lambda x: -x[0])[:top_n]</code></pre></li><li><strong>"Did you mean" with relaxed query:</strong><pre><code class="language-python">def _suggest_relaxed_query(query):
+    stop_words = {"the", "a", "an", "is", "are", ...}
+    words = query.lower().split()
+    meaningful = [w for w in words if w not in stop_words]
+    return [" ".join(meaningful[:-1])] if len(meaningful) &gt;= 2 else []</code></pre></li><li><strong>Zero-result telemetry logging:</strong><pre><code class="language-python">def _log_zero_result(query):
+    log_file = Path.home() / ".misakanet" / "search_telemetry.jsonl"
+    entry = {"query": query, "timestamp": datetime.now().isoformat(), "result": "zero"}
+    with open(log_file, "a") as f:
+        f.write(json.dumps(entry) + "\n")</code></pre></li><li><strong>Auto-issue suggestion after 3+ failures:</strong><pre><code class="language-python">count = sum(1 for l in lines if f'"query": "{query}"' in l)
+if count &gt;= 3:
+    print(f"⚠️ This query has returned 0 results {count} times.")
+    print(f"   Consider creating an issue for a missing lesson.")</code></pre></li></ol><h3>Impact</h3><ul><li><strong>Before</strong>: Zero results = dead end</li><li><strong>After</strong>: Zero results = discovery opportunity<ul><li>Shows top-3 related lessons</li><li>Suggests relaxed query</li><li>Logs for gap analysis</li><li>Auto-suggests creating issue after repeated failures</li></ul></li></ul><h3>Verification</h3><pre><code class="language-bash"># Test smart fallback
+python3 search_knowledge.py "xylophone purple elephant dancing"
+# Expected: Shows closest matches + "Did you mean" + available domains
+
+# Test telemetry logging
+cat ~/.misakanet/search_telemetry.jsonl
+# Expected: JSONL with query, timestamp, result
+
+# Test auto-issue suggestion (run 3+ times)
+for i in {1..4}; do python3 search_knowledge.py "nonexistent query xyz"; done
+# Expected: "This query has returned 0 results 4 times" message</code></pre><h3>Related</h3><ul><li>PR #441: Smart fallback implementation</li><li>Issue #301: Smart fallback when search returns no results</li><li><code>search_knowledge.py</code>: Main search script</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/search-smart-fallback-implementation.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Search Smart Fallback — Turning Zero Results into Discovery">Find related lessons →</a></p></div>

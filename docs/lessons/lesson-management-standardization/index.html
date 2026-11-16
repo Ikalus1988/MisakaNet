@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,14 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Over 180 lessons accumulated in the MisakaNet knowledge base with significant quality and consistency issues:</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Over 180 lessons accumulated in the MisakaNet knowledge base with significant quality and consistency issues:</p><ol><li><strong>Inconsistent filenames</strong>: Mix of Chinese and English characters, project-specific prefixes (<code>cc-connect-<em></code>, <code>ccswitch-</em></code>, <code>codewhale-<em></code>, <code>deepseek-tui-</em></code>, <code>hermes-<em></code>, <code>node_</em></code>, <code>st2-*</code>)</li><li><strong>Hardcoded sensitive content</strong>: User home paths (<code>&lt;REDACTED&gt; specific usernames (</code>&lt;user&gt;<code>, </code>&lt;agent&gt;<code>), internal project names (</code>mify<code>, </code>InternalGateway`) embedded in lesson body text</li><li><strong>Non-portable tags</strong>: Project-specific metadata (<code>project:<em></code>, <code>node:</em></code>, <code>severity:*</code>) in frontmatter that are meaningless to external contributors</li><li><strong>No submission standards</strong>: Every contributor writes differently, no automated validation before merge</li><li><strong>Plaintext secrets discovered</strong>: PATs, API keys, and Cloudflare tokens in public-facing and internal documentation</li></ol><h2>Root Cause</h2><p>The lesson system grew organically with no upfront naming convention, content policy, or CI enforcement. Contributors wrote lessons from their own context without generalizing for external readers. Review relied entirely on manual checks.</p><h2>Solution</h2><h3>Phase 1: Bulk Cleanup</h3><p>Two-pass generalization script (<code>scripts/generalize_lessons.py</code>):</p><table><thead><tr><th>Pass</th><th>Operation</th><th>Files affected</th></tr></thead><tbody><tr><td>1</td><td>Remove project-specific prefixes + content sanitization</td><td>12 renamed + content generalized</td></tr><tr><td>2</td><td>Chinese→English filenames (<code>git mv</code> preserves history)</td><td>37 renamed, 13 deleted</td></tr></tbody></table><p>Files with Chinese names: <strong>50 → 0</strong> Files with project-specific tags: <strong>~15 → 0</strong></p><h3>Phase 2: Automated Quality Gate</h3><p>Three-layer enforcement:</p><p><strong>Layer 1 — Pre-commit hook</strong> (<code>.pre-commit-config.yaml</code>):</p><pre><code class="language-yaml">- id: check-lesson-quality
+  name: check lesson quality
+  entry: python3 scripts/check_lesson_quality.py
+  files: ^lessons/.*\.md$</code></pre><p>Checks before allowing commit:</p><ul><li>Filename: no Chinese, kebab-case, no banned prefixes</li><li>Frontmatter: valid JSON, required fields present</li><li>Content: no hardcoded paths, no specific usernames, warn on Chinese body text</li></ul><p><strong>Layer 2 — CI gate</strong> (<code>.github/workflows/lesson-quality.yml</code>):</p><ul><li>Triggers on PRs touching <code>lessons/**</code></li><li>Runs <code>check_lesson_quality.py</code> on all lesson files</li><li>Pass: ✅ green comment</li><li>Fail: ❌ add <code>quality:needs-review</code> label + detailed comment</li></ul><p><strong>Layer 3 — One-click submission</strong> (<code>scripts/submit_lesson.py</code>):</p><p><strong>Expected Output:</strong></p><pre><code>Python check passed
+On branch main
+OK</code></pre><h2>Notes</h2><ul><li>All generalization scripts are removed from the repo after use (<code>generalize_lessons.py</code>, <code>rename_cn_files.py</code>, <code>update_index.py</code> were deleted to keep repo clean)</li><li>The <code>submit_lesson.py</code> and <code>check_lesson_quality.py</code> are kept as permanent workflow tools</li><li>WSL users may hit <code>GnuTLS recv error</code> with <code>git push</code>; workaround is <code>push_via_api.py</code> which uses GitHub API directly</li><li>Built-in <code>--dry-run</code> flag allows testing without making changes</li><li>Add new sensitive patterns to the <code>SENSITIVE_PATTERNS</code> list in <code>submit_lesson.py</code> as new internal project names emerge</li></ul><h2>Related</h2><ul><li>Issue #226: Translate remaining Chinese lesson content to English</li><li><code>lessons/TEMPLATE.md</code>: Standard lesson template</li><li><code>scripts/submit_lesson.py</code>: One-click submission</li><li><code>scripts/check_lesson_quality.py</code>: Quality check script</li><li><code>.github/workflows/lesson-quality.yml</code>: CI gate</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/lesson-management-standardization.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Lesson Management Standardization — Naming, Content Sanitization, and Automated Submission Pipeline">Find related lessons →</a></p></div>

@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>AgentCap capability registry verification reports secret-safe validation failures on capability descriptions and guidance metadata, causing the coordinator to m…</p>
+</div>
+<div class="lesson-body">
+<p>AgentCap capability registry verification reports secret-safe validation failures on capability descriptions and guidance metadata, causing the coordinator to mark the registry as untrusted and fall back to unoptimized local extraction.</p><h2>Problem</h2><p>During automated registry synchronization, read-only capability registries fail the security gate:</p><pre><code>FAIL: secret-safe; last refresh: validation-failed; Healthy: False</code></pre><p>While structural schemas and timestamp freshness checks pass cleanly, the secret scanner flags the capability metadata as containing sensitive credentials, blocking registry caching.</p><h2>Root Cause</h2><p>The secret-safe gate scans documentation strings, parameter examples, and guidance descriptions using broad credential matching regular expressions. When tool documentation includes dummy parameter placeholders (such as <code>Bearer &lt;token&gt;</code> or mock API keys), the scanner flags these documentation snippets as high-confidence credential leaks, triggering a validation failure.</p><h2>Fix</h2><ol><li>Isolate descriptor documentation fields from active credential configuration inputs prior to security scanning.</li><li>Standardize mock parameter placeholders in capability definitions using neutral sanitization tokens (<code>&lt;TOKEN_PLACEHOLDER&gt;</code>).</li><li>Configure the scanner rule engine to enforce boundary assertions, distinguishing documentation sample snippets from live credentials.</li></ol><h2>Verification</h2><p>Run the capability verification command to confirm that metadata passes the secret-safe check:</p><pre><code class="language-bash">python scripts/audit_dependencies.py</code></pre><p>Expected output:</p><pre><code>Capability registry verification: PASSED (secret-safe: clean, Healthy: True)</code></pre>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/core/agentcap-registry-secret-safe-validation-failure-metadata.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=AgentCap Registry Secret-Safe Validation Failure in Capability Metadata">Find related lessons →</a></p></div>

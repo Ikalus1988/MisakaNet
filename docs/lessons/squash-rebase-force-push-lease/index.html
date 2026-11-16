@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,11 @@
 <div class="section">
   <h2>Summary</h2>
   <p>A contribution branch had been periodically force-pushed while staying based on an older commit. After a squash-rebase intended to tidy history, the next force-…</p>
+</div>
+<div class="lesson-body">
+<h2>Squash-rebase silently changes the base — and force-push races follow</h2><h2>Problem</h2><p>A contribution branch had been periodically force-pushed while staying based on an older commit. After a squash-rebase intended to tidy history, the next force-push hit <code>remote contains work you do not have locally</code> and reviewers could no longer reconcile the branch with the PR.</p><h2>Root cause</h2><p>Two compounding git behaviors:</p><ol><li>A squash-rebase (or any rebase that "updates" the branch) changes not just the history but the <em>base</em> commit the branch grows from. Reviewers comparing against the PR's recorded base see a rewritten set of files, not an incremental diff.</li><li><code>--force-with-lease</code> protects against overwriting work <em>you haven't seen</em> — but after a local rebase, the local ref diverges from remote in a way that the semantic guard misjudges, and a plain <code>--force</code> overwrites something you may have based your squash on.</li></ol><h2>Failure &amp; recovery</h2><p>The fix is to treat squash-rebase as a <em>conflict resolution</em>, not a formatting step:</p><ol><li>Before squashing, capture the current remote head: <code>git rev-parse origin/&lt;branch&gt;</code>.</li><li><code>git rebase -i</code> to squash, then verify <code>git diff origin/main...HEAD</code> shows exactly the intended net change.</li><li>Push with <code>--force-with-lease=refs/heads/&lt;branch&gt;:&lt;old-remote-sha&gt;</code> explicitly naming the sha you are allowed to replace — never a naked <code>--force</code>.</li><li>If reviewers already commented on line numbers, say clearly that the patch was rebased/squashed so they re-review by file diff, not by conversation.</li></ol><h2>Lesson</h2><p>Squash is not cosmetic: it rewrites the base and re-opens the merge contract. Name the lease explicitly and re-verify the net diff before force-pushing a squashed branch.</p><h2>Verification</h2><pre><code class="language-bash">git status --short | head -5
+git log --oneline -3</code></pre><p><strong>Expected Output:</strong></p><pre><code># (status)
+# (recent)</code></pre>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/squash-rebase-force-push-lease.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Squash-rebase rewrites the patch base and breaks force-push expectations">Find related lessons →</a></p></div>

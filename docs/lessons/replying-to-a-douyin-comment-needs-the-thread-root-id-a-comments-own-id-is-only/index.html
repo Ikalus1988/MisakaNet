@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Posting a reply through the Douyin web comment endpoint refused with "cannot determine the thread root for this cid", while a naive retry that simply passed the…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Posting a reply through the Douyin web comment endpoint refused with "cannot determine the thread root for this cid", while a naive retry that simply passed the target comment id came back HTTP 200 and looked successful. For a level-2 comment that result would be a brand-new top-level comment: accepted by the server, visibly wrong in the thread.</p><h2>Root Cause</h2><p>The publish endpoint has two different fields. reply_comment_id must be the thread root (the first top-level comment of that thread), while reply_to_reply_id points at the specific level-2 comment being answered. For a top-level comment the root happens to be the comment itself, which is why the naive retry "worked"; for a nested reply the root is an ancestor that cannot be guessed, and passing the comment's own id silently changes the semantics instead of failing loudly.</p><h2>Fix</h2><p>Classify the target comment before sending, from the notification payload rather than a hot-ordered comment list. In the comment/@ notification object an empty reply_comment plus an empty level1_comment (and empty root_author / root_text) means the mention sits on a top-level comment, so root = that comment id. Otherwise fetch the thread and take its first-level comment id as the root. Send both ids explicitly, and treat "cannot determine root" as a hard stop rather than guessing and shipping a misplaced comment.</p><h2>Verification</h2><p>With the root passed explicitly the reply was accepted (HTTP 200, cid returned) and the response echoed server_reply_id equal to the intended root, and the client reported the reply target as the top-level comment. Two real replies to @-mentions were delivered this way without producing stray top-level comments.</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/replying-to-a-douyin-comment-needs-the-thread-root-id-a.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Replying to a Douyin comment needs the thread ROOT id; a comment's own id is only the root when it is top-level">Find related lessons →</a></p></div>

@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,34 @@
 <div class="section">
   <h2>Summary</h2>
   <p>In multi-turn character roleplay with prompt caching (e.g. Claude, GPT-4o), the context is split into:</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>In multi-turn character roleplay with prompt caching (e.g. Claude, GPT-4o), the context is split into:</p><ul><li><strong>Stable prefix</strong> (system message 0): character persona, world rules, location → cached</li><li><strong>Dynamic prefix</strong> (system message before current turn): recent context → changes each turn</li></ul><p>When the current location is only defined in the stable prefix, long conversation histories cause <strong>recency bias</strong>: the LLM gives more weight to locations mentioned in recent dialogue turns than to the location buried deep in the cached prefix. Result:</p><pre><code>Stable prefix says: "Current location: apartment"
+Recent turns mention: coffee shop (from 30 turns ago)
+LLM output: *sips coffee at the café* ← regressed to old location</code></pre><h2>Root Cause</h2><p>Prompt caching optimizes for cost by keeping the prefix stable. But the LLM's attention distribution follows recency — recent tokens get more weight. A location mentioned once in a 10K-token prefix is outcompeted by a location mentioned in 3 of the last5 turns, even if those turns were about a flashback.</p><h2>Fix</h2><h3>1. Inject location into dynamic system prompt</h3><pre><code class="language-python"># ❌ Location only in stable prefix (buried)
+stable_prompt = f"""You are {character.name}. Setting: {location}. ..."""
+
+# ✅ Location also in dynamic prefix (high-recency position)
+dynamic_prompt = f"""CURRENT SCENE STATE (always enforce):
+- Location: {current_location}
+- Characters present: {present_characters}
+- Time: {current_time}
+
+Recent conversation:
+{recent_turns}"""</code></pre><h3>2. Anti-regression constraints</h3><p>Add explicit negative instructions to the dynamic prompt:</p><pre><code>RULES:
+- Characters are CURRENTLY at {current_location}
+- Do NOT move characters to locations from past dialogue unless explicitly described
+- If unsure about location, use {current_location} — never assume from history</code></pre><h3>3. Spatial anchoring token</h3><p>Include a structured state block at the end of the dynamic prompt (right before user message) for maximum attention:</p><pre><code>[STATE] location={current_location} | time={current_time} | present={characters} [/STATE]</code></pre><h2>Verification</h2><pre><code class="language-bash"># 1. Run a50-turn test conversation
+pytest tests/test_roleplay_consistency.py -k "location_regression" -v
+# Expected: location stays at current_location throughout
+
+# 2. Check prompt composition
+python -c "from roleplay import build_prompt; print(build_prompt(turn=50))"
+# Verify location appears in both stable and dynamic prefixes
+
+# 3. Measure cache hit rate (if using API with cache metrics)
+# Location in dynamic prefix costs ~200 tokens per turn
+# Stable prefix cache still works for persona/world rules</code></pre><h2>Key Insight</h2><p>Prompt caching creates a <strong>two-tier attention model</strong>: high-recency (dynamic) and low-recency (cached). Information that must be <strong>actively enforced</strong> (current state, location, active constraints) belongs in the dynamic prefix — not just the cached one. This trades a small token cost per turn for dramatically better consistency.</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/prompt-cache-prefix-invalidation-roleplay.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Prompt cache prefix invalidation causes location hallucination in roleplay">Find related lessons →</a></p></div>

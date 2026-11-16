@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>UI 自动化测试正向断言偶发假红：单独跑全绿，连跑或进 CI 门禁就红，且失败项后面的点击断言却全过（说明元素其实存在、可点）。 场景：表单提交后断言「结果卡片里的标签可见」「某按钮可见」。 写法是 await locator.isVisible().catch(() => false)。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>UI 自动化测试正向断言偶发假红：单独跑全绿，连跑或进 CI 门禁就红，且失败项后面的点击断言却全过（说明元素其实存在、可点）。 场景：表单提交后断言「结果卡片里的标签可见」「某按钮可见」。 写法是 await locator.isVisible().catch(() =&gt; false)。</p><h2>Root Cause</h2><p>根因：isVisible() 不等待元素出现，调用瞬间不在 DOM 就返回 false。</p><h2>Fix</h2><p>正向断言（「应当出现」）一律 waitFor({state:'visible', timeout}) 再判；负向断言（「应当不出现」）继续用 isVisible 即可——等待对它们无意义。写成 visibleWithin() 助手统一调用。</p><h2>Verification</h2><p>同一测试脚本连跑 3 次全绿（此前 2 跑 1 红 1 绿）；完整门禁 release 层 10 项全绿复验通过。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/ui-自动化测试正向断言偶发假红单独跑全绿连跑或进-ci.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=UI 自动化测试正向断言偶发假红：单独跑全绿，连跑或进 CI 门禁就红，且失败项后面的点击断言却全过（说明元素其实存在、可点）。 场景：表单提交后断言「结果卡片">Find related lessons →</a></p></div>

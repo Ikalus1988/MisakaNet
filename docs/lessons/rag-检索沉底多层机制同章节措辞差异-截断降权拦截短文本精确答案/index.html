@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,16 @@
 <div class="section">
   <h2>Summary</h2>
   <p>2026-08-21/22 R-2000iC 换油周期案例：hermes 回答"数值对（碰巧）但来源错位"，④ 误判"KB 蒸馏覆盖缺口"——实际 **B-82334CM/05 §7.3 数据完整在库**（3年/11520h + 指定润滑脂 Alvania S2 + 各轴供脂量 8370ml 等），是**检索漏召回**…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>2026-08-21/22 R-2000iC 换油周期案例：hermes 回答"数值对（碰巧）但来源错位"，④ 误判"KB 蒸馏覆盖缺口"——实际 <strong>B-82334CM/05 §7.3 数据完整在库</strong>（3年/11520h + 指定润滑脂 Alvania S2 + 各轴供脂量 8370ml 等），是<strong>检索漏召回</strong>。同类案例：M-900iB 换油（数据在库但 hermes 答"未覆盖"）。两次都被 LLM 误判为"数据缺失"，根因都在检索层。</p><h2>Root Cause</h2><p>多层检索管道各自丢弃精确答案 chunk，无单一修复足够：</p><ol><li><strong>查询措辞差异</strong> — 用户问"换油周期"，手册用"润滑脂更换/定期检修"，BM25 与向量均未命中手册号</li><li><strong>RRF 截断过紧</strong> — <code>top_k*2</code> 在 RRF 排名 15–20 的精确 chunk 被截掉</li><li><strong>overlap-guard 降权</strong> — 短文本精确答案因与查询词重叠低被降权沉底</li><li><strong>diversity 提前截断</strong> — diversity 在 overlap-guard 之前截断，锚点命中 chunk 未获优先保留</li></ol><h2>Solution</h2><p>四层配合修复（<code>self-grow-wiki</code> 的 <code>rag_core.py</code>）：</p><h3>1. <code>_augment_query</code>：机型保养锚点</h3><p>查询含 <code>R-?2000\s*iC</code> + 换油/润滑/保养词时，追加手册号锚点：</p><pre><code class="language-python">if re.search(r'R-?2000\s*iC', query, re.I) and re.search(r'换油|润滑|保养', query):
+    query += " B-82334CM B-82334EN 润滑脂 更换 定期检修 11520"</code></pre><p>BM25 直接命中手册号，绕过措辞差异。</p><h3>2. RRF 截断放宽</h3><p><code>top_k*2</code> → <code>top_k*3</code>，保留 RRF 排名 15–20 的精确答案进入候选池。</p><h3>3. overlap-guard：手册号锚点豁免</h3><p>手册号锚点命中的 chunk 豁免降权并加分 0.3：</p><pre><code class="language-python">anchors = re.findall(r'B-\d{5}[A-Z]{2}', expanded_query)
+for chunk in candidates:
+    if any(a in chunk.text for a in anchors):
+        chunk.score += 0.3  # 锚点 = 强匹配信号，豁免降权</code></pre><h3>4. diversity：锚点 chunk 优先保留</h3><p>锚点命中的 chunk 加入 <code>_exempt</code> 集合，在 diversity 截断时优先保留（diversity 在 overlap-guard 之前执行，只改 overlap 不够）。</p><h2>Verification</h2><pre><code class="language-bash">set -o pipefail
+python3 search_knowledge.py "R-2000iC 换油周期 B-82334" --lessons --tags=fanuc --top=50 --strict --json |
+  python3 -c 'import json,sys; hits=json.load(sys.stdin); assert any(hit["path"] == "lessons/contrib/rag-retrieval-sink-multilayer-cutoff.md" for hit in hits)'
+python3 -c 'import json; entry=next(item for item in json.load(open("data/lessons.json", encoding="utf-8")) if item["id"] == "rag-retrieval-sink-multilayer-cutoff"); assert entry["tags"] == ["rag", "retrieval", "silent-degradation", "bm25", "overlap-guard", "fanuc", "anchor"]; assert entry["evidence_level"] == "E2"'</code></pre><p><strong>Expected:</strong> search returns this lesson through the <code>fanuc</code> tag filter and the index assertions exit 0.</p><h2>Key Points</h2><ul><li>数据在库但检索漏召回时，LLM 会误判为"KB 覆盖缺口"——先查检索层再查蒸馏层</li><li>手册号（如 <code>B-82334CM</code>）是强锚点，应贯穿 query 扩展、RRF 截断、overlap-guard、diversity 四层</li><li>与 [rag-retrieval-six-layer-silent-degradation](rag-retrieval-six-layer-silent-degradation.md) 互补：该 lesson 覆盖 M-900iB 六层退化，本 lesson 聚焦 FANUC 保养手册号的四层锚点修复</li></ul><h2>Related Lessons</h2><ul><li>rag-retrieval-six-layer-silent-degradation: M-900iB 六层静默退化</li><li>fanuc-r-2000ic-retrieval-fix: R-2000iC 跨品牌型号混淆的关键词强制召回</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/rag-retrieval-sink-multilayer-cutoff.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=RAG 检索沉底多层机制：同章节措辞差异 + 截断/降权拦截短文本精确答案">Find related lessons →</a></p></div>

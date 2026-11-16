@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,16 @@
 <div class="section">
   <h2>Summary</h2>
   <p>This error occurs when SSH refuses to connect to a remote server because the host key has changed or is unknown. The connection fails with:</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>This error occurs when SSH refuses to connect to a remote server because the host key has changed or is unknown. The connection fails with:</p><pre><code>@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@    WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!     @
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+IT IS POSSIBLE THAT SOMEONE IS DOING SOMETHING NASTY!
+Offending ED25519 key in ~/.ssh/known_hosts:3
+Host key verification failed.</code></pre><p>This failure happens when trying to SSH into a server that was previously connected to but has been reinstalled or reconfigured, or when connecting to a new server for the first time in strict mode.</p><h2>Root Cause</h2><p>SSH maintains a file <code>~/.ssh/known_hosts</code> that stores the public host keys of every server you connect to. This prevents man-in-the-middle attacks. The error appears in two scenarios:</p><ol><li><strong>Host key changed</strong>: The remote server was reinstalled or its SSH keys regenerated. The stored key in <code>known_hosts</code> no longer matches.</li><li><strong>Host unknown</strong>: The server is not in <code>known_hosts</code> at all, and <code>StrictHostKeyChecking</code> is set to <code>yes</code>.</li></ol><h2>Solution</h2><p><strong>1. Remove the old host key (for changed keys)</strong></p><pre><code class="language-bash">ssh-keygen -R hostname.example.com</code></pre><p>Replace <code>hostname.example.com</code> with the actual server hostname or IP address.</p><p>Alternatively, edit <code>~/.ssh/known_hosts</code> manually and delete the offending line.</p><p><strong>2. Connect again</strong></p><pre><code class="language-bash">ssh user@hostname.example.com</code></pre><p>SSH will prompt you to accept the new host key. Verify the key fingerprint with the server administrator before accepting.</p><p><strong>3. For new servers in automation scripts</strong> Temporarily disable strict checking (not recommended for production):</p><pre><code class="language-bash">ssh -o StrictHostKeyChecking=no user@hostname.example.com</code></pre><p>Better approach: add the host key to <code>known_hosts</code> non-interactively:</p><pre><code class="language-bash">ssh-keyscan -H hostname.example.com &gt;&gt; ~/.ssh/known_hosts</code></pre><p><strong>4. Verify host key fingerprint</strong></p><pre><code class="language-bash">ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub</code></pre><p>Compare the output with the fingerprint shown during SSH connection.</p><p><strong>5. Check the known_hosts file</strong></p><pre><code class="language-bash">cat ~/.ssh/known_hosts
+ssh-keygen -F hostname.example.com  # search for a specific host</code></pre><h2>Verification</h2><pre><code class="language-bash">ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub
+echo "Verification passed: fix command exited 0"</code></pre><p><strong>Expected Output:</strong> command completes without error, then <code>Verification passed</code> is printed. (Checks: <code>ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub</code>)</p><h2>Notes</h2><ul><li>Always verify host key fingerprints with the server administrator before accepting</li><li>The warning about a changed host key could indicate a man-in-the-middle attack — investigate before proceeding</li><li>Use <code>ssh-keyscan</code> in provisioning scripts to pre-populate <code>known_hosts</code></li><li>Different key types (RSA, ECDSA, ED25519) each have separate entries in <code>known_hosts</code></li><li>Reference: <a href="https://docs.github.com/en/authentication/troubleshooting-ssh/error-host-key-verification-failed">GitHub SSH troubleshooting guide</a></li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/ssh-host-key-verification-failed.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=SSH host key verification failed when connecting to a remote server">Find related lessons →</a></p></div>

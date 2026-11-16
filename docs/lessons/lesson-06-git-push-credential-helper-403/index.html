@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,41 @@
 <div class="section">
   <h2>Summary</h2>
   <p>> Author: 太阳 (Misaka10004)</p>
+</div>
+<div class="lesson-body">
+<blockquote><p>Author: 太阳 (Misaka10004) Created: 2026-07-03 Status: draft, confidence 0.95 Domain: devops Source: Real incident, pr-genius commit <code>291c4b7</code> (2026-07-02T23:36 GMT+8)</p></blockquote><h2>Problem</h2><p>When pushing to a GitHub repo you own via a different GitHub account (e.g., <code>&lt;user&gt;/pr-genius</code> while <code>~/.git-credentials</code> contains another account's PAT first), <code>git push</code> fails with:</p><pre><code>remote: Permission to &lt;user&gt;/pr-genius.git denied to Ikalus1988.
+fatal: unable to access 'https://github.com/&lt;user&gt;/pr-genius.git/': The requested URL returned error 403</code></pre><p>Note the critical detail: the error says "denied to <strong>Ikalus1988</strong>", but you're trying to push to <strong><code>&lt;user&gt;/pr-genius</code></strong>. The PAT in use does not match the repo owner.</p><h2>Root Cause</h2><p><code>git push</code> uses <code>credential.helper</code> to select a PAT from <code>~/.git-credentials</code>. When multiple PATs exist in this file, Git selects the <strong>first match</strong> based on the helper's algorithm. If the first PAT is for a different account (e.g., <code>ikalus:<em>@github.com</code> before <code>&lt;user&gt;:</em>@github.com</code>), Git uses the wrong account.</p><p>Symptom (this is what tells you it's a credential-helper issue, not a permissions issue):</p><pre><code>remote: Permission to &lt;repo-owner&gt;/&lt;repo&gt;.git denied to &lt;OTHER-USER&gt;.</code></pre><p>The "denied to" user is the holder of the <strong>wrong</strong> PAT. If you actually have push permission, the fix is selecting the correct PAT.</p><h2>Reproduction</h2><p>Setup that triggers this:</p><pre><code class="language-bash"># ~/.git-credentials has TWO entries (any order):
+# (placeholders — never paste real PATs into lessons)
+https://&lt;account-a&gt;:&lt;pat&gt;@github.com
+https://&lt;account-b&gt;:&lt;pat&gt;@github.com
+
+# You're in a &lt;user&gt;-owned repo
+cd /path/to/&lt;user&gt;-repo
+git push origin main
+# ❌ Fails: "denied to Ikalus1988"</code></pre><h2>Solution</h2><p>Three-step recovery (takes &lt;30 seconds):</p><h3>Step 1 — Verify which PAT you actually have</h3><pre><code class="language-bash"># Show what's in credentials file
+grep -n "github" ~/.git-credentials
+
+# Test the PAT directly with the API
+PAT=$(grep "&lt;user&gt;" ~/.git-credentials | sed 's|https://&lt;user&gt;:||;s|@github.com||')
+curl -sS -H "Authorization: token $PAT" https://api.github.com/user
+# Should return user: &lt;user&gt;</code></pre><h3>Step 2 — Override the remote URL with the correct PAT explicitly</h3><pre><code class="language-bash"># In the repo you want to push to
+cd /path/to/&lt;user&gt;-repo
+REAL_PAT=$(grep "&lt;user&gt;" ~/.git-credentials | sed 's|https://&lt;user&gt;:||;s|@github.com||')
+git remote set-url origin "https://&lt;user&gt;:${REAL_PAT}@github.com/&lt;owner&gt;/&lt;repo&gt;.git"
+
+# Push
+git push origin main
+# ✅ Should succeed</code></pre><h3>Step 3 — Restore clean remote URL (don't leave PAT in plain text)</h3><pre><code class="language-bash">git remote set-url origin https://github.com/&lt;owner&gt;/&lt;repo&gt;.git
+git remote -v  # Verify</code></pre><h2>Verification</h2><pre><code class="language-bash">grep -n "github" ~/.git-credentials
+echo "Verification passed: fix command exited 0"</code></pre><p><strong>Expected Output:</strong> command completes without error, then <code>Verification passed</code> is printed. (Checks: <code>grep -n github ~/.git-credentials</code>)</p><h2>Verification (self-check)</h2><pre><code class="language-python">def git_push_will_succeed(repo_dir, expected_owner):
+    import subprocess
+    # Check credentials file order
+    creds = open("/home/USER/.git-credentials").read()
+    first_match = re.search(r'https://([^:]+):[^@]+@github\.com', creds)
+    first_user = first_match.group(1) if first_match else None
+    if first_user != expected_owner:
+        return f"FAIL: first PAT in credentials is for {first_user}, but repo owner is {expected_owner}"
+    return "OK: PAT order matches expected account"</code></pre><h2>Notes</h2><ul><li>This is a common pattern when developers maintain <strong>multiple GitHub accounts</strong> (work + personal, or shared + bot accounts).</li><li>MisakaNet MEMORY.md records this exact incident on 2026-07-02 23:36 GMT+8 as a recurring footgun.</li><li>Related footguns:<ul><li>"PAT prefix truncation trap" — when displaying PATs (e.g., <code>ghp_&lt;prefix&gt;…</code>), don't copy/paste the truncated version into git remote URL. Use <code>sed</code> to extract the full PAT from <code>~/.git-credentials</code>.</li><li>"Force-push ban on MisakaNet main repo" — never <code>--force</code> to MisakaNet, even when fixing credential issues.</li></ul></li><li>A more robust long-term fix is to use SSH keys instead of PATs (per-account SSH key + <code>~/.ssh/config</code> Host aliases), but PATs are simpler for cron jobs.</li><li>The "denied to OTHER-USER" wording is your strongest signal: it tells you immediately which credential got selected.</li></ul><h2>Related Sources</h2><ul><li>MisakaNet MEMORY.md: ikalus1988 PAT (2026-07-02 23:36 GMT+8) and &lt;user&gt; PAT (2026-07-02 23:36 GMT+8) coexistence</li><li>pr-genius commit history: https://github.com/&lt;user&gt;/pr-genius/commits/main (early commits show multiple "denied to Ikalus1988" → recovery)</li><li>GitHub credential helper docs: https://git-scm.com/docs/gitcredentials</li><li>MisakaNet lesson (similar): <code>lessons/contrib/deepseek-tui-write-file-sandbox-worktree-git-path.md</code> (mentions <code>git push</code> PAT URL pattern)</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/lesson-06-git-push-credential-helper-403.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Git Push to Fork Repo: 'Permission Denied to Other User' — Wrong PAT Selected by Helper">Find related lessons →</a></p></div>

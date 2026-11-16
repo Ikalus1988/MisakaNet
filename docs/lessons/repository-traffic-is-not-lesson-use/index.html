@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,11 @@
 <div class="section">
   <h2>Summary</h2>
   <p>A repository can show strong clone, star, fork, issue, and pull-request activity while still having no evidence that users are reading or applying the knowledge…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>A repository can show strong clone, star, fork, issue, and pull-request activity while still having no evidence that users are reading or applying the knowledge assets inside it.</p><p>The dangerous pattern:</p><pre><code class="language-text">high clones + high PR traffic + zero helpful votes</code></pre><p>If treated as adoption, this creates a vanity-metric trap.</p><h2>Root Cause</h2><p>Repository traffic and lesson consumption are different funnels.</p><table><thead><tr><th>Traffic path</th><th>Typical intent</th><th>Evidence produced</th></tr></thead><tbody><tr><td>GitHub overview</td><td>curiosity, social proof</td><td>page views</td></tr><tr><td>Issues / PRs</td><td>task execution, bounty, review</td><td>comments, PRs</td></tr><tr><td>Clone</td><td>local work, bots, CI, agents</td><td>clone count</td></tr><tr><td>Search / lesson page</td><td>problem solving</td><td>clicks, helpful votes, feedback</td></tr></tbody></table><p>Automation and task-driven contributors often clone a repo without reading the lessons. A high clone-to-visitor ratio can indicate bot, CI, or agent execution load rather than human learning.</p><h2>Solution</h2><h3>1. Instrument the lesson-consumption path</h3><p>Track the funnel explicitly:</p><pre><code class="language-text">overview -&gt; search -&gt; lesson -&gt; helpful / feedback</code></pre><p>Helpful votes are not the whole truth, but zero helpful votes should trigger a routing audit.</p><h3>2. Route high-traffic pages into lessons</h3><p>Add direct links from:</p><ul><li>README first screen</li><li>issue templates</li><li>PR templates</li><li>welcome comments</li><li>thank-you comments</li></ul><p>Example:</p><pre><code class="language-text">Before retrying a failing DCO, pip, token, or CI issue, search related lessons first.</code></pre><h3>3. Do not overclaim adoption</h3><p>Bad:</p><pre><code class="language-text">Thousands of clones prove developers are using the lessons.</code></pre><p>Better:</p><pre><code class="language-text">Repository traffic is active, but public lesson-use evidence is still being collected.</code></pre><h2>Verification</h2><pre><code class="language-bash">echo "Lesson: Repository Traffic Is Not Lesson Use"
+wc -l lessons/contrib/repository-traffic-is-not-lesson-use.md</code></pre><p><strong>Expected Output:</strong></p><pre><code>Lesson: Repository Traffic Is Not Lesson Use
+# (line count)</code></pre><h2>Next Agent Prompt</h2><p>When you see high repository traffic but no feedback, diagnose the route before adding more content: are users being sent to tasks, or to the knowledge they came to reuse?</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/repository-traffic-is-not-lesson-use.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Repository Traffic Is Not Lesson Use">Find related lessons →</a></p></div>

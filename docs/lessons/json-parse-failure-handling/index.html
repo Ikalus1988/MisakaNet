@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,50 @@
 <div class="section">
   <h2>Summary</h2>
   <p>从 LLM 输出或 API 返回中解析 JSON 时报 `json.decoder.JSONDecodeError`。常见于模型输出被截断、前后有多余字符。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>从 LLM 输出或 API 返回中解析 JSON 时报 <code>json.decoder.JSONDecodeError</code>。常见于模型输出被截断、前后有多余字符。</p><h2>Root Cause</h2><ol><li>模型输出在 JSON 完成前被截断（token 限制）</li><li>模型在 JSON 前后加了 markdown 代码块标记 ``<code>json ... </code>``</li><li>JSON 内容含未转义的特殊字符</li></ol><h2>Verification</h2><pre><code class="language-bash">echo "Lesson: JSON 解析失败Handling — 截断 / 格式Error"
+wc -l lessons/contrib/json-parse-failure-handling.md</code></pre><p><strong>Expected Output:</strong></p><pre><code>Lesson: JSON 解析失败Handling — 截断 / 格式Error
+# (line count)</code></pre><h2>Solution</h2><pre><code class="language-python">import json
+import re
+
+def safe_json_parse(text: str) -&gt; dict | None:
+    """尝试多种策略解析 JSON"""
+    
+    # 策略 1：直接解析
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        pass
+    
+    # 策略 2：提取代码块中的 JSON
+    m = re.search(r'```(?:json)?\s*\n?(.*?)\n?```', text, re.DOTALL)
+    if m:
+        try:
+            return json.loads(m.group(1))
+        except json.JSONDecodeError:
+            pass
+    
+    # 策略 3：提取第一个 { } 间的完整内容
+    m = re.search(r'(\{.*\})', text, re.DOTALL)
+    if m:
+        try:
+            return json.loads(m.group(1))
+        except json.JSONDecodeError:
+            pass
+    
+    # 策略 4：使用 strict=False（允许控制字符）
+    try:
+        return json.loads(text, strict=False)
+    except json.JSONDecodeError:
+        pass
+    
+    return None
+
+# JSON 解析失败Handling — 截断 / 格式Error
+result = safe_json_parse(model_output)
+if result is None:
+    print("JSON 解析失败，尝试重新生成")</code></pre>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/json-parse-failure-handling.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=JSON 解析失败Handling — 截断 / 格式Error">Find related lessons →</a></p></div>

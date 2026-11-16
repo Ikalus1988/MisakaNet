@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,29 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Mobil uygulamada gizlilik amacıyla Tor kullanımı hedefleniyordu ancak Orbot’un çalışıp çalışmadığı, cihazda yüklü olup olmadığı ve API trafiğinin gerçekten Tor …</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Mobil uygulamada gizlilik amacıyla Tor kullanımı hedefleniyordu ancak Orbot’un çalışıp çalışmadığı, cihazda yüklü olup olmadığı ve API trafiğinin gerçekten Tor üzerinden geçip geçmediği net değildi. Kullanıcılar “Tor açık” sanırken uygulama normal ağ üzerinden istek atabiliyor ve gerçek anonimlik sağlanamıyordu.</p><h2>Root Cause</h2><p>Orbot yalnızca cihaz düzeyinde bir Tor proxy sağlar. React Native tarafında soketler otomatik olarak SOCKS5 üzerinden yönlendirilmez. Uygulama, Orbot’un durumunu kontrol etmeden veya proxy tercihini kaydetmeden API isteklerini normal şekilde göndermeye devam eder.</p><h2>Solution</h2><p>Tor kullanımını güvenli hale getirmek için uygulamada ayrı bir gizlilik akışı tanımlandı.</p><h3>Step 1 — Orbot kontrolü</h3><pre><code class="language-javascript">import { Linking, Platform } from 'react-native';
+
+const ORBOT_URI = 'orbot://';
+
+async function isOrbotInstalled() {
+  if (Platform.OS !== 'android') return false;
+  try { return await Linking.canOpenURL(ORBOT_URI); } catch { return false; }
+}</code></pre><h3>Step 2 — Kullanıcı tercihini sakla</h3><pre><code class="language-javascript">import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const PREF_KEY = '@MyApp:privacy_preferences';
+
+async function setUseTorProxy(enabled) {
+  await AsyncStorage.setItem(PREF_KEY, JSON.stringify({ useTorProxy: enabled }));
+}</code></pre><h3>Step 3 — API isteklerini işaretle</h3><pre><code class="language-javascript">import api from './api';
+
+function applyTorPreference(enabled) {
+  if (enabled) api.defaults.headers.common['X-Tor-Requested'] = 'true';
+  else delete api.defaults.headers.common['X-Tor-Requested'];
+}</code></pre><h2>Verification</h2><pre><code class="language-bash">echo "Lesson: React Native uygulamasında Orbot (Tor) ile gizlili"
+wc -l lessons/contrib/tor-orbot-privacy-in-react-native-tr.md</code></pre><p><strong>Expected Output:</strong></p><pre><code>Lesson: React Native uygulamasında Orbot (Tor) ile gizlili
+# (line count)</code></pre><h2>Notes</h2><ul><li>Orbot’un çalışması tek başına trafik tünellemesini garanti etmez; gerçek SOCKS5 yönlendirmesi için native proxy modülü gerekir.</li><li>Üretim ortamında “Tor aktif” rozeti yalnızca proxy gerçekten devredeyken gösterilmelidir.</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/tor-orbot-privacy-in-react-native-tr.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=React Native uygulamasında Orbot (Tor) ile gizlilik akışı">Find related lessons →</a></p></div>

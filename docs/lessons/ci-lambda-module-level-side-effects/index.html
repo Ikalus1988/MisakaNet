@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,26 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Python 测试文件尝试 `importlib.import_module()` 导入 Lambda 函数模块，CI 报错：</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Python 测试文件尝试 <code>importlib.import_module()</code> 导入 Lambda 函数模块，CI 报错：</p><pre><code>ModuleNotFoundError: No module named 'xxx'</code></pre><p>或导入成功但触发：</p><pre><code>botocore.exceptions.NoCredentialsError: Unable to locate credentials</code></pre><h2>Root Cause</h2><p>Lambda 函数文件（如 <code>index.py</code>）在模块级执行了 <code>boto3.client("xxx")</code>。当测试通过 <code>importlib.import_module()</code> 导入该模块时：</p><ol><li><strong>模块名错误</strong> — 测试用 <code>rotate_rds_index</code> 作为模块名，但实际文件叫 <code>index.py</code>。<code>importlib</code> 找不到模块。</li><li><strong>模块级副作用</strong> — 即使模块名正确，<code>boto3.client()</code> 在模块加载时立即执行。CI 环境没有 AWS 凭证，直接报 <code>NoCredentialsError</code>。</li></ol><p>这两层问题叠加，导致测试在不同阶段以不同方式失败。</p><h2>Solution</h2><p><strong>不要导入 Lambda 模块来检查其内容。</strong> 改为直接读取源码文本：</p><pre><code class="language-python"># ❌ 错误：导入模块触发副作用
+def _import_lambda_module(name, source_dir):
+    sys.path.insert(0, str(source_dir))
+    return importlib.import_module(name)  # 触发 boto3.client()
+
+# ✅ 正确：读取源码文本，用正则提取默认值
+def _extract_default(source: str) -&gt; str:
+    match = re.search(
+        r'''os\.environ\.get\(\s*["']EXCLUDE_CHARACTERS["']\s*,\s*(['"])((?:[^\\]|\\.)*?)\1''',
+        source,
+    )
+    return match.group(2)
+
+# 测试
+source = (Path("lambda") / "index.py").read_text()
+assert "/@" in _extract_default(source)</code></pre><h2>Verification</h2><pre><code class="language-bash">python3 --version
+python3 -c 'import sys; print(sys.version)'</code></pre><p><strong>Expected Output:</strong></p><pre><code>Python 3.
+3.</code></pre><h2>Why it matters</h2><p>Lambda 函数、数据库迁移脚本、CLI 工具等经常在模块级执行 I/O 操作（连接数据库、初始化客户端）。测试这类代码时，<strong>源码分析</strong>比<strong>运行时导入</strong>更安全、更可靠。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/ci-lambda-module-level-side-effects.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=CI 测试陷阱 — 模块级副作用导致 import 失败">Find related lessons →</a></p></div>

@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,13 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Seller account exists and cookies from a real Firefox profile inject into Playwright. Navigation to:</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Seller account exists and cookies from a real Firefox profile inject into Playwright. Navigation to:</p><ul><li><code>https://www.fiverr.com/manage_gigs</code></li><li><code>https://www.fiverr.com/manage_gigs/create</code></li><li>sometimes mid-onboarding steps</li></ul><p>returns page title/body:</p><pre><code class="language-text">It needs a human touch
+Complete the task and we'll get you right back into Fiverr.
+Loading challenge</code></pre><p>Seller onboarding (<code>/seller_onboarding/0</code>) may still load; gig management is gated.</p><h2>Root Cause</h2><p>Fiverr fronts seller write paths with <strong>PerimeterX / human challenge</strong>. Cookie replay + headless Firefox is classified as automation even when:</p><ul><li>Google SSO account is real</li><li><code>User-Agent</code> is a desktop Firefox string</li><li>Cookies include full <code>fiverr.com</code> jar from an interactive session</li></ul><p>This is intentional bot defense, not a missing “create gig” API field.</p><h2>Fix</h2><ol><li><strong>Do not loop</strong> on manage_gigs/create in headless — you will not beat PX reliably.</li><li>Use a <strong>human-attended</strong> browser (same profile) to pass the challenge once, then finish gig publish in that session.</li><li>Keep gig copy offline (title, tags, packages, FAQ) so the human step is only challenge + paste.</li><li>Parallelize other earn lanes while blocked (bounties, APIs without PX).</li><li>Prefer official partner/API programs if available; scraping seller write endpoints is a dead end.</li></ol><h2>Verification</h2><pre><code class="language-bash">echo "Lesson: Fiverr PerimeterX captcha blocks headless seller g"
+wc -l lessons/contrib/fiverr-perimeterx-blocks-seller-automation.md</code></pre><p><strong>Expected Output:</strong></p><pre><code>Lesson: Fiverr PerimeterX captcha blocks headless seller g
+# (line count)</code></pre><h2>Notes</h2><ul><li>xdotool against a real Firefox window can still hit PX on sensitive routes</li><li>Never store or share challenge tokens</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/fiverr-perimeterx-blocks-seller-automation.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Fiverr PerimeterX captcha blocks headless seller gig creation">Find related lessons →</a></p></div>

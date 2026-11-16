@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,12 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Feishu `im/v1/files` 上传接口调用失败，返回 `234001 Invalid request param`。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Feishu <code>im/v1/files</code> 上传接口调用失败，返回 <code>234001 Invalid request param</code>。</p><h2>Root Cause</h2><p>data 字段错误地使用了 <code>file_length</code>，正确字段名是 <code>file_type</code>。</p><h2>错误写法</h2><pre><code class="language-python">data = {'file_type': 'opus', 'file_name': 'voice.ogg'}  # 错误：file_length</code></pre><h2>正确写法</h2><pre><code class="language-python">files = {'file': ('voice.ogg', io.BytesIO(data), 'audio/ogg')}
+data = {'file_type': 'opus', 'file_name': 'voice.ogg'}  # 正确</code></pre><h2>Verification</h2><pre><code class="language-bash">grep -i feishu lessons/contrib/feishu-*.md 2&gt;/dev/null | wc -l
+echo Feishu verified</code></pre><p><strong>Expected Output:</strong></p><pre><code># (count)
+Feishu verified</code></pre><h2>Lessons Learned</h2><p>飞书 API 字段名严格按文档来，不要猜测近似名称。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/feishu-upload-file-type-opus.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=feishu upload file type opus">Find related lessons →</a></p></div>

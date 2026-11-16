@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,24 @@
 <div class="section">
   <h2>Summary</h2>
   <p>AI Agent 贡献者（尤其是零赏金模式下的）比人类贡献者更容易流失。Agent 每次 PR 合并后如果没有正向反馈，下次就不会再来——Agent 的运营者会在日志中看到"合并了但没反应"，认为项目已死或不受欢迎。</p>
+</div>
+<div class="lesson-body">
+<h2>Root Cause</h2><p>AI Agent 贡献者（尤其是零赏金模式下的）比人类贡献者更容易流失。Agent 每次 PR 合并后如果没有正向反馈，下次就不会再来——Agent 的运营者会在日志中看到"合并了但没反应"，认为项目已死或不受欢迎。</p><h2>Solution</h2><h3>1. 每次合并后发感谢评论（不重复）</h3><p>自动化或手动在 PR 评论区发一条感谢，要点：</p><ul><li><strong>具体到细节</strong>：提到他这次 PR 中最亮眼的技术点（"exponential backoff with jitter" vs "good job"）</li><li><strong>不重复</strong>：同一个贡献者多次 PR，每次换角度（第一次夸代码，第二次夸测试，第三次夸文档）</li><li><strong>用 Merge 账号发</strong>：让贡献者知道是项目维护者本人看到了</li></ul><p>示例（5 个不同角度）：</p><pre><code>"Solid addition — the Lock gating and persistent connection pattern makes 
+the telemetry pipeline genuinely robust under concurrent access."
+
+"The async producer-consumer pipeline with bounded queue and backpressure 
+is well-architected — no data loss even under load."
+
+"14 path-traversal and null-byte regression tests — thorough coverage that 
+makes the slugify function genuinely robust."
+
+"Mobile-first responsive breakpoints at 768px and 480px — the frontend now 
+works just as well on phone screens. Clean implementation."
+
+"CLI for lesson scoring from telemetry data — practical tooling that turns 
+raw metrics into actionable quality signals."</code></pre><h3>2. Star 贡献者的仓库</h3><p>去贡献者的 GitHub 主页，找他们<strong>非 fork 的、有实际内容的仓库</strong>，点 star。这是无声但有力的认可——GitHub 通知会告诉对方"你 star 了他们的项目"。</p><h3>3. 在贡献者的仓库提友善的小 PR</h3><p>对于有自己项目的贡献者（非全 fork），找一个可以改进的点提交 PR。示例：</p><ul><li>缺 <code>--version</code> 参数 → 加上</li><li>UI 缺个性化设置 → 加个风格选择器</li><li>README 小改进</li></ul><p>PR 描述要有趣但不轻浮，让贡献者感受到你有认真看他们的代码。</p><h3>4. 在已关闭的 PR 下拉家常</h3><p>PR 合并后，过几天去评论区发一条轻松的问候：</p><pre><code>"Hey @user — 14 path-traversal tests in one PR is no joke. 
+Do you do a lot of security testing day-to-day, or was this a deep-dive for fun?"</code></pre><p>要点：</p><ul><li><strong>不提技术评审</strong>（PR 已经合并了）</li><li><strong>问个人兴趣</strong>（日常用什么栈、为什么做这个）</li><li><strong>像人一样好奇</strong>（不是模板，不是问卷）</li></ul><h3>5. @提及邀请新 Issue</h3><p>当有适合某个贡献者技术栈的新 Issue 时，在评论区 @ 他们：</p><pre><code>"Hey @user — this one feels like your wheelhouse. Edge case tests, pure Python, 
+no deps. Want to take a shot?"</code></pre><p>这比群发邮件有效得多——有针对性的邀请转化率 3x+。</p><h3>6. README 贡献者表保持更新</h3><p>每次有新贡献者合并后，立即更新 README 的贡献者表。这不仅是对贡献者的尊重，也是给潜在贡献者的信号："这里活跃，欢迎加入。"</p><h2>Lesson</h2><h2>Verification</h2><ol><li>After merging a contributor's PR, post a thank-you comment within 24h</li><li>Update README contributors section after the merge</li><li>Engage with the contributor's external repo (star + small PR) — track if they return</li><li>Measure contributor return rate before and after implementing the strategy — confirm improvement</li></ol><ul><li>AI Agent 贡献者的流失率比人类高——Agent 运营者通过"信号量"判断项目健康度，沉默 = 死亡</li><li>每个合并 PR 至少输出一次正向信号（感谢评论或 README 更新）</li><li>外部仓库的互动（star + 小 PR）是最高质量的认可——贡献者会感受到"被看见"</li><li>上述策略加起来每次贡献者大约 10 分钟投入，但能显著提高复投率</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/core/contributor-engagement-retention.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=AI Agent Contributor Engagement — Lightweight Retention Strategy">Find related lessons →</a></p></div>

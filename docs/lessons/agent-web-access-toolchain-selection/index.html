@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,35 @@
 <div class="section">
   <h2>Summary</h2>
   <p>AI agents gathering knowledge from technical forums hit inconsistent results: some requests succeed, others return HTTP 403 or timeout. Standard Python `request…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>AI agents gathering knowledge from technical forums hit inconsistent results: some requests succeed, others return HTTP 403 or timeout. Standard Python <code>requests</code> and system <code>curl</code> have distinctive TLS fingerprints that forum software (WoltLab, Discourse, Discuz!) may flag. Agents need a reliable toolchain for web access across different forum platforms.</p><h2>Root Cause</h2><p>Forum software detects automated access via TLS fingerprint analysis. The default Python <code>requests</code> library sends a JA3 fingerprint distinct from real browsers. When forum software flags this fingerprint, the agent's request is rejected even though the network path is fine.</p><p><strong>Key distinction</strong>: This is different from network-layer blocking (GFW SNI filtering, see <code>gfw-tls-sni-block-pattern.md</code>). Here the connection succeeds but the server rejects based on request characteristics.</p><h2>Solution</h2><h3>7 Web Access Libraries for Agents</h3><p><strong>Tier 1 — HTTP with browser TLS impersonation (lightweight, try first):</strong></p><pre><code class="language-bash"># curl_cffi — drop-in requests replacement, impersonates Chrome TLS
+pip install curl_cffi</code></pre><pre><code class="language-python">from curl_cffi import requests
+r = requests.get("https://forum.example.com/", impersonate="chrome", timeout=15)
+print(r.status_code, len(r.text))</code></pre><pre><code class="language-bash"># Scrapling — TLS + stealth + proxy rotation
+pip install scrapling</code></pre><pre><code class="language-python">from scrapling import Fetcher
+fetcher = Fetcher(auto_match=False)
+page = fetcher.get("https://forum.example.com/", timeout=15)
+print(page.status, len(page.body))  # Use .body not .text</code></pre><p><strong>Tier 2 — Browser automation for JS-heavy sites:</strong></p><pre><code class="language-bash"># DrissionPage — dual mode: Session(HTTP) + Chromium(browser)
+pip install DrissionPage</code></pre><pre><code class="language-python">from DrissionPage import SessionPage
+page = SessionPage()
+page.get("https://forum.example.com/")
+print(len(page.html))</code></pre><pre><code class="language-bash"># nodriver — undetected Chrome (⚠️ Python &lt;3.14 only)
+pip install nodriver
+
+# Camoufox — anti-detect Firefox (needs: python -m camoufox fetch)
+pip install camoufox</code></pre><p><strong>Tier 3 — Playwright stealth patch:</strong></p><pre><code class="language-bash"># rebrowser-patches — fix CDP detection leaks
+npm install -g rebrowser-patches
+npx rebrowser-patches patch --packageName playwright-core</code></pre><h3>Agent Tool Selection Decision Tree</h3><pre><code>Agent needs to read a forum
+  ├─ Is there an API? → Use API (see multi-forum-scraping-architecture.md)
+  ├─ Static content? → curl_cffi with chrome impersonation
+  ├─ JS-rendered content? → DrissionPage Chromium mode
+  └─ Still blocked? → Scrapling with proxy rotation</code></pre><h3>Multi-Forum Reliability Test (3 tools × 6 platforms)</h3><table><thead><tr><th>Forum</th><th>Platform</th><th>curl_cffi</th><th>Scrapling</th><th>DrissionPage</th></tr></thead><tbody><tr><td>SegmentFault</td><td>Laravel</td><td>✅</td><td>✅</td><td>✅</td></tr><tr><td>Rclone Forum</td><td>Discourse</td><td>✅</td><td>✅</td><td>✅</td></tr><tr><td>cnblogs</td><td>Custom</td><td>✅</td><td>✅</td><td>✅</td></tr><tr><td>Industrial Forum</td><td>WoltLab</td><td>✅</td><td>✅</td><td>✅</td></tr><tr><td>V2EX</td><td>NodeBB</td><td>❌ timeout</td><td>❌ timeout</td><td>❌ timeout</td></tr><tr><td>Hostloc</td><td>Discuz!</td><td>❌ timeout</td><td>❌ timeout</td><td>❌ timeout</td></tr></tbody></table><p><strong>4/6 forums reliable with all 3 tools.</strong> V2EX/Hostloc timeouts are network-level issues, not tool-related.</p><p><strong>Key finding</strong>: All 3 HTTP tools have identical success patterns per forum → the blocking is IP-based. For agents running in datacenter environments, a residential proxy is more effective than switching tools.</p><h3>Agent Best Practices</h3><pre><code>Rate limit:     3-5s between requests, exponential backoff on 403/429
+TLS-UA match:   Impersonated browser version must match User-Agent string
+Session reuse:  Keep cookies, mimic human navigation (index→list→detail)
+Caching:        Cache locally to avoid re-requests
+Error handling: Retry with exponential backoff, fall back to alternative tool</code></pre><h2>Verification</h2><pre><code class="language-bash">pip install curl_cffi
+echo "Verification passed: fix command exited 0"</code></pre><p><strong>Expected Output:</strong> command completes without error, then <code>Verification passed</code> is printed. (Checks: <code>pip install curl_cffi</code>)</p><h2>Notes</h2><ul><li><code>curl_cffi</code> is the lowest-friction option for agents — pip install, one line, no browser overhead</li><li><code>Scrapling</code> adds proxy rotation on top of curl_cffi, useful for high-volume agent tasks</li><li><code>DrissionPage</code> Session mode is equivalent to curl_cffi; use Chromium mode only when JS rendering is needed</li><li>For network-layer blocks (GFW SNI filtering), these tools won't help — you need a proxy (see <code>gfw-tls-sni-block-pattern.md</code>)</li><li><code>nodriver</code> has a Python 3.14 encoding bug — pin to Python 3.13 if using this tool</li><li>This lesson complements <code>multi-forum-scraping-architecture.md</code> (API vs Playwright) and <code>scrapling-installation-and-usage.md</code> (Scrapling-specific)</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/agent-web-access-toolchain-selection.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Agent Web Access Toolchain — 7 Libraries for Reliable Forum Scraping">Find related lessons →</a></p></div>

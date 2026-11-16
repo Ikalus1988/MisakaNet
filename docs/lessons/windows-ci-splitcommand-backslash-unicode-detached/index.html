@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,45 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Three distinct bugs surfaced in a single Windows CI session:</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Three distinct bugs surfaced in a single Windows CI session:</p><ol><li><code>splitCommand()</code> strips backslashes from Windows paths — <code>C:\hostedtoolcache</code> becomes <code>C:hostedtoolcache</code>, causing ENOENT.</li><li>Python subprocess with non-ASCII output (Chinese characters) fails with <code>UnicodeEncodeError</code> on Windows <code>cp1252</code> default encoding.</li><li><code>detached: true</code> + <code>unref()</code> on Windows does not survive <code>process.exit()</code> — fire-and-forget child processes are killed when the parent exits.</li></ol><h2>Root Cause</h2><h3>Bug 1: splitCommand() backslash stripping</h3><p>The <code>!isWindows</code> guard that prevents backslash stripping was lost during a rebase/squash. Without this guard, the command parser treats <code>\</code> as an escape character on all platforms, destroying Windows drive-letter and directory paths.</p><h3>Bug 2: Python subprocess UnicodeEncodeError</h3><p>Windows defaults to <code>cp1252</code> (or the system locale codepage) for process stdout/stderr. When a Python subprocess emits Chinese characters or other non-ASCII output, the encoding fails because <code>cp1252</code> cannot represent those codepoints. Linux and macOS default to UTF-8, so this only manifests on Windows.</p><h3>Bug 3: detached process killed by parent exit</h3><p>On Windows, <code>detached: true</code> with <code>unref()</code> creates a new process group, but <code>process.exit()</code> terminates the entire process tree including detached children. This differs from Unix where <code>unref()</code> truly decouples the child's lifetime from the parent. Windows requires synchronous spawning for fire-and-forget patterns.</p><h2>Solution</h2><h3>Fix 1: Restore the isWindows guard in splitCommand</h3><pre><code class="language-javascript">function splitCommand(cmd) {
+  // On Windows, do NOT strip backslashes — they are path separators
+  if (process.platform === 'win32') {
+    return cmd.split(/\s+/);
+  }
+  // On Unix, strip escape backslashes
+  return cmd.replace(/\\(\s)/g, '$1').split(/\s+/);
+}</code></pre><h3>Fix 2: Set PYTHONIOENCODING for subprocess calls</h3><pre><code class="language-javascript">const { spawn } = require('child_process');
+
+const child = spawn('python', ['script.py'], {
+  env: {
+    ...process.env,
+    PYTHONIOENCODING: 'utf-8',
+  },
+});</code></pre><p>Alternatively, set <code>PYTHONIOENCODING=utf-8</code> in the CI workflow environment:</p><pre><code class="language-yaml">env:
+  PYTHONIOENCODING: utf-8</code></pre><h3>Fix 3: Use spawnSync for fire-and-forget children on Windows</h3><pre><code class="language-javascript">// Instead of detached + unref (does not survive process.exit on Windows):
+const { spawnSync } = require('child_process');
+
+// Blocking but reliable — child completes before parent exits
+spawnSync('node', ['worker.js'], {
+  stdio: 'ignore',
+  detached: false,
+});
+
+// Or, if you truly need async: keep parent alive until child exits
+const child = spawn('node', ['worker.js'], {
+  detached: true,
+  stdio: 'ignore',
+});
+child.unref();
+
+// Ensure parent does not exit before child on Windows
+process.on('beforeExit', () =&gt; {
+  // Give detached child time to detach properly
+});</code></pre><p>For CI fire-and-forget scenarios, <code>spawnSync</code> is the most reliable cross-platform approach. The process completes synchronously, so there is no parent-exit race.</p><h2>Key Points</h2><ol><li><strong>Rebase/squash can silently drop platform guards.</strong> Always verify <code>process.platform</code> conditionals survive merge operations.</li><li><strong>Windows encoding defaults differ from Unix.</strong> <code>PYTHONIOENCODING=utf-8</code> or <code>encoding: 'utf-8'</code> on spawn options is mandatory for non-ASCII output.</li><li><strong><code>detached: true</code> + <code>unref()</code> is not truly fire-and-forget on Windows.</strong> Use <code>spawnSync</code> for cross-platform reliability, or keep the parent alive until the child confirms detachment.</li><li><strong>Test CI changes on Windows runners.</strong> These three bugs only manifest on Windows; Linux/macOS CI passes would not catch them.</li></ol><h2>Verification</h2><pre><code class="language-bash">python3 --version
+python3 -c 'import sys; print(sys.version)'</code></pre><p><strong>Expected Output:</strong></p><pre><code>Python 3.
+3.</code></pre>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/windows-ci-splitcommand-backslash-unicode-detached.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Windows CI: splitCommand backslash stripping, UnicodeEncodeError, and detached process failure">Find related lessons →</a></p></div>

@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>飞书文档被分享为「只读、禁止下载/复制」时，文档内图片无法通过任何 OpenAPI 拿到：drive medias batch_get_tmp_download_url 返回空数组、medias/files download 返回 403、export_tasks 返回 no permission(1069902)，d…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>飞书文档被分享为「只读、禁止下载/复制」时，文档内图片无法通过任何 OpenAPI 拿到：drive medias batch_get_tmp_download_url 返回空数组、medias/files download 返回 403、export_tasks 返回 no permission(1069902)，drive copy 也 forbidden。连引用的 pdf/pptx 附件同样 403。</p><h2>Root Cause</h2><p>图片/附件存在文档作者个人云盘（box file），API 层面的文件级 ACL 要求下载权限；文档的「禁止下载」分享设置会同时封锁 medias 下载、export、copy 三条路。自建应用 OAuth scope 即使加上 docs:document:export/drive:export:readonly 也无济于事，因为卡的是文件级权限不是 scope。</p><h2>Fix</h2><p>借用户浏览器登录态在页面上下文里取图：复制 Chrome 的 Cookies+Local State 到独立 user-data-dir（新版 Chrome 禁止对默认 profile 开 --remote-debugging-port），启动 chrome --user-data-dir=副本 --remote-debugging-port=9222，让用户在该窗口完成一次 SSO；然后用 CDP 打开文档页，Network.enable 监听 Image 响应 URL + 滚动懒加载容器（feishu 文档滚动容器是 .bear-web-x-container），把 internal-api-drive-stream 的图片 URL 在页面内 fetch 成 base64 保存。30 张图可回收 20+ 张。</p><h2>Verification</h2><p>同一 token：curl medias download=403、export=no permission；CDP 页面内 fetch 同一图片 URL 返回 image/* 且 &gt;5KB 即算成功。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/飞书文档被分享为只读禁止下载复制时文档内图片无法通过任何-openapi.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=飞书文档被分享为「只读、禁止下载/复制」时，文档内图片无法通过任何 OpenAPI 拿到：drive medias batch_get_tmp_download">Find related lessons →</a></p></div>

@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,16 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Tailscale's control plane (CONTROL) began using a JSON file-based persistence layer that became a significant bottleneck as the service scaled. The database fil…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Tailscale's control plane (CONTROL) began using a JSON file-based persistence layer that became a significant bottleneck as the service scaled. The database file reached a peak size of 150MB, with the entire file being rewritten on every data change. Even with optimizations like NVMe drives and splitting data into two halves (important data vs. ephemeral data on tmpfs), performance degraded as the file I/O became the limiting factor.</p><h2>Root Cause</h2><p>The original persistence mechanism was implemented as a shortcut during early development: a Go in-memory data model wrapped in <code>sync.Mutex</code> that would serialize the entire data structure to JSON and write it to disk on every edit. The data model structure followed this pattern:</p><pre><code class="language-go">type AllTheData struct {
+    BigLock sync.Mutex
+    Somethings map[string]Something
+    Widgets map[string]Widget
+    Gadgets map[string]Gadget
+}</code></pre><p>This approach was intended to be temporary but persisted because the team prioritized other work. The fundamental issue was that every write operation required serializing and writing the entire state, not just the changed data.</p><h2>Solution</h2><p>Tailscale migrated to etcd as a "minimally-viable database" for the following reasons:</p><ol><li><strong>KV-store alignment</strong>: The core data model mapped naturally onto a key-value store pattern</li><li><strong>Lock granularity</strong>: Migration broke the <code>BigLock</code> into something more akin to <code>sync.RWMutex</code></li><li><strong>Selective writes</strong>: Only changed data is written, not the entire structure</li><li><strong>Testing benefits</strong>: Being written in Go, etcd can be linked directly into tests without Docker or mocks, allowing tests to run against the same codebase used in production</li><li><strong>Positive validation</strong>: A Jepsen report showed positive results for etcd, and the team had positive experiences from previous use</li></ol><p>The team also evaluated but rejected alternatives:</p><ul><li><strong>SQLite</strong>: Could work but difficult to justify for a growing service</li><li><strong>MySQL/PostgreSQL</strong>: High availability story was concerning; required Docker for testing</li><li><strong>CockroachDB</strong>: Promising but relatively new with risk of vendor lock-in</li></ul><h2>Verification</h2><pre><code class="language-bash">echo "Lesson: An Unlikely Database Migration: From JSON Files to"
+wc -l lessons/contrib/an-unlikely-database-migration.md</code></pre><p><strong>Expected Output:</strong></p><pre><code>Lesson: An Unlikely Database Migration: From JSON Files to
+# (line count)</code></pre><h2>Notes</h2><ul><li>The Tailscale team is intentionally careful not to use etcd features that would be hard to map onto CockroachDB, keeping migration options open for the future</li><li>Tailscale maintains an open source etcd client wrapper at <code>github.com/tailscale/tailetc</code></li><li>The team successfully debugged and fixed a slow key pagination edge case in etcd 3.4 by reading through source code and implementing a fix in one hour</li><li>CONTROL remains a single Go process on a single VM; the control plane design doesn't require high availability typical of web services (short outages only prevent new nodes from logging in; existing networks continue working)</li></ul><h2>References</h2><ul><li>Jepsen report on etcd (referenced as showing positive results)</li><li>CockroachDB (mentioned as alternative database option)</li><li>Perkeep's dockertest (github.com/tailscale/tailetc mentioned as reference in testing approach)</li><li>Tailscale tailetc client: github.com/tailscale/tailetc</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/an-unlikely-database-migration.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=An Unlikely Database Migration: From JSON Files to etcd">Find related lessons →</a></p></div>

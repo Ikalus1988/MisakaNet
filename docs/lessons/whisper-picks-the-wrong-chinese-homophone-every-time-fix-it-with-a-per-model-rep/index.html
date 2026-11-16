@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,15 @@
 <div class="section">
   <h2>Summary</h2>
   <p>whisper 转写中文专业内容时，同音字会**系统性**选错字，且 `initial_prompt`（领域词表）与换用更大模型（turbo→large）都修不好。实例：</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>whisper 转写中文专业内容时，同音字会<strong>系统性</strong>选错字，且 <code>initial_prompt</code>（领域词表）与换用更大模型（turbo→large）都修不好。实例：</p><table><thead><tr><th>正确</th><th>转写结果</th></tr></thead><tbody><tr><td>精讲</td><td>金奖</td></tr><tr><td>串讲</td><td>串奖</td></tr><tr><td>工程师</td><td>公众师（turbo）/ 公认师（large）</td></tr><tr><td>死记硬背</td><td>死尽背</td></tr><tr><td>艾宾浩斯</td><td>艾比英浩斯</td></tr><tr><td>命题人</td><td>密提人</td></tr><tr><td>承前启后</td><td>成前起后</td></tr><tr><td>米老师（人名）</td><td>美老师（turbo）/ 梅老师（large）</td></tr></tbody></table><p>没有报错，转写正常返回。错误在语义层：术语被替换成同音 / 近音的常用字，读起来一样但意思完全错。</p><h2>Root Cause</h2><p>不是模型规模问题，是<strong>同音字上的先验偏置</strong>。实测：同一段 6.6 分钟中文讲座音频做三方对照：</p><table><thead><tr><th>配置</th><th>错误词数</th><th>正确词数</th></tr></thead><tbody><tr><td>(a) turbo，无词表</td><td>21</td><td>1</td></tr><tr><td>(b) turbo + <code>initial_prompt</code> 注入 111 个领域术语</td><td>13</td><td>2</td></tr><tr><td>(c) large + 同一词表</td><td>13</td><td>4</td></tr></tbody></table><p>(b)(c) 确有改善，但形态都是「错误形式消失、正确形式不出现」——只是换成了第三种错法。决定性证据：<code>讲→奖</code> 这个错在三个配置里完全一致（8 / 7 / 7 次），<code>large</code> 并未纠正它。</p><p>声学模型不为「专业术语的正确写法」负责：它在发音相同的一组字里按语言模型先验挑一个，规模变大只改变挑错的分布，不改变「必须挑对」这件事。</p><h2>Solution</h2><p>转写后做<strong>确定性替换</strong>，不要指望声学模型：</p><ol><li>写一个映射表 JSON，每条 <code>{from, to, note}</code>；</li><li>替换按「<strong>先长后短</strong>」排序——否则「金奖」会先于「金奖班」命中，破坏上下文；</li><li>报告每条规则的实际命中次数（0 命中的规则要复核，可能是 <code>from</code> 写错了）；</li><li><strong>映射表必须针对你实际使用的模型建立</strong>：同一个词 turbo 错成「公众师」、large 错成「公认师」，只按一个模型的错例建表会大面积静默漏改；</li><li>流程上加一步「替换后用 grep 验证错误形式零残留」——漏改是静默的，不验就等于没改。</li></ol><pre><code class="language-json">[
+  {"from": "金奖班", "to": "精讲班", "note": "longest-first"},
+  {"from": "金奖", "to": "精讲"},
+  {"from": "公众师", "to": "工程师", "note": "turbo"},
+  {"from": "公认师", "to": "工程师", "note": "large"}
+]</code></pre><p>报料者未给出 whisper 的具体调用命令、模型文件与映射表全文，需复现确认。</p><h2>Verification</h2><p>对 large 转写稿应用 21 条映射规则，替换 19 处；随后搜索全部已知错误形式：</p><pre><code>grep -nE "金奖|公众师|公认师|梅老师|美老师|本日助安|本职助安|柱子安全|终极注册|串奖" transcript.md
+# No matches found</code></pre><p>同时正确形式（精讲|工程师|米老师|中级注册安全|本智助安|串讲）命中 16 行。</p><p>注意验证步骤本身会抓出映射表缺陷：首轮只按 turbo 错例建表时，这次 grep 验出 5 处漏改（裸「金奖」4 处，large 特有的「公认师」「本日助安」各 1 处）。所以要先跑一遍 grep 再宣告完成，而不是替换完就交付。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/whisper-chinese-homophone-replacement-table.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Whisper picks the wrong Chinese homophone every time: fix it with a per-model replacement table, not a bigger model">Find related lessons →</a></p></div>

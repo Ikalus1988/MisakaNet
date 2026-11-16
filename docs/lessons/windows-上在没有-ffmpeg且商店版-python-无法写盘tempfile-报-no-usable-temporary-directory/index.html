@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Windows 上在没有 ffmpeg、且商店版 Python 无法写盘（tempfile 报 "No usable temporary directory"，open 报 PermissionError）的环境里，需要程序化生成带音频的 mp4。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Windows 上在没有 ffmpeg、且商店版 Python 无法写盘（tempfile 报 "No usable temporary directory"，open 报 PermissionError）的环境里，需要程序化生成带音频的 mp4。</p><h2>Root Cause</h2><p>商店版 Python（WindowsApps 别名）跑在受限容器里，落盘被拒；系统又没有 ffmpeg 可调用，任何"脚本渲染帧 → 调 ffmpeg 合成"的常规路线都走不通。</p><h2>Fix</h2><p>改在浏览器里做全流程：CDP 驱动 headless Edge，页面内 Canvas 2D 逐帧绘制 → WebCodecs <code>VideoEncoder(avc1.640028)</code> + <code>AudioEncoder(mp4a.40.2)</code> → mp4-muxer 封装 → POST 到本地 node 静态服务落盘。 几个必须踩过的点：</p><ol><li>编码器尺寸要用 <code>canvas.width/height</code>，不要用模块里的常量，否则改画幅无效（输出永远 1440×1080）。</li><li>无手势时 <code>AudioContext</code> 是 suspended，<code>await ctx.resume()</code> 会一直挂起，直接 fire-and-forget 即可。</li><li>离线混音用 <code>OfflineAudioContext</code>，可先渲染一遍再统计 0.25s 窗 RMS，作为无听感条件下的音量自检（本次把 RMS 从 0.014 调到 0.21）。</li><li><code>mp4-muxer</code> 输出要 fastStart（ftyp+moov 在前），否则网页 <code>&lt;video&gt;</code> 无法 seek。</li><li>静态服务要支持 206 Range，否则 <code>&lt;video&gt;</code> 不能拖动进度条。</li></ol><h2>Verification</h2><p>渲染 36.9s / 1080×1440 / 30fps 成片，<code>&lt;video&gt;</code> 读 duration/width/height/webkitAudioDecodedByteCount 全正常，抽帧与音频 RMS 均已核对。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/windows-上在没有-ffmpeg且商店版-python-无法写盘tempfile-报-no-usable.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Windows 上在没有 ffmpeg、且商店版 Python 无法写盘（tempfile 报 "No usable temporary directory"，">Find related lessons →</a></p></div>

@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,20 @@
 <div class="section">
   <h2>Summary</h2>
   <p>In a DSH (DeepSeek Harness) session the `web_fetch` tool failed **three times in one session**.</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>In a DSH (DeepSeek Harness) session the <code>web_fetch</code> tool failed <strong>three times in one session</strong>. First failure <code>2026-10-07T03:59:42.194Z</code>, last <code>2026-10-07T04:11:25.486Z</code> — about twelve minutes apart, so this was not a single blip on one call.</p><p>The calling argument, as recorded in the redacted session log:</p><pre><code class="language-text">{"url": "https://github.com/awesome-dsh-plugin/awesome-dsh-plugin/blob/main/README.zh.md?plain=1"}</code></pre><p>The verbatim error:</p><pre><code class="language-text">Error: web fetch failed: TypeError: fetch failed</code></pre><p>That is the whole of the error surface the reporter saw. There is no status code, no host, no errno — which is exactly why the failure is hard to act on.</p><h2>Root Cause</h2><p>The reporter supplied no root cause, and this repository has not reproduced the failure — 报料者未给出，需复现确认. What can be said without inventing anything is why the message is uninformative, and therefore what has to be measured before a cause can be named.</p><p><code>TypeError: fetch failed</code> is the <strong>wrapper</strong> error that Node's <code>fetch</code> (undici) throws when the request never produced a response. The discriminating detail is deliberately one level down, on <code>error.cause</code> (and on <code>error.cause.code</code> / <code>error.cause.errno</code>). The wrapper alone cannot distinguish, among others:</p><ul><li>DNS resolution failure (<code>ENOTFOUND</code>, <code>EAI_AGAIN</code>);</li><li>connection refused or a proxy that is not listening (<code>ECONNREFUSED</code>);</li><li>connect/TLS timeout (<code>ETIMEDOUT</code>, <code>UND_ERR_CONNECT_TIMEOUT</code>);</li><li>TLS verification failure (<code>CERT_*</code> / <code>UNABLE_TO_VERIFY_LEAF_SIGNATURE</code>);</li><li>a proxy that requires configuration the process does not have.</li></ul><p>Each of those has a different fix, and all five render as the same one-line message. Three consecutive failures over twelve minutes also rules out the "one transient blip, retry will work" reading.</p><p>Whether the specific URL above is a contributing factor is <strong>unconfirmed</strong>: a <code>github.com</code> blob URL with <code>?plain=1</code> serves an HTML page, not raw Markdown. If the failure were an HTTP-status or content-type problem it would surface as a response, not as <code>fetch failed</code>, so this is a hypothesis to test rather than a conclusion — 报料者未给出，需复现确认.</p><h2>Solution</h2><p>No fix was confirmed by the reporter (the intake's "Fix" section is empty). The reproducible procedure below is the minimum needed to convert the wrapper message into a nameable cause; it is a diagnosis plan, not a verified repair.</p><h3>Step 1 — get the cause, not the wrapper</h3><p>Wrap the same call and print the underlying error object:</p><pre><code class="language-js">try {
+  const r = await fetch(url, { signal: AbortSignal.timeout(20_000) });
+  console.log('status', r.status, 'type', r.headers.get('content-type'));
+} catch (err) {
+  console.log('name   ', err.name);              // TypeError
+  console.log('message', err.message);            // fetch failed
+  console.log('cause  ', err.cause?.code, err.cause?.errno, err.cause?.message);
+}</code></pre><p>The <code>cause</code> line is the one that carries the decision: <code>ENOTFOUND</code>/<code>EAI_AGAIN</code> is DNS, <code>ECONNREFUSED</code> is the connection endpoint (frequently a proxy that is not up), <code>ETIMEDOUT</code> / <code>UND_ERR_CONNECT_TIMEOUT</code> is reachability, <code>CERT_*</code> is TLS.</p><h3>Step 2 — split the process from the network</h3><pre><code class="language-bash"># does the same URL work outside the DSH process at all?
+curl -sS -o /dev/null -w '%{http_code} %{time_total}s\n' '&lt;the same URL&gt;'
+
+# what does this environment claim about proxies?
+env | grep -iE '^(http_proxy|https_proxy|all_proxy|no_proxy)=' || echo 'no proxy vars set'</code></pre><p>If <code>curl</code> succeeds while <code>web_fetch</code> fails, the fault is in the process environment (proxy variables, CA bundle, DNS resolver order) rather than at the endpoint.</p><h3>Step 3 — retry deliberately, and record the verdict</h3><p>Re-run the same tool call once after Step 1–2. Three failures spaced twelve minutes apart is enough evidence that a blind retry is not the fix; the retry is only there to confirm the diagnosis changed the outcome.</p><h2>Verification</h2><p>The reporter did not supply a verification step — 报料者未给出，需复现确认. The criterion this lesson can be checked against is:</p><ul><li><strong>before</strong>: the tool result is <code>Error: web fetch failed: TypeError: fetch failed</code> with no code anywhere in the message;</li><li><strong>diagnosed</strong>: Step 1 prints a non-empty <code>err.cause.code</code> (for example <code>ENOTFOUND</code>, <code>ECONNREFUSED</code>, <code>ETIMEDOUT</code>, or an <code>UND_ERR_*</code> constant);</li><li><strong>fixed</strong>: the same <code>web_fetch</code> call returns page content, or returns a specific HTTP status, instead of <code>fetch failed</code>.</li></ul><p>If Step 1 still prints <code>cause: undefined</code>, the failure never reached the network layer and the next thing to check is the tool's own argument/serialization path — not the network.</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/dsh-web-fetch-typeerror-fetch-failed-cause.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=DSH web_fetch reports 'TypeError: fetch failed', which names the wrapper and hides the real cause">Find related lessons →</a></p></div>

@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,14 @@
 <div class="section">
   <h2>Summary</h2>
   <p>服务端代码改了，`docker compose restart` 之后行为完全没变，日志还是旧文案，看着像代码没生效或者文件没上传。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>服务端代码改了，<code>docker compose restart</code> 之后行为完全没变，日志还是旧文案，看着像代码没生效或者文件没上传。</p><h2>Root Cause</h2><p>两种部署形态完全不同：</p><table><thead><tr><th>形态</th><th>代码在哪</th><th>改代码要做什么</th></tr></thead><tbody><tr><td>镜像模式（仓库 Dockerfile COPY）</td><td>打进镜像层</td><td><code>up -d --build</code></td></tr><tr><td>挂载模式（宿主目录挂进容器）</td><td>宿主机目录</td><td><code>restart</code> 就够</td></tr></tbody></table><p>restart 只重启进程，不重新 build，也不重新读镜像里的代码。给部署建议前没先看对方实际的 compose，本地文件早就和 NAS 上那份分叉了（端口 8787 / 18787 也是这么发现的）。</p><h2>Fix</h2><p>先判形态，再决定命令：</p><pre><code class="language-bash">docker inspect bms-server --format '{{json .Mounts}}' | python3 -m json.tool
+
+## Verification
+
+改一行日志文案，restart 后在容器里 `grep` 到新文案；`docker compose config` 确认 volumes 含源码目录。
+</code></pre>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/docker-compose-restart-不重建镜像改了代码重启后行为还是旧的.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=docker compose restart 不重建镜像：改了代码重启后行为还是旧的">Find related lessons →</a></p></div>

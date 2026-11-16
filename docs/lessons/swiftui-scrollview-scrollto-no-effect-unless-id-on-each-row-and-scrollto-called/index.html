@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,57 @@
 <div class="section">
   <h2>Summary</h2>
   <p>In SwiftUI, `ScrollViewReader.scrollTo(_:anchor:)` appears to do nothing — the scroll position never moves. Happens especially in macOS sidebar-detail `HSplitVi…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>In SwiftUI, <code>ScrollViewReader.scrollTo(_:anchor:)</code> appears to do nothing — the scroll position never moves. Happens especially in macOS sidebar-detail <code>HSplitView</code> layouts with a list of "records" in the left pane where you want the detail pane to scroll to the matching record's section in a long form.</p><h2>Root Cause</h2><p>Three independent requirements that are easy to miss:</p><ol><li><strong><code>.id()</code> is mandatory on every scrollable child.</strong> <code>ScrollViewReader.scrollTo</code> works by matching the <code>id</code> value to a child view's <code>id</code> modifier. Without it, the scroll view has nothing to navigate to and silently no-ops.</li><li><strong><code>scrollTo</code> must be triggered outside the body/ForEach.</strong> Calling <code>scrollTo</code> directly in the view body (inside <code>ScrollViewReader { ... }</code>) is a side-effect during view evaluation — SwiftUI ignores it. You must call it from <code>.onChange(of:)</code>, <code>.onAppear</code>, a button action, or a task modifier.</li><li><strong><code>LazyVStack</code> / <code>LazyHStack</code> has known issues.</strong> Lazy containers may not report correct content offsets, causing <code>scrollTo</code> to overshoot, undershoot, or do nothing. Wrap in <code>ScrollViewReader</code> — if still flaky, use <code>ScrollView(.vertical, showsIndicators: true)</code> with a non-lazy <code>VStack</code> (acceptable for ~100 sections; for 1000+ rows, consider <code>ScrollViewReader</code> + explicit offset computation via <code>GeometryReader</code>).</li></ol><p>Also: <code>@FocusState</code> can fight with <code>scrollTo</code> on macOS — if both set focus and scroll, the focus binding may steal the scroll on the next layout pass.</p><h2>Solution</h2><pre><code class="language-swift">struct RecordDetailForm: View {
+    let sections: [RecordSection]   // each has .id: UUID
+    @Binding var selectedSectionID: UUID?
+    @State private var lastScrolledID: UUID?
+
+    var body: some View {
+        ScrollViewReader { proxy in
+            ScrollView(.vertical, showsIndicators: true) {
+                // NOT LazyVStack — proxy.scrollTo works reliably with VStack
+                VStack(alignment: .leading, spacing: 20) {
+                    ForEach(sections) { section in
+                        SectionView(section: section)
+                            .id(section.id)   // ← MANDATORY: scrollTo finds this
+                    }
+                }
+                .padding()
+            }
+            // Call scrollTo from onChange, never from inside body/ForEach
+            .onChange(of: selectedSectionID) { oldValue, newValue in
+                guard let id = newValue, id != lastScrolledID else { return }
+                lastScrolledID = id
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    proxy.scrollTo(id, anchor: .top)
+                }
+            }
+            .onAppear {
+                // Scroll to initial selection on first load
+                if let id = selectedSectionID {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                        proxy.scrollTo(id, anchor: .top)
+                    }
+                }
+            }
+        }
+    }
+}</code></pre><p>When you also need keyboard focus on the target section (e.g. to auto-focus a text field), combine <code>scrollTo</code> with <code>@FocusState</code>:</p><pre><code class="language-swift">@FocusState private var focusedField: FieldAnchor?
+enum FieldAnchor: Hashable { case section(UUID) }
+
+// In onChange:
+.onChange(of: selectedSectionID) { _, newValue in
+    guard let id = newValue else { return }
+    withAnimation {
+        proxy.scrollTo(id, anchor: .top)
+    }
+    // Delay focus to let scroll settle
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+        focusedField = .section(id)
+    }
+}</code></pre><h2>Verification</h2><ol><li>Each <code>ForEach</code> child has <code>.id(section.id)</code> — the id is stable across renames and not derived from <code>\.self</code> or array index.</li><li><code>scrollTo</code> is called inside <code>.onChange(of: selectedSectionID)</code> — NOT in the ForEach body, NOT in <code>.task</code>, NOT during view init.</li><li>Uses <code>VStack</code> (not <code>LazyVStack</code>) for reliable scroll offset — or verify LazyVStack scroll accuracy on your platform if you need lazy rendering.</li><li><code>lastScrolledID</code> guard prevents re-scrolling to the same section on unrelated state changes.</li><li>On macOS <code>HSplitView</code>: click a row in the sidebar → detail pane scrolls to that section's header within 0.5s.</li></ol>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/swiftui-scrollview-scrollto-doesnt-scroll.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=SwiftUI ScrollView scrollTo no effect unless .id() on each row and scrollTo called in onChange">Find related lessons →</a></p></div>

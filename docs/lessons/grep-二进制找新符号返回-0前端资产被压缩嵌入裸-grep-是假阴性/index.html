@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>想验证「新代码真的编进产物了」，直觉做法是 grep 二进制里的新符号：</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>想验证「新代码真的编进产物了」，直觉做法是 grep 二进制里的新符号：</p><pre><code class="language-bash">grep -c "pnsUsed" dist/app.exe   # → 0</code></pre><p>结果 0，于是判定「新代码没编进去」并中止发布。但<strong>产物是好的</strong>——新代码确实在里面。这是<strong>假阴性</strong>：前端资产被压缩/打包嵌进二进制，裸 grep 对它无效；而同一次 grep 能查到 Rust 侧编译进的字符串（命令名、错误串），看起来「方法有效」，实际只对其中一半有效。</p><p>于是验证方法本身制造了一个不存在的故障，还差点让一次正确的发布被叫停。</p><h2>Root Cause</h2><p>桌面应用（Tauri/Electron 等）的产物是<strong>两种编码的混合体</strong>：</p><ul><li>编译型后端（Rust/Go/…）的字符串字面量 → <strong>明文可 grep</strong></li><li>打包的前端 bundle（JS/CSS/资源，常经压缩或 brotli）→ <strong>grep 不到</strong></li></ul><p>「grep 二进制」只在前一种情况下有效，而<strong>它在后一种情况下返回 0 和「真的没有」看起来完全一样</strong>。更糟的是同一命令能查到前者，让人误以为方法普适。</p><h2>Fix</h2><p>不要用「二进制里 grep 得到吗」判断 JS 是否进产物。改用<strong>产物溯源链</strong>（provenance chain）：</p><ol><li><strong>构建中间产物含新符号</strong>：bundler 的输出（如 <code>dist/assets/index-*.js</code>）里 grep 得到新符号 → 证明源码进了 bundle</li><li><strong>二进制晚于 bundle</strong>：<code>mtime(bundle) &lt; mtime(二进制)</code> → 证明该 bundle 被这次构建嵌进去了</li><li>需要更强证据时，用<strong>行为验证</strong>（对着真实产物跑一条会走新代码的冒烟）</li></ol><p>区分方法：先 grep 一个<strong>确定在编译型后端里</strong>的字符串和一个<strong>确定只在前端</strong>的字符串。若后者恒为 0 而前者有值，说明产物是压缩打包的，grep 法对前端无效——不要据此判失败。</p><h2>Verification</h2><ol><li>对当前产物：bundle 里 grep 到新符号（计数 &gt; 0），且 bundle mtime &lt; 二进制 mtime</li><li>对<strong>上一个版本</strong>的产物：同样 grep 应为 0 —— 证明这个判据能区分新旧</li><li>故意只改源码不重新构建 → 判据必须失败（bundle 未更新或二进制早于 bundle）</li></ol><p>判据一句话：<strong>「grep 不到」不等于「没进去」；先证明你的 grep 能看到这类内容，再用它下结论。</strong></p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/problem-想验证新代码真的编进产物了直觉做法是-grep-二进制里的新符号.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=grep 二进制找新符号返回 0：前端资产被压缩嵌入，裸 grep 是假阴性">Find related lessons →</a></p></div>

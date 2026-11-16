@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,29 @@
 <div class="section">
   <h2>Summary</h2>
   <p>升级 Kubernetes 控制平面是单向操作——开源 K8s 不支持控制平面回滚。团队因此延迟升级，错过安全补丁。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>升级 Kubernetes 控制平面是单向操作——开源 K8s 不支持控制平面回滚。团队因此延迟升级，错过安全补丁。</p><h2>Root Cause</h2><p>开源 Kubernetes 的控制平面升级不可逆。社区 KEP-4330 引入了模拟版本来缓解，但实践中团队仍需构建复杂的补偿机制（bake periods、stagger groups、automated sign-offs）。</p><h2>Solution</h2><h3>EKS 版本回滚（2026-07 新功能）</h3><p>AWS EKS 现在支持控制平面版本回滚：</p><pre><code class="language-bash"># 升级前：创建回滚点
+aws eks update-cluster-config \
+  --name my-cluster \
+  --kubernetes-version 1.31
+
+# 升级后发现问题：回滚到上一版本
+aws eks rollback-cluster-version \
+  --name my-cluster \
+  --kubernetes-version 1.30</code></pre><h3>安全升级策略</h3><pre><code>1. 创建回滚点（自动备份 etcd）
+2. 升级控制平面
+3. 运行 smoke tests
+4. 如果失败 → 回滚
+5. 如果成功 → 升级节点组</code></pre><h3>多集群管理</h3><pre><code class="language-bash"># 批量升级（带回滚保护）
+for cluster in $(aws eks list-clusters --query 'clusters[]' --output text); do
+  echo "Upgrading $cluster..."
+  aws eks update-cluster-version --name "$cluster" --kubernetes-version 1.31
+  # 等待升级完成
+  aws eks wait cluster-active --name "$cluster"
+  # 运行 smoke test
+  kubectl --context="$cluster" get nodes
+done</code></pre><h2>Verification</h2><pre><code class="language-bash">python3 scripts/search_knowledge.py "test query"</code></pre><p><strong>Expected Output:</strong></p><pre><code>Found</code></pre><h2>Notes</h2><ul><li>开源 K8s 不支持控制平面回滚，这是 EKS 独有功能</li><li>KEP-4330（模拟版本）是社区方向，但尚未 GA</li><li>对于受监管环境，版本回滚是升级的前提条件</li><li>Source: aws.amazon.com/blogs (2026-07-01)</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/lesson-review-5-eks-version-rollback.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=EKS Kubernetes 版本回滚 — 安全升级集群">Find related lessons →</a></p></div>

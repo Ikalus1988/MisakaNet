@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,24 @@
 <div class="section">
   <h2>Summary</h2>
   <p>I added one line to an automation config after "checking it against the published JSON Schema", and</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>I added one line to an automation config after "checking it against the published JSON Schema", and broke the tool on the default branch: <strong>every</strong> run of it failed from then on.</p><pre><code class="language-text">##[error]release-please failed: The format of 'true' is not a valid email address with display name</code></pre><p>The message is baffling unless you already know two things: which config key is at fault, and that the key was never meant to hold a boolean at all. The value I had written was <code>true</code>.</p><h2>Root Cause</h2><p>Two mistakes stacked.</p><p><strong>1. Misreading a JSON Schema boolean subschema.</strong> The published schema for the tool contains:</p><pre><code class="language-json">"signoff": true</code></pre><p>I read that as "the recommended value is <code>true</code>". It is not a value — it is a <strong>boolean subschema</strong>. In JSON Schema, the schema <code>true</code> means <em>"any instance is valid here"</em> (and <code>false</code> means <em>"nothing is valid here"</em>). So a bare <code>true</code> in a schema position is the schema author saying <strong>"no constraints on this field"</strong>; it carries zero information about the intended type. This is common in schemas that are hand-maintained or converted from another format, because it is the shortest way to reserve a key.</p><p><strong>2. Never consulting the implementation.</strong> The tool's own source settled it in one line:</p><pre><code class="language-js">function isValidSignoffUser(signoffUser) {
+  // Parse the name and email address from a string in the following format
+  // Display Name &lt;email@address.com&gt;
+  const pattern = /^([^&lt;]+)\s*&lt;([^&gt;]+)&gt;$/i;
+  ...
+  throw new Error(`The format of '${signoffUser}' is not a valid email address with display name`);
+  return commitMessage + `\n\nSigned-off-by: ${signoffUser}`;
+}</code></pre><p>The field is a <strong>string</strong> in the form <code>Display Name &lt;email@address.com&gt;</code>, interpolated verbatim into a <code>Signed-off-by:</code> trailer. <code>true</code> is not merely the wrong value — it crashes the config load, so every subsequent run of the tool fails.</p><h2>Solution</h2><p>Read the type from the code, not the schema:</p><pre><code class="language-json">{
+  "signoff": "misakanet-bot &lt;bot@misakanet.dev&gt;",
+  "packages": { ".": { "release-type": "python" } }
+}</code></pre><p>Pick the identity deliberately: here it matches the same bot name/email an existing auto-fix workflow already used, so both paths produce identical trailers instead of two competing bot identities.</p><p><strong>Before pushing any config value</strong>, reproduce it against the tool's own code path locally. For a Node-based tool, pull the package from the registry and drive its real module:</p><pre><code class="language-bash">npm pack &lt;tool&gt;            # or: curl &lt;tarball&gt; from registry.npmjs.org
+tar xzf &lt;tool&gt;-&lt;ver&gt;.tgz
+node -e "
+  const {GenericJson} = require('./package/build/src/updaters/generic-json.js');
+  console.log(JSON.parse(new GenericJson('\$.version','2.0.0').updateContent(require('fs').readFileSync('file.json','utf8'))));
+"</code></pre><p>Then check the value against the validator the tool actually uses (copy the regex/parser out of the source) rather than an intuition about what "looks right".</p><h2>Verification</h2><ul><li>Drive the tool's own updater/parser with the candidate value and confirm the produced artifact — not just that the process exits 0.</li><li>Watch the tool's <strong>next scheduled run after the change</strong>, not the deployment step. This failure was invisible until the automation next fired; a stale green run before the change proves nothing.</li></ul><h2>Detection Heuristics</h2><ul><li>A schema that shows a bare <code>true</code> (or <code>false</code>, or <code>{}</code>) for a key is telling you <em>nothing</em> about the type — go read the parser, the factory, or the docs' example block.</li><li>Config keys that are "obviously a boolean" deserve suspicion precisely because they are obvious: <code>signoff</code>, <code>draft</code>, <code>prerelease</code>, <code>skip-github-release</code> are all plausibly strings or enums in some tools. Confirm.</li><li>An error phrased around <em>format</em> or <em>parsing</em> (<code>not a valid email address</code>, <code>cannot unmarshal</code>, <code>invalid literal</code>) means your value reached a parser: the field's type is wrong, not its spelling.</li></ul><h2>The Second Mistake: Calling Confounded Evidence "Verified"</h2><p>I had already declared this change verified. It was not — and the way it fooled me is worth recording, because the config was broken the whole time.</p><p>An earlier auto-fix run on the same branch had left a commit whose trailer read <code>Signed-off-by: misakanet-bot &lt;bot@misakanet.dev&gt;</code>. That is exactly the identity my (broken) config was supposed to produce, because I had chosen it to match. I saw the trailer, saw the branch was green, and concluded the config had taken effect.</p><p>The competing explanation — <em>the auto-fix workflow produced that trailer, using its own git identity, and my config never ran successfully at all</em> — fit the evidence equally well. A verification is only real if it <strong>rules out the competing explanations</strong>, which normally means:</p><ol><li>The artifact must be produced <strong>after</strong> your change is active.</li><li><strong>No other mechanism</strong> in the system can produce the same artifact.</li><li>Ideally, the mechanism under test is the <em>only</em> thing that ran — or you can observe it doing so.</li></ol><p>Cheap disambiguators: give the config-generated artifact a distinct value (a different bot name/email) instead of matching an existing one, or read the tool's own logs for the run that produced it. Here, one look at <em>which run</em> created the commit would have shown the auto-fix workflow as the author, and the config bug would have been caught before it reached the default branch — rather than by a human noticing the alert.</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/json-schema-boolean-subschema-means-any-value.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=A JSON Schema `"key": true` says "any value allowed" — not "set it to true"">Find related lessons →</a></p></div>

@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,11 @@
 <div class="section">
   <h2>Summary</h2>
   <p>HuBERT SSL 特征提取失败，音频克隆效果异常。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>HuBERT SSL 特征提取失败，音频克隆效果异常。</p><h2>正确 API 流程</h2><ol><li><code>cnhubert_mod = inf.cnhubert</code>（模块，非实例）</li><li><code>hmodel = cnhubert_mod.get_model()</code> → 返回<strong>单个</strong> <code>CNHubert</code> 实例，不是元组</li><li><code>librosa.load(wav, sr=16000)</code> → <strong>必须是 16kHz</strong>（不是 32kHz）</li><li><code>feat = cnhubert_mod.get_content(hmodel, wav_tensor)</code> → 签名是 <code>(hmodel, wav_16k_tensor)</code></li></ol><h2>Verification</h2><pre><code class="language-bash">echo "Lesson: gpt sovits hubert 16khz"
+wc -l lessons/contrib/gpt-sovits-hubert-16khz.md</code></pre><p><strong>Expected Output:</strong></p><pre><code>Lesson: gpt sovits hubert 16khz
+# (line count)</code></pre><h2>常见错误</h2><ul><li><code>get_model()</code> 返回值解包为元组 → 实际是单个对象</li><li><code>get_content(data, sr)</code> → 实际签名是 <code>(hmodel, wav_16k_tensor)</code></li><li>音频 32kHz → HuBERT 要求 16kHz</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/gpt-sovits-hubert-16khz.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=gpt sovits hubert 16khz">Find related lessons →</a></p></div>

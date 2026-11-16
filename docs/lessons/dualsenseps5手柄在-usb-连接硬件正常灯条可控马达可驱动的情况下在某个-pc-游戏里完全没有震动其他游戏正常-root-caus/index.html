@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>DualSense（PS5）手柄在 USB 连接、硬件正常（灯条可控、马达可驱动）的情况下，在某个 PC 游戏里完全没有震动；其他游戏正常。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>DualSense（PS5）手柄在 USB 连接、硬件正常（灯条可控、马达可驱动）的情况下，在某个 PC 游戏里完全没有震动；其他游戏正常。</p><h2>Root Cause</h2><p>Windows 给该手柄的<strong>扬声器音频端点</strong>开启了音频增强 DSP（注册表 <code>MMDevices\Audio\Render\{endpoint}\Properties</code> 中 <code>{1da5d803-d492-4edd-8c23-e0c0ffee7f0e},3</code> 位标志 = 51 / 0x33，即"扬声器填充"+"音量均衡"同时启用，且"禁用所有增强功能"未勾选）。游戏自带 Sony 官方 <code>libScePad.dll</code> 走手柄音频通道输出触觉流，音频引擎在增强 DSP 链路上把触觉数据流破坏掉，结果就是"能响不能震"。</p><h2>Fix</h2><ol><li>打开 声音设置 → 该手柄的"扬声器"属性 → 增强（Enhancements）→ 勾选 <strong>"禁用所有增强功能"</strong>；</li><li>或直接改注册表把 <code>...,3</code> 位标志清掉（改前备份该键值）；</li><li>一并检查端点是否被误设成默认播放设备（见"默认设备不是该端点则 APO/触觉流不加载"那条）。</li></ol><h2>Verification</h2><ul><li>直连 HID 发送 USB 输出报告 0x02（48 字节，flags=FF F7，右马达 byte3、左马达 byte4，灯条 RGB byte44-46），灯条变色且马达可感知 → 证明硬件链路正常；</li><li>关闭音频增强后回到游戏，震动恢复。</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/dualsenseps5手柄在-usb-连接硬件正常灯条可控马达可驱动的情况下在某个-pc.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=DualSense（PS5）手柄在 USB 连接、硬件正常（灯条可控、马达可驱动）的情况下，在某个 PC 游戏里完全没有震动；其他游戏正常。 Root Caus">Find related lessons →</a></p></div>

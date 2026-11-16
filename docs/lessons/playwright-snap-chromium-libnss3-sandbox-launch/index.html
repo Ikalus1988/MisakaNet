@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,47 @@
 <div class="section">
   <h2>Summary</h2>
   <p>在受限容器/sandbox 里跑 `playwright` 启动 chromium 会失败，至少撞到下面其中一种：</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>在受限容器/sandbox 里跑 <code>playwright</code> 启动 chromium 会失败，至少撞到下面其中一种：</p><ol><li><code>snap-confine is packaged without necessary permissions (cap_dac_override)</code> —— snap 版 chromium 跑不起来。</li><li><code>error while loading shared libraries: libnspr4.so: cannot open shared object file</code> —— 系统缺 NSPR/NSS 库。</li><li><code>Executable doesn't exist at .../chromium_headless_shell-1234/chrome-linux/headless_shell</code> —— <code>playwright-core</code> 缓存版本与期望 build 不匹配。</li><li><code>chrome_crashpad_handler: --database is required</code> —— crashpad handler 起不来。</li></ol><h2>Error</h2><pre><code class="language-text">playwright._impl._api_types.Error: BrowserType.launch: Failed to load libnss3.so</code></pre><p>或：</p><pre><code class="language-text">/snap/chromium/&lt;ver&gt;/usr/lib/x86_64-linux-gnu/chromium.chrome:
+  error while loading shared libraries: libnspr4.so:
+  cannot open shared object file: No such file or directory</code></pre><p>或：</p><pre><code class="language-text">chrome_crashpad_handler: --database is required</code></pre><h2>What was tried</h2><ul><li>直接 <code>launch()</code> snap 版 chromium → snap-confine 权限被拒。</li><li>装最新版 <code>playwright-core</code> → 缓存版本仍不匹配。</li><li><code>apt-get install libnss3 libnspr4</code> → 受限容器里 apt 不可用或仓库不可达。</li></ul><h2>Solution</h2><p><strong>用 playwright 缓存里的 <code>chrome-headless-shell</code> 二进制 + <code>executablePath</code> 直指 + 注入 <code>LD_LIBRARY_PATH</code>：</strong></p><pre><code class="language-javascript">// 1. 找 playwright 缓存里的 headless shell
+const fs = require('node:fs');
+const path = require('node:path');
+
+const cacheRoot = path.join(
+  process.env.HOME || '/root',
+  '.cache/ms-playwright'
+);
+const dirs = fs.readdirSync(cacheRoot)
+  .filter(d =&gt; d.startsWith('chromium_headless_shell-'));
+const shellPath = path.join(
+  cacheRoot,
+  dirs[0],
+  'chrome-linux/headless_shell'
+);
+
+// 2. 用 snap chromium 包自带的 lib 目录（含 libnspr4/libnss3/libsmime3/libssl3）
+const snapLib = '/snap/chromium/current/usr/lib/x86_64-linux-gnu';
+
+// 3. 启动参数加 --no-sandbox --disable-dev-shm-usage --disable-crash-reporter
+//    （否则 crashpad handler 起不来）
+const { chromium } = require('playwright');
+const browser = await chromium.launch({
+  executablePath: shellPath,
+  env: {
+    ...process.env,
+    LD_LIBRARY_PATH: `${snapLib}:${process.env.LD_LIBRARY_PATH || ''}`,
+  },
+  args: [
+    '--no-sandbox',
+    '--disable-dev-shm-usage',
+    '--disable-crash-reporter',
+  ],
+});</code></pre><p><strong>关键点：</strong></p><ul><li><code>executablePath</code> 直指缓存里的 <code>headless_shell</code>，不依赖系统 chromium 包。</li><li><code>LD_LIBRARY_PATH</code> 指向 <strong>snap chromium 包内置的 lib 目录</strong>（不是系统目录），绕过容器里装不了 apt 的限制。</li><li><code>--no-sandbox</code> + <code>--disable-dev-shm-usage</code> + <code>--disable-crash-reporter</code> 三件套：sandbox 跑不了 → 关 sandbox；<code>/dev/shm</code> 太小 → 不用它；crashpad 数据库要求 → 关 reporter。</li></ul><h2>Verification</h2><pre><code class="language-javascript">const page = await browser.newPage();
+await page.goto('https://example.com');
+console.log(await page.title());  // 必须打印 "Example Domain"
+await browser.close();</code></pre><p><strong>Expected Output:</strong> <code>Example Domain</code>，且无 snap-confine / libnspr4 / crashpad 错误。</p><h2>Related经验</h2><ul><li>与 <a href="/lessons/openclaw-playwright-wsl-libnss3-libnspr4-snap-chromium/"><code>openclaw-playwright-wsl-libnss3-libnspr4-snap-chromium</code></a> 互补：那条是 WSL2 场景（apt 可用），这条是容器/sandbox 场景（apt 不可用，必须用 snap 内置 lib）。</li><li><code>LD_LIBRARY_PATH</code> 优先级低于 <code>RPATH</code>，但 snap 包通常没有 <code>RPATH</code> 指向自己，所以环境变量有效。</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/playwright-snap-chromium-libnss3-sandbox-launch.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Playwright 在受限容器/sandbox 启动 snap chromium：用 chrome-headless-shell + LD_LIBRARY_PATH 绕开 snap-confine">Find related lessons →</a></p></div>

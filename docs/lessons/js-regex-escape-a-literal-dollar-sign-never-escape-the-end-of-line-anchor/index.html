@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,23 @@
 <div class="section">
   <h2>Summary</h2>
   <p>A field-name classifier built out of JavaScript regular expressions silently returned the</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>A field-name classifier built out of JavaScript regular expressions silently returned the <strong>wrong category</strong> for two whole families of real field names, with no exception and no log line. Fields beginning with a literal <code>$</code> (<code>$DCS_C_SSO</code>) and fields ending in <code>_TIM</code> (<code>ID1_1ST_TIM</code>) never matched the branches written for them and fell through to the default return value, so callers saw a plausible-looking but wrong class:</p><pre><code>expected 'high' to be 'medium'
+expected 'medium' to be 'low'</code></pre><p>Unit tests passed the whole time, because their synthetic field names did not contain the two characters that mattered. The gap only appeared when the classifier was run over a real corpus of field names and the priority distribution was compared against a manual sample.</p><h2>Root Cause</h2><p>In JavaScript a bare <code>$</code> is not a character — it is a <strong>zero-width end-of-input assertion</strong> (and, with the <code>m</code> flag, an end-of-line assertion). A literal dollar sign must be escaped as <code>\$</code>. The classifier got that rule backwards in both directions:</p><pre><code class="language-js">// WRONG — each rule is dead for every real input
+/^$DCS_C_(SSO|CSO)/   // `$` left bare in the middle: `^` then END-OF-INPUT then `DCS_C`,
+                      // which can never match -&gt; `$DCS_C_SSO` is never classified
+/_TIM\$/              // the trailing anchor was escaped into a literal: this wants the
+                      // text `_TIM$`, but the input ends at `_TIM` -&gt; never matches</code></pre><ul><li><code>^$DCS_C_(SSO|CSO)</code> — <code>^</code> asserts start, <code>$</code> asserts end, and then <code>DCS_C</code> is expected <em>after</em> the end of input. The pattern matches nothing, ever.</li><li><code>_TIM\$</code> — <code>\$</code> is a literal <code>$</code>, so the regex looks for the five characters <code>_TIM$</code> at the end of the string. The field ends in <code>_TIM</code> with no dollar, so it never matches.</li></ul><p>A third shape appears wherever a literal dollar sits after another escaped metacharacter, e.g. <code>\.$PAYLOAD</code>: the <code>.</code> is escaped correctly, so the author assumes no other escaping is needed — but <code>$PAYLOAD</code> still needs <code>\$PAYLOAD</code>.</p><p>The default branch made the failure invisible. <code>classify()</code> returned a real business class (<code>medium</code>) for input it did not recognize, so a broken rule always presented as "classified into the wrong bucket" and never as "no rule matched".</p><h2>Fix</h2><p>Two rules, applied by where the <code>$</code> sits:</p><ol><li><strong>A <code>$</code> in the middle of a token is a literal — write <code>\$</code></strong> (<code>$SBR</code>, <code>$DCS_C</code>, <code>\.$PAYLOAD</code>). <strong>A <code>$</code> at the end of the pattern is the end-of-input anchor — do not escape it</strong> (<code>_TIM$</code>, <code>_STAT$</code>).</li></ol><pre><code class="language-js">   // RIGHT
+   /^\$DCS_C_(SSO|CSO)/   // `\$` = literal dollar at the start of the field
+   /_TIM$/                // `$`  = the field ends there</code></pre><ol><li><strong>Never let the default branch return a business class.</strong> An unrecognized shape must be explicit, so a broken rule reads as "not matched" instead of "matched something else".</li></ol><pre><code class="language-js">   function classify(field) {
+     if (/^\$DCS_C_(SSO|CSO)/.test(field)) return 'high';
+     if (/_TIM$/.test(field)) return 'low';
+     return 'unknown'; // NOT 'medium': an unknown shape must not masquerade as a real class
+   }</code></pre><p>If <code>unknown</code> is unacceptable downstream, keep the fallback but make it observable — emit a counter or a log line for every default hit, so a silent rule regression is visible.</p><p>When you write or change such a rule, assert on the <strong>field names</strong> you expect to hit and on the neighbouring field names you expect <em>not</em> to hit, not only on the returned tier. A tier assertion cannot tell "the rule matched and ranked it" from "nothing matched and the default happened to be that tier".</p><h2>Verification</h2><p>Use real corpus field names for both directions of each rule:</p><pre><code class="language-js">assert(classify('$DCS_C_SSO[1]') === 'high');                 // mid-word `$` must be a literal
+assert(classify('$SLSCHED1[1].ID1_1ST_TIM') === 'low');       // trailing `$` must be an anchor
+assert(classify('$DCS_C_SSO[1]') !== 'unknown');              // and it must not be the fallback</code></pre><p>Then deliberately break the escaping and confirm the tests turn <strong>red</strong> — either mistake must fail an assertion, or the tests are decoration:</p><pre><code class="language-js">/^$DCS_C_(SSO|CSO)/.test('$DCS_C_SSO[1]')  // false -&gt; `expected 'high', got 'unknown'`
+/_TIM\$/.test('$SLSCHED1[1].ID1_1ST_TIM')  // false -&gt; `expected 'low', got 'unknown'`</code></pre><p>Finally, sweep the real corpus and compare the priority distribution and the <code>unknown</code> count against a manual sample; the <code>unknown</code> count is the signal that a rule is not firing.</p><h2>Notes</h2><ul><li>The same distinction exists in other regex dialects, but the failure is <em>quiet</em> in JavaScript because <code>$</code> is never a syntax error there: <code>^$DCS_C</code> is a valid regex that simply matches nothing. An invalid pattern would have thrown; this one did not.</li><li>Inside a character class (<code>[$@]</code>) a <code>$</code> is literal and needs no escape; the rule above is about <code>$</code> used as a standalone token.</li><li>Related lessons: <code>lessons/contrib/regex-escaped-quotes-source-parsing.md</code> and <code>lessons/contrib/regex-greedy-matching.md</code> (other regex rules that fail silently on real input while passing synthetic tests).</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/core/js-regex-literal-dollar-vs-end-of-line-anchor.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=JS regex: escape a literal dollar sign, never escape the end-of-line anchor">Find related lessons →</a></p></div>

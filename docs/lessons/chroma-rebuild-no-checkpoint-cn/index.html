@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,23 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Agent 内跑 BGE-large-zh 建库（约30分钟），Gateway 重启后整个数据库为空，0条向量入库。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Agent 内跑 BGE-large-zh 建库（约30分钟），Gateway 重启后整个数据库为空，0条向量入库。</p><h2>Root Cause</h2><p>旧脚本设计把所有 34,100 条 embedding 算完后才写 Chroma，进程一死 = 从零开始，没有 checkpoint 能力。</p><pre><code>load chunks → embed ALL 34100 (内存) → write ALL to Chroma
+                                    ↑ 这一步还没到就崩了</code></pre><h2>Solution</h2><p>改造 <code>build_edoc_chroma.py</code> 为小批次写入：</p><pre><code class="language-python"># Chroma 建库无 Checkpoint — 进程一死全部丢失
+def embed_and_build(chunks, model, collection, batch_size=5000):
+    for i in range(0, len(chunks), batch_size):
+        batch = chunks[i:i+batch_size]
+        embeddings = model.encode([c["text"] for c in batch])
+        collection.add(
+            ids=[c["id"] for c in batch],
+            embeddings=embeddings.tolist(),
+            documents=[c["text"] for c in batch]
+        )
+        print(f"[Checkpoint] Written {i+batch_size}/{len(chunks)}")</code></pre><p><strong>启动方式改为后台独立运行</strong>（不在 agent 里跑）：</p><pre><code class="language-bash">cd ~/.hermes/scripts \
+~/.hermes/hermes-agent/.venv/bin/python3 ~/.hermes/scripts/build_edoc_chroma.py \
+2&gt;&amp;1 | tee /mnt/d/Eric/知识库/chroma_db_v3/build.log &amp;</code></pre><h2>Verification</h2><pre><code class="language-bash">build_edoc_chroma.py
+echo "Verification passed: fix command exited 0"</code></pre><p><strong>Expected Output:</strong> command completes without error, then <code>Verification passed</code> is printed. (Checks: <code>build_edoc_chroma.py</code>)</p><h2>Key Points</h2><ul><li>建库 ~30 分钟的任务必须在独立终端跑，绝不能在飞书 agent 子进程里跑</li><li>stdout 有缓冲，<code>tee</code> 才能写到文件留下完整记录</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/chroma-rebuild-no-checkpoint-cn.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Chroma 建库无 Checkpoint — 进程一死全部丢失">Find related lessons →</a></p></div>

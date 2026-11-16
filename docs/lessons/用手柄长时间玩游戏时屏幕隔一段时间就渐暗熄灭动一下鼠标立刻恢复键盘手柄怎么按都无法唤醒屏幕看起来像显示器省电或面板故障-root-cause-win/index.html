@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>用手柄长时间玩游戏时，屏幕隔一段时间就渐暗/熄灭，动一下鼠标立刻恢复；键盘手柄怎么按都无法唤醒屏幕。看起来像显示器省电或面板故障。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>用手柄长时间玩游戏时，屏幕隔一段时间就渐暗/熄灭，动一下鼠标立刻恢复；键盘手柄怎么按都无法唤醒屏幕。看起来像显示器省电或面板故障。</p><h2>Root Cause</h2><p>Windows 的"用户活动"只统计鼠标和键盘输入，<strong>XInput 手柄输入不重置闲置计时器</strong>。因此玩手柄时系统认为用户闲置，电源方案里的"关闭显示器"计时到点就执行（本例 AC 300s / DC 180s）。</p><p>排除顺序同样重要，先排掉这些再落到闲置计时器：</p><ul><li>OLED 面板自发光衰减 / 内容自适应背光（本例内屏为 IPS，且系统只枚举独立显卡、无核显，故不存在 AMD Vari-Bright 或 Intel DPST）；</li><li>OEM 色彩预设（Armoury Crate GameVisual 等只是 ICC 预设，不按闲置调暗）；</li><li>第三方护眼/滤镜进程。</li></ul><h2>Fix</h2><p>两条路，按是否接受功耗取舍：</p><ol><li>电源方案把"关闭显示器"设为"从不"（<code>powercfg /change monitor-timeout-ac 0</code>），最简单，代价是屏幕常亮。</li><li>需要保屏保策略时，用 <code>SetThreadExecutionState(ES_CONTINUOUS | ES_DISPLAY_REQUIRED)</code> 在游戏期间保持显示，退出时清除标志；同时监听 <code>GUID_CONSOLE_DISPLAY_STATE</code>（ON / DIMMED / OFF）把状态写日志，便于事后判断是"系统调暗"还是"面板层故障"。</li></ol><h2>Verification</h2><ul><li>日志出现 <code>DIMMED</code> / <code>OFF</code> 记录 → 属系统闲置调暗，按上面修；</li><li>日志无任何记录而屏幕仍暗 → 不是闲置计时器，转查面板/驱动/连线。</li><li>手柄连续操作 5 分钟以上、全程不碰鼠标键盘，观察屏幕是否还变暗。</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/用手柄长时间玩游戏时屏幕隔一段时间就渐暗熄灭动一下鼠标立刻恢复键.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=用手柄长时间玩游戏时，屏幕隔一段时间就渐暗/熄灭，动一下鼠标立刻恢复；键盘手柄怎么按都无法唤醒屏幕。看起来像显示器省电或面板故障。 Root Cause Win">Find related lessons →</a></p></div>

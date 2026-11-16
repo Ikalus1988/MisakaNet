@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,11 @@
 <div class="section">
   <h2>Summary</h2>
   <p>SideStore 导入 ipa 时报 `An invalid value '百度探针' was provided for the parameter 'appIdName'`，签不过去，App 装不上。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>SideStore 导入 ipa 时报 <code>An invalid value '百度探针' was provided for the parameter 'appIdName'</code>，签不过去，App 装不上。</p><h2>Root Cause</h2><p>SideStore 自签时把 <code>CFBundleDisplayName</code> 直接当 <code>appIdName</code> 提交给 Apple，而 Apple 的 <code>appIdName</code> 只接受 ASCII。中文写进主 <code>Info.plist</code> 就一定炸。</p><p>2026-10-25 又犯一次：正式 App 的 <code>pack-ipa.sh</code> 早就处理了这件事，但新做的「百度探针」是另写的打包命令，忘了照抄，白装一次。</p><h2>Fix</h2><p>两步都要，缺一不可：</p><table><thead><tr><th>位置</th><th>内容</th><th>作用</th></tr></thead><tbody><tr><td>主 <code>Info.plist</code> → <code>CFBundleDisplayName</code></td><td><code>BaiduProbe</code>（ASCII）</td><td>只给签名用</td></tr><tr><td><code>zh-Hans.lproj/InfoPlist.strings</code></td><td><code>"CFBundleDisplayName" = "百度探针";</code></td><td>iOS 桌面读这个</td></tr></tbody></table><pre><code class="language-bash">plutil -replace CFBundleDisplayName -string "BaiduProbe" "$APP/Info.plist"
+mkdir -p "$APP/zh-Hans.lproj"
+printf '"CFBundleDisplayName" = "百度探针";\n' &gt; "$APP/zh-Hans.lproj/InfoPlist.strings"</code></pre><p>同理 <code>CFBundleName</code> / <code>CFBundleExecutable</code> / <code>CFBundleIdentifier</code> 也必须是 ASCII；但 <code>NSLocationWhenInUseUsageDescription</code> 这类描述文案写中文没关系——只有「标识符性质」的字段受限。</p><p>教训：<strong>「已经有脚本做过的事」，新脚本必须照抄，不能凭记忆手敲</strong>。判据很简单——手敲的打包命令里没有 <code>plutil -replace CFBundleDisplayName</code> 这一行，就一定会踩。</p><h2>Verification</h2><p>打包脚本结尾校验显示名是纯 ASCII，不是就 <code>exit 1</code>（探针的 pack-ipa.sh 已加）；装好后桌面仍显示中文名。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/自签包的-cfbundledisplayname-必须是-ascii中文名签不了名同一个坑第二次又犯.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=自签包的 CFBundleDisplayName 必须是 ASCII：中文名签不了名（同一个坑第二次又犯）">Find related lessons →</a></p></div>

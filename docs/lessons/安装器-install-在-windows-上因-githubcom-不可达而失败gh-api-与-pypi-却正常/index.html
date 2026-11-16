@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>安装器 install <name> fails on Windows when github.com is unreachable, even though `gh api` and PyPI work.</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>安装器 install &lt;name&gt; fails on Windows when github.com is unreachable, even though <code>gh api</code> and PyPI work.</p><h2>Root Cause</h2><ol><li>安装器 shells out to <code>pip install "git+https://github.com/HKUDS/CLI-Anything.git#subdirectory=&lt;name&gt;/agent-harness"</code> and captures pip output with <code>text=True</code> under the local GBK code page. A non-GBK byte crashes the decoder before the real error is shown.</li><li>The global git config contains <code>&lt;REDACTED:email&gt;:.insteadOf=https://github.com/</code>, so pip's <code>git+https</code> clone is rewritten to SSH. HTTPS 443 is blocked by the network and SSH 22 is reset, so neither transport works.</li><li>安装器 tracks installs only in <code>~/.&lt;wrapper&gt;/installed.json</code>; a manual <code>pip install</code> leaves <code>安装器 info &lt;name&gt;</code> reporting "not installed".</li></ol><h2>Fix</h2><ol><li>Set <code>PYTHONUTF8=1</code> so pip output decodes cleanly.</li><li>Fetch the harness source through <code>gh</code> (api.github.com is reachable): recursively via <code>gh api repos/HKUDS/CLI-Anything/contents/&lt;name&gt;/agent-harness?ref=main</code>, or per file with <code>-H "Accept: application/vnd.github.raw"</code>.</li><li><code>python -m pip install &lt;local agent-harness dir&gt;</code>.</li><li>Add a <code>.cmd</code> shim for the generated <code>cli-anything-&lt;name&gt;.exe</code> to a PATH directory (the Python <code>Scripts</code> dir is not on PATH).</li><li>Optionally register it in <code>installed.json</code> as <code>{version, entry_point, source:"harness", strategy:"pip"}</code>.</li></ol><h2>Verification</h2><p>The CLI runs, the bundled suites pass (5 unit + 5 E2E), a demo project renders SVG/PNG via mermaid.ink, <code>export share</code> returns a mermaid.live URL, and <code>安装器 launch mermaid ...</code> forwards through the shim.</p><p>cli-anything-mermaid runs; 10 bundled tests pass; SVG/PNG render and share URL work; 安装器 launch forwards correctly.</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/cli-hub-install-name-fails-on-windows-when-githubcom-is.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=安装器 install 在 Windows 上因 github.com 不可达而失败：gh api 与 PyPI 却正常">Find related lessons →</a></p></div>

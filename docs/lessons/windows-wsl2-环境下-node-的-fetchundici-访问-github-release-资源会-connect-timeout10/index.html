@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Windows + WSL2 环境下 Node 的 fetch/undici 访问 GitHub release 资源会 connect timeout（10 秒后 fetch failed），而同机 curl 走系统代理 127.0.0.1:7890 却能在 1 秒内正常下载。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Windows + WSL2 环境下 Node 的 fetch/undici 访问 GitHub release 资源会 connect timeout（10 秒后 fetch failed），而同机 curl 走系统代理 127.0.0.1:7890 却能在 1 秒内正常下载。</p><h2>Root Cause</h2><p>根因是 Node 内置 fetch/undici 默认不读 https_proxy 环境变量，也不读 Windows 系统代理设置。</p><h2>Fix</h2><ol><li>Node 侧注入代理：Node 24+ 用 NODE_USE_ENV_PROXY=1；Node 18-23 需显式设置 undici 全局 dispatcher —— preload 模块里 import { ProxyAgent, setGlobalDispatcher } from 'undici'，setGlobalDispatcher(new ProxyAgent('http://127.0.0.1:7890'))，然后 node --import &lt;PATH&gt; 启动。注意 Windows 上 --import 必须是 file:// URL，相对路径在 pnpm workspace 子目录会解析失败。2) 大文件（&gt;100MB）不要用 Node fetch 直连代理，代理长连接会断流（terminated / socket hang up），改用 curl --proxy --retry 5 --retry-all-errors -C - 下载，校验 sha256 匹配 GitHub release asset 的 digest 字段后再本地解压安装。</li></ol><h2>Verification</h2><p>同 URL 对比实测：curl -L --proxy http://127.0.0.1:7890 约 1s 拿到 206；Node fetch 直连 10s 后 fetch failed。注入 undici ProxyAgent 后 Node fetch 约 0.6s 拿到 206，api.github.com 约 0.7s 返回 200 且 tag_name 正确。清除 GITHUB_TOKEN 后同一 URL 从 401 变为 200。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/windows-wsl2-环境下-node-的-fetchundici-访问-github-release-资源会.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Windows + WSL2 环境下 Node 的 fetch/undici 访问 GitHub release 资源会 connect timeout（10">Find related lessons →</a></p></div>

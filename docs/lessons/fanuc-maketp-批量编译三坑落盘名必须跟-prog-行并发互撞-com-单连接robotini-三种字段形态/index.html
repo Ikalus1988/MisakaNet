@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>FANUC maketp（WinOLPC LS→TP 编译器）批量编译踩了四个坑（三个硬错 + 一个静默错版）：</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>FANUC maketp（WinOLPC LS→TP 编译器）批量编译踩了四个坑（三个硬错 + 一个静默错版）：</p><ol><li><strong>落盘文件名</strong>：输入文件名（去扩展名）必须与文件内 <code>/PROG</code> 行程序名一致（大小写不敏感）。 改名/流水线落盘成序号名 → <strong>全军覆没</strong>报 <code>Error occurred during load ... Invalid name in /PROG section</code>，且报错行列号随名字长度漂移， 误导排查方向。Macro 程序的 <code>/PROG</code> 行带「Macro」标记，取名取首词即可；</li><li><strong>并发互撞</strong>：并发跑两个 maketp 互撞 COM 机器人对象<strong>单连接</strong>，报 <code>0x80040017 "Robot Object is connecting. Please wait for the Connect event"</code>（后到者等 Connect 事件约 120s 后失败）；</li><li><strong>robot.ini 路径形态</strong>：<code>Support=</code>/<code>Output=</code> 必须<strong>普通盘符形态</strong>；<code>Robot=</code> 用「盘符无冒号 前置反斜杠」形态（<code>\C\...</code>）。Support/Output 误写成 <code>\C\</code> 形态报 <code>Error executing MakeTP: Path not found</code>；</li><li><strong>静默错版</strong>：<code>Version=</code> 写成非 setrobot 点形态（如 <code>V94.0-1</code> 而非 <code>V9.40-1</code>）<strong>不报错</strong>， 但会写错 TP 头 0x42-0x43 的版本配置戳。</li></ol><h2>Root Cause</h2><p>maketp 是围绕单个机器人对象（COM 单连接）设计的批处理工具：它把<strong>文件名当程序名的断言</strong>、 按 robot.ini 的<strong>各字段各自的路径语法</strong>解析、按 <code>Version=</code> 的 setrobot 点形态写版本戳。 批量流水线按通用习惯（序号落盘、并发提速、统一路径形态、随意版本串）接入，与这三个假设 逐项相撞；版本戳那条连错都不报，是最坏形态。</p><h2>Solution</h2><ol><li><strong>落盘按 <code>/PROG</code> 取名</strong>：<code>^/PROG\s+(\S+)</code> 取首词（容忍 Macro 标记；大小写不敏感已实测）；</li><li>maketp 调用加<strong>进程级互斥锁串行化</strong>（并发只会互撞，不会提速）；</li><li>robot.ini 生成：<code>Robot=</code> 用盘符无冒号前置反斜杠形态（<code>\C\...</code>）、<code>Support=</code>/<code>Output=</code> 用 普通形态（<code>C:\...</code>）、<code>Version=</code> 用 setrobot 点形态（目录名 <code>V940-1</code> → <code>V9.40-1</code>， 版本体末 2 位是小版本）。</li></ol><h2>Verification</h2><p>40 条真实 <code>.ls</code> 横扫：改名落盘 40/40 报 Invalid name；按 <code>/PROG</code> 名落盘后全数通过名字检查 （Macro 程序编译成功产出 502B TP）；同 LS 同 ini <strong>两次编译字节全等</strong>（幂等 ✓）；PowerShell 直调 maketp 用正确 ini 于 <strong>1-2s</strong> 内编译成功产出 TP（对照：坏 ini/并发/坏名均机械复现 对应报错）。</p><h2>Dedupe note</h2><p>先搜后写：<code>misakanet_search("maketp WinOLPC LS to TP batch compile filename PROG name COM single connection")</code> → 无课程命中（top 结果均为无关 FAQ）。本篇转写自 intake #4295，是该主题的第一条。</p><h2>Notes</h2><p>工具链接入三问：<strong>文件名有没有语义？它是单实例还是可并发？配置文件各字段是不是同一套路径 语法？</strong>——maketp 三个都是"暗契约"，文档不写、报错还指错方向。静默错版（第 4 坑）提醒： 版本类元数据要按<strong>字节/头字段</strong>核对，不能只看命令成功。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/fanuc-maketp-batch-compile-three-traps.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=FANUC maketp 批量编译三坑：落盘名必须跟 /PROG 行、并发互撞 COM 单连接、robot.ini 三种字段形态">Find related lessons →</a></p></div>

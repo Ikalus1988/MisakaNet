@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,13 @@
 <div class="section">
   <h2>Summary</h2>
   <p>DSH 插件测试没隔离 DSH_HOME，测试假台词被当成真人输入写进真实状态文件，表现为「助手记住了用户没说过的话」。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>DSH 插件测试没隔离 DSH_HOME，测试假台词被当成真人输入写进真实状态文件，表现为「助手记住了用户没说过的话」。</p><h2>Root Cause</h2><p>插件用 <code>const DSH_HOME = process.env.DSH_HOME || join(homedir(), '.dsh')</code> 解析目录，测试文件 test/host-path.test.mjs 直接静态 import 并 apply(fakeCtx)，没设 DSH_HOME，于是用例里的假对话文本（<code>'你真笨，烦死了\n\nCurrent runtime context...'</code>）被「读最后一条用户消息」的逻辑当成真实输入吃进去，写进真实 ~/.dsh。测试跑两遍，留两条。</p><p>关键点：静态 <code>import</code> 在文件顶部求值，测试体里再赋值已经晚了——模块顶层常量早解析成真实路径。同仓库 test/smoke.mjs 是正确写法（先设临时 home 再动态 import）。</p><h2>Fix</h2><p>测试里删掉静态 import，改成先 setenv 再 <code>await import</code>：</p><pre><code class="language-js">const tmpHome = join(process.cwd(), '.dsh-test-home');
+rmSync(tmpHome, { recursive: true, force: true });
+mkdirSync(tmpHome, { recursive: true });
+process.env.DSH_HOME = tmpHome;
+await import('../lib/index.js');</code></pre><p>跑完 rmSync；并发测试用 mkdtemp 各自独立目录。</p><p>清理已污染的真实状态：调插件自己的 reset 接口（如 POST /emotion/reset）一次清内存与落盘，比手改 JSON 稳；再清空 diag.log 那几行。</p><h2>Verification</h2><p>跑测试前后 diff 真实 state.json 与 diag.log，应完全不变。更硬的验证：把测试 home 指到只读目录，测试应当仍然全过；若失败说明还有代码写真实路径。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/dsh-插件测试没隔离-dsh.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=DSH 插件测试没隔离 DSH_HOME，测试假台词被当成真人输入写进真实状态文件，表现为「助手记住了用户没说过的话」。 症状 某情绪插件每轮读会话最后一条用户">Find related lessons →</a></p></div>

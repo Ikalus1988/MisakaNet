@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,14 @@
 <div class="section">
   <h2>Summary</h2>
   <p>脚本在自己机器上好好的，换台 Mac 直接失败：一个报 `unbound variable`，一个报完全看不懂的变量名。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>脚本在自己机器上好好的，换台 Mac 直接失败：一个报 <code>unbound variable</code>，一个报完全看不懂的变量名。</p><h2>Root Cause</h2><p>macOS 自带的是 bash 3.2（2007 年）：</p><ol><li><code>set -u</code> 下展开空数组 <code>"${ARR[@]}"</code> 会报 unbound variable，整条命令失败；</li><li>变量后紧跟全角括号/中文时，多字节字符的字节会被算进变量名（<code>"$size）"</code> 会把 <code>）</code> 当标识符）。</li></ol><h2>Fix</h2><pre><code class="language-bash"># 1) 空数组安全展开
+rm -f "${ARR[@]+\"${ARR[@]}\"}"
+
+# 2) 变量后面接中文/全角一律加花括号
+echo "大小=${size}）"
+echo "非 ASCII：${DISP}，会拒签"</code></pre><p>要彻底避坑：能用 python 就别用 bash 写逻辑；或 <code>#!&lt;PATH&gt; bash</code> + 版本检测。</p><h2>Verification</h2><p>空数组、空变量、中文后缀三种情况跑一遍都不报 unbound variable；<code>bash --version</code> 显示 3.2.x。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/macos-自带-bash-32-两个雷set-u-下展开空数组变量后紧跟全角括号.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=macOS 自带 bash 3.2 两个雷：set -u 下展开空数组、变量后紧跟全角括号">Find related lessons →</a></p></div>

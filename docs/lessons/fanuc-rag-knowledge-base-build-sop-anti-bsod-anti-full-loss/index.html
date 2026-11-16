@@ -6,6 +6,7 @@
 <title>FANUC RAG Knowledge-Base Build SOP: Anti-BSOD / Anti-Full-Loss — MisakaNet</title>
 <meta name="description" content="Draft (not published): 2026-08-16: after receiving approval to rebuild the KB with the new FANUC Manual 13.0 CM (218 PDFs, 2.6GB), the build was started directly — without f...">
 <link rel="canonical" href="https://misakanet.org/lessons/fanuc-rag-knowledge-base-build-sop-anti-bsod-anti-full-loss/">
+<meta name="robots" content="noindex, follow">
 <meta property="og:title" content="FANUC RAG Knowledge-Base Build SOP: Anti-BSOD / Anti-Full-Loss">
 <meta property="og:description" content="Draft (not published): 2026-08-16: after receiving approval to rebuild the KB with the new FANUC Manual 13.0 CM (218 PDFs, 2.6GB), the build was started directly — without f...">
 <meta property="og:url" content="https://misakanet.org/lessons/fanuc-rag-knowledge-base-build-sop-anti-bsod-anti-full-loss/">
@@ -160,6 +161,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -179,6 +191,18 @@
 <div class="section">
   <h2>Summary</h2>
   <p>2026-08-16: after receiving approval to rebuild the KB with the new FANUC Manual 13.0 CM (218 PDFs, 2.6GB), the build was started directly — without first readi…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>2026-08-16: after receiving approval to rebuild the KB with the new FANUC Manual 13.0 CM (218 PDFs, 2.6GB), the build was started directly — without first reading the existing MisakaNet build lessons. Result: WSL memory/driver overload → <strong>BSOD / system restart</strong>. Same failure modes were already documented in 2026-04: <code>rag-build-strategy-batch</code> (all data loaded into VRAM/WSL memory at once → driver crash → BSOD) and <code>chroma-rebuild-no-checkpoint-cn</code> (all 34,100 embeddings computed before writing → process death = total data loss).</p><p>Root cause of the incident: (1) build lessons not consulted before starting; (2) full dataset processed at once without memory budget; (3) no checkpointing.</p><h2>Root Cause</h2><ol><li><strong>Lesson lookup skipped.</strong> Knowledge-base builds are exactly the long-running, crash-prone tasks MisakaNet lessons exist for. Starting a 30min+ build without grepping lessons (<code>build/chroma/ingest/rebuild/batch/memory</code>) turns past incidents into future repeats.</li><li><strong>Whole-dataset loading.</strong> Extract + embed + write all at once blows past WSL memory and CUDA limits; driver crash → BSOD.</li><li><strong>No checkpoint.</strong> If the process dies, everything embedded but not yet written is lost.</li></ol><h2>Solution (SOP — follow in order)</h2><h3>Step 1 — Consult lessons first (mandatory)</h3><p>Before any KB build / re-ingest / full Phase-1 rerun, grep MisakaNet lessons for <code>build|chroma|ingest|rebuild|batch|memory</code>, read every hit, and copy its rules into the execution plan (todo list). This step is the first todo item, not optional.</p><h3>Step 2 — Small-sample validation</h3><p>Run the pipeline on 5–10 PDFs first (dry-run / mini batch). Measure peak memory:</p><pre><code class="language-bash">/usr/bin/time -v python3 scripts/import/import_batch.py /tmp/sample_pdfs --dry-run 2&gt;&amp;1 | grep -E "Maximum resident|Elapsed"</code></pre><h3>Step 3 — Memory budget before scaling</h3><p>Estimate: <code>dataset_size × peak_factor + existing_collection + embedding_model(vram)</code>. WSL on this box: ~23Gi RAM, C: only ~19Gi free, D: ~247Gi free. If the estimate exceeds limits, lower concurrency or split into stages — do not scale up blind.</p><h3>Step 4 — Small batches + checkpoint</h3><p>Embed a batch, write a batch (≤5000/batch), print progress per batch. Never embed everything then write once:</p><pre><code class="language-python">for i in range(0, len(chunks), 5000):
+    batch = chunks[i:i+5000]
+    embeddings = model.encode([c["text"] for c in batch])
+    collection.add(ids=[c["id"] for c in batch],
+                   embeddings=embeddings.tolist(),
+                   documents=[c["text"] for c in batch])
+    print(f"[Checkpoint] written {i+len(batch)}/{len(chunks)}", flush=True)</code></pre><h3>Step 5 — Run in background, never in an interactive session</h3><pre><code class="language-bash">nohup python3 scripts/import/import_batch.py /mnt/d/Downloads/extracted_fanuc13 2&gt;&amp;1 | tee /tmp/kb_build.log &amp;</code></pre><p>Keep the log with <code>tee</code> (stdout is buffered otherwise). Poll the log; do not occupy the foreground session.</p><h3>Step 6 — Post-restart / post-build health check</h3><p>After any crash/reboot, verify before continuing: ChromaDB count matches expectation, spot-check a critical chunk (e.g. <code>M-900iB/330L</code>), BM25 cache exists, both repos' git status clean. (2026-08-16 data survived at 198,116 chunks — luck, not design.)</p><h2>Verification</h2><pre><code class="language-bash">python3 -c "import chromadb; c=chromadb.PersistentClient('/home/&lt;user&gt;/rag_chromadb'); print(c.get_collection('wiki_docs').count())"
+# retrieval smoke test
+python3 -m pytest tests/test_retrieval_regression.py -q
+# peak memory recorded in build log &lt; WSL limit</code></pre><h2>Notes</h2><ul><li><strong>"Not consulted" is the primary failure.</strong> The lessons existed and matched the task exactly; skipping the lookup was the root cause, not the memory limit itself.</li><li>Related lessons: <code>rag-build-strategy-batch</code> (BSOD), <code>chroma-rebuild-no-checkpoint-cn</code> (checkpoint + background), <code>wsl-ntfs-sqlite-update-100x-slower</code> (SQLite on NTFS).</li><li>Any long-running production task (build, rerun, ingest) gets Steps 1 and 5 as non-negotiable.</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/rag-kb-build-sop-anti-bsod.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=FANUC RAG Knowledge-Base Build SOP: Anti-BSOD / Anti-Full-Loss">Find related lessons →</a></p></div>

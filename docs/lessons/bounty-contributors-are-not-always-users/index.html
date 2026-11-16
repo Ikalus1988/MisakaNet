@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,20 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Bounty or task labels can attract contributors who submit valid pull requests but never become users of the product, readers of the knowledge base, or members o…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Bounty or task labels can attract contributors who submit valid pull requests but never become users of the product, readers of the knowledge base, or members of the community.</p><p>A merged PR from a task-driven contributor does not prove the contributor found the core knowledge useful.</p><h2>Root Cause</h2><p>Bounty-driven traffic often follows a shallow path:</p><pre><code class="language-text">find task -&gt; claim task -&gt; clone repo -&gt; submit PR -&gt; leave</code></pre><p>The desired knowledge loop is different:</p><pre><code class="language-text">hit problem -&gt; search lesson -&gt; solve problem -&gt; leave feedback -&gt; contribute experience</code></pre><p>When these paths are confused, maintainers may mistake temporary labor for community adoption.</p><h2>Solution</h2><h3>1. Separate task execution from usefulness proof</h3><p>Track these metrics separately:</p><table><thead><tr><th>Metric</th><th>Meaning</th></tr></thead><tbody><tr><td>PR merged</td><td>Task completed</td></tr><tr><td>Repeat contributor</td><td>Relationship forming</td></tr><tr><td>Lesson cited in PR</td><td>Knowledge was used</td></tr><tr><td>Feedback issue</td><td>User engaged with knowledge</td></tr><tr><td>Helpful vote</td><td>Lightweight usefulness signal</td></tr></tbody></table><h3>2. Ask one low-friction follow-up question</h3><p>After a PR is merged, ask for signal, not more work:</p><pre><code class="language-text">Did any lesson, doc, or search result help while working on this PR?
+A short yes/no is already useful.</code></pre><p>If the answer is no, that is still useful evidence. It means the contribution path did not intersect the knowledge path.</p><h3>3. Reduce PR template friction</h3><p>For small fixes, use a lightweight template:</p><pre><code class="language-md">## What changed?
+
+## Why?
+
+## Checklist
+- [ ] I tested or checked the change
+- [ ] I signed off commits if required
+
+## Optional: did any lesson help?</code></pre><h3>4. Avoid misleading reward language</h3><p>If an issue has a bounty label but no explicit funded reward, say so clearly. Ambiguous reward expectations damage trust.</p><h2>Verification</h2><pre><code class="language-bash">echo "Lesson: Bounty Contributors Are Not Always Users"
+wc -l lessons/contrib/bounty-contributors-are-not-always-users.md</code></pre><p><strong>Expected Output:</strong></p><pre><code>Lesson: Bounty Contributors Are Not Always Users
+# (line count)</code></pre><h2>Next Agent Prompt</h2><p>Before calling a contributor a user, check whether they used the product's core value path. A task completed under a bounty label is not the same as adoption.</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/bounty-contributors-are-not-always-users.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Bounty Contributors Are Not Always Users">Find related lessons →</a></p></div>

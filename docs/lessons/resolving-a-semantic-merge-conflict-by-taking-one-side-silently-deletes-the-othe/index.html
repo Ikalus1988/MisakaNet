@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,13 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Resolving a semantic merge conflict by taking one side silently deletes the other side's</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Resolving a semantic merge conflict by taking one side silently deletes the other side's <em>tests</em>, and the breakage only surfaces after merge.</p><p>Both branches edited the same function for different reasons:</p><ul><li><code>main</code> kept a feature and moved its reporting out of a generated file onto stderr, adding a test asserting the report still reaches a human;</li><li>the other branch deleted the feature entirely.</li></ul><p>The textual overlap was one block. Resolving "take the feature-deletion side" removed the feature <strong>and</strong> the line that emitted the report — and with it, the thing <code>main</code>'s new test existed to defend. The test then failed:</p><pre><code class="language-text">FAILED test_the_note_about_the_&lt;feature&gt;_reaches_a_human
+AssertionError: the &lt;feature&gt; note vanished instead of moving to stderr;
+nobody reading the log learns it happened</code></pre><p>The reasoning that led there was not careless: "with those statements gone, the warning they carried has nothing left to warn on." That is true of the <em>warning</em>. It says nothing about the <em>test</em>, which was defending observability, not the warning.</p><p>Repository, branch names and the real feature name appear here as placeholders because the reporter did not give them; the case needs to be reproduced.</p><h2>Root Cause</h2><p>A semantic conflict is one where both sides changed the same logic with different intents. Picking either side is not a merge — it is a decision to discard an intent. The discarded intent usually leaves artifacts (tests, docs, CI assertions) that still defend it, so the cost lands later and somewhere else.</p><p>Reading the conflict hunk shows you two implementations. It does not show you what else in the tree depends on either one. The test lives in another file, and nothing in <code>git status</code> after the merge tells you it was defending the side you just dropped.</p><h2>Solution</h2><p><strong>Before resolving, find what else references both intents.</strong></p><pre><code class="language-bash"># what does the side you are about to discard rely on?
+git diff $(git merge-base HEAD origin/main)..origin/main --name-only
+grep -rn "the distinctive symbol or phrase from their change" tests/ docs/</code></pre><p>If a test defends the intent you are discarding, you have a real decision, not a mechanical merge:</p><ul><li>delete the test <strong>with</strong> the feature, and say so in the commit — coherent: the intent and its defender leave together.</li></ul><p>The reporter's option list is cut off after that first item; the remaining options were not given and need to be enumerated by reproducing the case.</p><h2>Verification</h2><ul><li>Run the tests for <strong>both</strong> sides' concerns after resolving — not only the side you kept.</li><li>Grep <code>tests/</code> and <code>docs/</code> for the phrase their test asserts. A hit means the discarded intent still has a defender, so the merge is not finished; the decision to drop it has to be made explicitly rather than inherited from a conflict hunk.</li><li>Watch specifically for tests that assert an observable side effect of deleted code (a log line, a stderr note, a report). They pass review and fail after merge, which is the expensive order.</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/semantic-merge-conflict-drops-defending-test.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Resolving a semantic merge conflict by taking one side silently deletes the other side's tests">Find related lessons →</a></p></div>

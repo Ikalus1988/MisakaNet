@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>DISM /StartComponentCleanup 卡死：Dism.exe 和 TiWorker CPU 近 0，CBS 日志停在 session options=0x400100。上一次 DISM 被中断导致 CBS session 未 finalize。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>DISM /StartComponentCleanup 卡死：Dism.exe 和 TiWorker CPU 近 0，CBS 日志停在 session options=0x400100。上一次 DISM 被中断导致 CBS session 未 finalize。</p><h2>Root Cause</h2><p>TrustedInstaller 持有的 CBS session 半完成，新 DISM 拿不到锁。Dism/TiWorker 是受保护进程，管理员 taskkill /F 也杀不掉。</p><h2>Fix</h2><ol><li>等 10-15 分钟，CBS session 可能自行 finalize（观察 CBS.log 出现 Ending TrustedInstaller finalization）。</li><li>管理员 bat：sc stop TrustedInstaller → taskkill /F /IM TrustedInstaller.exe /IM Dism.exe /IM TiWorker.exe → sc start → 重跑 DISM。</li><li>不行就重启电脑。</li></ol><p>注意 /StartComponentCleanup 未缩减 WinSxS 属正常，深度清理用 /ResetBase（不可逆）。</p><h2>Verification</h2><p>2026-11-04 实测：等 30 分钟后 TrustedInstaller 自行 finalize，重跑成功。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/dism-startcomponentcleanup-卡死dismexe-和-tiworker-cpu-近-0cbs.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=DISM /StartComponentCleanup 卡死：Dism.exe 和 TiWorker CPU 近 0，CBS 日志停在 session opti">Find related lessons →</a></p></div>

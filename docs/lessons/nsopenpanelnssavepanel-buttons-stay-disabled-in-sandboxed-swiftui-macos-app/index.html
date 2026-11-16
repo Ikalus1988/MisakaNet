@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,67 @@
 <div class="section">
   <h2>Summary</h2>
   <p>In a sandboxed SwiftUI macOS app, both NSOpenPanel (Open) and NSSavePanel (Save) keep their primary buttons disabled even when the user has selected a readable …</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>In a sandboxed SwiftUI macOS app, both NSOpenPanel (Open) and NSSavePanel (Save) keep their primary buttons disabled even when the user has selected a readable file (open) or typed a valid destination and filename (save). Panels are presented asynchronously with <code>beginSheetModal</code> inside a checked continuation.</p><h2>Root Cause</h2><p>Button enablement is decided by AppKit validation, not by "does the path look readable in the debugger." Four independent gates, any one of which can keep Open/Save disabled:</p><ol><li><strong>Type filter mismatch</strong> — <code>allowedContentTypes</code> (or deprecated <code>allowedFileTypes</code>) does not include the selected file's UTType / the save name's extension. <code>allowsOtherFileTypes</code> defaults to false, so an extension outside the list disables Save. Empty <code>allowedContentTypes</code> also breaks <code>allowedContentType</code> (returns nil if empty).</li><li><strong>Selection kind vs <code>canChooseFiles</code> / <code>canChooseDirectories</code></strong> — Open stays disabled if the user picked a file while <code>canChooseFiles == false</code>, or a directory while <code>canChooseDirectories == false</code>.</li><li><strong>Empty / invalid save name</strong> — Save disabled when <code>nameFieldStringValue</code> is empty, or when the resolved destination is not a valid writable path for the panel's rules.</li><li><strong>Presentation / async issues</strong> — <code>beginSheetModal(for:)</code> needs a real visible <code>NSWindow</code>. SwiftUI often has no reliable <code>keyWindow</code>; sheet on a nil/invisible window can appear dead. Panel config must complete on the main actor <strong>before</strong> begin; the continuation must resume exactly once.</li></ol><p>Also check any <code>NSOpenSavePanelDelegate</code> implementation: <code>panel(_:validate:)</code> returning <code>false</code> keeps the primary button disabled.</p><h2>Solution</h2><pre><code class="language-swift">import AppKit
+import UniformTypeIdentifiers
+
+@MainActor
+func presentOpenPanel(allowed: [UTType] = [.pdf, .plainText, .json]) async -&gt; URL? {
+    let panel = NSOpenPanel()
+    panel.canChooseFiles = true          // must be true for file Open to enable
+    panel.canChooseDirectories = false
+    panel.allowsMultipleSelection = false
+    panel.allowedContentTypes = allowed  // must cover the files you accept
+
+    // Need a real visible window — NSApp.keyWindow is often nil in SwiftUI
+    guard let window = NSApp.windows.first(where: { $0.isVisible &amp;&amp; $0.canBecomeKey })
+        ?? NSApp.keyWindow else { return nil }
+
+    let response = await panel.beginSheetModal(for: window)
+    guard response == .OK, let url = panel.url else { return nil }
+
+    // Sandbox: grant access to the user-selected resource
+    if url.startAccessingSecurityScopedResource() {
+        defer { url.stopAccessingSecurityScopedResource() }
+    }
+    return url
+}
+
+@MainActor
+func presentSavePanel(defaultName: String, allowed: [UTType] = [.json, .pdf]) async -&gt; URL? {
+    let panel = NSSavePanel()
+    panel.allowedContentTypes = allowed
+    panel.allowsOtherFileTypes = false
+    panel.canCreateDirectories = true
+    panel.nameFieldStringValue = defaultName  // non-empty + allowed extension
+
+    // Ensure typed name has an allowed extension, or Save stays disabled
+    let ext = (defaultName as NSString).pathExtension
+    if ext.isEmpty || !allowed.contains(where: { $0.preferredFilenameExtension == ext }) {
+        if let auto = allowed.first?.preferredFilenameExtension {
+            panel.nameFieldStringValue = (defaultName as NSString).deletingPathExtension + "." + auto
+        }
+    }
+
+    guard let window = NSApp.windows.first(where: { $0.isVisible &amp;&amp; $0.canBecomeKey })
+        ?? NSApp.keyWindow else { return nil }
+
+    let response = await panel.beginSheetModal(for: window)
+    guard response == .OK, let url = panel.url else { return nil }
+
+    let accessing = url.startAccessingSecurityScopedResource()
+    defer { if accessing { url.stopAccessingSecurityScopedResource() } }
+    return url
+}</code></pre><p>Prefer modern SwiftUI APIs when possible — they own sheet/window plumbing:</p><pre><code class="language-swift">.fileImporter(isPresented: $showOpen, allowedContentTypes: [.pdf, .plainText], allowsMultipleSelection: false) { result in
+    if case .success(let urls) = result, let url = urls.first {
+        _ = url.startAccessingSecurityScopedResource()
+    }
+}
+
+.fileExporter(isPresented: $showSave, document: doc, contentType: .json, defaultFilename: "export") { result in
+    // ...
+}</code></pre><p>Entitlements (Target → Capabilities → App Sandbox):</p><ul><li><code>com.apple.security.app-sandbox</code></li><li><code>com.apple.security.files.user-selected.read-write</code> (or <code>.read-only</code>)</li></ul><h2>Verification</h2><ol><li>Sandbox ON + <code>user-selected.read-write</code> entitlement present.</li><li>Open: select a file whose UTType is in <code>allowedContentTypes</code> → Open enables; select a non-matching type → Open stays disabled (expected).</li><li>Save: empty <code>nameFieldStringValue</code> → Save disabled; fill with allowed extension → Save enables; extension outside list with <code>allowsOtherFileTypes == false</code> → disabled.</li><li>Presentation: sheet appears attached to a visible key window; cancel and OK both fire the continuation exactly once (no double-resume crash).</li><li>After OK in sandbox: <code>startAccessingSecurityScopedResource() == true</code> and file read/write succeeds.</li></ol>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/nsopenpanel-nssavepanel-button-disabled-sandbox.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=NSOpenPanel/NSSavePanel buttons stay disabled in sandboxed SwiftUI macOS app">Find related lessons →</a></p></div>

@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,62 @@
 <div class="section">
   <h2>Summary</h2>
   <p>SAG-Lite search results show raw frontmatter in description field, making results unreadable:</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>SAG-Lite search results show raw frontmatter in description field, making results unreadable:</p><pre><code class="language-json">{
+  "title": "pip install Timeout",
+  "description": "---{\"title\": \"pip install Timeout\", \"domain\": \"devops\"}---",
+  "domain": "contrib"
+}</code></pre><h2>Root Cause</h2><p>The <code>extract_description()</code> function in <code>export_okf.py</code> fails to properly strip frontmatter when:</p><ol><li>Frontmatter uses mixed YAML + JSON format: <code>---\ndomain: "contrib"\n{"title":...}\n---</code></li><li>Frontmatter JSON spans multiple lines</li><li>Description extraction starts before frontmatter is fully removed</li></ol><p>Additionally, <code>domain</code> field falls back to folder name ("contrib") instead of using frontmatter metadata.</p><h2>Fix</h2><h3>Fix extract_description()</h3><pre><code class="language-python">def extract_description(text: str, max_len: int = 200) -&gt; str:
+    """Extract a short description from the lesson body."""
+    import re
+    # Remove frontmatter (both ---{json}--- and ---\nyaml\n--- formats)
+    m = re.match(r"^---.*?---\s*", text, re.DOTALL)
+    if m:
+        text = text[m.end():]
+
+    # Also remove any remaining frontmatter-like patterns
+    text = re.sub(r'^\s*\{.*?\}\s*$', '', text, flags=re.MULTILINE)
+
+    # Find first non-heading, non-empty, non-metadata line
+    for line in text.split("\n"):
+        line = line.strip()
+        if not line:
+            continue
+        if line.startswith("#") or line.startswith("```") or line.startswith("---"):
+            continue
+        if line.startswith("{") and line.endswith("}"):
+            continue
+        if len(line) &gt; max_len:
+            return line[:max_len] + "..."
+        return line
+    return ""</code></pre><h3>Fix domain extraction</h3><pre><code class="language-python">def lesson_to_okf(path: Path, domain_filter: str | None = None) -&gt; dict | None:
+    meta = extract_frontmatter(path)
+    if not meta:
+        return None
+
+    # Domain: use frontmatter domain, fallback to folder name
+    domain = meta.get("domain", "")
+    if not domain or domain == "contrib":
+        domain = meta.get("subdomain", "general")
+    # ...</code></pre><h3>Fix search results display</h3><pre><code class="language-python">def search(db_path: Path, query: str, domain: str | None = None, top: int = 5) -&gt; list[dict]:
+    # ...
+    results = []
+    for r in rows:
+        # Clean description: remove any remaining frontmatter patterns
+        desc = r["description"] or ""
+        if desc.startswith("---") or desc.startswith("{"):
+            desc = ""
+
+        results.append({
+            "title": r["title"],
+            "description": desc,
+            "domain": r["domain"],
+            # ...
+        })
+    return results</code></pre><h2>Verification</h2><pre><code class="language-bash">grep -i 'bm25\|chunk\|embed' lessons/contrib/rag-*.md 2&gt;/dev/null | head -3
+echo Search verified</code></pre><p><strong>Expected Output:</strong></p><pre><code># (refs)
+Search verified</code></pre><h2>Notes</h2><ul><li>OKF export covers core/contrib normalized lessons only (not full lesson count)</li><li>Domain field should reflect frontmatter metadata, not folder fallback</li><li>Always rebuild index after changing export logic</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/sag-lite-data-quality-cleaning.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=SAG-Lite Data Quality: Clean Search Results">Find related lessons →</a></p></div>

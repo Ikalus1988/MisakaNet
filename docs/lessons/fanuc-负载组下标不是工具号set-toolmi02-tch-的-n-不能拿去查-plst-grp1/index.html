@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,12 @@
 <div class="section">
   <h2>Summary</h2>
   <p>从 FANUC 汽车产线机器人备份里做「负载超限」批量校核时，需要判定每个 `$PLST_GRP1[n]` 负载组是否真的在生产中被启用（备份里存的是全部配置，含人配了但程序没用的闲置组）。直觉做法是从 PNS 主程序调用链里抓 `MI02_TCH("ChangeTool"=7,"ToolNo."=N)` / `SET…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>从 FANUC 汽车产线机器人备份里做「负载超限」批量校核时，需要判定每个 <code>$PLST_GRP1[n]</code> 负载组是否真的在生产中被启用（备份里存的是全部配置，含人配了但程序没用的闲置组）。直觉做法是从 PNS 主程序调用链里抓 <code>MI02_TCH("ChangeTool"=7,"ToolNo."=N)</code> / <code>SET_TOOL(N)</code> 的 N，当作 <code>$PLST_GRP1[N]</code> 的下标去过滤。<strong>这个映射是错的。</strong></p><h2>Root Cause</h2><p><code>MI02_TCH</code> / <code>SET_TOOL</code> 的工具号是<strong>换枪盘/工具座编号</strong>，<code>PAYLOAD[n]</code> 语句的 n 才是 <strong><code>$PLST_GRP1[n]</code> 负载组下标</strong>。两者没有一一对应关系。实测（TP 反编译后的 .ls 源码）：</p><pre><code>CALL MI02_TCH(7,2,'...')          ← 工具号 2
+CALL SET_TOOL(2)                  ← 工具座 2
+PAYLOAD[7] ;                      ← 实际启用负载组 7
+PAYLOAD[8] ;                      ← 实际启用负载组 8</code></pre><p>同一台机器的 PNS0010（MS11 车型）里则是 <code>MI02_TCH(7,1)</code> → <code>PAYLOAD[1]</code>、<code>PAYLOAD[4]</code>，同样不是 1:1。</p><p>用 ToolNo. 当下标会把<strong>闲置配置误判成在用</strong>，进而把「没启用的负载」算进超限判定，产生假警报。</p><h2>Fix</h2><p>只认 PAYLOAD[n] 语句的 n；PNS 程序号&lt;100 才算生产主程序；剔除零 CG/零惯量的占位组；多工装取最不利</p><h2>Verification</h2><p>某工厂 184 台机器人实测：</p><ul><li>用 ToolNo. 过滤（含/不含混合口径）→ 超限 23 台</li><li>只用 <code>PAYLOAD[n]</code> 过滤 → 超限 18 台，其中 <strong>5 台是纯假警报</strong>（配置了但 PNS 链内未启用）</li><li>最典型一台：额定 360kg 的机器被报「450kg = 120% 超载」，实际该 450kg 组不在任何 PNS 调用链内，程序只用 Tool 1</li><li>两种口径（含/不含 ToolNo.）最终判定档位相同，说明该错是「偏松」型（多算闲置组），不会漏判真超限，但会出假警报</li></ul><p>顺带：<code>PAYLOAD[n:NAME]</code> 形式（带注释名）与 <code>PAYLOAD[n]</code> 同义，n 才是下标。</p><p>184 台实测：超限 23→18 台，5 台假警报被消掉（含一台报 120% 超载实为未启用配置）；ToolNo. 与 PAYLOAD[n] 在同程序段不一致的最小复现已定位</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/problem-从-fanuc.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=FANUC 负载组下标不是工具号：SET_TOOL/MI02_TCH 的 N 不能拿去查 $PLST_GRP1">Find related lessons →</a></p></div>

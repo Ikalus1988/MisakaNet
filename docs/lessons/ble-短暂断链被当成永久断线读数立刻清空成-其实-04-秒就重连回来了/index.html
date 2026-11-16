@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,15 @@
 <div class="section">
   <h2>Summary</h2>
   <p>电池卡从 78% 突然变成 `--`，一两秒后又恢复，看起来像数据在闪；骑行中出现会让人以为电池掉线。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>电池卡从 78% 突然变成 <code>--</code>，一两秒后又恢复，看起来像数据在闪；骑行中出现会让人以为电池掉线。</p><h2>Root Cause</h2><p><code>didDisconnectPeripheral</code> → <code>resetSession()</code> 里 <code>reading = nil</code>，界面立刻清空。实际 0.4~1 秒就重连回来了。另外 <code>dataStale</code> 阈值 4.5 秒太紧：一轮失败 = 页超时 1.5 + 冷静 0.4 + 下一轮 1.05 ≈ 3 秒，连败两轮就超过 4.5 秒，正常抖动也会被判过期。</p><h2>Fix</h2><pre><code class="language-swift">// 1) 意外断线保留最后一次读数
+resetSession(keepReading: true)
+
+// 2) 重连退避从 0.4s 起
+let ladder: [TimeInterval] = [0.4, 1, 2, 4, 8, 16, 20]
+
+// 3) dataStale 4.5s → 7s</code></pre><p>区分「意外断线」和「用户主动断开」：只有前者保留读数，后者要清空。</p><h2>Verification</h2><p>走远到断链再走回来：读数不清空、不闪 <code>--</code>；真正关掉电池电源后，7 秒才显示为过期（<code>dataStale</code>）。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/ble-短暂断链被当成永久断线读数立刻清空成-其实-04-秒就重连回来了.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=BLE 短暂断链被当成永久断线：读数立刻清空成 --，其实 0.4 秒就重连回来了">Find related lessons →</a></p></div>

@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,11 @@
 <div class="section">
   <h2>Summary</h2>
   <p>PowerShell 的 `Start-Process -ArgumentList` **不会**给含空格的数组元素自动加引号。传</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>PowerShell 的 <code>Start-Process -ArgumentList</code> <strong>不会</strong>给含空格的数组元素自动加引号。传 <code>--user-data-dir="C:\Users\&lt;user&gt;\..."</code>（路径里带空格）时，参数在空格处被拆成两个 token，目标程序 只拿到前半截。</p><p>Reporter's error line:</p><pre><code>process starts normally, exit code 0, but the expected profile/config directory is never created</code></pre><p>失败是静默的：<strong>进程正常启动、不报任何错，但指定目录压根没被创建</strong>。排查成本远高于崩溃——没有 非零退出码、没有异常、没有日志，唯一线索是"应该存在的东西不存在"。</p><h2>Root Cause</h2><p><code>-ArgumentList</code> 接受的是一组已经"成型"的参数；PowerShell 把它们拼成命令行时不会为其中的空格 添加引号。含空格的元素在拼接后变成两个独立的命令行 token，被目标程序按两个参数解析：</p><pre><code>--user-data-dir=C:\Users\&lt;user&gt;     ← token 1，路径在此截断
+...                                 ← token 2，路径的剩余部分成为下一个参数</code></pre><p>目标程序通常不会因为一个无法解析的 <code>--user-data-dir</code> 而拒绝启动：它拿到的目录不存在或不可用， 就退回默认配置目录继续跑。于是"启动成功"和"目录没建"同时为真。</p><p>报料者的排查顺序也说明了这个失败为什么贵：先怀疑端口占用，再怀疑权限，再怀疑参数顺序，逐个 排除后才定位到空格截断。以上三项都是"进程不工作"的常见原因，而这里进程恰恰是工作的。</p><h2>Solution</h2><p>二选一。</p><p><strong>(A) 手工加引号</strong>，让含空格的路径作为一个 token 传过去：</p><pre><code class="language-powershell">Start-Process $chrome -ArgumentList "--user-data-dir=`"$UserDataDir`""</code></pre><p>反引号 `<code> </code> `` 是 PowerShell 的转义符，用来在这里产出内层的双引号。</p><p><strong>(B) 直接不用带空格的路径</strong>，例如：</p><pre><code class="language-powershell">$UserDataDir = 'C:\Users\&lt;user&gt;\chrome-cdp-profile'</code></pre><p>附带一个坑：<code>$args</code> 是 PowerShell 的<strong>自动变量</strong>，不要拿它当参数数组名，用 <code>$progArgs</code> 之类的名字。</p><h2>Verification</h2><p><code>Test-Path $UserDataDir</code> 必须为 <code>True</code>。</p><p>或者检查完整命令行，确认路径没有被截断：</p><pre><code class="language-powershell">Get-CimInstance Win32_Process -Filter "Name='chrome.exe'" |
+  Where-Object { $_.CommandLine -like '*chrome-cdp-profile*' }</code></pre><p>The reporter's stated criteria, verbatim:</p><pre><code>Test-Path $UserDataDir 必须为 True；或 Get-CimInstance Win32_Process -Filter "Name='chrome.exe'" | Where-Object { $_.CommandLine -like '*chrome-cdp-profile*' } 检查完整命令行</code></pre><p>只看 <code>Start-Process</code> 是否抛错、或看进程是否出现，都<strong>不能</strong>作为通过判据——这两种情况在失败时 同样成立。</p><h2>Notes</h2><ul><li>报料者未给出 Chrome 的具体路径、<code>$UserDataDir</code> 的原始取值和完整脚本——需复现确认。本课的路径已 把用户名脱敏为 <code>&lt;user&gt;</code>。</li><li>同样的截断会发生在任何由 PowerShell 拼命令行的地方；<code>-ArgumentList @('--x','--y')</code> 数组形式 并不会自动补引号，这是本课的关键点。</li><li>与"进程启动成功即视为成功"的一类判据同源：判据要观察副作用（目录是否存在），而不是观察调用 有没有报错。</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/powershell-start-process-argumentlist-space-split.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=PowerShell Start-Process -ArgumentList splits a path at its spaces, silently">Find related lessons →</a></p></div>

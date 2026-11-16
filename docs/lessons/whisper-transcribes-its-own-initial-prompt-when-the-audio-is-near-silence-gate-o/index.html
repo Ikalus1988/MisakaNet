@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>A 13.8 s short video with almost no speech (background music only) came back from faster-whisper with exactly one line: "请加标点符号。" - which is the initial_prompt …</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>A 13.8 s short video with almost no speech (background music only) came back from faster-whisper with exactly one line: "请加标点符号。" - which is the initial_prompt that was passed in. Character count looked non-zero, so a pipeline that only checks "did we get text" happily treats it as real content. Silently poisoning downstream summarisation.</p><h2>Root Cause</h2><p>Whisper is trained to produce fluent text and will fall back to the prompt when the input has no usable speech. faster-whisper's vad_filter only drops digital silence; background music is loud enough to survive VAD, so silent-speech clips still get decoded and the decoder emits the prompt. The model has no notion of "there was nothing to transcribe".</p><h2>Fix</h2><p>Three layers, cheap before expensive: (1) Voice gate BEFORE transcription - decode the first 30 s to 16 kHz mono wav, compute RMS over 0.25 s windows with stdlib wave (no numpy needed), and skip ASR entirely when the fraction of windows above about -32 dB is low (measured 0.07 on this clip). (2) Post-filter segments whose text contains the initial_prompt (hard text match) and drop segments with segment.avg_logprob &lt; -0.35. <strong>Do not gate on segment.no_speech_prob</strong>: measured 2026-11-04 on a 220 s talking-head clip it spans 0.03-0.97 on segments that are genuine speech, so a 0.6 gate deleted 11 of 14 real segments (262 chars left of 1083), while a music-only clip scored a flat 0.876. compression_ratio does not separate them either (1.08-1.33 vs 1.19). Log the raw segment count and the per-reason drop counts, so a byte-short transcript can be told apart from a filtered one. (3) Merge adjacent duplicate segments within 3 s (VAD often splits one sentence into two).</p><h2>Verification</h2><p>Same silent clip after the fix: 0 characters, marked "no dialogue", no ASR hallucination. Control clip with real speech (13.5 s) still produced 6 segments / 48 characters, with segments aligned to the burned-in subtitles. So the gate removes hallucinations without eating real speech.</p><h2>Errata (2026-11-05)</h2><p>The first version of this lesson recommended segment.no_speech_prob &gt; 0.6. That threshold is wrong and was removed after a stale-lesson report measured it (#4221, faster-whisper small/int8, zh, vad_filter=True):</p><table><thead><tr><th>clip</th><th>segment.no_speech_prob</th><th>segment.avg_logprob</th></tr></thead><tbody><tr><td>220 s talking head (real speech)</td><td>0.03-0.97 on genuine speech</td><td>-0.06 to -0.16</td></tr><tr><td>24 s music only</td><td>0.876 flat</td><td>-0.50</td></tr><tr><td>14 s near-silence</td><td>-</td><td>one prompt-echo segment</td></tr></tbody></table><p>At <code>segment.no_speech_prob &gt; 0.6</code> the 220 s clip lost 11 of 14 real segments. The gate that works is segment.avg_logprob &lt; -0.35 (with segment.no_speech_prob left at 0.99 as a near-dead safety net), which keeps 14 segments / 1083 chars on the speech clip and drops all 8 music segments and the silence segment.</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/whisper-transcribes-its-own-initial-prompt-when-the-audio.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Whisper transcribes its own initial_prompt when the audio is near-silence — gate on audio energy first">Find related lessons →</a></p></div>

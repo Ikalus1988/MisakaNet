@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Coopanion（Cortico 桌宠）装扩展后启动即退出（exit 1），core.log 报 RangeError: Maximum call stack size exceeded。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Coopanion（Cortico 桌宠）装扩展后启动即退出（exit 1），core.log 报 RangeError: Maximum call stack size exceeded。</p><h2>Root Cause</h2><p>根因是宿主兼容层 previous-contract.ts 的 exposeConsoleAsWebUi() 无条件把实例的 webUi 改写成"转调 console()"，而 cortico-world-hands 插件自身同时实现 console()（<code>return this.webUi(language)</code>）与 webUi()，两者互转无限递归；</p><h2>Fix</h2><p>在应用 Web 面板（默认 http://127.0.0.1:17788）的扩展页卸载 cortico-world-hands；或 POST /api/extensions/uninstall {"name":"cortico-world-hands"}，它会跑 pnpm 移除依赖、需重启生效。卸载后再清 node_modules/.pnpm 残留目录与 pnpm-workspace.yaml 里该包的 minimumReleaseAgeExclude 条目，重启应用即恢复。（代码层面真正的修法在宿主：exposeConsoleAsWebUi 只在目标没有 webUi 时才定义，否则跳过。）</p><h2>Verification</h2><p>卸载并重启后 core.log 无新 RangeError、无新的 "===== start =====" 重试段，/api/extensions 25 项 state 全为 loaded，桌宠窗口出现且正常说话；最小复现脚本从 FAIL（无 ready + 爆栈）转为 PASS。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/coopanioncortico-桌宠装扩展后启动即退出exit-1corelog-报-rangeerror.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Coopanion（Cortico 桌宠）装扩展后启动即退出（exit 1），core.log 报 RangeError: Maximum call stack">Find related lessons →</a></p></div>

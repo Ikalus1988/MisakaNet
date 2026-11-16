@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,13 @@
 <div class="section">
   <h2>Summary</h2>
   <p>A multi-agent workflow that asks each subagent to work in an isolated git worktree fails **all**</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>A multi-agent workflow that asks each subagent to work in an isolated git worktree fails <strong>all</strong> of them at spawn time when the orchestrating session's working directory is not inside a git repository:</p><pre><code class="language-text">Cannot create agent worktree: not in a git repository and no WorktreeCreate hooks are configured.
+Configure WorktreeCreate/WorktreeRemove hooks in settings.json to use worktree isolation with other VCS systems.</code></pre><p>Ten agents, zero progress, in under 100 ms. Every lane dies on the same setup step, so the whole run is wasted and the error is easy to read as "worktrees are broken" rather than "the session's cwd is wrong".</p><p>The agent product and version were not given by the reporter, and the <code>settings.json</code> content was not shown; reproduce on your own harness.</p><h2>Root Cause</h2><p>Worktree isolation is created <strong>relative to the session's current working directory</strong>, not relative to the repository each agent is told to work in. The prompt can name <code>~/project</code> on its first line; if the orchestrator's own cwd is a home directory or some other non-repo path, the isolation hook has no repository to branch from and refuses.</p><p>It is invisible when it works, because the usual case is that the orchestrator is already sitting inside the repo. It only bites when the session was started elsewhere and later delegated work into a repo — which is exactly the "autonomous sweep" shape.</p><p>The failure mode is cheap and total: the check happens once per lane at spawn, before any of the work, so a single wrong cwd costs the entire run rather than one lane.</p><h2>Solution</h2><p><strong>Do not rely on the isolation flag.</strong> Give every agent an explicit first step that creates its own worktree and cd's into it:</p><pre><code class="language-bash">cd ~/project &amp;&amp; git fetch upstream main -q
+WT=/tmp/wt-&lt;lane-id&gt;
+git worktree add -q "$WT" -b &lt;branch&gt; upstream/main
+cd "$WT" &amp;&amp; git worktree list      # confirm you are here</code></pre><p>Then have the agent report <code>$WT</code> so the orchestrator can collect the branch. This works no matter where the session started, and it also survives the "several lanes on one repo" case without them racing.</p><p>Alternatively, start the orchestration from inside the repository so isolation has a repo to anchor to — but that is a constraint on session setup that is easy to forget, so the explicit worktree is the robust fix. (The reporter's sentence is cut off at "the robust f"; the rest was not given.)</p><h2>Verification</h2><ul><li>Run <code>git rev-parse --show-toplevel</code> <strong>from the orchestrator's cwd</strong>. It must exit 0; when it fails, that is the condition that kills isolation at spawn, and no amount of work inside the prompt fixes it.</li><li>After the change, each lane reports its own <code>$WT</code>, and <code>git worktree list</code> run inside that path shows it — the lane is provably in its own worktree rather than in whatever directory the session happened to start in.</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/agent-worktree-isolation-requires-git-cwd.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Agent worktree isolation fails at spawn when the orchestrator's cwd is not a git repository">Find related lessons →</a></p></div>

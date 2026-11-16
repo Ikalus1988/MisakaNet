@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>加新 lesson 后按生成器链重算派生产物（update_lessons_json / export_okf / export_public_vocabulary / gen_ranking_snapshot / build_lesson_pages / sync_lesson_count），本地门禁全绿，但 PR …</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>加新 lesson 后按生成器链重算派生产物（update_lessons_json / export_okf / export_public_vocabulary / gen_ranking_snapshot / build_lesson_pages / sync_lesson_count），本地门禁全绿，但 PR 上全部 test 腿（跨 3 OS × 3 Python）确定性失败，audit 同步红。</p><h2>Root Cause</h2><p><code>docs/trust-semantics.md</code> 里的证据分布表是派生物，但<strong>不在</strong>上述自动生成链里：它由 <code>scripts/evidence_distribution.py</code> 生成并需手动贴回文档。新 lesson 进语料后分布表 stale，<code>tests/test_evidence_distribution.py</code> 断言表与语料一致 → 每条 test 腿都挂在这一个断言上。批量 PR 的 checklist 写了 "evidence distribution" 但它容易被当成 6 件套之一漏掉。</p><h2>Fix</h2><p>新增 lesson 后单独跑 <code>python3 scripts/evidence_distribution.py</code>，把输出表贴进 docs/trust-semantics.md 的 Generated 注释块；用 <code>python3 scripts/evidence_distribution.py --check docs/trust-semantics.md</code> 验证。</p><h2>Verification</h2><p><code>--check</code> 输出 "ok: docs/trust-semantics.md matches the corpus"；重跑 CI 全部 test 腿转绿。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/加新-lesson-后按生成器链重算派生产物update-lessons-json-export-okf-export.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=加新 lesson 后按生成器链重算派生产物（update_lessons_json / export_okf / export_public_vocabula">Find related lessons →</a></p></div>

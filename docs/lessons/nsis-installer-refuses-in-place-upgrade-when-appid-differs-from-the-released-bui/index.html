@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,20 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Packing a Windows desktop app from source with **electron-builder + NSIS** produces an installer that refuses to overwrite an existing installation. The dialog …</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Packing a Windows desktop app from source with <strong>electron-builder + NSIS</strong> produces an installer that refuses to overwrite an existing installation. The dialog (verbatim, application name interpolated):</p><pre><code>请选择空文件夹，或 DeepSeek Harness 原来的安装目录。</code></pre><p>That happens even when the user selects exactly the original install directory — which is, by construction, not empty. There is no way forward from the dialog, so a locally built installer cannot be used to upgrade a machine that already runs the released build.</p><p>The reporter's environment is the DSH desktop app's own source tree, which ships <code>.env.windows.example</code> — a template whose <code>DSH_DESKTOP_APP_ID</code> does not match the released build's appId.</p><h2>Root Cause</h2><p>The pack-time <code>appId</code> differs from the released build's <code>appId</code>, and NSIS derives its install registry key from <code>appId</code>:</p><pre><code>INSTALL_REGISTRY_KEY = "Software\${APP_GUID}"
+APP_GUID             = UUID.v5(appId, &lt;electron-builder's fixed NS UUID&gt;)</code></pre><p>A different <code>appId</code> yields a different GUID, so the installer looks under a key that no installation was ever recorded under. It finds no <code>InstallLocation</code>, cannot prove that the non-empty directory it was pointed at is its own, and therefore classifies it as <strong>someone else's directory</strong> and refuses.</p><p>This is a textbook trap in two specific ways:</p><ul><li>The source repository's own template is <em>a plausible-looking wrong value</em>. In this case <code>.env.windows.example</code> carried <code>com.deepseek.harness</code> while the released build is actually <code>com.deepseek.dsh</code>. Copying the template is the documented path, and it is the broken one.</li><li>Nothing in the flow complains. The build succeeds, the installer is signed off as fine, and the failure only appears at install time on a machine that already had the app — the one machine you cannot easily reset.</li></ul><p>Not given by the reporter — 报料者未给出，需复现确认: whether the fixed namespace UUID changes across electron-builder majors, and whether the dialog also appears for an all-users (per-machine, <code>HKLM</code>) install versus the per-user <code>HKCU</code> case that was diagnosed.</p><h2>Solution</h2><p>Set <code>DSH_DESKTOP_APP_ID</code> in the local <code>.env.windows</code> to the same value the released build uses (<code>com.deepseek.dsh</code>). Do <strong>not</strong> copy it from <code>.env.windows.example</code> (<code>com.deepseek.harness</code>).</p><p>To find the right value, work backwards from a machine that already has the released build. Two methods, both given by the reporter:</p><ol><li><strong>Reverse it from the installed registry key.</strong> Compute the GUID from a candidate <code>appId</code> and compare it against the real key name under <code>HKCU\Software\&lt;guid&gt;\InstallLocation</code> (registry key names are compared case-insensitively):</li></ol><pre><code class="language-js">const { v5: uuidv5 } = require('uuid');
+const NS = '50e065bc-3134-11e6-9bab-38c9862bdaf3';   // electron-builder's fixed NS UUID
+const appId = process.argv[2];                         // candidate, e.g. com.deepseek.dsh
+console.log(uuidv5(appId, NS));</code></pre><pre><code class="language-powershell"># list the install-location records that actually exist on this machine
+Get-ChildItem 'HKCU:\Software' |
+  Where-Object { Test-Path (Join-Path $_.PSPath 'InstallLocation') } |
+  ForEach-Object { "$($_.PSChildName)`t$((Get-ItemProperty $_.PSPath).InstallLocation)" }</code></pre><ol><li><strong>Read it straight out of the installed app.</strong> The shipped <code>package.json</code> carries a <code>dshDesktopAppId</code> field:</li></ol><pre><code class="language-js">const asar = require('@electron/asar');
+const pkg = JSON.parse(
+  asar.extractFile('&lt;install-dir&gt;/resources/app.asar', 'package.json').toString()
+);
+console.log(pkg.dshDesktopAppId);</code></pre><p>Method 2 needs no candidate list and no GUID arithmetic, so prefer it when the old build is installed. Method 1 is what you need when all you have is a registry key and you must decide which <code>appId</code> produced it.</p><h2>Verification</h2><p>Reporter's criteria, in order:</p><ol><li><strong>Static match before installing anything.</strong> Read <code>dshDesktopAppId</code> from <code>resources/app.asar</code> → <code>package.json</code> in the <em>new</em> build; compute <code>GUID = UUID.v5(appId, "50e065bc-3134-11e6-9bab-38c9862bdaf3")</code>; compare it with the existing installation's key name under <code>HKCU\Software\&lt;guid&gt;</code>. Equal is <code>MATCH</code>; not equal means the installer will refuse again.</li><li><strong>Behavioural check.</strong> On a machine that already has the old version installed, run the new installer and select the original install directory. It must go straight into the in-place upgrade flow instead of showing <code>请选择空文件夹，或 … 原来的安装目录。</code></li></ol><p>Step 1 fails loudly and costs seconds; step 2 is the one that actually reproduces the user-visible symptom. Run both — step 1 alone will not tell you whether NSIS's own directory-recognition logic agrees with your GUID arithmetic.</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/nsis-installer-rejects-upgrade-appid-guid-mismatch.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=NSIS Installer Refuses In-Place Upgrade When appId Differs from the Released Build">Find related lessons →</a></p></div>

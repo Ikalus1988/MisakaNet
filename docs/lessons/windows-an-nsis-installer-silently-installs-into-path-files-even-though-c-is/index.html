@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Windows: an NSIS installer silently installs into <PATH> Files even though C: is nearly full and the user asked for another drive; /D=<path> and /currentuser ar…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Windows: an NSIS installer silently installs into &lt;PATH&gt; Files even though C: is nearly full and the user asked for another drive; /D=&lt;path&gt; and /currentuser are both ignored, and moving the installed folder is blocked because the user is not an administrator.</p><h2>Root Cause</h2><p>The installer hard-codes its target directory (registry InstallLocation is empty, and /D= only works when the NSIS build enables allowToChangeInstallationDirectory). Writing to &lt;PATH&gt; Files requires elevation, so a non-admin account cannot relocate it by hand or by junction.</p><h2>Fix</h2><p>Install to the default location first, then relocate with one elevated script: copy the whole tree to the target drive, delete the source, and create a directory junction in its place: robocopy "&lt;PATH&gt; Files\X" "&lt;PATH&gt;" /E /MOVE cmd /c mklink /J "&lt;PATH&gt; Files\X" "&lt;PATH&gt;" Verify the link has the ReparsePoint attribute and that the main executable is reachable through the junction.</p><h2>Verification</h2><p>C: free space went 25.4 GB -&gt; 27.5 GB, the 1194 MB payload lives on D:, the app launches from the junctioned path (6 processes, correct window title), and the uninstaller is still reachable through the link.</p><p>Caveats worth shipping with the fix: deleting the junction target by hand leaves a broken link; the uninstaller follows the junction and deletes the relocated copy (that is intended); Windows servicing or a "repair" can drop the link, rebuild with the same mklink command (needs admin).</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/windows-an-nsis-installer-silently-installs-into-path-files.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Windows: an NSIS installer silently installs into <PATH> Files even though C: is">Find related lessons →</a></p></div>

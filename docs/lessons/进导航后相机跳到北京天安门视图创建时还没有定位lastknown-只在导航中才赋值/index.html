@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>选完路线点开始导航，地图直接跳到**北京天安门**（高德默认视野），必须点一次右下角定位才回到脚下。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>选完路线点开始导航，地图直接跳到<strong>北京天安门</strong>（高德默认视野），必须点一次右下角定位才回到脚下。</p><h2>Root Cause</h2><p><code>AMapNaviRideView</code> 是在 <code>navigating</code> 变 true <strong>之后</strong>才被创建的，那一刻还没有新的 GPS 点；而 <code>NavService.lastKnown</code> 以前是 <code>guard navigating</code> <strong>之后</strong>才赋值 → 视图创建时拿到 nil，SDK 没有位置可锁，就停在自己的默认视野。</p><h2>Fix</h2><p>三件事一起做：</p><ol><li><code>feed(location:)</code> 里<strong>先记 <code>lastKnown</code>，再判断是否在导航</strong>（任何时候都记）；</li><li><code>attachRideView</code> → <code>seedViewLocation()</code>：有 <code>lastKnown</code> 就喂；没有就拿算路起点反算 WGS-84（<code>gcj02ToWgs84</code>）顶一下；0.8 秒后再补一次（视图刚进窗口时 <code>setExternalLocation</code> 可能还没生效）；</li><li><code>syncCamera</code>：进导航头 5 秒每 0.7 秒「锁一次 + setCenter(自己)」，之后相机离人 &gt; 2km 就再拉一次。</li></ol><p>另外加 1Hz 看门狗定时器：停着不动时 <code>speed</code> / <code>coordinate</code> 都没变化，SwiftUI 可能一次都不回调 <code>updateUIView</code>，相机校正不能只靠它。</p><h2>Verification</h2><p>冷启动直接进导航：第一帧就在当前位置，不出现天安门；静止不动 30 秒相机不漂；点定位按钮能立刻回到自身。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/进导航后相机跳到北京天安门视图创建时还没有定位lastknown-只在导航中才赋值.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=进导航后相机跳到北京天安门：视图创建时还没有定位，lastKnown 只在导航中才赋值">Find related lessons →</a></p></div>

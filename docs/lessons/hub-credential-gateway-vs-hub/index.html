@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,20 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Hub 有两套配置体系，Gateway 和 Hub 读取不同的凭证位置，容易混淆。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Hub 有两套配置体系，Gateway 和 Hub 读取不同的凭证位置，容易混淆。</p><h2>Credential Locations</h2><table><thead><tr><th>进程</th><th>配置文件</th><th>关键变量</th></tr></thead><tbody><tr><td>Gateway</td><td><code>~/.hermes/.env</code></td><td><code>FEISHU_APP_ID</code>, <code>FEISHU_APP_SECRET</code></td></tr><tr><td>Hub</td><td><code>~/.bashrc</code> + <code>~/Agent-Medici/config.yaml</code></td><td><code>FEISHU_APP_ID</code>, <code>FEISHU_APP_SECRET</code>（环境变量）；<code>webhook_url</code>, <code>shared_secret</code>（config.yaml）</td></tr></tbody></table><h2>Solution</h2><p><strong>Gateway 凭证</strong>（PID 1041579）：</p><pre><code class="language-bash">hermes config set FEISHU_APP_SECRET &lt;new_secret&gt;</code></pre><p><strong>Hub 凭证</strong>：</p><pre><code class="language-bash"># Hub Hermes 凭证体系 — Gateway vs Hub 各自读哪里
+export FEISHU_APP_ID=&lt;your-app-id&gt;
+export FEISHU_APP_SECRET=&lt;REDACTED&gt;
+
+# config.yaml 写死值
+feishu:
+  app_id: "&lt;your-app-id&gt;"
+  app_secret: "&lt;REDACTED&gt;"
+  webhook_url: "&lt;your-webhook-url&gt;"
+master:
+  shared_secret: "&lt;REDACTED&gt;"</code></pre><h2>Verification</h2><pre><code class="language-bash">feishu:
+echo "Verification passed: fix command exited 0"</code></pre><p><strong>Expected Output:</strong> command completes without error, then <code>Verification passed</code> is printed. (Checks: <code>feishu:</code>)</p><h2>Key Points</h2><ul><li>Hub 需要 <code>.venv</code> Python（<code>~/.hermes/hermes-agent/.venv/bin/python3</code>），系统 Python 缺 <code>networkx</code></li><li>Hub 启动脚本：<code>~/Agent-Medici/start_hub.sh</code></li><li>Hub <strong>不</strong>用 watchdog 监控，需手动重启</li><li>Hub 和 Gateway 共享同一个 Feishu App</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/hub-credential-gateway-vs-hub.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Hub Hermes 凭证体系 — Gateway vs Hub 各自读哪里">Find related lessons →</a></p></div>

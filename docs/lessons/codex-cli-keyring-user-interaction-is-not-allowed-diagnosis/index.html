@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,32 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Codex CLI on macOS with `cli_auth_credentials_store=keyring` fails to write OAuth</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Codex CLI on macOS with <code>cli_auth_credentials_store=keyring</code> fails to write OAuth tokens with: <code>failed to write OAuth tokens to keyring: Platform secure storage failure: User interaction is not allowed</code>. A fresh <code>codex login status</code> can still read an existing ChatGPT session, and the Keychain reports unlocked.</p><h2>Root Cause</h2><p>The macOS Keychain item's Access Control List (ACL) restricts which applications can access it. The <code>User interaction is not allowed</code> error means the Keychain 拒绝了当前进程的写入请求，通常是因为：</p><ol><li><strong>Screen is locked</strong> — Keychain items with <code>kSecAttrAccessibleWhenUnlocked</code> are inaccessible when the screen is locked.</li><li><strong>ACL does not include the current process</strong> — the item was created by a different binary or path, and the ACL only allows that specific app.</li><li><strong>Keychain is locked</strong> — even if the UI shows it as unlocked, the CLI process may see a different state.</li></ol><p>Read-only access (login status) works because reading may use a different ACL entry or the item's access control allows read without interaction.</p><h2>Solution</h2><h3>Step 1: Diagnose the ACL</h3><pre><code class="language-bash"># Check the Keychain item's ACL
+security find-generic-password -s "Codex Auth" -a "&lt;your-email&gt;" 2&gt;&amp;1
+# Look for "accc" (access control) entries — which app paths are allowed
+
+# Check if Keychain is actually locked from CLI perspective
+security show-keychain-info ~/Library/Keychains/login.keychain-db 2&gt;&amp;1</code></pre><h3>Step 2: Fix the ACL</h3><pre><code class="language-bash"># Option A: Delete and recreate the item (next codex login will recreate it)
+security delete-generic-password -s "Codex Auth" -a "&lt;your-email&gt;" 2&gt;&amp;1
+codex login
+
+# Option B: Add the current binary to the ACL
+# This requires the Keychain Access GUI:
+# 1. Open Keychain Access.app
+# 2. Search for "Codex Auth"
+# 3. Double-click → Access Control → click "+"
+# 4. Navigate to /usr/local/bin/codex (or wherever it's installed)
+# 5. Save</code></pre><h3>Step 3: Verify</h3><pre><code class="language-bash"># Test write access
+codex login 2&gt;&amp;1
+# Expected: successful login without "User interaction" error
+
+# Verify the item exists and is readable
+security find-generic-password -s "Codex Auth" -a "&lt;your-email&gt;" -w 2&gt;&amp;1
+# Expected: the token value (or at least no ACL error)</code></pre><h2>Verification</h2><pre><code class="language-bash">security find-generic-password -s "Codex Auth" -g 2&gt;&amp;1 | head -5
+# Expected: item attributes including "svce" = "Codex Auth"
+# Not expected: "User interaction is not allowed" or "could not be found"</code></pre>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/codex-keyring-user-interaction-not-allowed.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Codex CLI: keyring 'User interaction is not allowed' diagnosis">Find related lessons →</a></p></div>

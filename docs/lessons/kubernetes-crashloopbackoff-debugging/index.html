@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,41 @@
 <div class="section">
   <h2>Summary</h2>
   <p>CrashLoopBackOff is a Kubernetes pod status that indicates a container is crashing and being automatically restarted in a loop. This can result from several typ…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>CrashLoopBackOff is a Kubernetes pod status that indicates a container is crashing and being automatically restarted in a loop. This can result from several types of misconfigurations including inability to connect to persistent volumes, init-container misconfiguration, or application code failures. The primary debugging challenge is understanding why the service fails to stay running.</p><h2>Root Cause</h2><p>Two common problems when starting a container are:</p><ol><li><strong>OCI runtime create failed</strong>: References a binary or script that doesn't exist on the container (Exit Code 127)</li><li><strong>Container "Completed" or "Error"</strong>: The code executing on the container failed to run a service and stay running (Exit Code 1)</li></ol><p>Exit code 137 (128 + SIGKILL 9) indicates Kubernetes hit the memory limit for the pod and killed the container.</p><h2>Solution</h2><h3>Step 1: Identify Docker Entrypoint and Cmd</h3><p>For containers where you lack the Dockerfile, pull and inspect the image locally:</p><pre><code class="language-bash">docker pull docker.elastic.co/elasticsearch/elasticsearch:7.10.2
+docker inspect docker.elastic.co/elasticsearch/elasticsearch:7.10.2 | jq '.[0].ContainerConfig.Entrypoint'
+docker inspect docker.elastic.co/elasticsearch/elasticsearch:7.10.2 | jq '.[0].ContainerConfig.Cmd'</code></pre><p><strong>Kubernetes Naming Convention</strong>:</p><ul><li>Docker Entrypoint = Kubernetes <code>command</code></li><li>Docker Cmd = Kubernetes <code>args</code></li></ul><h3>Step 2: Override Container Entrypoint for Debugging</h3><p>Update the deployment to replace the container entrypoint with <code>tail -f /dev/null</code> or <code>sleep infinity</code> to keep the container running without executing the problematic startup command:</p><pre><code class="language-yaml">apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: elasticsearch
+  namespace: elasticsearch
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app: backend
+      tier: backend
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: backend
+        tier: backend
+    spec:
+      containers:
+      - command:
+        - tail
+        - "-f"
+        - /dev/null</code></pre><h3>Step 3: Execute into the Container</h3><p>Use kubectl or k9s to exec into the container and inspect the environment:</p><pre><code>kubectl exec -it &lt;pod-name&gt; -- /bin/sh</code></pre><h3>Step 4: Run the Intended Startup Command</h3><p>Execute the original Entrypoint and Cmd you discovered to see how the application is failing and identify the specific error.</p><h3>Step 5: Install Debugging Tools</h3><p>Containers may lack debugging tools (curl, lsof, vim). Try common package managers:</p><ul><li>Alpine Linux: <code>apk</code></li><li>Debian/Ubuntu: <code>apt-get</code></li></ul><h2>Verification</h2><pre><code class="language-bash">tail -f /dev/null
+echo "Verification passed: fix command exited 0"</code></pre><p><strong>Expected Output:</strong> command completes without error, then <code>Verification passed</code> is printed. (Checks: <code>tail -f /dev/null</code>)</p><h2>Notes</h2><ul><li>Use <code>kubectl describe pod &lt;pod-name&gt;</code> to view container exit codes and status messages</li><li>Common exit statuses range from 1-125 for Unix processes</li><li>Each Unix command has a man page with details about specific exit codes</li><li>The <code>kubectl describe pod</code> output shows the restart count and last state of the container, which helps identify if a CrashLoopBackOff is occurring</li></ul><h2>References</h2><ul><li>Article: Kubernetes - How to Debug CrashLoopBackOff in a Container by David Giffin (February 4, 2021)</li><li>Source: https://releaseapp.io/blog/kubernetes-how-to-debug-crashloopbackoff-in-a-container</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/kubernetes-crashloopbackoff-debugging.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Tips for Debugging Kubernetes CrashLoopBackOff in a Container">Find related lessons →</a></p></div>

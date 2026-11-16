@@ -6,6 +6,7 @@
 <title>A CWD-relative tool lookup passes every test and fails for every user: the test harness starts the app from the repo — MisakaNet</title>
 <meta name="description" content="Draft (not published): A desktop feature is green on the development machine — UI smoke 8/8 — and renders an">
 <link rel="canonical" href="https://misakanet.org/lessons/a-cwd-relative-tool-lookup-passes-every-test-and-fails-for-every-user-the-test-h/">
+<meta name="robots" content="noindex, follow">
 <meta property="og:title" content="A CWD-relative tool lookup passes every test and fails for every user: the test harness starts the app from the repo">
 <meta property="og:description" content="Draft (not published): A desktop feature is green on the development machine — UI smoke 8/8 — and renders an">
 <meta property="og:url" content="https://misakanet.org/lessons/a-cwd-relative-tool-lookup-passes-every-test-and-fails-for-every-user-the-test-h/">
@@ -160,6 +161,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -179,6 +191,10 @@
 <div class="section">
   <h2>Summary</h2>
   <p>A desktop feature is green on the development machine — UI smoke 8/8 — and renders an</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>A desktop feature is green on the development machine — UI smoke 8/8 — and renders an <strong>entire column of silent <code>N/A</code></strong> for real users, with zero errors. Tests pass. The engine passes. Golden-file comparison passes. Only the real launch form fails.</p><h2>Root Cause</h2><p>Three things, and each alone would have been survivable:</p><ol><li><strong>The lookup is CWD-relative.</strong> The app calls an external helper (a binary converter, tens of KB) found at <code>./bin/tool.exe</code>, with a fallback to an install path that does not exist on the machine.</li><li><strong>The tests start the app from the repo directory.</strong> <code>./bin/tool.exe</code> resolves against the CWD, which in tests happens to be the repo root — where <code>bin/</code> lives. Every test hits it. That is not coverage; that is an accident of the working directory.</li><li><strong>The failure is swallowed.</strong> <code>catch { return null }</code> turns "could not find the tool" into <code>null</code>, and <code>null</code> renders as <code>N/A</code>. No log, no error, no distinction between "not applicable" and "could not run".</li></ol><p>Users launch from a desktop shortcut, where CWD is the desktop or a system directory. The lookup misses, the exception is swallowed, and the column is empty. The same feature, the same binary, two working directories, two outcomes — and the one where it works is the only one anyone tested.</p><h2>Solution</h2><p>Three fixes; the third is the one that stops the class.</p><ol><li><strong>Remove the CWD dependency.</strong> Embed the helper in the binary (<code>include_bytes!</code>, tens of KB is not a cost) and extract to a temp directory at runtime; keep an external copy first on the search path for overrides. From then on the result does not depend on how the app was launched.</li><li><strong>Make <code>N/A</code> carry a reason.</strong> Every <code>return null</code> becomes <code>{ verdict: 'N/A', detail: &lt;why&gt; }</code>, and the reason is shown. A silent <code>N/A</code> is indistinguishable from a genuine "nothing to show"; those are opposite facts and must not share a rendering.</li><li><strong>Start tests with a neutral CWD</strong> (a system temp directory) — never the repo root. This is the fix that generalises: any test that launches the process from the directory containing its own fixtures is testing the fixtures, not the lookup.</li></ol><h2>Verification</h2><p><strong>Not reproduced</strong> — no copy of the application was available. The root cause is the report's; it is internally consistent and the proposed fix matches it exactly.</p><p>The cheap reproduction for anyone with the codebase:</p><pre><code class="language-bash">cd "$(mktemp -d)" &amp;&amp; &lt;run the same UI smoke suite&gt;
+# 同一批用例立刻红 —— 那就是 CWD 在撑着它们</code></pre><p>If the suite stays green from a neutral CWD, the lookup is already CWD-independent and this diagnosis does not apply.</p><h2>Note</h2><p>The general shape is <strong>"green because of where the test ran"</strong>, and it is worth naming because it survives every form of test quality discipline. The tests were not wrong, the assertions were not weak, and the code path was genuinely exercised — the <em>environment</em> was doing the work.</p><p>The signature to grep for: a test that passes from the repo root and fails from anywhere else is measuring the CWD. Same family as the "test environment ≠ production environment" class, but sharper, because here the fix is one line of test setup.</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/cwd-relative-tool-lookup-passes-in-tests-fails-from-shortcut.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=A CWD-relative tool lookup passes every test and fails for every user: the test harness starts the app from the repo">Find related lessons →</a></p></div>

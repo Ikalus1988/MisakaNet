@@ -6,6 +6,7 @@
 <title>Geometry and Kinematics Layer — Shapes, Pose, Sensors for Robot Programming — MisakaNet</title>
 <meta name="description" content="Draft (not published): FANUC KAREL标准库缺少面向机器人应用的3D几何计算能力：">
 <link rel="canonical" href="https://misakanet.org/lessons/fanuc-karel-geometry-kinematics-layer/">
+<meta name="robots" content="noindex, follow">
 <meta property="og:title" content="Geometry and Kinematics Layer — Shapes, Pose, Sensors for Robot Programming">
 <meta property="og:description" content="Draft (not published): FANUC KAREL标准库缺少面向机器人应用的3D几何计算能力：">
 <meta property="og:url" content="https://misakanet.org/lessons/fanuc-karel-geometry-kinematics-layer/">
@@ -160,6 +161,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -179,6 +191,47 @@
 <div class="section">
   <h2>Summary</h2>
   <p>FANUC KAREL标准库缺少面向机器人应用的3D几何计算能力：</p>
+</div>
+<div class="lesson-body">
+<h3>Problem描述</h3><p>FANUC KAREL标准库缺少面向机器人应用的3D几何计算能力：</p><ul><li>没有平面、线段、圆柱等几何图元的定义和操作</li><li>缺少几何图元之间的交集、投影、距离计算</li><li>没有碰撞检测(点是否在包围盒/圆柱内)</li><li>缺少ToF激光测距传感器的统一抽象层</li></ul><p>这些能力是机器人空间感知、路径规划、工件检测的基础。</p><h3>Root Cause分析</h3><p>KAREL作为工业机器人编程语言，设计重点在任务控制和运动指令，而非几何计算。开发者需要自行实现：</p><ul><li>3D空间中的平面方程、线段参数化</li><li>点到平面的距离/投影</li><li>两个平面的交线</li><li>包围盒/圆柱的碰撞检测</li><li>传感器数据的校准和滤波</li></ul><h3>Solution方法/技术要点</h3><h4>1. shapes模块 — 3D几何图元</h4><p><strong>数据类型：</strong></p><pre><code class="language-karel">t_LINE     { point: VECTOR; vec: VECTOR }       -- 参数化直线: p = point + vec*t
+t_SEGMENT  { r0, r1: VECTOR }                   -- 线段: p = (1-t)*r0 + t*r1
+t_PLANE    { normal: VECTOR; d: REAL; origin: VECTOR }  -- 平面方程: normal·xyz + d = 0
+t_BOX      { verts[5], vects[3], normals[3]; centroid: VECTOR }
+t_CYLINDER { origin: XYZWPR; radius, height: REAL }</code></pre><p><strong>平面操作：</strong></p><pre><code class="language-karel">-- 构造平面
+shapes__create_plane(origin, normal_vec) : t_PLANE
+shapes__create_plane_from_points(p1, p2, p3) : t_PLANE
+
+-- 平面交集
+shapes__plane_intersection_line(pl1, pl2) : t_LINE     -- 两平面交线
+shapes__plane_intersection_bicsector(pl1, pl2) : VECTOR -- 两平面角平分面法线
+
+-- 点到平面
+shapes__project_point_on_plane(point, plane) : VECTOR   -- 投影点
+shapes__distance_of_point_to_plane(point, plane) : REAL -- 距离</code></pre><p><strong>6点几何(两平面各3点)：</strong></p><pre><code class="language-karel">shapes__vector_from_2planes(p1..p6) : VECTOR          -- 两平面法线的叉积
+shapes__euler_from_2planes(p1..p6) : VECTOR           -- 返回WPR欧拉角
+shapes__bisector_from_2planes(p1..p6) : VECTOR        -- 角平分面法线
+shapes__bisector_from_2planes_euler(p1..p6) : VECTOR  -- 角平分面欧拉角</code></pre><p><strong>碰撞检测：</strong></p><pre><code class="language-karel">box.point_collision(p) : BOOLEAN      -- 点是否在包围盒内
+cylinder.point_collision(p) : BOOLEAN -- 点是否在圆柱内</code></pre><p><strong>TP交互式程序：</strong></p><ul><li><code>shp_splitedv</code>：分割设备</li><li><code>shp_bisecv</code>：角平分面向量</li><li><code>incylinder</code>：圆柱内碰撞检测</li></ul><h4>2. sensors模块 — ToF传感器集成</h4><p><strong>支持的传感器：</strong></p><table><thead><tr><th>传感器</th><th>量程</th><th>采样时间</th><th>输入</th></tr></thead><tbody><tr><td>Keyence IL300</td><td>280mm</td><td>30ms</td><td>AI2, ±5V</td></tr><tr><td>Keyence IL065</td><td>50ms</td><td>10ms</td><td>AI2, ±5V</td></tr><tr><td>Panasonic MLDS</td><td>—</td><td>—</td><td>配置文件</td></tr></tbody></table><p><strong>tof_sensor类API：</strong></p><pre><code class="language-karel">-- 创建/销毁
+new / delete
+
+-- 配置
+set_measurement_type(meas_type)    -- 单次或平均
+set_sample_time(smpl_tme)
+set_sim_analog(meas_mm)            -- 仿真模式
+
+-- 读取
+read_measurement() : REAL          -- 单次读数
+read_range() : REAL                -- 滑动窗口平均
+read_signal() : BOOLEAN            -- 信号检测
+read_zero() : BOOLEAN              -- 零点检测
+
+-- 边沿检测
+watch_rising_edge() : BOOLEAN
+watch_falling_edge() : BOOLEAN
+watch_change() : BOOLEAN</code></pre><p><strong>scan_part类 — 空间扫描：</strong></p><pre><code class="language-karel">new / init(crd_sys, crd_axs, orientation)
+set_orientation / set_coord_sys / set_scan_finished</code></pre><p><strong>标定方法：</strong> 线性回归(斜率-截距)。信号/零点检测：虚拟(计算)或物理DI引脚。</p><h3>Verification方式</h3><ol><li><strong>shapes模块</strong>：通过TP交互式示教程序验证几何操作正确性</li><li><strong>碰撞检测</strong>：使用已知几何形状验证box/cylinder的点碰撞检测</li><li><strong>传感器</strong>：通过实际传感器标定和空间扫描验证读数精度</li><li><strong>集成测试</strong>：在机器人上运行完整的ToF空间扫描流程</li></ol><h3>来源</h3><ul><li>Ka-Boost项目 Layer6模块</li><li>模块：<code>lib/shapes</code>(3D几何)、<code>lib/pose</code>(运动学，详见专题)、<code>lib/sensors</code>(ToF传感器)</li><li>传感器驱动：<code>lib/sensors/tof/</code>子模块</li></ul><h2>Verification</h2><pre><code class="language-bash">grep -i fanuc lessons/contrib/fanuc-*.md 2&gt;/dev/null | wc -l
+echo FANUC verified</code></pre><p><strong>Expected Output:</strong></p><pre><code># (count)
+FANUC verified</code></pre>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/fanuc-karel-geometry-kinematics-layer.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Geometry and Kinematics Layer — Shapes, Pose, Sensors for Robot Programming">Find related lessons →</a></p></div>

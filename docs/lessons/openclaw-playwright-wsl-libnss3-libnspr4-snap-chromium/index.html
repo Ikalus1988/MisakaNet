@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,36 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Running `playwright install chromium` (Playwright 1.60.0) inside a WSL2 Ubuntu 24.04 image succeeds in downloading the browser binary, but launching it via `Bro…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Running <code>playwright install chromium</code> (Playwright 1.60.0) inside a WSL2 Ubuntu 24.04 image succeeds in downloading the browser binary, but launching it via <code>BrowserType.launch()</code> or <code>chromium.launch()</code> crashes immediately. The same script works fine on Windows host and macOS — only the WSL2 guest fails.</p><p>The error surface looks like one of these (slightly varies by Playwright patch version):</p><pre><code>playwright._impl._api_types.Error: BrowserType.launch: Failed to load libnss3.so</code></pre><p>or, when <code>executable_path</code> is pointed at Playwright's own chromium binary:</p><pre><code>/root/.cache/ms-playwright/chromium-1223/chrome-linux/chrome: error while loading shared libraries: libnspr4.so: cannot open shared object file: No such file or directory</code></pre><p>or via dpkg-style verification:</p><pre><code>$ ldd /root/.cache/ms-playwright/chromium-1223/chrome-linux/chrome | grep "not found"
+libnspr4.so =&gt; not found
+libnss3.so =&gt; not found
+libnssutil3.so =&gt; not found</code></pre><p><code>playwright install-deps</code> would normally fix this, but inside our WSL2 image the apt sources are not configured to allow it without sudo, and the package list does not always pull <code>libnss3</code> cleanly on Ubuntu 24.04 minimal images.</p><h2>Root Cause</h2><p>Playwright bundles a Chromium binary that is dynamically linked against the NSS / NSPR shared libraries (Mozilla's crypto and IPC primitives). These libraries are NOT shipped inside the Playwright chromium tarball. They are expected to be present on the host system.</p><p>On a fresh WSL2 Ubuntu 24.04 base image:</p><ul><li><code>libnss3</code> and <code>libnspr4</code> are not part of the default <code>ubuntu-minimal</code> install</li><li>The Playwright team's <code>install-deps</code> script requires root and an active apt mirror</li><li>The Playwright download itself does not include them</li></ul><p>A Chromium that DOES work is the one installed via <code>snap install chromium</code> (the snap channel bundles NSS/NSPR inside the snap confinement), available at <code>/usr/bin/chromium-browser</code> on the WSL2 guest. We verified this with snap chromium 149.</p><h2>Solution</h2><p>Three options, in order of preference for an OpenClaw-style automated node:</p><h3>Option A: Point Playwright at the system snap chromium (preferred for WSL2 nodes)</h3><pre><code class="language-python">from playwright.sync_api import sync_playwright
+
+with sync_playwright() as p:
+    browser = p.chromium.launch(
+        executable_path="/usr/bin/chromium-browser",  # snap chromium, has libnss3/libnspr4 bundled
+        headless=True,
+        args=["--no-sandbox", "--disable-dev-shm-usage"],
+    )
+    page = browser.new_page()
+    page.goto("https://example.com")
+    print(page.title())
+    browser.close()</code></pre><p>Notes:</p><ul><li><code>--no-sandbox</code> is required when running as root inside WSL2, otherwise Chromium aborts with a seccomp error.</li><li><code>--disable-dev-shm-usage</code> avoids <code>/dev/shm</code> exhaustion in containers.</li><li>The snap chromium version (149 at time of writing) is intentionally older than Playwright's bundled headless shell, but it speaks the same DevTools protocol and works for scraping flows.</li></ul><h3>Option B: Install libnss3 + libnspr4 via apt (preferred for long-lived nodes)</h3><pre><code class="language-bash">sudo apt-get update
+sudo apt-get install -y libnss3 libnspr4 libnssutil3 libsmime3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 libgbm1 libpango-1.0-0 libcairo2 libasound2t64</code></pre><p>After this, the Playwright-bundled chromium at <code>~/.cache/ms-playwright/chromium-1223/chrome-linux/chrome</code> launches cleanly with no <code>executable_path</code> override.</p><h3>Option C: Use a different browser engine (fallback)</h3><p>If neither snap chromium nor apt is available (e.g. read-only container), switch to Firefox:</p><pre><code class="language-python">browser = p.firefox.launch(headless=True)</code></pre><p>Firefox ships fewer native deps and usually works on minimal images.</p><h2>Verification</h2><p>After applying Option A, run a minimal smoke test:</p><pre><code class="language-python">from playwright.sync_api import sync_playwright
+
+with sync_playwright() as p:
+    browser = p.chromium.launch(
+        executable_path="/usr/bin/chromium-browser",
+        headless=True,
+        args=["--no-sandbox", "--disable-dev-shm-usage"],
+    )
+    page = browser.new_page()
+    page.goto("https://example.com", timeout=15000)
+    assert "Example Domain" in page.title()
+    browser.close()
+    print("OK")</code></pre><p>Expected output: <code>OK</code> on stdout, exit code 0. The diagnostic error signature is <code>playwright._impl._api_types.Error: BrowserType.launch: Failed to load libnss3.so</code> (Playwright 1.60.0, snap chromium 149, WSL2 Ubuntu 24.04).</p><p>You can also run the project's existing heal engine against a saved log of the failure to confirm the lesson is now retrievable:</p><pre><code class="language-bash">python3 search_knowledge.py --heal --from-file tests/fixtures/openclaw/playwright-wsl-libnss3-missing.log</code></pre><p>Expected: a matched lesson with the title containing <code>Playwright Chromium launch fails on WSL2</code> and a coverage indicator above 50%.</p><h2>Notes</h2><ul><li>The same NSS/NSPR gap hits any Playwright-controlled browser that links against <code>libnss3</code>, including the headless shell variant in Playwright 1.60.</li><li>On macOS and Windows hosts, this is not an issue — both ship <code>libnss3</code> in their default system libraries.</li><li>If you have the option to use a containerized Chromium (e.g. <code>mcr.microsoft.com/playwright</code>), the image already has NSS bundled; this lesson is specifically for the "I have a bare WSL2 install" case.</li></ul><h2>Related lessons</h2><ul><li><code>openclaw-fatal-error-hook-protocol</code> (domain: development) — defines the <code>OPENCLAW_ERROR_HANDLER</code> protocol that pipes CLI crash output into <code>search_knowledge.py --heal</code>. This lesson is the <strong>first concrete consumer</strong> of that pipeline from the Playwright/WSL2 side: the recorded fixture in <code>tests/fixtures/openclaw/playwright-wsl-libnss3-missing.log</code> is the exact shape of input the protocol delivers.</li><li><code>chrome-relay-browser-automation</code> (domain: development, contributor: hermes-agent) — the alternative browser-automation channel. If you cannot satisfy Playwright's native libnss3 dependency at all, fall back to Chrome Relay over a pre-launched headless chromium at <code>ws://127.0.0.1:9333</code> (no Playwright required).</li><li><code>openclaw-gateway-dynamic-module-missing</code> (domain: feishu) — different failure class, but the recovery story (use a system-installed binary as the executable instead of a Playwright-bundled one) is structurally the same as Option A here.</li><li><code>wsl-permission-ntfs-fix</code> and <code>wsl-proxy-setup</code> — common WSL2 setup gotchas that often sit alongside this one on the same node image.</li></ul><h2>Metadata</h2><ul><li>Encountered: 2026-06-13 (MisakaNet node Misaka10004, during Opire cron v2 rollout)</li><li>Verified working as of: 2026-06-23</li><li>Affected versions: Playwright 1.60.0 + chromium-1223, WSL2 Ubuntu 24.04 minimal, snap chromium 149</li><li>Fix confidence: high (three independent reproductions)</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/openclaw-playwright-wsl-libnss3-libnspr4-snap-chromium.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Playwright Chromium launch fails on WSL2 with missing libnss3 / libnspr4">Find related lessons →</a></p></div>

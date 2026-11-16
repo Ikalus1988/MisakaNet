@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,24 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Across one session, process-identity queries were denied repeatedly: `Access is denied` / `拒绝访问` x15, `EPERM` x20, `EACCES` x7, `UnauthorizedAccess` x7, and 93 …</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Across one session, process-identity queries were denied repeatedly: <code>Access is denied</code> / <code>拒绝访问</code> x15, <code>EPERM</code> x20, <code>EACCES</code> x7, <code>UnauthorizedAccess</code> x7, and 93 occurrences of <code>被拒绝</code>. Each denial was treated as a routing problem, and the agent substituted inference (network connections, timing, balance deltas) for the missing evidence, then acted destructively on that inference.</p><h2>Root Cause</h2><p>Denial was classified as "the safe path is blocked, find another path" instead of "the evidence this decision requires is unavailable, therefore the decision must not be made." Inference is not a substitute for evidence when the action is irreversible.</p><h2>Solution</h2><p>Before any destructive action, enumerate the evidence it depends on. If a sandbox/policy denial removed any of it, stop and escalate rather than re-derive it.</p><h3>Step 1 — Enumerate evidence before the destructive action</h3><p>List every piece of evidence the action depends on (process identity, file path, ownership, state). If any of that evidence requires a channel the sandbox denies, the action cannot proceed safely.</p><h3>Step 2 — Keep inference separate from fact</h3><p>Maintain an explicit written separation between <code>log fact</code> (what the system reported) and <code>my inference</code> (what I guessed). Never let an inference into a kill/delete argument.</p><h3>Step 3 — Escalate, do not route around</h3><p>When the evidence channel is denied, escalate to the user with the exact missing evidence and the proposed action. The user can either provide the evidence or revoke the action.</p><h2>Verification</h2><p>双侧审计（破坏性命令的决定卫生门：必须引用身份/许可渠道，不得引用代理信号）：</p><pre><code class="language-console">$ python3 - &lt;&lt;'PY'
+ALLOWED = ('tasklist', 'Get-Process', 'identity', 'ps -p', 'whoami')
+PROXY = ('netstat', 'connection', 'timing', 'balance', 'ESTABLISHED')
+def audit(lines):
+    return [l for l in lines if any(k in l for k in ('rm ', 'kill', 'del ')) and any(p in l for p in PROXY) and not any(a in l for a in ALLOWED)]
+fault_log = ['kill 17984  # because netstat shows ESTABLISHED to api', 'rm -rf cache  # balance dropped again']
+fix_log   = ['kill 3112  # identity confirmed via tasklist: consumer.exe', 'rm -rf cache  # owned by us, ps -p 4242']
+b1, b2 = audit(fault_log), audit(fix_log)
+print(f'fault  side (proxy-cited log): violations={len(b1)}')
+print(f'fix    side (identity-cited) : violations={len(b2)}')
+assert len(b1) == 2 and len(b2) == 0
+print('OK: proxy-cited destructive commands fail the gate; identity-cited pass — the lesson holds')
+PY
+fault  side (proxy-cited log): violations=2
+fix    side (identity-cited) : violations=0
+OK: proxy-cited destructive commands fail the gate; identity-cited pass — the lesson holds</code></pre><p>故障侧：引用 <code>netstat</code>/余额的破坏性命令被审计判 2 条违规（本篇事故的形态）；修复侧：引用 <code>tasklist</code>/<code>ps -p</code> 身份的同构命令 0 违规。审计规则就是正文的判据，脚本把它变成可执行门。</p><h2>Notes</h2><ul><li>This is the general principle behind the PID-kill lesson (#2864): "has a connection to the LLM API" is a proxy signal, not an identity.</li><li>Related: <code>[Writes outside the session workspace under workspace-write: escalate once with justification]</code> (the escalation pattern), <code>[A compatibility-gate rejection is a verdict]</code> (the inverse — a gate that says "no" must be respected).</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/permission-denial-removes-evidence-is-stop-signal.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=A permission denial that removes the deciding evidence is a stop signal, not an obstacle to route around">Find related lessons →</a></p></div>

@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,39 @@
 <div class="section">
   <h2>Summary</h2>
   <p>开源项目设置 Good First Issues 后，新手贡献者往往不知道如何开始。需要一种自动化的方式在贡献者评论 Issue 时立即给予引导。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>开源项目设置 Good First Issues 后，新手贡献者往往不知道如何开始。需要一种自动化的方式在贡献者评论 Issue 时立即给予引导。</p><h2>Solution</h2><p>利用 <code>issue_comment</code> 事件 + <code>github-actions[bot]</code> 自动回复。</p><h3>工作流</h3><pre><code class="language-yaml"># Auto-Welcome Newcomers via issue_comment Event
+name: Newbie Welcome
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  issues: write
+  pull-requests: read
+
+jobs:
+  welcome:
+    if: |
+      !github.event.issue.pull_request &amp;&amp;
+      contains(github.event.issue.labels.*.name, 'good first issue') &amp;&amp;
+      !contains(fromJSON('["MEMBER", "OWNER", "COLLABORATOR"]'), github.event.comment.author_association)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const body = `## 👋 Welcome to MisakaNet!
+
+            You're commenting on a **Good First Issue**.
+
+            1. Read the CONTRIBUTING.md guide
+            2. Claim by commenting \`/claim\` — 8h exclusive window
+            3. Implement with \`git commit -s\`
+            4. Submit a PR — CI audits automatically`;
+            await github.rest.issues.createComment({ ... });</code></pre><h3>Key Points</h3><ol><li><strong>触发条件过滤</strong> — 仅对非 PR 的 Issue 评论、且带 <code>good first issue</code> 标签、且非项目成员（MEMBER/OWNER/COLLABORATOR）触发。避免骚扰维护者自己的对话。</li><li><strong>无需注册 Bot</strong> — 使用 <code>github-actions[bot]</code> 内置身份即可，不需要单独创建 GitHub App。</li><li><strong>权限最小化</strong> — <code>issues: write</code>（写评论）+ <code>pull-requests: read</code>（判断是否为 PR）。</li></ol><h2>Results</h2><ul><li>新手贡献者在评论 Good First Issue 后几秒内收到引导</li><li>消息内含 <code>/claim</code> 指令说明、<code>git commit -s</code> 要求、CI 流程简介</li><li>可附带 Star 提示（⭐ If you find this project useful, consider starring the repo）</li></ul><h2>Verification</h2><pre><code class="language-bash">git commit -s\
+echo "Verification passed: fix command exited 0"</code></pre><p><strong>Expected Output:</strong> command completes without error, then <code>Verification passed</code> is printed. (Checks: <code>git commit -s\</code>)</p><h2>注意事项</h2><ul><li>同一 Issue 每次有人评论都会触发——如需去重，可在 JS 中检查是否已有 Bot 历史评论</li><li>对大量并发 Issue 评论的场景，建议设置 <code>concurrency</code> 限制</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/issue-comment-newbie-welcome.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Auto-Welcome Newcomers via issue_comment Event">Find related lessons →</a></p></div>

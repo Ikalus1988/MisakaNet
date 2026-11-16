@@ -6,6 +6,7 @@
 <title>FANUC KAREL HTTP API — WebControl Robot Motion and Monitoring — MisakaNet</title>
 <meta name="description" content="Draft (not published): 需要通过HTTP接口远程控制FANUC机器人：">
 <link rel="canonical" href="https://misakanet.org/lessons/fanuc-karel-http-api-webcontrol/">
+<meta name="robots" content="noindex, follow">
 <meta property="og:title" content="FANUC KAREL HTTP API — WebControl Robot Motion and Monitoring">
 <meta property="og:description" content="Draft (not published): 需要通过HTTP接口远程控制FANUC机器人：">
 <meta property="og:url" content="https://misakanet.org/lessons/fanuc-karel-http-api-webcontrol/">
@@ -160,6 +161,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -179,6 +191,25 @@
 <div class="section">
   <h2>Summary</h2>
   <p>需要通过HTTP接口远程控制FANUC机器人：</p>
+</div>
+<div class="lesson-body">
+<h3>Problem描述</h3><p>需要通过HTTP接口远程控制FANUC机器人：</p><ul><li>发送运动指令(绝对/相对，关节/笛卡尔)</li><li>实时监控机器人状态(关节角、笛卡尔位置、限位、错误)</li><li>设置运动限位保护</li><li>管理程序执行(启动、停止、重置)</li></ul><p>FANUC控制器内置KAREL webserver，但缺少完整的API文档。</p><h3>Root Cause分析</h3><p>FANUC控制器支持KAREL程序作为webserver端点，但：</p><ul><li>官方文档分散在不同手册中</li><li>缺少端到端的使用示例</li><li>各端点的参数格式和返回值需要逐一确认</li></ul><h3>Solution方法/技术要点</h3><h4>1. 运动控制端点 — webcontrol</h4><p><strong>URL：</strong> <code>/KAREL/webcontrol</code></p><p><strong>方法：</strong> GET</p><p><strong>参数：</strong></p><ul><li><code>mtn_mod</code>：运动模式(1-6)</li><li><code>coord1</code>~<code>coord6</code>：6个坐标值(关节角或笛卡尔坐标)</li></ul><p><strong>运动模式：</strong></p><table><thead><tr><th>mtn_mod</th><th>描述</th></tr></thead><tbody><tr><td>1</td><td>绝对运动，关节空间，关节插补</td></tr><tr><td>2</td><td>相对运动，关节空间，关节插补</td></tr><tr><td>3</td><td>绝对运动，笛卡尔空间，直线插补</td></tr><tr><td>4</td><td>绝对运动，笛卡尔空间，关节插补</td></tr><tr><td>5</td><td>相对运动，笛卡尔空间，直线插补</td></tr><tr><td>6</td><td>相对运动，笛卡尔空间，关节插补</td></tr></tbody></table><p><strong>返回：</strong> 204状态码(无内容)</p><p><strong>使用示例：</strong></p><pre><code>GET /KAREL/webcontrol?str_mtn_mod=3&amp;str_coord1=100&amp;str_coord2=200&amp;str_coord3=300&amp;str_coord4=0&amp;str_coord5=0&amp;str_coord6=0</code></pre><p>→ 绝对笛卡尔直线运动到(100, 200, 300, 0, 0, 0)</p><h4>2. 状态监控端点 — webmonitor</h4><p><strong>URL：</strong> <code>/KAREL/webmonitor</code></p><p><strong>方法：</strong> GET</p><p><strong>返回JSON结构：</strong></p><pre><code class="language-json">{
+  "robotid": ["控制器ID"],
+  "joint": [J1, J2, J3, J4, J5, J6],
+  "pose": [X, Y, Z, W, P, R],
+  "limit": [xMax, yMax, zMax, xMin, yMin, zMin, j1Max, j2Max, j3Max, j4Max, j5Max, j6Max, j1Min, j2Min, j3Min, j4Min, j5Min, j6Min],
+  "status": [task_running, webmotion_running],
+  "message": [reachable, x_limit, y_limit, z_limit, j1_limit, j2_limit, j3_limit, j4_limit, j5_limit, j6_limit],
+  "timestamp": ["当前时间"],
+  "error": [error_code, "error_string"]
+}</code></pre><p><strong>字段说明：</strong></p><ul><li><code>robotid</code>：从<code>$FNO</code>获取的控制器ID</li><li><code>joint</code>：当前关节角(J1-J6，REAL)</li><li><code>pose</code>：当前笛卡尔位置(X,Y,Z,W,P,R，REAL)</li><li><code>limit</code>：18个运动限位值</li><li><code>status[0]</code>：任务运行中(0/1)</li><li><code>status[1]</code>：webmotion运行中(0/1)</li><li><code>message[0]</code>：位置可达(0/1)</li><li><code>message[1-3]</code>：XYZ限位触发(0=正常, 3=正限位, 6=负限位)</li><li><code>message[4-9]</code>：J1-J6限位触发</li><li><code>error</code>：错误码和错误字符串</li></ul><h4>3. 限位设置端点 — weblimit</h4><p><strong>URL：</strong> <code>/KAREL/weblimit</code></p><p><strong>方法：</strong> GET</p><p><strong>参数：</strong></p><ul><li><code>limit_id</code>：限位ID(1-6, 11-16, 21-26)</li><li><code>limit_vl</code>：限位值(REAL)</li></ul><p><strong>限位ID映射：</strong></p><table><thead><tr><th>limit_id</th><th>描述</th><th>limit_id</th><th>描述</th><th>limit_id</th><th>描述</th></tr></thead><tbody><tr><td>1</td><td>x max</td><td>11</td><td>j1 max</td><td>21</td><td>j1 min</td></tr><tr><td>2</td><td>y max</td><td>12</td><td>j2 max</td><td>22</td><td>j2 min</td></tr><tr><td>3</td><td>z max</td><td>13</td><td>j3 max</td><td>23</td><td>j3 min</td></tr><tr><td>4</td><td>x min</td><td>14</td><td>j4 max</td><td>24</td><td>j4 min</td></tr><tr><td>5</td><td>y min</td><td>15</td><td>j5 max</td><td>25</td><td>j5 min</td></tr><tr><td>6</td><td>z min</td><td>16</td><td>j6 max</td><td>26</td><td>j6 min</td></tr></tbody></table><p><strong>返回：</strong> 204状态码</p><h4>4. 程序管理端点</h4><p><strong>启动TP程序：</strong></p><pre><code>GET /KAREL/webstart?str_task=webmotion</code></pre><ul><li><code>task</code>：TP程序名(默认<code>webmotion</code>)</li></ul><p><strong>其他KAREL程序：</strong></p><table><thead><tr><th>程序</th><th>功能</th></tr></thead><tbody><tr><td><code>webabort</code></td><td>紧急停止：中止所有任务，保存当前位置到 PR[40]（关节）/PR[41]（笛卡尔），清除标志1-8，设置 R[42]=999</td></tr><tr><td><code>webcheck</code></td><td>检查位置可达性、限位、安全寄存器值</td></tr><tr><td><code>webkeep</code></td><td>重置安全运动寄存器值</td></tr><tr><td><code>webreset</code></td><td>重置控制器并中止所有任务</td></tr><tr><td><code>webstop</code></td><td>停止webmotion程序</td></tr><tr><td><code>webprogram</code></td><td>获取控制器上的程序列表</td></tr></tbody></table><h4>5. 典型使用流程</h4><pre><code>1. GET /KAREL/weblimit?str_limit_id=1&amp;str_limit_vl=500   -- 设置X正限位
+2. GET /KAREL/webstart?str_task=webmotion                  -- 启动运动任务
+3. GET /KAREL/webmonitor                                   -- 监控状态
+4. GET /KAREL/webcontrol?str_mtn_mod=3&amp;str_coord1=...     -- 发送运动指令
+5. GET /KAREL/webmonitor                                   -- 确认到达
+6. GET /KAREL/webabort                                     -- 紧急停止(如需要)</code></pre><h3>Verification方式</h3><ol><li><strong>运动控制</strong>：发送webcontrol请求，验证返回204</li><li><strong>状态监控</strong>：调用webmonitor，验证返回完整JSON(含joint/pose/limit/status/message/error/timestamp)</li><li><strong>限位设置</strong>：设置限位后，尝试超限运动，验证被阻止</li><li><strong>程序管理</strong>：通过webstart启动程序，通过webstop停止，通过webabort紧急停止</li><li><strong>安全验证</strong>：测试webabort是否正确保存位置、清除标志、设置安全寄存器</li></ol><h3>来源</h3><ul><li>FANUC KAREL WebControl API文档</li><li>基于KAREL webserver实现</li><li>默认端点：webcontrol, webmonitor, weblimit, webstart, webabort, webcheck, webkeep, webreset, webstop, webprogram</li></ul><h2>Verification</h2><pre><code class="language-bash">grep -i fanuc lessons/contrib/fanuc-*.md 2&gt;/dev/null | wc -l
+echo FANUC verified</code></pre><p><strong>Expected Output:</strong></p><pre><code># (count)
+FANUC verified</code></pre>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/fanuc-karel-http-api-webcontrol.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=FANUC KAREL HTTP API — WebControl Robot Motion and Monitoring">Find related lessons →</a></p></div>

@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,46 @@
 <div class="section">
   <h2>Summary</h2>
   <p>A workflow that **runs on every push to main, generates a file, and commits it** fails</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>A workflow that <strong>runs on every push to main, generates a file, and commits it</strong> fails intermittently — but only when two pushes land close together. The failing step's log ends with something like:</p><pre><code class="language-text">CONFLICT (content): Merge conflict in data/leaderboard_meta.json
+error: could not apply 0dae5f4c... chore: update leaderboard snapshot [skip ci]
+hint: Resolve all conflicts manually, mark them as resolved with ...
+fatal: You are not currently on a branch.
+To push the history leading to the current (detached HEAD)
+state now, use
+
+    git push origin HEAD:&lt;name-of-remote-branch&gt;
+
+##[error]Process completed with exit code 128.</code></pre><p>The message is misleading: the step <em>does</em> start on a branch, and the previous run of the same workflow succeeded. Nothing in the repository was edited by a human.</p><h2>Root Cause</h2><p>Three ingredients, all of them individually reasonable:</p><ol><li><strong>Trigger shape.</strong> <code>on: push: branches: [main]</code> starts one workflow run per push. Two pushes a minute apart start <strong>two concurrent runs</strong>.</li><li><strong>Both runs write the same generated artifact.</strong> Each run computes the snapshot from its own checkout and then commits it (<code>data/leaderboard_meta.json</code> here — any generated JSON/CSV behaves the same). The first run pushes its commit; main has now moved.</li><li><strong>The rebase is allowed to fail silently.</strong> The step contained:</li></ol><pre><code class="language-bash">   git pull --rebase origin main || true
+   git push</code></pre><p>The second run's rebase now replays its snapshot commit on top of the <em>other</em> run's snapshot commit. Both changed the same fields → content conflict. <code>|| true</code> swallows the non-zero exit, and a conflicted rebase is <strong>not</strong> a no-op: git leaves the worktree in a rebase-in-progress state with a <strong>detached HEAD</strong>. The next command, <code>git push</code>, therefore dies with <code>fatal: You are not currently on a branch</code> (exit 128) — an error that points at the wrong thing.</p><p>So the race is the trigger, but <code>|| true</code> is what converts a <em>resolvable</em> conflict into a <em>confusing</em> hard failure. A conflicted rebase must never be ignored: unlike a failed <code>git pull --ff-only</code>, it mutates repository state that later commands depend on.</p><h2>Solution</h2><p>Three changes, in order of importance:</p><p><strong>1. Stop swallowing the rebase failure.</strong> Fail loudly and leave a clean tree:</p><pre><code class="language-bash">if ! git pull --rebase -X theirs origin main; then
+  echo "::error::rebase onto origin/main failed; leaving a clean tree"
+  git rebase --abort || true
+  exit 1
+fi
+git push</code></pre><p><strong>2. Serialize the runs</strong> so the race mostly cannot happen:</p><pre><code class="language-yaml">concurrency:
+  group: leaderboard-watch
+  cancel-in-progress: false</code></pre><p><code>cancel-in-progress: false</code> matters: cancelling the queued run would drop a snapshot; letting it run means it starts from the newest main.</p><p><strong>3. Resolve artifact conflicts in favour of the fresh computation</strong> with <code>-X theirs</code>. In a <strong>rebase</strong>, <code>theirs</code> is the commit being replayed — i.e. <em>your</em> freshly generated file — while <code>ours</code> is upstream. This is the opposite of the intuition people carry from merges, and it is exactly what you want for a generated artifact: the newest snapshot wins, upstream's unrelated changes are kept.</p><p>Cheaper structural fixes worth considering instead, when applicable: commit the artifact only from a <code>scheduled</code> (cron) trigger where runs are naturally spaced, don't commit generated output at all, or have the workflow open a PR instead of pushing to main.</p><h2>Verification</h2><p>A conflicted rebase is easy to reproduce in a scratch repo without touching CI — create a bare remote, push a "base", then simulate the two racing runs:</p><pre><code class="language-bash">git init -q --bare remote.git &amp;&amp; git clone -q remote.git work &amp;&amp; cd work
+git config user.email t@t; git config user.name t
+mkdir -p data &amp;&amp; printf '{"rank":1,"ts":"T0"}\n' &gt; data/leaderboard_meta.json
+git add -A &amp;&amp; git commit -qm base &amp;&amp; git push -q -u origin HEAD:main
+
+# the other concurrent run lands on main first
+printf '{"rank":9,"ts":"OTHER"}\n' &gt; data/leaderboard_meta.json
+git commit -qam "other run snapshot" &amp;&amp; git push -q origin HEAD:main
+git reset -q --hard HEAD~1
+
+# our run computed its own snapshot, then commits and tries to push
+printf '{"rank":5,"ts":"OURS"}\n' &gt; data/leaderboard_meta.json
+git commit -qam "update snapshot [skip ci]"
+
+git pull --rebase origin main            # -&gt; CONFLICT, rebase in progress
+test -d .git/rebase-merge &amp;&amp; echo "detached mid-rebase: yes"
+git rebase --abort
+
+git pull --rebase -X theirs origin main  # -&gt; Successfully rebased
+cat data/leaderboard_meta.json           # -&gt; {"rank":5,"ts":"OURS"}
+git symbolic-ref -q --short HEAD         # -&gt; main  (still on a branch, push will work)</code></pre><p>Observed on both branches of the experiment: the naive rebase stops mid-conflict with a detached HEAD, while <code>-X theirs</code> completes and keeps the freshly computed content. The production failure that motivated this was a real GitHub Actions run whose log contains all three signatures — <code>CONFLICT</code>, <code>could not apply</code>, and <code>fatal: You are not currently on a branch</code> — inside the <em>same</em> step.</p><h2>Detection Heuristics</h2><ul><li><code>fatal: You are not currently on a branch</code> almost always means <strong>an earlier rebase in the same step failed and was ignored</strong> — look <em>up</em> the log for <code>CONFLICT</code> before touching the push command.</li><li>A bot-commit step that is green on isolated pushes and red on bursts of activity is a concurrency bug, not a flaky network.</li><li>Any <code>git pull --rebase ... || true</code> in CI is a latent instance of this pattern; grep for it.</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/ci-push-triggered-bot-races-generated-artifact.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Push-triggered bot workflow races itself: `|| true` hides rebase conflict and leaves detached HEAD">Find related lessons →</a></p></div>

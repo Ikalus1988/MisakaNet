@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>pnpm 11 不读取 `~/.npmrc` 里的 `store-dir`，改了配置 `pnpm store path` 仍指向默认位置（如 <PATH> C 盘。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>pnpm 11 不读取 <code>~/.npmrc</code> 里的 <code>store-dir</code>，改了配置 <code>pnpm store path</code> 仍指向默认位置（如 &lt;PATH&gt; C 盘。</p><h2>Root Cause</h2><p>最后发现 pnpm 11 的 workspace 配置优先，且 .npmrc 的 store-dir 不再生效。</p><h2>Fix</h2><p>把设置写进 profile 的 <code>pnpm-workspace.yaml</code>，用 camelCase 键：<code>storeDir: &lt;PATH&gt; packages/nodeLinker/autoInstallPeers）。改完在 profile 目录执行 </code>pnpm store path` 验证；已安装过的项目还需把 node_modules/.modules.yaml 里的 storeDir 与 virtualStoreDir 一并改到新位置，否则 pnpm 会认为依赖来自别处。</p><h2>Verification</h2><p>在项目目录跑 <code>pnpm store path</code> 输出新路径；安装新包时旧 store 目录文件数不变，新 store 增长。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/pnpm-11-不读取-npmrc-里的-store-dir改了配置-pnpm-store-path-仍指向默认位置如.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=pnpm 11 不读取 `~/.npmrc` 里的 `store-dir`，改了配置 `pnpm store path` 仍指向默认位置（如 <PATH> C">Find related lessons →</a></p></div>

@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,16 @@
 <div class="section">
   <h2>Summary</h2>
   <p>An ML-DSA (post-quantum signature algorithm) implementation in Go always rejected valid signatures. All test vectors failed with "invalid signature" errors duri…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>An ML-DSA (post-quantum signature algorithm) implementation in Go always rejected valid signatures. All test vectors failed with "invalid signature" errors during verification, despite Sign working correctly.</p><h2>Root Cause</h2><p>During earlier refactoring, <code>HighBits</code> and <code>w1Encode</code> were merged into a single function for the Sign path, then reused in Verify. However, in Verify, <code>UseHint</code> already produces the high bits — meaning the combined function effectively takes the high bits of w1 twice during verification.</p><p>The bug manifests as a subtle semantic error where the same data flows through different transformations in Sign vs Verify:</p><pre><code class="language-go">// Sign path: w1Encode(highBits(w)) — correct
+// Verify path: w1Encode(highBits(UseHint(...))) — double high bits!</code></pre><h2>Solution</h2><p>The fix was to refactor <code>w1Encode</code> to accept high bits as input and change the type of the high bits:</p><pre><code class="language-go">// Before: w1Encode computes high bits internally
+func w1Encode(w []poly) []poly { ... }
+
+// After: w1Encode takes pre-computed high bits
+func w1Encode(w1 []poly) []poly { ... }</code></pre><p>Steps taken:</p><ul><li>Claude Code identified the non-obvious error by analyzing the mathematical flow of the algorithm</li><li>Rather than reverting the merge, the fix refactored <code>w1Encode</code> to accept pre-computed high bits</li><li>This eliminated a round-trip through Montgomery representation and made the code clearer</li><li>Claude Code wrote a hypothesis test reimplementing half of verification to confirm before applying the fix</li></ul><h2>Verification</h2><pre><code class="language-bash">echo "Lesson: Claude Code can debug low-level cryptography — ML-"
+wc -l lessons/contrib/claude-code-debugging-ml-dsa-cryptography.md</code></pre><p><strong>Expected Output:</strong></p><pre><code>Lesson: Claude Code can debug low-level cryptography — ML-
+# (line count)</code></pre><h2>Notes</h2><p>This demonstrates that LLMs can debug novel cryptographic implementations by reasoning about mathematical invariants, not just pattern matching. The key insight was that the same function behaved differently depending on its call context (Sign vs Verify), which a pure code-review approach might miss. Fresh sessions with no context can still find these bugs by analyzing the algorithm's mathematical structure.</p><h2>References</h2><p>https://words.filippo.io/claude-debugging/</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/claude-code-debugging-ml-dsa-cryptography.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Claude Code can debug low-level cryptography — ML-DSA signature verification failure">Find related lessons →</a></p></div>

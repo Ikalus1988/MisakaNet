@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,18 @@
 <div class="section">
   <h2>Summary</h2>
   <p>During a quality inspection of a FANUC robot RAG knowledge base, the team found three design flaws in the brand-filtering strategy that allowed competitor docum…</p>
+</div>
+<div class="lesson-body">
+<h2>Background</h2><p>During a quality inspection of a FANUC robot RAG knowledge base, the team found three design flaws in the brand-filtering strategy that allowed competitor documents to keep leaking into retrieval results.</p><h2>Three Pitfalls</h2><h3>Pitfall 1: Conditionally Triggered Brand Filtering</h3><p><strong>Symptom:</strong> Brand filtering is triggered only when the query contains target-brand keywords (for example, "FANUC").</p><p><strong>Why this is a pitfall:</strong></p><ul><li>Daily inspection questions usually do not include brand names, such as "What is the difference between the TCP setup method for a welding gun tool and a gripper tool?"</li><li>Front-end users also rarely add brand keywords proactively</li><li>As a result, every inspection bypasses the filter and competitor documents pass through unchecked</li></ul><p><strong>Correct approach:</strong></p><ul><li>Brand filtering should be always on, and non-target-brand documents should be excluded directly at the retrieval layer</li><li>If all results are excluded, keep the top-k high-scoring results as an emergency fallback, but mark the source warning for the LLM</li></ul><h3>Pitfall 2: Filename Regex Instead of Metadata</h3><p><strong>Symptom:</strong> Brand filtering uses regex matching on filenames instead of metadata fields.</p><pre><code class="language-python"># RAG brand-filter three pitfalls: conditional trigger, filename regex, BM25 cache
+_fanuc_pat = re.compile(r'(?i)fanuc|B-\d{5}|R-30i[AB]|M-\d{3}|A-\d{5}')
+filtered = [c for c in chunks if _fanuc_pat.search(c["filename"])]</code></pre><p><strong>Why this is a pitfall:</strong></p><ul><li>Documents whose filenames do not follow brand naming conventions are missed (for example, kap05_1_*.pdf is actually a KUKA document)</li><li>Running regex searches on every query wastes CPU</li><li>Adding a new brand or pattern requires code changes</li><li>Filenames and actual document contents may not match</li></ul><p><strong>Correct approach:</strong></p><ul><li>Tag the brand during ingestion with a metadata field (<code>brand: "fanuc" | "kuka" | "abb" | "unknown"</code>)</li><li>During filtering, read the metadata field directly for an O(1) decision without regex</li><li>Keep brand detection in one full-scan ingestion step instead of scattering it across every query</li></ul><h3>Pitfall 3: BM25 Cache and Metadata Drift</h3><p><strong>Symptom:</strong> ChromaDB metadata has been updated, but retrieval still returns old data.</p><p><strong>Why this is a pitfall:</strong></p><ul><li>The RAG system uses a BM25 index to speed up keyword retrieval</li><li>When the BM25 index is built from ChromaDB, it copies metadata into memory and persists it with pickle to <code>bm25_index.pkl</code></li><li>After ChromaDB <code>update()</code> changes metadata, the metadata in the BM25 cache is still old</li><li>This makes <code>meta.get("brand", "unknown")</code> in <code>_build_chunk_v2()</code> always return <code>"unknown"</code></li></ul><pre><code class="language-python"># The meta returned by BM25 search comes from the cache, not live ChromaDB
+def search(self, query, n_results, where_filter=None):
+    tokens = list(jieba.cut(query))
+    scores = self.bm25.get_scores(tokens)
+    # scores[i] corresponds to self.metas[i] — stale cached data!
+    return [(self.docs[i], self.metas[i], scores[i]) for i in top_indices]</code></pre><p><strong>Correct approach:</strong></p><ul><li>After changing ChromaDB metadata, delete the BM25 cache file and rebuild the index</li><li>Or add a fallback in <code>_build_chunk_v2()</code>: if <code>meta</code> has no <code>brand</code> field, query ChromaDB live</li><li>Cache files are usually large (500MB+) and rebuilds take 2-5 minutes</li></ul><h2>Root Cause</h2><p>The failure mode comes from a concrete RAG pipeline design or configuration mismatch. Check the relevant log output, cache status, metadata fields, and retrieval configuration before changing prompts.</p><h2>Verification</h2><pre><code class="language-bash">grep -i 'bm25\|chunk\|embed' lessons/contrib/rag-*.md 2&gt;/dev/null | head -3
+echo Search verified</code></pre><p><strong>Expected Output:</strong></p><pre><code># (refs)
+Search verified</code></pre><h2>Summary</h2><table><thead><tr><th>Pitfall</th><th>Symptom</th><th>Fix</th></tr></thead><tbody><tr><td>Conditional trigger</td><td>Filtering is skipped when the query has no brand name</td><td>Always-on filtering</td></tr><tr><td>Filename regex</td><td>Documents with non-standard names are missed</td><td>Tag metadata during ingestion</td></tr><tr><td>BM25 cache</td><td>Cache is not refreshed after metadata updates</td><td>Explicitly delete and rebuild the cache</td></tr></tbody></table><p>When all three issues exist at the same time, brand filtering is basically ineffective no matter how accurately ChromaDB is tagged.</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/rag-brand-filter-three-pitfalls.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=RAG Brand Filter Three Pitfalls">Find related lessons →</a></p></div>

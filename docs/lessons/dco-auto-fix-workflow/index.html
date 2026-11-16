@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,33 @@
 <div class="section">
   <h2>Summary</h2>
   <p>贡献者提交 PR 后 DCO（Signed-off-by）检查失败是最常见的阻塞原因之一。尤其是 AI Agent 自动提交的 PR，经常缺签。需要在 PR 评论区提供一键自动修复能力。</p>
+</div>
+<div class="lesson-body">
+<h2>Root Cause</h2><p>贡献者提交 PR 后 DCO（Signed-off-by）检查失败是最常见的阻塞原因之一。尤其是 AI Agent 自动提交的 PR，经常缺签。需要在 PR 评论区提供一键自动修复能力。</p><p><strong>Error message</strong> from DCO check:</p><pre><code>Commit sha: abc1234, Author: user, Committer: user; Expected "Signed-off-by: user &lt;user@example.com&gt;", but got ""</code></pre><p><strong>Root cause</strong>: GitHub 的 DCO 检查要求每个 commit 都包含 <code>Signed-off-by:</code> 行。当贡献者使用 <code>git commit</code> 时忘记加 <code>-s</code> 标志，或者 AI Agent 自动生成的 commit 缺少签名，DCO 检查就会失败。手动修复需要 <code>git rebase --signoff</code>，这对新手贡献者来说门槛较高。</p><h2>上游 PR 被拒后的 Plan B 独立部署</h2><h3>场景</h3><p>项目向 <code>pre-commit/pre-commit-hooks</code> 官方上游提交原生 <code>check-dco</code> 钩子（PR #1262），通过了全部 CI（flake8、mypy、tox 矩阵、pre-commit.ci），但仍被核心维护者以"可用内置 pygrep 替代"为由拒绝合入。</p><h3>教训</h3><p>依赖单一上游的审核周期来驱动自身核心合规门禁是危险的。上游的拒绝是对供应链哲学的一次检验——它暴露的不是技术缺陷，而是信任模型的风险。</p><h3>独立部署策略</h3><p>当原生提交被拒后，应立刻执行以下步骤：</p><ol><li><strong>提取核心资产</strong>：将 5 个关键文件（<code>.pre-commit-hooks.yaml</code>、<code>setup.cfg</code>、<code>setup.py</code>、<code>check_dco.py</code>、<code>tests/</code>）从 Fork 仓库抽离，推送到全新独立仓库。</li><li><strong>锁定版本</strong>：使用固定 Commit SHA（而非分支名）作为 <code>.pre-commit-config.yaml</code> 中的 <code>rev</code> 值，确保供应链可控。</li><li><strong>补全 ADR</strong>：记录决策过程，供后续审计。</li><li><strong>发布公告</strong>：在追踪 Issue 中向所有节点交代迁移方案。</li></ol><h3>比官方建议更好的理由</h3><table><thead><tr><th>维度</th><th>独立 Python 钩子</th><th>pygrep 方案</th></tr></thead><tbody><tr><td>报错体验</td><td>精准 stderr 引导</td><td>粗暴整行匹配</td></tr><tr><td>多签名支持</td><td>原生 Python</td><td>跨行正则脆弱</td></tr><tr><td>测试覆盖</td><td>16 个 pytest 用例</td><td>无测试</td></tr><tr><td>供应链可控</td><td>自主仓库</td><td>依赖上游</td></tr></tbody></table><h2>方案</h2><p>利用 <code>issue_comment</code> 事件 + <code>pull_request_target</code> 安全模型，实现 <code>/fix-dco</code> 命令。</p><h3>工作流核心逻辑</h3><pre><code class="language-yaml">on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  fix-dco:
+    if: |
+      github.event.issue.pull_request &amp;&amp;
+      contains(github.event.comment.body, '/fix-dco') &amp;&amp;
+      (github.event.comment.user.login == github.event.issue.user.login ||
+       contains(fromJSON('["MEMBER","OWNER","COLLABORATOR"]'), ...))</code></pre><h3>分支处理</h3><p><strong>同仓库 PR</strong>（head repo = 目标仓库）：</p><ol><li>检出 PR 头部分支（<code>refs/pull/&lt;num&gt;/head</code>）</li><li>执行 <code>git rebase --signoff origin/main</code> 或 <code>git rebase --signoff HEAD~N</code></li><li>Force-push 回原分支</li><li>回复 ✅ 成功</li></ol><p><strong>Fork PR</strong>（head repo ≠ 目标仓库）：</p><ul><li>GITHUB_TOKEN 无权 push 到 fork</li><li>回复手动修复指引：<pre><code>git rebase --signoff HEAD~N
+git push --force</code></pre></li></ul><h3>安全限制</h3><ul><li>仅允许 PR 作者、MEMBER、OWNER、COLLABORATOR 触发</li><li>最多自动修复 10 个 commit（超过则要求手动修复）</li><li>需要 <code>contents: write</code> + <code>pull-requests: write</code> 权限</li></ul><h2>关键实现细节</h2><pre><code class="language-yaml">- name: Get PR info
+  run: |
+    PR_JSON=$(gh api repos/${{ github.repository }}/pulls/${{ github.event.issue.number }} \
+      --jq '{headRef: .head.ref, headRepo: .head.repo.full_name, baseRef: .base.ref}')
+    echo "isFork=$([ "$headRepo" != "${{ github.repository }}" ] &amp;&amp; echo true || echo false)"</code></pre><h2>验证</h2><p>在 PR 评论区输入 <code>/fix-dco</code>，等待 30 秒内 bot 回复修复结果。</p><h2>Verification</h2><ol><li>Open a test PR with a commit missing <code>Signed-off-by:</code> — confirm the <code>/fix-dco</code> comment triggers the workflow</li><li>Run the workflow on a same-repo PR — confirm it auto-amends and force-pushes with sign-off</li><li>Run the workflow on a fork PR — confirm it posts manual instructions instead of force-pushing</li><li>Verify the <code>pr-welcome.yml</code> output includes the copy-paste <code>git rebase --signoff</code> commands</li></ol><pre><code class="language-bash"># Test: Create a PR without Signed-off-by
+git commit -m "test: missing signoff"  # no -s flag
+git push origin test-branch
+gh pr create --title "Test DCO" --body "Testing DCO fix"
+
+# Trigger the fix
+gh pr comment &lt;PR_NUM&gt; --body "/fix-dco"
+
+# Verify: Check if signoff was added
+gh api repos/OWNER/REPO/pulls/&lt;PR_NUM&gt;/commits --jq '.[].commit.message' | grep "Signed-off-by"</code></pre><h2>关联</h2><ul><li>配套措施：<code>pr-welcome.yml</code> 欢迎语中已预置 DCO 修复命令</li><li>兜底方案：如自动修复失败，需贡献者本地手动执行 <code>git commit --amend --signoff</code></li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/core/dco-auto-fix-workflow.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=DCO Auto-Fix Workflow — /fix-dco Command Design & Implementation">Find related lessons →</a></p></div>

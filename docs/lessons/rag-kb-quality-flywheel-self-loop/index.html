@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,20 @@
 <div class="section">
   <h2>Summary</h2>
   <p>A vertical-domain RAG knowledge base (190+ PDFs, 200K+ vectors) was already online, supporting natural-language Q&A and daily automated inspections. However, is…</p>
+</div>
+<div class="lesson-body">
+<h2>Background</h2><p>A vertical-domain RAG knowledge base (190+ PDFs, 200K+ vectors) was already online, supporting natural-language Q&amp;A and daily automated inspections. However, issues found by inspections still had to be handled manually, so the whole loop lacked automation:</p><ul><li>Inspection failure → manually summarize into a badcase document → manually send to AI for repair</li><li>No feedback channel when users are dissatisfied</li><li>The synonym expansion table is empty, so some terms cannot be retrieved</li><li>No queue management, making review progress untraceable</li></ul><h2>Root Cause</h2><p>Inspect the RAG config, ingestion log, retrieval log, and cache status to confirm the exact mismatch before applying the fix.</p><p>The "flywheel" in the design document only covered the first half:</p><ul><li>The daily inspection concept exists (<code>daily_audit</code> is planned)</li><li>Wrong-question aggregation exists (badcase records)</li><li>But the self-learning module (<code>kb_learning.py</code>), review tool (<code>badcase_review.py</code>), and synonym file (<code>synonyms.json</code>) are all missing</li><li>The code has imports but silently degrades with try/except, and the files were never created</li></ul><h2>Solution</h2><p>Implement a four-layer closed loop, where each layer can work independently:</p><h3>Layer 1: Synonym Expansion (<code>synonyms.json</code>)</h3><ul><li>Create an independent JSON file with 32 groups of vertical-domain synonyms (alarms/servo/zero calibration/encoder, etc.)</li><li><code>rag_core.py</code> already has <code>_load_synonyms()</code>, which hot-loads incrementally by mtime</li><li>Convention: keys that start with <code>_</code> are metadata and are filtered out; all other entries are automatically used by <code>expand_query()</code></li></ul><h3>Layer 2: Self-Learning Engine (<code>kb_learning.py</code>)</h3><ul><li><code>log_query(query, top_score, chunks_count)</code> matches the existing call in <code>rag_core.py</code></li><li>Automatically classify badcase thresholds: top_score &lt; 0.45 is failure level; &lt; 0.6 is warning level; chunks_count == 0 is empty retrieval</li><li>Write to a JSONL queue file (<code>badcase_pending.jsonl</code>) with append support</li><li>Provide approve/reject operations; approved items move to the approved queue and rejected items move to the rejected queue</li></ul><h3>Layer 3: Daily Inspection (<code>daily_audit.py</code>)</h3><ul><li>Stratified sample 7 questions from a 200-question bank (2 L2 + 5 L3, stratified by tag)</li><li>Call the RAG API for live checks: keyword hits, minimum answer length, brand contamination, semantic gap</li><li>Output a JSON report + Markdown summary + automatically append to <code>badcase_pending</code></li><li><code>--cron</code> mode is for crontab, and the exit code reflects pass-rate status</li></ul><h3>Layer 4: Review Tool (<code>badcase_review.py</code>)</h3><ul><li>Five atomic CLI operations: list / show / approve / reject / auto</li><li><code>auto</code> automatically approves high-confidence badcases (empty retrieval, score &lt; 0.3, "low-quality retrieval" features)</li><li>Shares the same JSONL queue files with <code>kb_learning</code></li></ul><h3>Additional: IM Feedback Collection (WeChat Bot)</h3><ul><li>Intercept "good" and "bad" feedback in the existing wxauto bot</li><li>Track each user's previous question and associate feedback with the original query</li><li>Call <code>kb_learning.add_feedback()</code> to write into the queue</li></ul><h2>Verification</h2><pre><code class="language-bash">grep -i 'bm25\|chunk\|embed' lessons/contrib/rag-*.md 2&gt;/dev/null | head -3
+echo Search verified</code></pre><p><strong>Expected Output:</strong></p><pre><code># (refs)
+Search verified</code></pre><h2>File Structure</h2><pre><code>project_root/
+  synonyms.json            Synonym table (auto-loaded by rag_core)
+  kb_learning.py           Self-learning engine
+  daily_audit.py           Daily inspection
+  badcase_review.py        Review CLI
+  audit_reports/
+    badcase_pending.jsonl   Pending review queue
+    badcase_approved.jsonl  Approved
+    badcase_rejected.jsonl  Rejected
+    audit_YYYY-MM-DD.json   Daily report</code></pre><h2>Key Design Decisions</h2><ol><li><strong>JSONL instead of SQLite</strong>: Queue files need to be read/written/edited by humans; JSONL is more transparent than SQLite</li><li><strong>Command mode instead of a daemon</strong>: Review is a low-frequency operation, and a CLI is simpler and more reliable than a background service</li><li><strong>Layer independence</strong>: Each layer can run independently; <code>rag_core</code>'s dependency on <code>kb_learning</code> is optional with try/except degradation</li><li><strong>Shared review queue files</strong>: <code>daily_audit</code> and <code>add_feedback()</code> write to the same pending file, and <code>badcase_review</code> manages them centrally</li></ol>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/rag-kb-quality-flywheel-self-loop.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=RAG Knowledge Base Quality Flywheel Self Loop">Find related lessons →</a></p></div>

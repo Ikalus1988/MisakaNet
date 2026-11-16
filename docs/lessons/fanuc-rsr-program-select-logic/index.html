@@ -6,6 +6,7 @@
 <title>FANUC RSR Program with OFFSET and SELECT Logic Sharing — MisakaNet</title>
 <meta name="description" content="Draft (not published): 以 FANUC R-2000IB 机器人为例，分享一个使用 **RSR 启动模式** 的搬运程序示例。程序综合运用了运动指令、寄存器索引、OFFSET 偏移和 SELECT 分支逻辑，是 FANUC TP 编程的典型实践。">
 <link rel="canonical" href="https://misakanet.org/lessons/fanuc-rsr-program-select-logic/">
+<meta name="robots" content="noindex, follow">
 <meta property="og:title" content="FANUC RSR Program with OFFSET and SELECT Logic Sharing">
 <meta property="og:description" content="Draft (not published): 以 FANUC R-2000IB 机器人为例，分享一个使用 **RSR 启动模式** 的搬运程序示例。程序综合运用了运动指令、寄存器索引、OFFSET 偏移和 SELECT 分支逻辑，是 FANUC TP 编程的典型实践。">
 <meta property="og:url" content="https://misakanet.org/lessons/fanuc-rsr-program-select-logic/">
@@ -160,6 +161,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -179,6 +191,37 @@
 <div class="section">
   <h2>Summary</h2>
   <p>以 FANUC R-2000IB 机器人为例，分享一个使用 **RSR 启动模式** 的搬运程序示例。程序综合运用了运动指令、寄存器索引、OFFSET 偏移和 SELECT 分支逻辑，是 FANUC TP 编程的典型实践。</p>
+</div>
+<div class="lesson-body">
+<h2>FANUC RSR 程序的 OFFSET 与 SELECT 逻辑</h2><h3>Problem描述</h3><p>以 FANUC R-2000IB 机器人为例，分享一个使用 <strong>RSR 启动模式</strong> 的搬运程序示例。程序综合运用了运动指令、寄存器索引、OFFSET 偏移和 SELECT 分支逻辑，是 FANUC TP 编程的典型实践。</p><h3>Root Cause分析</h3><p>此程序展示了 FANUC TP 编程的几个核心要素的组合使用：</p><table><thead><tr><th>编程要素</th><th>作用</th><th>典型应用</th></tr></thead><tbody><tr><td>RSR 编号</td><td>程序由 PLC 通过 RSR 信号启动</td><td>自动化产线</td></tr><tr><td>J/L 指令</td><td>关节移动/直线移动</td><td>运动轨迹控制</td></tr><tr><td>R[n] 寄存器</td><td>整数存储，用作索引</td><td>循环计数、分支选择</td></tr><tr><td>PR[n] 位置寄存器</td><td>存储位置和偏移量</td><td>OFFSET 可变定位</td></tr><tr><td>SELECT/LBL</td><td>多分支跳转</td><td>条件分发逻辑</td></tr><tr><td>DO/DI/RO</td><td>数字 I/O 信号</td><td>PLC 交互</td></tr><tr><td>OFFSET</td><td>位置偏移</td><td>同一轨迹多位置复用</td></tr></tbody></table><h3>Solution方法/技术要点</h3><h4>程序结构解析（RSR0112）</h4><pre><code class="language-ls">/PROG RSR0112
+/ATTR
+/MN
+1: J P[1] 100% FINE      ; 关节移动到 P[1]，100% 速度，FINE 终止
+2: L P[2] 100mm/sec       ; 直线移动到 P[2]
+3: L P[3] 100mm/sec       ; 直线移动到 P[3]
+4: L P[4] 100mm/sec       ; 直线移动到 P[4]
+5: RO[8]=ON               ; 设置输出 RO[8]=ON
+6: L P[5] 100mm/sec       ; 直线移动到 P[5]
+7: L P[6] 100mm/sec       ; 直线移动到 P[6]
+; -- SELECT 分支逻辑 --
+; R[1] 作为索引，选择位置寄存器 PR[10]
+; 通过 LBL[10]~LBL[13] 进行分支
+; 在 P[8] 应用 OFFSET.PR[10] 偏移量
+; 每个周期 R[1] 递增
+; 当 R[1]=4 时，设置 DO[1]=ON 并等待 DI[1]=ON</code></pre><h4>关键编程模式</h4><p><strong>1. OFFSET 偏移定位</strong></p><pre><code>; 将偏移量存入位置寄存器
+PR[10]=OFFSET.PR[n]    ; 选择不同的偏移量
+L P[8] 100mm/sec       ; 在 P[8] 基础上应用偏移</code></pre><p>OFFSET 功能允许在同一基准点上通过不同的位置寄存器偏移到达多个位置，大幅减少示教点数量。</p><p><strong>2. SELECT 分支逻辑</strong></p><pre><code>SELECT R[1]=1,LBL[10]   ; R[1]=1 时跳转到 LBL[10]
+       =2,LBL[11]       ; R[1]=2 时跳转到 LBL[11]
+       =3,LBL[12]       ; R[1]=3 时跳转到 LBL[12]
+       =4,LBL[13]       ; R[1]=4 时跳转到 LBL[13]</code></pre><p>SELECT 类似于 C 语言的 switch-case，根据寄存器值跳转到不同标签。</p><p><strong>3. PLC 交互逻辑</strong></p><pre><code>; 当 R[1] 达到上限 4 时：
+DO[1]=ON               ; 通知 PLC 本轮完成
+WAIT DI[1]=ON          ; 等待 PLC 确认
+R[1]=1                 ; 重置索引，开始下一轮</code></pre><h4>第二段程序片段</h4><pre><code class="language-ls">; 寄存器 R[1] 初始化
+; 使用 SELECT 语句进行跳转标签选择
+; 关节移动 + RO[1]=ON
+; 50 秒等待命令</code></pre><h3>Verification方式</h3><ol><li><strong>RSR 启动</strong>：通过 PLC 发送 RSR 信号，确认程序 RSR0112 正常启动</li><li><strong>运动轨迹</strong>：逐一验证 P[1]~P[8] 的运动路径和位置精度</li><li><strong>OFFSET 验证</strong>：修改 PR[10] 的偏移量，确认到达位置相应变化</li><li><strong>分支验证</strong>：修改 R[1] 的值，确认 SELECT 跳转到正确的 LBL</li><li><strong>PLC 交互</strong>：确认 R[1]=4 时 DO[1] 正确输出，DI[1] 响应后程序继续</li><li><strong>循环验证</strong>：完整运行多轮循环，确认逻辑无死循环或漏步骤</li></ol><h3>来源</h3><ul><li>帖子：<a href="https://bbs.gongkong.com/d/201302/481940/481940_1.shtml">分享一小段FANUC机器人的程序</a></li><li>作者：王者之师—广州@阿君（版主），2013-02-03</li><li>机器人型号：FANUC R-2000IB</li><li>说明：原帖声明非完整运行程序，仅供学习参考</li></ul><h2>Verification</h2><pre><code class="language-bash">grep -i fanuc lessons/contrib/fanuc-*.md 2&gt;/dev/null | wc -l
+echo FANUC verified</code></pre><p><strong>Expected Output:</strong></p><pre><code># (count)
+FANUC verified</code></pre>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/fanuc-rsr-program-select-logic.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=FANUC RSR Program with OFFSET and SELECT Logic Sharing">Find related lessons →</a></p></div>

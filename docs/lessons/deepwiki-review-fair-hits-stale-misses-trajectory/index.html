@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,15 @@
 <div class="section">
   <h2>Summary</h2>
   <p>An external architecture review (DeepWiki AI analysis) judged MisakaNet as a</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>An external architecture review (DeepWiki AI analysis) judged MisakaNet as a "wrapped personal/small-team tool" with a weak moat, no real-time sync, and a vulnerable position against model vendors internalizing memory. Some claims were fair; several were based on a stale snapshot that predates the Cloudflare Worker + D1 remote surface.</p><h2>Root Cause</h2><ol><li><strong>Docs lagged code.</strong> <code>docs/LIMITATIONS.md</code> and README prose ("No server. No database. No daemon. Just git clone + python3") were written in the pure-local era and never updated after the remote HTTP MCP surface (<code>misakanet.org/mcp</code>, Cloudflare Worker + D1 + KV, anonymous search) shipped. Reviewers reading docs first conclude "local-only tool".</li><li><strong>Genuine debt exists.</strong> <code>search_knowledge.py</code> is ~1050 lines mixing search, heal/diagnose mode, GraphQL playground, harvest, feedback, quota checks and typo correction — a real "swiss-army CLI". CI validates format/DCO/dangerous patterns but not factual correctness. No embedding in the core (by design).</li></ol><h2>Fair hits (keep honest about these)</h2><ul><li><strong>Search is keyword BM25</strong>; semantic similarity needs an external embedding service (<code>--semantic</code> flag exists, not default).</li><li><strong>Scale ceiling</strong>: local core loads all lessons into memory (&gt;50k lessons is heavy); git is not a database; local sync is batch by design.</li><li><strong>No automated fact-checking</strong> — lessons are community-contributed; evidence levels (E0–E4) + <code>me_events</code> reuse signals are the corrective signals.</li><li><strong>Technical moat is thin</strong> (BM25+Git+Markdown is replicable); the moat is the corpus (321 lessons) and network effects, which are early (5 contributors in docs/community/voices.json).</li><li><strong>Model vendors may internalize failure memory</strong> — the real existential risk; counter-positioning is to sit close to agent runtimes (fatal-guard crash hook, me_events reuse evidence, MCP-first tools).</li></ul><h2>Stale-snapshot misses (correct the record)</h2><ul><li>"Zero-infrastructure / no server / no database" is <strong>outdated</strong>: there is now a Cloudflare Worker + D1 remote surface serving <code>misakanet.org/mcp</code> (anonymous search + intake → GitHub issue). README and LIMITATIONS were updated 2026-09-02 ("Two surfaces, one knowledge core").</li><li>"Should extract misakanet-core to PyPI" <strong>already happened</strong>: <code>misakanet-core</code> is a published PyPI dependency (&gt;=2.7.0); the repo is the orchestration layer.</li><li>"33→13 repo cleanup shows weeds" is better read as <strong>active governance</strong> (archiving zero-value forks), though the project did have filter-repo mishaps.</li></ul><h2>The right trajectory: protocol layer, not "big repo"</h2><p>The review asked "can it become a big repo?". The honest answer is it should <strong>not</strong> chase big-repo scope; it should stay a <strong>small, precise protocol layer</strong> (like llms.txt / MCP): zero-dep core extracted to misakanet-core, remote worker as reference deployment, and third parties building nodes/clients on the protocol. A benchmark ablation (2026-09-02, compare run) shows injected lessons help small models (+29pp on 3B) but can distract large ones (−4pp on 8B) — design injectors per model tier rather than "always inject".</p><h2>Verification</h2><pre><code class="language-bash"># Current surface truth
+curl -sS -X POST https://misakanet.org/mcp -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}'   # → 2.23.0
+
+python3 -c "import misakanet_core; print(misakanet_core.__version__)"   # core published
+wc -l search_knowledge.py   # ~1050 — acknowledged debt, track for refactor</code></pre><h2>Lesson</h2><ul><li>Keep docs in lockstep with shipped surfaces; a stale "no server" line costs more than the feature it describes.</li><li>Separate "fair limitations" (state them proudly) from "stale-snapshot criticism" (fix the docs) when triaging external reviews.</li><li>Aim for protocol-layer relevance, not big-repo sprawl; measure injection value per model tier instead of assuming "more context = better".</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/deepwiki-review-fair-hits-stale-misses-trajectory.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=DeepWiki Architecture Review: Fair Hits, Stale-Snapshot Misses, and the Right Trajectory">Find related lessons →</a></p></div>

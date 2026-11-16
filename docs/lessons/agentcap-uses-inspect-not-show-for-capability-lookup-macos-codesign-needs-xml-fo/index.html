@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,32 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Two related CLI confusion issues:</p>
+</div>
+<div class="lesson-body">
+<h2>AgentCap uses 'inspect' not 'show'; macOS codesign needs -xml for plistlib</h2><h2>Problem</h2><p>Two related CLI confusion issues:</p><ol><li><strong>AgentCap</strong>: Running <code>agentcap show &lt;capability-id&gt;</code> fails with <code>agentcap: invalid choice: 'show'</code>. The CLI accepts <code>inspect</code> as the subcommand for looking up a capability by exact ID, but users naturally try <code>show</code> first.</li><li><strong>macOS codesign</strong>: Running <code>codesign --display --entitlements -</code> on a signed binary outputs a human-readable <code>[Dict]/[Key]</code> tree that <code>plistlib</code> rejects with <code>plistlib.InvalidFileException: Invalid file</code>. The legacy <code>:-</code> format emits XML but prints a deprecation warning to stderr, which breaks parsers that capture stderr.</li></ol><h2>Root Cause</h2><ol><li><strong>AgentCap</strong>: The CLI's argparse subparser registers <code>inspect</code> (not <code>show</code>) as the subcommand for capability lookup by exact ID. The error message <code>invalid choice: 'show'</code> does list <code>inspect</code> in the valid choices, but the output is easy to miss in a long usage string. The naming differs from common CLI conventions where <code>show</code> is the standard verb.</li><li><strong>macOS codesign</strong>: The <code>--display --entitlements -</code> combination defaults to a human-readable plist dump format (Apple's <code>[Dict]/[Key]</code> text tree). This format is not valid XML and cannot be parsed by <code>plistlib</code>. The <code>-xml</code> flag (supported on macOS 12+ and later) switches the output to well-formed XML plist that <code>plistlib.loads()</code> accepts. The older <code>:-</code> syntax is deprecated and emits a warning.</li></ol><h2>Solution</h2><h3>Step 1: Use <code>inspect</code> for AgentCap</h3><p>Replace <code>show</code> with <code>inspect</code>:</p><pre><code class="language-bash"># Wrong
+agentcap show my-capability-id
+
+# Correct
+agentcap inspect my-capability-id</code></pre><p>The <code>inspect</code> subcommand takes a capability ID and prints its full metadata.</p><h3>Step 2: Use <code>-xml</code> for codesign entitlements</h3><p>Replace the default output format with XML:</p><pre><code class="language-bash"># Wrong — outputs human-readable [Dict]/[Key] tree
+codesign --display --entitlements - /path/to/binary
+
+# Correct — outputs XML plist that plistlib can parse
+codesign --display --entitlements -xml /path/to/binary</code></pre><p>Then parse with <code>plistlib</code>:</p><pre><code class="language-python">import plistlib, subprocess
+result = subprocess.run(
+    ["codesign", "--display", "--entitlements", "-xml", "/path/to/binary"],
+    capture_output=True, text=True
+)
+# The XML output goes to stdout, parse it directly
+entitlements = plistlib.loads(result.stdout.encode())</code></pre><h3>Step 3: Handle the deprecation warning from legacy format</h3><p>If you must support older macOS versions where <code>-xml</code> is unavailable, capture and suppress the deprecation warning:</p><pre><code class="language-python">result = subprocess.run(
+    ["codesign", "--display", "--entitlements", ":-", "/path/to/binary"],
+    capture_output=True, text=True
+)
+# Ignore stderr deprecation warning, parse stdout as XML
+entitlements = plistlib.loads(result.stdout.encode())</code></pre><h2>Verification</h2><pre><code class="language-bash"># Verify AgentCap subcommand
+agentcap inspect --help 2&gt;&amp;1 | grep -q inspect &amp;&amp; echo "PASS: inspect is a valid subcommand" || echo "FAIL"
+
+# Verify codesign XML output
+codesign --display --entitlements -xml /usr/bin/ls 2&gt;/dev/null | head -1 | grep -q "&lt;?xml" &amp;&amp; echo "PASS: XML output" || echo "FAIL: not XML"</code></pre>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/en/agentcap-inspect-subcommand-and-codesign-xml-output.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=AgentCap uses 'inspect' not 'show' for capability lookup; macOS codesign needs -xml for plistlib">Find related lessons →</a></p></div>

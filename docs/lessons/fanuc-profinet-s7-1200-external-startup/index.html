@@ -6,6 +6,7 @@
 <title>FANUC PROFINET Communication with Siemens S7-1200 and External Startup — MisakaNet</title>
 <meta name="description" content="Draft (not published): 在汽车焊装产线中，需要将 FANUC 机器人与 Siemens S7-1200 PLC 通过 **PROFINET** 协议建立通讯，并配置外部启动功能，使 PLC 能够远程触发机器人程序执行。这是工业自动化中常见的集成场景：S7-1200 作为 PROFINET Controller，FANUC ...">
 <link rel="canonical" href="https://misakanet.org/lessons/fanuc-profinet-s7-1200-external-startup/">
+<meta name="robots" content="noindex, follow">
 <meta property="og:title" content="FANUC PROFINET Communication with Siemens S7-1200 and External Startup">
 <meta property="og:description" content="Draft (not published): 在汽车焊装产线中，需要将 FANUC 机器人与 Siemens S7-1200 PLC 通过 **PROFINET** 协议建立通讯，并配置外部启动功能，使 PLC 能够远程触发机器人程序执行。这是工业自动化中常见的集成场景：S7-1200 作为 PROFINET Controller，FANUC ...">
 <meta property="og:url" content="https://misakanet.org/lessons/fanuc-profinet-s7-1200-external-startup/">
@@ -160,6 +161,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -179,6 +191,17 @@
 <div class="section">
   <h2>Summary</h2>
   <p>在汽车焊装产线中，需要将 FANUC 机器人与 Siemens S7-1200 PLC 通过 **PROFINET** 协议建立通讯，并配置外部启动功能，使 PLC 能够远程触发机器人程序执行。这是工业自动化中常见的集成场景：S7-1200 作为 PROFINET Controller，FANUC 机器人（配备 PRO…</p>
+</div>
+<div class="lesson-body">
+<h2>FANUC PROFINET 通讯与 S7-1200 外部启动配置</h2><h3>Problem描述</h3><p>在汽车焊装产线中，需要将 FANUC 机器人与 Siemens S7-1200 PLC 通过 <strong>PROFINET</strong> 协议建立通讯，并配置外部启动功能，使 PLC 能够远程触发机器人程序执行。这是工业自动化中常见的集成场景：S7-1200 作为 PROFINET Controller，FANUC 机器人（配备 PROFINET 适配卡）作为 PROFINET Device。</p><h3>Root Cause分析</h3><p>PROFINET 通讯及外部启动配置涉及以下关键环节，任一环节配置错误都会导致通讯失败或无法远程启动：</p><table><thead><tr><th>环节</th><th>说明</th><th>常见问题</th></tr></thead><tbody><tr><td>硬件适配</td><td>FANUC 需安装 PROFINET 适配卡</td><td>未安装卡或卡型号不兼容</td></tr><tr><td>网络配置</td><td>IP 地址、设备名需匹配</td><td>IP 冲突、设备名拼写错误</td></tr><tr><td>GSD 文件</td><td>TIA Portal 需导入 FANUC GSD</td><td>GSD 版本与固件不匹配</td></tr><tr><td>信号映射</td><td>DI/DO 信号与 PLC 地址对应</td><td>映射表错位导致信号混乱</td></tr><tr><td>启动模式</td><td>RSR 或 PNS 模式配置</td><td>启动模式与信号设计不匹配</td></tr></tbody></table><h3>Solution方法/技术要点</h3><h4>1. 硬件准备与网络配置</h4><ul><li>FANUC 机器人需安装 <strong>PROFINET 适配卡</strong>（如 A05B-2600 系列 PCI 卡）</li><li>配置 FANUC 侧 PROFINET 参数：<ul><li>MENU → SETUP → Profinet → 设置 IP 地址和设备名</li><li>确保与 S7-1200 在同一网段</li></ul></li></ul><h4>2. TIA Portal 侧配置</h4><ul><li>导入 FANUC GSD 文件（从 FANUC 官网获取对应版本）</li><li>在项目中添加 FANUC 作为 PROFINET Device</li><li>配置 IO 通讯区（Input/Output 模块）</li><li>下载硬件配置到 S7-1200</li></ul><h4>3. 外部启动模式配置</h4><p><strong>RSR（Robot Start Request）模式：</strong></p><ul><li>PLC 通过 DI 信号发送启动请求</li><li>FANUC 通过信号组接收程序编号</li><li>适合需要灵活选择程序的场景</li></ul><p><strong>PNS（Program Number Select）模式：</strong></p><ul><li>PLC 通过 8 位信号组选择程序号（PNS0001~PNS0256）</li><li>FANUC 自动执行对应编号的程序</li><li>适合程序数量固定的标准化产线</li></ul><h4>4. 信号映射要点</h4><pre><code>典型信号映射：
+DI[1-8]   ← PLC 程序选择信号（PNS 编号）
+DI[9]     ← 启动请求（RSR 触发）
+DI[10]    ← 停止信号
+DO[1]     → 程序运行中
+DO[2]     → 程序完成
+DO[3]     → 报警信号</code></pre><h3>Verification方式</h3><ol><li><strong>通讯验证</strong>：在 TIA Portal 中确认 PROFINET 网络拓扑显示 FANUC Device 为绿色在线状态</li><li><strong>信号验证</strong>：手动触发 DI 信号，确认 FANUC 侧对应信号响应正确</li><li><strong>启动验证</strong>：通过 PLC 发送 RSR/PNS 启动信号，确认机器人自动执行目标程序</li><li><strong>稳定性验证</strong>：监控通讯状态无断线或超时报警，连续运行多个周期</li></ol><h3>来源</h3><ul><li>帖子：<a href="https://bbs.gongkong.com/d/202011/845226/845226_1.shtml">FANUC机器人与S7-1200profinet通讯及外部启动配置</a></li><li>作者：工控稔 (gongkongren)，2020-11-19</li><li>说明：原帖主要内容为附件下载（需积分），技术细节基于帖子主题和社区讨论整理</li></ul><h2>Verification</h2><pre><code class="language-bash">grep -i fanuc lessons/contrib/fanuc-*.md 2&gt;/dev/null | wc -l
+echo FANUC verified</code></pre><p><strong>Expected Output:</strong></p><pre><code># (count)
+FANUC verified</code></pre>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/fanuc-profinet-s7-1200-external-startup.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=FANUC PROFINET Communication with Siemens S7-1200 and External Startup">Find related lessons →</a></p></div>

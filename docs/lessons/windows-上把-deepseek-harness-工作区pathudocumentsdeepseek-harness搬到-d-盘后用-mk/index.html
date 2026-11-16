@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Windows 上把 DeepSeek Harness 工作区（<PATH><u>\Documents\deepseek-harness）搬到 D 盘后用 mklink /J 在原路径建 junction。 旧会话仍能打开，但新建会话静默失败：会话目录能建、projcache 能生成，却没有 user/message …</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Windows 上把 DeepSeek Harness 工作区（&lt;PATH&gt;&lt;u&gt;\Documents\deepseek-harness）搬到 D 盘后用 mklink /J 在原路径建 junction。 旧会话仍能打开，但新建会话静默失败：会话目录能建、projcache 能生成，却没有 user/message 也没有 turn/start，storages\sessions\&lt;id&gt;.json 不存在，界面表现为"无法创建新会话"，日志无任何报错。</p><h2>Root Cause</h2><p>根因：&lt;PATH&gt;&lt;u&gt;\.dsh\storages\workspace.json 里 workspaces[&lt;id&gt;].path 存的是创建时的字面路径（C 盘）。</p><h2>Fix</h2><p>改 workspace.json 里该工作区的 path，使其等于 fs.realpath 的结果（搬迁后的真实路径）。①node -e "console.log(require('fs').realpathSync('&lt;PATH&gt;\Users\\&lt;u&gt;\\Documents\\deepseek-harness\\default-workspace'))" 算准规范路径；②备份 workspace.json；③把 tables.workspaces[&lt;id&gt;].path 改成上一步输出（本例 &lt;PATH&gt; → &lt;PATH&gt; BOM 的 UTF-8 —— PowerShell 的 Set-Content -Encoding UTF8 会加 BOM，Node JSON.parse 报 Unexpected token '\uFEFF'，注册表读不出来；用 [System.IO.File]::WriteAllText($f,$txt,(New-Object System.Text.UTF8Encoding($false)))；⑤同步 D 侧副本；⑥重启 DSH 生效（registry 在 Service.init 读盘）。更稳的做法：不用 junction 搬工作区，直接给 profile 的 workspace-controller 设 documentsDirectory 指向新盘（该行 schema 有 documentsDirectory / documentsLookupTimeoutMs 两键），新会话从一开始就用规范路径。</p><h2>Verification</h2><p>改完用 node 复验：①JSON.parse 成功且 path 读出正确；②fs.realpathSync(path) === 存入的 path 为 true；③对已登记每条会话把 header.cwd 走 realpathSync 后与 record.path 比对全部相等（否则老会话会被 get sessionIds() 过滤掉）。最后重启 DSH 确认能新建会话、正常发消息并产生 user/message 事件。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/windows-上把-deepseek-harness-工作区pathudocumentsdeepseek.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Windows 上把 DeepSeek Harness 工作区（<PATH><u>\Documents\deepseek-harness）搬到 D 盘后用 mk">Find related lessons →</a></p></div>

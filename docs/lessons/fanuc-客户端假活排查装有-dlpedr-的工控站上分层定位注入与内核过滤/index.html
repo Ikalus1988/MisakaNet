@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,22 @@
 <div class="section">
   <h2>Summary</h2>
   <p>ROBOGUIDE 离线仿真反复卡死。症状极具误导性：RGCore 进程在任务管理器里 `Responding=True`，但 CPU 采样增量为 0——界面「还活着」，实际什么都不做。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>ROBOGUIDE 离线仿真反复卡死。症状极具误导性：RGCore 进程在任务管理器里 <code>Responding=True</code>，但 CPU 采样增量为 0——界面「还活着」，实际什么都不做。</p><p>虚拟控制器其实已死。<code>&lt;工作单元&gt;/Robot_1/logfile.txt</code> 记录：</p><pre><code>[proxy] Windows exception: Memory access violation
+NTOS-020 Exception in proxy: 0xC0000005
+NTOS-001 Memory access violation
+  Exception at frsock!0x100014C6 : connect + 0x96
+Module 'proxy' aborting.
+OS  -145 Power off controller to reset</code></pre><p>同一工作单元在<strong>未安装本机这套安全软件组合</strong>的电脑上不复现。两次崩溃点完全相同：<code>frsock!connect + 0x96</code>。</p><h2>Root Cause</h2><p>本机三类终端安全软件同时作用在 FANUC 进程上，冲突发生在用户态 socket 调用链：</p><table><thead><tr><th>层</th><th>角色</th><th>行为</th><th>已观察到的证据</th></tr></thead><tbody><tr><td>用户态</td><td>企业 DLP（Detours 注入型）</td><td>就地挂钩 <code>networkSend</code> / <code>IMSend</code>，带 <code>OperationBlocking</code> 阻断能力</td><td>三个 FANUC 进程模块表均出现该挂钩 DLL；DLL 字符串含 <code>DetourTransactionBegin</code> / <code>DetoursAttach</code> / <code>detourd</code> / <code>networkSend</code> / <code>OperationBlocking</code>；另有按进程名单选择性挂钩的 <code>g_NotHook_FilesList_Count</code></td></tr><tr><td>内核态</td><td>终端杀软</td><td>WFP 过滤驱动拦截含本地回环的全部 TCP</td><td>过滤驱动运行中</td></tr><tr><td>内核态</td><td>企业 EDR</td><td>内核驱动 + AMSI Provider 行为监控注入</td><td>存在</td></tr></tbody></table><h3>触发序列（两次观测一致）</h3><pre><code>示教器/iPendant 断开重连（如 SMON 执行 tpconn 0 切换本地↔远程）
+  → PMON 对 127.0.0.1:50005 重连风暴 15+ 次
+    → FRSOCK 报 0x2745 (WSAECONNABORTED 10053) / 0x2746 (WSAECONNRESET 10054)
+      → frsock.dll 的 connect() 崩在同一偏移 +0x96
+        → proxy / snpx / rpcm / telnet / ftp 五模块连环 abort</code></pre><p>回环连接被反复复位，<code>frsock</code> 的 <code>connect()</code> 在同一偏移崩溃——是确定性事件，不是随机挂死。</p><h3>排除项：不是 LSP 劫持</h3><p>Winsock LSP 目录只有系统自带 MSAFD provider，可排除 LSP 劫持。干扰源是「用户态 Detours 注入 + WFP 内核过滤 + EDR 内核驱动」的<strong>组合</strong>。</p><h3>次要诱因</h3><p>工作单元自动备份必失败：<code>PNIO.SV</code>（PROFINET 配置）全盘不存在 → <code>FILE-077</code> / <code>FILE-079</code> / <code>FILE-014</code> / <code>FILE-063</code>。备份在崩溃前反复重试，放大了 socket 压力。</p><h2>Fix</h2><h3>第一步：区分「界面假活」和「界面死锁」</h3><p>不要从「窗口还能拖动」推断控制器还活着。按采样判定：</p><table><thead><tr><th>观察</th><th>结论</th></tr></thead><tbody><tr><td><code>Responding=True</code>，CPU 3 秒采样增量 ≤ 0.1，内存不动</td><td>控制器已死，不是 UI 死锁</td></tr><tr><td>CPU 有明显增量但窗口不响应</td><td>才是 UI 线程问题</td></tr></tbody></table><h3>第二步：日志签名确认</h3><p>在 <code>&lt;工作单元&gt;/Robot_1/logfile.txt</code> 中检索 <code>Memory access violation</code> / <code>Module 'x' aborting</code> / <code>OS  -145 Power off controller</code> / <code>Windows exception</code>。任一命中即控制器已死；<code>0x2745</code> / <code>0x2746</code> 的计数反映回环复位次数。</p><h3>第三步：分层定位注入（不依赖厂商名）</h3><p>列出 FANUC 进程的模块表，剔除系统目录与应用自身目录后，剩下的就是被注入的第三方模块：</p><pre><code class="language-powershell">Get-Process RGCore,frrobot,FRROBO~1 | ForEach-Object {
+  $_.Modules | Where-Object {
+    $_.FileName -notmatch '^C:\WINDOWS\' -and $_.FileName -notmatch 'FANUC'
+  } | Select-Object ModuleName,FileName
+}</code></pre><p>对可疑挂钩 DLL 抽 ASCII 字符串，出现 <code>DetoursAttach</code> / <code>networkSend</code> / <code>OperationBlocking</code> 即为就地挂钩型监控。这一步不需要知道厂商名，也不泄露任何产品标识。</p><h3>第四步：止血（不依赖 IT）</h3><ol><li><strong>避开触发条件</strong>——运行中不要执行 <code>tpconn</code>、不要切换本地↔远程示教器</li><li><strong>干净断电复位</strong>——结束 <code>RGCore</code> / <code>frrobot</code> / <code>FRROBO~1</code> 后重开工作单元。<code>OS -145</code> 要求的就是断电；工作单元已在正常保存点落盘，不丢用户数据</li><li><strong>关闭该工作单元的自动备份</strong>——<code>PNIO.SV</code> 缺失使它每次必失败，重试只放大 socket 压力</li><li><strong>看门狗</strong>——崩溃签名稳定，可监控 <code>logfile.txt</code> 命中即自动断电重启，实现无人值守恢复</li></ol><h3>第五步：根治（需 IT 下发，本例未验证）</h3><p>给 FANUC 安装目录整体加注入排除/信任白名单，重点 <code>RGCore.exe</code>、<code>frrobot.exe</code>、<code>ROBOGUIDE.exe</code>、<code>FRROBO~1.EXE</code> 及虚拟控制器 bin 目录；杀软对 <code>127.0.0.1</code> 回环及 FANUC 进程加例外。</p><p><strong>本例没有完成这一步的闭环验证。</strong> 下文 Verification 第 9 条是应当执行的复测步骤，不是已记录的结果——按现有证据，白名单是否根治仍属推断。</p><h2>Verification</h2><h3>已验证（本机实测）</h3><ol><li><strong>注入证据</strong>——三个 FANUC 进程模块表均出现该挂钩 DLL；DLL 字符串证实 Detours + <code>networkSend</code> hook + <code>OperationBlocking</code></li><li><strong>内核层</strong>——杀软 WFP 过滤驱动与 EDR 内核驱动均在运行</li><li><strong>错误码解码</strong>——<code>0x2745</code> / <code>0x2746</code> = WSAECONNABORTED / WSAECONNRESET，确认回环连接被复位</li><li><strong>排除 LSP</strong>——Winsock LSP 目录干净</li><li><strong>次要诱因定位</strong>——自动备份失败源于缺失 <code>PNIO.SV</code></li><li><strong>恢复可行</strong>——干净断电重启后可恢复</li><li><strong>确定性</strong>——第二次崩溃复现同一触发序列、同一崩溃地址（<code>frsock!connect + 0x96</code>）</li><li><strong>对照组</strong>——无该安全软件组合的电脑上，同一工作单元做相同操作不复现</li></ol><h3>待执行复测（未做）</h3><ol><li>加白后跑同一工作单元并主动做一次 <code>tpconn 0</code>，确认 <code>0x2745</code> / <code>0x2746</code> 消失且不再出现 <code>Memory access violation</code></li></ol><h3>复现（仅在装有同类三层防护的环境）</h3><p>启动工作单元后在 SMON 执行 <code>tpconn 0</code>（或用 UI 切换示教器连接方式），观察 PMON 连接风暴与 frsock 崩溃。<strong>未装同类三层防护的机器上这一步不会复现，不要据此判定环境正常。</strong></p><h2>Notes</h2><ul><li><strong>适用前提</strong>：本条根因归属于「用户态注入 + WFP 内核过滤 + EDR 内核驱动」三层组合。没有这三层防护的工控站不会复现。第一至第四步的判据（假活识别、日志签名、干净断电复位、<code>PNIO.SV</code> 检查）在其他环境仍有价值；第五步不适用。</li><li>DLP 挂钩 DLL 改写了 <code>networkSend</code> 调用链，与 <code>frsock.dll</code> 的 socket 实现冲突——这是冲突的具体位置，不只是「机器上装了防护软件」。</li><li><code>Responding=True</code> 在本例中完全没有诊断价值：进程还活着，控制器已经死了。</li><li><code>PNIO.SV</code> 缺失与崩溃不是同一个原因，但会让每次崩溃前的备份重试放大 socket 压力，值得单独清掉。</li><li>复现步骤对<strong>任何</strong>装了同类终端防护的工控站都敏感。未加白的仿真机属于高危工位，应在排产时避开无人值守运行。</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/fanuc-rgcore-hang-endpoint-security-injection.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=FANUC 客户端假活排查：装有 DLP/EDR 的工控站上分层定位注入与内核过滤">Find related lessons →</a></p></div>

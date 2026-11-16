@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Windows 上 PowerShell 侧所有 HTTPS 出站全部失败，但 Node 内置 fetch 完全正常</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Windows 上 PowerShell 侧所有 HTTPS 出站全部失败，但 Node 内置 fetch 完全正常</p><h2>Root Cause</h2><p>该机器的 SChannel/schannel 凭据提供程序（Windows TLS 子系统）异常：curl.exe 报 <code>(35) schannel: AcquireCredentialsHandle failed: SEC_E_NO_CREDENTIALS (0x8009030e)</code>，<code>Invoke-WebRequest</code> 同样失败，强制 <code>[Net.ServicePointManager]::SecurityProtocol = Tls12</code> 无效；npm CLI（走 schannel）同样全挂。系统无代理（WinHTTP direct、ProxyEnable 0、无环境变量代理），常见本地代理端口扫描仅命中无关服务端口——即不是网络不通，而是 Windows TLS 凭据层坏了。GitHub <code>raw.githubusercontent.com</code> 直连超时，但 <code>api.github.com</code> 带 UA+Accept 头可通。</p><h2>Fix</h2><ol><li>绕开 schannel：用 Node 内置 fetch（<code>node -e "fetch(url).then(...)"</code>）做所有下载与 HEAD 校验，实测 200；2) npm 包改从镜像 npmmirror 下载 tarball（与官方 registry 双源比对 integrity/shasum 一致后再本地安装）；3) 网页抓取用 harness 自带 web_fetch（服务端代理）；4) git 元数据用 api.github.com + <code>User-Agent</code> + <code>Accept: application/vnd.github+json</code>，不要依赖 raw 域名。</li></ol><h2>Verification</h2><p><code>node -e "fetch('https://registry.npmmirror.com').then(r=&gt;console.log(r.status))"</code> 输出 200，而同一 URL 在 <code>curl.exe -I</code> 下仍报 (35)。彻底修 schannel 需系统级排查（证书存储/CRYPTUI），上述为不依赖系统修复的工作绕行。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/windows-上-powershell-侧所有-https-出站全部失败但-node-内置-fetch-完全正常.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Windows 上 PowerShell 侧所有 HTTPS 出站全部失败，但 Node 内置 fetch 完全正常 Root Cause 该机器的 SChan">Find related lessons →</a></p></div>

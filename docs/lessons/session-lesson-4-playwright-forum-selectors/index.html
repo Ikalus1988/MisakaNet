@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,74 @@
 <div class="section">
   <h2>Summary</h2>
   <p>不同论坛使用不同的 CMS（WoltLab、IPS Community、Discourse），HTML 结构各异。写选择器需要逐个分析。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>不同论坛使用不同的 CMS（WoltLab、IPS Community、Discourse），HTML 结构各异。写选择器需要逐个分析。</p><h2>Root Cause</h2><p>每个论坛 CMS 有自己的 CSS 类名和 DOM 结构。没有统一的选择器标准。</p><h2>Solution</h2><h3>论坛 CMS 识别</h3><pre><code class="language-javascript">// 快速识别 CMS
+const cms = await page.evaluate(() =&gt; {
+  if (document.querySelector('.wbbThread')) return 'WoltLab';
+  if (document.querySelector('.ipsDataItem')) return 'IPS Community';
+  if (document.querySelector('.topic-list')) return 'Discourse';
+  if (document.querySelector('[data-thread-id]')) return 'Custom';
+  return 'Unknown';
+});</code></pre><h3>WoltLab (robot-forum.com)</h3><pre><code class="language-javascript">// 帖子列表
+const threads = await page.evaluate(() =&gt; {
+  const results = [];
+  document.querySelectorAll('ol.wbbThread').forEach(item =&gt; {
+    const titleEl = item.querySelector('.columnSubject h3 a');
+    const stats = item.querySelectorAll('.columnStats .statsDataList');
+    const replies = stats[0] ? parseInt(stats[0].querySelector('dd').textContent) : 0;
+    const views = stats[1] ? parseInt(stats[1].querySelector('dd').textContent) : 0;
+    const resolved = item.dataset.isDone === '1';  // 关键：data-is-done 属性
+    const dateEl = item.querySelector('woltlab-core-date-time');
+    
+    if (titleEl) {
+      results.push({
+        href: titleEl.href,
+        replies, views, resolved,
+        date: dateEl ? dateEl.getAttribute('date') : ''
+      });
+    }
+  });
+  return results;
+});</code></pre><h3>IPS Community (mrplc.com)</h3><pre><code class="language-javascript">const threads = await page.evaluate(() =&gt; {
+  const results = [];
+  document.querySelectorAll('.ipsDataItem').forEach(item =&gt; {
+    const titleEl = item.querySelector('.ipsDataItem_title a');
+    const meta = item.querySelector('.ipsDataItem_meta');
+    if (titleEl) {
+      results.push({
+        title: titleEl.textContent.trim(),
+        href: titleEl.href,
+        meta: meta ? meta.textContent.trim() : ''
+      });
+    }
+  });
+  return results;
+});</code></pre><h3>通用提取策略</h3><pre><code class="language-javascript">// 策略 1：按链接模式匹配
+const links = await page.evaluate(() =&gt; {
+  return Array.from(document.querySelectorAll('a[href*="/thread/"]'))
+    .map(a =&gt; ({ title: a.textContent.trim(), href: a.href }));
+});
+
+// 策略 2：按文本内容匹配
+const text = await page.evaluate(() =&gt; document.body.innerText);
+const titles = text.match(/\d+ replies.*?\n(.+)/g);
+
+// 策略 3：按 data 属性匹配
+const items = await page.evaluate(() =&gt; {
+  return Array.from(document.querySelectorAll('[data-thread-id], [data-topic-id]'))
+    .map(el =&gt; ({ id: el.dataset.threadId || el.dataset.topicId, text: el.innerText.substring(0, 100) }));
+});</code></pre><h3>等待策略</h3><pre><code class="language-javascript">// 等待内容加载
+await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 20000 });
+await page.waitForTimeout(3000);  // 等待 JS 渲染
+
+// 等待特定元素
+await page.waitForSelector('.wbbThread', { timeout: 10000 });
+
+// 等待网络空闲（SPA）
+await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 });</code></pre><h2>Verification</h2><pre><code class="language-bash">echo "Lesson: Playwright Forum Selectors — WoltLab/IPS/Common Pa"
+wc -l lessons/contrib/session-lesson-4-playwright-forum-selectors.md</code></pre><p><strong>Expected Output:</strong></p><pre><code>Lesson: Playwright Forum Selectors — WoltLab/IPS/Common Pa
+# (line count)</code></pre><h2>Notes</h2><ul><li>WoltLab 的 <code>data-is-done</code> 属性标识已解决帖子</li><li>IPS Community 的 <code>.ipsDataItem</code> 是通用容器</li><li>先用 <code>page.evaluate(() =&gt; document.body.innerText)</code> 快速预览内容</li><li>Source: practical-experience</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/session-lesson-4-playwright-forum-selectors.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Playwright Forum Selectors — WoltLab/IPS/Common Patterns">Find related lessons →</a></p></div>

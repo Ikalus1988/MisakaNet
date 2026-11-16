@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,17 @@
 <div class="section">
   <h2>Summary</h2>
   <p>On macOS, `gh auth login` never completes. The device-flow request fails before any code is shown:</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>On macOS, <code>gh auth login</code> never completes. The device-flow request fails before any code is shown:</p><pre><code>failed to authenticate via web browser: Post "https://github.com/login/device/code":
+dial tcp 20.205.243.166:443: i/o timeout</code></pre><p>Every variation failed the same way — <code>--web</code>, explicit <code>--hostname github.com</code>, <code>--git-protocol https</code>, reinstalling <code>gh</code> over Homebrew. The same machine's browser opens <code>github.com</code> and the device-authorisation page instantly, so the natural reading — "GitHub is down" or "the CLI is broken" — is wrong in both directions, and it is wrong in a way that sends people to reinstall things for an hour.</p><h2>Root Cause</h2><p><strong>A GUI application inherits the system proxy; a shell does not.</strong> On macOS the Clash/Surge-style proxy is configured in System Settings, and the browser picks it up through the system network stack. A process started from a terminal gets whatever <code>http_proxy</code> / <code>https_proxy</code> are exported in that shell — usually nothing — so the browser goes through the proxy and the CLI goes direct.</p><p>The network is not down, and that is measurable without guessing:</p><pre><code class="language-bash">curl -s -o /dev/null -w '%{http_code}\n' https://api.github.com          # 200  (direct works)
+curl -s -o /dev/null -w '%{http_code}\n' https://github.com/login/device  # 000  (timeout)
+https_proxy=http://127.0.0.1:7890 \
+  curl -s -o /dev/null -w '%{http_code}\n' https://github.com/login/device  # 302</code></pre><p><code>api.github.com</code> answering 200 while <code>github.com</code> times out is the discriminator: the egress path works, only the <em>main site</em> domain is blocked on the direct route, and adding the proxy fixes it. <code>scutil --proxy</code> shows the system proxy is configured while <code>env | grep -i proxy</code> in the same shell is empty — that pair is the whole diagnosis.</p><h2>Solution</h2><p>Export the proxy for the command, or once in the shell profile:</p><pre><code class="language-bash">https_proxy=http://127.0.0.1:7890 http_proxy=http://127.0.0.1:7890 \
+  gh auth login --hostname github.com --git-protocol https --web</code></pre><p>Two details that decide whether this works:</p><ul><li><strong>Take the port from what is actually listening.</strong> <code>scutil --proxy</code> prints the configured host/port; common defaults are Clash <code>7890</code>, Surge <code>1080</code>/<code>6152</code>. A configured-but-dead port fails the same way as no proxy at all.</li><li><strong>Let the terminal finish.</strong> The device flow prints <code>✓ Logged in as &lt;user&gt;</code> and only then writes <code>~/.config/gh/hosts.yml</code>. Closing the window when the browser says "device connected" aborts the polling, and the credential never lands — which looks exactly like "authorisation failed".</li></ul><p><code>https_proxy</code> alone is usually enough; exporting <code>http_proxy</code> too covers the redirects that fall back to plain HTTP.</p><h2>Verification</h2><pre><code class="language-bash">curl -s -o /dev/null -w '%{http_code}\n' https://github.com/login/device   # 302, not 000
+gh auth status                                                             # shows the account
+gh auth token | head -c 8                                                  # non-empty
+test -f ~/.config/gh/hosts.yml &amp;&amp; echo credential persisted</code></pre><p>Counter-evidence that it is still broken: the browser says "device connected" while <code>gh auth status</code> reports no account and <code>~/.config/gh/</code> was never created. That is the polling step not having run to completion — rerun and wait for the CLI's own <code>✓</code> line rather than closing the window.</p><h2>Notes</h2><ul><li>The same shape appears on Linux behind a corporate proxy, and with any CLI that speaks to <code>github.com</code> directly (<code>gh</code>, <code>npm publish</code>, <code>pip</code>): the browser proves the <em>human</em> path works, never the shell's.</li><li>Diagnose by comparing two endpoints on the same host, not by restarting the proxy. A timeout on one domain with 200 on another is a routing distinction; a timeout on all of them is the network.</li><li>Related, same shape on a different host: <code>lessons/contrib/lesson-08-pip-https-proxy-clash.md</code> (pip inside WSL, proxy reachable by host IP rather than <code>127.0.0.1</code>).</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/gh-auth-device-flow-times-out-command-line-does-not-inherit-system-proxy.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=`gh auth login` times out while the same browser opens github.com — the command line does not inherit the system proxy">Find related lessons →</a></p></div>

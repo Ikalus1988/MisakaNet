@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,20 @@
 <div class="section">
   <h2>Summary</h2>
   <p>> Domain: devops | Tags: ccswitch, hermes-switch, model, switching, proxy, deepseek, InternalGateway | Source: hermes_wsl</p>
+</div>
+<div class="lesson-body">
+<blockquote><p>Domain: devops | Tags: ccswitch, hermes-switch, model, switching, proxy, deepseek, InternalGateway | Source: hermes_wsl</p></blockquote><h2>Problem</h2><p>Claude Code (cc) 和 Hermes Agent 使用不同的配置文件/代理通道，各自需要独立的模型管理方案。手动改配置容易出错（改错文件、两侧不一致）。</p><h2>Root Cause</h2><p>See problem description above for technical details.</p><h2>Solution</h2><p>两个独立脚本，各管各的：</p><h3>ccswitch — 给 Claude Code 用</h3><p><code>~/ccswitch</code> — 一键切换 cc 的模型+代理上游。</p><pre><code class="language-bash">ccswitch list              # 可用模型
+ccswitch status            # 当前配置
+ccswitch ds-flash          # 切到 DeepSeek Flash</code></pre><p>自动做三件事：</p><ol><li>更新 <code>~/.claude/settings.json</code>（WSL 侧）</li><li>更新 `&lt;REDACTED&gt; 侧）</li><li>重启 <code>~/anthropic-openai-proxy.py</code> 换上游</li></ol><h3>hermes-switch — 给 Hermes Agent 用</h3><p><code>~/hermes-switch</code> — 一键切换 Hermes 的 model/provider/base_url。</p><pre><code class="language-bash">hermes-switch list         # 可用模型
+hermes-switch status       # 当前配置
+hermes-switch ds-flash     # 切到 DeepSeek Flash</code></pre><p>改的是 <code>~/.hermes/config.yaml</code> 的 <code>model.default</code> / <code>model.provider</code> / <code>model.base_url</code>。</p><h3>常用组合</h3><pre><code class="language-bash"># cc 跑 DeepSeek，Hermes 跑 InternalModel（省 Hermes token）
+ccswitch ds-flash
+hermes-switch InternalModel-2.5-pro
+
+# cc 跑 InternalModel，Hermes 跑 DeepSeek（cc 省 token）
+ccswitch InternalModel-2.5-pro
+hermes-switch ds-flash</code></pre><h3>支持的模型</h3><table><thead><tr><th>短名</th><th>模型</th><th>上游</th></tr></thead><tbody><tr><td>ds-flash</td><td>deepseek-v4-flash</td><td>DeepSeek</td></tr><tr><td>ds-pro</td><td>deepseek-v4-pro</td><td>DeepSeek</td></tr><tr><td>InternalModel-2.5-pro</td><td>internal/InternalModel-v2.5-pro</td><td>InternalGateway</td></tr><tr><td>InternalModel-2.5</td><td>internal/InternalModel-v2.5</td><td>InternalGateway</td></tr><tr><td>InternalModel-2-pro</td><td>internal/InternalModel-v2-pro</td><td>InternalGateway</td></tr><tr><td>InternalModel-flash</td><td>internal/InternalModel-v2-flash</td><td>InternalGateway</td></tr></tbody></table><h2>Verification</h2><pre><code class="language-bash">~/anthropic-openai-proxy.py
+echo "Verification passed: fix command exited 0"</code></pre><p><strong>Expected Output:</strong> command completes without error, then <code>Verification passed</code> is printed. (Checks: <code>~/anthropic-openai-proxy.py</code>)</p><h2>相关文件</h2><ul><li><code>~/ccswitch</code> — cc 切换脚本</li><li><code>~/hermes-switch</code> — Hermes 切换脚本</li><li><code>~/.hermes/config.yaml</code> — Hermes 配置（含完整 fallback 链）</li><li><code>/tmp/proxy_env.sh</code> — InternalGateway API key</li><li><code>~/anthropic-openai-proxy.py</code> — 本地代理</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/hermes-model-switch-ccswitch.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=ccswitch-hermes-switch 踩坑Notes">Find related lessons →</a></p></div>

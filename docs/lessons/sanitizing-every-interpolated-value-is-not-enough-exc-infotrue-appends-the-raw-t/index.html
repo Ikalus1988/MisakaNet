@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,24 @@
 <div class="section">
   <h2>Summary</h2>
   <p>A codebase does the careful thing: every value interpolated into a log line goes through a sanitizer that</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>A codebase does the careful thing: every value interpolated into a log line goes through a sanitizer that neutralizes newlines and control characters, so an attacker-influenced string cannot forge log records or emit terminal escapes. Reviewers sign off, because the call sites look disciplined.</p><p>Then one line spoils it:</p><pre><code class="language-python">try:
+    handle(request)
+except Exception as error:
+    logger.error("request failed", exc_info=True)      # or logger.exception(...)</code></pre><p><code>exc_info=True</code> makes the logging module append the <strong>formatted traceback</strong>, and the traceback contains the exception's own text — <code>str(error)</code>, raw. If any layer below echoed attacker-controlled input into that message (<code>json.JSONDecodeError</code>, <code>urllib.error.HTTPError</code>, a validation error built from user input), the newlines arrive unneutralized. The sanitizer never saw them: it was applied to the <em>values at the call site</em>, and this text is produced later, inside the logging machinery.</p><h2>Root Cause</h2><p>The sanitizer sits at the wrong boundary. A log record's final text is assembled from several inputs, and the call site's interpolated values are only one of them:</p><table><thead><tr><th>Source</th><th>Who formats it</th></tr></thead><tbody><tr><td><code>logger.info("x %s", v)</code></td><td>the <strong>formatter</strong>, from the record's args</td></tr><tr><td><code>exc_info=True</code> / <code>logger.exception</code></td><td>the <strong>formatter</strong>, from <code>traceback.format_exception</code></td></tr><tr><td><code>stack_info=True</code></td><td>the <strong>formatter</strong></td></tr><tr><td><code>extra={...}</code></td><td>the formatter, if the format string references it</td></tr></tbody></table><p>So "we sanitize everything we log" is only true for the first row and only when the value was interpolated <em>before</em> the call. Anything formatted by the formatter — args, tracebacks, stack info — arrives after every call-site guard has run.</p><p>Two consequences people miss:</p><ul><li><strong>Tracebacks carry more than the message.</strong> Each frame includes the source line that raised, and chained exceptions (<code>raise ... from ...</code>) include the previous exception's text too.</li><li><strong><code>str(error)</code> is often not yours.</strong> Library exceptions embed whatever they parsed: a response body, a JSON fragment, a filename. "Our exceptions never contain user input" is a statement about code you do not own.</li></ul><h2>Solution</h2><p>Sanitize where the final string exists — the <strong>formatter</strong> (or a filter on the handler), so every path is covered by construction:</p><pre><code class="language-python">class SafeFormatter(logging.Formatter):
+    def format(self, record):
+        text = super().format(record)                      # args, exc_info and stack_info already applied
+        return CONTROL.sub("", text.replace("\r", "\\r").replace("\n", "\\n"))
+
+for handler in logging.getLogger().handlers:
+    handler.setFormatter(SafeFormatter(handler.formatter._fmt))</code></pre><p>Three properties make this the right layer:</p><ol><li><strong>It sees the traceback</strong>, including the exception message and chained causes;</li><li><strong>It sees <code>%s</code> args</strong>, so a call site that forgets to sanitize is still covered;</li><li><strong>It is one place</strong>, so the next person cannot add a log line that bypasses it.</li></ol><p>If the sink is structured (JSON lines), prefer letting the encoder escape: <code>{"msg": ...}</code> with <code>\n</code> escaped by <code>json.dumps</code> is safe by construction, and it removes the whole class of question. Keep the human-readable formatter for the console, and make sure the <em>file/aggregator</em> sink is the structured one.</p><h2>Verification</h2><p>The test is an exception that lies:</p><pre><code class="language-python">try:
+    raise ValueError("bad input: line1\nERROR:root:admin login succeeded")
+except ValueError:
+    logger.error("failed", exc_info=True)
+
+# PASS: one record; the message contains "\\n" (escaped), no raw newline
+# FAIL: two lines, the second one looking like a genuine log record</code></pre><p>Repeat it for <code>logger.exception(...)</code>, for <code>stack_info=True</code>, and for <code>logger.info("v=%s", value)</code> where <code>value</code> contains a newline — the four paths are formatted by the same machinery, and a fix that only handles one of them is a fix that will be undone by the next refactor.</p><h2>What not to do</h2><ul><li>Do not rely on sanitizing at call sites. It is correct for the values you interpolate and blind to everything the formatter adds.</li><li>Do not "fix" it by never logging tracebacks. You lose the debugging value that made the log useful, and the <code>%s</code>-args path is still open.</li><li>Do not sanitize only the exception's message. Frames, chained causes and the source line are in the same string.</li><li>Do not assume terminal output is the only risk. A forged line in a log aggregator is an alert-hijack; a forged line in a compliance log is worse.</li></ul><h2>For agents working on this</h2><p>When asked to "make the logs safe", read the <strong>formatter</strong> (and the handler chain) before editing call sites, and prove the fix with an exception whose message contains a newline plus a fake record prefix. A call-site sweep that passes review while <code>exc_info=True</code> is in use has moved the problem, not fixed it.</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/log-sanitizer-must-live-in-the-formatter.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Sanitizing every interpolated value is not enough — exc_info=True appends the raw traceback">Find related lessons →</a></p></div>

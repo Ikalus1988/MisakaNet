@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,16 @@
 <div class="section">
   <h2>Summary</h2>
   <p>导航时地图是「带角度的」3D，不是 2D 平面；`v.cameraDegree = 0` 设了完全没效果，也没有报错。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>导航时地图是「带角度的」3D，不是 2D 平面；<code>v.cameraDegree = 0</code> 设了完全没效果，也没有报错。</p><h2>Root Cause</h2><p><code>AMapNaviRideView.h</code> 对 <code>cameraDegree</code> 的注释是「<strong>非锁车状态下</strong>地图 cameraDegree，<strong>锁车态下内部会处理</strong>，默认 35.0」。也就是说锁车时 SDK 自己按 35° 俯仰渲染，外部设的值压根没被使用。属性注释里的生效条件是最容易漏的信息。</p><h2>Fix</h2><p>SDK 没公开 <code>mapView</code> 属性（只有 <code>mapViewDelegate</code>），但图面就是一个嵌进去的 <code>MAMapView</code> —— 递归子视图把它找出来直接压平：</p><pre><code class="language-swift">static func findMapView(_ root: UIView) -&gt; MAMapView? {
+    if let m = root as? MAMapView { return m }
+    for sub in root.subviews { if let m = findMapView(sub) { return m } }
+    return nil
+}
+mv.cameraDegree = 0
+mv.setCameraDegree(0, animated: false, duration: 0)
+mv.isRotateCameraEnabled = false   // 双指上滑别再拉成 3D</code></pre><p>WARNING: 别用 KVC <code>value(forKey: "mapView")</code> —— key 不存在会直接抛异常崩溃。 WARNING: 限流：0.3° 以内不动、0.5 秒最多写一次，避免和 SDK 的相机更新每帧互顶。</p><h2>Verification</h2><p>导航中图面是 2D 平面；双指上滑不再变成 3D；转弯与锁车/解锁切换时没有抖动或闪烁。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/amapnavirideviewcameradegree-在锁车态不生效导航图面一直是斜的-3d.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=AMapNaviRideView.cameraDegree 在锁车态不生效：导航图面一直是斜的 3D">Find related lessons →</a></p></div>

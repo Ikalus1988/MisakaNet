@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>在 Windows 上，从一个受限的父进程（宿主对子进程做了写入限制）调用 adb 时，设备永远停在 unauthorized。adb 日志：auth.cpp:84 Failed to open <PATH><user>\.android\adbkey: Permission denied → Failed to ge…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>在 Windows 上，从一个受限的父进程（宿主对子进程做了写入限制）调用 adb 时，设备永远停在 unauthorized。adb 日志：auth.cpp:84 Failed to open &lt;PATH&gt;&lt;user&gt;\.android\adbkey: Permission denied → Failed to generate new key → Failed to get user public key。同样这个路径，用交互式 PowerShell 建文件完全正常。另有 adb 守护进程写不了 %TEMP%\adb.log（cannot open ...: Permission denied），直接 failed to start daemon。</p><h2>Root Cause</h2><p>两个机制叠在一起：(1) adb 在 Windows 上把用户密钥路径硬编码为 %USERPROFILE%\.android\adbkey，实测改 USERPROFILE / ANDROID_USER_HOME / HOME 都不改变它去找的位置；(2) 写入限制只作用于子进程，交互式 shell 不在同一限制内，所以"PowerShell 能写、adb 不能写"并不矛盾。adb 拿不到私钥时会尝试现场生成，生成失败就没有公钥可发给设备，授权流程永远走不完。</p><h2>Fix</h2><ol><li>用 .NET 生成 PKCS#8 RSA-2048 私钥，直接写到 adb 期望的位置（这一步用有权限的进程做）：先建目录，再 $rsa=[System.Security.Cryptography.RSA]::Create(2048); Set-Content -LiteralPath "$env:USERPROFILE\.android\adbkey" -Value $rsa.ExportPkcs8PrivateKeyPem() -Encoding ascii -NoNewline。2) 把 TMP/TEMP 指到一个可写目录，让 adb 守护进程能写日志并启动。3) adb kill-server 后重连，设备上点允许。</li></ol><h2>Verification</h2><p>adb devices 由 unauthorized 变为 device；adb shell getprop ro.product.model 有返回；adb shell screencap -p &lt;PATH&gt; 配合 adb pull 能拿到非空图片。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/受限环境下-adb-无法生成-adbkey预置一把私钥让它只读不写.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=受限环境下 adb 无法生成 adbkey：预置一把私钥让它只读不写">Find related lessons →</a></p></div>

@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,199 @@
 <div class="section">
   <h2>Summary</h2>
   <p>In enterprise agent systems and multi-model routing pipelines, teams maintain extensive catalogs of prompt presets defining system instructions, conversational …</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>In enterprise agent systems and multi-model routing pipelines, teams maintain extensive catalogs of prompt presets defining system instructions, conversational personalities, output format schemas, and model generation hyperparameters (such as temperature, top_p, and max_tokens). When these presets are stored as unvalidated dictionary blobs, arbitrary YAML documents, or raw database rows without explicit schema contracts, system updates introduce critical production bugs.</p><p>A common failure occurs when an engineer updates a system prompt template to reference a new contextual variable (such as <code>{retrieved_context}</code> or <code>{agent_role}</code>) without updating all caller sites. When the agent attempts interpolation, Python raises an unhandled <code>KeyError</code> during customer interactions. Similarly, setting invalid hyperparameters (such as a negative temperature or a context window exceeding model boundaries) crashes the inference engine mid-turn. In-place mutation of preset dictionaries during dynamic experimentation also introduces thread contamination across concurrent user sessions.</p><h2>Root Cause</h2><ol><li><strong>Unchecked Template Interpolation</strong>: Using standard <code>str.format()</code> or f-strings without static verification of declared placeholders versus supplied parameters leaves missing variable bugs undetected until runtime execution.</li><li><strong>Untyped Hyperparameter Bundling</strong>: Model inference hyperparameters are coupled directly with prompt text without numerical range validation, type checking, or model compatibility verification.</li><li><strong>Absence of Semantic Immutability</strong>: Modifying preset configurations in-place during runtime experimentation corrupts baseline templates across parallel threads and prevents reliable rollback mechanisms.</li></ol><h2>Solution</h2><p>Implement an immutable prompt preset architecture (<code>PromptPreset</code> and <code>PresetRegistry</code>) backed by structural validation. The registry statically inspects template placeholders upon registration, enforces hyperparameter boundaries, and freezes configurations against runtime mutation.</p><table><thead><tr><th>Governance Dimension</th><th>Raw Dictionary Presets</th><th>Validated Preset Governance</th></tr></thead><tbody><tr><td>Placeholder Verification</td><td>Late runtime failure (<code>KeyError</code>)</td><td>Static check on registration and rendering</td></tr><tr><td>Hyperparameter Safety</td><td>Untyped; accepts out-of-range values</td><td>Strict numeric bounds and type enforcement</td></tr><tr><td>Concurrency Safety</td><td>Mutable in-place; race condition risks</td><td>Frozen immutable instances (<code>frozen=True</code>)</td></tr><tr><td>Version Tracking</td><td>Blind overrides</td><td>Immutable semantic versioning (<code>name:version</code>)</td></tr></tbody></table><pre><code class="language-python">import re
+from dataclasses import dataclass, field
+from typing import Any, Dict, Set
+
+
+@dataclass(frozen=True)
+class PromptPreset:
+    """Immutable prompt template preset with schema validation and parameter boundaries."""
+
+    name: str
+    version: str
+    template: str
+    model: str
+    temperature: float = 0.7
+    max_tokens: int = 2048
+    required_vars: Set[str] = field(default_factory=set)
+
+    def __post_init__(self) -&gt; None:
+        """Validates template placeholders and numerical hyperparameter bounds."""
+        if not (0.0 &lt;= self.temperature &lt;= 2.0):
+            raise ValueError(
+                f"Temperature {self.temperature} out of valid bounds [0.0, 2.0]"
+            )
+        if self.max_tokens &lt;= 0:
+            raise ValueError(
+                f"max_tokens must be positive, got {self.max_tokens}"
+            )
+        placeholders = set(
+            re.findall(r"\{([a-zA-Z_][a-zA-Z0-9_]*)\}", self.template)
+        )
+        missing = self.required_vars - placeholders
+        if missing:
+            raise ValueError(
+                f"Declared required variables {missing} not found in template string"
+            )
+
+    def render(self, variables: Dict[str, Any]) -&gt; str:
+        """Renders the prompt template after validating all required variables exist.
+
+        Args:
+            variables: Mapping of placeholder keys to contextual values.
+
+        Returns:
+            The formatted prompt string.
+
+        Raises:
+            KeyError: If any declared required variable is absent from input mapping.
+        """
+        provided = set(variables.keys())
+        missing = self.required_vars - provided
+        if missing:
+            raise KeyError(f"Missing required prompt variables: {missing}")
+        return self.template.format(**variables)
+
+
+class PresetRegistry:
+    """Central registry providing versioned retrieval and validation of prompt presets."""
+
+    def __init__(self) -&gt; None:
+        """Initializes an empty preset registry."""
+        self._presets: Dict[str, PromptPreset] = {}
+
+    def register(self, preset: PromptPreset) -&gt; None:
+        """Registers a verified prompt preset into the registry.
+
+        Args:
+            preset: PromptPreset instance to register.
+
+        Raises:
+            ValueError: If a preset with identical name and version already exists.
+        """
+        key = f"{preset.name}:{preset.version}"
+        if key in self._presets:
+            raise ValueError(f"Preset {key} is already registered")
+        self._presets[key] = preset
+
+    def get(self, name: str, version: str = "latest") -&gt; PromptPreset:
+        """Retrieves a prompt preset by name and version identifier.
+
+        Args:
+            name: Logical preset identifier.
+            version: Target version string, or 'latest' for the highest version.
+
+        Returns:
+            The requested immutable PromptPreset instance.
+
+        Raises:
+            KeyError: If no matching preset is found.
+        """
+        if version == "latest":
+            matches = [p for p in self._presets.values() if p.name == name]
+            if not matches:
+                raise KeyError(f"No preset registered with name '{name}'")
+            matches.sort(key=lambda x: x.version, reverse=True)
+            return matches[0]
+        key = f"{name}:{version}"
+        if key not in self._presets:
+            raise KeyError(f"Preset '{key}' not found in registry")
+        return self._presets[key]</code></pre><h2>Verification</h2><p>Execute the following test script validating placeholder validation, missing parameter detection, hyperparameter bounds checking, and immutability:</p><pre><code class="language-bash">python3 -c "
+import re
+from dataclasses import dataclass, field
+from typing import Any, Dict, Set
+
+@dataclass(frozen=True)
+class PromptPreset:
+    name: str
+    version: str
+    template: str
+    model: str
+    temperature: float = 0.7
+    max_tokens: int = 2048
+    required_vars: Set[str] = field(default_factory=set)
+
+    def __post_init__(self) -&gt; None:
+        if not (0.0 &lt;= self.temperature &lt;= 2.0):
+            raise ValueError(f'Temperature {self.temperature} out of bounds')
+        if self.max_tokens &lt;= 0:
+            raise ValueError(f'max_tokens must be positive')
+        placeholders = set(re.findall(r'\{([a-zA-Z_][a-zA-Z0-9_]*)\}', self.template))
+        missing = self.required_vars - placeholders
+        if missing:
+            raise ValueError(f'Missing placeholders: {missing}')
+
+    def render(self, variables: Dict[str, Any]) -&gt; str:
+        provided = set(variables.keys())
+        missing = self.required_vars - provided
+        if missing:
+            raise KeyError(f'Missing variables: {missing}')
+        return self.template.format(**variables)
+
+class PresetRegistry:
+    def __init__(self) -&gt; None:
+        self._presets: Dict[str, PromptPreset] = {}
+
+    def register(self, preset: PromptPreset) -&gt; None:
+        key = f'{preset.name}:{preset.version}'
+        if key in self._presets:
+            raise ValueError(f'Duplicate preset: {key}')
+        self._presets[key] = preset
+
+    def get(self, name: str, version: str = 'latest') -&gt; PromptPreset:
+        if version == 'latest':
+            matches = [p for p in self._presets.values() if p.name == name]
+            if not matches:
+                raise KeyError(f'Preset {name} not found')
+            matches.sort(key=lambda x: x.version, reverse=True)
+            return matches[0]
+        key = f'{name}:{version}'
+        if key not in self._presets:
+            raise KeyError(f'Preset {key} not found')
+        return self._presets[key]
+
+def test_presets():
+    reg = PresetRegistry()
+    p1 = PromptPreset(
+        name='code_auditor',
+        version='1.0.0',
+        template='Role: {role}. Reviewing repository {repo}. Findings: {findings}.',
+        model='claude-3-7-sonnet',
+        temperature=0.1,
+        required_vars={'role', 'repo', 'findings'},
+    )
+    reg.register(p1)
+
+    rendered = reg.get('code_auditor').render({
+        'role': 'Senior Security Engineer',
+        'repo': 'MisakaNet',
+        'findings': 'Clean implementation',
+    })
+    assert 'Role: Senior Security Engineer.' in rendered
+
+    try:
+        reg.get('code_auditor').render({'role': 'Auditor'})
+        assert False, 'Allowed missing variable'
+    except KeyError:
+        pass
+
+    try:
+        PromptPreset(
+            name='invalid_temp',
+            version='1.0.0',
+            template='test',
+            model='gpt-4o',
+            temperature=3.5,
+        )
+        assert False, 'Allowed invalid temperature'
+    except ValueError:
+        pass
+
+test_presets()
+"</code></pre><h2>Notes</h2><ul><li>Reference upstream issue and schema validation discussions: <a href="https://github.com/pydantic/pydantic/issues">Pydantic Validation Workflows</a> and <a href="https://docs.pydantic.dev/latest/concepts/models/">Prompt Engineering Template Architecture</a>.</li><li>When serializing prompt presets to disk (such as YAML or JSON catalogs in configuration repositories), execute this validation in pre-commit hooks and CI quality gates to intercept malformed templates before deployment.</li><li>Avoid passing dynamic user input directly as format strings to prevent prompt injection or formatting string exploits.</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/agent-prompt-preset-template-governance.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Prompt Preset Governance: Schema Validation and Immutable Versioning">Find related lessons →</a></p></div>

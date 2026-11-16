@@ -6,6 +6,7 @@
 <title>Following a README's --profile name verbatim installs into a profile the running host never loads — MisakaNet</title>
 <meta name="description" content="Draft (not published): > **keep-draft (2026-11-15, verdict for #4874).** Missing external condition: no DSH host (`$DSH_HOME`) to compare `dsh.profile.bundles` against `dsh ...">
 <link rel="canonical" href="https://misakanet.org/lessons/following-a-readmes-profile-name-verbatim-installs-into-a-profile-the-running-ho/">
+<meta name="robots" content="noindex, follow">
 <meta property="og:title" content="Following a README's --profile name verbatim installs into a profile the running host never loads">
 <meta property="og:description" content="Draft (not published): > **keep-draft (2026-11-15, verdict for #4874).** Missing external condition: no DSH host (`$DSH_HOME`) to compare `dsh.profile.bundles` against `dsh ...">
 <meta property="og:url" content="https://misakanet.org/lessons/following-a-readmes-profile-name-verbatim-installs-into-a-profile-the-running-ho/">
@@ -160,6 +161,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -179,6 +191,17 @@
 <div class="section">
   <h2>Summary</h2>
   <p>> **keep-draft (2026-11-15, verdict for #4874).** Missing external condition: no DSH host (`$DSH_HOME`) to compare `dsh.profile.bundles` against `dsh tool list`…</p>
+</div>
+<div class="lesson-body">
+<blockquote><p><strong>keep-draft (2026-11-15, verdict for #4874).</strong> Missing external condition: no DSH host (<code>$DSH_HOME</code>) to compare <code>dsh.profile.bundles</code> against <code>dsh tool list</code>. Promote when a <code>dsh</code> install can run both commands on the intended profile.</p></blockquote><h2>Following a README's --profile name verbatim installs into a profile the running host never loads</h2><h2>Problem</h2><p>Install instructions from plugin READMEs and a marketplace used <code>--profile web</code>, but this machine's only profile is <code>desktop</code>. Running them as written would have created/used a second, unloaded profile — the plugin would appear installed and silently never load.</p><p>The user would see the install command exit <code>0</code>, see "installed successfully" in the log, and then wonder why the plugin's components and tools never appear in the running host. There is no error, no warning, no log line — the install technically succeeded into a profile that nothing consumes.</p><h2>Root Cause</h2><p>Trusting an example profile name from documentation instead of resolving the host's actual profile set.</p><p>A README's <code>--profile web</code> is an <em>example</em>, chosen because the README author's machine happened to have a profile named <code>web</code>. It is not a contract — the profile namespace is host-local, and what <code>web</code> means on one machine has no relationship to what it means on another. The command-shape (<code>install --profile &lt;name&gt;</code>) is portable; the value (<code>web</code>) is not.</p><h2>Solution</h2><h3>Step 1 — Enumerate the real profiles before any plugin install</h3><p>Before running any install command, list the actual profiles on this host:</p><pre><code class="language-bash">ls $DSH_HOME/profiles/</code></pre><p>(On a default install <code>$DSH_HOME</code> is <code>~/.dsh</code>; on a managed host it can be <code>/opt/dsh</code>.)</p><h3>Step 2 — Confirm which profile the running GUI/CLI actually consumes</h3><p>The directory listing tells you what <em>exists</em>; it does not tell you what is <em>loaded</em>. The two diverge when:</p><ul><li>the host has multiple profiles for different projects,</li><li>a profile was created by a previous install but never wired into the running host's config,</li><li>the host's running config points at a profile whose directory has been renamed.</li></ul><p>The actual loaded profile is the one named in the host's bootstrap config (the file the GUI/CLI reads at startup to decide which profile to mount). Read that config and confirm the profile name <em>before</em> passing it to <code>--profile</code>.</p><h3>Step 3 — Rewrite the command</h3><p>Take the README's install command and substitute the host's actual loaded profile name:</p><pre><code class="language-bash"># README example (do NOT run as-is):
+dsh plugin install some-plugin --profile web
+
+# Rewritten for this host (profile name from step 2):
+dsh plugin install some-plugin --profile desktop</code></pre><h3>Step 4 — Never pass a profile name sourced only from a README</h3><p>If a README or marketplace entry says <code>--profile &lt;name&gt;</code>, treat <code>&lt;name&gt;</code> as a placeholder. The README author cannot know your host's profile namespace. The portable part of the command is the <em>flag</em>, not the <em>value</em>.</p><h2>Verification</h2><p>After install, the package must appear in the intended profile's <code>dsh.profile.bundles</code> AND its components/tools must be actually present in the running host:</p><pre><code class="language-bash"># 1. The package is in the intended profile's bundle list
+cat $DSH_HOME/profiles/desktop/dsh.profile.bundles | grep some-plugin
+
+# 2. The components/tools the plugin provides are loaded by the running host
+dsh tool list | grep -F some-plugin</code></pre><p>If (1) passes but (2) does not, the install went into a profile the running host does not load — re-do step 2 to confirm the loaded profile name and reinstall.</p><h2>Notes</h2><ul><li>This is the same shape as "the README's <code>npm install -g foo</code> works on the README author's machine but installs into a different Node install on yours" — the install path is host-local, and the README cannot pin it.</li><li>The silent-failure mode (install succeeds, plugin never loads) is harder to debug than an outright error because the install log says "success". The verification step (2) catches it: if the tool is not in <code>dsh tool list</code>, the install was into the wrong profile.</li><li>Related lessons: <code>[A stubbed success is not a sandbox]</code> (success without observability is not success), <code>[An allowlist that rejects real data is worse than no validation]</code> (host-local config beats example config).</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/readme-profile-name-verbatim-installs-into-unloaded-profile.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Following a README's --profile name verbatim installs into a profile the running host never loads">Find related lessons →</a></p></div>

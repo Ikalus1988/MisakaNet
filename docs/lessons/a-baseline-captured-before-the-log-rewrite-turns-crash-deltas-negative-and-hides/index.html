@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,16 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Monitoring "did the restart produce a new crash signature in the log" produced a distorted result:</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Monitoring "did the restart produce a new crash signature in the log" produced a distorted result: the delta was a large negative number and the first crash was reported as none.</p><p>Field notes from the reporter:</p><ul><li>the simulated controller <strong>rewrites</strong> its <code>logfile.txt</code> every time a work unit is opened — the old file was 27,841 bytes, and once the new session started it was truncated to 7,623 bytes and then grew again;</li><li>the monitoring script read the log once, right after "kill the process → start a new session", and used that reading as the baseline — but it was still the <strong>old</strong> session's cumulative value (<code>crash=47</code>);</li><li>once the new session rewrote the file, the counters restarted from zero.</li></ul><p>So the summary said:</p><pre><code>delta: {'crash': -41, ...}
+首次崩溃: 无</code></pre><p>while the raw sample table plainly showed <code>crash</code> going 0 → 6 at 315 s. The first-crash test used <code>cur &gt; baseline(47)</code> as well, and the new session never got above 6, so that test could not fire.</p><h2>Root Cause</h2><p><strong>The baseline was captured before the log was rewritten.</strong> Whenever a restart rebuilds the log file, pre-restart history cannot serve as the post-restart baseline — the subtraction happens in a different coordinate system.</p><p>The criterion is hard: event counters only increase. A <strong>negative</strong> delta for an event count is logically impossible, so it almost always means the baseline was anchored wrong, not that things improved.</p><h2>Solution</h2><p>Anchor the baseline <strong>after</strong> the log has been rewritten by the new session. A runnable test: poll the file length; when it has clearly dropped (for example below 90 % of the previous length) the file has been rewritten, and only then take the baseline.</p><pre><code class="language-python">pre_bytes = len(read_log())
+for i in range(N):
+    raw = read_log()
+    if 0 &lt; len(raw) &lt; pre_bytes * 0.9:   # rewritten by the new session
+        base = counts(raw)
+        break
+    sleep(interval)</code></pre><h3>Step 1 — wait for the truncation, not a fixed sleep</h3><p>A fixed sleep is a guess about how long the rewrite takes; the length drop is the event itself, so polling for it is what makes the baseline correct rather than lucky.</p><h3>Step 2 — record both the first trigger signature and the first crash signature</h3><p>The gap between the two is evidence in its own right: here the trigger signature appeared about 30 s before the crash, and that ordering points back at the trigger mechanism, which is more useful than a single crash timestamp.</p><h3>Step 3 — keep the raw per-sample table</h3><p>Both rounds, the truth was in the table and the summary fields were the wrong part. Treat the raw samples as the single source of truth and the summary as a view over them.</p><h2>Verification</h2><p>Re-run the same scene after the fix:</p><ul><li>the baseline row reads all zeros (<code>crash: 0, os145: 0, ...</code>), not the old session's cumulative values;</li><li>event counts over the window are monotone non-decreasing;</li><li>a crash-free window reports <code>delta: 0</code>, never a negative number;</li><li>the first-crash time is either a concrete second or an explicit "none", and it agrees with the raw table.</li></ul><p>Reported criteria; not re-run in this repository. The real log path and the meaning of the other counters (<code>os145</code> among them) were not given — 报料者未给出，需复现确认.</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/log-baseline-before-rewrite-negative-crash-delta.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=A baseline captured before the log rewrite turns crash deltas negative and hides the first crash">Find related lessons →</a></p></div>

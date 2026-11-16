@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,17 @@
 <div class="section">
   <h2>Summary</h2>
   <p>A security fix deliberately removed a credential-carrying code path: an API key accepted as a</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>A security fix deliberately removed a credential-carrying code path: an API key accepted as a query parameter (<code>GET /api/memories?api_key=...</code>). Uvicorn logs the whole request line, query string included, so the key ended up in the access log — a place nobody audits and rotates. The fix removed the query-parameter path and left the key in a header, where it is not logged.</p><p>The suite immediately went red. Two tests still asserted that the removed path <strong>works</strong>:</p><pre><code class="language-python">assert response.status_code == 200</code></pre><p>…executed against exactly the request the fix now refuses. Read cold, the diff looked like the security change had broken authentication — a regression introduced by the fix.</p><h2>Root Cause</h2><p>When a leaky path is also the convenient one — no header plumbing, one call, works pasted into a browser URL — it accumulates callers <em>and tests</em>. Those tests are written from the working behaviour, not from the security property, so they record the leak as the contract.</p><p>That makes them look authoritative after the fix: <code>main</code> is green, the branch is red, and the red assertions sit in the auth file, which reads as "this change broke auth". The tempting resolution is to make the suite green again by restoring the query-parameter path — which undoes the security fix while every test passes. The regression ships silently, because the tests that would have caught it are the ones that were edited to expect it.</p><p>In this case the trade-off was named in the test's own comment — <em>"Useful for quick scripts, though less secure"</em> — so the risk was known and had been accepted as the contract instead of flagged as debt. A comment that documents a security trade-off is a marker to write the refusal test, not a licence to keep the behaviour.</p><h2>Solution</h2><h3>1. Rewrite the test to assert the refusal, and put the reason in the docstring</h3><p>Keep the old test name. A person searching "why did query auth stop working" then finds the assertion <strong>with</strong> the explanation, instead of turning it back to <code>200</code>.</p><pre><code class="language-python">async def test_query_parameter_success(self, client):
+    """`api_key` as a query parameter is refused.
+
+    This used to return 200 and is why the key ended up in the access log:
+    uvicorn logs the whole request line. The query-parameter name is kept
+    in the test title deliberately — a reader looking for "why did query auth
+    stop working" finds the answer here.
+    """
+    assert client.get("/api/memories?api_key=dummy").status_code == 401</code></pre><h3>2. Add tests for the replacement in the same change</h3><p>Removing a capability without a test for what replaced it leaves the suite silent about the new contract. Cover that the new credential works, and that a single-use ticket cannot be replayed.</p><h3>3. Check which tests your change was <em>supposed</em> to break</h3><p>If exactly the tests naming the removed behaviour fail and everything else passes, that is evidence the change did what it intended. The failure set is the receipt: a test that only passes because it asserts the leak is a candidate for this rewrite, not a specification to preserve.</p><h2>Verification</h2><ul><li>Ran the affected file before the rewrite: exactly the two leak-encoding tests failed; wrong-key, bearer-fallback and multi-endpoint auth all passed unchanged. That failure set matched the intended change precisely.</li><li>After the rewrite: 29 passed in the auth/ticket area, including new cases proving the replacement authenticates and that a second use of a single-use ticket fails.</li><li>Full suite minus an unrelated flake: no new failures attributable to the change.</li><li>Stashed the change to confirm the one remaining suite failure is pre-existing on a clean tree, so it is not reported as caused by this work.</li></ul><h2>Notes</h2><ul><li>The same shape appears whenever a fix removes a convenient path: uploads by filesystem path instead of a handle, <code>?token=</code> links, debug backdoors. The tests that encode the removed path are exactly the ones the fix is expected to break.</li><li>Red tests after a security change are a question, not a verdict. Ask which behaviour is the contract — the leak, or its refusal — before editing the assertion.</li><li>Related: <code>lessons/core/allowlist-must-be-tested-against-the-corpus.md</code> (a test whose world was smaller than the real corpus), <code>lessons/core/agentcap-registry-secret-safe-validation-failure-metadata.md</code>.</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/core/a-security-fix-that-turns-tests-red-is-the-fix-working.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=A security fix that turns tests red is the fix working — rewrite the test that encoded the leak as the contract">Find related lessons →</a></p></div>

@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,37 @@
 <div class="section">
   <h2>Summary</h2>
   <p>A published package declares a dependency on a directory that is **not** in its own</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>A published package declares a dependency on a directory that is <strong>not</strong> in its own tarball:</p><pre><code class="language-json">{
+  "name": "repro-parent",
+  "dependencies": { "native-addon": "file:./packages/native-addon" },
+  "files": ["index.js", "package.json"]
+}</code></pre><p>The report (issue #3299, npm 11.20.0) was: read-only inspection found a <strong>dangling <code>node_modules</code> symlink</strong> to the omitted directory, and the question is whether this layout is a known trigger for Arborist <code>rebuild.js</code> <code>#addToBuildSet</code> failing with</p><pre><code>Cannot destructure property 'package' of 'node.target' as it is null.</code></pre><p><strong>Evidence status of that crash, stated up front:</strong> the dangling symlink is reproduced below; <strong>the crash itself is not</strong>. On both npm 11.12.1 and the exact reported npm 11.20.0, <code>install</code> / <code>rebuild</code> / <code>ci</code> complete successfully over this layout. Treat the crash attribution as <strong>unconfirmed</strong>, and the dangling-link part as measured.</p><h2>Root Cause</h2><p>What is confirmed by reproduction:</p><ol><li><strong><code>npm pack</code> only ships what <code>files</code> (or the default rules) allow.</strong> With <code>files: ["index.js", "package.json"]</code>, <code>packages/native-addon</code> never enters the tarball, while the <code>file:</code> dependency declaration does (it lives in <code>package.json</code>).</li><li><strong>On install, npm materializes the <code>file:</code> dependency as a relative symlink.</strong> The consumer's <code>node_modules</code> ends up with:</li></ol><pre><code>   native-addon -&gt; repro-parent/packages/native-addon</code></pre><p>The target directory is not inside the installed <code>repro-parent</code> (the tarball omitted it), so the symlink dangles. The lockfile simultaneously records the link and a target entry with no package data: <code>"node_modules/repro-parent/packages/native-addon": {}</code>.</p><p>Where the reported crash <em>would</em> come from, in Arborist's source (<code>@npmcli/arborist/lib/arborist/rebuild.js</code>, <code>#addToBuildSet</code>):</p><pre><code class="language-js">const { package: pkg, hasInstallScript } = node.target</code></pre><p>If a link node with <code>target === null</code> ever reaches the build set, that destructure throws exactly the reported message. In the repro here, that shape does <strong>not</strong> occur: the dangling link is not represented as a null-target node during install/rebuild, and a lockfile that references a link whose target entry is missing is rejected earlier with a clean <code>EMISSINGTARGET</code> error (see Verification). Which npm/arborist version or tree shape does put a null-target link node into the build set is <strong>not established</strong> by this reproduction — evidence insufficient.</p><h2>Solution</h2><p>Publisher-side correction for the part that <strong>is</strong> reproduced (the dangling link): the <code>file:</code> dependency must not point outside the published surface. Either</p><ol><li><strong>ship the directory</strong> — add it to <code>files</code>:</li></ol><pre><code class="language-json">   "files": ["index.js", "package.json", "packages/native-addon"]</code></pre><p>or</p><ol><li><strong>stop declaring it as <code>file:</code></strong> — depend on the published <code>native-addon</code> package by version range, or make it a <code>bundledDependency</code> that is genuinely present in the tarball.</li></ol><p>Verified effect of (1): with <code>packages/native-addon</code> in <code>files</code>, the pack listing contains the directory, the install-time symlink resolves, and <code>require('native-addon')</code> returns the expected value. No dangling link remains.</p><p>This lesson does <strong>not</strong> claim a fix for the reported <code>#addToBuildSet</code> crash, because the crash was not reproduced.</p><h2>Verification</h2><p>tarball 安装双侧复现（npm 11.12.1；<code>files</code> 省略依赖目录 vs 包含）：</p><pre><code class="language-console">$ python3 - &lt;&lt;'PY'
+import json, os, subprocess, tempfile
+def build(omit):
+    d = tempfile.mkdtemp()
+    os.makedirs(os.path.join(d, 'packages', 'native-addon', 'build'))
+    open(os.path.join(d, 'packages', 'native-addon', 'package.json'), 'w').write(json.dumps({"name": "native-addon", "version": "1.0.0"}))
+    open(os.path.join(d, 'packages', 'native-addon', 'build', 'addon.node'), 'w').write('x')
+    files = ["index.js", "package.json"] if omit else ["index.js", "package.json", "packages"]
+    open(os.path.join(d, 'package.json'), 'w').write(json.dumps({"name": "repro-parent", "version": "1.0.0", "dependencies": {"native-addon": "file:./packages/native-addon"}, "files": files}))
+    open(os.path.join(d, 'index.js'), 'w').write('')
+    return d
+for omit, label in [(True, 'fault'), (False, 'fix ')]:
+    src = build(omit)
+    pack = subprocess.run(['npm', 'pack'], cwd=src, capture_output=True, text=True, timeout=120)
+    tgz = pack.stdout.strip().splitlines()[-1]
+    inst = tempfile.mkdtemp()
+    open(os.path.join(inst, 'package.json'), 'w').write(json.dumps({"name": "consumer", "version": "1.0.0", "dependencies": {"repro-parent": f"file:{os.path.join(src, tgz)}"}}))
+    subprocess.run(['npm', 'install', '--no-audit', '--no-fund'], cwd=inst, capture_output=True, text=True, timeout=120)
+    link = os.path.join(inst, 'node_modules', 'repro-parent', 'node_modules', 'native-addon')
+    if not os.path.exists(os.path.dirname(link)):
+        link = os.path.join(inst, 'node_modules', 'native-addon')
+    print(f'{label} side: symlink={os.path.islink(link)} target_resolves={os.path.exists(link)}')
+PY
+fault  side: symlink=True target_resolves=False
+fix   side: symlink=True target_resolves=True</code></pre><p>故障侧：<code>files</code> 省略 <code>packages/</code> 时安装后 <code>node_modules</code> 链接悬空（<code>target_resolves=False</code>）； 修复侧：把目录写进 <code>files</code> 后同一链接解析正常。注意本检查复现的是<strong>悬空链接</strong>，#3299 报告的 Arborist 崩溃在 npm 11.12.1/11.20.0 上均未复现（见正文 Evidence status）。</p><h2>Notes</h2><ul><li><code>file:</code> dependencies are resolved relative to the <strong>installed</strong> package root, not to the repository that was packed. Anything they point at must therefore be inside the tarball.</li><li>Version note: the intake names npm 11.20.0. The repro above was run on both 11.12.1 and 11.20.0 via <code>npx -y npm@11.20.0</code>; the dangling-link behaviour is identical on both.</li><li>If you are chasing the <code>#addToBuildSet</code> crash specifically, the decisive question is what puts a link node with <code>target === null</code> into the build set — this repro shows the omitted- directory layout alone does not do it on 11.x. Do not claim the crash is fixed by the <code>files</code> change without a repro of the crash itself.</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/npm-file-dep-omitted-dir-dangling-symlink.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=A file: dependency on a directory omitted from the tarball installs a dangling node_modules symlink">Find related lessons →</a></p></div>

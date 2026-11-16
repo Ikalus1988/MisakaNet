@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,40 @@
 <div class="section">
   <h2>Summary</h2>
   <p>A TypeScript file that type-checks clean dies the moment Node loads it:</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>A TypeScript file that type-checks clean dies the moment Node loads it:</p><pre><code>SyntaxError [ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX]: TypeScript parameter property is not supported in strip-only mode
+  code: 'ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX'</code></pre><p>The offending syntax is a constructor parameter property:</p><pre><code class="language-ts">constructor(
+  private readonly options: Options,
+  private readonly onStderr: (line: string) =&gt; void = () =&gt; {},
+) {}</code></pre><p><code>tsc --noEmit</code> exits 0. <code>node --test --experimental-strip-types</code> then fails <em>while loading the module</em>, and under the test runner the result line carries no cause at all — just <code>not ok 1 - a.test.ts</code> with <code>failureType: 'testCodeFailure'</code> and <code>error: 'test failed'</code>. The real <code>SyntaxError</code> is emitted above it as TAP diagnostic lines, so a reader scanning the test summary sees a generic failure and starts looking at the test rather than at the module it imports. Every test in every file that transitively imports the module fails the same way.</p><h2>Root Cause</h2><p>Strip-only type removal does what its name says: it deletes type annotations. It does not <strong>transform</strong> code. A parameter property is not an annotation — it is a declaration <em>and</em> an assignment packed into one token, which a compiler must expand into a separate field declaration plus an assignment in the constructor body. That expansion is a transform, and Node will not do one, so it refuses the module.</p><p>The failing set is therefore not "TypeScript features" but a precise subset: <strong>syntax that lowers to something else</strong>. Type positions strip fine; anything that has to become different JavaScript does not.</p><p>One correction to the common write-up of this family: <code>declare</code> is <em>not</em> part of the failing set. <code>declare</code> marks a member as having no runtime code, which is exactly the kind of annotation strip-only handles. The distinction is not "declared vs not declared" — it is "has a runtime meaning that needs generating" vs "only exists in the type layer".</p><h2>Fix</h2><p>Write the fields out longhand:</p><pre><code class="language-ts">private readonly options: Options
+private readonly onStderr: (line: string) =&gt; void
+
+constructor(options: Options, onStderr: (line: string) =&gt; void = () =&gt; {}) {
+  this.options = options
+  this.onStderr = onStderr
+}</code></pre><p>Semantically identical, and it runs under strip-only and under any real transpiler. The same rule applies to the rest of the needs-lowering set: replace an <code>enum</code> with a frozen object or a union of literals, and replace a <code>namespace</code> that carries runtime code with a plain module. <code>interface</code>, <code>type</code>, generics, type annotations and <code>import type</code> all strip cleanly and need no change.</p><p>If you would rather keep the shorthand, run a real transpiler (<code>tsx</code>, <code>vitest</code>, <code>tsdown</code>, <code>ts-jest</code>) instead of <code>--experimental-strip-types</code> — the flag is a fast path for type-only TypeScript, not a compiler.</p><p>To find every affected site before the test run does it for you, search the sources for parameter properties in a <code>constructor(</code> parameter list, plus <code>enum </code> and <code>namespace </code> declarations.</p><h2>Verification</h2><p>Reproduced on Node v22.22.3 with TypeScript 6.0.3. One class, one parameter property:</p><pre><code>$ tsc -p tsconfig.json
+$ echo $?
+0
+
+$ node --experimental-strip-types -e "import('./app.ts')"
+SyntaxError [ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX]: TypeScript parameter property is not supported in strip-only mode
+  code: 'ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX'</code></pre><p>Through the test runner, the cause is separated from the result — the summary line is generic and the diagnostic is the comment-prefixed block above it:</p><pre><code># /path/dep.ts:1
+# export class D { constructor(private readonly v: number) {} ... }
+#                                               ^^^^^^^^^
+# SyntaxError [ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX]: TypeScript parameter property is not supported in strip-only mode
+# Subtest: a.test.ts
+not ok 1 - a.test.ts
+  error: 'test failed'
+  code: 'ERR_TEST_FAILURE'</code></pre><p>After rewriting the fields longhand, the same two commands succeed and the class runs:</p><pre><code>$ tsc -p tsconfig.json
+$ echo $?
+0
+$ node --experimental-strip-types -e "import('./fixed.ts').then(m =&gt; new m.Runner({name:'ok'}).run())"
+ok</code></pre><p>The rest of the needs-lowering set, each loaded under <code>--experimental-strip-types</code> on the same Node version:</p><pre><code>enum Color { Red = 'red' }                -&gt; ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX (enum)
+namespace Util { export const x = 1 }     -&gt; ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX (namespace)
+export declare namespace D { ... }        -&gt; loads
+class C { declare readonly injected: number; ... }  -&gt; loads
+export type Alias = { b: number }         -&gt; loads</code></pre><p>So the split is confirmed: <code>enum</code> and a <code>namespace</code> with runtime code are rejected, while <code>declare</code> members and pure type aliases are not. (Decorators are in the same family by construction but were not exercised here, so treat that one as untested.)</p><h2>References</h2><ul><li><a href="https://github.com/Ikalus1988/MisakaNet/issues/2724">https://github.com/Ikalus1988/MisakaNet/issues/2724</a> — intake report this lesson was promoted from</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/node-strip-types-rejects-syntax-that-needs-lowering.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Node strip-only mode rejects TypeScript syntax that needs lowering, not just type annotations">Find related lessons →</a></p></div>

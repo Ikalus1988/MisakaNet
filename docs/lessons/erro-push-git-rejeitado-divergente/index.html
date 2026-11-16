@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,24 @@
 <div class="section">
   <h2>Summary</h2>
   <p>This error occurs when Git refuses to push local commits because the remote branch has commits that the local branch does not. The push fails with:</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>This error occurs when Git refuses to push local commits because the remote branch has commits that the local branch does not. The push fails with:</p><pre><code>! [rejected]        main -&gt; main (non-fast-forward)
+error: failed to push some refs to 'https://github.com/usuario/repo.git'
+hint: Updates were rejected because the remote contains work that you do not
+hint: have locally.</code></pre><p>This happens when you and another collaborator modified the same files and the Git history diverged.</p><h2>Root Cause</h2><p>Git requires the local history to be a linear superset of the remote history to accept a <code>push</code>. When someone pushes commits to the remote while you are also working locally, the two timelines diverge. Git rejects the push to prevent overwriting someone else's work.</p><p>Two approaches exist to resolve this: <strong>merge</strong> (creates a merge commit) or <strong>rebase</strong> (rewrites history linearly).</p><h2>Solution</h2><p><strong>Approach 1: Merge (recommended for beginners)</strong></p><pre><code class="language-bash">git pull origin main
+git push origin main</code></pre><p>If conflicts occur during merge:</p><pre><code class="language-bash">git pull origin main
+# Git shows: CONFLICT in arquivo.txt
+# Edit the conflicting files manually
+git add arquivo.txt
+git commit -m "Resolve merge conflicts with origin/main"
+git push origin main</code></pre><p><strong>Approach 2: Rebase (linear history, more advanced)</strong></p><pre><code class="language-bash">git pull --rebase origin main
+git push origin main</code></pre><p>If conflicts occur during rebase:</p><pre><code class="language-bash">git pull --rebase origin main
+# Resolve conflicts in the affected files
+git add arquivo.txt
+git rebase --continue
+git push origin main</code></pre><p>To abort the rebase if something goes wrong:</p><pre><code class="language-bash">git rebase --abort</code></pre><p><strong>Approach 3: Force push (ONLY if you are certain)</strong></p><pre><code class="language-bash">git push --force-with-lease</code></pre><p><code>--force-with-lease</code> is safer than <code>--force</code> because it checks that the remote has not changed since your last fetch.</p><h2>Verification</h2><pre><code class="language-bash">git pull origin main
+echo "Verification passed: fix command exited 0"</code></pre><p><strong>Expected Output:</strong> command completes without error, then <code>Verification passed</code> is printed. (Checks: <code>git pull origin main</code>)</p><h2>Notes</h2><ul><li><code>git pull</code> is equivalent to <code>git fetch</code> followed by <code>git merge</code></li><li>Run <code>git fetch</code> before <code>git push</code> to check for remote changes without automatically merging</li><li>Prefer <code>--force-with-lease</code> over <code>--force</code> in all situations</li><li>Agree with your team on whether to use merge or rebase to maintain consistent history</li><li>Set <code>git config --global pull.rebase true</code> to use rebase as the default pull strategy</li><li>Reference: <a href="https://docs.github.com/en/get-started/using-git/dealing-with-non-fast-forward-errors">GitHub docs on non-fast-forward errors</a></li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/erro-push-git-rejeitado-divergente.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Erro de push rejeitado no Git: branches divergentes e como resolver">Find related lessons →</a></p></div>

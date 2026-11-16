@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,54 @@
 <div class="section">
   <h2>Summary</h2>
   <p>数据分析中，当数据超出阈值（如实际节拍超过工位节拍），把超出部分"封顶"到阈值值（如写成 100%），本质上是伪造满负荷数据。后续计算基于伪造数据得出错误结论。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>数据分析中，当数据超出阈值（如实际节拍超过工位节拍），把超出部分"封顶"到阈值值（如写成 100%），本质上是伪造满负荷数据。后续计算基于伪造数据得出错误结论。</p><p>封顶操作的危害链条：</p><ul><li>原始数据异常（Z &gt; P，实际节拍超出目标节拍）</li><li>封顶后数据看起来"正常"（利用率 = 100%）</li><li>汇总统计被拉高，掩盖真实产能瓶颈</li><li>决策者基于失真数据做出错误的产能规划或排班决策</li><li>问题持续存在但无人察觉，因为数据"看起来没问题"</li></ul><h2>Root Cause</h2><p>封顶和剔除是两种完全不同的操作：</p><ul><li><strong>封顶</strong> = 把异常值截断到阈值 → 掩盖真实异常，污染后续计算</li><li><strong>剔除</strong> = 承认数据异常并排除 → 保持数据诚实</li></ul><p>"Z &gt; P 封顶 100%"是典型的封顶陷阱：超出阈值的数据被强制拉回阈值，看起来"合理"但完全失真。</p><p>深层原因分析：</p><ol><li><strong>认知误区</strong>：开发者认为"超出 100% 不合理，所以截断到 100% 是合理修正"。但这混淆了"数据不合理"和"数据应被修正"两个概念——数据不合理恰恰说明它应该被标记和排除，而不是被篡改。</li><li><strong>统计污染</strong>：封顶后的数据参与均值、总量等统计计算，会系统性地高估实际利用率。例如 10 条数据中有 3 条被封顶为 100%，即使真实值是 130%、150%、200%，汇总均值也会被人为压低到"看起来合理"的区间。</li><li><strong>可追溯性丧失</strong>：封顶后无法区分"真实满负荷（Z = P）"和"异常被截断（Z &gt; P）"，审计和问题排查失去依据。</li><li><strong>阈值设计问题</strong>：有时封顶是因为阈值本身设置不合理（过低），正确做法是重新评估阈值，而非用封顶掩盖阈值问题。</li></ol><h2>Examples</h2><p><strong>具体数字示例：</strong></p><p>假设某工位目标节拍 P = 60 秒，某日 5 条生产记录如下：</p><table><thead><tr><th>记录</th><th>实际节拍 Z</th><th>封顶后利用率</th><th>剔除后利用率</th></tr></thead><tbody><tr><td>A</td><td>45s</td><td>75%</td><td>75%</td></tr><tr><td>B</td><td>60s</td><td>100%</td><td>100%</td></tr><tr><td>C</td><td>72s</td><td><strong>100%</strong>（伪造）</td><td><strong>None</strong>（剔除）</td></tr><tr><td>D</td><td>90s</td><td><strong>100%</strong>（伪造）</td><td><strong>None</strong>（剔除）</td></tr><tr><td>E</td><td>50s</td><td>83%</td><td>83%</td></tr></tbody></table><ul><li><strong>封顶口径均值</strong>：(75 + 100 + 100 + 100 + 83) / 5 = <strong>91.6%</strong>（虚高，掩盖了 C、D 的异常）</li><li><strong>剔除口径均值</strong>：(75 + 100 + 83) / 3 = <strong>86%</strong>（真实，且明确标注有 2 条异常数据被排除）</li></ul><p>封顶口径让管理者误以为产线运行良好，而剔除口径则如实反映了 40% 的数据存在异常，需要排查原因。</p><h2>Solution</h2><ol><li><strong>超出阈值的数据直接剔除</strong>（保持空值），不参与后续计算</li><li>任何口径都不能"封顶"异常数据</li><li>剔除后需记录剔除数量和比例，供审计追溯</li><li>如果阈值本身不合理，应调整阈值而非封顶数据</li><li>在数据管道入口处统一处理，避免各处重复实现封顶逻辑</li></ol><pre><code class="language-python"># ❌ 封顶 = 伪造
+utilization = min(actual_cycle / target_cycle, 1.0)
+
+# ✅ 剔除 = 诚实
+if actual_cycle &gt; target_cycle:
+    utilization = None  # 标记为异常，不参与统计
+else:
+    utilization = actual_cycle / target_cycle</code></pre><p><strong>批量处理示例（Pandas）：</strong></p><pre><code class="language-python">import pandas as pd
+
+df = pd.DataFrame({
+    'actual_cycle': [45, 60, 72, 90, 50],
+    'target_cycle': [60, 60, 60, 60, 60],
+})
+
+# ❌ 封顶写法：污染统计
+df['utilization_capped'] = (df['actual_cycle'] / df['target_cycle']).clip(upper=1.0)
+
+# ✅ 剔除写法：诚实统计
+df['utilization_clean'] = df['actual_cycle'] / df['target_cycle']
+df.loc[df['actual_cycle'] &gt; df['target_cycle'], 'utilization_clean'] = None
+
+# 记录剔除情况，供审计
+excluded = df['utilization_clean'].isna()
+print(f"剔除数量: {excluded.sum()} / {len(df)}，占比: {excluded.mean():.1%}")
+# 输出: 剔除数量: 2 / 5，占比: 40.0%
+
+# 仅对有效数据计算均值
+valid_mean = df['utilization_clean'].mean()  # 自动忽略 None
+print(f"有效数据均值: {valid_mean:.1%}")
+# 输出: 有效数据均值: 86.0%</code></pre><p><strong>数据管道入口统一校验：</strong></p><pre><code class="language-python">def compute_utilization(actual_cycle: float, target_cycle: float) -&gt; float | None:
+    """
+    计算利用率。超出阈值返回 None（剔除），不封顶。
+    
+    Args:
+        actual_cycle: 实际节拍（秒）
+        target_cycle: 目标节拍（秒）
+    Returns:
+        利用率 [0, 1.0]，或 None（异常数据）
+    """
+    if target_cycle &lt;= 0:
+        raise ValueError(f"目标节拍必须为正数，得到: {target_cycle}")
+    if actual_cycle &gt; target_cycle:
+        return None  # 异常，剔除，不封顶
+    return actual_cycle / target_cycle</code></pre><h2>Verification</h2><pre><code class="language-bash">echo "Lesson: 数据封顶=伪造数据：超出阈值应剔除而非截断"
+wc -l lessons/contrib/data-capping-equals-forging-data.md</code></pre><p><strong>Expected Output:</strong></p><pre><code>Lesson: 数据封顶=伪造数据：超出阈值应剔除而非截断
+# (line count)</code></pre>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/data-capping-equals-forging-data.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=数据封顶=伪造数据：超出阈值应剔除而非截断">Find related lessons →</a></p></div>

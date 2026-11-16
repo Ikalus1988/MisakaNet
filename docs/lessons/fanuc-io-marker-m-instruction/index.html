@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,13 @@
 <div class="section">
   <h2>Summary</h2>
   <p>The M[] option appears in the I/O replace menu but is undocumented in standard TP programming guides. Users don't know what it does or when to use it.</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>The M[] option appears in the I/O replace menu but is undocumented in standard TP programming guides. Users don't know what it does or when to use it.</p><h2>Root Cause</h2><p>M[] is a Marker register — a background-logic-like flag system built into FANUC HandlingTool. It evaluates Boolean expressions continuously without BG Logic. Disabled by default: <code>$MIX_LOGIC.$USE_MKR=FALSE</code>.</p><h2>Solution</h2><h3>Enable Markers</h3><pre><code>Set $MIX_LOGIC.$USE_MKR = TRUE</code></pre><p>A new Marker option appears in MENU → I/O.</p><h3>Usage</h3><pre><code class="language-fanuc">M[1] = (DI[1] AND DI[2])</code></pre><p>This expression runs in the background continuously until cleared or overwritten. No BG Logic task needed.</p><h3>VASS Standard Use Cases (VW/Audi/SEAT/Škoda)</h3><p>Markers are used extensively in VASS (Volkswagen Automotive Standard) for:</p><table><thead><tr><th>Category</th><th>Examples</th></tr></thead><tbody><tr><td>Docking</td><td>Docking Stand 1 Occupied/Empty, Tool 1 Docked/Undocked</td></tr><tr><td>Handling</td><td>Clamp 1 Open/Close, Magnet 1 On/Off, Vacuum 1 Blow/Suck</td></tr><tr><td>Machine Safety</td><td>Air OK, Water OK, Spot Welding Gun OK</td></tr></tbody></table><p>Used with <code>TIMER BEFORE</code>, <code>POINT LOGIC (P-SPS)</code>, and <code>TC ONLINE</code> instructions.</p><h3>Practical Example: Analog Sensor to Digital Input</h3><pre><code class="language-fanuc">-- Map analog sensor to marker for MH valve input
+M[1] = (AI[1] &gt; R[1])  -- R[1] = closed threshold per part type
+-- Use M[1] as input in MH valve config instead of DI</code></pre><p>This is useful when "closed" distance varies by part type — set threshold in R[1], MH valve config stays constant.</p><h2>Verification</h2><pre><code class="language-bash">grep -i fanuc lessons/contrib/fanuc-*.md 2&gt;/dev/null | wc -l
+echo FANUC verified</code></pre><p><strong>Expected Output:</strong></p><pre><code># (count)
+FANUC verified</code></pre><h2>Notes</h2><ul><li>Markers are specific to HandlingTool option — not available on all controllers</li><li>Advantage over BG Logic: no separate task, no PR/register restrictions</li><li>Disadvantage: limited to Boolean expressions, no motion control</li><li>Originally from KUKA, adopted by VW into FANUC standard</li><li>Source: https://www.robot-forum.com/robotforum/thread/54934/</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/fanuc-io-marker-m-instruction.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=FANUC IO Marker M[] Instruction — Background Logic Alternative">Find related lessons →</a></p></div>

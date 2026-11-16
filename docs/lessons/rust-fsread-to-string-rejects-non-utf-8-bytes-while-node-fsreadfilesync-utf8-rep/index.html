@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,10 @@
 <div class="section">
   <h2>Summary</h2>
   <p>同一条「二进制 → 文本」转换管道在两个运行时里各写了一遍：Node 侧脚本一路跑绿、数据完整；Rust 侧 UI 入口把其中两个最大的文件整份丢掉，界面不报错，只是「功能少了一大块」。Rust 侧唯一的痕迹是读取时的错误：</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>同一条「二进制 → 文本」转换管道在两个运行时里各写了一遍：Node 侧脚本一路跑绿、数据完整；Rust 侧 UI 入口把其中两个最大的文件整份丢掉，界面不报错，只是「功能少了一大块」。Rust 侧唯一的痕迹是读取时的错误：</p><pre><code>stream did not contain valid UTF-8</code></pre><p>实测输入：164 KB 的二进制配置导出，转换后约 3.8 MB 文本；其中注释字段是本地代码页字节（非 UTF-8）。Rust 侧该文件读取失败后，per-file 隔离逻辑 <code>continue</code> 掉它，整份文件不进入结果；Node 侧同样输入正常出结果（注释显示为替换字符 U+FFFD 的 mojibake，数据完整）。丢掉的恰好是两个最大的文件，依赖它们的字段族全没了。</p><p>报料者未给出具体仓库、文件与调用命令，需复现确认。</p><h2>Root Cause</h2><p>「读文本」在两个运行时里<strong>不是等价原语</strong>：</p><table><thead><tr><th>运行时</th><th>调用</th><th>非法 UTF-8 的行为</th></tr></thead><tbody><tr><td>Rust</td><td><code>fs::read_to_string(path)</code></td><td>严格校验，返回 <code>Err(InvalidData)</code>，消息 <code>stream did not contain valid UTF-8</code></td></tr><tr><td>Node</td><td><code>fs.readFileSync(path, 'utf8')</code></td><td>有损解码，非法序列替换为 U+FFFD，继续返回字符串</td></tr></tbody></table><p>同一条解析链在 JS 脚本与 Rust 服务里各写一遍时，只要没统一解码口径就会分叉：一边继续、一边 <code>Err</code>。而 <code>Err</code> 又被 per-file 隔离 + <code>continue</code> 吞掉，于是「解码失败」被放大成「数据缺失」，且没有任何错误出现在 UI 上——<strong>报错消失，数据也消失</strong>。</p><p>排除项（报料者已实测）：不是 IPC 体积上限。先用页面内直接 invoke 逐文件实测，1 MB 小文件正常返回、两个大文件固定报 UTF-8 错——同一量级的体积按文件分叉，指向读取严格性而非 IPC。</p><h2>Solution</h2><p>Rust 侧改用有损读取，与 Node 同口径：</p><pre><code class="language-rust">let raw = std::fs::read(path)?;                        // Vec&lt;u8&gt;，不做 UTF-8 校验
+let text = String::from_utf8_lossy(&amp;raw).into_owned();  // 非法字节 → U+FFFD</code></pre><p>不要用 <code>fs::read_to_string</code>——它把一个可容忍的编码问题升级成整份文件失败。</p><p>配套三件事：</p><ol><li><strong>per-file 隔离必须留痕</strong>：把失败原因（文件 + 错误文本）收集成列表并在 UI 暴露，不要只 <code>console.warn</code> / <code>eprintln!</code>。没有留痕的隔离等于静默丢数据。</li><li><strong>两边同输入必须同结果</strong>：以引擎侧脚本为基准，UI 入口逐项对齐。</li><li><strong>只验小样本会全绿</strong>：显式断言「最大那几个文件」也进了结果。</li></ol><h2>Verification</h2><p>判据（两边同输入必须同结果，缺一不可）：</p><ol><li>同一份二进制输入分别经 Node（<code>utf8</code>，有损）与 Rust（<code>from_utf8_lossy</code>）转换，输出长度一致（差异只在替换字符数量）。</li><li>UI 入口的文件分类计数（程序 / 日志 / 系统变量 / IO）与引擎侧脚本逐项相等；对不上就是有文件被静默丢。</li><li>此前丢失的高优先级字段族重新出现在结果列表前排，且两个最大的文件都在结果里。</li><li>故意喂一份含非法字节的文件，确认 UI 上能看到「该文件解码失败（已用替换字符继续）」这类留痕，而不是静默消失。</li></ol><p>报料者未给出具体的断言脚本与文件名，上述命令形态需复现确认。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/rust-read-to-string-strict-utf8-vs-node-lossy.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Rust fs::read_to_string rejects non-UTF-8 bytes while Node fs.readFileSync utf8 replaces them">Find related lessons →</a></p></div>

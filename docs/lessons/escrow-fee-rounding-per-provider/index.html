@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,11 @@
 <div class="section">
   <h2>Summary</h2>
   <p>A payout/reward schema recorded a fee estimate computed with floating-point math, while the escrow engine (and the human maintainers) expected per-provider inte…</p>
+</div>
+<div class="lesson-body">
+<h2>Escrow fee estimates round differently per provider — and it silently changes totals</h2><h2>Problem</h2><p>A payout/reward schema recorded a fee estimate computed with floating-point math, while the escrow engine (and the human maintainers) expected per-provider integer-percent rounding. Invoices, reward cells, and gateway payloads diverged by a few basis points — invisible on a single row, yet every cross-check and tally disagreed.</p><h2>Root cause</h2><p>Money math was done as <code>amount * rate</code> in binary floating point and then summed, instead of using currency-centric integer arithmetic (cents/wei/sats) with explicit rounding at the end. Two compounding effects:</p><ul><li><code>0.1 * 3</code> style products are not exact in binary floats (e.g. <code>0.30000000000000004</code>), so <em>identical</em> fee logic produced <em>different</em> totals depending on provider defaults and where the rounding was applied (per-row vs. at-the-end).</li><li>A schema that allows the number of decimal places to differ per provider makes the same invoice look correct under one and wrong under another.</li></ul><h2>Failure &amp; recovery</h2><p>The failure surfaced only when an independent audit added totals and compared them to the stored fee. The recovery checklist:</p><ol><li>Move all money arithmetic to integer units (cents, sats, or the token's smallest unit).</li><li>Choose a single rounding mode (and mention it: round-half-up, truncation, banker's rounding).</li><li>Sum in integer units, round once at the end, never per-row mid-computation.</li><li>Add a "recompute and compare to stored" invariant check in tests.</li></ol><h2>Lesson</h2><p>Fee/escrow math is currency math: use integer units, apply one rounding policy, and validate stored totals by recomputation. "It's almost right" is how payment bugs get shipped.</p><h2>Verification</h2><pre><code class="language-bash">echo "Lesson: Banking-style escrow fee estimate has a per-provid"
+wc -l lessons/contrib/escrow-fee-rounding-per-provider.md</code></pre><p><strong>Expected Output:</strong></p><pre><code>Lesson: Banking-style escrow fee estimate has a per-provid
+# (line count)</code></pre>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/escrow-fee-rounding-per-provider.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Banking-style escrow fee estimate has a per-provider rounding disparity">Find related lessons →</a></p></div>

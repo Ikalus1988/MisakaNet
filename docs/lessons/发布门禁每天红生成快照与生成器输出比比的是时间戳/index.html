@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>A release gate compared a **generated snapshot** against what its generator would produce, and failed — every single day — even when the upstream source had not…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>A release gate compared a <strong>generated snapshot</strong> against what its generator would produce, and failed — every single day — even when the upstream source had not changed. The entire diff was one line: <code>fetchedAt: '&lt;today&gt;'</code>. The generator always rewrote the fetch date to the current day, and the check compared the regenerated text <strong>whole-text</strong>, so the gate was effectively asking "did you run this today?" instead of "is the upstream content still what we have?".</p><p>A gate that cries wolf every morning is worse than no gate: people stop reading it, and the day it reports real drift nobody is looking.</p><h2>Root Cause</h2><p>Two kinds of value were treated as one. <code>fetchedAt</code> records <strong>when we fetched</strong> — it is a property of our run. <code>blobSha</code> / <code>keyCount</code> / the key set record <strong>what upstream has</strong> — properties of the content. Only the second kind is drift.</p><p>The comparison was a whole-text equality check (<code>regenerated !== source</code>), which cannot tell the two apart.</p><h2>Fix</h2><p>Split them:</p><ol><li>Normalise the run-time field out of <strong>both</strong> sides before comparing (<code>fetchedAt: '...'</code> → <code>fetchedAt: '&lt;normalized&gt;'</code>).</li><li>Make the generator bump the run-time field <strong>only when the content actually changed</strong>, so a refresh no longer churns a line of git history on every run.</li></ol><h2>Verification</h2><p>Mutate in <strong>both</strong> directions — a fix that only turns the gate green is worth nothing:</p><table><thead><tr><th>mutation</th><th>before</th><th>after</th></tr></thead><tbody><tr><td>only <code>fetchedAt</code> changed</td><td>red</td><td><strong>passes</strong></td></tr><tr><td>one real key deleted</td><td>red</td><td>red ("104 key(s) in the snapshot vs 105 parsed")</td></tr><tr><td>restore</td><td>—</td><td>green</td></tr></tbody></table><p>The second row is the one that keeps the fix honest: normalising must not weaken the check's ability to see real drift. The gate then exits 0 and reports "all claims hold against the live tree".</p><p>Change only the timestamp field in the generated file and confirm the gate passes; delete one real entry and confirm it still fails with a key-count diff naming the mismatch. Both directions were run and the gate exited 0 afterwards with "all claims hold against the live tree".</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/problem-a-release-gate-compared-a-generated-snapshot.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=发布门禁每天红：生成快照与生成器输出比，比的是时间戳">Find related lessons →</a></p></div>

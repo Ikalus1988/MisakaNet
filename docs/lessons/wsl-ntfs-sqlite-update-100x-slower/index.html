@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,16 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Running `UPDATE` on a 1.2GB SQLite database via WSL2's NTFS mount (`/mnt/d/`) takes 5+ minutes for a single statement updating ~9000 rows. The same operation on…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Running <code>UPDATE</code> on a 1.2GB SQLite database via WSL2's NTFS mount (<code>/mnt/d/</code>) takes 5+ minutes for a single statement updating ~9000 rows. The same operation on a Linux ext4 filesystem completes in ~3 seconds.</p><h2>Root Cause</h2><p>WSL2 accesses Windows NTFS through the <code>drvfs</code> filesystem driver, which translates POSIX I/O calls to Windows NTFS operations. SQLite's WAL (Write-Ahead Log) mode requires frequent random writes to both the WAL file and the main database file. NTFS's random I/O performance through the WSL2 translation layer is extremely poor compared to native ext4, especially for workloads that mix small random writes with large sequential reads.</p><p>Key factors:</p><ul><li>SQLite WAL mode = heavy random write pattern</li><li>WSL2 <code>drvfs</code> adds translation overhead per I/O syscall</li><li>NTFS metadata updates (timestamps, allocation) add latency</li><li>1GB+ database = large page pool = more random I/O surface</li></ul><h2>Solution</h2><p>Copy the database to a Linux-native filesystem, perform the UPDATE there, then copy back.</p><h3>Step 1: Copy to Linux filesystem</h3><pre><code class="language-bash">cp /mnt/d/project/data.db /tmp/data.db</code></pre><h3>Step 2: Run UPDATE on the local copy</h3><pre><code class="language-bash">python3 -c "
+import sqlite3
+conn = sqlite3.connect('/tmp/data.db')
+conn.execute('UPDATE table SET col = ... WHERE ...')
+conn.commit()
+conn.close()
+"</code></pre><h3>Step 3: Copy back to NTFS</h3><pre><code class="language-bash">cp /tmp/data.db /mnt/d/project/data.db</code></pre><h2>Verification</h2><pre><code class="language-bash">cp /mnt/d/project/data.db /tmp/data.db
+echo "Verification passed: fix command exited 0"</code></pre><p><strong>Expected Output:</strong> command completes without error, then <code>Verification passed</code> is printed. (Checks: <code>cp /mnt/d/project/data.db /tmp/data.db</code>)</p><h2>Notes</h2><ul><li>SELECT queries are not significantly affected — the read path has less random I/O overhead.</li><li>For repeated UPDATE operations, consider keeping the working copy on <code>/tmp</code> and syncing back periodically.</li><li>The <code>PRAGMA journal_mode=WAL</code> does not help on NTFS — the bottleneck is the filesystem layer, not SQLite's journaling.</li><li>This also applies to <code>VACUUM</code>, <code>REINDEX</code>, and other write-heavy SQLite operations.</li><li>Related: WSL2 with <code>wsl2.mountDisk</code> or custom <code>/etc/fstab</code> with <code>metadata</code> option does NOT fix this — the issue is fundamental to the drvfs translation layer.</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/wsl-ntfs-sqlite-update-100x-slower.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=WSL NTFS SQLite UPDATE 100x slower than ext4">Find related lessons →</a></p></div>

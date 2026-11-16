@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>改完代码 `xcodebuild` 装不了真机，报签名错误；之前明明能装，代码本身没动签名相关的东西。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>改完代码 <code>xcodebuild</code> 装不了真机，报签名错误；之前明明能装，代码本身没动签名相关的东西。</p><h2>Root Cause</h2><p>工程文件是脚本扫目录生成的，每次重跑都会重写 <code>project.pbxproj</code>。Xcode 里手选的 <code>DEVELOPMENT_TEAM</code> 存在工程文件里，被整个覆盖掉，于是签名找不到 Team。</p><h2>Fix</h2><p>把团队 ID 写进生成脚本常量，重生成时自动写入：</p><pre><code class="language-python">DEVELOPMENT_TEAM = "H4T4222QWF"   # 改团队就改这里，别在 Xcode 里改</code></pre><p>同理，<code>Info.plist</code> 也不许手改，改脚本里的模板。</p><h2>Verification</h2><p><code>python3 tools/gen_xcodeproj.py</code> 之后 <code>git diff</code> 为 0；<code>xcodebuild -showBuildSettings | grep DEVELOPMENT_TEAM</code> 有值；真机能装上。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/重新生成-xcodeproj-会丢-development-team之后-xcodebuild-装不了真机.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=重新生成 .xcodeproj 会丢 DEVELOPMENT_TEAM：之后 xcodebuild 装不了真机">Find related lessons →</a></p></div>

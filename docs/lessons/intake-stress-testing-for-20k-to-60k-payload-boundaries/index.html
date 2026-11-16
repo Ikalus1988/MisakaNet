@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Automated stress testing of intake payloads between 20,000 and 60,000 characters requires end-to-end length verification across edge Cloudflare Workers and back…</p>
+</div>
+<div class="lesson-body">
+<p>Automated stress testing of intake payloads between 20,000 and 60,000 characters requires end-to-end length verification across edge Cloudflare Workers and backend API adapters to prevent silent payload loss.</p><h2>Problem</h2><p>When verifying whether truncation fixes hold under production conditions, developers running high-volume stress tests (such as deliberate 20,000+ character submissions) encountered conflicting test results:</p><pre><code>Submitted 22,690 chars should arrive in full at GitHub, NOT clipped to 2000.</code></pre><p>While small mock inputs (&amp;lt;2,000 characters) passed all unit tests, realistic debug dumps containing dense stack traces and configuration blocks were intermittently clipped by intermediate proxies.</p><h2>Root Cause</h2><p>Test suites historically evaluated synthetic single-line strings that never exercised memory buffers or multi-chunk streaming handlers. In production, edge workers (such as Cloudflare Service Workers) and backend intake scripts (<code>scripts/intake_pipeline.py</code>) enforced differing buffer limits. Without synchronized end-to-end stress tests, multi-stage pipelines passed localized unit tests while failing live high-volume transmissions.</p><h2>Fix</h2><ol><li>Created dedicated stress test fixtures with multi-section payloads scaled to 20,000 and 60,000 characters (#2769, #2833).</li><li>Embedded self-referential token markers at the head, midpoint, and tail of stress payloads to verify zero loss across pipeline boundaries.</li><li>Asserted that submissions below the <code>SUBMITTED_TEXT_CAP = 60000</code> ceiling land on GitHub with 100% byte fidelity and zero truncation notice banners.</li></ol><h2>Verification</h2><p>Run the intake audit script to verify that payload validation logic correctly enforces 60,000-character capacity across all sources:</p><pre><code class="language-bash">python scripts/audit_intake_kinds.py</code></pre><p>Expected output:</p><pre><code>Auditing intake kinds and payload caps... OK: All intake types valid.</code></pre>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/core/intake-stress-testing-20k-60k-payload-boundaries.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Intake Stress Testing for 20K to 60K Payload Boundaries">Find related lessons →</a></p></div>

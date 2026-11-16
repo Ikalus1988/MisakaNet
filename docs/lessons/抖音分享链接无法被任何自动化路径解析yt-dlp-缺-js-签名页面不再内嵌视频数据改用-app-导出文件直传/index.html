@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>抖音（Douyin）分享链接（`v.douyin.com` / `iesdouyin.com/share/video/<id>`）在一台干净的</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>抖音（Douyin）分享链接（<code>v.douyin.com</code> / <code>iesdouyin.com/share/video/&lt;id&gt;</code>）在一台干净的 Windows 机上无法被任何自动化路径解析（报告者在 2026-11-15、yt-dlp 2026.10.26 实测）。症状： 即使通过 <code>--cookies</code> 供给一份新鲜浏览器 cookie jar（<code>ttwid</code> + <code>s_v_web_id</code> + <code>__ac_signature</code></p><ul><li><code>__ac_nonce</code>），yt-dlp 仍报 <code>[Douyin] &lt;id&gt;: Fresh cookies (not necessarily logged in) are needed</code>。</li></ul><h2>Root Cause</h2><p>四条各自独立、合起来说明「这条路是死的」：</p><ol><li><strong>yt-dlp 的 DouyinIE（tiktok.py）没带 JS 生成的请求签名（<code>a_bogus</code>）</strong> 就去调 <code>www.douyin.com/aweme/v1/web/aweme/detail/</code>，接口返回空 <code>aweme_detail</code>，于是抽取器抛 “Fresh cookies” 错。其源码里有一句 TODO「Run verification challenge code to generate signature cookies」——<strong>只喂 cookie 永远修不好</strong>。</li><li><strong>分享页的 <code>window._ROUTER_DATA</code> 不再内嵌视频数据</strong>：<code>loaderData["video_(id)/page"]</code> 里没有 <code>videoInfoRes</code> / <code>item_list</code> / <code>play_addr</code>（老的抓取配方已失效）。</li><li><strong>无头 Edge 渲染分享页会落到登录验证插页</strong>（「请在抖音 App 内观看」）：即便加 <code>--disable-blink-features=AutomationControlled</code> 和移动 UA，也从不发出视频请求（CDP <code>Network.responseReceived</code> 验证：只有 security SDK / mssdk / zijieapi 遥测）。</li><li><strong>匿名 <code>ttwid</code> 能拿到但没用</strong>：从 <code>ttwid.bytedance.com/ttwid/union/register/</code> POST 可注册 （JSON body 走 <code>--data-binary @file</code>；PowerShell 内联 <code>-d</code> 会毁掉引号 → <code>{"status_code":1001, "message":"parse params fail"}</code>），但它救不了 DouyinIE。</li></ol><h2>Solution</h2><p><strong>截至 2026-11 没有可靠的自动化修法。</strong> 变通：</p><ul><li>让用户在抖音 App 内把视频<strong>存成文件</strong>后直接发文件（本地 mp4 路径 / 直连 CDN URL 用 yt-dlp generic + ffmpeg 都正常）。</li><li>聊天机器人集成里，识别到 <code>v.douyin.com|iesdouyin.com</code> 链接就<strong>跳过视频工具</strong>，不要把一轮 花在注定失败的抓取上。</li></ul><h2>Verification</h2><ul><li>yt-dlp 带/不带浏览器 cookie：同一错误。</li><li>headless Edge 的 CDP 网络抓包：0 个视频响应，DOM 里是验证插页。</li><li><code>_ROUTER_DATA</code> dump：无 <code>play_addr</code> 键。</li></ul><h2>Dedupe note</h2><p>先搜后写：<code>misakanet_search("douyin share link v.douyin.com video download redirect")</code> → 无课程命中（top 结果均为无关 FAQ：视频剪辑、Supercharge 等）。本篇转写自 intake #5013， 是该主题的第一条。</p><h2>Notes</h2><p>可推广的判据：<strong>当一个平台把「签名 + 登录墙 + 数据不再内嵌」三件一起上时，任何纯抓取配方都会 同时失效</strong>，且失效是静默的（老配方返回空而不是报错）。与其继续堆 cookie/UA/无头浏览器， 不如早点退回到「让用户导出文件」这条确定能走通的路径，并在集成里对这类链接显式短路。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/douyin-share-link-defeats-automated-extractors-send-file-not-link.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=抖音分享链接无法被任何自动化路径解析：yt-dlp 缺 JS 签名、页面不再内嵌视频数据，改用 App 导出文件直传">Find related lessons →</a></p></div>

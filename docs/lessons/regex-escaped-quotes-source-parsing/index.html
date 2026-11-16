@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,22 @@
 <div class="section">
   <h2>Summary</h2>
   <p>用正则从 Python 源码中提取 `os.environ.get("KEY", "default_value")` 的默认值时，提取结果被截断：</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>用正则从 Python 源码中提取 <code>os.environ.get("KEY", "default_value")</code> 的默认值时，提取结果被截断：</p><pre><code class="language-python">source = 'exclude = os.environ.get("EXCLUDE_CHARACTERS", "/@\\"'+:?&amp;!=% ")'
+# 实际默认值: /@"'+:?&amp;!=%  (含转义引号 \")
+# 正则提取到: /@\  (在 \" 处停止)</code></pre><h2>Root Cause</h2><p>标准非贪婪正则 <code>(["'])(.*?)\1</code> 在遇到 <code>\"</code> 时：</p><ol><li><code>(.*?)</code> 匹配到 <code>/@\</code></li><li>下一个字符是 <code>"</code>（被 <code>\</code> 转义的引号）</li><li><code>\1</code> 回溯引用匹配到这个 <code>"</code>（因为它是 <code>"</code> 字符）</li><li>正则在此处停止，忽略了后续的 <code>'+:?&amp;!=% "</code></li></ol><p>正则不知道 <code>\"</code> 是转义序列，只看到一个 <code>"</code> 字符。</p><h2>Solution</h2><p>用 <code>[^\\]|\\.</code> 替代 <code>.</code> 来跳过转义字符：</p><pre><code class="language-python"># ❌ 错误：. 不能跳过转义引号
+pattern = r'(["'])(.*?)\1'
+
+# ✅ 正确：(?:[^\\]|\\.) 匹配非反斜杠字符或转义序列
+pattern = r'(["\'])((?:[^\\]|\\.)*?)\1'</code></pre><p>解释：</p><ul><li><code>[^\\]</code> — 匹配任何非 <code>\</code> 的字符</li><li><code>\\.</code> — 匹配 <code>\</code> 后跟任意字符（即转义序列）</li><li><code>(?:...)*?</code> — 非贪婪重复，但在每个位置都能正确跳过 <code>\"</code></li></ul><p>完整用法：</p><pre><code class="language-python">import re
+
+def extract_env_default(source: str, key: str) -&gt; str:
+    pattern = rf'''os\.environ\.get\(\s*["']{key}["']\s*,\s*(["\'])((?:[^\\]|\\.)*?)\1'''
+    match = re.search(pattern, source)
+    assert match, f"Could not find {key} default in source"
+    return match.group(2)</code></pre><h2>Verification</h2><pre><code class="language-bash">[^\]|\.
+echo "Verification passed: fix command exited 0"</code></pre><p><strong>Expected Output:</strong> command completes without error, then <code>Verification passed</code> is printed. (Checks: <code>[^\]|\.</code>)</p><h2>Why it matters</h2><p>从源码中提取字符串常量是自动化测试和代码分析的常见需求。当源码包含转义引号（<code>\"</code>、<code>\'</code>）时，标准非贪婪匹配会提前终止。这个问题在解析 JSON 字符串、SQL 查询、Shell 命令等嵌套引号场景中也会出现。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/regex-escaped-quotes-source-parsing.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=正则陷阱 — 源码中转义引号导致非贪婪匹配提前终止">Find related lessons →</a></p></div>

@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,20 @@
 <div class="section">
   <h2>Summary</h2>
   <p>YAML 内联注释导致类型强制转换失败 — `0.15 # comment` 被读取为字符串而非 float。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>YAML 内联注释导致类型强制转换失败 — <code>0.15 # comment</code> 被读取为字符串而非 float。</p><h2>Root Cause</h2><p>YAML 规范中，<code>#</code> 是注释字符。但某些 YAML 解析器（特别是内联注释处理不一致的）会将 <code>0.15 # comment</code> 整体作为字符串处理，而不是先提取 <code>0.15</code> 再忽略注释。</p><p>常见场景：</p><ol><li>配置文件中写 <code>timeout: 30 # seconds</code></li><li>某些解析器将 <code>30 # seconds</code> 作为字符串</li><li>后续比较 <code>timeout &gt; 20</code> 时类型错误</li></ol><h2>Solution</h2><p><strong>避免内联注释，或使用引号：</strong></p><pre><code class="language-yaml"># 错误方式：内联注释可能导致类型问题
+timeout: 30 # seconds
+
+# 正确方式1：注释放在下一行
+timeout: 30
+# seconds
+
+# 正确方式2：使用引号明确类型
+timeout: "30"  # 如果需要字符串
+timeout: 30    # 如果需要数字（无注释）</code></pre><p><strong>解析器选择：</strong></p><ul><li>使用 <code>yaml.safe_load()</code> 而不是 <code>yaml.load()</code></li><li>考虑使用 <code>strictyaml</code> 等严格解析器</li><li>在 CI 中添加 YAML lint 检查</li></ul><h2>Verification</h2><pre><code class="language-bash">echo "Lesson: YAML 内联注释导致类型强制转换失败"
+wc -l lessons/contrib/yaml-inline-comment-type-coercion.md</code></pre><p><strong>Expected Output:</strong></p><pre><code>Lesson: YAML 内联注释导致类型强制转换失败
+# (line count)</code></pre><h2>Key Points</h2><ul><li>YAML 内联注释可能导致类型强制转换问题</li><li>使用严格解析器或避免内联注释</li><li>在 CI 中添加 YAML lint 检查</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/yaml-inline-comment-type-coercion.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=YAML 内联注释导致类型强制转换失败">Find related lessons →</a></p></div>

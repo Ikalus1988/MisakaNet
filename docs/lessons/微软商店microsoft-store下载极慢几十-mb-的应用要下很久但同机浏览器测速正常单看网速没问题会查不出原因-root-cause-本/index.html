@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>微软商店（Microsoft Store）下载极慢，几十 MB 的应用要下很久，但同机浏览器测速正常。单看"网速没问题"会查不出原因。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>微软商店（Microsoft Store）下载极慢，几十 MB 的应用要下很久，但同机浏览器测速正常。单看"网速没问题"会查不出原因。</p><h2>Root Cause</h2><p>本例是三个因素叠加，缺一都不会这么慢：</p><ol><li><strong>hosts 被第三方工具劫持</strong>（主因）：<code>&lt;PATH&gt; 被写进 104 行几乎全是劫持项，把 </code>dl.delivery.mp.microsoft.com<code>、</code>tlu.dl.delivery.mp.microsoft.com<code>、</code>1d.tlu.dl.delivery.mp.microsoft.com` 等强制指向某个境外 CDN 节点，延迟高、吞吐差。</li><li><strong>Clash 处于全局模式</strong>：全局模式下代理出口只认 <code>GLOBAL.now</code>，商店流量绕进代理，速度受节点带宽限制。</li><li><strong>NCSI 主动探测被关闭</strong>：<code>EnableActiveProbing=0</code> 让 Windows 无法正确判断连通性，影响 CDN 选路。</li></ol><h2>Fix</h2><ol><li>把 hosts 恢复为 Windows 默认模板（只保留注释，约 800 字节），改前备份；</li><li>Clash 切回<strong>规则模式</strong>（不要用全局），或至少确认商店域名走直连组；</li><li><code>HKLM\SYSTEM\CurrentControlSet\Services\NlaSvc\Parameters\Internet\EnableActiveProbing</code> 置 1，重启 <code>nlasvc</code>。</li></ol><p>验连通：<code>curl -I</code> 打 <code>dl.delivery.mp.microsoft.com</code> 应返回 200/302，且解析到就近 CDN。</p><h2>Verification</h2><p>本例修复后实测商店下载 123.8 Mbps；hosts 复核为 0 条活跃劫持记录，NCSI 探测 HTTP 200。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/微软商店microsoft-store下载极慢几十-mb.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=微软商店（Microsoft Store）下载极慢，几十 MB 的应用要下很久，但同机浏览器测速正常。单看"网速没问题"会查不出原因。 Root Cause 本">Find related lessons →</a></p></div>

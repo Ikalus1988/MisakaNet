@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,11 @@
 <div class="section">
   <h2>Summary</h2>
   <p>A script that updates existing files in a repository through the REST contents API started failing with `422 Validation Failed` and a body that only mentioned `…</p>
+</div>
+<div class="lesson-body">
+<h2>GitHub contents API edit fails 422 when the file <code>sha</code> is missing</h2><h2>Problem</h2><p>A script that updates existing files in a repository through the REST contents API started failing with <code>422 Validation Failed</code> and a body that only mentioned <code>"sha" wasn't supplied</code>. The script treated edits like an initial create and sent only <code>message</code> + <code>content</code>.</p><h2>Root cause</h2><p>The GitHub contents API (<code>PUT /repos/{owner}/{repo}/contents/{path}</code>) changes behavior depending on whether the file already exists:</p><ul><li><strong>Create:</strong> only <code>message</code> + <code>content</code> (+ <code>branch</code>) needed.</li><li><strong>Update:</strong> must also include the current blob <code>sha</code> of the file being overwritten. Omitting it produces exactly that <code>422</code> with <code>"sha" wasn't supplied</code> — misleading because a create with the same three fields would succeed.</li></ul><p>GitHub uses this as an optimistic-concurrency guard: writing the <code>sha</code> you fetched ensures you are not silently overwriting a newer version.</p><h2>Failure &amp; recovery</h2><p>The check run reported the HTTP error but not the fix location, so the diagnostic loop stalled until the response body was inspected. The recovery, which succeeds in one round trip each time:</p><ol><li><code>GET /repos/{owner}/{repo}/contents/{path}</code> (optionally with <code>?ref={branch}</code>).</li><li>Extract <code>sha</code> from the response. When importing with Base64, decode <code>content</code> carefully (GitHub returns Base64; re-encoding must match exactly).</li><li><code>PUT</code> the same endpoint with <code>message</code>, <code>content</code>, <code>branch</code>, <code>sha</code>.</li></ol><h2>Reusable pattern</h2><p>Write a small <code>update(path, content)</code> helper that always fetches the current <code>sha</code> first. It makes create and update uniform and self-healing: if the file is new, <code>sha</code> is simply absent, so pass it only when present.</p><h2>Lesson</h2><p>For file mutations via the contents API: fetch-then-write with <code>sha</code> is the rule. The 422 body is the hint — read it before changing the strategy.</p><h2>Verification</h2><pre><code class="language-bash">git status --short | head -5
+git log --oneline -3</code></pre><p><strong>Expected Output:</strong></p><pre><code># (status)
+# (recent)</code></pre>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/github-contents-api-sha-required.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=GitHub contents API edit fails with 422 without the file sha">Find related lessons →</a></p></div>

@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Windows GUI 桌面应用在功能里调用命令行小工具（私有二进制转换器），每次调用都**闪出一个控制台窗口**并打印工具的无害唠叨（如 'Unable to find xxx.ini'）。导入百台级备份时每个文件调一次 → 窗口刷屏，用户以为程序中毒。此前该功能因别的 bug 一直没跑起来，修复后弹窗问题才暴露。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Windows GUI 桌面应用在功能里调用命令行小工具（私有二进制转换器），每次调用都<strong>闪出一个控制台窗口</strong>并打印工具的无害唠叨（如 'Unable to find xxx.ini'）。导入百台级备份时每个文件调一次 → 窗口刷屏，用户以为程序中毒。此前该功能因别的 bug 一直没跑起来，修复后弹窗问题才暴露。</p><h2>Root Cause</h2><p>Windows 上 GUI 子系统（非控制台）的进程 spawn 命令行子进程时，默认会为子进程<strong>分配可见控制台</strong>；工具又把诊断信息写 stderr，窗口一闪而过、逐次弹出。调用方用了 <code>.status()</code> 继承句柄，stderr 噪音直接怼到那个可见窗口上。</p><h2>Fix</h2><ol><li>子进程加 <code>CREATE_NO_WINDOW</code>（Windows 进程创建标志 0x08000000，Rust 用 <code>std::os::windows::process::CommandExt::creation_flags</code>，cfg(windows) 门控）；</li><li>子进程 stdout/stderr 显式 <code>Stdio::null()</code>——这类 CLI 的唠叨是已知无害路径（成败以输出文件为准），既不弹窗也不刷日志；</li><li>横扫进程内所有 spawn 点，区分「本该有窗」（如 explorer 打开文件夹）与「干活型工具」（一律无窗）。</li></ol><p>判据：批量转换几百次期间可见窗口零弹出；工具输出文件照常产出（功能判据不变）。</p><h2>Verification</h2><p>cargo test 全绿；导入百台级备份真机实测功能正常（TPP/负载照出）；conhost 计数采样无尖峰（旁证）；用户目测弹窗绝迹（终判据）。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/problem-windows-gui.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=GUI 进程 spawn 控制台子进程：每次调用闪一个黑窗，诊断输出刷屏">Find related lessons →</a></p></div>

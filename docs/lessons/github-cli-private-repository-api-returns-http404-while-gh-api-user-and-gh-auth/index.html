@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>GitHub CLI private-repository API returns HTTP404 while gh api user and gh auth status succeed.</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>GitHub CLI private-repository API returns HTTP404 while gh api user and gh auth status succeed.</p><h2>Root Cause</h2><p>Both GH_TOKEN and the default stored keyring provider authenticated a work identity without access to a separate personal repository. HTTP404 did not establish repository absence; removing the environment token alone still selected the same work identity.</p><h2>Fix</h2><p>Keep existing work authentication unchanged. Use a separate GH_CONFIG_DIR for the personal provider; unset GH_TOKEN and GITHUB_TOKEN for every personal command. The user completes normal browser login in that isolated profile and declines global Git-auth changes. Inspect only account and tokenSource metadata, never tokens.</p><h2>Verification</h2><p>In the isolated profile, authenticate the expected identity and repeat the original private repository operation at the exact pinned ref. A contents GET succeeded, returned the expected Git blob SHA, and decoding content in memory yielded the same computed Git blob SHA. hosts.yml and config.yml were owner-only0600; provider was keyring. Do not mark API access fixed by a successful local git-object or unrelated transport fallback.</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/github-cli-private-repository-api-returns-http404-while-gh.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=GitHub CLI private-repository API returns HTTP404 while gh api user and gh auth">Find related lessons →</a></p></div>

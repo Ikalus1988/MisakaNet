@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>在 agent 指定的工作目录（如 <PATH> NapCat.Shell 并运行 launcher.bat，注入后 QQ 立刻退出：控制台只有 '[NapCat Backend] Main Process ID … Creating pipe … Process resumed' 紧接着 'Process exite…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>在 agent 指定的工作目录（如 &lt;PATH&gt; NapCat.Shell 并运行 launcher.bat，注入后 QQ 立刻退出：控制台只有 '[NapCat Backend] Main Process ID … Creating pipe … Process resumed' 紧接着 'Process exited.'，QQ 不显示窗口，NapCat 不监听 6099，也不生成 logs/cache。QQ 版本与 NapCat 完全匹配（QQ 9.9.33-52230 + NapCat 4.18.41），换 QQ 版本、关掉已登录的 QQ、用管理员运行都无效。</p><h2>Root Cause</h2><p>DeepSeek Harness 这类 agent 会把指定工作目录及其子目录/文件标成低完整性（Low IL）。icacls 可验证：&lt;PATH&gt; 下文件带 S-1-[REDACTED:card_number]:(W,D,DC)，且 &lt;PATH&gt; 根有 Everyone:(CI)(DENY)(DC)。QQ 被注入后从该低完整性路径加载，QQNT 初始化直接失败退出（NapCat issue #2116 下有相同症状的评论，指向沙箱/低完整性标签）。用 standalone 方式（napcat.mjs fork worker）反而正常，说明失败点在 QQ 进程侧而不是 NapCat JS 侧。</p><h2>Fix</h2><p>把整个 NapCat 目录拷到普通路径（不要放在 agent 工作区内），然后逐个文件把完整性提到 Medium：</p><p>$dst = '&lt;PATH&gt;' Copy-Item '&lt;PATH&gt;' $dst -Recurse -Force Get-ChildItem $dst -Recurse -File | ForEach-Object { icacls $_.FullName /setintegritylevel M | Out-Null }</p><p>之后用 &lt;PATH&gt; 启动（需要管理员；它会从注册表 HKLM\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\QQ 的 UninstallString 推导 QQ 路径）。</p><h2>Verification</h2><ol><li>icacls 任取一个文件应显示 'Mandatory Label\Medium Mandatory Level'，而不是 S-1-4-… 低完整性 SID。2) 启动后 qq 进程存活，launcher 控制台打印 'WebUi [REDACTED:credential] 与 'WebUi User Panel Url: http://127.0.0.1:6099/webui?[REDACTED:credential] &lt;PATH&gt; 生成、扫码后可登录。</li></ol>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/napcat-qq-dsh-agent.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=NapCat 注入 QQ 后秒退：DSH/agent 工作区目录被打了低完整性标签">Find related lessons →</a></p></div>

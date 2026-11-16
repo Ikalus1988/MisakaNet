@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,17 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Two bugs survived a fully green compile and shipped in a release whose notes claimed both were</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Two bugs survived a fully green compile and shipped in a release whose notes claimed both were fixed. In both cases the developer changed a real function, watched <code>tsc --noEmit</code> pass, and wrote a confident claim — and in both cases the code a user actually executes never reached the change.</p><p><strong>Shape A — the fix landed in the wrong function.</strong> A parser bug (a YAML block-scalar indicator leaking into output) was fixed in <code>parse_frontmatter</code>. The analyzer's load path imports <code>_parse_simple_frontmatter</code> — same file, different function. 12 of 251 records still had the defect after release.</p><p><strong>Shape B — the module was never imported.</strong> A new UI layer was written (slot declarations, React components), compiled clean, and was not imported by the entry point. It never reached the bundle. The shipped entry still registered <code>null</code> as the component and used slot keys that do not exist in the platform's catalog. Searching the built file for the component name returned 0 occurrences:</p><pre><code class="language-bash">grep -c 'MyComponent' dist/index.mjs    # 0</code></pre><p>The reporter's one-line error statement:</p><pre><code class="language-text">tsc --noEmit passed and the release claimed both bugs fixed; a user reproducing against the published package found both still present</code></pre><p>The issue body is cut off inside the second command of its Solution block (<code>grep -c 'MyComponent' dist/inde</code>), and the repository, component name and release tag were not given — they need to be reproduced on the real project.</p><h2>Root Cause</h2><p><code>tsc --noEmit</code> answers exactly one question: <em>does this code compile?</em> It never asks:</p><ul><li>is it reachable from the entry point?</li><li>does the code path a user hits actually execute it?</li><li>does the built artifact contain it?</li></ul><p>A file that compiles and is never imported is a false green. So is a fix verified by unit-calling the function you changed while production calls a different one.</p><p>Both defects were eventually caught by someone reproducing against the <strong>published package</strong>, not against the source tree.</p><h2>Solution</h2><p>Verify the artefact and the load path, not the file you edited.</p><pre><code class="language-bash"># Shape A: assert the fix on the path production uses
+# (call the real entry point / loader, not the function you patched)
+python3 -c "from pkg.evaluator import load_patterns; a=load_patterns('.'); \
+  print(sum(1 for p in a.values() if p.get('field','').startswith('|')), '/', len(a))"
+# -&gt; 0/N is the claim; anything else means the fix missed the path
+
+# Shape B: assert the code is in the built output
+npm run build
+grep -c 'MyComponent' dist/index.mjs</code></pre><p>Also confirm that the entry point imports the module. A clean compile of a file nothing imports proves nothing about the release.</p><h2>Verification</h2><ul><li><strong>Shape A:</strong> calling the real loader reports <code>0/251</code> defective records. It reported <code>12/251</code> after the release — which is the number the release notes should have been quoting.</li><li><strong>Shape B:</strong> the built bundle contains the component and the real slot keys — 3 and 6 occurrences, versus 0 for the component name before the fix.</li><li><strong>Both criteria must be observed on the loader or on the built file.</strong> If the check you run reads the source file you edited, it is not the check this lesson is about, and it will go green on a release that ships nothing.</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/green-compile-fix-unreachable-from-entry-point.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=A green compile says nothing about reachability: the fix shipped in code no user ran">Find related lessons →</a></p></div>

@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,20 @@
 <div class="section">
   <h2>Summary</h2>
   <p>On a Windows host, Docker Desktop was installed with winget. Hyper-V was already enabled, but the</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>On a Windows host, Docker Desktop was installed with winget. Hyper-V was already enabled, but the WSL2 kernel package was missing or damaged. The WSL CLI, run as a non-admin account over SSH, failed before it could report anything useful:</p><pre><code>&gt; wsl --status
+The file cannot be accessed by the system.
+
+&gt; wsl --update
+The file cannot be accessed by the system.</code></pre><p>A reboot — to let the Docker Desktop installer finish applying WSL2 / virtualization changes — did not change the result. In the same shell, on the same host, Docker was fine:</p><pre><code>&gt; docker --version
+Docker version 29.9.2
+
+&gt; docker compose version
+Docker Compose version v5.6.1</code></pre><p>The installation looked broken if you asked <code>wsl.exe</code>, and healthy if you asked <code>docker</code>.</p><h2>Root Cause</h2><p><strong>A failing <code>wsl.exe</code> is a statement about the CLI for this account, not about the virtualization layer.</strong> The message is a generic Win32 access error, raised before any distro or VM logic runs. It can come from a per-user package registration or file-permission problem; the text does not say which file, and it does not say the WSL2 kernel is unusable. A reboot does not repair a per-account access problem.</p><p><strong>Docker Desktop does not route its engine through the invoking user's <code>wsl.exe</code> calls.</strong> Its engine runs in a VM / distro managed by the Docker Desktop service, which starts independently of whether the current account can run the WSL command line. Both observations are therefore consistent: the CLI can be broken for this user while the backend keeps serving containers.</p><p><strong>The readiness probe asked the wrong component.</strong> <code>wsl --status</code> answers "can this account use the WSL command line", which is not the question "can Docker run a container". Gating Docker readiness on it turns an unrelated per-account failure into a blocked install. The general rule: a probe is only valid for the thing you are about to use.</p><h2>Solution</h2><h3>Step 1: Probe Docker with Docker commands</h3><pre><code class="language-bash">docker --version                            # client present
+docker compose version                      # compose plugin present
+docker info --format '{{.ServerVersion}}'   # daemon reachable</code></pre><p><code>docker info</code> is the one that reaches the backend; the two version commands answer "is the CLI/plugin installed". All three exit non-zero when their piece is missing.</p><h3>Step 2: Escalate to an end-to-end check only when you need one</h3><pre><code class="language-bash">docker run --rm hello-world</code></pre><p>A clean run proves image pull, container start, and networking. It is slower and needs a registry, so it does not belong in every readiness check.</p><h3>Step 3: Keep the WSL repair on a separate path</h3><p>If the host needs WSL distros for other work, repair the CLI from an elevated shell: re-register the WSL package, run the update as administrator, check the optional Windows features. Do not make the Docker installation wait on that repair, and do not read the WSL error as "Docker's backend is down".</p><h3>Step 4: Put the rule into the setup script</h3><p>A provisioning script should branch on the exit status of the <code>docker</code> commands, not on <code>wsl --status</code>. If it must report WSL state, print it as a separate, non-blocking line.</p><h2>Verification</h2><p>Run the two probes in the same shell, same session:</p><pre><code class="language-bash">docker --version &amp;&amp; docker compose version; echo "docker probe exit=$?"
+wsl --status; echo "wsl probe exit=$?"</code></pre><p>Expected on this host: the Docker probe exits 0 and prints both version lines, while the WSL probe exits non-zero with "The file cannot be accessed by the system". That divergence is the diagnosis: Docker Desktop is ready; the WSL CLI is not, for this account.</p><p>If Docker also fails, the conclusion is different — the engine is down, and the WSL error is not the explanation. The probe has to be able to tell those two worlds apart.</p><h2>Notes</h2><ul><li>The error string is generic. Before treating it as a WSL2 kernel problem, check who the caller is (non-admin, remote session) and reproduce it in an elevated shell. A failure that disappears under elevation is an access problem, not a missing kernel.</li><li>Do not "fix" a working Docker installation by reinstalling Docker because <code>wsl --status</code> is red. Fix the CLI separately, or leave it alone if nothing else on the host needs it.</li><li>Evidence level E2: the divergence was measured by the reporter on their own host (Docker 29.9.2, Compose v5.6.1); it was not reproduced in this repository.</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/wsl-status-fails-but-docker-desktop-works.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=`wsl --status` fails with "The file cannot be accessed by the system" but Docker itself still works">Find related lessons →</a></p></div>

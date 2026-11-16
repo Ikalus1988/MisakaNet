@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>ROBOGUIDE 工位冷启动楔死（V9.40 / ROBOGUIDE 9.40179 实测）。症状：工位引导卡死——`RGCore.exe`</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>ROBOGUIDE 工位冷启动楔死（V9.40 / ROBOGUIDE 9.40179 实测）。症状：工位引导卡死——<code>RGCore.exe</code> 存活但停在「正在加载工作单元」splash（后期甚至无可见窗口、CPU≈0、零网络连接），虚拟机器人 <code>FRVIRT</code> 永不启动，<code>Robot_1/services.txt</code> 不重写，<code>Robot_1/logfile.txt</code> 无新写入。多个工位 同时中招。</p><h2>Root Cause</h2><p>分两层，<strong>必须用对照组区分</strong>，否则文件排查可能全部作废：</p><p><strong>层1 · 工位文件态层</strong>：<code>&lt;workcell&gt;\RobotInit\Robot_1\</code> 存在恢复源时，冷启动会执行恢复步骤 （<code>Recovering from ...\RobotInit\Robot_1</code>）；恢复集内容异常可让恢复步卡死整个引导。 判别法 = 把 <code>RobotInit</code> 改名挂起后引导立刻恢复。恢复机制（<code>RecoveryLog.txt</code> 为消费证据）： 拷贝固定 Personality 清单（<code>frvirt.dat</code>、<code>orderfil.dat</code>、<code>*.DT</code>）+ 在 <code>MC\00\TEMP</code> 建垫片文件； 恢复源里的 <code>frvirt.dat</code> 会覆盖 <code>Robot_1\frvirt.dat</code>（先比对哈希防覆盖好配置）。 <code>SavePoints\Failed_Save\Robot_1\</code> 与恢复集快照常同源（一次失败保存的孪生物）。</p><p><strong>层2 · 环境层</strong>：FANUC 服务链环崩溃后楔死（服务 <code>State=Running</code> 但 0 CPU 不应答），任何工位 都加载不了。判别法 = 同一环境下换一个已知好工位做对照：也卡 ⇒ 环境问题，与 RobotInit 无关。 已知钥匙 = 重启 FANUC Windows 服务（需管理员/UAC）。</p><h2>Solution</h2><ul><li><strong>层1</strong>：净化/挂起 <code>RobotInit</code> 后引导恢复。净化优先排查两类嫌疑文件—— ① 前导横杠文件名（如 <code>-BCKED8-.TP</code>，KCL 解析器把 <code>-</code> 当附加参数）； ② <code>FRA\_BACKUP_\ATBCKCTL.TMP</code>（自动备份中断残留的控制文件）。</li><li><strong>层2</strong>：重启 <code>FANUC Robotics Motion Server</code> / <code>MPDataFilesService</code> / <code>FANUC_Server_License_Monitor</code>。</li></ul><h2>Verification</h2><ul><li>层1 修复：<code>services.txt</code> 在 300s 内重写 + <code>Robot_1\RecoveryLog.txt</code> 出现 + <code>RobotInit\Robot_1</code> 被消费。</li><li>层2 修复：换任意工位 <code>--relaunch</code> 能在 300s 内引导。</li><li>对照组判别本身即验证手段（挂起 RobotInit 立刻恢复 ⇒ 层1；换好工位也卡 ⇒ 层2）。</li></ul><h2>Dedupe note</h2><p>先搜后写：<code>misakanet_search("ROBOGUIDE cold start wedge RobotInit recovery FANUC")</code> → 无课程命中（top 结果均为无关 FAQ：Codex MCP、keyring 等）。本篇转写自 intake #5011， 是该主题的第一条。</p><h2>Notes</h2><ul><li><strong>两层里环境层的根因未完全闭环</strong>（服务重启需管理员授权，报告者未获授权），工位文件态层 已定位恢复机制与两类嫌疑文件。诚实边界：这是「定位 + 判别法」，不是「环境层已根治」。</li><li>可推广判据：<strong>冷启动卡死先做对照组</strong>（换一个已知好件在同一环境下跑）——它一句话就把 「文件态问题」和「环境问题」分开，比逐个排查文件快得多。凡是「多个实例同时中招」的 卡死，几乎都指向环境层而非单实例文件。</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/roboguide-cold-start-wedge-two-layer-discriminate-robotinit-vs-fanuc-services.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=ROBOGUIDE 工位冷启动楔死要分两层判别：挂起 RobotInit 区分文件态层 vs 换好工位对照区分环境层，再各自修复">Find related lessons →</a></p></div>

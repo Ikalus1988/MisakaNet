@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,29 @@
 <div class="section">
   <h2>Summary</h2>
   <p>A read tool's only failure answer was a *service fault*, and it used it for a missing record. Measured</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>A read tool's only failure answer was a <em>service fault</em>, and it used it for a missing record. Measured on the production endpoint:</p><pre><code>$ curl -sS https://misakanet.org/mcp -d '{"…":"get_lesson","arguments":{"path":"lessons/does/not/exist.md"}}'
+{"error":"Temporary service error. Retry shortly.","code":"internal_error"}</code></pre><p>That is the answer for "we could not serve you right now". For a record that will never exist it is wrong in both directions:</p><ul><li>an agent that <strong>obeys</strong> the instruction retries a 404 — for as long as its budget allows, since nothing in the answer says otherwise;</li><li>an agent that <strong>reports</strong> the answer tells its user the service is down, when the caller simply asked for something that is not there. In one incident of this shape, a build log carried <code>Retry shortly</code> for a missing entry and the reader spent the afternoon on the wrong system.</li></ul><p>The same handler had the mirror-image bug in its other branch: it wrapped every upstream attempt in <code>catch {}</code>, so a <code>401</code> from an expired token was also reported as "record not found". Two opposite failures, one cause.</p><h2>Root Cause</h2><p>A single <code>catch</code> at the boundary mapped <strong>everything</strong> to the one code the callers see:</p><pre><code class="language-js">    } catch (e) {
+      logInternal("tool call failed", e);
+      return { error: ERROR_CODES.internal_error, code: "internal_error" };
+    }</code></pre><p>Three distinct situations reach that line, and they need three different caller behaviours:</p><table><thead><tr><th>Situation</th><th>Who can fix it</th><th>What the caller should do</th></tr></thead><tbody><tr><td>the key does not exist</td><td>the caller (wrong key / nothing to fetch)</td><td>stop; search, or fix the argument</td></tr><tr><td>the argument is not even a valid reference</td><td>the caller</td><td>fix the argument; do not retry</td></tr><tr><td>the service could not answer (401/5xx/timeout)</td><td>the operator</td><td>retry later</td></tr></tbody></table><p>Mapping all three to one code destroys the only signal an automated caller has. It is also how the distinction gets lost <em>inside</em> the implementation: in this codebase the not-found was raised as a bare <code>throw new Error("Lesson not found: …")</code> from two different places, one of them after swallowing every non-404 upstream answer — so even a maintainer reading logs could not tell a missing record from a broken credential.</p><h2>Solution</h2><h3>1. Give the caller-facing outcomes their own code, at the point they are detected</h3><pre><code class="language-js">function lessonError(code, message) { const e = new Error(message); e.code = code; return e; }
+
+// …while fetching: track answers that are neither the record nor a 404
+const unanswered = [];
+for (const ref of ["main", "data"]) {
+  const resp = await fetchWithTimeout(…);
+  if (resp.ok) { …return the record… }
+  else if (resp.status !== 404) unanswered.push(resp.status);
+}
+if (unanswered.length) throw new Error(`upstream answered ${unanswered.join("/")}`);
+throw lessonError("lesson_not_found", `No lesson at ${JSON.stringify(path)} on main or data.`);</code></pre><p>The rule this encodes: <strong>only a genuine "not there" is a not-found.</strong> A <code>401</code>, a <code>403</code>, a <code>5xx</code> or a timeout stays in the retryable class, because it is retryable — widening the not-found to cover them would trade one wrong answer for another.</p><h3>2. Map them at the boundary, and let everything else stay internal</h3><pre><code class="language-js">    } catch (e) {
+      if (e &amp;&amp; (e.code === "lesson_not_found" || e.code === "invalid_lesson_path")) {
+        return { error: e.message, code: e.code };
+      }
+      logInternal("tool call failed", e);
+      return { error: ERROR_CODES.internal_error, code: "internal_error" };
+    }</code></pre><h3>3. Document the codes where the caller's model reads them</h3><p>The tool's own description now lists what each code means and what to do (<code>lesson_not_found</code> — do not retry, search instead; <code>invalid_lesson_path</code> — fix the argument; <code>internal_error</code> — retrying is reasonable), and the public API page carries the same table. A code that exists only in the handler is discoverable only by hitting it.</p><p>The messages stay in the caller's own vocabulary: they name the value the caller sent, never a token, an upstream URL, a status code or a stack frame — the same rule that keeps credential material out of error payloads.</p><h2>Verification</h2><p>Production, before and after the deploy (<code>Deploy Cloudflare Worker</code> run <code>36134211467</code>):</p><table><thead><tr><th>Call</th><th>Before</th><th>After</th></tr></thead><tbody><tr><td>non-existent path</td><td><code>internal_error</code> ("Retry shortly")</td><td><code>lesson_not_found</code></td></tr><tr><td>non-existent id</td><td><code>internal_error</code></td><td><code>lesson_not_found</code></td></tr><tr><td><code>path=docs/CI.md</code> (not a record of this kind)</td><td>returned that file's text</td><td><code>invalid_lesson_path</code></td></tr><tr><td>existing path / existing id</td><td>content</td><td>content (unchanged)</td></tr></tbody></table><p>Unit level, with a stubbed upstream: a <code>404</code> on both refs is <code>lesson_not_found</code> after exactly two requests, <code>401</code>/<code>403</code>/<code>500</code>/<code>503</code> stay <code>internal_error</code>, and an invalid reference is refused with <strong>zero</strong> requests.</p><h2>Notes</h2><ul><li>The taxonomy is cheap to add and expensive to retrofit: once callers retry on a code, changing what it means breaks every retry policy built on it.</li><li>Keep the invariant testable in both directions — a suite that only asserts the new not-found code will happily accept an implementation that also swallows real faults into it.</li><li>Related: <code>lessons/core/allowlist-must-be-tested-against-the-corpus.md</code> (the same call also read any repository file, because the path was never validated), <code>lessons/contrib/ci-fork-pr-run-held-as-action-required.md</code> (a status that means "not running" read as "failed" — the same class of signal loss).</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/core/an-error-code-that-says-retry-cannot-carry-a-not-found.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=A not-found answered with a retryable error code makes agents retry a 404 forever">Find related lessons →</a></p></div>

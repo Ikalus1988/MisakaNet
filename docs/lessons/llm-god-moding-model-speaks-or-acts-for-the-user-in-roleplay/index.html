@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,48 @@
 <div class="section">
   <h2>Summary</h2>
   <p>In roleplay conversations, the LLM generates dialogue blocks attributed to the user's character or narrates actions in second person ("you walk to the door"), e…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>In roleplay conversations, the LLM generates dialogue blocks attributed to the user's character or narrates actions in second person ("you walk to the door"), effectively controlling the user's character. This is known as <strong>god-moding</strong> — the model takes agency away from the user.</p><p>Example of god-moded output:</p><pre><code>Assistant: "I think we should check the basement," Maria says.
+You nod and walk toward the basement door, feeling a chill run down your spine.
+You open the door slowly.  ← model narrating user's actions</code></pre><p>The user never chose these actions. The model assumed control of the user's character.</p><h2>Root Cause</h2><p>Two factors combine:</p><h3>1. Training data contains "assistant completes both sides"</h3><p>Many roleplay training examples show the assistant generating dialogue for all characters, including the user's. The model learns to "keep the story moving" by filling in the user's part when the user pauses or gives a short prompt.</p><p>This is especially prevalent in:</p><ul><li>Collaborative fiction datasets</li><li>Chat logs where the human was a passive reader</li><li>Automated roleplay evaluation datasets</li></ul><h3>2. No explicit turn boundary in roleplay prompts</h3><p>Standard chat formatting treats each message as one speaker's turn. In roleplay, the model doesn't know where the user's agency boundary is unless explicitly told. Without a clear rule like "only output your own character's actions," the model treats the entire scene as its canvas.</p><h2>Solution</h2><p>Three-layer defense, each catching what the previous layer misses:</p><h3>Layer 1: System prompt anti-godmoding instructions</h3><p>Explicit instructions in the system prompt that define the boundary:</p><pre><code class="language-markdown">## Turn rules
+- Only narrate actions and dialogue for YOUR character(s).
+- Never write dialogue, actions, or internal thoughts for the user's character.
+- If the user's character needs to respond, WAIT for the user to write it.
+- Acceptable: "Maria looks at you expectantly." (describes NPC, implies user should respond)
+- Forbidden: "You nod and follow her." (user action)</code></pre><h3>Layer 2: Output parser filter</h3><p>A post-generation filter that detects and strips god-moded content:</p><pre><code class="language-python">def strip_godmoding(text: str, user_name: str) -&gt; tuple[str, bool]:
+    """Strip blocks attributed to user or containing 2nd-person actions."""
+    patterns = [
+        rf'^{re.escape(user_name)}:.*$',  # "You: ..." dialogue
+        r'^(You|Você)\s+(walk|open|nod|say|think|feel|look|turn|grab|run)\b',  # 2nd-person actions
+        r'^(Você)\s+(caminha|abre|acena|diz|pensa|sente|olha|vira|pega|corre)\b',  # Portuguese
+    ]
+    lines = text.split('\n')
+    filtered = []
+    stripped = False
+    for line in lines:
+        if any(re.match(p, line, re.IGNORECASE) for p in patterns):
+            stripped = True
+            continue
+        filtered.append(line)
+    return '\n'.join(filtered), stripped</code></pre><h3>Layer 3: Guardrail with targeted retry</h3><p>When the parser strips content, retry with a reinforced instruction:</p><pre><code>Your previous response contained actions for the user's character.
+Regenerate, narrating ONLY your character(s). End with a prompt for the user.</code></pre><p>This catches cases where the system prompt alone isn't strong enough (e.g., long roleplay context dilutes the instruction).</p><h2>Verification</h2><h3>Quantitative: god-moding turn count</h3><p>Before fix: Run 50 roleplay turns → count turns containing user-attributed dialogue or 2nd-person actions.</p><p>After fix: Same 50 turns → expect 0 god-moded turns.</p><h3>Unit tests</h3><pre><code class="language-python">def test_strip_user_dialogue():
+    text = 'Maria smiles.\nYou: "I agree."\nMaria nods.'
+    result, stripped = strip_godmoding(text, "You")
+    assert stripped is True
+    assert "I agree" not in result
+
+def test_strip_second_person_action():
+    text = 'Maria waits.\nYou walk to the door.'
+    result, stripped = strip_godmoding(text, "You")
+    assert stripped is True
+    assert "walk to the door" not in result
+
+def test_preserve_npc_dialogue():
+    text = 'Maria: "Let\'s go."\nShe leads the way.'
+    result, stripped = strip_godmoding(text, "You")
+    assert stripped is False
+    assert "Let's go" in result</code></pre><h3>Integration test</h3><p>Run a full roleplay session with the3-layer defense active. Verify:</p><ul><li>No user-attributed dialogue in any output</li><li>No 2nd-person action narration</li><li>Conversation still flows naturally (NPC describes scene, asks questions, waits)</li></ul><h2>See also</h2><ul><li>[Roleplay vocative entity disambiguation](roleplay-vocative-entity-disambiguation-portuguese.md) — speaker attribution in roleplay</li><li>[NPC dispatch speaker dislocation](npc-dispatch-speaker-dislocation.md) — related speaker/attribution failure</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/godmoding-model-acts-for-user.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=LLM god-moding: model speaks or acts for the user in roleplay">Find related lessons →</a></p></div>

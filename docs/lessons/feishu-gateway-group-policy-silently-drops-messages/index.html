@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,23 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Hermes Gateway 接入飞书 bot 后,bot 正常连接 (`gateway_state.json` 报 `connected`,WebSocket ESTAB,`Sent home-channel startup notification` 也成功),但群里所有 @bot 消息都没有任何回复,**互动卡片…</p>
+</div>
+<div class="lesson-body">
+<h2>背景</h2><p>Hermes Gateway 接入飞书 bot 后,bot 正常连接 (<code>gateway_state.json</code> 报 <code>connected</code>,WebSocket ESTAB,<code>Sent home-channel startup notification</code> 也成功),但群里所有 @bot 消息都没有任何回复,<strong>互动卡片的按钮 (<code>Allow Once</code> / <code>Session</code> / <code>Always</code>) 点击也完全无响应</strong>。日志 <code>~/.hermes/logs/gateway.log</code> 完全没有 <code>Inbound ... message received</code> 行,<code>feishu_seen_message_ids.json</code> 倒是有新条目 — 让人误以为消息没传过来,实际是 adapter 在 <code>_admit()</code> 里静默 reject。<strong>群消息失声和卡片按钮失灵是同一个根因,同一段修复代码解决</strong> — 见下方"根因"段第二段。</p><blockquote><p><strong>本 lesson 描述的环境</strong>:Hermes Agent(基于 <code>hermes_cli</code> 框架,Feishu 插件路径 <code>plugins/platforms/feishu/adapter.py</code>)。不同框架的 adapter 字段名可能不同,但<strong>双层 allowlist 模式</strong>(框架入口 vs 平台插件)是普适陷阱。</p></blockquote><h2>根因</h2><p>Hermes Gateway 对飞书群消息的访问控制分<strong>两层</strong>,必须两层都打通:</p><table><thead><tr><th>层</th><th>配置文件</th><th>默认行为</th><th>涉及的 env 变量</th></tr></thead><tbody><tr><td>gateway-run 层</td><td><code>config.yaml</code></td><td>白名单 <code>FEISHU_GROUP_ALLOWED_CHATS</code></td><td><code>GATEWAY_ALLOW_ALL_USERS=true</code> 是这一层的 kill switch</td></tr><tr><td>adapter 层 (飞书插件)</td><td><code>config.yaml</code> + <code>.env</code></td><td><code>FEISHU_GROUP_POLICY=allowlist</code> + 空 <code>FEISHU_ALLOWED_USERS</code></td><td><strong>不会被 <code>GATEWAY_ALLOW_ALL_USERS</code> 覆盖</strong></td></tr></tbody></table><p><code>GATEWAY_ALLOW_ALL_USERS=true</code> <strong>只覆盖 gateway-run 层</strong>。adapter 层在 <code>plugins/platforms/feishu/adapter.py:4199</code> 的 <code>_allow_group_message()</code> 直接读 <code>self._allowed_group_users</code> (来源 <code>FEISHU_ALLOWED_USERS</code> env),allowlist 是空 frozenset → <code>policy == "allowlist"</code> 分支 <code>return False</code> → 消息被 <code>group_policy_rejected</code> 静默丢弃。同一段代码也决定 <code>_handle_approval_card_action()</code> 里卡片按钮 operator 的授权,所以<strong>群消息和卡片授权是同一个根因</strong>。</p><p>加上 <code>FEISHU_BOT_OPEN_ID</code> 未设时,即使消息过了 allowlist,<code>_mentions_self()</code> 也会走 name fallback;飞书 <code>bot_name</code> 经常是 <code>None</code>,只有 <code>app_name</code> — 导致真正的 @ 消息被 <code>bot_not_mentioned</code> reject。两个 env 缺失叠加,症状更怪(连接 OK / startup 通知 OK / 群消息全失)。</p><h2>修复</h2><p>在 <code>~/.hermes/.env</code> 追加(terminal sed/python,<code>hermes config set</code> 只写 <code>config.yaml</code> 不写 <code>.env</code>):</p><pre><code>FEISHU_ALLOWED_USERS=&lt;user_open_id&gt;
+FEISHU_BOT_OPEN_ID=&lt;bot_open_id&gt;</code></pre><p><code>user_open_id</code> 怎么拿:从 <code>mcp_feishu_get_feishu_chats(page_size=100)</code> 返回的 home channel <code>owner_id.open_id</code> 字段,或 <code>errors.log</code> 里出现过的 click 事件的 open_id(典型的 user 是 owner)。</p><p><code>bot_open_id</code> 怎么拿(不能从 <code>.env</code> 静态读,要从飞书 API 拉):</p><pre><code class="language-python">import json, urllib.request
+app_id, app_secret = "&lt;FEISHU_APP_ID&gt;", "&lt;FEISHU_APP_SECRET&gt;"
+# 1) 拿 tenant_access_token
+tok = json.loads(urllib.request.urlopen(
+    urllib.request.Request("https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal",
+        data=json.dumps({"app_id": app_id, "app_secret": app_secret}).encode(),
+        headers={"Content-Type": "application/json"}, method="POST"),
+    timeout=8).read())["tenant_access_token"]
+# 2) 拿 bot info
+bot = json.loads(urllib.request.urlopen(
+    urllib.request.Request("https://open.feishu.cn/open-apis/bot/v3/info",
+        headers={"Authorization": f"Bearer {tok}"}),
+    timeout=8).read())["bot"]
+print(bot["open_id"], bot.get("app_name"))  # ou_xxx  &lt;app_name&gt;</code></pre><p>改完后让用户手动跑 <code>hermes gateway restart</code>(agent 跑会被框架拦截),<strong>耐心等 90s</strong> — 中途别再 restart(见下方"hermes gateway restart 90s 链式"附注)。</p><h2>验证</h2><ol><li><code>tail -F ~/.hermes/logs/gateway.log</code>,在群里发一条 @bot 测试消息。</li><li>5s 内应出现 <code>[Feishu] Inbound ... message received: id=om_...</code> 行 — 看到就是 allowlist + mention-gating 都过了。</li><li><code>feishu_seen_message_ids.json</code> 有新条目 <strong>不能</strong> 作为验证依据 — 它只记 WS frame,不反映 dispatch 结果。</li><li>卡片 <code>Allow Once</code> 点击后 <code>errors.log</code> 不再出现 <code>[Feishu] Unauthorized approval click by &lt;open_id&gt;</code> — 这是授权通过的唯一信号。</li><li><code>gateway_state.json</code> 的 <code>feishu.state</code> 仍为 <code>connected</code>,<code>error_code=null</code> — 别被这两个看似正常的字段骗了。</li></ol><h2>限制</h2><ul><li><code>FEISHU_ALLOWED_USERS</code> 是单 bot 单域级别,不是按 chat_id 粒度;要为不同群开不同 allowlist 需要 <code>config.yaml</code> 的 <code>feishu.group_rules.&lt;chat_id&gt;.allowlist</code>。</li><li><code>FEISHU_BOT_OPEN_ID</code> 是 bot 实体的 app-scoped open_id,App 改版(换 App ID)需要重新拉。</li><li>此次修复是<strong>群消息</strong>路径,P2P 单聊走 <code>_admit</code> 不同的分支 (DM 默认不需要 <code>require_mention</code>);DM 报 <code>230013 Bot has NO availability to this user</code> 是另一个根因 (飞书开放平台 Bot 应用范围配置),与本 lesson 无关。</li><li>若仍不响应,下一步看 <code>~/.hermes/logs/errors.log</code> 的 <code>group_policy_rejected</code> / <code>bot_not_mentioned</code> 行确认到底是哪层 reject。</li><li><code>hermes gateway restart</code> 本身有 90s 链式 SIGTERM 坑:wrapper <code>start_gateway(replace=True)</code>让旧 PID 干净退 (systemd <code>Restart=</code> 不触发),wrapper 已 fork 的孤儿进程不在 service 下 → systemd 60s 后给孤儿发 SIGTERM → exit 1 → <code>Restart=on-failure</code> 才拉第三个 PID,这次活。期间每次 startup 都会发通知到 home channel (2-3 条重复卡片)。耐心等满 90s 别中途再 restart。</li></ul><h2>附:诊断日志优先级</h2><table><thead><tr><th>现象</th><th>看的文件</th><th>关键行</th></tr></thead><tbody><tr><td>bot 看起来活着但群消息全无</td><td><code>~/.hermes/logs/gateway.log</code></td><td><code>Inbound ... message received</code> 有没有</td></tr><tr><td>群消息拒了但不知道为啥</td><td><code>~/.hermes/logs/errors.log</code></td><td><code>Unauthorized approval click</code> / <code>group_policy_rejected</code> / <code>bot_not_mentioned</code></td></tr><tr><td>restart 链式 90s 卡顿</td><td><code>~/.hermes/logs/gateway-exit-diag.log</code></td><td>3 个 PID 串联,<code>Exiting with code 1 (signal-initiated shutdown without restart request)</code></td></tr><tr><td><code>journalctl --user -u hermes-gateway</code> 一直空</td><td>—</td><td>Hermes 部署的常见现象,主源以 <code>~/.hermes/logs/*.log</code> 文件为准</td></tr></tbody></table>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/feishu-gateway-group-policy-silently-drops-messages.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=飞书 bot 在群聊里静默吞消息 — gateway 与 adapter 双层 allowlist 陷阱">Find related lessons →</a></p></div>

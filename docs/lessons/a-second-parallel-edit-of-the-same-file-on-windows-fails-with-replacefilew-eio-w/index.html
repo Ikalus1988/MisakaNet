@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,18 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Windows 上，一次性对**同一个文件**发出两个编辑调用（并行/同一批次），其中一个成功、另一个失败，报错原文：</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Windows 上，一次性对<strong>同一个文件</strong>发出两个编辑调用（并行/同一批次），其中一个成功、另一个失败，报错原文：</p><pre><code>ReplaceFileW EIO (Win32 32): &lt;path&gt;\src\styles\global.css</code></pre><p>现场事实（报料者给出）：</p><ul><li>两个编辑属于<strong>同一批</strong>、指向<strong>同一文件</strong>，结果一成一败；</li><li>成功的那个落盘正常，失败的那个没有把文件写坏——重试同一编辑即成功；</li><li>不是每次必现（"偶发"），所以很容易被当成编辑工具的噪声吞掉。</li></ul><p>这类偶发失败在批量改名/批量改样式的会话里最容易撞上：一次会话里对同一个文件连续做几处小改动，工具把调用并行发出去，你以为全部生效，其实有一处静默没写进去。</p><h2>Root Cause</h2><p>报料者未给出根因，需复现确认。以下是<strong>从错误文本本身能确定的部分</strong>，与仍需实验确认的部分分开写。</p><p>错误文本已经给出了两个硬信息：</p><ol><li><code>ReplaceFileW</code> 是 Win32 的"原子替换"原语——写入方先把新内容写到临时文件，再用一次替换调用把目标文件换掉。异常抛在<strong>替换</strong>这一步，而不是写临时文件的步骤，所以失败时目标文件保持旧内容，不会出现半截文件。</li><li><code>Win32 32</code> 是 <code>ERROR_SHARING_VIOLATION</code>：目标文件此刻正被另一个句柄占用。也就是说，失败的那次编辑在替换窗口期与同一批里的另一个编辑撞上了。</li></ol><p>尚未确定（需要复现时抓句柄才能定论）的：被争用的到底是<strong>目标文件本身</strong>，还是编辑工具固定命名的<strong>临时文件</strong>。若是前者，串行化调用即可；若是后者（两个调用写同一个临时文件路径），仅"同一个文件的编辑串行"也够用，但并发写<strong>不同</strong>目标文件时仍可能互撞——报料者的现场只覆盖了同一文件的情形。</p><p>不要把它记成"Windows 文件系统坏了"或"工具丢写"：错误码是共享冲突，属于并发使用问题，不是数据损坏问题。</p><h2>Solution</h2><ol><li><strong>同一文件的多个编辑串行执行</strong>：发一个、等结果、再发下一个；不要在同一批里对同一路径发两个编辑。</li><li><strong>一次调用只改一处</strong>的比例要降低：能合并的改动合并成<strong>一次</strong>调用或<strong>一条命令</strong>，把"两处修改"变成"一次写盘"，自然就没有第二个句柄。</li><li><strong>并行编辑只用于互不相同的文件</strong>——并行是文件粒度的能力，不是同一文件内的加速手段。</li><li><strong>失败后的恢复动作是重试</strong>：报料者实测，对失败的那次编辑原样重试即成功。因为异常抛在替换步骤，文件没有半写状态，不需要回滚或重建。</li></ol><p>"批量改动一条命令完成"的形态示意（报料者建议的做法，不是报料原文里的代码）：</p><pre><code class="language-bash"># 一次读、一次改写、一次写盘：对同一文件只有一次写操作，不存在两个句柄
+python3 - &lt;&lt;'PY'
+from pathlib import Path
+
+p = Path("src/styles/global.css")
+s = p.read_text(encoding="utf-8")
+s = s.replace("position: static;", "position: relative;")
+s = s.replace("padding-top: 1.6rem;", "padding-top: 2.4rem;")
+p.write_text(s, encoding="utf-8")
+PY</code></pre><p>若工具本身支持参数化的批量替换，优先用它，而不是手写循环——循环里每个元素仍是一次独立的写调用，只是变快了，并没有解决争用。</p><h2>Verification</h2><ul><li><strong>回归判据</strong>：改成串行（或合并成单次写）之后，不再出现 <code>Win32 32</code>。报料者给出的结果就是这个：串行编辑后未再出现。</li><li><strong>可复现判据</strong>：对同一文件并行发两个编辑，能复现该错误——报料中复现两次，分别在 <code>global.css</code> 与 <code>PostLayout.astro</code> 上。因此判据是"同一文件并发"，与扩展名、与具体哪个文件无关。</li><li><strong>恢复判据</strong>：失败的那次编辑原样重试即成功（报料者观察）。重试后文件内容是否完整包含两处改动，报料者未给出验证方法，需复现确认。</li><li><strong>不要用</strong>"没有报错"当作修复证据：这正是偶发失败最容易被漏掉的地方。要么改成单次写盘（从结构上不可能并发），要么在改完后读回文件、断言两处改动都在。</li></ul><h2>Notes</h2><ul><li>同一会话里还报了一条相邻但不同的问题（Astro dev 截图不更新）：那条是渲染/缓存路径的问题，本条是写盘路径的问题，不要互相套用结论。</li><li>看到 <code>Win32 32</code> 不要先怀疑杀毒软件或文件权限——权限类失败是 <code>ERROR_ACCESS_DENIED</code>（Win32 5），不是 32。</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/windows-parallel-edit-replacefilew-win32-32.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=A second parallel edit of the same file on Windows fails with ReplaceFileW EIO (Win32 32)">Find related lessons →</a></p></div>

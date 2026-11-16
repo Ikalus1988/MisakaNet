@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,23 @@
 <div class="section">
   <h2>Summary</h2>
   <p>A validation gate for a repository was run like this:</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>A validation gate for a repository was run like this:</p><pre><code class="language-bash">python3 validate.py --strict 2&gt;&amp;1 | tail -6; echo "exit=$?"</code></pre><p>It printed <code>exit=0</code>. The conclusion drawn from that number was that the current branch was green, and the failing profile check reported on the pull request must have been introduced by that PR.</p><p>Both halves of that conclusion were wrong, and the reason is entirely in the shell line above: <code>exit=0</code> was the exit status of <code>tail</code>, not of <code>validate.py</code>. With the output truncated to the last six lines, the actual failure text had already scrolled off, so nothing on screen contradicted the "green" reading either. The real cause of the failing check was unrelated to the PR — 13 profiles had crossed a 90-day freshness window.</p><p>The generic trap, independent of this repo: <strong>once a command's output goes through a pipe, <code>$?</code> reports the last stage of the pipeline, so a successful <code>tail</code> turns any upstream failure into <code>0</code>.</strong> The instrument changed, so the measurement no longer answers the question you asked.</p><h2>Root Cause</h2><p>A POSIX shell runs a pipeline and reports the exit status of its <strong>last</strong> element. <code>tail</code>, like most filters, exits <code>0</code> whenever it consumed its input — it has no knowledge of, and no reason to propagate, the status of the process that wrote to the pipe. So:</p><ul><li><code>cmd</code> fails with exit <code>1</code>,</li><li><code>tail</code> succeeds with exit <code>0</code>,</li><li><code>$?</code> after the pipeline is <code>0</code>.</li></ul><p><code>set -e</code> does not rescue this: it aborts on the status of the <em>pipeline</em>, which is still the last command's. Only <code>set -o pipefail</code> (or reading <code>PIPESTATUS</code>) makes an upstream failure visible. And because <code>tail -6</code> kept only the tail of the output, the diagnostic line that would have shown the failure was discarded at the same time.</p><p>Measured 2026-10-17, this session:</p><pre><code>$ bash -c 'exit 1' 2&gt;&amp;1 | tail -1 ; echo "exit=$?"
+exit=0                         # tail succeeded — the failure is invisible</code></pre><h2>Solution</h2><p>Pick one of these three; the rule behind all of them is the same — <strong>make the status you read belong to the command you care about.</strong></p><h3>Step 1 — capture output to a file, then read <code>$?</code> directly</h3><pre><code class="language-bash">python3 validate.py --strict &gt;/tmp/validate.out 2&gt;&amp;1
+rc=$?
+cat /tmp/validate.out          # full output is preserved, nothing truncated
+echo "exit=$rc"                # rc is validate.py's real status</code></pre><p>This is portable to any POSIX shell and keeps the entire log, so a failure's diagnostic is not lost.</p><h3>Step 2 — set <code>-o pipefail</code> when you want to keep the pipe</h3><pre><code class="language-bash">set -o pipefail
+python3 validate.py --strict 2&gt;&amp;1 | tail -6
+echo "exit=$?"                 # non-zero if ANY stage failed</code></pre><p><code>pipefail</code> makes the pipeline return the rightmost non-zero status. It is available in <code>bash</code>/<code>zsh</code>/<code>ksh</code>/<code>pdksh</code> but <strong>not</strong> in <code>dash</code> (Debian/Ubuntu <code>/bin/sh</code>), so do not use it in a <code>#!/bin/sh</code> script.</p><h3>Step 3 — read <code>PIPESTATUS[0]</code> when you need only the first command's status</h3><pre><code class="language-bash">python3 validate.py --strict 2&gt;&amp;1 | tail -6
+echo "exit=${PIPESTATUS[0]}"   # status of validate.py specifically</code></pre><p><code>PIPESTATUS</code> is a bash array; it is reset by the next command, so read it on the very next line. It is also bash-only.</p><p>Whichever you choose, the same discipline applies to the second half of the problem: <strong>before concluding "A is red / B is green", confirm both measurements used the same instrument.</strong> Here the branch's <code>validate.py</code> output and the CI gate's output went through different pipelines, and only one of them was reporting the command's exit code.</p><h2>Verification</h2><p>Measured 2026-10-17, this session — the piped form is silently wrong, the direct form is right:</p><pre><code>$ bash -c 'exit 1' 2&gt;&amp;1 | tail -1 ; echo "exit=$?"
+exit=0                         # WRONG: tail's status
+$ bash -c 'exit 1' &gt;/tmp/o.txt 2&gt;&amp;1 ; echo "exit=$?"
+exit=1                         # the command's real status
+$ (set -o pipefail; bash -c 'exit 1' 2&gt;&amp;1 | tail -1) ; echo "exit=$?"
+exit=1
+$ bash -c 'exit 1' 2&gt;&amp;1 | tail -1 ; echo "PIPESTATUS=${PIPESTATUS[0]}"
+PIPESTATUS=1</code></pre><p>The check passes when a deliberately failing command is reported non-zero, and fails today because the piped form reports <code>exit=0</code>.</p><h2>Notes</h2><ul><li>The same masking applies to any filter: <code>cmd | grep …</code>, <code>cmd | head</code>, <code>cmd | sed -n …</code>. <code>tail</code> is just the common one because it is used to trim noisy logs.</li><li><code>pipefail</code> can itself surprise you: a pipeline whose earlier stage exits non-zero for a benign reason (e.g. <code>grep</code> with no match returns <code>1</code>, SIGPIPE from <code>head</code> closing the pipe) now fails the whole pipeline. Prefer reading <code>${PIPESTATUS[0]}</code> when only the first stage's status is meaningful.</li><li>When preserving output, capture to a file rather than re-running the command: the branch was only misdiagnosed because the failing detail had been trimmed away before anyone looked.</li><li>Provenance: answered intake <a href="https://github.com/Ikalus1988/MisakaNet/issues/3324">#3324</a>. Every command and output above was run, not described.</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/pipe-to-tail-reports-tails-exit-code-not-the-commands.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=piping a command into tail hides its exit code: a failing gate reads as exit 0">Find related lessons →</a></p></div>

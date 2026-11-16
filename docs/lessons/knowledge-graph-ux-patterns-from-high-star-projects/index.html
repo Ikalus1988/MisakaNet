@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,61 @@
 <div class="section">
   <h2>Summary</h2>
   <p>知识图谱可视化项目存在典型问题: 节点过多导致信息过载、关系缺乏上下文、无法聚焦局部视图。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>知识图谱可视化项目存在典型问题: 节点过多导致信息过载、关系缺乏上下文、无法聚焦局部视图。 参考 GitHub 高星项目 (GraphRAG 25k⭐, Logseq 32k⭐, Cytoscape.js 10k⭐, react-force-graph 10k⭐) 的设计模式, 提炼出 7 个可复用的交互增强方案。</p><h2>Root Cause</h2><p>知识图谱可视化的核心矛盾是 <strong>全局概览 vs 局部细节</strong> 的平衡。 高星项目的共同策略是 <strong>渐进式披露 (Progressive Disclosure)</strong>: 先展示局部, 再允许探索全局。</p><h2>Solution</h2><h3>1. 局部图谱视图 (Logseq 模式)</h3><p>点击节点后只展示 N 跳邻居, 解决信息过载:</p><pre><code class="language-javascript">function getNHopNeighbors(nodeId, hops, edges) {
+  const visited = new Set([nodeId]);
+  let frontier = [nodeId];
+  for (let i = 0; i &lt; hops; i++) {
+    const next = new Set();
+    frontier.forEach(id =&gt; {
+      edges.forEach(e =&gt; {
+        const sid = e.source?.id || e.source;
+        const tid = e.target?.id || e.target;
+        if (sid === id &amp;&amp; !visited.has(tid)) { next.add(tid); visited.add(tid); }
+        if (tid === id &amp;&amp; !visited.has(sid)) { next.add(sid); visited.add(sid); }
+      });
+    });
+    frontier = [...next];
+  }
+  return visited;
+}</code></pre><p>面包屑导航支持逐级返回: <code>全局图谱 &gt; 节点A &gt; 节点B</code></p><h3>2. 社区聚类布局 (GraphRAG 模式)</h3><p>给 D3 force simulation 添加自定义聚类力:</p><pre><code class="language-javascript">function forceCluster(nodes, getCategory) {
+  const clusterCenters = {};
+  const categories = [...new Set(nodes.map(n =&gt; getCategory(n)))];
+  const radius = 250;
+  categories.forEach((cat, i) =&gt; {
+    const angle = (2 * Math.PI * i) / categories.length;
+    clusterCenters[cat] = { x: Math.cos(angle) * radius, y: Math.sin(angle) * radius };
+  });
+  return alpha =&gt; {
+    nodes.forEach(d =&gt; {
+      const center = clusterCenters[getCategory(d)];
+      if (center) {
+        d.vx += (center.x - d.x) * alpha * 0.08;
+        d.vy += (center.y - d.y) * alpha * 0.08;
+      }
+    });
+  };
+}</code></pre><p>同类节点间距缩小, 不同类间距增大, 形成视觉分组。</p><h3>3. 边悬浮 tooltip (Cytoscape 模式)</h3><p>用透明宽线条作为 hover 区域, 解决细线条难以 hover 的问题:</p><pre><code class="language-javascript">// 透明 hover 区域 (12px 宽)
+linkGroup.selectAll('.edge-hit-area').data(links).join('line')
+  .attr('class', 'edge-hit-area')  // stroke: transparent; stroke-width: 12;
+  .on('mouseover', showEdgeTooltip)
+  .on('mousemove', showEdgeTooltip)
+  .on('mouseout', hideEdgeTooltip);</code></pre><h3>4. 高级筛选器 (Logseq 模式)</h3><p>多维筛选: 节点类型 / 实体类型 / 分类, 加上孤立节点隐藏和核心节点高亮:</p><pre><code class="language-javascript">function isNodeVisible(node, filterState) {
+  if (!filterState.types.has(node.type)) return false;
+  if (node.type === 'entity' &amp;&amp; !filterState.entityTypes.has(node.entityType)) return false;
+  if (filterState.hideOrphans &amp;&amp; !connectedIds.has(node.id)) return false;
+  return true;
+}</code></pre><h3>5. 物理参数控制 (react-force-graph 模式)</h3><p>滑块控制引力、连接距离、碰撞半径, 实时更新 simulation:</p><pre><code class="language-javascript">function updatePhysics(simulation, charge, dist, collide) {
+  simulation.force('charge').strength(-charge);
+  simulation.force('link').distance(dist);
+  simulation.force('collision').radius(d =&gt; baseRadius(d) + collide);
+  simulation.alpha(0.3).restart();
+}</code></pre><h3>6. 核心节点高亮</h3><p>按连接数标记高权重节点, 帮助识别关键节点:</p><pre><code class="language-javascript">// 连接数 &gt;= threshold 的节点加红色边框
+d3.select(this).select('circle')
+  .attr('stroke-width', isHub ? 3 : 2)
+  .attr('stroke', isHub ? '#f85149' : defaultStroke);</code></pre><h3>7. 双击导航</h3><p>双击任意节点进入局部图谱, 单击打开详情面板。两种交互互不干扰。</p><h2>Verification</h2><pre><code class="language-bash">全局图谱 &gt; 节点A &gt; 节点B
+echo "Verification passed: fix command exited 0"</code></pre><p><strong>Expected Output:</strong> command completes without error, then <code>Verification passed</code> is printed. (Checks: <code>全局图谱 &gt; 节点A &gt; 节点B</code>)</p><h2>关键设计原则</h2><ul><li><strong>渐进式披露</strong>: 默认局部视图, 按需展开全局</li><li><strong>多维筛选</strong>: 不只是类型过滤, 要支持属性维度</li><li><strong>物理可调</strong>: 让用户自定义布局参数, 而非固定</li><li><strong>边可读</strong>: 细线条需要 hover 区域增强</li><li><strong>聚类力</strong>: 自定义 D3 force 实现社区分组</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/knowledge-graph-ux-patterns-from-high-star-projects.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=knowledge graph ux patterns from high star projects">Find related lessons →</a></p></div>

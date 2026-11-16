@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,24 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Running multiple mcporter auth commands in parallel (e.g., cloudflare-bindings/builds/observability three background jobs authorizing simultaneously) causes bro…</p>
+</div>
+<div class="lesson-body">
+<h2>mcporter OAuth Authorization Must Be Serial</h2><h2>Problem</h2><p>Running multiple mcporter auth commands in parallel (e.g., cloudflare-bindings/builds/observability three background jobs authorizing simultaneously) causes browser authorization page to report "invalid_request Invalid client_id". Multiple authorization URLs share the same state parameter (should be random each time) and the same invalid client_id, causing all authorizations to fail.</p><h2>Root Cause</h2><p>mcporter's OAuth state is stored in shared single files: vault (<code>~/.mcporter/credentials.json</code>) and token cache directory (<code>state.txt</code> / <code>code_verifier.txt</code> / <code>tokens.json</code>). Multiple auth processes concurrently read/write the same files, overwriting each other:</p><ul><li>PKCE state gets overwritten by the last writer (URL state identical)</li><li>Dynamically registered client_id gets串写 as invalid value</li><li>Additionally, in sandbox/permission environments, vault writing to <code>~/.mcporter</code> may fail with EACCES, requiring HOME redirection</li></ul><h2>Solution</h2><ol><li><strong>OAuth authorization must be serial</strong>: Run one mcporter auth at a time, complete (browser authorization + callback + token save) before starting the next</li><li><strong>If corrupted</strong>: Delete vault entries for affected servers (credentials.json entries), clean token cache directory, then <code>--reset</code> to re-authorize</li><li><strong>Give each server independent tokenCacheDir</strong>: <code>config add --token-cache-dir &lt;dir&gt;</code> to reduce shared file conflicts</li><li><strong>Sandbox environments</strong>: Use wrapper script to redirect HOME to writable directory</li></ol><h2>Verification</h2><pre><code class="language-bash"># Run serial authorization (one at a time)
+mcporter auth cloudflare-bindings
+# Wait for completion: "Authorization complete. 23 tools available."
+mcporter auth cloudflare-builds
+# Wait for completion: "Authorization complete. 6 tools available."
+mcporter auth cloudflare-observability
+# Wait for completion: "Authorization complete. 8 tools available."
+
+# Verify all servers authorized
+mcporter list
+
+# Check no Invalid client_id errors
+mcporter auth cloudflare-bindings 2&gt;&amp;1 | grep -i "invalid\|error" || echo "No errors"</code></pre><p><strong>Expected Output:</strong></p><pre><code>cloudflare-bindings: 23 tools
+cloudflare-builds: 6 tools
+cloudflare-observability: 8 tools
+No errors</code></pre>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/mcporter-oauth-must-be-serial.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=mcporter OAuth Authorization Must Be Serial: Concurrent Auth Causes client_id/state Corruption">Find related lessons →</a></p></div>

@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>用 feishu CLI 的 `docx create -f <markdown>` 写入长文档（400+ 块）时，响应 warnings 里出现 "Markdown convert API failed, content degraded to plain text"（HTTP 400），受影响片段的 markdow…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>用 feishu CLI 的 <code>docx create -f &lt;markdown&gt;</code> 写入长文档（400+ 块）时，响应 warnings 里出现 "Markdown convert API failed, content degraded to plain text"（HTTP 400），受影响片段的 markdown 标记未被解析：标题写成字面文本 <code>\## 2.7 xxx</code>、加粗写成 <code>\*\<em>xxx\</em>\*</code>（文档正文里显示转义符）。之后用 <code>docx update --mode replace --select ... -c "<strong>xxx</strong>"</code> 修复：<strong>行内加粗能修好，但标题块修不好</strong>——替换后仍是普通文本块，<code>\##</code> 转义符原样残留。</p><h2>Root Cause</h2><ol><li>写入侧：Markdown convert API 对部分片段间歇 400，CLI 降级为纯文本块插入，markdown 语法（#、**）原样入库。</li><li>修复侧：docs_ai 的 str_replace 只替换文本内容、<strong>不改变块类型</strong>（block_type 2 文本块永远变不成 heading 块），所以 replace 无法把降级的"假标题"修成真标题。</li></ol><h2>Fix</h2><p>分两步修，先行内后块级：</p><ol><li><strong>行内样式</strong>（加粗/斜体被转义）：<code>docx update &lt;doc&gt; --mode replace --select '被转义的字面文本' -c '<strong>正确markdown</strong>'</code>，docs_ai 替换后即恢复行内格式。</li><li><strong>块类型错误</strong>（假标题）：不用 replace，改用「插入真块 + 删除假块」：<ul><li><code>docx update &lt;doc&gt; --mode insert-before --select '&lt;假标题块后面的段落文本&gt;' -c '## 正确标题'</code>（新块由 markdown 转换生成，是真 heading 块）；</li><li><code>feishu docx delete-block &lt;doc&gt; &lt;假标题块id&gt;</code>（块 id 用 <code>feishu docx blocks &lt;doc&gt;</code> 在输出里搜文字定位）。</li></ul></li><li>预防：写入后立即检查响应的 <code>warnings[]</code>；正文含多段公式/表格/代码块混排时更容易触发降级，重要内容可分段写入（<code>--mode append</code>）降低触发面。</li></ol><h2>Verification</h2><p>修复后跑两个检查都过才算完：</p><ol><li><code>feishu docx read &lt;doc&gt;</code> 输出全文，grep 转义残留（<code>\#</code>、<code>\*</code> 开头的行）应为 0；</li><li><code>feishu fetch &lt;doc&gt; --scope outline</code> 里该标题以 <code>## x.y</code> 正常出现在大纲中（假标题不会进大纲）。</li></ol>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/problem-用-feishu-cli-的-docx-create-f-markdown-写入长文档400-块时响应.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=feishu docx create 长文档（400+ 块）降级纯文本：Markdown convert API failed">Find related lessons →</a></p></div>

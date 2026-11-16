@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,44 @@
 <div class="section">
   <h2>Summary</h2>
   <p>典型 Web 应用同时用 PostgreSQL（持久化）+ Redis（缓存/PubSub/队列），两个数据库 = 两个备份点、两个监控、两个故障点。Redis 用 RAM（贵），持久化复杂。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>典型 Web 应用同时用 PostgreSQL（持久化）+ Redis（缓存/PubSub/队列），两个数据库 = 两个备份点、两个监控、两个故障点。Redis 用 RAM（贵），持久化复杂。</p><h2>Root Cause</h2><p>PostgreSQL 可以做 Redis 的所有事情，但很多人不知道或不信任。</p><h2>Solution</h2><h3>替换方案</h3><table><thead><tr><th>Redis 功能</th><th>PostgreSQL 替代</th><th>性能</th></tr></thead><tbody><tr><td>缓存 (70%)</td><td><code>UNLOGGED TABLE</code> + <code>pg_cron</code> 过期</td><td>更快（无 WAL 开销）</td></tr><tr><td>PubSub (20%)</td><td><code>LISTEN/NOTIFY</code></td><td>相当</td></tr><tr><td>队列 (10%)</td><td><code>SKIP LOCKED</code> + 行级锁</td><td>更可靠</td></tr></tbody></table><h3>缓存实现</h3><pre><code class="language-sql">-- 创建非日志表（无 WAL，更快）
+CREATE UNLOGGED TABLE cache (
+    key TEXT PRIMARY KEY,
+    value JSONB,
+    expires_at TIMESTAMPTZ
+);
+
+-- 写入缓存
+INSERT INTO cache (key, value, expires_at)
+VALUES ('user:123', '{"name":"Alice"}', NOW() + INTERVAL '1 hour')
+ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, expires_at = EXCLUDED.expires_at;
+
+-- 读取缓存
+SELECT value FROM cache WHERE key = 'user:123' AND expires_at &gt; NOW();
+
+-- 清理过期（pg_cron 定时执行）
+DELETE FROM cache WHERE expires_at &lt; NOW();</code></pre><h3>PubSub 实现</h3><pre><code class="language-sql">-- 发布
+NOTIFY notifications, '{"userId":123,"message":"hello"}';
+
+-- 订阅（应用层）
+LISTEN notifications;</code></pre><h3>队列实现</h3><pre><code class="language-sql">-- 创建任务表
+CREATE TABLE jobs (
+    id SERIAL PRIMARY KEY,
+    payload JSONB,
+    status TEXT DEFAULT 'pending',
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 消费任务（SKIP LOCKED 避免竞争）
+BEGIN;
+SELECT * FROM jobs WHERE status = 'pending'
+ORDER BY created_at LIMIT 1 FOR UPDATE SKIP LOCKED;
+-- 处理任务...
+UPDATE jobs SET status = 'done' WHERE id = :id;
+COMMIT;</code></pre><h3>成本对比</h3><table><thead><tr><th>项目</th><th>Redis (ElastiCache)</th><th>PostgreSQL (RDS)</th></tr></thead><tbody><tr><td>2GB</td><td>$45/月</td><td>已含</td></tr><tr><td>5GB</td><td>$110/月</td><td>$0.50/月</td></tr><tr><td>备份</td><td>需单独配置</td><td>已含</td></tr><tr><td>监控</td><td>需单独配置</td><td>已含</td></tr></tbody></table><h2>Verification</h2><pre><code class="language-bash">UNLOGGED TABLE
+echo "Verification passed: fix command exited 0"</code></pre><p><strong>Expected Output:</strong> command completes without error, then <code>Verification passed</code> is printed. (Checks: <code>UNLOGGED TABLE</code>)</p><h2>Notes</h2><ul><li>UNLOGGED TABLE 不写 WAL，崩溃后数据丢失（适合缓存场景）</li><li>LISTEN/NOTIFY 不持久化消息（与 Redis PubSub 行为一致）</li><li>SKIP LOCKED 是 PostgreSQL 9.5+ 特性</li><li>Source: dev.to (2026-01-09, 335↑)</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/lesson-9-redis-postgresql-replacement.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Redis → PostgreSQL 替换 — 缓存/PubSub/队列统一">Find related lessons →</a></p></div>

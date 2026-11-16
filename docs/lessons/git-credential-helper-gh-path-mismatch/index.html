@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,21 @@
 <div class="section">
   <h2>Summary</h2>
   <p>执行 `git push` 时卡住或报错：</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>执行 <code>git push</code> 时卡住或报错：</p><pre><code>/home/&lt;user&gt;/.local/bin/gh auth git-credential get: 1: /home/&lt;user&gt;/.local/bin/gh: not found</code></pre><p>或：</p><pre><code>remote: Repository not found.
+fatal: repository 'https://github.com/...' not found</code></pre><p>但其实仓库存在，token 也有效。</p><h2>Root Cause</h2><p><code>gh</code> 安装在 <code>/usr/bin/gh</code>，但 git 全局配置中的 credential helper 指向了一个不存在的路径：</p><pre><code>credential.https://github.com.helper=
+credential.https://github.com.helper=!/home/&lt;user&gt;/.local/bin/gh auth git-credential
+                                                   ^^^^^^^^^^^^^^^^^^
+                                                   这个路径没有 gh 二进制</code></pre><p>这通常是安装 <code>gh</code> 后又通过 <code>git config --global credential.helper</code> 自动配置的遗留项。当 WSL Ubuntu 通过 <code>apt install gh</code> 安装时，gh 在 <code>/usr/bin/gh</code>，但 credential helper 可能指向其他位置。</p><h2>Solution</h2><h3>1. 查看当前 credential helper 配置</h3><pre><code class="language-bash">git config --global --list | grep credential</code></pre><h3>2. 移除路径错误的 gh credential helper</h3><pre><code class="language-bash">git config --global --unset-all credential.https://github.com.helper
+git config --global --unset-all credential.https://gist.github.com.helper</code></pre><h3>3. 确保保留正确的 credential store</h3><pre><code class="language-bash"># gh credential helper 路径Error导致 git push 静默失败
+git config --global credential.helper store
+# 确认 .git-credentials 里有有效 token
+cat ~/.git-credentials
+# 格式: https://&lt;username&gt;:&lt;token&gt;@github.com（占位符示例，非真实凭证）</code></pre><h3>4. 验证</h3><pre><code class="language-bash">git ls-remote origin HEAD
+# 应正常返回 commit hash，不再报错</code></pre><h2>Verification</h2><pre><code class="language-bash">git status --short | head -5
+git log --oneline -3</code></pre><p><strong>Expected Output:</strong></p><pre><code># (status)
+# (recent)</code></pre><h2>预防</h2><ul><li>新装 <code>gh</code> 后用 <code>gh auth login</code> 登录后，检查 credential helper 是否引入了错误路径</li><li>如果同时使用 <code>credential.helper store</code> 和 <code>gh auth git-credential</code>，确保 <code>gh auth git-credential</code> 的路径与二进制位置一致</li><li>用 <code>which gh</code> 确认真实路径，与 git config 中的 credential helper 路径对比</li></ul><blockquote><p>English: <a href="/lessons/git-credential-helper-gh-path-mismatch/"><code>lessons/en/git-credential-helper-gh-path-mismatch.md</code></a></p></blockquote>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/git-credential-helper-gh-path-mismatch.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=gh credential helper 路径Error导致 git push 静默失败">Find related lessons →</a></p></div>

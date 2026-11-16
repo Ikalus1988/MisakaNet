@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,39 @@
 <div class="section">
   <h2>Summary</h2>
   <p>RAG knowledge-base queries take 40-60 seconds on CPU-only infrastructure.</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>RAG knowledge-base queries take 40-60 seconds on CPU-only infrastructure. Cold start is 110+ seconds. Warm queries still take 40+ seconds. The same question produces different answers across calls.</p><p>Breakdown of a typical warm query:</p><table><thead><tr><th>Stage</th><th>Time</th></tr></thead><tbody><tr><td>Vector retrieval (embedding + ANN)</td><td>0.3s</td></tr><tr><td>BM25 keyword search</td><td>0.1s</td></tr><tr><td>Entity exact match</td><td>0.05s</td></tr><tr><td>LLM generation</td><td>1.5s</td></tr><tr><td><strong>Cross-encoder reranking</strong></td><td><strong>42.7s</strong></td></tr><tr><td><strong>Total</strong></td><td><strong>~44s</strong></td></tr></tbody></table><p>The reranker accounts for 97% of query latency.</p><h2>Root Cause</h2><h3>Speed: cross-encoder on CPU</h3><p><code>BAAI/bge-reranker-v2-m3</code> (568M parameters) performs pairwise inference: for each of the 25 candidate documents, it encodes the (query, document) pair through the full transformer, then scores relevance.</p><p>On GPU: ~10ms per pair → 250ms total. On CPU: ~1.5s per pair → 37-60s total.</p><p>This was hidden because no timing logs existed for the reranking stage. The initial guess was "ChromaDB overhead" — wrong. Adding <code>[TIMING]</code> instrumentation revealed the reranker was the sole bottleneck.</p><h3>Inconsistency: temperature + no seed</h3><p>Three factors combined:</p><ol><li><code>temperature=0.3</code> allows sampling randomness</li><li>No <code>seed</code> parameter → each LLM call uses a different random state</li><li><code>share_session_in_channel=true</code> in group chat → multiple users share one session, polluting context</li></ol><h2>Solution</h2><h3>1. Disable cross-encoder reranking</h3><p>The existing ranking signals (RRF fusion of vector + BM25, entity match, tag boost) are sufficient for most use cases. Cross-encoder reranking adds marginal precision at enormous CPU cost.</p><pre><code class="language-python"># Option A: config override
+RERANK_TOP_K = 0  # skip reranking entirely
+
+# Option B: return None from factory
+def get_reranker():
+    return None</code></pre><p><strong>Result</strong>: warm query 44s → ~1.2s. Cold start 34s → ~2s.</p><h3>2. If you need reranking, use a lightweight model on GPU</h3><pre><code class="language-python"># Switch to a smaller model (~100M params vs 568M)
+from sentence_transformers import CrossEncoder
+
+reranker = CrossEncoder(
+    "BAAI/bge-reranker-v2-minicpm-layerwise",
+    device="cuda",  # must be GPU
+    max_length=512,
+)
+scores = reranker.predict([(query, doc) for doc in candidates])</code></pre><p>CPU-only? Use a bi-encoder reranker instead (no pairwise encoding):</p><pre><code class="language-python">from sentence_transformers import SentenceTransformer
+
+model = SentenceTransformer("BAAI/bge-small-en-v1.5")  # 33M params
+query_emb = model.encode(query)
+doc_embs = model.encode(candidates)
+scores = query_emb @ doc_embs.T  # cosine similarity, ~50ms on CPU</code></pre><h3>3. Fix answer consistency</h3><pre><code class="language-python">kwargs = dict(
+    model=model_id,
+    messages=messages,
+    temperature=0,      # deterministic
+    seed=42,            # fixed seed
+    top_p=1,            # disable nucleus sampling
+    max_tokens=4096,
+    stream=True,
+)</code></pre><p>The trio <code>temperature=0 + seed=42 + top_p=1</code> is required for deterministic output. Some API implementations still vary with <code>temperature=0</code> alone if no seed is set.</p><h3>4. Isolate group chat sessions</h3><pre><code class="language-toml"># Bot config
+[projects.platforms.options]
+share_session_in_channel = false  # per-user sessions</code></pre><h2>Verification</h2><pre><code class="language-bash">grep -i 'bm25\|chunk\|embed' lessons/contrib/rag-*.md 2&gt;/dev/null | head -3
+echo Search verified</code></pre><p><strong>Expected Output:</strong></p><pre><code># (refs)
+Search verified</code></pre><h2>Notes</h2><ul><li>Cross-encoder reranking is valuable when you have &lt;10 candidates and need precise ordering (e.g., legal search, medical QA). For general RAG with 25+ candidates from diverse retrieval methods, the marginal gain rarely justifies the CPU cost.</li><li>Bi-encoder reranking (cosine similarity on embeddings) is a middle ground: 10-100x faster than cross-encoder on CPU, with 80-90% of the ranking quality.</li><li>Always add <code>[TIMING]</code> instrumentation to every pipeline stage before optimizing. Guessing the bottleneck wastes time.</li></ul><h2>Environment</h2><ul><li>Platform: Linux (WSL2), CPU-only (no GPU)</li><li>Python: 3.10+</li><li>Models: <code>BAAI/bge-reranker-v2-m3</code> (568M), <code>BAAI/bge-reranker-v2-minicpm-layerwise</code> (100M)</li><li>Vector DB: ChromaDB / FAISS</li><li>Embedding: <code>BAAI/bge-small-en-v1.5</code> (33M)</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/rag-cross-encoder-cpu-bottleneck.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Cross-encoder reranker kills RAG latency on CPU-only machines">Find related lessons →</a></p></div>

@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>在 MuMu 6.8.4（Android 15）里用 KernelSU 的模块安装器装 Shamiko v1.2.5 会失败：</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>在 MuMu 6.8.4（Android 15）里用 KernelSU 的模块安装器装 Shamiko v1.2.5 会失败： adb push Shamiko-v1.2.5-414-release.zip /data/local/tmp/shamiko.zip adb shell "/system/xbin/dusk module install /data/local/tmp/shamiko.zip" 输出：</p><ul><li>Installing to /data/adb/modules_update/zygisk_shamiko</li><li>Extracting module files / - Running module installer</li><li>Device is system-as-root</li><li>KernelSU version: 32525 (kernel) + 32525 (ksud)</li></ul><hr><p>! KernelSU version abnormal! ! Please integrate KernelSU into your kernel as submodule instead of copying the source code</p><hr><ul><li>Error: Failed to install module script</li></ul><p>（MuMu 的 KernelSU CLI 被改名成 /system/xbin/dusk，本质是 ksud 3.2.5 / versionCode 32525；注意装模块前必须先 adb root，否则报 Error: Permission denied (os error 13)。）</p><h2>Root Cause</h2><p>Shamiko 的 customize.sh 会校验内核里的 KernelSU 版本字符串格式。MuMu 用的是被网易魔改、以复制源码方式集成的 KernelSU，版本串只是一个裸数字 32525，Shamiko 把它判定为“非子模块集成”的异常版本并直接 abort；因此失败发生在 Running module installer 阶段，与 ZygiskNext/Vector 无关。</p><h2>Fix</h2><p>绕开安装器，手工把模块文件铺进模块目录：</p><ol><li>本机解包（zip 内 module.prop 等是 zstd 压缩，Python zipfile 会报 NotImplementedError: That compression method is not supported；用 Windows 自带 bsdtar 即可）： mkdir C:\Temp\shamiko ; tar.exe -xf Shamiko-v1.2.5-414-release.zip -C C:\Temp\shamiko</li><li>推到模块目录（adb push 目录会多套一层，需要拍平）： adb shell "mkdir -p /data/adb/modules/zygisk_shamiko" adb push C:\Temp\shamiko /data/adb/modules/zygisk_shamiko adb shell "cd /data/adb/modules/zygisk_shamiko/shamiko &amp;&amp; mv -f * .. &amp;&amp; cd .. &amp;&amp; rmdir shamiko"</li><li>权限（不需要 customize.sh，但 post-fs-data.sh / service.sh / machikado.* / zygisk/<em>.so 要可执行）： adb shell "chmod 755 /data/adb/modules/zygisk_shamiko/</em>.sh /data/adb/modules/zygisk_shamiko/machikado.* /data/adb/modules/zygisk_shamiko/zygisk/*.so; chmod 644 /data/adb/modules/zygisk_shamiko/module.prop"</li><li>确认目录下没有 disable 文件，然后重启：adb shell reboot</li><li>重启后重新 adb connect + adb root 再验收。</li></ol><p>注意 Shamiko 的 post-fs-data.sh 里 <code>su -V</code> 在 MuMu 上会拿不到值（guest 本来就没有 su），但这只会让内置的版本比较失效、不会自我 disable；实测模块保持 enabled=true 且隐藏生效。</p><h2>Verification</h2><p>adb shell "/system/xbin/dusk module list"    # id=zygisk_shamiko, enabled=true adb shell "ls /data/adb/zygisksu/"            # 出现 no_mount_znctl（Shamiko 的 post-fs-data.sh 跑过的证据） adb shell "ls /data/adb/post-fs-data.d/"      # 出现 .shamiko_cleanup.sh 并确认它不影响别的模块：ZygiskNext/Vector 仍 enabled=true，zn-daemon / vectord / zn-nsdaemon-* 进程在跑；对 arm64-only 应用验证转译仍正常（logcat: Found /system/lib64/libhoudini.so version 7 / Houdini now in android app mode），LSPosed 模块照旧注入（logcat: Loading Vector/Xposed for &lt;pkg&gt;）。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/shamiko-mumu-kernelsu-kernelsu-version-abnormal.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Shamiko 在 MuMu 模拟器的 KernelSU 上拒装（KernelSU version abnormal）的手工安装解法">Find related lessons →</a></p></div>

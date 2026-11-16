@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,18 @@
 <div class="section">
   <h2>Summary</h2>
   <p>cc-connect 默认会在飞书聊天中显示工具调用信息（如 "🔧 工具 #5: Bash"）和上下文占用提示（如 "[ctx: ~0%]"），影响用户体验。</p>
+</div>
+<div class="lesson-body">
+<h2>cc-connect 飞书显示优化：禁用工具调用和上下文提示</h2><h3>Problem描述</h3><p>cc-connect 默认会在飞书聊天中显示工具调用信息（如 "🔧 工具 #5: Bash"）和上下文占用提示（如 "[ctx: ~0%]"），影响用户体验。</p><h3>Root Cause</h3><p>cc-connect 的显示设置默认启用了工具消息和上下文指示器。</p><h3>Solution方法</h3><p>修改 <code>~/.cc-connect/config.toml</code> 配置文件，添加显示设置：</p><pre><code class="language-toml">[display]
+mode = "quiet"             # 隐藏思考和工具消息
+thinking_messages = false  # 不显示思考消息
+thinking_max_len = 0       # 思考消息最大字符数（0 = 不限制）
+tool_max_len = 0           # 工具调用消息最大字符数（0 = 不限制）
+tool_messages = false      # 不显示工具进度消息
+show_context_indicator = false  # 不显示上下文占用提示
+reply_footer = false            # 不显示回复底部状态行</code></pre><h3>Verification方式</h3><ol><li>重启 cc-connect：<code>cc-connect stop --force &amp;&amp; cc-connect</code></li><li>在飞书中发送消息测试</li><li>确认不显示工具调用和上下文提示</li></ol><h3>注意事项</h3><ul><li>配置文件中的引号必须是标准 ASCII 引号（<code>"</code>），不能是 Unicode 引号（<code>"</code> <code>"</code>）</li><li>修改配置后需要重启 cc-connect 才能生效</li><li>使用 <code>cc-connect stop --force</code> 停止正在运行的实例</li></ul><h3>相关文件</h3><ul><li>配置文件：<code>~/.cc-connect/config.toml</code></li><li>日志查看：<code>cc-connect logs --force</code></li><li>状态查看：<code>cc-connect status --force</code></li></ul><h2>Verification</h2><pre><code class="language-bash">grep -i feishu lessons/contrib/feishu-*.md 2&gt;/dev/null | wc -l
+echo Feishu verified</code></pre><p><strong>Expected Output:</strong></p><pre><code># (count)
+Feishu verified</code></pre>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/feishu-display-optimization-cc-connect.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=cc connect feishu display optimization">Find related lessons →</a></p></div>

@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>In DeepSeek Harness (DSH) desktop and web environments, registering a companion plugin into the application shell requires adhering to strict extension point co…</p>
+</div>
+<div class="lesson-body">
+<p>In DeepSeek Harness (DSH) desktop and web environments, registering a companion plugin into the application shell requires adhering to strict extension point contracts across seven UI injection seats.</p><h2>Problem</h2><p>When installing client-side plugins into DSH profiles (<code>~/.dsh/profiles/web</code>), developers report missing panel tabs, unrendered icon glyphs, or boot graph errors:</p><pre><code>Failed to mount sidebar extension: seat 'sidebar.panellist' unmapped in client bundle.</code></pre><p>While static contract tests may report green, UI components fail to appear in the left rail or right drawer if registration order is inverted.</p><h2>Root Cause</h2><p>DSH defines seven adjacent extension points for plugin integration:</p><ol><li><code>conversation.view</code></li><li><code>sidebar.panellist</code></li><li><code>main</code></li><li><code>shell.overlay</code></li><li><code>sidebar.footer.action</code></li><li><code>sidebar.right.pane.tab</code></li><li><code>sidebar.right.pane.tab.title</code></li></ol><p>If a plugin loads before its host bundle (<code>@deepseek-ai/dsh-web-app</code>) in the boot graph, or fails to provide an explicit icon registration on <code>sidebar.panellist</code> (lines 1839–1847 in client bundles), the web shell ignores the plugin registration and mounts an empty placeholder.</p><h2>Fix</h2><ol><li>Share the primary panel component (<code>MisakanetPanel</code>) across <code>conversation.view</code>, <code>main</code>, and <code>sidebar.right.pane.tab</code>.</li><li>Register an explicit 9-line icon component (<code>MisakanetPanelIcon</code>) on <code>sidebar.panellist</code> to ensure left-rail badge rendering.</li><li>Verify that host shell dependencies load at lower indices in the profile boot graph prior to mounting downstream plugins.</li></ol><h2>Verification</h2><p>Run the DSH plugin surface contract suite to verify all seven injection points are correctly satisfied:</p><pre><code class="language-bash">pytest tests/test_dsh_plugin_surface.py</code></pre><p>Expected output:</p><pre><code>tests/test_dsh_plugin_surface.py::test_extension_seats PASSED (42/42 green)</code></pre>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/core/dsh-plugin-sidebar-and-panel-registration-contracts.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=DSH Plugin Sidebar and Panel View Registration Contracts">Find related lessons →</a></p></div>

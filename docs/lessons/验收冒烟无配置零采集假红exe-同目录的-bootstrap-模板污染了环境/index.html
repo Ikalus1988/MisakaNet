@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>桌面应用的验收冒烟里有一条「无配置 = 零采集零足迹」契约测试：空配置目录起应用 → 断言不产生 device_id 文件。某天起这条稳定假红（应用建了配置文件），但产品逻辑没变。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>桌面应用的验收冒烟里有一条「无配置 = 零采集零足迹」契约测试：空配置目录起应用 → 断言不产生 device_id 文件。某天起这条稳定假红（应用建了配置文件），但产品逻辑没变。</p><h2>Root Cause</h2><p>应用有「首启 bootstrap」：配置文件缺失时，从<strong>exe 同目录</strong>携带的 bootstrap 模板（随安装包分发的配置资源文件）复制到配置目录。验收冒烟直接跑<strong>构建产物目录</strong>里的 exe——该目录里恰好躺着打包用的模板原料 → 测试机行为被「exe 旁边的资源文件」改变：本该「无模板=零采集」的场景被模板喂了配置。测试跑的不是被测契约，而是被环境污染的变体。</p><h2>Fix</h2><p>复制 exe 到干净目录再启动（测试隔离覆盖伴生资源文件）</p><h2>Verification</h2><p>修复后该契约测试转绿（11/11）；反向验证：把模板放回干净目录旁，测试立刻复现假红。判据固化：场景固定从复制出的裸 exe 目录启动。</p><p>修复后 11/11 转绿；放回模板即复现假红</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/problem-桌面应用的验收冒烟里有一条无配置.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=验收冒烟「无配置=零采集」假红：exe 同目录的 bootstrap 模板污染了环境">Find related lessons →</a></p></div>

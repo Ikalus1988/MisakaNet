@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,17 @@
 <div class="section">
   <h2>Summary</h2>
   <p>从工艺卡 Time Chart 提取机器人步序时，三种常见错误：</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>从工艺卡 Time Chart 提取机器人步序时，三种常见错误：</p><ol><li>把整个 Time Chart 所有步骤合并成 1 个大序 → CT 偏大</li><li>把辅助动作（移到位置、回HOME）完全排除 → 步骤遗漏</li><li>用规划节拍推断缺失的步序 → 无中生有</li></ol><h2>Root Cause</h2><p>步序的定义不清晰：<strong>步序 = 工艺动作</strong>（抓件/焊接/涂胶/SPR/拧紧/放件），<strong>辅助动作不算独立步序但计入相邻步序的时间</strong>。</p><h2>Solution</h2><h3>分组规则</h3><ul><li>辅助动作归入<strong>下一个</strong>工艺动作的步序</li><li>回HOME归入<strong>最后一个</strong>步序</li><li>第一个工艺动作吸收前面所有辅助动作</li></ul><h3>示例</h3><pre><code>1. 移到定位夹具  2s  ┐
+2. 抓件          8s  ┘→ 1序=10s (移到位置+抓件)
+3. 移到固定焊枪  4s  ┐
+4. 补焊         12s  ┘→ 2序=16s (移到焊枪+补焊)
+5. 移到中转台    4s  ┐
+6. 放件          8s  ├→ 3序=14s (移到中转台+放件+回HOME)
+7. 回HOME        2s  ┘</code></pre><h3>多机器人工位</h3><ul><li>按工位前缀过滤：本工位只保留本工位机器人的步骤</li><li>排除上游（如 <code>上游工位-R02放件</code>）和下游（如下游工位-R01抓件）</li><li>每个机器人的步序填到对应的行</li></ul><h3>铁律</h3><p>工艺卡 Time Chart 中没有的机器人步序，不能推断、不能补填。</p><h2>Verification</h2><pre><code class="language-bash">grep -i fanuc lessons/contrib/fanuc-*.md 2&gt;/dev/null | wc -l
+echo FANUC verified</code></pre><p><strong>Expected Output:</strong></p><pre><code># (count)
+FANUC verified</code></pre>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/process-card-sequence-extraction-rules.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=工艺卡步序提取：辅助动作不算独立步序，按工艺动作分界">Find related lessons →</a></p></div>

@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,23 @@
 <div class="section">
   <h2>Summary</h2>
   <p>In long sessions, the main context gets gradually filled: every file read, every raw log line, every full trial-and-error output stays in the main thread. After…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>In long sessions, the main context gets gradually filled: every file read, every raw log line, every full trial-and-error output stays in the main thread. After dozens of rounds, the original constraints and goals are diluted — the agent starts dropping constraints, repeating work, even redoing already-completed steps. Meanwhile, each continuation round must re-digest the entire history, so token cost and error rate rise simultaneously.</p><p>The root failure: putting large volumes of independent work into the main context is the starting point of this failure chain.</p><h2>Root Cause</h2><p>The default execution strategy is "do it in-place": batch file reads, batch searches, batch regression checks, enumeration-style translation — all independent work units, with no shunting mechanism, land in the same context. Context is a single, finite attention budget — any raw material read into it permanently occupies quota and dilutes every subsequent decision.</p><p>Missing shunting is not missing capability — it serializes parallel work onto the single attention channel.</p><h2>Solution</h2><p>Multi-step, multi-file, parallelizable work should first be assessed for splittability, then executed per these five rules:</p><h3>Step 1 — Delegate independent work units to subagents</h3><p>Hand independent work units (subagent / subagent_fork / teammate) to subagents. Only bring conclusions back to the main context — not the raw process material.</p><h3>Step 2 — Main context does only four things</h3><p>The main context should only:</p><ol><li><strong>Decompose</strong> — break the task into independent units</li><li><strong>Dispatch</strong> — assign each unit to a subagent</li><li><strong>Verify</strong> — check the returned conclusions against the acceptance criteria</li><li><strong>Reply</strong> — compose the final answer from the verified conclusions</li></ol><h3>Step 3 — Each subagent task brief must specify</h3><p>The task brief for each subagent must state: first read the skills and MCP tool catalog, then invoke the skill / MCP tool that matches this task — do not re-invent the wheel.</p><h3>Step 4 — Dispatch multiple independent tasks concurrently</h3><p>Multiple independent dispatches go in the same message, sent concurrently. While waiting, the main thread continues other independent steps — do not spin-poll.</p><h3>Step 5 — Subagents return results, not intermediate steps</h3><p>Subagents return results (conclusions, verdicts, data), not process material (logs, raw output, intermediate state). The main context does not accept raw logs.</p><h2>Verification</h2><p>双侧对照（5 个同构子任务：内联跑 vs 委托跑，只统计进主上下文的行数）：</p><pre><code class="language-console">$ python3 - &lt;&lt;'PY'
+import subprocess, sys
+N = 5
+main_inline = 7 * N  # 每个子任务的过程输出（初始化/工具清单/契约/编码检查…）都落在主上下文
+inner = "import concurrent.futures\ndef work(i):\n    return 'conclusion-%d: endpoint contract valid' % i\nwith concurrent.futures.ThreadPoolExecutor(5) as ex:\n    for c in ex.map(work, range(5)):\n        print(c)"
+proc = subprocess.run([sys.executable, '-c', inner], capture_output=True, text=True)
+main_delegated = len(proc.stdout.strip().splitlines())
+print(f'fault  side (inline)   : main-context lines = {main_inline} for {N} subtasks')
+print(f'fix    side (delegated): main-context lines = {main_delegated} (conclusions only)')
+assert main_inline &gt; main_delegated * 5
+print('OK: delegation keeps main context flat while inline absorbs every subtask log — the lesson holds')
+PY
+fault  side (inline)   : main-context lines = 35 for 5 subtasks
+fix    side (delegated): main-context lines = 5 (conclusions only)
+OK: delegation keeps main context flat while inline absorbs every subtask log — the lesson holds</code></pre><p>断言钉住：内联行数必须超过委托行数 5 倍（实测 7 倍）；委托侧只有结论行。这是机制对照——它证明 "主上下文随子任务数增长"与"只留结论"的差异，与本篇 2026-10-03 会话实测的判据一致。</p><h2>Notes</h2><ul><li>This is the same shape as "the working set of a long-running process exceeds RAM and starts swapping" — the fix is to page out independent work, not to buy more RAM (or in the agent case, not to buy more context window).</li><li>Related: <code>[A corpus cached in one row has a ceiling]</code> (the storage-side analog), <code>[Agent read_file Silent Truncation in Multi-Brain Meeting Recovery]</code> (the truncation-side failure).</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/long-context-pollution-delegate-to-subagents-keep-only-decisions.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Long context pollution — delegate independent tasks to subagents, keep only decisions in the main context">Find related lessons →</a></p></div>

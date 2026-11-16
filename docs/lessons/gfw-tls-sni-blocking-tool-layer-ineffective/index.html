@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,24 @@
 <div class="section">
   <h2>Summary</h2>
   <p>从中国大陆抓取 Reddit/StackOverflow 等站点时，所有工具层方案（curl、Playwright、scrapling、Safari MCP、WebFetch、Agent-Reach Jina Reader）全部超时失败。Agent 误判为"工具配置问题"，反复尝试不同工具浪费大量时间。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>从中国大陆抓取 Reddit/StackOverflow 等站点时，所有工具层方案（curl、Playwright、scrapling、Safari MCP、WebFetch、Agent-Reach Jina Reader）全部超时失败。Agent 误判为"工具配置问题"，反复尝试不同工具浪费大量时间。</p><h2>Root Cause</h2><p>GFW TLS SNI 嗅探阻断：</p><ul><li>DNS 正常解析 → Fastly CDN IP</li><li>TCP 三次握手成功</li><li>TLS Client Hello 的 SNI 字段被识别（如 <code>reddit.com</code>）</li><li>Server Hello 被丢弃，10s 超时</li></ul><p><strong>所有工具底层走同一 TCP+TLS 链路</strong>，工具层无法绕过网络层封锁。</p><h2>Solution</h2><h3>诊断命令</h3><pre><code class="language-bash">curl -v --max-time 5 "https://www.reddit.com/" 2&gt;&amp;1 | grep -E "Connected|TLS|timeout"
+# 期望看到: Connected → TLS handshake Client hello → timeout</code></pre><h3>判断流程</h3><pre><code>收到论坛链接
+  → 第1层：白名单检查（robot-forum.com / GitHub / Dev.to / 掘金 → 直接抓取）
+  → 第2层：curl TLS 握手测试
+  → 握手超时 → SNI 阻断，走代理
+  → 非超时错误（403/404）→ anti-bot 或 URL 问题，不是 GFW</code></pre><h3>国内直连白名单</h3><table><thead><tr><th>站点</th><th>抓取方式</th></tr></thead><tbody><tr><td>robot-forum.com</td><td>Playwright (WoltLab)</td></tr><tr><td>GitHub</td><td>gh CLI / REST API</td></tr><tr><td>Dev.to</td><td>REST API</td></tr><tr><td>Juejin 掘金</td><td>Playwright</td></tr></tbody></table><h3>唯一解法</h3><pre><code class="language-bash">export HTTPS_PROXY=http://ip:port
+curl -x http://ip:port https://www.reddit.com/...</code></pre><h2>Verification</h2><p><strong>The check must fail when the network is blocked</strong> — that is the whole claim. The previous version of this section did not: it ran <code>curl</code> <strong>through</strong> whatever proxy the machine has, so it printed <code>Verification passed</code> on a machine where the direct path is blocked (measured 2026-11-14, this machine: through the proxy the handshake completes; with <code>--noproxy '*'</code> it times out). A check that passes in both states is a comment.</p><pre><code class="language-bash"># 1) the discriminating run: no proxy, so only the raw TCP+TLS path is exercised
+curl -sS -v --noproxy '*' --max-time 12 https://www.reddit.com/ -o /dev/null 2&gt;&amp;1 \
+  | grep -E 'Trying|Connected to|Client hello|Server hello|timed out'
+
+# 2) the control: the same host through the proxy still answers
+curl -sS --max-time 12 -o /dev/null -w 'proxied: %{http_code}\n' https://www.reddit.com/</code></pre><p><strong>Expected output on a blocked network</strong> (measured 2026-11-14):</p><pre><code>*   Trying 157.240.7.20:443...
+*   Trying [2001::1]:443...
+* Connection timed out after 12000 milliseconds
+curl: (28) Connection timed out after 12000 milliseconds
+proxied: 200</code></pre><p>Reading it: DNS answers with <code>157.240.7.20</code> (a Facebook range) <strong>and</strong> <code>2001::1</code> — both are poisoning, not Reddit — and the direct attempt never reaches <code>Server hello</code>. The control succeeding is what proves the failure is in the network path rather than in the tool.</p><p><strong>If your machine shows <code>Server hello</code> on the direct run</strong>, this lesson does not apply to you: the network is not blocking it, and another cause is in play.</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/gfw-tls-sni-blocking-tool-layer-ineffective.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=GFW TLS SNI 阻断：工具层全部无效，只有代理能解">Find related lessons →</a></p></div>

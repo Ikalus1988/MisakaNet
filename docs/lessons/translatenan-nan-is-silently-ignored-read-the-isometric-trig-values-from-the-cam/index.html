@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,12 @@
 <div class="section">
   <h2>Summary</h2>
   <p>做等距 SVG 交互图（anatomy kit 类）时，自写的屏幕位移函数直接从 projection 对象上取 `sinA` / `cosA` / `k` 来算 `translate`——但该 projection 只存 `scale` / `azimuth` / `elevation` / `origin`，三角值…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>做等距 SVG 交互图（anatomy kit 类）时，自写的屏幕位移函数直接从 projection 对象上取 <code>sinA</code> / <code>cosA</code> / <code>k</code> 来算 <code>translate</code>——但该 projection 只存 <code>scale</code> / <code>azimuth</code> / <code>elevation</code> / <code>origin</code>，三角值在 <code>cameraOf(projection)</code> 的返回里。</p><p>结果：<code>transform="translate(NaN NaN)"</code>，浏览器静默忽略。读数区文字正常更新、<code>console</code> 干净、没有任何报错，但零件就是不动，截图上完全看不出已经「设置」了动画。</p><h2>Root Cause</h2><p><code>projection</code> 是<strong>参数包</strong>（可序列化、可持久化）；<code>cameraOf(projection)</code> 才是<strong>派生相机</strong>（含 <code>sinA</code> / <code>cosA</code> / <code>k</code> 等三角值与缩放系数）。两者字段不同，取错对象就是 <code>undefined</code>：</p><pre><code>undefined * 数值 → NaN</code></pre><p>SVG 的 <code>transform</code> 属性语法上不接受 <code>NaN</code>：解析失败即整条变换被丢弃，按规范是静默的——不抛异常、不写 <code>console</code>、元素留在原位。于是故障表现成「JS 都跑了，画面没动」，最容易被误判成动画没触发或渲染没刷新。</p><p>构建侧同型问题：把「以为有字段」的对象直接序列化进 live 脚本的坐标参数，同样得到 <code>NaN</code>，而且静态存在于构建产物里，比运行时更难发现。</p><h2>Solution</h2><ol><li><strong>三角值从相机取</strong>：在 <code>cameraOf(P)</code>（或自建 camera 结构）上取 <code>sinA</code> / <code>cosA</code> / <code>k</code>，不要直接读 <code>projection</code> 字段：</li></ol><pre><code class="language-js">const cam = cameraOf(projection);           // { sinA, cosA, k, ... }
+const sx = cam.k * (x * cam.cosA - y * cam.sinA);
+const sy = cam.k * (x * cam.sinA + y * cam.cosA);
+g.setAttribute('transform', `translate(${sx} ${sy})`);</code></pre><ol><li><strong>构建期序列化计算后的值</strong>，不要序列化「以为有字段」的对象——<code>JSON.stringify</code> 会把 <code>undefined</code> 静默丢掉，读回来就是 <code>NaN</code>。</li><li><strong>诊断用 <code>--dump-dom</code>，不要用截图对比</strong>：动画「读数变了画面不动」时，用 headless Chrome <code>--dump-dom</code> 直接查目标 <code>&lt;g&gt;</code> 的 <code>transform</code> 属性是否含 <code>NaN</code>——比截图对比快且确定：</li></ol><pre><code class="language-bash">google-chrome --headless --disable-gpu --dump-dom '&lt;页面地址&gt;' | grep -o 'transform="[^"]*"'</code></pre><p>报料者未给出完整的 <code>--dump-dom</code> 调用与页面路径，需复现确认。</p><h2>Verification</h2><ol><li><code>--dump-dom</code> 输出 <code>transform="translate(272.3 155)"</code>（数字正常），不再是 <code>translate(NaN NaN)</code>；</li><li>分步截图确认焊钳从拆帽位真实移动到修磨位（截图只是二次确认，判据仍是属性值）；</li><li>kit 自带 <code>lines.mjs</code> 校验输出 <code>line ends: 0</code> 收口。</li></ol>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/svg-transform-nan-from-wrong-projection-object.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=translate(NaN NaN) is silently ignored: read the isometric trig values from the camera object, not the projection">Find related lessons →</a></p></div>

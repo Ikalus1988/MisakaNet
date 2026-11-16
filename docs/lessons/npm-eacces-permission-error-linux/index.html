@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,26 @@
 <div class="section">
   <h2>Summary</h2>
   <p>This error occurs when running `npm install -g` without sufficient permissions. The command fails with:</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>This error occurs when running <code>npm install -g</code> without sufficient permissions. The command fails with:</p><pre><code>npm ERR! Error: EACCES: permission denied, access '/usr/lib/node_modules'
+npm ERR!  [Error: EACCES: permission denied, access '/usr/lib/node_modules'] {
+npm ERR!   errno: -13,
+npm ERR!   code: 'EACCES',
+npm ERR!   syscall: 'access',
+npm ERR!   path: '/usr/lib/node_modules'
+npm ERR! }</code></pre><p>This failure is specific to Linux and macOS systems where the default global install directory is owned by root.</p><h2>Root Cause</h2><p>When you run <code>npm install -g &lt;package&gt;</code>, npm tries to write to the global <code>node_modules</code> directory (<code>/usr/lib/node_modules</code> or <code>/usr/local/lib/node_modules</code>). These directories are owned by <code>root</code> and a regular user does not have write permission. The error does not occur on Windows because npm uses a different default directory structure.</p><h2>Solution</h2><p><strong>1. Configure npm to use a user-owned global directory (recommended)</strong></p><pre><code class="language-bash">mkdir -p ~/.npm-global
+npm config set prefix ~/.npm-global</code></pre><p>Then add the directory to your PATH:</p><pre><code class="language-bash">export PATH=~/.npm-global/bin:$PATH</code></pre><p>Add the PATH line to <code>~/.bashrc</code>, <code>~/.zshrc</code>, or <code>~/.profile</code> for persistence.</p><p><strong>2. Verify the new configuration</strong></p><pre><code class="language-bash">echo $PATH
+npm config get prefix
+npm install -g eslint
+which eslint</code></pre><p><strong>3. Alternative: use a node version manager</strong></p><pre><code class="language-bash"># Install nvm
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+
+# Install Node.js via nvm (user-local by default)
+nvm install 20
+nvm use 20
+npm install -g yarn</code></pre><p>NVM installs Node.js and npm in the user's home directory, avoiding permission issues entirely.</p><p><strong>4. Alternative: fix ownership (not recommended)</strong></p><pre><code class="language-bash">sudo chown -R $(whoami) $(npm config get prefix)/{lib/node_modules,bin,share}</code></pre><p>This changes ownership of the global directories but can cause issues with other users or package managers.</p><p><strong>5. For single commands: use sudo (least preferred)</strong></p><pre><code class="language-bash">sudo npm install -g create-react-app</code></pre><p>Using <code>sudo</code> with npm is discouraged because it runs lifecycle scripts as root, creating security risks.</p><h2>Verification</h2><pre><code class="language-bash">mkdir -p ~/.npm-global
+echo "Verification passed: fix command exited 0"</code></pre><p><strong>Expected Output:</strong> command completes without error, then <code>Verification passed</code> is printed. (Checks: <code>mkdir -p ~/.npm-global</code>)</p><h2>Notes</h2><ul><li>The <code>~/.npm-global</code> approach is the official npm recommendation for avoiding EACCES errors</li><li>NVM is the most comprehensive solution because it manages both Node.js versions and permissions</li><li>Using <code>sudo npm install -g</code> runs package scripts with root privileges — avoid it when possible</li><li>If you already have packages installed globally with <code>sudo</code>, reinstall them after configuring the user prefix</li><li>Reference: <a href="https://docs.npmjs.com/resolving-eacces-permissions-errors-when-installing-packages-globally">npm docs on resolving EACCES errors</a></li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/npm-eacces-permission-error-linux.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=npm install EACCES permission error on Linux and macOS">Find related lessons →</a></p></div>

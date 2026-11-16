@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,46 @@
 <div class="section">
   <h2>Summary</h2>
   <p>慢查询是大多数 Web 应用的性能瓶颈。缺少索引、全表扫描、N+1 查询是最常见的原因。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>慢查询是大多数 Web 应用的性能瓶颈。缺少索引、全表扫描、N+1 查询是最常见的原因。</p><h2>Root Cause</h2><p>数据库查询没有使用索引，或索引设计不当。</p><h2>Solution</h2><h3>索引设计原则</h3><pre><code class="language-sql">-- 1. WHERE 条件列
+CREATE INDEX idx_users_email ON users(email);
+-- SELECT * FROM users WHERE email = 'x'; → Index Scan
+
+-- 2. 复合索引（最左前缀）
+CREATE INDEX idx_orders_user_date ON orders(user_id, created_at);
+-- WHERE user_id = 1 → ✅ 使用索引
+-- WHERE user_id = 1 AND created_at &gt; '2026-01-01' → ✅ 使用索引
+-- WHERE created_at &gt; '2026-01-01' → ❌ 不使用索引
+
+-- 3. 覆盖索引（避免回表）
+CREATE INDEX idx_orders_covering ON orders(user_id, created_at) INCLUDE (total);
+-- SELECT total FROM orders WHERE user_id = 1; → Index Only Scan
+
+-- 4. 部分索引（节省空间）
+CREATE INDEX idx_orders_pending ON orders(created_at) WHERE status = 'pending';
+-- 只索引 pending 状态的订单</code></pre><h3>查询优化</h3><pre><code class="language-sql">-- ❌ N+1 查询
+SELECT * FROM users;
+-- 然后每个用户查询订单
+SELECT * FROM orders WHERE user_id = ?;
+
+-- ✅ JOIN 查询
+SELECT u.*, o.* 
+FROM users u 
+LEFT JOIN orders o ON u.id = o.user_id;
+
+-- ❌ SELECT *
+SELECT * FROM users WHERE active = true;
+
+-- ✅ 只选需要的列
+SELECT id, name, email FROM users WHERE active = true;</code></pre><h3>EXPLAIN ANALYZE</h3><pre><code class="language-sql">-- 分析查询计划
+EXPLAIN ANALYZE 
+SELECT * FROM orders WHERE user_id = 123 AND created_at &gt; '2026-01-01';
+
+-- 关注：
+-- Seq Scan vs Index Scan
+-- Rows Removed by Filter
+-- Execution Time</code></pre><h3>常见反模式</h3><table><thead><tr><th>反模式</th><th>问题</th><th>解决</th></tr></thead><tbody><tr><td><code>SELECT *</code></td><td>传输不需要的数据</td><td>只选需要的列</td></tr><tr><td><code>WHERE YEAR(date) = 2026</code></td><td>函数导致索引失效</td><td><code>WHERE date &gt;= '2026-01-01'</code></td></tr><tr><td><code>OR</code> 条件</td><td>可能不走索引</td><td>改用 <code>UNION</code></td></tr><tr><td><code>LIKE '%keyword'</code></td><td>前缀通配符不走索引</td><td>全文搜索</td></tr></tbody></table><h2>Verification</h2><pre><code class="language-bash">python3 scripts/search_knowledge.py "test query"</code></pre><p><strong>Expected Output:</strong></p><pre><code>Found</code></pre><h2>Notes</h2><ul><li>80% 的性能问题可以通过加索引解决</li><li>过度索引会降低写入性能</li><li>Source: practical-experience + HN (353↑)</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/lesson-18-database-performance-indexing.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=数据库性能 — 索引与查询优化实践">Find related lessons →</a></p></div>

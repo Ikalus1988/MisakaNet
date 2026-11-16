@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,30 @@
 <div class="section">
   <h2>Summary</h2>
   <p>`source venv/bin/activate` 后 `which python` 还是系统 Python，或 `deactivate` 报错。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p><code>source venv/bin/activate</code> 后 <code>which python</code> 还是系统 Python，或 <code>deactivate</code> 报错。</p><h2>Root Cause</h2><ol><li>当前 shell 是 fish/zsh 但用了 bash 语法（<code>source</code> vs <code>.</code>）</li><li>在 venv 外又创建了 venv（路径嵌套）</li><li><code>.bashrc</code> 中有硬编码路径覆盖了 PATH</li></ol><h2>Solution</h2><pre><code class="language-bash"># Python venv 激活失败或路径不匹配
+echo $SHELL
+
+# 2. 正确的激活方式
+# bash/zsh:
+source venv/bin/activate
+# 或:
+. venv/bin/activate
+
+# fish:
+source venv/bin/activate.fish
+
+# 3. 验证
+which python   # 应指向 venv/bin/python
+python -c "import sys; print(sys.prefix)"  # 应显示 venv 路径
+
+# 4. 重建 venv（如果目录损坏）
+rm -rf venv
+python3 -m venv venv
+source venv/bin/activate
+pip install --upgrade pip setuptools wheel</code></pre><h2>Verification</h2><pre><code class="language-bash">echo $SHELL
+echo "Verification passed: fix command exited 0"</code></pre><p><strong>Expected Output:</strong> command completes without error, then <code>Verification passed</code> is printed. (Checks: <code>echo $SHELL</code>)</p><h2>Pitfalls</h2><ul><li>永远不要在 venv 已激活时运行 <code>python3 -m venv venv</code> — 这会创建嵌套 venv</li><li>把 <code>source ~/venv/bin/activate</code> 写在 .bashrc 里会导致脚本 curl 等工具找不到 venv 包</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/python-venv-troubleshoot.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Python venv 激活失败或路径不匹配">Find related lessons →</a></p></div>

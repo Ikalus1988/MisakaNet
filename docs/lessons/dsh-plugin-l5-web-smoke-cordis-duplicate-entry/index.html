@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,81 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Publishing the [MisakaNet dsh plugin](https://github.com/Ikalus1988/MisakaNet) (v2.23.0) to</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Publishing the <a href="https://github.com/Ikalus1988/MisakaNet">MisakaNet dsh plugin</a> (v2.23.0) to <a href="https://www.dsh.so/artifact/misakanet/">dsh.so</a> earned the static badges (L1 / L2 / L3) and the sandbox install badge (L4), but the per-version runtime verdict on the <strong>l5-web-smoke</strong> profile (test ID <code>misakanet-20260902T192254Z</code>, dsh 0.1.2-alpha.1) was:</p><pre><code>L5 · failed
+  L5.1_INSTALL_PASSED_SANDBOXED — Sandbox install passed  ✓ Passed
+  L5.2_WEB_BOOT_READY          — Web boot ready          ✕ Failed
+    detail: plugin tree failed to load
+  L5.3_HTTP_SERVED             — HTTP endpoint served    ✕ Failed</code></pre><p>The headline "plugin tree failed to load" is the literal stderr of the Cordis Loader when two patch layers try to insert the same entry id. Once L5.2 fails, L5.3 cascades because <code>dsh web</code> never finished booting its HTTP listener.</p><h2>Root Cause</h2><p>The plugin shipped a <code>dsh.bundle.patch</code> whose <code>cordis.patch.yml</code> declared:</p><pre><code class="language-yaml">- insert:
+    - id: misakanet
+      name: misakanet</code></pre><p>MisakaNet's value is the SKILL content + the documented MCP endpoints; the <code>apply()</code> was a no-op. The insert was never <em>needed</em> — it only existed to materialize a Cordis entry so the bundle would show up in <code>pluginInventory/list</code>. That cosmetic contribution is exactly what crashed the L5 sandbox.</p><p>Reproduced locally against the published v2.23.0 tarball:</p><pre><code class="language-bash">$ export DSH_HOME=/tmp/dsh-home
+$ mkdir -p $DSH_HOME/profiles/test
+$ cat &gt; $DSH_HOME/profiles/test/package.json &lt;&lt;EOF
+{ "name":"dsh-test-profile", "private":true,
+  "dependencies": { "misakanet": "file:/home/&lt;user&gt;/MisakaNet" },
+  "dsh": { "profile": { "bundles": [
+    "@deepseek-ai/dsh-base", "@deepseek-ai/dsh-headless", "misakanet"
+  ]}}
+}
+EOF
+$ cat &gt; $DSH_HOME/profiles/test/cordis.yml &lt;&lt;EOF
+[]
+EOF
+$ cd $DSH_HOME/profiles/test &amp;&amp; pnpm install
+$ dsh --profile test --help
+Error: dsh: plugin tree failed to load:
+  failed to apply loader entry include (cordis:include):
+  duplicate loader entry id: misakanet
+TypeError: duplicate loader entry id: misakanet
+    at EntryGroup.update (.../cordis-plugin-loader/lib/index.js:81:28)</code></pre><p>The exact error chain in the dsh.so sandbox differs from a vanilla install — dsh.so's l5-web-smoke harness re-applies the bundle patch through a second path, so the same <code>id: misakanet</code> insert is fed to Cordis twice. The dsh 0.1.2-alpha.1 Loader is strict: any second <code>insert</code> with an existing id is a fatal startup failure, not a warning.</p><p>The <code>dsh.client.platform: "web"</code> declaration in the same <code>package.json</code> made matters worse by hinting that a web-client bundle should exist, even though <code>lib/client.js</code> was never shipped.</p><h2>Fix</h2><p>Strip the bundle and the unused client declaration. A library that ships only a SKILL and an inert <code>apply()</code> does not need a Cordis entry, and removing the patch makes duplicate-id collisions structurally impossible:</p><p><code>package.json</code> (v2.23.1):</p><pre><code class="language-diff">   "files": [
+     "SKILL.md",
+     "skills/",
+-    "cordis.patch.yml",
+     "index.js",
+     "index.d.ts"
+-  ],
+-  "dsh": {
+-    "bundle": { "patch": "./cordis.patch.yml" },
+-    "client": { "platform": "web" }
+-  }
+   ],</code></pre><p><code>cordis.patch.yml</code> — deleted entirely.</p><p><code>index.js</code> — keep the <code>name</code> export and the no-op <code>apply()</code> so <code>dsh plugin --profile web add misakanet</code> still passes the install contract, but rewrite the top comment to explain why no Cordis contribution is made.</p><p>After the change, the same local repro boots cleanly and <code>dsh web</code> returns HTTP 200 on <code>/</code>:</p><pre><code class="language-bash">$ dsh --profile web-test --help   # exit 0
+$ dsh --profile web-test --port 28372 --no-open &amp;
+$ curl -sS -o /dev/null -w "%{http_code}\n" http://127.0.0.1:28372/
+200</code></pre><h2>Verification</h2><p>Run from a clean sandbox profile pointing at the fixed v2.23.1 tarball:</p><pre><code class="language-bash"># 0. Pull the fixed plugin locally (any host with dsh 0.1.x installed works).
+git clone --branch v2.23.1 https://github.com/Ikalus1988/MisakaNet.git /tmp/mn-2.23.1
+test ! -e /tmp/mn-2.23.1/cordis.patch.yml   # file was removed
+grep -q '"version": "2.23.1"' /tmp/mn-2.23.1/package.json
+! grep -q 'dsh.bundle' /tmp/mn-2.23.1/package.json
+
+# 1. Spin up an isolated profile under a redirected DSH_HOME.
+export DSH_HOME=/tmp/dsh-home-$$
+mkdir -p "$DSH_HOME/profiles/web-test"
+cat &gt; "$DSH_HOME/profiles/web-test/package.json" &lt;&lt;EOF
+{
+  "name": "dsh-test-web-profile",
+  "private": true,
+  "dependencies": { "misakanet": "file:/tmp/mn-2.23.1" },
+  "dsh": { "profile": {
+    "bundles": ["@deepseek-ai/dsh-base", "@deepseek-ai/dsh-web-app"]
+  }}
+}
+EOF
+printf '[]\n' &gt; "$DSH_HOME/profiles/web-test/cordis.yml"
+( cd "$DSH_HOME/profiles/web-test" &amp;&amp; pnpm install &gt;/dev/null )
+
+# 2. Boot must succeed and the tree must contain NO misakanet entry.
+dsh --dump-config --profile web-test | grep -ci '^.*misakanet.*$' || true
+# expected: 0  (no Cordis row added)
+dsh --profile web-test --help &gt;/dev/null &amp;&amp; echo "boot=ok"
+# expected: boot=ok
+
+# 3. HTTP listener must come up (L5.3).
+dsh --profile web-test --port 28372 --no-open &gt;/tmp/dsh-web.log 2&gt;&amp;1 &amp;
+PID=$!; sleep 8
+curl -sS -o /dev/null -w "root=%{http_code}\n" http://127.0.0.1:28372/
+# expected: root=200
+kill "$PID" 2&gt;/dev/null; wait "$PID" 2&gt;/dev/null</code></pre><p>Expected output, in order: <code>boot=ok</code> and <code>root=200</code>. Any non-zero line from <code>grep -c '^.<em>misakanet.</em>$'</code> would mean a Loader entry leaked back in — fail the change. After the green run, request a re-verdict on <a href="https://www.dsh.so/artifact/misakanet/">dsh.so/artifact/misakanet</a> to confirm L5.2 / L5.3 flip to ✓ Passed.</p><h2>Lessons (for the next plugin author)</h2><ol><li><strong>Only declare <code>dsh.bundle.patch</code> if the bundle actually contributes Cordis rows.</strong> An inert <code>apply()</code> does not need a Loader entry; the <code>dsh.plugin</code> reconciler will still add the package as a profile layer if you do declare it, but a pure SKILL ships just as well as a plain npm dependency.</li><li><strong>Treat <code>dsh.client.platform</code> as a contract.</strong> Declaring <code>"platform": "web"</code> without shipping <code>lib/client.js</code> (or an <code>exports</code> entry that resolves to a real browser bundle) tells dsh.so and dsh web "expect a client bundle", and the loader will keep asking.</li><li><strong>Patch-level inserts are global.</strong> Any <code>insert: [{ id, ... }]</code> with an id that any other layer — bundle, user, overlay, or registry automation — might also produce is a latent crash. When in doubt, prefer a unique id (e.g. <code>misakanet-skill</code>) or skip the insert altogether.</li><li><strong>dsh.so's L5 verdict text mirrors the Cordis Loader stderr.</strong> Reading the published verdict back as a search engine is faster than guessing — <code>plugin tree failed to load</code> literally appears in the crash, not just the summary.</li></ol>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/dsh-plugin-l5-web-smoke-cordis-duplicate-entry.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=DSH Plugin dsh.so L5 web-smoke — duplicate Loader entry id crashes plugin tree">Find related lessons →</a></p></div>

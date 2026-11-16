@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,16 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Two independent failures while hand-writing OOXML to produce a `.pptx`:</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Two independent failures while hand-writing OOXML to produce a <code>.pptx</code>:</p><p><strong>1. A read → write round-trip corrupted the source.</strong> Reading the generator source back with the agent's <code>tools.read</code> and writing it out again carried the truncation marker <code>(line truncated to 2000 chars)</code> into the saved file, so the next run failed with:</p><pre><code>SyntaxError: Invalid or unexpected token</code></pre><p><strong>2. A picture element the reader refuses.</strong> With <code>&lt;p:cNvPr&gt;</code> under <code>&lt;p:pic&gt;</code> missing its <code>descr</code> attribute, the DSH <code>ppt_read</code> tool returned:</p><pre><code>tool "ppt_read" returned invalid output: value is not lossless JSON</code></pre><p>The second failure has no error code and no field name, so it reads like a tool bug rather than a defect in the generated file.</p><h2>Root Cause</h2><p><strong>1. The truncation marker is content.</strong> <code>tools.read</code> truncates over-long lines and appends a <code>(line truncated to 2000 chars)</code> marker so a human knows the view was clipped. Write that view back and the marker becomes literal text in the file — for the generated source that meant a string or token cut off mid-literal, hence <code>SyntaxError: Invalid or unexpected token</code>. A read → write round-trip is only an identity operation when nothing was truncated; on a file with over-long lines it is not.</p><p><strong>2. <code>descr</code> is what the reader needed.</strong> The reporter's evidence is differential, not documented: comparing against the pptx the plugin itself generates showed <code>&lt;p:cNvPr&gt;</code> carrying <code>descr</code> where the hand-written version carried none, and adding the attribute made <code>ppt_read</code> succeed. Not given by the reporter — 报料者未给出，需复现确认: <em>why</em> <code>descr</code> specifically is required (i.e. whether it is the only attribute whose absence makes the mapping lossy, or just the first one hit).</p><p>The diagnosis path is worth keeping, because the obvious first move does not work:</p><ol><li>A minimal repro built from the line content <strong>failed</strong> — the repro string itself was truncated, so the repro reproduced nothing.</li><li>A bisect probe (text only → + solid fill box → + frame/lines → + picture) narrowed the culprit to the picture element.</li><li>Comparing the hand-written XML against the plugin's own output found the missing <code>descr</code>.</li></ol><h2>Solution</h2><p><strong>1. Stop doing read → write round-trips on files with over-long lines.</strong> Use <code>edit</code> with a short anchor, or regenerate the whole section/file. If you must rewrite, assert that the payload contains no <code>(line truncated</code> marker before saving.</p><p><strong>2. Give every <code>&lt;p:pic&gt;</code>'s <code>&lt;p:cNvPr&gt;</code> a <code>descr="..."</code> (alt text):</strong></p><pre><code class="language-xml">&lt;p:pic&gt;
+  &lt;p:nvPicPr&gt;
+    &lt;p:cNvPr id="4" name="Picture 3" descr="Example chart image"/&gt;
+    &lt;p:cNvPicPr/&gt;
+    &lt;p:nvPr/&gt;
+  &lt;/p:nvPicPr&gt;
+  
+&lt;/p:pic&gt;</code></pre><p><strong>3. Validate the XML with PowerShell using <code>-Encoding UTF8</code> and <code>-LiteralPath</code>:</strong></p><pre><code class="language-powershell">[xml]$x = Get-Content -LiteralPath "$dir\[Content_Types].xml" -Encoding UTF8</code></pre><p>Without <code>-Encoding UTF8</code> the file is read as GBK, which produces false "illegal character" reports on legitimate UTF-8 — a validation step that lies is worse than no validation step. Without <code>-LiteralPath</code>, the brackets in <code>[Content_Types].xml</code> are treated as a wildcard character class.</p><h2>Verification</h2><p>Reporter's criteria, run after adding <code>descr</code>:</p><ul><li><code>ppt_read</code> reads the deck back successfully: <strong>8 slides</strong>, all elements, with inch coordinates — no <code>invalid output</code> error.</li><li><code>[xml]</code> cast over all <strong>30 parts</strong> → <code>invalid=0</code>.</li><li>Colour audit: <code>srgbClr</code> values deduplicated give <strong>exactly 4</strong> distinct hex values (i.e. the palette is the one you meant to use, not an accidental fifth shade).</li><li>Out-of-bounds elements, summed over slides: <strong>0</strong>.</li></ul><p>The colour and bounds checks are the ones that catch silent damage: a deck can open, read back, and still be wrong. Not given by the reporter — 报料者未给出，需复现确认: whether <code>ppt_read</code> (rather than a plain <code>[xml]</code> parse) is also what a reader should trust for <code>sp</code>/<code>graphicFrame</code> elements, or only for pictures.</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/ooxml-pptx-cnvpr-descr-truncated-rewrite.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Hand-Written OOXML PPTX: Truncation Marker Written Back, and Missing cNvPr descr">Find related lessons →</a></p></div>

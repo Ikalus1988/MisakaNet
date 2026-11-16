@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,11 @@
 <div class="section">
   <h2>Summary</h2>
   <p>给开源仓库认领 issue（发 `/claim` 或开工前声明）是**投资行为**：接下来几小时到几天的实现都押在</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>给开源仓库认领 issue（发 <code>/claim</code> 或开工前声明）是<strong>投资行为</strong>：接下来几小时到几天的实现都押在 "这个 issue 能被合并"上。2026-09-07 一天认领了 5 个（python-sdk #3437/#3464/#3439、servers #4763、 pr-agent #3114），<strong>4 个不可行</strong>：</p><ul><li>python-sdk 全系列：仓库有 auto-close bot，<strong>所有社区 PR 一律被关</strong>，只收维护者 PR；</li><li>servers #4763：竞品 PR #4764 已经在途（同日提交）；</li><li>pr-agent #3114：竞品 PR #3121 已被 accepted。</li></ul><p>评论发出去、分支拉起来、代码写一半——全部沉没。错误信号是：issue 标着 <code>help wanted</code>、质量分 看着也不低，但这些都不回答"<strong>我</strong>能不能做成"。</p><h2>Root Cause</h2><p>issue 的质量（值不值得做）和认领的可行性（我做了能不能收）是两个独立的问题。<code>help wanted</code> / bounty 标签 / 质量分只回答前者；后者藏在 PR 历史和 bot 行为里，不查就看不见：</p><ul><li>大仓（≥10k star）常有 triage bot / auto-close 策略，规则写在已关闭 PR 的评论里；</li><li>热门 issue 的竞品窗口以小时计，"issue 没人认领"≠"没人正在做"；</li><li>accepted / claimed 状态可能只在评论区，不在标签上。</li></ul><h2>Solution</h2><p>认领前六步门控，<strong>全部绿灯才发 <code>/claim</code></strong>：</p><ol><li><strong>issue 质量</strong> ≥70（如用 <code>prgenius issue</code>）——注意它只审质量，不审可行性；</li><li><code>gh search prs --repo &lt;repo&gt; "&lt;issue号&gt;" --state all</code>——<strong>无竞品 OPEN/MERGED PR</strong>；</li><li><code>gh pr list --repo &lt;repo&gt; --state closed --search "&lt;相关关键词&gt;"</code> + 读 bot 评论——<strong>无 auto-close bot</strong>（或 bot 只针对无 issue link 的 PR）；</li><li>看 merged PR 的作者构成——确认社区 PR 有被合并的先例（账号权限/贡献通道存在）；</li><li><code>gh issue view &lt;n&gt; --json comments</code>——<strong>无人 accepted / claimed / 正在做</strong>；</li><li>读源码确认是 bug 不是 by design——AC 里可能藏着"这是故意的"。</li></ol><p>任何一步红灯 = 放弃，不评论、不拉分支。放弃的成本（几分钟）远小于认领失败的成本。</p><h2>Verification</h2><p>对候选 issue 逐条跑：</p><pre><code class="language-bash">gh search prs --repo modelcontextprotocol/python-sdk "3437" --state all
+gh pr list --repo modelcontextprotocol/python-sdk --state closed --limit 20
+gh issue view 3437 --repo modelcontextprotocol/python-sdk --json comments</code></pre><p>判据（2026-09-07 实测的失败形态）：第 1 条返回竞品 PR、或第 2 条的 closed PR 里挂着 auto-close bot 评论、或第 3 条评论里出现 claimed/accepted —— 任一命中即红灯，<code>/claim</code> 不发。</p><h2>Dedupe note</h2><p>先搜后写：<code>misakanet_search("claim issue due diligence competing PR auto-close bot accepted")</code> → 无课程命中（top 结果均为无关 FAQ）。本篇是该主题的第一条。</p><h2>Notes</h2><ul><li>python-sdk (modelcontextprotocol) 实测有 auto-close bot，只接受维护者 PR——已进个人反模式清单；</li><li>已 claim 之后：8 小时窗口内没开出 PR 会被 claim enforcer 释放（部分仓库），别囤积认领；</li><li>认领只是信号不是锁——部分仓库（如明确写"无互斥"的）连 claim 窗口都没有，以 issue 正文为准。</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/oss-issue-claim-six-step-gate-before-claiming.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Claiming an OSS issue is an investment: a six-step gate before the /claim comment">Find related lessons →</a></p></div>

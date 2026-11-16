@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,27 @@
 <div class="section">
   <h2>Summary</h2>
   <p>On an x86_64 Android emulator (MuMu 6.8.4, Android 15, KernelSU + ZygiskNext + LSPosed/Vector),</p>
+</div>
+<div class="lesson-body">
+<h2>ZygiskAssistant breaks MuMu's houdini ARM translation</h2><h2>Problem</h2><p>On an x86_64 Android emulator (MuMu 6.8.4, Android 15, KernelSU + ZygiskNext + LSPosed/Vector), any app that ships <strong>only</strong> arm64 native libraries crashed instantly at launch:</p><pre><code>E locationspoofer: No implementation found for ... JNIMD5.encodeUrlParamsValue(java.lang.String)
+W System.err: java.lang.UnsatisfiedLinkError: dlopen failed:
+    ".../base.apk!/lib/arm64-v8a/lib&lt;name&gt;.so" is for EM_AARCH64 (183) instead of EM_X86_64 (62)
+E AndroidRuntime: Process: &lt;pkg&gt; ... at ...LocationApp.onCreate</code></pre><p>Every such launch also logged the real cause, one line earlier than the crash:</p><pre><code>E nativebridge(pid): Invalid state: native bridge is expected to be opened.
+E nativebridge(pid): LLLog RedirectTranslator source:/data/system/etc/mumu-configs/translators/&lt;id&gt;/lib64/houdini/arm64/ target:/system/lib64/arm64/ err:No such file or directory</code></pre><p>In other words: the ARM translation layer never initialized, so the x86_64 process tried to <code>dlopen</code> an arm64 shared object directly and the loader rejected it on ABI grounds. The <code>UnsatisfiedLinkError</code> is the symptom; the <code>nativebridge</code> line is the diagnosis.</p><h2>Root Cause</h2><p>MuMu's ARM translation works through its own shim, <code>/system/lib64/libnb.so</code>, which opens the <strong>native bridge</strong> and then loads <code>/system/lib64/libhoudini.so</code>. <code>ZygiskAssistant</code> hides Zygisk by patching ART's native-bridge library: it locates the <code>.bss</code> of <code>/apex/com.android.art/lib64/libnativebridge.so</code> (40 bytes) and rewrites it, and its <code>zygisk/{x86_64,arm64-v8a,x86,armeabi-v7a}.so</code> payloads carry the string <code>doHideZygisk</code>. A launch log shows the patch happening:</p><pre><code>E/ZygiskAssistant/JNI(pid): preAppSpecialize ...
+ZygiskAssistant: Found .bss for "/apex/com.android.art/lib64/libnativebridge.so" at ... sized 40 bytes.
+ZygiskAssistant: /libnativebridge.so had_error was reset.</code></pre><p>That patch prevents <code>libnb</code> from completing native-bridge initialization — hence <code>Invalid state: native bridge is expected to be opened.</code> — so houdini is never loaded and the translation chain is broken before any app code runs. Because the module patches globally and offers no per-package exemption, this happens for every arm64-only app on the device.</p><p>Two things that look like the cause but are not, both worth ruling out explicitly:</p><ul><li><strong>ABI configuration.</strong> <code>/system/etc/mumu-configs/abi-select-android12.config</code> and <code>translator.config</code> were correct, and <code>dumpsys nemuhotd abi/translator</code> showed the rules matching. The configuration was never the problem.</li><li><strong>A missing translator package.</strong> A side-loaded app failing to fetch NetEase's translator bundle (<code>{"errcode":101,"errmsg":"配置不存在"}</code>) is a red herring; translation works from the on-device houdini library once the bridge is allowed to open.</li></ul><h2>Solution</h2><p>Stop <code>ZygiskAssistant</code> — it patches the native-bridge library globally and has no per-package exemption:</p><pre><code class="language-bash">adb root
+adb shell "touch /data/adb/modules/zygisk-assistant/disable"
+adb shell reboot</code></pre><p>Translation recovers immediately after the reboot. The launch log for the same arm64-only app then shows the chain working end to end:</p><pre><code>V/libnb (pid): enter native_bridge2_initialize /data/user/0/&lt;pkg&gt;/code_cache arm64
+I/libnb (pid): Found /system/lib64/libhoudini.so version 7
+E/HP   (pid): patch_houdini_linker_null_crash: patched +0x... (je-&gt;jmp) OK
+D/houdini(pid): Houdini now in android app mode / Initialize library(version: 15.0.0...) successfully</code></pre><p>If Zygisk hiding is still required, use mechanisms that do <strong>not</strong> rewrite the native-bridge library: Shamiko (mount-namespace-level hiding, observed not to affect translation) together with an app-list hider such as HMA for the installed-app list.</p><h2>Verification</h2><p>Reproduce and confirm with the same app:</p><pre><code class="language-bash">adb shell "logcat -c; am force-stop &lt;pkg&gt;; monkey -p &lt;pkg&gt; -c android.intent.category.LAUNCHER 1"
+sleep 25
+adb shell "logcat -d -v brief &gt; /sdcard/l.txt"
+adb shell "awk '/EM_AARCH64/{n++} END{print \"EM_AARCH64 lines:\", n+0}' /sdcard/l.txt"   # expect 0
+adb shell "grep -e libnb -e houdini -e 'Invalid.state' /sdcard/l.txt"
+# expect: native_bridge2_initialize ... arm64 / Found libhoudini.so version 7 /
+#         Houdini now in android app mode, and NO 'Invalid state'
+adb shell "dumpsys window | grep mCurrentFocus"   # the app's activity is really in the foreground</code></pre><p>The <code>EM_AARCH64</code> count is the pass/fail criterion: it is 0 only when the translator actually loaded, so it fails for exactly this defect and cannot be satisfied by the app merely starting and immediately crashing again. The <code>mCurrentFocus</code> check is what distinguishes "no ABI error" from "the app is actually usable".</p><h2>Notes</h2><ul><li>Domain note: filed under <code>android</code>. The failure is emulator- and framework-specific, but the diagnostic pattern generalizes: on any translated Android build, an <code>EM_AARCH64/EM_X86_64</code> mismatch is a loader verdict, and the <code>nativebridge</code> line above it says whether translation was ever available.</li><li>The name of the module is the actionable part. A "hide Zygisk" tool that rewrites <code>/apex/.../libnativebridge.so</code> is incompatible with translation layers by construction; the ordering to check is always: did the bridge open (libnb), did houdini load, only then did the app run.</li><li><code>UnsatisfiedLinkError</code> naming the <em>app's</em> library sends you to the app's ABI packaging. The two <code>nativebridge</code> lines are the evidence that the problem is one layer below the app.</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/zygiskassistant-breaks-houdini-arm-translation-on-mumu.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=ZygiskAssistant breaks MuMu's houdini ARM translation, so arm64-only apps crash with EM_AARCH64 instead of EM_X86_64">Find related lessons →</a></p></div>

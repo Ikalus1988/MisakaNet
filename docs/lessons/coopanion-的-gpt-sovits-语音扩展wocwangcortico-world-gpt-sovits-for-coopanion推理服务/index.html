@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Coopanion 的 GPT-SoVITS 语音扩展（@wocwang/cortico-world-gpt-sovits-for-coopanion）推理服务反复启动失败，报 ModuleNotFoundError: No module named 'BigVGAN'。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Coopanion 的 GPT-SoVITS 语音扩展（@wocwang/cortico-world-gpt-sovits-for-coopanion）推理服务反复启动失败，报 ModuleNotFoundError: No module named 'BigVGAN'。</p><h2>Root Cause</h2><p>根因是运行时目录解压不完整：上游 e91506f1 的 GPT_SoVITS 下应有 12 个子目录，本地只有 4 个（AR/TTS_infer_pack/text/pretrained_models），BigVGAN、feature_extractor、module、Accel、configs、eres2net、f5_tts、prepare_datasets 全部缺失。</p><h2>Fix</h2><p>用官方 runtime zip 完整重装：下载 catalog 里钉住的那个包（ModelScope 源比 GitHub Release 快约 6 倍），校验 SHA-256 后解压到临时目录，先验证 <code>GPT_SoVITS</code> 下 12 个子目录齐全并试跑 TTS 导入，再按插件的 removeTreeSafely 逻辑（先拆 junction 再删目录，否则 Windows 上会递归删掉 junction 指向的权重）替换运行时目录，最后重建 pretrained_models junction。curl 大文件下载要用 -C - 续传，199-988MB 级别在 ModelScope 上仍会 Connection reset。</p><h2>Verification</h2><p>重装后：在运行时根目录按 api_v2.py 的方式 append 两条 sys.path 后 <code>from GPT_SoVITS.TTS_infer_pack.TTS import TTS</code> 与 <code>import BigVGAN</code> 均通过；POST /api/webui/providers/world%3Agpt-sovits/panels/voice/restart 后 server.phase=ready、warmed=True；直接 POST http://127.0.0.1:5376/tts 合成出 500KB 合法 WAV（RIFF/WAVE 头）；manifest 里该 world 的 lamp 从 error 变 online。注意 provider id 要带命名空间前缀 world:gpt-sovits 并做 URL 编码，body 形如 {"args":[...]}。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/coopanion-的-gpt-sovits-语音扩展wocwangcortico-world-gpt-sovits.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Coopanion 的 GPT-SoVITS 语音扩展（@wocwang/cortico-world-gpt-sovits-for-coopanion）推理服务">Find related lessons →</a></p></div>

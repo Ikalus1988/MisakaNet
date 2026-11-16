@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,22 @@
 <div class="section">
   <h2>Summary</h2>
   <p>用 Obsidian Local REST API（插件，HTTPS 默认端口 27124）做"读笔记 → 追加标注 → 写回"：</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>用 Obsidian Local REST API（插件，HTTPS 默认端口 27124）做"读笔记 → 追加标注 → 写回"：</p><pre><code class="language-python">content = urlopen(GET /vault/note.md).read()      # 返回 {"content": "...."}
+note = content + new_annotation
+urlopen(PUT /vault/note.md, data=note)            # 把「JSON 包装体 + 标注」整个写回</code></pre><p>每跑一次，文件里就多一层 JSON 包装。实测：69MB 的 vault，个别文件膨胀到 <strong>139MB</strong>， Obsidian 变卡、同步爆仓，而脚本每一步都"成功"。另外两个坑：API 用<strong>自签名证书</strong>（urlopen 直接 拒绝连接）；插件重启后可能没自动启用、长时间运行后停止监听。</p><h2>Root Cause</h2><ol><li><strong>JSON 包装</strong>：API 的响应体是 <code>{"content": "&lt;markdown&gt;"}</code>（envelope），本地文件系统读出来的是 裸 markdown。把 API 响应当正文写回，等于把信封和信纸一起塞进信封——每次读-改-写多一层。 两种读法混用（API 读 + 本地写，或反之）在单次看不出问题，循环里指数级恶化。</li><li><strong>自签名证书</strong>：插件默认给 127.0.0.1:27124 签自签证书，Python <code>urllib</code> 默认校验主机名和链， 直接 <code>URLError: certificate verify failed</code>。</li><li><strong>插件生命周期</strong>：插件随 Obsidian 启停，崩溃/重启后端口可能消失——把 REST API 当唯一写入通道 会静默丢更新。</li></ol><h2>Solution</h2><p><strong>本地文件读写优先，REST API 只作回退</strong>（本地 markdown 就是事实源，没有包装层）：</p><pre><code class="language-python">from pathlib import Path
+note = (VAULT / "note.md").read_text(encoding="utf-8")   # 裸 markdown，无包装
+(VAULT / "note.md").write_text(note + annotation, encoding="utf-8")</code></pre><p>必须用 API 时：</p><ol><li>写回前<strong>递归解包</strong> envelope（<code>_unwrap_json_content</code>，设层数上限如 20 层防炸）；</li><li>写回前<strong>清除已有标注</strong>（<code>_strip_old_annotations</code>），追加式写入天然幂等；</li><li>自签名证书用显式 SSL 上下文（或更好：把插件证书加入信任链，不要全局关校验）：</li></ol><pre><code class="language-python">import ssl
+ctx = ssl.create_default_context()
+ctx.check_hostname = False
+ctx.verify_mode = ssl.CERT_NONE      # 仅限 127.0.0.1 的本地 API
+urlopen(req, context=ctx)</code></pre><ol><li>插件安装别赌 <code>releases/latest/download/main.js</code> 直链（GitHub API 限流会 404）——用社区插件 浏览器装，或从 <code>obsidianmd/obsidian-releases</code> 的 <code>community-plugins.json</code> 取准确 repo 名。</li></ol><h2>Verification</h2><pre><code class="language-bash"># 1) API 读是包装体，本地读是裸 markdown
+curl -sk https://127.0.0.1:27124/vault/note.md | head -c 40   # 预期以 {"content" 开头
+head -c 40 ~/vault/note.md                                    # 预期裸 markdown（# 或正文）
+
+# 2) 解包生效判据：连续两轮 API 读-改-写后不再累积包装层
+grep -o '{"content"' ~/vault/note.md                           # 预期无输出（本地写路径）</code></pre><p>预期：<code>_unwrap_json_content</code> 介入后 <code>grep</code> 无输出（本地写路径）或恰好一层（API 读到的包装在解包后 消失）；未解包的写法每轮多一层，两轮后 grep 会打出两行。</p><h2>Dedupe note</h2><p>先搜后写：<code>misakanet_search("Obsidian REST API nested JSON self-signed certificate plugin install")</code> → 无本主题命中；最近邻是 <code>npmjs-registry-unreachable-pin-a-mirror-never-disable-tls</code>（E1，npm 源 TLS 策略）——不同问题：那条讲 registry 证书策略，本条讲 Local REST API 的 JSON-envelope 读-改-写放大与本地优先写法。</p><h2>Notes</h2><ul><li>任何"读-改-写"对接 API 的场景通用此课：先确认响应是<strong>文档本身</strong>还是<strong>文档的包装体</strong>；</li><li>文件膨胀是这类 bug 的典型指纹——循环写入前先在小样本上跑 2 轮，看字节数增量是否恒定。</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/obsidian-local-rest-api-json-envelope-read-modify-write.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Obsidian Local REST API wraps note content in JSON — write-back without unwrapping nests a new layer per write">Find related lessons →</a></p></div>

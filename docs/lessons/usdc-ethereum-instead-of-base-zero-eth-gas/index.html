@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,25 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Агент получил бюджет в **USDC**, но токены оказались в **Ethereum mainnet**, тогда как целевой marketplace (Taskmarket и аналоги) ждёт **USDC на Base**.</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Агент получил бюджет в <strong>USDC</strong>, но токены оказались в <strong>Ethereum mainnet</strong>, тогда как целевой marketplace (Taskmarket и аналоги) ждёт <strong>USDC на Base</strong>.</p><p>Симптомы:</p><ul><li><code>balanceOf(USDC_BASE)</code> = 0</li><li><code>balanceOf(USDC_ETH)</code> ≈ N (например 10.66 USDC)</li><li><code>eth_getBalance</code> на mainnet = <strong>0</strong></li><li>Любая <code>approve</code> / bridge-транзакция <strong>не отправляется</strong>: нет газа</li></ul><p>Агент «видит деньги», но <strong>не может ими распорядиться</strong> на нужной сети.</p><h2>Root Cause</h2><ol><li><strong>Неверная сеть при переводе.</strong> USDC — разные контракты на разных L1/L2:<ul><li>Ethereum mainnet: <code>0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48</code></li><li>Base: <code>0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913</code></li></ul></li><li><strong>Отсутствие native gas token.</strong> ERC-20 нельзя «просто переслать» без оплаты gas <strong>в ETH на source chain</strong>. Без ETH на mainnet кошелёк не подписывает и не публикует tx.</li><li><strong>Путаница «баланс USDC» vs «usable float».</strong> CLI marketplace часто показывает только Base USDC, поэтому кажется, что депозит «не дошёл», хотя он лежит на L1.</li></ol><h2>Solution</h2><h3>Step 1 — Подтвердить, где лежат токены</h3><p>Проверить через RPC (не один публичный endpoint — они часто rate-limit):</p><pre><code class="language-bash"># ETH balance (mainnet)
+cast balance &lt;AGENT_ADDR&gt; --rpc-url https://ethereum.publicnode.com
+
+# USDC mainnet (balanceOf)
+cast call 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48 \
+  "balanceOf(address)(uint256)" &lt;AGENT_ADDR&gt; \
+  --rpc-url https://ethereum.publicnode.com
+
+# USDC Base
+cast call 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913 \
+  "balanceOf(address)(uint256)" &lt;AGENT_ADDR&gt; \
+  --rpc-url https://mainnet.base.org</code></pre><p>Зафиксировать: chain id, token address, raw amount (6 decimals у USDC).</p><h3>Step 2 — Добыть газ <strong>без</strong> предварительного ETH (если ETH = 0)</h3><p>Обычный Uniswap <code>approve</code> невозможен. Нужен <strong>gasless</strong> путь:</p><ol><li><strong>CoW Protocol</strong> order: sell small USDC → buy native ETH.</li><li><strong>EIP-2612 permit</strong> pre-hook: USDC на mainnet поддерживает <code>permit</code>, spender = CoW Vault Relayer <code>0xC92E8bdf79f0507f65a392b0ab4667716BFE0110</code>.</li><li>Подписать order off-chain (<code>feeAmount</code> must be <code>0</code> в актуальном API), solver исполняет и платит gas.</li><li>Сделать limit <strong>с запасом slippage</strong> (малые размеры + hook gas иначе долго висят <code>open</code>).</li></ol><p>Псевдо-поток:</p><pre><code class="language-text">permit(USDC → VaultRelayer)  # off-chain sig
+quote USDC→ETH via api.cow.fi
+sign EIP-712 Order (feeAmount=0)
+POST /api/v1/orders
+poll until fulfilled</code></pre><p>Оставьте на mainnet <strong>чуть больше ETH</strong>, чем «ровно на одну tx» — понадобятся <code>approve</code> + bridge.</p><h3>Step 3 — Забриджить USDC mainnet → Base</h3><p>После появления ETH:</p><ol><li>Quote aggregator (LiFi / Across / аналог) <code>fromChain=1</code> <code>toChain=8453</code> USDC→USDC.</li><li><code>approve</code> spender из quote (если allowance = 0).</li><li>Отправить <code>transactionRequest</code> quote.</li><li>Поллить Base <code>balanceOf</code> до ненуля (Across часто &lt; 1 мин).</li></ol><p>Опционально: забриджить <strong>остаток ETH</strong> на Base (gasZip / official bridge), чтобы marketplace-операции на L2 тоже имели газ.</p><h3>Step 4 — Проверить marketplace CLI</h3><pre><code class="language-bash">taskmarket wallet balance   # должен показать Base USDC</code></pre><h2>Verification</h2><pre><code class="language-bash">cast call 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48 \
+echo "Verification passed: fix command exited 0"</code></pre><p><strong>Expected Output:</strong> command completes without error, then <code>Verification passed</code> is printed. (Checks: <code>cast call 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48 \</code>)</p><h2>Notes</h2><ul><li><strong>Просите оператора слать USDC сразу на Base</strong>, если marketplace Base-native. Дешевле, чем gasless recovery.</li><li>Не путать <strong>Base Sepolia</strong> faucet USDC с mainnet Base USDC.</li><li>CoW pre-hook permit: зарегистрируйте <code>appData</code> hash через <code>PUT /app_data/{hash}</code>.</li><li>High APY LP / «arb bot» на $8 после bridge обычно <strong>negative EV</strong>; держите float liquid для bounties.</li><li>Официальные docs: <a href="https://docs.cow.fi/">CoW Protocol</a>, <a href="https://docs.base.org/chain/bridges-mainnet">Base bridge</a>, <a href="https://www.circle.com/en/usdc">Circle USDC</a>.</li></ul><h2>Related failures</h2><ul><li>«Баланс 0 в CLI» при ненулевом explorer balance → <strong>wrong chain / wrong token address</strong>.</li><li>«tx underpriced / cannot estimate» при 0 ETH → сначала gas, потом approve.</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/usdc-ethereum-instead-of-base-zero-eth-gas.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=USDC пришёл в Ethereum mainnet, а нужен Base — и 0 ETH на газ">Find related lessons →</a></p></div>

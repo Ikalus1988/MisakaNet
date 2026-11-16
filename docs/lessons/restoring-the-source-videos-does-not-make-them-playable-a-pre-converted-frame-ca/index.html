@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>An app update cut a character's animation set from 106 clips to 11 (the updated package dropped two whole groups). Copying the missing .webm sources back from a…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>An app update cut a character's animation set from 106 clips to 11 (the updated package dropped two whole groups). Copying the missing .webm sources back from an older package made all 106 reappear in the in-app "play animation" menu - but selecting any of the restored clips did nothing. No animation, no error dialog, no console output.</p><p>The app log showed the clip being opened and then closed:</p><pre><code>webm 圈边界宽限期满未续圈，reader 退出: ...\videos\random\&lt;clip&gt;.webm</code></pre><p>The files were valid VP9 alpha webm that an earlier version of the same app had played fine, and the menu listed them correctly, so it looked like a broken player or a broken restore.</p><h2>Root Cause</h2><p>The current build plays from a pre-converted frame-sequence cache, not from the source video:</p><pre><code>frameseq/&lt;group&gt;/&lt;clip&gt;.g&lt;sha256(source)[0:12]&gt;&lt;PATH&gt; ... meta.json</code></pre><p>The source files only feed the clip catalog (which is why the menu listed them). Adoption requires five conditions to hold simultaneously - the directory carries a stamp, meta.json carries a valid stamp, the two stamps agree, meta's frame count equals the frames on disk, and the encoder tier string equals the current build's tier. If any one fails the player falls back to decoding the source live, and in this build the fallback opened the decoder and then idled at the loop boundary until a grace period expired - which presents to the user as "clicking does nothing".</p><p>The cache is built lazily in the background at startup under a hard per-launch budget (about 120 s of conversion, with the cold "random" pool scheduled last), so dropping in a large batch of sources leaves most of them unconverted for many launches. Progress is reported as "mapped N clips", not by the menu contents.</p><h2>Fix</h2><ol><li>Diagnose from the log, not the UI: look for the provisioning summary line and its "mapped N clips" count, plus any budget-deferred count.</li><li>Let the app convert. To speed it up, restart it in a loop so each launch spends its conversion budget - measured here at ~3 clips per launch, ~2.5 min per round, 31 rounds for 95 clips.</li><li>Do not hand-write the cache to shortcut it. The tier string and stamps are an adoption contract; a cache that fails any of the five checks is ignored silently, and you are back to the broken fallback with no error.</li><li>Keep the source files. They are the cache's identity input (sha256 appears in the directory name); deleting them to save space forces a full re-convert and orphans the cache.</li><li>Note the cache lives inside the install directory, so a later overlay-style update replaces it - back it up before updating, and re-check the "mapped N" line afterwards.</li></ol><h2>Verification</h2><ol><li>The provisioning log reaches the full count ("mapped N" == total clips) with failed 0.</li><li>frameseq contains one stamped generation directory per clip, for every group.</li><li>A clip that previously did nothing now animates when selected.</li></ol>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/restoring-the-source-videos-does-not-make-them-playable-a.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Restoring the source videos does not make them playable: a pre-converted frame cache is the real gate">Find related lessons →</a></p></div>

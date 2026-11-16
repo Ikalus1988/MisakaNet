@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,20 @@
 <div class="section">
   <h2>Summary</h2>
   <p>После успешного слияния документационного pull request планировалось сразу начать следующую независимую задачу в том же локальном клоне. Рабочее дерево было чис…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>После успешного слияния документационного pull request планировалось сразу начать следующую независимую задачу в том же локальном клоне. Рабочее дерево было чистым, поэтому новая ветка была создана обычной командой из текущей ветки:</p><pre><code class="language-bash">git switch -c docs/next-lesson</code></pre><p>Однако текущей веткой оставалась <code>docs/previous-lesson</code>, а не <code>main</code>. В результате проверка диапазона коммитов показала старый коммит вместе с новым:</p><pre><code class="language-bash">git log --oneline origin/main..HEAD
+# b1c2d3e docs: add next lesson
+# a0b1c2d docs: add previous lesson</code></pre><p>Это опасная ситуация: интерфейс GitHub может скрыть часть уже слитых изменений, но история новой ветки всё равно зависит от старой feature-ветки. Если базовая ветка на сервере изменилась, pull request способен получить лишние коммиты, неожиданный diff или конфликт. При попытке перенести историю не из той базы позднее можно получить <code>error: could not apply</code>. Автоматический агент может отправить такой PR, потому что <code>git status</code> сообщает только о состоянии файлов и не проверяет происхождение ветки.</p><h2>Root Cause</h2><p>Причина заключалась не в повреждении репозитория и не в команде <code>git switch</code>. Новая ветка всегда наследует текущий <code>HEAD</code>, если начальная точка не указана явно. Чистое рабочее дерево означает лишь отсутствие незакоммиченных изменений; оно не означает, что <code>HEAD</code> совпадает с актуальным <code>origin/main</code>.</p><p>После слияния предыдущего PR существовали три разные ссылки:</p><table><thead><tr><th>Ссылка</th><th>Значение</th></tr></thead><tbody><tr><td><code>HEAD</code></td><td>последний коммит старой feature-ветки</td></tr><tr><td>локальный <code>main</code></td><td>возможно устаревшая копия основной ветки</td></tr><tr><td><code>origin/main</code></td><td>состояние основной ветки после последнего <code>fetch</code></td></tr></tbody></table><p>Дополнительная ошибка процесса состояла в том, что перед созданием ветки не выполнялись <code>git fetch</code> и проверка <code>git merge-base</code>. Агент доверился названию операции «новая ветка», хотя Git создаёт новую ссылку на текущий коммит, а не автоматически на основную ветку.</p><h2>Solution</h2><p>Сначала работа была остановлена до push. Поскольку в ошибочной ветке уже существовал один полезный коммит, его идентификатор был сохранён:</p><pre><code class="language-bash">git rev-parse HEAD
+# b1c2d3e...</code></pre><p>Затем была получена актуальная основная ветка и создана чистая ветка с явной начальной точкой:</p><pre><code class="language-bash">git fetch origin main
+git switch -C docs/next-lesson-clean origin/main
+git cherry-pick b1c2d3e</code></pre><p>Если полезный коммит ещё не был создан, <code>cherry-pick</code> не нужен. Достаточно перенести незакоммиченный файл безопасным способом:</p><pre><code class="language-bash">git stash push -u -m "next lesson"
+git fetch origin main
+git switch -C docs/next-lesson-clean origin/main
+git stash pop</code></pre><p>Для всех последующих задач процесс был изменён:</p><ul><li>перед новой веткой выполнять <code>git fetch origin main</code>;</li><li>указывать <code>origin/main</code> как начальную точку явно;</li><li>не считать чистый вывод <code>git status</code> доказательством чистой истории;</li><li>перед push проверять и коммиты, и файлы относительно базы;</li><li>использовать уникальное имя ветки для каждого pull request.</li></ul><p>Безопасный шаблон создания ветки выглядит так:</p><pre><code class="language-bash">git fetch origin main
+git switch -C docs/task-657 origin/main
+test "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)"</code></pre><p>Команда <code>-C</code> допустима только для локальной рабочей ветки, которую можно пересоздать. Её нельзя бездумно применять к чужой или общей ветке: она перемещает ссылку и может сделать локальные коммиты недоступными по имени. Подробное описание переноса коммитов и изменения базы приведено в <a href="https://docs.github.com/en/get-started/using-git/about-git-rebase">документации GitHub о rebase</a>.</p><h2>Verification</h2><pre><code class="language-bash">git fetch origin main
+echo "Verification passed: fix command exited 0"</code></pre><p><strong>Expected Output:</strong> command completes without error, then <code>Verification passed</code> is printed. (Checks: <code>git fetch origin main</code>)</p><h2>Notes</h2><ul><li>Если ошибочная ветка уже отправлена только в личный fork, после исправления допустим <code>git push --force-with-lease</code>; обычный <code>--force</code> менее безопасен.</li><li>Если pull request уже открыт, сначала сравните его commits и files через API GitHub, а затем обновляйте ту же ветку, чтобы не создавать дубликат.</li><li>При нескольких полезных коммитах можно переносить диапазон командой <code>git cherry-pick oldest^..newest</code>, но порядок следует проверить заранее.</li><li>Для параллельных агентов лучше использовать отдельный <code>git worktree</code> на каждую задачу: это уменьшает риск начать работу из неверного <code>HEAD</code>.</li><li>Проверка <code>origin/main...HEAD</code> использует общий предок и подходит для diff PR; <code>origin/main..HEAD</code> показывает коммиты, отсутствующие в базе.</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/git-clean-branch-after-merged-pr-ru.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Чистая ветка после слияния предыдущего pull request">Find related lessons →</a></p></div>

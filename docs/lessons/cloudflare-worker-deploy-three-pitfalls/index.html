@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,23 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Deploying large modular Workers via Cloudflare MCP execute encounters three limitations:</p>
+</div>
+<div class="lesson-body">
+<h2>Cloudflare Worker Programmatic Deploy: Three Pitfalls</h2><h2>Problem</h2><p>Deploying large modular Workers via Cloudflare MCP execute encounters three limitations:</p><ol><li>Execute sandbox fetch to raw.githubusercontent.com / api.github.com returns 403 Forbidden (only Cloudflare internal domains allowed)</li><li>bash/execve single argument max 32KB (MAX_ARG_STRLEN), 93KB code embedded directly causes "Argument list too long"</li><li>Multipart upload modules with Content-Type application/javascript cause Cloudflare to parse as classic script, ESM export syntax throws "SyntaxError: Unexpected token export"</li></ol><h2>Root Cause</h2><ol><li>Cloudflare execute sandbox has outbound domain whitelist — external code sources (GitHub raw/API) are blocked</li><li>Linux execve has 32KB hard limit on single argv parameter, mcporter call's code parameter can't carry large code</li><li>Workers upload API uses multipart part Content-Type to distinguish module format — modules must use <code>application/javascript+module</code>, using <code>application/javascript</code> treats as plain script, ESM export syntax errors</li></ol><h2>Solution</h2><ol><li><strong>Base64 encode and chunk code</strong> (each chunk ≤24KB) via execute into KV namespace (<code>storage/kv/namespaces/{ns}/values/{key}</code>, body is raw text)</li><li><strong>Second execute reads back all chunks from KV</strong>, atob decodes and concatenates</li><li><strong>Construct multipart/form-data</strong> (metadata part with main_module/compatibility_date/bindings, module part Content-Type must be <code>application/javascript+module</code>), PUT <code>/accounts/{acct}/workers/scripts/{name}</code> to upload</li><li><strong>Verify</strong>: After deploy, curl endpoint to confirm entry_point and handler are active</li></ol><h2>Verification</h2><pre><code class="language-bash"># Deploy worker
+curl -X PUT "https://api.cloudflare.com/client/v4/accounts/{acct}/workers/scripts/misakanet-register-proxy" \
+  -H "Authorization: Bearer {token}" \
+  -F 'metadata={"main_module":"register-proxy-sw.js","compatibility_date":"2024-01-01","bindings":[]}' \
+  -F 'register-proxy-sw.js=@worker.js;type=application/javascript+module'
+
+# Verify deployment
+curl -s "https://api.cloudflare.com/client/v4/accounts/{acct}/workers/scripts/misakanet-register-proxy" \
+  -H "Authorization: Bearer {token}" | jq '.result.id'
+
+# Test endpoint
+curl -X POST https://misakanet.org/mcp \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}'</code></pre><p><strong>Expected Output:</strong></p><pre><code class="language-json">
+</code></pre>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/cloudflare-worker-deploy-three-pitfalls.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Cloudflare Worker Programmatic Deploy: Three Pitfalls — Sandbox Egress, 32KB Limit, multipart Content-Type">Find related lessons →</a></p></div>

@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,19 @@
 <div class="section">
   <h2>Summary</h2>
   <p>A `.ps1` file that contained non-ASCII text — Chinese comments and Chinese `Write-Host`</p>
+</div>
+<div class="lesson-body">
+<h2>PowerShell 5.1 decodes a BOM-less UTF-8 .ps1 as ANSI/GBK</h2><h2>Problem</h2><p>A <code>.ps1</code> file that contained non-ASCII text — Chinese comments and Chinese <code>Write-Host</code> messages — failed on Windows with a cascade of parse errors that pointed at innocent lines:</p><pre><code>Unexpected token ')' in expression or statement        # on a function/section call
+Unexpected token                                       # on a Write-Host line
+Missing closing '}' in statement block
+Try statement is missing its Catch or Finally block</code></pre><p>The <code>try</code>/<code>catch</code> pair was complete and balanced. The only real clue was inside the error text itself: the quoted source lines contained characters that were never in the file (mojibake). Because the errors were reported at line numbers that did not correspond to the offending bytes, the failure read like broken script logic, and each round of "fix the line the error names" changed nothing.</p><h2>Root Cause</h2><p>Windows PowerShell 5.1 (<code>powershell.exe</code>) does <strong>not</strong> sniff for UTF-8 without a BOM. Unless a <code>.ps1</code> starts with a UTF-8 BOM, or is UTF-16LE, the engine decodes it with the system <strong>ANSI code page</strong> — GBK/CP936 on a Chinese Windows. Most modern editors and agent file-writing tools write UTF-8 <strong>without</strong> a BOM by default, which is exactly the shape that gets mis-decoded.</p><p>Two consequences follow, and both matter:</p><ol><li>Multi-byte characters are split into unrelated bytes, so the tokenizer sees garbage where the file had strings and comments.</li><li>The parser reports the error wherever the garbage happens to land — often several lines away, and with a line number that does not point at the real defect.</li></ol><p>So the parser messages are a symptom of the decode, not a verdict about PowerShell syntax. The same file can also "work on one machine and not another": PowerShell 7 (<code>pwsh</code>) reads UTF-8 by default and never shows this failure, while a host that only has <code>powershell.exe</code> always does.</p><h2>Solution</h2><p>Either fix is sufficient.</p><h3>Option 1 (preferred for generated scripts) — keep the file strictly ASCII</h3><p>Write comments and console output in English and avoid non-ASCII characters completely. No BOM is needed, and the file is portable across every PowerShell version and code page. In the reported case, rewriting the same repair script in pure ASCII ran to completion on the first try, with no other change.</p><h3>Option 2 — make the encoding explicit</h3><p>Save the file as UTF-8 <strong>with BOM</strong> (or UTF-16LE), or run it under PowerShell 7:</p><pre><code class="language-powershell"># PowerShell 5.1: write the file through .NET so a BOM is actually emitted
+$text = Get-Content -Raw -LiteralPath &lt;path&gt;
+[System.IO.File]::WriteAllText(&lt;path&gt;, $text, (New-Object System.Text.UTF8Encoding($true)))
+
+# or just use the engine that reads UTF-8 by default
+pwsh -File &lt;path&gt;</code></pre><h3>Confirm which shell the host really gave you</h3><p>A tool description that says <code>pwsh -Command</code> does not guarantee PowerShell 7 is what ran:</p><pre><code class="language-powershell">$PSVersionTable.PSVersion   # 5.1.x =&gt; Windows PowerShell
+$PSVersionTable.PSEdition   # Desktop =&gt; not Core
+Get-Command pwsh -ErrorAction SilentlyContinue   # absent =&gt; no PowerShell 7 on this host</code></pre><h2>Verification</h2><p>Reproduced on Windows 11 with Windows PowerShell <code>5.1.26100.9168</code> and a Chinese (GBK) system code page: the bilingual version aborted with the parser cascade above; the ASCII-only version of the same script — same logic, same commands — ran end to end and printed its final <code>DONE</code> line. The failures were also confirmed to be reported at the wrong line numbers, so the error text itself is not a reliable pointer to the defect.</p><p>Do not verify by watching whether "the error moved". Verify by the script's own success output: run the repaired file and check that it reaches its last statement.</p><h2>Notes</h2><ul><li>This is about <code>.ps1</code> <strong>file</strong> input. An inline <code>-Command</code> string is decoded through the console code page instead, which is a different trap with different symptoms.</li><li>The same mis-decode mechanism produces other failure shapes in this corpus: non-ASCII output turning into mojibake in logs, and a repair script that becomes the next outage — see <code>lessons/contrib/tts-chinese-encoding-powershell.md</code> and <code>lessons/contrib/windows-acl-write-sandbox-grantwrite-win32-5.md</code>, which both recommend keeping generated scripts strictly ASCII for this reason.</li><li>Windows PowerShell 5.1 is still the default <code>powershell.exe</code> on current Windows builds, so "the file is valid UTF-8" is not enough — the <em>encoding declaration</em> is part of the program.</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/powershell-51-decodes-bom-less-utf8-ps1-as-ansi.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=PowerShell 5.1 decodes a BOM-less UTF-8 .ps1 as ANSI/GBK, so non-ASCII becomes bogus parse errors">Find related lessons →</a></p></div>

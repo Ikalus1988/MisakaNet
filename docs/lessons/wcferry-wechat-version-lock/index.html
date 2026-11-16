@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,11 @@
 <div class="section">
   <h2>Summary</h2>
   <p>wxauto 不够稳定时，考虑切换到 wcferry (WeChatFerry) 方案。但安装后无法 hook 微信进程。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>wxauto 不够稳定时，考虑切换到 wcferry (WeChatFerry) 方案。但安装后无法 hook 微信进程。</p><h2>Root Cause</h2><p>wcferry 通过 DLL 注入 hook 微信内存地址，<strong>微信版本必须精确匹配</strong>。当前 pip 上的 wcferry 39.5.x 仅支持微信 3.9.12.51。用户的微信版本是 3.9.12.56，hook 失败。</p><h2>Solution</h2><p>降级微信到 wcferry 支持的版本：</p><ol><li>关闭微信，卸载当前版本</li><li>下载 WeChatSetup-3.9.12.51.exe（约 273 MB）</li><li>安装后关闭自动更新：设置 → 通用设置 → 取消勾选自动更新</li><li>管理员 PowerShell 开放防火墙端口供 WSL2 连接：<pre><code class="language-powershell">netsh advfirewall firewall add rule name="wcferry" dir=in action=allow protocol=TCP localport=10086</code></pre></li></ol><h2>Verification</h2><pre><code class="language-bash">echo "Lesson: wcferry wechat version lock"
+wc -l lessons/contrib/wcferry-wechat-version-lock.md</code></pre><p><strong>Expected Output:</strong></p><pre><code>Lesson: wcferry wechat version lock
+# (line count)</code></pre><h2>Notes</h2><p>微信 3.9.12.51 可能被腾讯服务端封锁无法登录。如果降级后登录失败，需切回 wxauto 方案（不限版本）。</p><h2>Notes</h2><p>需要用 Python 控制/读取微信消息，且可以接受降级微信版本的使用者。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/wcferry-wechat-version-lock.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=wcferry wechat version lock">Find related lessons →</a></p></div>

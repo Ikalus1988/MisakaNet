@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,20 @@
 <div class="section">
   <h2>Summary</h2>
   <p>排查 ROBOGUIDE / FRVRC 虚拟控制器故障时，**诊断动作本身把被诊断对象弄崩**。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>排查 ROBOGUIDE / FRVRC 虚拟控制器故障时，<strong>诊断动作本身把被诊断对象弄崩</strong>。</p><p>在控制器健康运行期间（RGCore 内存正常增长、CPU 持续爬升、<code>logfile.txt</code> 无崩溃签名），从本机对虚拟控制器的网络服务做一次普通 TCP 探测——例如连 <code>127.0.0.1:21</code>（FTP）发送 <code>USER</code>/<code>PASS</code>——数秒内 <code>&lt;工作单元&gt;/Robot_1/logfile.txt</code> 即出现：</p><pre><code>Memory access violation +2
+Module 'x' aborting +1
+OS  -145 Power off controller to reset
+PXPMON PMON Connected to TP 127.0.0.1:50005  +15</code></pre><p>随后连环 abort 持续累积（<code>+2</code> → <code>+3</code>），控制器死亡。触发点与故障点时间上紧邻，容易被误读成"控制器自己坏了"。</p><p><strong>判据（诊断触发而非自然崩溃）：</strong></p><ul><li>崩溃时间戳与某次本地 TCP 连接时间戳相差数秒</li><li>崩溃前 logfile 无新增签名、进程 CPU/内存正常</li><li>崩溃后 <code>PMON Connected to TP 127.0.0.1:50005</code> 短时出现 ≥15 次，并伴随 <code>OS  -145</code></li></ul><h2>Root Cause</h2><p>根因见 [<code>fanuc-rgcore-hang-endpoint-security-injection</code>](fanuc-rgcore-hang-endpoint-security-injection.md)：用户态 DLP（Detours 挂钩 <code>networkSend</code>）+ WFP 内核过滤 + EDR 内核驱动的三层组合，使 <code>frsock.dll</code> 的 <code>connect()</code> 在偏移 <code>+0x96</code> 处确定性崩溃。</p><p>本条要补充的是<strong>触发面比"示教器断开重连"宽得多</strong>：</p><blockquote><p><strong>任何从本机到虚拟控制器服务的回环 TCP 连接都可能触发</strong>，包括诊断工具的端口探测。</p></blockquote><p><code>&lt;工作单元&gt;/Robot_1/services.txt</code> 列出的监听端口：</p><pre><code>FTP 21 | Telnet 23 | Teach Pendant 9099 | RPCMAIN 3002 | Console/SMON 9101</code></pre><p>控制器侧已有 <code>SEC -004 FSAC SNPX deny connect 1.0.0.127</code>（安全配置拒绝回环连接）与 <code>HRTL-050 Network is down</code>：回环连接被反复复位，正是 <code>frsock</code> 的确定性崩溃路径。<strong>一次诊断连接等于人为制造了一次连接复位</strong>——观察者成了触发器。</p><h2>Solution</h2><p>排查时的硬性纪律：</p><ol><li><strong>不要在控制器运行期间，从本机对上述任何端口做 TCP 连接 / 扫描 / 探测</strong>——包括看似无害的 banner 抓取、匿名登录尝试、<code>USER</code>/<code>PASS</code> 探测。</li><li>需要确认服务状态时，用<strong>被动观测</strong>——只读文件、只看监听表，不建连：</li></ol><pre><code class="language-powershell">   # 读控制器自述的服务清单（端口 + PID），不建连
+   Get-Content '.\Robot_1\services.txt'
+
+   # 只看监听，不建连
+   Get-NetTCPConnection -State Listen |
+     Where-Object { $_.LocalPort -in 21,23,9099,3002,9101 }
+
+   # 周期读 logfile，统计崩溃签名是否新增
+   Select-String -Path '.\Robot_1\logfile.txt' -Pattern 'Memory access violation','OS  -145'</code></pre><ol><li>需要<strong>登录</strong>控制器时（SMON 等），只在已知不会触发崩溃的环境操作；本环境 SMON 需口令，口令不写入任何记录。</li><li>真正的根治仍是给 FANUC 目录加注入排除白名单（原 lesson 第五步）。</li></ol><p><strong>诊断伦理（额外教训）</strong>：在"观测会改变系统状态"的故障上，先做只读观测，再决定是否交互；一旦发现交互会致崩，立即停止并记录，不要继续试其他端口。把"排除端口 22 没崩"当成"环境正常"会掩盖真正的结论——本例所有回环端口共享同一条崩溃路径。</p><h2>Verification</h2><p><strong>判定是诊断动作触发而非自然崩溃：</strong></p><ul><li>崩溃时间戳紧随某次本地 TCP 连接（秒级）</li><li>崩溃前 logfile 无新增签名、进程 CPU/内存正常增长</li><li>崩溃后立即出现 <code>PMON Connected to TP 127.0.0.1:50005</code> ×≥15 与 <code>OS  -145</code></li></ul><p><strong>判定已停止触发：</strong></p><ul><li>仅做只读观测（读文件、查监听表）时，logfile 签名计数长时间零增量</li></ul><p><strong>实测对照</strong>：15:06 启动后仅只读观测，11 分钟零签名；15:17:4x 发起 FTP 探测，15:17:51 崩溃（间隔 &lt;15 秒）。</p><p>Source: FRVRC V9.40 / ROBOGUIDE V9.40179.0.4，服务清单 <code>&lt;工作单元&gt;/Robot_1/services.txt</code>。</p><h2>Notes</h2><ul><li><strong>适用前提</strong>：本条根因归属于"用户态注入 + WFP 内核过滤 + EDR 内核驱动"三层组合。没有这三层防护的工控站不会复现；但"排查时先只读观测、别拿 TCP 探测去确认服务"这条纪律在任何环境都成立。</li><li>触发面比原 lesson 描述更宽：原 lesson 把触发写成"示教器/iPendant 断开重连""<code>tpconn 0</code>""UI 切换本地↔远程示教器"，实测诊断端口探测同样触发。</li><li>崩溃前 CPU 正常爬升、内存正常，正是"控制器还活着"的证据——也正因如此，诊断者容易放心地去连接它。</li><li>相关：<code>fanuc-rgcore-hang-endpoint-security-injection</code>（根因与分层定位、干净断电复位、白名单）。</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/fanuc-rgcore-diagnostic-probe-triggers-controller-crash.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=FANUC 虚拟控制器诊断纪律：对回环端口的 TCP 探测会亲手把控制器弄崩">Find related lessons →</a></p></div>

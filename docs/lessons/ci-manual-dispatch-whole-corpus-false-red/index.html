@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,23 @@
 <div class="section">
   <h2>Summary</h2>
   <p>A maintainer dispatched the PR-audit workflow by hand to answer one question:</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>A maintainer dispatched the PR-audit workflow by hand to answer one question: "do the tests still pass on <code>main</code>?" The test suite answered cleanly — <code>1170 passed, 15 skipped</code> — and the run still finished red:</p><pre><code>Audit failed: lesson schema validation failed.
+##[error]Process completed with exit code 1.</code></pre><p>The schema gate was not auditing anything related to the question. With no pull request in the event payload, it had fallen back to validating <strong>every</strong> lesson in the repository, where a large legacy fraction fails by design. Every manual dispatch of that workflow ended the same way, so the red check carried no information: the maintainer had to read the log to find out whether the failure belonged to the thing being audited.</p><h2>Root Cause</h2><p>The audit step was written for one trigger and silently reused for another:</p><pre><code class="language-bash">if [ "${{ github.event_name }}" = "pull_request" ]; then
+  mapfile -t TARGETS &lt; &lt;(git diff --name-only "$BASE_SHA" "$HEAD_SHA" -- 'lessons/**/*.md' 'lessons/*.md')
+else
+  mapfile -t TARGETS &lt; &lt;(find lessons -name '*.md' | sort)   # ← whole corpus
+fi</code></pre><p>On a PR the check is meaningful: only changed files are judged, and legacy debt in untouched files is not the contributor's problem. The <code>else</code> branch was written as a fallback for "some other event", but there is only one other event — the manual dispatch, which has no PR context at all. So the fallback turned a scoped, per-change gate into a corpus-wide gate that the corpus can never pass, and the verdict logic (<code>if [ "$SCHEMA" = "fail" ]; then exit 1</code>) faithfully reported failure.</p><p>The generalisable defect is not the schema rule. It is a <strong>fallback that changes the gate's scope instead of declining to run</strong>: a check that fails for reasons outside the thing under audit teaches everyone to ignore it, and the next real failure is then ignored too.</p><h2>Solution</h2><p>Make the scope an explicit property of the trigger, and let the gate decline rather than substitute a different question:</p><pre><code class="language-bash">PR_NUM="${{ github.event.inputs.pr_number }}"
+if [ "${{ github.event_name }}" = "pull_request" ]; then
+  mapfile -t TARGETS &lt; &lt;(git diff --name-only "$BASE_SHA" "$HEAD_SHA" -- 'lessons/**/*.md' 'lessons/*.md')
+elif [ -n "$PR_NUM" ]; then
+  # manual audit of one PR: judge that PR's lessons only
+  mapfile -t TARGETS &lt; &lt;(gh pr diff "$PR_NUM" --repo OWNER/REPO --name-only | grep -E '^lessons/.*\.md$' || true)
+else
+  TARGETS=()
+  echo "No PR context — schema gate skipped. Pass the pr_number input to audit a specific PR."
+fi</code></pre><p>Rules that follow from this incident:</p><ul><li>A gate's scope should come from the audited object (this PR, this commit), never from "whatever is in the working tree" as a fallback.</li><li>If the scope cannot be determined, <strong>skip and say so</strong>; do not silently widen it.</li><li>Give the manual trigger a way to name its target (here a <code>pr_number</code> input), otherwise the maintainer's only option is a run that cannot pass.</li><li>Distinguish "the code is bad" from "the run is red". A red check must be actionable within the run itself.</li></ul><h2>Verification</h2><ol><li>Dispatch the workflow with no inputs; confirm the schema step prints "schema gate skipped" and the overall verdict is green when the other gates pass. MisakaNet evidence: the manual dispatch of <code>7fcb00aef</code> (2026-09-13), which was previously red for exactly this reason in run 34758013963.</li><li>Dispatch it with the <code>pr_number</code> input set to an open PR that touches a lesson and confirm the schema step validates only that PR's files (the <code>gh pr diff</code> listing appears in the log).</li><li>Open a normal PR and confirm the changed-file scope is unchanged — this fix must not weaken the gate on real pull requests.</li></ol>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/ci-manual-dispatch-whole-corpus-false-red.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=A manual CI run that sweeps the whole corpus always fails, so nobody trusts the red">Find related lessons →</a></p></div>

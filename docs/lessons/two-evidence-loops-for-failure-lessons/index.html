@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,19 @@
 <div class="section">
   <h2>Summary</h2>
   <p>A failure-lesson project can undercount real value if it only treats public feedback signals as proof of reuse. Helpful votes, feedback issues, and usage report…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>A failure-lesson project can undercount real value if it only treats public feedback signals as proof of reuse. Helpful votes, feedback issues, and usage reports are important, but some lessons have already been reused before they are published.</p><p>This creates a misleading conclusion:</p><blockquote><p><code>helpful_votes = 0</code>, therefore no lesson has ever helped anyone.</p></blockquote><p>That may be true for public post-publication evidence, but false for source evidence.</p><h2>Root Cause</h2><p>There are two different evidence loops:</p><table><thead><tr><th>Loop</th><th>What it proves</th><th>Example signals</th></tr></thead><tbody><tr><td>Pre-ingest reuse</td><td>The lesson came from a real failure and a real fix before publication</td><td>maintainer-side reuse, colleague memory dump, field debugging notes, PR repair record</td></tr><tr><td>Post-publication usefulness</td><td>The public lesson helped a new user after publication</td><td>helpful vote, feedback issue, usage report, external citation</td></tr></tbody></table><p>Mixing these loops causes bad strategy. If you only chase public votes, you may ignore high-value private or messy knowledge sources. If you only trust source evidence, you may overclaim public adoption.</p><h2>Solution</h2><p>Track both loops separately.</p><h3>1. Add source evidence when a lesson is ingested</h3><pre><code class="language-yaml">evidence:
+  level: "pre_ingest_reused"
+  source_type: "maintainer_reuse"
+  verified_by: "maintainer"
+  public_quote_allowed: false</code></pre><p>Useful evidence levels:</p><pre><code class="language-text">draft
+self_tested
+pre_ingest_reused
+post_public_feedback
+independently_reproduced</code></pre><h3>2. Keep public usefulness metrics separate</h3><p>Do not merge helpful votes with source evidence. Helpful votes answer a different question:</p><pre><code class="language-text">Did this published lesson help a new user later?</code></pre><p>Pre-ingest evidence answers:</p><pre><code class="language-text">Was this lesson distilled from a real failure and a working fix?</code></pre><h3>3. Use precise release wording</h3><p>Bad:</p><pre><code class="language-text">No helpful votes means no evidence of value.</code></pre><p>Better:</p><pre><code class="language-text">Public post-publication reuse is not yet proven. Several lessons have pre-ingest reuse evidence from real debugging sessions and maintainer-side reuse.</code></pre><h2>Verification</h2><pre><code class="language-bash">echo "Lesson: Two Evidence Loops for Failure Lessons"
+wc -l lessons/contrib/two-evidence-loops-for-failure-lessons.md</code></pre><p><strong>Expected Output:</strong></p><pre><code>Lesson: Two Evidence Loops for Failure Lessons
+# (line count)</code></pre><h2>Next Agent Prompt</h2><p>When reviewing a lesson repository, ask two questions separately:</p><ol><li>What proves this lesson came from a real failure?</li><li>What proves this published lesson helped someone new?</li></ol>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/two-evidence-loops-for-failure-lessons.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Two Evidence Loops for Failure Lessons">Find related lessons →</a></p></div>

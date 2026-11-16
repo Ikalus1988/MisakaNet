@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,18 @@
 <div class="section">
   <h2>Summary</h2>
   <p>`pnpm` / `plugin-add` failed with `ERR_PNPM_META_FETCH_FAIL` preceded by:</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p><code>pnpm</code> / <code>plugin-add</code> failed with <code>ERR_PNPM_META_FETCH_FAIL</code> preceded by:</p><ul><li><code>DEPTH_ZERO_SELF_SIGNED_CERT</code></li><li><code>CERT_HAS_EXPIRED</code></li></ul><p>against <code>registry.npmjs.org</code>. <code>curl</code> to npmjs returned <code>000</code> (TLS handshake failure) while the mirror returned <code>200</code>.</p><p>The failure happens <em>before</em> any package is resolved — the package manager cannot even fetch the registry metadata, so no version negotiation, no dependency graph walk, no install. The error is at the transport layer, not the package layer.</p><h2>Root Cause</h2><p>The default npm registry is not reliably reachable with valid certificates from this network. Two compounding causes:</p><ol><li><strong>Self-signed certificate in the chain.</strong> A middlebox (corporate proxy, captive portal, or transparent TLS inspector) is terminating the TLS connection to <code>registry.npmjs.org</code> with its own self-signed root. The client sees a cert chain that does not validate against its trust store — <code>DEPTH_ZERO_SELF_SIGNED_CERT</code>.</li><li><strong>Expired certificate.</strong> The middlebox's interception certificate has expired (or the chain has an expired intermediate) — <code>CERT_HAS_EXPIRED</code>.</li></ol><p>Both are transport-layer failures. The package manager is correctly refusing to proceed — disabling TLS verification to force the install through would expose every subsequent download to silent MITM, and is the wrong fix.</p><h2>Solution</h2><h3>Step 1 — Confirm the failure is transport-layer, not package-layer</h3><pre><code class="language-bash">curl -vI https://registry.npmjs.org/
+# expect: SSL certificate problem: self-signed certificate in certificate chain
+#         OR: SSL certificate problem: certificate has expired</code></pre><p>If <code>curl</code> to npmjs returns <code>000</code> and <code>curl</code> to a mirror returns <code>200</code>, the failure is the registry endpoint's TLS chain from this network, not the package manager's config.</p><h3>Step 2 — Pin a mirror in the profile <code>.npmrc</code></h3><p>In the profile's <code>.npmrc</code> (NOT the global one — keep the global default intact for hosts that can reach npmjs directly):</p><pre><code class="language-ini">registry=https://registry.npmmirror.com</code></pre><p><code>npmmirror.com</code> is the canonical mirror (Alibaba's public mirror, also reachable as <code>registry.npm.taobao.org</code> legacy). It serves the same metadata as <code>registry.npmjs.org</code> from a different TLS endpoint that does not traverse the failing middlebox.</p><p>If the network also intercepts <code>npmmirror.com</code>, try <code>https://registry.yarnpkg.com</code> or self-host a <a href="https://verdaccio.org">Verdaccio</a> instance behind a TLS chain you control.</p><h3>Step 3 — Retry the install</h3><pre><code class="language-bash">pnpm install
+# expect: HTTP 200 from the mirror, install completes, package in dependencies + lockfile</code></pre><h3>Step 4 — Do NOT disable TLS verification</h3><p>The wrong fix is to set:</p><pre><code class="language-ini"># DO NOT DO THIS — exposes every download to MITM
+strict-ssl=false
+NODE_TLS_REJECT_UNAUTHORIZED=0</code></pre><p>These work around the symptom but accept any certificate for any subsequent fetch — including for <code>postinstall</code> scripts that download further binaries. A self-signed middlebox that expires and intercepts is the exact threat model TLS is supposed to defend against; disabling TLS to install <code>left-pad</code> is not the trade-off.</p><h2>Verification</h2><p>双侧（注册表不可达 vs 钉住镜像；注意修复是换镜像，<strong>不是</strong>关 TLS）：</p><pre><code class="language-console">$ curl -sS -I --max-time 5 --resolve registry.npmjs.org:443:127.0.0.1 https://registry.npmjs.org/
+curl: (7) Failed to connect to registry.npmjs.org port 443 after 0 ms: Couldn't connect to server
+
+$ curl -sS -I --max-time 10 https://registry.npmmirror.com
+HTTP/2 200</code></pre><p>故障侧：注册表不可达时安装直接死（--resolve 指向 127.0.0.1 模拟 DNS/网络不通）；修复侧：钉住 HTTPS 镜像后元数据端点返回 200——全程 <code>strict-ssl</code> 保持开启，本篇的红线是"换镜像，永不关 TLS"。</p><h2>Notes</h2><ul><li>The "pin a mirror" fix is host-local — keep the global <code>.npmrc</code> pointing at <code>registry.npmjs.org</code> so hosts on networks that can reach it use the canonical registry. Only the hosts behind the failing middlebox get the mirror pinned.</li><li>The middlebox-interception pattern is the same shape as "Wi-Fi captive portal that intercepts HTTPS with a self-signed cert until you sign in" — if you are on a new network and npm fails with <code>DEPTH_ZERO_SELF_SIGNED_CERT</code>, sign into the captive portal first; the cert chain will resolve itself once you are authenticated.</li><li>Related lessons: <code>[A stubbed success is not a sandbox]</code> (a TLS-disabled install "succeeds" but is not a successful install), <code>[An allowlist that rejects real data is worse than no validation]</code> (the inverse — too-strict TLS can also break legitimate installs).</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/npmjs-registry-unreachable-pin-a-mirror-never-disable-tls.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=npmjs registry unreachable from this host (self-signed/expired cert): pin a mirror, never disable TLS">Find related lessons →</a></p></div>

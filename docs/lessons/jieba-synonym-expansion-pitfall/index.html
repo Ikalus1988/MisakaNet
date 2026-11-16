@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,26 @@
 <div class="section">
   <h2>Summary</h2>
   <p>使用 jieba.add_word() 添加同义词时，会改变全局分词行为，导致其他查询回归。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>使用 jieba.add_word() 添加同义词时，会改变全局分词行为，导致其他查询回归。</p><h2>Root Cause</h2><p>jieba.add_word() 的问题：</p><ol><li>改变全局分词器状态，影响所有后续查询</li><li>新词优先级高于已有分词规则</li><li>语义扩展（如"手机"→"电话"）不适合用 add_word</li><li>只有专有名词才应该用 add_word</li></ol><h2>Solution</h2><p><strong>用同义词映射文件代替 add_word：</strong></p><pre><code class="language-python"># 错误方式：改变全局分词
+jieba.add_word("手机")  # 会影响所有查询
+
+# 正确方式：同义词映射文件
+# synonyms.json:
+{
+  "手机": ["电话", "移动设备", "智能手机"],
+  "电脑": ["计算机", "PC", "笔记本"]
+}
+
+def expand_query_with_synonyms(query, synonyms):
+    expanded = [query]
+    for word, syns in synonyms.items():
+        if word in query:
+            expanded.extend(syns)
+    return expanded</code></pre><p><strong>规则：</strong></p><ul><li>只有专有名词才用 add_word（如产品名、品牌名）</li><li>语义扩展必须用映射文件</li><li>映射文件可版本控制，可审计</li><li>add_word 改变全局状态，不可控</li></ul><h2>Verification</h2><pre><code class="language-bash">echo "Lesson: 同义词扩展陷阱：jieba.add_word() 改变全局分词行为导致回归"
+wc -l lessons/contrib/jieba-synonym-expansion-pitfall.md</code></pre><p><strong>Expected Output:</strong></p><pre><code>Lesson: 同义词扩展陷阱：jieba.add_word() 改变全局分词行为导致回归
+# (line count)</code></pre><h2>Key Points</h2><ul><li>jieba.add_word() 改变全局分词行为，不可控</li><li>语义扩展必须用同义词映射文件</li><li>只有专有名词才用 add_word</li><li>映射文件可版本控制、可审计</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/jieba-synonym-expansion-pitfall.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=同义词扩展陷阱：jieba.add_word() 改变全局分词行为导致回归">Find related lessons →</a></p></div>

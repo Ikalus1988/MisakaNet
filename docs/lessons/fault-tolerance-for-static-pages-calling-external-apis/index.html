@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,28 @@
 <div class="section">
   <h2>Summary</h2>
   <p>> English translation / rewrite of `lessons/contrib/static-page-github-api-403-rate-limit.md`</p>
+</div>
+<div class="lesson-body">
+<blockquote><p>English translation / rewrite of <code>lessons/contrib/static-page-github-api-403-rate-limit.md</code></p></blockquote><h2>Problem</h2><p>Pure static pages (HTML+JS on CDN/GitHub Pages, no backend) call third-party APIs from the browser. Risks:</p><ul><li>Hard rate limits (e.g. GitHub REST unauthenticated <strong>60 req/hour</strong>)</li><li><code>fetch</code> with no timeout hangs forever on bad networks</li><li>One failed call kills unrelated UI via a shared <code>Promise.all</code> / try-catch</li><li>No server-side key, cache, or request coalescing</li></ul><h2>Design principles</h2><h3>1. Every external request needs a timeout</h3><pre><code class="language-js">async function fetchWithTimeout(url, timeoutMs = 8000) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() =&gt; ctrl.abort(), timeoutMs);
+  try {
+    const r = await fetch(url, { signal: ctrl.signal });
+    clearTimeout(timer);
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    return r.json();
+  } catch (e) {
+    clearTimeout(timer);
+    throw e;
+  }
+}</code></pre><h3>2. Parallel requests fail independently</h3><pre><code class="language-js">const [dataA, dataB] = await Promise.all([
+  fetchWithTimeout(urlA).catch(() =&gt; null),
+  fetchWithTimeout(urlB).catch(() =&gt; null),
+]);</code></pre><h3>3. Features load independently</h3><pre><code class="language-js">// bad: one throw blocks the rest
+// good:
+loadA().catch(() =&gt; {});
+loadB().catch(() =&gt; {});
+loadC().catch(() =&gt; {});</code></pre><h3>4. Friendly degradation</h3><p>Do not dump raw <code>TypeError: Failed to fetch</code> or <code>HTTP 403</code> to end users. Map abort → timeout message, 403 → rate-limit / auth message, network → retry later.</p><h3>5. Prefer authenticated or cached paths when possible</h3><p>For GitHub data on static sites: build-time fetch, or a tiny proxy, beats browser-anonymous spam against the 60/hour ceiling.</p><h2>Verification</h2><ul><li>Kill network mid-load: page still shows other widgets</li><li>Force 403: UI shows a calm fallback, not a blank page</li><li>Confirm timeouts fire under ~timeoutMs</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/en/static-page-github-api-fault-tolerance.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Fault-tolerance for static pages calling external APIs">Find related lessons →</a></p></div>

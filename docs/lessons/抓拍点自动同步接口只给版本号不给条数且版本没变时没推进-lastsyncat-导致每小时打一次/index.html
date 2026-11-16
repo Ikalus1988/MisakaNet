@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>1) 想做「不下载就知道要不要同步」在协议层面做不到；2) 调度器每小时都在打接口，明明上次刚查过，日志里反复「距上次同步 73 小时」。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><ol><li>想做「不下载就知道要不要同步」在协议层面做不到；2) 调度器每小时都在打接口，明明上次刚查过，日志里反复「距上次同步 73 小时」。</li></ol><h2>Root Cause</h2><ol><li><code>&lt;PATH&gt; 只返回 </code>{"version":"[REDACTED:card_number]"}`，条数必须把 1.2MB 密文拉下来解密才知道，版本号里不含条数信息。</li><li>版本没变时代码只更新了 <code>lastCheckAt</code>，而调度器判定的依据是 <code>lastSyncAt</code>，于是下一次又算出「距上次 73 小时」→ 每小时再打一次接口。</li></ol><h2>Fix</h2><ol><li>做成两级判断：版本号没变 → 不下载；变了 → 拉下来比「条数 + 内容哈希」，两者都一样就<strong>不写盘</strong>，只更新版本号。</li><li>版本没变时也要把 <code>lastSyncAt</code> 推到当前时间（数据确实是最新的），别只更新 <code>lastCheckAt</code>。</li></ol><p>判据：调度器读哪个字段，就必须推进哪个字段，两个时间戳不能混用。</p><h2>Verification</h2><p>连续观察 24 小时：每小时一次的重复请求消失；版本变化时能同步且条数一致；内容相同时数据文件 mtime 不变（没写盘）。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/抓拍点自动同步接口只给版本号不给条数且版本没变时没推进-lastsyncat-导致每小时打一次.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=抓拍点自动同步：接口只给版本号不给条数，且「版本没变」时没推进 lastSyncAt 导致每小时打一次">Find related lessons →</a></p></div>

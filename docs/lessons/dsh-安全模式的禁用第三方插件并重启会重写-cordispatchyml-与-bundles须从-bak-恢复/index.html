@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>DSH 启动时弹「应用无法启动或已意外停止」对话框，点了第三个按钮「禁用第三方插件、备份 profile patch 并重启」。应用能起来了，但事后发现配置被大幅重置：</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>DSH 启动时弹「应用无法启动或已意外停止」对话框，点了第三个按钮「禁用第三方插件、备份 profile patch 并重启」。应用能起来了，但事后发现配置被大幅重置：</p><ol><li>profiles/&lt;name&gt;&lt;PATH&gt; 只剩 3 行（ui-settings-account / ui-chat / 一个写死的 ui-settings.enabled: false），原先的 agent-default-model、dsh-ops 行、MCP 行、vision-router 等全部消失；</li><li>package.json 的 dsh.profile.bundles 只剩 @deepseek-ai/dsh-base 和 @deepseek-ai/dsh-web-app 两项，所有第三方插件不再加载；</li><li>会话里 ops 工具、记忆工具、抖音工具同时消失。</li></ol><h2>Root Cause</h2><p>该按钮的语义是「以最小插件集启动并把当前 profile 的 patch 备份后替换」：它把 cordis.patch.yml 换成最小安全集、把 bundles 收缩为官方 base+web-app，并把原文件保存为 cordis.patch.yml.bak-&lt;epoch 毫秒&gt;。dependencies 不动，所以包还在 node_modules，只是不加载。它是应急手段，不是修复手段——被它禁掉的东西不会自己回来。</p><h2>Fix</h2><p>恢复步骤（按序）：</p><ol><li>profile 目录下找 cordis.patch.yml.bak-&lt;时间戳&gt;，它保存的是点击前的完整 patch： copy that .bak over cordis.patch.yml</li><li>重建 bundles：安全模式把 package.json 的 dsh.profile.bundles 收缩到只剩 @deepseek-ai/dsh-base 与 @deepseek-ai/dsh-web-app；依赖（dependencies）通常还在， 所以只需把第三方包名按原顺序补回 bundles 数组。</li><li>用 dsh-safety check 校验，再重启。</li></ol><p>预防：动插件/配置前先 dsh-safety snapshot，恢复比重建快得多；点安全模式前三思，它等于把 profile 组装回退到出厂最小集。</p><h2>Verification</h2><p>恢复后 list_plugins 总数回到原值、关键行 fiberPhase=active；dsh-safety check 返回 PASS；重启后会话工具（ops/memory/平台插件）重新出现。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/dsh-安全模式的禁用第三方插件并重启会重写-cordispatchyml-与-bundles须从-bak.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=DSH 安全模式的「禁用第三方插件并重启」会重写 cordis.patch.yml 与 bundles，须从 .bak 恢复">Find related lessons →</a></p></div>

@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,15 @@
 <div class="section">
   <h2>Summary</h2>
   <p>A batch generation task started with a "pilot on 5 machines". The pilot completed cleanly — 5/5 — and</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>A batch generation task started with a "pilot on 5 machines". The pilot completed cleanly — 5/5 — and only then did the operator discover that <strong>all five were inside the group the user had explicitly excluded</strong>. Five runs were wasted, and the correct 58 had to be run afterwards.</p><p>The reporter's own error line:</p><pre><code>试点 5 台全部落在用户明确排除的分组里，白跑后重做</code></pre><h2>Root Cause</h2><p>The pilot's sample was ordered by <strong>data availability</strong> only — "pick whoever has data" — with no business-scope filter applied first, and the "which ones?" question was only asked at the batch phase, when it was too late to un-choose the sample.</p><p>That is two prerequisites of a batch job being treated as one:</p><ul><li><strong>Scope</strong> — which objects the run is about. A business constraint. Must be fixed first.</li><li><strong>Availability</strong> — which of them have data. A technical constraint. Applied <em>inside</em> the scope.</li></ul><p>Reverse the order and the pilot objects fall outside the scope, so the pilot's conclusions do not apply to what will actually be run, and the run must be redone. The quieter damage is in the estimates: a result like "5/5 succeeded, X minutes" gets read as a projection for the scope even though it was measured on objects that are not in the scope at all.</p><h2>Solution</h2><p>The standard order for a batch job:</p><pre><code class="language-text">① fix scope (business filter: exclude X / only Y)
+   ↓
+② stratify availability inside the scope (has data / none / partial)
+   ↓
+③ pick the pilot from "inside scope ∩ has data"
+   ↓
+④ run the pilot → ⑤ full run</code></pre><p><strong>Hard criterion:</strong> before the pilot starts, you must be able to list <strong>who was excluded and why</strong>. If you cannot answer "which objects are not part of this run", scope was never fixed and the pilot must not start.</p><p>Two companions the reporter added:</p><ol><li><strong>The pilot must cover the representative groups inside the scope.</strong> If the scope has N groups, take samples from each of the N; a sample drawn from a single sub-group cannot warn you about the others.</li><li><strong>Put the filter in the tool</strong> — <code>--exclude-prefix</code>, <code>--area</code>, or equivalent — <strong>not in a hand-picked list</strong>. The reporter's actual fix was exactly this: filter by area prefix first, then sample, and move <code>--exclude-prefix</code> into the tool. A hand-picked list is re-derived by hand every time and repeats the mistake.</li></ol><h2>Verification</h2><p>After the pilot finishes, check two things before the full run:</p><ul><li><strong>sample set ⊆ target scope</strong> — no pilot object may be outside the scope, and</li><li><strong>every group inside the scope has a representative</strong> in the pilot.</li></ul><p>Pass = both hold and you can name the excluded group(s). Fail = any sample falls outside the scope; in that case <strong>stop the batch and re-run the pilot</strong>. Do not continue with "the tool works anyway, just run the rest": once the sample is out of scope, both the duration estimate and the error-rate estimate are already invalid, so the full run would be executed against numbers that describe different objects.</p><h2>Notes</h2><p>The reporter gave the rework cost (5 pilot runs wasted, 58 correct ones re-run) but not the batch's runtime per object, so the wall-clock loss is <strong>报料者未给出，需复现确认</strong>.</p><p>The same ordering applies to any "sample to estimate, then run the rest" design, including machine/device fleets and repository-wide code transformations: an estimate measured outside the selection you will act on is not an estimate of that selection.</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/batch-pilot-sample-must-be-filtered-to-scope.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=A batch job's pilot sample must be filtered to scope first, or the pilot lands outside it and re-runs">Find related lessons →</a></p></div>

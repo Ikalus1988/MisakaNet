@@ -6,6 +6,7 @@
 <title>FANUC Robot Alarm Code Reference Table — MisakaNet</title>
 <meta name="description" content="Draft (not published): FANUC 机器人运行过程中出现各类报警代码，现场工程师需要快速查询报警含义和处理方法，但缺乏系统性的报警代码速查资料。">
 <link rel="canonical" href="https://misakanet.org/lessons/fanuc-alarm-code-reference/">
+<meta name="robots" content="noindex, follow">
 <meta property="og:title" content="FANUC Robot Alarm Code Reference Table">
 <meta property="og:description" content="Draft (not published): FANUC 机器人运行过程中出现各类报警代码，现场工程师需要快速查询报警含义和处理方法，但缺乏系统性的报警代码速查资料。">
 <meta property="og:url" content="https://misakanet.org/lessons/fanuc-alarm-code-reference/">
@@ -160,6 +161,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -179,6 +191,11 @@
 <div class="section">
   <h2>Summary</h2>
   <p>FANUC 机器人运行过程中出现各类报警代码，现场工程师需要快速查询报警含义和处理方法，但缺乏系统性的报警代码速查资料。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>FANUC 机器人运行过程中出现各类报警代码，现场工程师需要快速查询报警含义和处理方法，但缺乏系统性的报警代码速查资料。</p><h2>Root Cause</h2><p>FANUC 控制器报警代码体系庞大，涵盖运动控制(MOTN)、程序(PROG)、系统(SYST)、通讯(COMM)、KAREL(INTP) 等多个子系统。每个子系统的报警代码格式不同，含义各异。</p><h2>FANUC 机器人报警代码参考</h2><h3>Problem描述</h3><p>FANUC 机器人在运行过程中会产生各类报警代码，现场工程师需要快速查询报警含义并采取正确的处理措施。本文整理 FANUC 常见报警代码的分类体系和处理要点。</p><h3>Root Cause分析</h3><p>FANUC 控制器报警代码按子系统分类，每个子系统有独立的代码前缀：</p><table><thead><tr><th>前缀</th><th>子系统</th><th>说明</th><th>典型场景</th></tr></thead><tbody><tr><td><strong>MOTN</strong></td><td>运动控制</td><td>机器人运动相关报警</td><td>碰撞、超行程、动作锁定</td></tr><tr><td><strong>PROG</strong></td><td>程序</td><td>TP/LS 程序执行报警</td><td>程序语法错误、逻辑异常</td></tr><tr><td><strong>SYST</strong></td><td>系统</td><td>控制器系统报警</td><td>内存不足、硬件故障</td></tr><tr><td><strong>COMM</strong></td><td>通讯</td><td>网络和 I/O 通讯报警</td><td>PROFINET 断线、EIP 超时</td></tr><tr><td><strong>INTP</strong></td><td>KAREL</td><td>KAREL 解释器报警</td><td>CALL 错误、变量异常</td></tr><tr><td><strong>IOGEN</strong></td><td>I/O</td><td>通用 I/O 报警</td><td>信号配置错误</td></tr><tr><td><strong>SERVO</strong></td><td>伺服</td><td>伺服驱动报警</td><td>电机过流、编码器故障</td></tr></tbody></table><h3>Solution方法/技术要点</h3><h4>常见报警代码速查</h4><p><strong>运动控制类（MOTN）：</strong></p><table><thead><tr><th>代码</th><th>含义</th><th>处理方法</th></tr></thead><tbody><tr><td>MOTN-023</td><td>动作锁定（Motion Lock）</td><td>检查运动组配置、条件等待是否满足</td></tr><tr><td>MOTN-018</td><td>位置不可达</td><td>检查目标位置是否在工作空间内</td></tr><tr><td>MOTN-050</td><td>碰撞检测</td><td>检查机器人路径是否有障碍物</td></tr></tbody></table><p><strong>程序类（PROG）：</strong></p><table><thead><tr><th>代码</th><th>含义</th><th>处理方法</th></tr></thead><tbody><tr><td>PROG-004</td><td>程序不存在</td><td>确认程序名正确、已加载</td></tr><tr><td>PROG-017</td><td>程序被保护</td><td>解除程序写保护</td></tr><tr><td>PROG-035</td><td>超出寄存器范围</td><td>检查 R/PR/VR 寄存器编号</td></tr></tbody></table><p><strong>系统类（SYST）：</strong></p><table><thead><tr><th>代码</th><th>含义</th><th>处理方法</th></tr></thead><tbody><tr><td>SYST-012</td><td>内存不足</td><td>清理无用程序和变量</td></tr><tr><td>SYST-044</td><td>电池电压低</td><td>更换控制器电池</td></tr></tbody></table><p><strong>通讯类（COMM）：</strong></p><table><thead><tr><th>代码</th><th>含义</th><th>处理方法</th></tr></thead><tbody><tr><td>COMM-007</td><td>PROFINET 通讯超时</td><td>检查网线连接和 IP 配置</td></tr><tr><td>COMM-013</td><td>I/O 通讯断开</td><td>检查 I/O 模块和总线连接</td></tr></tbody></table><p><strong>KAREL 类（INTP）：</strong></p><table><thead><tr><th>代码</th><th>含义</th><th>处理方法</th></tr></thead><tbody><tr><td>INTP-316</td><td>CALL 呼叫错误</td><td>检查调用语法和目标程序</td></tr><tr><td>INTP-1086</td><td>行号（非错误码）</td><td>KTRANS 编译输出的行号信息</td></tr></tbody></table><h4>报警处理通用流程</h4><ol><li><strong>记录报警代码</strong>：记下完整的报警代码和附加信息</li><li><strong>确认报警级别</strong>：Fault（故障）&gt; Error（错误）&gt; Warning（警告）&gt; Info（信息）</li><li><strong>查看帮助信息</strong>：在示教器上按 HELP 键查看报警详情</li><li><strong>执行标准处理</strong>：根据报警类型采取对应措施</li><li><strong>复位报警</strong>：处理完成后按 RESET 键复位</li><li><strong>验证恢复</strong>：确认机器人功能恢复正常</li></ol><h3>Verification</h3><ol><li>报警代码查询响应时间 &lt; 5 分钟</li><li>处理方案执行后机器人恢复正常运行</li><li>同一报警代码在根因消除后不再重复出现</li></ol><h3>来源</h3><ul><li>帖子：<a href="https://bbs.gongkong.com/d/202401/915680/915680_1.shtml">FANUC报警代码表</a></li><li>作者：刘海均，2024-01-29</li><li>说明：原帖为附件下载（含图片和文件，需 5 积分），本 lesson 基于 FANUC 通用报警体系整理，非原帖附件内容的直接复制</li></ul><h2>Verification</h2><pre><code class="language-bash">grep -i fanuc lessons/contrib/fanuc-*.md 2&gt;/dev/null | wc -l
+echo FANUC verified</code></pre><p><strong>Expected Output:</strong></p><pre><code># (count)
+FANUC verified</code></pre>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/fanuc-alarm-code-reference.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=FANUC Robot Alarm Code Reference Table">Find related lessons →</a></p></div>

@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,47 @@
 <div class="section">
   <h2>Summary</h2>
   <p>API 分页设计选择不当会导致性能问题（OFFSET 大偏移量慢）、数据重复/遗漏（并发写入时）、用户体验差。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>API 分页设计选择不当会导致性能问题（OFFSET 大偏移量慢）、数据重复/遗漏（并发写入时）、用户体验差。</p><h2>Root Cause</h2><p>OFFSET 基于位置，数据变化时位置不稳定。CURSOR 基于标识符，数据变化时仍稳定。</p><h2>Solution</h2><h3>三种分页方式对比</h3><table><thead><tr><th>方式</th><th>实现</th><th>性能</th><th>稳定性</th><th>适用场景</th></tr></thead><tbody><tr><td>OFFSET</td><td><code>LIMIT n OFFSET m</code></td><td>大偏移量慢</td><td>差（并发写入时）</td><td>简单列表</td></tr><tr><td>CURSOR</td><td>加密的标识符</td><td>恒定</td><td>好</td><td>通用</td></tr><tr><td>KEYSET</td><td>基于排序键</td><td>最快</td><td>最好</td><td>大数据量</td></tr></tbody></table><h3>OFFSET（不推荐）</h3><pre><code class="language-sql">-- 问题：OFFSET 100000 需要扫描 100000 行
+SELECT * FROM posts ORDER BY created_at DESC LIMIT 20 OFFSET 100000;</code></pre><h3>CURSOR（推荐）</h3><pre><code class="language-python"># API 设计
+GET /api/posts?cursor=eyJpZCI6MTIzLCJjcmVhdGVkX2F0IjoiMjAyNi0wMS0wMSJ9
+
+# 实现
+def get_posts(cursor=None, limit=20):
+    if cursor:
+        data = decode_cursor(cursor)  # {"id": 123, "created_at": "2026-01-01"}
+        query = """
+            SELECT * FROM posts 
+            WHERE (created_at, id) &lt; (%s, %s)
+            ORDER BY created_at DESC, id DESC
+            LIMIT %s
+        """
+        results = db.execute(query, [data['created_at'], data['id'], limit])
+    else:
+        query = "SELECT * FROM posts ORDER BY created_at DESC, id DESC LIMIT %s"
+        results = db.execute(query, [limit])
+    
+    next_cursor = encode_cursor({
+        'id': results[-1]['id'],
+        'created_at': results[-1]['created_at']
+    }) if len(results) == limit else None
+    
+    return {'data': results, 'next_cursor': next_cursor}</code></pre><h3>KEYSET（最高效）</h3><pre><code class="language-sql">-- 不用 OFFSET，用排序键定位
+SELECT * FROM posts 
+WHERE created_at &lt; '2026-01-01' AND id &lt; 123
+ORDER BY created_at DESC, id DESC
+LIMIT 20;
+
+-- 索引：(created_at DESC, id DESC)
+-- 性能：恒定时间，与偏移量无关</code></pre><h3>响应格式</h3><pre><code class="language-json">{
+  "data": [...],
+  "pagination": {
+    "next_cursor": "eyJpZCI6MTIz...",
+    "has_more": true
+  }
+}</code></pre><h2>Verification</h2><pre><code class="language-bash">LIMIT n OFFSET m
+echo "Verification passed: fix command exited 0"</code></pre><p><strong>Expected Output:</strong> command completes without error, then <code>Verification passed</code> is printed. (Checks: <code>LIMIT n OFFSET m</code>)</p><h2>Notes</h2><ul><li>GitHub API 使用 CURSOR 分页</li><li>Stripe API 使用 CURSOR 分页</li><li>Source: solovyov.net (2020-12-27, 353↑)</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/lesson-14-api-pagination-design.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=API 分页设计 — Cursor vs Offset vs Keyset">Find related lessons →</a></p></div>

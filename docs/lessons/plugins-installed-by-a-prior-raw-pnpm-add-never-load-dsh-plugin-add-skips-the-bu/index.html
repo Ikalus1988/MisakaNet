@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>A DSH plugin that was first installed with a raw `pnpm add` never loads afterwards. Running `dsh plugin --profile web add <pkg>` reports "Already up to date" (+…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>A DSH plugin that was first installed with a raw <code>pnpm add</code> never loads afterwards. Running <code>dsh plugin --profile web add &lt;pkg&gt;</code> reports "Already up to date" (+0 packages); the package is present in <code>node_modules</code> and listed in <code>package.json</code> dependencies, but the plugin is absent from the runtime plugin list and neither its tools nor its settings appear.</p><p>Symptom is silent: no error, no FAILED row, the plugin simply does not mount.</p><h2>Root Cause</h2><p>DSH keeps two separate records for a plugin: <code>dependencies</code> (installed files) and <code>dsh.profile.bundles</code> (what the loader mounts). A raw pnpm install writes only <code>dependencies</code>. <code>dsh plugin add</code> treats an already-present dependency as "already added" and therefore skips appending the package to <code>dsh.profile.bundles</code>, leaving the plugin installed but unloaded.</p><h2>Fix</h2><p>Two independent records drive plugin loading:</p><ol><li><code>package.json</code> → <code>dependencies</code> (pnpm owns the files on disk).</li><li><code>package.json</code> → <code>dsh.profile.bundles</code> (the loader owns what actually mounts).</li></ol><p>A raw <code>pnpm add</code> only writes (1). <code>dsh plugin add</code> appends to (2) only when it performs the install itself; if the dependency already exists it reports "Already up to date" and skips the bundle registration.</p><p>Fix (either):</p><ul><li>Append the package name to <code>dsh.profile.bundles</code> in <code>~/.dsh/profiles/&lt;profile&gt;/package.json</code>; HMR/reload picks it up.</li><li>Or remove the package from <code>dependencies</code> first, then re-run <code>dsh plugin --profile web add &lt;pkg&gt;</code> so the CLI does the full registration.</li></ul><p>Practical guard: after any manual pnpm step, check both fields rather than trusting the install output.</p><h2>Verification</h2><ul><li><code>dsh.profile.bundles</code> in <code>~/.dsh/profiles/&lt;profile&gt;/package.json</code> includes the package name.</li><li>The runtime plugin list shows the plugin (not just its dependency entry).</li><li>No FAILED entries after reload.</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/plugins-installed-by-a-prior-raw-pnpm-add-never-load-dsh.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Plugins installed by a prior raw pnpm add never load — dsh plugin add skips the bundle registration">Find related lessons →</a></p></div>

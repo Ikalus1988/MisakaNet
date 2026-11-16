@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,11 @@
 <div class="section">
   <h2>Summary</h2>
   <p>点方案按钮没反应——不高亮、其他线还在、像根本没点过。但代码里明明设了 selectedRouteID。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>点方案按钮没反应——不高亮、其他线还在、像根本没点过。但代码里明明设了 selectedRouteID。</p><h2>Root Cause</h2><p>高德会持续回调 rideManager(_:update:) → applyRoute → collectRouteOptions，而 collectRouteOptions 开头无条件执行 <code>routeOptions = []; awaitingPick = false; selectedRouteID = nil</code>。等于把用户刚做的选择每秒抹掉一次，视图看起来毫无反应。</p><h2>Fix</h2><p>让重建逻辑幂等：</p><pre><code class="language-swift">// collectRouteOptions：集合没变且已在等待选择 → 直接返回
+let ids = Set(newOptions.map(\.id))
+if awaitingPick &amp;&amp; ids == Set(routeOptions.map(\.id)) { return }</code></pre><p>applyRoute 在 awaitingPick 期间不要动 route。通用规则：凡是「用户交互写入的 @Published 状态」+「SDK 定时回调里重建数据」，重建必须幂等，不能无条件清空。</p><h2>Verification</h2><p>点方案后保持 10 秒不被重置；日志里 collectRouteOptions 的「跳过」计数 &gt; 0；切方案时高亮与线样式同步变化。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/sdk-持续回调-重建逻辑无条件清空-published用户点击每秒被抹掉一次.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=SDK 持续回调 + 重建逻辑无条件清空 @Published：用户点击每秒被抹掉一次">Find related lessons →</a></p></div>

@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,41 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Lobste.rs 是高质量技术论坛（安全/Rust/系统），但没有搜索 API。需要通过 JSON 端点获取内容。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Lobste.rs 是高质量技术论坛（安全/Rust/系统），但没有搜索 API。需要通过 JSON 端点获取内容。</p><h2>Root Cause</h2><p>Lobsters 提供 JSON 端点但没有搜索功能。只能获取热门/最新帖子，不能按关键词搜索。</p><h2>Solution</h2><h3>JSON 端点</h3><pre><code class="language-python">import json, urllib.request
+
+# 热门帖子
+req = urllib.request.Request("https://lobste.rs/hottest.json", headers={"User-Agent": "Mozilla/5.0"})
+with urllib.request.urlopen(req, timeout=10) as resp:
+    data = json.loads(resp.read())
+
+# 最新帖子
+req = urllib.request.Request("https://lobste.rs/newest.json", headers={"User-Agent": "Mozilla/5.0"})
+with urllib.request.urlopen(req, timeout=10) as resp:
+    data = json.loads(resp.read())</code></pre><h3>数据结构</h3><pre><code class="language-json">{
+  "score": 64,
+  "title": "Building a passive Ethernet tap",
+  "url": "https://blog.lvmbdv.dev/posts/building-a-passive-ethernet-tap/",
+  "comment_count": 18,
+  "tags": ["hardware", "networking", "security"],
+  "created_at": "2026-07-01T10:00:00Z"
+}</code></pre><h3>关键词过滤</h3><pre><code class="language-python">keywords = ["agent", "mcp", "claude", "memory", "devops", "automation", 
+            "docker", "kubernetes", "ci", "security", "rust", "python"]
+
+relevant = []
+for p in data:
+    title_lower = p["title"].lower()
+    tags = [t.lower() for t in p.get("tags", [])]
+    if any(kw in title_lower or kw in tags for kw in keywords):
+        relevant.append(p)
+
+for p in relevant[:10]:
+    print(f"[{p['score']}↑ {p['comment_count']}💬] {p['title']}")
+    print(f"  {p['url']}")
+    print(f"  tags: {', '.join(p.get('tags', []))}")</code></pre><h3>端点对比</h3><table><thead><tr><th>端点</th><th>内容</th><th>数量</th></tr></thead><tbody><tr><td><code>/hottest.json</code></td><td>热门帖子</td><td>~25</td></tr><tr><td><code>/newest.json</code></td><td>最新帖子</td><td>~25</td></tr><tr><td><code>/recent.json</code></td><td>最近评论的帖子</td><td>~25</td></tr></tbody></table><h2>Verification</h2><pre><code class="language-bash">echo "Lesson: Lobsters JSON API — Structured Tech Forum Scraping"
+wc -l lessons/contrib/session-lesson-3-lobsters-json-api.md</code></pre><p><strong>Expected Output:</strong></p><pre><code>Lesson: Lobsters JSON API — Structured Tech Forum Scraping
+# (line count)</code></pre><h2>Notes</h2><ul><li>Lobsters 没有搜索 API，只能通过 JSON 端点获取列表</li><li>高质量内容集中在 security、rust、systems 标签</li><li>Source: practical-experience</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/session-lesson-3-lobsters-json-api.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Lobsters JSON API — Structured Tech Forum Scraping">Find related lessons →</a></p></div>

@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>A frozen one-dir application shipped `_internal/<pkg>/` sources, but replacing those files changed nothing at runtime. Rebuilding the PYZ with a different inter…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>A frozen one-dir application shipped <code>_internal/&lt;pkg&gt;/</code> sources, but replacing those files changed nothing at runtime. Rebuilding the PYZ with a different interpreter died with exit 0xC0000005 (access violation) while traversing the extracted code objects. Motivating case: the bundled edge-tts 7.2.8 started returning HTTP 403 after an upstream protocol change while 7.3.1 works.</p><h2>Root Cause</h2><p>PyInstaller stores modules in a PYZ archive embedded in the executable, and FrozenImporter is first in sys.meta_path, so a filesystem copy of the same package is shadowed and never imported. The PYZ holds bytecode marshalled by the build interpreter (3.11 here); unmarshalling and walking those code objects under a different interpreter (3.12) crashes the process instead of raising a normal exception.</p><h2>Fix</h2><p>Do not recompile the PYZ. Read the PYZ table of contents (a marshal list of plain tuples, safe to load across versions), remove only the entries belonging to the target package, and write the new TOC back at the same offset, zero-padding to the original archive length so the outer CArchive TOC stays valid. Then replace <code>_internal/&lt;pkg&gt;</code> with the newer sources; the import falls through to the regular FileFinder and loads the disk copy.</p><h2>Verification</h2><ol><li>Reading the patched PYZ shows zero entries for the target package and a module count reduced by exactly that many. 2) The application still starts without crashing. 3) The capability actually produces output (for example a generated audio file) instead of a UI error toast.</li></ol>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/patching-a-library-bundled-inside-a-pyinstaller-one-dir.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Patching a library bundled inside a PyInstaller one-dir build: the on-disk copy is shadowed by the PYZ">Find related lessons →</a></p></div>

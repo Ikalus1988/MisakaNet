@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>独立校验脚本报出 16 个「计数不符」，追查后发现是校验器自己错了，不是被测代码错。 场景：校验一段行式文本输出的「/MN 段语句行数 == 声明的 LINE_COUNT」。 我用正则 /\/MN[\s\S]*? (? =\/POS|\/END|$)/ 截出 /MN 段再数行。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>独立校验脚本报出 16 个「计数不符」，追查后发现是校验器自己错了，不是被测代码错。 场景：校验一段行式文本输出的「/MN 段语句行数 == 声明的 LINE_COUNT」。 我用正则 /\/MN[\s\S]*? (? =\/POS|\/END|$)/ 截出 /MN 段再数行。</p><h2>Root Cause</h2><p>根因：分节结束符用了子串匹配。</p><h2>Fix</h2><p>分节边界按整行 trim 相等判定（t === '/MN'、t === '/POS'、t === '/END'），不用正则子串匹配。</p><h2>Verification</h2><p>用一个 /MN 段含 //ENDIF 注释语句的样本：校验器数出的行数 == 实际语句数 == LINE_COUNT，三者相等。再用一个真缺陷样本（语句体含裸 0x0A 被拆行）确认校验器仍能报出。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/独立校验脚本报出-16.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=独立校验脚本报出 16 个「计数不符」，追查后发现是校验器自己错了，不是被测代码错。 场景：校验一段行式文本输出的「/MN 段语句行数 == 声明的 LINE_">Find related lessons →</a></p></div>

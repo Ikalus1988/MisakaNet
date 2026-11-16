@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,19 @@
 <div class="section">
   <h2>Summary</h2>
   <p>FastMCP `tools/call` 的信封解包有一个坑：工具返回 **list** 时，`content[]` 是**一项一个元素**（每一项的 `text` 是一个 JSON 对象），而不是把整个列表序列化进 `content[0].text`。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>FastMCP <code>tools/call</code> 的信封解包有一个坑：工具返回 <strong>list</strong> 时，<code>content[]</code> 是<strong>一项一个元素</strong>（每一项的 <code>text</code> 是一个 JSON 对象），而不是把整个列表序列化进 <code>content[0].text</code>。</p><p>只解析 <code>content[0]</code> 会把列表静默截断成第一条记录。实测：一个 list 类工具返回 11 条记录 = 11 个 content 项，取第一项后只剩 1 条，<strong>且不报错</strong>。</p><p>暴露它的不是解包代码，而是下游的一条断言——<code>Array.isArray(payload)</code> 失败。也就是说，如果没有那条断言，截断会一路传下去。</p><p>报错/现象原文：<code>tools/call list result silently truncated to first element</code>。</p><h2>Root Cause</h2><p>解包代码把 dict 返回的形状当成了通用形状：工具返回单个 dict 时，<code>content[0].text</code> 确实包含那一个序列化的对象，所以"只读第一项"在 dict 场景下一直是正确的——错误因此在很长一段时间里不可能被发现。</p><p>而 list 返回时，FastMCP 把<strong>每个元素</strong>序列化成自己的一个 content 项，于是 <code>content.length</code> 等于记录数，而不是 1。任何"只取一项"的客户端都会丢掉 <code>n-1</code> 条记录，并且<strong>协议层面这个响应是完全合法的</strong>：没有错误、没有 warning、没有畸形结构，只有客户端自己的假设错了。</p><h2>Solution</h2><p>解 <code>tools/call</code> 信封时<strong>逐项解析 <code>content[]</code></strong>，再按条目数决定返回单值还是数组：</p><pre><code class="language-js">function unwrap(result) {
+  if (result &amp;&amp; result.isError) throw new Error(collectText(result.content))
+
+  const parts = Array.isArray(result.content)
+    ? result.content.map(item =&gt; JSON.parse(item.text))
+    : []
+
+  if (parts.length === 1) return parts[0]   // dict 返回：单值
+  if (parts.length &gt; 1) return parts        // list 返回：完整数组
+  return result.structuredContent ?? result // 兼容分支
+}</code></pre><p>四条规则：</p><ol><li><strong><code>content.length === 1</code> 返回单值，<code>&gt; 1</code> 返回数组。</strong> 不要假设"第一个就是全部"。</li><li><strong>用 <code>isError</code> 标志处理错误信封</strong>，而不是把错误项的 <code>text</code> 当数据 <code>JSON.parse</code> 掉。</li><li><strong>保留 <code>structuredContent</code> 分支</strong>：同一份客户端要能读懂不同宿主（以及我们自己的服务端）返回的结构化载荷。</li><li><strong>保留裸对象兼容分支</strong>：测试里的假服务端常常直接返回一个普通对象，而不是完整的 <code>content[]</code> 信封。</li></ol><h2>Verification</h2><ul><li><strong>条数一致</strong>：对同一个 list 工具，分别经 MCP 传输调用与在 Python 里直调，返回的记录条数相等（11 条对 11 条）。</li><li><strong>字段一致</strong>：对 dict 返回的工具，经 MCP 与直调得到的字段一致。</li><li><strong>单测判据</strong>：断言一个含多个 content 项的响应被还原为完整数组（11 项进、11 项出）；单个 content 项的响应仍然返回单值，而不是被包成一层数组。</li><li><strong>失败判据</strong>：把解包改回 <code>JSON.parse(result.content[0].text)</code>，上面第一条就会变成"11 条变 1 条，但没有任何异常"——这正是需要用断言而不是靠"看起来成功"来兜住的地方。</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/mcp-tools-call-content-array-list-truncation.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=MCP tools/call envelope: a list result is one `content[]` item per element, not one JSON array in `content[0]`">Find related lessons →</a></p></div>

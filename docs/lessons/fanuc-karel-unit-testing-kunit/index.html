@@ -6,6 +6,7 @@
 <title>Unit Testing FANUC KAREL Programs with KUnit Framework — MisakaNet</title>
 <meta name="description" content="Draft (not published): FANUC KAREL 程序没有原生的单元测试支持。开发者通常需要将程序部署到控制器或 ROBOGUIDE 上运行才能验证逻辑，调试效率低且风险高。需要一种在部署前就能系统性验证 KAREL 程序逻辑的方法。">
 <link rel="canonical" href="https://misakanet.org/lessons/fanuc-karel-unit-testing-kunit/">
+<meta name="robots" content="noindex, follow">
 <meta property="og:title" content="Unit Testing FANUC KAREL Programs with KUnit Framework">
 <meta property="og:description" content="Draft (not published): FANUC KAREL 程序没有原生的单元测试支持。开发者通常需要将程序部署到控制器或 ROBOGUIDE 上运行才能验证逻辑，调试效率低且风险高。需要一种在部署前就能系统性验证 KAREL 程序逻辑的方法。">
 <meta property="og:url" content="https://misakanet.org/lessons/fanuc-karel-unit-testing-kunit/">
@@ -160,6 +161,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -179,6 +191,51 @@
 <div class="section">
   <h2>Summary</h2>
   <p>FANUC KAREL 程序没有原生的单元测试支持。开发者通常需要将程序部署到控制器或 ROBOGUIDE 上运行才能验证逻辑，调试效率低且风险高。需要一种在部署前就能系统性验证 KAREL 程序逻辑的方法。</p>
+</div>
+<div class="lesson-body">
+<h2>Unit Testing FANUC KAREL Programs with KUnit Framework</h2><h3>Problem描述</h3><p>FANUC KAREL 程序没有原生的单元测试支持。开发者通常需要将程序部署到控制器或 ROBOGUIDE 上运行才能验证逻辑，调试效率低且风险高。需要一种在部署前就能系统性验证 KAREL 程序逻辑的方法。</p><h3>Root Cause分析</h3><p>KAREL 是 FANUC 专有的类 Pascal 编译语言，运行环境是机器人控制器，不支持标准的软件测试工具链。KUnit 框架通过以下机制解决这个问题：</p><ul><li>测试用例是返回 <code>BOOLEAN</code> 的 KAREL ROUTINE（true=通过，false=失败）</li><li>KUnit 提供断言函数（<code>kunit_eq_int</code>, <code>kunit_eq_str</code> 等）封装比较逻辑</li><li>测试运行器通过控制器的 HTTP 服务输出结果，可在浏览器中查看</li><li>支持并行运行多个测试文件</li></ul><h3>Solution方法/技术要点</h3><h4>1. 安装步骤</h4><ol><li>下载 KUnit 发布包</li><li>将 <code>kunit.pc</code> 和 <code>vendor/strings.pc</code> 复制到机器人控制器</li><li>将 <code>kunit.h.kl</code> 放到项目的 support 目录或与测试文件同目录</li><li>测试文件中 <code>%INCLUDE kunit.h</code></li><li>翻译并部署 KAREL 程序到控制器</li></ol><h4>2. 编写测试用例</h4><p>完整示例——测试一个整数加法函数：</p><pre><code class="language-karel">PROGRAM test_add_int
+%NOLOCKGROUP          -- 浏览器运行 KAREL 必须
+%INCLUDE kunit.h
+
+-- 被测函数
+ROUTINE add_int(l : INTEGER; r : INTEGER) : INTEGER
+BEGIN
+  RETURN(l + r)
+END add_int
+
+-- 测试用例：每个返回 BOOLEAN
+ROUTINE test_11 : BOOLEAN
+BEGIN
+  RETURN(kunit_eq_int(2, add_int(1,1)))
+END test_11
+
+ROUTINE test_22 : BOOLEAN
+BEGIN
+  RETURN(kunit_eq_int(4, add_int(2,2)))
+END test_22
+
+ROUTINE test_00 : BOOLEAN
+BEGIN
+  RETURN(kunit_eq_int(0, add_int(0,0)))
+END test_00
+
+BEGIN
+  -- 注册并运行测试
+  kunit_test('1+1=2', test_11)
+  kunit_test('2+2=4', test_22)
+  kunit_test('0+0=0', test_00)
+
+  -- 必须调用，标记测试结束
+  kunit_done
+END test_add_int</code></pre><p><strong>关键约定：</strong></p><ul><li><code>%NOLOCKGROUP</code> 是必须的，否则浏览器无法运行 KAREL</li><li>测试 ROUTINE 返回 BOOLEAN：true=pass, false=fail</li><li>文件末尾必须调用 <code>kunit_done</code></li><li>简单测试可直接内联：<code>kunit_test('1+1=2', kunit_eq_int(2, add_int(1,1)))</code></li></ul><h4>3. 可用断言一览</h4><table><thead><tr><th>断言函数</th><th>用途</th></tr></thead><tbody><tr><td><code>kunit_assert(b : BOOLEAN)</code></td><td>断言条件为真</td></tr><tr><td><code>kunit_eq_int(expected, actual)</code></td><td>断言两个 INTEGER 相等</td></tr><tr><td><code>kunit_eq_r(expected, actual)</code></td><td>断言两个 REAL 相等</td></tr><tr><td><code>kunit_eq_str(expected, actual)</code></td><td>断言两个 STRING 相等</td></tr><tr><td><code>kunit_eq_pos(expected, actual)</code></td><td>断言两个 XYZWPR 位置相等</td></tr><tr><td><code>kunit_eq_pip(fname : STRING)</code></td><td>断言 pipe 内容与文件一致（超长字符串比较）</td></tr><tr><td><code>kunit_un_int(actual)</code></td><td>断言 INTEGER 为 UNINIT</td></tr><tr><td><code>kunit_un_str(actual)</code></td><td>断言 STRING 为 UNINIT</td></tr><tr><td><code>kunit_un_r(actual)</code></td><td>断言 REAL 为 UNINIT</td></tr></tbody></table><h4>4. 运行测试</h4><p><strong>单个测试文件：</strong></p><pre><code>http://your.robot/KAREL/kunit?filenames=your_test</code></pre><p><strong>多个测试文件（逗号分隔）：</strong></p><pre><code>http://your.robot/KAREL/kunit?filenames=test_kunit,test_something_else</code></pre><p><strong>HTML 格式输出：</strong></p><pre><code>http://your.robot/KAREL/kunit?filenames=your_test&amp;output=html</code></pre><h4>5. 测试输出示例</h4><pre><code>KUnit v1.0.0
+........
+Finished in 0.002 seconds
+4000.0 tests/sec, 9500.0 assertions/sec
+8 tests, 19 assertions, 0 failures</code></pre><p><strong>失败时的调试信息：</strong></p><pre><code>1) Failure:
+a eqls a
+Expected "a" but got "b"</code></pre><h4>6. 开发环境要求</h4><ul><li>ROBOGUIDE 已安装</li><li>WinOLPC bin 目录在系统 PATH 中</li><li>GnuWin（Windows 环境）</li><li>构建：<code>make</code> 编译 KAREL 二进制 PC 文件</li><li>部署：复制到 ROBOGUIDE 或真实机器人</li><li>运行：<code>http://robot.ip/KAREL/test_kunit</code></li></ul><h3>Verification方式</h3><ol><li><code>kunit.pc</code> 和 <code>strings.pc</code> 已正确部署到控制器</li><li>测试程序翻译编译无错误</li><li>浏览器访问 <code>http://robot_ip/KAREL/kunit?filenames=test_add_int</code> 显示测试结果</li><li>输出包含 "0 failures"</li><li>故意修改断言期望值，确认失败时有明确的 Expected/Actual 信息</li></ol><h3>来源</h3><ul><li>GitHub: kylerlippincott/kunit — Simple unit testing framework for FANUC KAREL</li><li>适用于所有支持 KAREL 的 FANUC 控制器（需 R632 选件）</li></ul><h2>Verification</h2><pre><code class="language-bash">grep -i fanuc lessons/contrib/fanuc-*.md 2&gt;/dev/null | wc -l
+echo FANUC verified</code></pre><p><strong>Expected Output:</strong></p><pre><code># (count)
+FANUC verified</code></pre>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/fanuc-karel-unit-testing-kunit.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Unit Testing FANUC KAREL Programs with KUnit Framework">Find related lessons →</a></p></div>

@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>首页三栏、骑行页、连接页每秒都在重新计算视图 body（耗电、掉帧），但界面上看不到任何数字在变。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>首页三栏、骑行页、连接页每秒都在重新计算视图 body（耗电、掉帧），但界面上看不到任何数字在变。</p><h2>Root Cause</h2><p>6 个诊断字段（rxBytes / txBytes / lastTx / lastRx / probeText / discovered）没有任何界面读取，却每秒被改 3 次（轮询间隔 0.35s）。ObservableObject 的 objectWillChange 是对象级的：任何一个 @Published 变化都会让所有订阅该对象的视图重算 body。</p><h2>Fix</h2><p>逐个确认读取者：没人读就删；确实要留（例如 rxBytes 用于通道探测）改成 <code>private(set) var</code>（去掉 @Published，只保留内部可写）。判据：搜索该属性名，只有写入没有读取 → 删。</p><h2>Verification</h2><p>Instruments 的 SwiftUI View Body 计数从每秒数次降到「只有真实数据变化时」；<code>Publishing changes from within view updates</code> 警告消失。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/没人读的-published-也在每秒触发-objectwillchange整页白重算.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=没人读的 @Published 也在每秒触发 objectWillChange，整页白重算">Find related lessons →</a></p></div>

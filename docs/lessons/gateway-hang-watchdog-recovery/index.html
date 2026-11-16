@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,22 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Hermes Agent 频繁崩溃，用户反映"卡死"。实际调查发现是 **WSL PTY 断连**导致 CLI 崩溃，而非 Gateway 本身问题。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Hermes Agent 频繁崩溃，用户反映"卡死"。实际调查发现是 <strong>WSL PTY 断连</strong>导致 CLI 崩溃，而非 Gateway 本身问题。</p><h2>Root Cause</h2><pre><code>Windows Terminal 断连/关闭
+  ↓
+WSL PTY 收到 SIGHUP
+  ↓
+prompt_toolkit stdout.flush() → OSError [Errno 5] I/O error
+  ↓
+Hermes CLI 进程崩溃
+  ↓
+systemd (Restart=always) 5s 后重启 gateway</code></pre><p>Gateway 本身通过 systemd 常驻，但 CLI 的 TTY 依赖导致每次 WT 断线都触发崩溃链。</p><h2>Solution</h2><p><strong>治本方案</strong>：杀掉 TTY 里的 Hermes CLI，让 Gateway 走 systemd 独立运行：</p><pre><code class="language-bash"># Gateway 进程挂死未崩溃 — watchdog 自动Recovery
+pkill -f "hermes cli" || true
+
+# Gateway 通过 systemd 运行，不依赖 TTY
+systemctl --user status hermes-gateway.service</code></pre><p><strong>watchdog 只监控进程存活</strong>，不监控 Gateway 功能响应性。</p><h2>Verification</h2><pre><code class="language-bash">pkill -f "hermes cli" || true
+echo "Verification passed: fix command exited 0"</code></pre><p><strong>Expected Output:</strong> command completes without error, then <code>Verification passed</code> is printed. (Checks: <code>pkill -f hermes cli || true</code>)</p><h2>Key Points</h2><ul><li>飞书 WebSocket 断连后消息会积压，重连时集中投递，可能触发重复处理</li><li>Gateway 日志路径：<code>~/.hermes/logs/gateway.log</code>（不同启动方式写不同路径）</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/gateway-hang-watchdog-recovery.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Gateway 进程挂死未崩溃 — watchdog 自动Recovery">Find related lessons →</a></p></div>

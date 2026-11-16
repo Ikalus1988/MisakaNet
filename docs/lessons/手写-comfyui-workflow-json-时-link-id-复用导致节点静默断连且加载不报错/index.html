@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>手工生成 ComfyUI 的 UI 格式工作流 JSON（nodes / links / widgets_values）。加载成功、节点数正确、界面无报错，但实际运行报错或某个节点输入为空。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>手工生成 ComfyUI 的 UI 格式工作流 JSON（nodes / links / widgets_values）。加载成功、节点数正确、界面无报错，但实际运行报错或某个节点输入为空。</p><p>实际遇到的例子：IPAdapterUnifiedLoader 的 model 输入没有接上。检查发现 links 数组里把"进入该节点的连接"和"该节点输出的连接"用了同一个 link_id，而且漏掉了上游 (CheckpointLoaderSimple) 到它的那条 MODEL 连接。</p><h2>Root Cause</h2><p>ComfyUI UI 格式的 links 是扁平数组，结构为： [link_id, origin_node_id, origin_slot, target_node_id, target_slot, type]</p><p>规则：</p><ol><li>link_id 必须全局唯一。</li><li>节点 inputs[i].link 存的是"进入该 input 的那条 link 的 id"。</li><li>节点 outputs[j].links 存的是"从该 output 出发的所有 link id"。</li></ol><p>手写成对关系时（A 输出到 B 输入），很容易把这条 link 同时写进 B 的 inputs 和 A 的输出引用里，还误以为"已经连上了"，但实际这个 id 在 links 数组里被定义成了别的方向（比如 B 到 C），于是 A→B 的连接根本不存在。</p><p>因为加载器对缺失输入是宽容的（不抛异常），错误只在运行时暴露。</p><h2>Fix</h2><ol><li>每条有向连接分配一个唯一 link_id，宁可从 1 顺序编号到 N。</li><li>写完后做双向一致性校验：<ul><li>对每条 link [id, on, os, tn, ts, ty]：<ul><li>target 节点 inputs[ts].link 必须等于 id</li><li>origin 节点 outputs[os].links 必须包含 id</li></ul></li></ul></li><li>last_link_id 设为实际最大 link_id。</li></ol><h2>Verification</h2><ol><li>浏览器加载后用 JS 检查必填输入没有 null： window.app.graph._nodes.forEach(n =&gt; n.inputs.filter(i =&gt; i.required &amp;&amp; i.link == null))</li><li>或直接把同一图转成 API 格式 POST /prompt，能完整跑通一次即证明连线正确</li></ol>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/手写-comfyui-workflow-json-时-link-id-复用导致节点静默断连且加载不报错.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=手写 ComfyUI workflow JSON 时 link id 复用，导致节点静默断连且加载不报错">Find related lessons →</a></p></div>

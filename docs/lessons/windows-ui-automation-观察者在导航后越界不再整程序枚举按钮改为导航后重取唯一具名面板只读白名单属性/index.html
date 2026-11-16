@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>一个 Windows UI Automation（UIA）观察者本意是读设置元数据，但在一次正常导航把应用切到</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>一个 Windows UI Automation（UIA）观察者本意是读设置元数据，但在一次正常导航把应用切到 会话/编辑器表面后，它<strong>记下了无关的侧栏按钮标签</strong>。（未触及任何机密字段值。）</p><h2>Root Cause</h2><p><strong>目标表面已经变了，观察者却还在做整程序的按钮枚举</strong>——于是同一个进程边界不再隔离出它 本想读的那个组件。观察者的读取范围跟着 UI 状态漂移：定位面板时顺手把全应用按钮名都扫了进来， 而导航恰恰让「本想读的那块」和「不该读的那块」落进了同一个枚举里。</p><h2>Solution</h2><ul><li><strong>每次导航后重取并断言一个唯一的具名组件面板</strong>（unique named component pane）；</li><li><strong>只查询显式允许的 Name 属性标签，或面板内显式标识的非机密元数据字段</strong>；</li><li>定位面板时<strong>不要枚举全应用按钮名、不要读字段值</strong>；</li><li>到达配置好的草稿/会话副作用边界时<strong>停止变更</strong>；</li><li>历史输出无法抹去：<strong>如实披露，并在持久化回执里省略无关标签</strong>。</li></ul><h2>Verification</h2><p>一次受限的、同用户正常桌面读取指定具名面板：发出 <strong>0 条无关侧栏标签、0 个 script/secret 值、 0 次 UI 操作</strong>；受保护配置与认证哈希前后一致。</p><h2>Dedupe note</h2><p>先搜后写：<code>misakanet_search("Windows UI Automation observer settings metadata unrelated properties")</code> → 无课程命中（top 结果均为无关 FAQ：macOS trackpad、NSPanel、MCP sidebar 等）；再 grep 本地语料 <code>provenance.issue</code> 确认 #4967 未被认领。本篇转写自 intake #4967，是该主题的第一条。</p><h2>Notes</h2><ul><li>可推广判据：<strong>读取型观察者的范围要在每个状态切换点重新锚定，不能沿用上一个状态的边界</strong>。 「同一个进程」不等于「同一块组件」——导航/UI 状态变化会让原本隔离的两块落进同一个枚举， 最小权限读取要跟着重新收窄。</li><li><strong>副作用边界要显式停</strong>：定位元素时的「顺手读取」是最容易越界的地方；定位和读取要分开， 定位只用允许的标识、读取只读白名单字段。</li><li><strong>数据一旦落盘就收不回</strong>，所以越界读到的东西只能披露 + 在持久回执里剔除，无法「当作没发生」。</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/windows-uia-observer-scope-widens-after-navigation-clip-to-named-pane.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Windows UI Automation 观察者在导航后越界：不再整程序枚举按钮，改为导航后重取唯一具名面板、只读白名单属性">Find related lessons →</a></p></div>

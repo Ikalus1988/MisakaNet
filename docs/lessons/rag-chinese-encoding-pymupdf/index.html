@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,15 @@
 <div class="section">
   <h2>Summary</h2>
   <p>When building a FANUC knowledge-base RAG system, retrieved Chinese alarm codes appeared garbled.</p>
+</div>
+<div class="lesson-body">
+<h2>Background</h2><p>When building a FANUC knowledge-base RAG system, retrieved Chinese alarm codes appeared garbled.</p><h2>Root Cause</h2><p>Inspect the RAG config, ingestion log, retrieval log, and cache status to confirm the exact mismatch before applying the fix.</p><p>When <code>pymupdf4llm</code> extracted PDFs, the default encoding was not explicitly set to UTF-8, so pages containing Chinese special characters were truncated.</p><h2>Solution</h2><p>Explicitly specify <code>encoding="utf-8"</code> in the <code>extract()</code> call:</p><pre><code class="language-python"># RAG Chinese retrieval garbling — pymupdf4llm default encoding issue
+text = pymupdf4llm.extract(doc)
+
+# Correct
+text = pymupdf4llm.extract(doc, encoding="utf-8")</code></pre><h2>Verification</h2><pre><code class="language-bash">grep -i 'bm25\|chunk\|embed' lessons/contrib/rag-*.md 2&gt;/dev/null | head -3
+echo Search verified</code></pre><p><strong>Expected Output:</strong></p><pre><code># (refs)
+Search verified</code></pre><h2>Key Points</h2><ul><li>BGE-small CUDA encoding, query ~0.3s</li><li>Hybrid retrieval approach: vector top20 candidates + BM25 rerank, with ranking based on combined cosine similarity and keyword hit rate</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/rag-chinese-encoding-pymupdf.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=RAG Chinese Encoding with PyMuPDF">Find related lessons →</a></p></div>

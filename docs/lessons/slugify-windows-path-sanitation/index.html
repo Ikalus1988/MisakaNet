@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,11 @@
 <div class="section">
   <h2>Summary</h2>
   <p>When creating a new lesson using `scripts/new_lesson.py` (either interactively or via batch mode), if the user or agent supplies a title with special characters…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>When creating a new lesson using <code>scripts/new_lesson.py</code> (either interactively or via batch mode), if the user or agent supplies a title with special characters, slashes (<code>/</code>, <code>\</code>), emojis, or Windows reserved names, the <code>slugify</code> logic crashes, generates invalid file paths, or attempts to write to reserved devices (like <code>CON</code> or <code>PRN</code> on Windows). This disrupts the creation workflow on Windows and WSL systems.</p><h2>Root Cause</h2><ol><li><strong>Path Delimiters</strong>: Slashes (<code>/</code>) and backslashes (<code>\</code>) were not explicitly replaced first, potentially resulting in nested directories or path traversal if not fully cleaned.</li><li><strong>Empty Slug Fallbacks</strong>: Emojis, diacritics, and special characters were stripped completely by regex. If the title consisted solely of these characters, <code>_slugify</code> returned an empty string <code>""</code>, leading to writing a hidden file <code>.md</code> directly to the <code>lessons/</code> root, which triggers crashes or invalid path errors.</li><li><strong>Windows Reserved Names</strong>: If the slug matches reserved keywords (like <code>CON</code>, <code>PRN</code>, <code>AUX</code>, <code>NUL</code>, etc.), Windows prevents creating the file or redirects the file write to physical devices/null, resulting in permission errors or environment crashes.</li></ol><h2>Solution方案</h2><p>Hardened the <code>_slugify</code> logic in <code>scripts/new_lesson.py</code> using standard library libraries and safeguards:</p><ol><li><strong>Unicode Decompositions</strong>: Used <code>unicodedata.normalize('NFKD', title)</code> to strip accents and normalize letters.</li><li><strong>Slashes Normalization</strong>: Replaced <code>/</code> and <code>\</code> with <code>-</code> explicitly before regex stripping.</li><li><strong>Hyphens Collapsing</strong>: Collapsed multiple consecutive hyphens into a single hyphen and stripped leading/trailing hyphens.</li><li><strong>Empty Fallback</strong>: If the final slug is empty (e.g. purely emojis), generated a unique safe default name: <code>lesson-YYYYMMDD-HHMMSS</code>.</li><li><strong>Reserved Words Prefixing</strong>: Added a <code>safe-</code> prefix if the slug matches any Windows reserved name (e.g. <code>con</code> becomes <code>safe-con</code>).</li></ol><h2>Verification</h2><pre><code class="language-bash">echo "Lesson: slugify windows path sanitation"
+wc -l lessons/contrib/slugify-windows-path-sanitation.md</code></pre><p><strong>Expected Output:</strong></p><pre><code>Lesson: slugify windows path sanitation
+# (line count)</code></pre>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/slugify-windows-path-sanitation.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=slugify windows path sanitation">Find related lessons →</a></p></div>

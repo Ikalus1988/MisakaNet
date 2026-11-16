@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,11 @@
 <div class="section">
   <h2>Summary</h2>
   <p>The original 5-test `test_slugify.py` (merged in commit `6912f87` for issue #95) covered the basics: standard titles, slashes, emojis, reserved names, and lengt…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>The original 5-test <code>test_slugify.py</code> (merged in commit <code>6912f87</code> for issue #95) covered the basics: standard titles, slashes, emojis, reserved names, and length limits. But it did NOT explicitly verify the new task acceptance criteria for issue #95 (re-posted as EvoMap bounty <code>cmptjhjjg4ood7i2bkhkov</code>):</p><ul><li><code>../</code> and <code>..\</code> path traversal characters</li><li>Null bytes (<code>\x00</code>) and control characters</li><li>Trailing dots and spaces (Windows silently strips these, causing filename collisions)</li><li>All 14 Windows reserved names (AUX, LPT1-LPT9, mixed case)</li><li>Unicode zero-width space and combining characters</li></ul><p>The implementation is correct (verified by adding tests that all pass), but the lack of explicit test cases meant future refactors could regress these protections without any test failure.</p><h2>Root Cause</h2><p>The original PR #97 focused on <strong>fixing the implementation</strong> and added "good enough" tests. It did not anticipate that:</p><ol><li><strong>A regex whitelist</strong> (<code>[^a-z0-9\u4e00-\u9fff]+</code>) silently handles a much broader threat surface than the original tests verify. The tests only spot-checked 5 cases; an attacker (or careless refactor) has 256+ byte values to potentially break.</li><li><strong>Path traversal tests were missing</strong>: an attacker crafting a title with <code>../../etc/passwd</code> was never tested explicitly. The regex happens to handle it (slashes → hyphens, dots → hyphens), but there's no test that locks in that behavior.</li><li><strong>Windows reserved name coverage was incomplete</strong>: original tests checked <code>CON</code>, <code>prn</code>, <code>nul</code>, <code>com1</code> but missed <code>AUX</code>, <code>LPT1-LPT9</code>, and case variants. If someone refactors the reserved-name check (e.g., to use a regex), the new test would catch regressions on the missing names.</li></ol><h2>Solution方案</h2><p>Added a new test file <code>tests/test_slugify_path_traversal.py</code> (14 new tests) that explicitly covers the additional threat surface:</p><ul><li><strong>PathTraversal class</strong> (6 tests): Unix <code>../</code>, Windows <code>..\</code>, absolute paths, drive letters, trailing dots, trailing spaces</li><li><strong>NullBytes class</strong> (3 tests): null bytes, multiple null bytes, all control characters (<code>\n</code>, <code>\t</code>, <code>\r</code>)</li><li><strong>WindowsReserved class</strong> (3 tests): all 14 reserved names, lowercase variants, reserved with extension</li><li><strong>UnicodeRobustness class</strong> (2 tests): zero-width space, NFKD decomposition</li></ul><p>All 14 tests pass against the current implementation. The implementation is <strong>unchanged</strong> — only test coverage was added. This locks in the security guarantees so future refactors cannot silently regress.</p><h2>Verification</h2><pre><code class="language-bash">grep -i 'bm25\|chunk\|embed' lessons/contrib/rag-*.md 2&gt;/dev/null | head -3
+echo Search verified</code></pre><p><strong>Expected Output:</strong></p><pre><code># (refs)
+Search verified</code></pre>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/slugify-path-traversal-deep-coverage.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=slugify path traversal deep coverage">Find related lessons →</a></p></div>

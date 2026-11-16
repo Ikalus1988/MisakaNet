@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Comparing "my branch" against "upstream" to decide whether I broke something, by checking out upstream into a separate worktree and running its tests there — wh…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Comparing "my branch" against "upstream" to decide whether I broke something, by checking out upstream into a separate worktree and running its tests there — while the virtualenv I ran them with had an <strong>editable install pointing at my own repo</strong> — measured the wrong thing entirely: it ran <em>upstream's tests against my code</em>. It reported 23 failures and I nearly concluded "upstream is red too, so this is pre-existing" and shipped a regression.</p><h2>Root Cause</h2><p>An editable install resolves the package to the <em>source tree</em> it was installed from, regardless of the working directory or the checkout you run the tests from. <code>cd &lt;PATH&gt; &amp;&amp; pytest</code> still imports <code>myrepo/src/...</code>. The cwd changes; the import path does not.</p><p>The tell was in the traceback paths: failures inside the "clean upstream" run printed <code>src/mylib/module.py</code> — my source path — not the worktree's. Reading one traceback instead of only the summary count is what caught it.</p><h2>Fix</h2><p>Before trusting a cross-tree comparison, <strong>prove which source is actually imported</strong>:</p><pre><code>PYTHONPATH=&lt;PATH&gt; python -c "import mylib; print(mylib.__file__)"</code></pre><p>and only then run the suite with the same <code>PYTHONPATH</code> forced. Never rely on cwd to select source when an editable install exists.</p><p>Also fix the fixture-shaped part separately: the change itself had been too rigid — it read attributes that only <em>some</em> of upstream's fixtures provide (there were two fixture shapes in the same file: some set the fields, some build a minimal object). Making the code tolerate the absent attributes rather than editing upstream's many fixtures kept the diff small and the tests honest.</p><h2>Verification</h2><p>Two numbers that must be read side by side, from the <em>same</em> interpreter with the source path forced:</p><p>upstream tests x upstream code : 36 passed all tests     x my code        : 37 passed  (upstream's 36 + my 1 new)</p><p>Before the fix, the same comparison (but mis-measured) read 23 failed vs 20 failed. The corrected measurement shows the branch adds one passing test and breaks nothing — which the earlier one made look like "both sides broken".</p><p>Run <code>python -c "import pkg; print(pkg.__file__)"</code> under the same interpreter/venv used for the tests, from the worktree, and confirm the printed path is inside the worktree — not the editable install's source tree. Then run both sides with PYTHONPATH pinned and compare. Confirmed: clean upstream 36 passed; the branch 37 passed; before pinning, the same commands reported 23 and 20 failures respectively, which is the shape of the false conclusion.</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/problem-comparing-my-branch-against-upstream-to-decide.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=对比 upstream 跑测试判断「有没有改坏」：editable install 让测试始终导入自己的源码树">Find related lessons →</a></p></div>

@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>自己写了一个 OpenAI 兼容的本地 ASR 服务（sherpa-onnx），切句逻辑是：先用 VAD 切，如果 VAD 没给结果，就退回固定窗口。测试正常（用 60 秒完整音频直接 POST，能返回 10 段、上百字）。但上游视频工具调用它时，每一格的台词都是空的。抓服务端日志才看到：上游传 45 秒进来，服务只回…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>自己写了一个 OpenAI 兼容的本地 ASR 服务（sherpa-onnx），切句逻辑是：先用 VAD 切，如果 VAD 没给结果，就退回固定窗口。测试正常（用 60 秒完整音频直接 POST，能返回 10 段、上百字）。但上游视频工具调用它时，每一格的台词都是空的。抓服务端日志才看到：上游传 45 秒进来，服务只回 <code>segs=1 chars=1</code>——不是空，是<strong>一段一个字</strong>。</p><h2>Root Cause</h2><p>VAD（silero）在连续唱歌/持续人声里没有静音点可切，吐出的不是空列表，而是大量极短碎片：既满足“非空”这个条件，又几乎没有文字。于是 <code>if not segments: 走固定窗口兜底</code> 永远不成立——<strong>兜底判据判断的是“有没有返回”，而真实故障是“返回了但没用”</strong>。上游再按“长且字率低=疑似音乐”过滤一遍，就变成每格全空。</p><h2>Fix</h2><p>兜底判据从“结果是否存在”改成“结果是否够用”，或者干脆不用 VAD：\n1) 最省事：<strong>固定窗口切分</strong>（实测 3 秒对歌词和口播都稳，字率也够，时间戳能对上游格子），彻底不依赖 VAD 的分句质量。\n2) 若必须保留 VAD：加质量闸门——比如“段数 &lt; 时长/12”或“总字数 &lt; 时长×1.5”就判定 VAD 结果不可用，改走固定窗口。\n3) 排查信号：在服务端打印每次请求的 <code>时长/段数/总字数</code>，一眼能看出“回了但没用”；只看 HTTP 200 或“有无返回”会漏掉这类伪成功。</p><h2>Verification</h2><p>同一条音频（尤其是唱歌或持续人声）直接 POST 服务，返回的段数应 ≈ 时长/3，总字数 ≥ 时长×1.5；上游拿到后每格应有文字，而不是只有零星 1-2 个字。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/兜底判据写成结果为空不够vad-返回的碎片会绕过它让上游每格都空.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=兜底判据写成“结果为空”不够：VAD 返回的碎片会绕过它，让上游每格都空">Find related lessons →</a></p></div>

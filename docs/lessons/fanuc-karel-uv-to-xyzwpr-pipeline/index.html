@@ -6,6 +6,7 @@
 <title>UV-to-XYZWPR Pipeline — From 2D Slice Geometry to Robot Motion — MisakaNet</title>
 <meta name="description" content="Draft (not published): 5轴DLP 3D打印切片器需要将2D切片几何(从SVG/DXF文件导入)转换为机器人可执行的XYZWPR运动指令。整个流程涉及多个阶段：2D几何处理、路径规划排序、坐标系转换、运动插值、多层迭代、硬件控制。每个阶段需要不同的算法和数据结构。">
 <link rel="canonical" href="https://misakanet.org/lessons/fanuc-karel-uv-to-xyzwpr-pipeline/">
+<meta name="robots" content="noindex, follow">
 <meta property="og:title" content="UV-to-XYZWPR Pipeline — From 2D Slice Geometry to Robot Motion">
 <meta property="og:description" content="Draft (not published): 5轴DLP 3D打印切片器需要将2D切片几何(从SVG/DXF文件导入)转换为机器人可执行的XYZWPR运动指令。整个流程涉及多个阶段：2D几何处理、路径规划排序、坐标系转换、运动插值、多层迭代、硬件控制。每个阶段需要不同的算法和数据结构。">
 <meta property="og:url" content="https://misakanet.org/lessons/fanuc-karel-uv-to-xyzwpr-pipeline/">
@@ -160,6 +161,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -179,6 +191,62 @@
 <div class="section">
   <h2>Summary</h2>
   <p>5轴DLP 3D打印切片器需要将2D切片几何(从SVG/DXF文件导入)转换为机器人可执行的XYZWPR运动指令。整个流程涉及多个阶段：2D几何处理、路径规划排序、坐标系转换、运动插值、多层迭代、硬件控制。每个阶段需要不同的算法和数据结构。</p>
+</div>
+<div class="lesson-body">
+<h3>Problem描述</h3><p>5轴DLP 3D打印切片器需要将2D切片几何(从SVG/DXF文件导入)转换为机器人可执行的XYZWPR运动指令。整个流程涉及多个阶段：2D几何处理、路径规划排序、坐标系转换、运动插值、多层迭代、硬件控制。每个阶段需要不同的算法和数据结构。</p><h3>Root Cause分析</h3><p>切片器管线跨越5个核心模块，每个模块负责不同阶段的转换：</p><pre><code>[2D Slice Geometry] SVG/DXF导入
+        ↓
+    lib/draw → t_VEC_PATH (MOVETO/LINETO/CURVE3/CURVE4/CLOSE)
+        ↓
+    pathplan → 有序段索引 (MST/NN/raster排序)
+        ↓
+    pathmake → t_TOOLPATH (XYZWPR + 速度/点) + 坐标转换
+        ↓
+    pathmotion → TP运动指令 (MOVE_LINE/MOVE_CIRC)
+        ↓
+    pathlayer → 逐层迭代 + 硬件控制(激光/粉末)</code></pre><h3>Solution方法/技术要点</h3><h4>1. draw模块 — 2D几何处理</h4><p>核心功能：将多边形几何转换为矢量路径。</p><p><strong>关键数据类型：</strong></p><ul><li><code>t_VEC_PATH</code>：矢量路径节点(路径码 + 多边形ID)</li><li><code>t_RASTER</code>：光栅参数(角度、线宽、间距、方向)</li></ul><p><strong>关键API：</strong></p><pre><code class="language-karel">-- 光栅填充：用平行线填充多边形
+draw__raster_lines(polygon, raster_params, out_lines[])
+-- 轮廓提取
+draw__trace(polygon, out_contours[])
+-- 凸包
+draw__convex_hull(points[], out[])
+-- 包围盒
+draw__bounding_box(points[]) : t_RECT
+-- 多边形内缩/旋转/缩放
+draw__inset_polygon(polygon, offset, out[])
+draw__rotate_polygon(polygon, angle, out[])
+-- 碰撞检测
+draw__point_collision_polygon(p, polygon) : BOOLEAN</code></pre><p><strong>OOP画布(canvas)：</strong></p><pre><code class="language-karel">canvas__new/init/delete
+canvas__append_polygon / append_vertex
+canvas__raster(raster_params) / canvas__trace
+canvas__rotate_canvas / scale_polygons / inset_polygons</code></pre><p><strong>Python工具链：</strong></p><ul><li><code>utils/dxf/</code>：DXF→CSV转换</li><li><code>utils/svg/</code>：SVG路径解析(svgpy)</li><li><code>utils/slices/</code>：Python Clipper多边形裁剪</li><li><code>viz/</code>：Matplotlib调试可视化</li></ul><h4>2. pathplan模块 — 路径段排序</h4><p>使用图算法确定路径段的最优遍历顺序。</p><pre><code class="language-karel">new / init(coord_frame)
+importPath / append_path
+get_plan() : INTEGER[]          -- 排序后的段索引
+
+-- 图算法
+MST(start_node, out_pth)        -- 最小生成树遍历
+NN_graph(k)                     -- k近邻图
+raster_graph()                  -- 优化的光栅线排序</code></pre><h4>3. pathmake模块 — 路径生成与插值</h4><p>将规划好的路径段转换为密集的运动点云(含速度曲线)。</p><pre><code class="language-karel">new / init(coord_frame, origin, path_planner)
+makeline(start, end, spacing)
+interpolate_toolpath(segment, spacing)  -- 线性 + 贝塞尔插值
+set_segment_speed_bounds(start_spd, end_spd)</code></pre><p><strong>路径码(兼容matplotlib)：</strong></p><ul><li><code>PTH_MOVETO</code>：抬笔移动</li><li><code>PTH_LINETO</code>：直线</li><li><code>PTH_CURVE3</code>：二次贝塞尔</li><li><code>PTH_CURVE4</code>：三次贝塞尔</li><li><code>PTH_CLOSE</code>：闭合路径</li></ul><p><strong>坐标系统：</strong></p><ul><li><code>PTH_CARTESIAN</code>：笛卡尔</li><li><code>PTH_CYLINDER</code>：圆柱</li><li><code>PTH_POLAR</code>：极坐标</li></ul><p><strong>光栅类型：</strong></p><ul><li><code>ONEWAY</code>：单向</li><li><code>ZIGZAG</code>：锯齿形</li><li><code>NEARESTNEIGHBOR</code>：最近邻</li><li><code>BOTTOMFILL</code>/<code>CASCADEFILL</code>：填充策略</li></ul><h4>4. pathmotion模块 — 运动执行</h4><p>向机器人发送实际TP运动指令。支持可插拔接口(6轴机器人、旋转台、变位机)。</p><pre><code class="language-karel">-- 运动基类
+set_tool_offset / set_speeds / set_interpolation
+set_coord_frame / set_idod
+
+-- 机器人运动(继承motion)
+move / moveLine / moveArc / movePos
+movePoly / movePolyFull / movePolyArc
+run_approach_path / run_retract_path
+moveApproach / moveRetract</code></pre><p>接口模板<code>motion.interface.klt</code>支持在不同运动后端之间切换，无需修改调用代码。</p><h4>5. pathlayer模块 — 逐层迭代</h4><p>协调多层打印：迭代Z层和通道，控制激光/粉末硬件，管理布局文件加载。</p><pre><code class="language-karel">new / init(layer_params, pass_params)
+next_layer / next_pass
+import_layout / open_layout / close_layout
+set_drawing_type(typ)     -- LINES, CONTOURS, RASTER等
+lam_start / lam_stop      -- 激光/粉末硬件控制钩子</code></pre><h4>6. 布局模块(layout)</h4><p>通用模板化缓冲文件读取器，将结构化CSV(或G-code)切片输出反序列化为KAREL PATH缓冲区。</p><pre><code class="language-karel">loadBuffer() : BOOLEAN        -- 加载下一个缓冲区；TRUE=还有数据
+bufferLength() : INTEGER</code></pre><p>缓冲策略：</p><ul><li><code>pathlayer_by_layer.klt</code>：每个Z层一个缓冲区</li><li><code>pathlayer_by_pass.klt</code>：每层内每个通道一个缓冲区</li></ul><h4>7. 激光/粉末参数(lam子包)</h4><pre><code class="language-karel">t_LASER     { power: REAL }
+t_POWDER    { wps_no, rpm, lpm, flow_rate, height: REAL; powder_type: INTEGER }
+t_HOPPERS   { hopper1, hopper2: t_POWDER }
+t_DEPTHREGR { a, b, c: REAL }  -- 二次多项式：a*x^2 + b*x + c，用于Z高度补偿</code></pre><h3>Verification方式</h3><ol><li><strong>几何验证</strong>：使用Python工具链(DXF/SVG解析 + Clipper裁剪 + Matplotlib可视化)离线验证2D几何正确性</li><li><strong>路径验证</strong>：验证光栅填充、轮廓提取、路径排序的输出</li><li><strong>运动验证</strong>：在实际机器人上验证pathmotion发出的运动指令</li><li><strong>端到端验证</strong>：完成一次完整的5轴DLP打印，验证管线完整性</li></ol><h3>来源</h3><ul><li>Ka-Boost项目 Layer7模块</li><li>模块：<code>lib/draw</code>(光栅化)、<code>lib/paths</code>(路径系统，含pathlib/pathplan/pathmake/pathmotion/pathlayer)</li><li>辅助工具：Python DXF/SVG/Clipper工具链</li></ul><h2>Verification</h2><pre><code class="language-bash">grep -i fanuc lessons/contrib/fanuc-*.md 2&gt;/dev/null | wc -l
+echo FANUC verified</code></pre><p><strong>Expected Output:</strong></p><pre><code># (count)
+FANUC verified</code></pre>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/fanuc-karel-uv-to-xyzwpr-pipeline.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=UV-to-XYZWPR Pipeline — From 2D Slice Geometry to Robot Motion">Find related lessons →</a></p></div>

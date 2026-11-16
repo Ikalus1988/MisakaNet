@@ -174,7 +174,15 @@ NOT_A_PAGE = {
 EMOJI = re.compile("[\U0001F300-\U0001FAFF\U00002600-\u27BF\U00002B00-\u2BFF]")
 TEXT_SYMBOLS = set("✓✗✘★☆⚠☰✕✦✧※⌘⌨")
 
-# ── what batch Y owns ───────────────────────────────────────────────────────────────────────────
+# The generated lesson pages carry the lesson's own markdown between these markers. That text is
+# quoted corpus content, not site chrome: a lesson that tabulates "✅ works / ❌ fails" is writing
+# about software, and rewriting its marks would falsify the lesson — the same reason the Feishu quote
+# in EMOJI_ALLOWLIST is allowed to keep its wrench. Criterion 13 therefore reads every generated page
+# *outside* this region, so an emoji in the template, the nav, the tags or the summary is still
+# caught. The renderer emits no `<div>` of its own, so the first `</div>` closes the region.
+LESSON_BODY_REGION = re.compile(r'<div class="lesson-body">[\s\S]*?</div>')
+
+# ── what batch Y owns ──────────────────────────────────────────────────────────────────────────
 # An emoji is a colour bitmap chosen by the platform: the same markup renders three different
 # icons in three browsers, and none of them is the page's accent colour. The site's icons are
 # Lucide SVGs (scripts/site_icons.py), and this gate keeps it that way.
@@ -447,15 +455,8 @@ COLOUR_LITERAL = re.compile(
     r"#[0-9a-fA-F]{6}\b|#[0-9a-fA-F]{3}\b|rgba?\(\s*\d+\s*,\s*\d+\s*,\s*\d+[^)]*\)")
 
 
-def colour_occurrences(page: Path) -> list[tuple[int, str]]:
-    """Every literal colour on the page, as (line number, the literal).
-
-    The whole page text, not just its stylesheets: a colour a script writes into a badge is
-    still a colour the reader sees, and that is how the homepage's per-domain palette kept a
-    violet through a stylesheet-only check. Comments are stripped — a hex in a comment is a note
-    about a colour, not a colour on the screen.
-    """
-    text = page.read_text(encoding="utf-8", errors="replace")
+def colour_occurrences_in_text(text: str) -> list[tuple[int, str]]:
+    """Every literal colour in this already-prepared text, as (line number, the literal)."""
     text = TOKEN_BLOCK.sub("", text)
     text = COMMENT.sub("", text)
     text = JS_LINE_COMMENT.sub("", text)
@@ -466,6 +467,17 @@ def colour_occurrences(page: Path) -> list[tuple[int, str]]:
             if colour_hsv(literal) is not None:
                 out.append((lineno, literal))
     return out
+
+
+def colour_occurrences(page: Path) -> list[tuple[int, str]]:
+    """Every literal colour on the page, as (line number, the literal).
+
+    The whole page text, not just its stylesheets: a colour a script writes into a badge is
+    still a colour the reader sees, and that is how the homepage's per-domain palette kept a
+    violet through a stylesheet-only check. Comments are stripped — a hex in a comment is a note
+    about a colour, not a colour on the screen.
+    """
+    return colour_occurrences_in_text(page.read_text(encoding="utf-8", errors="replace"))
 
 
 def page_background(page: Path) -> str | None:
@@ -622,7 +634,13 @@ def check(root: Path = REPO) -> list[str]:
         # 1 — the rest of the accent band: GitHub's blue was the second product's own primary,
         # and the site's two accents are the vocabulary's cyan and magenta, which sit just
         # outside the band.
-        for lineno, literal in colour_occurrences(page):
+        # A generated lesson page quotes the corpus, and issue numbers are written `#429`, `#203`,
+        # `#479` — three hex digits, which `COLOUR_LITERAL` reads as a violet. That is prose, not a
+        # palette; the page's own chrome stays in scope because it sits outside the region.
+        scanned = page.read_text(encoding="utf-8", errors="replace")
+        if rel.startswith("docs/lessons/"):
+            scanned = LESSON_BODY_REGION.sub(_blank, scanned)
+        for lineno, literal in colour_occurrences_in_text(scanned):
             hsv = colour_hsv(literal)
             if hsv is None:
                 continue
@@ -687,7 +705,10 @@ def check(root: Path = REPO) -> list[str]:
     for asset in site_assets(root):
         rel = asset.relative_to(root).as_posix()
         allowed = [snippet for snippet, _reason in EMOJI_ALLOWLIST.get(rel, [])]
-        for lineno, line, char in emoji_occurrences(asset):
+        text = visible_text(asset)
+        if rel.startswith("docs/lessons/"):
+            text = LESSON_BODY_REGION.sub(_blank, text)
+        for lineno, line, char in emoji_occurrences_in_text(text):
             if any(snippet in line for snippet in allowed):
                 continue
             problems.append(
@@ -802,19 +823,28 @@ def visible_text(path: Path) -> str:
     return "".join(pieces)
 
 
-def emoji_occurrences(path: Path) -> list[tuple[int, str, str]]:
-    """(line number, the line, the pictograph) for every emoji a reader can see.
+def emoji_occurrences_in_text(text: str) -> list[tuple[int, str, str]]:
+    """(line number, the line, the pictograph) for every emoji in this already-visible text.
 
     Occurrences rather than distinct characters: "42 different emoji" and "86 emoji" are different
     numbers for different jobs, and the gate's job is to say "there is none of these left".
+
+    Takes text rather than a path because criterion 13 narrows the page first: on a generated lesson
+    page the body is quoted corpus content, and blanking it has to happen before the line numbers are
+    read, not after (`_blank` keeps every newline, so the numbers survive).
     """
     out = []
-    for lineno, line in enumerate(visible_text(path).splitlines(), 1):
+    for lineno, line in enumerate(text.splitlines(), 1):
         for char in EMOJI.findall(line):
             if char in TEXT_SYMBOLS:
                 continue
             out.append((lineno, line.strip(), char))
     return out
+
+
+def emoji_occurrences(path: Path) -> list[tuple[int, str, str]]:
+    """Every emoji a reader can see on this asset, corpus bodies included."""
+    return emoji_occurrences_in_text(visible_text(path))
 
 
 def icon_bodies(text: str) -> list[str]:

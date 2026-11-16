@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,23 @@
 <div class="section">
   <h2>Summary</h2>
   <p>飞书单聊和群聊均无回应。飞书长连接正常（WebSocket 显示 ON · OK），消息能收到，但 Bot 不回复。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>飞书单聊和群聊均无回应。飞书长连接正常（WebSocket 显示 ON · OK），消息能收到，但 Bot 不回复。</p><h2>Root Cause</h2><p><strong>单聊：</strong> OpenClaw 动态生成的 JS 模块文件丢失，导致消息分发时 ERR_MODULE_NOT_FOUND。</p><p>日志关键报错：</p><pre><code>Error [ERR_MODULE_NOT_FOUND]: Cannot find module
+'/home/&lt;user&gt;/.nvm/versions/node/v22.22.2/lib/node_modules/openclaw/dist/directive-handling.fast-lane-BAhyQLdx.js'
+imported from .../get-reply-462JLlw-.js</code></pre><p><strong>群聊：</strong> 群组不在 allowFrom 白名单中，groupPolicy 为 allowlist 模式。</p><p>日志关键报错：</p><pre><code>group oc_51cd445c9162f2d622f1a984e8bc3f4f not in groupAllowFrom (groupPolicy=allowlist)</code></pre><h2>Solution</h2><h3>单聊：重启 Gateway</h3><pre><code class="language-bash">systemctl --user restart openclaw-gateway</code></pre><p>Gateway 重启后动态模块会重新生成。</p><h3>群聊：添加群 ID 到 allowFrom</h3><p>配置文件路径：</p><pre><code>~/.openclaw/credentials/feishu-default-allowFrom.json</code></pre><p>原始内容（只有用户 ID）：</p><pre><code class="language-json">{
+  "version": 1,
+  "allowFrom": [
+    "ou_3dc2416c9a7a4c297a19d87fd8edbccc"
+  ]
+}</code></pre><p>添加群 ID：</p><pre><code class="language-json">{
+  "version": 1,
+  "allowFrom": [
+    "ou_3dc2416c9a7a4c297a19d87fd8edbccc",
+    "oc_51cd445c9162f2d622f1a984e8bc3f4f"
+  ]
+}</code></pre><p>修改后需重启 Gateway：</p><pre><code class="language-bash">systemctl --user restart openclaw-gateway</code></pre><h2>Verification</h2><pre><code class="language-bash">systemctl --user restart openclaw-gateway
+echo "Verification passed: fix command exited 0"</code></pre><p><strong>Expected Output:</strong> command completes without error, then <code>Verification passed</code> is printed. (Checks: <code>systemctl --user restart openclaw-gateway</code>)</p><h2>诊断命令</h2><p>查看实时日志：</p><pre><code class="language-bash">journalctl --user -u openclaw-gateway --no-pager -f</code></pre><p>查看飞书 channel 状态：</p><pre><code class="language-bash">openclaw status</code></pre><p>查看所有 session：</p><pre><code class="language-bash">openclaw sessions list</code></pre>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/openclaw-gateway-dynamic-module-missing.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=openclaw gateway dynamic module missing">Find related lessons →</a></p></div>

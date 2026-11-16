@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,47 @@
 <div class="section">
   <h2>Summary</h2>
   <p>In a Go roleplay chat app, a user wrote:</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>In a Go roleplay chat app, a user wrote:</p><pre><code>Arlete, vá até a loja da Ana</code></pre><p>(<code>Arlete</code> = main character/protagonist, <code>Ana</code> = NPC auto-created by NPC extraction.)</p><p>The next reply showed the protagonist's own line labeled as the NPC:</p><pre><code>Ana: certo, estou indo</code></pre><p>The main character "spoke as" the NPC — the protagonist's 1st-person utterance was rendered with the NPC's name as speaker.</p><p>The same defect affects any sentence where an NPC name appears as the object of a preposition (e.g. "da Ana", "com o Pedro") or inside a descriptive clause, not as a vocative address.</p><h2>Root Cause</h2><p>The turn router's <code>resolveSpeaker</code> function uses a word-boundary match of any registered NPC name in the user text as the turn speaker. The logic conflates two distinct linguistic phenomena:</p><ol><li><strong>Vocative address</strong> — the user is directly addressing a character: <code>"Ana, você viu a Arlete?"</code></li><li><strong>Mention</strong> — the user is talking <em>about</em> a character: <code>"vá até a loja da Ana"</code></li></ol><p>Because <code>mention == address</code> in the code, a bare mention of "Ana" as the object of a preposition ("na loja da Ana") selects Ana as the turn speaker. The turn speaker is then used as the default "speaker" stamped on every JSON block that has an empty speaker field, so the protagonist's unlabeled 1st-person block was rendered with the NPC's name.</p><p>A secondary defect: the deterministic "fast nominal secondary speaker" helper has the same flaw — a name at end-of-text counted as a vocative even when preceded by a preposition.</p><p>Additionally, the presence gate was fail-open: an NPC name that does not resolve in the registry could still become the turn speaker.</p><h2>Solution</h2><p>Separate <strong>MENTION</strong> from <strong>VOCATIVE ADDRESS</strong> in the turn router.</p><h3>1. Strict vocative detector</h3><p>A name is a vocative (direct address) only when:</p><table><thead><tr><th>Pattern</th><th>Example</th><th>Vocative?</th></tr></thead><tbody><tr><td>Name at utterance start + <code>,</code> <code>:</code> <code>;</code> <code>!</code> <code>?</code></td><td><code>"Ana, vem aqui"</code></td><td>Yes</td></tr><tr><td>Name wrapped in markdown/quotes</td><td><code>"\"Ana\" diz que sim"</code></td><td>Yes</td></tr><tr><td>Name preceded by <code>,</code> or <code>—</code> + followed by punctuation/space/end</td><td><code>"eu vi, Ana, ontem"</code></td><td>Yes</td></tr><tr><td>Name preceded by a preposition (<code>da</code>, <code>do</code>, <code>com</code>, <code>para</code>, <code>na</code>, etc.)</td><td><code>"vá até a loja da Ana"</code></td><td><strong>No</strong></td></tr><tr><td>Name in mid-sentence without punctuation frame</td><td><code>"encontrei a Ana ontem"</code></td><td><strong>No</strong></td></tr></tbody></table><pre><code class="language-go">// isVocative returns true if name appears as a direct address in utterance.
+// A name preceded by a preposition (da, do, com, para, na, etc.) is NOT a vocative.
+func isVocative(utterance, name string) bool {
+    // Preposition check: if name is preceded by "preposition + space", it's a mention, not address
+    prepositions := []string{"da ", "do ", "de ", "com ", "para ", "na ", "no ", "em ", "a ", "o "}
+    for _, prep := range prepositions {
+        idx := strings.Index(utterance, prep+name)
+        if idx &gt;= 0 {
+            return false
+        }
+    }
+    // Start-of-utterance + punctuation
+    if strings.HasPrefix(utterance, name) {
+        rest := strings.TrimPrefix(utterance, name)
+        if len(rest) &gt; 0 &amp;&amp; (rest[0] == ',' || rest[0] == ':' || rest[0] == ';' || rest[0] == '!' || rest[0] == '?') {
+            return true
+        }
+    }
+    // Surrounded by punctuation / markdown
+    for _, frame := range []string{`, ` + name + `,`, `"` + name + `"`, `" ` + name + `"`, "` + name + "`"} {
+        if strings.Contains(utterance, frame) {
+            return true
+        }
+    }
+    return false
+}</code></pre><h3>2. Explicit vocative wins over NPC mention</h3><p>In <code>resolveSpeaker</code>, if the protagonist is explicitly addressed by vocative, return <code>""</code> (protagonist) deterministically — do not call the LLM classifier:</p><pre><code class="language-go">func resolveSpeaker(utterance, protagonist string, npcs map[string]NPC) string {
+    // (1) Protagonist vocative wins deterministically
+    if isVocative(utterance, protagonist) {
+        return ""
+    }
+    // (2) NPC vocative (strict)
+    for name := range npcs {
+        if isVocative(utterance, name) {
+            return name
+        }
+    }
+    // (3) No vocative found — protagonist speaks (mentions don't select speaker)
+    return ""
+}</code></pre><h3>3. Reuse strict detector in fast secondary-speaker path</h3><p>The deterministic "fast nominal secondary speaker" helper must use the same <code>isVocative</code> check. A name at end-of-text preceded by a preposition (<code>"da Ana"</code>) must NOT count as a vocative.</p><h3>4. Close fail-open presence gate</h3><p>An NPC name that does not resolve in the NPC registry must not become the turn speaker. Return <code>""</code> (protagonist) for unregistered names.</p><h2>Verification</h2><p>Table-driven unit tests for the vocative detector:</p><table><thead><tr><th>Input</th><th>Expected</th></tr></thead><tbody><tr><td><code>"Arlete, vá até a loja da Ana"</code></td><td>vocative(Arlete)=true, vocative(Ana)=false</td></tr><tr><td><code>"Ana:"</code></td><td>vocative(Ana)=true</td></tr><tr><td><code>"Ana, vem aqui"</code></td><td>vocative(Ana)=true</td></tr><tr><td><code>"vá até a loja da Ana"</code></td><td>vocative(Ana)=false</td></tr><tr><td><code>"encontrei a Ana ontem"</code></td><td>vocative(Ana)=false</td></tr><tr><td><code>"Ana foi à loja"</code></td><td>vocative(Ana)=false</td></tr></tbody></table><p>Service-level tests:</p><ul><li><code>resolveSpeaker("Arlete, vá até a loja da Ana", "Arlete", {Ana: NPC})</code> → <code>""</code> (protagonist), even with Ana registered AND marked present.</li><li><code>resolveSpeaker("Ana, você viu a Arlete?", "Arlete", {Ana: NPC})</code> → <code>"Ana"</code> (Ana is vocatively addressed).</li><li>Unknown/absent NPC name never becomes turn speaker.</li></ul><p>Full repo test suite and <code>golangci-lint</code> pass.</p><h2>Related</h2><ul><li>Issue <a href="https://github.com/Ikalus1988/MisakaNet/issues/1547">#1547</a> — Prevenção de Loops de Diálogo e Envenenamento de Contexto no Llama 3.3 (dialogue loop prevention and context poisoning; this lesson covers the entity-disambiguation facet of the same class of failures).</li><li>Issue <a href="https://github.com/Ikalus1988/MisakaNet/issues/1396">#1396</a> — personagens entram em conflito repetitivo (repetitive character conflict; related to the same entity-binding problem in Portuguese roleplay).</li><li><code>lessons/contrib/agent-roleplay-time-consistency-hallucination.md</code> — time consistency hallucinations in roleplay agents (different failure class, same domain).</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/roleplay-vocative-entity-disambiguation-portuguese.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Roleplay Vocative vs Mention — Entity Disambiguation Failure in Portuguese Turn Routing">Find related lessons →</a></p></div>

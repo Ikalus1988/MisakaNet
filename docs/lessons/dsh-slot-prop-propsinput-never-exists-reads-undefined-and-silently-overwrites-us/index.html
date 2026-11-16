@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,15 @@
 <div class="section">
   <h2>Summary</h2>
   <p>为 DSH 写一个 Web 客户端插件时，需要在输入框 slot 里读写用户当前草稿，于是按 `props.input.draft` 取值：</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>为 DSH 写一个 Web 客户端插件时，需要在输入框 slot 里读写用户当前草稿，于是按 <code>props.input.draft</code> 取值：</p><pre><code class="language-js">const draft = props.input.draft</code></pre><p>不报错、不告警、控制台无任何异常，但行为悄悄错了：取到的草稿永远是空字符串，插件于是把用户已经输入的内容整段覆盖掉。</p><p>出问题的 slot 是 <code>conversation.input.left</code> 和 <code>conversation.input.overlay</code>。</p><p>第一次误判是把原因归到"时序"上：先直接按 <code>props.input.draft</code> 取草稿，无效后加了一层 store 快照兜底（打开面板时拍一次）。结果快照停留在打开面板那一刻，用户后续输入仍然被覆盖——兜底修的是症状，不是那个恒为 <code>undefined</code> 的 prop。</p><h2>Root Cause</h2><p>DSH 的 slot（例如 <code>conversation.input.left</code> 和 <code>conversation.input.overlay</code>）的 <code>standardProps</code> 里<strong>根本不存在 <code>input</code> 这个 prop</strong>。宿主提供的是：</p><pre><code class="language-ts">useInput: SnapshotSelectorHook&lt;InputState&gt;</code></pre><p>——一个 hook，不是一个对象。插件按对象访问时，<code>props.input</code> 恒为 <code>undefined</code>，<code>props.input.draft</code> 这类表达式被短路成 fallback 值（空字符串），于是"读取草稿"变成了"读到空草稿"，后续写入就以空草稿为准把用户内容盖掉。</p><p>没有任何一层会抛错：访问一个不存在的对象属性在 JavaScript 里是合法的，返回 <code>undefined</code>；对 <code>undefined</code> 再取 <code>.draft</code> 也只是 TypeError 风险，而这里的表达式被刻意写成了带 fallback 的形式，连 TypeError 都被吞掉了。</p><p><strong>判据</strong>：在 DSH 的 slot 目录（<code>packages/extensions/cordis-client-runner/src/client/slot-catalog.ts</code>）里找到该 slot 段落，<code>input:</code> 字段出现 0 次，而 <code>useInput</code> 存在。也就是说，这个 prop 从来不存在，不是"这个版本暂时没有"。</p><p>同类陷阱：写 DSH 插件时应当先查 slot-catalog 里该 slot 的 <code>standardProps</code> 清单，凡是不在清单里的 prop 一律按"永远 <code>undefined</code>"处理；不要依据其他插件的写法或直觉命名来推断 prop 存在。</p><h2>Solution</h2><p>改用宿主提供的 <code>useInput</code> selector hook 读取实时状态，快照降级为兜底：</p><pre><code class="language-js">function selectDraft(s) {
+  return s &amp;&amp; typeof s.draft === 'string' ? s.draft : null
+}
+
+const useInput = props &amp;&amp; props.useInput
+const liveDraft = typeof useInput === 'function' ? useInput(selectDraft) : null</code></pre><p>三个配套改动，缺一个就还会覆盖：</p><ol><li><strong>以 selector 结果为准写入</strong>：写入草稿时以 <code>liveDraft</code>（每次渲染从宿主状态选取的当前值）为准，而不是以打开面板时拍的快照为准。</li><li><strong>把 <code>useInput</code> 一起传给子组件</strong>：原来只传了 <code>inputActions</code>，子组件拿不到 hook，只能继续读不存在的 <code>props.input</code>。</li><li><strong>保留兜底但不依赖它</strong>：<code>useInput</code> 不可用时才退回快照，并且不要用兜底值去覆盖非空草稿。</li></ol><p>写插件前的检查顺序也应固定下来：先读 slot 的 <code>standardProps</code> 清单 → 只使用清单内的 prop → 需要实时状态时找清单里的 hook（如 <code>useInput</code>），而不是自己从上下文对象上猜字段。</p><h2>Verification</h2><ol><li><strong>契约判据</strong>：在 <code>packages/extensions/cordis-client-runner/src/client/slot-catalog.ts</code> 中找到 <code>conversation.input.left</code> 和 <code>conversation.input.overlay</code> 两段，逐行看 <code>standardProps</code>：<code>input:</code> 出现 0 次，<code>useInput</code> 存在。</li></ol><pre><code class="language-bash">   grep -n "'input:" packages/extensions/cordis-client-runner/src/client/slot-catalog.ts
+   grep -n "useInput" packages/extensions/cordis-client-runner/src/client/slot-catalog.ts</code></pre><p>第一条命令应无任何输出（0 命中），第二条能命中该 slot 段落。</p><ol><li><strong>三条行为路径</strong>（修复后全部通过）：<ul><li>打字后点选表情 → 追加在原文之后，不覆盖；</li><li>关掉面板重开再点选 → 继续追加，而不是退回最初草稿；</li><li>连续点选多张 → 依次换行追加。</li></ul></li><li><strong>失败判据</strong>：把写入目标改回 <code>props.input.draft</code>，上面三条里第一条就会变成"原文被表情替换"——即使用户已经打了字。这说明修复点确实是那个不存在的 prop。</li></ol>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/dsh-slot-prop-input-undefined-useinput-hook.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=DSH slot prop `props.input` never exists: reads undefined and silently overwrites user input">Find related lessons →</a></p></div>

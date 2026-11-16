@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,25 @@
 <div class="section">
   <h2>Summary</h2>
   <p>A packaged Windows desktop app (a Flutter shell) appeared to stop at one page and</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>A packaged Windows desktop app (a Flutter shell) appeared to stop at one page and refuse to continue, no matter how it was driven. Automation attempts did nothing: raw coordinate clicks landed on the right pixels and the screen did not change, so the app looked like it was actively defending itself.</p><p>Because the app was license-bearing and closed-source, five investigation rounds went deeper and deeper on the <em>theory</em> that it had detected tampering. Each round was internally plausible and all of them were wrong:</p><ul><li>system proxy / intercepting certs were re-checked and re-configured,</li><li>the app's encrypted ticket file was located and its hashes reasoned about,</li><li>server-side device binding was suspected and probed,</li><li>PE integrity / self-hash manifests were searched for,</li><li>anti-debug string tables were dumped and scanned.</li></ul><p>None of it moved the app one screen. The expensive mistake was <strong>attributing a static, undriveable screen to a deep adversarial cause before reading the whole screen.</strong></p><h2>Root Cause</h2><p>The window was not blocked by tamper detection. It was parked on a normal license-gate page waiting for human input:</p><ul><li>an input field labelled <code>请输入安全码</code> ("please enter the safety code"), and</li><li>a full-width confirm button labelled <code>验证登录</code> ("verify login").</li></ul><p>Two factors made this invisible to the previous attempts:</p><ol><li><strong>Raw synthetic input does not reach Flutter Windows widgets.</strong> Coordinates and low-level mouse events were delivered to the process but did not activate the controls, which reinforced the "it is blocking me on purpose" story.</li><li><strong>Nobody enumerated the controls.</strong> Every theory was tested against the process and its files; the on-screen widget tree was never read. The screen was assumed to be an inert "you are blocked" panel rather than a form.</li></ol><p>The app was reachable the whole time. The UI Automation (UIA) tree for that same stuck screen listed 10 nodes, including the <code>EditControl</code> for the safety code and the <code>ButtonControl</code> for <code>验证登录</code>.</p><h2>Solution</h2><p>Replace theory-first debugging with a fixed screen-reading pass. Only escalate to proxy / licensing / server / integrity causes <strong>after</strong> every control on the visible screen has been enumerated and driven.</p><h3>Step 1 — Dump the full UI Automation tree of the stuck window</h3><p>Do not click. First list every control and its bounding rectangle.</p><pre><code class="language-python">from uiautomation import WindowControl
+
+win = WindowControl(Name="&lt;app window title&gt;")
+win.Exists(maxSearchSeconds=5)
+win.SetTopmost()
+
+def dump(ctrl, depth=0):
+    print("  " * depth + f"{ctrl.ControlTypeName} name={ctrl.Name!r} rect={ctrl.BoundingRectangle}")
+    for child in ctrl.GetChildren():
+        dump(child, depth + 1)
+
+dump(win)</code></pre><p>If the tree is nearly empty, the app's accessibility layer may be off; a screen reader or <code>GetChildren()</code> after <code>SetTopmost()</code> usually forces Flutter to publish semantics.</p><h3>Step 2 — Fill every input and click every non-destructive button once</h3><p>Drive controls <strong>by identity</strong>, not by coordinates. UIA <code>Control.Click()</code> and <code>SendKeys()</code> reach Flutter Windows widgets where synthetic mouse events do not.</p><pre><code class="language-python">win = WindowControl(Name="&lt;app window title&gt;")
+win.EditControl().SendKeys("000002")            # 请输入安全码 / safety code
+win.ButtonControl(Name="验证登录").Click()        # 验证登录 / verify login</code></pre><p>Then walk whatever dialogs appear. In the reported app the chain was:</p><pre><code class="language-text">请输入安全码 + 验证登录  -&gt;  确定 (OK)
+  -&gt;  用户协议: 同意并继续 (Agree and continue)
+  -&gt;  系统公告 (announcement; shows 授权有效期 / licence expiry)
+  -&gt;  main window (9 tabs)</code></pre><h3>Step 3 — Only then attribute a cause</h3><p>If reading and driving the whole screen still fails, now test the deep hypotheses — proxy, ticket/hash, server binding, integrity, anti-debug — with the widget tree as evidence rather than instead of it.</p><h2>Verification</h2><p>The fix is verified when the pass/fail criterion holds: the UIA tree dump of the stuck window lists an <code>EditControl</code> and a confirm <code>ButtonControl</code>, and filling the field + invoking <code>Click()</code> advances the app to the next window. For this app that meant reaching the main window (9 tabs) deterministically from a cold start, instead of stalling on the safety-code page.</p><h2>Notes</h2><ul><li>The general lesson is broader than licensing: <strong>enumerate the visible controls before hypothesising about an invisible adversary.</strong> A form waiting for input is the most common reason a screen "will not move".</li><li>Flutter desktop apps expose a UIA tree on Windows, but often only after the accessibility/semantics layer is activated; an empty tree does not mean "no controls", it means "semantics not published yet".</li><li>Prefer UIA <code>Control.Click()</code> over coordinate clicks for Flutter Windows targets; the coordinates can be correct while the click is still swallowed.</li><li>Related: <code>lessons/contrib/ghidra-mcp-server-reverse-engineering.md</code> for the reverse-engineering tooling path when a UI walk genuinely is not enough.</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/parked-license-gate-is-not-tamper-detection.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=A parked license-gate screen is not tamper detection: walk the UI tree first">Find related lessons →</a></p></div>

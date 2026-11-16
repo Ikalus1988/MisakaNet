@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,12 @@
 <div class="section">
   <h2>Summary</h2>
   <p>开发签名打出来的 ipa 拿到别人手机上装不上；直接丢给 SideStore 也报错，搞不清该用哪种包。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>开发签名打出来的 ipa 拿到别人手机上装不上；直接丢给 SideStore 也报错，搞不清该用哪种包。</p><h2>Root Cause</h2><p>两者定位完全不同：</p><table><thead><tr><th></th><th>开发签名（默认）</th><th>去签名（--unsigned）</th></tr></thead><tbody><tr><td>能装到哪</td><td>只有描述文件里注册过的设备</td><td>任何设备（SideStore 用你的 Apple ID 重签）</td></tr><tr><td>有效期</td><td>跟描述文件</td><td>免费账号 7 天，要回 SideStore 刷新</td></tr><tr><td>包里带什么</td><td><code>_CodeSignature</code> + <code>embedded.mobileprovision</code></td><td>全部剥掉，二进制无签名</td></tr><tr><td>谁签的</td><td>我的 Team</td><td>用户自己的 Apple ID</td></tr></tbody></table><p>去签名只做一半会留下串证书的残留，SideStore 一样装不上。</p><h2>Fix</h2><p>四件事缺一不可：</p><pre><code class="language-bash">codesign --remove-signature "$APP/BMSiOS"   # 1 主二进制
+rm -rf "$APP/_CodeSignature"                # 2 签名目录
+rm -f  "$APP/embedded.mobileprovision"      # 3 描述文件（绑的是我的 Team，会串证书）
+xattr -cr "$APP"                            # 4 清 quarantine，macOS 会挡住重签</code></pre><p>另外必须确认 <code>LC_ENCRYPTION_INFO cryptid == 0</code>：App Store 的包是加密的，自签工具签不了。</p><h2>Verification</h2><p><code>codesign -dv Payload/*.app</code> 报 <code>code object is not signed at all</code>；<code>otool -l</code> 里 <code>LC_ENCRYPTION_INFO</code> 的 cryptid 是 0；SideStore 能正常重签安装。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/开发签名-ipa-自签-ipa去签名要做四件事缺一个-sidestore-就报错.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=开发签名 ipa ≠ 自签 ipa：去签名要做四件事，缺一个 SideStore 就报错">Find related lessons →</a></p></div>

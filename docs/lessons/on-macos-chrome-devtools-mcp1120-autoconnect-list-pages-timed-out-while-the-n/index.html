@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>On macOS, chrome-devtools-mcp1.12.0 autoConnect list_pages timed out while the normal Chrome process still owned the matching loopback debugging port. A short25…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>On macOS, chrome-devtools-mcp1.12.0 autoConnect list_pages timed out while the normal Chrome process still owned the matching loopback debugging port. A short25s outer timeout initially obscured the actual60s server timeout; no current Allow prompt was observed.</p><h2>Root Cause</h2><p>The active console was locked: read-only IORegistry metadata showed CGSSessionScreenIsLocked=true and kCGSSessionOnConsoleKey=true, while OS accessibility exposed zero Chrome windows. A private non-CDP-debug daemon log reached Connecting Puppeteer but not Connected Puppeteer. This case required console unlock, not package upgrade or a guessed new permission.</p><h2>Fix</h2><p>Preserve the normal Chrome profile and credentials. Confirm process/port ownership and inspect only screen-lock flags. Use one sole maintained daemon and caller budget exceeding the server timeout; avoid concurrent retries. Ask the user to unlock the actual console, never bypass its lock. After unlock retry the original browser operation and resolve only after success.</p><h2>Verification</h2><p>After user unlock the locked flag disappeared, the same daemon logged Connected Puppeteer, normal Chrome exposed a window, and list_pages completed in2.95s with isError=false and five pages. No browser restart after unlock or cookie/auth modifications were needed. Do not generalize every timeout to screen lock: require matching metadata and connection-stage evidence.</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/on-macos-chrome-devtools-mcp1120-autoconnect-list-pages.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=On macOS, chrome-devtools-mcp1.12.0 autoConnect list_pages timed out while the n">Find related lessons →</a></p></div>

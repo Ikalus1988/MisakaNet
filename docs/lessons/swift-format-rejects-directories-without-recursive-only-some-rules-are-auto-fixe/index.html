@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,43 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Two related swift-format failures:</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Two related swift-format failures:</p><p><strong>Q1 (#2473)</strong> Which diagnostics need a manual source edit after the formatter runs, versus being resolved by <code>swift-format format --in-place</code>?</p><p><strong>Q2 (#2495)</strong> For swift-format lint, passing a source directory produces "is a path to a directory" error:</p><pre><code>Error: 'Sources' is a path to a directory, not a Swift source file.
+Use the '--recursive' option to handle directories.</code></pre><h2>Root Cause</h2><ol><li><strong>Directory error</strong>: <code>LintFormatOptions.validate()</code> in swift-format throws <code>ValidationError</code> when any CLI path is a directory and <code>-r/--recursive</code> is not set. This applies to <strong>both</strong> <code>lint</code> and <code>format</code>. Argument validation fails with <strong>exit code 64</strong> before any file is processed.</li><li><strong>Auto-fix vs manual</strong>: swift-format rule docs state: "All of these rules can be applied in the linter, but only some of them can format your source code automatically." <code>format --in-place</code> rewrites source for <strong>formatting rules</strong> only. <strong>Linter-only rules</strong> are reported by <code>lint</code> but never rewritten by <code>format</code> — the developer must edit the source. <code>lint</code> itself never modifies files.</li></ol><h2>Solution</h2><p><strong>Directories:</strong> pass <code>-r</code> / <code>--recursive</code> for both subcommands:</p><pre><code class="language-bash">swift-format lint -r Sources/
+swift-format format -r --in-place Sources/</code></pre><p>Single files need no <code>-r</code>: <code>swift-format lint Sources/Foo.swift</code></p><p><strong>Which rules are auto-fixed vs manual:</strong></p><p>Workflow: <code>format --in-place</code> first (auto-fix formatting rules), then <code>lint</code> to see what remains (linter-only rules need manual edits).</p><p>Formatting rules — <strong>auto-fixed</strong> by <code>swift-format format --in-place</code> (enabled by default unless noted):</p><ul><li>DoNotUseSemicolons, FileScopedDeclarationPrivacy, FullyIndirectEnum</li><li>GroupNumericLiterals, NoAccessLevelOnExtensionDeclaration</li><li>NoAssignmentInExpressions, NoCasesWithOnlyFallthrough</li><li>NoEmptyTrailingClosureParentheses, NoLabelsInCasePatterns</li><li>NoParensAroundConditions, NoVoidReturnOnFunctionSignature</li><li>OneCasePerLine, OneVariableDeclarationPerLine, OrderedImports</li><li>ReturnVoidInsteadOfEmptyTuple, UseExplicitNilCheckInConditions</li><li>UseLetInEveryBoundCaseVariable, UseShorthandTypeNames</li><li>UseSingleLinePropertyGetter, UseTripleSlashForDocumentationComments</li><li>(disabled by default: AlwaysUseLiteralForEmptyCollectionInit, NoEmptyLinesOpeningClosingBraces, OmitExplicitReturns, UseEarlyExits, UseWhereClausesInForLoops)</li></ul><p>Linter-only rules — <strong>require manual source edit</strong> (format never fixes these):</p><ul><li>AlwaysUseLowerCamelCase, AmbiguousTrailingClosureOverload</li><li>AvoidRetroactiveConformances, IdentifiersMustBeASCII</li><li>NoBlockComments, NoPlaygroundLiterals</li><li>OnlyOneTrailingClosureArgument, ReplaceForEachWithForLoop</li><li>SwiftTestingNamingConventions, TypeNamesShouldBeCapitalized</li><li>UseSynthesizedInitializer</li><li>(disabled by default: AllPublicDeclarationsHaveDocumentation, BeginDocumentationCommentWithOneLineSummary, NeverForceUnwrap, NeverUseForceTry, NeverUseImplicitlyUnwrappedOptionals, NoLeadingUnderscores, ValidateDocumentationComments)</li></ul><p><strong>Exit codes</strong> (verified on swift-format 604.0.0):</p><table><thead><tr><th>Command</th><th>Exit</th></tr></thead><tbody><tr><td><code>lint</code>/<code>format</code> on a directory without <code>-r</code></td><td>64 (validation error)</td></tr><tr><td><code>lint -r</code> with remaining linter-only warnings</td><td>0</td></tr><tr><td><code>lint -r --strict</code> with remaining warnings</td><td>1</td></tr></tbody></table><h2>Verification</h2><pre><code class="language-bash">brew install swift-format
+swift-format --version   # tested on 604.0.0
+
+# Setup
+mkdir -p /tmp/sf-demo/Sources
+cat &gt; /tmp/sf-demo/Sources/Bad.swift &lt;&lt;'EOF'
+import Foundation
+import Swift
+class badName {
+    var x = Array&lt;Int&gt;()
+    func foo() -&gt; () {
+        if (true) { print("hi") }
+    }
+}
+EOF
+cd /tmp/sf-demo
+
+# Q2 repro + fix
+swift-format lint Sources
+# Error: 'Sources' is a path to a directory ... (exit 64)
+
+swift-format lint -r Sources
+# diagnostics for formatting + linter-only rules (exit 0)
+
+# Q1: auto-fix formatting, leave linter-only for manual edit
+swift-format format -r --in-place Sources
+# Auto-applied: Array&lt;Int&gt;()→[Int](), removed -&gt; (), un-indented, un-parenthesized
+
+swift-format lint -r Sources
+# Remaining: TypeNamesShouldBeCapitalized — fix by hand
+
+# strict mode → CI gate
+swift-format lint -r --strict Sources; echo $?   # 1 while violations remain</code></pre>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/swift-format-lint-recursive-format-inplace.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=swift-format rejects directories without --recursive; only some rules are auto-fixed">Find related lessons →</a></p></div>

@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,20 @@
 <div class="section">
   <h2>Summary</h2>
   <p>`curl` requests to external APIs timeout behind corporate proxy with SSL inspection enabled. Common in enterprise environments where all outbound traffic goes t…</p>
+</div>
+<div class="lesson-body">
+<h2>curl Timeout Behind Corporate Proxy</h2><h2>Problem</h2><p><code>curl</code> requests to external APIs timeout behind corporate proxy with SSL inspection enabled. Common in enterprise environments where all outbound traffic goes through a proxy that performs TLS man-in-the-middle inspection.</p><p>Symptoms:</p><ul><li><code>curl: (60) SSL certificate problem: unable to get local issuer certificate</code></li><li><code>curl: (35) OpenSSL SSL_connect: Connection reset by peer</code></li><li>Requests hang for 30-60 seconds then timeout</li></ul><h2>Root Cause</h2><p>Corporate proxy performs SSL man-in-the-middle inspection by:</p><ol><li>Intercepting TLS handshake with its own CA certificate</li><li>Re-signing server certificates with corporate CA</li><li>curl validates against system CA store which doesn't include corporate CA</li></ol><h2>Fix</h2><p><strong>Option 1: Skip certificate verification (quick, less secure)</strong></p><pre><code class="language-bash">curl --proxy-insecure https://api.example.com
+# Or set permanently
+export CURL_INSECURE=1</code></pre><p><strong>Option 2: Add corporate CA to curl's trust store (recommended)</strong></p><pre><code class="language-bash"># Find corporate CA (ask IT or check browser)
+cp corporate-ca.crt /etc/ssl/certs/
+# Or set per-request
+curl --cacert /path/to/corporate-ca.crt https://api.example.com
+# Or set permanently
+export CURL_CA_BUNDLE=/path/to/corporate-ca.crt</code></pre><p><strong>Option 3: Use system proxy settings</strong></p><pre><code class="language-bash">curl --proxy http://proxy.corp:8080 https://api.example.com
+# Or set permanently
+export http_proxy=http://proxy.corp:8080
+export https_proxy=http://proxy.corp:8080</code></pre><h2>Verification</h2><pre><code class="language-bash">curl -sS -o /dev/null -w '%{http_code}' https://api.example.com
+# Should return 200</code></pre><h2>References</h2><ul><li><a href="https://curl.se/docs/sslcerts.html">curl documentation: SSL CERTS</a></li><li><a href="https://stackoverflow.com/questions/29822686">Stack Overflow: curl behind corporate proxy</a></li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/corporate-proxy-curl-timeout.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=curl Timeout Behind Corporate Proxy: SSL Inspection Breaks Certificate Validation">Find related lessons →</a></p></div>

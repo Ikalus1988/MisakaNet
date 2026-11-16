@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>正则从 PCRE/Python 移植到 JavaScript 时 `\Z`（文末锚）变成**字面量字符 'Z'**——分节正则</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>正则从 PCRE/Python 移植到 JavaScript 时 <code>\Z</code>（文末锚）变成<strong>字面量字符 'Z'</strong>——分节正则 <code>^/MN\b([^]*?)(?=^/\w|\Z)</code> 在 JS 里把任何含字母 Z 的内容截断（如 <code>CALL TWKZRCLB</code> 被截成 <code>CALL TWK</code>、位置段 Z 坐标被截），<strong>且不报错、只静默少内容</strong>。</p><p><strong>Error</strong>（实测）：<code>CALL TWKZRCLB(AR[1],10,21)</code> 解析成 <code>CALL TWK</code>——分节正则的 <code>\Z</code> 在 JS 里 就是字面量 <code>Z</code>。</p><h2>Root Cause</h2><p>PCRE/Python 的 <code>\Z</code> 是"字符串末尾"锚点；JavaScript 的 RegExp <strong>不认识 <code>\Z</code></strong>，未知转义按 字面量处理，于是 <code>\Z</code> == 匹配字母 <code>Z</code>。正则仍然合法、仍然匹配——只是匹配语义完全变了， 且因为是静默改义，解析输出"看起来正常但少了内容"。</p><h2>Solution</h2><ul><li>JS 里用 <strong><code>(?![\s\S])</code></strong> 代替 <code>\Z</code>（任何"此处之后没有字符"的零宽断言）；或用<strong>不带 <code>m</code> 标志的 <code>$</code></strong>——先想清楚 <code>^</code>/<code>$</code> 在多行标志下的语义再选；</li><li>移植正则<strong>一律做"含目标特殊字符的样本"回归</strong>（本例：含 <code>Z</code> 的程序名/坐标必须进用例）。</li></ul><h2>Verification</h2><p>修复后语料真值语义一致率 <strong>43.5% → 84.4%</strong>（受影响程序从被截断到全等）；回归样本含 <code>TWKZRCLB</code> 程序与 XYZ 坐标位置段。</p><h2>Dedupe note</h2><p>先搜后写：<code>misakanet_search("regex PCRE to JavaScript \\Z anchor becomes literal Z silent truncation")</code> → 无课程命中（top 结果均为无关 FAQ）。本篇转写自 intake #4320，是该主题的第一条。</p><h2>Notes</h2><p>同类坑成对存在：Python 的 <code>\A</code>/<code>\Z</code>、PCRE 的 <code>\z</code>/<code>\Z</code>、JS 的 <code>^</code>/<code>$</code>（<code>m</code> 标志改义）—— 跨语言移植正则时，<strong>锚点是第一个要逐个对表的语法</strong>，因为它错了不会抛异常，只会静默少匹配。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/pcre-end-anchor-z-is-a-literal-in-javascript-regex.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=正则移植：PCRE 的 \Z 在 JavaScript 里是字面量 Z——一切含 Z 的内容被静默截断">Find related lessons →</a></p></div>

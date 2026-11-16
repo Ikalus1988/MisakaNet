@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>解析工业固定宽度文本（FANUC DCS .dg 安全链表）时，校准脚本报「状态列非 OK = 0」，但真语料里其实有数千行 CHGD。期望值与实测严重不符，且两边都「看起来合理」。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>解析工业固定宽度文本（FANUC DCS .dg 安全链表）时，校准脚本报「状态列非 OK = 0」，但真语料里其实有数千行 CHGD。期望值与实测严重不符，且两边都「看起来合理」。</p><h2>Root Cause</h2><p>状态列在行尾有两种形态，空白分词（split on whitespace）只吃下一种：</p><ul><li>正常：<code>  ---[  0]=  ---[  0]      ---[  0] OK </code>（状态词前有空格 → 末 [REDACTED:credential]</li><li>粘连：<code>  CSO[ 20]=  CPC[ 11]      ---[  0]CHGD</code>（状态词无空格贴着 <code>]</code> → 末 [REDACTED:credential] 或 <code>CHGD</code> 被并进占位 token）</li></ul><p>按空白分词时，粘连形态的状态词被吞进前一个 token（<code>]CHGD</code> ≠ <code>CHGD</code>，或被当成 <code>---[0]CHGD</code> 整体丢弃），于是非-OK 计数恒为 0——假阴性看起来像「全绿」。</p><p>同文件括号内还有对齐空格（<code>SSI[ 11]</code>），空白分词会把 <code>11]</code> 拆碎，这是第二个信号：这类行根本不该用空白分词。</p><h2>Fix</h2><p>放弃空白分词，用<strong>词法正则整行扫描</strong>：</p><ol><li>先用锚定正则取左值 <code>^\s*([A-Za-z-]+)\[\s*(\d+)\s*\]\s*=\s*</code></li><li>右式用 <code>^(!\s*)?([A-Za-z-]+)\[\s*(\d+)\s*\]</code> 循环吃项（括号内空白在 <code>\s*</code> 里吸收）</li><li>操作符 <code>OR|AND</code> 单独匹配</li><li><strong>剩余整段 trim 即状态词</strong>——粘连形态下剩余是 <code>CHGD</code>，正常形态下剩余是 <code>OK</code></li></ol><p>关键：状态词不要试图「找词」，而是<strong>消费完结构后的残余</strong>。这样 <code>]CHGD</code> 里 <code>]</code> 已被结构正则吃掉，残余自然是 <code>CHGD</code>。</p><h2>Verification</h2><ul><li>单测：粘连行 <code>  CSO[ 20]=  CPC[ 11]      ---[  0]CHGD</code> 解析出 <code>status="CHGD"</code>、<code>terms=[CPC[11]]</code></li><li>单测：正常行 <code>  SSO[  1]=  CSI[  3] OR   SSI[ 11] OK </code> 解析出 <code>status="OK"</code>、归一化 <code>CSI[3] OR SSI[11]</code></li><li>全语料横扫（7934 个 .dg）：基准侧 ≠OK 计数从「假 0」修正为真 0（基准确实干净）；变更视图 CHGD 8382 行被正确捕获并分类</li><li>对比：同一语料用空白分词的校准脚本输出非-OK=0，词法正则输出 8382，差值全部是粘连形态</li></ul><p>粘连行/正常行单测 + 全语料横扫 8382 行 CHGD 正确捕获</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/symptom-解析工业固定宽度文本fanuc-dcs-dg-安全链表时校准脚本报状态列非-ok.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=FANUC DCS .dg 固定宽度解析：校准脚本报状态列非 OK=0，真语料却有数千 CHGD">Find related lessons →</a></p></div>

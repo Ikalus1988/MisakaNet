@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,11 @@
 <div class="section">
   <h2>Summary</h2>
   <p>When HermesHub starts, if the BGE-m3 model has not been downloaded to the local path, SkillIndexer crashes immediately.</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>When HermesHub starts, if the BGE-m3 model has not been downloaded to the local path, SkillIndexer crashes immediately. The local path is hard-coded as <code>~/.cache/huggingface/...</code>, which does not exist on other machines.</p><h2>Root Cause</h2><p>Inspect the RAG config, ingestion log, retrieval log, and cache status to confirm the exact mismatch before applying the fix.</p><p><code>_init_embedding_model()</code> in <code>skill_indexer.py</code> loads the model with <code>local_files_only=True</code>, and the model path is a hard-coded machine-specific absolute path. There is no fallback mechanism and no environment-variable override.</p><h2>Solution</h2><ol><li>Remove the hard-coded absolute path and use: constructor parameter → <code>EMBEDDING_MODEL_PATH</code> environment variable → model name (auto-download)</li><li>Wrap loading failures in try/except and degrade to no-embedding mode (<code>register_skill</code> skips semantic deduplication)</li><li>Make <code>_generate_embedding()</code> return an empty list, so <code>search_skills</code> falls back to keyword matching</li></ol><h2>Verification</h2><pre><code class="language-bash">echo "Lesson: BGE Embedding Fallback Crash"
+wc -l lessons/contrib/bge-embedding-fallback-crash.md</code></pre><p><strong>Expected Output:</strong></p><pre><code>Lesson: BGE Embedding Fallback Crash
+# (line count)</code></pre><h2>Scenario</h2><p>Any non-development Node machine (Node 1/2/3/6) without a pre-downloaded BGE-m3 model cache.</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/bge-embedding-fallback-crash.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=BGE Embedding Fallback Crash">Find related lessons →</a></p></div>

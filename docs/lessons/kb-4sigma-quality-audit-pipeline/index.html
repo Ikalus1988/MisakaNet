@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,10 @@
 <div class="section">
   <h2>Summary</h2>
   <p>After continuous document imports, the RAG knowledge base developed data contamination, version confusion, inconsistent sources, and other issues that affected …</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>After continuous document imports, the RAG knowledge base developed data contamination, version confusion, inconsistent sources, and other issues that affected retrieval quality.</p><h2>Root Cause</h2><ol><li>Multiple versions of the same document were imported repeatedly, with old versions not removed</li><li>OCR imports introduced garbled data</li><li>The same knowledge point appeared in multiple documents with different wording</li><li>There was no systematic quality-check workflow</li></ol><h2>Solution</h2><p>Build a 4σ quality audit pipeline:</p><ol><li>Contamination cleanup: delete non-document content (garbled text, empty chunks, numeric-only chunks)</li><li>Version deduplication: identify duplicates by filename + import time</li><li>Source correction: standardize document paths, filenames, and source URLs</li><li>Quality scoring: score by completeness, cleanliness, and version consistency</li></ol><p>Implement it as <code>daily_audit.py</code>, run automatically by cron every day at 06:00. Reports are stored at <code>~/audit_reports/audit_YYYY-MM-DD.json</code>.</p><h2>Verification</h2><pre><code class="language-bash">daily_audit.py
+echo "Verification passed: fix command exited 0"</code></pre><p><strong>Expected Output:</strong> command completes without error, then <code>Verification passed</code> is printed. (Checks: <code>daily_audit.py</code>)</p><h2>Scenario</h2><p>A continuously growing RAG knowledge base (&gt;150 documents, &gt;200K vectors) that needs automated quality assurance.</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/kb-4sigma-quality-audit-pipeline.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Knowledge Base 4-Sigma Quality Audit Pipeline">Find related lessons →</a></p></div>

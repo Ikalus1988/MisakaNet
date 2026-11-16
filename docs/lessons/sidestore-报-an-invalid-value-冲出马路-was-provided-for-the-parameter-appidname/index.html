@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,13 @@
 <div class="section">
   <h2>Summary</h2>
   <p>把 ipa 丢进 SideStore 点安装直接失败：</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>把 ipa 丢进 SideStore 点安装直接失败：</p><pre><code>Failed to Install 冲出马路
+Bundle identifier unavailable: An invalid value '冲出马路' was provided
+for the parameter 'appIdName'.</code></pre><h2>Root Cause</h2><p>SideStore 会拿 <code>CFBundleDisplayName</code> 直接当 <strong>App ID 名字</strong>去调 Apple 的接口，而 Apple 的 <code>appIdName</code> <strong>只接受 ASCII</strong>（字母数字空格），中文一律拒绝。我们的 <code>CFBundleDisplayName</code> 正是「冲出马路」。</p><h2>Fix</h2><p>主 plist 改成 ASCII（只给签名用），中文名放进本地化文件（iOS 桌面读这个）：</p><pre><code class="language-bash">plutil -replace CFBundleDisplayName -string "ChongChuMaLu" "$APP/Info.plist"
+mkdir -p "$APP/zh-Hans.lproj"
+printf '"CFBundleDisplayName" = "冲出马路";\n' &gt; "$APP/zh-Hans.lproj/InfoPlist.strings"</code></pre><p>WARNING: 只改主 plist 不改本地化，桌面图标名会变成英文。 WARNING: <code>.strings</code> 用 UTF-8 无 BOM 即可（iOS 同时支持 UTF-16）。</p><h2>Verification</h2><p><code>plutil -p Payload/*.app/Info.plist | grep CFBundleDisplayName</code> 为纯 ASCII；SideStore 能创建 App ID 并安装成功；装好后桌面图标名仍是「冲出马路」。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/sidestore-报-an-invalid-value-冲出马路-was-provided-for-the.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=SideStore 报 An invalid value '冲出马路' was provided for the parameter 'appIdName'">Find related lessons →</a></p></div>

@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,27 @@
 <div class="section">
   <h2>Summary</h2>
   <p>POST https://misakanet.org/mcp returns 404 {"error":"Not found"}, but GET /mcp returns the worker's HTML info page. The symptoms are contradictory. Additionally…</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>POST https://misakanet.org/mcp returns 404 {"error":"Not found"}, but GET /mcp returns the worker's HTML info page. The symptoms are contradictory. Additionally, /api/lessons returns 502 (GitHub API 401) while /api/counter works normally.</p><h2>Root Cause</h2><ol><li>Zone workers routes: <code>misakanet.org/mcp</code> and <code>/mcp/*</code> point to <code>misakanet-api</code> worker, which doesn't have MCP implementation (POST /mcp hits its 404 branch)</li><li>GET /mcp HTML comes from <code>misakanet-api</code> forwarding the register-proxy page, creating contradictory symptoms</li><li>The live <code>misakanet-register-proxy</code> worker is deployed with old code (only <code>/api/*</code>, POST /) without <code>/mcp</code> routes</li><li><code>/api/lessons</code> 401 comes from <code>misakanet-api</code>'s own REGISTER_TOKEN being expired, while <code>/api/counter</code> works because it reads from KV</li></ol><h2>Solution</h2><ol><li>Use <code>PUT /zones/{zone_id}/workers/routes/{route_id}</code> to change <code>/mcp</code> and <code>/mcp/*</code> routes to the worker with full MCP implementation (<code>misakanet-register-proxy</code>)</li><li>Redeploy the worker with latest code</li><li>Consolidate architecture: move <code>/api/*</code>, <code>/ping</code> routes to the new worker (its new <code>/api/lessons</code> uses public raw reads, no longer depending on expired GitHub token)</li><li>Note: PATCH reports 10405 Method not allowed when using OAuth token for zone route changes — must use PUT instead</li></ol><h2>Verification</h2><pre><code class="language-bash"># Test MCP endpoint
+curl -X POST https://misakanet.org/mcp \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}'
+
+# Test tools/list
+curl -X POST https://misakanet.org/mcp \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}'
+
+# Test API endpoints
+curl -s https://misakanet.org/api/lessons | head -1
+curl -s https://misakanet.org/api/counter
+curl -s https://misakanet.org/api/health
+curl -s https://misakanet.org/ping</code></pre><p><strong>Expected Output:</strong></p><pre><code class="language-json">
+
+192
+
+pong</code></pre>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/mcp-endpoint-404-zone-route-misconfig.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=MCP Endpoint 404: Zone Route Points to Worker Without MCP Implementation">Find related lessons →</a></p></div>

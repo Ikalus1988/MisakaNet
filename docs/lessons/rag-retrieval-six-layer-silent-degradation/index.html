@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,11 @@
 <div class="section">
   <h2>Summary</h2>
   <p>RAG 知识库包含完整的 FANUC M-900iB/330L 规格表，但 agent 回答"M-900iB/330L 不存在"。六个独立层级各自丢弃了有效 chunk — 无单一修复足够。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>RAG 知识库包含完整的 FANUC M-900iB/330L 规格表，但 agent 回答"M-900iB/330L 不存在"。六个独立层级各自丢弃了有效 chunk — 无单一修复足够。</p><h2>Root Cause</h2><p>六层静默退化：</p><ol><li><strong>BM25 依赖失败</strong> — BM25 索引未构建或损坏，回退到纯关键词匹配</li><li><strong>Warmup-no-retry</strong> — 预热失败后不重试，直接返回空结果</li><li><strong>Variant tokenization</strong> — <code>$contains</code> 分词变体导致查询不匹配</li><li><strong>Multi-layer truncation</strong> — 多层截断（query → retrieval → context）累积丢失有效信息</li><li><strong>Score-scale mismatch</strong> — RRF 分数与语义分数混合时尺度不一致</li><li><strong>Chinese tokenization in overlap-guard</strong> — 中文分词在 overlap guard 中失效</li></ol><h2>Solution</h2><p><strong>6 步修复：</strong></p><ol><li><strong>验证 BM25 索引完整性</strong><pre><code class="language-bash">python3 scripts/misakanet_cli.py doctor</code></pre></li><li><strong>添加 warmup 重试逻辑</strong><ul><li>首次失败后等待 5s 重试</li><li>重试失败后回退到 BM25-only</li></ul></li><li><strong>修复 <code>$contains</code> tokenization</strong><ul><li>统一查询预处理：先分词，再匹配</li><li>避免特殊字符干扰分词</li></ul></li><li><strong>减少截断层数</strong><ul><li>在 retrieval 阶段就截断，避免 context 阶段重复截断</li><li>设置合理 top-k（如 top=10 而非 top=50）</li></ul></li><li><strong>统一分数尺度</strong><ul><li>RRF 和语义分数分别归一化到 [0,1]</li><li>再加权合并</li></ul></li><li><strong>修复中文 overlap guard</strong><ul><li>使用 jieba 分词替代简单空格分割</li><li>确保中文查询在 overlap guard 中正确匹配</li></ul></li></ol><h2>Verification</h2><pre><code class="language-bash">grep -i fanuc lessons/contrib/fanuc-*.md 2&gt;/dev/null | wc -l
+echo FANUC verified</code></pre><p><strong>Expected Output:</strong></p><pre><code># (count)
+FANUC verified</code></pre><h2>Key Points</h2><ul><li>RAG 检索失败往往是多层复合问题，不是单一修复</li><li>生产路径验证比单元测试更重要</li><li>中文分词在 RAG 管道中需要特别注意</li><li>"验证于生产接口" 规则：在最终输出层验证，不只是中间层</li></ul><h2>Related Lessons</h2><ul><li>fanuc-r-2000ic-retrieval-fix: keyword forced recall</li><li>rag-alarm-code-mandatory-recall: alarm-code keyword recall</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/rag-retrieval-six-layer-silent-degradation.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=RAG 检索六层静默退化：BM25 失败 + 截断 + 分数混合导致有效 chunk 被丢弃">Find related lessons →</a></p></div>

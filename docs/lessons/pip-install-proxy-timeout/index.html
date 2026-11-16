@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,20 @@
 <div class="section">
   <h2>Summary</h2>
   <p>`pip install` fails with `ReadTimeoutError` or `ConnectionResetError` when behind corporate proxy with SSL inspection. Common errors:</p>
+</div>
+<div class="lesson-body">
+<h2>pip install Fails Behind Corporate Proxy</h2><h2>Problem</h2><p><code>pip install</code> fails with <code>ReadTimeoutError</code> or <code>ConnectionResetError</code> when behind corporate proxy with SSL inspection. Common errors:</p><pre><code>pip._vendor.urllib3.exceptions.ReadTimeoutError: HTTPSConnectionPool(host='pypi.org', port=443): Read timed out.
+ERROR: Could not install packages due to an EnvironmentError: [SSL: CERTIFICATE_VERIFY_FAILED]</code></pre><h2>Root Cause</h2><ol><li>Corporate proxy performs TLS MITM inspection</li><li>pip validates certificates against system CA store (missing corporate CA)</li><li>Default timeout (15s) too short for proxy inspection overhead</li></ol><h2>Fix</h2><p><strong>Option 1: Increase timeout + trust PyPI host (quick)</strong></p><pre><code class="language-bash">pip install --timeout 120 --trusted-host pypi.org --trusted-host files.pythonhosted.org package-name</code></pre><p><strong>Option 2: Set corporate CA globally (recommended)</strong></p><pre><code class="language-bash"># Find corporate CA
+cp corporate-ca.crt ~/.local/share/ca-certificates/
+update-ca-certificates  # Linux
+# Or set via pip config
+pip config set global.cert /path/to/corporate-ca.crt</code></pre><p><strong>Option 3: Use system proxy settings</strong></p><pre><code class="language-bash">pip install --proxy http://proxy.corp:8080 package-name
+# Or set permanently
+export HTTP_PROXY=http://proxy.corp:8080
+export HTTPS_PROXY=http://proxy.corp:8080</code></pre><p><strong>Option 4: pip config for persistent fix</strong></p><pre><code class="language-bash">pip config set global.timeout 120
+pip config set global.trusted-host pypi.org
+pip config set global.trusted-host files.pythonhosted.org</code></pre><h2>Verification</h2><pre><code class="language-bash">pip install --dry-run requests
+# Should show "Would install requests-2.x.x"</code></pre><h2>References</h2><ul><li><a href="https://pip.pypa.io/en/stable/topics/https-certificates/">pip documentation: SSL/TLS</a></li><li><a href="https://pip.pypa.io/en/stable/user_guide/#timeout">pip documentation: timeouts</a></li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/pip-install-proxy-timeout.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=pip install ReadTimeoutError Behind Corporate Proxy: Certificate Validation and Timeout Configuration">Find related lessons →</a></p></div>

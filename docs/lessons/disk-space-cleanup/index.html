@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,21 @@
 <div class="section">
   <h2>Summary</h2>
   <p>写入文件或构建向量库时报 `No space left on device` / `ENOSPC`，hermes-hub 进程崩溃。</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>写入文件或构建向量库时报 <code>No space left on device</code> / <code>ENOSPC</code>，hermes-hub 进程崩溃。</p><h2>Root Cause</h2><ul><li>chroma_db_v4 向量库膨胀（长期不清理）</li><li>模型缓存占用 ~/.cache/huggingface/</li><li>临时文件堆积 /tmp</li><li>磁盘真的满了</li></ul><h2>Solution</h2><p><strong>快速定位谁占空间：</strong></p><pre><code class="language-bash">du -sh ~/.hermes/* 2&gt;/dev/null | sort -h
+du -sh /mnt/d/Eric/知识库/chroma_db_v4/ 2&gt;/dev/null</code></pre><p><strong>清理向量库旧版本：</strong></p><pre><code class="language-bash"># 磁盘空间不足 / chroma_db_v4 CacheCleanup
+# 查看 chroma 版本
+ls /mnt/d/Eric/知识库/chroma_db_v4/
+
+# 备份后重建（如果太大）
+cp -r /mnt/d/Eric/知识库/chroma_db_v4/ ~/chroma_db_v4_backup_$(date +%Y%m%d)</code></pre><p><strong>清理 HuggingFace 缓存：</strong></p><pre><code class="language-bash"># 清理重复的 snapshot
+du -sh ~/.cache/huggingface/hub/
+
+# 删除旧版本模型文件（谨慎）
+# huggingface-cli snapshots remove &lt;model-id&gt;</code></pre><p><strong>清理 tmp 和日志：</strong></p><pre><code class="language-bash">rm -rf /tmp/hermes-* 2&gt;/dev/null
+find ~/.hermes/logs/ -name "*.log" -mtime +7 -delete 2&gt;/dev/null</code></pre><h2>Verification</h2><pre><code class="language-bash">du -sh ~/.hermes/* 2&gt;/dev/null | sort -h
+echo "Verification passed: fix command exited 0"</code></pre><p><strong>Expected Output:</strong> command completes without error, then <code>Verification passed</code> is printed. (Checks: <code>du -sh ~/.hermes/* 2&gt;/dev/null | sort -h</code>)</p><h2>Related</h2><ul><li>设置 cron 每周清理：<code>0 3 * * 0 find ~/.hermes/logs/ -name "*.log" -mtime +30 -delete</code></li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/disk-space-cleanup.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=磁盘空间不足 / chroma_db_v4 CacheCleanup">Find related lessons →</a></p></div>

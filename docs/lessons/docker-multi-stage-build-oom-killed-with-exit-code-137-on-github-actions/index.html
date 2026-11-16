@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,51 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Docker multi-stage build fails mid-build with:</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Docker multi-stage build fails mid-build with:</p><pre><code>executor process running /bin/sh: exit code: 137</code></pre><p>Exit code 137 = <code>SIGKILL</code> (128+9), typically the Linux OOM killer terminating the build process. GitHub Actions standard runners have ~7GB RAM; large multi-stage builds (especially with compiled dependencies like Node.js native modules or Rust) can exceed this.</p><h2>Root Cause</h2><p>Multi-stage builds accumulate memory across stages. The Docker daemon plus the build process inside the container share the runner's RAM. Large <code>COPY</code> + <code>npm install</code> + <code>cargo build</code> in a single stage can spike past 7GB.</p><h2>Diagnosis</h2><pre><code class="language-bash"># 1. Check if it's OOM (on self-hosted runner)
+dmesg -T | grep -i "oom\|killed" | tail -5
+
+# 2. Monitor container memory during build
+docker stats --no-stream  # during build on another terminal
+
+# 3. Check build context size
+docker build --no-cache -t test . 2&gt;&amp;1 | grep "transferring context"
+# If context is &gt;1GB, .dockerignore may be too permissive</code></pre><h2>Solution</h2><h3>1. Split stages into separate jobs</h3><pre><code class="language-yaml"># ❌ One job, memory accumulates
+jobs:
+  build:
+    steps:
+      - run: docker build -t app .
+
+# ✅ Split: build deps separately, then compose
+jobs:
+  build-deps:
+    steps:
+      - run: docker build --target deps -t app:deps .
+  build-app:
+    needs: build-deps
+    steps:
+      - run: docker build --target runtime -t app:runtime .</code></pre><h3>2. Reduce intermediate layer size</h3><pre><code class="language-dockerfile"># ❌ Large intermediate layer stays in memory
+FROM node:20 AS build
+COPY . .
+RUN npm install &amp;&amp; npm run build
+
+# ✅ Install deps first (cached layer), then copy source
+FROM node:20 AS build
+COPY package*.json ./
+RUN npm ci --production
+COPY . .
+RUN npm run build</code></pre><h3>3. Use <code>--jobs=1</code> for parallel builds</h3><pre><code class="language-dockerfile"># If using BuildKit with parallel stages, limit concurrency
+RUN --mount=type=cache,target=/root/.cargo cargo build --jobs=1</code></pre><h3>4. Add swap (self-hosted runners only)</h3><pre><code class="language-bash">sudo fallocate -l 4G /swapfile
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile</code></pre><h2>Verification</h2><pre><code class="language-bash"># 1. Build completes without exit 137
+docker build -t app . &amp;&amp; echo "PASS"
+
+# 2. Monitor peak memory (should stay under 6GB on GH Actions)
+docker stats --format "table {{.MemUsage}}" --no-stream
+
+# 3. CI green on the same runner type</code></pre><h2>Key Insight</h2><p>Exit code 137 is always OOM — no amount of retry will fix it. The fix is always architectural: smaller layers, split stages, or more memory. On GitHub Actions, <code>--jobs=1</code> and splitting stages into separate jobs are the two most reliable mitigations.</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/docker-build-exit-137-multistage-oom.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Docker multi-stage build OOM-killed with exit code 137 on GitHub Actions">Find related lessons →</a></p></div>

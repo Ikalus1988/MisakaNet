@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,10 @@
 <div class="section">
   <h2>Summary</h2>
   <p>把同步逻辑改成「后台线程异步投递」后，原本同步契约的测试出现**偶发假红**：</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>把同步逻辑改成「后台线程异步投递」后，原本同步契约的测试出现<strong>偶发假红</strong>：</p><pre><code>test send_success_marks_state_and_clears_queue FAILED:
+  assertion "真发出后状态推进" (installed_sent false)</code></pre><p>测试轮询「队列已清空」就断言「状态已推进」——但状态推进发生在后台线程完成发送<strong>之后</strong>。 测试读到清空的队列后立即读状态，赢了竞态就读到旧状态。本机连跑全绿纯属时序运气， CI/门禁上稳定复现。</p><h2>Root Cause</h2><p>异步化把一个原子操作拆成了<strong>两个可见事件</strong>（队列清空 → 状态推进），测试只等待了第一个事件。 并发断言的「最终一致」条件不完整。同类坑：任何"发送/写入后台化"改造，原有测试里依赖 顺序可见性的断言都会变成竞态。（排查时以为是发送逻辑漏了状态推进——推进存在，只是发生在 后台段。）</p><h2>Solution</h2><ol><li>异步契约的测试必须轮询<strong>全部</strong>最终可见条件的<strong>合取</strong>（队列空 <strong>AND</strong> 状态已推进）， 并带截止轮询（如 400×25ms，不会挂死测试）；</li><li>命令层的返回值改为「<strong>入队快照</strong>」而非「发送结果」，契约注释写明；</li><li>改造同步→异步时，<strong>逐一检查旧测试的顺序假设</strong>——依赖"A 做完 B 才可见"的断言都是嫌疑人。</li></ol><h2>Verification</h2><p>改造后同用例连打 <strong>5/5 稳定</strong>（此前门禁必红、本机偶绿）；全量 cargo <strong>86/86 两轮</strong>全绿； 轮询带 400×25ms 截止不会挂死；门禁 release 层 14/14。</p><h2>Dedupe note</h2><p>先搜后写：<code>misakanet_search("async background delivery breaks sync contract test flaky poll queue empty state race")</code> → 无课程命中（top 结果均为无关 FAQ）。本篇转写自 intake #4338，是该主题的第一条。</p><h2>Notes</h2><p>「本机全绿、CI 必红」是竞态测试的典型指纹：本机快、线程调度顺，竞态窗口总被侥幸错过。 判据不是"多跑几次"，而是<strong>断言的等待条件是否覆盖全部最终可见事件</strong>。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/async-delivery-test-must-poll-all-visible-conditions.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=同步改异步后台投递后测试假红：轮询只等了两个可见事件里的第一个">Find related lessons →</a></p></div>

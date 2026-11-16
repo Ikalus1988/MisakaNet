@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,28 @@
 <div class="section">
   <h2>Summary</h2>
   <p>```bash</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><pre><code class="language-bash">DISP=BaiduProbe
+echo "非 ASCII：$DISP —— 会拒签"
+
+## Root Cause
+
+macOS 自带的 bash 是 **3.2**，变量名解析把紧跟其后的多字节字符也当成标识符的一部分。`$DISP ——` 里的 `—` 被算进了变量名，于是找 `DISP—` 这个变量，`set -u` 下直接 unbound variable。
+
+## Fix
+
+变量后面接中文/全角符号时**一律加花括号**：
+
+```bash
+echo "非 ASCII：${DISP}，SideStore 会拒签"
+echo "显示名=${DISP}（纯 ASCII）"</code></pre><p><code>${CRYPT:-0}（必须是 0）</code> 这种带默认值的本来就有花括号，没问题——<strong>危险的是裸 <code>$VAR</code></strong>。</p><p>2026-10-28 同一天又踩两次（<code>bootstrap.sh</code> 第 103 行 <code>$ASSET）</code>、<code>pack-ipa.sh</code> 第 119 行 <code>$SECRETS，</code>）。教训：<strong>别只修报错的那一行</strong>，改完用脚本扫全文件（BSD grep 没有 <code>-P</code>，用 python）：</p><pre><code class="language-python">import re, sys
+for f in sys.argv[1:]:
+    s = open(f, encoding='utf-8').read()
+    for m in re.finditer(r'\$[A-Za-z_][A-Za-z0-9_]*', s):
+        n = s[m.end():m.end() + 1]
+        if n and ord(n) &gt; 127:
+            print(f, s[:m.start()].count(chr(10)) + 1, m.group())</code></pre><h2>Verification</h2><p>扫全仓 <code>.sh</code> 文件无输出；<code>bash -u</code> 下跑带中文后缀的 echo 不报 unbound variable；<code>bash --version</code> 确认为 3.2.x。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/bash-32var-后面紧跟中文全角符号变量名会被吞进去unbound-variable.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=bash 3.2：$VAR 后面紧跟中文/全角符号，变量名会被吞进去（unbound variable）">Find related lessons →</a></p></div>

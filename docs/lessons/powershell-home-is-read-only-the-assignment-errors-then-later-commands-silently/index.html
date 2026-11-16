@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,9 @@
 <div class="section">
   <h2>Summary</h2>
   <p>A script sets a convenience variable named $home (the same trap exists for $host, $pwd, $profile, $input, $args). PowerShell prints:</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>A script sets a convenience variable named $home (the same trap exists for $host, $pwd, $profile, $input, $args). PowerShell prints:</p><pre><code>WriteError: Cannot overwrite variable HOME because it is read-only or constant.</code></pre><p>and the pipeline continues. The next command still resolves $home to the predefined value, so it silently reads the wrong path and returns a plausible but wrong result - for example listing the user profile root instead of the intended data directory.</p><h2>Root Cause</h2><p>$HOME and several other names are predefined automatic variables. Assigning one raises a non-terminating error, which stops nothing unless $ErrorActionPreference is Stop. Downstream commands do not fail; they just use the unchanged automatic value.</p><h2>Fix</h2><p>Pick a name outside the automatic set ($appHome, $dshHome, ...). For a home directory use $env:USERPROFILE. When the output must be trusted, either set $ErrorActionPreference='Stop' or scan for WriteError before relying on later commands.</p><h2>Verification</h2><ol><li><code>$home='x'</code> prints the WriteError.</li><li>(Get-Item variable:home).Options includes ReadOnly / Constant.</li><li>After renaming, the variable returns the intended path and the command lists the right directory.</li></ol>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/powershell-home-is-read-only-the-assignment-errors-then.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=PowerShell $home is read-only: the assignment errors, then later commands silently use the old value">Find related lessons →</a></p></div>

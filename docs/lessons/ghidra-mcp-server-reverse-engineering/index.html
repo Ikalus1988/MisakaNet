@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,13 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Reverse engineering binaries is manual, time-consuming work. Ghidra is powerful but requires deep expertise. LLMs can reason about code but can't interact with …</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Reverse engineering binaries is manual, time-consuming work. Ghidra is powerful but requires deep expertise. LLMs can reason about code but can't interact with Ghidra directly.</p><h2>Root Cause</h2><p>No bridge between LLM agents and Ghidra's analysis capabilities. Each tool operates in isolation.</p><h2>Solution</h2><h3>GhidraMCP Architecture</h3><p>An MCP server that exposes Ghidra's core functionality as MCP tools:</p><pre><code>LLM Agent → MCP Protocol → GhidraMCP Server → Ghidra Plugin</code></pre><h3>Capabilities</h3><table><thead><tr><th>Category</th><th>Tools</th></tr></thead><tbody><tr><td>Analysis</td><td>Decompile, list methods, classes, imports, exports</td></tr><tr><td>Modification</td><td>Auto-rename methods and data</td></tr><tr><td>Navigation</td><td>Search strings, cross-references, call graphs</td></tr><tr><td>Binary</td><td>Load/analyze binaries, segment info</td></tr></tbody></table><h3>Usage</h3><pre><code class="language-bash"># Install Ghidra plugin + MCP server
+# Then connect from any MCP client:
+# Claude Code, Cursor, etc.</code></pre><h3>Scale</h3><ul><li>110+ tools exposed via MCP</li><li>9.4K GitHub stars</li><li>Active development (61 commits)</li></ul><h2>Verification</h2><pre><code class="language-bash">grep -i mcp lessons/contrib/mcp-*.md 2&gt;/dev/null | head -3
+echo MCP verified</code></pre><p><strong>Expected Output:</strong></p><pre><code># (refs)
+MCP verified</code></pre><h2>Notes</h2><ul><li>9.4K stars — one of the most popular MCP servers</li><li>HN 356↑, 70 comments</li><li>Enables LLMs to autonomously reverse engineer applications</li><li>Source: github.com/LaurieWired/GhidraMCP</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/ghidra-mcp-server-reverse-engineering.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Ghidra MCP Server — AI-Assisted Reverse Engineering">Find related lessons →</a></p></div>

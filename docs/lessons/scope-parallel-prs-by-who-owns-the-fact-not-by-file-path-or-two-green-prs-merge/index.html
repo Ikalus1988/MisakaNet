@@ -160,6 +160,17 @@
   a { color: var(--accent); }
   h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
   .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
   .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
   .section { margin-bottom: 24px; }
   .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
@@ -178,6 +189,12 @@
 <div class="section">
   <h2>Summary</h2>
   <p>Two parallel PRs, each with a green CI, produced a red `main` after merge. The scoping rule was</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>Two parallel PRs, each with a green CI, produced a red <code>main</code> after merge. The scoping rule was <strong>file paths</strong>: <code>docs/locales/*</code> went to one issue, <code>docs/index.html</code> to another.</p><p>Case 1 — a managed number. The count "MCP tool count" was hardcoded in both <code>docs/index.html</code> and <code>docs/locales/{en,zh}.json</code>. The PR that fixed the HTML could not touch the language packs, which are what the site actually renders, so the site kept showing the old value.</p><p>Case 2 — a new contract crossed by another PR. One PR added a contract test saying "inside the Quickstart block, no hardcoded UI copy may exist unless it goes through <code>data-i18n</code>". Another PR added hardcoded bilingual link copy to that same block. Each PR was green on its own branch; after merge the new test failed:</p><pre><code>quickstart_prose() leftovers: 'Generate a pairing code / 生成配对码' —
+test_quickstart_ui_copy_is_not_hardcoded_in_the_html would FAIL</code></pre><h2>Root Cause</h2><p>Scope was cut along <strong>file paths</strong>, but the unit that can break <code>main</code> is a <strong>fact or contract</strong>, and one fact has several faces in a repository:</p><ul><li>the HTML fallback value rendered when i18n does not run;</li><li>each locale JSON file (<code>en</code>, <code>zh</code>, ...);</li><li>the SSOT script that is supposed to own the number;</li><li>inline templates inside a worker;</li><li>test fixtures that pin the expected copy.</li></ul><p>A path boundary splits those faces across two issues. Each PR then verifies <em>its own branch</em>, and no PR is responsible for the combination — so the failure only exists after the merge, where no branch's CI can see it.</p><h2>Solution</h2><p>Cut parallel scope by <strong>fact / contract ownership</strong>, not by file path.</p><ol><li>Name the fact the issue governs (a managed count) or the contract it introduces ("no hardcoded copy in this block").</li><li>Grep for <strong>every face</strong> of that fact or contract: HTML fallback, locale JSON, SSOT script, worker inline templates, test fixtures.</li><li>Assign <strong>each face to the same issue</strong>, even when the files live in different directories.</li><li>For a new contract, make the closing evidence cross-PR: the contract test must be run against the other PR's artifacts, not only against its own branch.</li></ol><h2>Verification</h2><p>Cross-run the test rather than trusting per-branch green:</p><pre><code class="language-bash"># point issue A's contract test at issue B's artifact, from a clean checkout of B's tree
+pytest tests/test_site_i18n.py -k quickstart_prose
+# FAILS, printing the two leftover strings — this reproduces the collision</code></pre><ul><li>The conflict is confirmed when the test fails against the other PR's artifact while both PRs are individually green.</li><li>It is resolved when issue B moves the copy to a <code>data-i18n</code> key plus bilingual entries and the same test reports <code>11 passed</code>.</li><li>For a managed number, the check is that the SSOT function and every face agree, e.g. <code>grep -nE '7 tools|7 个工具' docs/locales/*.json</code> returning nothing while <code>canonical_mcp_tools()</code> returns <code>8</code>. In the reported case that grep returned two hardcoded spots — the language pack was the unmanaged second face.</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/parallel-pr-scope-belongs-to-the-fact-not-the-path.md">View on GitHub →</a></p></div>
 <div class="section"><h2>Search</h2><p><a href="/search/?q=Scope parallel PRs by who owns the fact, not by file path, or two green PRs merge into a red main">Find related lessons →</a></p></div>
