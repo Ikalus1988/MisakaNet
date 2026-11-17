@@ -6916,6 +6916,52 @@ function rememberLessons(rows, env) {
   return rows;
 }
 
+/**
+ * The corpus, in KV, read without billing a D1 row (2026-11-17).
+ *
+ * `getWithCache` above keeps the corpus in the **durable store**, and that store reads through D1
+ * (`storeGet` → `d1.prepare`). So a cache *hit* still costs a row read, and the per-isolate memo only
+ * covers the isolate that just read it. Measured on 2026-11-13..16 from the dashboard: 30k read queries
+ * a day — flat — against **240M, 1.43B, 1.38B, 1.91B rows read**, i.e. 150-1000 searches a day each
+ * reading the whole corpus, and `corpus read (memo/KV/D1)` at p95 6440 ms against `misakanet_search`
+ * p95 6337 ms in the Analytics Engine phase breakdown.
+ *
+ * KV is the right home for this: it is what a read cache is for, a hit costs a KV read rather than a
+ * D1 row, and the freshness contract is unchanged — the same `PROXY_CACHE_TTL` the durable cache used,
+ * because the corpus changes on a daily sync and not on any request.
+ *
+ * The write is best-effort and silent on failure: a KV miss or refusal must degrade to the D1 read
+ * that was there before, not fail the search.
+ */
+const CORPUS_KV_KEY = "corpus:v1";
+
+async function readKvCorpus(env) {
+  const kv = env && env.MISAKANET_KV;
+  if (!kv || typeof kv.get !== "function") return null;
+  try {
+    const payload = await kv.get(CORPUS_KV_KEY, "json");
+    if (!payload || !Array.isArray(payload.rows) || payload.rows.length === 0) return null;
+    if (!payload.ts || Date.now() - payload.ts >= PROXY_CACHE_TTL) return null;
+    return payload.rows;
+  } catch (error) {
+    debugLog(env, 2, "kv corpus read failed", { error: String((error && error.message) || error) });
+    return null;
+  }
+}
+
+async function storeKvCorpus(env, rows) {
+  const kv = env && env.MISAKANET_KV;
+  if (!kv || typeof kv.put !== "function" || !Array.isArray(rows) || rows.length === 0) return false;
+  try {
+    await kv.put(CORPUS_KV_KEY, JSON.stringify({ ts: Date.now(), rows }),
+      { expirationTtl: Math.ceil(PROXY_CACHE_TTL / 1000) + 30 });
+    return true;
+  } catch (error) {
+    debugLog(env, 2, "kv corpus write failed", { error: String((error && error.message) || error) });
+    return false;
+  }
+}
+
 async function loadLessons(env, filters = {}) {
   // Filtered queries must go to D1 (GitHub proxy can't filter). Unfiltered
   // keeps the D1-first / GitHub fallback behavior, with a KV cache over the
@@ -6959,6 +7005,12 @@ async function loadLessons(env, filters = {}) {
     recordLessonsRead({ ok: true, source: "memo" });
     return memo.rows;
   }
+  // KV first: a warm corpus costs one KV read instead of a D1 row read (see `readKvCorpus`).
+  const kvCorpus = await readKvCorpus(env);
+  if (kvCorpus) {
+    recordLessonsRead({ ok: true, source: "kv" });
+    return rememberLessons(kvCorpus, env);
+  }
   if (d1Binding(env)) {
     if (Date.now() < d1ReadCooldownUntil) {
       recordLessonsRead({ ok: false, source: "snapshot-cooldown" });
@@ -6969,6 +7021,7 @@ async function loadLessons(env, filters = {}) {
         fetchLessonsFromD1(env, { limit: INTERNAL_LESSON_LIMIT, rich: true }));
       if (fromD1 && fromD1.length > 0) {
         recordLessonsRead({ ok: true, source: "d1" });
+        await storeKvCorpus(env, fromD1);
         return rememberLessons(fromD1, env);
       }
     } catch (error) {
