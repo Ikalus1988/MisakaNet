@@ -45,13 +45,24 @@ ALIAS_GROUPS = [
 def load(path: str | None) -> list[dict]:
     if path:
         return json.loads(open(path, encoding="utf-8").read())
+    # The encoding is named for the same reason #5139/#5153 name it on every `git` call: without it
+    # Windows decodes `gh` as the locale codec (GBK here), raises inside subprocess's reader thread,
+    # and the swallowed exception leaves `stdout` empty — which this function then parsed as `[]`.
+    # Measured 2026-11-17: `python3 scripts/label_audit.py` printed "open issues: 0" and "misfiled:
+    # none" on a repository with 536 open issues. A silent zero is worse than a crash: the audit's
+    # whole job is to say *which* items are misfiled.
     out = subprocess.run(
-        ["gh", "issue", "list", "--repo", "Ikalus1988/MisakaNet", "--state", "open", "--limit", "500",
+        ["gh", "issue", "list", "--repo", "Ikalus1988/MisakaNet", "--state", "open", "--limit", "2000",
          "--json", "number,title,labels"],
-        capture_output=True, text=True)
+        capture_output=True, text=True, encoding="utf-8", errors="replace")
     if out.returncode != 0:
         raise SystemExit(f"gh issue list failed: {out.stderr[:300]}")
-    return json.loads(out.stdout or "[]")
+    if not out.stdout.strip():
+        raise SystemExit(
+            "gh issue list returned nothing. An empty read is not 'no open issues' — this repository "
+            "always has them, so the answer being empty means the call did not happen. Check the "
+            "credential (env -u GITHUB_TOKEN) and the encoding of this subprocess.")
+    return json.loads(out.stdout)
 
 
 def names(issue: dict) -> set[str]:
