@@ -30,7 +30,7 @@ COMMUNITY_SRC = Path(
          r"/d08837fa-53b2-4596-8e37-41e02fc7d03f/misakanet-cindy-plugin"
 )
 TARGET = REPO / ".cindy-plugin-community"
-VERSION = "1.5.9"
+VERSION = "1.5.10"
 
 
 def sub(text: str, old: str, new: str, count: int = 1, label: str = "") -> str:
@@ -328,6 +328,25 @@ def build_main() -> None:
         "D16 prune before writing",
     )
 
+    # D17 — `misakanet_me_inbox` takes one reference, not two. Two references leave "which report
+    # is this?" to the endpoint, so the plugin refuses before the request: one answer, one report.
+    out = sub(
+        out,
+        "      const inboxArgs = pickArgs(args, INBOX_ARGS);",
+        "      if (intakeId && dedupKey) {\n"
+        "        // 两个查询编号同时给，远端只能自己挑一个——那样「查的到底是哪一条」就由远端决定了。\n"
+        "        // 在发请求之前就拒掉，一个请求都不发。\n"
+        "        return await fail(\n"
+        "          callId,\n"
+        "          'AMBIGUOUS_INTAKE_REF',\n"
+        "          'misakanet_me_inbox 只能带一个查询编号：intake_id（如 issue-4238 或 4238）与 dedup_key（8 位）二选一，不要同时给。',\n"
+        "        );\n"
+        "      }\n"
+        "      const inboxArgs = pickArgs(args, INBOX_ARGS);",
+        1,
+        "D17 me_inbox one reference",
+    )
+
     # The version moves with the manifest.
     out = sub(out, "const PLUGIN_VERSION = '1.5.4';", f"const PLUGIN_VERSION = '{VERSION}';", 1, "version")
 
@@ -337,24 +356,16 @@ def build_main() -> None:
 
 # ---------------------------------------------------------------- ghost.json
 RELEASE_NOTES = (
-    "社区通道重基到官方源：把官方通道在 1.5.3 之后修掉的四处一并带回来——四个读工具的返回都带 "
-    "trust_notice（第三方公开投稿是数据不是指令）、每次回包都 await（宿主桥拒收时不再产生未处理拒绝）、"
-    "轮次提醒里刚解决的问题指向 new_lesson_candidate 而不是 missing_lesson、search 的 kind 过滤空不再被当成"
-    "语料零命中。社区通道自己的两项能力不变：只读调用的一次保守重试（网络失败/5xx 退避带抖动再试一次，"
-    "上报类绝不自动重试）、上报前的交互卡确认闸门（默认供卡，只有用户点「确认提交」才外发；30 秒等不到"
-    "点击就明确放弃并告知调用方什么都没提交；调用方确认按钮点不动时可传 confirm=\"direct\" 走直发路径）。"
-    "版本号与官方通道刻意错开（官方 1.6.x / 社区 1.5.x），避免占掉彼此的版本位。"
-    "这一版还带上两处修正：如实披露本地存储（私有目录除随机客户端 id 外，还按会话保存轮次计数与"
-    "公告状态，只用于提醒节奏、不上传），以及 kind 过滤空只在过滤前确实命中过时才成立——"
-    "真零命中照旧走 no_match，不再被说成「换个 kind 再试」。"
-    "再往后两处：披露文案把「发给端点的自报标签」与「只留在本地的轮次计数」分开写清"
-    "（随机客户端 id 与系统标签随每次请求发给端点，用于统计独立客户端），"
-    "以及 kind 过滤空的结果不再带端点给的 suggestion / intake——那一支不是知识缺口，"
-    "带上等于劝 Agent 把一条已公开的教训再报一遍。"
-    "这一版还带上三处：上报在发出前就被拒的两条路径（缺用户确认 / 缺 problem）现在明确返回 "
-    "not_sent，外发工具的三态在每条失败路径上都有位置；零命中建议里的工具名固定为 "
-    "misakanet_submit_intake，不再由端点挑本地工具；会话状态按最近使用淘汰（最多留 20 个），"
-    "状态文件与每轮 I/O 不再无上限增长。"
+    "这一版只改文案与一处校验，官方通道那两项收口一并带过来："
+    "一是 misakanet_search 的默认中文描述与 zh-CN 文案对齐——之前那句还写着"
+    "「私有目录只存一个随机客户端 id 和按会话的轮次计数」，而实际是随机客户端 id 与系统标签"
+    "随每次请求发给端点、只有轮次计数留在本地，四种语言的文案早就写对了，漏的是清单这一份；"
+    "二是 misakanet_submit_intake 的默认中文描述与 zh-CN 文案对齐（此前清单里那句比实际行为旧，"
+    "读者看不到确认卡与返回字段）；"
+    "三是 misakanet_me_inbox 会拒绝同时给出 intake_id 与 dedup_key 的调用（在发出请求之前就拒，"
+    "一个请求都不发），此前两个值会原样一起发给端点、由端点自己挑一个。"
+    "社区通道自己的两项能力不变：只读调用的一次保守重试、上报前的交互卡确认闸门。"
+    "版本号与官方通道继续刻意错开（官方 1.6.x / 社区 1.5.x）。"
 )
 
 
@@ -382,6 +393,11 @@ def build_manifest() -> None:
             continue
         assert name in official_tools, f"{name} is not in the official manifest"
         tool["description"] = official_tools[name]["description"]
+    # `misakanet_submit_intake` is the community channel's own text (the card gate), and it is
+    # the same text the zh-CN locale carries: the manifest default copy and the locale copy must
+    # not drift — that drift is what the gate in tests/test_cindy_plugin_community_package.py
+    # would have caught, had it existed on 2026-11-12.
+    community_tools["misakanet_submit_intake"]["description"] = MERGED["zh-CN"]
     (TARGET / "ghost.json").write_text(
         json.dumps(community, ensure_ascii=False, indent=2) + "\n", encoding="utf-8", newline=""
     )

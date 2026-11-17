@@ -280,6 +280,26 @@ def test_the_intake_tool_name_is_pinned():
         )
 
 
+def test_the_manifest_default_copy_matches_the_zh_cn_locale():
+    """The manifest's default tool description is the Chinese fallback — it must be the same text.
+
+    2026-11-12: the manifest still said "the private directory holds only a client id and a turn
+    counter", while every locale said the client id goes to the endpoint and only the counter stays
+    local. The locales were right, the manifest was stale, and nothing noticed: the two copies are
+    maintained by hand. This gate is that hand-check, run every time.
+    """
+    for base in (OFFICIAL, COMMUNITY):
+        manifest_entry = manifest(base)
+        locale = json.loads((base / "locales" / "zh-CN.json").read_text(encoding="utf-8"))
+        for tool in manifest_entry["tools"]:
+            default = tool["description"]
+            localized = locale["tools"][tool["name"]]["description"]
+            assert default == localized, (
+                f"{base.name}/{tool['name']}: the manifest default copy and the zh-CN locale copy "
+                "have drifted apart — the manifest is what a reader without a locale gets"
+            )
+
+
 def test_the_tracked_session_list_is_bounded():
     """Unbounded session state grows the file and the per-turn I/O without limit."""
     for base in (OFFICIAL, COMMUNITY):

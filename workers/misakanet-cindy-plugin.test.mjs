@@ -393,6 +393,19 @@ test('me_inbox: a dedup_key is a reference too', async () => {
   assert.deepEqual(JSON.parse(load.requests[0].body).params.arguments, { dedup_key: 'a28a0593' });
 });
 
+test('me_inbox: two references at once is refused, and nothing is sent', async () => {
+  // Two references leave "which report is this?" to the endpoint. The plugin refuses before the
+  // request instead: one answer, one report.
+  const load = await loadPlugin();
+  const answer = await callTool(load, 'misakanet_me_inbox', {
+    intake_id: 'issue-4238',
+    dedup_key: 'a28a0593',
+  });
+  assert.equal(answer.ok, false);
+  assert.equal(answer.errorCode, 'AMBIGUOUS_INTAKE_REF');
+  assert.equal(load.requests.length, 0, 'an ambiguous lookup must not reach the endpoint');
+});
+
 test('the manifest declares the turn subscription, the resident launch and the notice capability', async () => {
   // The three fields are the plugin's whole reason for being resident: without them the turn
   // counter never runs, and a manifest that only promises tools would be a lie about the
