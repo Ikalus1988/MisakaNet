@@ -89,8 +89,15 @@ def tracked_lesson_files(lessons_root: Path) -> list[Path] | None:
     try:
         proc = subprocess.run(
             ["git", "-c", "core.quotepath=false", "ls-files", "--", "."],
-            cwd=lessons_root, capture_output=True, text=True, errors="surrogateescape",
-            check=False, timeout=60,
+            # `encoding="utf-8"`, not the locale codec: with `text=True` and no encoding, Python
+            # decodes git's UTF-8 output with cp936 on a Chinese-locale Windows checkout. cp936 does
+            # not *fail* on those bytes, it maps them to different characters, so `surrogateescape`
+            # never fires and the paths simply do not exist — measured 2026-11-16 on this repository:
+            # 844 tracked lesson files instead of 1055, and an index of **801** instead of 1012.
+            # `PYTHONUTF8=1` hid it, which is why it survived review: the CI runners and the hosted
+            # worker run a UTF-8 locale, so only a local Windows user saw the smaller corpus.
+            cwd=lessons_root, capture_output=True, text=True, encoding="utf-8",
+            errors="surrogateescape", check=False, timeout=60,
         )
     except (OSError, subprocess.SubprocessError):  # git missing, or not a repository
         return None
