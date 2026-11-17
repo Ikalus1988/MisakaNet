@@ -7040,6 +7040,34 @@ async function loadLessons(env, filters = {}) {
     () => fetchFromGitHub(env.REGISTER_TOKEN, "lessons.json", "data")), env);
 }
 
+/**
+ * Give the site's search read a ceiling, and degrade instead of timing out (2026-11-17).
+ *
+ * `/api/lessons?q=` fires once per keystroke from the search page and reads the whole corpus. Measured
+ * on the zone 2026-11-14..17: 200 -> 238, **499 -> 321** (the browser gave up first), 204 -> 213,
+ * **504 -> 924**. A 504 is the worst of those answers: the page gets nothing to show and no reason.
+ *
+ * So the read gets a budget. Over it, the handler answers the shape it already uses for "no storage" —
+ * `{query, results: [], source, hint}` — which the page renders as "search is slow right now" instead of
+ * an empty panel after a minute. The read is not cancelled (that is not possible); it is abandoned,
+ * which is what the browser was doing anyway.
+ */
+const LESSONS_READ_BUDGET_MS = 8000;
+
+async function readLessonsWithinBudget(env, budgetMs = LESSONS_READ_BUDGET_MS) {
+  let timer = null;
+  try {
+    const budget = new Promise((resolve) => {
+      timer = setTimeout(() => resolve({ timedOut: true, rows: null }), budgetMs);
+    });
+    const read = loadLessons(env, {}).then((rows) => ({ timedOut: false, rows }));
+    const outcome = await Promise.race([read, budget]);
+    return outcome;
+  } finally {
+    if (timer !== null) clearTimeout(timer);
+  }
+}
+
 // ── D1 question service (PRD ⑤ §9: pull-based answer delivery) ──
 // One row per question-kind intake issue. The worker records 'pending' on
 // submit; scripts/sync_answered_questions.py flips answered rows with the
@@ -9900,7 +9928,19 @@ export default {
           const limit = Math.min(Math.max(parseInt(qLimit, 10) || 20, 1), 50);
           let lessons;
           try {
-            lessons = await loadLessons(env, {});
+            const outcome = await readLessonsWithinBudget(env);
+            if (outcome.timedOut) {
+              // A slow corpus read is not an empty catalogue: say which one it is, because the page
+              // renders these two differently.
+              return jsonResponse({
+                query: qSearch,
+                results: [],
+                source: "timeout",
+                hint: "The lesson corpus did not load within " + Math.round(LESSONS_READ_BUDGET_MS / 1000) +
+                      "s. This is a slow read, not an empty index — retry in a moment.",
+              }, 503);
+            }
+            lessons = outcome.rows;
           } catch (e) {
             // Neither D1, nor a warm lesson cache, nor the network: answer with an
             // explicit hint instead of a 5xx. A bare 502 told the caller nothing.
@@ -11367,6 +11407,8 @@ export {
   // question this pair answers is whether a refused read degrades to the snapshot or takes search
   // down with it.
   loadLessons,
+  // Exported for workers/lessons-read-budget.test.mjs: the ceiling on the site's search read.
+  readLessonsWithinBudget,
   filterSnapshot,
   // Exported for workers/health-lessons-read.test.mjs: the probe, its classifier, and the isolate
   // state that `/api/health` now reports.
