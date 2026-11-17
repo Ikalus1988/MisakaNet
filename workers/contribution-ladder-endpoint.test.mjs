@@ -33,6 +33,12 @@ function fakeOps(rows, usedRows = [], authorCount = 0) {
   };
 }
 
+// The ladder cuts by window (`week` by default), so a fixture with a hardcoded date falls out of it as
+// time passes. Measured 2026-11-17: `2026-11-10`/`2026-11-11` were inside the week when they were
+// written and outside it six days later, so `total` read 1 instead of 2 with no code change — a red
+// main for everyone. Fixtures are relative to now for that reason.
+const recent = (daysAgo) => new Date(Date.now() - daysAgo * 86400000).toISOString();
+
 function envWith(rows, usedRows = [], authorCount = 0) {
   const ops = fakeOps(rows, usedRows, authorCount);
   return { env: { MISAKANET_OPS_D1: ops }, ops };
@@ -57,9 +63,9 @@ test('an empty table is an empty board, not an error', async () => {
 
 test('rows are scored by the ladder module and ranked', async () => {
   const { env } = envWith([
-    { node_id: 'MisakaA', kind: 'lesson', n: 3, last: '2026-11-11T00:00:00Z' },
-    { node_id: 'MisakaA', kind: 'question', n: 2, last: '2026-11-11T00:00:00Z' },
-    { node_id: 'MisakaB', kind: 'lesson', n: 1, last: '2026-11-10T00:00:00Z' },
+    { node_id: 'MisakaA', kind: 'lesson', n: 3, last: recent(1) },
+    { node_id: 'MisakaA', kind: 'question', n: 2, last: recent(1) },
+    { node_id: 'MisakaB', kind: 'lesson', n: 1, last: recent(2) },
   ]);
   const { body } = await ladder(env);
   assert.equal(body.total, 2);
@@ -72,9 +78,9 @@ test('rows are scored by the ladder module and ranked', async () => {
 
 test('the automation identities never reach the board', async () => {
   const { env } = envWith([
-    { node_id: 'misakanet-doctor', kind: 'lesson', n: 9, last: '2026-11-11T00:00:00Z' },
-    { node_id: 'github-actions[bot]', kind: 'lesson', n: 9, last: '2026-11-11T00:00:00Z' },
-    { node_id: 'MisakaReal', kind: 'lesson', n: 1, last: '2026-11-11T00:00:00Z' },
+    { node_id: 'misakanet-doctor', kind: 'lesson', n: 9, last: recent(1) },
+    { node_id: 'github-actions[bot]', kind: 'lesson', n: 9, last: recent(1) },
+    { node_id: 'MisakaReal', kind: 'lesson', n: 1, last: recent(1) },
   ]);
   const { body } = await ladder(env);
   assert.deepEqual(body.top.map((r) => r.node), ['MisakaReal']);
@@ -82,9 +88,9 @@ test('the automation identities never reach the board', async () => {
 });
 
 test('the caller asks for a node and gets that row even outside the top ten', async () => {
-  const rows = [{ node_id: 'Mine', kind: 'question', n: 1, last: '2026-11-11T00:00:00Z' }];
+  const rows = [{ node_id: 'Mine', kind: 'question', n: 1, last: recent(1) }];
   for (let i = 0; i < 12; i++) {
-    rows.push({ node_id: `Big${String(i).padStart(2, '0')}`, kind: 'lesson', n: 10, last: '2026-11-11T00:00:00Z' });
+    rows.push({ node_id: `Big${String(i).padStart(2, '0')}`, kind: 'lesson', n: 10, last: recent(1) });
   }
   const { env } = envWith(rows);
   const { body } = await ladder(env, '?node=Mine');
@@ -142,8 +148,8 @@ test('a GitHub handle is the display name, and the pseudonym stays on the row', 
   // The agreed design: two identity methods on one board — a GitHub name when the contributor has
   // one, the node pseudonym otherwise. The node id is never dropped: it is what `?node=` matches.
   const { env } = envWith([
-    { node_id: "gh:octocat", kind: "lesson", login: "octocat", n: 2, last: "2026-11-11T00:00:00Z" },
-    { node_id: "MisakaY", kind: "question", login: null, n: 1, last: "2026-11-11T00:00:00Z" },
+    { node_id: "gh:octocat", kind: "lesson", login: "octocat", n: 2, last: recent(1) },
+    { node_id: "MisakaY", kind: "question", login: null, n: 1, last: recent(1) },
   ]);
   const { body } = await ladder(env);
   const github = body.top.find((row) => row.node === "gh:octocat");
@@ -162,7 +168,7 @@ test('a handle on a pseudonym row is not a verified identity', async () => {
   // written straight into `contributions.login`. Only the sweep's `gh:<login>` rows are verified —
   // it writes the `user.login` of a merged lesson PR — so a login elsewhere must not badge a row.
   const { env } = envWith([
-    { node_id: "Misaka38084", kind: "question", login: "claude-code", n: 3, last: "2026-11-12T00:00:00Z" },
+    { node_id: "Misaka38084", kind: "question", login: "claude-code", n: 3, last: recent(1) },
   ]);
   const { body } = await ladder(env);
   const row = body.top.find((entry) => entry.node === "Misaka38084");
@@ -176,8 +182,8 @@ test('used counts retrievals of lessons whose author is known', async () => {
   // Without the join, `used` is 0 and the 0.2 weight never applies — which is what the board showed
   // before attribution landed.
   const ops = fakeOps(
-    [{ node_id: "gh:octocat", kind: "lesson", login: "octocat", n: 1, last: "2026-11-11T00:00:00Z" }],
-    [{ node_id: "gh:octocat", n: 5, last: "2026-11-11T00:00:00Z" }],
+    [{ node_id: "gh:octocat", kind: "lesson", login: "octocat", n: 1, last: recent(1) }],
+    [{ node_id: "gh:octocat", n: 5, last: recent(1) }],
   );
   const res = await worker.fetch(new Request("https://misakanet.org/api/leaderboard/ladder?window=week"), { MISAKANET_OPS_D1: ops });
   const body = await res.json();
@@ -191,7 +197,7 @@ test('coverage reports how many lessons have a recorded author', async () => {
   // and the panel printed it as fact (2026-11-14). The count is now read, and `null` (not 0) says
   // "could not read it", which the panel renders as a different sentence.
   const { env } = envWith(
-    [{ node_id: "gh:octocat", kind: "lesson", login: "octocat", n: 1, last: "2026-11-11T00:00:00Z" }],
+    [{ node_id: "gh:octocat", kind: "lesson", login: "octocat", n: 1, last: recent(1) }],
     [],
     424,
   );
