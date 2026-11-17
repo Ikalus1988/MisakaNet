@@ -47,3 +47,46 @@ def test_an_approval_watch_tracker_is_not_a_misfile():
     """`approval-watch.yml` writes `needs-human-review` to mean "a human must approve a run"."""
     result = label_audit.audit([issue(6, "needs-human-review", "approval-watch", "needs-ac")])
     assert result["leaks"] == []
+
+
+def test_an_empty_gh_read_is_loud_instead_of_zero_issues(monkeypatch):
+    """An empty read is not "no open issues" (measured 2026-11-17).
+
+    `load()` decoded `gh` with the locale codec on Windows, the UnicodeDecodeError was raised inside
+    subprocess's reader thread and swallowed, and `json.loads(out.stdout or "[]")` turned that into a
+    clean `[]`. The script then printed "open issues: 0 … misfiled: none" over 536 open issues.
+    """
+    import subprocess
+
+    class Result:
+        returncode = 0
+        stdout = ""
+        stderr = ""
+
+    monkeypatch.setattr(subprocess, "run", lambda *a, **k: Result())
+    try:
+        label_audit.load(None)
+    except SystemExit as exc:
+        assert "returned nothing" in str(exc), exc
+    else:
+        raise AssertionError("an empty gh read was reported as zero open issues")
+
+
+def test_the_gh_call_names_its_encoding(monkeypatch):
+    """The same reason #5139/#5153 name it on every `git` call: the locale codec is not UTF-8 here."""
+    import subprocess
+
+    seen = {}
+
+    class Result:
+        returncode = 0
+        stdout = "[]"
+        stderr = ""
+
+    def fake_run(cmd, **kwargs):
+        seen.update(kwargs)
+        return Result()
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    label_audit.load(None)
+    assert seen.get("encoding") == "utf-8", seen
