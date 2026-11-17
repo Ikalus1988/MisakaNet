@@ -123,4 +123,4 @@ ghost_call({ ghost_id: "misakanet", tool: "misakanet_preflight",
 | `misakanet_get_lesson` | 取一条教训全文 | `id` 或 `path`（二选一） |
 | `misakanet_preflight` | 高风险操作前预检 | `intent`（必填）、`context` |
 | `misakanet_submit_intake` | 上报未覆盖的故障或提问（**公开**） | `problem`（必填）、`user_confirmed=true`、`kind`、`contributor` |
-| `misakanet_me_inbox` | 查一次已提交上报的答复／是否已转成课程 | `intake_id` 或 `dedup_key`（二选一） |
+| `misakanet_me_inbox` | 查一次已提交上报的答复／是否已转成课程 | `intake_id` 或 `dedup_key`（二选一；两个都给会被拒绝，一个请求都不发） |

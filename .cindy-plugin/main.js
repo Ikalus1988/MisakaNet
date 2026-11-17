@@ -16,7 +16,7 @@
 
 const MCP_URL = 'https://misakanet.org/mcp';
 const FETCH_TIMEOUT_MS = 45000;
-const PLUGIN_VERSION = '1.6.0';
+const PLUGIN_VERSION = '1.6.1';
 
 /* 客户端标识：每台机器一个稳定 id。
  * 端点会把 X-MisakaNet-Client salt-hash 进 search_signals.client_hint，而 client_hint 是
@@ -782,6 +782,15 @@ async function handleToolCall(msg) {
           callId,
           'MISSING_INTAKE_REF',
           'misakanet_me_inbox 需要 intake_id（如 issue-4238 或 4238）或 dedup_key（8 位）——二选一。',
+        );
+      }
+      if (intakeId && dedupKey) {
+        // 两个查询编号同时给，远端只能自己挑一个——那样「查的到底是哪一条」就由远端决定了。
+        // 在发请求之前就拒掉，一个请求都不发。
+        return await fail(
+          callId,
+          'AMBIGUOUS_INTAKE_REF',
+          'misakanet_me_inbox 只能带一个查询编号：intake_id（如 issue-4238 或 4238）与 dedup_key（8 位）二选一，不要同时给。',
         );
       }
       const inboxArgs = pickArgs(args, INBOX_ARGS);
