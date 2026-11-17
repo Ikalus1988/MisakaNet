@@ -827,6 +827,7 @@
   <url><loc>https://misakanet.org/lessons/tauri-v1-expects-js-camelcase-argument-keys-so-an-invoke-with-snake-case-fails-a/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/ant-design-v5-renders-unstyled-in-tauri-v1-webview2-csp-blocks-the-style-tags-cs/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/testimonio-misakanet/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/a-fixture-dated-six-days-ago-is-a-test-that-reddens-main-on-its-own/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/anthropic-compatible-endpoints-return-400-for-a-text-block-ordered-after-tool-us/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/tia-portal-openness-apiprojectsretrieveopen打开引用了未安装选件包的工程时抛-missingproductse/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/tia-portal-v16-openness-连接报-no-matching-tia-portal-version-与-getplcs-报-not-suppo/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -871,6 +872,7 @@
   <url><loc>https://misakanet.org/lessons/welcome-bot-mcp-intake-path/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/whisper-picks-the-wrong-chinese-homophone-every-time-fix-it-with-a-per-model-rep/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/whisper-transcribes-its-own-initial-prompt-when-the-audio-is-near-silence-gate-o/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/a-utf-8-path-list-decoded-as-cp936-loses-211-files-and-nothing-raises/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/windows-an-nsis-installer-silently-installs-into-path-files-even-though-c-is/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/windows-ci-splitcommand-backslash-unicode-detached/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/windows-cmd-批处理内含非-ascii-字符导致命令被截断路径失效/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
