@@ -98,6 +98,24 @@ def test_a_real_packaging_change_is_not_flagged():
     assert packaging_damage(None, BROKEN_PYPROJECT) == [], "no base text means no claim to make"
 
 
+def test_an_unreadable_head_pyproject_is_not_a_deletion():
+    """A zero-byte read is missing data, not an emptied file (measured 2026-11-17, #5188).
+
+    The workflow writes the head file with `git show ... || true`; when the PR ref cannot be read the
+    file is empty. The guard then accused a PR that touched a workflow and one test file of
+    replacing `pyproject.toml`, and its comment asked the author to "revert the file".
+    """
+    assert packaging_damage(HEALTHY_PYPROJECT, "", ["scripts/pr_shape_guard.py"]) == []
+    assert packaging_damage(HEALTHY_PYPROJECT, "", []) == []
+
+
+def test_a_pr_that_does_empty_pyproject_is_still_flagged():
+    """The suppression above must not hide a real deletion: the patch names the file."""
+    found = packaging_damage(HEALTHY_PYPROJECT, "", ["pyproject.toml", "README.md"])
+    assert found, "a PR that empties pyproject.toml is exactly what this rule is for"
+    assert "[project]" in found[0], found
+
+
 # ── rule 3: a question bounty with no lesson ──────────────────────────────────────────────────────
 
 def test_a_question_bounty_without_a_lesson_is_flagged():
