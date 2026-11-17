@@ -188,7 +188,7 @@ def _backfill() -> dict:
         if node_id:
             r = subprocess.run(
                 ["git", "log", "--author=" + node_id, "--oneline", "--", "lessons/"],
-                capture_output=True, text=True, timeout=5, cwd=str(REPO),
+                capture_output=True, text=True, encoding="utf-8", timeout=5, cwd=str(REPO),
             )
             if r.returncode == 0 and r.stdout.strip():
                 # 有提交记录
