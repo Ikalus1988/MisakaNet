@@ -105,3 +105,40 @@ def test_canonical_dedupes_mirror_copies(tmp_path):
     # repo-relative POSIX paths, so normalise at this boundary, not in the code.
     order = [f.relative_to(root).as_posix() for f in canonical_lessons(root)]
     assert order == ["core/topic-b.md", "contrib/topic-a.md", "en/unique-c.md"]
+
+
+def test_the_git_call_pins_utf8_instead_of_the_locale_codec():
+    """`text=True` without `encoding=` decodes git's UTF-8 paths with the *locale* codec.
+
+    On a cp936 (Chinese Windows) checkout that does not fail — it maps the bytes to different
+    characters, `surrogateescape` never fires, and every non-ASCII path then fails the `is_file()`
+    filter. Measured 2026-11-16 on this repository: **844** tracked lesson files instead of 1055, an
+    index of **801** instead of 1012. `PYTHONUTF8=1` hid it, which is why CI and the hosted worker
+    (UTF-8 locales) never saw it — only a local Windows user did, with a silently smaller corpus.
+    """
+    import misakanet.lesson_index as lesson_index
+
+    captured = {}
+
+    class _Proc:
+        returncode = 0
+        stdout = "contrib/one.md\n"
+
+    def _fake_run(argv, **kwargs):
+        captured["argv"] = argv
+        captured.update(kwargs)
+        return _Proc()
+
+    real_run = lesson_index.subprocess.run
+    lesson_index.subprocess.run = _fake_run
+    try:
+        lesson_index.tracked_lesson_files(Path(__file__).resolve().parents[1] / "lessons")
+    finally:
+        lesson_index.subprocess.run = real_run
+
+    assert captured.get("encoding") == "utf-8", (
+        "the git call is back to the locale codec; a Chinese-locale Windows checkout will silently "
+        "index ~20% fewer lessons")
+    assert "core.quotepath=false" in captured["argv"], (
+        "without it git octal-escapes non-ASCII paths, which is the same silent loss by a different "
+        "mechanism")
