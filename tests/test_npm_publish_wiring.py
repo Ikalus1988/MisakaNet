@@ -725,7 +725,8 @@ def test_the_publish_safety_rule_notices_a_workflow_with_neither(tmp_path):
 # approval is pending. Both end in E409, so the log line cannot be the verdict; the registry read is.
 # Measured 2026-11-09: 3.7.0 was staged, the run went green, and `latest` stayed on 3.6.0.
 
-def _run_publish_step(tmp_path: Path, view_output: str, version: str = "3.7.0"):
+def _run_publish_step(tmp_path: Path, view_output: str, version: str = "3.7.0",
+                      view_late_after: int | None = None, poll_seconds: str = "0"):
     tree = tmp_path / "tree"
     tree.mkdir(parents=True, exist_ok=True)
     (tree / "package.json").write_text(
@@ -742,6 +743,13 @@ def _run_publish_step(tmp_path: Path, view_output: str, version: str = "3.7.0"):
         "Cannot publish over previously staged version \"'\"$LIVE_VERSION\"'\"' >&2\n"
         "    exit 1 ;;\n"
         "  view)\n"
+        "    if [ -n \"${FAKE_NPM_VIEW_LATE_AFTER:-}\" ]; then\n"
+        "      COUNTER=${FAKE_NPM_VIEW_COUNTER:?}\n"
+        "      N=0; [ -f \"$COUNTER\" ] && N=$(cat \"$COUNTER\")\n"
+        "      N=$((N + 1)); echo \"$N\" > \"$COUNTER\"\n"
+        "      if [ \"$N\" -le \"$FAKE_NPM_VIEW_LATE_AFTER\" ]; then exit 1; fi\n"
+        "      echo \"$FAKE_NPM_VIEW\"; exit 0\n"
+        "    fi\n"
         "    if [ -n \"${FAKE_NPM_VIEW:-}\" ]; then echo \"$FAKE_NPM_VIEW\"; exit 0; fi\n"
         "    exit 1 ;;\n"
         "esac\n", encoding="utf-8")
@@ -754,7 +762,12 @@ def _run_publish_step(tmp_path: Path, view_output: str, version: str = "3.7.0"):
         "ACTIONS_ID_TOKEN_REQUEST_URL": "https://example.invalid/token",
         "LIVE_VERSION": version,
         "FAKE_NPM_VIEW": view_output,
+        # The stand-down read is a poll; the tests must not sit through it.
+        "NPM_STANDDOWN_POLL_SECONDS": poll_seconds,
     }
+    if view_late_after is not None:
+        environment["FAKE_NPM_VIEW_LATE_AFTER"] = str(view_late_after)
+        environment["FAKE_NPM_VIEW_COUNTER"] = str(tmp_path / "view-counter")
     return subprocess.run([require_posix_shell(), str(script)], cwd=tree, env=environment,
                           capture_output=True, text=True)
 
@@ -775,3 +788,20 @@ def test_a_live_version_behind_the_e409_is_the_desired_end_state(tmp_path):
     combined = result.stdout + result.stderr
     assert result.returncode == 0, f"a live version must stand down, not fail:\n{combined}"
     assert "is live on npm" in combined, combined
+
+
+def test_a_sibling_run_that_publishes_a_minute_later_still_stands_down(tmp_path):
+    """The read side lags the write side, so the stand-down read must be a poll.
+
+    Measured 2026-11-17: the dispatch run read `npm view misakanet@3.19.0` at 14:55:52 and got nothing,
+    while the release-event run's publish of that same version became visible at 14:57:30. One look
+    turned a successful release into a red run; the version was live the whole time from npm's side.
+    """
+    # The idempotence check reads once before publishing (read 1), so a version appearing at read 3
+    # is the sibling run's publish landing between two polls of this one.
+    result = _run_publish_step(tmp_path / "late", view_output="3.7.0", view_late_after=2)
+    combined = result.stdout + result.stderr
+    assert result.returncode == 0, (
+        f"a version that appears while polling must stand down, not fail:\n{combined}")
+    assert "is live on npm" in combined, combined
+    assert "not on npm yet" in combined, "the poll must say it is re-reading rather than reading once"

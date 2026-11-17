@@ -30,7 +30,9 @@ name: Publish misakanet
 #     input to republish (the escape hatch);
 #   * `push: tags: misakanet-v*` — the documented manual tag path.
 # The release event and the dispatch fire for the same release on purpose (the dispatch survives a lost
-# event), so a run that finds the version already on npm stands down instead of failing.
+# event), so a run that finds the version already on npm stands down instead of failing. The stand-down
+# read is a bounded poll rather than one look, because the sibling run's publish only becomes visible on
+# the registry's read side about a minute later (see the E409 branch below).
 #
 # ── What this job needs from the repository (settings, not code) ────────────────────────────────────
 #  * environment **`npm-release`** (created 2026-09-30). It holds **no secret**: authentication is npm
@@ -288,13 +290,33 @@ jobs:
               # publish (npm 2FA) also ends in E409, and treating that as success turned the run
               # green while npm stayed on the previous version — measured 2026-11-09: 3.7.0 was
               # staged, `npm view misakanet@3.7.0` said "version not found", and `latest` was 3.6.0.
+              #
+              # The read is a bounded poll, not one look. When the *other* trigger of this release is
+              # the one publishing, its version is not on the read side yet: measured 2026-11-17, the
+              # dispatch run read `npm view misakanet@3.19.0` at 14:55:52 and got nothing, while the
+              # release-event run's publish of that same version became visible at 14:57:30 — 98 s
+              # later, on a release that had in fact succeeded. Six reads 15 s apart cover that gap;
+              # a genuinely staged version still fails, ~90 s later and with the same message.
               LIVE=$(node -p "require('./package.json').version")
-              PUBLISHED=$(npm view "misakanet@${LIVE}" version 2>/dev/null || true)
+              ATTEMPTS=${NPM_STANDDOWN_POLL_ATTEMPTS:-6}
+              INTERVAL=${NPM_STANDDOWN_POLL_SECONDS:-15}
+              PUBLISHED=""
+              attempt=1
+              while [ "$attempt" -le "$ATTEMPTS" ]; do
+                PUBLISHED=$(npm view "misakanet@${LIVE}" version 2>/dev/null || true)
+                [ "$PUBLISHED" = "$LIVE" ] && break
+                if [ "$attempt" -lt "$ATTEMPTS" ]; then
+                  echo "::notice::misakanet@${LIVE} is not on npm yet (read ${attempt}/${ATTEMPTS}); the other"
+                  echo "::notice::trigger of this release may still be publishing. Re-reading in ${INTERVAL}s."
+                  sleep "$INTERVAL"
+                fi
+                attempt=$((attempt + 1))
+              done
               if [ "$PUBLISHED" = "$LIVE" ]; then
                 echo "::notice::misakanet@${LIVE} is live on npm; treating the refusal as the desired end state."
                 exit 0
               fi
-              echo "::error::npm refused the publish, but misakanet@${LIVE} is NOT live (read back '${PUBLISHED}')."
+              echo "::error::npm refused the publish, but misakanet@${LIVE} is NOT live (read back '${PUBLISHED}' after ${ATTEMPTS} reads)."
               echo "::error::A staged publish also returns E409. Approve it at npmjs.com (Packages -> Staged publishes) or clear the stage, then re-run."
               exit 1
             fi
