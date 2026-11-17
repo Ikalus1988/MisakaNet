@@ -37,7 +37,7 @@ npx @misaka-net/misakanet-setup --only cindy
 
 插件源码在本仓库 [`.cindy-plugin/`](https://github.com/Ikalus1988/MisakaNet/tree/main/.cindy-plugin)：
 `ghost.json`（清单）、`main.js`（电子脑）、`locales/en.json` 与 `locales/zh-CN.json`（文案）、
-`manual/misakanet/MANUAL.md`（随包手册）、`assets/icon.png`。市场里发布的就是本仓库这个包（提审期间市场可能仍显示上一版），仓库已到 **1.6.1**（市场评审后同步：三态外发、CSPRNG client id、`detail="full"` 透传正文、提醒计数以内存为准、四个读工具带 `trust_notice`、移除未使用的 `network` 声明、清单默认描述与 zh-CN 对齐、`me_inbox` 拒绝同时给两个查询编号）；
+`manual/misakanet/MANUAL.md`（随包手册）、`assets/icon.png`。市场里发布的就是本仓库这个包（提审期间市场可能仍显示上一版），仓库已到 **1.6.2**（市场评审后同步：三态外发、CSPRNG client id、`detail="full"` 透传正文、提醒计数以内存为准、四个读工具带 `trust_notice`、移除未使用的 `network` 声明、清单默认描述与 zh-CN 对齐、`me_inbox` 拒绝同时给两个查询编号、domain 过滤零命中单独标记、首轮公告带版本号与更新办法）；
 审核通过后，仓库这与市场里的包内容一致。
 
 ### 1.1 社区通道的变体（`.cindy-plugin-community/`）
@@ -45,8 +45,8 @@ npx @misaka-net/misakanet-setup --only cindy
 市场里的**社区投稿通道**（同一个插件 id `misakanet`，由发布者自己签名）用的是同一份源码加两项
 官方通道没有的能力：**只读调用的一次保守重试**，和**上报前的交互卡确认闸门**。它在
 [`.cindy-plugin-community/`](https://github.com/Ikalus1988/MisakaNet/tree/main/.cindy-plugin-community)，
-当前版本 1.5.10；官方随包通道那份在 [`.cindy-plugin/`](https://github.com/Ikalus1988/MisakaNet/tree/main/.cindy-plugin)，
-当前版本 1.6.1。两个版本号刻意错开，免得互相占掉对方的版本位。
+当前版本 1.5.11；官方随包通道那份在 [`.cindy-plugin/`](https://github.com/Ikalus1988/MisakaNet/tree/main/.cindy-plugin)，
+当前版本 1.6.2。两个版本号刻意错开，免得互相占掉对方的版本位。
 
 社区变体**不是**另一份 fork：它由官方那份重新构建，官方通道修过的每个修复都会带过去。
 2026-11-11 之前两条通道是**双向分叉**的——社区那份保留了卡闸门，却漏掉了官方修掉的

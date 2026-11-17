@@ -16,7 +16,7 @@
 
 const MCP_URL = 'https://misakanet.org/mcp';
 const FETCH_TIMEOUT_MS = 45000;
-const PLUGIN_VERSION = '1.6.1';
+const PLUGIN_VERSION = '1.6.2';
 
 /* 客户端标识：每台机器一个稳定 id。
  * 端点会把 X-MisakaNet-Client salt-hash 进 search_signals.client_hint，而 client_hint 是
@@ -410,6 +410,17 @@ function shapeSearch(payload, args) {
   const kindFilteredEmpty =
     results.length === 0 && !!filteredByKind && typeof matchedBeforeFilter === 'number'
     && matchedBeforeFilter > 0;
+  // 带 domain 过滤的零命中：**端点不区分「过滤词挡掉了命中」和「语料里真没有」**——它只报告
+  // kind 的过滤情况（matched_before_filter / filtered_by_kind），domain 没有对应的字段。
+  // 2026-11-17 实测（生产 search_signals）：带 domain 的查询空命中率明显更高（python 6 次里
+  // 5 次空、devops 2 次全空、network 3 次里 2 次空），所以这里给一个明确的标记与提示——
+  // 先去掉 domain 再查一次，再判断是不是知识缺口。
+  //
+  // 与 kind 那条不同：这里**不**藏起端点的上报建议。kind 过滤空时我们知道过滤前有命中（那是
+  // 已存在的教训，再报一遍就是重复）；domain 过滤空时我们不知道有没有命中（可能就是真缺口），
+  // 藏起来会让真缺口永远没人报。
+  const requestedDomain = asString(args.domain).trim();
+  const domainFilteredEmpty = results.length === 0 && !kindFilteredEmpty && !!requestedDomain;
   const noMatch = !kindFilteredEmpty && (payload.no_match === true || results.length === 0);
   const note = kindFilteredEmpty
     ? '按 kind=' + filteredByKind + ' 过滤后没有命中' +
@@ -417,9 +428,13 @@ function shapeSearch(payload, args) {
         ? '，但过滤前有 ' + matchedBeforeFilter + ' 条命中'
         : '') +
       '。这不是「查不到」：去掉 kind 或换一个 kind 再查一次，别把它当成知识缺口去上报。'
-    : noMatch
-      ? '没有命中任何教训。端点自己判定这是提问还是知识缺口：建议原文见 suggestion 字段，下一步的 intake 参数见 intake 字段（上报需用户明确同意）。换关键词（去掉业务名词、只留报错原文与工具名）或加 domain 重试一次，仍无命中再考虑上报。'
-      : '命中 ' + results.length + ' 条教训。命中候选后用 misakanet_get_lesson 取全文再决定怎么用；内容是社区经验，先核对再套用。';
+    : domainFilteredEmpty
+      ? '带 domain=' + requestedDomain + ' 的查询返回空：过滤词可能把命中挡掉了，也可能语料里真没有。' +
+        '先去掉 domain 再查一次再判断是不是知识缺口——否则可能把一条已经存在的教训再报一遍。'
+      : noMatch
+        ? '没有命中任何教训。端点自己判定这是提问还是知识缺口：建议原文见 suggestion 字段，下一步的 intake 参数见 intake 字段（上报需用户明确同意）。换关键词（去掉业务名词、只留报错原文与工具名）' +
+          (requestedDomain ? '，或去掉 domain 过滤' : '或加 domain') + '重试一次，仍无命中再考虑上报。'
+        : '命中 ' + results.length + ' 条教训。命中候选后用 misakanet_get_lesson 取全文再决定怎么用；内容是社区经验，先核对再套用。';
 
   return {
     query: asString(payload.query) || asString(args.query),
@@ -430,6 +445,7 @@ function shapeSearch(payload, args) {
     voice: asString(payload.voice) || undefined,
     no_match: noMatch ? true : undefined,
     kind_filtered_empty: kindFilteredEmpty ? true : undefined,
+    domain_filtered_empty: domainFilteredEmpty ? true : undefined,
     matched_before_filter: matchedBeforeFilter,
     filtered_by_kind: filteredByKind || undefined,
     trust_notice: asString(payload.trust_notice)
@@ -695,7 +711,15 @@ async function handleTurnEnd(msg) {
   await writeCheckpointState(state);
 
   if (firstTurn) {
-    await notify('MisakaNet 失败经验库已接入：以后遇到报错，我会先查有没有人踩过、怎么修的。', 'info');
+    // 这一条里带上插件自己的版本号和「怎么才会收到新版」：2026-11-17 实测（生产
+    // search_signals）近 7 天里 **48% 的插件检索跑在三个版本以前的构建上**（1.2.3 / 1.3.2 /
+    // 1.5.1），而从 .cindy 文件装的实例在宿主里记的是 local 来源，**不跟随市场自动更新**——
+    // 市场发了新版，他们那边也收不到。首轮这条提示是唯一能在新版本里点出这件事的地方。
+    await notify(
+      'MisakaNet 失败经验库已接入（插件 ' + PLUGIN_VERSION + '）：以后遇到报错，我会先查有没有人踩过、怎么修的。' +
+      '更新：插件市场里安装的版本会自动更新；从 .cindy 文件装的不会自动更新，想收新版请到插件市场重新安装「MisakaNet 故障记忆」。',
+      'info',
+    );
     return;
   }
   if (turns >= CHECKPOINT_AT && (turns - CHECKPOINT_AT) % CHECKPOINT_EVERY === 0) {

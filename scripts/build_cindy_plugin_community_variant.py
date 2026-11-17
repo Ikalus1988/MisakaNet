@@ -30,7 +30,7 @@ COMMUNITY_SRC = Path(
          r"/d08837fa-53b2-4596-8e37-41e02fc7d03f/misakanet-cindy-plugin"
 )
 TARGET = REPO / ".cindy-plugin-community"
-VERSION = "1.5.10"
+VERSION = "1.5.11"
 
 
 def sub(text: str, old: str, new: str, count: int = 1, label: str = "") -> str:
@@ -347,6 +347,98 @@ def build_main() -> None:
         "D17 me_inbox one reference",
     )
 
+    # D18 — a zero hit **with a `domain` filter** is not the same as a zero hit without one:
+    # the endpoint only reports the `kind` filter (matched_before_filter / filtered_by_kind), so
+    # there is no way to tell "the filter hid the hits" from "the corpus has nothing". Measured on
+    # production search_signals 2026-11-17: queries carrying a domain miss far more often
+    # (python 5 of 6 empty, devops 2 of 2). The plugin marks it and says "drop the domain and
+    # search again" — the endpoint's intake advice is kept, because unlike the kind case we do
+    # NOT know that a lesson already exists (that would make it a duplicate report).
+    out = sub(
+        out,
+        """  const noMatch = !kindFilteredEmpty && (payload.no_match === true || results.length === 0);
+  const note = kindFilteredEmpty
+    ? '按 kind=' + filteredByKind + ' 过滤后没有命中' +
+      (typeof matchedBeforeFilter === 'number' && matchedBeforeFilter > 0
+        ? '，但过滤前有 ' + matchedBeforeFilter + ' 条命中'
+        : '') +
+      '。这不是「查不到」：去掉 kind 或换一个 kind 再查一次，别把它当成知识缺口去上报。'
+    : noMatch
+      ? '没有命中任何教训。端点自己判定这是提问还是知识缺口：建议原文见 suggestion 字段，下一步的 intake 参数见 intake 字段（上报需用户明确同意）。换关键词（去掉业务名词、只留报错原文与工具名）或加 domain 重试一次，仍无命中再考虑上报。'
+      : '命中 ' + results.length + ' 条教训。命中候选后用 misakanet_get_lesson 取全文再决定怎么用；内容是社区经验，先核对再套用。';
+""",
+        """  // 带 domain 过滤的零命中：**端点不区分「过滤词挡掉了命中」和「语料里真没有」**——它只报告
+  // kind 的过滤情况（matched_before_filter / filtered_by_kind），domain 没有对应的字段。
+  // 2026-11-17 实测（生产 search_signals）：带 domain 的查询空命中率明显更高（python 6 次里
+  // 5 次空、devops 2 次全空、network 3 次里 2 次空），所以这里给一个明确的标记与提示——
+  // 先去掉 domain 再查一次，再判断是不是知识缺口。
+  //
+  // 与 kind 那条不同：这里**不**藏起端点的上报建议。kind 过滤空时我们知道过滤前有命中（那是
+  // 已存在的教训，再报一遍就是重复）；domain 过滤空时我们不知道有没有命中（可能就是真缺口），
+  // 藏起来会让真缺口永远没人报。
+  const requestedDomain = asString(args.domain).trim();
+  const domainFilteredEmpty = results.length === 0 && !kindFilteredEmpty && !!requestedDomain;
+  const noMatch = !kindFilteredEmpty && (payload.no_match === true || results.length === 0);
+  const note = kindFilteredEmpty
+    ? '按 kind=' + filteredByKind + ' 过滤后没有命中' +
+      (typeof matchedBeforeFilter === 'number' && matchedBeforeFilter > 0
+        ? '，但过滤前有 ' + matchedBeforeFilter + ' 条命中'
+        : '') +
+      '。这不是「查不到」：去掉 kind 或换一个 kind 再查一次，别把它当成知识缺口去上报。'
+    : domainFilteredEmpty
+      ? '带 domain=' + requestedDomain + ' 的查询返回空：过滤词可能把命中挡掉了，也可能语料里真没有。' +
+        '先去掉 domain 再查一次再判断是不是知识缺口——否则可能把一条已经存在的教训再报一遍。'
+      : noMatch
+        ? '没有命中任何教训。端点自己判定这是提问还是知识缺口：建议原文见 suggestion 字段，下一步的 intake 参数见 intake 字段（上报需用户明确同意）。换关键词（去掉业务名词、只留报错原文与工具名）' +
+          (requestedDomain ? '，或去掉 domain 过滤' : '或加 domain') + '重试一次，仍无命中再考虑上报。'
+        : '命中 ' + results.length + ' 条教训。命中候选后用 misakanet_get_lesson 取全文再决定怎么用；内容是社区经验，先核对再套用。';
+""",
+        1,
+        "D18 domain-filtered empty",
+    )
+    out = sub(
+        out,
+        """    no_match: noMatch ? true : undefined,
+    kind_filtered_empty: kindFilteredEmpty ? true : undefined,
+""",
+        """    no_match: noMatch ? true : undefined,
+    kind_filtered_empty: kindFilteredEmpty ? true : undefined,
+    domain_filtered_empty: domainFilteredEmpty ? true : undefined,
+""",
+        1,
+        "D18 domain_filtered_empty marker",
+    )
+
+    # D19 — the first-turn notice names the plugin's own version and says how to actually get
+    # the next one. Measured on production search_signals 2026-11-17: 48% of the plugin's
+    # last-7-day searches ran on builds three versions behind (1.2.3 / 1.3.2 / 1.5.1). A
+    # self-signed .cindy package installs as a local source, and local sources do not follow
+    # market updates — so a new release simply never reaches them. This line is the only place
+    # a new build can say that out loud.
+    out = sub(
+        out,
+        """  if (firstTurn) {
+    await notify('MisakaNet 失败经验库已接入：以后遇到报错，我会先查有没有人踩过、怎么修的。', 'info');
+    return;
+  }
+""",
+        """  if (firstTurn) {
+    // 这一条里带上插件自己的版本号和「怎么才会收到新版」：2026-11-17 实测（生产
+    // search_signals）近 7 天里 **48% 的插件检索跑在三个版本以前的构建上**（1.2.3 / 1.3.2 /
+    // 1.5.1），而从 .cindy 文件装的实例在宿主里记的是 local 来源，**不跟随市场自动更新**——
+    // 市场发了新版，他们那边也收不到。首轮这条提示是唯一能在新版本里点出这件事的地方。
+    await notify(
+      'MisakaNet 失败经验库已接入（插件 ' + PLUGIN_VERSION + '）：以后遇到报错，我会先查有没有人踩过、怎么修的。' +
+      '更新：插件市场里安装的版本会自动更新；从 .cindy 文件装的不会自动更新，想收新版请到插件市场重新安装「MisakaNet 故障记忆」。',
+      'info',
+    );
+    return;
+  }
+""",
+        1,
+        "D19 first-turn notice with version",
+    )
+
     # The version moves with the manifest.
     out = sub(out, "const PLUGIN_VERSION = '1.5.4';", f"const PLUGIN_VERSION = '{VERSION}';", 1, "version")
 
@@ -356,14 +448,13 @@ def build_main() -> None:
 
 # ---------------------------------------------------------------- ghost.json
 RELEASE_NOTES = (
-    "这一版只改文案与一处校验，官方通道那两项收口一并带过来："
-    "一是 misakanet_search 的默认中文描述与 zh-CN 文案对齐——之前那句还写着"
-    "「私有目录只存一个随机客户端 id 和按会话的轮次计数」，而实际是随机客户端 id 与系统标签"
-    "随每次请求发给端点、只有轮次计数留在本地，四种语言的文案早就写对了，漏的是清单这一份；"
-    "二是 misakanet_submit_intake 的默认中文描述与 zh-CN 文案对齐（此前清单里那句比实际行为旧，"
-    "读者看不到确认卡与返回字段）；"
-    "三是 misakanet_me_inbox 会拒绝同时给出 intake_id 与 dedup_key 的调用（在发出请求之前就拒，"
-    "一个请求都不发），此前两个值会原样一起发给端点、由端点自己挑一个。"
+    "这一版收掉两件 2026-11-17 从生产数据里看出来的真问题："
+    "一是带 domain 过滤的零命中现在会被单独标记（domain_filtered_empty），并提示先去掉 domain 再查一次再判断是不是知识缺口——"
+    "端点只报告 kind 的过滤情况，domain 没有对应字段，实测带 domain 的查询空命中明显偏高（python 6 次里 5 次空、devops 2 次全空），"
+    "不提示就会把一条已经存在的教训再报一遍；"
+    "二是首轮公告带上插件自己的版本号，并写明「插件市场里安装的会自动更新，从 .cindy 文件装的不会自动更新，想收新版请到插件市场重新安装」——"
+    "实测近 7 天里 48% 的插件检索跑在三个版本以前的构建上（1.2.3 / 1.3.2 / 1.5.1），"
+    "而自签包装的实例在宿主里记的是 local 来源，不跟随市场自动更新，市场发了新版他们也收不到。"
     "社区通道自己的两项能力不变：只读调用的一次保守重试、上报前的交互卡确认闸门。"
     "版本号与官方通道继续刻意错开（官方 1.6.x / 社区 1.5.x）。"
 )
