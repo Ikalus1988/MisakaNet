@@ -180,7 +180,7 @@ def _get_token():
         result = subprocess.run(
             ["git", "credential", "fill"],
             input="protocol=https\nhost=github.com\n",
-            capture_output=True, text=True, timeout=5
+            capture_output=True, text=True, encoding="utf-8", timeout=5
         )
         for line in result.stdout.split("\n"):
             if line.startswith("password="):
@@ -292,7 +292,7 @@ def cmd_flush(node):
     subprocess.run(["git", "commit", "-m", f"hook_stats: {node} — {total} triggers"],
                    capture_output=True, timeout=10, cwd=str(REPO_ROOT))
     push = subprocess.run(["git", "push", "origin", "main"],
-                          capture_output=True, text=True, timeout=20,
+                          capture_output=True, text=True, encoding="utf-8", timeout=20,
                           cwd=str(REPO_ROOT))
 
     if push.returncode == 0:

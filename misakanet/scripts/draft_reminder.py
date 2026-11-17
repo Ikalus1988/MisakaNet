@@ -55,7 +55,7 @@ def _get_lesson_age_from_git(filepath: Path) -> float | None:
         rel = filepath.relative_to(PROJECT_ROOT)
         result = subprocess.run(
             ["git", "log", "-1", "--format=%ct", "--", str(rel)],
-            capture_output=True, text=True, timeout=10,
+            capture_output=True, text=True, encoding="utf-8", timeout=10,
             cwd=str(PROJECT_ROOT),
         )
         if result.returncode == 0 and result.stdout.strip():
