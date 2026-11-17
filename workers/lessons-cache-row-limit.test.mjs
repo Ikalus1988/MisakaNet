@@ -259,7 +259,12 @@ test('a write D1 and KV both refuse is reported with the key and the bytes, and 
     // The KV fallback is not deleted — it is what this refusal falls back *to*, and the record of the
     // attempt is what makes "out of budget" distinguishable from "never tried".
     assert.ok(kv.writes.length > 0, 'the KV fallback must still be tried');
-    assert.ok(kv.writes.every((row) => row.key === CACHE_KEY || row.key.startsWith(`${CACHE_KEY}${CACHE_CHUNK_MARK}`)),
+    // `corpus:v1` (2026-11-17) is the same payload under a key the worker reads *without* going through
+    // D1, so a warm corpus costs a KV read instead of a row read. It is this cache's payload, not an
+    // unrelated write, which is what the assertion is about.
+    assert.ok(kv.writes.every((row) => row.key === CACHE_KEY
+      || row.key.startsWith(`${CACHE_KEY}${CACHE_CHUNK_MARK}`)
+      || row.key === 'corpus:v1'),
       `and tried with this cache's payload: ${JSON.stringify(kv.writes)}`);
     // Nothing readable landed anywhere, so the next request must refetch rather than serve a fragment.
     assert.equal(await readCachePayload({ MISAKANET_KV: kv }, CACHE_KEY), null);
