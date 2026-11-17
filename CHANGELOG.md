@@ -7,6 +7,36 @@ All notable changes to the Misaka Network project are documented here.
 
 ---
 
+## [3.19.0](https://github.com/Ikalus1988/MisakaNet/compare/v3.18.0...v3.19.0) (2026-11-17)
+
+
+### Features
+
+* **intake:** a lesson-shaped submission must carry the two fields a lesson needs ([#5097](https://github.com/Ikalus1988/MisakaNet/issues/5097)) ([b82410a](https://github.com/Ikalus1988/MisakaNet/commit/b82410a50543cd0b8b5dfcd53da7332de2f9e892))
+* **intake:** a payload is not a lesson, and the queue stops pretending it is ([#5091](https://github.com/Ikalus1988/MisakaNet/issues/5091)) ([7516d76](https://github.com/Ikalus1988/MisakaNet/commit/7516d76690d73d083a8abbcb44e6efaee3e7be2b))
+* **lessons:** intake batch 2026-11-16, rebuilt on current main ([#5135](https://github.com/Ikalus1988/MisakaNet/issues/5135)) ([26b1b0c](https://github.com/Ikalus1988/MisakaNet/commit/26b1b0c5eaec39b73909147de64beea2bacae305))
+
+
+### Bug Fixes
+
+* **cindy-plugin:** 把两件从生产数据里看出来的真问题收掉（domain 过滤空、首轮公告带版本） ([#5182](https://github.com/Ikalus1988/MisakaNet/issues/5182)) ([3e85133](https://github.com/Ikalus1988/MisakaNet/commit/3e85133cd0fbe026e1c562fffbb718340cbb5caf))
+* **cindy-plugin:** 清单默认文案与 zh-CN 对齐，me_inbox 拒绝两个查询编号 ([#5175](https://github.com/Ikalus1988/MisakaNet/issues/5175)) ([6bb81f5](https://github.com/Ikalus1988/MisakaNet/commit/6bb81f55eb932a5e04598978612c893648f5ccfa))
+* **index:** read git's path list as UTF-8, not as the locale codec ([#5139](https://github.com/Ikalus1988/MisakaNet/issues/5139)) ([dab48c4](https://github.com/Ikalus1988/MisakaNet/commit/dab48c4ffd0d6436907ba36de359bcae59a6e6aa))
+* **intake:** a complete report is not swept for being short ([#5105](https://github.com/Ikalus1988/MisakaNet/issues/5105)) ([208760f](https://github.com/Ikalus1988/MisakaNet/commit/208760ff4aa2b15aa9c6ea356044c3f3fac61dbf))
+* **intake:** a re-run on the same day must rebuild its branch, not be rejected by it ([#5112](https://github.com/Ikalus1988/MisakaNet/issues/5112)) ([960cdb0](https://github.com/Ikalus1988/MisakaNet/commit/960cdb04f7b2df714d479a916b719476e089ac4a))
+* **intake:** a re-run updates the batch's pull request instead of failing on it ([#5138](https://github.com/Ikalus1988/MisakaNet/issues/5138)) ([ab18b78](https://github.com/Ikalus1988/MisakaNet/commit/ab18b78ca9f4ae061cdb20b14e9ffd966ed49f76))
+* **intake:** stage the batch's lessons before regenerating, or the corpus never sees them ([#5111](https://github.com/Ikalus1988/MisakaNet/issues/5111)) ([50fc15f](https://github.com/Ikalus1988/MisakaNet/commit/50fc15ff58abe268bcaa5d4be1ba1f611be2bcca))
+* **intake:** the batch asks the gate's two questions it was skipping, and runs the generators in order ([#5109](https://github.com/Ikalus1988/MisakaNet/issues/5109)) ([804f4fd](https://github.com/Ikalus1988/MisakaNet/commit/804f4fd95240c6bfb9b5821490494dfc09878263))
+* **package:** the other git calls say their encoding too ([#5153](https://github.com/Ikalus1988/MisakaNet/issues/5153)) ([b935156](https://github.com/Ikalus1988/MisakaNet/commit/b9351562f6dcb8613686292d4a729525aaf74936))
+* **seo:** the sitemap lists pages, and one dead lesson URL gets its 301 back ([#5074](https://github.com/Ikalus1988/MisakaNet/issues/5074)) ([c3666c0](https://github.com/Ikalus1988/MisakaNet/commit/c3666c07209eb899c35e090abffc8a4bd5aa93e1))
+* **tests:** a ranking score that lands on the tolerance boundary is rounding, not drift ([#5134](https://github.com/Ikalus1988/MisakaNet/issues/5134)) ([b414511](https://github.com/Ikalus1988/MisakaNet/commit/b414511ae2867d763f84ff5f112008756b3815b7))
+* **tests:** the ladder fixtures are relative to now, so they cannot expire ([#5140](https://github.com/Ikalus1988/MisakaNet/issues/5140)) ([94cb6b5](https://github.com/Ikalus1988/MisakaNet/commit/94cb6b547f976584870db5406af49e72be946156))
+
+
+### Lessons
+
+* **contrib:** two failures measured today, with the numbers that name them ([#5151](https://github.com/Ikalus1988/MisakaNet/issues/5151)) ([0d9064b](https://github.com/Ikalus1988/MisakaNet/commit/0d9064b4954e8ef6e2e153809465942ba32dd784))
+
 ## [3.18.0](https://github.com/Ikalus1988/MisakaNet/compare/v3.17.0...v3.18.0) (2026-11-16)
 
 
