@@ -80,9 +80,18 @@ def root_solution_dump(paths) -> list[str]:
 PACKAGING_TABLES = ("[build-system]", "[project]")
 
 
-def packaging_damage(base_text: str | None, head_text: str | None) -> list[str]:
-    """Tables that `pyproject.toml` had and no longer has."""
+def packaging_damage(base_text: str | None, head_text: str | None, paths=()) -> list[str]:
+    """Tables that `pyproject.toml` had and no longer has.
+
+    An empty head text is *missing data*, not an empty file: the workflow writes it with
+    `git show ... || true`, so a failed fetch of the PR ref leaves a zero-byte file. Reading that as
+    "the PR deleted both tables" made the guard accuse a two-file PR of replacing `pyproject.toml`
+    (measured 2026-11-17, #5188: the PR touched a workflow and one test file). So an empty head only
+    counts when the patch itself touches `pyproject.toml` — then the file really was emptied.
+    """
     if base_text is None or head_text is None:
+        return []
+    if not head_text.strip() and "pyproject.toml" not in {p.replace("\\\\", "/") for p in paths}:
         return []
     missing = [t for t in PACKAGING_TABLES if t in base_text and t not in head_text]
     if not missing:
@@ -367,7 +376,7 @@ def findings(*, paths, pr_text: str = "", base_pyproject: str | None = None,
     """Every finding for one pull request, in the order a reviewer should read them."""
     out: list[str] = []
     out += root_solution_dump(paths)
-    out += packaging_damage(base_pyproject, head_pyproject)
+    out += packaging_damage(base_pyproject, head_pyproject, paths)
     out += question_bounty_without_a_lesson(paths, issue_bodies or {}, pr_text)
     out += internal_artifact(paths, repo_dirs, pr_text)
     out += new_top_level_directory(paths, repo_dirs, pr_text)
