@@ -146,6 +146,15 @@ jobs:
           # `--force-with-lease` is not enough here: the workflow never fetches that branch, so the
           # lease has no expected value to compare against and the push stays rejected.
           git push --force -u origin "$BRANCH"
+          # Idempotent on purpose: a re-run on the same day force-pushes the same branch, so the pull
+          # request already exists and `gh pr create` would fail the job *after* the lessons and the
+          # derived files are committed — measured 2026-11-16 (run 43890245556): the content landed,
+          # the run went red, and nothing said why.
+          if gh pr view "$BRANCH" --json number >/dev/null 2>&1; then
+            echo "pull request for $BRANCH already open — the force-push above updated it"
+            exit 0
+          fi
+
           gh pr create --base main --head "$BRANCH" \
             --title "feat(lessons): intake batch $(date -u +%Y-%m-%d)" \
             --body "$(printf '%s\n\n' \
