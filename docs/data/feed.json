@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-11-17T04:00:42.797190+00:00",
+  "generated_at": "2026-11-17T16:14:51.791610+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 13,
   "items": [
     {
       "type": "merged_pr",
-      "title": "fix(package): the other git calls say their encoding too",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5153",
-      "timestamp": "2026-11-17T03:50:54Z",
+      "title": "docs(handoff): vol 40 — merged is not deployed, and the search cost sits in one phase",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5186",
+      "timestamp": "2026-11-17T15:42:03Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "lessons(contrib): two failures from today, with the numbers that name them",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5151",
-      "timestamp": "2026-11-17T03:45:20Z",
+      "title": "chore(main): release 3.19.0",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5079",
+      "timestamp": "2026-11-17T14:54:41Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(index): read git's path list as UTF-8, not as the locale codec",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5139",
-      "timestamp": "2026-11-17T02:58:08Z",
+      "title": "fix(cindy-plugin): domain 过滤空单独标记 + 首轮公告带版本号与更新办法",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5182",
+      "timestamp": "2026-11-17T14:05:55Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(tests): the ladder fixtures are relative to now, so they cannot expire",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5140",
-      "timestamp": "2026-11-17T02:36:55Z",
+      "title": "fix(cindy-plugin): 清单默认文案与 zh-CN 对齐，me_inbox 拒绝两个查询编号",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5175",
+      "timestamp": "2026-11-17T12:00:05Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(intake): a re-run updates the batch's pull request instead of failing on it",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5138",
-      "timestamp": "2026-11-17T02:08:26Z",
+      "title": "perf(search): the site's search read has a ceiling, and says so when it hits it",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5162",
+      "timestamp": "2026-11-17T06:09:36Z",
       "source": "github"
     },
     {
