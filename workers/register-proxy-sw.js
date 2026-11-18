@@ -4205,7 +4205,12 @@ async function deliverAnswerNoticesImpl(env) {
 //   blob5 lesson_id       normalized public lesson slug (get_lesson only, "" otherwise)
 //   blob6 intake_kind     question | missing_lesson | proposal | … (intake only, "" otherwise)
 //   double1 latency_ms    whole milliseconds, measured inside the tool handler
-//   double2 result_count  search results served (0 for the other tools)
+//   double2 result_count  search results served (0 for get_lesson). For an intake it is the
+//                         **corpus coverage probe**: how many lessons the corpus already returned
+//                         for the submission (0 = nothing, -1 = the index was cold and nothing could
+//                         be measured). Recorded since 2026-11-18 and *not acted on* — the share of
+//                         `double2 > 0` over new intakes is what decides whether a submit-side gate
+//                         is worth building (see the note on `measureIntakeCoverage`)
 //   double3 miss_flag     1 = no_match / lesson miss / intake dedup, 0 otherwise
 //
 // The raw query is deliberately absent. SHA-256 is one-way and stable across deploys, so the
@@ -4290,13 +4295,35 @@ async function recordLessonAnalytics(env, { lessonId, hit, latencyMs, bucket }) 
   );
 }
 
-async function recordIntakeAnalytics(env, { kind, outcome, latencyMs, bucket }) {
+async function recordIntakeAnalytics(env, { kind, outcome, latencyMs, bucket, corpusHits = -1 }) {
   await Promise.resolve();
   return writeAnalyticsPoint(
     env,
     [AE_INTAKE, bucket, "", outcome, "", kind],
-    [latencyMs, 0, outcome === "dedup" ? 1 : 0],
+    [latencyMs, corpusHits, outcome === "dedup" ? 1 : 0],
   );
+}
+
+/**
+ * Would the corpus already have answered this submission? **Measured, never acted on (2026-11-18).**
+ *
+ * The queue grows faster than it is worked (~35 filed a day against ~2 triaged on a quiet day), and
+ * the one lever that can change the inflow lives right here: at submission time the endpoint holds
+ * both the text and the corpus. Refusing on a hit would be a behaviour change nobody has data for
+ * yet, so this records the answer and files the issue exactly as before.
+ *
+ * `-1` means "could not measure" (a cold isolate has no index — see the note at the call site) and
+ * must not be read as "no hits". The question the first week of data answers is narrow: of the
+ * submissions that created an issue, what share already matched something in the corpus?
+ */
+function measureIntakeCoverage(text, index) {
+  if (!index || !text) return -1;
+  try {
+    const hits = searchLessonsBM25(index, String(text).slice(0, 400), null, 3);
+    return Array.isArray(hits) ? hits.length : -1;
+  } catch (e) {
+    return -1;
+  }
 }
 
 /**
@@ -5413,12 +5440,17 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx, 
     // from the store, a submission covered by an existing lesson, or a filing that created an
     // issue. Validation refusals above return before `kind` exists and are not intakes. The
     // problem text is never a field; `kind` and "did this create a new issue" are the signal.
+    // Declared here, not next to the probe: the dedup paths below call `finishIntake` *before* the
+    // probe runs, and a `let` seen through that closure would be a temporal dead zone error rather
+    // than a measurement. `-1` is the honest value for "the probe has not answered".
+    let corpusHits = -1;
     const finishIntake = (result, outcome) => {
       if (ctx) ctx.waitUntil(recordIntakeAnalytics(env, {
         kind,
         outcome,
         latencyMs: Date.now() - intakeStartedAt,
         bucket: callerBucket,
+        corpusHits,
       }).catch(() => {}));
       return result;
     };
@@ -5596,7 +5628,15 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx, 
     // looked private without having had to know it in advance.
     const surfaceText = [args.problem, args.error, args.what_tried, args.verification, args.fix]
       .filter(Boolean).join("\n");
+    // The coverage probe shares the surface check's index peek, for the same reason it takes a peek
+    // rather than a load: it runs inside the request that creates the public issue. Both answers are
+    // measurements; neither changes what is filed.
     let surfaceUnknown = null;
+    try {
+      corpusHits = measureIntakeCoverage(surfaceText, peekBM25Index());
+    } catch (e) {
+      debugLog(env, 1, "coverage probe skipped", { error: String((e && e.message) || e) });
+    }
     try {
       // `peekBM25Index`, not `loadBM25Index`: this runs inside the request that creates the public
       // issue, and loading the index there can take 30-60 s on a cold isolate — longer than any MCP
@@ -11483,6 +11523,9 @@ export {
   loadLessons,
   // Exported for workers/lessons-read-budget.test.mjs: the ceiling on the site's search read.
   readLessonsWithinBudget,
+  // Exported for workers/intake-coverage-probe.test.mjs: "would the corpus have answered this?"
+  // measured at submit time and recorded, never acted on.
+  measureIntakeCoverage,
   // Exported for workers/cindy-plugin-version.test.mjs: what a Cindy caller is told about its own
   // build. The comparison is exported too, because "1.5.11 is newer than 1.5.9" is the one thing a
   // string compare gets wrong and the whole `outdated` flag rests on it.
