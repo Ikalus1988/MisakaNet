@@ -30,7 +30,7 @@ COMMUNITY_SRC = Path(
          r"/d08837fa-53b2-4596-8e37-41e02fc7d03f/misakanet-cindy-plugin"
 )
 TARGET = REPO / ".cindy-plugin-community"
-VERSION = "1.5.11"
+VERSION = "1.5.12"
 
 
 def sub(text: str, old: str, new: str, count: int = 1, label: str = "") -> str:
@@ -439,6 +439,72 @@ def build_main() -> None:
         "D19 first-turn notice with version",
     )
 
+    # D20 — the plugin says which channel it is on. Same plugin id, two version lines
+    # (official 1.6.x / community 1.5.x), so the endpoint needs to know which one to compare
+    # against when it answers "is the caller behind?" (#5185). Self-declared, advisory only —
+    # the endpoint does not need it to serve anything, and when the endpoint does not implement
+    # the comparison this header changes nothing (silence is the design, not a defect).
+    out = sub(
+        out,
+        """    'X-MisakaNet-Agent': 'cindy',
+    'X-MisakaNet-Client': clientId,
+""",
+        """    'X-MisakaNet-Agent': 'cindy',
+    // 自报通道：同一个插件 id 在两条通道上各有一个版本号线（官方 1.6.x / 社区 1.5.x），
+    // 端点要拿「市场当前版」来对照，就得知道来的是哪条通道（#5185）。自报、只做提示、不做授权；
+    // 端点没实现这个字段时，这一行不生效——**忘了写=沉默，是设计不是缺陷**。
+    'X-MisakaNet-Channel': 'community',
+    'X-MisakaNet-Client': clientId,
+""",
+        1,
+        "D20 channel header",
+    )
+
+    # D21 — the endpoint's version comparison, passed through and said out loud when it says
+    # the caller is behind. When the endpoint does not answer with it (not implemented yet, or
+    # the KV was not written at publish time), the plugin says nothing — that is the design.
+    out = sub(
+        out,
+        """  const suggestion = asString(payload.suggestion);
+""",
+        """  const suggestion = asString(payload.suggestion);
+  // 端点（若已实现 #5185）会带回「你跑了哪个版本 / 市场当前是哪个」的对照。
+  // **带不出来就什么都不说**——忘了写 KV 就没有信号，静默是设计不是缺陷。
+  const versionInfo = payload.plugin_version && typeof payload.plugin_version === 'object'
+    ? payload.plugin_version
+    : null;
+  const versionCurrent = versionInfo ? asString(versionInfo.current) : '';
+  const versionLatest = versionInfo ? asString(versionInfo.latest) : '';
+  const versionOutdated = versionInfo ? versionInfo.outdated === true : false;
+""",
+        1,
+        "D21 read plugin_version",
+    )
+    out = sub(
+        out,
+        """    results,
+    note,
+  };
+""",
+        """    results,
+    note: versionOutdated
+      ? note + ' 插件版本：你在用 ' + versionCurrent + '，市场当前是 ' + versionLatest +
+        '——自签 .cindy 包装的不会自动更新，请到插件市场重新安装「MisakaNet 故障记忆」再试。'
+      : note,
+    plugin_version: versionInfo
+      ? {
+        channel: asString(versionInfo.channel) || undefined,
+        current: versionCurrent || undefined,
+        latest: versionLatest || undefined,
+        outdated: versionOutdated ? true : undefined,
+      }
+      : undefined,
+  };
+""",
+        1,
+        "D21 version notice in the result",
+    )
+
     # The version moves with the manifest.
     out = sub(out, "const PLUGIN_VERSION = '1.5.4';", f"const PLUGIN_VERSION = '{VERSION}';", 1, "version")
 
@@ -448,13 +514,12 @@ def build_main() -> None:
 
 # ---------------------------------------------------------------- ghost.json
 RELEASE_NOTES = (
-    "这一版收掉两件 2026-11-17 从生产数据里看出来的真问题："
-    "一是带 domain 过滤的零命中现在会被单独标记（domain_filtered_empty），并提示先去掉 domain 再查一次再判断是不是知识缺口——"
-    "端点只报告 kind 的过滤情况，domain 没有对应字段，实测带 domain 的查询空命中明显偏高（python 6 次里 5 次空、devops 2 次全空），"
-    "不提示就会把一条已经存在的教训再报一遍；"
-    "二是首轮公告带上插件自己的版本号，并写明「插件市场里安装的会自动更新，从 .cindy 文件装的不会自动更新，想收新版请到插件市场重新安装」——"
-    "实测近 7 天里 48% 的插件检索跑在三个版本以前的构建上（1.2.3 / 1.3.2 / 1.5.1），"
-    "而自签包装的实例在宿主里记的是 local 来源，不跟随市场自动更新，市场发了新版他们也收不到。"
+    "这一版把「你落后了吗」这件事的两端接上（配套 #5185）："
+    "一是插件自报通道（请求头 X-MisakaNet-Channel：community），"
+    "同一个插件 id 在两条通道上各有一个版本号线，端点要拿「市场当前版」对照就得知道来的是哪条；"
+    "二是检索结果里透传端点带回的 plugin_version（current / latest / outdated），"
+    "落后时 note 里多一句「你在用 X、市场当前是 Y，自签 .cindy 包装的不会自动更新，请到插件市场重新安装」。"
+    "**端点还没实现、或发布时忘了写 KV 时，这个字段就没有——插件什么都不说，这是设计不是缺陷。**"
     "社区通道自己的两项能力不变：只读调用的一次保守重试、上报前的交互卡确认闸门。"
     "版本号与官方通道继续刻意错开（官方 1.6.x / 社区 1.5.x）。"
 )
