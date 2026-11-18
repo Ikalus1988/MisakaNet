@@ -1,35 +1,35 @@
 {
-  "generated_at": "2026-11-18T01:01:24.789857+00:00",
+  "generated_at": "2026-11-18T11:56:29.946559+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 13,
   "items": [
     {
       "type": "merged_pr",
-      "title": "fix(audit): the label audit read nothing on Windows and called it \"no misfiles\"",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5195",
-      "timestamp": "2026-11-17T17:15:02Z",
+      "title": "feat(cindy-plugin): 插件自报通道 + 把「你落后了吗」说出口（#5185 的插件侧）",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5216",
+      "timestamp": "2026-11-18T10:55:23Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(publish): the stand-down read is a poll, because the sibling run's publish lands a minute later",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5188",
-      "timestamp": "2026-11-17T17:00:42Z",
+      "title": "test(mcp): pin the two shapes the plugin publisher actually writes",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5225",
+      "timestamp": "2026-11-18T06:58:47Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(guard): an unreadable pyproject is missing data, not a deleted one",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5193",
-      "timestamp": "2026-11-17T16:52:13Z",
+      "title": "feat(mcp): the endpoint tells a Cindy caller whether its build is behind (#5185)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5201",
+      "timestamp": "2026-11-18T03:10:01Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
       "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5189",
-      "timestamp": "2026-11-17T16:28:19Z",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5199",
+      "timestamp": "2026-11-18T01:22:12Z",
       "source": "github"
     },
     {
