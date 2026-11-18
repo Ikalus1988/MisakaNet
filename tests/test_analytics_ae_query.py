@@ -41,6 +41,10 @@ TOP = {"data": [
 ]}
 
 
+INTAKE_COVERAGE = {
+    "data": [{"filed": 40, "covered": 12, "unmeasured": 8, "questions": 24, "questions_covered": 3}],
+}
+
 class FakeOpener:
     """Records each request and returns canned SQL API answers, in order."""
 
@@ -141,7 +145,7 @@ class TestRun(unittest.TestCase):
 
 class TestMain(unittest.TestCase):
     def test_main_answers_three_questions_and_never_prints_the_token(self):
-        opener = FakeOpener([MISS, LATENCY, TOP, PHASE])
+        opener = FakeOpener([MISS, LATENCY, TOP, PHASE, INTAKE_COVERAGE])
         code, out, err = run_main(
             ["--days", "7"],
             {"CLOUDFLARE_API_TOKEN": TOKEN, "CLOUDFLARE_ACCOUNT_ID": ACCOUNT},
@@ -153,12 +157,14 @@ class TestMain(unittest.TestCase):
         self.assertIn("812 ms", out)
         self.assertIn("0123456789abcdef", out)
         self.assertIn("42 misses", out)
+        self.assertIn("corpus already matched 37.5% (12/32)", out)
+        self.assertIn("questions: 24 filed, 3 already matched", out)
         self.assertNotIn(TOKEN, out)
         self.assertNotIn(TOKEN, err)
-        self.assertEqual(len(opener.requests), 4)
+        self.assertEqual(len(opener.requests), 5)
 
     def test_main_keeps_the_token_out_of_every_request_url_and_body(self):
-        opener = FakeOpener([MISS, LATENCY, TOP, PHASE])
+        opener = FakeOpener([MISS, LATENCY, TOP, PHASE, INTAKE_COVERAGE])
         run_main([], {"CLOUDFLARE_API_TOKEN": TOKEN, "CLOUDFLARE_ACCOUNT_ID": ACCOUNT}, opener)
         for request in opener.requests:
             self.assertNotIn(TOKEN, request.full_url)
@@ -176,13 +182,14 @@ class TestMain(unittest.TestCase):
         self.assertNotIn(TOKEN, err)
 
     def test_empty_dataset_report_is_explicit(self):
-        opener = FakeOpener([{"data": []}, {"data": []}, {"data": []}, {"data": []}])
+        opener = FakeOpener([{"data": []}, {"data": []}, {"data": []}, {"data": []}, {"data": []}])
         code, out, _ = run_main(
             [], {"CLOUDFLARE_API_TOKEN": TOKEN, "CLOUDFLARE_ACCOUNT_ID": ACCOUNT}, opener)
         self.assertEqual(code, 0)
         self.assertIn("no completed searches", out)
         self.assertIn("no completed tool calls", out)
         self.assertIn("no no-match searches", out)
+        self.assertIn("no intakes filed in the window", out)
 
 
 if __name__ == "__main__":

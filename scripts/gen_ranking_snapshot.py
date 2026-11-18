@@ -43,6 +43,7 @@ then regenerate with the command above.
 from __future__ import annotations
 
 import argparse
+import os
 import hashlib
 import json
 import sys
@@ -210,7 +211,24 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--check", action="store_true",
                         help="compare against the committed fixture instead of writing it")
+    parser.add_argument("--allow-windows", action="store_true",
+                        help="write the fixture on Windows anyway (see the refusal below)")
     args = parser.parse_args(argv)
+
+    # Writing this fixture on Windows produces two things CI rejects, both measured 2026-11-18 while
+    # landing four lessons: the file is written with CRLF (1476 of 1476 lines, caught by
+    # `test_tracked_text_files_are_lf.py`), and the same pinned row scores 0.739701 here against
+    # 0.739695 on the Linux runners — past the 5e-6 tolerance in `test_ranking_snapshot.py`. A Windows
+    # run therefore cannot produce a fixture that passes, and refusing costs less than one red CI round
+    # per contributor. `--check` still works: it only compares.
+    if not args.check and os.name == "nt" and not args.allow_windows:
+        raise SystemExit(
+            "refusing to write tests/fixtures/ranking-snapshot.json on Windows:\n"
+            "  * the scores differ from the Linux runners by ~6e-6, past the gate's 5e-6 tolerance\n"
+            "  * the file would be written with CRLF, which test_tracked_text_files_are_lf.py rejects\n"
+            "Run it under WSL/POSIX, e.g. wsl -e bash -lc 'python3 scripts/gen_ranking_snapshot.py',\n"
+            "or pass --allow-windows if you have compared both outputs yourself."
+        )
 
     payload = collect_snapshot()
     if args.check:
