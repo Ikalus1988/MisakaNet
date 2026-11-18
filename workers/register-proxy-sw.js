@@ -4603,6 +4603,12 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx, 
   if (toolName === "misakanet_search") {
     if (!args.query) return { error: "query is required" };
 
+    // Intake #5185: a Cindy caller learns whether its own build is behind. Only the plugin pays the
+    // KV read (the helper returns null for every other agent), and an unwritten key means the two
+    // version fields are simply absent — see the note on `describePluginVersion`.
+    const pluginVersion = await describePluginVersion(env, args);
+    const pluginVersionEnvelope = pluginVersion ? { plugin_version: pluginVersion } : {};
+
     // How long the caller waited (#4052). Recorded with the signal row, which already had a
     // `latency_ms` column nothing filled: the only trace of the 2026-10-29 episode (six calls,
     // 1.3 s → 62 s, the client reporting `fetch failed`) was a user's report. The timer starts
@@ -4932,6 +4938,7 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx, 
         ...searchDegraded(source),
         identity: aura,
         trust_notice: TRUST_NOTICE,
+        ...pluginVersionEnvelope,
       };
     }
     // #1779: the hit half of the same table. Exactly one of these two calls runs
@@ -4966,6 +4973,7 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx, 
     // npm/plugin install rather than only from a clone.
     return { results, source, detail, kind, query: args.query, ...searchDegraded(source),
              identity: aura, trust_notice: TRUST_NOTICE,
+             ...pluginVersionEnvelope,
              voice: results.length ? "lesson-found" : "failure-warning" };
   }
 
@@ -6351,6 +6359,15 @@ async function handleMcpRequest(request, env, useSse = false, ctx) {
         if (!value || args[field]) continue;
         if (value.length <= max) args[field] = value;
         else debugLog(env, 2, `ignored ${header}: longer than ${max} characters`);
+      }
+      // The install channel, same posture as the three above (self-declared, hint only). It is a
+      // closed set and a value outside it is dropped rather than used: the two channels version
+      // apart on purpose (`.cindy-plugin` 1.6.2 vs `.cindy-plugin-community` 1.5.11), so an
+      // unrecognised channel must not pick one of them to compare against.
+      if (!args.channel) {
+        const declared = (request.headers.get("X-MisakaNet-Channel") || "").trim().toLowerCase();
+        if (PLUGIN_CHANNELS.has(declared)) args.channel = declared;
+        else if (declared) debugLog(env, 2, "ignored X-MisakaNet-Channel: not community|official");
       }
       if (!toolName) {
         const err = { code: -32602, message: "Missing tool name" };
@@ -9683,6 +9700,63 @@ async function refreshContributorLeaderboard(env) {
   return { ok: true, entries: board.length, top: board[0], moved, benchChanged, stored: storedOk, notified };
 }
 
+// ── the plugin's own version, and whether it is behind (2026-11-17, intake #5185) ──────────────────
+//
+// Why the endpoint and not the plugin: only the publisher knows what the latest published version is,
+// and the two channels carry deliberately different numbers (.cindy-plugin 1.6.2 vs
+// .cindy-plugin-community 1.5.11). The plugin knows its own version — it says so in its first-run
+// announcement since 1.5.11/1.6.2 — what it cannot know is whether that number is behind.
+//
+// Why the value comes from `cindy:plugin:latest` and not from a constant in this file: the
+// repository's manifest is *ahead* of the marketplace while a review runs (docs/integrations/cindy.md
+// §1.1), so a compiled-in "latest" would tell marketplace users they are behind while they are
+// current. An absent key means the endpoint claims nothing — silence is a correct answer, a wrong
+// number is not, and a nag nobody can act on is worse than no nag.
+//
+// The reply carries data, not prose. Where "you are behind" belongs is the plugin's decision; inside
+// a search result it would compete with the answer the caller asked for.
+const PLUGIN_CHANNELS = new Set(["community", "official"]);
+const PLUGIN_LATEST_KEY = "cindy:plugin:latest";
+
+/** Numeric per segment: "1.5.11" is newer than "1.5.9", which a string compare gets backwards. */
+function comparePluginVersions(a, b) {
+  const split = (value) => String(value || "").trim().replace(/^v/i, "").split(/[.+-]/).slice(0, 3);
+  const left = split(a);
+  const right = split(b);
+  for (let i = 0; i < 3; i += 1) {
+    const x = parseInt(left[i], 10);
+    const y = parseInt(right[i], 10);
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return 0;
+    if (x !== y) return x < y ? -1 : 1;
+  }
+  return 0;
+}
+
+/** The published version for one channel, or "" when nobody has recorded one. */
+async function readPublishedPluginVersion(env, channel) {
+  if (!env || !env.MISAKANET_KV || !PLUGIN_CHANNELS.has(channel)) return "";
+  try {
+    const stored = await env.MISAKANET_KV.get(PLUGIN_LATEST_KEY, "json");
+    const value = stored && typeof stored === "object" ? stored[channel] : "";
+    return typeof value === "string" ? value.trim() : "";
+  } catch {
+    return "";
+  }
+}
+
+/** What a Cindy caller is told about its own build; `null` for every other caller. */
+async function describePluginVersion(env, args) {
+  if (!args || args.agent !== "cindy") return null;
+  const channel = PLUGIN_CHANNELS.has(args.channel) ? args.channel : "";
+  const described = { channel, current: String(args.client_version || "").trim() };
+  if (!channel) return described;
+  const latest = await readPublishedPluginVersion(env, channel);
+  if (!latest) return described;
+  described.latest = latest;
+  described.outdated = comparePluginVersions(described.current, latest) < 0;
+  return described;
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
@@ -11409,6 +11483,12 @@ export {
   loadLessons,
   // Exported for workers/lessons-read-budget.test.mjs: the ceiling on the site's search read.
   readLessonsWithinBudget,
+  // Exported for workers/cindy-plugin-version.test.mjs: what a Cindy caller is told about its own
+  // build. The comparison is exported too, because "1.5.11 is newer than 1.5.9" is the one thing a
+  // string compare gets wrong and the whole `outdated` flag rests on it.
+  describePluginVersion,
+  comparePluginVersions,
+  readPublishedPluginVersion,
   filterSnapshot,
   // Exported for workers/health-lessons-read.test.mjs: the probe, its classifier, and the isolate
   // state that `/api/health` now reports.
