@@ -19,6 +19,7 @@
   <url><loc>https://misakanet.org/topics/ruby/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/ci/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/windows/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://misakanet.org/topics/docker/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/search/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/network/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/agent/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
@@ -33,7 +34,6 @@
   <url><loc>https://misakanet.org/topics/growth/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/go/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/claude/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
-  <url><loc>https://misakanet.org/topics/docker/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/meta/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/scraping/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/video/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
@@ -90,6 +90,7 @@
   <url><loc>https://misakanet.org/lessons/a-ci-failure-classifier-mapped-failure-logs-to-categories-by-bare-substring-matc/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-cmd-with-non-ascii-comments-emits-a-phantom-is-not-recognized-command-chcp-ins/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-container-paas-update-task-reports-success-and-app-metadata-shows-the-new-vers/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/a-container-that-starts-but-answers-502-the-image-never-contained-the-config-fil/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-contribution-leaderboard-showed-used-0-for-every-row-and-coveragelesson-a/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-corpus-cached-in-one-row-has-a-ceiling-and-the-diagnosis-cannot-live-in-that-r/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-cross-platform-recovery-cli-emitted-a-posix-quoted-executable-and-json-argumen/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -576,6 +577,7 @@
   <url><loc>https://misakanet.org/lessons/oss-refactor-lessons/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/owa-thread-view-exposes-only-the-newest-messages-attachments-older-ones-need-a-m/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/scope-parallel-prs-by-who-owns-the-fact-not-by-file-path-or-two-green-prs-merge/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/four-parallel-windowed-queries-hit-the-upstreams-concurrency-limit-the-same-four/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-parked-license-gate-screen-is-not-tamper-detection-walk-the-ui-tree-first/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-patch-that-fails-on-a-later-hunk-has-usually-already-changed-the-earlier-ones/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/patching-a-library-bundled-inside-a-pyinstaller-one-dir-build-the-on-disk-copy-i/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -829,6 +831,7 @@
   <url><loc>https://misakanet.org/lessons/testimonio-misakanet/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-fixture-dated-six-days-ago-is-a-test-that-reddens-main-on-its-own/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/anthropic-compatible-endpoints-return-400-for-a-text-block-ordered-after-tool-us/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/the-ingress-binds-at-start-a-deploy-that-does-not-restart-keeps-serving-the-old/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/tia-portal-openness-apiprojectsretrieveopen打开引用了未安装选件包的工程时抛-missingproductse/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/tia-portal-v16-openness-连接报-no-matching-tia-portal-version-与-getplcs-报-not-suppo/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/time-based-staleness-gates-fail-on-a-schedule-add-an-acknowledged-debt-marker-ne/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -840,6 +843,7 @@
   <url><loc>https://misakanet.org/lessons/tts-chinese-encoding-powershell/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/two-artifacts-with-the-same-name-are-two-production-paths-separate-them-by-trigg/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/two-evidence-loops-for-failure-lessons/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/two-files-hold-the-version-the-deploy-bumps-one-and-the-health-check-reads-the-o/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/typescript-solution-tsconfig-silent-nocheck/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-navigation-layout-change-leaves-other-ui-automation-scripts-on-the-old-selecto/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/ui-自动化测试正向断言偶发假红单独跑全绿连跑或进-ci-门禁就红且失败项后面的点击断言却全过说明元素其实存在可点-场景表单提交后断言结果卡片/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
