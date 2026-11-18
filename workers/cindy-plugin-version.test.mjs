@@ -84,6 +84,19 @@ test('an unwritten key means silence, not "you are current"', async () => {
   }
 });
 
+test('an empty string for a channel is silence, not version 0.0.0', async () => {
+  // `data/cindy-plugin-versions.json` records "official": "" while the official channel has no
+  // marketplace listing yet — the honest way to say "no comparable version". If a reader ever
+  // treated that as a version, every official-channel caller would be told it is behind.
+  const empty = { 'cindy:plugin:latest': { community: '1.5.11', official: '' } };
+  const described = await describePluginVersion(
+    { MISAKANET_KV: kv(empty) },
+    { agent: 'cindy', channel: 'official', client_version: '1.6.2' },
+  );
+  assert.deepEqual(described, { channel: 'official', current: '1.6.2' }, JSON.stringify(described));
+  assert.equal(await readPublishedPluginVersion({ MISAKANET_KV: kv(empty) }, 'official'), '');
+});
+
 test('a KV failure is silence too, not an error in the search result', async () => {
   const described = await describePluginVersion(
     { MISAKANET_KV: kv({}, { throws: true }) },
@@ -110,6 +123,20 @@ test('an unknown channel never borrows another channel\'s number', async () => {
   );
   assert.equal(described.channel, '', 'the channel is a closed set: community | official');
   assert.equal('latest' in described, false);
+});
+
+test('prose next to the two version lines does not break the read', async () => {
+  // `data/cindy-plugin-versions.json` carries `updated_at` and a `note` for readers in the
+  // repository; the publisher strips them before writing, but a hand-written `wrangler kv key put`
+  // with the whole file must still work — the endpoint reads `versions[channel]` and nothing else.
+  const whole = {
+    'cindy:plugin:latest': {
+      community: '1.5.11', official: '1.6.2',
+      updated_at: '2026-11-18', note: '两条通道在市场上实际在售的版本',
+    },
+  };
+  assert.equal(await readPublishedPluginVersion({ MISAKANET_KV: kv(whole) }, 'community'), '1.5.11');
+  assert.equal(await readPublishedPluginVersion({ MISAKANET_KV: kv(whole) }, 'official'), '1.6.2');
 });
 
 test('the reader ignores a stored value that is not an object', async () => {
