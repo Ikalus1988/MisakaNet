@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-11-17T16:14:51.791610+00:00",
+  "generated_at": "2026-11-18T01:01:24.789857+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 13,
   "items": [
     {
       "type": "merged_pr",
+      "title": "fix(audit): the label audit read nothing on Windows and called it \"no misfiles\"",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5195",
+      "timestamp": "2026-11-17T17:15:02Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "fix(publish): the stand-down read is a poll, because the sibling run's publish lands a minute later",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5188",
+      "timestamp": "2026-11-17T17:00:42Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "fix(guard): an unreadable pyproject is missing data, not a deleted one",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5193",
+      "timestamp": "2026-11-17T16:52:13Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5189",
+      "timestamp": "2026-11-17T16:28:19Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
       "title": "docs(handoff): vol 40 — merged is not deployed, and the search cost sits in one phase",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/5186",
       "timestamp": "2026-11-17T15:42:03Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(main): release 3.19.0",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5079",
-      "timestamp": "2026-11-17T14:54:41Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "fix(cindy-plugin): domain 过滤空单独标记 + 首轮公告带版本号与更新办法",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5182",
-      "timestamp": "2026-11-17T14:05:55Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "fix(cindy-plugin): 清单默认文案与 zh-CN 对齐，me_inbox 拒绝两个查询编号",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5175",
-      "timestamp": "2026-11-17T12:00:05Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "perf(search): the site's search read has a ceiling, and says so when it hits it",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5162",
-      "timestamp": "2026-11-17T06:09:36Z",
       "source": "github"
     },
     {
