@@ -214,3 +214,27 @@ def test_the_git_reading_decodes_raw_bytes(tmp_path: Path, monkeypatch):
         f"UnicodeDecodeError (measured on ext4); the call was made with {kwargs!r}")
     assert kwargs.get("text") is True, f"without text mode the paths arrive as bytes: {kwargs!r}"
     assert [path.name for path in got] == ["ok.md"], "the fake's lesson did not come through"
+
+
+def test_a_fallback_to_the_filesystem_says_so(tmp_path, capsys, monkeypatch):
+    """The walk is allowed; being silent about it is not.
+
+    Measured 2026-11-18: a stray untracked draft in a local worktree entered the corpus on Windows
+    (1019 lessons against 1018 tracked) and two generators died on its `tags:` field, while CI — a
+    clean tree — never saw the file. The warning is what turns "which set am I indexing" into a
+    question the output answers.
+    """
+    import subprocess
+
+    import misakanet.lesson_index as index
+
+    (tmp_path / "some-lesson.md").write_text("---\ntitle: x\n---\nbody\n", encoding="utf-8")
+
+    def boom(*_args, **_kwargs):
+        raise OSError(errno.ENOENT, "git is not installed")
+
+    monkeypatch.setattr(subprocess, "run", boom)
+    assert index.tracked_lesson_files(tmp_path) is None
+    err = capsys.readouterr().err
+    assert "[lesson_index]" in err, err
+    assert "untracked" in err, err

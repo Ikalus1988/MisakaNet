@@ -18,6 +18,7 @@ visible on purpose: users hit them, trial-and-error, and submit corrections
 from __future__ import annotations
 
 import subprocess
+import sys
 
 from pathlib import Path
 
@@ -100,8 +101,10 @@ def tracked_lesson_files(lessons_root: Path) -> list[Path] | None:
             errors="surrogateescape", check=False, timeout=60,
         )
     except (OSError, subprocess.SubprocessError):  # git missing, or not a repository
+        _warn_fallback(lessons_root, "git could not be run")
         return None
     if proc.returncode != 0:
+        _warn_fallback(lessons_root, "git ls-files exited non-zero")
         return None
     found = [lessons_root / line for line in proc.stdout.splitlines() if line.endswith(".md")]
     found = [path for path in found if path.is_file()]
@@ -125,8 +128,25 @@ def tracked_lesson_files(lessons_root: Path) -> list[Path] | None:
         # reach this branch: they check out a clean tree where `lessons/` is tracked and present, so git
         # answers with paths that exist. Returning `[]` instead of `None` here would avoid case 3 by
         # re-creating case 1, which is the failure this whole branch exists to prevent.
+        _warn_fallback(lessons_root, "git listed no lesson file that exists on disk")
         return None
     return found
+
+
+def _warn_fallback(lessons_root: Path, why: str) -> None:
+    """Say out loud that the corpus is being read from the disk instead of from git.
+
+    The fallback is legitimate (an exported tarball has no git) and it is the previous behaviour. What
+    is not legitimate is it being **silent**: measured 2026-11-18, a stray untracked draft in a local
+    worktree entered the corpus on Windows (1019 lessons against 1018 tracked) and two generators died
+    on its `tags:` field, while the platform that CI runs on never saw the file. The warning costs one
+    line and names the consequence, because "which set am I indexing" is the only question here.
+    """
+    print(
+        f"[lesson_index] {why}: indexing {lessons_root} from the filesystem, "
+        "so untracked files count and CI may see a different corpus",
+        file=sys.stderr,
+    )
 
 
 def canonical_lessons(lessons_root: Path) -> list[Path]:
