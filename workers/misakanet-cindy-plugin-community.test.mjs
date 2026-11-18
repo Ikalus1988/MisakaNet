@@ -160,6 +160,39 @@ test('search: the client id is per machine, stable, and says who is asking', asy
   assert.ok(load.requests[0].headers['X-MisakaNet-Os'], 'the platform belongs in the headers');
 });
 
+test('the request says which channel this plugin is on', async () => {
+  // Same plugin id, two version lines (official 1.6.x / community 1.5.x). The endpoint needs to
+  // know which one to compare against when it answers "is the caller behind?" (#5185).
+  // Self-declared, advisory only — nothing about serving a request depends on it.
+  const load = await loadPlugin({ respond: () => ({ results: [] }) });
+  await callTool(load, 'misakanet_search', { query: 'anything' });
+  assert.equal(load.requests[0].headers['X-MisakaNet-Channel'], 'community');
+});
+
+test('the version comparison comes back and is said out loud', async () => {
+  const load = await loadPlugin({
+    respond: () => ({
+      results: [{ id: 'x', title: 't', summary_plain: 'p' }],
+      plugin_version: { channel: 'community', current: '1.5.11', latest: '1.5.12', outdated: true },
+    }),
+  });
+  const answer = await callTool(load, 'misakanet_search', { query: 'anything' });
+  assert.equal(answer.result.plugin_version.current, '1.5.11');
+  assert.equal(answer.result.plugin_version.latest, '1.5.12');
+  assert.equal(answer.result.plugin_version.outdated, true);
+  assert.match(answer.result.note, /1.5.12/);
+  assert.match(answer.result.note, /插件市场重新安装/);
+});
+
+test('no version information means no version talk', async () => {
+  // The endpoint does not implement the comparison yet, or the KV was not written at publish
+  // time. Either way the plugin says nothing — silence is the design, not a defect.
+  const load = await loadPlugin({ respond: () => ({ results: [] }) });
+  const answer = await callTool(load, 'misakanet_search', { query: 'anything' });
+  assert.equal(answer.result.plugin_version, undefined);
+  assert.doesNotMatch(answer.result.note, /市场当前是/);
+});
+
 test('the version header cannot drift away from the manifest', async () => {
   // `PLUGIN_VERSION` is a literal in main.js and `version` is a literal in ghost.json. Bump one
   // and forget the other and the endpoint records the wrong client version forever.

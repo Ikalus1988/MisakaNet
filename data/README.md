@@ -26,6 +26,7 @@
 | `pr-genius-observations.jsonl` | `scripts/pr_genius_observe.py` | 无（观察记录，供人工分析）| 手动 |
 | `intake_receipts.jsonl` | `scripts/emit_intake_receipt.py` | `scripts/emit_intake_receipt.py`、`update-lessons.yml`（每日）| 手动（首次开启时 `--seed-log` 种入一次）|
 | `publish_rhythm.jsonl` | `scripts/publish_rhythm.py` | 无 | 手动 |
+| `cindy-plugin-versions.json` | 手写维护（每次插件版本**上架**后填，不是仓库 manifest 的版本） | `scripts/publish_cindy_plugin_version.py`（把它写进端点的 KV 键 `cindy:plugin:latest`）、`workers/cindy-plugin-version.test.mjs`（空串 = 沉默这条契约） | 每次插件版本上架后 |
 | `retrieval_noisebench_queries.json` | `scripts/retrieval_noisebench.py` | `scripts/retrieval_noisebench.py`（自用）| 手动 |
 | `retrieval_noisebench_report.json` | `scripts/retrieval_noisebench.py` | 无（报告产物）| 手动 |
 | `bm25_weight_benchmark.json` | `scripts/benchmark_bm25_weights.py` | 无 | 手动 |

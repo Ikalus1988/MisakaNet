@@ -16,7 +16,7 @@
 
 const MCP_URL = 'https://misakanet.org/mcp';
 const FETCH_TIMEOUT_MS = 45000;
-const PLUGIN_VERSION = '1.6.2';
+const PLUGIN_VERSION = '1.6.3';
 
 /* 客户端标识：每台机器一个稳定 id。
  * 端点会把 X-MisakaNet-Client salt-hash 进 search_signals.client_hint，而 client_hint 是
@@ -103,6 +103,10 @@ function buildHeaders(clientId) {
     // 版本从常量拼，不手写第二遍。
     'User-Agent': `cindy-plugin/${PLUGIN_VERSION}`,
     'X-MisakaNet-Agent': 'cindy',
+    // 自报通道：同一个插件 id 在两条通道上各有一个版本号线（官方 1.6.x / 社区 1.5.x），
+    // 端点要拿「市场当前版」来对照，就得知道来的是哪条通道（#5185）。自报、只做提示、不做授权；
+    // 端点没实现这个字段时，这一行不生效——**忘了写=沉默，是设计不是缺陷**。
+    'X-MisakaNet-Channel': 'official',
     'X-MisakaNet-Client': clientId,
     'X-MisakaNet-Os': detectOs(),
     'X-MisakaNet-Version': PLUGIN_VERSION,
@@ -400,6 +404,14 @@ function shapeSearch(payload, args) {
     ? payload.matched_before_filter
     : undefined;
   const filteredByKind = asString(payload.filtered_by_kind);
+  // 端点（若已实现 #5185）会带回「你跑了哪个版本 / 市场当前是哪个」的对照。
+  // **带不出来就什么都不说**——忘了写 KV 就没有信号，静默是设计不是缺陷。
+  const versionInfo = payload.plugin_version && typeof payload.plugin_version === 'object'
+    ? payload.plugin_version
+    : null;
+  const versionCurrent = versionInfo ? asString(versionInfo.current) : '';
+  const versionLatest = versionInfo ? asString(versionInfo.latest) : '';
+  const versionOutdated = versionInfo ? versionInfo.outdated === true : false;
   // A `kind` filter that emptied the list is not a corpus miss: the lessons are there, the
   // filter excluded them. Calling that "no match" pushes the agent down the knowledge-gap
   // route — it can publish a duplicate of a lesson that already exists.
@@ -456,7 +468,18 @@ function shapeSearch(payload, args) {
     suggestion: kindFilteredEmpty ? undefined : (suggestion || undefined),
     intake: kindFilteredEmpty ? undefined : intake,
     results,
-    note,
+    note: versionOutdated
+      ? note + ' 插件版本：你在用 ' + versionCurrent + '，市场当前是 ' + versionLatest +
+        '——自签 .cindy 包装的不会自动更新，请到插件市场重新安装「MisakaNet 故障记忆」再试。'
+      : note,
+    plugin_version: versionInfo
+      ? {
+        channel: asString(versionInfo.channel) || undefined,
+        current: versionCurrent || undefined,
+        latest: versionLatest || undefined,
+        outdated: versionOutdated ? true : undefined,
+      }
+      : undefined,
   };
 }
 
