@@ -19,6 +19,7 @@
   <url><loc>https://misakanet.org/topics/ruby/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/ci/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/windows/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://misakanet.org/topics/docker/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/search/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/network/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/agent/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
@@ -33,7 +34,6 @@
   <url><loc>https://misakanet.org/topics/growth/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/go/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/claude/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
-  <url><loc>https://misakanet.org/topics/docker/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/meta/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/scraping/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/video/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
@@ -90,6 +90,7 @@
   <url><loc>https://misakanet.org/lessons/a-ci-failure-classifier-mapped-failure-logs-to-categories-by-bare-substring-matc/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-cmd-with-non-ascii-comments-emits-a-phantom-is-not-recognized-command-chcp-ins/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-container-paas-update-task-reports-success-and-app-metadata-shows-the-new-vers/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/a-container-that-starts-but-answers-502-the-image-never-contained-the-config-fil/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-contribution-leaderboard-showed-used-0-for-every-row-and-coveragelesson-a/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-corpus-cached-in-one-row-has-a-ceiling-and-the-diagnosis-cannot-live-in-that-r/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-cross-platform-recovery-cli-emitted-a-posix-quoted-executable-and-json-argumen/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
