@@ -138,6 +138,7 @@
   <url><loc>https://misakanet.org/lessons/amapnavirideviewshowmode-被拖图改掉后不会自动恢复镜头停在原处/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/an-archive-container-name-is-not-an-entity-name-parse-the-entries-before-groupin/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/an-electron-apps-cookie-sqlite-cannot-be-read-while-it-runs-and-no-non-admin-tri/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/listing-a-directory-on-an-embedded-controller-can-be-the-one-operation-that-kill/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/an-instruction-policy-installer-succeeds-in-writing-a-merged-file-but-its-immedi/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/an-unlikely-database-migration/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/antd-upload-fires-onchange-once-per-file-per-batch-so-one-drop-becomes-n-busines/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -378,6 +379,7 @@
   <url><loc>https://misakanet.org/lessons/fractional-devicepixelratio-makes-1dpr-pens-anti-alias-and-breaks-pixel-exact-qt/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/frame-grid-validation-when-a-replacement-shot-is-shorter-than-its-montage-slot/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/frontmatter-parsing-edge-cases/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/ftplib-reports-a-servers-immediate-refusal-as-a-timeout-so-rejected-looks-like-u/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/game-mcp-end-turn-conflict-409/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/game-mcp-game-over-restart-flow/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/game-mcp-rare-relic-freeze/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -795,6 +797,7 @@
   <url><loc>https://misakanet.org/lessons/sidestore-报-an-invalid-value-冲出马路-was-provided-for-the-parameter-appidname/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/silent-data-loss-in-google-cloud-bigquery-schema-mismatch-and-firestore-overwrit/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/simaticml-lad-块-xml-导入-tia-v16uid-必须全块唯一并联分支不支持scoilrcoil-名称/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/sizes-on-an-embedded-file-device-are-metadata-not-bytes-verify-transfers-by-what/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/slugify-path-traversal-deep-coverage/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/slugify-windows-path-sanitation/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-snapshot-writer-and-reader-with-different-filename-grammars-silently-keep-the/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>

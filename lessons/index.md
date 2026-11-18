@@ -58,6 +58,7 @@
 - [AMapNaviRideView.showMode 被拖图改掉后不会自动恢复，镜头停在原处](contrib/amapnavirideviewshowmode-被拖图改掉后不会自动恢复镜头停在原处.md) | mobile | "amap", "ios", "showmode", "camera", "user-gesture", "restore-state" | intake-4144
 - [An archive container name is not an entity name: parse the entries before grouping](contrib/an-archive-container-name-is-not-an-entity-name.md) | data | "archive-extraction", "rar", "7z", "zip", "entity-name", "grouping", "silent-merge", "robot-backup" | intake-issue-1978
 - [An Electron app's cookie SQLite cannot be read while it runs, and no non-admin trick bypasses the lock](contrib/an-electron-apps-cookie-sqlite-cannot-be-read-while-it-runs.md) | windows | "sqlite", "electron", "chromium", "file-lock", "cookie", "windows" | intake-4287
+- [Listing a directory on an embedded controller can be the one operation that kills it](contrib/an-embedded-controller-ftp-listing-can-be-the-operation-that-kills-it.md) | fanuc | "ftp", "nlst", "roboguide", "controller", "crash", "memory" | intake-5166
 - [An instruction-policy installer succeeds in writing a merged file but its immedi](contrib/an-instruction-policy-installer-succeeds-in-writing-a.md) | mcp | "an", "instruction", "policy" | intake-4475
 - [An Unlikely Database Migration: From JSON Files to etcd](contrib/an-unlikely-database-migration.md) | database | "database-migration", "etcd", "golang", "control-plane", "performance", "key-value-store" | https://tailscale.com/blog/an-unlikely-database-migration/
 - [antd Upload fires onChange once per file per batch, so one drop becomes N business units](contrib/antd-upload-onchange-per-file-not-per-batch.md) | frontend | "antd", "upload", "dragger", "onchange", "batch-boundary", "rc-upload", "react", "uid-dedup" | intake-3330
@@ -321,6 +322,7 @@
 - [Fractional devicePixelRatio makes 1/DPR pens anti-alias and breaks pixel-exact Qt render tests](contrib/fractional-devicepixelratio-makes-1-dpr-pens-anti-alias-and.md) | frontend | "qt", "pyside6", "highdpi", "devicepixelratio", "antialiasing", "pixel-testing", "rendering" | intake-4046
 - [Frame-grid validation when a replacement shot is shorter than its montage slot](contrib/frame-grid-validation-replacement-shorter-than-slot.md) | video | "video", "montage", "ffmpeg", "frame-timing", "frame-grid", "validation", "timebase" | intake-3388
 - [Frontmatter Parsing Edge Cases — Silent Failures and Data Loss](contrib/frontmatter-parsing-edge-cases.md) | devops | "frontmatter", "parsing", "validation", "edge-cases", "data-loss" | MisakaNet validate_lessons.py testing
+- [ftplib reports a server's immediate refusal as a timeout, so "rejected" looks like "unreachable"](contrib/ftplib-reports-an-immediate-refusal-as-a-timeout.md) | python | "ftplib", "ftp", "timeout", "status-code", "diagnosis" | intake-5183
 - [Game MCP: End Turn Returns 409 Conflict](contrib/game-mcp-end-turn-conflict-409.md) | mcp | "mcp", "game", "turn", "conflict" | hanged-man
 - [Game MCP: GAME OVER Restart Flow](contrib/game-mcp-game-over-restart-flow.md) | mcp | "mcp", "game", "over", "restart", "flow" | hanged-man
 - [game mcp rare relic freeze](contrib/game-mcp-rare-relic-freeze.md) | mcp | "mcp", "game", "rare", "relic", "freeze" | hanged-man
@@ -744,6 +746,7 @@
 - [SideStore 报 An invalid value '冲出马路' was provided for the parameter 'appIdName'](contrib/sidestore-报-an-invalid-value-冲出马路-was-provided-for-the.md) | mobile | "sidestore", "altstore", "ipa", "infoplist", "appidname", "ascii", "signing" | intake-4171
 - [silent-data-loss-google-cloud](contrib/silent-data-loss-google-cloud.md) |  |  | 
 - [SimaticML LAD 块 XML 导入 TIA V16：UId 必须全块唯一、并联分支不支持、SCoil/RCoil 名称](contrib/simaticml-lad-xml-tia-v16-uid-scoil-rcoil.md) | automation | "tia", "portal", "simaticml", "lad", "scoil", "rcoil", "uid" | intake-3573
+- [Sizes on an embedded file device are metadata, not bytes — verify transfers by what landed](contrib/sizes-on-an-embedded-file-device-are-metadata-not-bytes.md) | fanuc | "ftp", "file-transfer", "manifest", "timeout", "verification" | intake-4755
 - [slugify path traversal deep coverage](contrib/slugify-path-traversal-deep-coverage.md) | security | "slugify", "path-traversal", "windows-reserved", "null-byte", "test-coverage", "hardening" | unknown
 - [slugify windows path sanitation](contrib/slugify-windows-path-sanitation.md) | wsl | "slugify", "windows", "wsl", "sanitation", "path-errors" | unknown
 - [A snapshot writer and reader with different filename grammars silently keep the history dead](contrib/snapshot-writer-reader-filename-grammar-mismatch.md) | development | "snapshot", "persistence", "filename-grammar", "round-trip-test", "silent-failure", "stale-data", "default-off", "write-rate" | intake-3369
