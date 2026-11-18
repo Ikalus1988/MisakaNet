@@ -145,6 +145,36 @@ def phase_sql(days: int = DEFAULT_DAYS) -> str:
     )
 
 
+def intake_coverage_sql(days: int = DEFAULT_DAYS) -> str:
+    """Question 5: of the intakes that became issues, how many the corpus already matched.
+
+    The queue grows ~35 filed a day against ~2 triaged on a quiet day, and the only moment both the
+    submission and the corpus are in one place is before the issue exists. `findCoveringLesson`
+    (#1526) already refuses a `missing_lesson` whose text a lesson covers near-verbatim; it never
+    looks at `question`, which is the kind that piles up. So `double2` on the intake point records
+    the BM25 hit count at submit time for **every** filing: `countIf(double2 > 0)` is the share a
+    submit-side gate could have stopped, `countIf(double2 < 0)` is the share nobody could measure
+    (cold isolate), and the last two columns split it by `blob6` (intake_kind) so the question queue can be judged
+    separately from the lesson queue.
+
+    **Read only the window after the deploy that introduced the probe (2026-11-18).** Rows written
+    before it carry `double2 = 0`, which this query would count as "corpus did not match" — the same
+    number a measured zero produces. Baseline on the first night: 48 filed, 20 of them questions, all
+    48 in the pre-probe shape.
+    """
+    return (
+        "SELECT "
+        "countIf(blob4 = 'new') AS filed, "
+        "countIf(blob4 = 'new' AND double2 > 0) AS covered, "
+        "countIf(blob4 = 'new' AND double2 < 0) AS unmeasured, "
+        "countIf(blob4 = 'new' AND blob6 = 'question') AS questions, "
+        "countIf(blob4 = 'new' AND blob6 = 'question' AND double2 > 0) AS questions_covered "
+        f"FROM {DATASET} "
+        f"WHERE timestamp > NOW() - {_window(days)} "
+        "AND blob1 = 'misakanet_submit_intake'"
+    )
+
+
 def build_request(sql: str, *, account_id: str, token: str) -> urllib.request.Request:
     """The POST the SQL API expects. The token lives in the header and nowhere else."""
     account = str(account_id or "").strip()
@@ -235,6 +265,7 @@ def build_report(
     *,
     days: int = DEFAULT_DAYS,
     phase_rows: list[dict] | None = None,
+    intake_rows: list[dict] | None = None,
 ) -> str:
     """The four answers as text. No credential, no account id, no raw query."""
     lines = [f"{DATASET} — last {days} day(s)", ""]
@@ -283,6 +314,29 @@ def build_report(
             query_hash = str(row.get("query_hash") or "")
             lines.append(f"   {query_hash:<16} {_format_count(row.get('misses'))} misses")
 
+    lines.extend(["", "5. Intake coverage probe (was the corpus already answering it?)"])
+    intake = intake_rows[0] if intake_rows else {}
+    filed = _as_float(intake.get("filed")) or 0.0
+    if filed <= 0:
+        lines.append("   no intakes filed in the window")
+    else:
+        covered = _as_float(intake.get("covered")) or 0.0
+        unmeasured = _as_float(intake.get("unmeasured")) or 0.0
+        questions = _as_float(intake.get("questions")) or 0.0
+        q_covered = _as_float(intake.get("questions_covered")) or 0.0
+        measurable = filed - unmeasured
+        share = (covered / measurable) if measurable > 0 else None
+        lines.append(
+            f"   filed {_format_count(filed)}; corpus already matched "
+            + ("n/a (nothing measurable)" if share is None
+               else f"{share * 100:.1f}% ({_format_count(covered)}/{_format_count(measurable)})")
+        )
+        lines.append(f"   not measurable (cold isolate): {_format_count(unmeasured)}")
+        lines.append(
+            "   questions: "
+            f"{_format_count(questions)} filed, {_format_count(q_covered)} already matched"
+        )
+
     return "\n".join(lines)
 
 
@@ -329,12 +383,15 @@ def main(argv: list[str] | None = None, environ: dict | None = None, opener=None
         phase_rows = run_query(
             phase_sql(args.days), account_id=account_id, token=token, opener=client
         )
+        intake_rows = run_query(
+            intake_coverage_sql(args.days), account_id=account_id, token=token, opener=client
+        )
     except AnalyticsError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
 
     print(build_report(miss_rows, latency_rows, top_rows, days=args.days,
-                   phase_rows=phase_rows))
+                   phase_rows=phase_rows, intake_rows=intake_rows))
     return 0
 
 
