@@ -37,12 +37,14 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import subprocess
 import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
 LESSONS_DIR = REPO / "lessons"
 CASES_DIR = REPO / "tests" / "intake_receipt_cases"
+REPO_SLUG = "Ikalus1988/MisakaNet"
 BLOB_BASE = "https://github.com/Ikalus1988/MisakaNet/blob/main"
 
 # A lesson cites its intake in `source:` (`intake-1130`, `intake #1553 — …`, `mcp-intake-1193`) and,
@@ -226,13 +228,78 @@ def load_cases(cases_dir: Path = CASES_DIR) -> list[dict]:
     return [json.loads(p.read_text(encoding="utf-8")) for p in sorted(cases_dir.glob("*.json"))]
 
 
+def post_receipt(issue: int, body: str, *, repo: str = REPO_SLUG, opener=None) -> tuple[bool, str]:
+    """Comment the receipt and close the intake. Returns (ok, detail).
+
+    This is #1528's remaining half, and it exists because the manual version has already failed
+    twice in this repository's own history: four intakes sat open for days after their lessons merged
+    (2026-09-21), and a sweep on 2026-11-19 found **64** more in exactly that state — every one of
+    them already converted. A receipt nobody posts is a receipt nobody receives, and the queue reads
+    as "still owed" for work that is done.
+    """
+    run = opener or _gh
+    ok_comment, out_comment = run(["issue", "comment", str(issue), "--body-file", "-"], body)
+    if not ok_comment:
+        return False, f"comment failed: {out_comment}"
+    ok_close, out_close = run(["issue", "close", str(issue), "--reason", "completed"])
+    if not ok_close:
+        return False, f"comment posted, close failed: {out_close}"
+    return True, "receipt posted, intake closed"
+
+
+def _gh(args: list[str], body: str | None = None) -> tuple[bool, str]:
+    """`gh` with the body on stdin, so no temporary file and no shell quoting of prose."""
+    proc = subprocess.run(["gh", *args], input=body, capture_output=True, text=True,
+                          encoding="utf-8", errors="replace", check=False)
+    return proc.returncode == 0, (proc.stdout or proc.stderr or "").strip()[:200]
+
+
+def converted_but_open(*, repo: str = REPO_SLUG, open_issues: list[int] | None = None) -> list[int]:
+    """Open intakes whose lesson already exists — the set this repository keeps re-discovering.
+
+    `open_issues` is injectable so the test does not need the network; the CLI asks `gh`.
+    """
+    if open_issues is None:
+        ok, out = _gh(["issue", "list", "--repo", repo, "--state", "open", "--limit", "1000",
+                       "--json", "number", "--jq", ".[].number"])
+        if not ok:
+            raise SystemExit(f"gh issue list failed: {out}")
+        open_issues = [int(line) for line in out.split() if line.strip().isdigit()]
+    return [n for n in open_issues if lessons_citing(n)]
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description="intake → lesson conversion receipts (#1528)")
     parser.add_argument("--intake", type=int, help="intake issue number")
     parser.add_argument("--source", default="unknown", help="the reporter's source label, if known")
     parser.add_argument("--json", action="store_true", help="structured payload instead of text")
     parser.add_argument("--list-cases", action="store_true", help="the cases the harness covers")
+    parser.add_argument("--post", action="store_true",
+                        help="post the receipt as a comment and close the intake (a write; off by default)")
+    parser.add_argument("--sweep", action="store_true",
+                        help="list every open intake whose lesson already exists")
+    parser.add_argument("--apply", action="store_true", help="with --sweep: post and close them")
+    parser.add_argument("--repo", default=REPO_SLUG, help="owner/name, for the sweep")
     args = parser.parse_args(argv)
+
+    if args.sweep:
+        pending = converted_but_open(repo=args.repo)
+        if not pending:
+            print("ok: no open intake is already converted")
+            return 0
+        print(f"{len(pending)} open intake(s) already have a lesson:")
+        for n in pending:
+            print(f"  #{n}")
+        if not args.apply:
+            print("(dry run — nothing posted. Re-run with --apply to post receipts and close.)")
+            return 0
+        failed = 0
+        for n in pending:
+            receipt = compose(n)
+            ok, detail = post_receipt(n, render(receipt), repo=args.repo)
+            print(f"  #{n}: {'ok' if ok else detail}")
+            failed += 0 if ok else 1
+        return 1 if failed else 0
 
     if args.list_cases:
         for case in load_cases():
@@ -249,6 +316,13 @@ def main(argv=None) -> int:
         print(json.dumps(receipt, ensure_ascii=False, indent=2))
     else:
         print(render(receipt))
+    if args.post:
+        if not receipt["emitted"]:
+            print("nothing to post: no lesson cites this intake", file=sys.stderr)
+            return 2
+        ok, detail = post_receipt(args.intake, render(receipt), repo=args.repo)
+        print(detail)
+        return 0 if ok else 1
     # Exit 2 (not 1) for "nothing to receipt": that is a legitimate answer, not a failure — and a
     # caller that treats it as success would post an empty receipt.
     return 0 if receipt["emitted"] else 2
