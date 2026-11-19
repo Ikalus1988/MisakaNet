@@ -805,18 +805,32 @@ def intake_claim(fm: dict) -> set[str]:
     provenance = fm.get("provenance")
     if not isinstance(provenance, dict):
         return set()
-    raw = provenance.get("issue")
-    if isinstance(raw, bool):                     # bool is an int subclass; never a claim
-        return set()
-    if isinstance(raw, (int, float)):
-        return {str(int(raw))}
-    if not isinstance(raw, str):
-        return set()
-    text = raw.strip()
-    claims = set(INTAKE_HASH_RE.findall(text)) | set(INTAKE_NAMED_RE.findall(text))
-    bare = INTAKE_BARE_RE.match(text)
-    if bare:
-        claims.add(bare.group(1))
+
+    def _from(raw) -> set[str]:
+        if isinstance(raw, bool):                 # bool is an int subclass; never a claim
+            return set()
+        if isinstance(raw, (int, float)):
+            return {str(int(raw))}
+        if not isinstance(raw, str):
+            return set()
+        text = raw.strip()
+        found = set(INTAKE_HASH_RE.findall(text)) | set(INTAKE_NAMED_RE.findall(text))
+        bare = INTAKE_BARE_RE.match(text)
+        if bare:
+            found.add(bare.group(1))
+        return found
+
+    # `issues:` is the plural spelling, and it exists because one lesson legitimately converts several
+    # reports: a contributor's single run produces failures that share one root cause (measured
+    # 2026-11-19 on a 28-item cluster — eight of them came down to three mechanisms). Until this was
+    # read, a list was **silently ignored**: `intake_claim` returned an empty set, the gate accepted it,
+    # and the receipts never fired, so the intakes stayed open looking unconverted.
+    claims = _from(provenance.get("issue"))
+    plural = provenance.get("issues")
+    if plural is not None:
+        items = plural if isinstance(plural, (list, tuple)) else [plural]
+        for item in items:
+            claims |= _from(item)
     return claims
 
 

@@ -55,6 +55,7 @@ verify: "<checkable pass/fail criterion, <= 200 chars>"       # required for NEW
 | **Domain** | One of the 46 topics in `data/domains.json` | The gate rejects a domain outside that vocabulary |
 | **Tags** | 1-10 tags, 2+ chars each | BM25 retrieval |
 | **Section order** | Problem → Root Cause → Solution → Verification | Consistency |
+| **Intake link** | `provenance.issue: "#123"` — or `provenance.issues: ["#123", "#124"]` when one lesson converts several reports of the same failure. Each intake may be claimed by exactly one lesson; the receipt names the lesson for every number listed | The receipt, and "is this intake done?" |
 | **Structured fields** | `summary_plain`, `trigger`, `verify` — required for **new** lessons (#1783) | Answerable in plain language + retrievable by fragment |
 | **Code blocks** | Language-specified fenced blocks | Syntax highlighting |
 | **Paths** | `<placeholder>` not `/home/user/...` | Portability |

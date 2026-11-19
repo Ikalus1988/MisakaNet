@@ -793,3 +793,20 @@ def test_the_duplicate_message_renders_posix_paths_on_every_platform(monkeypatch
     found = find_duplicate_intake_claim("1553", repo)
     assert found == ["lessons/contrib/a.md", "lessons/contrib/b.md"], found
     assert not any("\\" in path for path in found), found
+
+
+def test_one_lesson_may_convert_several_intakes():
+    """`provenance.issues: [...]` — the plural spelling, and the reason it exists.
+
+    A contributor's single run produces several failures that share one root cause (measured
+    2026-11-19: a 28-item cluster came down to a handful of mechanisms). Until this was read, a list
+    was **silently ignored** — the gate accepted it, receipts never fired, and the intakes stayed open
+    looking unconverted.
+    """
+    from scripts.lesson_gate import intake_claim
+
+    assert intake_claim({"provenance": {"issues": ["#111", "#222"]}}) == {"111", "222"}
+    assert intake_claim({"provenance": {"issue": "#111", "issues": [222]}}) == {"111", "222"}
+    assert intake_claim({"provenance": {"issue": "#111, #222"}}) == {"111", "222"}
+    assert intake_claim({"provenance": {}}) == set()
+    assert intake_claim({"provenance": {"issues": []}}) == set()
