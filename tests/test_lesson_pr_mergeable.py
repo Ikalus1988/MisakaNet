@@ -362,3 +362,40 @@ def test_the_workflow_does_not_compare_mergeable_to_the_graphql_spelling():
         "REST endpoint — that refuses every candidate; normalise with mergeable_is_clean"
     )
     assert "mergeable_is_clean" in workflow
+
+
+def test_a_conversion_pr_carries_its_generated_output_and_may_merge():
+    """A lesson PR cannot be lessons-only: the generators rewrite the corpus, the site and the fixture.
+
+    Measured 2026-11-19: a lessons-only PR fails `test_lesson_source_contract.py`, because
+    `data/lessons.json` and the page for the new lesson do not exist yet. So the rule refused every
+    conversion PR and each one ended with a human click — a week of latency per batch.
+    """
+    files = [
+        "lessons/contrib/foo.md",
+        "lessons/index.md",
+        "data/lessons.json",
+        "docs/lessons/foo/index.html",
+        "docs/topics/fanuc/index.html",
+        "tests/fixtures/ranking-snapshot.json",
+    ]
+    stats = {path: [1, 0] for path in files}
+    stats["lessons/contrib/foo.md"] = [40, 0]
+    verdict, reason = verdict_of(payload(files=files, file_stats=stats))
+    assert verdict == lpm.MERGE, reason
+
+
+def test_generated_output_alone_is_not_a_conversion():
+    """The generators are the only writer of those paths; no lesson means nothing produced them."""
+    verdict, reason = verdict_of(payload(files=["data/lessons.json"]))
+    assert verdict == lpm.REFUSE
+    assert "no lesson file changed" in reason
+
+
+def test_the_whitelist_is_paths_not_directories():
+    """`docs/**` would let a PR rewrite the site; only the generator-owned paths are listed."""
+    verdict, reason = verdict_of(
+        payload(files=["lessons/contrib/foo.md", "docs/googled7bffcd986dade3f.html"])
+    )
+    assert verdict == lpm.REFUSE
+    assert "docs/googled7bffcd986dade3f.html" in reason
