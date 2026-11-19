@@ -149,6 +149,18 @@ jobs:
           # lessons that already existed, so the first automated run receipts only new promotions.
           python3 scripts/emit_intake_receipt.py --quiet --close
 
+      - name: Close any intake whose lesson already exists
+        run: |
+          # `emit_intake_receipt.py` receipts **new promotions**: it reads a ledger and only sees the
+          # lessons that appeared after `--seed-log` was run by hand on 2026-11-02. Everything converted
+          # before that seed — or through a path the ledger never recorded — stayed open with no
+          # receipt, and it is invisible until someone compares the two sets. Measured 2026-11-19:
+          # **64** open intakes already cited by a lesson, the oldest from September.
+          #
+          # The sweep answers the same question from the other side (which open intake does a lesson
+          # already cite?) and is idempotent: it closes only where `lessons_citing()` finds a lesson.
+          python3 scripts/intake_receipt.py --sweep --apply
+
       - name: Check for changes
         id: check
         run: |
