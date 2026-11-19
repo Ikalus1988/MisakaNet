@@ -104,9 +104,9 @@ ghost_call({ ghost_id: "misakanet", tool: "misakanet_preflight",
      或用 `misakanet_me_inbox` 查；
    - 拿到回执 → 确定已执行，把 intake_id 与 dedup_key 给用户。
 
-官方通道的包由平台在发布流水线写入签名（本目录不含 `cindy-signatures.json`）：Cindy 安装时会复算
-文件清单并验签，**清单对不上的包装不上**（也不会静默降级成未签名包）。签名证明「文件没被改、还是
-同一把钥匙」，不证明发布者的现实身份；自签只用于社区投稿通道的本地校验。
+社区通道的包带发布者签名（包内 `cindy-signatures.json`）：Cindy 安装时会复算文件清单并验签，
+**清单对不上的包装不上**（也不会静默降级成未签名包）。签名证明「文件没被改、还是同一把钥匙」，
+不证明发布者的现实身份。
 
 ## 5.7 版本对照：插件会告诉你是不是落后了
 
@@ -125,6 +125,22 @@ ghost_call({ ghost_id: "misakanet", tool: "misakanet_preflight",
   ——那是设计，不是缺陷。**（对照的是「端点以为的当前版」，它与市场真实状态不一致时，
   宁可少说一句，也不要把用户指向一个不存在的版本。）
 - 你也会在首轮提示里看到自己的版本号（第 5.5 节）；两处对不上时以市场的实际列表为准。
+
+### 5.6.1 确认卡闸门（社区通道专有）
+
+社区通道的上报多一道**点击闸门**：调用 `misakanet_submit_intake` 后，插件会先在聊天里供出一张确认卡，
+列出这次将要公开到 GitHub 的原文、目标与可见性、脱敏提醒，以及「确认提交」「不提交」两个按钮。
+
+- 只有用户点「确认提交」，才会真正创建那条公开 issue；点「不提交」则什么都没发生。
+- 等不到点击时，插件在 **30 秒**上限后**明确放弃**：没有提交任何内容，远端也没有任何记录，
+  并把这个结论作为 `CONFIRMATION_TIMEOUT` 交回调用方——不会静默地按「用户已确认」处理。
+- **实测限制**：手机与远程会话里卡片按钮点不动（宿主没有把 card-action 事件回传，远端没有任何记录）。
+  调用方如果知道当前会话属于这种情况，应当**立即**改用 `confirm="direct"` 重新调用
+  （仍然需要 `user_confirmed=true`），不要等这次超时。
+- `confirm` 参数只决定用不用确认卡（`card` 默认 / `direct`），**不影响是否需要用户确认**。
+  走 `direct` 时，回执里会注明本次未经过点击确认。
+
+官方随包通道没有这道卡闸门：那条通道的包由平台在发布流水线写入签名，上报前只按上面的文字闸门操作。
 
 ## 6. 可信边界（重要）
 
@@ -147,5 +163,5 @@ ghost_call({ ghost_id: "misakanet", tool: "misakanet_preflight",
 | `misakanet_search` | 找候选教训 | `query`（必填）、`top`、`domain`、`kind`、`detail` |
 | `misakanet_get_lesson` | 取一条教训全文 | `id` 或 `path`（二选一） |
 | `misakanet_preflight` | 高风险操作前预检 | `intent`（必填）、`context` |
-| `misakanet_submit_intake` | 上报未覆盖的故障或提问（**公开**） | `problem`（必填）、`user_confirmed=true`、`kind`、`contributor` |
+| `misakanet_submit_intake` | 上报未覆盖的故障或提问（**公开**） | `problem`（必填）、`user_confirmed=true`、`kind`、`contributor`、`confirm`（社区通道：card 默认 / direct） |
 | `misakanet_me_inbox` | 查一次已提交上报的答复／是否已转成课程 | `intake_id` 或 `dedup_key`（二选一；两个都给会被拒绝，一个请求都不发） |
