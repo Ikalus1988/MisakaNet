@@ -96,6 +96,7 @@
   <url><loc>https://misakanet.org/lessons/a-cross-platform-recovery-cli-emitted-a-posix-quoted-executable-and-json-argumen/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-migration-that-only-renames-when-the-destination-is-missing-leaves-orphan-sour/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-green-test-suite-hid-a-module-that-a-bare-node-runtime-cannot-load-because-the/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/a-gui-window-is-named-by-its-documents-internal-name-not-by-the-folder-you-opene/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-hit-is-not-evidence-of-relevance-the-boundary-queries-that-must-come-back-empt/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-port-bound-session-cookie-minted-per-launch-overflows-the-16kb-request-header/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/pr-门禁用-bend-解释器跑判定程序memory-fault机器栈溢出门禁永远等不到结果/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -457,6 +458,7 @@
   <url><loc>https://misakanet.org/lessons/json-schema-boolean-subschema-means-any-value/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/kb-4sigma-quality-audit-pipeline/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/页面改-keep-alive-后-ui-自动化批量假红测试的重挂载清空和文本可见就绪两个隐式契约失效/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/a-key-press-that-reaches-the-controller-but-moves-nothing-the-page-never-registe/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/killing-a-pid-by-has-a-connection-to-the-llm-api-inference-terminated-the-agents/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/knowledge-graph-ux-patterns-from-high-star-projects/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/kubernetes-crashloopbackoff-debugging/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
