@@ -86,6 +86,7 @@
   <url><loc>https://misakanet.org/lessons/require-relative-resolves-against-the-requiring-file-not-the-working-directory/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/search-first-roadmap-loop/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-whole-file-content-push-silently-reverts-the-lines-another-writer-owns/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/a-vendors-binary-variable-dump-needs-its-type-table-not-a-fixed-field-width/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-child-stat-failure-must-not-fail-the-whole-parent-directory-listing/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-ci-failure-classifier-mapped-failure-logs-to-categories-by-bare-substring-matc/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-cmd-with-non-ascii-comments-emits-a-phantom-is-not-recognized-command-chcp-ins/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -110,6 +111,7 @@
   <url><loc>https://misakanet.org/lessons/a-stdio-mcp-recovery-server-and-clihooks-used-different-sqlite-state-stores-alt/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-stubbed-success-is-not-a-sandbox-a-faked-git-push-let-the-suite-rewrite-the-pu/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-worksheet-patch-accepted-xfe1-and-produced-an-excel-workbook-whose-column-exce/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/accepted-is-not-executed-measure-readiness-at-the-layer-that-will-do-the-work/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/accidental-pycache-commit/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/adding-new-lesson-files-to-a-corpus-and-running-its-generator-suite-leaves-the-t/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/为什么-ai-编码代理的-api-key-用量是普通聊天的上百倍上下文重放-缓存统计口径附本地台账与官网余额对不上的原因/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>

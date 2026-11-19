@@ -6,6 +6,7 @@
 
 | Lesson | Domain | Tags | Source |
 |--------|--------|------|--------|
+- [A vendor's binary variable dump needs its type table, not a fixed field width](contrib/a-binary-variable-dump-is-read-by-type-width-not-fixed-width.md) | fanuc | "binary", "reverse-engineering", "schema", "sentinel", "parsing" | intake-5229
 - [A child stat failure must not fail the whole parent directory listing](contrib/a-child-probe-failure-must-not-poison-the-parent-listing.md) | nodejs | "nodejs", "filesystem", "error-handling", "windows", "acl", "listing", "degradation" | intake-2314
 - [A CI failure classifier mapped failure logs to categories by bare substring matc](contrib/a-ci-failure-classifier-mapped-failure-logs-to-categories.md) | dsh | "race_condition", "race", "rate" | intake-4877
 - [A .cmd with non-ASCII comments emits a phantom "is not recognized" command: chcp inside the file is already too late](contrib/a-cmd-with-non-ascii-comments-emits-a-phantom-is-not.md) | windows | "windows", "batch", "cmd", "encoding", "codepage", "chcp" | intake-4299
@@ -30,6 +31,7 @@
 - [A stdio MCP recovery server and CLI/hooks used different SQLite state stores alt](contrib/a-stdio-mcp-recovery-server-and-clihooks-used-different.md) | mcp | "stdio", "mcp", "recovery" | intake-4919
 - [A stubbed success is not a sandbox — a faked `git push` let the suite rewrite the published index](contrib/a-stubbed-success-is-not-a-sandbox.md) | testing | "test-isolation", "stubs", "test-pollution", "false-failure", "generated-artifacts" | dsh agent session, 2026-09-26 (diagnosed from a red CI leg on a lesson-only pull request)
 - [A worksheet patch accepted XFE1 and produced an Excel workbook whose column exce](contrib/a-worksheet-patch-accepted-xfe1-and-produced-an-excel.md) | dsh | "worksheet", "patch", "accepted" | intake-4536
+- [Accepted is not executed: measure readiness at the layer that will do the work](contrib/accepted-is-not-executed-measure-readiness-at-the-layer-that-works.md) | fanuc | "readiness", "automation", "controller", "karel", "motion" | intake-5169
 - [Accidental __pycache__ artifacts committed to a data repository](contrib/accidental-pycache-commit.md) | development | "git", "pycache", "gitignore", "cleanup" | 
 - [Adding new lesson files to a corpus and running its generator suite leaves the t](contrib/adding-new-lesson-files-to-a-corpus-and-running-its.md) | mcp | "rglob", "and", "the" | intake-5032
 - [为什么 AI 编码代理的 API Key 用量是普通聊天的上百倍：上下文重放 + 缓存统计口径（附本地台账与官网余额对不上的原因）](contrib/agent-api-key-usage-vs-chat-context-replay-and-cache-accounting.md) | agent | "dsh", "deepseek", "token-usage", "prompt-cache", "cost-meter", "agent-loop", "context-replay", "subagent", "cost-optimization", "api-key" | intake-3312

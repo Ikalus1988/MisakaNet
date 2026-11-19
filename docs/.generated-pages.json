@@ -80,6 +80,7 @@
     "docs/lessons/a-two-step-regex-rewrite-silently-cut-a-1648-line-changelog-to-81-lines-check-th/index.html",
     "docs/lessons/a-utf-8-path-list-decoded-as-cp936-loses-211-files-and-nothing-raises/index.html",
     "docs/lessons/a-validators-error-names-the-symptom-not-the-gate-and-a-check-script-must-not-wr/index.html",
+    "docs/lessons/a-vendors-binary-variable-dump-needs-its-type-table-not-a-fixed-field-width/index.html",
     "docs/lessons/a-verification-script-that-only-writes-a-report-cannot-be-a-gate-step-however-gr/index.html",
     "docs/lessons/a-watchdog-that-only-matches-new-crash-lines-stays-silent-when-the-target-is-alr/index.html",
     "docs/lessons/a-watchdog-without-backoff-respawns-a-crashing-agent-shim-into-eaddrinuse-and-a/index.html",
@@ -92,6 +93,7 @@
     "docs/lessons/a-windows-drive-letter-path-parses-as-a-url-scheme-so-nodes-esm-loader-rejects-i/index.html",
     "docs/lessons/a-windows-libvips-dll-loaded-twice-poisons-the-bundled-sharp-and-surfaces-as-tra/index.html",
     "docs/lessons/a-worksheet-patch-accepted-xfe1-and-produced-an-excel-workbook-whose-column-exce/index.html",
+    "docs/lessons/accepted-is-not-executed-measure-readiness-at-the-layer-that-will-do-the-work/index.html",
     "docs/lessons/accidental-pycache-commit/index.html",
     "docs/lessons/add-jitter-to-retry-sleeps-avoid-thundering-herd/index.html",
     "docs/lessons/adding-new-lesson-files-to-a-corpus-and-running-its-generator-suite-leaves-the-t/index.html",
@@ -1085,6 +1087,7 @@
     "docs/topics/wsl/index.html"
   ],
   "slugs": {
+    "a-binary-variable-dump-is-read-by-type-width-not-fixed-width": "a-vendors-binary-variable-dump-needs-its-type-table-not-a-fixed-field-width",
     "a-child-probe-failure-must-not-poison-the-parent-listing": "a-child-stat-failure-must-not-fail-the-whole-parent-directory-listing",
     "a-ci-failure-classifier-mapped-failure-logs-to-categories": "a-ci-failure-classifier-mapped-failure-logs-to-categories-by-bare-substring-matc",
     "a-cmd-with-non-ascii-comments-emits-a-phantom-is-not": "a-cmd-with-non-ascii-comments-emits-a-phantom-is-not-recognized-command-chcp-ins",
@@ -1110,6 +1113,7 @@
     "a-stdio-mcp-recovery-server-and-clihooks-used-different": "a-stdio-mcp-recovery-server-and-clihooks-used-different-sqlite-state-stores-alt",
     "a-stubbed-success-is-not-a-sandbox": "a-stubbed-success-is-not-a-sandbox-a-faked-git-push-let-the-suite-rewrite-the-pu",
     "a-worksheet-patch-accepted-xfe1-and-produced-an-excel": "a-worksheet-patch-accepted-xfe1-and-produced-an-excel-workbook-whose-column-exce",
+    "accepted-is-not-executed-measure-readiness-at-the-layer-that-works": "accepted-is-not-executed-measure-readiness-at-the-layer-that-will-do-the-work",
     "accidental-pycache-commit": "accidental-pycache-commit",
     "adding-new-lesson-files-to-a-corpus-and-running-its": "adding-new-lesson-files-to-a-corpus-and-running-its-generator-suite-leaves-the-t",
     "agent-api-key-usage-vs-chat-context-replay-and-cache-accounting": "为什么-ai-编码代理的-api-key-用量是普通聊天的上百倍上下文重放-缓存统计口径附本地台账与官网余额对不上的原因",
