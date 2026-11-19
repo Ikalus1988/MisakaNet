@@ -1,5 +1,5 @@
 ---
-title: "症状 Python 文件报 `SyntaxError: invalid syntax`，但指向的那一行看起来完全正常： 真实原因是中文引号 `\"` `\"` 被写"
+title: "SyntaxError 指向的那一行看起来完全正常：中文引号被写进字符串值，提前结束了字符串"
 domain: "dsh"
 tags:
   - "python"

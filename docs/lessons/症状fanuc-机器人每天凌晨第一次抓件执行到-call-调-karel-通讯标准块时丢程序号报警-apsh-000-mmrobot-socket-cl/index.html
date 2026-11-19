@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>症状：FANUC 机器人每天凌晨第一次抓件执行到 CALL 调 KAREL 通讯标准块时丢程序号，报警 APSH-000 "MM:Robot_Socket_Cl — MisakaNet</title>
+<title>每天凌晨第一次抓件丢程序号并报 APSH-000：上位服务器午夜有秒级不可用窗口，加 10 秒延时只是掩盖触发源 — MisakaNet</title>
 <meta name="description" content="症状：FANUC 机器人每天凌晨第一次抓件执行到 CALL 调 KAREL 通讯标准块时丢程序号，报警 APSH-000 "MM:Robot_Socket_Closed"，同刻可能伴随 SYST-034（HOLD signal from SOP/UOP is lost）。在报错指令前加 10 秒延时...">
 <link rel="canonical" href="https://misakanet.org/lessons/症状fanuc-机器人每天凌晨第一次抓件执行到-call-调-karel-通讯标准块时丢程序号报警-apsh-000-mmrobot-socket-cl/">
-<meta property="og:title" content="症状：FANUC 机器人每天凌晨第一次抓件执行到 CALL 调 KAREL 通讯标准块时丢程序号，报警 APSH-000 "MM:Robot_Socket_Cl">
+<meta property="og:title" content="每天凌晨第一次抓件丢程序号并报 APSH-000：上位服务器午夜有秒级不可用窗口，加 10 秒延时只是掩盖触发源">
 <meta property="og:description" content="症状：FANUC 机器人每天凌晨第一次抓件执行到 CALL 调 KAREL 通讯标准块时丢程序号，报警 APSH-000 "MM:Robot_Socket_Closed"，同刻可能伴随 SYST-034（HOLD signal from SOP/UOP is lost）。在报错指令前加 10 秒延时...">
 <meta property="og:url" content="https://misakanet.org/lessons/症状fanuc-机器人每天凌晨第一次抓件执行到-call-调-karel-通讯标准块时丢程序号报警-apsh-000-mmrobot-socket-cl/">
 <!-- design-tokens:start -->
@@ -183,7 +183,7 @@
 </style>
 </head>
 <body>
-<h1>症状：FANUC 机器人每天凌晨第一次抓件执行到 CALL 调 KAREL 通讯标准块时丢程序号，报警 APSH-000 "MM:Robot_Socket_Cl</h1>
+<h1>每天凌晨第一次抓件丢程序号并报 APSH-000：上位服务器午夜有秒级不可用窗口，加 10 秒延时只是掩盖触发源</h1>
 <div class="meta">Domain: <a href="/topics/fanuc/">fanuc</a> · <span class="evidence" title="A maintainer accepted the intake">Evidence E1 — Maintainer reviewed</span></div>
 <div class="tags"><span class="tag">fanuc</span><span class="tag">call</span><span class="tag">karel</span></div>
 <div class="section">
@@ -194,7 +194,7 @@
 <h2>Problem</h2><p>症状：FANUC 机器人每天凌晨第一次抓件执行到 CALL 调 KAREL 通讯标准块时丢程序号，报警 APSH-000 "MM:Robot_Socket_Closed"，同刻可能伴随 SYST-034（HOLD signal from SOP/UOP is lost）。在报错指令前加 10 秒延时后当晚不复发。</p><h2>Root Cause</h2><p>两层：</p><ol><li>触发源：上位服务器在午夜前后有秒级不可用窗口（计划任务重启/服务回收），首次 TCP 握手撞上窗口，MSG_CONNECT 失败。</li><li>放大器：KAREL 标准块把所有错误统一 POST_ERR(err_code, msg, 0, ERR_ABORT)，而 KAREL 手册 A.16.16 定义 POST_ERR 第 4 参 severity：0=WARNING 不影响执行 / 1=PAUSE 全任务暂停+停 motion / 2=ABORT 取消所有任务。severity=2 会把调用它的 TP 程序一并取消——一次 1-2 秒的连接失败放大成丢程序号。同一标准块里 info 消息却用 severity=0（如 POST_ERR(38100,'...',0,0)），错误路径无分级、无重试。</li></ol><h2>Fix</h2><ol><li>通讯类错误加重试：MSG_CONNECT 失败后 DELAY 数秒重试 2-3 次再定性（FANUC 手册 MSG_CONNECT 示例自带 DISCO+重试一次）；</li><li>可恢复错误 severity 降级 2→1（PAUSE，不丢程序）或 0+状态寄存器回传让 TP 层决定；注意 TP 层重试护栏必须以库先降级为前置，否则 severity=2 先取消所有任务，护栏永远不可达；</li><li>查上位午夜计划任务，挪窗或做连接优雅化。</li></ol><h2>Verification</h2><p>字节码层核对 POST_ERR 第 4 参：pcode 解包后调用点尾部为 27 &lt;i32BE 2&gt; 31 00 0a（sev2）或 27 9d 31 00 0a（sev1=PAUSE），对照手册 A.16.16 语义；整改后连续 7 天观察凌晨第一次抓件：零丢程序号且 APSH-000 归零。</p><p>字节码核对 POST_ERR 第4参=立即数2（尾部 27 00 00 00 02 31 00 0a）；整改后连续7天凌晨首次抓件零丢程序号、APSH-000归零。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/症状fanuc-机器人每天凌晨第一次抓件执行到-call-调-karel.md">View on GitHub →</a></p></div>
-<div class="section"><h2>Search</h2><p><a href="/search/?q=症状：FANUC 机器人每天凌晨第一次抓件执行到 CALL 调 KAREL 通讯标准块时丢程序号，报警 APSH-000 "MM:Robot_Socket_Cl">Find related lessons →</a></p></div>
+<div class="section"><h2>Search</h2><p><a href="/search/?q=每天凌晨第一次抓件丢程序号并报 APSH-000：上位服务器午夜有秒级不可用窗口，加 10 秒延时只是掩盖触发源">Find related lessons →</a></p></div>
 <div class="back"><a href="/">← Back to MisakaNet</a> · <a href="/search/">Search lessons</a></div>
 <footer class="footer">
 <!-- site-links:start -->

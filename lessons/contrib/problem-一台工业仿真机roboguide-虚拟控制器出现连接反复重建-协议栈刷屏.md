@@ -1,5 +1,5 @@
 ---
-title: "Problem 一台工业仿真机（ROBOGUIDE 虚拟控制器）出现「连接反复重建 / 协议栈刷屏 / 客户端永远登录不上」的**网络/协议症状**， 排查了半"
+title: "看门狗把常驻空闲的辅助宿主判成假活并断电重启，制造出「连接反复重建、协议栈刷屏」这类像网络故障的假象"
 domain: "mcp"
 tags:
   - "event-count-is-not-a-health-signal"

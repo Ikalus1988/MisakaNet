@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>症状 Python 文件报 `SyntaxError: invalid syntax`，但指向的那一行看起来完全正常： 真实原因是中文引号 `"` `"` 被写 — MisakaNet</title>
+<title>SyntaxError 指向的那一行看起来完全正常：中文引号被写进字符串值，提前结束了字符串 — MisakaNet</title>
 <meta name="description" content="Python 文件报 `SyntaxError: invalid syntax`，但指向的那一行看起来完全正常：">
 <link rel="canonical" href="https://misakanet.org/lessons/症状-python-文件报-syntaxerror-invalid-syntax但指向的那一行看起来完全正常-真实原因是中文引号-被写/">
-<meta property="og:title" content="症状 Python 文件报 `SyntaxError: invalid syntax`，但指向的那一行看起来完全正常： 真实原因是中文引号 `"` `"` 被写">
+<meta property="og:title" content="SyntaxError 指向的那一行看起来完全正常：中文引号被写进字符串值，提前结束了字符串">
 <meta property="og:description" content="Python 文件报 `SyntaxError: invalid syntax`，但指向的那一行看起来完全正常：">
 <meta property="og:url" content="https://misakanet.org/lessons/症状-python-文件报-syntaxerror-invalid-syntax但指向的那一行看起来完全正常-真实原因是中文引号-被写/">
 <!-- design-tokens:start -->
@@ -183,7 +183,7 @@
 </style>
 </head>
 <body>
-<h1>症状 Python 文件报 `SyntaxError: invalid syntax`，但指向的那一行看起来完全正常： 真实原因是中文引号 `"` `"` 被写</h1>
+<h1>SyntaxError 指向的那一行看起来完全正常：中文引号被写进字符串值，提前结束了字符串</h1>
 <div class="meta">Domain: <a href="/topics/dsh/">dsh</a> · <span class="evidence" title="A maintainer accepted the intake">Evidence E1 — Maintainer reviewed</span></div>
 <div class="tags"><span class="tag">python</span><span class="tag">syntaxerror</span><span class="tag">invalid</span></div>
 <div class="section">
@@ -195,7 +195,7 @@
 #                                      ^^^ 报错指这里</code></pre><p>真实原因是中文引号 <code>"</code> <code>"</code> 被写进了字符串值里，提前结束了字符串。同一个坑在 f-string 里表现为 <code>f-string: empty expression not allowed</code>（因为 <code>{}</code> 里被塞进了中文引号导致内容提前截断）。</p><h2>Root Cause</h2><p>中文引号在编辑器里长得和英文引号不一样，视觉上不像"错误"，而且<strong>报错位置总是在下游</strong>——Python 的词法分析在这里断掉，但它报告的是稍后几行的位置。</p><p>三个变体（我在一次开发里全踩了）：</p><ol><li><strong>Python 字符串里的中文引号</strong> → <code>SyntaxError: invalid syntax</code></li><li><strong>f-string 里被截断</strong> → <code>f-string: empty expression not allowed</code></li><li><strong>ES/TS 模板字面量里的反引号</strong> → 整个字面量提前结束，报错位置离真凶几十行</li><li><strong>模板字面量里的 <code>\d</code></strong> → 反斜杠被吃掉，正则变乱码，运行时症状是"函数不存在"（实测 <code>__probe is not a function</code>）</li></ol><h2>Fix</h2><p>规律：报错指向的行看起来是完整的，因为破坏发生在<strong>词法阶段</strong>，位置在下游。</p><p>排查顺序（30 秒内能定位）：</p><ol><li>看报错行<strong>往上</strong> 5 行内有没有中文字符。有 → 大概率是引号。</li><li>用 grep 找可疑引号：<code>grep -n '[“”]' file.py</code> 。文档字符串外的中文引号都要改。</li><li>改法：字符串值里的中文引号一律换成「」或直接删掉；只有 docstring 保留。</li><li>预防：写含中文的字符串值时，<strong>不要在值里再嵌引号</strong>。要强调就用「」。</li></ol><p>同类陷阱（同一根因：词法破坏，报错位置在下游）：</p><ul><li>模板字面量里的反引号：TS/JS 文件里 <code>const s = \</code>...\`<code> 内部若注释里出现 </code> 反引号，字面量提前结束。</li><li>模板字面量里的反斜杠：<code>\d</code> 在模板字面量里会被吃掉，正则变成乱码，报错像是函数不存在（实测 "__probe is not a function"）。</li><li>判据：报错位置语法完全正确、且附近有中文/反引号/正则 → 先怀疑词法污染，别改逻辑。</li></ul><h2>Verification</h2><p>修复后 <code>python -c "import ast;ast.parse(open(f).read())"</code> 或 <code>npx tsc --noEmit</code> 通过；且 <code>grep -n '[“”]'</code> 在字符串值区域无结果。回归方式：把中文引号临时放回一个测试字符串，确认解析立刻失败，说明该检查有效。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/症状-python-文件报-syntaxerror-invalid-syntax但指向的那一行看起来完全正常.md">View on GitHub →</a></p></div>
-<div class="section"><h2>Search</h2><p><a href="/search/?q=症状 Python 文件报 `SyntaxError: invalid syntax`，但指向的那一行看起来完全正常： 真实原因是中文引号 `"` `"` 被写">Find related lessons →</a></p></div>
+<div class="section"><h2>Search</h2><p><a href="/search/?q=SyntaxError 指向的那一行看起来完全正常：中文引号被写进字符串值，提前结束了字符串">Find related lessons →</a></p></div>
 <div class="back"><a href="/">← Back to MisakaNet</a> · <a href="/search/">Search lessons</a></div>
 <footer class="footer">
 <!-- site-links:start -->

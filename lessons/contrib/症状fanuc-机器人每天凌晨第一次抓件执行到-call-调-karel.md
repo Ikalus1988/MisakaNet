@@ -1,5 +1,5 @@
 ---
-title: "症状：FANUC 机器人每天凌晨第一次抓件执行到 CALL 调 KAREL 通讯标准块时丢程序号，报警 APSH-000 \"MM:Robot_Socket_Cl"
+title: "每天凌晨第一次抓件丢程序号并报 APSH-000：上位服务器午夜有秒级不可用窗口，加 10 秒延时只是掩盖触发源"
 domain: "fanuc"
 tags:
   - "fanuc"

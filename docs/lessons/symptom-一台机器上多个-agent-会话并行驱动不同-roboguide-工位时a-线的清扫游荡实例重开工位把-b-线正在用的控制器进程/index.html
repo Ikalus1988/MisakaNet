@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Symptom 一台机器上多个 agent 会话并行驱动不同 ROBOGUIDE 工位时：A 线的「清扫游荡实例/重开工位」把 B 线**正在用的控制器进程** — MisakaNet</title>
+<title>多工位克隆共用一套端口表：一条线的「清扫孤儿实例」会杀掉另一条线正在用的控制器，交接时端口还被假活进程占着 — MisakaNet</title>
 <meta name="description" content="一台机器上多个 agent 会话并行驱动不同 ROBOGUIDE 工位时：A 线的「清扫游荡实例/重开工位」把 B 线**正在用的控制器进程**当孤儿杀掉（B 线采集/实验当场报废）；交接时还会发现端口被一个假活进程全部占着，新控制器起不来或串台。">
 <link rel="canonical" href="https://misakanet.org/lessons/symptom-一台机器上多个-agent-会话并行驱动不同-roboguide-工位时a-线的清扫游荡实例重开工位把-b-线正在用的控制器进程/">
-<meta property="og:title" content="Symptom 一台机器上多个 agent 会话并行驱动不同 ROBOGUIDE 工位时：A 线的「清扫游荡实例/重开工位」把 B 线**正在用的控制器进程**">
+<meta property="og:title" content="多工位克隆共用一套端口表：一条线的「清扫孤儿实例」会杀掉另一条线正在用的控制器，交接时端口还被假活进程占着">
 <meta property="og:description" content="一台机器上多个 agent 会话并行驱动不同 ROBOGUIDE 工位时：A 线的「清扫游荡实例/重开工位」把 B 线**正在用的控制器进程**当孤儿杀掉（B 线采集/实验当场报废）；交接时还会发现端口被一个假活进程全部占着，新控制器起不来或串台。">
 <meta property="og:url" content="https://misakanet.org/lessons/symptom-一台机器上多个-agent-会话并行驱动不同-roboguide-工位时a-线的清扫游荡实例重开工位把-b-线正在用的控制器进程/">
 <!-- design-tokens:start -->
@@ -183,7 +183,7 @@
 </style>
 </head>
 <body>
-<h1>Symptom 一台机器上多个 agent 会话并行驱动不同 ROBOGUIDE 工位时：A 线的「清扫游荡实例/重开工位」把 B 线**正在用的控制器进程**</h1>
+<h1>多工位克隆共用一套端口表：一条线的「清扫孤儿实例」会杀掉另一条线正在用的控制器，交接时端口还被假活进程占着</h1>
 <div class="meta">Domain: <a href="/topics/mcp/">mcp</a> · <span class="evidence" title="A maintainer accepted the intake">Evidence E1 — Maintainer reviewed</span></div>
 <div class="tags"><span class="tag">get-nettcpconnection</span><span class="tag">services.txt</span><span class="tag">agent</span></div>
 <div class="section">
@@ -194,7 +194,7 @@
 <h2>Problem</h2><p>一台机器上多个 agent 会话并行驱动不同 ROBOGUIDE 工位时：A 线的「清扫游荡实例/重开工位」把 B 线<strong>正在用的控制器进程</strong>当孤儿杀掉（B 线采集/实验当场报废）；交接时还会发现端口被一个假活进程全部占着，新控制器起不来或串台。</p><h2>Root Cause</h2><p>两个叠加事实：①多工位克隆自同一模板时 <code>services.txt</code> 端口配置<strong>完全相同</strong>（RPC/HTTP/CGTP/FTP/Telnet/TP 各端口一致）⇒ 本机实为<strong>单控制器时分复用</strong>，任何时刻只能跑一台；②清扫脚本的「游荡/孤儿」判据是「进程父 PID 不在存活表即杀」——并行会话的控制器进程常以已死进程为父（启动编排差异），被误判成僵尸；控制器崩溃（内存访问违例家族）后 Virtual Robot 进程会<strong>假活残留</strong>并独占全部端口，加剧误判。</p><h2>Fix</h2><p>多会话共机纪律：清扫前先按<strong>命令行归属</strong>（含工位路径）+ 跨会话知会确认；孤儿判据加「镜像名族+启动时间窗+命令行归属」三重校验再杀；交接/重开前用定点断电（只杀本工位账本登记的控制器 pid，带镜像名校验）清掉假活占端口者，交接后验证端口全空再通知下一方。</p><h2>Verification</h2><p>判据：交接时六个控制器端口（RPC/HTTP/CGTP/FTP/Telnet/TP）<code>Get-NetTCPConnection -State Listen</code> 全无监听=PASS；清扫后对方会话的控制器仍存活（进程账本可查）=PASS；任一端口被无主进程持有=FAIL。</p><p>交接前后六端口监听全空=PASS；对侧控制器进程存活=PASS；误杀或端口被占=FAIL</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/symptom-一台机器上多个-agent-会话并行驱动不同-roboguide-工位时a.md">View on GitHub →</a></p></div>
-<div class="section"><h2>Search</h2><p><a href="/search/?q=Symptom 一台机器上多个 agent 会话并行驱动不同 ROBOGUIDE 工位时：A 线的「清扫游荡实例/重开工位」把 B 线**正在用的控制器进程**">Find related lessons →</a></p></div>
+<div class="section"><h2>Search</h2><p><a href="/search/?q=多工位克隆共用一套端口表：一条线的「清扫孤儿实例」会杀掉另一条线正在用的控制器，交接时端口还被假活进程占着">Find related lessons →</a></p></div>
 <div class="back"><a href="/">← Back to MisakaNet</a> · <a href="/search/">Search lessons</a></div>
 <footer class="footer">
 <!-- site-links:start -->

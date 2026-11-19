@@ -616,9 +616,9 @@
 - [从 PDF 代码清单提取源码编译失败：折行与分页符把逻辑行拆开](contrib/problem-extracting-program-source-from-pdf-code-listings.md) | mcp | "problem", "extracting", "program" | intake-4607
 - [Problem feishu 文档 doc_update 的 `select_title` 按标题替换章节时返回 "No heading found match](contrib/problem-feishu-文档-doc-update-的-select-title-按标题替换章节时返回-no.md) | feishu | "no", "select_title", "feishu" | intake-5006
 - [Problem `gh pr create --base <fork-branch>` 想把 stacked PR 挂到上游仓库里另一个 PR 的 head 分](contrib/problem-gh-pr-create-base-fork-branch-想把-stacked-pr.md) | mcp | "user-branch", "update_lessons_json.py", "git" | intake-4993
-- [Problem GUI 状态机里「残留状态」会以**同貌反治**的形态坑人：界面上两个状态长得几乎一样（同一标题、同一按钮），但处理动作完全相反。实例：程序创建](contrib/problem-gui-5146.md) | fanuc | "exists", "gui" | intake-5146
+- [GUI 的「残留屏」与「同名已存在」屏共用同一版面和同一个按钮，处置却相反：同貌反治只能按状态判别，按外观判别会永远点无效按钮](contrib/problem-gui-5146.md) | fanuc | "exists", "gui" | intake-5146
 - [Problem GUI 自动化里注入鼠标点击（mouse_event 类）落在目标控件上却**毫无效果**：坐标几何正确（点位在列表行内）、控件枚举正常、点击](contrib/problem-gui-自动化里注入鼠标点击mouse-event.md) | windows | "gui", "mouse", "event" | intake-4733
-- [Problem GUI 自动化里「点击毫无反应」有三种截然不同的病因，混治会越修越糟：①**死会话**——后端/控制器断连后前端 DOM 照常渲染、截图 OCR](contrib/problem-gui.md) | mcp | "gui", "dom", "ocr" | intake-5132
+- [「点击毫无反应」有三种互斥病因（死会话、开关语义、渲染时序）：按坐标反复重试会把三种都治得更糟](contrib/problem-gui.md) | mcp | "gui", "dom", "ocr" | intake-5132
 - [SwiftPM 新增 XCTest 方法后 --skip-build 报 No matching test cases](contrib/problem-in-a-swiftpm-package-after-adding-new-xctest.md) | mcp | "problem", "in", "swiftpm" | intake-4020
 - [AppKit 文档应用后台任务结束后菜单项灰着：菜单校验时机不对](contrib/problem-in-an-appkit-document-style-app-after-a-background.md) | development | "problem", "in", "an" | intake-4019
 - [Vite/Rollup 构建报 is not exported by：CommonJS 文件被 ESM 命名导入](contrib/problem-js-项目viterollup-打包-共享工具层构建报x-is-not-exported-by.md) | windows | "problem", "js", "vite" | intake-4672
@@ -634,7 +634,7 @@
 - [Problem Windows 上 COM 本地服务器崩溃导致客户端永久等待时，症状极具误导性：客户端界面只剩「正在连接/Connecting…」，进程活着但零](contrib/problem-windows-上-com.md) | windows | "windows", "com", "connecting" | intake-4872
 - [VB6 自绘树控件只认真实输入链路：合成消息不触发选中，老化实例还会静默降级](contrib/problem-windows-上自动化-vb6-自绘树控件如.md) | windows | "problem", "windows", "vb6" | intake-4600
 - [git commit -m 里用反引号引命令：提交信息里的内容被 shell 吃掉](contrib/problem-writing-a-git-commit-message-that-quotes-a-command.md) | mcp | "problem", "writing", "git" | intake-3976
-- [Problem 一台工业仿真机（ROBOGUIDE 虚拟控制器）出现「连接反复重建 / 协议栈刷屏 / 客户端永远登录不上」的**网络/协议症状**， 排查了半](contrib/problem-一台工业仿真机roboguide-虚拟控制器出现连接反复重建-协议栈刷屏.md) | mcp | "event-count-is-not-a-health-signal", "roboguide" | intake-5262
+- [看门狗把常驻空闲的辅助宿主判成假活并断电重启，制造出「连接反复重建、协议栈刷屏」这类像网络故障的假象](contrib/problem-一台工业仿真机roboguide-虚拟控制器出现连接反复重建-协议栈刷屏.md) | mcp | "event-count-is-not-a-health-signal", "roboguide" | intake-5262
 - [对拍 405 行 0 偏差仍全错：golden 与提取层同源，只锁公式层不锁输入](contrib/problem-一套数值引擎用与官方-excel-工具逐行对拍-405-行-0.md) | mcp | "problem", "excel", "bug" | intake-4490
 - [工业机器人 ASCII↔二进制编译器：两级判据全绿，补缺口语句的编码却是错的](contrib/problem-为工业机器人-ascii-源码.md) | fanuc | "problem", "ascii", "disassemble" | intake-4658
 - [CI 敏感词黑名单把敏感词写进仓库：防泄密闸自己成了泄密源](contrib/problem-为防止敏感字面量口令序列号内部项目名等进入代码仓在-ci.md) | mcp | "problem", "ci", "grep" | intake-4670
@@ -647,7 +647,7 @@
 - [同时装 dsh-free-search 与 dsh-web-search-free：fetchProvider 报 not registered](contrib/problem-同时安装-dsh-free-search-和-dsh-web-search-free.md) | dsh | "problem", "dsh", "free" | intake-4539
 - [FANUC FTP 上传 .tp 报 550：先分清路径层、内容层、选项层](contrib/problem-向-fanuc-虚拟真机器人-ftp-上传程序文件md-设备时-550.md) | fanuc | "problem", "fanuc", "ftp" | intake-4523
 - [grep 二进制找新符号返回 0：前端资产被压缩嵌入，裸 grep 是假阴性](contrib/problem-想验证新代码真的编进产物了直觉做法是-grep-二进制里的新符号.md) | mcp | "problem", "grep" | intake-3873
-- [Problem 手写解析器 + 合成夹具测试全绿后，对真实语料横扫出现**统计口径归零**：解析位置记录的计数恒为 0（几万个程序文件"零位置记录"），但语句解](contrib/problem-手写解析器.md) | mcp | "blocks_seen", "records_parsed", "seen" | intake-5172
+- [手写解析器对真实语料的格式偏差静默跳过：语句数全对，位置计数却恒为 0，合成夹具全绿掩盖了统计口径归零](contrib/problem-手写解析器.md) | mcp | "blocks_seen", "records_parsed", "seen" | intake-5172
 - [打包目录累积历史产物：发布脚本 find 到旧 zip 发了出去](contrib/problem-打包目录会累积历史版本的产物例如-dist-或-bundle-里同时躺着-app.md) | mcp | "problem", "dist", "bundle" | intake-3872
 - [封装 FANUC LS→TP 编译器：robot.ini 私有格式 + GUI 错误框静默挂死](contrib/problem-把-fanuc-官方-lstp-编译器winolpc-工具链-maketpexe封装进-windows.md) | fanuc | "problem", "fanuc", "ls" | intake-4267
 - [后台跑长脚本接 | tail：输出文件 0 字节，进度全丢](contrib/problem-把一个跑约-4-分钟的扫描脚本丢到后台执行顺手接了-tail.md) | mcp | "problem", "tail" | intake-3890
@@ -661,7 +661,7 @@
 - [飞书 doc_update 的选择器粒度太粗：静默丢内容](contrib/problem-用飞书文档-mcp-的-doc-update.md) | feishu | "problem", "mcp", "doc" | intake-3968
 - [容量水位分级：Number(null)=0 让「取不到」被判成告急](contrib/problem-给剩余容量做水位分级剩余-10-判告急红25-判偏低黄取不到判.md) | mcp | "problem", "unknown", "tp" | intake-3889
 - [Problem 自动化脚本在「虚拟控制器引导完成」后立刻发起 HTTP/RPC 读写，全部连接被拒（WinError 10061），实验整段报废；引导判据用的是](contrib/problem-自动化脚本在虚拟控制器引导完成后立刻发起-httprpc.md) | mcp | "http", "rpc", "winerror" | intake-4724
-- [Problem 自动化读一个「网页里嵌的设备界面」（机器人示教器、PLC 的 Web 组态、远程 HMI…）时， 网页会用**自己的 HTML 覆盖层**画出一](contrib/problem-自动化读一个网页里嵌的设备界面机器人示教器plc-的-web-组态远程.md) | mcp | "plc", "web", "hmi" | intake-5242
+- [网页会用自己的 HTML 覆盖层画出像设备的界面：外层点得动，设备本身根本没进那个状态](contrib/problem-自动化读一个网页里嵌的设备界面机器人示教器plc-的-web-组态远程.md) | mcp | "plc", "web", "hmi" | intake-5242
 - [Problem 自动化驱动「设备内置 Web TP」（浏览器形态的示教器）时三个连环陷阱，症状全是「命令发了、返回 0x0 成功、界面纹丝不动」：①登录接口是*](contrib/problem-自动化驱动设备内置-web.md) | fanuc | "web", "tp", "x0" | intake-4980
 - [Problem 驱动 WinForms/HTML 混合 GUI（仿真器示教器类）做自动化操作时连撞三个坑：①数字输入弹窗是灰底灰字渲染，OCR 词表**零命中*](contrib/problem-驱动-winformshtml-混合.md) | mcp | "winforms", "html", "gui" | intake-5107
 - [用反汇编渲染文本搜 CALL 判断修磨/换帽调用：大面积假阴性](contrib/problem.md) | fanuc | "problem", "call" | intake-3222
@@ -794,11 +794,11 @@
 - [SwiftUI ScrollView scrollTo no effect unless .id() on each row and scrollTo called in onChange](contrib/swiftui-scrollview-scrollto-doesnt-scroll.md) | development | "swift", "swiftui", "scrollview", "scrollviewreader", "scrollto", "focusstate", "macos", "ios" | 
 - [SwiftUI 动态字体三个雷：lineLimit(1) 挡不住压缩、ContentSizeCategory 没有 isAccessibilitySize、大字号必须分级封顶](contrib/swiftui-动态字体三个雷linelimit1-挡不住压缩contentsizecategory-没有.md) | mobile | "swiftui", "ios", "dynamic-type", "line-limit", "fixed-size", "minimum-scale-factor", "layout" | intake-4147
 - [SwiftUI 里 Color.clear 不是「空占位」：会把整张卡片撑到屏幕高度](contrib/swiftui-里-colorclear-不是空占位会把整张卡片撑到屏幕高度.md) | mobile | "swiftui", "ios", "layout", "color-clear", "spacer", "hstack", "flexible-view", "geometry" | intake-4181
-- [Symptom feishu-mcp-pro 的 doc_insert 对「文档靠后位置的顶层块」作 after_block_id 锚点时报错 `Block <](contrib/symptom-feishu-mcp-pro-的-doc-insert-对文档靠后位置的顶层块作-after.md) | feishu | "not", "feishu", "mcp" | intake-5197
-- [Symptom GUI 自动化的 OCR 突然「读不到目标面板」：词表全是无关内容（3D 视口纹理/别的窗口/工具栏），锚点点击也全部落空或点进无关区域；但用](contrib/symptom-gui-自动化的-ocr-突然读不到目标面板词表全是无关内容3d.md) | mcp | "gui", "ocr" | intake-5165
+- [doc_insert 用文档靠后的顶层块作锚点报 Block not found：块索引没覆盖到那么深，锚点要往前挪或改串行](contrib/symptom-feishu-mcp-pro-的-doc-insert-对文档靠后位置的顶层块作-after.md) | feishu | "not", "feishu", "mcp" | intake-5197
+- [OCR 读屏拍的是被遮挡的可见层：词表全是别的面板，PrintWindow 直取窗口句柄才读得到真面板](contrib/symptom-gui-自动化的-ocr-突然读不到目标面板词表全是无关内容3d.md) | mcp | "gui", "ocr" | intake-5165
 - [Symptom On DeepSeek Harness (DSH) desktop, an agent tried to fix a broken half-i](contrib/symptom-on-deepseek-harness-dsh-desktop-an-agent-tried-to.md) | windows | "on", "to", "by" | intake-5028
-- [Symptom 一台机器上多个 agent 会话并行驱动不同 ROBOGUIDE 工位时：A 线的「清扫游荡实例/重开工位」把 B 线**正在用的控制器进程**](contrib/symptom-一台机器上多个-agent-会话并行驱动不同-roboguide-工位时a.md) | mcp | "get-nettcpconnection", "services.txt", "agent" | intake-5164
-- [Symptom: 一次会话里的临时扫描数字（"ON[0] 1679 个文件命中""CHGD 约 14 台（反相 10/SSO 3）"）被写进对外 issue 评](contrib/symptom-一次会话里的临时扫描数字on0-1679-个文件命中chgd-约-14-台反相-10sso.md) | mcp | "on", "chgd", "sso" | intake-5227
+- [多工位克隆共用一套端口表：一条线的「清扫孤儿实例」会杀掉另一条线正在用的控制器，交接时端口还被假活进程占着](contrib/symptom-一台机器上多个-agent-会话并行驱动不同-roboguide-工位时a.md) | mcp | "get-nettcpconnection", "services.txt", "agent" | intake-5164
+- [会话内 ad-hoc 探针的数字被当事实写进对外评论：不固化成探针就引用，只能事后发勘误收回](contrib/symptom-一次会话里的临时扫描数字on0-1679-个文件命中chgd-约-14-台反相-10sso.md) | mcp | "on", "chgd", "sso" | intake-5227
 - [Symptom 桌面应用（Tauri v1）「选择文件夹添加备份」，选到内容多的目录（几千个文件的整线备份库）软件直接卡死无响应。小目录完全正常。 Root C](contrib/symptom-桌面应用tauri.md) | fanuc | "scan_directory", "read_backup_files", "settimeout-0" | intake-4691
 - [FANUC DCS .dg 固定宽度解析：校准脚本报状态列非 OK=0，真语料却有数千 CHGD](contrib/symptom-解析工业固定宽度文本fanuc-dcs-dg-安全链表时校准脚本报状态列非-ok.md) | fanuc | "symptom", "fanuc", "dcs" | intake-4683
 - [Tauri 更新弹窗「去下载页」点了没反应：按钮在，打开外部浏览器失败](contrib/symptom.md) | mcp | "symptom", "tauri" | intake-4685
@@ -964,18 +964,18 @@
 - [用脚本按大括号配对替换 JS 函数：模板字符串里的 ${} 会把配对带偏，整份文件被截断](contrib/用脚本按大括号配对替换-js-函数被模板字符串带偏.md) | devops | "javascript", "refactor", "brace-matching", "template-literal", "file-corruption" | intake-4554
 - [DSH preset 里 tools.restrict 一次摘 41 个 MCP 工具：全部失败](contrib/症状-dsh-021-rc5-上想用-ctxtoolsrestrictdeny-在某个-agent-preset-里把.md) | windows | "dsh", "rc", "ctx" | intake-4477
 - [hyperframes/puppeteer 下载 Chrome 只有 30KB/s：走 Google CDN 的坑](contrib/症状-npx-hyperframes-browser-ensure或任何-puppeteerchrome-for.md) | windows | "npx", "hyperframes", "browser" | intake-4417
-- [症状 Python 文件报 `SyntaxError: invalid syntax`，但指向的那一行看起来完全正常： 真实原因是中文引号 `"` `"` 被写](contrib/症状-python-文件报-syntaxerror-invalid-syntax但指向的那一行看起来完全正常.md) | dsh | "python", "syntaxerror", "invalid" | intake-5235
+- [SyntaxError 指向的那一行看起来完全正常：中文引号被写进字符串值，提前结束了字符串](contrib/症状-python-文件报-syntaxerror-invalid-syntax但指向的那一行看起来完全正常.md) | dsh | "python", "syntaxerror", "invalid" | intake-5235
 - [Windows 上 curl 通、Node fetch 全失败：Node 不读系统证书库](contrib/症状-windows-上-curl-能正常访问-githubnpm走-schannel-windows.md) | windows | "windows", "curl", "github" | intake-4416
-- [症状 一个板间链路审查工具有两条互相冲突的要求： - 从 STM32CubeMX 的 .ioc 抽出 13 条板间链路（同名外设 + TX↔RX 引脚交叉，可信](contrib/症状-一个板间链路审查工具有两条互相冲突的要求-从-stm32cubemx-的-ioc.md) | dsh | "if", "stm32cubemx", "ioc" | intake-5233
+- [推断出来的 13 条链路全部标 inferred，而纪律又不许推断结果判 fail：出口是把推断降级成建议，不是放宽推断](contrib/症状-一个板间链路审查工具有两条互相冲突的要求-从-stm32cubemx-的-ioc.md) | dsh | "if", "stm32cubemx", "ioc" | intake-5233
 - [症状 下游视觉核对工具（看图模型/截图分析）按 `t26.05.png` 这类"秒数.帧号"的直觉拼绝对路径去读抽帧图，直接报： Input image not](contrib/症状-下游视觉核对工具看图模型截图分析按-t2605png.md) | windows | "t26.05.png", "t26_05.png", "t26_45.png" | intake-4804
 - [症状 在 PowerShell 里用 `& $yt-dlp "bilisearch5:关键词" --print "%(title)s"` 抓搜索结果，标题里的中](contrib/症状-在-powershell-里用-yt-dlp-bilisearch5关键词-print-titles.md) | windows | "node", "curl.exe", "powershell" | intake-4899
-- [症状 在 Windows 的 agent 沙箱里启动一个长驻后端（uvicorn / node server），启动命令返回成功、同一次 bash 调用里 cu](contrib/症状-在-windows-的-agent-沙箱里启动一个长驻后端uvicorn-node.md) | windows | "nohup", "start", "windows" | intake-5237
-- [症状 带 CI 敏感词门（哈希 denylist 滑窗扫描，零明文）的仓库里，多 agent 会话按「同步/推送仓库」的指令直接 `git push`，把本地积](contrib/症状-带-ci-敏感词门哈希-denylist-滑窗扫描零明文的仓库里多-agent.md) | mcp | "git", "ci", "denylist" | intake-5226
+- [沙箱用 Job Object 加 KILL_ON_JOB_CLOSE 管子进程：启动命令返回成功，下一次工具调用时进程已被回收](contrib/症状-在-windows-的-agent-沙箱里启动一个长驻后端uvicorn-node.md) | windows | "nohup", "start", "windows" | intake-5237
+- [带哈希 denylist 的仓库里直接 push 会泄露积压的未推历史：敏感串还留在工作注释和工位名里](contrib/症状-带-ci-敏感词门哈希-denylist-滑窗扫描零明文的仓库里多-agent.md) | mcp | "git", "ci", "denylist" | intake-5226
 - [症状 用 DSH（DeepSeek Harness）会话文件大小当「上下文要爆」的危险指标，写了「超 5 MB 就换会话，8 MB 必崩」的规则，还写进了体检脚](contrib/症状-用-dshdeepseek-harness会话文件大小当上下文要爆的危险指标写了超-5-mb.md) | dsh | "session.v4.jsonl.zstd", "dsh-compaction-tool-result-pruner", "session-stats" | intake-4898
-- [症状 调用一个编译接口，传了 `board=...`，返回 hex 看起来正常。但换了三个不同的板卡型号，**产出的 hex md5 完全一样**——说明 `b](contrib/症状-调用一个编译接口传了-board返回-hex.md) | dsh | "board", "extra-ignore", "board_fqbn" | intake-5238
-- [症状 写了一堆断言，全绿，于是认为机制建好了。实际把实现改回错的，测试**还是全绿**——断言永远为真，什么也没保护。 具体实例：一个"删除即失败"的断言机制，](contrib/症状.md) | dsh | "connected", "if", "cp" | intake-5236
+- [编译接口传了 board 却不生效、三种板卡产出同一个 hex：pydantic 默认 extra=ignore 把拼错的字段静默丢掉](contrib/症状-调用一个编译接口传了-board返回-hex.md) | dsh | "board", "extra-ignore", "board_fqbn" | intake-5238
+- [把实现改回错的，测试还是全绿：断言恒真，闸门退化无声](contrib/症状.md) | dsh | "connected", "if", "cp" | intake-5236
 - [DSH 桌面版装 dsh-windows-mcp：工具注入失败，惰性工具永久隐藏](contrib/症状dsh-桌面版022-rc1profile-desktop装-dsh-windows-mcp-024.md) | windows | "dsh", "rc", "profile" | intake-4606
-- [症状：FANUC 机器人每天凌晨第一次抓件执行到 CALL 调 KAREL 通讯标准块时丢程序号，报警 APSH-000 "MM:Robot_Socket_Cl](contrib/症状fanuc-机器人每天凌晨第一次抓件执行到-call-调-karel.md) | fanuc | "fanuc", "call", "karel" | intake-5265
+- [每天凌晨第一次抓件丢程序号并报 APSH-000：上位服务器午夜有秒级不可用窗口，加 10 秒延时只是掩盖触发源](contrib/症状fanuc-机器人每天凌晨第一次抓件执行到-call-调-karel.md) | fanuc | "fanuc", "call", "karel" | intake-5265
 - [症状：Node fetch 到某 Cloudflare Workers 端点报 `TypeError: fetch failed`，curl 报 `Connec](contrib/症状node-fetch-到某-cloudflare-workers-端点报-typeerror-fetch.md) | mcp | "curl", "node", "fetch" | intake-4879
 - [百度导航 SDK 鉴权错误码：-300 是网络错误，230 才是包名/安全码对不上](contrib/百度导航-sdk-鉴权错误码-300-是网络错误230-才是包名安全码对不上.md) | mobile | "baidu", "ios", "sdk", "auth", "error-code", "bundle-id", "230", "permission-check" | intake-4177
 - [给骑行记录加字段要改三个地方，少一个就「一半有、一半没有」](contrib/给骑行记录加字段要改三个地方少一个就一半有一半没有.md) | data | "data-integrity", "serialization", "ios", "nodejs", "schema", "optional-field", "backfill" | intake-4180

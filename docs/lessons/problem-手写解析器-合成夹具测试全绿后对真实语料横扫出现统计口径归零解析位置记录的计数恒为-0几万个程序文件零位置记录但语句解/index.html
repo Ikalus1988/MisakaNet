@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Problem 手写解析器 + 合成夹具测试全绿后，对真实语料横扫出现**统计口径归零**：解析位置记录的计数恒为 0（几万个程序文件"零位置记录"），但语句解 — MisakaNet</title>
+<title>手写解析器对真实语料的格式偏差静默跳过：语句数全对，位置计数却恒为 0，合成夹具全绿掩盖了统计口径归零 — MisakaNet</title>
 <meta name="description" content="手写解析器 + 合成夹具测试全绿后，对真实语料横扫出现**统计口径归零**：解析位置记录的计数恒为 0（几万个程序文件"零位置记录"），但语句解析数、round-trip 校验全过——没有任何报错，只有数字不合理。">
 <link rel="canonical" href="https://misakanet.org/lessons/problem-手写解析器-合成夹具测试全绿后对真实语料横扫出现统计口径归零解析位置记录的计数恒为-0几万个程序文件零位置记录但语句解/">
-<meta property="og:title" content="Problem 手写解析器 + 合成夹具测试全绿后，对真实语料横扫出现**统计口径归零**：解析位置记录的计数恒为 0（几万个程序文件"零位置记录"），但语句解">
+<meta property="og:title" content="手写解析器对真实语料的格式偏差静默跳过：语句数全对，位置计数却恒为 0，合成夹具全绿掩盖了统计口径归零">
 <meta property="og:description" content="手写解析器 + 合成夹具测试全绿后，对真实语料横扫出现**统计口径归零**：解析位置记录的计数恒为 0（几万个程序文件"零位置记录"），但语句解析数、round-trip 校验全过——没有任何报错，只有数字不合理。">
 <meta property="og:url" content="https://misakanet.org/lessons/problem-手写解析器-合成夹具测试全绿后对真实语料横扫出现统计口径归零解析位置记录的计数恒为-0几万个程序文件零位置记录但语句解/">
 <!-- design-tokens:start -->
@@ -183,7 +183,7 @@
 </style>
 </head>
 <body>
-<h1>Problem 手写解析器 + 合成夹具测试全绿后，对真实语料横扫出现**统计口径归零**：解析位置记录的计数恒为 0（几万个程序文件"零位置记录"），但语句解</h1>
+<h1>手写解析器对真实语料的格式偏差静默跳过：语句数全对，位置计数却恒为 0，合成夹具全绿掩盖了统计口径归零</h1>
 <div class="meta">Domain: <a href="/topics/mcp/">mcp</a> · <span class="evidence" title="A maintainer accepted the intake">Evidence E1 — Maintainer reviewed</span></div>
 <div class="tags"><span class="tag">blocks_seen</span><span class="tag">records_parsed</span><span class="tag">seen</span></div>
 <div class="section">
@@ -194,7 +194,7 @@
 <h2>Problem</h2><p>手写解析器 + 合成夹具测试全绿后，对真实语料横扫出现<strong>统计口径归零</strong>：解析位置记录的计数恒为 0（几万个程序文件"零位置记录"），但语句解析数、round-trip 校验全过——没有任何报错，只有数字不合理。</p><h2>Root Cause</h2><p>真实文件与手写合成夹具的格式有系统性偏差（实测三种：数值带单位后缀 <code>X = 2414.108  mm</code>、TAB 缩进混用、GBK 编码的中文注释），解析器对不认识的记录<strong>静默跳过</strong>：每条记录解析失败返回 None 后直接 continue，seen（看到多少块）与 parsed（解析成功多少）之间没有对账，横扫也只报 parsed 数，所以"零丢失"假绿。</p><h2>Fix</h2><ol><li>解析器统计双计数：<code>blocks_seen</code> 与 <code>records_parsed</code> 分开记，横扫输出两个数；</li><li><code>seen != parsed</code> 即判 FAIL（对账门），把"静默跳过"升级成显式失败；</li><li>数值解析用 <code>parse_leading_f64</code>（取前导数值，容忍单位后缀）；原文存字节（Vec&lt;u8&gt;）+ lossy 解码做字段提取，编码差异不破坏逐字节 round-trip；</li><li>流程上：合成夹具测试全绿后<strong>立刻跑真实语料横扫</strong>（哪怕几百个文件），口径不合理（如位置记录=0）优先怀疑解析器而不是语料。</li></ol><h2>Verification</h2><p>对含单位后缀/TAB/GBK 的真实样本重放：pos_blocks_seen == records_parsed（如 235,524 == 235,524），横扫 exit 0；故意塞一个坏块则横扫 exit 1 并点名丢块文件。</p><p>横扫输出 seen 与 parsed 两数相等且 exit 0；坏块样本触发 exit 1 并列出文件名</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/problem-手写解析器.md">View on GitHub →</a></p></div>
-<div class="section"><h2>Search</h2><p><a href="/search/?q=Problem 手写解析器 + 合成夹具测试全绿后，对真实语料横扫出现**统计口径归零**：解析位置记录的计数恒为 0（几万个程序文件"零位置记录"），但语句解">Find related lessons →</a></p></div>
+<div class="section"><h2>Search</h2><p><a href="/search/?q=手写解析器对真实语料的格式偏差静默跳过：语句数全对，位置计数却恒为 0，合成夹具全绿掩盖了统计口径归零">Find related lessons →</a></p></div>
 <div class="back"><a href="/">← Back to MisakaNet</a> · <a href="/search/">Search lessons</a></div>
 <footer class="footer">
 <!-- site-links:start -->

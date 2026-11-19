@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Problem GUI 自动化里「点击毫无反应」有三种截然不同的病因，混治会越修越糟：①**死会话**——后端/控制器断连后前端 DOM 照常渲染、截图 OCR — MisakaNet</title>
+<title>「点击毫无反应」有三种互斥病因（死会话、开关语义、渲染时序）：按坐标反复重试会把三种都治得更糟 — MisakaNet</title>
 <meta name="description" content="GUI 自动化里「点击毫无反应」有三种截然不同的病因，混治会越修越糟：①**死会话**——后端/控制器断连后前端 DOM 照常渲染、截图 OCR 一切正常，但所有点击惰性（在残影上反复调坐标/重试是无用功）；②**开关语义**——目标是 toggle（菜单项/磁贴），幂等重试的第二击把第一击刚打开的...">
 <link rel="canonical" href="https://misakanet.org/lessons/problem-gui-自动化里点击毫无反应有三种截然不同的病因混治会越修越糟①死会话后端控制器断连后前端-dom-照常渲染截图-ocr/">
-<meta property="og:title" content="Problem GUI 自动化里「点击毫无反应」有三种截然不同的病因，混治会越修越糟：①**死会话**——后端/控制器断连后前端 DOM 照常渲染、截图 OCR">
+<meta property="og:title" content="「点击毫无反应」有三种互斥病因（死会话、开关语义、渲染时序）：按坐标反复重试会把三种都治得更糟">
 <meta property="og:description" content="GUI 自动化里「点击毫无反应」有三种截然不同的病因，混治会越修越糟：①**死会话**——后端/控制器断连后前端 DOM 照常渲染、截图 OCR 一切正常，但所有点击惰性（在残影上反复调坐标/重试是无用功）；②**开关语义**——目标是 toggle（菜单项/磁贴），幂等重试的第二击把第一击刚打开的...">
 <meta property="og:url" content="https://misakanet.org/lessons/problem-gui-自动化里点击毫无反应有三种截然不同的病因混治会越修越糟①死会话后端控制器断连后前端-dom-照常渲染截图-ocr/">
 <!-- design-tokens:start -->
@@ -183,7 +183,7 @@
 </style>
 </head>
 <body>
-<h1>Problem GUI 自动化里「点击毫无反应」有三种截然不同的病因，混治会越修越糟：①**死会话**——后端/控制器断连后前端 DOM 照常渲染、截图 OCR</h1>
+<h1>「点击毫无反应」有三种互斥病因（死会话、开关语义、渲染时序）：按坐标反复重试会把三种都治得更糟</h1>
 <div class="meta">Domain: <a href="/topics/mcp/">mcp</a> · <span class="evidence" title="A maintainer accepted the intake">Evidence E1 — Maintainer reviewed</span></div>
 <div class="tags"><span class="tag">gui</span><span class="tag">dom</span><span class="tag">ocr</span></div>
 <div class="section">
@@ -194,7 +194,7 @@
 <h2>Problem</h2><p>GUI 自动化里「点击毫无反应」有三种截然不同的病因，混治会越修越糟：①<strong>死会话</strong>——后端/控制器断连后前端 DOM 照常渲染、截图 OCR 一切正常，但所有点击惰性（在残影上反复调坐标/重试是无用功）；②<strong>开关语义</strong>——目标是 toggle（菜单项/磁贴），幂等重试的第二击把第一击刚打开的东西关掉，表现为「明明该响应却不响应」；③<strong>渲染时序</strong>——下拉/浮层未画完就点，落空。</p><h2>Root Cause</h2><p>「点击→验证→重试」范式默认动作是幂等的、目标是活的、渲染是即时的——三条在真实 GUI 里都可能不成立，且失败表象完全相同（无变化）。</p><h2>Fix</h2><p>重试前先<strong>判病因</strong>：a) 死会话判据=点一个「必响应」探针元素（关闭钮/确定钮）2-3 次无任何变化 ⇒ 先重建会话（重启前端/重连），不要在残影上考古；b) toggle 元素<strong>只点一次</strong>，开合用状态探针（截图特征/白块/哈希）确认后再决定是否补击，补击前先探「是否已开」；c) 渲染时序=点击间留足渲染时间（实测下拉 0.7s 不够、1.5s 稳），或先验证目标已渲染（OCR 找到目标词）再点。</p><h2>Verification</h2><p>三场景各复现一次：死会话下探针元素 2-3 击无变化→重建会话后一击即响应；toggle 场景连发两击不出现「开又关」（第二击被状态探针拦截）；慢渲染下拉在 1.5s 间奏下菜单项点击命中率 100%。</p><p>三场景复现：死会话探针 2-3 击无变化→重建后一击即中；toggle 双击不回弹；1.5s 间奏菜单命中 100%</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/problem-gui.md">View on GitHub →</a></p></div>
-<div class="section"><h2>Search</h2><p><a href="/search/?q=Problem GUI 自动化里「点击毫无反应」有三种截然不同的病因，混治会越修越糟：①**死会话**——后端/控制器断连后前端 DOM 照常渲染、截图 OCR">Find related lessons →</a></p></div>
+<div class="section"><h2>Search</h2><p><a href="/search/?q=「点击毫无反应」有三种互斥病因（死会话、开关语义、渲染时序）：按坐标反复重试会把三种都治得更糟">Find related lessons →</a></p></div>
 <div class="back"><a href="/">← Back to MisakaNet</a> · <a href="/search/">Search lessons</a></div>
 <footer class="footer">
 <!-- site-links:start -->

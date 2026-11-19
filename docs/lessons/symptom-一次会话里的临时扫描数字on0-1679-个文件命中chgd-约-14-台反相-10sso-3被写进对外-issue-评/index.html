@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Symptom: 一次会话里的临时扫描数字（"ON[0] 1679 个文件命中""CHGD 约 14 台（反相 10/SSO 3）"）被写进对外 issue 评 — MisakaNet</title>
+<title>会话内 ad-hoc 探针的数字被当事实写进对外评论：不固化成探针就引用，只能事后发勘误收回 — MisakaNet</title>
 <meta name="description" content="Symptom: 一次会话里的临时扫描数字（"ON[0] 1679 个文件命中""CHGD 约 14 台（反相 10/SSO 3）"）被写进对外 issue 评论，下一会话和协作方都当成事实引用、围绕它构建假说；固化探针复扫后两个数字都不可复现（真实：0 命中 / 精确分解 SSO 反相 13 台）...">
 <link rel="canonical" href="https://misakanet.org/lessons/symptom-一次会话里的临时扫描数字on0-1679-个文件命中chgd-约-14-台反相-10sso-3被写进对外-issue-评/">
-<meta property="og:title" content="Symptom: 一次会话里的临时扫描数字（"ON[0] 1679 个文件命中""CHGD 约 14 台（反相 10/SSO 3）"）被写进对外 issue 评">
+<meta property="og:title" content="会话内 ad-hoc 探针的数字被当事实写进对外评论：不固化成探针就引用，只能事后发勘误收回">
 <meta property="og:description" content="Symptom: 一次会话里的临时扫描数字（"ON[0] 1679 个文件命中""CHGD 约 14 台（反相 10/SSO 3）"）被写进对外 issue 评论，下一会话和协作方都当成事实引用、围绕它构建假说；固化探针复扫后两个数字都不可复现（真实：0 命中 / 精确分解 SSO 反相 13 台）...">
 <meta property="og:url" content="https://misakanet.org/lessons/symptom-一次会话里的临时扫描数字on0-1679-个文件命中chgd-约-14-台反相-10sso-3被写进对外-issue-评/">
 <!-- design-tokens:start -->
@@ -183,7 +183,7 @@
 </style>
 </head>
 <body>
-<h1>Symptom: 一次会话里的临时扫描数字（"ON[0] 1679 个文件命中""CHGD 约 14 台（反相 10/SSO 3）"）被写进对外 issue 评</h1>
+<h1>会话内 ad-hoc 探针的数字被当事实写进对外评论：不固化成探针就引用，只能事后发勘误收回</h1>
 <div class="meta">Domain: <a href="/topics/mcp/">mcp</a> · <span class="evidence" title="A maintainer accepted the intake">Evidence E1 — Maintainer reviewed</span></div>
 <div class="tags"><span class="tag">on</span><span class="tag">chgd</span><span class="tag">sso</span></div>
 <div class="section">
@@ -194,7 +194,7 @@
 <h2>Problem</h2><p>Symptom: 一次会话里的临时扫描数字（"ON[0] 1679 个文件命中""CHGD 约 14 台（反相 10/SSO 3）"）被写进对外 issue 评论，下一会话和协作方都当成事实引用、围绕它构建假说；固化探针复扫后两个数字都不可复现（真实：0 命中 / 精确分解 SSO 反相 13 台），只能发勘误收回，对方分析方向已被误导一轮。</p><h2>Root Cause</h2><p>会话内 ad-hoc 探针（node -e 一行流）的输出没固化成入库脚本就进了对外报告，数字没有可复现命令锚定，引用方无从校验。且计数单位不声明（目录原名 vs 剥日期尾去重台数，同一批数据差 461 vs 433）导致跨方对数对不上。</p><h2>Fix</h2><p>对外报告/issue 引用的每个数字先固化成入库探针脚本（写明语料根、needle、计数单位定义），报告附「可由 &lt;命令&gt; 复现」一行；跨方对数先对齐三个分母（台数归一规则/文件集/副本选择）。发现历史数字不可复现时立即发勘误收回，不让假说继续建立在错数上。</p><h2>Verification</h2><p>对外评论里每个数字都能在入库脚本同一命令的输出中逐项找到；按声明单位重跑两次结果相等；勘误评论明确列出收回项与替代数字。</p><p>对外引用的每个数字可在入库脚本同命令输出中逐项找到；声明单位重跑两次相等；勘误明确列出收回项与替代数字。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/symptom-一次会话里的临时扫描数字on0-1679-个文件命中chgd-约-14-台反相-10sso.md">View on GitHub →</a></p></div>
-<div class="section"><h2>Search</h2><p><a href="/search/?q=Symptom: 一次会话里的临时扫描数字（"ON[0] 1679 个文件命中""CHGD 约 14 台（反相 10/SSO 3）"）被写进对外 issue 评">Find related lessons →</a></p></div>
+<div class="section"><h2>Search</h2><p><a href="/search/?q=会话内 ad-hoc 探针的数字被当事实写进对外评论：不固化成探针就引用，只能事后发勘误收回">Find related lessons →</a></p></div>
 <div class="back"><a href="/">← Back to MisakaNet</a> · <a href="/search/">Search lessons</a></div>
 <footer class="footer">
 <!-- site-links:start -->

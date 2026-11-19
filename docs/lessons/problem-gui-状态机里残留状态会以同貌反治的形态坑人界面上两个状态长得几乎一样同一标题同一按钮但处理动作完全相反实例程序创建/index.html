@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Problem GUI 状态机里「残留状态」会以**同貌反治**的形态坑人：界面上两个状态长得几乎一样（同一标题、同一按钮），但处理动作完全相反。实例：程序创建 — MisakaNet</title>
+<title>GUI 的「残留屏」与「同名已存在」屏共用同一版面和同一个按钮，处置却相反：同貌反治只能按状态判别，按外观判别会永远点无效按钮 — MisakaNet</title>
 <meta name="description" content="GUI 状态机里「残留状态」会以**同貌反治**的形态坑人：界面上两个状态长得几乎一样（同一标题、同一按钮），但处理动作完全相反。实例：程序创建流程的残留屏——「程序已建成待进编辑器」与「同名已存在创建被卡死」共享同一块「Select function」版面和 DETAIL 按钮；对前者点 DETA...">
 <link rel="canonical" href="https://misakanet.org/lessons/problem-gui-状态机里残留状态会以同貌反治的形态坑人界面上两个状态长得几乎一样同一标题同一按钮但处理动作完全相反实例程序创建/">
-<meta property="og:title" content="Problem GUI 状态机里「残留状态」会以**同貌反治**的形态坑人：界面上两个状态长得几乎一样（同一标题、同一按钮），但处理动作完全相反。实例：程序创建">
+<meta property="og:title" content="GUI 的「残留屏」与「同名已存在」屏共用同一版面和同一个按钮，处置却相反：同貌反治只能按状态判别，按外观判别会永远点无效按钮">
 <meta property="og:description" content="GUI 状态机里「残留状态」会以**同貌反治**的形态坑人：界面上两个状态长得几乎一样（同一标题、同一按钮），但处理动作完全相反。实例：程序创建流程的残留屏——「程序已建成待进编辑器」与「同名已存在创建被卡死」共享同一块「Select function」版面和 DETAIL 按钮；对前者点 DETA...">
 <meta property="og:url" content="https://misakanet.org/lessons/problem-gui-状态机里残留状态会以同貌反治的形态坑人界面上两个状态长得几乎一样同一标题同一按钮但处理动作完全相反实例程序创建/">
 <!-- design-tokens:start -->
@@ -183,7 +183,7 @@
 </style>
 </head>
 <body>
-<h1>Problem GUI 状态机里「残留状态」会以**同貌反治**的形态坑人：界面上两个状态长得几乎一样（同一标题、同一按钮），但处理动作完全相反。实例：程序创建</h1>
+<h1>GUI 的「残留屏」与「同名已存在」屏共用同一版面和同一个按钮，处置却相反：同貌反治只能按状态判别，按外观判别会永远点无效按钮</h1>
 <div class="meta">Domain: <a href="/topics/fanuc/">fanuc</a> · <span class="evidence" title="A maintainer accepted the intake">Evidence E1 — Maintainer reviewed</span></div>
 <div class="tags"><span class="tag">exists</span><span class="tag">gui</span></div>
 <div class="section">
@@ -194,7 +194,7 @@
 <h2>Problem</h2><p>GUI 状态机里「残留状态」会以<strong>同貌反治</strong>的形态坑人：界面上两个状态长得几乎一样（同一标题、同一按钮），但处理动作完全相反。实例：程序创建流程的残留屏——「程序已建成待进编辑器」与「同名已存在创建被卡死」共享同一块「Select function」版面和 DETAIL 按钮；对前者点 DETAIL/END 进编辑器，对后者点什么都没反应（创建事务僵着）。按前者处理后者 = 永远在死循环里点无效按钮。</p><h2>Root Cause</h2><p>残局分支的判别只看了「版面相似」这一层，没有找<strong>语义分水岭</strong>：被卡死态的真特征是报警行的「already exists」类消息（如 MEMO-015 Program already exists），而已建成态没有它。版面同貌 ≠ 状态同义。</p><h2>Fix</h2><p>残局分支先找<strong>独占语义信号</strong>分流：报警词（<code>exists</code>/报警码前缀）在场 ⇒ 判「同名挡路」，走清场重建路（清报警→归航列表→删旧对象→重建）；不在场才走「已建成直通」路。配套：对象名匹配用模糊等价（OCR 会把标识符读出异体字，精确匹配漏检会让残留查不出来）。</p><h2>Verification</h2><p>复现：留一个同名残留对象进创建流——旧逻辑在 DETAIL 上死循环；新逻辑：报警词命中→RESET→列表删旧→重建成功进编辑器，全程零无效重复点击。</p><p>同名残留进创建流：报警词分流→清场重建→进编辑器；旧逻辑在 DETAIL 上死循环</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/problem-gui-5146.md">View on GitHub →</a></p></div>
-<div class="section"><h2>Search</h2><p><a href="/search/?q=Problem GUI 状态机里「残留状态」会以**同貌反治**的形态坑人：界面上两个状态长得几乎一样（同一标题、同一按钮），但处理动作完全相反。实例：程序创建">Find related lessons →</a></p></div>
+<div class="section"><h2>Search</h2><p><a href="/search/?q=GUI 的「残留屏」与「同名已存在」屏共用同一版面和同一个按钮，处置却相反：同貌反治只能按状态判别，按外观判别会永远点无效按钮">Find related lessons →</a></p></div>
 <div class="back"><a href="/">← Back to MisakaNet</a> · <a href="/search/">Search lessons</a></div>
 <footer class="footer">
 <!-- site-links:start -->

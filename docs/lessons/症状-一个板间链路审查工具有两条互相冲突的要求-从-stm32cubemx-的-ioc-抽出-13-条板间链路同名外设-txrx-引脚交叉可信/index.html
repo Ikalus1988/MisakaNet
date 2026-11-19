@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>症状 一个板间链路审查工具有两条互相冲突的要求： - 从 STM32CubeMX 的 .ioc 抽出 13 条板间链路（同名外设 + TX↔RX 引脚交叉，可信 — MisakaNet</title>
+<title>推断出来的 13 条链路全部标 inferred，而纪律又不许推断结果判 fail：出口是把推断降级成建议，不是放宽推断 — MisakaNet</title>
 <meta name="description" content="一个板间链路审查工具有两条互相冲突的要求：">
 <link rel="canonical" href="https://misakanet.org/lessons/症状-一个板间链路审查工具有两条互相冲突的要求-从-stm32cubemx-的-ioc-抽出-13-条板间链路同名外设-txrx-引脚交叉可信/">
-<meta property="og:title" content="症状 一个板间链路审查工具有两条互相冲突的要求： - 从 STM32CubeMX 的 .ioc 抽出 13 条板间链路（同名外设 + TX↔RX 引脚交叉，可信">
+<meta property="og:title" content="推断出来的 13 条链路全部标 inferred，而纪律又不许推断结果判 fail：出口是把推断降级成建议，不是放宽推断">
 <meta property="og:description" content="一个板间链路审查工具有两条互相冲突的要求：">
 <meta property="og:url" content="https://misakanet.org/lessons/症状-一个板间链路审查工具有两条互相冲突的要求-从-stm32cubemx-的-ioc-抽出-13-条板间链路同名外设-txrx-引脚交叉可信/">
 <!-- design-tokens:start -->
@@ -183,7 +183,7 @@
 </style>
 </head>
 <body>
-<h1>症状 一个板间链路审查工具有两条互相冲突的要求： - 从 STM32CubeMX 的 .ioc 抽出 13 条板间链路（同名外设 + TX↔RX 引脚交叉，可信</h1>
+<h1>推断出来的 13 条链路全部标 inferred，而纪律又不许推断结果判 fail：出口是把推断降级成建议，不是放宽推断</h1>
 <div class="meta">Domain: <a href="/topics/dsh/">dsh</a> · <span class="evidence" title="A maintainer accepted the intake">Evidence E1 — Maintainer reviewed</span></div>
 <div class="tags"><span class="tag">if</span><span class="tag">stm32cubemx</span><span class="tag">ioc</span></div>
 <div class="section">
@@ -194,7 +194,7 @@
 <h2>Problem</h2><p>一个板间链路审查工具有两条互相冲突的要求：</p><ul><li>从 STM32CubeMX 的 .ioc 抽出 13 条板间链路（同名外设 + TX↔RX 引脚交叉，可信度高）；</li><li>纪律要求「推断的结论不能判人 fail」——如果推断错了却让设计报错，人会开始怀疑检查器而不是自己的设计。</li></ul><p>第一版两边都做了，结果进入死胡同：13 条链路全部标 source=inferred，落地函数 apply_draft(only_declared=True) 一条都不写。于是：</p><ul><li>抽出的链路写不进设计（links_list 仍为空）；</li><li>链路检查仍返回 status=not_ready, declared_links=0；</li><li>用户看到的报告和「根本没做抽取」时一模一样。</li></ul><p>同样的错在另一处也发生了：断言层从网表推出「R1 是 3.3V 到 PB10 的上拉」，但断言生成函数只产出一条 claim.R1.connected。删掉 R1 时系统只是少一条断言（变安静），没有一条断言说「PB10 悬空了」（变红）。</p><h2>Root Cause</h2><p>「不许用推断做硬判定」这条纪律被实现成了纯闸门，没有配套的确认通道。</p><p>纪律本身是对的（推断会错），但它只规定了「不能自动生效」，没规定「那要怎样才生效」。缺了后者，严格执行纪律的结果就是功能完全不可用 —— 而不可用在界面上和「没实现」无法区分。</p><p>更深一层：这类闸门容易写成 if ... continue 一行，看起来优雅、测试也容易过（断言不写就是通过），但<strong>没有任何测试会失败</strong>，因为「什么都没发生」正是期望的结果。这是一个自我验证的假象。</p><h2>Fix</h2><ol><li>推断结论带 source 字段（declared / inferred / measured），硬检查一律 <code>if source == "inferred": continue</code>，只提示不判 fail。</li><li>推断结果默认不落地。apply 只写 declared，要落地必须显式 promote（人工逐条或批量确认），promote 后记 promoted_from 以便追溯。</li><li>必须有出口：只有闸门没有确认通道 = 抽出来的结果永远用不上。提供 review_list()（按可信度排序 + 证据 + 待办动作）和 promote(ids) 两个函数。</li><li>回归双侧：去掉闸门要立刻红（断言 added==0），promote 后要能写入（断言 added&gt;0 且 validate 真的检查了）。</li></ol><h2>Verification</h2><p>四步闭环，均有实测：</p><ol><li>闸门生效：only_declared=True 时 apply_draft 返回 0，design.links_list 仍为空。</li><li>显式确认后写入：promote(draft, ids) 把选定链路标成 declared 并记 promoted_from=inferred；再 apply_draft 返回 13。</li><li>检查真的执行：links.validate 的 checked.declared_links 从 0 变成 13，status 从 not_ready 变成 ok。</li><li>退化验证：去掉闸门（让 inferred 也直接落地），第 1 条立刻 FAIL（实测 added=13）；恢复后 PASS。同时断言 promote 之前不可能有 declared 链路。</li></ol>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/症状-一个板间链路审查工具有两条互相冲突的要求-从-stm32cubemx-的-ioc.md">View on GitHub →</a></p></div>
-<div class="section"><h2>Search</h2><p><a href="/search/?q=症状 一个板间链路审查工具有两条互相冲突的要求： - 从 STM32CubeMX 的 .ioc 抽出 13 条板间链路（同名外设 + TX↔RX 引脚交叉，可信">Find related lessons →</a></p></div>
+<div class="section"><h2>Search</h2><p><a href="/search/?q=推断出来的 13 条链路全部标 inferred，而纪律又不许推断结果判 fail：出口是把推断降级成建议，不是放宽推断">Find related lessons →</a></p></div>
 <div class="back"><a href="/">← Back to MisakaNet</a> · <a href="/search/">Search lessons</a></div>
 <footer class="footer">
 <!-- site-links:start -->

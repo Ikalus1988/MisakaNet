@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>症状 在 Windows 的 agent 沙箱里启动一个长驻后端（uvicorn / node server），启动命令返回成功、同一次 bash 调用里 cu — MisakaNet</title>
+<title>沙箱用 Job Object 加 KILL_ON_JOB_CLOSE 管子进程：启动命令返回成功，下一次工具调用时进程已被回收 — MisakaNet</title>
 <meta name="description" content="在 Windows 的 agent 沙箱里启动一个长驻后端（uvicorn / node server），启动命令返回成功、同一次 bash 调用里 curl 也能通。但**下一次工具调用**时进程已经没了。">
 <link rel="canonical" href="https://misakanet.org/lessons/症状-在-windows-的-agent-沙箱里启动一个长驻后端uvicorn-node-server启动命令返回成功同一次-bash-调用里-cu/">
-<meta property="og:title" content="症状 在 Windows 的 agent 沙箱里启动一个长驻后端（uvicorn / node server），启动命令返回成功、同一次 bash 调用里 cu">
+<meta property="og:title" content="沙箱用 Job Object 加 KILL_ON_JOB_CLOSE 管子进程：启动命令返回成功，下一次工具调用时进程已被回收">
 <meta property="og:description" content="在 Windows 的 agent 沙箱里启动一个长驻后端（uvicorn / node server），启动命令返回成功、同一次 bash 调用里 curl 也能通。但**下一次工具调用**时进程已经没了。">
 <meta property="og:url" content="https://misakanet.org/lessons/症状-在-windows-的-agent-沙箱里启动一个长驻后端uvicorn-node-server启动命令返回成功同一次-bash-调用里-cu/">
 <!-- design-tokens:start -->
@@ -183,7 +183,7 @@
 </style>
 </head>
 <body>
-<h1>症状 在 Windows 的 agent 沙箱里启动一个长驻后端（uvicorn / node server），启动命令返回成功、同一次 bash 调用里 cu</h1>
+<h1>沙箱用 Job Object 加 KILL_ON_JOB_CLOSE 管子进程：启动命令返回成功，下一次工具调用时进程已被回收</h1>
 <div class="meta">Domain: <a href="/topics/windows/">windows</a> · <span class="evidence" title="A maintainer accepted the intake">Evidence E1 — Maintainer reviewed</span></div>
 <div class="tags"><span class="tag">nohup</span><span class="tag">start</span><span class="tag">windows</span></div>
 <div class="section">
@@ -196,7 +196,7 @@ s = "@echo off\r\ncd /d &lt;PATH&gt;\proj\r\n\"&lt;PATH&gt;\path\\python.exe\" -
 io.open('run.cmd','wb').write(s.encode('ascii'))</code></pre></li><li>注册计划任务（<strong>不要加 /RL HIGHEST</strong>，会 Access denied）：<pre><code class="language-bash">schtasks /Create /TN "my-backend" /TR "&lt;PATH&gt;\proj\\run.cmd" /SC ONCE /ST 23:59 /F</code></pre></li><li>启动：<code>schtasks /Run /TN "my-backend"</code></li><li>验证存活：隔 30 秒再 <code>curl http://127.0.0.1:3080/health</code>，能返回即成功。</li><li>停止：<code>schtasks /End /TN "my-backend"</code>，删除：<code>schtasks /Delete /TN "my-backend" /F</code></li></ol><p>判据：启动后<strong>下一次工具调用</strong>仍能连上端口，才算存活；同一调用内能连上不算。</p><p>注意：uvicorn 要直接 exec，不要在 .cmd 里用 <code>start</code>（start 会开新窗口并让 schtasks 立即返回成功，实际进程状态未知）。</p><h2>Verification</h2><p>启动后间隔至少 30 秒、在<strong>另一次工具调用</strong>里 <code>curl -sS http://127.0.0.1:&lt;port&gt;/health</code> 返回 200 且进程 pid 不变。同一调用内能连上不算验证。停止后端口应拒绝连接。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/症状-在-windows-的-agent-沙箱里启动一个长驻后端uvicorn-node.md">View on GitHub →</a></p></div>
-<div class="section"><h2>Search</h2><p><a href="/search/?q=症状 在 Windows 的 agent 沙箱里启动一个长驻后端（uvicorn / node server），启动命令返回成功、同一次 bash 调用里 cu">Find related lessons →</a></p></div>
+<div class="section"><h2>Search</h2><p><a href="/search/?q=沙箱用 Job Object 加 KILL_ON_JOB_CLOSE 管子进程：启动命令返回成功，下一次工具调用时进程已被回收">Find related lessons →</a></p></div>
 <div class="back"><a href="/">← Back to MisakaNet</a> · <a href="/search/">Search lessons</a></div>
 <footer class="footer">
 <!-- site-links:start -->

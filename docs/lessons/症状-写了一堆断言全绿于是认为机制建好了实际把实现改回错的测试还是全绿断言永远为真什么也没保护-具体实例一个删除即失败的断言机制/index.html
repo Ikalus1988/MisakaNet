@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>症状 写了一堆断言，全绿，于是认为机制建好了。实际把实现改回错的，测试**还是全绿**——断言永远为真，什么也没保护。 具体实例：一个"删除即失败"的断言机制， — MisakaNet</title>
+<title>把实现改回错的，测试还是全绿：断言恒真，闸门退化无声 — MisakaNet</title>
 <meta name="description" content="写了一堆断言，全绿，于是认为机制建好了。实际把实现改回错的，测试**还是全绿**——断言永远为真，什么也没保护。">
 <link rel="canonical" href="https://misakanet.org/lessons/症状-写了一堆断言全绿于是认为机制建好了实际把实现改回错的测试还是全绿断言永远为真什么也没保护-具体实例一个删除即失败的断言机制/">
-<meta property="og:title" content="症状 写了一堆断言，全绿，于是认为机制建好了。实际把实现改回错的，测试**还是全绿**——断言永远为真，什么也没保护。 具体实例：一个"删除即失败"的断言机制，">
+<meta property="og:title" content="把实现改回错的，测试还是全绿：断言恒真，闸门退化无声">
 <meta property="og:description" content="写了一堆断言，全绿，于是认为机制建好了。实际把实现改回错的，测试**还是全绿**——断言永远为真，什么也没保护。">
 <meta property="og:url" content="https://misakanet.org/lessons/症状-写了一堆断言全绿于是认为机制建好了实际把实现改回错的测试还是全绿断言永远为真什么也没保护-具体实例一个删除即失败的断言机制/">
 <!-- design-tokens:start -->
@@ -183,7 +183,7 @@
 </style>
 </head>
 <body>
-<h1>症状 写了一堆断言，全绿，于是认为机制建好了。实际把实现改回错的，测试**还是全绿**——断言永远为真，什么也没保护。 具体实例：一个"删除即失败"的断言机制，</h1>
+<h1>把实现改回错的，测试还是全绿：断言恒真，闸门退化无声</h1>
 <div class="meta">Domain: <a href="/topics/dsh/">dsh</a> · <span class="evidence" title="A maintainer accepted the intake">Evidence E1 — Maintainer reviewed</span></div>
 <div class="tags"><span class="tag">connected</span><span class="tag">if</span><span class="tag">cp</span></div>
 <div class="section">
@@ -192,10 +192,18 @@
 </div>
 <div class="lesson-body">
 <h2>Problem</h2><p>写了一堆断言，全绿，于是认为机制建好了。实际把实现改回错的，测试<strong>还是全绿</strong>——断言永远为真，什么也没保护。</p><p>具体实例：一个"删除即失败"的断言机制，测试写的是</p><pre><code class="language-python">reddened = removal_impact(design, "R1")["count"]
-assert reddened &gt; 0        # 看起来对</code></pre><p>但实现只给每个元件生成一条 <code>connected</code> 断言，删掉 R1 确实会有 1 条变红，测试通过。真相是：删掉上拉电阻，系统只是<strong>变安静</strong>（少一条断言），没有任何断言说"那个引脚悬空了"。测试给了虚假的信心。</p><h2>Root Cause</h2><p>断言验证的是"有没有反应"，而不是"反应对不对"。而没有退化验证（把实现改回错的，看测试是否变红），就无法区分"断言有效"和"断言恒真"。</p><p>更隐蔽的一类：<code>if condition: continue</code> 形式的闸门。去掉它，测试<strong>天然还是绿的</strong>——因为"什么都没发生"正是期望结果。这类代码的退化完全无声。</p><h2>Fix</h2><p>每条断言写完立刻做一次退化验证，90 秒内完成：</p><ol><li>备份实现文件：<code>cp impl.py impl.bak</code></li><li>用脚本把实现改回错的（不要手改，容易改错）：把关键判断替换成 <code># TEMP: 模拟退化</code> 并让分支恒不成立。</li><li>跑测试，<strong>必须看到 FAIL</strong>。看到 PASS 就是断言无效，回去重写断言。</li><li>恢复：<code>cp impl.bak impl.py</code>，再跑一次确认 PASS。</li></ol><p>判据：如果去掉实现后测试仍然绿，那条断言就是"永远为真"，它保护的代码可以随便退化而无人发现。</p><p>本次实测的三个有效退化：</p><ul><li>归因消费：把 <code>_attribution_map</code> 改成 <code>return {}</code> → FAIL（报"D1 被判为 signal_diode，但 derive() 只给了它 connected"）</li><li>闸门生效：去掉 <code>if only_declared and source != "declared": continue</code> → FAIL（报 added=13，期望 0）</li><li>缺产物不虚构：把读 coverify.json 改回读 budget.json → FAIL（报 0 条，期望 7）</li></ul><p><strong>特别注意</strong>：所有 <code>if ...: continue</code> 形式的闸门，去掉后测试<strong>天然还是绿的</strong>（因为"什么都没发生"正是期望）。这类闸门必须专写一条正面断言（如 <code>assert added == 0</code>），否则等于没有测试。</p><h2>Verification</h2><p>对每条断言执行四步：备份实现 → 用脚本改回错误行为 → 确认测试变红（FAIL）→ 恢复并确认变绿。若第 3 步仍为 PASS，则该断言无效。可脚本化：```bash cp impl.py impl.bak python - &lt;&lt;'PY' import io; p='impl.py'; s=io.open(p,encoding='utf-8').read() s=s.replace('&lt;关键判断&gt;','pass  # TEMP: 模拟退化') io.open(p,'w',encoding='utf-8').write(s) PY python -m pytest tests/ -k &lt;该断言&gt;   # 必须 FAIL cp impl.bak impl.py &amp;&amp; rm impl.bak python -m pytest tests/ -k &lt;该断言&gt;   # 必须 PASS</p><pre><code></code></pre>
+assert reddened &gt; 0        # 看起来对</code></pre><p>但实现只给每个元件生成一条 <code>connected</code> 断言，删掉 R1 确实会有 1 条变红，测试通过。真相是：删掉上拉电阻，系统只是<strong>变安静</strong>（少一条断言），没有任何断言说"那个引脚悬空了"。测试给了虚假的信心。</p><h2>Root Cause</h2><p>断言验证的是"有没有反应"，而不是"反应对不对"。而没有退化验证（把实现改回错的，看测试是否变红），就无法区分"断言有效"和"断言恒真"。</p><p>更隐蔽的一类：<code>if condition: continue</code> 形式的闸门。去掉它，测试<strong>天然还是绿的</strong>——因为"什么都没发生"正是期望结果。这类代码的退化完全无声。</p><h2>Fix</h2><p>每条断言写完立刻做一次退化验证，90 秒内完成：</p><ol><li>备份实现文件：<code>cp impl.py impl.bak</code></li><li>用脚本把实现改回错的（不要手改，容易改错）：把关键判断替换成 <code># TEMP: 模拟退化</code> 并让分支恒不成立。</li><li>跑测试，<strong>必须看到 FAIL</strong>。看到 PASS 就是断言无效，回去重写断言。</li><li>恢复：<code>cp impl.bak impl.py</code>，再跑一次确认 PASS。</li></ol><p>判据：如果去掉实现后测试仍然绿，那条断言就是"永远为真"，它保护的代码可以随便退化而无人发现。</p><p>本次实测的三个有效退化：</p><ul><li>归因消费：把 <code>_attribution_map</code> 改成 <code>return {}</code> → FAIL（报"D1 被判为 signal_diode，但 derive() 只给了它 connected"）</li><li>闸门生效：去掉 <code>if only_declared and source != "declared": continue</code> → FAIL（报 added=13，期望 0）</li><li>缺产物不虚构：把读 coverify.json 改回读 budget.json → FAIL（报 0 条，期望 7）</li></ul><p><strong>特别注意</strong>：所有 <code>if ...: continue</code> 形式的闸门，去掉后测试<strong>天然还是绿的</strong>（因为"什么都没发生"正是期望）。这类闸门必须专写一条正面断言（如 <code>assert added == 0</code>），否则等于没有测试。</p><h2>Verification</h2><p>对每条断言执行四步：备份实现 → 用脚本改回错误行为 → 确认测试变红（FAIL）→ 恢复并确认变绿。若第 3 步仍为 PASS，则该断言无效。可脚本化：</p><pre><code class="language-bash">cp impl.py impl.bak
+python - &lt;&lt;'PY'
+import io; p='impl.py'; s=io.open(p,encoding='utf-8').read()
+s=s.replace('&lt;关键判断&gt;','pass  # TEMP: 模拟退化')
+io.open(p,'w',encoding='utf-8').write(s)
+PY
+python -m pytest tests/ -k &lt;该断言&gt;   # 必须 FAIL
+cp impl.bak impl.py &amp;&amp; rm impl.bak
+python -m pytest tests/ -k &lt;该断言&gt;   # 必须 PASS</code></pre>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/症状.md">View on GitHub →</a></p></div>
-<div class="section"><h2>Search</h2><p><a href="/search/?q=症状 写了一堆断言，全绿，于是认为机制建好了。实际把实现改回错的，测试**还是全绿**——断言永远为真，什么也没保护。 具体实例：一个"删除即失败"的断言机制，">Find related lessons →</a></p></div>
+<div class="section"><h2>Search</h2><p><a href="/search/?q=把实现改回错的，测试还是全绿：断言恒真，闸门退化无声">Find related lessons →</a></p></div>
 <div class="back"><a href="/">← Back to MisakaNet</a> · <a href="/search/">Search lessons</a></div>
 <footer class="footer">
 <!-- site-links:start -->

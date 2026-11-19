@@ -1,5 +1,5 @@
 ---
-title: "症状 在 Windows 的 agent 沙箱里启动一个长驻后端（uvicorn / node server），启动命令返回成功、同一次 bash 调用里 cu"
+title: "沙箱用 Job Object 加 KILL_ON_JOB_CLOSE 管子进程：启动命令返回成功，下一次工具调用时进程已被回收"
 domain: "windows"
 tags:
   - "nohup"

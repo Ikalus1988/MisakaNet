@@ -1,5 +1,5 @@
 ---
-title: "症状 调用一个编译接口，传了 `board=...`，返回 hex 看起来正常。但换了三个不同的板卡型号，**产出的 hex md5 完全一样**——说明 `b"
+title: "编译接口传了 board 却不生效、三种板卡产出同一个 hex：pydantic 默认 extra=ignore 把拼错的字段静默丢掉"
 domain: "dsh"
 tags:
   - "board"

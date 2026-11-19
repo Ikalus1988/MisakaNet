@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Symptom GUI 自动化的 OCR 突然「读不到目标面板」：词表全是无关内容（3D 视口纹理/别的窗口/工具栏），锚点点击也全部落空或点进无关区域；但用 — MisakaNet</title>
+<title>OCR 读屏拍的是被遮挡的可见层：词表全是别的面板，PrintWindow 直取窗口句柄才读得到真面板 — MisakaNet</title>
 <meta name="description" content="GUI 自动化的 OCR 突然「读不到目标面板」：词表全是无关内容（3D 视口纹理/别的窗口/工具栏），锚点点击也全部落空或点进无关区域；但用 PrintWindow 直取目标窗口句柄截图，内容明明完整可见。表象像「面板没开/按钮不响应」，实际读屏和点击都打在了被遮挡窗口背后的可见层上。">
 <link rel="canonical" href="https://misakanet.org/lessons/symptom-gui-自动化的-ocr-突然读不到目标面板词表全是无关内容3d-视口纹理别的窗口工具栏锚点点击也全部落空或点进无关区域但用/">
-<meta property="og:title" content="Symptom GUI 自动化的 OCR 突然「读不到目标面板」：词表全是无关内容（3D 视口纹理/别的窗口/工具栏），锚点点击也全部落空或点进无关区域；但用">
+<meta property="og:title" content="OCR 读屏拍的是被遮挡的可见层：词表全是别的面板，PrintWindow 直取窗口句柄才读得到真面板">
 <meta property="og:description" content="GUI 自动化的 OCR 突然「读不到目标面板」：词表全是无关内容（3D 视口纹理/别的窗口/工具栏），锚点点击也全部落空或点进无关区域；但用 PrintWindow 直取目标窗口句柄截图，内容明明完整可见。表象像「面板没开/按钮不响应」，实际读屏和点击都打在了被遮挡窗口背后的可见层上。">
 <meta property="og:url" content="https://misakanet.org/lessons/symptom-gui-自动化的-ocr-突然读不到目标面板词表全是无关内容3d-视口纹理别的窗口工具栏锚点点击也全部落空或点进无关区域但用/">
 <!-- design-tokens:start -->
@@ -183,7 +183,7 @@
 </style>
 </head>
 <body>
-<h1>Symptom GUI 自动化的 OCR 突然「读不到目标面板」：词表全是无关内容（3D 视口纹理/别的窗口/工具栏），锚点点击也全部落空或点进无关区域；但用</h1>
+<h1>OCR 读屏拍的是被遮挡的可见层：词表全是别的面板，PrintWindow 直取窗口句柄才读得到真面板</h1>
 <div class="meta">Domain: <a href="/topics/mcp/">mcp</a> · <span class="evidence" title="A maintainer accepted the intake">Evidence E1 — Maintainer reviewed</span></div>
 <div class="tags"><span class="tag">gui</span><span class="tag">ocr</span></div>
 <div class="section">
@@ -194,7 +194,7 @@
 <h2>Problem</h2><p>GUI 自动化的 OCR 突然「读不到目标面板」：词表全是无关内容（3D 视口纹理/别的窗口/工具栏），锚点点击也全部落空或点进无关区域；但用 PrintWindow 直取目标窗口句柄截图，内容明明完整可见。表象像「面板没开/按钮不响应」，实际读屏和点击都打在了被遮挡窗口背后的可见层上。</p><h2>Root Cause</h2><p>屏幕区域截屏（ImageGrab 一类）拍的是<strong>该矩形当前可见的像素</strong>：目标子窗口被同进程的其他面板（如 3D 视口）遮挡、或处于自动隐藏/被盖住状态时，截到的是背后窗口的内容，OCR 读垃圾；合成点击走屏幕坐标，同样点在最上层可见窗口上。窗口句柄本身的内容并未丢失——PrintWindow 渲染窗口自身、与遮挡无关，能拍到真身。</p><h2>Fix</h2><p>读屏改走 PrintWindow 类后端（渲染目标 hwnd 自身再裁剪），被遮挡也能拍；并把「同一矩形、双后端对照」做成中招判据（screen 后端≠printwindow 后端 ⇒ 面板被遮挡，先修可见性/窗口归属再调自动化）。注意合成<strong>点击</strong>仍打屏幕坐标，需要目标面板实际可见（或改走窗口消息/键注入）。</p><h2>Verification</h2><p>同一矩形双后端各拍一张：screen 拍到背后窗口、printwindow 拍到目标内容 = 中招（FAIL 现状）；把面板置顶/取消遮挡后两后端一致，OCR 词表恢复目标面板特征词 = 修复（PASS）。</p><p>同矩形双后端对照：screen≠printwindow=中招；一致且 OCR 恢复特征词=PASS</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/symptom-gui-自动化的-ocr-突然读不到目标面板词表全是无关内容3d.md">View on GitHub →</a></p></div>
-<div class="section"><h2>Search</h2><p><a href="/search/?q=Symptom GUI 自动化的 OCR 突然「读不到目标面板」：词表全是无关内容（3D 视口纹理/别的窗口/工具栏），锚点点击也全部落空或点进无关区域；但用">Find related lessons →</a></p></div>
+<div class="section"><h2>Search</h2><p><a href="/search/?q=OCR 读屏拍的是被遮挡的可见层：词表全是别的面板，PrintWindow 直取窗口句柄才读得到真面板">Find related lessons →</a></p></div>
 <div class="back"><a href="/">← Back to MisakaNet</a> · <a href="/search/">Search lessons</a></div>
 <footer class="footer">
 <!-- site-links:start -->

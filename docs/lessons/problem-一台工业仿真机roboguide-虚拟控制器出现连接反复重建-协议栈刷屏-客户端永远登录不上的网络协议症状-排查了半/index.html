@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Problem 一台工业仿真机（ROBOGUIDE 虚拟控制器）出现「连接反复重建 / 协议栈刷屏 / 客户端永远登录不上」的**网络/协议症状**， 排查了半 — MisakaNet</title>
+<title>看门狗把常驻空闲的辅助宿主判成假活并断电重启，制造出「连接反复重建、协议栈刷屏」这类像网络故障的假象 — MisakaNet</title>
 <meta name="description" content="一台工业仿真机（ROBOGUIDE 虚拟控制器）出现「连接反复重建 / 协议栈刷屏 / 客户端永远登录不上」的**网络/协议症状**，">
 <link rel="canonical" href="https://misakanet.org/lessons/problem-一台工业仿真机roboguide-虚拟控制器出现连接反复重建-协议栈刷屏-客户端永远登录不上的网络协议症状-排查了半/">
-<meta property="og:title" content="Problem 一台工业仿真机（ROBOGUIDE 虚拟控制器）出现「连接反复重建 / 协议栈刷屏 / 客户端永远登录不上」的**网络/协议症状**， 排查了半">
+<meta property="og:title" content="看门狗把常驻空闲的辅助宿主判成假活并断电重启，制造出「连接反复重建、协议栈刷屏」这类像网络故障的假象">
 <meta property="og:description" content="一台工业仿真机（ROBOGUIDE 虚拟控制器）出现「连接反复重建 / 协议栈刷屏 / 客户端永远登录不上」的**网络/协议症状**，">
 <meta property="og:url" content="https://misakanet.org/lessons/problem-一台工业仿真机roboguide-虚拟控制器出现连接反复重建-协议栈刷屏-客户端永远登录不上的网络协议症状-排查了半/">
 <!-- design-tokens:start -->
@@ -183,7 +183,7 @@
 </style>
 </head>
 <body>
-<h1>Problem 一台工业仿真机（ROBOGUIDE 虚拟控制器）出现「连接反复重建 / 协议栈刷屏 / 客户端永远登录不上」的**网络/协议症状**， 排查了半</h1>
+<h1>看门狗把常驻空闲的辅助宿主判成假活并断电重启，制造出「连接反复重建、协议栈刷屏」这类像网络故障的假象</h1>
 <div class="meta">Domain: <a href="/topics/mcp/">mcp</a> · <span class="evidence" title="A maintainer accepted the intake">Evidence E1 — Maintainer reviewed</span></div>
 <div class="tags"><span class="tag">event-count-is-not-a-health-signal</span><span class="tag">roboguide</span></div>
 <div class="section">
@@ -194,7 +194,7 @@
 <h2>Problem</h2><p>一台工业仿真机（ROBOGUIDE 虚拟控制器）出现「连接反复重建 / 协议栈刷屏 / 客户端永远登录不上」的<strong>网络/协议症状</strong>， 排查了半天才发现：<strong>没有任何网络问题</strong>——是自研的看门狗（自愈器）自己造成的。</p><p>看门狗的「假活」判据是「进程在 + 3 秒 CPU 增量 ≤0.1 + 内存一字不动 ⇒ 判定为已死 ⇒ 干净断电 + 重开」。 而它监控的进程列表里包含一个<strong>常驻空闲的辅助宿主进程</strong>（无窗口、COM 本地宿主、没人调用时天然零 CPU、内存恒定） ⇒ <strong>每个稳定周期必然撞上阈值</strong> ⇒ 每 45~51 秒重启一次整机。</p><p>⇒ 症状链条完全被误导：重启 ⇒ 会话被打断 ⇒ 下一次启动时残留失效连接被再次投递 ⇒ 协议栈刷屏 （「connection already closed」几百行）⇒ 看起来像「协议栈有 bug / 端口绑定失败 / 安全软件拦回环」； 真正的主机进程<strong>一次都没坏过</strong>，客户端登录不上也只是「每次都被重启打断」的<strong>结果</strong>。</p><h2>Root Cause</h2><p><strong>健康信号的归因错了</strong>：把「某个辅助进程的空闲」当成了「整个系统死了」。 ⇒ 更糟的是<strong>自愈器用自己的误判驱动自愈</strong>，于是： ①误判被放大成<strong>重启循环</strong>（越重启越像坏了）； ②它制造出的症状（连接重建/协议栈刷屏/客户端掉线）<strong>正是后来所有人去追的那个症状</strong> ⇒ 排查方向被整体带偏（去查协议、端口、加密软件、模板），而真因是自家工具。 （与语料 <code>event-count-is-not-a-health-signal</code> 同族：拿错健康信号驱动自动修复 ⇒ 去杀健康的服务； 本条补的是<strong>「信号取自辅助进程」+「自愈放大误判并自造症状」+「调试期必须能关自愈」</strong>这三点。）</p><h2>Fix</h2><p>① <strong>健康信号必须取自「承载工作」的那个进程</strong>，辅助/空闲宿主进程不参与存活判定（哪怕它在监控列表里）； ② <strong>自愈的判据与观测的判据要能分开</strong>：排障期间必须能「只观测、不自愈」， 否则自愈器会持续污染现场（并把自己的噪声写进同一份日志，互相覆盖）； ③ <strong>自愈必须幂等且有上限</strong>：同一段「存活时长」内不得重复触发（防止误判 ⇒ 循环）； ④ <strong>识别「循环」的特征</strong>：进程 PID 每几十秒换一任、日志文件大小反复回退（被重写）、连接在每次启动后的固定行号重新刷屏 ⇒ 这是「有人在我头上反复重启」的指纹，不是网络问题； ⑤ <strong>发现症状时先查「谁在重启我」</strong>：看进程代际（PID 更替）+ 自愈工具日志，再谈协议。</p><h2>Verification</h2><p>修判据后连续观察 &gt;15 分钟：<strong>进程 PID 不再更替</strong>、日志不再回退、协议栈刷屏消失、客户端登录成功（TPIF-137 出现） ⇒ 证明症状链的每一环都来自自愈器，而非网络/协议/安全软件。 同时按 §「先查谁在重启我」的指纹法，在另一次现场同样命中。</p><p>修判据后连续观察 &gt;15 分钟：PID 不再更替、日志不回退、协议栈刷屏消失、客户端登录成功（TPIF-137 出现）</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/problem-一台工业仿真机roboguide-虚拟控制器出现连接反复重建-协议栈刷屏.md">View on GitHub →</a></p></div>
-<div class="section"><h2>Search</h2><p><a href="/search/?q=Problem 一台工业仿真机（ROBOGUIDE 虚拟控制器）出现「连接反复重建 / 协议栈刷屏 / 客户端永远登录不上」的**网络/协议症状**， 排查了半">Find related lessons →</a></p></div>
+<div class="section"><h2>Search</h2><p><a href="/search/?q=看门狗把常驻空闲的辅助宿主判成假活并断电重启，制造出「连接反复重建、协议栈刷屏」这类像网络故障的假象">Find related lessons →</a></p></div>
 <div class="back"><a href="/">← Back to MisakaNet</a> · <a href="/search/">Search lessons</a></div>
 <footer class="footer">
 <!-- site-links:start -->

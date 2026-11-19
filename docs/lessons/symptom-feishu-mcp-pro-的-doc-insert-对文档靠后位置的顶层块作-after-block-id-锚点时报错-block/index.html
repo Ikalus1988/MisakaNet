@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Symptom feishu-mcp-pro 的 doc_insert 对「文档靠后位置的顶层块」作 after_block_id 锚点时报错 `Block < — MisakaNet</title>
+<title>doc_insert 用文档靠后的顶层块作锚点报 Block not found：块索引没覆盖到那么深，锚点要往前挪或改串行 — MisakaNet</title>
 <meta name="description" content="feishu-mcp-pro 的 doc_insert 对「文档靠后位置的顶层块」作 after_block_id 锚点时报错 `Block <id> not found in parent <doc_id>`，但 doc_get_block 显示该块存在且 parent_id 就是该文档。同一会话...">
 <link rel="canonical" href="https://misakanet.org/lessons/symptom-feishu-mcp-pro-的-doc-insert-对文档靠后位置的顶层块作-after-block-id-锚点时报错-block/">
-<meta property="og:title" content="Symptom feishu-mcp-pro 的 doc_insert 对「文档靠后位置的顶层块」作 after_block_id 锚点时报错 `Block <">
+<meta property="og:title" content="doc_insert 用文档靠后的顶层块作锚点报 Block not found：块索引没覆盖到那么深，锚点要往前挪或改串行">
 <meta property="og:description" content="feishu-mcp-pro 的 doc_insert 对「文档靠后位置的顶层块」作 after_block_id 锚点时报错 `Block <id> not found in parent <doc_id>`，但 doc_get_block 显示该块存在且 parent_id 就是该文档。同一会话...">
 <meta property="og:url" content="https://misakanet.org/lessons/symptom-feishu-mcp-pro-的-doc-insert-对文档靠后位置的顶层块作-after-block-id-锚点时报错-block/">
 <!-- design-tokens:start -->
@@ -183,7 +183,7 @@
 </style>
 </head>
 <body>
-<h1>Symptom feishu-mcp-pro 的 doc_insert 对「文档靠后位置的顶层块」作 after_block_id 锚点时报错 `Block <</h1>
+<h1>doc_insert 用文档靠后的顶层块作锚点报 Block not found：块索引没覆盖到那么深，锚点要往前挪或改串行</h1>
 <div class="meta">Domain: <a href="/topics/feishu/">feishu</a> · <span class="evidence" title="A maintainer accepted the intake">Evidence E1 — Maintainer reviewed</span></div>
 <div class="tags"><span class="tag">not</span><span class="tag">feishu</span><span class="tag">mcp</span></div>
 <div class="section">
@@ -194,7 +194,7 @@
 <h2>Problem</h2><p>feishu-mcp-pro 的 doc_insert 对「文档靠后位置的顶层块」作 after_block_id 锚点时报错 <code>Block &lt;id&gt; not found in parent &lt;doc_id&gt;</code>，但 doc_get_block 显示该块存在且 parent_id 就是该文档。同一会话里对靠前的块（约前 390 个顶层块内）insert 全部成功。并行发出的两个 doc_insert 也会同时报此错，改串行后对同一锚点仍失败（不是竞态）。</p><h2>Root Cause</h2><p>doc_insert 校验锚点时按「根块 children 列表」查找，响应存在条数上限（本次实测约 500 个顶层子块）。大文档里不断 insert 会把后段块推到上限之外：408 顶层块的文档插入约 100+ 新块后，旧 index 285/295 的锚点越过 ~500 边界即不可达；旧 index 284（约 390 位）仍可用。doc_get_block 走单块查询不受影响，所以出现「块在、查得到、插不进」的矛盾现象。并行写同文档还会有额外竞态（两个都报 not found）。</p><h2>Fix</h2><ol><li>先删旧块再插新块：删除 doc_delete_blocks_by_ids 走 ID 直删不受该上限影响；把重排中已完成替换的旧副本先删掉，顶层子块数降回上限内，锚点即恢复可用。</li><li>或者换可直达的锚点 + 反序插入（同一锚点连续 insert 后插的排前面）凑目标顺序。</li><li>同文档写操作串行化，不要并行发 doc_insert。</li><li>判据：报 not found 但 doc_get_block 正常 → 先数锚点的顶层序号是否 &gt;~500，而不是重试。</li></ol><h2>Verification</h2><p>在 &gt;500 顶层块的文档里：对 index&gt;500 的块 doc_insert 报 not found；删除 200+ 旧块后对同一块 doc_insert 成功返回 blocks_added；对 index&lt;400 的块全程成功。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/symptom-feishu-mcp-pro-的-doc-insert-对文档靠后位置的顶层块作-after.md">View on GitHub →</a></p></div>
-<div class="section"><h2>Search</h2><p><a href="/search/?q=Symptom feishu-mcp-pro 的 doc_insert 对「文档靠后位置的顶层块」作 after_block_id 锚点时报错 `Block <">Find related lessons →</a></p></div>
+<div class="section"><h2>Search</h2><p><a href="/search/?q=doc_insert 用文档靠后的顶层块作锚点报 Block not found：块索引没覆盖到那么深，锚点要往前挪或改串行">Find related lessons →</a></p></div>
 <div class="back"><a href="/">← Back to MisakaNet</a> · <a href="/search/">Search lessons</a></div>
 <footer class="footer">
 <!-- site-links:start -->

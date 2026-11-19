@@ -1,5 +1,5 @@
 ---
-title: "症状 带 CI 敏感词门（哈希 denylist 滑窗扫描，零明文）的仓库里，多 agent 会话按「同步/推送仓库」的指令直接 `git push`，把本地积"
+title: "带哈希 denylist 的仓库里直接 push 会泄露积压的未推历史：敏感串还留在工作注释和工位名里"
 domain: "mcp"
 tags:
   - "git"

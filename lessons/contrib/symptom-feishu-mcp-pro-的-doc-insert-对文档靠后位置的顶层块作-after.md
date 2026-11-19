@@ -1,5 +1,5 @@
 ---
-title: "Symptom feishu-mcp-pro 的 doc_insert 对「文档靠后位置的顶层块」作 after_block_id 锚点时报错 `Block <"
+title: "doc_insert 用文档靠后的顶层块作锚点报 Block not found：块索引没覆盖到那么深，锚点要往前挪或改串行"
 domain: "feishu"
 tags:
   - "not"

@@ -1,5 +1,5 @@
 ---
-title: "Symptom 一台机器上多个 agent 会话并行驱动不同 ROBOGUIDE 工位时：A 线的「清扫游荡实例/重开工位」把 B 线**正在用的控制器进程**"
+title: "多工位克隆共用一套端口表：一条线的「清扫孤儿实例」会杀掉另一条线正在用的控制器，交接时端口还被假活进程占着"
 domain: "mcp"
 tags:
   - "get-nettcpconnection"
