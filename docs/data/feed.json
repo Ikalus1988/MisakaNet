@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-11-18T11:56:29.946559+00:00",
+  "generated_at": "2026-11-19T02:39:50.103968+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 13,
   "items": [
     {
       "type": "merged_pr",
-      "title": "feat(cindy-plugin): 插件自报通道 + 把「你落后了吗」说出口（#5185 的插件侧）",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5216",
-      "timestamp": "2026-11-18T10:55:23Z",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5271",
+      "timestamp": "2026-11-18T21:02:14Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "test(mcp): pin the two shapes the plugin publisher actually writes",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5225",
-      "timestamp": "2026-11-18T06:58:47Z",
+      "title": "fix(tooling): the two generators that lie on Windows now refuse, and the fallback speaks",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5249",
+      "timestamp": "2026-11-18T16:15:31Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(mcp): the endpoint tells a Cindy caller whether its build is behind (#5185)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5201",
-      "timestamp": "2026-11-18T03:10:01Z",
+      "title": "feat(intake): record whether the corpus already answered a submission, before acting on it",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5241",
+      "timestamp": "2026-11-18T12:43:45Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
       "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5199",
-      "timestamp": "2026-11-18T01:22:12Z",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5239",
+      "timestamp": "2026-11-18T12:17:19Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "docs(handoff): vol 40 — merged is not deployed, and the search cost sits in one phase",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5186",
-      "timestamp": "2026-11-17T15:42:03Z",
+      "title": "feat(cindy-plugin): 插件自报通道 + 把「你落后了吗」说出口（#5185 的插件侧）",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5216",
+      "timestamp": "2026-11-18T10:55:23Z",
       "source": "github"
     },
     {
