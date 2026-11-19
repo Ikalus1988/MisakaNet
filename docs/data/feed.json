@@ -1,9 +1,23 @@
 {
-  "generated_at": "2026-11-19T02:39:50.103968+00:00",
+  "generated_at": "2026-11-19T11:53:42.524213+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 13,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "chore(data): 市场在售版本更新为社区 1.5.12（KV 已同步）",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5337",
+      "timestamp": "2026-11-19T11:27:32Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5300",
+      "timestamp": "2026-11-19T02:57:51Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "chore(data): sync lessons.json + refresh feed",
@@ -23,20 +37,6 @@
       "title": "feat(intake): record whether the corpus already answered a submission, before acting on it",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/5241",
       "timestamp": "2026-11-18T12:43:45Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5239",
-      "timestamp": "2026-11-18T12:17:19Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat(cindy-plugin): 插件自报通道 + 把「你落后了吗」说出口（#5185 的插件侧）",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5216",
-      "timestamp": "2026-11-18T10:55:23Z",
       "source": "github"
     },
     {
