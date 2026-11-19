@@ -41,6 +41,17 @@ name: Auto-Merge Lessons
 on:
   pull_request:
     types: [labeled, synchronize, ready_for_review]
+  # The sweeper (`.github/workflows/auto-merge-sweep.yml`) re-asks once the checks have finished.
+  # Without it this channel only ever evaluates at the moment the label lands — when the checks are
+  # still running, so the verdict is `wait`, and `wait` deliberately does nothing. Measured
+  # 2026-11-19 on the first batch PR (#5349): labelled, green twenty minutes later, and never looked
+  # at again (issue #5350).
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: "pull request number to re-evaluate"
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -78,7 +89,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_NUMBER: ${{ inputs.pr || github.event.pull_request.number }}
           OPT_IN_LABEL: auto-merge-lesson
         run: |
           set -euo pipefail
@@ -92,8 +103,8 @@ jobs:
           fi
 
           # ── resolve the pull request ────────────────────────────────────────────────
-          # Every trigger left is a `pull_request` event, so the number comes straight from the
-          # payload; the head-SHA lookup that used to back-stop the `check_suite` path went with it.
+          # A `pull_request` event carries the number; the sweeper passes it as an input. Both land
+          # in `PR_NUMBER`, so nothing below has to know which one woke it.
           PR="${PR_NUMBER:-}"
           if [ -z "$PR" ]; then
             echo "No open pull request in this event — nothing to do."
