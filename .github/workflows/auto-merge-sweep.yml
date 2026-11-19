@@ -1,0 +1,77 @@
+name: Auto-Merge Sweep
+
+# `Auto-Merge Lessons` decides once per event: when the label lands, when the branch moves, when a
+# draft becomes ready. A check finishing is **not** one of those events, so a PR that was `wait` (checks
+# still running) is never asked again — measured 2026-11-19 on the first intake batch PR (#5349):
+# labelled with `auto-merge-lesson`, green twenty minutes later, never looked at again (issue #5350).
+#
+# This workflow is the "ask again" half, and it is deliberately the dumbest possible version of it:
+# every half hour, take the PRs that are labelled and clean, and dispatch the real workflow at each.
+# The decision, the payload shape and the merge itself stay where they were — one implementation, one
+# set of tests (`scripts/lesson_pr_mergeable.py`), rather than a second sweeper that could disagree.
+#
+# Why a schedule rather than a `check_suite` trigger: `check_suite` payloads carry `pull_requests`,
+# but GitHub does not deliver check-suite events for runs from forks, and this channel is opt-in for
+# outside contributions too. Thirty minutes is indistinguishable from three for a queue that moves in
+# days, and it does not depend on event semantics that already have a gap.
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+
+permissions:
+  actions: write      # dispatch the deciding workflow
+  pull-requests: read
+  contents: read
+
+concurrency:
+  group: auto-merge-sweep
+  cancel-in-progress: false
+
+jobs:
+  sweep:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Find labelled, clean pull requests
+        id: find
+        env:
+          GH_TOKEN: ${{ secrets.SHELDON_PAT || secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          # `mergeStateStatus` is what the deciding workflow re-checks anyway; asking here keeps the
+          # dispatch list small and the logs readable.
+          gh pr list --repo "$REPO" --state open --label auto-merge-lesson --limit 100 \
+            --json number,mergeStateStatus,isDraft \
+            --jq '.[] | select(.isDraft == false) | select(.mergeStateStatus == "CLEAN") | .number' \
+            > /tmp/candidates.txt
+          count=$(wc -l < /tmp/candidates.txt | tr -d ' ')
+          echo "candidates: $count"
+          tr '\n' ' ' < /tmp/candidates.txt; echo
+          echo "count=$count" >> "$GITHUB_OUTPUT"
+
+      - name: Re-ask the deciding workflow
+        if: steps.find.outputs.count != '0'
+        env:
+          GH_TOKEN: ${{ secrets.SHELDON_PAT || secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          failed=0
+          while read -r pr; do
+            [ -z "$pr" ] && continue
+            if gh workflow run auto-merge-lessons.yml --repo "$REPO" -f pr="$pr"; then
+              echo "dispatched auto-merge-lessons for #$pr"
+            else
+              echo "::warning::could not dispatch for #$pr"
+              failed=$((failed + 1))
+            fi
+          done < /tmp/candidates.txt
+          # A dispatch failure is worth a red run only if it happened for every candidate; a single
+          # 403/rate-limit blip must not paint the sweep red for thirty minutes.
+          total=$(wc -l < /tmp/candidates.txt | tr -d ' ')
+          if [ "$failed" -ne 0 ] && [ "$failed" -eq "$total" ]; then
+            echo "::error::every dispatch failed ($failed/$total)"
+            exit 1
+          fi
