@@ -202,7 +202,7 @@
 # Motion needs its own probe, not the command layer's success.
 def motion_ready(ctl):
     ctl.reset()                      # clear a latched error state before trying to move
-    return ctl.probe_position() is not None</code></pre><p>And read the table you are about to write through, instead of trusting the document:</p><pre><code class="language-python">slots = ctl.show_array("CMDS")        # print all entries, compare with the doc, then write</code></pre><p>When a latched motion error survives reset, relaunch the workcell instead of retrying: on this device the clean window after a relaunch is 30–90 s, which is the right budget for a short burst of motion work rather than a long poll that burns it.</p><h2>Verification</h2><pre><code class="language-console">$ python3 bringup_and_run.py --expect-host ROBOT
+    return ctl.probe_position() is not None</code></pre><p>And read the table you are about to write through, instead of trusting the document:</p><pre><code class="language-python">slots = ctl.show_array("CMDS")        # print all entries, compare with the doc, then write</code></pre><p>When a motion error survives reset, relaunch the workcell instead of retrying: on this device the clean window after a relaunch is 30–90 s, which is the right budget for a short burst of motion work rather than a long poll that burns it.</p><h2>Verification</h2><pre><code class="language-console">$ python3 bringup_and_run.py --expect-host ROBOT
 ready (copy echo: Copied)          &lt;- runtime layer answered
 CMDS[12] = ''                      &lt;- read back, not assumed
 run X -&gt; accepted
