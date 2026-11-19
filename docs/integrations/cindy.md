@@ -147,3 +147,36 @@ npx @misaka-net/misakanet-setup --only cindy --verify
 - 安装器**不写任何文件**，所以"重跑安装命令"修不了 Cindy 的任何问题——能修的只有应用内的插件状态；
 - `--verify` 的「查不了」**不是错误**，它不会让安装失败，只让退出码变成 2；
 - 私有数据目录里存一个每机稳定的 `client_id`（用于端点侧的复用计数）和一个提醒计数 `checkpoint.json`，卸载时随插件数据一起走。
+
+## 7. 插件待办（按优先级）
+
+### P1 — 通道收尾（等人，不急）
+
+- 源仓 [#5375](https://github.com/Ikalus1988/MisakaNet/pull/5375) 合并：两条通道并成一份实现、
+  社区变体降级成薄壳、漂移守卫改成字节级。
+- 源仓 [#5377](https://github.com/Ikalus1988/MisakaNet/pull/5377) 合并：三条运维命令（发版一键化、
+  市场与遥测读数、AE 包装器）。
+- 官方仓 [#357](https://github.com/makecindy/cindy-official-plugins/pull/357) 合并：官方包 1.6.4
+  （并入只读重试与确认卡闸门）——**这是最后一次同步**，合完官方仓那份就冻结；归属一旦放行，
+  下次 push 会自动把官方包发出去。
+- id `misakanet` 的**个人作者归属**（makecindy 组织 admin dashhuang）：放行 → 官方包能上架；
+  不放行 → 社区通道继续当正式发布通道。诉求与实测见
+  [makecindy/cindy-official-plugins#356](https://github.com/makecindy/cindy-official-plugins/issues/356)。
+
+### P2 — 端点耗时的分阶段定位（**暂缓，上量再提**）
+
+- 目的：把一次检索的耗时拆成**语料读 / BM25 索引 / 打分 / 语义回退**四段（AE 的
+  `misakanet_events`；phase 列 2026-11-15 那次部署才有）。
+- 现在的判断：**6s 不算难以忍受的用户摩擦**——插件侧平均 3.3s、>6s 占 14%；Claude Code 侧
+  45% >6s，但那是另一种调用形状（detail/full、top 更大）。所以这条**在上量之前不追**。
+- 上量后再做的成本：一个带 `Account | Account Analytics | Read` 的 Cloudflare token（放仓库外
+  `~/.config/misakanet/cf_analytics_token`），或直接在 Cloudflare 控制台跑一条 SQL——
+  两种读法 `scripts/ae_query_with_local_token.py` 里都写了。
+- 一句话理由：这条服务的是**端点的性能优化**，插件自己的决策不依赖它。
+
+### P2 — 老版本 cohort 的触达
+
+- 近 7 天仍有 **25% 的检索跑在 1.2.x / 1.3.x**（那批机器不发新协议，任何服务端手段都够不着；
+  市场来源的安装才会跟随更新，自签 `.cindy` 包装的不会）。
+- 唯一能触达它们的地方是**市场条目本身**与**官网公告**：「请从插件市场安装——自签 .cindy 包装的
+  不会自动更新」。这件事不需要任何人放行。
