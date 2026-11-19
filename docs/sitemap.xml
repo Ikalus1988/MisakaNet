@@ -516,6 +516,7 @@
   <url><loc>https://misakanet.org/lessons/mcp-initialized-通知被-sse-包装导致客户端拒绝notification-的应答要走空-202不能进-sse-分发/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/mcp-question-answer-pull-delivery/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/mcp-registry-readiness-requires-qa-before-promotion/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/mcp-resource-call-before-initialize-capabilities-unknown-method-resourcestemplat/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/mcp-server-direct-handler-testing/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/mcp-server-testing-patterns-ru/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/mcp-server-that-reduces-claude-code-context-consumption-by-9/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>

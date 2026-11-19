@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MCP resource call before initialize capabilities: 'Unknown method: resources/templates/list', 'unknown server' — MisakaNet</title>
+<meta name="description" content="两个 intake 表现不同，根因是同一个：">
+<link rel="canonical" href="https://misakanet.org/lessons/mcp-resource-call-before-initialize-capabilities-unknown-method-resourcestemplat/">
+<meta property="og:title" content="MCP resource call before initialize capabilities: 'Unknown method: resources/templates/list', 'unknown server'">
+<meta property="og:description" content="两个 intake 表现不同，根因是同一个：">
+<meta property="og:url" content="https://misakanet.org/lessons/mcp-resource-call-before-initialize-capabilities-unknown-method-resourcestemplat/">
+<!-- design-tokens:start -->
+<style id="misaka-design-tokens">
+/*
+ * The design system's tokens — ONE source for every hand-written page (#3541, batch V).
+ *
+ * Why this file exists: the site currently holds two products. The homepage has an identity
+ * (Orbitron, a cyan glow, a grid), and the other hand-written pages are GitHub's default dark
+ * theme — copied in from somewhere else. Fourteen pages, fourteen sets of hardcoded colours,
+ * radii, shadows and font stacks. Nothing is *wrong* with them; they are simply not one site,
+ * and every future change has to be made fourteen times.
+ *
+ * This block changes nothing on its own: no page references these names yet. That is deliberate
+ * — batch W is the batch that replaces hardcoded values with these names, and a batch that
+ * changed the rendering as well as the vocabulary would make a visual regression impossible to
+ * attribute. So this file is the vocabulary, and the gate below keeps it the only copy of it.
+ *
+ * Every value below is measured, not chosen for taste: the text colours were picked for their
+ * WCAG contrast ratio against --bg-0 (15.95:1, 7.67:1, 4.14:1), and the two accent colours
+ * for theirs (12.79:1 and 5.21:1). If a value changes here, the ratios change with it, so the
+ * numbers in the comments are part of the contract.
+ *
+ * Maintained by scripts/sync_design_tokens.py — `--check` fails when a page drifts from this
+ * file, the same way the shared nav row is kept honest.
+ */
+:root {
+  /* ── 底与面：3 档（收编 GitHub 习惯色，不再各页自定义）── */
+  --bg-0: #070b15;   /* 页面底 */
+  --bg-1: #0d1424;   /* 卡片 / 面 */
+  --bg-2: #161b22;   /* 浮层 / 代码块 */
+
+  /* ── 文字：3 档（对比度已实测）── */
+  --fg-1: #e2e8f0;   /* 15.95:1 on --bg-0 */
+  --fg-2: #94a3b8;   /*  7.67:1 on --bg-0 */
+  --fg-3: #64748b;   /*  仅限 ≥16px 或非文本装饰（4.14:1，正文禁用）*/
+
+  /* ── 品牌与语义 ── */
+  --accent:   #00e5ff;  /* 12.79:1 — 品牌 / 链接（首页既有 --cyan）*/
+  --accent-2: #ff0080;  /*  5.21:1 — 次级强调，限量使用 */
+  --ok:       #22c55e;  /*  8.63:1 */
+  --warn:     #f0c040;
+  --danger:   #ef4444;  /*  5.23:1 */
+  --line:        rgba(148,163,184,.14);
+  --line-strong: rgba(0,229,255,.28);
+
+  /* ── 字体：4 族（不换字体家族，只把 5 套声明收敛成 token）── */
+  /* `--font-ui` 是**系统栈**，不是 Inter：十三个手写页面今天用的是
+     `-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`，而 Inter 只在首页被
+     加载。#3541 的风险第 1 条写着"若 onload 不触发会静默回退……只有像素对比能抓到"，所以
+     **本单不换字体家族**：把 `--font-ui` 写成 Inter 开头，等于让这十三个页面在没加载 Inter
+     的情况下用 CJK 字体渲染拉丁字母——那是一次静默的排版退化。
+     首页的 Inter 因此单列为 `--font-brand`：两个族都是"不动"的，只是各归其位。── */
+  --font-ui:      -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', sans-serif;
+  --font-brand:   'Inter','PingFang SC','Microsoft YaHei','Noto Sans SC',sans-serif;
+  --font-display: 'Orbitron', var(--font-brand);      /* 仅品牌层 */
+  --font-cn:      'Ma Shan Zheng','Noto Sans SC',cursive; /* 仅首页副标 */
+  --font-mono:    'JetBrains Mono',ui-monospace,monospace;
+
+  /* ── 字阶：10 档，rem 基准 16 ── */
+  --fs-3xs:.6875rem; --fs-2xs:.75rem; --fs-xs:.8125rem; --fs-sm:.875rem;
+  --fs-md:1rem;     --fs-lg:1.125rem; --fs-xl:1.3125rem; --fs-2xl:1.5rem;
+  --fs-3xl:1.875rem;--fs-4xl:2.375rem;
+  /* 品牌层的字号（首页的标识组合）。它们不属于 UI 字阶：按 #3541 的 px 规则向上取整，52px 和
+     48px 恰好不动，但 22px 会变成 24px、36px 会变成 38px——那会把首页的标识撑宽 41px，
+     而首页的头部本来就比视口宽（§118.9 的既有 bug），再撑就没有余地了。
+     #3541 说"首页那套签名不是要改掉的东西，它是资产"，所以这一层保留原尺寸，
+     并由像素对比守住：改这里的数会立刻在 header 的宽度上被看见。── */
+  --fs-display:3.25rem;      /* 52px — .logo-title */
+  --fs-display-sm:3rem;      /* 48px — .logo-cn */
+  --fs-display-md:2.25rem;   /* 36px — 窄屏下的 .logo-title / .logo-cn */
+  --fs-tagline:1.375rem;     /* 22px — .logo-tagline */
+
+  /* ── 间距：4px 基准，8 档 ── */
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px;
+  --sp-5:24px; --sp-6:32px; --sp-7:40px; --sp-8:48px;
+
+  /* ── 圆角：3 档（现状 14 种）── */
+  --r-sm:6px; --r-md:10px; --r-lg:16px;
+  /* 胶囊形不是"圆角档位"，是形状：现状的 50% 与 999px 是同一种东西的两种写法。
+     它单列一个 token，而不是混进三档里——把它塞进 --r-lg 会让胶囊变成圆角矩形。── */
+  --r-pill:999px;
+
+  /* ── 动效：2 档 + 1 个 easing（现状 5 种时长）── */
+  --t-fast:150ms; --t-base:250ms; --ease:cubic-bezier(.2,.8,.2,1);
+
+  /* ── 阴影：2 档（现状 31 处）── */
+  --sh-1:0 1px 2px rgba(0,0,0,.35);
+  --sh-2:0 12px 32px rgba(0,0,0,.45);
+}
+
+/* ── 图标：一套 Lucide 线性图标（Y 批）── */
+/* The icon set is Lucide, inlined as SVG; the *shapes* live in `scripts/site_icons.py` and the
+   *style* lives here, for the same reason the tokens live here and not in each page: one source,
+   copied into every page, gated by a script. An emoji could not do this job — it is a coloured
+   bitmap chosen by the platform, so the same markup renders three different icons in three
+   browsers and none of them is `--accent`.
+
+   `1em` makes an icon the size of the text it sits in, which is exactly what an emoji was.
+   `non-scaling-stroke` keeps the line one hairline wide at every size instead of letting it
+   thicken as the icon grows — a scaled-up drawing looks like a scaled-up drawing, and this is a
+   set of UI glyphs, not artwork. Lucide draws at 24px with a 2px stroke; at the 14px of a drawer
+   row that would be 1.17px, and at the 30px of the register panel 2.5px, so the stroke is set
+   once, here, at 1.5px, and every icon inherits it.
+
+   The markup carries no width/height/stroke attributes at all: the attributes would be forty
+   copies of a decision this block already makes. */
+.ico {
+  width: 1em;
+  height: 1em;
+  display: inline-block;
+  vertical-align: -0.125em;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+/* ── The footer shell（Z 批）────────────────────────────────────────────────
+   The footer is the one navigation every page shares, and until batch Z it was
+   six shells wearing six spellings: `footer {}` on some pages and `.footer {}`
+   on others, a cyan-tinted top border on the homepage and a grey one on the
+   rest, four different `margin-top` values, and six pages with no footer at all
+   — which meant six pages the reader could not leave except with the back
+   button.
+
+   So the shell lives here, beside the icons, for the same reason: one source,
+   copied into every page, and `scripts/sync_design_tokens.py --check` fails when
+   a page drifts from it. A page may still add its *own* footer content (the
+   homepage's link row and wordmark), but the shell around it is not the page's
+   to decide. */
+.footer {
+  margin-top: var(--sp-7);
+  padding: var(--sp-5) 0;
+  border-top: 1px solid var(--line);
+  text-align: center;
+  color: var(--fg-2);
+  font-size: var(--fs-xs);
+  line-height: 1.8;
+}
+.footer a { color: var(--accent); text-decoration: none; }
+.footer a:hover { text-decoration: underline; }
+.site-links { margin: 0 0 var(--sp-2); }
+</style>
+<!-- design-tokens:end -->
+<style>
+  body { font-family: var(--font-ui); background: var(--bg-0); color: var(--fg-1); max-width: 720px; margin: 0 auto; padding: 40px 20px; line-height: 1.6; }
+  a { color: var(--accent); }
+  h1 { font-size: var(--fs-2xl); margin-bottom: 8px; }
+  .meta { color: #8b949e; font-size: var(--fs-xs); margin-bottom: 24px; }
+  .lesson-body { margin-top: 32px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,0.1); }
+  .lesson-body h2 { font-size: var(--fs-md); color: var(--accent); margin: 24px 0 8px; }
+  .lesson-body h3 { font-size: var(--fs-sm); color: var(--fg-1); margin: 20px 0 6px; }
+  .lesson-body p, .lesson-body li { color: #c9d1d9; font-size: var(--fs-sm); }
+  .lesson-body ul, .lesson-body ol { padding-left: 22px; }
+  .lesson-body pre { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12); border-radius: var(--r-sm); padding: 12px 14px; overflow-x: auto; }
+  .lesson-body code { font-family: var(--font-mono); font-size: var(--fs-2xs); color: #c9d1d9; }
+  .lesson-body blockquote { margin: 12px 0; padding: 10px 14px; background: rgba(0,229,255,0.06); border-radius: var(--r-sm); color: #8b949e; }
+  .lesson-body table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: var(--fs-xs); }
+  .lesson-body th, .lesson-body td { border: 1px solid rgba(0,229,255,0.12); padding: 6px 8px; text-align: left; color: #c9d1d9; }
+  .lesson-body hr { border: 0; border-top: 1px solid rgba(0,229,255,0.12); margin: 20px 0; }
+  .evidence { background: rgba(0,229,255,0.14); color: var(--accent); border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: help; }
+  .section { margin-bottom: 24px; }
+  .section h2 { font-size: var(--fs-md); color: var(--accent); margin-bottom: 8px; }
+  .section p { color: #c9d1d9; font-size: var(--fs-sm); }
+  .tags { display: flex; gap: 8px; flex-wrap: wrap; margin: 16px 0; }
+  .tag { background: rgba(0,229,255,0.1); color: var(--accent); padding: 2px 8px; border-radius: var(--r-sm); font-size: var(--fs-2xs); }
+  .related { margin-top: 32px; }
+  .related a { display: block; padding: 8px 0; border-bottom: 1px solid rgba(0,229,255,0.1); }
+  .back { margin-top: 32px; font-size: var(--fs-xs); }
+</style>
+</head>
+<body>
+<h1>MCP resource call before initialize capabilities: 'Unknown method: resources/templates/list', 'unknown server'</h1>
+<div class="meta">Domain: <a href="/topics/mcp/">mcp</a> · <span class="evidence" title="Maintainer or CI reproduced the fix">Evidence E2 — Local smoke reproduced</span></div>
+<div class="tags"><span class="tag">mcp</span><span class="tag">resources</span><span class="tag">capabilities</span><span class="tag">json-rpc</span><span class="tag">-32601</span><span class="tag">-32002</span></div>
+<div class="section">
+  <h2>Summary</h2>
+  <p>两个 intake 表现不同，根因是同一个：</p>
+</div>
+<div class="lesson-body">
+<h2>Problem</h2><p>两个 intake 表现不同，根因是同一个：</p><ul><li>#5204：<code>resources/templates/list failed: Unknown method: resources/templates/list</code></li><li>#5141：<code>unknown MCP server</code>，并且「misakanet helper could not parse its response」</li></ul><h2>Root Cause</h2><p><strong>调用发生在 <code>initialize</code> 能力握手之前。</strong> 客户端对 MCP 服务器的能力面有两套实现，而两套的 <code>initialize</code> 说法不一样：</p><table><thead><tr><th>方法</th><th>托管端点 <code>misakanet.org/mcp</code></th><th>本地 stdio 3.19.0</th></tr></thead><tbody><tr><td><code>initialize</code> capabilities</td><td><code>{"tools":{}}</code></td><td><code>{"tools":{},"resources":{},"prompts":{}}</code></td></tr><tr><td><code>resources/list</code></td><td><code>-32601 Method not found</code></td><td>200，返回 <code>misaka://lessons/index</code> 等</td></tr><tr><td><code>resources/templates/list</code></td><td><code>-32601 Method not found</code></td><td><code>-32601 Unknown method:</code></td></tr><tr><td><code>resources/read</code></td><td><code>-32000 Unauthorized</code>（路由在、要 token）</td><td>200</td></tr></tbody></table><p>两个关键点：</p><ol><li><strong>错误文案不同就说明是两套方法表</strong>：<code>Unknown method:</code> 出自 <code>misakanet/server/protocol.py</code> 的兜底 <code>else</code>；<code>Method not found:</code> 出自托管网关。</li><li><strong>能力面自相矛盾</strong>：托管端点 <code>resources/read</code> 返回 <code>-32000 Unauthorized</code>（路由存在），<code>resources/list</code> 却返回 <code>-32601</code>（路由不存在）。先探 <code>read</code> 的客户端会误判「资源支持但要 token」，再调 <code>list</code> 就炸。</li></ol><p><code>unknown MCP server</code> 这个字符串在仓库里根本不存在，它是<strong>客户端自己抛的</strong>：namespace 是延迟物化的，resource 查询在服务器条目落库之前就跑了，客户端注册表里查不到。因为它从没做过 <code>initialize</code>，也就永远不知道这个端点只声明了 <code>tools</code>。</p><p><code>could not parse its response</code> 同理：helper 把 JSON-RPC <strong>错误信封</strong>当成 <code>result</code> 取：</p><pre><code class="language-python">res = client.call("resources/list")
+for r in res.result["resources"]:   # res 没有 .result，它是 error</code></pre><p>响应本身解析得好好的，只是形状不对。</p><h2>Fix</h2><ol><li><strong>先物化再查询</strong>：延迟 namespace 在 <code>initialize</code> 返回前不发任何 <code>resources/*</code> 或 <code>tools/call</code>。这一条就消掉 <code>unknown MCP server</code>。</li><li><strong>按 capabilities 分支，不要抛</strong>：<pre><code class="language-python">caps = init["result"]["capabilities"]
+items = client.call("resources/list").get("result", {}).get("resources", []) if "resources" in caps else []</code></pre></li><li><strong>把 <code>-32601</code> 当「能力不存在」</strong>，不回退重试，直接改用 <code>tools/call → misakanet_search</code>（两个传输都可匿名用）。</li><li><strong>托管端点只走 tools</strong>：它 <code>initialize</code> 就声明了 <code>{"tools":{}}</code>，<code>resources/*</code> 对它没有意义。</li></ol><h2>服务端侧（同一现象的另一半）</h2><p>本地 stdio 的 <code>resources/read</code> 读不到 URI 时，返回的是<strong>成功信封</strong>，错误塞在 <code>contents[0].text</code>：</p><pre><code>{"result":{"contents":[{"uri":"misakanet://does-not-exist",
+                        "text":"{\"error\": \"Unknown resource: misakanet://does-not-exist\"}"}]}}</code></pre><p>命中与未命中在 JSON-RPC 层完全不可区分。按 MCP 规范应返回 <code>-32002</code>。改成：</p><pre><code class="language-python">if isinstance(content, dict) and content.get("error"):
+    return {"jsonrpc":"2.0","id":req_id,
+            "error":{"code":-32002,"message":f"Resource not found: {uri}",
+                     "data":{"uri":uri,"detail":content["error"]}}}</code></pre><p>detail 留在 <code>error.data.detail</code> 里，诊断信息不丢。</p><h2>Verification</h2><p>先看托管端点声明的能力面：</p><pre><code class="language-bash">curl -sS -X POST https://misakanet.org/mcp \
+  -H 'content-type: application/json' \
+  -H 'accept: application/json, text/event-stream' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}'</code></pre><p>预期（<code>data:</code> 帧，capabilities 里没有 resources）：</p><pre><code class="language-json">{"jsonrpc":"2.0","id":1,"result":{"protocolVersion":"2025-06-18","capabilities":{"tools":{}},"serverInfo":{"name":"misakanet","version":"3.19.0"}}}</code></pre><p>再看一个未声明方法怎么答：</p><pre><code class="language-bash">curl -sS -X POST https://misakanet.org/mcp \
+  -H 'content-type: application/json' \
+  -H 'accept: application/json, text/event-stream' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"resources/templates/list","params":{}}'</code></pre><p>预期：</p><pre><code class="language-json">{"jsonrpc":"2.0","id":1,"error":{"code":-32601,"message":"Method not found: resources/templates/list"}}</code></pre><p>本地 stdio 服务则声明了 resources，且未命中必须是协议错误：</p><pre><code class="language-bash">python3 -m misakanet.server &lt;&lt;'EOF'
+{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{}}}
+{"jsonrpc":"2.0","id":2,"method":"resources/read","params":{"uri":"misakanet://does-not-exist"}}
+EOF</code></pre><p>预期：<code>initialize</code> 的 capabilities 含 <code>resources</code>；<code>resources/read</code> 返回 <code>{"error":{"code":-32002,"message":"Resource not found: misakanet://does-not-exist",...}}</code>，<strong>没有 <code>result</code> 字段</strong>。</p><p>回归：解析得到的 URI 仍正常返回，说明改动只落在未命中路径。</p><pre><code class="language-bash">python3 -c "from misakanet.server.protocol import handle_request as h; import json; r=h({'jsonrpc':'2.0','id':1,'method':'resources/read','params':{'uri':'misaka://lessons/index'}}); print(len(json.loads(r['result']['contents'][0]['text'])['lessons']))"</code></pre><p>预期输出 <code>1014</code>（本 checkout 的 lesson 数）。</p>
+</div>
+<div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/mcp-resource-call-before-initialize-capabilities-looks-like-unknown-server.md">View on GitHub →</a></p></div>
+<div class="section"><h2>Search</h2><p><a href="/search/?q=MCP resource call before initialize capabilities: 'Unknown method: resources/templates/list', 'unknown server'">Find related lessons →</a></p></div>
+<div class="back"><a href="/">← Back to MisakaNet</a> · <a href="/search/">Search lessons</a></div>
+<footer class="footer">
+<!-- site-links:start -->
+<nav class="site-links" aria-label="Site links">
+  <a href="/">Home</a> ·
+  <a href="/search/">Search lessons</a> ·
+  <a href="/install/">Install</a> ·
+  <a href="/start">Start</a>
+</nav>
+<!-- site-links:end --></footer>
+</body>
+</html>
