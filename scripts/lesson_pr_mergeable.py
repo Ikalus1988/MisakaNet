@@ -85,6 +85,30 @@ LESSONS_DIR = "lessons/"
 INDEX_PATH = "lessons/index.md"
 INDEX_MAX_ADDITIONS = 1
 
+# The generators rewrite these from `lessons/`, so a conversion PR cannot be lessons-only: the corpus
+# snapshot, the OKF export, the counts, the site pages and the ranking fixture all move with it. They
+# are listed here rather than allowed by directory, because "docs/**" would let a PR change the site
+# itself — and every path here is *overwritten* by a generator the gate re-runs, so listing it is not
+# a promise about its content, only about who writes it.
+GENERATED_PATHS = frozenset({
+    "data/lessons.json",
+    "data/okf/lessons.jsonl",
+    "data/public-vocabulary.json",
+    "docs/.generated-pages.json",
+    "docs/.well-known/llms.txt",
+    "docs/_lessons_count.txt",
+    "docs/_redirects",
+    "docs/data/lessons-lite.json",
+    "docs/data/lessons.json",
+    "docs/index.html",
+    "docs/llms.txt",
+    "docs/sitemap.xml",
+    "docs/trust-semantics.md",
+    "tests/fixtures/ranking-snapshot.json",
+})
+# Prefixes the page generator owns wholesale (one directory per lesson / per topic).
+GENERATED_PREFIXES = ("docs/lessons/", "docs/topics/")
+
 # Conclusions that mean "not finished yet" — the workflow will see this PR again.
 PENDING_CONCLUSIONS = frozenset(
     {"", "pending", "queued", "in_progress", "requested", "waiting", "expected"}
@@ -167,11 +191,23 @@ def _evaluate_files(
         # under lessons/" is vacuously true for it — never merge on that.
         return WAIT, "no changed files reported — scope could not be verified"
 
-    outside = sorted(path for path in files if not path.startswith(LESSONS_DIR))
+    def _generated(path: str) -> bool:
+        return path in GENERATED_PATHS or path.startswith(GENERATED_PREFIXES)
+
+    outside = sorted(
+        path for path in files
+        if not path.startswith(LESSONS_DIR) and not _generated(path)
+    )
     if outside:
         shown = ", ".join(outside[:10])
         more = "" if len(outside) <= 10 else f" (+{len(outside) - 10} more)"
         return REFUSE, f"file(s) outside {LESSONS_DIR}: {shown}{more}"
+
+    # A PR of generated output alone is refused: the generators are the only writer of those paths,
+    # and a diff that changed nothing under `lessons/` cannot have produced this output. The
+    # conversion PRs this rule exists for always carry at least one lesson.
+    if not any(path.startswith(LESSONS_DIR) for path in files):
+        return REFUSE, f"no lesson file changed — {LESSONS_DIR} output alone is not a conversion"
 
     if INDEX_PATH in files:
         stats = file_stats.get(INDEX_PATH)

@@ -3,17 +3,24 @@ name: Intake Batch Convert
 # The scheduled half of the intake flywheel (docs/maintainer/intake-flywheel.md).
 #
 # What it does: asks the converter to turn every open `mcp-intake` report into a lesson, regenerates
-# the derived corpus files, and opens **one** pull request. What it does not do: merge. A batch PR
-# carries regenerated files (`data/lessons.json`, `data/okf/`, `lessons/index.md`, …), and
-# `lesson-gate.yml` requires those to match the corpus — while `Auto-Merge Lessons` only merges PRs
-# whose every path is under `lessons/` (`scripts/lesson_pr_mergeable.py`). Both rules are right, so a
-# batch always ends with one human click. Pretending otherwise would mean weakening one of them.
+# the derived corpus files, and opens **one** pull request. It merges itself.
 #
-# Weekly, not daily: measured 2026-11-02, roughly 100-150 reports arrive per week and a batch below
-# ~5 lessons is not worth a PR. `workflow_dispatch` exists for the "I want it now" case.
+# Until 2026-11-19 that last sentence was false: a batch PR carries regenerated files
+# (`data/lessons.json`, `data/okf/`, `lessons/index.md`, …) because `lesson-gate.yml` requires them in
+# any PR that adds lessons, while `Auto-Merge Lessons` refused every path outside `lessons/` — so each
+# batch ended with a human click and the queue moved at one batch a week against 35-45 reports a day.
+# The rule now names the generator-owned paths (`lesson_pr_mergeable.GENERATED_PATHS`) instead of
+# refusing them, and the gate's own proof does the work: it re-runs the generators, so output that
+# does not match its lessons is red before anything merges.
+#
+# Six-hourly now, not weekly. The weekly cadence existed because a batch cost a click and a review;
+# with the click gone, the only argument left was "a batch below ~5 lessons is not worth a PR"
+# (measured 2026-11-02: 100-150 reports/week), and four small PRs a day cost less in review attention
+# than a queue that grows 35-45 items a day. `workflow_dispatch` still exists for the "I want it now"
+# case.
 on:
   schedule:
-    - cron: "40 6 * * 1"   # Mondays 06:40 UTC, before the daily data sync at 00:00 UTC reruns it
+    - cron: "40 */6 * * *"   # every six hours at :40, clear of the daily data sync at 00:00
   workflow_dispatch:
 
 permissions:
@@ -157,10 +164,11 @@ jobs:
 
           gh pr create --base main --head "$BRANCH" \
             --title "feat(lessons): intake batch $(date -u +%Y-%m-%d)" \
+            --label auto-merge-lesson \
             --body "$(printf '%s\n\n' \
               'Converted by `scripts/convert_intake_batch.py` from the open `mcp-intake` queue.' \
               '```' "$(cat /tmp/batch-report.txt)" '```' \
-              '**Why this is not auto-merged**: it carries the derived corpus files, which `lesson-gate.yml` requires in any PR that adds lessons, while `Auto-Merge Lessons` only takes PRs whose every path is under `lessons/`. Both rules are deliberate — this one needs a click.' \
+              '**Auto-merge**: this PR carries the derived corpus files, which `lesson-gate.yml` requires in any PR that adds lessons; `Auto-Merge Lessons` accepts them because `scripts/lesson_pr_mergeable.py` names the generator-owned paths, and the gate has already re-run those generators.' \
               '**After merge**: `update-lessons.yml` posts the receipt on every cited intake and closes it.')"
           echo "opened $BRANCH"
 
