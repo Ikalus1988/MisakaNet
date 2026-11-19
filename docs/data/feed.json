@@ -1,82 +1,82 @@
 {
-  "generated_at": "2026-11-19T16:15:18.747054+00:00",
+  "generated_at": "2026-11-19T18:52:24.435535+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 13,
   "items": [
     {
       "type": "merged_pr",
-      "title": "feat(lessons): eleven failures at the pattern level (deploy ×4, embedded FTP ×3, GUI automation ×2, binary parse ×1, layered readiness ×1)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5243",
-      "timestamp": "2026-11-19T16:15:05Z",
+      "title": "feat(lessons): intake batch 2026-11-19",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5349",
+      "timestamp": "2026-11-19T18:52:11Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(intake): a conversion PR may merge itself — the funnel was one click wide",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5346",
-      "timestamp": "2026-11-19T15:25:14Z",
+      "title": "docs(cindy): 插件待办清单（按优先级）",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5379",
+      "timestamp": "2026-11-19T17:43:07Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(intake): the receipt posts itself, and a sweep finds the ones nobody closed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5344",
-      "timestamp": "2026-11-19T12:50:37Z",
+      "title": "docs(handoff): vol 41 — the funnel measured end to end, and the four places it waits for a human",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5376",
+      "timestamp": "2026-11-19T17:16:01Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5343",
-      "timestamp": "2026-11-19T12:08:43Z",
+      "title": "refactor(cindy-plugin): 两条通道并成一份实现，社区变体降级成薄壳",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5375",
+      "timestamp": "2026-11-19T17:08:48Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(data): 市场在售版本更新为社区 1.5.12（KV 已同步）",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5337",
-      "timestamp": "2026-11-19T11:27:32Z",
+      "title": "chore(cindy-plugin): 官方通道 1.6.4 —— 首次上架的占位版本",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5351",
+      "timestamp": "2026-11-19T16:15:36Z",
       "source": "github"
     },
     {
       "type": "lesson",
-      "title": "A vendor's binary variable dump needs its type table, not a fixed field width",
-      "url": "lessons/contrib/a-binary-variable-dump-is-read-by-type-width-not-fixed-width.md",
-      "timestamp": "2026-11-18",
-      "domain": "fanuc",
+      "title": "A Home Assistant integration that verifies a control's registry row by Python ob",
+      "url": "lessons/contrib/a-home-assistant-integration-that-verifies-a-controls.md",
+      "timestamp": "2026-11-19",
+      "domain": "mcp",
       "source": "lessons"
     },
     {
       "type": "lesson",
-      "title": "A container that starts but answers 502: the image never contained the config file the server reads at boot",
-      "url": "lessons/contrib/a-container-starts-but-the-image-lacks-the-config-it-reads-at-boot.md",
-      "timestamp": "2026-11-18",
-      "domain": "docker",
+      "title": "A native media intent accepted a removed spoken receiver name as part of a wildc",
+      "url": "lessons/contrib/a-native-media-intent-accepted-a-removed-spoken-receiver.md",
+      "timestamp": "2026-11-19",
+      "domain": "mcp",
       "source": "lessons"
     },
     {
       "type": "lesson",
-      "title": "A GUI window is named by its document's internal name, not by the folder you opened",
-      "url": "lessons/contrib/a-gui-window-is-named-by-its-document-not-its-folder.md",
-      "timestamp": "2026-11-18",
-      "domain": "windows",
+      "title": "A recovery control rejected document retrieval evidence with \"a successful verif",
+      "url": "lessons/contrib/a-recovery-control-rejected-document-retrieval-evidence.md",
+      "timestamp": "2026-11-19",
+      "domain": "mcp",
       "source": "lessons"
     },
     {
       "type": "lesson",
-      "title": "Accepted is not executed: measure readiness at the layer that will do the work",
-      "url": "lessons/contrib/accepted-is-not-executed-measure-readiness-at-the-layer-that-works.md",
-      "timestamp": "2026-11-18",
-      "domain": "fanuc",
+      "title": "A scheduling grammar with an unrestricted task wildcard before a date can match",
+      "url": "lessons/contrib/a-scheduling-grammar-with-an-unrestricted-task-wildcard.md",
+      "timestamp": "2026-11-19",
+      "domain": "mcp",
       "source": "lessons"
     },
     {
       "type": "lesson",
-      "title": "Listing a directory on an embedded controller can be the one operation that kills it",
-      "url": "lessons/contrib/an-embedded-controller-ftp-listing-can-be-the-operation-that-kills-it.md",
-      "timestamp": "2026-11-18",
-      "domain": "fanuc",
+      "title": "A spoken music request that names a receiver can be parsed with the destination",
+      "url": "lessons/contrib/a-spoken-music-request-that-names-a-receiver-can-be-parsed.md",
+      "timestamp": "2026-11-19",
+      "domain": "mcp",
       "source": "lessons"
     },
     {
