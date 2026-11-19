@@ -174,6 +174,7 @@
   <url><loc>https://misakanet.org/lessons/the-502-was-not-the-gateway-a-go-struct-expected-a-string-and-the-model-returned/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/chinese-powershell-51-script-saved-as-utf-8-without-bom-is-read-as-gbk-and-fails/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/chroma-rebuild-no-checkpoint-cn/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/无头-chrome-打印-pdf-全文字号缩到-5560多栏定高column-fillauto-溢出把整份文档缩小去掉定高改用-grid-两栏/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/chrome-relay-browser-automation/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/ci-dco-decouple-pythonpath-fork-pr/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/ci-fork-pr-no-comment-token/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -202,6 +203,7 @@
   <url><loc>https://misakanet.org/lessons/codeql-alert-dismissal-false-positive/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/codesign-entitlements-prints-a-usage-banner-unless-you-give-it-a-destination/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/codesign-verify-r-reads-a-bare-requirement-string-as-a-filename-prefix-it-with/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/codex-启动告警在开启-multi-agent-v2-后仍残留只删废弃的-featuresmulti-agent-显式键保留-agentsenabled-与/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/codex-desktop-reload-mcp-config-without-restarting-the-app/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/codex-cli-keyring-user-interaction-is-not-allowed-diagnosis/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-config-edit-changes-only-the-runtime-layer-the-project-layer-keeps-the-old-opt/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -314,6 +316,7 @@
   <url><loc>https://misakanet.org/lessons/fanuc-roboguide-frvrc-auto-backup-fails-on-every-restart-file-077-file-079-file/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/fanuc-intp-102-detect-joint-olp-whitespace/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/fanuc-io-marker-m-instruction/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/fanuc-首件-karel-通讯块丢程序号post-err-severity2-把一次瞬时连接失败放大成取消所有任务改重试降级/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/fanuc-kl-1086-is-line-number-not-error-code/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/fanuc-kl-bytes-ahead-is-builtin-procedure/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/fanuc-kl-err-abort-vs-err-pause/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -362,6 +365,7 @@
   <url><loc>https://misakanet.org/lessons/a-file-count-is-not-an-entity-count-three-layer-dedup-and-short-names-collide-ac/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/finding-and-fixing-ghostty-s-largest-memory-leak/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/firewall-port-open-not-public/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/单任务固件构建在编译资产字面量的大生成-tu-时耗尽整机给该-tu-单独限址空间内存下限别只看顶层-runner-退出码/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/fiverr-perimeterx-blocks-seller-automation/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/judge-a-fix-by-how-the-failure-degrades-not-by-whether-a-crash-remains-count-the/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/fractional-devicepixelratio-makes-1dpr-pens-anti-alias-and-breaks-pixel-exact-qt/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -421,6 +425,7 @@
   <url><loc>https://misakanet.org/lessons/a-green-compile-says-nothing-about-reachability-the-fix-shipped-in-code-no-user/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/green-unit-tests-hid-a-build-only-type-error-because-the-test-runner-strips-type/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/griffe-docstring-parsers-return-empty-instead-of-raising-a-tryexcept-fall-throug/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/推送被拒任务却标完成legacy-服务返回正常掩盖云端拒绝改用阻塞式-notifysend-message-到单一-notify-实体被拒就留-pending/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/applying-a-review-computed-from-an-old-snapshot-as-a-blind-overwrite-silently-dr/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/headless-chrome-cdp-port-answers-but-the-page-target-is-hung-automation-fails-si/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/heartbeat-scan-improvement/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
