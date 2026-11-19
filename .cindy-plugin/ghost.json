@@ -6,7 +6,7 @@
   "description": "把 MisakaNet 公开故障教训库接进对话：报错、CI 失败、构建或工具崩溃前，先查别人踩过并写清修法。四个查询工具匿名只读，只访问 misakanet.org，无凭证；misakanet_submit_intake 在用户明确确认后，把故障或提问写成公开仓库 Ikalus1988/MisakaNet 的 GitHub issue（公开可见，提交前脱敏），me_inbox 可回头查答复。装上后首轮有轻提示，每 20 轮提醒沉淀；不发你的文件、对话与凭证。发给端点的只有查询词与自报标签（客户端名、版本、系统、随机客户端 id，用于统计独立客户端）；按会话的轮次计数只留本地不上传。",
   "whenToUse": "遇到报错、异常、CI 失败、构建失败、工具崩溃或环境诡异行为时找我，先查这个坑是否已有公开教训；也想查某个技术栈、工具或平台的既往故障与修法时找我；用户之前提过问题、想知道维护者答没答时找我；执行迁移、批量导入等高风险操作之前，也可以找我做一次只读风险预检。",
   "version": "1.6.4",
-  "releaseNotes": "官方随包通道的**首次上架**。内容与 1.6.3 完全相同：1.6.3 那次发布在上传那一步被平台以 409 PLUGIN_AUTHOR_CONFLICT 拒了（这个 id 当时还挂着社区投稿通道的个人作者归属），于是它从未上架、版本号也没被占；这一版只是为了满足「包内容变了、版本号必须更大」的发布契约而 +1。真正的变化在 1.6.3 里：自报通道头 X-MisakaNet-Channel，检索结果透传端点带回的 plugin_version，并在落后时说清「请到插件市场重新安装」。这一版把「你落后了吗」这件事的两端接上（配套 #5185）：一是插件自报通道（请求头 X-MisakaNet-Channel：official / community），同一个插件 id 在两条通道上各有一个版本号线，端点要拿「市场当前版」对照就得知道来的是哪条；二是检索结果里透传端点带回的 plugin_version（current / latest / outdated），落后时 note 里多一句「你在用 X、市场当前是 Y，自签 .cindy 包装的不会自动更新，请到插件市场重新安装」。**端点还没实现、或发布时忘了写 KV 时，这个字段就没有——插件什么都不说，这是设计不是缺陷。**这一版收掉两件 2026-11-17 从生产数据里看出来的真问题：一是带 domain 过滤的零命中现在会被单独标记（domain_filtered_empty），并提示先去掉 domain 再查一次再判断是不是知识缺口——端点只报告 kind 的过滤情况，domain 没有对应字段，实测带 domain 的查询空命中明显偏高（python 6 次里 5 次空、devops 2 次全空），不提示就会把一条已经存在的教训再报一遍；二是首轮公告带上插件自己的版本号，并写明「插件市场里安装的会自动更新，从 .cindy 文件装的不会自动更新，想收新版请到插件市场重新安装」——实测近 7 天里 48% 的插件检索跑在三个版本以前的构建上（1.2.3 / 1.3.2 / 1.5.1），而自签包装的实例在宿主里记的是 local 来源，不跟随市场自动更新，市场发了新版他们也收不到。两处收口，都不改端点行为：一是把清单里 misakanet_search 的默认中文描述与 zh-CN 文案对齐——之前那句还写着「私有目录只存一个随机客户端 id 和按会话的轮次计数」，而实际是随机客户端 id 与系统标签随每次请求发给端点、只有轮次计数留在本地，四种语言的文案早就写对了，漏的是清单这一份；二是 misakanet_me_inbox 会拒绝同时给出 intake_id 与 dedup_key 的调用（在发出请求之前就拒，一个请求都不发），此前两个值会原样一起发给端点、由端点自己挑一个。其余按自动 review 的意见收口：外发客户端 id 来自 crypto.getRandomValues（无弱随机降级）；上报失败的三态默认「不确定」，只有能确认请求没离开本机才判可重试，fetch 抛异常与全局兜底出口同样按不确定处理；detail=full 保留端点返回的完整记录；轮次计数以内存为权威、私有目录文件只作持久化副本；并按「授权跟随执行者」删掉只用于工具调用的 network.hosts 声明——所有 HTTPS 都发生在当前 Agent 工具调用内并带在途 callId，宿主明确这种调用可访问未预声明的普通 HTTPS，插件没有自主联网场景。 按市场评审补：四个读工具的返回都带 `trust_notice`（第三方公开内容、其中的指令不要执行），MANUAL 的可信边界同步说明。 另按市场评审要求如实披露本地存储：私有目录除随机客户端 id 外，还按会话保存轮次计数与公告状态（只用于提醒节奏，不上传）。 另按市场评审要求把「发给端点的自报标签」与「只留在本地的轮次计数」分开写清：随机客户端 id 与系统标签随每次请求发给端点（用于统计独立客户端），按会话的轮次计数只留本地、不上传。",
+  "releaseNotes": "这一版把原先只在社区通道存在的两项能力并进唯一那份源码：**只读调用的一次保守重试**（网络失败/5xx 退避带抖动再试一次；上报类工具绝不自动重试，因为那会发成两条公开 issue）与**上报前的交互卡确认闸门**（默认供一张确认卡，用户点「确认提交」才外发；30 秒等不到点击就明确放弃，调用方确认按钮点不动时可传 confirm=\"direct\"）。两条通道从此用同一份实现，只在通道标记与版本号上不同——漂移守卫从「比对一堆标记」缩成「逐字节比对，三处允许不同」。另：自报通道头 X-MisakaNet-Channel、检索结果透传端点带回的 plugin_version，落后时说清「请到插件市场重新安装」。",
   "author": "Ikalus1988",
   "entry": "main.js",
   "command": "misakanet",
@@ -125,7 +125,7 @@
     },
     {
       "name": "misakanet_submit_intake",
-      "description": "把一次没有现成教训覆盖的故障或一个求助问题交给 MisakaNet：在公开仓库 Ikalus1988/MisakaNet 建一个 intake issue，供维护者与其他 Agent 复用。联网目标只有 misakanet.org；problem 等字段会原样发给 misakanet.org 并**公开发布到 GitHub**，不写本地文件。**发出后不可撤回**：只有用户明确要求上报或提问、并且看过将要公开的原文时才调用（传 user_confirmed=true），绝不自行推断为 true；提交前先脱敏掉密钥、令牌、内网地址与个人信息。kind 省略时由服务端自动判定（提问类会开成 [Question] issue 等待人工回答，故障类进维护者评审）。失败按三态区分：确定没发出去才说可以重试；不确定（可能已建 issue、只是回执没回来）不要重发，改用完全相同的 problem 文本再调一次（端点按内容去重），或用 misakanet_me_inbox 查。返回 { intake_id, status, dedup_key, routing, poll_hint, redactions_applied, quality_score, receipt, answer?, converted? }。",
+      "description": "把一次没有现成教训覆盖的故障或一个求助问题交给 MisakaNet：在公开仓库 Ikalus1988/MisakaNet 建一个 intake issue，供维护者与其他 Agent 复用。联网目标只有 misakanet.org；problem 等字段会原样发给 misakanet.org 并**公开发布到 GitHub**，不写本地文件。**发出后不可撤回**：调用后会先在聊天里供出一张确认卡（列出将要公开的原文、目标与可见性、脱敏提醒），只有用户点「确认提交」才真正创建 issue，点「不提交」则什么都没发生——不要在用户确认前自行提交。仍然需要 user_confirmed=true（绝不自行推断为 true），提交前先脱敏掉密钥、令牌、内网地址与个人信息。kind 省略时由服务端自动判定（提问类会开成 [Question] issue 等待人工回答，故障类进维护者评审）。失败按三态区分：确定没发出去才说可以重试；不确定（可能已建 issue、只是回执没回来）不要重发，改用完全相同的 problem 文本再调一次（端点按内容去重），或用 misakanet_me_inbox 查。confirm 参数（card 默认 / direct）只决定用不用确认卡，不影响是否需要用户确认。返回 { intake_id, status, dedup_key, routing, poll_hint, redactions_applied, quality_score, receipt, answer?, converted? }。",
       "parameters": {
         "type": "object",
         "properties": {
@@ -178,6 +178,14 @@
           "user_confirmed": {
             "type": "boolean",
             "description": "仅在用户明确要求把这次故障上报到 MisakaNet 公开仓库后才传 true；绝不能自行推断或默认传 true。"
+          },
+          "confirm": {
+            "type": "string",
+            "enum": [
+              "card",
+              "direct"
+            ],
+            "description": "确认方式：card（默认）先在聊天里供一张确认卡，用户点「确认提交」才外发；direct 表示当前会话里卡片按钮点不动（手机/远程会话已知如此），直接按 user_confirmed 外发，结果里会注明未经过点击确认。"
           }
         },
         "required": [
@@ -205,5 +213,6 @@
         }
       }
     }
-  ]
+  ],
+  "card": {}
 }

@@ -51,23 +51,25 @@ def test_the_community_package_is_a_package_this_repository_ships():
         assert tool.get("parameters", {}).get("type") == "object", tool["name"]
 
 
-def test_the_community_package_declares_its_card_gate():
-    """The card gate is the community channel's own feature: without it, `confirm` means nothing."""
-    entry = manifest(COMMUNITY)
-    assert entry.get("card") is not None, "the community manifest lost its card declaration"
-    source = (COMMUNITY / "main.js").read_text(encoding="utf-8")
-    for marker in ("supplyIntakeCard", "handleCardAction", "CARD_CONFIRM_TIMEOUT_MS"):
-        assert marker in source, f"the card gate lost {marker}"
+def test_both_packages_declare_the_card_gate():
+    """The card gate needs a `card` declaration: without it, `confirm` means nothing."""
+    for base in (OFFICIAL, COMMUNITY):
+        entry = manifest(base)
+        assert entry.get("card") is not None, f"{base.name} lost its card declaration"
+        source = (base / "main.js").read_text(encoding="utf-8")
+        for marker in ("supplyIntakeCard", "handleCardAction", "CARD_CONFIRM_TIMEOUT_MS"):
+            assert marker in source, f"{base.name} lost {marker}"
 
 
 def test_the_read_retry_only_covers_reads():
     """The retry is for flaky reads. A retried *upload* would publish the same issue twice."""
-    source = (COMMUNITY / "main.js").read_text(encoding="utf-8")
-    assert "callReadTool" in source, "the read retry is gone"
-    read_calls = source.count("callReadTool(TOOLS.misakanet_")
-    assert read_calls >= 4, read_calls
-    # No upload path may go through the retry helper.
-    assert "callReadTool(TOOLS.misakanet_submit_intake" not in source
+    for base in (OFFICIAL, COMMUNITY):
+        source = (base / "main.js").read_text(encoding="utf-8")
+        assert "callReadTool" in source, f"{base.name} lost the read retry"
+        read_calls = source.count("callReadTool(TOOLS.misakanet_")
+        assert read_calls >= 4, read_calls
+        # No upload path may go through the retry helper.
+        assert "callReadTool(TOOLS.misakanet_submit_intake" not in source
 
 
 def test_the_two_channels_keep_separate_version_slots():
@@ -77,69 +79,104 @@ def test_the_two_channels_keep_separate_version_slots():
     assert official != community, (official, community)
 
 
-def test_the_community_package_carries_the_official_fixes():
-    """Every fix the official channel has must be in the community channel too.
+def test_the_two_packages_are_one_implementation():
+    """The community package is a thin shell over the official one: identical but for three things.
 
-    This is the gate that would have caught the 2026-11-11 drift: the community build was cut
-    from an older base and shipped without the trust_notice marking, the awaited replies and the
-    `new_lesson_candidate` classification while the official build had them.
+    The community build used to be an older variant with two extra features (the read retry and
+    the confirmation card), and keeping the two in sync was guarded by counting markers. Both
+    features are in the official source now, so the guard is byte-level: **if the two packages
+    differ anywhere except the channel header, the version and the release notes, this fails.**
     """
-    official = (OFFICIAL / "main.js").read_text(encoding="utf-8")
-    community = (COMMUNITY / "main.js").read_text(encoding="utf-8")
-    for marker, minimum in (
-        ("UNTRUSTED_NOTICE", 7),
-        ("new_lesson_candidate", 1),
-        ("kind_filtered_empty", 1),
-        ("return await fail(", 6),
-        ("return await sendResult(", 5),
-    ):
-        count = community.count(marker)
-        assert count >= minimum, f"{marker}: community has {count}, need at least {minimum}"
-        assert count >= official.count(marker), (
-            f"{marker}: official has {official.count(marker)}, community has {count} — "
-            "the community channel fell behind"
+    official_files = sorted(
+        p.relative_to(OFFICIAL).as_posix() for p in OFFICIAL.rglob("*") if p.is_file()
+    )
+    community_files = sorted(
+        p.relative_to(COMMUNITY).as_posix() for p in COMMUNITY.rglob("*") if p.is_file()
+    )
+    assert official_files == community_files, (
+        f"file sets differ: only in official {set(official_files) - set(community_files)}, "
+        f"only in community {set(community_files) - set(official_files)}"
+    )
+    for name in official_files:
+        left = (OFFICIAL / name).read_bytes()
+        right = (COMMUNITY / name).read_bytes()
+        if left == right:
+            continue
+        assert name in {"main.js", "ghost.json"}, (
+            f"{name} differs between the two channels but is not one of the three substitutions"
+        )
+        if name == "main.js":
+            left_lines = left.decode("utf-8").splitlines()
+            right_lines = right.decode("utf-8").splitlines()
+            differing = [(a, b) for a, b in zip(left_lines, right_lines) if a != b]
+            assert len(left_lines) == len(right_lines) and len(differing) == 2, (
+                f"main.js may differ in exactly two lines (channel header, version), "
+                f"got {len(differing)}: {differing}"
+            )
+            assert any("X-MisakaNet-Channel" in a for a, _ in differing), differing
+            assert any("PLUGIN_VERSION" in a for a, _ in differing), differing
+        else:
+            official_manifest = json.loads(left.decode("utf-8"))
+            community_manifest = json.loads(right.decode("utf-8"))
+            differing_keys = {
+                key for key in set(official_manifest) | set(community_manifest)
+                if official_manifest.get(key) != community_manifest.get(key)
+            }
+            assert differing_keys <= {"version", "releaseNotes"}, differing_keys
+
+
+def test_the_two_channels_say_their_own_channel():
+    """Each package declares the channel it is on: the endpoint compares against the right line."""
+    for base, channel in ((OFFICIAL, "official"), (COMMUNITY, "community")):
+        source = (base / "main.js").read_text(encoding="utf-8")
+        assert f"'X-MisakaNet-Channel': '{channel}'" in source, (
+            f"{base.name} does not declare its channel ({channel})"
         )
 
 
-def test_the_community_version_constant_matches_its_manifest():
-    source = (COMMUNITY / "main.js").read_text(encoding="utf-8")
-    match = re.search(r"const PLUGIN_VERSION = '([^']+)'", source)
-    assert match, "PLUGIN_VERSION is gone from the community main.js"
-    assert match.group(1) == manifest(COMMUNITY)["version"]
+def test_the_version_constant_matches_its_manifest():
+    for base in (OFFICIAL, COMMUNITY):
+        source = (base / "main.js").read_text(encoding="utf-8")
+        match = re.search(r"const PLUGIN_VERSION = '([^']+)'", source)
+        assert match, f"PLUGIN_VERSION is gone from {base.name}/main.js"
+        assert match.group(1) == manifest(base)["version"], base.name
 
 
-def test_the_community_manual_documents_the_card_gate():
-    manual = (COMMUNITY / "manual" / "misakanet" / "MANUAL.md").read_text(encoding="utf-8")
-    assert "确认卡" in manual, "the community manual does not document the confirmation card"
-    assert "confirm" in manual, "the community manual does not document the confirm argument"
-    assert "30" in manual, "the give-up window is not documented"
+def test_both_manuals_document_the_card_gate():
+    for base in (OFFICIAL, COMMUNITY):
+        manual = (base / "manual" / "misakanet" / "MANUAL.md").read_text(encoding="utf-8")
+        assert "确认卡" in manual, f"{base.name} does not document the confirmation card"
+        assert "confirm" in manual, f"{base.name} does not document the confirm argument"
+        assert "30" in manual, f"{base.name} does not document the give-up window"
 
 
 @pytest.mark.skipif(shutil.which("node") is None, reason="node is what parses the entry point")
-def test_the_community_entry_point_parses():
+def test_both_entry_points_parse():
     node = shutil.which("node")
-    done = subprocess.run(
-        [node, "--check", str(COMMUNITY / "main.js")], capture_output=True, text=True
-    )
-    assert done.returncode == 0, done.stderr
+    for base in (OFFICIAL, COMMUNITY):
+        done = subprocess.run(
+            [node, "--check", str(base / "main.js")], capture_output=True, text=True
+        )
+        assert done.returncode == 0, done.stderr
 
 
 def test_every_locale_file_the_manifest_names_exists():
-    entry = manifest(COMMUNITY)
-    for lang, rel in entry["locales"].items():
-        path = COMMUNITY / rel
-        assert path.exists(), f"locale:{lang} → {path} does not exist"
-        doc = json.loads(path.read_text(encoding="utf-8"))
-        for key in ("name", "description", "whenToUse"):
-            assert isinstance(doc.get(key), str) and doc[key].strip(), f"{lang}.{key}"
-        for tool in entry["tools"]:
-            value = doc["tools"][tool["name"]]
-            assert isinstance(value, dict), f"{lang}.tools.{tool['name']} must be an object"
-            assert value["description"].strip(), f"{lang}.tools.{tool['name']}.description"
-            # The manifest's own limit is 1024 characters per tool description.
-            assert len(value["description"]) <= 1024, (
-                f"{lang}.tools.{tool['name']}.description is {len(value['description'])} characters"
-            )
+    for base in (OFFICIAL, COMMUNITY):
+        entry = manifest(base)
+        for lang, rel in entry["locales"].items():
+            path = base / rel
+            assert path.exists(), f"{base.name} locale:{lang} → {path} does not exist"
+            doc = json.loads(path.read_text(encoding="utf-8"))
+            for key in ("name", "description", "whenToUse"):
+                assert isinstance(doc.get(key), str) and doc[key].strip(), f"{lang}.{key}"
+            for tool in entry["tools"]:
+                value = doc["tools"][tool["name"]]
+                assert isinstance(value, dict), f"{lang}.tools.{tool['name']} must be an object"
+                assert value["description"].strip(), f"{lang}.tools.{tool['name']}.description"
+                # The manifest's own limit is 1024 characters per tool description.
+                assert len(value["description"]) <= 1024, (
+                    f"{lang}.tools.{tool['name']}.description is {len(value['description'])} characters"
+                )
 
 
 def test_the_storage_disclosure_reaches_both_channels():

@@ -46,7 +46,7 @@
       }
     },
     "misakanet_submit_intake": {
-      "description": "把一次没有现成教训覆盖的故障或一个求助问题交给 MisakaNet：在公开仓库 Ikalus1988/MisakaNet 建一个 intake issue，供维护者与其他 Agent 复用。联网目标只有 misakanet.org；problem 等字段会原样发给 misakanet.org 并**公开发布到 GitHub**，不写本地文件。**发出后不可撤回**：只有用户明确要求上报或提问、并且看过将要公开的原文时才调用（传 user_confirmed=true），绝不自行推断为 true；提交前先脱敏掉密钥、令牌、内网地址与个人信息。kind 省略时由服务端自动判定（提问类会开成 [Question] issue 等待人工回答，故障类进维护者评审）。失败按三态区分：确定没发出去才说可以重试；不确定（可能已建 issue、只是回执没回来）不要重发，改用完全相同的 problem 文本再调一次（端点按内容去重），或用 misakanet_me_inbox 查。返回 { intake_id, status, dedup_key, routing, poll_hint, redactions_applied, quality_score, receipt, answer?, converted? }。",
+      "description": "把一次没有现成教训覆盖的故障或一个求助问题交给 MisakaNet：在公开仓库 Ikalus1988/MisakaNet 建一个 intake issue，供维护者与其他 Agent 复用。联网目标只有 misakanet.org；problem 等字段会原样发给 misakanet.org 并**公开发布到 GitHub**，不写本地文件。**发出后不可撤回**：调用后会先在聊天里供出一张确认卡（列出将要公开的原文、目标与可见性、脱敏提醒），只有用户点「确认提交」才真正创建 issue，点「不提交」则什么都没发生——不要在用户确认前自行提交。仍然需要 user_confirmed=true（绝不自行推断为 true），提交前先脱敏掉密钥、令牌、内网地址与个人信息。kind 省略时由服务端自动判定（提问类会开成 [Question] issue 等待人工回答，故障类进维护者评审）。失败按三态区分：确定没发出去才说可以重试；不确定（可能已建 issue、只是回执没回来）不要重发，改用完全相同的 problem 文本再调一次（端点按内容去重），或用 misakanet_me_inbox 查。confirm 参数（card 默认 / direct）只决定用不用确认卡，不影响是否需要用户确认。返回 { intake_id, status, dedup_key, routing, poll_hint, redactions_applied, quality_score, receipt, answer?, converted? }。",
       "parameters": {
         "/properties/problem": {
           "description": "这次故障或知识缺口的简短描述（必填）。写清现象与影响，别写业务机密。"
