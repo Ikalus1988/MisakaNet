@@ -1,9 +1,30 @@
 {
-  "generated_at": "2026-11-19T18:52:24.435535+00:00",
+  "generated_at": "2026-11-19T20:48:56.737230+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 13,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "feat(intake): one lesson may convert several intakes, and the ones nobody closed get swept",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5347",
+      "timestamp": "2026-11-19T19:32:37Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "fix(ci): the sweep could not dispatch at all — a PAT without actions:write, on its first real candidate",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5382",
+      "timestamp": "2026-11-19T19:24:02Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5381",
+      "timestamp": "2026-11-19T19:11:21Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "feat(lessons): intake batch 2026-11-19",
@@ -16,27 +37,6 @@
       "title": "docs(cindy): 插件待办清单（按优先级）",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/5379",
       "timestamp": "2026-11-19T17:43:07Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "docs(handoff): vol 41 — the funnel measured end to end, and the four places it waits for a human",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5376",
-      "timestamp": "2026-11-19T17:16:01Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "refactor(cindy-plugin): 两条通道并成一份实现，社区变体降级成薄壳",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5375",
-      "timestamp": "2026-11-19T17:08:48Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(cindy-plugin): 官方通道 1.6.4 —— 首次上架的占位版本",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5351",
-      "timestamp": "2026-11-19T16:15:36Z",
       "source": "github"
     },
     {
