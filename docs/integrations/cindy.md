@@ -75,6 +75,18 @@ python scripts/publish_cindy_plugin_version.py
 > **忘了写不是缺陷。** 端点没有可比对的版本，就对版本保持沉默；插件那头也不说（结果里没有
 > `plugin_version`）——静默是设计，不是 bug。代价只是：暂时没人被提醒「你落后了」。
 
+### 1.1.2 三条运维命令
+
+| 命令 | 干什么 | 需要什么 |
+|---|---|---|
+| `python scripts/release_cindy_plugin.py --variant community` | 发版前把整件事做掉：重建社区包、断言两条通道只差三处、断言版本号一致、用发布者私钥签名、验签，然后打印接下来那三个宿主调用（`ghost_forge_pack` → `ghost_forge_install` → `ghost_contribution_prepare` → `submit`） | 本机的发布者私钥（`~/.cindy/publisher-keys/`） |
+| `python scripts/cindy_plugin_market_stats.py` | 市场触达（下载/使用，**无 API，只能在客户端页面上观察后记进 `data/cindy-plugin-market-stats.json`**）+ 遥测侧版本分布（生产 `misakanet-ops` 的 `search_signals`，`agent='cindy'` 那一片） | 遥测部分需要能跑 wrangler（本机在 WSL 上跑） |
+| `python scripts/ae_query_with_local_token.py` | 端点侧的分阶段耗时（AE 的 `misakanet_events`：语料读 / BM25 索引 / 打分 / 语义回退各 p95） | 一个带 **Account \| Account Analytics \| Read** 的 Cloudflare API token（放在 `~/.config/misakanet/cf_analytics_token`，**不在仓库里**） |
+
+`release_cindy_plugin.py` 的存在理由是**别再手搓那五步**：手工流程里最容易出的错是
+「先签名、后改源码」——签名与包内容对不上，宿主直接拒装。脚本把版本一致性与签名校验放在发布之前，
+对不上就不往下走。
+
 ### 1.2 发布者签名与公钥（社区投稿通道）
 
 市场投稿通道的包带**发布者签名**：包内 `cindy-signatures.json` 记录这份包的文件清单
