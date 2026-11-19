@@ -78,7 +78,7 @@ And read the table you are about to write through, instead of trusting the docum
 slots = ctl.show_array("CMDS")        # print all entries, compare with the doc, then write
 ```
 
-When a latched motion error survives reset, relaunch the workcell instead of retrying: on this device
+When a motion error survives reset, relaunch the workcell instead of retrying: on this device
 the clean window after a relaunch is 30–90 s, which is the right budget for a short burst of motion
 work rather than a long poll that burns it.
 
