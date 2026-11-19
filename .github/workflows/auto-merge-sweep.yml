@@ -54,7 +54,18 @@ jobs:
       - name: Re-ask the deciding workflow
         if: steps.find.outputs.count != '0'
         env:
-          GH_TOKEN: ${{ secrets.SHELDON_PAT || secrets.GITHUB_TOKEN }}
+          # `SHELDON_PAT` cannot dispatch: measured 2026-11-19T18:51Z, on the first real candidate
+          # (#5349), `POST /actions/workflows/{id}/dispatches` answered
+          # `403 Resource not accessible by personal access token`. The first run of this workflow
+          # (16:30Z) passed only vacuously — it found zero candidates, and the loop below only goes
+          # red when *every* dispatch fails, so `0 failed / 0 total` looked like success.
+          #
+          # `github.token` is the right identity here: this workflow's `permissions:` block already
+          # grants `actions: write`, and `workflow_dispatch` is one of the two events a
+          # `GITHUB_TOKEN` *can* raise (the recursion guard exempts it, unlike `push`). If the
+          # dispatch ever stops raising runs, this step is the place to look first — it is the only
+          # event in the funnel that has to travel through a token.
+          GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
