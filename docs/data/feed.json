@@ -1,9 +1,37 @@
 {
-  "generated_at": "2026-11-19T11:53:42.524213+00:00",
+  "generated_at": "2026-11-19T16:15:18.747054+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 13,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "feat(lessons): eleven failures at the pattern level (deploy ×4, embedded FTP ×3, GUI automation ×2, binary parse ×1, layered readiness ×1)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5243",
+      "timestamp": "2026-11-19T16:15:05Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "feat(intake): a conversion PR may merge itself — the funnel was one click wide",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5346",
+      "timestamp": "2026-11-19T15:25:14Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "feat(intake): the receipt posts itself, and a sweep finds the ones nobody closed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5344",
+      "timestamp": "2026-11-19T12:50:37Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5343",
+      "timestamp": "2026-11-19T12:08:43Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "chore(data): 市场在售版本更新为社区 1.5.12（KV 已同步）",
@@ -12,71 +40,43 @@
       "source": "github"
     },
     {
-      "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5300",
-      "timestamp": "2026-11-19T02:57:51Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5271",
-      "timestamp": "2026-11-18T21:02:14Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "fix(tooling): the two generators that lie on Windows now refuse, and the fallback speaks",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5249",
-      "timestamp": "2026-11-18T16:15:31Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat(intake): record whether the corpus already answered a submission, before acting on it",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5241",
-      "timestamp": "2026-11-18T12:43:45Z",
-      "source": "github"
-    },
-    {
       "type": "lesson",
-      "title": "A fixture dated six days ago is a test that reddens main on its own",
-      "url": "lessons/contrib/testing-a-fixture-dated-six-days-ago-reddens-main-on-its-own.md",
-      "timestamp": "2026-11-17",
-      "domain": "testing",
+      "title": "A vendor's binary variable dump needs its type table, not a fixed field width",
+      "url": "lessons/contrib/a-binary-variable-dump-is-read-by-type-width-not-fixed-width.md",
+      "timestamp": "2026-11-18",
+      "domain": "fanuc",
       "source": "lessons"
     },
     {
       "type": "lesson",
-      "title": "A UTF-8 path list decoded as cp936 loses 211 files, and nothing raises",
-      "url": "lessons/contrib/windows-a-utf8-path-list-decoded-as-cp936-loses-files-without-raising.md",
-      "timestamp": "2026-11-17",
+      "title": "A container that starts but answers 502: the image never contained the config file the server reads at boot",
+      "url": "lessons/contrib/a-container-starts-but-the-image-lacks-the-config-it-reads-at-boot.md",
+      "timestamp": "2026-11-18",
+      "domain": "docker",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "A GUI window is named by its document's internal name, not by the folder you opened",
+      "url": "lessons/contrib/a-gui-window-is-named-by-its-document-not-its-folder.md",
+      "timestamp": "2026-11-18",
       "domain": "windows",
       "source": "lessons"
     },
     {
       "type": "lesson",
-      "title": "A CI failure classifier mapped failure logs to categories by bare substring matc",
-      "url": "lessons/contrib/a-ci-failure-classifier-mapped-failure-logs-to-categories.md",
-      "timestamp": "2026-11-16",
-      "domain": "dsh",
+      "title": "Accepted is not executed: measure readiness at the layer that will do the work",
+      "url": "lessons/contrib/accepted-is-not-executed-measure-readiness-at-the-layer-that-works.md",
+      "timestamp": "2026-11-18",
+      "domain": "fanuc",
       "source": "lessons"
     },
     {
       "type": "lesson",
-      "title": "A container PaaS update task reports SUCCESS and app metadata shows the new vers",
-      "url": "lessons/contrib/a-container-paas-update-task-reports-success-and-app.md",
-      "timestamp": "2026-11-16",
-      "domain": "mcp",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "A contribution leaderboard showed `used: 0` for every row and `coverage.lesson_a",
-      "url": "lessons/contrib/a-contribution-leaderboard-showed-used-0-for-every-row-and.md",
-      "timestamp": "2026-11-16",
-      "domain": "dsh",
+      "title": "Listing a directory on an embedded controller can be the one operation that kills it",
+      "url": "lessons/contrib/an-embedded-controller-ftp-listing-can-be-the-operation-that-kills-it.md",
+      "timestamp": "2026-11-18",
+      "domain": "fanuc",
       "source": "lessons"
     },
     {
