@@ -116,6 +116,21 @@ def handle_request(request: dict) -> dict:
     elif method == "resources/read":
         uri = params.get("uri", "")
         content = handle_resources_read(uri)
+        # A miss is a protocol-level failure, not content. Returning it inside a
+        # successful `result` made every caller that trusts the envelope treat
+        # {"error": "Unknown resource: ..."} as the resource body — the read path
+        # answered 200-shaped JSON-RPC for a URI it never resolved. MCP assigns
+        # that case -32002; the payload keeps the detail so nothing is lost.
+        if isinstance(content, dict) and content.get("error"):
+            return {
+                "jsonrpc": "2.0",
+                "id": req_id,
+                "error": {
+                    "code": -32002,
+                    "message": f"Resource not found: {uri}",
+                    "data": {"uri": uri, "detail": content["error"]},
+                },
+            }
         return {
             "jsonrpc": "2.0",
             "id": req_id,
