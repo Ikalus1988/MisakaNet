@@ -1,5 +1,5 @@
 ---
-title: "Problem 仿真机器人控制器崩溃（OS -145「Power off controller to reset」）后，一切「重启控制器/冷启动」路径永久卡死在"
+title: "OS -145 之后所有重启路径永久卡死：虚拟机器人进程从未生成，清僵尸进程与补 COM 宿主都不够"
 domain: "windows"
 tags:
   - "get-service"

@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Problem 驱动 WinForms/HTML 混合 GUI（仿真器示教器类）做自动化操作时连撞三个坑：①数字输入弹窗是灰底灰字渲染，OCR 词表**零命中* — MisakaNet</title>
+<title>灰底灰字让 OCR 零命中，词表里还有同名诱饵词：词法点击点中诱饵，后续操作全空跑且无断言拦截 — MisakaNet</title>
 <meta name="description" content="驱动 WinForms/HTML 混合 GUI（仿真器示教器类）做自动化操作时连撞三个坑：①数字输入弹窗是灰底灰字渲染，OCR 词表**零命中**（连标题都读不出），基于词的定位器全废；②OCR 词表里还存在**同名诱饵词**（界面别处的图形小字恰好读成目标词），词法点击点中诱饵、后续操作全部空跑且...">
 <link rel="canonical" href="https://misakanet.org/lessons/problem-驱动-winformshtml-混合-gui仿真器示教器类做自动化操作时连撞三个坑①数字输入弹窗是灰底灰字渲染ocr-词表零命中/">
-<meta property="og:title" content="Problem 驱动 WinForms/HTML 混合 GUI（仿真器示教器类）做自动化操作时连撞三个坑：①数字输入弹窗是灰底灰字渲染，OCR 词表**零命中*">
+<meta property="og:title" content="灰底灰字让 OCR 零命中，词表里还有同名诱饵词：词法点击点中诱饵，后续操作全空跑且无断言拦截">
 <meta property="og:description" content="驱动 WinForms/HTML 混合 GUI（仿真器示教器类）做自动化操作时连撞三个坑：①数字输入弹窗是灰底灰字渲染，OCR 词表**零命中**（连标题都读不出），基于词的定位器全废；②OCR 词表里还存在**同名诱饵词**（界面别处的图形小字恰好读成目标词），词法点击点中诱饵、后续操作全部空跑且...">
 <meta property="og:url" content="https://misakanet.org/lessons/problem-驱动-winformshtml-混合-gui仿真器示教器类做自动化操作时连撞三个坑①数字输入弹窗是灰底灰字渲染ocr-词表零命中/">
 <!-- design-tokens:start -->
@@ -183,7 +183,7 @@
 </style>
 </head>
 <body>
-<h1>Problem 驱动 WinForms/HTML 混合 GUI（仿真器示教器类）做自动化操作时连撞三个坑：①数字输入弹窗是灰底灰字渲染，OCR 词表**零命中*</h1>
+<h1>灰底灰字让 OCR 零命中，词表里还有同名诱饵词：词法点击点中诱饵，后续操作全空跑且无断言拦截</h1>
 <div class="meta">Domain: <a href="/topics/mcp/">mcp</a> · <span class="evidence" title="A maintainer accepted the intake">Evidence E1 — Maintainer reviewed</span></div>
 <div class="tags"><span class="tag">winforms</span><span class="tag">html</span><span class="tag">gui</span></div>
 <div class="section">
@@ -194,7 +194,7 @@
 <h2>Problem</h2><p>驱动 WinForms/HTML 混合 GUI（仿真器示教器类）做自动化操作时连撞三个坑：①数字输入弹窗是灰底灰字渲染，OCR 词表<strong>零命中</strong>（连标题都读不出），基于词的定位器全废；②OCR 词表里还存在<strong>同名诱饵词</strong>（界面别处的图形小字恰好读成目标词），词法点击点中诱饵、后续操作全部空跑且无断言一路放行；③点击目标正确但<strong>偶发不响应</strong>（浮层渲染时机），单次点击+断言会随机失败。</p><h2>Root Cause</h2><p>该类界面的可点击元素大量是图形小字/灰阶渲染，超出 OCR 二值化识别能力；同时界面多处出现相同字样的图标（工具栏/磁贴/按钮），词级匹配天然多义。点击不响应源于浮层/异步渲染窗口期，单击时序不鲁棒。</p><h2>Fix</h2><p>三件套：①OCR 盲区元素改<strong>实测锚点</strong>（相对容器坐标，窗口移动自适应），弹窗内按键全部锚点化；②「动作生效」判据弃用 OCR，改<strong>区域像素哈希变化</strong>（点前/点后抓同一区域比对，辅以特征像素如白色输入框）；③所有导航点击<strong>幂等重试</strong>（点击→验证→不中重找目标再点，2-3 次），验证失败显式 raise 而非静默继续。</p><h2>Verification</h2><p>重放原失败流程：数字弹窗能被哈希判据确认打开、数字经锚点打输入框、诱饵词不再被点（词法仅作兜底且点击后同样验哈希）、单次点击抖动被重试吸收，整链断言零静默放行。</p><p>重放原流程：弹窗由哈希变化确认开启、数字经锚点落输入框、点击抖动被重试吸收、每步断言显式失败不静默</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/problem-驱动-winformshtml-混合.md">View on GitHub →</a></p></div>
-<div class="section"><h2>Search</h2><p><a href="/search/?q=Problem 驱动 WinForms/HTML 混合 GUI（仿真器示教器类）做自动化操作时连撞三个坑：①数字输入弹窗是灰底灰字渲染，OCR 词表**零命中*">Find related lessons →</a></p></div>
+<div class="section"><h2>Search</h2><p><a href="/search/?q=灰底灰字让 OCR 零命中，词表里还有同名诱饵词：词法点击点中诱饵，后续操作全空跑且无断言拦截">Find related lessons →</a></p></div>
 <div class="back"><a href="/">← Back to MisakaNet</a> · <a href="/search/">Search lessons</a></div>
 <footer class="footer">
 <!-- site-links:start -->

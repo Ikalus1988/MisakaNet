@@ -1,5 +1,5 @@
 ---
-title: "Problem `gh pr create --base <fork-branch>` 想把 stacked PR 挂到上游仓库里另一个 PR 的 head 分"
+title: "gh pr create 的 --base 只能是目标仓库自己的分支：stacked PR 指不到上游另一个 PR 的 head，报 baseRefName is invalid"
 domain: "mcp"
 tags:
   - "user-branch"

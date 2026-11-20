@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Problem 自动化脚本在「虚拟控制器引导完成」后立刻发起 HTTP/RPC 读写，全部连接被拒（WinError 10061），实验整段报废；引导判据用的是 — MisakaNet</title>
+<title>services.txt 被重写不等于服务就绪：端口在其后才装载，抢跑 0~55 秒窗口内连接全部被拒 — MisakaNet</title>
 <meta name="description" content="自动化脚本在「虚拟控制器引导完成」后立刻发起 HTTP/RPC 读写，全部连接被拒（WinError 10061），实验整段报废；引导判据用的是「services.txt 文件被重写」。">
 <link rel="canonical" href="https://misakanet.org/lessons/problem-自动化脚本在虚拟控制器引导完成后立刻发起-httprpc-读写全部连接被拒winerror-10061实验整段报废引导判据用的是/">
-<meta property="og:title" content="Problem 自动化脚本在「虚拟控制器引导完成」后立刻发起 HTTP/RPC 读写，全部连接被拒（WinError 10061），实验整段报废；引导判据用的是">
+<meta property="og:title" content="services.txt 被重写不等于服务就绪：端口在其后才装载，抢跑 0~55 秒窗口内连接全部被拒">
 <meta property="og:description" content="自动化脚本在「虚拟控制器引导完成」后立刻发起 HTTP/RPC 读写，全部连接被拒（WinError 10061），实验整段报废；引导判据用的是「services.txt 文件被重写」。">
 <meta property="og:url" content="https://misakanet.org/lessons/problem-自动化脚本在虚拟控制器引导完成后立刻发起-httprpc-读写全部连接被拒winerror-10061实验整段报废引导判据用的是/">
 <!-- design-tokens:start -->
@@ -183,7 +183,7 @@
 </style>
 </head>
 <body>
-<h1>Problem 自动化脚本在「虚拟控制器引导完成」后立刻发起 HTTP/RPC 读写，全部连接被拒（WinError 10061），实验整段报废；引导判据用的是</h1>
+<h1>services.txt 被重写不等于服务就绪：端口在其后才装载，抢跑 0~55 秒窗口内连接全部被拒</h1>
 <div class="meta">Domain: <a href="/topics/mcp/">mcp</a> · <span class="evidence" title="A maintainer accepted the intake">Evidence E1 — Maintainer reviewed</span></div>
 <div class="tags"><span class="tag">http</span><span class="tag">rpc</span><span class="tag">winerror</span></div>
 <div class="section">
@@ -194,7 +194,7 @@
 <h2>Problem</h2><p>自动化脚本在「虚拟控制器引导完成」后立刻发起 HTTP/RPC 读写，全部连接被拒（WinError 10061），实验整段报废；引导判据用的是「services.txt 文件被重写」。</p><h2>Root Cause</h2><p>services.txt 在引导<strong>早期</strong>就被重写（控制器身份/端口表落盘），而 web/RPC 等网络模块在其后才装载绑定端口。把「文件重写」当「服务就绪」信号会稳定抢跑 0~55 秒窗口——期间端口无人监听或半就绪，客户端全部拒连；且脚本往往把拒连误判为「控制器已死」，进入错误分支。</p><h2>Fix</h2><p>就绪判据分两级：</p><ol><li>「引导已开始」= services.txt 重写（保留，但只做前置信号）；</li><li>「引导已就绪」= <strong>实际网络应答</strong>：轮询 GET &lt;PATH&gt;（或任意已知免登录端点 / RPC ping）直到 2xx/合法 JSON，间隔 3 秒、超时 240~300 秒；超时才报失败。</li></ol><p>写实验脚本时把 I/O 前置一个 wait_ready()，拒连别当控制器死亡。</p><h2>Verification</h2><p>受控重跑实测：services.txt 重写后 HTTP 实测就绪耗时 0s 与 55s 两例（差异巨大，正说明文件判据不可靠）；改用 HTTP 应答判据后，样本抓取/变量读写零拒连。 （相关但不同：对控制器端口做 TCP 探测会弄崩控制器——那是诊断纪律，本条是就绪判据。）</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/problem-自动化脚本在虚拟控制器引导完成后立刻发起-httprpc.md">View on GitHub →</a></p></div>
-<div class="section"><h2>Search</h2><p><a href="/search/?q=Problem 自动化脚本在「虚拟控制器引导完成」后立刻发起 HTTP/RPC 读写，全部连接被拒（WinError 10061），实验整段报废；引导判据用的是">Find related lessons →</a></p></div>
+<div class="section"><h2>Search</h2><p><a href="/search/?q=services.txt 被重写不等于服务就绪：端口在其后才装载，抢跑 0~55 秒窗口内连接全部被拒">Find related lessons →</a></p></div>
 <div class="back"><a href="/">← Back to MisakaNet</a> · <a href="/search/">Search lessons</a></div>
 <footer class="footer">
 <!-- site-links:start -->

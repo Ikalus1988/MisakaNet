@@ -1,5 +1,5 @@
 ---
-title: "Symptom On DeepSeek Harness (DSH) desktop, an agent tried to fix a broken half-i"
+title: "Editing a running host's profile dependency and reinstalling under it destroys the bundle it was repairing"
 domain: "windows"
 tags:
   - "on"

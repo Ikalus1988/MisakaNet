@@ -1,5 +1,5 @@
 ---
-title: "Problem feishu 文档 doc_update 的 `select_title` 按标题替换章节时返回 \"No heading found match"
+title: "feishu doc_update 的 select_title 匹配的是标题的原始 markdown（含行内标记），不是 outline 里的显示文本"
 domain: "feishu"
 tags:
   - "no"

@@ -1,5 +1,5 @@
 ---
-title: "Problem 某飞书文档 MCP 的 doc_update（select 匹配 + replace/insert/delete）在改结构化文档时大面积「No"
+title: "结构化文档按显示文本 select 必然落空：标题被拍平成正文、加粗段落匹配不上、图片题注够不到"
 domain: "feishu"
 tags:
   - "no"

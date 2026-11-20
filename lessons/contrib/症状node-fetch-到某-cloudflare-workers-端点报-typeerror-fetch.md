@@ -1,5 +1,5 @@
 ---
-title: "症状：Node fetch 到某 Cloudflare Workers 端点报 `TypeError: fetch failed`，curl 报 `Connec"
+title: "裸 workers.dev 域名在部分网络被阻断：node fetch 报 fetch failed，同网络下 curl 与生产自定义域都正常"
 domain: "mcp"
 tags:
   - "curl"

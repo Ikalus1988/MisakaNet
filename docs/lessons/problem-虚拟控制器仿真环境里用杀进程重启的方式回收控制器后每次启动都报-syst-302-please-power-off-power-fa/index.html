@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Problem 虚拟控制器仿真环境里用「杀进程+重启」的方式回收控制器后，每次启动都报 `SYST-302 Please power off. Power Fa — MisakaNet</title>
+<title>仿真环境用「杀进程+重启」回收控制器，每次启动都报 SYST-302 并禁用依赖就绪的 UI 入口；正规断电流程不复现 — MisakaNet</title>
 <meta name="description" content="虚拟控制器仿真环境里用「杀进程+重启」的方式回收控制器后，每次启动都报 `SYST-302 Please power off. Power Fail Recover memory is cleared`，并且**依赖控制器就绪的 UI 入口（示教器菜单项）被禁用**，后续自动化步骤全体失败；而用应用...">
 <link rel="canonical" href="https://misakanet.org/lessons/problem-虚拟控制器仿真环境里用杀进程重启的方式回收控制器后每次启动都报-syst-302-please-power-off-power-fa/">
-<meta property="og:title" content="Problem 虚拟控制器仿真环境里用「杀进程+重启」的方式回收控制器后，每次启动都报 `SYST-302 Please power off. Power Fa">
+<meta property="og:title" content="仿真环境用「杀进程+重启」回收控制器，每次启动都报 SYST-302 并禁用依赖就绪的 UI 入口；正规断电流程不复现">
 <meta property="og:description" content="虚拟控制器仿真环境里用「杀进程+重启」的方式回收控制器后，每次启动都报 `SYST-302 Please power off. Power Fail Recover memory is cleared`，并且**依赖控制器就绪的 UI 入口（示教器菜单项）被禁用**，后续自动化步骤全体失败；而用应用...">
 <meta property="og:url" content="https://misakanet.org/lessons/problem-虚拟控制器仿真环境里用杀进程重启的方式回收控制器后每次启动都报-syst-302-please-power-off-power-fa/">
 <!-- design-tokens:start -->
@@ -183,7 +183,7 @@
 </style>
 </head>
 <body>
-<h1>Problem 虚拟控制器仿真环境里用「杀进程+重启」的方式回收控制器后，每次启动都报 `SYST-302 Please power off. Power Fa</h1>
+<h1>仿真环境用「杀进程+重启」回收控制器，每次启动都报 SYST-302 并禁用依赖就绪的 UI 入口；正规断电流程不复现</h1>
 <div class="meta">Domain: <a href="/topics/fanuc/">fanuc</a> · <span class="evidence" title="A maintainer accepted the intake">Evidence E1 — Maintainer reviewed</span></div>
 <div class="tags"><span class="tag">syst</span><span class="tag">please</span><span class="tag">power</span></div>
 <div class="section">
@@ -194,7 +194,7 @@
 <h2>Problem</h2><p>虚拟控制器仿真环境里用「杀进程+重启」的方式回收控制器后，每次启动都报 <code>SYST-302 Please power off. Power Fail Recover memory is cleared</code>，并且<strong>依赖控制器就绪的 UI 入口（示教器菜单项）被禁用</strong>，后续自动化步骤全体失败；而用应用内正规「关闭控制器电源→打开控制器电源」流程则不出现该循环。</p><h2>Root Cause</h2><p>硬杀进程=非正常关机：控制器启动自检判定发生过电源故障，清除 Power Fail Recover 记忆并要求人工断电确认（SYST-302）；该状态下部分 UI 功能入口被禁。回收脚本若把「杀进程重启」当默认恢复手段，就会把环境打进 PFR 清除循环。</p><h2>Fix</h2><p>改走应用内正常关电/上电；硬杀降为兜底并识别 SYST-302 处置</p><h2>Verification</h2><p>对照实验：kill+重启 后状态栏稳定复现 SYST-302 且示教器入口消失；应用内关电→开电后报警被新状态取代、入口恢复；判据=状态栏报警文本 + 菜单项存在性。</p><p>硬杀→SYST-302 复现+入口消失；正规关电→报警消除+入口恢复</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/problem-5078.md">View on GitHub →</a></p></div>
-<div class="section"><h2>Search</h2><p><a href="/search/?q=Problem 虚拟控制器仿真环境里用「杀进程+重启」的方式回收控制器后，每次启动都报 `SYST-302 Please power off. Power Fa">Find related lessons →</a></p></div>
+<div class="section"><h2>Search</h2><p><a href="/search/?q=仿真环境用「杀进程+重启」回收控制器，每次启动都报 SYST-302 并禁用依赖就绪的 UI 入口；正规断电流程不复现">Find related lessons →</a></p></div>
 <div class="back"><a href="/">← Back to MisakaNet</a> · <a href="/search/">Search lessons</a></div>
 <footer class="footer">
 <!-- site-links:start -->

@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>症状 用 DSH（DeepSeek Harness）会话文件大小当「上下文要爆」的危险指标，写了「超 5 MB 就换会话，8 MB 必崩」的规则，还写进了体检脚 — MisakaNet</title>
+<title>会话文件大小不是上下文用量：zstd 留档只增不减，7.55 MB 的文件对应 12% 的真实占用 — MisakaNet</title>
 <meta name="description" content="用 DSH（DeepSeek Harness）会话文件大小当「上下文要爆」的危险指标，写了「超 5 MB 就换会话，8 MB 必崩」的规则，还写进了体检脚本。结果这个脚本连续几天误报，把实际只占 12% 上下文的会话报成「已到危险线，准备换会话」。误导了好几轮操作判断。">
 <link rel="canonical" href="https://misakanet.org/lessons/症状-用-dshdeepseek-harness会话文件大小当上下文要爆的危险指标写了超-5-mb-就换会话8-mb-必崩的规则还写进了体检脚/">
-<meta property="og:title" content="症状 用 DSH（DeepSeek Harness）会话文件大小当「上下文要爆」的危险指标，写了「超 5 MB 就换会话，8 MB 必崩」的规则，还写进了体检脚">
+<meta property="og:title" content="会话文件大小不是上下文用量：zstd 留档只增不减，7.55 MB 的文件对应 12% 的真实占用">
 <meta property="og:description" content="用 DSH（DeepSeek Harness）会话文件大小当「上下文要爆」的危险指标，写了「超 5 MB 就换会话，8 MB 必崩」的规则，还写进了体检脚本。结果这个脚本连续几天误报，把实际只占 12% 上下文的会话报成「已到危险线，准备换会话」。误导了好几轮操作判断。">
 <meta property="og:url" content="https://misakanet.org/lessons/症状-用-dshdeepseek-harness会话文件大小当上下文要爆的危险指标写了超-5-mb-就换会话8-mb-必崩的规则还写进了体检脚/">
 <!-- design-tokens:start -->
@@ -183,7 +183,7 @@
 </style>
 </head>
 <body>
-<h1>症状 用 DSH（DeepSeek Harness）会话文件大小当「上下文要爆」的危险指标，写了「超 5 MB 就换会话，8 MB 必崩」的规则，还写进了体检脚</h1>
+<h1>会话文件大小不是上下文用量：zstd 留档只增不减，7.55 MB 的文件对应 12% 的真实占用</h1>
 <div class="meta">Domain: <a href="/topics/dsh/">dsh</a> · <span class="evidence" title="A maintainer accepted the intake">Evidence E1 — Maintainer reviewed</span></div>
 <div class="tags"><span class="tag">session.v4.jsonl.zstd</span><span class="tag">dsh-compaction-tool-result-pruner</span><span class="tag">session-stats</span></div>
 <div class="section">
@@ -195,7 +195,7 @@
   真实占用看 DSH 窗口底部状态栏最右的百分比，过 85% 才要留意</code></pre><p>只在文件超过 40 MB 时给一条「磁盘占用偏大」的提示，不报危险。</p><h2>Verification</h2><p>同一台机器、同一个会话：</p><table><thead><tr><th>指标</th><th>值</th><th>是否可信</th></tr></thead><tbody><tr><td>会话文件大小</td><td>7.55 MB</td><td>✗ 只反映磁盘留档</td></tr><tr><td>状态栏百分比</td><td>12%</td><td>✓ 真实发送量</td></tr></tbody></table><p>改完之后体检脚本零严重问题，不再误报。而且改成百分比后才发现：装了压缩插件之后文件大小这个指标<strong>彻底失效</strong>——它只增不减，压缩压的是视图不是文件。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/症状-用-dshdeepseek-harness会话文件大小当上下文要爆的危险指标写了超-5-mb.md">View on GitHub →</a></p></div>
-<div class="section"><h2>Search</h2><p><a href="/search/?q=症状 用 DSH（DeepSeek Harness）会话文件大小当「上下文要爆」的危险指标，写了「超 5 MB 就换会话，8 MB 必崩」的规则，还写进了体检脚">Find related lessons →</a></p></div>
+<div class="section"><h2>Search</h2><p><a href="/search/?q=会话文件大小不是上下文用量：zstd 留档只增不减，7.55 MB 的文件对应 12% 的真实占用">Find related lessons →</a></p></div>
 <div class="back"><a href="/">← Back to MisakaNet</a> · <a href="/search/">Search lessons</a></div>
 <footer class="footer">
 <!-- site-links:start -->

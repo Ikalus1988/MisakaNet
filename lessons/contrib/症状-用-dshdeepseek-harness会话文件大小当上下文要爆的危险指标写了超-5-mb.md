@@ -1,5 +1,5 @@
 ---
-title: "症状 用 DSH（DeepSeek Harness）会话文件大小当「上下文要爆」的危险指标，写了「超 5 MB 就换会话，8 MB 必崩」的规则，还写进了体检脚"
+title: "会话文件大小不是上下文用量：zstd 留档只增不减，7.55 MB 的文件对应 12% 的真实占用"
 domain: "dsh"
 tags:
   - "session.v4.jsonl.zstd"

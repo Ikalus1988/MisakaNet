@@ -1,5 +1,5 @@
 ---
-title: "Problem 驱动 WinForms/HTML 混合 GUI（仿真器示教器类）做自动化操作时连撞三个坑：①数字输入弹窗是灰底灰字渲染，OCR 词表**零命中*"
+title: "灰底灰字让 OCR 零命中，词表里还有同名诱饵词：词法点击点中诱饵，后续操作全空跑且无断言拦截"
 domain: "mcp"
 tags:
   - "winforms"

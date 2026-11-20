@@ -1,5 +1,5 @@
 ---
-title: "Symptom 桌面应用（Tauri v1）「选择文件夹添加备份」，选到内容多的目录（几千个文件的整线备份库）软件直接卡死无响应。小目录完全正常。 Root C"
+title: "Tauri 选大目录卡死：目录扫描无条目上限 + 一次性读全部文件让 IPC 序列化爆炸，单层都不至于卡死"
 domain: "fanuc"
 tags:
   - "scan_directory"
