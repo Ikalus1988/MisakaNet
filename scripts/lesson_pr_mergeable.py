@@ -79,11 +79,14 @@ REQUIRED_CHECKS = ("gate", "provenance", "dco", "audit-shape")
 REQUIRED_CHECK_PREFIXES = ("test (",)
 
 LESSONS_DIR = "lessons/"
-# lessons/index.md is the corpus index: it may gain at most one line and must never lose
-# one. Anything else (a bulk re-index) goes through a human, see
-# docs/maintainer/auto-merge-lessons.md.
+# lessons/index.md is the corpus index: it gains **one line per new lesson** and must never lose one.
+# The allowance was a flat `+1` until 2026-11-20, which meant a batch of two or more converted intakes
+# could never merge itself: measured on #5416, the decider answered
+# `refuse: lessons/index.md must be at most a one-line addition: +2/-0 (allowed: +1/-0)` for a PR that
+# had added exactly two lessons. Anything beyond "one line per added lesson" (a bulk re-index) still
+# goes through a human, see docs/maintainer/auto-merge-lessons.md.
 INDEX_PATH = "lessons/index.md"
-INDEX_MAX_ADDITIONS = 1
+INDEX_MIN_ADDITIONS = 1
 
 # The generators rewrite these from `lessons/`, so a conversion PR cannot be lessons-only: the corpus
 # snapshot, the OKF export, the counts, the site pages and the ranking fixture all move with it. They
@@ -217,13 +220,37 @@ def _evaluate_files(
             additions, deletions = int(stats[0]), int(stats[1])
         except (TypeError, ValueError, IndexError, KeyError):
             return WAIT, f"{INDEX_PATH} stats are unreadable: {stats!r}"
-        if deletions > 0 or additions > INDEX_MAX_ADDITIONS:
+        allowed = index_additions_allowed(files, file_stats)
+        if deletions > 0 or additions > allowed:
             return (
                 REFUSE,
-                f"{INDEX_PATH} must be at most a one-line addition: "
-                f"+{additions}/-{deletions} (allowed: +{INDEX_MAX_ADDITIONS}/-0)",
+                f"{INDEX_PATH} must be at most a one-line-per-new-lesson addition: "
+                f"+{additions}/-{deletions} (allowed: +{allowed}/-0)",
             )
     return MERGE, ""
+
+
+def index_additions_allowed(files: Sequence[str], file_stats: Mapping[str, Any]) -> int:
+    """One index line per **newly added** lesson file, and never fewer than one.
+
+    The generators write one `lessons/index.md` line per lesson, so a batch that converts two intakes
+    legitimately adds two lines. A flat allowance of one made every multi-lesson batch unmergeable by
+    the channel that exists to merge lesson batches (#5416, 2026-11-20). The floor stays at one so a
+    single-lesson PR keeps the old allowance, and a lesson whose stats are unreadable contributes
+    nothing rather than a guess.
+    """
+    added = 0
+    for path in files:
+        if path == INDEX_PATH or not path.startswith(LESSONS_DIR):
+            continue
+        stats = file_stats.get(path)
+        try:
+            additions, deletions = int(stats[0]), int(stats[1])
+        except (TypeError, ValueError, IndexError, KeyError):
+            continue
+        if additions > 0 and deletions == 0:
+            added += 1
+    return max(INDEX_MIN_ADDITIONS, added)
 
 
 def decide(
