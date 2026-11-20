@@ -58,6 +58,15 @@ run 44714007969 结论 `skipped`、零个 step）。所以那个守卫现在写�
 `github.event_name == 'workflow_dispatch' || contains(...)`：标签仍由判定脚本从 API 重读并给出 `wait`
 （决策表第 2 行），只是不再拦在 dispatch 的路上。
 
+第二个形状更隐蔽，而且在“看日志”这一层不可见：**`mergeStateStatus` 是缓存字段**。每一次合并进默认分支，
+所有 open PR 的合并能力缓存都失效，直到 GitHub 懒计算为止 —— 而列表端点只是**读缓存**。实测
+2026-11-20：`#5416` 在 09:49Z 是 `CLEAN`（找到 1 个候选并成功 dispatch），几笔合并落地之后它在
+`gh pr list`/`mergeStateStatus` 里变回 `UNKNOWN`，扫尾器于是报 `candidates: 0`，而
+`GET /pulls/5416` 依然回答 `mergeable: true` / `mergeable_state: clean`。
+一个**静默丢掉它自己目标的过滤条件**比没有过滤更糟：run 是绿的。
+所以扫尾器的候选集现在只按 GitHub 永远会回答的事实筛（标签 + 非 draft），
+再对每个 PR 调**单 PR**端点（它会触发计算），读到 `unknown` 就重试。
+
 ### 判定从哪来（事实全部读 API，不读 PR 内容）
 
 | 事实 | 来源 |
