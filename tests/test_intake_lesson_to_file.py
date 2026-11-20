@@ -373,3 +373,29 @@ def test_a_fence_that_opens_after_prose_is_moved_to_its_own_line():
     import lesson_markdown
     prose = re.sub(r"<pre>[\s\S]*?</pre>", "", lesson_markdown.render(lesson["content"]))
     assert "```" not in prose
+
+
+def test_a_trimmed_body_title_yields_to_the_untrimmed_issue_title():
+    """The client trims `**Title:**`; the issue title is the same sentence, untrimmed.
+
+    Measured 2026-11-20 on three submissions: the body carried `… flag always-r` while the issue title
+    read `… flag always-rewritten logs`, so the lesson shipped with the stub even though the full
+    sentence was one API field away.
+    """
+    full = sample()
+    trimmed = "npm registry unreachable: pin"
+    body = full["body"].replace("**Title:** " + full_title(full), "**Title:** " + trimmed)
+    lesson, notes = conv.convert({**full, "body": body}, CANONICAL)
+    assert lesson is not None
+    assert lesson["title"] == full_title(full)
+    assert any("title taken from the issue" in note for note in notes)
+
+
+def test_two_different_titles_keep_the_submitters_field():
+    """Only a prefix relation means "one of them was cut"; anything else is a judgement, not a guess."""
+    assert conv._the_longer_prefix("the panel is blank", "npm registry unreachable") == "the panel is blank"
+    assert conv._the_longer_prefix("", "issue title") == "issue title"
+
+
+def full_title(issue_dict: dict) -> str:
+    return issue_dict["title"].removeprefix("[Lesson] ").strip()
