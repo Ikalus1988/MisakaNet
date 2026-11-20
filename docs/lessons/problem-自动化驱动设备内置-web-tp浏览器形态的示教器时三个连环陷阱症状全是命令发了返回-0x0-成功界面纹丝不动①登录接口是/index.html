@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Problem 自动化驱动「设备内置 Web TP」（浏览器形态的示教器）时三个连环陷阱，症状全是「命令发了、返回 0x0 成功、界面纹丝不动」：①登录接口是* — MisakaNet</title>
+<title>Web TP 的三个连环陷阱：单会话秒级锁、按键数字被当控制码解析、登录时钟拿到陈旧会话 id — MisakaNet</title>
 <meta name="description" content="自动化驱动「设备内置 Web TP」（浏览器形态的示教器）时三个连环陷阱，症状全是「命令发了、返回 0x0 成功、界面纹丝不动」：①登录接口是**单会话 + 秒级锁**——脚本连环 login 会触发「login is locked」锁定页，而解析器可能从旧响应里拿到陈旧会话 id，后续按键全部发进...">
 <link rel="canonical" href="https://misakanet.org/lessons/problem-自动化驱动设备内置-web-tp浏览器形态的示教器时三个连环陷阱症状全是命令发了返回-0x0-成功界面纹丝不动①登录接口是/">
-<meta property="og:title" content="Problem 自动化驱动「设备内置 Web TP」（浏览器形态的示教器）时三个连环陷阱，症状全是「命令发了、返回 0x0 成功、界面纹丝不动」：①登录接口是*">
+<meta property="og:title" content="Web TP 的三个连环陷阱：单会话秒级锁、按键数字被当控制码解析、登录时钟拿到陈旧会话 id">
 <meta property="og:description" content="自动化驱动「设备内置 Web TP」（浏览器形态的示教器）时三个连环陷阱，症状全是「命令发了、返回 0x0 成功、界面纹丝不动」：①登录接口是**单会话 + 秒级锁**——脚本连环 login 会触发「login is locked」锁定页，而解析器可能从旧响应里拿到陈旧会话 id，后续按键全部发进...">
 <meta property="og:url" content="https://misakanet.org/lessons/problem-自动化驱动设备内置-web-tp浏览器形态的示教器时三个连环陷阱症状全是命令发了返回-0x0-成功界面纹丝不动①登录接口是/">
 <!-- design-tokens:start -->
@@ -183,7 +183,7 @@
 </style>
 </head>
 <body>
-<h1>Problem 自动化驱动「设备内置 Web TP」（浏览器形态的示教器）时三个连环陷阱，症状全是「命令发了、返回 0x0 成功、界面纹丝不动」：①登录接口是*</h1>
+<h1>Web TP 的三个连环陷阱：单会话秒级锁、按键数字被当控制码解析、登录时钟拿到陈旧会话 id</h1>
 <div class="meta">Domain: <a href="/topics/fanuc/">fanuc</a> · <span class="evidence" title="A maintainer accepted the intake">Evidence E1 — Maintainer reviewed</span></div>
 <div class="tags"><span class="tag">web</span><span class="tag">tp</span><span class="tag">x0</span></div>
 <div class="section">
@@ -194,7 +194,7 @@
 <h2>Problem</h2><p>自动化驱动「设备内置 Web TP」（浏览器形态的示教器）时三个连环陷阱，症状全是「命令发了、返回 0x0 成功、界面纹丝不动」：①登录接口是<strong>单会话 + 秒级锁</strong>——脚本连环 login 会触发「login is locked」锁定页，而解析器可能从旧响应里拿到陈旧会话 id，后续按键全部发进虚空；②按键注入的<strong>数字符号语义</strong>：十进制解析把 '8' 解析成控制码 8（=Backspace），而面板数字键实际是 ASCII（'8'=0x38）——发键全「成功」但语义全错；③同一窗口有<strong>两套渲染形态</strong>（经典 KAREL 屏 vs Web 应用屏），键码语义随形态切换：同一支键在经典屏开菜单、在 Web 屏可能只是切页/无响应，Web 屏的磁贴控件对合成鼠标点击（SetCursorPos+mouse_event）无反应。</p><h2>Root Cause</h2><p>Web TP 的会话层是单例的（服务端登录锁，失败后有秒级冷却）；键码通道沿用传统面板键码表但数字段与 ASCII 映射不一致；Web 屏的 UI 控件是浏览器层渲染，不消费传统合成输入或需要控件级事件。</p><h2>Fix</h2><ol><li>登录：<strong>一次登录复用会话 id</strong>，绝不连环 login；遇「locked」响应=等 10s 冷却，且解析器必须区分「锁页」与「真登录页」（判据：锁页无 g_connect_id）；</li><li>键注入：数字键一律按单字符 ASCII 发送；把「字符键/控制键」两族在工具里分开命名（text vs key），别共用一个 parse；</li><li>交互前先<strong>认形态</strong>（截屏判断当前是经典屏还是 Web 应用屏），键码路线只对经典屏可靠；Web 屏磁贴改走 URL 直连或控件级事件通道，别用合成坐标点击硬试。</li></ol><h2>Verification</h2><p>锁页识别：连环 login 第二次返回「login is locked」文本且不产生新 g_connect_id（修复后应等 10s 只登录一次）；数字修复：发送日志显示 0x30/0x34/0x38（而非 0x00/0x04/0x08）；认形态：发键前截屏比对两套渲染特征（经典屏=软键行文本，Web 屏=磁贴网格）。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/problem-自动化驱动设备内置-web.md">View on GitHub →</a></p></div>
-<div class="section"><h2>Search</h2><p><a href="/search/?q=Problem 自动化驱动「设备内置 Web TP」（浏览器形态的示教器）时三个连环陷阱，症状全是「命令发了、返回 0x0 成功、界面纹丝不动」：①登录接口是*">Find related lessons →</a></p></div>
+<div class="section"><h2>Search</h2><p><a href="/search/?q=Web TP 的三个连环陷阱：单会话秒级锁、按键数字被当控制码解析、登录时钟拿到陈旧会话 id">Find related lessons →</a></p></div>
 <div class="back"><a href="/">← Back to MisakaNet</a> · <a href="/search/">Search lessons</a></div>
 <footer class="footer">
 <!-- site-links:start -->

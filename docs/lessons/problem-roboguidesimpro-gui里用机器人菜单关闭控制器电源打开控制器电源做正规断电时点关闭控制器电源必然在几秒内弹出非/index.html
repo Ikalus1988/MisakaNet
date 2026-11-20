@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Problem ROBOGUIDE（SimPRO GUI）里用「机器人菜单→关闭控制器电源→打开控制器电源」做正规断电时，点「关闭控制器电源」必然在几秒内弹出非 — MisakaNet</title>
+<title>ROBOGUIDE 正规断电必弹 Object is no longer valid 且断电不生效，模态框还会吞掉后续所有菜单点击 — MisakaNet</title>
 <meta name="description" content="ROBOGUIDE（SimPRO GUI）里用「机器人菜单→关闭控制器电源→打开控制器电源」做正规断电时，点「关闭控制器电源」必然在几秒内弹出非致命错误框：`RGCRobotController.PowerOffRobotController ... Object is no longer vali...">
 <link rel="canonical" href="https://misakanet.org/lessons/problem-roboguidesimpro-gui里用机器人菜单关闭控制器电源打开控制器电源做正规断电时点关闭控制器电源必然在几秒内弹出非/">
-<meta property="og:title" content="Problem ROBOGUIDE（SimPRO GUI）里用「机器人菜单→关闭控制器电源→打开控制器电源」做正规断电时，点「关闭控制器电源」必然在几秒内弹出非">
+<meta property="og:title" content="ROBOGUIDE 正规断电必弹 Object is no longer valid 且断电不生效，模态框还会吞掉后续所有菜单点击">
 <meta property="og:description" content="ROBOGUIDE（SimPRO GUI）里用「机器人菜单→关闭控制器电源→打开控制器电源」做正规断电时，点「关闭控制器电源」必然在几秒内弹出非致命错误框：`RGCRobotController.PowerOffRobotController ... Object is no longer vali...">
 <meta property="og:url" content="https://misakanet.org/lessons/problem-roboguidesimpro-gui里用机器人菜单关闭控制器电源打开控制器电源做正规断电时点关闭控制器电源必然在几秒内弹出非/">
 <!-- design-tokens:start -->
@@ -183,7 +183,7 @@
 </style>
 </head>
 <body>
-<h1>Problem ROBOGUIDE（SimPRO GUI）里用「机器人菜单→关闭控制器电源→打开控制器电源」做正规断电时，点「关闭控制器电源」必然在几秒内弹出非</h1>
+<h1>ROBOGUIDE 正规断电必弹 Object is no longer valid 且断电不生效，模态框还会吞掉后续所有菜单点击</h1>
 <div class="meta">Domain: <a href="/topics/mcp/">mcp</a> · <span class="evidence" title="A maintainer accepted the intake">Evidence E1 — Maintainer reviewed</span></div>
 <div class="tags"><span class="tag">roboguide</span><span class="tag">simpro</span><span class="tag">gui</span></div>
 <div class="section">
@@ -194,7 +194,7 @@
 <h2>Problem</h2><p>ROBOGUIDE（SimPRO GUI）里用「机器人菜单→关闭控制器电源→打开控制器电源」做正规断电时，点「关闭控制器电源」必然在几秒内弹出非致命错误框：<code>RGCRobotController.PowerOffRobotController ... Object is no longer valid</code>（栈在 frmGenericMessage_Shown → RefreshControllerForUnload），断电不生效且弹窗带模态会吞掉后续所有菜单点击。三连复现，与控制器状态无关。</p><h2>Root Cause</h2><p>PowerOffRobotController 代码路径的控制器对象卸载与 UI 刷新竞态：对象被判定 invalid 后关电动作中止，GUI 留在「半死」状态（菜单使能态/状态栏 stale）。厂商 .NET 层确定性缺陷，非操作问题。</p><h2>Fix</h2><p>同语义替代路径：「机器人菜单 → 重新启动控制器(R) ▸ → 重新启动电源(C)」（一键电源重启）。不经 PowerOffRobotController。SYST-302 判据自动化：读 robot 目录 logfile.txt，按末个 <code>[tpmains] ready</code> 切段，段内正则 <code>SYST-302|PROG-057|OS  -145</code> 即需电源循环。</p><h2>Verification</h2><p>点「重新启动电源」无错误弹窗、虚拟机器人进程 PID 变化、新 boot 段 grep 不到 SYST-302/PROG-057、RPC 实答恢复（status=0x0）。</p><p>点「重新启动控制器▸重新启动电源」后：无错误弹窗+FRVIRT 换 PID+新日志段无 SYST-302+RPC 实答 status=0x0</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/problem-roboguidesimpro.md">View on GitHub →</a></p></div>
-<div class="section"><h2>Search</h2><p><a href="/search/?q=Problem ROBOGUIDE（SimPRO GUI）里用「机器人菜单→关闭控制器电源→打开控制器电源」做正规断电时，点「关闭控制器电源」必然在几秒内弹出非">Find related lessons →</a></p></div>
+<div class="section"><h2>Search</h2><p><a href="/search/?q=ROBOGUIDE 正规断电必弹 Object is no longer valid 且断电不生效，模态框还会吞掉后续所有菜单点击">Find related lessons →</a></p></div>
 <div class="back"><a href="/">← Back to MisakaNet</a> · <a href="/search/">Search lessons</a></div>
 <footer class="footer">
 <!-- site-links:start -->

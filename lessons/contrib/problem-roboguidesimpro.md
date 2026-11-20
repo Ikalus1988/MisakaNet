@@ -1,5 +1,5 @@
 ---
-title: "Problem ROBOGUIDE（SimPRO GUI）里用「机器人菜单→关闭控制器电源→打开控制器电源」做正规断电时，点「关闭控制器电源」必然在几秒内弹出非"
+title: "ROBOGUIDE 正规断电必弹 Object is no longer valid 且断电不生效，模态框还会吞掉后续所有菜单点击"
 domain: "mcp"
 tags:
   - "roboguide"

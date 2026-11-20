@@ -1,5 +1,5 @@
 ---
-title: "症状 在 PowerShell 里用 `& $yt-dlp \"bilisearch5:关键词\" --print \"%(title)s\"` 抓搜索结果，标题里的中"
+title: "Windows 版 yt-dlp 走 GBK 控制台：PowerShell 里抓到的中文标题全部变成 U+FFFD"
 domain: "windows"
 tags:
   - "node"

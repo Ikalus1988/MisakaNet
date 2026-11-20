@@ -20020,7 +20020,7 @@
   },
   {
     "id": "problem-4725",
-    "title": "Problem 自动化脚本按「另一台机器人解码出的下标」写控制器系统变量数组（例：$SERVENT[8]），本意是关掉 PMON 服务条目；写入成功、读回校验也",
+    "title": "控制器系统变量数组的下标不跨机器人稳定：按另一台解码出的 $SERVENT[8] 写入，读回校验全过，打中的却是 TP_INPUT",
     "domain": "mcp",
     "tags": [
       "servent",
@@ -20049,7 +20049,7 @@
   },
   {
     "id": "problem-5078",
-    "title": "Problem 虚拟控制器仿真环境里用「杀进程+重启」的方式回收控制器后，每次启动都报 `SYST-302 Please power off. Power Fa",
+    "title": "仿真环境用「杀进程+重启」回收控制器，每次启动都报 SYST-302 并禁用依赖就绪的 UI 入口；正规断电流程不复现",
     "domain": "fanuc",
     "tags": [
       "syst",
@@ -20409,7 +20409,7 @@
   },
   {
     "id": "problem-cherry-pick-一个改了源文件如",
-    "title": "Problem cherry-pick 一个改了源文件（如 lessons/*.md）的提交到新分支时，仓库里提交过的派生物（data/lessons.json",
+    "title": "cherry-pick 改了源文件的提交时派生物必然冲突：冲突的是生成结果而不是手写内容，要重跑生成链而不是逐块解",
     "domain": "mcp",
     "tags": [
       "git",
@@ -20589,7 +20589,7 @@
   },
   {
     "id": "problem-feishu-文档-doc-update-的-select-title-按标题替换章节时返回-no",
-    "title": "Problem feishu 文档 doc_update 的 `select_title` 按标题替换章节时返回 \"No heading found match",
+    "title": "feishu doc_update 的 select_title 匹配的是标题的原始 markdown（含行内标记），不是 outline 里的显示文本",
     "domain": "feishu",
     "tags": [
       "no",
@@ -20619,7 +20619,7 @@
   },
   {
     "id": "problem-gh-pr-create-base-fork-branch-想把-stacked-pr",
-    "title": "Problem `gh pr create --base <fork-branch>` 想把 stacked PR 挂到上游仓库里另一个 PR 的 head 分",
+    "title": "gh pr create 的 --base 只能是目标仓库自己的分支：stacked PR 指不到上游另一个 PR 的 head，报 baseRefName is invalid",
     "domain": "mcp",
     "tags": [
       "user-branch",
@@ -20678,7 +20678,7 @@
   },
   {
     "id": "problem-gui-自动化里注入鼠标点击mouse-event",
-    "title": "Problem GUI 自动化里注入鼠标点击（mouse_event 类）落在目标控件上却**毫无效果**：坐标几何正确（点位在列表行内）、控件枚举正常、点击",
+    "title": "注入点击不产生 WM_MOUSEACTIVATE：未激活窗口会丢弃鼠标消息，坐标与控件枚举看起来全对而点击毫无效果",
     "domain": "windows",
     "tags": [
       "gui",
@@ -20888,7 +20888,7 @@
   },
   {
     "id": "problem-roboguidesimpro",
-    "title": "Problem ROBOGUIDE（SimPRO GUI）里用「机器人菜单→关闭控制器电源→打开控制器电源」做正规断电时，点「关闭控制器电源」必然在几秒内弹出非",
+    "title": "ROBOGUIDE 正规断电必弹 Object is no longer valid 且断电不生效，模态框还会吞掉后续所有菜单点击",
     "domain": "mcp",
     "tags": [
       "roboguide",
@@ -21068,7 +21068,7 @@
   },
   {
     "id": "problem-windows-ui-自动化里给应用发菜单加速键如-altr-然后-t",
-    "title": "Problem Windows UI 自动化里给应用发**菜单加速键**（如 Alt+R 然后 T 触发菜单项「示教器(T)」），合成键事件被**中文输入法（I",
+    "title": "合成菜单加速键被中文输入法拦截：IME 中文态下字母键变成拼音候选，同一脚本时灵时不灵",
     "domain": "windows",
     "tags": [
       "windows",
@@ -21098,7 +21098,7 @@
   },
   {
     "id": "problem-windows-上-com",
-    "title": "Problem Windows 上 COM 本地服务器崩溃导致客户端永久等待时，症状极具误导性：客户端界面只剩「正在连接/Connecting…」，进程活着但零",
+    "title": "COM 本地服务器在激活瞬间崩溃，客户端永久停在「正在连接」：SCM 激活缓存还会让崩溃记录不再产生",
     "domain": "windows",
     "tags": [
       "windows",
@@ -21367,7 +21367,7 @@
   },
   {
     "id": "problem-仿真机器人控制器崩溃os-145power-off-controller-to",
-    "title": "Problem 仿真机器人控制器崩溃（OS -145「Power off controller to reset」）后，一切「重启控制器/冷启动」路径永久卡死在",
+    "title": "OS -145 之后所有重启路径永久卡死：虚拟机器人进程从未生成，清僵尸进程与补 COM 宿主都不够",
     "domain": "windows",
     "tags": [
       "get-service",
@@ -21695,7 +21695,7 @@
   },
   {
     "id": "problem-某飞书文档-mcp-的-doc-updateselect-匹配",
-    "title": "Problem 某飞书文档 MCP 的 doc_update（select 匹配 + replace/insert/delete）在改结构化文档时大面积「No",
+    "title": "结构化文档按显示文本 select 必然落空：标题被拍平成正文、加粗段落匹配不上、图片题注够不到",
     "domain": "feishu",
     "tags": [
       "no",
@@ -21755,7 +21755,7 @@
   },
   {
     "id": "problem-桌面应用的遥测单测偶红入队快照断言",
-    "title": "Problem 桌面应用的遥测单测偶红（入队快照断言 3≠2，队列里混进**别处铸的事件**），本机偶绿、门禁必现。异步家族：同一现象还有「状态被写进别人的目录",
+    "title": "后台投递线程每次存取都现解析环境变量：入队快照混进别处铸的事件，本机偶绿而门禁必现",
     "domain": "mcp",
     "tags": [
       "load_queue",
@@ -21814,7 +21814,7 @@
   },
   {
     "id": "problem-用-feishu-cli-docx-update-做小范围文字替换时踩到两个叠加坑-1-mode",
-    "title": "Problem 用 feishu CLI `docx update` 做小范围文字替换时踩到两个叠加坑： 1. `--mode replace --select",
+    "title": "feishu CLI 的 replace 会假成功：success 为真、matched_text 也回显了，文档的 modified_time 与内容却没变",
     "domain": "feishu",
     "tags": [
       "docx",
@@ -21964,7 +21964,7 @@
   },
   {
     "id": "problem-自动化脚本在虚拟控制器引导完成后立刻发起-httprpc",
-    "title": "Problem 自动化脚本在「虚拟控制器引导完成」后立刻发起 HTTP/RPC 读写，全部连接被拒（WinError 10061），实验整段报废；引导判据用的是",
+    "title": "services.txt 被重写不等于服务就绪：端口在其后才装载，抢跑 0~55 秒窗口内连接全部被拒",
     "domain": "mcp",
     "tags": [
       "http",
@@ -22024,7 +22024,7 @@
   },
   {
     "id": "problem-自动化驱动设备内置-web",
-    "title": "Problem 自动化驱动「设备内置 Web TP」（浏览器形态的示教器）时三个连环陷阱，症状全是「命令发了、返回 0x0 成功、界面纹丝不动」：①登录接口是*",
+    "title": "Web TP 的三个连环陷阱：单会话秒级锁、按键数字被当控制码解析、登录时钟拿到陈旧会话 id",
     "domain": "fanuc",
     "tags": [
       "web",
@@ -22054,7 +22054,7 @@
   },
   {
     "id": "problem-驱动-winformshtml-混合",
-    "title": "Problem 驱动 WinForms/HTML 混合 GUI（仿真器示教器类）做自动化操作时连撞三个坑：①数字输入弹窗是灰底灰字渲染，OCR 词表**零命中*",
+    "title": "灰底灰字让 OCR 零命中，词表里还有同名诱饵词：词法点击点中诱饵，后续操作全空跑且无断言拦截",
     "domain": "mcp",
     "tags": [
       "winforms",
@@ -26411,7 +26411,7 @@
   },
   {
     "id": "symptom-on-deepseek-harness-dsh-desktop-an-agent-tried-to",
-    "title": "Symptom On DeepSeek Harness (DSH) desktop, an agent tried to fix a broken half-i",
+    "title": "Editing a running host's profile dependency and reinstalling under it destroys the bundle it was repairing",
     "domain": "windows",
     "tags": [
       "on",
@@ -26501,7 +26501,7 @@
   },
   {
     "id": "symptom-桌面应用tauri",
-    "title": "Symptom 桌面应用（Tauri v1）「选择文件夹添加备份」，选到内容多的目录（几千个文件的整线备份库）软件直接卡死无响应。小目录完全正常。 Root C",
+    "title": "Tauri 选大目录卡死：目录扫描无条目上限 + 一次性读全部文件让 IPC 序列化爆炸，单层都不至于卡死",
     "domain": "fanuc",
     "tags": [
       "scan_directory",
@@ -31838,7 +31838,7 @@
   },
   {
     "id": "症状-下游视觉核对工具看图模型截图分析按-t2605png",
-    "title": "症状 下游视觉核对工具（看图模型/截图分析）按 `t26.05.png` 这类\"秒数.帧号\"的直觉拼绝对路径去读抽帧图，直接报： Input image not",
+    "title": "按「秒数.帧号」拼抽帧图路径：真实文件名是下划线，not found 被误判成渲染没出图而重跑",
     "domain": "windows",
     "tags": [
       "t26.05.png",
@@ -31868,7 +31868,7 @@
   },
   {
     "id": "症状-在-powershell-里用-yt-dlp-bilisearch5关键词-print-titles",
-    "title": "症状 在 PowerShell 里用 `& $yt-dlp \"bilisearch5:关键词\" --print \"%(title)s\"` 抓搜索结果，标题里的中",
+    "title": "Windows 版 yt-dlp 走 GBK 控制台：PowerShell 里抓到的中文标题全部变成 U+FFFD",
     "domain": "windows",
     "tags": [
       "node",
@@ -31958,7 +31958,7 @@
   },
   {
     "id": "症状-用-dshdeepseek-harness会话文件大小当上下文要爆的危险指标写了超-5-mb",
-    "title": "症状 用 DSH（DeepSeek Harness）会话文件大小当「上下文要爆」的危险指标，写了「超 5 MB 就换会话，8 MB 必崩」的规则，还写进了体检脚",
+    "title": "会话文件大小不是上下文用量：zstd 留档只增不减，7.55 MB 的文件对应 12% 的真实占用",
     "domain": "dsh",
     "tags": [
       "session.v4.jsonl.zstd",
@@ -32108,7 +32108,7 @@
   },
   {
     "id": "症状node-fetch-到某-cloudflare-workers-端点报-typeerror-fetch",
-    "title": "症状：Node fetch 到某 Cloudflare Workers 端点报 `TypeError: fetch failed`，curl 报 `Connec",
+    "title": "裸 workers.dev 域名在部分网络被阻断：node fetch 报 fetch failed，同网络下 curl 与生产自定义域都正常",
     "domain": "mcp",
     "tags": [
       "curl",

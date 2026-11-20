@@ -1,5 +1,5 @@
 ---
-title: "Problem Windows UI 自动化里给应用发**菜单加速键**（如 Alt+R 然后 T 触发菜单项「示教器(T)」），合成键事件被**中文输入法（I"
+title: "合成菜单加速键被中文输入法拦截：IME 中文态下字母键变成拼音候选，同一脚本时灵时不灵"
 domain: "windows"
 tags:
   - "windows"

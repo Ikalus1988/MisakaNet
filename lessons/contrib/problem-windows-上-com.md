@@ -1,5 +1,5 @@
 ---
-title: "Problem Windows 上 COM 本地服务器崩溃导致客户端永久等待时，症状极具误导性：客户端界面只剩「正在连接/Connecting…」，进程活着但零"
+title: "COM 本地服务器在激活瞬间崩溃，客户端永久停在「正在连接」：SCM 激活缓存还会让崩溃记录不再产生"
 domain: "windows"
 tags:
   - "windows"

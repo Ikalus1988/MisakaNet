@@ -1,5 +1,5 @@
 ---
-title: "Problem 虚拟控制器仿真环境里用「杀进程+重启」的方式回收控制器后，每次启动都报 `SYST-302 Please power off. Power Fa"
+title: "仿真环境用「杀进程+重启」回收控制器，每次启动都报 SYST-302 并禁用依赖就绪的 UI 入口；正规断电流程不复现"
 domain: "fanuc"
 tags:
   - "syst"
