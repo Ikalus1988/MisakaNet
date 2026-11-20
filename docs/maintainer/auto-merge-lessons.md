@@ -92,7 +92,7 @@ run 44714007969 结论 `skipped`、零个 step）。所以那个守卫现在写�
 | 4 | 评审状态是 `CHANGES_REQUESTED` | **refuse** | `a review requests changes (CHANGES_REQUESTED)` |
 | 5 | 有任何一个改动文件不在 `lessons/` 下 | **refuse** | `file(s) outside lessons/: scripts/…` |
 | 5b | 改动文件列表为空 | **wait** | `no changed files reported — scope could not be verified` |
-| 6 | 动了 `lessons/index.md` 且 `deletions > 0` 或 `additions > 1` | **refuse** | `lessons/index.md must be at most a one-line addition: +3/-5 …` |
+| 6 | 动了 `lessons/index.md` 且 `deletions > 0` 或 `additions >` **新增课程数**（至少 1） | **refuse** | `lessons/index.md must be at most a one-line-per-new-lesson addition: +3/-0 (allowed: +2/-0) …` |
 | 6b | 动了 `lessons/index.md` 但拿不到行数 | **wait** | `lessons/index.md is touched but its line stats are unknown` |
 | 7 | 任一必需检查结论不是 `success` | **refuse** | `required check(s) not successful: provenance (failure)` |
 | 8 | 任一必需检查缺失 / 还在跑 / 排队 | **wait** | `required check(s) not green yet: provenance (in_progress)` |
