@@ -77,7 +77,14 @@ jobs:
     # produce neither a comment nor a merge, and does not need a runner to say so. Measured
     # 2026-10-02: 32 `pull_request` runs in the 20 minutes 04:54–05:14Z across 7 branches, and with
     # `cancel-in-progress: false` they could not even cancel each other.
-    if: contains(github.event.pull_request.labels.*.name, 'auto-merge-lesson')
+    #
+    # **`workflow_dispatch` has no `pull_request` context**, so this guard evaluated to false for every
+    # run the sweeper dispatched and the job was skipped before reaching the decision script — measured
+    # 2026-11-20T09:49Z on #5416: the sweep dispatched (run 44714007969), and the run finished as
+    # `skipped` with no steps. The label is still enforced, just where it already was: the deciding
+    # script re-reads it from the API and answers `wait` (decision table row 2), and a dispatch for a
+    # PR without the label therefore costs one script invocation and produces no comment and no merge.
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.pull_request.labels.*.name, 'auto-merge-lesson')
     steps:
       - name: Checkout the trusted decision script
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
