@@ -38,6 +38,7 @@ jobs:
     permissions:
       contents: write
       pull-requests: write   # the regeneration lands through the auto-merging PR, not a push
+      issues: write          # the receipt sweep comments on and closes intakes
     runs-on: ubuntu-latest
     # A job with no bound holds its runner until the platform default (six hours).
     timeout-minutes: 20
@@ -150,6 +151,15 @@ jobs:
           python3 scripts/emit_intake_receipt.py --quiet --close
 
       - name: Close any intake whose lesson already exists
+        # `GH_TOKEN` **and** `issues: write`, both of which this step lacked when it landed (#5347):
+        # the sweep shells out to `gh`, so without the variable it died with
+        # `gh: To use GitHub CLI in a GitHub Actions workflow, set the GH_TOKEN environment variable`
+        # — measured 2026-11-20T19:36Z, the first run after the step was added, and the only run it
+        # ever had. The step is what closes "done but open" intakes (41 of them on the day it was
+        # finally able to run), so a silent failure here is the queue growing while a green-looking
+        # automation reports nothing.
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           # `emit_intake_receipt.py` receipts **new promotions**: it reads a ledger and only sees the
           # lessons that appeared after `--seed-log` was run by hand on 2026-11-02. Everything converted
