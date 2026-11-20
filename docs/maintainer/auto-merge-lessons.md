@@ -45,6 +45,19 @@
 > 一个已 opt-in 的 PR 如果在 `synchronize` / `ready_for_review` / `labeled` 之后检查才全绿，
 > **不会**自动合并，需要人手动合一次。判定逻辑与 opt-in 标签的校验都没变，变的是"什么时候被叫醒"。
 
+### 「再问一次」由扫尾器负责（2026-11-19 起）
+
+`auto-merge-sweep.yml` 每半小时（`*/30 * * * *`）列出「带标签且 `mergeStateStatus == CLEAN`」的 PR，
+对每个 PR `workflow_dispatch` **本工作流**并传 `pr=<number>`。判定、载荷形状、合并本身都还在本工作流里
+——一个实现、一组测试（`scripts/lesson_pr_mergeable.py`），而不是第二个可能给出不同答案的扫尾器。
+
+这条链上有个必须记住的形状：**`workflow_dispatch` 没有 `pull_request` 上下文**。作业级那个
+`contains(github.event.pull_request.labels.*.name, 'auto-merge-lesson')` 在 dispatch 下恒为 false，
+于是每次 dispatch 都在进判定脚本之前被 skip 掉（实测 2026-11-20T09:49Z：扫尾器成功 dispatch 了 #5416，
+run 44714007969 结论 `skipped`、零个 step）。所以那个守卫现在写作
+`github.event_name == 'workflow_dispatch' || contains(...)`：标签仍由判定脚本从 API 重读并给出 `wait`
+（决策表第 2 行），只是不再拦在 dispatch 的路上。
+
 ### 判定从哪来（事实全部读 API，不读 PR 内容）
 
 | 事实 | 来源 |
