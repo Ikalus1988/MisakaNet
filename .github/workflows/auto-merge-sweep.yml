@@ -40,12 +40,35 @@ jobs:
           REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
-          # `mergeStateStatus` is what the deciding workflow re-checks anyway; asking here keeps the
-          # dispatch list small and the logs readable.
+          # **Do not filter on `mergeStateStatus` from the list endpoint.** It is a *cached* field:
+          # every merge into the default branch invalidates the cached mergeability of every open pull
+          # request, and it reads `UNKNOWN` until GitHub recomputes it — on access, lazily. Measured
+          # 2026-11-20: #5416 was `CLEAN` at 09:49Z (one candidate, dispatched), then `UNKNOWN` in
+          # `gh pr list`/`mergeStateStatus` right after the next few merges landed, and this step
+          # reported `candidates: 0` while `GET /pulls/5416` still answered `mergeable: true`,
+          # `mergeable_state: clean`. A candidate filter that silently drops the very pull requests it
+          # exists for is worse than no filter: the run is green.
+          #
+          # So: list by the facts GitHub always answers (label, draft), then ask the **single-PR**
+          # endpoint, which computes mergeability rather than reading a cache — retrying while it says
+          # `unknown`, because the first read is what triggers the computation.
           gh pr list --repo "$REPO" --state open --label auto-merge-lesson --limit 100 \
-            --json number,mergeStateStatus,isDraft \
-            --jq '.[] | select(.isDraft == false) | select(.mergeStateStatus == "CLEAN") | .number' \
-            > /tmp/candidates.txt
+            --json number,isDraft \
+            --jq '.[] | select(.isDraft == false) | .number' > /tmp/labelled.txt
+
+          : > /tmp/candidates.txt
+          while read -r pr; do
+            [ -z "$pr" ] && continue
+            state=""
+            for attempt in 1 2 3 4; do
+              state=$(gh api "repos/$REPO/pulls/$pr" --jq '.mergeable_state // "unknown"' 2>/dev/null || echo unknown)
+              [ "$state" = "unknown" ] || break
+              sleep 3
+            done
+            echo "#$pr mergeable_state=$state"
+            [ "$state" = "clean" ] && echo "$pr" >> /tmp/candidates.txt
+          done < /tmp/labelled.txt
+
           count=$(wc -l < /tmp/candidates.txt | tr -d ' ')
           echo "candidates: $count"
           tr '\n' ' ' < /tmp/candidates.txt; echo
