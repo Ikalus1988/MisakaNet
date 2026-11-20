@@ -1,9 +1,23 @@
 {
-  "generated_at": "2026-11-20T19:34:11.306473+00:00",
+  "generated_at": "2026-11-20T20:34:29.085236+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 13,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "fix(intake): the sweep read a 200-character prefix of a 660-line list, and called it \"nothing to do\"",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5486",
+      "timestamp": "2026-11-20T20:17:04Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5481",
+      "timestamp": "2026-11-20T19:56:51Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "feat(lessons): convert the eight pending lesson submissions, and stop shipping trimmed titles",
@@ -23,20 +37,6 @@
       "title": "fix(lessons): the last twenty-two titles stop naming the intake form's own heading",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/5465",
       "timestamp": "2026-11-20T18:11:25Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "docs(handoff): vol 42 — one chain, five shapes, and only the last one was red",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5444",
-      "timestamp": "2026-11-20T15:56:13Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat(ci): the sweep wakes when the question becomes answerable, not only on a sparse cron",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5434",
-      "timestamp": "2026-11-20T15:06:35Z",
       "source": "github"
     },
     {
