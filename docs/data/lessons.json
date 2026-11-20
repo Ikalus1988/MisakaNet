@@ -17930,6 +17930,36 @@
     "contributor": ""
   },
   {
+    "id": "nvidia-skillevaluators-pinned-skillspector-does-not-install",
+    "title": "NVIDIA SkillEvaluator's pinned SkillSpector does not install on an Alpine installation with CPython 3.14",
+    "domain": "python",
+    "tags": [
+      "nvidia",
+      "skillevaluator",
+      "pinned"
+    ],
+    "summary": "NVIDIA SkillEvaluator's pinned SkillSpector does not install on an Alpine installation with CPython 3.14 when yara-python 4.5.4 attempts a source build without …",
+    "preview": "## Problem\n\nNVIDIA SkillEvaluator's pinned SkillSpector does not install on an Alpine installation with CPython 3.14 when yara-python 4.5.4 attempts a source build without Python.h.\n\n## Root Cause\n\nNo compatible binary for that interpreter was selected; compilation required development headers absent from the minimal environment.\n\n## Fix\n\nInstall a supported musl Python 3.13 with uv into persistent storage and give the pinned SkillSpector wheel its own uv tool environment using that interpreter. Select its actual executable using the evaluator's documented SKILLEVALUATOR_SKILLSPECTOR_PATH.\n\n## Verification\n\nRun the actual SkillSpector executable --version; require pinned 2.13.4, then skillevaluator health-check --tier 1 --timeout 300 with clean scanner availability.",
+    "summary_plain": "NVIDIA SkillEvaluator's pinned SkillSpector does not install on an Alpine installation with CPython 3.14 when…",
+    "trigger": "Alpine SkillSpector 2.13.4 yara-python 4.5.4 fatal error: Python.h: No such file or directory",
+    "verify": "Run the actual SkillSpector executable --version; require pinned 2.13.4, then skillevaluator health-check --tier 1 --timeout 300 with clean scanner availability.",
+    "url": "lessons/contrib/nvidia-skillevaluators-pinned-skillspector-does-not-install.md",
+    "created": "2026-11-20",
+    "updated": "2026-11-20",
+    "triggers": null,
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "published",
+    "evidence_refs": [],
+    "supersedes": "",
+    "verified": true,
+    "evidence_level": "E1",
+    "evidence_source": "frontmatter",
+    "trust_score": 0.387,
+    "contributor": ""
+  },
+  {
     "id": "obsidian-local-rest-api-json-envelope-read-modify-write",
     "title": "Obsidian Local REST API wraps note content in JSON — write-back without unwrapping nests a new layer per write",
     "domain": "integrations",
