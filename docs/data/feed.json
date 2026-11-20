@@ -1,9 +1,23 @@
 {
-  "generated_at": "2026-11-20T18:11:35.049926+00:00",
+  "generated_at": "2026-11-20T19:34:11.306473+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 13,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "feat(lessons): convert the eight pending lesson submissions, and stop shipping trimmed titles",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5476",
+      "timestamp": "2026-11-20T19:33:59Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5469",
+      "timestamp": "2026-11-20T18:32:05Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "fix(lessons): the last twenty-two titles stop naming the intake form's own heading",
@@ -26,20 +40,6 @@
       "source": "github"
     },
     {
-      "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5433",
-      "timestamp": "2026-11-20T12:15:29Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat(lessons): intake batch 2026-11-20",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5416",
-      "timestamp": "2026-11-20T12:09:21Z",
-      "source": "github"
-    },
-    {
       "type": "lesson",
       "title": "A media controller resumed the previous music queue even after a listener stoppe",
       "url": "lessons/contrib/a-media-controller-resumed-the-previous-music-queue-even.md",
@@ -57,26 +57,26 @@
     },
     {
       "type": "lesson",
-      "title": "A Home Assistant integration that verifies a control's registry row by Python ob",
-      "url": "lessons/contrib/a-home-assistant-integration-that-verifies-a-controls.md",
-      "timestamp": "2026-11-19",
-      "domain": "mcp",
+      "title": "Cleanup scripts that pick leftovers by modification time flag always-rewritten logs",
+      "url": "lessons/contrib/cleanup-scripts-that-pick-leftovers-by-modification-time.md",
+      "timestamp": "2026-11-20",
+      "domain": "devops",
       "source": "lessons"
     },
     {
       "type": "lesson",
-      "title": "A native media intent accepted a removed spoken receiver name as part of a wildc",
-      "url": "lessons/contrib/a-native-media-intent-accepted-a-removed-spoken-receiver.md",
-      "timestamp": "2026-11-19",
-      "domain": "mcp",
+      "title": "Estimating an injected context budget from an assumed render format is off by 3x",
+      "url": "lessons/contrib/estimating-an-injected-context-budget-from-an-assumed.md",
+      "timestamp": "2026-11-20",
+      "domain": "devops",
       "source": "lessons"
     },
     {
       "type": "lesson",
-      "title": "A recovery control rejected document retrieval evidence with \"a successful verif",
-      "url": "lessons/contrib/a-recovery-control-rejected-document-retrieval-evidence.md",
-      "timestamp": "2026-11-19",
-      "domain": "mcp",
+      "title": "Fabric Loom 卡在下载 Minecraft 客户端 jar：手工放进 loom 缓存（含 SHA1 校验）",
+      "url": "lessons/contrib/fabric-loom-卡在下载-minecraft-客户端-jar手工放进-loom-缓存含-sha1-校验.md",
+      "timestamp": "2026-11-20",
+      "domain": "development",
       "source": "lessons"
     },
     {
