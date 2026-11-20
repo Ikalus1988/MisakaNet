@@ -247,11 +247,20 @@ def post_receipt(issue: int, body: str, *, repo: str = REPO_SLUG, opener=None) -
     return True, "receipt posted, intake closed"
 
 
-def _gh(args: list[str], body: str | None = None) -> tuple[bool, str]:
-    """`gh` with the body on stdin, so no temporary file and no shell quoting of prose."""
+def _gh(args: list[str], body: str | None = None, *, keep: int | None = 200) -> tuple[bool, str]:
+    """`gh` with the body on stdin, so no temporary file and no shell quoting of prose.
+
+    `keep` trims the result because most callers only ever print it in an error message. **A caller
+    that parses a list must pass `keep=None`**: the sweep asked for up to 1,000 open issues and then
+    read a 200-character prefix of the answer, which is about 40 issue numbers — measured 2026-11-20,
+    when the repository had 660 open issues and six of them had a lesson already merged that the sweep
+    could not see. The mechanism that closes done-but-open intakes was quietly looking at the newest
+    6% of the queue and reporting "no open intake is already converted".
+    """
     proc = subprocess.run(["gh", *args], input=body, capture_output=True, text=True,
                           encoding="utf-8", errors="replace", check=False)
-    return proc.returncode == 0, (proc.stdout or proc.stderr or "").strip()[:200]
+    text = (proc.stdout or proc.stderr or "").strip()
+    return proc.returncode == 0, text if keep is None else text[:keep]
 
 
 def converted_but_open(*, repo: str = REPO_SLUG, open_issues: list[int] | None = None) -> list[int]:
@@ -261,7 +270,7 @@ def converted_but_open(*, repo: str = REPO_SLUG, open_issues: list[int] | None =
     """
     if open_issues is None:
         ok, out = _gh(["issue", "list", "--repo", repo, "--state", "open", "--limit", "1000",
-                       "--json", "number", "--jq", ".[].number"])
+                       "--json", "number", "--jq", ".[].number"], keep=None)
         if not ok:
             raise SystemExit(f"gh issue list failed: {out}")
         open_issues = [int(line) for line in out.split() if line.strip().isdigit()]

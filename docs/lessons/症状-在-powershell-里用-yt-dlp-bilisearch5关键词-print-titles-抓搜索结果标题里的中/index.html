@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>症状 在 PowerShell 里用 `& $yt-dlp "bilisearch5:关键词" --print "%(title)s"` 抓搜索结果，标题里的中 — MisakaNet</title>
+<title>Windows 版 yt-dlp 走 GBK 控制台：PowerShell 里抓到的中文标题全部变成 U+FFFD — MisakaNet</title>
 <meta name="description" content="在 PowerShell 里用 `& $yt-dlp "bilisearch5:关键词" --print "%(title)s"` 抓搜索结果，标题里的中文全部变成 `��`（U+FFFD 替换字符），UP 主名字同样是乱码。">
 <link rel="canonical" href="https://misakanet.org/lessons/症状-在-powershell-里用-yt-dlp-bilisearch5关键词-print-titles-抓搜索结果标题里的中/">
-<meta property="og:title" content="症状 在 PowerShell 里用 `& $yt-dlp "bilisearch5:关键词" --print "%(title)s"` 抓搜索结果，标题里的中">
+<meta property="og:title" content="Windows 版 yt-dlp 走 GBK 控制台：PowerShell 里抓到的中文标题全部变成 U+FFFD">
 <meta property="og:description" content="在 PowerShell 里用 `& $yt-dlp "bilisearch5:关键词" --print "%(title)s"` 抓搜索结果，标题里的中文全部变成 `��`（U+FFFD 替换字符），UP 主名字同样是乱码。">
 <meta property="og:url" content="https://misakanet.org/lessons/症状-在-powershell-里用-yt-dlp-bilisearch5关键词-print-titles-抓搜索结果标题里的中/">
 <!-- design-tokens:start -->
@@ -183,7 +183,7 @@
 </style>
 </head>
 <body>
-<h1>症状 在 PowerShell 里用 `& $yt-dlp "bilisearch5:关键词" --print "%(title)s"` 抓搜索结果，标题里的中</h1>
+<h1>Windows 版 yt-dlp 走 GBK 控制台：PowerShell 里抓到的中文标题全部变成 U+FFFD</h1>
 <div class="meta">Domain: <a href="/topics/windows/">windows</a> · <span class="evidence" title="A maintainer accepted the intake">Evidence E1 — Maintainer reviewed</span></div>
 <div class="tags"><span class="tag">node</span><span class="tag">curl.exe</span><span class="tag">powershell</span></div>
 <div class="section">
@@ -204,7 +204,7 @@ UP: 精湛電腦
 标题: 組裝電腦維修紀錄：電腦一直在重開機，沒辦法開機  這個零件千萬不能省</code></pre><p><strong>顺带一个同源问题</strong>：<code>Invoke-WebRequest</code> 在 PowerShell 里拿 npm registry 的 JSON 也会失败（<code>$o.'dist-tags'.latest</code> 取不到），换成 <code>node fetch</code> 或 <code>curl.exe</code> 就正常。同样是 PowerShell 的 HTTP 客户端对编码和 UA 的处理和裸 HTTP 不一致。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/症状-在-powershell-里用-yt-dlp-bilisearch5关键词-print-titles.md">View on GitHub →</a></p></div>
-<div class="section"><h2>Search</h2><p><a href="/search/?q=症状 在 PowerShell 里用 `& $yt-dlp "bilisearch5:关键词" --print "%(title)s"` 抓搜索结果，标题里的中">Find related lessons →</a></p></div>
+<div class="section"><h2>Search</h2><p><a href="/search/?q=Windows 版 yt-dlp 走 GBK 控制台：PowerShell 里抓到的中文标题全部变成 U+FFFD">Find related lessons →</a></p></div>
 <div class="back"><a href="/">← Back to MisakaNet</a> · <a href="/search/">Search lessons</a></div>
 <footer class="footer">
 <!-- site-links:start -->

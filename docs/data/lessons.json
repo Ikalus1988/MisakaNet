@@ -1298,6 +1298,36 @@
     "contributor": ""
   },
   {
+    "id": "a-media-controller-resumed-the-previous-music-queue-even",
+    "title": "A media controller resumed the previous music queue even after a listener stoppe",
+    "domain": "mcp",
+    "tags": [
+      "media",
+      "controller",
+      "resumed"
+    ],
+    "summary": "A media controller resumed the previous music queue even after a listener stopped an interrupting clip early.",
+    "preview": "## Problem\n\nA media controller resumed the previous music queue even after a listener stopped an interrupting clip early.\n\n## Root Cause\n\nThe player kept the clip metadata in IDLE after STOP; the same final state can also signal natural completion. Checking only the final state and the time at which it is read loses the time of the transition.\n\n## Fix\n\nLatch the first observed playing-to-idle transition against the rendered clip duration on a monotonic clock. Withhold both queue resumption and inverse gain on an early transition or uncertain completion. A physical stop at a plausible natural end remains indistinguishable.\n\n## Verification\n\nIn mocked provider I/O, stop early and advance the clock past the expected end: neither resume nor restore gain. A plausible normal end resumes once. Verify cancellation and unknown-duration cases too.",
+    "summary_plain": "A media controller resumed the previous music queue even after a listener stopped an interrupting clip early.",
+    "trigger": "premature STOP with retained clip metadata incorrectly resumes parked queue",
+    "verify": "In mocked provider I/O, stop early and advance the clock past the expected end: neither resume nor restore gain. A plausible normal end resumes once. Verify cancellation and unknown-duration cases…",
+    "url": "lessons/contrib/a-media-controller-resumed-the-previous-music-queue-even.md",
+    "created": "2026-11-20",
+    "updated": "2026-11-20",
+    "triggers": null,
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "published",
+    "evidence_refs": [],
+    "supersedes": "",
+    "verified": true,
+    "evidence_level": "E1",
+    "evidence_source": "frontmatter",
+    "trust_score": 0.387,
+    "contributor": ""
+  },
+  {
     "id": "a-native-media-intent-accepted-a-removed-spoken-receiver",
     "title": "A native media intent accepted a removed spoken receiver name as part of a wildc",
     "domain": "mcp",
@@ -2871,6 +2901,36 @@
     "url": "lessons/contrib/an-instruction-policy-installer-succeeds-in-writing-a.md",
     "created": "2026-11-09",
     "updated": "2026-11-09",
+    "triggers": null,
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "published",
+    "evidence_refs": [],
+    "supersedes": "",
+    "verified": true,
+    "evidence_level": "E1",
+    "evidence_source": "frontmatter",
+    "trust_score": 0.387,
+    "contributor": ""
+  },
+  {
+    "id": "an-overlapping-generic-announcement-sentence-consumed-the",
+    "title": "An overlapping generic announcement sentence consumed the destination prefix and",
+    "domain": "mcp",
+    "tags": [
+      "an",
+      "overlapping",
+      "generic"
+    ],
+    "summary": "An overlapping generic announcement sentence consumed the destination prefix and sent it to the selected speaker as part of the announcement.",
+    "preview": "## Problem\n\nAn overlapping generic announcement sentence consumed the destination prefix and sent it to the selected speaker as part of the announcement.\n\n## Root Cause\n\nThe registered generic wildcard matched before the more-specific destination sentence. Reordering alone left destination-only phrases eligible for the generic wildcard.\n\n## Fix\n\nRegister the explicit destination and its no-body literal ahead of the generic wildcard. Return a local clarification without invoking delivery when no message is present. Keep legitimate leading prepositions and repeated words inside the actual body.\n\n## Verification\n\nRun real native recognition and the automation against a silent transport; assert exactly one expected body, no transport calls on empty/negated requests, and unchanged routes.",
+    "summary_plain": "An overlapping generic announcement sentence consumed the destination prefix and sent it to the selected speaker as…",
+    "trigger": "Hassil Home Assistant conversation trigger wildcard captures explicit speaker destination as announcement text",
+    "verify": "Run real native recognition and the automation against a silent transport; assert exactly one expected body, no transport calls on empty/negated requests, and unchanged routes.",
+    "url": "lessons/contrib/an-overlapping-generic-announcement-sentence-consumed-the.md",
+    "created": "2026-11-20",
+    "updated": "2026-11-20",
     "triggers": null,
     "validity_period_days": 365,
     "environment_version": "",
@@ -4729,6 +4789,37 @@
     "url": "lessons/contrib/claude-code-hook-silent-failure.md",
     "created": "2026-09-12",
     "updated": "2026-09-12",
+    "triggers": null,
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "published",
+    "evidence_refs": [],
+    "supersedes": "",
+    "verified": true,
+    "evidence_level": "E1",
+    "evidence_source": "frontmatter",
+    "trust_score": 0.387,
+    "contributor": ""
+  },
+  {
+    "id": "cleanup-scripts-that-pick-leftovers-by-modification-time",
+    "title": "Cleanup scripts that pick leftovers by modification time flag always-rewritten logs",
+    "domain": "devops",
+    "tags": [
+      "cleanup",
+      "artifact-detection",
+      "false-positive",
+      "time-window"
+    ],
+    "summary": "A task-cleanup script selects candidate leftovers by \"modified within the last N hours\". It reliably lists the logs of long-running helper processes (watchdog l…",
+    "preview": "## Problem\n\nA task-cleanup script selects candidate leftovers by \"modified within the last N hours\". It reliably lists the logs of long-running helper processes (watchdog log, wallpaper-rotation log) under \"kept but consider deleting\", because those processes append every few minutes and therefore always fall inside any time window.\n\nConsequence: the candidate list is dominated by noise, so the human review that is supposed to catch real waste is spent on files that must never be deleted. Acting on the list literally would delete logs that are being written right now.\n\n## Root Cause\n\n\"Recently modified\" was treated as \"changed by this task\". The two are equivalent only when the only writer is the task itself. Long-running processes periodically rewrite the same file, so its mtime is always fresh regardless of what the task did.\n\nA time-window filter is a cheap approximation: it answers \"who was written during this period\", not \"who was written by this task\". The error is assuming the second question follows from the first.\n\n## Fix\n\n1. Classify by file identity, not only by time: separate logs (.log), state files (state/history), and artifacts.\n2. Give logs their own section labelled \"produced by always-on tools, normally kept, not this task's leftover\", and keep them out of the delete candidate list.\n3. When a real judgement is needed, take the primary source from \"files this session created or modified\" or VCS status; use the time window only as a fallback for non-repo directories.\n4. Every automatic candidate stays advisory: the script must never delete by itself.\n\n## Verification\n\nRun twice on a directory that contains an always-on log: the logs appear in the separate \"runtime logs\" section and the delete candidate count is 0, while genuine one-off leftovers (.bak / .tmp / probe-*) are still listed.",
+    "summary_plain": "A task-cleanup script selects candidate leftovers by \"modified within the last N hours\".",
+    "trigger": "Cleanup scripts that pick leftovers by modification time flag always-rewritten logs. A task-cleanup script selects candidate leftovers by \"modified within the…",
+    "verify": "Run twice on a directory that contains an always-on log: the logs appear in the separate \"runtime logs\" section and the delete candidate count is 0, while genuine one-off leftovers (.bak / .tmp /…",
+    "url": "lessons/contrib/cleanup-scripts-that-pick-leftovers-by-modification-time.md",
+    "created": "2026-11-20",
+    "updated": "2026-11-20",
     "triggers": null,
     "validity_period_days": 365,
     "environment_version": "",
@@ -8682,6 +8773,37 @@
     "contributor": ""
   },
   {
+    "id": "estimating-an-injected-context-budget-from-an-assumed",
+    "title": "Estimating an injected context budget from an assumed render format is off by 3x",
+    "domain": "devops",
+    "tags": [
+      "token-budget",
+      "estimation",
+      "prompt-injection",
+      "calibration"
+    ],
+    "summary": "A status script estimates how much of a long-term memory plugin's prompt budget is consumed. Three successive attempts, all wrong:",
+    "preview": "## Problem\n\nA status script estimates how much of a long-term memory plugin's prompt budget is consumed. Three successive attempts, all wrong:\n\n- v1 summed only pinned entries (text + metadata): 745 / 2000 — far below reality.\n- v2 added the plugin's recent-N entries as well: 1973 / 2000 — now far above.\n- The plugin actually injected 1845 / 2000.\n\nEach version looked internally consistent and was still wrong, because each was built from an assumption about what gets rendered rather than from the rendered text.\n\n## Root Cause\n\nThe formula encoded \"what I know exists\", not \"what the plugin actually emits\". Three things were missing, and each one pushed the error in a different direction:\n\n1. Non-pinned recent entries also consume the budget (v1 missed this → too low).\n2. The budget fills until it is full and then truncates; it does not try to fit everything (v2 missed this → too high).\n3. There is fixed overhead outside the entries: section heading, and the trailing \"N more not shown\" hint (both versions missed this).\n\nBecause the errors were in opposite directions, neither version looked consistently biased, which made the mistake harder to notice than a single wrong constant would have been.\n\n## Fix\n\n1. Capture the real rendered block once (the actual injected text) and measure it. Use that number as ground truth before writing any formula.\n2. Decompose it: fixed overhead / per-entry overhead / per-entry text. Only then reverse-engineer the formula from the observed value.\n3. If the algorithm is not fully visible or can change between versions, stop pretending to be exact: label the output \"approximate\", and prefer a threshold alarm (e.g. >90% of budget) over a precise number nobody can verify.\n4. Keep the estimate honest in the output text itself, not in a comment — the number gets quoted later without the comment.\n\n## Verification\n\nThe estimate stays within about 5% of the measured injected block. In this case the error went from 3x to 21 characters out of 1845 (about 1%), after adding truncation and fixed overhead.",
+    "summary_plain": "A status script estimates how much of a long-term memory plugin's prompt budget is consumed.",
+    "trigger": "Estimating an injected context budget from an assumed render format is off by 3x. A status script estimates how much of a long-term memory plugin's prompt…",
+    "verify": "The estimate stays within about 5% of the measured injected block. In this case the error went from 3x to 21 characters out of 1845 (about 1%), after adding truncation and fixed overhead.",
+    "url": "lessons/contrib/estimating-an-injected-context-budget-from-an-assumed.md",
+    "created": "2026-11-20",
+    "updated": "2026-11-20",
+    "triggers": null,
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "published",
+    "evidence_refs": [],
+    "supersedes": "",
+    "verified": true,
+    "evidence_level": "E1",
+    "evidence_source": "frontmatter",
+    "trust_score": 0.387,
+    "contributor": ""
+  },
+  {
     "id": "event-count-is-not-a-health-signal",
     "title": "An event count is not a health signal: auto-remediation keyed on it restarts a healthy service",
     "domain": "devops",
@@ -8735,6 +8857,38 @@
     "url": "lessons/contrib/external-issue-diagnosis-needs-own-reproduction.md",
     "created": "2026-10-25",
     "updated": "2026-10-25",
+    "triggers": null,
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "published",
+    "evidence_refs": [],
+    "supersedes": "",
+    "verified": true,
+    "evidence_level": "E1",
+    "evidence_source": "frontmatter",
+    "trust_score": 0.387,
+    "contributor": ""
+  },
+  {
+    "id": "fabric-loom-卡在下载-minecraft-客户端-jar手工放进-loom-缓存含-sha1-校验",
+    "title": "Fabric Loom 卡在下载 Minecraft 客户端 jar：手工放进 loom 缓存（含 SHA1 校验）",
+    "domain": "development",
+    "tags": [
+      "minecraft",
+      "fabric",
+      "loom",
+      "gradle",
+      "download"
+    ],
+    "summary": "首次构建 Fabric mod 工程，Loom 卡在下载客户端 jar：",
+    "preview": "## Problem\n\n首次构建 Fabric mod 工程，Loom 卡在下载客户端 jar：\n\n~/.gradle/caches/fabric-loom/<mcver><PATH>  恒为 0 字节然后极慢增长\n\n等了 20 分钟只下 1.4MB（约 1KB/s），同一次构建里 server jar（59MB）却很快下完。build 既不报错也不前进。\n\n## Root Cause\n\nLoom 用 HttpURLConnection 直接从 piston-data.mojang.com 拉客户端 jar，无断点续传、无多线程；该源在国内吞吐可低到 1KB/s，于是表现为\"永久卡住\"而不是\"失败\"。\n\n## Fix\n\n1) 从缓存里的 mojang_minecraft_info.json（或 version json）读 downloads.client.url 与 downloads.client.sha1\n2) 多线程下载器拉完整 jar（aria2 -x16 -s16 -k1M）\n3) Get-FileHash 校验 SHA1 必须与 json 一致\n4) 放到 ~/.gradle/caches/fabric-loom/<mcver><PATH>\n5) 删掉同目录的 minecraft-client.jar.part（不删会接着从断点爬）\n6) 重新 build\n\n## Verification\n\n1) SHA1 与 version json 完全一致；\n2) 重新 build 不再生成 .part，下载阶段被跳过；\n3) 缓存目录出现 minecraft-merged.jar / minecraft-extracted_server.jar 等后续产物。",
+    "summary_plain": "首次构建 Fabric mod 工程，Loom 卡在下载客户端 jar： ~/.gradle/caches/fabric-loom/<mcver><PATH> 恒为 0 字节然后极慢增长 等了 20 分钟只下 1.4MB（约…",
+    "trigger": "Fabric Loom 卡在下载 Minecraft 客户端 jar：手工放进 loom 缓存（含 SHA1 校验）. 首次构建 Fabric mod 工程，Loom 卡在下载客户端 jar： ~/.gradle/caches/fabric-loom/<mcver><PATH> 恒为 0 字节然后极慢增长 等了…",
+    "verify": "1) SHA1 与 version json 完全一致； 2) 重新 build 不再生成 .part，下载阶段被跳过； 3) 缓存目录出现 minecraft-merged.jar / minecraft-extracted_server.jar 等后续产物。",
+    "url": "lessons/contrib/fabric-loom-卡在下载-minecraft-客户端-jar手工放进-loom-缓存含-sha1-校验.md",
+    "created": "2026-11-20",
+    "updated": "2026-11-20",
     "triggers": null,
     "validity_period_days": 365,
     "environment_version": "",
@@ -13270,6 +13424,38 @@
     "contributor": ""
   },
   {
+    "id": "gradle-toolchain-自动下载-jdk-卡死gradlejdks-里-part-恒-0-字节",
+    "title": "Gradle toolchain 自动下载 JDK 卡死：~/.gradle/jdks 里 .part 恒 0 字节",
+    "domain": "java",
+    "tags": [
+      "gradle",
+      "java",
+      "toolchain",
+      "foojay",
+      "download"
+    ],
+    "summary": "多模块工程里子项目声明 java.toolchain.languageVersion = 21，本机只装了 JDK 25。build 卡在：",
+    "preview": "## Problem\n\n多模块工程里子项目声明 java.toolchain.languageVersion = 21，本机只装了 JDK 25。build 卡在：\n\n~/.gradle/jdks/OpenJDK21U-jdk_x64_windows_hotspot_21-any-vendor-21.0.13_9.zip.part   恒 0 字节\n\n既不失败也不前进，日志里只有 daemon forked 那一句，很容易误判成\"编译很慢\"。\n\n## Root Cause\n\nfoojay-resolver 会去 Adoptium / GitHub 自动下约 190MB 的 JDK，该链路在国内极慢且没有进度输出；Gradle 侧没有超时，于是永久挂起。\n\n## Fix\n\n1) 用镜像拿同版本 JDK（例如清华 Adoptium 镜像的 21.0.13+9），解压到固定目录\n2) gradle.properties 增加：\n   org.gradle.java.installations.paths=<PATH>\n3) 不需要自动下载就把 settings.gradle 里的 foojay-resolver-convention 插件去掉\n\n## Verification\n\n1) gradlew -q javaToolchains 能列出该本地 JDK21，路径就是指定目录；\n2) 再 build 时 ~/.gradle/jdks 不再新增 .part；\n3) 子项目 compileJava 正常执行，不再卡在 configure。",
+    "summary_plain": "多模块工程里子项目声明 java.toolchain.languageVersion = 21，本机只装了 JDK 25。build 卡在：…",
+    "trigger": "Gradle toolchain 自动下载 JDK 卡死：~/.gradle/jdks 里 .part 恒 0 字节. 多模块工程里子项目声明 java.toolchain.languageVersion = 21，本机只装了 JDK 25。build 卡在：…",
+    "verify": "1) gradlew -q javaToolchains 能列出该本地 JDK21，路径就是指定目录； 2) 再 build 时 ~/.gradle/jdks 不再新增 .part； 3) 子项目 compileJava 正常执行，不再卡在 configure。",
+    "url": "lessons/contrib/gradle-toolchain-自动下载-jdk-卡死gradlejdks-里-part-恒-0-字节.md",
+    "created": "2026-11-20",
+    "updated": "2026-11-20",
+    "triggers": null,
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "published",
+    "evidence_refs": [],
+    "supersedes": "",
+    "verified": true,
+    "evidence_level": "E1",
+    "evidence_source": "frontmatter",
+    "trust_score": 0.387,
+    "contributor": ""
+  },
+  {
     "id": "green-check-subject-outside-scope",
     "title": "Three checks that were green and covered nothing: the subject was outside the scope",
     "domain": "testing",
@@ -15450,6 +15636,37 @@
     "evidence_level": "E2",
     "evidence_source": "frontmatter",
     "trust_score": 0.807,
+    "contributor": ""
+  },
+  {
+    "id": "lm-studio-推理模型-content-返回空串max-tokens-被-reasoning-吃光",
+    "title": "LM Studio 推理模型 content 返回空串：max_tokens 被 reasoning 吃光",
+    "domain": "llm",
+    "tags": [
+      "lm-studio",
+      "reasoning-model",
+      "openai-compatible",
+      "max-tokens"
+    ],
+    "summary": "用 OpenAI 兼容端点调 LM Studio 里的推理模型（qwen3.5-4b），返回：",
+    "preview": "## Problem\n\n用 OpenAI 兼容端点调 LM Studio 里的推理模型（qwen3.5-4b），返回：\n\ncontent: \"\"          finish_reason: \"length\"\nusage: completion_tokens=200, completion_tokens_details.reasoning_tokens=193\n\nmessage 里另有 reasoning_content 字段，装着完整思考过程，正文一个字没有。\n\n## Root Cause\n\n推理模型把\"思考\"也算进 completion token 预算；max_tokens 设得小（本例 200）时预算在思考阶段就耗尽，正文一开始就被截断，于是 content 为空、finish_reason=length。\n\n## Fix\n\n1) max_tokens 抬到 2000~3000（简单问题 1200 往往够）；或\n2) 直接读 choices[0].message.reasoning_content；或\n3) 用支持关闭思考的 chat template 参数。\n判别：finish_reason==\"length\" 且 usage.completion_tokens_details.reasoning_tokens 接近 max_tokens。\n\n## Verification\n\n1) 同问题重跑后 finish_reason==\"stop\" 且 content 非空；\n2) reasoning_tokens 明显小于 max_tokens；\n3) 客户端加断言：content 空且 finish_reason=length 时自动用更大 max_tokens 重试一次。",
+    "summary_plain": "用 OpenAI 兼容端点调 LM Studio 里的推理模型（qwen3.5-4b），返回： content: \"\" finish_reason: \"length\" usage: completion_tokens=200…",
+    "trigger": "LM Studio 推理模型 content 返回空串：max_tokens 被 reasoning 吃光. 用 OpenAI 兼容端点调 LM Studio 里的推理模型（qwen3.5-4b），返回： content: \"\" finish_reason: \"length\" usage…",
+    "verify": "1) 同问题重跑后 finish_reason==\"stop\" 且 content 非空； 2) reasoning_tokens 明显小于 max_tokens； 3) 客户端加断言：content 空且 finish_reason=length 时自动用更大 max_tokens 重试一次。",
+    "url": "lessons/contrib/lm-studio-推理模型-content-返回空串max-tokens-被-reasoning-吃光.md",
+    "created": "2026-11-20",
+    "updated": "2026-11-20",
+    "triggers": null,
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "published",
+    "evidence_refs": [],
+    "supersedes": "",
+    "verified": true,
+    "evidence_level": "E1",
+    "evidence_source": "frontmatter",
+    "trust_score": 0.387,
     "contributor": ""
   },
   {
@@ -19674,6 +19891,37 @@
     "contributor": ""
   },
   {
+    "id": "powershell-parameter-db-collides-with-the-common-parameter",
+    "title": "PowerShell parameter -Db collides with the common parameter -Debug and aborts before the script runs",
+    "domain": "devops",
+    "tags": [
+      "powershell",
+      "parameters",
+      "abbreviation",
+      "common-parameters"
+    ],
+    "summary": "A script declares `[string]$Db` (a database path) inside a `[CmdletBinding()] param()` block. Calling it with `-Db <path>` fails immediately:",
+    "preview": "## Problem\n\nA script declares `[string]$Db` (a database path) inside a `[CmdletBinding()] param()` block. Calling it with `-Db <path>` fails immediately:\n\n```\n无法指定参数\"Db\"，因为它与参数\"Debug\"的同名参数别名冲突。\n```\n\n(English: cannot specify parameter \"Db\" because it conflicts with the same-named alias of parameter \"Debug\".) Not one line of the script body executes.\n\n## Root Cause\n\nPowerShell resolves parameter names by unique prefix, and `[CmdletBinding()]` (or any `[Parameter()]` attribute) injects the common parameters — including `-Debug`, `-Verbose`, `-ErrorAction`, `-Force`, `-Confirm`, `-WhatIf`.\n\n`-Db` is a prefix of `-Debug`, so the binder resolves it to the common parameter first. Once bound, the explicit `-Db` is seen as a second alias for the same slot and the binding is rejected. It is not namespace pollution; it is the interaction between abbreviation resolution and automatically injected common parameters.\n\n## Fix\n\n1. Do not name a parameter after the start of a common parameter: avoid `-Db`, `-Ve`, `-Er`, `-Fo`, `-Co`, `-Wh`, `-De`.\n2. Rename to something that cannot abbreviate into one: `-DbPath`, `-DatabasePath`, `-LtmDb`.\n3. Passing the value positionally only hides the problem; any caller who uses the named form still fails.\n\n## Verification\n\n`.\\script.ps1 -DbPath <path>` runs to completion, and `Get-Help .\\script.ps1 -Parameter *` lists no name that is a prefix of a common parameter.",
+    "summary_plain": "A script declares `[string]$Db` (a database path) inside a `[CmdletBinding()] param()` block.",
+    "trigger": "PowerShell parameter -Db collides with the common parameter -Debug and aborts before the script runs. A script declares `[string]$Db` (a database path) inside…",
+    "verify": "`.\\script.ps1 -DbPath <path>` runs to completion, and `Get-Help .\\script.ps1 -Parameter *` lists no name that is a prefix of a common parameter.",
+    "url": "lessons/contrib/powershell-parameter-db-collides-with-the-common-parameter.md",
+    "created": "2026-11-20",
+    "updated": "2026-11-20",
+    "triggers": null,
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "published",
+    "evidence_refs": [],
+    "supersedes": "",
+    "verified": true,
+    "evidence_level": "E1",
+    "evidence_source": "frontmatter",
+    "trust_score": 0.387,
+    "contributor": ""
+  },
+  {
     "id": "powershell-pinvoke-charset-unicode-window-titles-mfc-fields",
     "title": "PowerShell P/Invoke needs CharSet.Unicode to read window titles, and MFC AfxWnd fields ignore WM_SETTEXT",
     "domain": "windows",
@@ -19960,7 +20208,7 @@
   },
   {
     "id": "problem-4725",
-    "title": "Problem 自动化脚本按「另一台机器人解码出的下标」写控制器系统变量数组（例：$SERVENT[8]），本意是关掉 PMON 服务条目；写入成功、读回校验也",
+    "title": "控制器系统变量数组的下标不跨机器人稳定：按另一台解码出的 $SERVENT[8] 写入，读回校验全过，打中的却是 TP_INPUT",
     "domain": "mcp",
     "tags": [
       "servent",
@@ -19989,7 +20237,7 @@
   },
   {
     "id": "problem-5078",
-    "title": "Problem 虚拟控制器仿真环境里用「杀进程+重启」的方式回收控制器后，每次启动都报 `SYST-302 Please power off. Power Fa",
+    "title": "仿真环境用「杀进程+重启」回收控制器，每次启动都报 SYST-302 并禁用依赖就绪的 UI 入口；正规断电流程不复现",
     "domain": "fanuc",
     "tags": [
       "syst",
@@ -20349,7 +20597,7 @@
   },
   {
     "id": "problem-cherry-pick-一个改了源文件如",
-    "title": "Problem cherry-pick 一个改了源文件（如 lessons/*.md）的提交到新分支时，仓库里提交过的派生物（data/lessons.json",
+    "title": "cherry-pick 改了源文件的提交时派生物必然冲突：冲突的是生成结果而不是手写内容，要重跑生成链而不是逐块解",
     "domain": "mcp",
     "tags": [
       "git",
@@ -20529,7 +20777,7 @@
   },
   {
     "id": "problem-feishu-文档-doc-update-的-select-title-按标题替换章节时返回-no",
-    "title": "Problem feishu 文档 doc_update 的 `select_title` 按标题替换章节时返回 \"No heading found match",
+    "title": "feishu doc_update 的 select_title 匹配的是标题的原始 markdown（含行内标记），不是 outline 里的显示文本",
     "domain": "feishu",
     "tags": [
       "no",
@@ -20559,7 +20807,7 @@
   },
   {
     "id": "problem-gh-pr-create-base-fork-branch-想把-stacked-pr",
-    "title": "Problem `gh pr create --base <fork-branch>` 想把 stacked PR 挂到上游仓库里另一个 PR 的 head 分",
+    "title": "gh pr create 的 --base 只能是目标仓库自己的分支：stacked PR 指不到上游另一个 PR 的 head，报 baseRefName is invalid",
     "domain": "mcp",
     "tags": [
       "user-branch",
@@ -20618,7 +20866,7 @@
   },
   {
     "id": "problem-gui-自动化里注入鼠标点击mouse-event",
-    "title": "Problem GUI 自动化里注入鼠标点击（mouse_event 类）落在目标控件上却**毫无效果**：坐标几何正确（点位在列表行内）、控件枚举正常、点击",
+    "title": "注入点击不产生 WM_MOUSEACTIVATE：未激活窗口会丢弃鼠标消息，坐标与控件枚举看起来全对而点击毫无效果",
     "domain": "windows",
     "tags": [
       "gui",
@@ -20828,7 +21076,7 @@
   },
   {
     "id": "problem-roboguidesimpro",
-    "title": "Problem ROBOGUIDE（SimPRO GUI）里用「机器人菜单→关闭控制器电源→打开控制器电源」做正规断电时，点「关闭控制器电源」必然在几秒内弹出非",
+    "title": "ROBOGUIDE 正规断电必弹 Object is no longer valid 且断电不生效，模态框还会吞掉后续所有菜单点击",
     "domain": "mcp",
     "tags": [
       "roboguide",
@@ -21008,7 +21256,7 @@
   },
   {
     "id": "problem-windows-ui-自动化里给应用发菜单加速键如-altr-然后-t",
-    "title": "Problem Windows UI 自动化里给应用发**菜单加速键**（如 Alt+R 然后 T 触发菜单项「示教器(T)」），合成键事件被**中文输入法（I",
+    "title": "合成菜单加速键被中文输入法拦截：IME 中文态下字母键变成拼音候选，同一脚本时灵时不灵",
     "domain": "windows",
     "tags": [
       "windows",
@@ -21038,7 +21286,7 @@
   },
   {
     "id": "problem-windows-上-com",
-    "title": "Problem Windows 上 COM 本地服务器崩溃导致客户端永久等待时，症状极具误导性：客户端界面只剩「正在连接/Connecting…」，进程活着但零",
+    "title": "COM 本地服务器在激活瞬间崩溃，客户端永久停在「正在连接」：SCM 激活缓存还会让崩溃记录不再产生",
     "domain": "windows",
     "tags": [
       "windows",
@@ -21307,7 +21555,7 @@
   },
   {
     "id": "problem-仿真机器人控制器崩溃os-145power-off-controller-to",
-    "title": "Problem 仿真机器人控制器崩溃（OS -145「Power off controller to reset」）后，一切「重启控制器/冷启动」路径永久卡死在",
+    "title": "OS -145 之后所有重启路径永久卡死：虚拟机器人进程从未生成，清僵尸进程与补 COM 宿主都不够",
     "domain": "windows",
     "tags": [
       "get-service",
@@ -21635,7 +21883,7 @@
   },
   {
     "id": "problem-某飞书文档-mcp-的-doc-updateselect-匹配",
-    "title": "Problem 某飞书文档 MCP 的 doc_update（select 匹配 + replace/insert/delete）在改结构化文档时大面积「No",
+    "title": "结构化文档按显示文本 select 必然落空：标题被拍平成正文、加粗段落匹配不上、图片题注够不到",
     "domain": "feishu",
     "tags": [
       "no",
@@ -21695,7 +21943,7 @@
   },
   {
     "id": "problem-桌面应用的遥测单测偶红入队快照断言",
-    "title": "Problem 桌面应用的遥测单测偶红（入队快照断言 3≠2，队列里混进**别处铸的事件**），本机偶绿、门禁必现。异步家族：同一现象还有「状态被写进别人的目录",
+    "title": "后台投递线程每次存取都现解析环境变量：入队快照混进别处铸的事件，本机偶绿而门禁必现",
     "domain": "mcp",
     "tags": [
       "load_queue",
@@ -21754,7 +22002,7 @@
   },
   {
     "id": "problem-用-feishu-cli-docx-update-做小范围文字替换时踩到两个叠加坑-1-mode",
-    "title": "Problem 用 feishu CLI `docx update` 做小范围文字替换时踩到两个叠加坑： 1. `--mode replace --select",
+    "title": "feishu CLI 的 replace 会假成功：success 为真、matched_text 也回显了，文档的 modified_time 与内容却没变",
     "domain": "feishu",
     "tags": [
       "docx",
@@ -21904,7 +22152,7 @@
   },
   {
     "id": "problem-自动化脚本在虚拟控制器引导完成后立刻发起-httprpc",
-    "title": "Problem 自动化脚本在「虚拟控制器引导完成」后立刻发起 HTTP/RPC 读写，全部连接被拒（WinError 10061），实验整段报废；引导判据用的是",
+    "title": "services.txt 被重写不等于服务就绪：端口在其后才装载，抢跑 0~55 秒窗口内连接全部被拒",
     "domain": "mcp",
     "tags": [
       "http",
@@ -21964,7 +22212,7 @@
   },
   {
     "id": "problem-自动化驱动设备内置-web",
-    "title": "Problem 自动化驱动「设备内置 Web TP」（浏览器形态的示教器）时三个连环陷阱，症状全是「命令发了、返回 0x0 成功、界面纹丝不动」：①登录接口是*",
+    "title": "Web TP 的三个连环陷阱：单会话秒级锁、按键数字被当控制码解析、登录时钟拿到陈旧会话 id",
     "domain": "fanuc",
     "tags": [
       "web",
@@ -21994,7 +22242,7 @@
   },
   {
     "id": "problem-驱动-winformshtml-混合",
-    "title": "Problem 驱动 WinForms/HTML 混合 GUI（仿真器示教器类）做自动化操作时连撞三个坑：①数字输入弹窗是灰底灰字渲染，OCR 词表**零命中*",
+    "title": "灰底灰字让 OCR 零命中，词表里还有同名诱饵词：词法点击点中诱饵，后续操作全空跑且无断言拦截",
     "domain": "mcp",
     "tags": [
       "winforms",
@@ -26351,7 +26599,7 @@
   },
   {
     "id": "symptom-on-deepseek-harness-dsh-desktop-an-agent-tried-to",
-    "title": "Symptom On DeepSeek Harness (DSH) desktop, an agent tried to fix a broken half-i",
+    "title": "Editing a running host's profile dependency and reinstalling under it destroys the bundle it was repairing",
     "domain": "windows",
     "tags": [
       "on",
@@ -26441,7 +26689,7 @@
   },
   {
     "id": "symptom-桌面应用tauri",
-    "title": "Symptom 桌面应用（Tauri v1）「选择文件夹添加备份」，选到内容多的目录（几千个文件的整线备份库）软件直接卡死无响应。小目录完全正常。 Root C",
+    "title": "Tauri 选大目录卡死：目录扫描无条目上限 + 一次性读全部文件让 IPC 序列化爆炸，单层都不至于卡死",
     "domain": "fanuc",
     "tags": [
       "scan_directory",
@@ -31135,6 +31383,37 @@
     "contributor": ""
   },
   {
+    "id": "放宽-fabricmodjson-的-minecraft-版本门槛只是骗过",
+    "title": "放宽 fabric.mod.json 的 minecraft 版本门槛只是骗过 Loader，跨版本照样崩（NoSuchFieldError: Minecraft 'Screen screen'）",
+    "domain": "development",
+    "tags": [
+      "minecraft",
+      "fabric",
+      "mod-compat",
+      "reflection"
+    ],
+    "summary": "Minecraft 26.2 + Fabric 上想跑一个只有 26.1 构建的模组。把 jar 内 fabric.mod.json 的依赖从 \">=26.1 <26.2\" 放宽成 \">=26.1 <26.3\" 之后，Loader 不再报不兼容，但游戏进到初始化阶段就崩：",
+    "preview": "## Problem\n\nMinecraft 26.2 + Fabric 上想跑一个只有 26.1 构建的模组。把 jar 内 fabric.mod.json 的依赖从 \">=26.1 <26.2\" 放宽成 \">=26.1 <26.3\" 之后，Loader 不再报不兼容，但游戏进到初始化阶段就崩：\n\nNoSuchFieldError: Class net.minecraft.client.Minecraft does not have member field 'net.minecraft.client.gui.screens.Screen screen'\n  at vazkii.patchouli.client.handler.BookCrashHandler.appendToCrashReport\n\n更早还有 mixin 落空：\n@Mixin target net.minecraft.client.renderer.MultiBufferSource$BufferSource was not found\n\n最坑的是：这个模组把崩溃报告生成器也挂在自己身上，它一崩就把真正的原始异常盖掉了。\n\n## Root Cause\n\n两个独立问题叠加：\n1. fabric.mod.json 的 depends 只是声明，Loader 只按它判版本；放宽它不会改动任何字节码。\n2. 跨 content 版本（26.1 → 26.2）时 Mojang 挪了 API：屏幕状态不再是 Minecraft 的字段，26.2 里在 Gui 上（Minecraft.gui.screen() / gui.setScreen(...)）；MultiBufferSource$BufferSource 也被移走。旧字节码按旧名访问，运行时才 NoSuchFieldError。\n\n## Fix\n\n不要靠改 metadata 兼容。要么从源码在新版本重编，要么别装。\n\n判断一个二进制能不能跨版本直接搬，命中下面任一条基本没救：\n- 带 SystemReport / CrashReport 钩子\n- mixin 里写死 @At target 的类名或成员名\n- 用到渲染 / GUI / 实体模型这类变动频繁的 API\n\n## Verification\n\n1) 把 fabric.mod.json 改回原样后 Loader 报不兼容 —— 说明门槛不是病根；\n2) javap -p -cp <新版 merged jar> net.minecraft.client.Minecraft 确认旧字段确实不存在（26.2 没有 Screen 字段，只有 gui）；\n3) 能进主菜单并加载世界不崩，才算真兼容。",
+    "summary_plain": "Minecraft 26.2 + Fabric 上想跑一个只有 26.1 构建的模组。把 jar 内 fabric.mod.json 的依赖从 \">=26.1 <26.2\" 放宽成 \">=26.1 <26.3\" 之后，Loader…",
+    "trigger": "放宽 fabric.mod.json 的 minecraft 版本门槛只是骗过 Loader，跨版本照样崩（NoSuchFieldError: Minecraft 'Screen screen'）. Minecraft 26.2 + Fabric 上想跑一个只有 26.1 构建的模组。把 jar 内…",
+    "verify": "1) 把 fabric.mod.json 改回原样后 Loader 报不兼容 —— 说明门槛不是病根； 2) javap -p -cp <新版 merged jar> net.minecraft.client.Minecraft 确认旧字段确实不存在（26.2 没有 Screen 字段，只有 gui）； 3) 能进主菜单并加载世界不崩，才算真兼容。",
+    "url": "lessons/contrib/放宽-fabricmodjson-的-minecraft-版本门槛只是骗过.md",
+    "created": "2026-11-20",
+    "updated": "2026-11-20",
+    "triggers": null,
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "published",
+    "evidence_refs": [],
+    "supersedes": "",
+    "verified": true,
+    "evidence_level": "E1",
+    "evidence_source": "frontmatter",
+    "trust_score": 0.387,
+    "contributor": ""
+  },
+  {
     "id": "新建的课程文件对检索与生成器隐身文件已在磁盘上内容正确但-search",
     "title": "新建的课程文件对检索与生成器「隐身」：文件已在磁盘上、内容正确，但 search_knowledge 里搜不到、update_lessons_json/buil",
     "domain": "mcp",
@@ -31274,6 +31553,42 @@
     "url": "lessons/contrib/桌面应用遥测出现混血事件同一设备的部分事件带新契约的-uuid-v4.md",
     "created": "2026-11-16",
     "updated": "2026-11-16",
+    "triggers": null,
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "published",
+    "evidence_refs": [],
+    "supersedes": "",
+    "verified": true,
+    "evidence_level": "E1",
+    "evidence_source": "frontmatter",
+    "trust_score": 0.387,
+    "contributor": ""
+  },
+  {
+    "id": "步道乐跑在-mumu-安卓15x86-64-上闪退加固壳被-houdini-翻译崩溃-可见-su",
+    "title": "步道乐跑在 MuMu 安卓15(x86_64) 上闪退：加固壳被 houdini 翻译崩溃 + 可见 su 触发自毁",
+    "domain": "android",
+    "tags": [
+      "android",
+      "mumu",
+      "emulator",
+      "houdini",
+      "arm64-translation",
+      "kwprotect",
+      "root-detection",
+      "locationspoofer",
+      "lsposed"
+    ],
+    "summary": "把步道乐跑（com.lptiyu.tanke，arm64-v8a only，含爱加密/快手 KwProtect 加固）装进 MuMu 6.8.4 的 Android 15 (x86_64, houdini 7) 实例后：",
+    "preview": "## Problem\n\n把步道乐跑（com.lptiyu.tanke，arm64-v8a only，含爱加密/快手 KwProtect 加固）装进 MuMu 6.8.4 的 Android 15 (x86_64, houdini 7) 实例后：\n- 4.3.3 最新版启动 2-3 秒即崩：`signal 11 (SIGSEGV), code 1 (SEGV_MAPERR), fault addr 0x0`，backtrace `libhoudini.so` → `art::DexFileLoader::OpenFromZipEntry` ← `lib/arm64-v8a/libkadp.so`；\n- 4.1.1 旧版表现为 `Fatal signal 11 (SIGSEGV), code -6 (SI_TKILL)`（进程给自己发信号）——把 `/system/xbin/su` 改名隐藏后可启动，但冷启动不稳定，且首页显示『哎呀,加载出现了问题』。\n环境：Android 15，`ro.product.cpu.abilist=x86_64,arm64-v8a,x86`（无 armeabi-v7a），`ro.dalvik.vm.isa.arm` 为空，ZygiskNext+Vector+Shamiko 正常工作。\n\n## Root Cause\n\n两层原因：\n1) 加固壳与 houdini 不兼容：APK 只有 arm64-v8a 原生库（无 x86/x86_64），依赖 MuMu 的 houdini 把 arm64 指令翻译成 x86_64；爱加密/快手 KwProtect 的 shell 在翻译层里桥接 ART 内部 API 时崩溃（libkadp.so → libdexfile）。这不是位置模拟/LSPosed 的问题——停用 LocationSpoofer 模块后同样崩溃。\n2) 环境检测：4.1.1 在存在 `/system/xbin/su`（为让 LocationSpoofer 拿到 root 而把 busybox 拷成 su）时，进程主动 SIGSEGV 自杀（code -6 = SI_TKILL，即 tgkill 自毁）；把 su 改名后能启动。步道乐跑会检查 root/模拟器/应用列表。\n补充：MuMu 安卓15 实例不支持 arm32（`pm install --abi armeabi-v7a` 直接报 ABI not supported；改 `<PATH> 加规则也不生效）。\n\n## Fix\n\n结论：MuMu 安卓15 + houdini 7 上跑不起来，改用以下任一环境：\n1) MuMu 另建 **Android 12** 实例（`MuMuManager create -v <idx> -ver 12`；若报 `android engine not installed`，需先在 MuMu 界面下载 Android 12 引擎）。A12 引擎带 32 位/更完整的 ARM 兼容层，社区教程（fklptiyu、budao-lepao-runner）都在 MuMu 12 上跑。建好后重装 ZygiskNext→Vector→LocationSpoofer，把 `com.lptiyu.tanke` 加进作用域。\n2) 换雷电 9 / MuMu 12 正式版等被教程验证过的模拟器，同理重建 LSPosed 栈。\n3) 真机 + LocationSpoofer（最稳，且能避开模拟器检测）。\n排查命令：`adb logcat -b crash`；`<PATH>/<pkg>/`；`getprop ro.product.cpu.abilist`；临时把 `/system/xbin/su` 改名验证是否 root 检测。\n\n## Verification\n\n换到 Android 12 实例后：`adb logcat -b crash` 无 SIGSEGV；应用能进首页并显示地图；LocationSpoofer 日志出现 `[INJECTED] Hooking package: com.lptiyu.tanke` 且 `配置已加载 active=true`；应用内定位点等于配置文件坐标。",
+    "summary_plain": "把步道乐跑（com.lptiyu.tanke，arm64-v8a only，含爱加密/快手 KwProtect 加固）装进 MuMu 6.8.4 的 Android 15 (x86_64, houdini 7) 实例后： - 4.3.3…",
+    "trigger": "步道乐跑在 MuMu 安卓15(x86_64) 上闪退：加固壳被 houdini 翻译崩溃 + 可见 su 触发自毁. 把步道乐跑（com.lptiyu.tanke，arm64-v8a only，含爱加密/快手 KwProtect 加固）装进 MuMu 6.8.4 的 Android 15 (x86_64…",
+    "verify": "换到 Android 12 实例后：`adb logcat -b crash` 无 SIGSEGV；应用能进首页并显示地图；LocationSpoofer 日志出现 `[INJECTED] Hooking package: com.lptiyu.tanke` 且 `配置已加载 active=true`；应用内定位点等于配置文件坐标。",
+    "url": "lessons/contrib/步道乐跑在-mumu-安卓15x86-64-上闪退加固壳被-houdini-翻译崩溃-可见-su.md",
+    "created": "2026-11-20",
+    "updated": "2026-11-20",
     "triggers": null,
     "validity_period_days": 365,
     "environment_version": "",
@@ -31778,7 +32093,7 @@
   },
   {
     "id": "症状-下游视觉核对工具看图模型截图分析按-t2605png",
-    "title": "症状 下游视觉核对工具（看图模型/截图分析）按 `t26.05.png` 这类\"秒数.帧号\"的直觉拼绝对路径去读抽帧图，直接报： Input image not",
+    "title": "按「秒数.帧号」拼抽帧图路径：真实文件名是下划线，not found 被误判成渲染没出图而重跑",
     "domain": "windows",
     "tags": [
       "t26.05.png",
@@ -31808,7 +32123,7 @@
   },
   {
     "id": "症状-在-powershell-里用-yt-dlp-bilisearch5关键词-print-titles",
-    "title": "症状 在 PowerShell 里用 `& $yt-dlp \"bilisearch5:关键词\" --print \"%(title)s\"` 抓搜索结果，标题里的中",
+    "title": "Windows 版 yt-dlp 走 GBK 控制台：PowerShell 里抓到的中文标题全部变成 U+FFFD",
     "domain": "windows",
     "tags": [
       "node",
@@ -31898,7 +32213,7 @@
   },
   {
     "id": "症状-用-dshdeepseek-harness会话文件大小当上下文要爆的危险指标写了超-5-mb",
-    "title": "症状 用 DSH（DeepSeek Harness）会话文件大小当「上下文要爆」的危险指标，写了「超 5 MB 就换会话，8 MB 必崩」的规则，还写进了体检脚",
+    "title": "会话文件大小不是上下文用量：zstd 留档只增不减，7.55 MB 的文件对应 12% 的真实占用",
     "domain": "dsh",
     "tags": [
       "session.v4.jsonl.zstd",
@@ -32048,7 +32363,7 @@
   },
   {
     "id": "症状node-fetch-到某-cloudflare-workers-端点报-typeerror-fetch",
-    "title": "症状：Node fetch 到某 Cloudflare Workers 端点报 `TypeError: fetch failed`，curl 报 `Connec",
+    "title": "裸 workers.dev 域名在部分网络被阻断：node fetch 报 fetch failed，同网络下 curl 与生产自定义域都正常",
     "domain": "mcp",
     "tags": [
       "curl",

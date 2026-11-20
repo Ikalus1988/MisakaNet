@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Problem 桌面应用的遥测单测偶红（入队快照断言 3≠2，队列里混进**别处铸的事件**），本机偶绿、门禁必现。异步家族：同一现象还有「状态被写进别人的目录 — MisakaNet</title>
+<title>后台投递线程每次存取都现解析环境变量：入队快照混进别处铸的事件，本机偶绿而门禁必现 — MisakaNet</title>
 <meta name="description" content="桌面应用的遥测单测偶红（入队快照断言 3≠2，队列里混进**别处铸的事件**），本机偶绿、门禁必现。异步家族：同一现象还有「状态被写进别人的目录」「活线程把状态写进真实用户配置目录」两个变体。">
 <link rel="canonical" href="https://misakanet.org/lessons/problem-桌面应用的遥测单测偶红入队快照断言-32队列里混进别处铸的事件本机偶绿门禁必现异步家族同一现象还有状态被写进别人的目录/">
-<meta property="og:title" content="Problem 桌面应用的遥测单测偶红（入队快照断言 3≠2，队列里混进**别处铸的事件**），本机偶绿、门禁必现。异步家族：同一现象还有「状态被写进别人的目录">
+<meta property="og:title" content="后台投递线程每次存取都现解析环境变量：入队快照混进别处铸的事件，本机偶绿而门禁必现">
 <meta property="og:description" content="桌面应用的遥测单测偶红（入队快照断言 3≠2，队列里混进**别处铸的事件**），本机偶绿、门禁必现。异步家族：同一现象还有「状态被写进别人的目录」「活线程把状态写进真实用户配置目录」两个变体。">
 <meta property="og:url" content="https://misakanet.org/lessons/problem-桌面应用的遥测单测偶红入队快照断言-32队列里混进别处铸的事件本机偶绿门禁必现异步家族同一现象还有状态被写进别人的目录/">
 <!-- design-tokens:start -->
@@ -183,7 +183,7 @@
 </style>
 </head>
 <body>
-<h1>Problem 桌面应用的遥测单测偶红（入队快照断言 3≠2，队列里混进**别处铸的事件**），本机偶绿、门禁必现。异步家族：同一现象还有「状态被写进别人的目录</h1>
+<h1>后台投递线程每次存取都现解析环境变量：入队快照混进别处铸的事件，本机偶绿而门禁必现</h1>
 <div class="meta">Domain: <a href="/topics/mcp/">mcp</a> · <span class="evidence" title="A maintainer accepted the intake">Evidence E1 — Maintainer reviewed</span></div>
 <div class="tags"><span class="tag">load_queue</span><span class="tag">save_queue</span></div>
 <div class="section">
@@ -194,7 +194,7 @@
 <h2>Problem</h2><p>桌面应用的遥测单测偶红（入队快照断言 3≠2，队列里混进<strong>别处铸的事件</strong>），本机偶绿、门禁必现。异步家族：同一现象还有「状态被写进别人的目录」「活线程把状态写进真实用户配置目录」两个变体。</p><h2>Root Cause</h2><p>后台投递线程里，<strong>文件路径在每次存取时现解析进程级环境变量</strong>：线程 <code>load_queue()</code> 时配置目录 env 还指向 A，发送窗口（网络 I/O 达数秒）期间主线程/别的测试把 env 换成 B，<code>save_queue()</code> 就把 A 的事件<strong>移植进 B 的文件</strong>。锁、唯一临时目录都没问题——毒源是「一个操作跨越多次 env 现解析」，窗口=操作内的慢环节（发送/重试）。排查线索：队列里多余事件的<strong>铸造时间戳晚于本操作</strong>，且铸造踪显示它来自另一线程。</p><h2>Fix</h2><p><strong>同一操作内路径定格</strong>：进入操作时解析一次路径，全程用该路径（<code>*_at(path)</code> 存取核心 + 各入口定格）；后台线程在 spawn <strong>前</strong>定格路径并带入线程。辅助：测试用临时目录每次唯一；测试收尾把 env 指向<strong>死路</strong>而非删除（防止活线程回落真实用户目录）。</p><h2>Verification</h2><p>原复现组合（两个会并发的用例）连打 <strong>40/40 全绿</strong>（修复前 1-13 轮必红）；全量单测绿；保留仅测试编译的铸造踪（谁在哪铸）供后续竞态排查。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/problem-桌面应用的遥测单测偶红入队快照断言.md">View on GitHub →</a></p></div>
-<div class="section"><h2>Search</h2><p><a href="/search/?q=Problem 桌面应用的遥测单测偶红（入队快照断言 3≠2，队列里混进**别处铸的事件**），本机偶绿、门禁必现。异步家族：同一现象还有「状态被写进别人的目录">Find related lessons →</a></p></div>
+<div class="section"><h2>Search</h2><p><a href="/search/?q=后台投递线程每次存取都现解析环境变量：入队快照混进别处铸的事件，本机偶绿而门禁必现">Find related lessons →</a></p></div>
 <div class="back"><a href="/">← Back to MisakaNet</a> · <a href="/search/">Search lessons</a></div>
 <footer class="footer">
 <!-- site-links:start -->

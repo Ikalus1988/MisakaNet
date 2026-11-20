@@ -160,7 +160,53 @@ def test_lessons_index_with_two_additions_refuses():
         )
     )
     assert verdict == lpm.REFUSE
-    assert "one-line addition" in reason
+    assert "one-line-per-new-lesson addition" in reason
+
+
+def test_a_batch_of_two_lessons_may_add_two_index_lines():
+    """#5416: `+2/-0` is exactly what two converted intakes produce, and used to be refused."""
+    verdict, _ = verdict_of(
+        payload(
+            files=["lessons/contrib/a.md", "lessons/contrib/b.md", "lessons/index.md"],
+            file_stats={
+                "lessons/contrib/a.md": [35, 0],
+                "lessons/contrib/b.md": [35, 0],
+                "lessons/index.md": [2, 0],
+            },
+        )
+    )
+    assert verdict == lpm.MERGE
+
+
+def test_an_index_that_grows_faster_than_the_lessons_keeps_refusing():
+    """The allowance is per added lesson, not "as many lines as the PR likes"."""
+    verdict, reason = verdict_of(
+        payload(
+            files=["lessons/contrib/a.md", "lessons/contrib/b.md", "lessons/index.md"],
+            file_stats={
+                "lessons/contrib/a.md": [35, 0],
+                "lessons/contrib/b.md": [35, 0],
+                "lessons/index.md": [3, 0],
+            },
+        )
+    )
+    assert verdict == lpm.REFUSE
+    assert "allowed: +2/-0" in reason
+
+
+def test_an_edited_lesson_does_not_raise_the_index_allowance():
+    """A rewrite of an existing lesson gets no new index line, so the floor of one applies."""
+    verdict, reason = verdict_of(
+        payload(
+            files=["lessons/contrib/a.md", "lessons/index.md"],
+            file_stats={
+                "lessons/contrib/a.md": [4, 4],
+                "lessons/index.md": [2, 0],
+            },
+        )
+    )
+    assert verdict == lpm.REFUSE
+    assert "allowed: +1/-0" in reason
 
 
 def test_lessons_index_with_one_addition_is_allowed():

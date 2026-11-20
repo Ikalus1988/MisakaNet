@@ -45,6 +45,49 @@
 > 一个已 opt-in 的 PR 如果在 `synchronize` / `ready_for_review` / `labeled` 之后检查才全绿，
 > **不会**自动合并，需要人手动合一次。判定逻辑与 opt-in 标签的校验都没变，变的是"什么时候被叫醒"。
 
+### 「再问一次」由扫尾器负责（2026-11-19 起）
+
+`auto-merge-sweep.yml` 每半小时（`*/30 * * * *`）列出「带标签且 `mergeStateStatus == CLEAN`」的 PR，
+对每个 PR `workflow_dispatch` **本工作流**并传 `pr=<number>`。判定、载荷形状、合并本身都还在本工作流里
+——一个实现、一组测试（`scripts/lesson_pr_mergeable.py`），而不是第二个可能给出不同答案的扫尾器。
+
+这条链上有个必须记住的形状：**`workflow_dispatch` 没有 `pull_request` 上下文**。作业级那个
+`contains(github.event.pull_request.labels.*.name, 'auto-merge-lesson')` 在 dispatch 下恒为 false，
+于是每次 dispatch 都在进判定脚本之前被 skip 掉（实测 2026-11-20T09:49Z：扫尾器成功 dispatch 了 #5416，
+run 44714007969 结论 `skipped`、零个 step）。所以那个守卫现在写作
+`github.event_name == 'workflow_dispatch' || contains(...)`：标签仍由判定脚本从 API 重读并给出 `wait`
+（决策表第 2 行），只是不再拦在 dispatch 的路上。
+
+第二个形状更隐蔽，而且在“看日志”这一层不可见：**`mergeStateStatus` 是缓存字段**。每一次合并进默认分支，
+所有 open PR 的合并能力缓存都失效，直到 GitHub 懒计算为止 —— 而列表端点只是**读缓存**。实测
+2026-11-20：`#5416` 在 09:49Z 是 `CLEAN`（找到 1 个候选并成功 dispatch），几笔合并落地之后它在
+`gh pr list`/`mergeStateStatus` 里变回 `UNKNOWN`，扫尾器于是报 `candidates: 0`，而
+`GET /pulls/5416` 依然回答 `mergeable: true` / `mergeable_state: clean`。
+一个**静默丢掉它自己目标的过滤条件**比没有过滤更糟：run 是绿的。
+所以扫尾器的候选集现在只按 GitHub 永远会回答的事实筛（标签 + 非 draft），
+再对每个 PR 调**单 PR**端点（它会触发计算），读到 `unknown` 就重试。
+
+第三个形状是**频率**：`schedule` 在这个仓库里送得远稀于声明。实测 2026-11-20：工作流上线后
+**14 小时只送了 2 次**（23:25Z、04:10Z），同期其它 cron 都正常（`PR Audit Watch` 19:00、
+`Site build watch` 18:42、`Approval Watch` 17:41）。链是通的（`#5416` 在 12:09Z 自己合了），
+但一个变绿的批次可能等上几小时，而入库队列以小时计。
+所以扫尾器现在**也在“问题变得可回答的那一刻”醒来**：`workflow_run: types: [completed]`，
+`workflows:` 只列那五个产生必需检查的工作流（`Lesson Quality Gate` / `Provenance Gate` /
+`DCO Check` / `PR Shape Guard` / `Cross-Platform Tests`）。
+
+为什么是名单而不是 `check_suite` 或“任何 workflow”：
+
+- `check_suite` 在 2026-10-02 被删掉是因为它会**扇出**（一条 commit 39 个 run、37 个自触发），
+  这里的触发器盯的是**五个具体工作流**的完成，其中没有扫尾器自己，不存在环；
+- “任何 workflow 完成”比这多一个量级的条数，而判定根本不读载荷 —— 它重新 `gh pr list`；
+- 名单有腐化风险，所以 `tests/test_auto_merge_sweep_trigger.py` 把名单与 `workflows/*.yml` 的
+  `name:` 对账，并要求名单盖全 `lesson_pr_mergeable.REQUIRED_CHECKS`。改名后的失败模式是
+  “变慢”而不是“坏掉”——下面的 `schedule` 仍是兜底。
+
+作业级还有一个必须留着的守卫：`github.event_name != 'workflow_run' || github.event.workflow_run.event == 'pull_request'`。
+推到 main 的那些运行不是“关于某个 PR 的问题”，它们由 `schedule` 负责；少了这行，每次主分支 CI
+完成都会白起一个 runner。
+
 ### 判定从哪来（事实全部读 API，不读 PR 内容）
 
 | 事实 | 来源 |
@@ -70,7 +113,7 @@
 | 4 | 评审状态是 `CHANGES_REQUESTED` | **refuse** | `a review requests changes (CHANGES_REQUESTED)` |
 | 5 | 有任何一个改动文件不在 `lessons/` 下 | **refuse** | `file(s) outside lessons/: scripts/…` |
 | 5b | 改动文件列表为空 | **wait** | `no changed files reported — scope could not be verified` |
-| 6 | 动了 `lessons/index.md` 且 `deletions > 0` 或 `additions > 1` | **refuse** | `lessons/index.md must be at most a one-line addition: +3/-5 …` |
+| 6 | 动了 `lessons/index.md` 且 `deletions > 0` 或 `additions >` **新增课程数**（至少 1） | **refuse** | `lessons/index.md must be at most a one-line-per-new-lesson addition: +3/-0 (allowed: +2/-0) …` |
 | 6b | 动了 `lessons/index.md` 但拿不到行数 | **wait** | `lessons/index.md is touched but its line stats are unknown` |
 | 7 | 任一必需检查结论不是 `success` | **refuse** | `required check(s) not successful: provenance (failure)` |
 | 8 | 任一必需检查缺失 / 还在跑 / 排队 | **wait** | `required check(s) not green yet: provenance (in_progress)` |

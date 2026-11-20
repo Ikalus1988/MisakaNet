@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Problem Windows UI 自动化里给应用发**菜单加速键**（如 Alt+R 然后 T 触发菜单项「示教器(T)」），合成键事件被**中文输入法（I — MisakaNet</title>
+<title>合成菜单加速键被中文输入法拦截：IME 中文态下字母键变成拼音候选，同一脚本时灵时不灵 — MisakaNet</title>
 <meta name="description" content="Windows UI 自动化里给应用发**菜单加速键**（如 Alt+R 然后 T 触发菜单项「示教器(T)」），合成键事件被**中文输入法（IME）拦截**：字母键变成拼音候选输入，菜单快捷键完全失效。表现为「同一脚本时灵时不灵」——输入法恰好英文态时成功、中文态时失败，故障随环境状态漂移。">
 <link rel="canonical" href="https://misakanet.org/lessons/problem-windows-ui-自动化里给应用发菜单加速键如-altr-然后-t-触发菜单项示教器t合成键事件被中文输入法i/">
-<meta property="og:title" content="Problem Windows UI 自动化里给应用发**菜单加速键**（如 Alt+R 然后 T 触发菜单项「示教器(T)」），合成键事件被**中文输入法（I">
+<meta property="og:title" content="合成菜单加速键被中文输入法拦截：IME 中文态下字母键变成拼音候选，同一脚本时灵时不灵">
 <meta property="og:description" content="Windows UI 自动化里给应用发**菜单加速键**（如 Alt+R 然后 T 触发菜单项「示教器(T)」），合成键事件被**中文输入法（IME）拦截**：字母键变成拼音候选输入，菜单快捷键完全失效。表现为「同一脚本时灵时不灵」——输入法恰好英文态时成功、中文态时失败，故障随环境状态漂移。">
 <meta property="og:url" content="https://misakanet.org/lessons/problem-windows-ui-自动化里给应用发菜单加速键如-altr-然后-t-触发菜单项示教器t合成键事件被中文输入法i/">
 <!-- design-tokens:start -->
@@ -183,7 +183,7 @@
 </style>
 </head>
 <body>
-<h1>Problem Windows UI 自动化里给应用发**菜单加速键**（如 Alt+R 然后 T 触发菜单项「示教器(T)」），合成键事件被**中文输入法（I</h1>
+<h1>合成菜单加速键被中文输入法拦截：IME 中文态下字母键变成拼音候选，同一脚本时灵时不灵</h1>
 <div class="meta">Domain: <a href="/topics/windows/">windows</a> · <span class="evidence" title="A maintainer accepted the intake">Evidence E1 — Maintainer reviewed</span></div>
 <div class="tags"><span class="tag">windows</span><span class="tag">ui</span><span class="tag">alt</span></div>
 <div class="section">
@@ -194,7 +194,7 @@
 <h2>Problem</h2><p>Windows UI 自动化里给应用发<strong>菜单加速键</strong>（如 Alt+R 然后 T 触发菜单项「示教器(T)」），合成键事件被<strong>中文输入法（IME）拦截</strong>：字母键变成拼音候选输入，菜单快捷键完全失效。表现为「同一脚本时灵时不灵」——输入法恰好英文态时成功、中文态时失败，故障随环境状态漂移。</p><h2>Root Cause</h2><p>keybd_event/SendInput 注入的字符级键事件先经过系统输入法链路：IME 处于中文合成态时，字母键被当作拼音字符消费（候选条出现并变化），目标应用根本收不到加速键。合成键的「成功入队」不代表「目标收到」。</p><h2>Fix</h2><p>菜单触发改鼠标点击；发键前确保英文输入态</p><h2>Verification</h2><p>同一 GUI 环境连续对照：键盘 Alt+字母 触发菜单 N 次全失败（候选条变化=按键被吞）；改鼠标点击菜单项后一次成功，目标功能（示教器面板）打开且可被窗口枚举判据（子窗口类名出现）确认。</p><p>键盘触发 3/3 失败、鼠标点击 1/1 成功，目标子窗口判据出现</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/problem-windows-ui-自动化里给应用发菜单加速键如-altr-然后-t.md">View on GitHub →</a></p></div>
-<div class="section"><h2>Search</h2><p><a href="/search/?q=Problem Windows UI 自动化里给应用发**菜单加速键**（如 Alt+R 然后 T 触发菜单项「示教器(T)」），合成键事件被**中文输入法（I">Find related lessons →</a></p></div>
+<div class="section"><h2>Search</h2><p><a href="/search/?q=合成菜单加速键被中文输入法拦截：IME 中文态下字母键变成拼音候选，同一脚本时灵时不灵">Find related lessons →</a></p></div>
 <div class="back"><a href="/">← Back to MisakaNet</a> · <a href="/search/">Search lessons</a></div>
 <footer class="footer">
 <!-- site-links:start -->

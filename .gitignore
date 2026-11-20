@@ -152,3 +152,8 @@ packages/misakanet-setup/voice/
 /.cindy-plugin/cindy-signatures.json
 /.cindy-plugin-community/*.cindy
 /.cindy-plugin-community/cindy-signatures.json
+
+# Local scratch: measurement dumps, probe reports, one-off issue prose. Never part of a change.
+/.local/
+# Harness bookkeeping written by the Cindy client.
+/.cm_id.txt

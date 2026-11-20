@@ -15,6 +15,7 @@ that is absent in the issue stays absent in the file.
 from __future__ import annotations
 
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -334,3 +335,67 @@ def test_an_issue_without_a_trigger_falls_back_to_the_old_synthesis():
     lesson, notes = conv.convert(sample(), CANONICAL)
     assert lesson is not None, notes
     assert lesson["trigger"].startswith("npm registry unreachable")
+
+
+def test_a_generic_label_is_dropped_from_the_title():
+    """The intake form's first heading is a label, not a topic (#5380).
+
+    Measured 2026-11-19: 16 of the 38 lessons in one batch were titled `症状 …` / `Problem …` /
+    `Symptom: …`, because the client writes the form's first heading as the issue title.
+    """
+    lesson, notes = conv.convert(sample(title="症状 写了一堆断言全绿，把实现改回错的测试还是全绿"), CANONICAL)
+    assert lesson is not None
+    assert lesson["title"].startswith("写了一堆断言")
+    assert "generic label dropped from the title" in notes
+
+    latin, _ = conv.convert(sample(title="Symptom: the panel reads nothing after a resize"), CANONICAL)
+    assert latin is not None
+    assert latin["title"].startswith("the panel reads nothing")
+
+
+def test_a_title_that_is_only_the_label_keeps_it():
+    """An empty title fails the gate; a redundant one does not. So the label stays when it is all there is."""
+    lesson, _ = conv.convert(sample(title="Symptom"), CANONICAL)
+    assert lesson is not None
+    assert lesson["title"] == "Symptom"
+
+
+def test_a_fence_that_opens_after_prose_is_moved_to_its_own_line():
+    """#5349: `可脚本化：```bash` renders a literal fence and opens a block that never ends."""
+    lesson, _ = conv.convert(
+        sample(verify='对每条断言执行四步，可脚本化：```bash\ncp impl.py impl.bak\n```'), CANONICAL)
+    assert lesson is not None
+    # A fence line is what the renderer recognises; moving it off the prose line is the whole fix.
+    assert re.search(r"(?m)^```bash$", lesson["content"])
+
+    # The assertion that actually failed CI: no fence marker may survive into the rendered prose.
+    sys.path.insert(0, str(REPO / "scripts"))
+    import lesson_markdown
+    prose = re.sub(r"<pre>[\s\S]*?</pre>", "", lesson_markdown.render(lesson["content"]))
+    assert "```" not in prose
+
+
+def test_a_trimmed_body_title_yields_to_the_untrimmed_issue_title():
+    """The client trims `**Title:**`; the issue title is the same sentence, untrimmed.
+
+    Measured 2026-11-20 on three submissions: the body carried `… flag always-r` while the issue title
+    read `… flag always-rewritten logs`, so the lesson shipped with the stub even though the full
+    sentence was one API field away.
+    """
+    full = sample()
+    trimmed = "npm registry unreachable: pin"
+    body = full["body"].replace("**Title:** " + full_title(full), "**Title:** " + trimmed)
+    lesson, notes = conv.convert({**full, "body": body}, CANONICAL)
+    assert lesson is not None
+    assert lesson["title"] == full_title(full)
+    assert any("title taken from the issue" in note for note in notes)
+
+
+def test_two_different_titles_keep_the_submitters_field():
+    """Only a prefix relation means "one of them was cut"; anything else is a judgement, not a guess."""
+    assert conv._the_longer_prefix("the panel is blank", "npm registry unreachable") == "the panel is blank"
+    assert conv._the_longer_prefix("", "issue title") == "issue title"
+
+
+def full_title(issue_dict: dict) -> str:
+    return issue_dict["title"].removeprefix("[Lesson] ").strip()

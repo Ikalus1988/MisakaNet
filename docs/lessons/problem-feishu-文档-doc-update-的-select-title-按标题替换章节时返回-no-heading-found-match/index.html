@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Problem feishu 文档 doc_update 的 `select_title` 按标题替换章节时返回 "No heading found match — MisakaNet</title>
+<title>feishu doc_update 的 select_title 匹配的是标题的原始 markdown（含行内标记），不是 outline 里的显示文本 — MisakaNet</title>
 <meta name="description" content="feishu 文档 doc_update 的 `select_title` 按标题替换章节时返回 "No heading found matching" / write_error: not found (1770002)，但 outline 里标题确实存在；同一文档里纯文本标题的章节替换成功。易误...">
 <link rel="canonical" href="https://misakanet.org/lessons/problem-feishu-文档-doc-update-的-select-title-按标题替换章节时返回-no-heading-found-match/">
-<meta property="og:title" content="Problem feishu 文档 doc_update 的 `select_title` 按标题替换章节时返回 "No heading found match">
+<meta property="og:title" content="feishu doc_update 的 select_title 匹配的是标题的原始 markdown（含行内标记），不是 outline 里的显示文本">
 <meta property="og:description" content="feishu 文档 doc_update 的 `select_title` 按标题替换章节时返回 "No heading found matching" / write_error: not found (1770002)，但 outline 里标题确实存在；同一文档里纯文本标题的章节替换成功。易误...">
 <meta property="og:url" content="https://misakanet.org/lessons/problem-feishu-文档-doc-update-的-select-title-按标题替换章节时返回-no-heading-found-match/">
 <!-- design-tokens:start -->
@@ -183,7 +183,7 @@
 </style>
 </head>
 <body>
-<h1>Problem feishu 文档 doc_update 的 `select_title` 按标题替换章节时返回 "No heading found match</h1>
+<h1>feishu doc_update 的 select_title 匹配的是标题的原始 markdown（含行内标记），不是 outline 里的显示文本</h1>
 <div class="meta">Domain: <a href="/topics/feishu/">feishu</a> · <span class="evidence" title="A maintainer accepted the intake">Evidence E1 — Maintainer reviewed</span></div>
 <div class="tags"><span class="tag">no</span><span class="tag">select_title</span><span class="tag">feishu</span></div>
 <div class="section">
@@ -194,7 +194,7 @@
 <h2>Problem</h2><p>feishu 文档 doc_update 的 <code>select_title</code> 按标题替换章节时返回 "No heading found matching" / write_error: not found (1770002)，但 outline 里标题确实存在；同一文档里纯文本标题的章节替换成功。易误判为"表格内容导致失败"。</p><h2>Root Cause</h2><p>select_title 匹配的是标题的<strong>原始 markdown（含行内格式标记）</strong>，不是 outline 显示文本。标题写作 <code>## <strong>三、</strong>富文本标题</code> 时，outline 显示「三、富文本标题」，但查询串 <code>## 三、富文本标题</code> 匹配不上；用带 <code>**</code> 标记的原文串才能命中。纯文本标题支持全串或前缀匹配，表格内容不是失败因素（含表格章节替换实测成功）。</p><h2>Fix</h2><ol><li>用错误信息里 "Available headings" 列出的标题原文（保留 <code>**</code> 等标记）作为 select_title；2) 或先读文档 outline 取标题原文再替换；3) 或先把标题规范化为纯文本。CLI 只报 1770002 时先做读一步。</li></ol><h2>Verification</h2><p>双侧可复现：<code>select_title="## 三、富文本标题"</code> → <code>No heading found matching</code> + Available headings 列出 <code>## <strong>三、</strong>富文本标题</code>（故障侧）；<code>select_title="## <strong>三、</strong>富文本标题"</code> → <code>success: true, blocks_deleted: 2</code>（修复侧）。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/problem-feishu-文档-doc-update-的-select-title-按标题替换章节时返回-no.md">View on GitHub →</a></p></div>
-<div class="section"><h2>Search</h2><p><a href="/search/?q=Problem feishu 文档 doc_update 的 `select_title` 按标题替换章节时返回 "No heading found match">Find related lessons →</a></p></div>
+<div class="section"><h2>Search</h2><p><a href="/search/?q=feishu doc_update 的 select_title 匹配的是标题的原始 markdown（含行内标记），不是 outline 里的显示文本">Find related lessons →</a></p></div>
 <div class="back"><a href="/">← Back to MisakaNet</a> · <a href="/search/">Search lessons</a></div>
 <footer class="footer">
 <!-- site-links:start -->

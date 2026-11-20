@@ -1,5 +1,5 @@
 ---
-title: "Problem cherry-pick 一个改了源文件（如 lessons/*.md）的提交到新分支时，仓库里提交过的派生物（data/lessons.json"
+title: "cherry-pick 改了源文件的提交时派生物必然冲突：冲突的是生成结果而不是手写内容，要重跑生成链而不是逐块解"
 domain: "mcp"
 tags:
   - "git"

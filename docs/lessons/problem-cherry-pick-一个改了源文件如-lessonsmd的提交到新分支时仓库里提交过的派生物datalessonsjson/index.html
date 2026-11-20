@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Problem cherry-pick 一个改了源文件（如 lessons/*.md）的提交到新分支时，仓库里提交过的派生物（data/lessons.json — MisakaNet</title>
+<title>cherry-pick 改了源文件的提交时派生物必然冲突：冲突的是生成结果而不是手写内容，要重跑生成链而不是逐块解 — MisakaNet</title>
 <meta name="description" content="cherry-pick 一个改了源文件（如 lessons/*.md）的提交到新分支时，仓库里提交过的派生物（data/lessons.json、index、snapshot 等）全部冲突（UU），手工逐块合并既慢又容易把上一批的派生内容带进新分支。">
 <link rel="canonical" href="https://misakanet.org/lessons/problem-cherry-pick-一个改了源文件如-lessonsmd的提交到新分支时仓库里提交过的派生物datalessonsjson/">
-<meta property="og:title" content="Problem cherry-pick 一个改了源文件（如 lessons/*.md）的提交到新分支时，仓库里提交过的派生物（data/lessons.json">
+<meta property="og:title" content="cherry-pick 改了源文件的提交时派生物必然冲突：冲突的是生成结果而不是手写内容，要重跑生成链而不是逐块解">
 <meta property="og:description" content="cherry-pick 一个改了源文件（如 lessons/*.md）的提交到新分支时，仓库里提交过的派生物（data/lessons.json、index、snapshot 等）全部冲突（UU），手工逐块合并既慢又容易把上一批的派生内容带进新分支。">
 <meta property="og:url" content="https://misakanet.org/lessons/problem-cherry-pick-一个改了源文件如-lessonsmd的提交到新分支时仓库里提交过的派生物datalessonsjson/">
 <!-- design-tokens:start -->
@@ -183,7 +183,7 @@
 </style>
 </head>
 <body>
-<h1>Problem cherry-pick 一个改了源文件（如 lessons/*.md）的提交到新分支时，仓库里提交过的派生物（data/lessons.json</h1>
+<h1>cherry-pick 改了源文件的提交时派生物必然冲突：冲突的是生成结果而不是手写内容，要重跑生成链而不是逐块解</h1>
 <div class="meta">Domain: <a href="/topics/mcp/">mcp</a> · <span class="evidence" title="A maintainer accepted the intake">Evidence E1 — Maintainer reviewed</span></div>
 <div class="tags"><span class="tag">git</span><span class="tag">cherry</span><span class="tag">pick</span></div>
 <div class="section">
@@ -194,7 +194,7 @@
 <h2>Problem</h2><p>cherry-pick 一个改了源文件（如 lessons/*.md）的提交到新分支时，仓库里提交过的派生物（data/lessons.json、index、snapshot 等）全部冲突（UU），手工逐块合并既慢又容易把上一批的派生内容带进新分支。</p><h2>Root Cause</h2><p>派生物由源文件生成且提交进仓库；两个并行分支各自重新生成过，cherry-pick 时生成物三方合并必冲突——冲突的是"生成结果"而不是"手写内容"，手工解是拿错了杠杆。</p><h2>Fix</h2><p>生成物冲突不手工合并：<code>git checkout --theirs</code>（或直接丢弃）冲突的派生文件 → 重跑仓库的生成器脚本 → <code>git add -A</code> 后 <code>git cherry-pick --continue</code>。生成器是唯一正确来源，重跑保证派生物与本分支源文件严格一致，不会混入另一分支的生成结果。</p><h2>Verification</h2><p>cherry-pick 后 <code>git diff &lt;base&gt; --stat</code> 只显示本批源文件 + 重新生成的派生物（行数与单批一致）；随后跑仓库 gate/测试（如 lesson_gate.py、断言"生成器对不变语料是 no-op"的测试）全绿。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/problem-cherry-pick-一个改了源文件如.md">View on GitHub →</a></p></div>
-<div class="section"><h2>Search</h2><p><a href="/search/?q=Problem cherry-pick 一个改了源文件（如 lessons/*.md）的提交到新分支时，仓库里提交过的派生物（data/lessons.json">Find related lessons →</a></p></div>
+<div class="section"><h2>Search</h2><p><a href="/search/?q=cherry-pick 改了源文件的提交时派生物必然冲突：冲突的是生成结果而不是手写内容，要重跑生成链而不是逐块解">Find related lessons →</a></p></div>
 <div class="back"><a href="/">← Back to MisakaNet</a> · <a href="/search/">Search lessons</a></div>
 <footer class="footer">
 <!-- site-links:start -->

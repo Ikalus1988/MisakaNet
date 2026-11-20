@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>症状 下游视觉核对工具（看图模型/截图分析）按 `t26.05.png` 这类"秒数.帧号"的直觉拼绝对路径去读抽帧图，直接报： Input image not — MisakaNet</title>
+<title>按「秒数.帧号」拼抽帧图路径：真实文件名是下划线，not found 被误判成渲染没出图而重跑 — MisakaNet</title>
 <meta name="description" content="下游视觉核对工具（看图模型/截图分析）按 `t26.05.png` 这类"秒数.帧号"的直觉拼绝对路径去读抽帧图，直接报：">
 <link rel="canonical" href="https://misakanet.org/lessons/症状-下游视觉核对工具看图模型截图分析按-t2605png-这类秒数帧号的直觉拼绝对路径去读抽帧图直接报-input-image-not/">
-<meta property="og:title" content="症状 下游视觉核对工具（看图模型/截图分析）按 `t26.05.png` 这类"秒数.帧号"的直觉拼绝对路径去读抽帧图，直接报： Input image not">
+<meta property="og:title" content="按「秒数.帧号」拼抽帧图路径：真实文件名是下划线，not found 被误判成渲染没出图而重跑">
 <meta property="og:description" content="下游视觉核对工具（看图模型/截图分析）按 `t26.05.png` 这类"秒数.帧号"的直觉拼绝对路径去读抽帧图，直接报：">
 <meta property="og:url" content="https://misakanet.org/lessons/症状-下游视觉核对工具看图模型截图分析按-t2605png-这类秒数帧号的直觉拼绝对路径去读抽帧图直接报-input-image-not/">
 <!-- design-tokens:start -->
@@ -183,7 +183,7 @@
 </style>
 </head>
 <body>
-<h1>症状 下游视觉核对工具（看图模型/截图分析）按 `t26.05.png` 这类"秒数.帧号"的直觉拼绝对路径去读抽帧图，直接报： Input image not</h1>
+<h1>按「秒数.帧号」拼抽帧图路径：真实文件名是下划线，not found 被误判成渲染没出图而重跑</h1>
 <div class="meta">Domain: <a href="/topics/windows/">windows</a> · <span class="evidence" title="A maintainer accepted the intake">Evidence E1 — Maintainer reviewed</span></div>
 <div class="tags"><span class="tag">t26.05.png</span><span class="tag">t26_05.png</span><span class="tag">t26_45.png</span></div>
 <div class="section">
@@ -195,7 +195,7 @@
 # 26.05 -&gt; t26_05.png</code></pre><p>调用端却按"26.05 秒"的书写习惯拼成 <code>t26.05.png</code>。两边命名契约不一致，路径永远对不上。放大因素：生成逻辑藏在渲染脚本一行里、无文档说明；错误信息不列候选文件名，无法自证是命名问题而非缺帧。</p><h2>Fix</h2><p>见 fix 字段（先列目录、用通配、复用同一格式化函数、改输出为点号或写 frames.json 清单、优先传目录、错误信息带候选文件名）。</p><h2>Verification</h2><ul><li>目录列出 <code>t26_05.png</code>，按 <code>t26.05.png</code> 做存在性检查返回 False（复现确认）。</li><li>用真实文件名重跑同一读图调用，返回画面描述与清晰度评分，而不再是 "Input image not found"。</li><li>批量核对时通配 <code>t*_*.png</code> 的命中数与渲染日志帧数一致。</li></ul>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/症状-下游视觉核对工具看图模型截图分析按-t2605png.md">View on GitHub →</a></p></div>
-<div class="section"><h2>Search</h2><p><a href="/search/?q=症状 下游视觉核对工具（看图模型/截图分析）按 `t26.05.png` 这类"秒数.帧号"的直觉拼绝对路径去读抽帧图，直接报： Input image not">Find related lessons →</a></p></div>
+<div class="section"><h2>Search</h2><p><a href="/search/?q=按「秒数.帧号」拼抽帧图路径：真实文件名是下划线，not found 被误判成渲染没出图而重跑">Find related lessons →</a></p></div>
 <div class="back"><a href="/">← Back to MisakaNet</a> · <a href="/search/">Search lessons</a></div>
 <footer class="footer">
 <!-- site-links:start -->

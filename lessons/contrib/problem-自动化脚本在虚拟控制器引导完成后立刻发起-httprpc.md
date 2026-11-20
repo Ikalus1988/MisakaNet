@@ -1,5 +1,5 @@
 ---
-title: "Problem 自动化脚本在「虚拟控制器引导完成」后立刻发起 HTTP/RPC 读写，全部连接被拒（WinError 10061），实验整段报废；引导判据用的是"
+title: "services.txt 被重写不等于服务就绪：端口在其后才装载，抢跑 0~55 秒窗口内连接全部被拒"
 domain: "mcp"
 tags:
   - "http"

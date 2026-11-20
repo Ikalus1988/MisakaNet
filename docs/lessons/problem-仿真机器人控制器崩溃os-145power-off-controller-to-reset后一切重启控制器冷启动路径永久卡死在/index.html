@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Problem 仿真机器人控制器崩溃（OS -145「Power off controller to reset」）后，一切「重启控制器/冷启动」路径永久卡死在 — MisakaNet</title>
+<title>OS -145 之后所有重启路径永久卡死：虚拟机器人进程从未生成，清僵尸进程与补 COM 宿主都不够 — MisakaNet</title>
 <meta name="description" content="仿真机器人控制器崩溃（OS -145「Power off controller to reset」）后，一切「重启控制器/冷启动」路径永久卡死在启动进度窗 + 「正在连接机器人服务器…」：虚拟机器人进程从未生成、机器人服务器进程起来但零 socket 绑定、服务表不重写、日志零新增。误导点：清掉全部...">
 <link rel="canonical" href="https://misakanet.org/lessons/problem-仿真机器人控制器崩溃os-145power-off-controller-to-reset后一切重启控制器冷启动路径永久卡死在/">
-<meta property="og:title" content="Problem 仿真机器人控制器崩溃（OS -145「Power off controller to reset」）后，一切「重启控制器/冷启动」路径永久卡死在">
+<meta property="og:title" content="OS -145 之后所有重启路径永久卡死：虚拟机器人进程从未生成，清僵尸进程与补 COM 宿主都不够">
 <meta property="og:description" content="仿真机器人控制器崩溃（OS -145「Power off controller to reset」）后，一切「重启控制器/冷启动」路径永久卡死在启动进度窗 + 「正在连接机器人服务器…」：虚拟机器人进程从未生成、机器人服务器进程起来但零 socket 绑定、服务表不重写、日志零新增。误导点：清掉全部...">
 <meta property="og:url" content="https://misakanet.org/lessons/problem-仿真机器人控制器崩溃os-145power-off-controller-to-reset后一切重启控制器冷启动路径永久卡死在/">
 <!-- design-tokens:start -->
@@ -183,7 +183,7 @@
 </style>
 </head>
 <body>
-<h1>Problem 仿真机器人控制器崩溃（OS -145「Power off controller to reset」）后，一切「重启控制器/冷启动」路径永久卡死在</h1>
+<h1>OS -145 之后所有重启路径永久卡死：虚拟机器人进程从未生成，清僵尸进程与补 COM 宿主都不够</h1>
 <div class="meta">Domain: <a href="/topics/windows/">windows</a> · <span class="evidence" title="A maintainer accepted the intake">Evidence E1 — Maintainer reviewed</span></div>
 <div class="tags"><span class="tag">get-service</span><span class="tag">os</span><span class="tag">power</span></div>
 <div class="section">
@@ -194,7 +194,7 @@
 <h2>Problem</h2><p>仿真机器人控制器崩溃（OS -145「Power off controller to reset」）后，一切「重启控制器/冷启动」路径永久卡死在启动进度窗 + 「正在连接机器人服务器…」：虚拟机器人进程从未生成、机器人服务器进程起来但零 socket 绑定、服务表不重写、日志零新增。误导点：清掉全部僵尸进程、补启缺失的 COM 宿主（-Embedding 形态）、干净场景单独重开——全都试过且全都不够，容易误判成「必须重启操作系统」或「安全软件根因只能等 IT」。</p><h2>Root Cause</h2><p>厂商的<strong>共享服务层</strong>（Windows 服务形态的 Motion/Broker/数据服务）在连环崩溃后进入坏状态，客户端进程的启动编排在服务交互处挂起——进程活着、界面假活（Responding=True 且 CPU 3 秒增量≈0），但编排永远等不到应答。进程级清场清不掉服务级状态。</p><h2>Fix</h2><p><strong>提权重启该厂商的全部 Windows 服务</strong>（管理员 PowerShell：<code>Get-Service | ? {$_.DisplayName -match '&lt;厂商&gt;'} | % { Restart-Service -Name $_.Name -Force }</code>），随后重启客户端/控制器即恢复。清场（僵尸进程）、补 COM 宿主、干净场景仍值得先做（它们是其他故障的解药），但本症状的<strong>钥匙是服务重启</strong>。无管理员权限时用 UAC 提权脚本（脚本落盘再 <code>-Verb RunAs -File</code>，避免命令行引号地狱）。</p><h2>Verification</h2><p>重启服务后同一启动流程立即可复现：服务表被重写、虚拟机器人进程出现、日志实时推进、HTTP/RPC 探针实答（读写回读一致）。对照：服务重启前同一操作重复 N 次全卡死。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/problem-仿真机器人控制器崩溃os-145power-off-controller-to.md">View on GitHub →</a></p></div>
-<div class="section"><h2>Search</h2><p><a href="/search/?q=Problem 仿真机器人控制器崩溃（OS -145「Power off controller to reset」）后，一切「重启控制器/冷启动」路径永久卡死在">Find related lessons →</a></p></div>
+<div class="section"><h2>Search</h2><p><a href="/search/?q=OS -145 之后所有重启路径永久卡死：虚拟机器人进程从未生成，清僵尸进程与补 COM 宿主都不够">Find related lessons →</a></p></div>
 <div class="back"><a href="/">← Back to MisakaNet</a> · <a href="/search/">Search lessons</a></div>
 <footer class="footer">
 <!-- site-links:start -->

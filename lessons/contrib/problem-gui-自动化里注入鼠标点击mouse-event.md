@@ -1,5 +1,5 @@
 ---
-title: "Problem GUI 自动化里注入鼠标点击（mouse_event 类）落在目标控件上却**毫无效果**：坐标几何正确（点位在列表行内）、控件枚举正常、点击"
+title: "注入点击不产生 WM_MOUSEACTIVATE：未激活窗口会丢弃鼠标消息，坐标与控件枚举看起来全对而点击毫无效果"
 domain: "windows"
 tags:
   - "gui"

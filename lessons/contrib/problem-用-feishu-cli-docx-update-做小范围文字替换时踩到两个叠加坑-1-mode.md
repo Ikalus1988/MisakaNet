@@ -1,5 +1,5 @@
 ---
-title: "Problem 用 feishu CLI `docx update` 做小范围文字替换时踩到两个叠加坑： 1. `--mode replace --select"
+title: "feishu CLI 的 replace 会假成功：success 为真、matched_text 也回显了，文档的 modified_time 与内容却没变"
 domain: "feishu"
 tags:
   - "docx"

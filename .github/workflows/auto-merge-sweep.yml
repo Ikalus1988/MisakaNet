@@ -14,10 +14,36 @@ name: Auto-Merge Sweep
 # but GitHub does not deliver check-suite events for runs from forks, and this channel is opt-in for
 # outside contributions too. Thirty minutes is indistinguishable from three for a queue that moves in
 # days, and it does not depend on event semantics that already have a gap.
+#
+# 2026-11-20: the schedule turned out to be far sparser than thirty minutes — **2 runs in the first 14
+# hours** (23:25Z, 04:10Z) while every other cron in this repository kept firing. The chain works end to
+# end (`#5416` merged itself at 12:09Z), but a green batch could wait hours for the next tick, and the
+# intake queue moves in hours. So the sweep now also wakes on **the moment the question becomes
+# answerable**: the completion of one of the five workflows whose checks gate the decision.
+#
+# Why a named list rather than `check_suite` or every workflow:
+#   * `check_suite` was removed from `Auto-Merge Lessons` on 2026-10-02 because it fanned out — one
+#     commit produced 39 runs and 37 of them were self-triggered (`docs/maintainer/auto-merge-lessons.md`
+#     §1). Nothing here changes that: this trigger is on *workflow runs of five specific workflows*, and
+#     none of them is the sweep, so there is no cycle;
+#   * every workflow in this repository would be ~an order of magnitude more events for the same
+#     answer, because the decision does not read the payload — it re-queries `gh pr list`;
+#   * the list is checked against the files by `tests/test_auto_merge_sweep_trigger.py`, because a
+#     renamed workflow would otherwise silently stop the wake-up. The failure mode is "slower", not
+#     "broken": the schedule below is still the backstop.
 on:
   schedule:
     - cron: "*/30 * * * *"
   workflow_dispatch:
+  workflow_run:
+    # The five workflows that produce the checks `scripts/lesson_pr_mergeable.py` requires.
+    workflows:
+      - Lesson Quality Gate
+      - Provenance Gate
+      - DCO Check
+      - PR Shape Guard
+      - Cross-Platform Tests
+    types: [completed]
 
 permissions:
   actions: write      # dispatch the deciding workflow
@@ -30,6 +56,9 @@ concurrency:
 
 jobs:
   sweep:
+    # A `workflow_run` from a push to `main` is not a question about a pull request. Only PR-initiated
+    # runs wake the sweep; the schedule covers everything else.
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.event == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -40,12 +69,35 @@ jobs:
           REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
-          # `mergeStateStatus` is what the deciding workflow re-checks anyway; asking here keeps the
-          # dispatch list small and the logs readable.
+          # **Do not filter on `mergeStateStatus` from the list endpoint.** It is a *cached* field:
+          # every merge into the default branch invalidates the cached mergeability of every open pull
+          # request, and it reads `UNKNOWN` until GitHub recomputes it — on access, lazily. Measured
+          # 2026-11-20: #5416 was `CLEAN` at 09:49Z (one candidate, dispatched), then `UNKNOWN` in
+          # `gh pr list`/`mergeStateStatus` right after the next few merges landed, and this step
+          # reported `candidates: 0` while `GET /pulls/5416` still answered `mergeable: true`,
+          # `mergeable_state: clean`. A candidate filter that silently drops the very pull requests it
+          # exists for is worse than no filter: the run is green.
+          #
+          # So: list by the facts GitHub always answers (label, draft), then ask the **single-PR**
+          # endpoint, which computes mergeability rather than reading a cache — retrying while it says
+          # `unknown`, because the first read is what triggers the computation.
           gh pr list --repo "$REPO" --state open --label auto-merge-lesson --limit 100 \
-            --json number,mergeStateStatus,isDraft \
-            --jq '.[] | select(.isDraft == false) | select(.mergeStateStatus == "CLEAN") | .number' \
-            > /tmp/candidates.txt
+            --json number,isDraft \
+            --jq '.[] | select(.isDraft == false) | .number' > /tmp/labelled.txt
+
+          : > /tmp/candidates.txt
+          while read -r pr; do
+            [ -z "$pr" ] && continue
+            state=""
+            for attempt in 1 2 3 4; do
+              state=$(gh api "repos/$REPO/pulls/$pr" --jq '.mergeable_state // "unknown"' 2>/dev/null || echo unknown)
+              [ "$state" = "unknown" ] || break
+              sleep 3
+            done
+            echo "#$pr mergeable_state=$state"
+            [ "$state" = "clean" ] && echo "$pr" >> /tmp/candidates.txt
+          done < /tmp/labelled.txt
+
           count=$(wc -l < /tmp/candidates.txt | tr -d ' ')
           echo "candidates: $count"
           tr '\n' ' ' < /tmp/candidates.txt; echo

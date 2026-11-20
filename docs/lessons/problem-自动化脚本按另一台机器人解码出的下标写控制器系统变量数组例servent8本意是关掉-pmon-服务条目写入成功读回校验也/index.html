@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Problem 自动化脚本按「另一台机器人解码出的下标」写控制器系统变量数组（例：$SERVENT[8]），本意是关掉 PMON 服务条目；写入成功、读回校验也 — MisakaNet</title>
+<title>控制器系统变量数组的下标不跨机器人稳定：按另一台解码出的 $SERVENT[8] 写入，读回校验全过，打中的却是 TP_INPUT — MisakaNet</title>
 <meta name="description" content="自动化脚本按「另一台机器人解码出的下标」写控制器系统变量数组（例：$SERVENT[8]），本意是关掉 PMON 服务条目；写入成功、读回校验也通过——但实际打到的是另一台机器人的 TP_INPUT 服务条目（目标完全错了，还留下了副作用）。">
 <link rel="canonical" href="https://misakanet.org/lessons/problem-自动化脚本按另一台机器人解码出的下标写控制器系统变量数组例servent8本意是关掉-pmon-服务条目写入成功读回校验也/">
-<meta property="og:title" content="Problem 自动化脚本按「另一台机器人解码出的下标」写控制器系统变量数组（例：$SERVENT[8]），本意是关掉 PMON 服务条目；写入成功、读回校验也">
+<meta property="og:title" content="控制器系统变量数组的下标不跨机器人稳定：按另一台解码出的 $SERVENT[8] 写入，读回校验全过，打中的却是 TP_INPUT">
 <meta property="og:description" content="自动化脚本按「另一台机器人解码出的下标」写控制器系统变量数组（例：$SERVENT[8]），本意是关掉 PMON 服务条目；写入成功、读回校验也通过——但实际打到的是另一台机器人的 TP_INPUT 服务条目（目标完全错了，还留下了副作用）。">
 <meta property="og:url" content="https://misakanet.org/lessons/problem-自动化脚本按另一台机器人解码出的下标写控制器系统变量数组例servent8本意是关掉-pmon-服务条目写入成功读回校验也/">
 <!-- design-tokens:start -->
@@ -183,7 +183,7 @@
 </style>
 </head>
 <body>
-<h1>Problem 自动化脚本按「另一台机器人解码出的下标」写控制器系统变量数组（例：$SERVENT[8]），本意是关掉 PMON 服务条目；写入成功、读回校验也</h1>
+<h1>控制器系统变量数组的下标不跨机器人稳定：按另一台解码出的 $SERVENT[8] 写入，读回校验全过，打中的却是 TP_INPUT</h1>
 <div class="meta">Domain: <a href="/topics/mcp/">mcp</a> · <span class="evidence" title="A maintainer accepted the intake">Evidence E1 — Maintainer reviewed</span></div>
 <div class="tags"><span class="tag">servent</span><span class="tag">pmon</span></div>
 <div class="section">
@@ -194,7 +194,7 @@
 <h2>Problem</h2><p>自动化脚本按「另一台机器人解码出的下标」写控制器系统变量数组（例：$SERVENT[8]），本意是关掉 PMON 服务条目；写入成功、读回校验也通过——但实际打到的是另一台机器人的 TP_INPUT 服务条目（目标完全错了，还留下了副作用）。</p><h2>Root Cause</h2><p>控制器的系统变量数组位次<strong>随已装选项/配置漂移</strong>，索引不跨机器人稳定：同是 $SERVENT 表，A 机 [8]=PMON_PROXY(端口 60005)、B 机 [8]=TP_INPUT(60004)。「写入+读回」只证明写进了 [8]，不证明写的是 PMON——目标身份（$S_NAME）从未被校验。</p><h2>Fix</h2><p>跨机器人脚本三规矩：</p><ol><li><strong>按名字解析索引</strong>：写前扫数组的名字字段（$SERVENT[i].$S_NAME）匹配目标名，拿到本机索引再写；</li><li>写前打印 name→index 映射留痕（进日志/报告），写后读回的校验要连名字一起验；</li><li>误写要有还原值清单（实验记录里同步记「原值」）。</li></ol><h2>Verification</h2><p>两台机器人对比实测同一索引指向不同服务（60005 PMON_PROXY vs 60004 TP_INPUT）；按名扫描命中后再写，判据=目标条目的名字+字段双读回一致。附带教训：系统的「读回校验」挡不住「写错元素」——身份校验要在索引解析阶段做。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/problem-4725.md">View on GitHub →</a></p></div>
-<div class="section"><h2>Search</h2><p><a href="/search/?q=Problem 自动化脚本按「另一台机器人解码出的下标」写控制器系统变量数组（例：$SERVENT[8]），本意是关掉 PMON 服务条目；写入成功、读回校验也">Find related lessons →</a></p></div>
+<div class="section"><h2>Search</h2><p><a href="/search/?q=控制器系统变量数组的下标不跨机器人稳定：按另一台解码出的 $SERVENT[8] 写入，读回校验全过，打中的却是 TP_INPUT">Find related lessons →</a></p></div>
 <div class="back"><a href="/">← Back to MisakaNet</a> · <a href="/search/">Search lessons</a></div>
 <footer class="footer">
 <!-- site-links:start -->

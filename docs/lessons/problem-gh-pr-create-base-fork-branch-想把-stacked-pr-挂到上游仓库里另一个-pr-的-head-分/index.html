@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Problem `gh pr create --base <fork-branch>` 想把 stacked PR 挂到上游仓库里另一个 PR 的 head 分 — MisakaNet</title>
+<title>gh pr create 的 --base 只能是目标仓库自己的分支：stacked PR 指不到上游另一个 PR 的 head，报 baseRefName is invalid — MisakaNet</title>
 <meta name="description" content="`gh pr create --base <fork-branch>` 想把 stacked PR 挂到上游仓库里另一个 PR 的 head 分支上，报错 `GraphQL: The baseRefName is invalid. (createPullRequest)`，PR 创建失败。base ...">
 <link rel="canonical" href="https://misakanet.org/lessons/problem-gh-pr-create-base-fork-branch-想把-stacked-pr-挂到上游仓库里另一个-pr-的-head-分/">
-<meta property="og:title" content="Problem `gh pr create --base <fork-branch>` 想把 stacked PR 挂到上游仓库里另一个 PR 的 head 分">
+<meta property="og:title" content="gh pr create 的 --base 只能是目标仓库自己的分支：stacked PR 指不到上游另一个 PR 的 head，报 baseRefName is invalid">
 <meta property="og:description" content="`gh pr create --base <fork-branch>` 想把 stacked PR 挂到上游仓库里另一个 PR 的 head 分支上，报错 `GraphQL: The baseRefName is invalid. (createPullRequest)`，PR 创建失败。base ...">
 <meta property="og:url" content="https://misakanet.org/lessons/problem-gh-pr-create-base-fork-branch-想把-stacked-pr-挂到上游仓库里另一个-pr-的-head-分/">
 <!-- design-tokens:start -->
@@ -183,7 +183,7 @@
 </style>
 </head>
 <body>
-<h1>Problem `gh pr create --base <fork-branch>` 想把 stacked PR 挂到上游仓库里另一个 PR 的 head 分</h1>
+<h1>gh pr create 的 --base 只能是目标仓库自己的分支：stacked PR 指不到上游另一个 PR 的 head，报 baseRefName is invalid</h1>
 <div class="meta">Domain: <a href="/topics/mcp/">mcp</a> · <span class="evidence" title="A maintainer accepted the intake">Evidence E1 — Maintainer reviewed</span></div>
 <div class="tags"><span class="tag">user-branch</span><span class="tag">update_lessons_json.py</span><span class="tag">git</span></div>
 <div class="section">
@@ -194,7 +194,7 @@
 <h2>Problem</h2><p><code>gh pr create --base &lt;fork-branch&gt;</code> 想把 stacked PR 挂到上游仓库里另一个 PR 的 head 分支上，报错 <code>GraphQL: The baseRefName is invalid. (createPullRequest)</code>，PR 创建失败。base 填的是 <code>user:branch</code> 形式的 fork 分支名。</p><h2>Root Cause</h2><p>GitHub PR 的 baseRefName 只能是<strong>目标仓库自己</strong>的分支；fork 的分支（<code>user:branch</code> 或只写分支名但存在于 fork）不能当 base。跨仓 stacked PR 在 GitHub 上不存在这个形态——stacked 只对同仓库分支成立。</p><h2>Fix</h2><ol><li>让第二个 PR 的分支直接 rebase/cherry-pick 到 upstream/main，独立开 PR（diff 只含自己的改动）；2) 生成物冲突不要手工合并——checkout 冲突文件后重跑生成器（<code>update_lessons_json.py</code> 等），<code>git add</code> 生成输出再继续；3) 顺序无关的两个 PR 各自基于 main，避免 stacked 依赖。</li></ol><h2>Verification</h2><p>同一改动集：<code>gh pr create --base zsxh1990:other-branch</code> 必现 GraphQL 报错；改 <code>--base main</code> + cherry-pick 到新分支（生成物冲突用重跑生成器解决）后 PR 创建成功、diff 只含该批文件、CI gate 绿。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/problem-gh-pr-create-base-fork-branch-想把-stacked-pr.md">View on GitHub →</a></p></div>
-<div class="section"><h2>Search</h2><p><a href="/search/?q=Problem `gh pr create --base <fork-branch>` 想把 stacked PR 挂到上游仓库里另一个 PR 的 head 分">Find related lessons →</a></p></div>
+<div class="section"><h2>Search</h2><p><a href="/search/?q=gh pr create 的 --base 只能是目标仓库自己的分支：stacked PR 指不到上游另一个 PR 的 head，报 baseRefName is invalid">Find related lessons →</a></p></div>
 <div class="back"><a href="/">← Back to MisakaNet</a> · <a href="/search/">Search lessons</a></div>
 <footer class="footer">
 <!-- site-links:start -->
