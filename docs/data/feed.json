@@ -1,9 +1,16 @@
 {
-  "generated_at": "2026-11-19T20:48:56.737230+00:00",
+  "generated_at": "2026-11-20T02:24:40.823769+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 13,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5392",
+      "timestamp": "2026-11-19T21:05:51Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "feat(intake): one lesson may convert several intakes, and the ones nobody closed get swept",
@@ -30,13 +37,6 @@
       "title": "feat(lessons): intake batch 2026-11-19",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/5349",
       "timestamp": "2026-11-19T18:52:11Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "docs(cindy): 插件待办清单（按优先级）",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5379",
-      "timestamp": "2026-11-19T17:43:07Z",
       "source": "github"
     },
     {
