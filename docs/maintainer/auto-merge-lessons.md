@@ -67,6 +67,27 @@ run 44714007969 结论 `skipped`、零个 step）。所以那个守卫现在写�
 所以扫尾器的候选集现在只按 GitHub 永远会回答的事实筛（标签 + 非 draft），
 再对每个 PR 调**单 PR**端点（它会触发计算），读到 `unknown` 就重试。
 
+第三个形状是**频率**：`schedule` 在这个仓库里送得远稀于声明。实测 2026-11-20：工作流上线后
+**14 小时只送了 2 次**（23:25Z、04:10Z），同期其它 cron 都正常（`PR Audit Watch` 19:00、
+`Site build watch` 18:42、`Approval Watch` 17:41）。链是通的（`#5416` 在 12:09Z 自己合了），
+但一个变绿的批次可能等上几小时，而入库队列以小时计。
+所以扫尾器现在**也在“问题变得可回答的那一刻”醒来**：`workflow_run: types: [completed]`，
+`workflows:` 只列那五个产生必需检查的工作流（`Lesson Quality Gate` / `Provenance Gate` /
+`DCO Check` / `PR Shape Guard` / `Cross-Platform Tests`）。
+
+为什么是名单而不是 `check_suite` 或“任何 workflow”：
+
+- `check_suite` 在 2026-10-02 被删掉是因为它会**扇出**（一条 commit 39 个 run、37 个自触发），
+  这里的触发器盯的是**五个具体工作流**的完成，其中没有扫尾器自己，不存在环；
+- “任何 workflow 完成”比这多一个量级的条数，而判定根本不读载荷 —— 它重新 `gh pr list`；
+- 名单有腐化风险，所以 `tests/test_auto_merge_sweep_trigger.py` 把名单与 `workflows/*.yml` 的
+  `name:` 对账，并要求名单盖全 `lesson_pr_mergeable.REQUIRED_CHECKS`。改名后的失败模式是
+  “变慢”而不是“坏掉”——下面的 `schedule` 仍是兜底。
+
+作业级还有一个必须留着的守卫：`github.event_name != 'workflow_run' || github.event.workflow_run.event == 'pull_request'`。
+推到 main 的那些运行不是“关于某个 PR 的问题”，它们由 `schedule` 负责；少了这行，每次主分支 CI
+完成都会白起一个 runner。
+
 ### 判定从哪来（事实全部读 API，不读 PR 内容）
 
 | 事实 | 来源 |

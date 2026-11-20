@@ -68,12 +68,18 @@ def test_every_privileged_workflow_pins_its_checkout_to_the_default_branch() -> 
 
 
 def test_the_two_known_pinned_workflows_are_the_only_privileged_ones() -> None:
-    """If a third appears, the rule above starts applying to it before anyone remembers to look."""
+    """If a third appears, the rule above starts applying to it before anyone remembers to look.
+
+    `auto-merge-sweep.yml` joined on 2026-11-20 with its `workflow_run` trigger. It passes the rule
+    above vacuously — it has **no `actions/checkout` at all** (it only calls `gh` and dispatches), so
+    there is no ref to pin to the wrong branch. Worth stating explicitly: the reason it is safe is
+    the absence of a checkout, not a promise about how it uses one.
+    """
     names = {name for name, _ in _privileged()}
     assert names == {
-        "approval-watch.yml", "auto-merge-docs.yml", "ci-lesson-search.yml", "dco-check.yml",
-        "deploy-freshness.yml", "intake-bot-demo.yml", "pr-merged-thank.yml", "pr-shape-guard.yml",
-        "pr-thank-you.yml", "pr-welcome.yml", "update-badges.yml",
+        "approval-watch.yml", "auto-merge-docs.yml", "auto-merge-sweep.yml", "ci-lesson-search.yml",
+        "dco-check.yml", "deploy-freshness.yml", "intake-bot-demo.yml", "pr-merged-thank.yml",
+        "pr-shape-guard.yml", "pr-thank-you.yml", "pr-welcome.yml", "update-badges.yml",
     }, (
         f"the set of privileged workflows changed: {sorted(names)} — check each new one against the "
         "rule above, then update this list so the next reader sees the decision was made")
