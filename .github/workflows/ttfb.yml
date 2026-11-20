@@ -11,6 +11,11 @@ name: MCP first-byte
 # that baseline is slow or flaky the whole run is **inconclusive**, never a failure — a bad link must
 # not be allowed to convict the code. That guard is the difference between a check people read and one
 # they mute.
+#
+# The second half of the run asks the other axis (#5245): does the body that arrives still match the
+# length the server announced? `scripts/probe_mcp_body.py` answers that, with the same inconclusive
+# guard — a body cut short by a dropping link and a body cut short by the worker are the same bytes to
+# a client, so the probe reports the count and lets the reader judge instead of guessing.
 
 on:
   schedule:
@@ -26,6 +31,7 @@ on:
     paths:
       - 'workers/register-proxy-sw.js'
       - 'scripts/bench_ttfb.py'
+      - 'scripts/probe_mcp_body.py'
       - '.github/workflows/ttfb.yml'
 
 permissions:
@@ -54,6 +60,17 @@ jobs:
           python3 scripts/bench_ttfb.py --samples "$SAMPLES" --json-out ttfb-report.json \
             | tee ttfb-report.md
 
+      - name: Measure body integrity
+        id: body
+        env:
+          SAMPLES: ${{ github.event.inputs.samples || '10' }}
+        run: |
+          set -o pipefail
+          # Same contract as the step above: the script's exit code is the verdict
+          # (1 = a body stopped before its announced end, 0 = pass or inconclusive).
+          python3 scripts/probe_mcp_body.py --samples "$SAMPLES" --check \
+            --json-out body-report.json | tee body-report.md
+
       - name: Verdict in the job summary
         if: always()
         run: |
@@ -61,6 +78,10 @@ jobs:
             echo "### MCP first-byte vs total"
             echo ""
             if [ -f ttfb-report.md ]; then cat ttfb-report.md; else echo "(no report was produced)"; fi
+            echo ""
+            echo "### MCP body integrity"
+            echo ""
+            if [ -f body-report.md ]; then cat body-report.md; else echo "(no report was produced)"; fi
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload the report
@@ -71,11 +92,15 @@ jobs:
           path: |
             ttfb-report.md
             ttfb-report.json
+            body-report.md
+            body-report.json
           if-no-files-found: warn
 
       - name: Calibration note on failures
         if: failure()
         run: |
-          echo "::error::the live endpoint failed the streaming assertions — read the table above."
+          echo "::error::the live endpoint failed the streaming or body-integrity assertions — read the tables above."
           echo "If the baseline row is slow or mostly failing, this is the runner's link, not the code:"
-          echo "re-run before changing anything."
+          echo "re-run before changing anything. A non-zero 'short' column is different: it means a body"
+          echo "stopped before the announced end, which is #5245 (either the worker or the link — the"
+          echo "'answered' column tells you which)."
