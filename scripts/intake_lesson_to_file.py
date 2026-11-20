@@ -90,6 +90,42 @@ def clean(text: str) -> str:
 
 _FENCE_RE = re.compile(r"^\s*(?:```|~~~)")
 
+#: The intake form's own first heading, when a client uses it as the title. Not a topic: it says
+#: "this is a symptom" and nothing about what broke, so it is dropped before the gate's 120-character
+#: budget is spent on it (measured 2026-11-19 on the batch that produced 16 of 38 lessons titled
+#: `症状 …` / `Problem …` / `Symptom: …`).
+_GENERIC_TITLE_PREFIX = re.compile(r"^(?:症状|问题|Problem|Symptom)\s*[:：]?\s+", re.IGNORECASE)
+
+
+def strip_generic_prefix(title: str) -> str:
+    """The title without a leading `症状` / `问题` / `Problem` / `Symptom` label.
+
+    A label is not a topic: it is the intake form's first heading, and the same word would be on
+    every lesson that came in through the same shape. Dropped only when something is left — a title
+    that *is* the label keeps it, because an empty title fails the gate and a wrong one does not.
+    """
+    stripped = _GENERIC_TITLE_PREFIX.sub("", title.strip(), count=1).strip()
+    return stripped if len(stripped) >= 8 else title
+
+
+def fences_start_a_line(text: str) -> str:
+    """Move a fence that opens mid-line onto its own line.
+
+    The renderer only recognises a fence at the start of a line (`_FENCE_RE` above, and
+    `scripts/lesson_markdown.py`). A fence that opens after prose is therefore *text* — and the
+    closing fence, which does start a line, then opens a block that never ends. Measured
+    2026-11-19 on the batch PR #5349: an intake whose Verification read `可脚本化：```bash` was copied
+    verbatim, so the page rendered a literal ``` and
+    `test_no_fence_marker_leaks_outside_a_code_block` failed on all six test legs.
+
+    The fix belongs here rather than in the renderer: the renderer is right to require a fence line,
+    and the intake is the thing that wrote a marker where no fence can be.
+    """
+    lines = []
+    for line in text.split("\n"):
+        lines.append(re.sub(r"(?<=\S)(```|~~~)", r"\n\1", line))
+    return "\n".join(lines)
+
 
 def section(body: str, name: str) -> str:
     r"""The text under **every** `## <name>` heading, concatenated; empty when absent.
@@ -355,6 +391,9 @@ def convert(issue: dict, canonical: set[str],
                           str(issue.get("title", ""))).strip())
     if override.get("title"):
         notes.append("title replaced by a maintainer override")
+    elif title != (stripped := strip_generic_prefix(title)):
+        title = stripped
+        notes.append("generic label dropped from the title")
     title = shorten(title, FIELDS_MAX["title"])
     problem = (section(body, "Problem") or section(body, "症状")
                or section(body, "Symptom"))
@@ -381,6 +420,8 @@ def convert(issue: dict, canonical: set[str],
     tags = tags_of(body, title)
     if len(tags) < 2:
         return None, [f"only {len(tags)} tag(s)"]
+    problem, cause, fix, verify = (fences_start_a_line(value)
+                                   for value in (problem, cause, fix, verify))
     content = (f"## Problem\n\n{problem}\n\n## Root Cause\n\n{cause}\n\n## Fix\n\n{fix}\n\n"
                f"## Verification\n\n{verify or 'Not recorded by the submitter.'}\n")
     if len(content) < 120:
