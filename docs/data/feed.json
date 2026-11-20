@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-11-20T02:24:40.823769+00:00",
+  "generated_at": "2026-11-20T11:54:52.314121+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 13,
   "items": [
     {
       "type": "merged_pr",
+      "title": "fix(ci): the sweep dropped its own candidates whenever GitHub had a stale mergeability cache",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5431",
+      "timestamp": "2026-11-20T11:17:11Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "fix(ci): a dispatched run was skipped before it reached the decision script",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5430",
+      "timestamp": "2026-11-20T10:29:09Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "fix(intake): a generic label is not a title, and a fence that opens mid-line is not a fence (#5380)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5423",
+      "timestamp": "2026-11-20T09:36:28Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "feat(ci): witness the body that arrives, not just when it starts (#5245)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5421",
+      "timestamp": "2026-11-20T07:06:30Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
       "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5392",
-      "timestamp": "2026-11-19T21:05:51Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat(intake): one lesson may convert several intakes, and the ones nobody closed get swept",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5347",
-      "timestamp": "2026-11-19T19:32:37Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "fix(ci): the sweep could not dispatch at all — a PAT without actions:write, on its first real candidate",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5382",
-      "timestamp": "2026-11-19T19:24:02Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5381",
-      "timestamp": "2026-11-19T19:11:21Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat(lessons): intake batch 2026-11-19",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5349",
-      "timestamp": "2026-11-19T18:52:11Z",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5417",
+      "timestamp": "2026-11-20T02:43:19Z",
       "source": "github"
     },
     {
