@@ -1,43 +1,59 @@
 {
-  "generated_at": "2026-11-20T11:54:52.314121+00:00",
+  "generated_at": "2026-11-20T18:11:35.049926+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 13,
   "items": [
     {
       "type": "merged_pr",
-      "title": "fix(ci): the sweep dropped its own candidates whenever GitHub had a stale mergeability cache",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5431",
-      "timestamp": "2026-11-20T11:17:11Z",
+      "title": "fix(lessons): the last twenty-two titles stop naming the intake form's own heading",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5465",
+      "timestamp": "2026-11-20T18:11:25Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(ci): a dispatched run was skipped before it reached the decision script",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5430",
-      "timestamp": "2026-11-20T10:29:09Z",
+      "title": "docs(handoff): vol 42 — one chain, five shapes, and only the last one was red",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5444",
+      "timestamp": "2026-11-20T15:56:13Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(intake): a generic label is not a title, and a fence that opens mid-line is not a fence (#5380)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5423",
-      "timestamp": "2026-11-20T09:36:28Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat(ci): witness the body that arrives, not just when it starts (#5245)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5421",
-      "timestamp": "2026-11-20T07:06:30Z",
+      "title": "feat(ci): the sweep wakes when the question becomes answerable, not only on a sparse cron",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5434",
+      "timestamp": "2026-11-20T15:06:35Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
       "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5417",
-      "timestamp": "2026-11-20T02:43:19Z",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5433",
+      "timestamp": "2026-11-20T12:15:29Z",
       "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "feat(lessons): intake batch 2026-11-20",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5416",
+      "timestamp": "2026-11-20T12:09:21Z",
+      "source": "github"
+    },
+    {
+      "type": "lesson",
+      "title": "A media controller resumed the previous music queue even after a listener stoppe",
+      "url": "lessons/contrib/a-media-controller-resumed-the-previous-music-queue-even.md",
+      "timestamp": "2026-11-20",
+      "domain": "mcp",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "An overlapping generic announcement sentence consumed the destination prefix and",
+      "url": "lessons/contrib/an-overlapping-generic-announcement-sentence-consumed-the.md",
+      "timestamp": "2026-11-20",
+      "domain": "mcp",
+      "source": "lessons"
     },
     {
       "type": "lesson",
@@ -59,22 +75,6 @@
       "type": "lesson",
       "title": "A recovery control rejected document retrieval evidence with \"a successful verif",
       "url": "lessons/contrib/a-recovery-control-rejected-document-retrieval-evidence.md",
-      "timestamp": "2026-11-19",
-      "domain": "mcp",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "A scheduling grammar with an unrestricted task wildcard before a date can match",
-      "url": "lessons/contrib/a-scheduling-grammar-with-an-unrestricted-task-wildcard.md",
-      "timestamp": "2026-11-19",
-      "domain": "mcp",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "A spoken music request that names a receiver can be parsed with the destination",
-      "url": "lessons/contrib/a-spoken-music-request-that-names-a-receiver-can-be-parsed.md",
       "timestamp": "2026-11-19",
       "domain": "mcp",
       "source": "lessons"
