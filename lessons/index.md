@@ -97,6 +97,8 @@
 - [A batch job's pilot sample must be filtered to scope first, or the pilot lands outside it and re-runs](contrib/batch-pilot-sample-must-be-filtered-to-scope.md) | automation | "automation", "batch-job", "pilot", "scope-filter", "sampling", "rework", "planning" | intake-3567
 - [Benchmark Honesty — Distinguishing Simulated vs Real Results](contrib/benchmark-honesty-simulated-vs-real.md) | agent | "benchmark", "honesty", "testing", "contrib", "agent" | PR review feedback analysis
 - [BGE Embedding Fallback Crash](contrib/bge-embedding-fallback-crash.md) | rag | "project:agent-medici", "severity:high", "node:hermes-wsl" | bootstrap
+- [BI 平台 SQL 按线体+班次 GROUP BY 汇总生产数据时，欠料/堵线时长一列写成 `(a.bdt + a.sdt) as '...'`](contrib/bi-平台-sql-按线体班次-group-by-汇总生产数据时欠料堵线时长一列写成-abdt.md) | mcp | "bi", "sql", "group" | intake-5420
+- [BI 报表给各线体分配"额定节拍"基准常数（CASE WHEN 按线体名映射到不同档位，如单线 44s / 双线 94s）后，图表出现两类异常：](contrib/bi-报表给各线体分配额定节拍基准常数case-when.md) | mcp | "bi", "case" | intake-5422
 - [bilibili-api get_download_url returns no durl key (KeyError durl)](contrib/bilibili-api-get-download-url-returns-no-durl-key-keyerror.md) | python | "bilibili-api", "python", "dash", "durl" | intake-3789
 - [Bilibili space API (member/videos) returns 访问权限不足 to anonymous clients that have no wbi signature](contrib/bilibili-space-api-membervideos-returns-访问权限不足-to-anonymous.md) | development | "bilibili", "wbi", "api", "risk-control", "unsigned-endpoint", "scraping" | intake-4192
 - [二进制反汇编的 entry 偏移可能是「代码区相对偏移」——按绝对偏移切段会整体错位且不报错](contrib/binary-disassembly-entry-offsets-code-relative-base.md) | development | "binary", "disassembly", "offset", "base-address", "parser", "silent-mis-split" | intake-4279
@@ -857,6 +859,7 @@
 - [wechat pubacct fetch separate search from retrieval](contrib/wechat-pubacct-fetch-separate-search-from-retrieval.md) | wechat | "wechat", "pubacct", "fetch", "separate", "search", "retrieval" | unknown
 - [wecom robot long connect no ngrok](contrib/wecom-robot-long-connect-no-ngrok.md) | wechat | "project:rag", "platform:windows", "node:hermes_wsl", "scope:narrow" | bootstrap
 - [Welcome bot should show MCP intake path for agents](contrib/welcome-bot-mcp-intake-path.md) | mcp | "mcp", "welcome", "bot", "intake", "onboarding" | mcp-intake-d0f432e355
+- [While patching an HTML-to-PDF generator written by another agent, I adde](contrib/while-patching-an-html-to-pdf-generator-written-by-another.md) | mcp | "the", "and", "in" | intake-5418
 - [Whisper picks the wrong Chinese homophone every time: fix it with a per-model replacement table, not a bigger model](contrib/whisper-chinese-homophone-replacement-table.md) | audio | "whisper", "asr", "transcription", "chinese", "homophone", "post-processing", "replacement-table" | intake-3267
 - [Whisper transcribes its own initial_prompt when the audio is near-silence — gate on audio energy first](contrib/whisper-transcribes-its-own-initial-prompt-when-the-audio.md) | llm | "whisper", "faster-whisper", "asr", "hallucination", "vad", "silence", "initial_prompt" | intake-4124
 - [A UTF-8 path list decoded as cp936 loses 211 files, and nothing raises](contrib/windows-a-utf8-path-list-decoded-as-cp936-loses-files-without-raising.md) | windows | "encoding", "cp936", "subprocess", "git-ls-files", "python" | maintainer
@@ -940,6 +943,7 @@
 - [对飞书云文档做内容验收时，两类「读取层证据」会误导结论： 1. 关键词检索（doc_fetch scope=keyword）对**加粗、引用块、callout](contrib/对飞书云文档做内容验收时两类读取层证据会误导结论-1-关键词检索doc.md) | feishu | "doc", "fetch", "scope" | intake-5187
 - [嵌入的 iframe 已经设成 `body{background:transparent}` 且 link 进去的样式里没有不透明底色，但页面**整体仍然刷成不](contrib/嵌入的-iframe-已经设成-bodybackgroundtransparent-且-link.md) | dsh | "body-background-transparent", "html-color-scheme-light", "color-scheme-only" | intake-5177
 - [开发签名 ipa ≠ 自签 ipa：去签名要做四件事，缺一个 SideStore 就报错](contrib/开发签名-ipa-自签-ipa去签名要做四件事缺一个-sidestore-就报错.md) | mobile | "ipa", "codesign", "sidestore", "mobileprovision", "unsigned", "quarantine", "packaging" | intake-4172
+- [引导超时窗太短会伪造『间歇楔死』：慢启动被误判并误杀 虚拟工位引导在 300s 判定窗内未完成（services.txt 未重写），被判定为楔死并被清理重试，反](contrib/引导超时窗太短会伪造间歇楔死慢启动被误判并误杀-虚拟工位引导在.md) | mcp | "services", "txt" | intake-5419
 - [微软商店（Microsoft Store）下载极慢，几十 MB 的应用要下很久，但同机浏览器测速正常。单看"网速没问题"会查不出原因。 Root Cause 本](contrib/微软商店microsoft-store下载极慢几十-mb.md) | windows | "microsoft", "store", "mb" | intake-4568
 - [想让一个已经装好的 DSH 客户端插件在左栏「插件」组常驻，但插件只注册了设置行（plugins.row.config）和会话标题按钮，没有 sidebar.p](contrib/想让一个已经装好的-dsh.md) | dsh | "sidebar.panellist", "main", "if" | intake-4885
 - [手写 ComfyUI workflow JSON 时 link id 复用，导致节点静默断连且加载不报错](contrib/手写-comfyui-workflow-json-时-link-id-复用导致节点静默断连且加载不报错.md) | llm | "comfyui", "workflow", "json", "graph", "wiring" | intake-4441
