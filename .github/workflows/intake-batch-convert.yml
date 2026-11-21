@@ -13,14 +13,17 @@ name: Intake Batch Convert
 # refusing them, and the gate's own proof does the work: it re-runs the generators, so output that
 # does not match its lessons is red before anything merges.
 #
-# Six-hourly now, not weekly. The weekly cadence existed because a batch cost a click and a review;
-# with the click gone, the only argument left was "a batch below ~5 lessons is not worth a PR"
-# (measured 2026-11-02: 100-150 reports/week), and four small PRs a day cost less in review attention
-# than a queue that grows 35-45 items a day. `workflow_dispatch` still exists for the "I want it now"
-# case.
+# Two-hourly since 2026-11-20 (was six-hourly, and weekly before that). The weekly cadence existed
+# because a batch cost a click and a review; with the click gone, the only argument left was "a batch
+# below ~5 lessons is not worth a PR". Measured 2026-11-20: the queue grows **61 intakes a day** and a
+# six-hourly run converted **2** — an 8x gap between what arrives and what leaves, which is why the
+# open count kept climbing while every automation reported success. Two-hourly does not close that gap
+# by itself (most intakes are not convertible: 33 of 81 lack Problem/Root Cause/Fix), but it stops the
+# batch from being the second bottleneck. Each run that finds nothing opens no PR, so the extra ticks
+# cost a checkout and a scan.
 on:
   schedule:
-    - cron: "40 */6 * * *"   # every six hours at :40, clear of the daily data sync at 00:00
+    - cron: "40 */2 * * *"   # every two hours at :40, clear of the daily data sync at 00:00
   workflow_dispatch:
 
 permissions:
@@ -157,8 +160,16 @@ jobs:
           # request already exists and `gh pr create` would fail the job *after* the lessons and the
           # derived files are committed — measured 2026-11-16 (run 43890245556): the content landed,
           # the run went red, and nothing said why.
-          if gh pr view "$BRANCH" --json number >/dev/null 2>&1; then
-            echo "pull request for $BRANCH already open — the force-push above updated it"
+          #
+          # **`--state open`, because `gh pr view "$BRANCH"` also answers for a MERGED pull request.**
+          # Measured 2026-11-21: the 00:46 batch merged, then a re-dispatch at 01:31 rebuilt the branch
+          # with **12 new lessons**, force-pushed it, read the *merged* PR back as "already open", and
+          # exited 0 — the run was green, the lessons were on a branch nobody would merge, and the
+          # intakes stayed open. With the cadence at two hours instead of six that loses most of a
+          # day's conversion, silently. A branch whose PR merged can open a new PR: it has new commits.
+          open_pr=$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number // ""')
+          if [ -n "$open_pr" ]; then
+            echo "an open pull request for $BRANCH already exists — the force-push above updated it"
             exit 0
           fi
 

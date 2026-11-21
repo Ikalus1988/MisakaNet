@@ -399,3 +399,68 @@ def test_two_different_titles_keep_the_submitters_field():
 
 def full_title(issue_dict: dict) -> str:
     return issue_dict["title"].removeprefix("[Lesson] ").strip()
+
+
+def test_one_tag_is_enough_because_the_gate_says_so():
+    """The converter was stricter than `lesson_gate.validate_tags()`: it demanded two.
+
+    Measured 2026-11-20 on 81 open intakes: 10 were refused for having exactly one tag while being
+    otherwise complete — the batch was applying a rule the corpus does not have.
+    """
+    full = sample()
+    body = full["body"].replace("**Tags:** npm, registry, tls", "**Tags:** npm")
+    lesson, _ = conv.convert({**full, "body": body}, CANONICAL)
+    assert lesson is not None
+    assert lesson["tags"][0] == "npm" and len(lesson["tags"]) >= 1
+
+
+def test_a_submission_with_no_tags_still_converts_from_its_tools():
+    """`tags_of()` tops up from the tools the lesson names, so "no Tag line" is not a refusal."""
+    full = sample()
+    body = full["body"].replace("**Tags:** npm, registry, tls", "**Tags:** ")
+    lesson, _ = conv.convert({**full, "body": body}, CANONICAL)
+    assert lesson is not None
+    assert lesson["tags"]
+
+
+def test_a_hyphenated_phrase_in_a_code_span_stops_reading_as_a_command():
+    """`delete-candidate` is a phrase; `get-help` is a command. Only the first is un-backticked."""
+    prose, touched = conv.debacktick_prose_compounds(
+        "keep it out of the `delete-candidate` list, unlike `get-help` or `write-warning`", known={"get-help", "write-warning"})
+    assert touched == 1
+    assert "`delete-candidate`" not in prose
+    assert "delete-candidate list" in prose
+    assert "`get-help`" in prose and "`write-warning`" in prose
+
+
+def test_a_single_word_in_a_code_span_is_left_alone():
+    """A single lowercase word may be an internal binary name — that is what the gate is protecting."""
+    prose, touched = conv.debacktick_prose_compounds("run `skillspector` before the build", known=set())
+    assert touched == 0
+    assert "`skillspector`" in prose
+
+
+def test_a_cause_heading_inside_the_problem_paragraph_is_used():
+    """#5403: `## Root Cause` sat mid-paragraph, so it was reported missing while being right there.
+
+    `section()` matches headings at line start, and this client wrote one inside the free-text
+    paragraph. The fix lives in the paragraph; the submitter marked the boundary, so splitting there
+    is strictly better evidence than any sentence heuristic.
+    """
+    body = """**Kind:** lesson_submission
+**Domain:** mcp
+**Title:** item count alone does not identify a stale read
+## Problem
+An asynchronous task-list read returned the old items after a recovery transition. ## Root Cause
+Item count alone does not identify a stale read: the list length was identical before and after.
+## Fix
+Compare the item identities, not the count.
+## Verification
+Re-read the list and compare ids.
+**Tags:** mcp, cache
+"""
+    lesson, notes = conv.convert(issue(5403, "item count alone does not identify a stale read", body), CANONICAL)
+    assert lesson is not None, notes
+    assert "## Root Cause\n\nItem count alone does not identify a stale read" in lesson["content"]
+    assert "returned the old items after a recovery transition." in lesson["content"]
+    assert any("sat inside the Problem paragraph" in note for note in notes)

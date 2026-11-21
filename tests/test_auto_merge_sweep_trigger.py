@@ -101,3 +101,21 @@ def test_a_push_to_main_does_not_wake_it():
     guard = document["jobs"]["sweep"]["if"]
     assert "pull_request" in guard
     assert "== 'push'" not in guard
+
+
+def test_the_sweep_also_keeps_the_intake_batch_moving():
+    """`schedule` in this repository delivers far less often than it says, and the batch has no other trip.
+
+    Measured 2026-11-20 on this very workflow: 2 runs in the first 14 hours of a `*/30` schedule.
+    Measured 2026-11-21 on `intake-batch-convert.yml`: no scheduled run at all after its cadence moved
+    from six-hourly to two-hourly. The sweep is woken by gate completions, so it is the one workflow
+    that reliably runs — and it now dispatches the batch when the newest batch run is old enough.
+    """
+    document, _ = sweep()
+    steps = {step.get("name"): step for step in document["jobs"]["sweep"]["steps"]}
+    keeper = next((name for name in steps if "intake batch" in str(name)), None)
+    assert keeper, "no step keeps the batch moving"
+    script = steps[keeper]["run"]
+    assert "intake-batch-convert.yml" in script
+    assert "INTERVAL_MINUTES" in script, "the interval must be a value, not a magic number in the body"
+    assert steps[keeper].get("env", {}).get("GH_TOKEN"), "a `gh workflow run` needs a token"
