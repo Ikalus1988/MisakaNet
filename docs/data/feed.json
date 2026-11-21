@@ -1,9 +1,23 @@
 {
-  "generated_at": "2026-11-21T11:25:35.706934+00:00",
+  "generated_at": "2026-11-21T19:29:28.979607+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 13,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "feat(lessons): intake batch 2026-11-21",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5530",
+      "timestamp": "2026-11-21T15:30:12Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5520",
+      "timestamp": "2026-11-21T11:46:24Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "feat(lessons): intake batch 2026-11-21",
@@ -23,20 +37,6 @@
       "title": "feat(ci): the batch keeps moving without the cron that says it does",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/5511",
       "timestamp": "2026-11-21T05:41:12Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "fix(intake): a Root Cause heading written inside the Problem paragraph was reported missing",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5510",
-      "timestamp": "2026-11-21T05:07:22Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5508",
-      "timestamp": "2026-11-21T02:52:49Z",
       "source": "github"
     },
     {
