@@ -922,6 +922,7 @@
 - [ZygiskAssistant breaks MuMu's houdini ARM translation, so arm64-only apps crash with EM_AARCH64 instead of EM_X86_64](contrib/zygiskassistant-breaks-houdini-arm-translation-on-mumu.md) | android | "android", "mumu-emulator", "houdini", "native-bridge", "zygisk", "arm-translation" | intake-3175
 - [一个「下载 → 处理 → 输出」的流水线脚本，下载步骤失败（HTTP 403），但后续步骤**照常跑完了**，还打印了成功信息： 下游拿到的不是这次下载的](contrib/一个下载-处理-输出的流水线脚本下载步骤失败http.md) | windows | "http" | intake-4900
 - [一个原本正常的 PowerShell 安装脚本（含中文提示），用 Python 读进来改了一行再写回之后，`powershell -NoProfile` 执行时](contrib/一个原本正常的-powershell-安装脚本含中文提示用-python.md) | windows | "powershell", "encoding-utf-8", "python" | intake-5178
+- [一周里同一套自检断言连续误报：① 正则少了 g 标志，5 个元素只匹配到 1 个；② 样式断言写 display:block，实际渲染是 display: bl](contrib/一周里同一套自检断言连续误报1-正则少了-g-标志5-个元素只匹配到-1-个2.md) | dsh | "display", "block", "bl" | intake-5524
 - [两个独立进程并发写同一个 SQLite 数据库（WAL 模式已开），一个进程写批量事务期间另一个进程 INSERT 报 `database is locked`](contrib/两个独立进程并发写同一个-sqlite-数据库wal.md) | dsh | "database", "sqlite", "wal" | intake-5069
 - [两处「各自写死间距」导致右列数字差几像素：共享常量 + 量像素验收](contrib/两处各自写死间距导致右列数字差几像素共享常量-量像素验收.md) | mobile | "swiftui", "ios", "layout", "alignment", "pixel-measurement", "shared-constant", "padding", "design-qa" | intake-4182
 - [中文 Windows 环境 Python 脚本用 subprocess.run(..., capture_output=True, text=True) 捕获子](contrib/中文-windows-环境-python-脚本用-subprocessrun-capture-outputtrue.md) | windows | "python-gbk-encoding-error", "windows", "python" | intake-5445
@@ -934,6 +935,7 @@
 - [兜底判据写成“结果为空”不够：VAD 返回的碎片会绕过它，让上游每格都空](contrib/兜底判据写成结果为空不够vad-返回的碎片会绕过它让上游每格都空.md) | llm | "asr", "vad", "sherpa-onnx", "fallback", "silent-failure", "audio" | intake-4560
 - [关掉控制器数据桥后车速冻在最后一个读数：stop() 只停轮询没清派生状态](contrib/关掉控制器数据桥后车速冻在最后一个读数stop-只停轮询没清派生状态.md) | mobile | "ios", "ble", "state-machine", "stale-state", "teardown", "speed" | intake-4179
 - [关闭脚本的黑窗口会把 Start-Process 拉起的子进程一起杀掉](contrib/关闭脚本的黑窗口会把-start-process-拉起的子进程一起杀掉.md) | devops | "powershell", "start-process", "windows", "process-group", "wmi" | intake-4623
+- [写自检历史时用 `@{ added = @($list) } | ConvertTo-Json`，没有元素时生成 `"added": null`（不是 `[]`](contrib/写自检历史时用-added-list-convertto-json没有元素时生成-added-null不是.md) | windows | "added", "list", "convertto" | intake-5528
 - [删掉的行程同步后又回来了：上传重试队列没撤销 + 删除标记收到 200 就清掉](contrib/删掉的行程同步后又回来了上传重试队列没撤销-删除标记收到-200-就清掉.md) | mobile | "ios", "sync", "tombstone", "delete", "retry-queue", "resurrection", "offline-first" | intake-4165
 - [前端两层缓存叠加：传了新 app.js 上去，手机打开还是旧版](contrib/前端两层缓存叠加传了新-appjs-上去手机打开还是旧版.md) | devops | "cloudflare", "service-worker", "cache", "static-files", "deployment", "sw-version" | intake-4156
 - [加新 lesson 后按生成器链重算派生产物（update_lessons_json / export_okf / export_public_vocabula](contrib/加新-lesson-后按生成器链重算派生产物update-lessons-json-export-okf-export.md) | mcp | "lesson", "update", "lessons" | intake-4413
@@ -945,6 +947,7 @@
 - [同一台机器上先后装了两套 Filee（旧 2.2.0 在 <PATH> 为 per-user 安装，新 2.5.0 在 <PATH> Files\Filee 为](contrib/同一台机器上先后装了两套-filee旧-220-在-path-为-per-user-安装新-250-在-path.md) | windows | "delete", "engines", "filee" | intake-5157
 - [向 FANUC 虚拟控制器（FRVRC V9.40）FTP 上传 .CM 命令文件到 MD: 时报 `550 No destination device or](contrib/向-fanuc-虚拟控制器frvrc-v940ftp-上传-cm-命令文件到-md-时报-550-no.md) | fanuc | "fanuc", "frvrc", "v9" | intake-4754
 - [在 OpenClaw 智能体中通过渐进加载的内置工具（如飞书 lark-cli 封装工具）干活时出现：上一轮刚 tool_activate 成功并正常调用过的工](contrib/在-openclaw-智能体中通过渐进加载的内置工具如飞书-lark-cli.md) | feishu | "openclaw", "lark", "cli" | intake-4390
+- [在 PowerShell 5.1 里写 `node script.mjs --add '{"title":"x"}'` 或 here-string 传 JSON](contrib/在-powershell-51-里写-node-scriptmjs-add-titlex-或-here-string.md) | windows | "powershell", "node", "script" | intake-5517
 - [在 PowerShell 里用内联方式把 Python 脚本传给解释器（如 `python -c "..."`、here-string 或管道），脚本里的单引号](contrib/在-powershell-里用内联方式把-python-脚本传给解释器如-python-c-here-string.md) | windows | "python", "count", "powershell" | intake-5070
 - [在 Windows + DSH agent 环境下用 PowerShell 脚本通过 COM 调用 Microsoft Word（New-Object -Com](contrib/在-windows-dsh-agent-环境下用-powershell-脚本通过-com-调用-microsoft.md) | windows | "windows", "dsh", "agent" | intake-5203
 - [在 Windows 上把一个符号链接提交进 git 仓，而这个链接的目标里写的是**未展开的变量**（例如字面量 "$HOME/.hermes/skills/x](contrib/在-windows-上把一个符号链接提交进-git.md) | windows | "windows", "git", "home" | intake-4184
@@ -961,6 +964,7 @@
 - [想让一个已经装好的 DSH 客户端插件在左栏「插件」组常驻，但插件只注册了设置行（plugins.row.config）和会话标题按钮，没有 sidebar.p](contrib/想让一个已经装好的-dsh.md) | dsh | "sidebar.panellist", "main", "if" | intake-4885
 - [手写 ComfyUI workflow JSON 时 link id 复用，导致节点静默断连且加载不报错](contrib/手写-comfyui-workflow-json-时-link-id-复用导致节点静默断连且加载不报错.md) | llm | "comfyui", "workflow", "json", "graph", "wiring" | intake-4441
 - [手柄卡顿/震动排查中，用「找不到 VID_2E8A」推断 USB 桥接（Pico 2W 转发器）未接入，结论错误。 Root Cause 桥接固件伪装成真手柄上](contrib/手柄卡顿震动排查中用找不到-vid-2e8a推断-usb-桥接pico-2w.md) | dsh | "vid", "e8a", "usb" | intake-4565
+- [批量替换脚本先用条件判断「某个替换点没找到」就 process.exit(1)，但此时前面的替换只改了内存里的字符串、还没 writeFileSync——脚本退](contrib/批量替换脚本先用条件判断某个替换点没找到就.md) | dsh | "process", "exit", "writefilesync" | intake-5523
 - [把「答案是给 PPT 用的」读成「把答案做成 PPT」：交付形态要在开工前确认](contrib/把答案是给-ppt-用的读成把答案做成-ppt交付形态要在开工前确认.md) | agent | "agent", "deliverable-form", "over-production", "confirmation", "token-cost", "dsh" | intake-4609
 - [抓拍点自动同步：接口只给版本号不给条数，且「版本没变」时没推进 lastSyncAt 导致每小时打一次](contrib/抓拍点自动同步接口只给版本号不给条数且版本没变时没推进-lastsyncat-导致每小时打一次.md) | nodejs | "nodejs", "sync", "scheduler", "version-check", "timestamp", "idempotent" | intake-4163
 - [拖到垃圾桶删除后弹「找不到对象」：delete 先落盘 + 过期存坐标 update 竞态（stale-op）](contrib/拖到垃圾桶删除后弹找不到对象delete-先落盘-过期存坐标-update-竞态stale-op.md) | frontend | "frontend", "react", "drag-drop", "pointer-events", "idempotency", "stale-op", "race-condition", "minified-bundle", "book-frontend" | intake-4547
@@ -1002,6 +1006,7 @@
 - [DSH 桌面版装 dsh-windows-mcp：工具注入失败，惰性工具永久隐藏](contrib/症状dsh-桌面版022-rc1profile-desktop装-dsh-windows-mcp-024.md) | windows | "dsh", "rc", "profile" | intake-4606
 - [每天凌晨第一次抓件丢程序号并报 APSH-000：上位服务器午夜有秒级不可用窗口，加 10 秒延时只是掩盖触发源](contrib/症状fanuc-机器人每天凌晨第一次抓件执行到-call-调-karel.md) | fanuc | "fanuc", "call", "karel" | intake-5265
 - [裸 workers.dev 域名在部分网络被阻断：node fetch 报 fetch failed，同网络下 curl 与生产自定义域都正常](contrib/症状node-fetch-到某-cloudflare-workers-端点报-typeerror-fetch.md) | mcp | "curl", "node", "fetch" | intake-4879
+- [症状：审核文件内容时，把 exec 输出末尾出现的 `<thinking-language>` 标签当成文件内容，出具了错误的「删除该行」审核发现；用户独立 R](contrib/症状审核文件内容时把-exec-输出末尾出现的-thinking-language.md) | mcp | "exec", "thinking", "language" | intake-5518
 - [百度导航 SDK 鉴权错误码：-300 是网络错误，230 才是包名/安全码对不上](contrib/百度导航-sdk-鉴权错误码-300-是网络错误230-才是包名安全码对不上.md) | mobile | "baidu", "ios", "sdk", "auth", "error-code", "bundle-id", "230", "permission-check" | intake-4177
 - [端到端验收脚本里「预期报错」断言绿了，但拿到的错误不是被测后端的报错——是「页面/连接已关闭」。整条失败路径其实一次都没验真，假绿混进 12/12 全过里。 R](contrib/端到端验收脚本里预期报错断言绿了但拿到的错误不是被测后端的报错是.md) | mcp | "err" | intake-4791
 - [给经验库写「双侧证据」验证脚本时，本地 mock 限流服务的配额计数器只增不清零：故障侧（无退避连发）先把 3 次配额耗光，修复侧（带退避）无论](contrib/给经验库写双侧证据验证脚本时本地-mock.md) | mcp | "mock" | intake-4977

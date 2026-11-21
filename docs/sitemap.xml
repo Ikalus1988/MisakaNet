@@ -968,6 +968,7 @@
   <url><loc>https://misakanet.org/lessons/zygiskassistant-breaks-mumus-houdini-arm-translation-so-arm64-only-apps-crash-wi/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/一个下载-处理-输出的流水线脚本下载步骤失败http-403但后续步骤照常跑完了还打印了成功信息-下游拿到的不是这次下载的/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/一个原本正常的-powershell-安装脚本含中文提示用-python-读进来改了一行再写回之后powershell-noprofile-执行时/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/一周里同一套自检断言连续误报①-正则少了-g-标志5-个元素只匹配到-1-个②-样式断言写-displayblock实际渲染是-display-bl/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/两个独立进程并发写同一个-sqlite-数据库wal-模式已开一个进程写批量事务期间另一个进程-insert-报-database-is-locked/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/两处各自写死间距导致右列数字差几像素共享常量-量像素验收/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/中文-windows-环境-python-脚本用-subprocessrun-capture-outputtrue-texttrue-捕获子/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -980,6 +981,7 @@
   <url><loc>https://misakanet.org/lessons/兜底判据写成结果为空不够vad-返回的碎片会绕过它让上游每格都空/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/关掉控制器数据桥后车速冻在最后一个读数stop-只停轮询没清派生状态/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/关闭脚本的黑窗口会把-start-process-拉起的子进程一起杀掉/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/写自检历史时用-added-list-convertto-json没有元素时生成-added-null不是/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/删掉的行程同步后又回来了上传重试队列没撤销-删除标记收到-200-就清掉/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/前端两层缓存叠加传了新-appjs-上去手机打开还是旧版/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/加新-lesson-后按生成器链重算派生产物update-lessons-json-export-okf-export-public-vocabula/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -991,6 +993,7 @@
   <url><loc>https://misakanet.org/lessons/同一台机器上先后装了两套-filee旧-220-在-path-为-per-user-安装新-250-在-path-filesfilee-为/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/向-fanuc-虚拟控制器frvrc-v940ftp-上传-cm-命令文件到-md-时报-550-no-destination-device-or/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/在-openclaw-智能体中通过渐进加载的内置工具如飞书-lark-cli-封装工具干活时出现上一轮刚-tool-activate-成功并正常调用过的工/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/在-powershell-51-里写-node-scriptmjs-add-titlex-或-here-string-传-json/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/在-powershell-里用内联方式把-python-脚本传给解释器如-python-c-here-string-或管道脚本里的单引号/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/在-windows-dsh-agent-环境下用-powershell-脚本通过-com-调用-microsoft-wordnew-object-com/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/在-windows-上把一个符号链接提交进-git-仓而这个链接的目标里写的是未展开的变量例如字面量-homehermesskillsx/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -1007,6 +1010,7 @@
   <url><loc>https://misakanet.org/lessons/想让一个已经装好的-dsh-客户端插件在左栏插件组常驻但插件只注册了设置行pluginsrowconfig和会话标题按钮没有-sidebarp/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/手写-comfyui-workflow-json-时-link-id-复用导致节点静默断连且加载不报错/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/手柄卡顿震动排查中用找不到-vid-2e8a推断-usb-桥接pico-2w-转发器未接入结论错误-root-cause-桥接固件伪装成真手柄上/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/批量替换脚本先用条件判断某个替换点没找到就-processexit1但此时前面的替换只改了内存里的字符串还没-writefilesync脚本退/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/把答案是给-ppt-用的读成把答案做成-ppt交付形态要在开工前确认/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/抓拍点自动同步接口只给版本号不给条数且版本没变时没推进-lastsyncat-导致每小时打一次/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/拖到垃圾桶删除后弹找不到对象delete-先落盘-过期存坐标-update-竞态stale-op/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -1047,6 +1051,7 @@
   <url><loc>https://misakanet.org/lessons/dsh-桌面版装-dsh-windows-mcp工具注入失败惰性工具永久隐藏/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/症状fanuc-机器人每天凌晨第一次抓件执行到-call-调-karel-通讯标准块时丢程序号报警-apsh-000-mmrobot-socket-cl/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/症状node-fetch-到某-cloudflare-workers-端点报-typeerror-fetch-failedcurl-报-connec/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/症状审核文件内容时把-exec-输出末尾出现的-thinking-language-标签当成文件内容出具了错误的删除该行审核发现用户独立-r/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/百度导航-sdk-鉴权错误码-300-是网络错误230-才是包名安全码对不上/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/端到端验收脚本里预期报错断言绿了但拿到的错误不是被测后端的报错是页面连接已关闭整条失败路径其实一次都没验真假绿混进-1212-全过里-r/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/给经验库写双侧证据验证脚本时本地-mock-限流服务的配额计数器只增不清零故障侧无退避连发先把-3-次配额耗光修复侧带退避无论/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
