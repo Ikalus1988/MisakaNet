@@ -27,8 +27,6 @@ All notable changes to the Misaka Network project are documented here.
 * **lessons:** intake batch 2026-11-19 ([#5349](https://github.com/Ikalus1988/MisakaNet/issues/5349)) ([dbfd66d](https://github.com/Ikalus1988/MisakaNet/commit/dbfd66d4df27e050c4fff9c2984cc0c68469955f))
 * **lessons:** intake batch 2026-11-20 ([#5416](https://github.com/Ikalus1988/MisakaNet/issues/5416)) ([798cb46](https://github.com/Ikalus1988/MisakaNet/commit/798cb464117b4589c3d757b3c0931b4034dd6823))
 * **lessons:** intake batch 2026-11-21 ([#5504](https://github.com/Ikalus1988/MisakaNet/issues/5504)) ([e504889](https://github.com/Ikalus1988/MisakaNet/commit/e504889f0ea79f96ede2d54a1e30449d5a086473))
-* **lessons:** intake batch 2026-11-21 ([#5507](https://github.com/Ikalus1988/MisakaNet/issues/5507)) ([f70dfe6](https://github.com/Ikalus1988/MisakaNet/commit/f70dfe6ba1f33cb2014caaf8a4931ca64793c3e8))
-* **lessons:** intake batch 2026-11-21 ([#5519](https://github.com/Ikalus1988/MisakaNet/issues/5519)) ([9fb340a](https://github.com/Ikalus1988/MisakaNet/commit/9fb340a2cb09f6aebd11087b955a692b93d3f5a1))
 * **mcp:** the endpoint tells a Cindy caller whether its build is behind ([#5185](https://github.com/Ikalus1988/MisakaNet/issues/5185)) ([#5201](https://github.com/Ikalus1988/MisakaNet/issues/5201)) ([fc7cd41](https://github.com/Ikalus1988/MisakaNet/commit/fc7cd41bce9d4c54ee471aa38bfaf30de5f582da))
 
 
