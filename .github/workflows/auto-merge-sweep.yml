@@ -138,3 +138,34 @@ jobs:
             echo "::error::every dispatch failed ($failed/$total)"
             exit 1
           fi
+
+      # The intake batch is scheduled every two hours (`intake-batch-convert.yml`), and in this
+      # repository `schedule` delivers far less often than it says: measured 2026-11-20 on the sweep
+      # itself, **2 runs in the first 14 hours** while every other cron kept firing, and measured
+      # 2026-11-21 on the batch, whose 00:40/02:40/04:40 ticks produced nothing after the cadence
+      # changed from six-hourly to two-hourly. A cadence nothing enforces is a comment.
+      #
+      # So the sweep — which already runs often, because it is woken by the gates finishing — also
+      # keeps the batch moving: dispatch it when the newest batch run is older than the interval.
+      # One API call per sweep, one dispatch per interval at most.
+      - name: Keep the intake batch moving
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          INTERVAL_MINUTES: "120"
+        run: |
+          set -euo pipefail
+          fmt='.[0].createdAt // ""'
+          last=$(gh run list --repo "$REPO" --workflow intake-batch-convert.yml --limit 1 --json createdAt --jq "$fmt")
+          if [ -z "$last" ]; then
+            echo "::warning::no batch run recorded — dispatching one"
+            gh workflow run intake-batch-convert.yml --repo "$REPO"
+            exit 0
+          fi
+          age=$(( ( $(date -u +%s) - $(date -u -d "$last" +%s) ) / 60 ))
+          echo "newest intake-batch-convert run is ${age} min old (interval ${INTERVAL_MINUTES} min)"
+          if [ "$age" -lt "$INTERVAL_MINUTES" ]; then
+            echo "recent enough — nothing to dispatch"
+            exit 0
+          fi
+          gh workflow run intake-batch-convert.yml --repo "$REPO" && echo "dispatched intake-batch-convert"
