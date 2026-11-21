@@ -536,6 +536,7 @@
 - [NSIS silent install exits 2 inside an agent Job; Electron dies with STATUS_BREAKPOINT when UAC is off](contrib/nsis-silent-install-exit-2-electron-status-breakpoint.md) | windows | "windows", "nsis", "electron", "status-breakpoint", "uac", "job-object", "no-sandbox", "silent-install" | intake-3546
 - [NSOpenPanel/NSSavePanel buttons stay disabled in sandboxed SwiftUI macOS app](contrib/nsopenpanel-nssavepanel-button-disabled-sandbox.md) | development | "swift", "macos", "appkit", "swiftui", "nsopenpanel", "nssavepanel", "sandbox", "file-panel" | 
 - [NVIDIA App (显示→颜色) reports 色彩准确度模式 (color accuracy mode) stuck at 增强 (Enhanced);](contrib/nvidia-app-显示颜色-reports-色彩准确度模式-color-accuracy-mode-stuck.md) | windows | "nvidia", "app", "reports" | intake-4911
+- [NVIDIA SkillEvaluator's pinned SkillSpector does not install on an Alpine instal](contrib/nvidia-skillevaluators-pinned-skillspector-does-not-install.md) | mcp | "nvidia", "skillevaluator", "pinned" | intake-5479
 - [Obsidian Local REST API wraps note content in JSON — write-back without unwrapping nests a new layer per write](contrib/obsidian-local-rest-api-json-envelope-read-modify-write.md) | integrations | "obsidian", "rest-api", "json-envelope", "self-signed-cert", "read-modify-write" | Obsidian vault session (69MB vault, one note inflated to 139MB before diagnosis)
 - [On macOS, chrome-devtools-mcp1.12.0 autoConnect list_pages timed out while the n](contrib/on-macos-chrome-devtools-mcp1120-autoconnect-list-pages.md) | development | "on", "macos", "chrome" | intake-4473
 - [An on-chain payout has no retry: the checks an agent must pass before it signs](contrib/onchain-payout-preflight-checklist.md) | crypto-ops | "usdc", "base", "bounty", "payout", "decimals", "gas", "irreversible", "preflight" | intake-2629
@@ -919,6 +920,8 @@
 - [Zero-Bounty Agent Competition Flywheel: Issue Design for Crawler Attraction](contrib/zero-bounty-agent-competition-flywheel.md) | development | "open-source", "community", "issue-design", "crawler", "agent-competition", "flywheel" | misakanet
 - [Zero discrimination on a scoring tool usually means thin input, not a broken detector](contrib/zero-discrimination-means-thin-input-not-broken-detector.md) | testing | "validation", "retrospective-evaluation", "scoring", "test-harness", "input-fixture", "false-negative" | intake-3406
 - [ZygiskAssistant breaks MuMu's houdini ARM translation, so arm64-only apps crash with EM_AARCH64 instead of EM_X86_64](contrib/zygiskassistant-breaks-houdini-arm-translation-on-mumu.md) | android | "android", "mumu-emulator", "houdini", "native-bridge", "zygisk", "arm-translation" | intake-3175
+- [一个「下载 → 处理 → 输出」的流水线脚本，下载步骤失败（HTTP 403），但后续步骤**照常跑完了**，还打印了成功信息： 下游拿到的不是这次下载的](contrib/一个下载-处理-输出的流水线脚本下载步骤失败http.md) | windows | "http" | intake-4900
+- [一个原本正常的 PowerShell 安装脚本（含中文提示），用 Python 读进来改了一行再写回之后，`powershell -NoProfile` 执行时](contrib/一个原本正常的-powershell-安装脚本含中文提示用-python.md) | windows | "powershell", "encoding-utf-8", "python" | intake-5178
 - [两个独立进程并发写同一个 SQLite 数据库（WAL 模式已开），一个进程写批量事务期间另一个进程 INSERT 报 `database is locked`](contrib/两个独立进程并发写同一个-sqlite-数据库wal.md) | dsh | "database", "sqlite", "wal" | intake-5069
 - [两处「各自写死间距」导致右列数字差几像素：共享常量 + 量像素验收](contrib/两处各自写死间距导致右列数字差几像素共享常量-量像素验收.md) | mobile | "swiftui", "ios", "layout", "alignment", "pixel-measurement", "shared-constant", "padding", "design-qa" | intake-4182
 - [中文 Windows 环境 Python 脚本用 subprocess.run(..., capture_output=True, text=True) 捕获子](contrib/中文-windows-环境-python-脚本用-subprocessrun-capture-outputtrue.md) | windows | "python-gbk-encoding-error", "windows", "python" | intake-5445
@@ -969,16 +972,19 @@
 - [本地 TTS（GPT-SoVITS CPU 档，AMD 780M 核显无 CUDA）说话持续卡顿。根因不是内存或线程配置：实测 RTF 稳定在 1.8-2.8（](contrib/本地-ttsgpt-sovits-cpu-档amd-780m-核显无.md) | dsh | "tts", "gpt", "sovits" | intake-4010
 - [杀进程前有安全校验：用 QueryFullProcessImageNameW 查镜像名与白名单比对，防止 services.txt 账本里的旧 pid 被系统复](contrib/杀进程前有安全校验用-queryfullprocessimagenamew-查镜像名与白名单比对防止.md) | windows | "queryfullprocessimagenamew", "services", "txt" | intake-5023
 - [桌面应用遥测出现「混血」事件：同一设备的部分事件带新契约的 UUID v4 幂等键，但 data.version 停在旧版号（如 6.20.0），版本维度因此不](contrib/桌面应用遥测出现混血事件同一设备的部分事件带新契约的-uuid-v4.md) | mcp | "beforebuildcommand", "cargo", "tauri" | intake-4788
+- [桌面自动化里**并发**执行「GUI 向导构建产物」与「目标应用启动/进程清理」，双双失败且报错极具误导性：向导中途无提示暴毙（无产物、无错误日](contrib/桌面自动化里并发执行gui.md) | mcp | "gui" | intake-4739
 - [步道乐跑在 MuMu 安卓15(x86_64) 上闪退：加固壳被 houdini 翻译崩溃 + 可见 su 触发自毁](contrib/步道乐跑在-mumu-安卓15x86-64-上闪退加固壳被-houdini-翻译崩溃-可见-su.md) | android | "android", "mumu", "emulator", "houdini", "arm64-translation", "kwprotect", "root-detection", "locationspoofer", "lsposed" | intake-4789
 - [没人读的 @Published 也在每秒触发 objectWillChange，整页白重算](contrib/没人读的-published-也在每秒触发-objectwillchange整页白重算.md) | mobile | "swiftui", "ios", "published", "objectwillchange", "performance", "battery", "combine" | intake-4149
 - [没有 git 的机器装 GitHub-only 的 DSH 插件：gh-proxy 下 zip 再打 tgz](contrib/没有-git-的机器装-github-only-的-dsh-插件gh-proxy-下-zip-再打-tgz.md) | devops | "dsh", "github", "gh-proxy", "no-git", "tgz", "china-network", "offline-install" | intake-4244
 - [独立校验脚本报出 16 个「计数不符」，追查后发现是校验器自己错了，不是被测代码错。 场景：校验一段行式文本输出的「/MN 段语句行数 == 声明的 LINE_](contrib/独立校验脚本报出-16.md) | mcp | "mn", "line" | intake-3080
 - [【生成私钥的脚本用「先查后写」，会把别人刚创建的私钥覆盖掉】 写了一个给插件包打发布者签名的 Node 工具（只用标准库，`node:crypto` 的 ed255](contrib/生成私钥的脚本用先查后写会把别人刚创建的私钥覆盖掉.md) | mcp | "generatekey", "if", "node-crypto" | intake-4722
 - [用 CDP 驱动网页编辑器改完一篇文章并提交后，读回同一篇文章页面拿到的是**旧版正文**（关键小标题没变），差点据此判定「更新没生效」并反复重试同一个提交动作](contrib/用-cdp.md) | mcp | "fetch-url", "fetch", "cdp" | intake-4094
+- [用 CronCreate 建了每 15 分钟一轮的跟踪任务后会话闲置十几小时，恢复时一次性收到 48 条相同的排队触发消息，每条都会再执行一遍任](contrib/用-croncreate-建了每-15.md) | mcp | "croncreate" | intake-4976
 - [用 ego/agent 浏览器做「扫码登录」流程时，二维码截图给用户扫，用户回来时二维码永远已失效；再想复用那个标签页时报 `no active tab to](contrib/用-egoagent.md) | dsh | "ego", "agent", "no" | intake-4496
 - [用 p5.brush 做逐帧无头渲染（CDP 里调 window.renderAt(t)，输出帧序列），字幕等叠加层通过引擎的 letter() 队列绘制。短跑](contrib/用-p5brush-做逐帧无头渲染cdp-里调.md) | dsh | "p5", "brush", "cdp" | intake-4862
 - [用 PowerShell 对源码做批量字符串替换后：中文注释全部变乱码，且部分代码行凭空消失——下一行被并进了注释里（例如 `const k = ...` 整行](contrib/用-powershell.md) | windows | "function", "node", "powershell" | intake-4861
 - [用 tia-portal-mcp 1.1.0 连本机 TIA Portal V16（装在 <PATH> V16，不在 C 盘）时依次卡三处： 1. connec](contrib/用-tia-portal-mcp-110-连本机-tia-portal-v16装在-path-v16不在-c.md) | windows | "tia", "portal", "mcp" | intake-4368
+- [用 WinRT OCR 读**小位图字体**的界面（工业 HMI / 示教器软键行这类 8~12 px 的点阵字）时，会出现很怪的「部分读得出、部分读不出」：同](contrib/用-winrt-ocr-读小位图字体的界面工业-hmi-示教器软键行这类-812-px.md) | mcp | "winrt", "ocr", "hmi" | intake-5168
 - [用手柄长时间玩游戏时，屏幕隔一段时间就渐暗/熄灭，动一下鼠标立刻恢复；键盘手柄怎么按都无法唤醒屏幕。看起来像显示器省电或面板故障。 Root Cause Win](contrib/用手柄长时间玩游戏时屏幕隔一段时间就渐暗熄灭动一下鼠标立刻恢复键.md) | windows | "root", "cause", "win" | intake-4566
 - [用脚本按大括号配对替换 JS 函数：模板字符串里的 ${} 会把配对带偏，整份文件被截断](contrib/用脚本按大括号配对替换-js-函数被模板字符串带偏.md) | devops | "javascript", "refactor", "brace-matching", "template-literal", "file-corruption" | intake-4554
 - [DSH preset 里 tools.restrict 一次摘 41 个 MCP 工具：全部失败](contrib/症状-dsh-021-rc5-上想用-ctxtoolsrestrictdeny-在某个-agent-preset-里把.md) | windows | "dsh", "rc", "ctx" | intake-4477
@@ -997,10 +1003,15 @@
 - [每天凌晨第一次抓件丢程序号并报 APSH-000：上位服务器午夜有秒级不可用窗口，加 10 秒延时只是掩盖触发源](contrib/症状fanuc-机器人每天凌晨第一次抓件执行到-call-调-karel.md) | fanuc | "fanuc", "call", "karel" | intake-5265
 - [裸 workers.dev 域名在部分网络被阻断：node fetch 报 fetch failed，同网络下 curl 与生产自定义域都正常](contrib/症状node-fetch-到某-cloudflare-workers-端点报-typeerror-fetch.md) | mcp | "curl", "node", "fetch" | intake-4879
 - [百度导航 SDK 鉴权错误码：-300 是网络错误，230 才是包名/安全码对不上](contrib/百度导航-sdk-鉴权错误码-300-是网络错误230-才是包名安全码对不上.md) | mobile | "baidu", "ios", "sdk", "auth", "error-code", "bundle-id", "230", "permission-check" | intake-4177
+- [端到端验收脚本里「预期报错」断言绿了，但拿到的错误不是被测后端的报错——是「页面/连接已关闭」。整条失败路径其实一次都没验真，假绿混进 12/12 全过里。 R](contrib/端到端验收脚本里预期报错断言绿了但拿到的错误不是被测后端的报错是.md) | mcp | "err" | intake-4791
+- [给经验库写「双侧证据」验证脚本时，本地 mock 限流服务的配额计数器只增不清零：故障侧（无退避连发）先把 3 次配额耗光，修复侧（带退避）无论](contrib/给经验库写双侧证据验证脚本时本地-mock.md) | mcp | "mock" | intake-4977
 - [给骑行记录加字段要改三个地方，少一个就「一半有、一半没有」](contrib/给骑行记录加字段要改三个地方少一个就一半有一半没有.md) | data | "data-integrity", "serialization", "ios", "nodejs", "schema", "optional-field", "backfill" | intake-4180
 - [编译字节码（.pc/嵌入式 P-code 类）反汇编输出不可读：大段 .byte 噪音 + 操作数误读（把 1 字节 opcode 误读成「opcode+u8](contrib/编译字节码pc嵌入式-p-code-类反汇编输出不可读大段-byte-噪音.md) | fanuc | "pc", "code", "byte" | intake-4029
 - [编辑飞书导出的 Markdown 报告时，按 Read 显示的原文做精确替换（Edit old_string）报 `String to replace not](contrib/编辑飞书导出的-markdown-报告时按-read-显示的原文做精确替换edit-old.md) | feishu | "markdown", "read", "edit" | intake-5173
+- [网页化示教器的程序列表做「选中→删除」自动化时，点程序**名字文本**不会选中行，而是直接进入该程序（详情页/编辑器）；随后按 DELETE 软](contrib/网页化示教器的程序列表做选中删除自动化时点程序名字文本不会选中行.md) | mcp | "delete" | intake-5108
 - [脱离父子关系的脚本仍随宿主退出被杀：别指望“等宿主关掉再干活”](contrib/脱离父子关系的脚本仍随宿主退出被杀别指望等宿主关掉再干活.md) | devops | "windows", "job-object", "wmi", "electron", "detached-process" | intake-4552
+- [自动化往网页化弹窗（灰底小字/图形渲染、OCR 全盲）里输数字时，基于视觉的路线全线碰壁：OCR 读不出按键标签、模板/锚点点击被弹窗**多变体](contrib/自动化往网页化弹窗灰底小字图形渲染ocr.md) | mcp | "ocr" | intake-5133
+- [自动化监控 GUI 向导类长任务时，用「目标进程的窗口还在」当「构建进行中」判据——结果把**「已完成、坐在完成对话框上待命」误判成「还在干活」](contrib/自动化监控-gui.md) | mcp | "gui" | intake-4742
 - [自研工具对接 TIA Portal Openness API（Siemens.Engineering.dll）时连踩三个宿主/依赖坑，症状与修复如下（TIA P](contrib/自研工具对接-tia-portal-openness.md) | windows | "tia", "portal", "openness" | intake-4731
 - [自研工具对接 TIA Portal Openness（V19）第二轮实证：PowerShell 宿主崩溃根因 + 归档/工程两类 API 正确用法 + 检索 P](contrib/自研工具对接-tia-portal-opennessv19第二轮实证powershell-宿主崩溃根因.md) | windows | "new", "tia", "portal" | intake-4736
 - [自签包的 CFBundleDisplayName 必须是 ASCII：中文名签不了名（同一个坑第二次又犯）](contrib/自签包的-cfbundledisplayname-必须是-ascii中文名签不了名同一个坑第二次又犯.md) | mobile | "sidestore", "infoplist", "cf", "bundledisplayname", "ascii", "localization", "ipa", "packaging" | intake-4175
@@ -1010,6 +1021,7 @@
 - [被中断的安装会留下“有目录没 package.json”的残骸：静态体检看不见，require 时才炸](contrib/被中断的安装会留下有目录没-packagejson的残骸静态体检看不见require.md) | devops | "node", "pnpm", "native-module", "corrupted-install", "dsh", "windows" | intake-4570
 - [设备名直接拼路径 = 路径穿越：?device=.. 能读到 Docker 根目录](contrib/设备名直接拼路径-路径穿越device-能读到-docker-根目录.md) | nodejs | "nodejs", "path-traversal", "security", "input-validation", "filesystem", "dot-dot" | intake-4154
 - [评估未知 Windows 安装包时，用「安装器文件名」精确短语做公开情报检索，会把正式产品误判为「未公开发布」。 Root Cause 安装器文件名（如 Ins](contrib/评估未知-windows.md) | windows | "windows", "ins" | intake-4723
+- [读屏幕上的局部区域做 OCR 时，出现「明明有字，却一个字都读不出来」的现象，而且**换个大一点的裁剪框就正常**。实测：裁剪框高 **22 p](contrib/读屏幕上的局部区域做-ocr.md) | mcp | "ocr" | intake-5231
 - [起始 SOC 只在 start() 采一次：那一刻电池没连上就永远是 nil，电量消耗永远显示 --](contrib/起始-soc-只在-start-采一次那一刻电池没连上就永远是-nil电量消耗永远显示.md) | mobile | "ios", "ride-session", "soc", "nil-state", "self-heal", "backfill", "data-integrity" | intake-4164
 - [进导航后相机跳到北京天安门：视图创建时还没有定位，lastKnown 只在导航中才赋值](contrib/进导航后相机跳到北京天安门视图创建时还没有定位lastknown-只在导航中才赋值.md) | mobile | "amap", "ios", "navigation", "camera", "view-lifecycle", "last-known-location" | intake-4169
 - [重建一个含中文目录/文件名（如 图片和附件\xxx.png）的 zip 交付物时两处翻车：① Python zipfile 默认把中文条目名写成 UTF-8+U](contrib/重建一个含中文目录文件名如-图片和附件xxxpng的-zip-交付物时两处翻车1.md) | windows | "xxx", "png", "zip" | intake-5196
