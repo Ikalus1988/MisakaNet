@@ -93,7 +93,7 @@
 | `publish-mcp-registry.yml` | Publish to MCP Registry（等 PyPI 落地后发布）| 手动 |  |
 | `publish-dataset.yml` | Publish dataset to R2（把 `data/okf/lessons.jsonl` + benchmark 产物打成带 manifest 的版本，推到 `misakanet-dataset`，`v<日期>/` 不可变、`latest.json` 可变；上传后回读远端 manifest 与本地比对才算成功。用 `automation` 环境（无审批，凭据 = `misakanet-automation-d1` + R2 写；此前在 `release`，每次都要人点一下，2026-11-15 改为每日 cron）| 每日 cron, 手动 | `20 5 * * *` |
 
-## 社区/机器人（14）
+## 社区/机器人（15）
 
 | workflow | 用途 | 触发 | 定时 |
 |---|---|---|---|
@@ -111,6 +111,7 @@
 | `adopt-pr.yml` | Adopt Fork PR（维护者评论 `/adopt`）| 评论 |  |
 | `protect-pinned-issues.yml` | Protect long-running issues | issues |  |
 | `pr-audit-watch.yml` | PR Audit Watch（PR 审查巡检）| 定时, 手动 | `17 */2 * * *` |
+| `spam-comment-cleanup.yml` | Spam Comment Cleanup（定时清理 `onlymrneo` 的自动认领垃圾评论，24h 以上才删，支持 dry-run）| 定时, 手动 | `0 */1 * * *` |
 
 ## 基础设施（10）
 

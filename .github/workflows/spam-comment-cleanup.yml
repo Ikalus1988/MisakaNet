@@ -1,0 +1,168 @@
+name: Spam Comment Cleanup
+
+on:
+  schedule:
+    - cron: '0 */1 * * *'
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: 'Issue number to clean (leave empty for all issues)'
+        required: false
+        type: string
+      dry_run:
+        description: 'Dry run mode - only report what would be deleted'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  issues: write
+  pull-requests: read
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7
+        with:
+          python-version: '3.12'
+
+      - name: Clean spam comments
+        # The step body is Python, so the shell must be Python too — under the
+        # bash default every line below would be a bash syntax error.
+        shell: python
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DRY_RUN: ${{ inputs.dry_run || 'false' }}
+          ISSUE_NUMBER: ${{ inputs.issue_number || '' }}
+        run: |
+          import json
+          import os
+          import re
+          import time
+          from datetime import datetime, timezone
+
+          DRY_RUN = os.environ.get("DRY_RUN", "false").lower() == "true"
+          ISSUE_NUMBER = os.environ.get("ISSUE_NUMBER", "").strip()
+
+          # Pattern to match the automated spam comments
+          SPAM_PATTERN = r"Autonomous Agent Solution Claim\. Bitcoin Payout Wallet: bc1q3yjwx8s6mupuysh5p2ystvrtu8un5r0w9nxgn6\nStatus: Automated verification and patch submission in progress\."
+
+          # Target account
+          SPAM_ACCOUNT = "onlymrneo"
+
+          # Time threshold: comments older than 24 hours
+          TIME_THRESHOLD_HOURS = 24
+
+
+          def get_issues():
+              if ISSUE_NUMBER:
+                  return [int(ISSUE_NUMBER)]
+
+              # Get all open issues with bounty label (--limit: the gh default page is 30)
+              issues = os.popen(
+                  "gh issue list --repo Ikalus1988/MisakaNet --state open --limit 500 "
+                  "--label 'bounty' --json number --jq '.[].number'"
+              ).read().strip()
+
+              if not issues:
+                  print("No bounty issues found.")
+                  return []
+
+              return [int(i) for i in issues.split("\n") if i.strip()]
+
+
+          def clean_issue_comments(issue_num):
+              print(f"\n=== Checking issue #{issue_num} ===")
+
+              # Get all comments from the issue (--paginate: one page is lossy past 100)
+              comments_json = os.popen(
+                  f"gh api 'repos/Ikalus1988/MisakaNet/issues/{issue_num}/comments?per_page=100' --paginate"
+              ).read()
+
+              if not comments_json:
+                  print("No comments found.")
+                  return 0, 0
+
+              try:
+                  comments = json.loads(comments_json)
+              except ValueError:
+                  print("Failed to parse comments JSON.")
+                  return 0, 0
+
+              now = datetime.now(timezone.utc)
+              spam_count = 0
+              deleted_count = 0
+
+              for comment in comments:
+                  # Check if comment is from the spam account
+                  if comment.get("user", {}).get("login") != SPAM_ACCOUNT:
+                      continue
+
+                  # Check if comment matches the spam pattern
+                  if not re.search(SPAM_PATTERN, comment.get("body", ""), re.MULTILINE):
+                      continue
+
+                  # Check comment age
+                  created_at = comment.get("created_at")
+                  if not created_at:
+                      continue
+
+                  try:
+                      comment_time = datetime.strptime(created_at, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+                      age = (now - comment_time).total_seconds() / 3600
+
+                      if age < TIME_THRESHOLD_HOURS:
+                          print(f"  Skipping recent comment ({age:.1f} hours old): {comment['id']}")
+                          continue
+                  except ValueError:
+                      print(f"  Could not parse comment date: {created_at}")
+                      continue
+
+                  spam_count += 1
+                  print(f"  Found spam comment: {comment['id']} (created: {created_at})")
+
+                  if DRY_RUN:
+                      continue
+
+                  # Delete the comment (single line: the DELETE method rides with
+                  # the endpoint so the call is never mistaken for a list read)
+                  exit_code = os.system(
+                      f"gh api 'repos/Ikalus1988/MisakaNet/issues/comments/{comment['id']}' --method DELETE"
+                  )
+                  if exit_code == 0:
+                      deleted_count += 1
+                      print(f"  Deleted comment: {comment['id']}")
+                  else:
+                      print(f"  Failed to delete comment {comment['id']} (exit {exit_code})")
+
+                  # Be respectful to GitHub API
+                  time.sleep(1)
+
+              print(f"  Summary: {spam_count} spam comments found, {deleted_count} deleted (DRY RUN: {DRY_RUN})")
+              return spam_count, deleted_count
+
+
+          issues = get_issues()
+          if not issues:
+              print("No issues to process.")
+              raise SystemExit(0)
+
+          total_spam = 0
+          total_deleted = 0
+
+          for issue in issues:
+              spam, deleted = clean_issue_comments(issue)
+              total_spam += spam
+              total_deleted += deleted
+
+          print("\n=== FINAL SUMMARY ===")
+          print(f"Total spam comments found: {total_spam}")
+          print(f"Total comments deleted: {total_deleted}")
+          print(f"Mode: {'DRY RUN' if DRY_RUN else 'LIVE'}")
