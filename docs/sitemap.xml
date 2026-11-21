@@ -589,6 +589,7 @@
   <url><loc>https://misakanet.org/lessons/nsis-silent-install-exits-2-inside-an-agent-job-electron-dies-with-status-breakp/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/nsopenpanelnssavepanel-buttons-stay-disabled-in-sandboxed-swiftui-macos-app/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/nvidia-app-显示颜色-reports-色彩准确度模式-color-accuracy-mode-stuck-at-增强-enhanced/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/nvidia-skillevaluators-pinned-skillspector-does-not-install-on-an-alpine-instal/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/obsidian-local-rest-api-wraps-note-content-in-json-write-back-without-unwrapping/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/on-macos-chrome-devtools-mcp1120-autoconnect-list-pages-timed-out-while-the-n/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/an-on-chain-payout-has-no-retry-the-checks-an-agent-must-pass-before-it-signs/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -965,6 +966,8 @@
   <url><loc>https://misakanet.org/lessons/zero-bounty-agent-competition-flywheel/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/zero-discrimination-on-a-scoring-tool-usually-means-thin-input-not-a-broken-dete/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/zygiskassistant-breaks-mumus-houdini-arm-translation-so-arm64-only-apps-crash-wi/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/一个下载-处理-输出的流水线脚本下载步骤失败http-403但后续步骤照常跑完了还打印了成功信息-下游拿到的不是这次下载的/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/一个原本正常的-powershell-安装脚本含中文提示用-python-读进来改了一行再写回之后powershell-noprofile-执行时/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/两个独立进程并发写同一个-sqlite-数据库wal-模式已开一个进程写批量事务期间另一个进程-insert-报-database-is-locked/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/两处各自写死间距导致右列数字差几像素共享常量-量像素验收/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/中文-windows-环境-python-脚本用-subprocessrun-capture-outputtrue-texttrue-捕获子/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -1014,16 +1017,19 @@
   <url><loc>https://misakanet.org/lessons/本地-ttsgpt-sovits-cpu-档amd-780m-核显无-cuda说话持续卡顿根因不是内存或线程配置实测-rtf-稳定在-18-28/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/杀进程前有安全校验用-queryfullprocessimagenamew-查镜像名与白名单比对防止-servicestxt-账本里的旧-pid-被系统复/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/桌面应用遥测出现混血事件同一设备的部分事件带新契约的-uuid-v4-幂等键但-dataversion-停在旧版号如-6200版本维度因此不/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/桌面自动化里并发执行gui-向导构建产物与目标应用启动进程清理双双失败且报错极具误导性向导中途无提示暴毙无产物无错误日/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/步道乐跑在-mumu-安卓15x86-64-上闪退加固壳被-houdini-翻译崩溃-可见-su-触发自毁/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/没人读的-published-也在每秒触发-objectwillchange整页白重算/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/没有-git-的机器装-github-only-的-dsh-插件gh-proxy-下-zip-再打-tgz/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/独立校验脚本报出-16-个计数不符追查后发现是校验器自己错了不是被测代码错-场景校验一段行式文本输出的mn-段语句行数-声明的-line/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/生成私钥的脚本用先查后写会把别人刚创建的私钥覆盖掉-写了一个给插件包打发布者签名的-node-工具只用标准库nodecrypto-的-ed255/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/用-cdp-驱动网页编辑器改完一篇文章并提交后读回同一篇文章页面拿到的是旧版正文关键小标题没变差点据此判定更新没生效并反复重试同一个提交动作/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/用-croncreate-建了每-15-分钟一轮的跟踪任务后会话闲置十几小时恢复时一次性收到-48-条相同的排队触发消息每条都会再执行一遍任/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/用-egoagent-浏览器做扫码登录流程时二维码截图给用户扫用户回来时二维码永远已失效再想复用那个标签页时报-no-active-tab-to/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/用-p5brush-做逐帧无头渲染cdp-里调-windowrenderatt输出帧序列字幕等叠加层通过引擎的-letter-队列绘制短跑/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/用-powershell-对源码做批量字符串替换后中文注释全部变乱码且部分代码行凭空消失下一行被并进了注释里例如-const-k-整行/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/用-tia-portal-mcp-110-连本机-tia-portal-v16装在-path-v16不在-c-盘时依次卡三处-1-connec/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/用-winrt-ocr-读小位图字体的界面工业-hmi-示教器软键行这类-812-px-的点阵字时会出现很怪的部分读得出部分读不出同/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/用手柄长时间玩游戏时屏幕隔一段时间就渐暗熄灭动一下鼠标立刻恢复键盘手柄怎么按都无法唤醒屏幕看起来像显示器省电或面板故障-root-cause-win/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/用脚本按大括号配对替换-js-函数模板字符串里的-会把配对带偏整份文件被截断/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/dsh-preset-里-toolsrestrict-一次摘-41-个-mcp-工具全部失败/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -1042,10 +1048,15 @@
   <url><loc>https://misakanet.org/lessons/症状fanuc-机器人每天凌晨第一次抓件执行到-call-调-karel-通讯标准块时丢程序号报警-apsh-000-mmrobot-socket-cl/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/症状node-fetch-到某-cloudflare-workers-端点报-typeerror-fetch-failedcurl-报-connec/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/百度导航-sdk-鉴权错误码-300-是网络错误230-才是包名安全码对不上/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/端到端验收脚本里预期报错断言绿了但拿到的错误不是被测后端的报错是页面连接已关闭整条失败路径其实一次都没验真假绿混进-1212-全过里-r/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/给经验库写双侧证据验证脚本时本地-mock-限流服务的配额计数器只增不清零故障侧无退避连发先把-3-次配额耗光修复侧带退避无论/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/给骑行记录加字段要改三个地方少一个就一半有一半没有/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/编译字节码pc嵌入式-p-code-类反汇编输出不可读大段-byte-噪音-操作数误读把-1-字节-opcode-误读成opcodeu8/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/编辑飞书导出的-markdown-报告时按-read-显示的原文做精确替换edit-old-string报-string-to-replace-not/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/网页化示教器的程序列表做选中删除自动化时点程序名字文本不会选中行而是直接进入该程序详情页编辑器随后按-delete-软/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/脱离父子关系的脚本仍随宿主退出被杀别指望等宿主关掉再干活/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/自动化往网页化弹窗灰底小字图形渲染ocr-全盲里输数字时基于视觉的路线全线碰壁ocr-读不出按键标签模板锚点点击被弹窗多变体/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/自动化监控-gui-向导类长任务时用目标进程的窗口还在当构建进行中判据结果把已完成坐在完成对话框上待命误判成还在干活/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/自研工具对接-tia-portal-openness-apisiemensengineeringdll时连踩三个宿主依赖坑症状与修复如下tia-p/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/自研工具对接-tia-portal-opennessv19第二轮实证powershell-宿主崩溃根因-归档工程两类-api-正确用法-检索-p/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/自签包的-cfbundledisplayname-必须是-ascii中文名签不了名同一个坑第二次又犯/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -1055,6 +1066,7 @@
   <url><loc>https://misakanet.org/lessons/被中断的安装会留下有目录没-packagejson的残骸静态体检看不见require-时才炸/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/设备名直接拼路径-路径穿越device-能读到-docker-根目录/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/评估未知-windows-安装包时用安装器文件名精确短语做公开情报检索会把正式产品误判为未公开发布-root-cause-安装器文件名如-ins/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/读屏幕上的局部区域做-ocr-时出现明明有字却一个字都读不出来的现象而且换个大一点的裁剪框就正常实测裁剪框高-22-p/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/起始-soc-只在-start-采一次那一刻电池没连上就永远是-nil电量消耗永远显示/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/进导航后相机跳到北京天安门视图创建时还没有定位lastknown-只在导航中才赋值/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/重建一个含中文目录文件名如-图片和附件xxxpng的-zip-交付物时两处翻车①-python-zipfile-默认把中文条目名写成-utf-8u/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
