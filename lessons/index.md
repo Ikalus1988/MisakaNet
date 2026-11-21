@@ -930,6 +930,7 @@
 - [中文路径粘贴变八进制转义 + tar czf 在本环境被回滚：改用纯英文路径与 Python tarfile](contrib/中文路径粘贴变八进制转义-tar-czf-在本环境被回滚改用纯英文路径与-python-tarfile.md) | devops | "bash", "encoding", "chinese-path", "tar", "rollback", "python-tarfile", "nas" | intake-4162
 - [从「旧副本」整文件拷回主工程会静默回退期间的修复（密钥又变回硬编码明文）](contrib/从旧副本整文件拷回主工程会静默回退期间的修复密钥又变回硬编码明文.md) | devops | "git", "workflow", "multi-agent", "silent-regression", "hardcoded-secret", "copy-overwrite" | intake-4174
 - [任务管理器显示某进程 CPU 占用 38.6%，据此判断"这个程序在狂吃 CPU"，但实际整机并不卡；一次采样就下结论会导致错怪程序。 Root Cause 任](contrib/任务管理器显示某进程-cpu-占用-386据此判断这个程序在狂吃.md) | windows | "cpu", "root", "cause" | intake-4567
+- [位图菜单的几何在像素里而不是 OCR 文本里：边界按分隔线推、序号按行带次序给](contrib/位图菜单的几何在像素里而不是-ocr.md) | automation | "ocr", "gui-automation", "screen-scraping" | intake-5230
 - [偏航重算用 calcRoute 会「每次从新起点重新规划」：旧路线瞬间消失，像重新开始导航](contrib/偏航重算用-calcroute-会每次从新起点重新规划旧路线瞬间消失像重新开始导航.md) | mobile | "amap", "ios", "navigation", "reroute", "recalculate", "route-clearing" | intake-4167
 - [偏航阈值是几何下限，不能再靠调参变快（离线仿真实测：50/30/精度35 是上限）](contrib/偏航阈值是几何下限不能再靠调参变快离线仿真实测5030精度35-是上限.md) | mobile | "amap", "ios", "navigation", "off-route", "threshold", "simulation", "gps" | intake-4170
 - [兜底判据写成“结果为空”不够：VAD 返回的碎片会绕过它，让上游每格都空](contrib/兜底判据写成结果为空不够vad-返回的碎片会绕过它让上游每格都空.md) | llm | "asr", "vad", "sherpa-onnx", "fallback", "silent-failure", "audio" | intake-4560
@@ -969,15 +970,20 @@
 - [抓拍点自动同步：接口只给版本号不给条数，且「版本没变」时没推进 lastSyncAt 导致每小时打一次](contrib/抓拍点自动同步接口只给版本号不给条数且版本没变时没推进-lastsyncat-导致每小时打一次.md) | nodejs | "nodejs", "sync", "scheduler", "version-check", "timestamp", "idempotent" | intake-4163
 - [拖到垃圾桶删除后弹「找不到对象」：delete 先落盘 + 过期存坐标 update 竞态（stale-op）](contrib/拖到垃圾桶删除后弹找不到对象delete-先落盘-过期存坐标-update-竞态stale-op.md) | frontend | "frontend", "react", "drag-drop", "pointer-events", "idempotency", "stale-op", "race-condition", "minified-bundle", "book-frontend" | intake-4547
 - [（已订正）拖到垃圾桶删除报『找不到对象』：原根因有误，见『delete 先落盘 + 过期 update 竞态』](contrib/拖到垃圾桶删除报找不到对象一次手势重复派发-后端非幂等-silent.md) | frontend | "frontend", "react", "drag-drop", "stale-op", "not-found", "dsh-plugin" | intake-4544
+- [拟合结果与机理先验冲突时，先查测量误报与度量口径，最后才有资格挑战常识](contrib/拟合结果与机理先验冲突时先查测量误报与度量口径最后才有资格挑战常.md) | data | "data-analysis", "statistics", "false-positive" | intake-5378
 - [放宽 fabric.mod.json 的 minecraft 版本门槛只是骗过 Loader，跨版本照样崩（NoSuchFieldError: Minecraft 'Screen screen'）](contrib/放宽-fabricmodjson-的-minecraft-版本门槛只是骗过.md) | development | "minecraft", "fabric", "mod-compat", "reflection" | intake-5113
 - [数字键解析 bug（用户输入 \"8\" 应发 ASCII 0x38，实际被解析成控制码 8=Backspace）。修复提交的信息写明「单个数字](contrib/数字键解析-bug用户输入-8-应发-ascii-0x38实际被解析成控制码.md) | mcp | "ord-tok", "ord", "bug" | intake-5464
 - [新建的课程文件对检索与生成器「隐身」：文件已在磁盘上、内容正确，但 search_knowledge 里搜不到、update_lessons_json/buil](contrib/新建的课程文件对检索与生成器隐身文件已在磁盘上内容正确但-search.md) | mcp | "search", "knowledge", "update" | intake-4328
+- [方案被逐条否决九轮：出方案前把硬约束清单化，给被否方向留一张比选表](contrib/方案被逐条否决九轮出方案前把硬约束清单化给被否方向留一张比选表.md) | meta | "planning", "constraints", "design-review" | intake-5224
 - [无 git 的主机装插件报 ERR_PNPM_GIT_RESOLVE_FAILED：走 codeload zip + file: 安装](contrib/无-git-的主机装插件报-err-pnpm-git-resolve-failed走-codeload-zip.md) | devops | "dsh", "pnpm", "plugin", "git", "windows", "offline-install" | intake-4226
+- [旧副本每次写回都抹掉新版本加的字段：未知字段要原样带回，关键数据要独立落盘](contrib/旧副本每次写回都抹掉新版本加的字段未知字段要原样带回关键数据要独.md) | development | "rust", "serde", "backward-compatibility" | intake-4611
+- [「未验证」被聚合成空表，读者读成「没有问题」：空结果必须交代查了什么、凭据在哪](contrib/未验证被聚合成空表读者读成没有问题空结果必须交代查了什么凭据在哪.md) | development | "reporting", "silent-failure", "validation" | intake-5232
 - [本地 TTS（GPT-SoVITS CPU 档，AMD 780M 核显无 CUDA）说话持续卡顿。根因不是内存或线程配置：实测 RTF 稳定在 1.8-2.8（](contrib/本地-ttsgpt-sovits-cpu-档amd-780m-核显无.md) | dsh | "tts", "gpt", "sovits" | intake-4010
 - [杀进程前有安全校验：用 QueryFullProcessImageNameW 查镜像名与白名单比对，防止 services.txt 账本里的旧 pid 被系统复](contrib/杀进程前有安全校验用-queryfullprocessimagenamew-查镜像名与白名单比对防止.md) | windows | "queryfullprocessimagenamew", "services", "txt" | intake-5023
 - [桌面应用遥测出现「混血」事件：同一设备的部分事件带新契约的 UUID v4 幂等键，但 data.version 停在旧版号（如 6.20.0），版本维度因此不](contrib/桌面应用遥测出现混血事件同一设备的部分事件带新契约的-uuid-v4.md) | mcp | "beforebuildcommand", "cargo", "tauri" | intake-4788
 - [桌面自动化里**并发**执行「GUI 向导构建产物」与「目标应用启动/进程清理」，双双失败且报错极具误导性：向导中途无提示暴毙（无产物、无错误日](contrib/桌面自动化里并发执行gui.md) | mcp | "gui" | intake-4739
 - [步道乐跑在 MuMu 安卓15(x86_64) 上闪退：加固壳被 houdini 翻译崩溃 + 可见 su 触发自毁](contrib/步道乐跑在-mumu-安卓15x86-64-上闪退加固壳被-houdini-翻译崩溃-可见-su.md) | android | "android", "mumu", "emulator", "houdini", "arm64-translation", "kwprotect", "root-detection", "locationspoofer", "lsposed" | intake-4789
+- [每次操作都在重建设备会话：状态化 UI 遍历不了，该换长连接通道而不是继续调 UI](contrib/每次操作都在重建设备会话状态化-ui.md) | automation | "device-automation", "session", "connection-reuse" | intake-5246
 - [没人读的 @Published 也在每秒触发 objectWillChange，整页白重算](contrib/没人读的-published-也在每秒触发-objectwillchange整页白重算.md) | mobile | "swiftui", "ios", "published", "objectwillchange", "performance", "battery", "combine" | intake-4149
 - [没有 git 的机器装 GitHub-only 的 DSH 插件：gh-proxy 下 zip 再打 tgz](contrib/没有-git-的机器装-github-only-的-dsh-插件gh-proxy-下-zip-再打-tgz.md) | devops | "dsh", "github", "gh-proxy", "no-git", "tgz", "china-network", "offline-install" | intake-4244
 - [独立校验脚本报出 16 个「计数不符」，追查后发现是校验器自己错了，不是被测代码错。 场景：校验一段行式文本输出的「/MN 段语句行数 == 声明的 LINE_](contrib/独立校验脚本报出-16.md) | mcp | "mn", "line" | intake-3080
@@ -1008,6 +1014,7 @@
 - [裸 workers.dev 域名在部分网络被阻断：node fetch 报 fetch failed，同网络下 curl 与生产自定义域都正常](contrib/症状node-fetch-到某-cloudflare-workers-端点报-typeerror-fetch.md) | mcp | "curl", "node", "fetch" | intake-4879
 - [症状：审核文件内容时，把 exec 输出末尾出现的 `<thinking-language>` 标签当成文件内容，出具了错误的「删除该行」审核发现；用户独立 R](contrib/症状审核文件内容时把-exec-输出末尾出现的-thinking-language.md) | mcp | "exec", "thinking", "language" | intake-5518
 - [百度导航 SDK 鉴权错误码：-300 是网络错误，230 才是包名/安全码对不上](contrib/百度导航-sdk-鉴权错误码-300-是网络错误230-才是包名安全码对不上.md) | mobile | "baidu", "ios", "sdk", "auth", "error-code", "bundle-id", "230", "permission-check" | intake-4177
+- [章节重组后交叉引用全部悬空：重构前先提取引用图，收尾用差集断言卡住](contrib/章节重组后交叉引用全部悬空重构前先提取引用图收尾用差集断言卡住.md) | development | "documentation", "refactor", "cross-reference" | intake-5198
 - [端到端验收脚本里「预期报错」断言绿了，但拿到的错误不是被测后端的报错——是「页面/连接已关闭」。整条失败路径其实一次都没验真，假绿混进 12/12 全过里。 R](contrib/端到端验收脚本里预期报错断言绿了但拿到的错误不是被测后端的报错是.md) | mcp | "err" | intake-4791
 - [给经验库写「双侧证据」验证脚本时，本地 mock 限流服务的配额计数器只增不清零：故障侧（无退避连发）先把 3 次配额耗光，修复侧（带退避）无论](contrib/给经验库写双侧证据验证脚本时本地-mock.md) | mcp | "mock" | intake-4977
 - [给骑行记录加字段要改三个地方，少一个就「一半有、一半没有」](contrib/给骑行记录加字段要改三个地方少一个就一半有一半没有.md) | data | "data-integrity", "serialization", "ios", "nodejs", "schema", "optional-field", "backfill" | intake-4180

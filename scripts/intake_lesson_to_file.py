@@ -312,13 +312,18 @@ def trigger_of(title: str, problem: str, limit: int) -> str:
     return shorten(f"{title}. {tail}", limit)
 
 
-def tags_of(body: str, title: str) -> list[str]:
-    raw = field(body, "Tags")
+def normalise_tags(values) -> list[str]:
+    """Tags as the corpus writes them: lower-case, hyphenated, de-duplicated, ≥2 characters."""
     out: list[str] = []
-    for tag in re.split(r"[,\s]+", raw):
-        tag = re.sub(r"[^a-z0-9._-]+", "-", tag.lower()).strip("-")
+    for value in values:
+        tag = re.sub(r"[^a-z0-9._-]+", "-", str(value).lower()).strip("-")
         if len(tag) >= 2 and tag not in out:
             out.append(tag)
+    return out
+
+
+def tags_of(body: str, title: str) -> list[str]:
+    out = normalise_tags(re.split(r"[,\s]+", field(body, "Tags")))
     if len(out) < 3:
         # Some submissions carry no Tags line. Three candidates come from the **tools the lesson
         # actually names** (single-token code spans: `uv`, `pyside6`, `json.loads`), because that is
@@ -495,6 +500,15 @@ def convert(issue: dict, canonical: set[str],
     # stricter than the gate. Measured 2026-11-20 on 81 open intakes: 10 were refused here while being
     # otherwise complete, i.e. the batch was applying a rule the corpus does not have.
     tags = tags_of(body, title)
+    if override.get("tags"):
+        # A report that carries everything except a `Tags` line is a lesson nobody can find: the two
+        # fallbacks in `tags_of` (the tools the text names, then the title's words) both assume Latin
+        # identifiers, so a Chinese report written in prose lands on zero — measured 2026-11-21 on
+        # seven such intakes, each complete down to `## Verification`. Supplying tags is the same kind
+        # of decision as `domain` and `title`: about one issue, by a human, said out loud in the notes
+        # rather than typed into the submitter's text.
+        tags = normalise_tags(override["tags"])[:TAGS_MAX]
+        notes.append(f"tags supplied by a maintainer override: {', '.join(tags) or '(none left)'}")
     if not tags:
         return None, ["no tag(s) at all — the gate requires one"]
     problem, cause, fix, verify = (fences_start_a_line(value)
