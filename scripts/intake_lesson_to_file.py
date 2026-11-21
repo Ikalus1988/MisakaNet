@@ -380,6 +380,11 @@ CAUSE_MARKERS = ("根因", "原因是", "原因：", "原因:", "root cause", "R
 FIX_MARKERS = ("修复", "改为", "换用", "解决", "绕过", "改法", "对策", "fix:", "Fix:")
 
 
+#: A cause marker the client wrote mid-paragraph: `## Root Cause`, `Root Cause:`, `根因：`, `原因：`.
+_INLINE_CAUSE_RE = re.compile(r"#{1,6}\s*Root\s*Cause\s*|Root\s*Cause\s*[:：]\s*|根因\s*[:：]\s*|原因\s*[:：]\s*",
+                              re.IGNORECASE)
+
+
 def split_intake_problem(text: str) -> tuple[str, str, str] | None:
     """Split a `missing_lesson` Problem paragraph into (problem, cause, fix), verbatim.
 
@@ -455,6 +460,19 @@ def convert(issue: dict, canonical: set[str],
                or section(body, "Symptom"))
     cause = section(body, "Root Cause")
     split = None
+    if not cause:
+        # A cause heading the client wrote **inside** the Problem paragraph is better evidence than
+        # any sentence heuristic: the submitter marked the boundary themselves. Measured 2026-11-21 on
+        # #5403, where `## Root Cause` sits mid-paragraph — `section()` matches headings at line start,
+        # so the cause was reported missing while being right there (and the fix was in its own
+        # `## Fix` section all along).
+        inline = _INLINE_CAUSE_RE.search(problem or "")
+        if inline:
+            head = problem[:inline.start()].strip()
+            tail = problem[inline.end():].strip()
+            if head and tail:
+                problem, cause = head, tail
+                notes.append("Root Cause heading sat inside the Problem paragraph; split there, verbatim")
     if not cause:
         split = split_intake_problem(problem)
         if split:

@@ -438,3 +438,29 @@ def test_a_single_word_in_a_code_span_is_left_alone():
     prose, touched = conv.debacktick_prose_compounds("run `skillspector` before the build", known=set())
     assert touched == 0
     assert "`skillspector`" in prose
+
+
+def test_a_cause_heading_inside_the_problem_paragraph_is_used():
+    """#5403: `## Root Cause` sat mid-paragraph, so it was reported missing while being right there.
+
+    `section()` matches headings at line start, and this client wrote one inside the free-text
+    paragraph. The fix lives in the paragraph; the submitter marked the boundary, so splitting there
+    is strictly better evidence than any sentence heuristic.
+    """
+    body = """**Kind:** lesson_submission
+**Domain:** mcp
+**Title:** item count alone does not identify a stale read
+## Problem
+An asynchronous task-list read returned the old items after a recovery transition. ## Root Cause
+Item count alone does not identify a stale read: the list length was identical before and after.
+## Fix
+Compare the item identities, not the count.
+## Verification
+Re-read the list and compare ids.
+**Tags:** mcp, cache
+"""
+    lesson, notes = conv.convert(issue(5403, "item count alone does not identify a stale read", body), CANONICAL)
+    assert lesson is not None, notes
+    assert "## Root Cause\n\nItem count alone does not identify a stale read" in lesson["content"]
+    assert "returned the old items after a recovery transition." in lesson["content"]
+    assert any("sat inside the Problem paragraph" in note for note in notes)
