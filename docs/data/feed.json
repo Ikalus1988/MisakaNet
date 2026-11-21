@@ -1,35 +1,42 @@
 {
-  "generated_at": "2026-11-21T02:31:28.672774+00:00",
+  "generated_at": "2026-11-21T11:25:35.706934+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 13,
   "items": [
     {
       "type": "merged_pr",
-      "title": "fix(intake): a merged batch pull request made every later batch that day vanish",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5506",
-      "timestamp": "2026-11-21T02:20:02Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat(intake): two rules were stricter than the gate, and the batch ran every six hours",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5505",
-      "timestamp": "2026-11-21T01:30:57Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "fix(ci): the step that closes done-but-open intakes had no token, and never ran once",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5487",
-      "timestamp": "2026-11-21T00:46:43Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
       "title": "feat(lessons): intake batch 2026-11-21",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5504",
-      "timestamp": "2026-11-21T00:46:11Z",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5519",
+      "timestamp": "2026-11-21T10:28:15Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "docs(intake): why the bare prose words stay refused, written down so they are not re-derived",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5512",
+      "timestamp": "2026-11-21T06:36:38Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "feat(ci): the batch keeps moving without the cron that says it does",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5511",
+      "timestamp": "2026-11-21T05:41:12Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "fix(intake): a Root Cause heading written inside the Problem paragraph was reported missing",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5510",
+      "timestamp": "2026-11-21T05:07:22Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5508",
+      "timestamp": "2026-11-21T02:52:49Z",
       "source": "github"
     },
     {
@@ -66,18 +73,11 @@
     },
     {
       "type": "lesson",
-      "title": "The NVIDIA SkillEvaluator 1.0.1 Tier 1 image can report incomplete security chec",
-      "url": "lessons/contrib/the-nvidia-skillevaluator-101-tier-1-image-can-report.md",
+      "title": "NVIDIA SkillEvaluator's pinned SkillSpector does not install on an Alpine instal",
+      "url": "lessons/contrib/nvidia-skillevaluators-pinned-skillspector-does-not-install.md",
       "timestamp": "2026-11-21",
       "domain": "mcp",
       "source": "lessons"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5488",
-      "timestamp": "2026-11-20T20:58:12Z",
-      "source": "github"
     },
     {
       "type": "challenge",
