@@ -183,6 +183,35 @@ def test_a_title_override_replaces_the_submitter_title():
     assert any("title replaced" in note for note in notes), notes
 
 
+def test_a_submission_with_no_tags_is_refused_and_a_tag_override_converts_it():
+    """Measured 2026-11-21: seven complete intakes whose only defect was a missing `Tags` line.
+
+    Both of `tags_of`'s fallbacks assume Latin identifiers — the tools the text names in backticks,
+    then the title's words — so a Chinese report written as prose reached zero tags and the converter
+    refused a lesson whose Problem/Root Cause/Fix/Verification were all present. The override is the
+    same kind of decision as `domain` and `title`: one issue, by a human, recorded in the notes.
+    """
+    notags = """**Kind:** missing_lesson
+**Domain:** development
+## Problem
+大型文档做章节重组（拆章、并章、改名、内容搬家）后，正文与表格里的交叉引用全部悬空：原章标题被拆入两个收纳区后，全文 18 处「见 XXX」都指不到任何标题。
+## Root Cause
+重组清单是按「内容搬家」编的，没把「引用也是内容」算进去：引用指向的是标题文本与编号，标题一改或者内容一搬，引用就失效；验收断言里也没有「引号内的章节名必须命中最终大纲」这一条。
+## Fix
+重构前先 grep 出全部引用做成清单，与新大纲对照；收尾固定跑一条断言：抽出「」内的章节名与 N.N 编号作为引用词表，与最终标题词表求差集，差集必须为空；引用量大时在新位置放一条「旧名 → 新位置」的别名注，一次插入解决 N 处悬空。
+## Verification
+对重组后的文档跑「引用词表 − 标题词表」差集断言：为空即通过，非空直接给出悬空引用清单。
+"""
+    raw = issue(202, "大型文档章节重组后的交叉引用悬空", notags)
+    lesson, notes = conv.convert(raw, CANONICAL)
+    assert lesson is None and notes == ["no tag(s) at all — the gate requires one"], notes
+
+    lesson, notes = conv.convert(raw, CANONICAL, {"tags": ["Documentation", "cross reference", "doc"]})
+    assert lesson is not None, notes
+    assert lesson["tags"] == ["documentation", "cross-reference", "doc"]
+    assert any("tags supplied by a maintainer override" in note for note in notes), notes
+
+
 def test_a_fenced_fix_keeps_its_shell_comments():
     """Measured 2026-11-02: `# 1)` inside a bash fence ended the section and the lesson lost its Fix."""
     body = """**Kind:** lesson_submission

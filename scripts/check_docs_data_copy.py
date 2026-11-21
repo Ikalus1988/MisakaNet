@@ -60,12 +60,18 @@ LITE_MAX_BYTES = 300_000
 # corpus grew to 705 (326,351 B / 705 = 463 B per lesson); only the count did. A per-lesson budget keeps
 # the guard pointed at the shape: a re-introduced `preview` is ~2 KB per lesson and blows it immediately,
 # while a corpus that is simply bigger no longer turns the check red for being bigger.
-LITE_MAX_BYTES_PER_LESSON = 510  # 2026-11-16: 509,044 B / 1012 = 503.0 after the 63-lesson batch
-# (third raise: 463 → 485.4 → 500 → 503.0). Each came from a bigger corpus of the *same* seven
-# fields, never from a new field — a re-introduced `preview` is still ~2 KB per lesson, four times
-# above this line, so the guard keeps pointing at the shape rather than at growth.
-# (again long CJK titles/summaries; the schema did not change). The failure mode this budget exists
-# for — a re-introduced `preview` — is ~2 KB per lesson, four times above this line.
+# History of this number: 463 → 485.4 → 500 → 503.0 → 510 → 520. Every raise came from a bigger
+# corpus of the *same* seven fields, never from a new field, and the failure mode it exists for (a
+# re-introduced `preview` at ~2 KB per lesson) stays four times above this line whichever number is
+# written.
+# 2026-11-21, 520: 561,008 B / 1,100 = 510.0 right after a seven-lesson batch. First raise where the
+# drift is *named* rather than observed: the projection's `summary` is capped at **160 characters**,
+# not 160 bytes, so a lesson whose first sentence is Chinese spends ~480 B on that one field — three
+# of those seven ended at 157-161 characters. The shape did not change; the encoding of a capped
+# field did. 520 leaves ~11 KB, i.e. ~15 CJK lessons of headroom. When it trips again, measure the
+# corpus's CJK share before nudging the number a sixth time: if Chinese lessons are the driver, the
+# budget wants to be expressed in characters, not bytes.
+LITE_MAX_BYTES_PER_LESSON = 520
 
 
 def lite_ceiling(entries: int) -> int:
