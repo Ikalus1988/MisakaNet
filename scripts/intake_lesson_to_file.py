@@ -108,6 +108,42 @@ def strip_generic_prefix(title: str) -> str:
     return stripped if len(stripped) >= 8 else title
 
 
+#: A code span that is a hyphenated phrase of ordinary lowercase words is prose, not a command name.
+#: The lesson gate reads every code span as a command name (`validate_public_surface`), so a sentence
+#: like "keep them out of the `delete-candidate` list" fails it — the same confusion that had to be
+#: fixed by hand on 2022-11-20 batches. A real hyphenated command (`get-help`, `write-warning`) is in
+#: the corpus vocabulary or its allowlist, so it is never touched here.
+_HYPHENATED_PROSE = re.compile(r"^[a-z]+(?:-[a-z]+)+$")
+
+
+def _known_surface_names() -> set[str]:
+    """The corpus vocabulary plus the allowlist, or an empty set when it cannot be read."""
+    try:
+        import lesson_gate  # local import: this module is importable without the gate
+        return lesson_gate.load_public_vocabulary(REPO, base=False) or set()
+    except Exception:  # noqa: BLE001 — a missing vocabulary must not stop a conversion
+        return set()
+
+
+def debacktick_prose_compounds(text: str, known: set[str] | None = None) -> tuple[str, int]:
+    """Turn `` `delete-candidate` `` into `delete-candidate` when it is a phrase, not a command.
+
+    Returns the rewritten text and how many spans were touched, so the batch report can say so.
+    """
+    vocabulary = _known_surface_names() if known is None else known
+    touched = 0
+
+    def replace(match: re.Match) -> str:
+        nonlocal touched
+        token = match.group(1).strip()
+        if not _HYPHENATED_PROSE.match(token) or token in vocabulary:
+            return match.group(0)
+        touched += 1
+        return token
+
+    return re.sub(r"`([^`\n]{2,60})`", replace, text), touched
+
+
 def _the_longer_prefix(a: str, b: str) -> str:
     """Whichever of two renderings of the same sentence is longer, or `a` when they differ.
 
@@ -437,11 +473,26 @@ def convert(issue: dict, canonical: set[str],
     if not verify:
         notes.append("no Verification section")
 
+    # One tag is enough: `lesson_gate.validate_tags()` requires **at least one**, and the converter was
+    # stricter than the gate. Measured 2026-11-20 on 81 open intakes: 10 were refused here while being
+    # otherwise complete, i.e. the batch was applying a rule the corpus does not have.
     tags = tags_of(body, title)
-    if len(tags) < 2:
-        return None, [f"only {len(tags)} tag(s)"]
+    if not tags:
+        return None, ["no tag(s) at all — the gate requires one"]
     problem, cause, fix, verify = (fences_start_a_line(value)
                                    for value in (problem, cause, fix, verify))
+    # A hyphenated phrase in a code span reads to the gate as an unlisted command name; the prose
+    # around it is what the submitter wrote, so the span — not the sentence — is what changes.
+    known = _known_surface_names()
+    debackticked = 0
+    rewritten = []
+    for value in (problem, cause, fix, verify):
+        text_value, touched = debacktick_prose_compounds(value, known)
+        debackticked += touched
+        rewritten.append(text_value)
+    problem, cause, fix, verify = rewritten
+    if debackticked:
+        notes.append(f"{debackticked} prose compound(s) un-backticked so the gate does not read them as commands")
     content = (f"## Problem\n\n{problem}\n\n## Root Cause\n\n{cause}\n\n## Fix\n\n{fix}\n\n"
                f"## Verification\n\n{verify or 'Not recorded by the submitter.'}\n")
     if len(content) < 120:
