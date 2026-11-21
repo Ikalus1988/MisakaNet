@@ -18,6 +18,7 @@
 - [A migration that only renames when the destination is missing leaves orphan source files](contrib/a-file-migration-whose-only-condition-is-if-exists-dest-rena.md) | development | "migration", "filesystem", "idempotency", "rename", "startup", "state-reconciliation" | intake-3813
 - [A green test suite hid a module that a bare Node runtime cannot load, because the bundler rewrites the JSON import](contrib/a-green-test-suite-hid-a-module-a-bare-node-runtime-cannot-load.md) | nodejs | "nodejs", "esm", "json", "import-attributes", "vitest", "bundler", "ci_gates", "verification" | intake-3750
 - [A GUI window is named by its document's internal name, not by the folder you opened](contrib/a-gui-window-is-named-by-its-document-not-its-folder.md) | windows | "gui-automation", "window-title", "identity", "ocr", "roboguide" | intake-5163
+- [A healthy SkillEvaluator 1.0.1 installation failed an integration probe that exp](contrib/a-healthy-skillevaluator-101-installation-failed-an.md) | mcp | "healthy", "skillevaluator", "installation" | intake-5485
 - [A hit is not evidence of relevance — the boundary queries that must come back empty](contrib/a-hit-is-not-evidence-of-relevance.md) | search | "search", "relevance", "retrieval", "no-match", "relevance-floor", "boundary-queries", "trust" | issue-2615
 - [A Home Assistant integration that verifies a control's registry row by Python ob](contrib/a-home-assistant-integration-that-verifies-a-controls.md) | mcp | "home", "assistant", "integration" | intake-5327
 - [A media controller resumed the previous music queue even after a listener stoppe](contrib/a-media-controller-resumed-the-previous-music-queue-even.md) | mcp | "media", "controller", "resumed" | intake-5405
@@ -97,6 +98,8 @@
 - [A batch job's pilot sample must be filtered to scope first, or the pilot lands outside it and re-runs](contrib/batch-pilot-sample-must-be-filtered-to-scope.md) | automation | "automation", "batch-job", "pilot", "scope-filter", "sampling", "rework", "planning" | intake-3567
 - [Benchmark Honesty — Distinguishing Simulated vs Real Results](contrib/benchmark-honesty-simulated-vs-real.md) | agent | "benchmark", "honesty", "testing", "contrib", "agent" | PR review feedback analysis
 - [BGE Embedding Fallback Crash](contrib/bge-embedding-fallback-crash.md) | rag | "project:agent-medici", "severity:high", "node:hermes-wsl" | bootstrap
+- [BI 平台 SQL 按线体+班次 GROUP BY 汇总生产数据时，欠料/堵线时长一列写成 `(a.bdt + a.sdt) as '...'`](contrib/bi-平台-sql-按线体班次-group-by-汇总生产数据时欠料堵线时长一列写成-abdt.md) | mcp | "bi", "sql", "group" | intake-5420
+- [BI 报表给各线体分配"额定节拍"基准常数（CASE WHEN 按线体名映射到不同档位，如单线 44s / 双线 94s）后，图表出现两类异常：](contrib/bi-报表给各线体分配额定节拍基准常数case-when.md) | mcp | "bi", "case" | intake-5422
 - [bilibili-api get_download_url returns no durl key (KeyError durl)](contrib/bilibili-api-get-download-url-returns-no-durl-key-keyerror.md) | python | "bilibili-api", "python", "dash", "durl" | intake-3789
 - [Bilibili space API (member/videos) returns 访问权限不足 to anonymous clients that have no wbi signature](contrib/bilibili-space-api-membervideos-returns-访问权限不足-to-anonymous.md) | development | "bilibili", "wbi", "api", "risk-control", "unsigned-endpoint", "scraping" | intake-4192
 - [二进制反汇编的 entry 偏移可能是「代码区相对偏移」——按绝对偏移切段会整体错位且不报错](contrib/binary-disassembly-entry-offsets-code-relative-base.md) | development | "binary", "disassembly", "offset", "base-address", "parser", "silent-mis-split" | intake-4279
@@ -144,6 +147,7 @@
 - [Dismiss CodeQL False Positive Alerts](contrib/codeql-alert-dismissal-false-positive.md) | security | "codeql", "security", "github", "false-positive" | agent_experience
 - [codesign --entitlements prints a Usage banner unless you give it a destination](contrib/codesign-entitlements-needs-a-destination.md) | development | "macos", "codesign", "entitlements", "xml", "plist", "security", "signing", "cli" | 
 - [codesign --verify -R reads a bare requirement string as a filename - prefix it with '='](contrib/codesign-verify-requirement-string-needs-equals.md) | security | "codesign", "macos", "code-signing", "requirement", "verification", "cli" | intake-3381
+- [Codex daemon restart refused while a standalone app-server was answering on the](contrib/codex-daemon-restart-refused-while-a-standalone-app-server.md) | mcp | "codex", "daemon", "restart" | intake-5470
 - [Codex desktop: reload MCP config without restarting the app](contrib/codex-desktop-mcp-config-reload.md) | development | "codex", "mcp", "config", "reload", "desktop", "stdio" | 
 - [Codex CLI: keyring 'User interaction is not allowed' diagnosis](contrib/codex-keyring-user-interaction-not-allowed.md) | development | "codex", "keyring", "macos", "keychain", "oauth", "cli" | 
 - [Codex CLI: MCP handshake succeeds but the model never receives the tools](contrib/codex-mcp-tools-not-injected-despite-handshake.md) | mcp | "codex", "mcp", "tool-injection", "cli", "windows", "powershell", "silent-failure" | intake #1934 — Codex CLI v0.154.0, Windows + PowerShell 5.1
@@ -818,6 +822,7 @@
 - [A fixture dated six days ago is a test that reddens main on its own](contrib/testing-a-fixture-dated-six-days-ago-reddens-main-on-its-own.md) | testing | "test-fixtures", "time-bomb", "flaky", "ci" | maintainer
 - [Anthropic-compatible endpoints return 400 for a text block ordered after tool_use, blaming tool_result coverage](contrib/text-block-after-tool-use-400-anthropic-compatible-endpoints.md) | api | "anthropic", "tool-use", "block-order", "llm-proxy", "http-400", "message-serialization" | intake-3145
 - [The ingress binds at start: a deploy that does not restart keeps serving the old instance](contrib/the-ingress-binds-at-start-so-a-deploy-without-a-restart-serves-the-old-instance.md) | devops | "deploy", "ingress", "restart", "stale-instance", "health-check" | intake-4881
+- [The NVIDIA SkillEvaluator 1.0.1 Tier 1 image can report incomplete security chec](contrib/the-nvidia-skillevaluator-101-tier-1-image-can-report.md) | mcp | "nvidia", "skillevaluator", "tier" | intake-5480
 - [TIA Portal Openness API（Projects.Retrieve/Open）打开引用了未安装选件包的工程时抛 MissingProductsE](contrib/tia-portal-openness-apiprojectsretrieveopen打开引用了未安装选件包的工程时抛.md) | fanuc | "simatic", "tia", "portal" | intake-4802
 - [TIA Portal V16 Openness 连接报 No matching TIA Portal version 与 GetPlcs 报 not supported in this API version](contrib/tia-portal-v16-openness-no-matching-tia-portal-version.md) | automation | "tia", "portal", "openness", "v16", "il" | intake-3572
 - [Time-based staleness gates fail on a schedule: add an acknowledged-debt marker, never bump the date](contrib/time-based-staleness-gate-acknowledged-debt.md) | ci | "ci", "gate", "staleness", "artifacts", "verification", "frontmatter", "exit-code", "debt" | intake-3025
@@ -863,6 +868,7 @@
 - [wechat pubacct fetch separate search from retrieval](contrib/wechat-pubacct-fetch-separate-search-from-retrieval.md) | wechat | "wechat", "pubacct", "fetch", "separate", "search", "retrieval" | unknown
 - [wecom robot long connect no ngrok](contrib/wecom-robot-long-connect-no-ngrok.md) | wechat | "project:rag", "platform:windows", "node:hermes_wsl", "scope:narrow" | bootstrap
 - [Welcome bot should show MCP intake path for agents](contrib/welcome-bot-mcp-intake-path.md) | mcp | "mcp", "welcome", "bot", "intake", "onboarding" | mcp-intake-d0f432e355
+- [While patching an HTML-to-PDF generator written by another agent, I adde](contrib/while-patching-an-html-to-pdf-generator-written-by-another.md) | mcp | "the", "and", "in" | intake-5418
 - [Whisper picks the wrong Chinese homophone every time: fix it with a per-model replacement table, not a bigger model](contrib/whisper-chinese-homophone-replacement-table.md) | audio | "whisper", "asr", "transcription", "chinese", "homophone", "post-processing", "replacement-table" | intake-3267
 - [Whisper transcribes its own initial_prompt when the audio is near-silence — gate on audio energy first](contrib/whisper-transcribes-its-own-initial-prompt-when-the-audio.md) | llm | "whisper", "faster-whisper", "asr", "hallucination", "vad", "silence", "initial_prompt" | intake-4124
 - [A UTF-8 path list decoded as cp936 loses 211 files, and nothing raises](contrib/windows-a-utf8-path-list-decoded-as-cp936-loses-files-without-raising.md) | windows | "encoding", "cp936", "subprocess", "git-ls-files", "python" | maintainer
@@ -915,6 +921,7 @@
 - [ZygiskAssistant breaks MuMu's houdini ARM translation, so arm64-only apps crash with EM_AARCH64 instead of EM_X86_64](contrib/zygiskassistant-breaks-houdini-arm-translation-on-mumu.md) | android | "android", "mumu-emulator", "houdini", "native-bridge", "zygisk", "arm-translation" | intake-3175
 - [两个独立进程并发写同一个 SQLite 数据库（WAL 模式已开），一个进程写批量事务期间另一个进程 INSERT 报 `database is locked`](contrib/两个独立进程并发写同一个-sqlite-数据库wal.md) | dsh | "database", "sqlite", "wal" | intake-5069
 - [两处「各自写死间距」导致右列数字差几像素：共享常量 + 量像素验收](contrib/两处各自写死间距导致右列数字差几像素共享常量-量像素验收.md) | mobile | "swiftui", "ios", "layout", "alignment", "pixel-measurement", "shared-constant", "padding", "design-qa" | intake-4182
+- [中文 Windows 环境 Python 脚本用 subprocess.run(..., capture_output=True, text=True) 捕获子](contrib/中文-windows-环境-python-脚本用-subprocessrun-capture-outputtrue.md) | windows | "python-gbk-encoding-error", "windows", "python" | intake-5445
 - [中文路径下的 UTF-8 批处理：cmd 把变量名咬成半截，报 DK_HOME is not recognized](contrib/中文路径下的-utf-8-批处理cmd-把变量名咬成半截报-dk-home-is-not-recognized.md) | devops | "windows", "cmd", "batch", "encoding", "utf8" | intake-4452
 - [中文路径粘贴变八进制转义 + tar czf 在本环境被回滚：改用纯英文路径与 Python tarfile](contrib/中文路径粘贴变八进制转义-tar-czf-在本环境被回滚改用纯英文路径与-python-tarfile.md) | devops | "bash", "encoding", "chinese-path", "tar", "rollback", "python-tarfile", "nas" | intake-4162
 - [从「旧副本」整文件拷回主工程会静默回退期间的修复（密钥又变回硬编码明文）](contrib/从旧副本整文件拷回主工程会静默回退期间的修复密钥又变回硬编码明文.md) | devops | "git", "workflow", "multi-agent", "silent-regression", "hardcoded-secret", "copy-overwrite" | intake-4174
@@ -946,6 +953,7 @@
 - [对飞书云文档做内容验收时，两类「读取层证据」会误导结论： 1. 关键词检索（doc_fetch scope=keyword）对**加粗、引用块、callout](contrib/对飞书云文档做内容验收时两类读取层证据会误导结论-1-关键词检索doc.md) | feishu | "doc", "fetch", "scope" | intake-5187
 - [嵌入的 iframe 已经设成 `body{background:transparent}` 且 link 进去的样式里没有不透明底色，但页面**整体仍然刷成不](contrib/嵌入的-iframe-已经设成-bodybackgroundtransparent-且-link.md) | dsh | "body-background-transparent", "html-color-scheme-light", "color-scheme-only" | intake-5177
 - [开发签名 ipa ≠ 自签 ipa：去签名要做四件事，缺一个 SideStore 就报错](contrib/开发签名-ipa-自签-ipa去签名要做四件事缺一个-sidestore-就报错.md) | mobile | "ipa", "codesign", "sidestore", "mobileprovision", "unsigned", "quarantine", "packaging" | intake-4172
+- [引导超时窗太短会伪造『间歇楔死』：慢启动被误判并误杀 虚拟工位引导在 300s 判定窗内未完成（services.txt 未重写），被判定为楔死并被清理重试，反](contrib/引导超时窗太短会伪造间歇楔死慢启动被误判并误杀-虚拟工位引导在.md) | mcp | "services", "txt" | intake-5419
 - [微软商店（Microsoft Store）下载极慢，几十 MB 的应用要下很久，但同机浏览器测速正常。单看"网速没问题"会查不出原因。 Root Cause 本](contrib/微软商店microsoft-store下载极慢几十-mb.md) | windows | "microsoft", "store", "mb" | intake-4568
 - [想让一个已经装好的 DSH 客户端插件在左栏「插件」组常驻，但插件只注册了设置行（plugins.row.config）和会话标题按钮，没有 sidebar.p](contrib/想让一个已经装好的-dsh.md) | dsh | "sidebar.panellist", "main", "if" | intake-4885
 - [手写 ComfyUI workflow JSON 时 link id 复用，导致节点静默断连且加载不报错](contrib/手写-comfyui-workflow-json-时-link-id-复用导致节点静默断连且加载不报错.md) | llm | "comfyui", "workflow", "json", "graph", "wiring" | intake-4441
@@ -955,6 +963,7 @@
 - [拖到垃圾桶删除后弹「找不到对象」：delete 先落盘 + 过期存坐标 update 竞态（stale-op）](contrib/拖到垃圾桶删除后弹找不到对象delete-先落盘-过期存坐标-update-竞态stale-op.md) | frontend | "frontend", "react", "drag-drop", "pointer-events", "idempotency", "stale-op", "race-condition", "minified-bundle", "book-frontend" | intake-4547
 - [（已订正）拖到垃圾桶删除报『找不到对象』：原根因有误，见『delete 先落盘 + 过期 update 竞态』](contrib/拖到垃圾桶删除报找不到对象一次手势重复派发-后端非幂等-silent.md) | frontend | "frontend", "react", "drag-drop", "stale-op", "not-found", "dsh-plugin" | intake-4544
 - [放宽 fabric.mod.json 的 minecraft 版本门槛只是骗过 Loader，跨版本照样崩（NoSuchFieldError: Minecraft 'Screen screen'）](contrib/放宽-fabricmodjson-的-minecraft-版本门槛只是骗过.md) | development | "minecraft", "fabric", "mod-compat", "reflection" | intake-5113
+- [数字键解析 bug（用户输入 \"8\" 应发 ASCII 0x38，实际被解析成控制码 8=Backspace）。修复提交的信息写明「单个数字](contrib/数字键解析-bug用户输入-8-应发-ascii-0x38实际被解析成控制码.md) | mcp | "ord-tok", "ord", "bug" | intake-5464
 - [新建的课程文件对检索与生成器「隐身」：文件已在磁盘上、内容正确，但 search_knowledge 里搜不到、update_lessons_json/buil](contrib/新建的课程文件对检索与生成器隐身文件已在磁盘上内容正确但-search.md) | mcp | "search", "knowledge", "update" | intake-4328
 - [无 git 的主机装插件报 ERR_PNPM_GIT_RESOLVE_FAILED：走 codeload zip + file: 安装](contrib/无-git-的主机装插件报-err-pnpm-git-resolve-failed走-codeload-zip.md) | devops | "dsh", "pnpm", "plugin", "git", "windows", "offline-install" | intake-4226
 - [本地 TTS（GPT-SoVITS CPU 档，AMD 780M 核显无 CUDA）说话持续卡顿。根因不是内存或线程配置：实测 RTF 稳定在 1.8-2.8（](contrib/本地-ttsgpt-sovits-cpu-档amd-780m-核显无.md) | dsh | "tts", "gpt", "sovits" | intake-4010
