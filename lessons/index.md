@@ -405,6 +405,7 @@
 - [Applying a review computed from an old snapshot as a blind overwrite silently drops concurrent edits](contrib/handoff-review-stale-snapshot-three-way-merge.md) | git | "git", "merge", "concurrent-edits", "handoff", "code-review", "three-way" | 
 - [Headless Chrome CDP port answers but the page target is hung — automation fails silently instead of erroring](contrib/headless-chrome-cdp-port-answers-but-the-page-target-is.md) | devops | "chrome", "cdp", "headless", "automation", "hung-page", "zombie-target", "user-data-dir", "json-list" | intake-4219
 - [Headless Chrome --print-to-pdf produced a PDF where all text rendered at roughly](contrib/headless-chrome-print-to-pdf-produced-a-pdf-where-all-text.md) | mcp | "at", "the", "and" | intake-5275
+- [Headline metric silently degrades to a default that looks measured: (1) the read](contrib/headline-metric-silently-degrades-to-a-default-that-looks.md) | mcp | "merge_rate", "external_merge_rate_30", "headline" | intake-2735
 - [GitHub Contribution Heartbeat Scan](contrib/heartbeat-scan-improvement.md) | devops | "github", "heartbeat", "monitoring", "pull-request", "issues" | session-feedback
 - [ccswitch-hermes-switch 踩坑Notes](contrib/hermes-model-switch-ccswitch.md) | devops | "devops", "hermes", "model", "switch", "ccswitch" | unknown
 - [HMA（隐藏应用列表）在 MuMu Android 15 上「模块已激活 / 系统服务未运行」且界面冻结：Vector 从未把它注入 system_server](contrib/hma-mumu-android-15-vector-system-server.md) | android | "mumu", "hidemyapplist", "hma", "lsposed", "vector", "system-server", "app-list-hiding", "emulator", "android15", "ui-freeze" | intake-3188
@@ -695,6 +696,7 @@
 - [Python venv 中 tiktoken 安装后仍报 ModuleNotFoundError](contrib/python-venv-tiktoken-module-not-found.md) | python | "python", "venv", "tiktoken", "pip", "setuptools" | Misaka10019
 - [Python venv 激活失败或路径不匹配](contrib/python-venv-troubleshoot.md) | python | "python", "venv", "virtualenv", "path" | unknown
 - [Python 里给 bytes 正则（re.compile(rb'...')）加「只认下标 [1]」过滤后，解析结果整块归零：payload_kg/armloa](contrib/python-里给-bytes-正则recompilerb加只认下标-1过滤后解析结果整块归零payload.md) | mcp | "python", "bytes", "re" | intake-4484
+- [Python\u2194Node.js bridge on Windows corrupts Chinese paths: subprocess text=Tr](contrib/pythonu2194nodejs-bridge-on-windows-corrupts-chinese-paths.md) | windows | "python", "u2194node", "js" | intake-3971
 - [pywinauto UIA on WinForms: the Button has no AutomationId, its name lives in window_text](contrib/pywinauto-uia-winforms-automationid-empty-window-text.md) | windows | "pywinauto", "uia", "winforms", "automation-id", "ui-automation", "desktop-automation", "readiness" | intake-3476
 - [轻舟部署任务 SUCCESS 不等于共享入口可达：应用处于停止态时入口无后端、健康检查一直等，启动实例才恢复](contrib/qingzhou-deploy-success-still-502-until-app-instance-started.md) | devops | "dokploy", "qingzhou", "deployment", "health-check", "shared-domain", "502" | intake-4981
 - [+q.limit 得到 NaN → slice(0,0) → 接口静默返回空数组，日志干干净净](contrib/qlimit-得到-nan-slice00-接口静默返回空数组日志干干净净.md) | nodejs | "nodejs", "express", "nan", "slice", "silent-failure", "query-params", "api" | intake-4152
@@ -745,6 +747,7 @@
 - [ROBOGUIDE DutyEstimation fails with 'Unknown variable name': the controller does not provide $CP_PARAMGRP](contrib/roboguide-dutyestimation-unknown-variable-name.md) | fanuc | "fanuc", "roboguide", "dutyestimation", "system-variables", "cp-paramgrp", "plugin-mismatch", "motor-load", "deceplugin" | intake-3243
 - [ROBOGUIDE 示教器激活弹出非致命托管异常：厂商 COM 竞态在 Connect 事件前读取机器人对象](contrib/roboguide-pendant-switch-reads-robot-before-connect-event.md) | fanuc | "roboguide", "fanuc", "teach-pendant", "frrobot", "virtual-controller", "connect-event", "dotnet", "race-condition" | intake-3303
 - [ROBOGUIDE won't open a workcell after reinstall: the FRVRC version its BackupVersion names is missing](contrib/roboguide-reinstall-missing-frvrc-controller-version.md) | fanuc | "fanuc", "roboguide", "frvrc", "virtual-controller", "reinstall", "workcell", "backupversion", "registry" | intake-3249
+- [ROBOGUIDE 工位文件 .frw 被外部编辑（如改 XML UserFrames 坐标）后，该工位每次引导必楔死：RGCore 存活但冻在 frmSpla](contrib/roboguide-工位文件-frw-被外部编辑如改-xml-userframes.md) | fanuc | "roboguide", "frw", "xml" | intake-5563
 - [ROBOGUIDE 虚拟控制器上注入并运行 KAREL .pc 的完整链路连环翻车（V9.40 实测）： 1) FTP `STOR MD:*.PC` 不可用：端](contrib/roboguide-虚拟控制器上注入并运行-karel-pc-的完整链路连环翻车v940-实测-1.md) | fanuc | "set", "show", "roboguide" | intake-4793
 - [A cloned confirmation line poisons the context: loop detection must compare dialogue, not whole messages](contrib/roleplay-dialogue-loop-context-poisoning.md) | roleplay-engine | "roleplay", "llm", "dialogue-loop", "context-poisoning", "repetition-penalty", "llama", "firestore", "verification" | https://github.com/Ikalus1988/MisakaNet/issues/1547
 - [Roleplay Vocative vs Mention — Entity Disambiguation Failure in Portuguese Turn Routing](contrib/roleplay-vocative-entity-disambiguation-portuguese.md) | agent | "roleplay", "entity-disambiguation", "vocative", "turn-routing", "portuguese", "go", "dialogue-systems" | issue-1630
@@ -798,6 +801,8 @@
 - [Before reviving a stale PR, check each half against current upstream](contrib/stale-pr-verify-each-half-before-rebasing.md) | github | "pull-request", "stale-branch", "rebase", "force-push", "upstream-verification", "dead-code", "contribution-workflow" | intake-3529
 - [static page github api 403 rate limit](contrib/static-page-github-api-403-rate-limit.md) | api | "api", "rate-limit", "static-site", "error-handling", "fault-tolerance" | unknown
 - [static page width consistency](contrib/static-page-width-consistency.md) | frontend | "css", "layout", "ux", "responsive" | unknown
+- [Suggested lesson title: "A two-line config question turned into asar archaeology](contrib/suggested-lesson-title-a-two-line-config-question-turned.md) | dsh | "suggested", "lesson", "title" | intake-4210
+- [Suggested lesson title: "The preset switch was on the user's first screenshot: r](contrib/suggested-lesson-title-the-preset-switch-was-on-the-users.md) | dsh | "configforms.developertools.enabled", "developertools", "suggested" | intake-4211
 - [Supabase capacity constraints caused project operation failures](contrib/supabase-capacity-constraints-project-operations.md) | database | "incident", "postmortem", "capacity", "supabase", "database", "operations" | hackernews
 - [Superteam Earn API returns Insufficient credits on submission create](contrib/superteam-earn-api-insufficient-credits.md) | web3 | "superteam", "earn", "api", "credits", "bounty", "http-403" | uncledad96-glitch
 - [translate(NaN NaN) is silently ignored: read the isometric trig values from the camera object, not the projection](contrib/svg-transform-nan-from-wrong-projection-object.md) | frontend | "svg", "isometric", "nan", "transform", "headless-chrome", "debugging", "animation" | intake-3273
@@ -942,6 +947,7 @@
 - [加新 lesson 后按生成器链重算派生产物（update_lessons_json / export_okf / export_public_vocabula](contrib/加新-lesson-后按生成器链重算派生产物update-lessons-json-export-okf-export.md) | mcp | "lesson", "update", "lessons" | intake-4413
 - [双击 .ps1 不会执行：交付"双击运行"的脚本给用户，可能一条都没跑](contrib/双击-ps1-不会执行交付双击运行的脚本给用户可能一条都没跑.md) | devops | "powershell", "windows", "file-association", "delivery", "ux" | intake-4624
 - [反向代理后面 remoteAddress 永远是 127.0.0.1：按 IP 限流实际变成了全局限流](contrib/反向代理后面-remoteaddress-永远是-127001按-ip-限流实际变成了全局限流.md) | nodejs | "nodejs", "cloudflare-tunnel", "reverse-proxy", "rate-limit", "remoteaddress", "x-forwarded-for" | intake-4153
+- [反编译器/编译器回环保真验证中，验证器报告的"字面量丢失"大部分是测量伪影，导致对着假目标修了半天。 现象：p-code→源码→重编译→p-code 的字面量保](contrib/反编译器编译器回环保真验证中验证器报告的字面量丢失大部分是测量伪.md) | fanuc | "code" | intake-4202
 - [受限 Windows 沙箱下用无头 Chromium 做截图/逐帧渲染：`--remote-debugging-port` 端口始终不监听。换遍参数（`--he](contrib/受限-windows-沙箱下用无头-chromium-做截图逐帧渲染-remote-debugging-port.md) | windows | "windows", "chromium", "remote" | intake-4860
 - [受限环境下 adb 无法生成 adbkey：预置一把私钥让它只读不写](contrib/受限环境下-adb-无法生成-adbkey预置一把私钥让它只读不写.md) | devops | "windows", "adb", "android", "permission", "sandbox", "crypto" | intake-4450
 - [只在 cordis.patch.yml 里 insert 的客户端插件：host 半能跑，浏览器侧 tab 永远不出现](contrib/只在-cordispatchyml-里-insert-的客户端插件host-半能跑浏览器侧-tab.md) | devops | "dsh", "client-plugin", "bundles", "cordis", "sidebar-tab", "startup-graph" | intake-4675
@@ -973,6 +979,7 @@
 - [拟合结果与机理先验冲突时，先查测量误报与度量口径，最后才有资格挑战常识](contrib/拟合结果与机理先验冲突时先查测量误报与度量口径最后才有资格挑战常.md) | data | "data-analysis", "statistics", "false-positive" | intake-5378
 - [放宽 fabric.mod.json 的 minecraft 版本门槛只是骗过 Loader，跨版本照样崩（NoSuchFieldError: Minecraft 'Screen screen'）](contrib/放宽-fabricmodjson-的-minecraft-版本门槛只是骗过.md) | development | "minecraft", "fabric", "mod-compat", "reflection" | intake-5113
 - [数字键解析 bug（用户输入 \"8\" 应发 ASCII 0x38，实际被解析成控制码 8=Backspace）。修复提交的信息写明「单个数字](contrib/数字键解析-bug用户输入-8-应发-ascii-0x38实际被解析成控制码.md) | mcp | "ord-tok", "ord", "bug" | intake-5464
+- [新功能上线后，用户实测报「某字段恒显示 N/A」。翻代码一看，解析函数写得没问题，单测也绿（用的是手工构造的输入）。但在真实备份里，那个数据源文](contrib/新功能上线后用户实测报某字段恒显示.md) | mcp | "summary.dg", "null", "isanalyzefile-name" | intake-3891
 - [新建的课程文件对检索与生成器「隐身」：文件已在磁盘上、内容正确，但 search_knowledge 里搜不到、update_lessons_json/buil](contrib/新建的课程文件对检索与生成器隐身文件已在磁盘上内容正确但-search.md) | mcp | "search", "knowledge", "update" | intake-4328
 - [方案被逐条否决九轮：出方案前把硬约束清单化，给被否方向留一张比选表](contrib/方案被逐条否决九轮出方案前把硬约束清单化给被否方向留一张比选表.md) | meta | "planning", "constraints", "design-review" | intake-5224
 - [无 git 的主机装插件报 ERR_PNPM_GIT_RESOLVE_FAILED：走 codeload zip + file: 安装](contrib/无-git-的主机装插件报-err-pnpm-git-resolve-failed走-codeload-zip.md) | devops | "dsh", "pnpm", "plugin", "git", "windows", "offline-install" | intake-4226
