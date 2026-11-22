@@ -72,7 +72,16 @@ def is_convertible(row: dict) -> bool:
     return str(row.get("title", "")).startswith("[Intake]") and "decision" not in labels
 
 
-def open_intakes(limit: int = 300) -> list[dict]:
+#: How many issues one `gh issue list` call asks for. **A page size, not a budget**: the queue is what
+#: it is, and a page that comes back exactly full is a truncation signal (see `open_intakes`).
+#: Measured 2026-11-22: 469 open `mcp-intake` issues against the old default of 300, which made the
+#: batch see the newest 300 only — 74 intake-shaped reports instead of 183, and `convertible 0`
+#: instead of 6. Same failure as #5486 ("read a 200-character prefix of a 660-line list, and called it
+#: 'nothing to do'"), and the reason the number is now well above the queue rather than just above it.
+PAGE_LIMIT = 1000
+
+
+def open_intakes(limit: int = PAGE_LIMIT) -> list[dict]:
     out = subprocess.run(
         ["gh", "issue", "list", "--repo", "Ikalus1988/MisakaNet", "--state", "open",
          "--label", "mcp-intake", "--limit", str(limit),
@@ -80,7 +89,17 @@ def open_intakes(limit: int = 300) -> list[dict]:
         capture_output=True, text=True)
     if out.returncode != 0:
         raise SystemExit(f"gh issue list failed: {out.stderr[:300]}")
-    return [row for row in json.loads(out.stdout or "[]") if is_convertible(row)]
+    rows = json.loads(out.stdout or "[]")
+    if limit and len(rows) >= limit:
+        # A full page is indistinguishable from a queue that ends there — and the difference is
+        # invisible in the output, because both print "scanned N" and then a histogram of why the
+        # prefix it did read was unconvertible. Fail instead of reporting on a prefix: a wrong
+        # "nothing convertible" is worse than a red run nobody can mistake for progress.
+        raise SystemExit(
+            f"gh returned {len(rows)} issues, exactly the --limit ({limit}): the page may be "
+            f"truncated, so every number this run prints would describe a prefix of the queue, not "
+            f"the queue. Re-run with a larger --limit.")
+    return [row for row in rows if is_convertible(row)]
 
 
 def precheck_skip(issue: dict, record: dict, repo: Path = REPO) -> str | None:
@@ -116,7 +135,8 @@ def precheck_skip(issue: dict, record: dict, repo: Path = REPO) -> str | None:
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--write", action="store_true", help="write the lesson files")
-    ap.add_argument("--limit", type=int, default=300, help="how many open intakes to scan")
+    ap.add_argument("--limit", type=int, default=PAGE_LIMIT,
+                    help="page size for the gh call; a full page is refused as possible truncation")
     ap.add_argument("--json", action="store_true")
     args = ap.parse_args(argv)
 
