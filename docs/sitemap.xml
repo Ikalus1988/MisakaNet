@@ -943,12 +943,15 @@
   <url><loc>https://misakanet.org/lessons/windows-ui-automation-观察者在导航后越界不再整程序枚举按钮改为导航后重取唯一具名面板只读白名单属性/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/windows-wsl2-环境下-node-的-fetchundici-访问-github-release-资源会-connect-timeout10/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/windows-上-powershell-侧所有-https-出站全部失败但-node-内置-fetch-完全正常-root-cause-该机器的-schan/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/windows-上-skills-目录有-57-个条目6-个真目录-51-个指向库目录的-junctionnode-用-fsreaddirsy/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/windows-上双击或程序调用-shellexecute-打开-pdf-时静默失败无反应文件本身完好edge-可正常打开-根因-hkcusof/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/windows-上只有一个商店版-python-313windowsapps-别名时所有需要落盘的脚本都失败tempfile-抛-no-usable/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/windows-上在没有-ffmpeg且商店版-python-无法写盘tempfile-报-no-usable-temporary-directory/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/windows-上把-deepseek-harness-工作区pathudocumentsdeepseek-harness搬到-d-盘后用-mk/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/windows-上整仓-py-compile-语法闸偶发整个崩掉报-permissionerror-winerror-5-拒绝访问栈底是-i/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/windows-上用-pnpm-构建-monorepo-时默认-isolated-linker-报-err-pnpm-symlink-failed-s/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/windows-上自建的-net-服务里统计类-sql-全返回-0接口-http-200-且不报错但用同一个-db-文件在外部-sqlite3pyth/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/windows-上跑虚拟控制器-gui-宿主类仿真宿主进程拉起-embedding-的短路径子进程时重启切换工位后出现网络端口的登/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/windows-下-c-子进程经-stdout-向父进程传输二进制协议帧1b-kind4b-lenbodybody-为-pcm-音频静音/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/windows-显示缩放-150-的机器上做-gui-自动化合成鼠标点击截屏定位点击系统性偏移到错误位置约-15检查点截图截到完全无关的窗口/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/windows-机器上用-npm-安装-devdependenciestypescript-wrangler-等npm-输出-changed-1-p/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -1003,7 +1006,9 @@
   <url><loc>https://misakanet.org/lessons/只在-cordispatchyml-里-insert-的客户端插件host-半能跑浏览器侧-tab-永远不出现/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/同一台机器上先后装了两套-filee旧-220-在-path-为-per-user-安装新-250-在-path-filesfilee-为/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/同一指标三种统计窗口工作台同时显示满分无扣分和该修待办/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/后台日志文件用-utf-8-无-bom-写中文windows-默认-gbk-终端或编辑器读成宸插湪杩愯脚本-stdout-输出含中文路径的-jso/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/向-fanuc-虚拟控制器frvrc-v940ftp-上传-cm-命令文件到-md-时报-550-no-destination-device-or/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/在-dsh-沙箱内启动-renodenet-程序报-但同一目录用-python-能删能建icacls-显示当前用户有完全控制权-f无/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/在-openclaw-智能体中通过渐进加载的内置工具如飞书-lark-cli-封装工具干活时出现上一轮刚-tool-activate-成功并正常调用过的工/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/在-powershell-51-里写-node-scriptmjs-add-titlex-或-here-string-传-json/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/在-powershell-里用内联方式把-python-脚本传给解释器如-python-c-here-string-或管道脚本里的单引号/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -1037,9 +1042,12 @@
   <url><loc>https://misakanet.org/lessons/方案被逐条否决九轮出方案前把硬约束清单化给被否方向留一张比选表/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/无-git-的主机装插件报-err-pnpm-git-resolve-failed走-codeload-zip-file-安装/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/旧副本每次写回都抹掉新版本加的字段未知字段要原样带回关键数据要独立落盘/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/更正-issue-5069-的根因表述两个独立进程并发写同一个-sqlite-数据库wal-已开一个进程的批量事务持写锁较久时另一个进程-inser/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/未验证被聚合成空表读者读成没有问题空结果必须交代查了什么凭据在哪/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/本地-ttsgpt-sovits-cpu-档amd-780m-核显无-cuda说话持续卡顿根因不是内存或线程配置实测-rtf-稳定在-18-28/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/本地工作台的表单通道用进程级随机令牌保护const-ui-redactedcredential-403页面还带着重启前的旧令牌而失败只回一/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/杀进程前有安全校验用-queryfullprocessimagenamew-查镜像名与白名单比对防止-servicestxt-账本里的旧-pid-被系统复/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/桌面应用electron-渲染进程页面在-http127001port-a里的状态胶囊用-fetchhttp12700/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/桌面应用遥测出现混血事件同一设备的部分事件带新契约的-uuid-v4-幂等键但-dataversion-停在旧版号如-6200版本维度因此不/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/桌面自动化里并发执行gui-向导构建产物与目标应用启动进程清理双双失败且报错极具误导性向导中途无提示暴毙无产物无错误日/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/步道乐跑在-mumu-安卓15x86-64-上闪退加固壳被-houdini-翻译崩溃-可见-su-触发自毁/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>

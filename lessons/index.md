@@ -896,12 +896,15 @@
 - [Windows UI Automation 观察者在导航后越界：不再整程序枚举按钮，改为导航后重取唯一具名面板、只读白名单属性](contrib/windows-uia-observer-scope-widens-after-navigation-clip-to-named-pane.md) | windows | "ui-automation", "observer-scope", "least-privilege", "windows", "settings-read" | intake-4967
 - [Windows + WSL2 环境下 Node 的 fetch/undici 访问 GitHub release 资源会 connect timeout（10](contrib/windows-wsl2-环境下-node-的-fetchundici-访问-github-release-资源会.md) | windows | "windows", "wsl2", "node" | intake-4127
 - [Windows 上 PowerShell 侧所有 HTTPS 出站全部失败，但 Node 内置 fetch 完全正常 Root Cause 该机器的 SChan](contrib/windows-上-powershell-侧所有-https-出站全部失败但-node-内置-fetch-完全正常.md) | windows | "windows", "powershell", "https" | intake-4545
+- [Windows 上 skills 目录有 57 个条目：6 个真目录 + 51 个指向库目录的 Junction。Node 用 `fs.readdirSy](contrib/windows-上-skills-目录有-57-个条目6-个真目录-51-个指向库目录的-junctionnode.md) | windows | "dirent.isdirectory", "windows", "skills" | intake-5513
+- [Windows 上双击或程序调用 ShellExecute 打开 .pdf 时静默失败/无反应，文件本身完好（Edge 可正常打开）。 根因 `HKCU\Sof](contrib/windows-上双击或程序调用-shellexecute-打开-pdf.md) | windows | "assoc", "windows", "shellexecute" | intake-4671
 - [Windows 上只有一个商店版 Python 3.13（WindowsApps 别名）时，所有需要落盘的脚本都失败：tempfile 抛 "No usable](contrib/windows-上只有一个商店版-python-313windowsapps.md) | windows | "windows", "python", "windowsapps" | intake-4495
 - [Windows 上在没有 ffmpeg、且商店版 Python 无法写盘（tempfile 报 "No usable temporary directory"，](contrib/windows-上在没有-ffmpeg且商店版-python-无法写盘tempfile-报-no-usable.md) | windows | "windows", "ffmpeg", "python" | intake-4530
 - [Windows 上把 DeepSeek Harness 工作区（<PATH><u>\Documents\deepseek-harness）搬到 D 盘后用 mk](contrib/windows-上把-deepseek-harness-工作区pathudocumentsdeepseek.md) | windows | "windows", "deepseek", "harness" | intake-4209
 - [Windows 上整仓 `py_compile` 语法闸偶发整个崩掉，报 `PermissionError: [WinError 5] 拒绝访问`，栈底是 `i](contrib/windows-上整仓-py-compile-语法闸偶发整个崩掉报-permissionerror-winerror.md) | windows | "py_compile", "except", "windows" | intake-4803
 - [Windows 上用 pnpm 构建 monorepo 时，默认 isolated linker 报 `[ERR_PNPM_SYMLINK_FAILED] [s](contrib/windows-上用-pnpm-构建-monorepo-时默认-isolated-linker-报-err-pnpm.md) | windows | "mv", "rm", "fts_read" | intake-4768
 - [Windows 上自建的 .NET 服务里统计类 SQL 全返回 0，接口 HTTP 200 且不报错，但用同一个 .db 文件在外部 sqlite3/pyth](contrib/windows-上自建的-net-服务里统计类-sql-全返回-0接口-http-200.md) | windows | "factory_ledger.db", "winsqlite3.dll", "localtime" | intake-5159
+- [Windows 上跑「虚拟控制器 + GUI 宿主」类仿真（宿主进程拉起 `-Embedding` 的短路径子进程）时，重启/切换工位后出现：网络端口的登](contrib/windows-上跑虚拟控制器-gui-宿主类仿真宿主进程拉起-embedding.md) | windows | "frvirtual.exe", "tasklist", "windows" | intake-4748
 - [Windows 下 C++ 子进程经 stdout 向父进程传输二进制协议帧（[1B kind][4B len][body]，body 为 PCM 音频）。静音](contrib/windows-下-c-子进程经-stdout-向父进程传输二进制协议帧1b-kind4b-lenbodybody-为.md) | windows | "windows", "stdout", "kind" | intake-3295
 - [Windows 显示缩放 150% 的机器上做 GUI 自动化（合成鼠标点击/截屏定位），点击系统性偏移到错误位置（约 ×1.5），检查点截图截到完全无关的窗口](contrib/windows-显示缩放-150-的机器上做-gui.md) | windows | "windows", "gui" | intake-4808
 - [Windows 机器上用 npm 安装 devDependencies（typescript / wrangler 等），npm 输出 "changed 1 p](contrib/windows-机器上用-npm-安装-devdependenciestypescript-wrangler-等npm.md) | windows | "windows", "npm", "devdependencies" | intake-4136
@@ -957,7 +960,9 @@
 - [只在 cordis.patch.yml 里 insert 的客户端插件：host 半能跑，浏览器侧 tab 永远不出现](contrib/只在-cordispatchyml-里-insert-的客户端插件host-半能跑浏览器侧-tab.md) | devops | "dsh", "client-plugin", "bundles", "cordis", "sidebar-tab", "startup-graph" | intake-4675
 - [同一台机器上先后装了两套 Filee（旧 2.2.0 在 <PATH> 为 per-user 安装，新 2.5.0 在 <PATH> Files\Filee 为](contrib/同一台机器上先后装了两套-filee旧-220-在-path-为-per-user-安装新-250-在-path.md) | windows | "delete", "engines", "filee" | intake-5157
 - [同一指标三种统计窗口，工作台同时显示「满分」「无扣分」和「该修待办」](contrib/同一指标三种统计窗口工作台同时显示满分无扣分和该修待办.md) | data | "metrics", "dashboard", "consistency" | intake-5527
+- [后台日志文件用 UTF-8 无 BOM 写中文，Windows 默认 GBK 终端或编辑器读成「宸插湪杩愯」；脚本 stdout 输出含中文路径的 JSO](contrib/后台日志文件用-utf-8-无-bom-写中文windows-默认-gbk.md) | windows | "utf", "bom", "windows" | intake-5516
 - [向 FANUC 虚拟控制器（FRVRC V9.40）FTP 上传 .CM 命令文件到 MD: 时报 `550 No destination device or](contrib/向-fanuc-虚拟控制器frvrc-v940ftp-上传-cm-命令文件到-md-时报-550-no.md) | fanuc | "fanuc", "frvrc", "v9" | intake-4754
+- [在 DSH 沙箱内启动 Renode（.NET 程序），报： 但同一目录用 Python 能删能建，`icacls` 显示当前用户有完全控制权 (F)、无](contrib/在-dsh-沙箱内启动-renodenet-程序报-但同一目录用-python-能删能建icacls.md) | windows | "icacls", "cmd", "dsh" | intake-5234
 - [在 OpenClaw 智能体中通过渐进加载的内置工具（如飞书 lark-cli 封装工具）干活时出现：上一轮刚 tool_activate 成功并正常调用过的工](contrib/在-openclaw-智能体中通过渐进加载的内置工具如飞书-lark-cli.md) | feishu | "openclaw", "lark", "cli" | intake-4390
 - [在 PowerShell 5.1 里写 `node script.mjs --add '{"title":"x"}'` 或 here-string 传 JSON](contrib/在-powershell-51-里写-node-scriptmjs-add-titlex-或-here-string.md) | windows | "powershell", "node", "script" | intake-5517
 - [在 PowerShell 里用内联方式把 Python 脚本传给解释器（如 `python -c "..."`、here-string 或管道），脚本里的单引号](contrib/在-powershell-里用内联方式把-python-脚本传给解释器如-python-c-here-string.md) | windows | "python", "count", "powershell" | intake-5070
@@ -992,9 +997,12 @@
 - [方案被逐条否决九轮：出方案前把硬约束清单化，给被否方向留一张比选表](contrib/方案被逐条否决九轮出方案前把硬约束清单化给被否方向留一张比选表.md) | meta | "planning", "constraints", "design-review" | intake-5224
 - [无 git 的主机装插件报 ERR_PNPM_GIT_RESOLVE_FAILED：走 codeload zip + file: 安装](contrib/无-git-的主机装插件报-err-pnpm-git-resolve-failed走-codeload-zip.md) | devops | "dsh", "pnpm", "plugin", "git", "windows", "offline-install" | intake-4226
 - [旧副本每次写回都抹掉新版本加的字段：未知字段要原样带回，关键数据要独立落盘](contrib/旧副本每次写回都抹掉新版本加的字段未知字段要原样带回关键数据要独.md) | development | "rust", "serde", "backward-compatibility" | intake-4611
+- [【更正 issue-5069 的根因表述】两个独立进程并发写同一个 SQLite 数据库（WAL 已开），一个进程的批量事务持写锁较久时，另一个进程 INSER](contrib/更正-issue-5069-的根因表述两个独立进程并发写同一个-sqlite-数据库wal.md) | database | "database", "sqlite", "wal" | intake-5072
 - [「未验证」被聚合成空表，读者读成「没有问题」：空结果必须交代查了什么、凭据在哪](contrib/未验证被聚合成空表读者读成没有问题空结果必须交代查了什么凭据在哪.md) | development | "reporting", "silent-failure", "validation" | intake-5232
 - [本地 TTS（GPT-SoVITS CPU 档，AMD 780M 核显无 CUDA）说话持续卡顿。根因不是内存或线程配置：实测 RTF 稳定在 1.8-2.8（](contrib/本地-ttsgpt-sovits-cpu-档amd-780m-核显无.md) | dsh | "tts", "gpt", "sovits" | intake-4010
+- [本地工作台的表单通道用进程级随机令牌保护：`const UI_[REDACTED:credential] 403——页面还带着重启前的旧令牌，而失败只回一](contrib/本地工作台的表单通道用进程级随机令牌保护const-ui-redactedcredential.md) | dsh | "const", "ui", "redacted" | intake-5514
 - [杀进程前有安全校验：用 QueryFullProcessImageNameW 查镜像名与白名单比对，防止 services.txt 账本里的旧 pid 被系统复](contrib/杀进程前有安全校验用-queryfullprocessimagenamew-查镜像名与白名单比对防止.md) | windows | "queryfullprocessimagenamew", "services", "txt" | intake-5023
+- [桌面应用（Electron 渲染进程，页面在 http://127.0.0.1:PORT_A）里的状态胶囊用 `fetch('http://127.0.0](contrib/桌面应用electron-渲染进程页面在-http127001port-a里的状态胶囊用-fetchhttp12700.md) | dsh | "fetch", "from-page-js", "electron" | intake-5515
 - [桌面应用遥测出现「混血」事件：同一设备的部分事件带新契约的 UUID v4 幂等键，但 data.version 停在旧版号（如 6.20.0），版本维度因此不](contrib/桌面应用遥测出现混血事件同一设备的部分事件带新契约的-uuid-v4.md) | mcp | "beforebuildcommand", "cargo", "tauri" | intake-4788
 - [桌面自动化里**并发**执行「GUI 向导构建产物」与「目标应用启动/进程清理」，双双失败且报错极具误导性：向导中途无提示暴毙（无产物、无错误日](contrib/桌面自动化里并发执行gui.md) | mcp | "gui" | intake-4739
 - [步道乐跑在 MuMu 安卓15(x86_64) 上闪退：加固壳被 houdini 翻译崩溃 + 可见 su 触发自毁](contrib/步道乐跑在-mumu-安卓15x86-64-上闪退加固壳被-houdini-翻译崩溃-可见-su.md) | android | "android", "mumu", "emulator", "houdini", "arm64-translation", "kwprotect", "root-detection", "locationspoofer", "lsposed" | intake-4789
