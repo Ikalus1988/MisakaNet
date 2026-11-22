@@ -528,3 +528,69 @@ def test_limit_truncates_the_measurement_not_only_the_report(monkeypatch):
     plan = qa.build_plan(limit=2)
     assert len(plan["items"]) == 2
     assert len(probed) == 2, f"build_plan probed {len(probed)} questions for a limit of 2"
+
+
+# ── bounties: read the whole set, and retire what has no premise ────────────
+#
+# Measured 2026-11-22: 114 open bounty tasks, 6 of them duplicates of one anchor. The dedupe read
+# `per_page=100` once, so a marker on page 2 was invisible — the same blind spot `open_issues()`
+# already paid for — and nothing ever closed a task whose questions had been answered.
+
+def _bounty(number: int, anchor: int, linked: list[int]) -> dict:
+    lines = "\n".join(f"- #{n} — a question" for n in linked)
+    return {"number": number, "body": f"<!-- misakanet-question-bounty:anchor-{anchor} -->\n{lines}\n"}
+
+
+def test_every_page_of_bounties_is_read_not_just_the_first(monkeypatch):
+    pages = [
+        [{"number": 1000 + i, "body": qa.BOUNTY_MARKER.format(i)} for i in range(100)],
+        [{"number": 2000, "body": qa.BOUNTY_MARKER.format(9999)}],
+    ]
+    calls: list[str] = []
+
+    def fake_gh(path, payload=None, method=None):
+        calls.append(path)
+        return pages.pop(0)
+
+    monkeypatch.setattr(qa, "gh", fake_gh)
+    found = qa.all_bounties("all")
+    assert len(found) == 101
+    assert len(calls) == 2, "the second page was never requested"
+    marker = qa.BOUNTY_MARKER.format(9999)
+    assert qa.existing_bounty(9999, found)["number"] == 2000, marker
+
+
+def test_a_bounty_whose_questions_are_all_answered_is_retired():
+    issue = _bounty(1, 100, [100, 101])
+    assert qa.retirement_reason(issue, {}, {}, {}) == "every linked question is answered or closed"
+
+
+def test_a_bounty_whose_questions_moved_to_a_newer_anchor_is_retired():
+    issue = _bounty(2, 100, [100, 101])
+    questions = {100: {"number": 100, "state": "open", "labels": []},
+                 101: {"number": 101, "state": "open", "labels": []}}
+    # Both questions are still live, but this run's clustering puts them under anchor 101.
+    assert "moved to a newer task" in qa.retirement_reason(issue, questions, {100: 101, 101: 101}, {})
+
+
+def test_a_bounty_that_still_owns_a_live_question_is_kept():
+    issue = _bounty(3, 100, [100, 101])
+    questions = {100: {"number": 100, "state": "open", "labels": []}}
+    assert qa.retirement_reason(issue, questions, {100: 100}, {}) is None
+
+
+def test_the_second_task_for_one_anchor_is_the_one_that_goes():
+    """The duplicate check has to be transitive: whichever is seen first stays."""
+    issue = _bounty(4, 100, [100])
+    questions = {100: {"number": 100, "state": "open", "labels": []}}
+    reason = qa.retirement_reason(issue, questions, {100: 100}, {100: 3})
+    assert "duplicates #3" in reason, reason
+
+
+def test_an_answered_label_is_enough_even_when_the_issue_stays_open():
+    """`answered` is the maintainer's verdict; the close is a separate step (sync_answered_questions)."""
+    issue = _bounty(5, 100, [100])
+    questions = {100: {"number": 100, "state": "open", "labels": [{"name": "answered"}]}}
+    assert qa.is_answered(questions[100])
+    assert qa.retirement_reason(issue, questions, {100: 100}, {}) == \
+        "every linked question is answered or closed"
