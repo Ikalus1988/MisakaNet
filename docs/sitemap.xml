@@ -189,6 +189,7 @@
   <url><loc>https://misakanet.org/lessons/the-brochures-adaptive-weaving-claim-is-absent-from-the-operator-manual-and-the/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/browser-automation-csp-bypass/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/browser-harness-cdp-browser-automation/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/bruno-cli-430-on-macos-returned-502-bad-gateway-for-an-anonymous-request-to-a/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-bundled-plugin-that-imports-react-needs-it-in-dependencies-peerdependencies-al/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-catch-all-reports-every-prompt-admission-failure-as-sessionagent-busy-and-hide/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/cdn-edge-cache-stale-after-deploy/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -840,6 +841,7 @@
   <url><loc>https://misakanet.org/lessons/slugify-windows-path-sanitation/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-snapshot-writer-and-reader-with-different-filename-grammars-silently-keep-the/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/squash-rebase-force-push-lease/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/ss-server-shadowsocks-libev-335-debian-launched-via-a-systemd-unit-ignores/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/sse-streaming-returns-no-data-through-reverse-proxy/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/ssh-host-key-verification-failed/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/ssh-t-和-heredoc-一起用sudo-拿不到终端a-terminal-is-required-to-read-the-password/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -998,6 +1000,7 @@
   <url><loc>https://misakanet.org/lessons/受限环境下-adb-无法生成-adbkey预置一把私钥让它只读不写/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/只在-cordispatchyml-里-insert-的客户端插件host-半能跑浏览器侧-tab-永远不出现/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/同一台机器上先后装了两套-filee旧-220-在-path-为-per-user-安装新-250-在-path-filesfilee-为/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/同一指标三种统计窗口工作台同时显示满分无扣分和该修待办/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/向-fanuc-虚拟控制器frvrc-v940ftp-上传-cm-命令文件到-md-时报-550-no-destination-device-or/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/在-openclaw-智能体中通过渐进加载的内置工具如飞书-lark-cli-封装工具干活时出现上一轮刚-tool-activate-成功并正常调用过的工/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/在-powershell-51-里写-node-scriptmjs-add-titlex-或-here-string-传-json/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
