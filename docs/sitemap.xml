@@ -976,6 +976,7 @@
   <url><loc>https://misakanet.org/lessons/中文路径粘贴变八进制转义-tar-czf-在本环境被回滚改用纯英文路径与-python-tarfile/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/从旧副本整文件拷回主工程会静默回退期间的修复密钥又变回硬编码明文/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/任务管理器显示某进程-cpu-占用-386据此判断这个程序在狂吃-cpu但实际整机并不卡一次采样就下结论会导致错怪程序-root-cause-任/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/位图菜单的几何在像素里而不是-ocr-文本里边界按分隔线推序号按行带次序给/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/偏航重算用-calcroute-会每次从新起点重新规划旧路线瞬间消失像重新开始导航/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/偏航阈值是几何下限不能再靠调参变快离线仿真实测5030精度35-是上限/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/兜底判据写成结果为空不够vad-返回的碎片会绕过它让上游每格都空/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -1014,15 +1015,20 @@
   <url><loc>https://misakanet.org/lessons/把答案是给-ppt-用的读成把答案做成-ppt交付形态要在开工前确认/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/抓拍点自动同步接口只给版本号不给条数且版本没变时没推进-lastsyncat-导致每小时打一次/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/拖到垃圾桶删除后弹找不到对象delete-先落盘-过期存坐标-update-竞态stale-op/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/拟合结果与机理先验冲突时先查测量误报与度量口径最后才有资格挑战常识/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/放宽-fabricmodjson-的-minecraft-版本门槛只是骗过-loader跨版本照样崩nosuchfielderror-minecraft-scr/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/数字键解析-bug用户输入-8-应发-ascii-0x38实际被解析成控制码-8backspace修复提交的信息写明单个数字/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/新建的课程文件对检索与生成器隐身文件已在磁盘上内容正确但-search-knowledge-里搜不到update-lessons-jsonbuil/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/方案被逐条否决九轮出方案前把硬约束清单化给被否方向留一张比选表/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/无-git-的主机装插件报-err-pnpm-git-resolve-failed走-codeload-zip-file-安装/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/旧副本每次写回都抹掉新版本加的字段未知字段要原样带回关键数据要独立落盘/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/未验证被聚合成空表读者读成没有问题空结果必须交代查了什么凭据在哪/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/本地-ttsgpt-sovits-cpu-档amd-780m-核显无-cuda说话持续卡顿根因不是内存或线程配置实测-rtf-稳定在-18-28/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/杀进程前有安全校验用-queryfullprocessimagenamew-查镜像名与白名单比对防止-servicestxt-账本里的旧-pid-被系统复/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/桌面应用遥测出现混血事件同一设备的部分事件带新契约的-uuid-v4-幂等键但-dataversion-停在旧版号如-6200版本维度因此不/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/桌面自动化里并发执行gui-向导构建产物与目标应用启动进程清理双双失败且报错极具误导性向导中途无提示暴毙无产物无错误日/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/步道乐跑在-mumu-安卓15x86-64-上闪退加固壳被-houdini-翻译崩溃-可见-su-触发自毁/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/每次操作都在重建设备会话状态化-ui-遍历不了该换长连接通道而不是继续调-ui/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/没人读的-published-也在每秒触发-objectwillchange整页白重算/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/没有-git-的机器装-github-only-的-dsh-插件gh-proxy-下-zip-再打-tgz/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/独立校验脚本报出-16-个计数不符追查后发现是校验器自己错了不是被测代码错-场景校验一段行式文本输出的mn-段语句行数-声明的-line/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -1053,6 +1059,7 @@
   <url><loc>https://misakanet.org/lessons/症状node-fetch-到某-cloudflare-workers-端点报-typeerror-fetch-failedcurl-报-connec/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/症状审核文件内容时把-exec-输出末尾出现的-thinking-language-标签当成文件内容出具了错误的删除该行审核发现用户独立-r/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/百度导航-sdk-鉴权错误码-300-是网络错误230-才是包名安全码对不上/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/章节重组后交叉引用全部悬空重构前先提取引用图收尾用差集断言卡住/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/端到端验收脚本里预期报错断言绿了但拿到的错误不是被测后端的报错是页面连接已关闭整条失败路径其实一次都没验真假绿混进-1212-全过里-r/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/给经验库写双侧证据验证脚本时本地-mock-限流服务的配额计数器只增不清零故障侧无退避连发先把-3-次配额耗光修复侧带退避无论/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/给骑行记录加字段要改三个地方少一个就一半有一半没有/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
