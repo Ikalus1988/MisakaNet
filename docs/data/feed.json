@@ -1,9 +1,16 @@
 {
-  "generated_at": "2026-11-22T07:34:08.903099+00:00",
+  "generated_at": "2026-11-22T11:40:45.904726+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 13,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5571",
+      "timestamp": "2026-11-22T07:55:18Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "feat(lessons): three intake that were blocked by public tool names, and the allowlist entries that unblock them",
@@ -30,13 +37,6 @@
       "title": "fix(questions): bounty tasks are read in full and retired when their premise is gone",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/5565",
       "timestamp": "2026-11-22T04:27:31Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat(lessons): intake batch 2026-11-22",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5564",
-      "timestamp": "2026-11-22T04:12:04Z",
       "source": "github"
     },
     {
