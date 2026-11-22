@@ -141,8 +141,19 @@ jobs:
       # (with contrib_id in frontmatter) is published, notify the original
       # source by commenting on their intake issue.
       - name: Emit intake receipts
+        # `github.token`, not `SHELDON_PAT`. The PAT exists in this repository for steps that must
+        # *trigger further workflow runs* (a push, a `gh pr create`) — commenting on an issue and
+        # closing it is not that, and the sibling step below closes intakes with `github.token` in
+        # this same job. So this is the token the job already proves works for issue writes.
+        #
+        # It was `SHELDON_PAT` until 2026-11-22, with **100% of attempts failing** for at least three
+        # days: 259 undelivered on 11-19, then 290, 302, 313 — every run green. The count grew by
+        # exactly the number of lessons the intake batches added, so the step was not behind on a
+        # backlog; it was posting nothing, and `_post_issue_comment` discarded gh's stderr, so no run
+        # named a reason. The script now carries the first failure's reason into the annotation, so if
+        # this token is not the cause the next run says what is instead of counting again.
         env:
-          GH_TOKEN: ${{ secrets.SHELDON_PAT }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           # `--close`: a published lesson IS the resolution of the intake that asked for it. Until
           # 2026-11-02 nothing closed them — the receipt step only commented, and the issue stayed

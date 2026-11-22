@@ -12,8 +12,15 @@ Usage:
     python3 scripts/emit_intake_receipt.py              # scan and emit
     python3 scripts/emit_intake_receipt.py --dry-run    # preview only
     python3 scripts/emit_intake_receipt.py --check      # verify no pending receipts
+    python3 scripts/emit_intake_receipt.py --log /tmp/r.jsonl --lessons-dir /tmp/lessons
 
 Requires GH_TOKEN for posting comments (uses gh CLI).
+
+`--log` and `--lessons-dir` exist so a test can run the whole script against a temp tree. The
+default log is the dedup memory for **every published intake**: a test that seeds it, or a test
+fixture written into the real `lessons/`, destroys state nothing else can restore — and the damage
+looks like normal output (measured 2026-11-22, #5551: running `tests/test_intake_receipt.py`
+appended 297 lines to the tracked `data/intake_receipts.jsonl` while all 9 cases passed).
 """
 
 from __future__ import annotations
@@ -28,6 +35,9 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
 LESSONS_DIR = REPO / "lessons"
+# Both are module globals on purpose (not just locals in `main`): the helpers below read them, and a
+# caller that drives the module directly can repoint them at a temp tree — the same shape
+# `scripts/check_docs_data_copy.py` uses for its two index paths.
 RECEIPT_LOG = REPO / "data" / "intake_receipts.jsonl"
 
 # gh accepts an issue by number (with --repo) or by full URL — NOT by the
@@ -111,6 +121,19 @@ def _append_receipt(contrib_id: str, lesson_path: str, issue_url: str, evidence_
         f.write(json.dumps(entry, ensure_ascii=False) + "\n")
 
 
+def _repo_relative(path: Path) -> str:
+    """`path` relative to the repository, with `/` separators; the path itself outside it.
+
+    A test can point `LESSONS_DIR` at a temp tree (#5551), and `relative_to` raises for that — the
+    failure mode of `relative_to` here would be a traceback, not a wrong answer, so the fallback is
+    the honest one: the caller passed a path outside the repository on purpose.
+    """
+    try:
+        return path.relative_to(REPO).as_posix()
+    except ValueError:
+        return path.as_posix()
+
+
 def _scan_published_lessons() -> list[dict]:
     """Scan all published lessons (not drafts) for contrib_id in frontmatter."""
     results = []
@@ -141,7 +164,10 @@ def _scan_published_lessons() -> list[dict]:
                 continue
             results.append({
                 "contrib_id": contrib_id,
-                "lesson_path": str(md.relative_to(REPO)),
+                # `as_posix()`: this string is written to a tracked file, and `str(Path)` uses the
+                # platform separator — a Windows run of the test suite wrote
+                # `lessons\\contrib\\…` into a log the repository commits with `/` (#5551).
+                "lesson_path": _repo_relative(md),
                 "title": fm.get("title", md.stem),
                 "domain": fm.get("domain", ""),
                 "evidence_level": fm.get("evidence_level", "unverified"),
@@ -150,16 +176,37 @@ def _scan_published_lessons() -> list[dict]:
     return results
 
 
-def _post_issue_comment(issue_url: str, body: str) -> bool:
-    """Post a comment on a GitHub issue using gh CLI."""
+def _post_issue_comment(issue_url: str, body: str) -> tuple[bool, str]:
+    """Post a comment on a GitHub issue using gh CLI. Returns `(ok, reason)`.
+
+    `reason` is gh's own stderr, first line, because a sweep that fails 313 times and reports only
+    the count is a run nobody can act on: on 2026-11-22 three consecutive runs warned
+    "313 / 303 / 302 receipt(s) could not be posted" with **no** cause in the log, while the
+    failures were fast, uniform and from the very first issue — the shape of a broken credential,
+    not of one owed comment. Discarding the child's stderr is what made that shape unrecognisable.
+    """
     try:
         result = subprocess.run(
             ["gh", "issue", "comment", issue_url, "--body", body],
             capture_output=True, text=True, timeout=30,
         )
-        return result.returncode == 0
-    except (subprocess.TimeoutExpired, FileNotFoundError):
-        return False
+        if result.returncode == 0:
+            return True, ""
+        return False, _first_line(result.stderr) or _first_line(result.stdout) or \
+            f"gh exited {result.returncode} with no output"
+    except subprocess.TimeoutExpired:
+        return False, "gh timed out after 30s"
+    except FileNotFoundError:
+        return False, "gh is not installed on this runner"
+
+
+def _first_line(text: str, limit: int = 300) -> str:
+    """The first non-empty line of an error, trimmed — annotations are single-line."""
+    for line in (text or "").splitlines():
+        line = line.strip()
+        if line:
+            return line[:limit]
+    return ""
 
 
 def _format_receipt_message(lesson: dict) -> str:
@@ -188,7 +235,20 @@ def main(argv: list[str] | None = None) -> int:
                              "once before enabling the daily job on a corpus that already has "
                              "hundreds of converted intakes, otherwise the first run posts a receipt "
                              "for every lesson ever written.")
+    parser.add_argument("--log", default=None,
+                        help="receipt log to read and append (default: data/intake_receipts.jsonl). "
+                             "Point this at a temp file in a test: the default log is the dedup "
+                             "memory for every published intake (#5551).")
+    parser.add_argument("--lessons-dir", default=None,
+                        help="lessons tree to scan (default: lessons/). A test points this at a "
+                             "temp directory instead of writing fixtures into the real corpus.")
     args = parser.parse_args(argv)
+
+    global LESSONS_DIR, RECEIPT_LOG  # noqa: PLW0603 — see the comment at their definition
+    if args.lessons_dir:
+        LESSONS_DIR = Path(args.lessons_dir)
+    if args.log:
+        RECEIPT_LOG = Path(args.log)
 
     # Scan for published lessons with contrib_id
     published = _scan_published_lessons()
@@ -222,6 +282,8 @@ def main(argv: list[str] | None = None) -> int:
     # Emit receipts
     emitted = 0
     failed: list[str] = []
+    attempted = 0
+    first_error = ""
     for lesson in pending:
         contrib_id = lesson["contrib_id"]
         # Find the intake issue — contrib_id format is typically the GitHub issue number
@@ -236,9 +298,11 @@ def main(argv: list[str] | None = None) -> int:
 
         # Post comment if we have an issue URL
         success = False
+        reason = ""
         if issue_url:
+            attempted += 1
             body = _format_receipt_message(lesson)
-            success = _post_issue_comment(issue_url, body)
+            success, reason = _post_issue_comment(issue_url, body)
 
         if success or not issue_url:
             _append_receipt(contrib_id, lesson["lesson_path"], issue_url or "", lesson["evidence_level"])
@@ -249,6 +313,7 @@ def main(argv: list[str] | None = None) -> int:
             # delivered and it is then skipped forever (measured 2026-10-04: every
             # post failed on a bad issue reference while still being logged).
             failed.append(contrib_id)
+            first_error = first_error or reason
 
         if success:
             closed = _close_issue(issue_url) if args.close else False
@@ -262,16 +327,30 @@ def main(argv: list[str] | None = None) -> int:
     if failed:
         # Loud, but NOT a non-zero exit: this step sits ahead of the regeneration
         # steps in the single `update` job, so failing here would freeze the daily
-        # pipeline over one owed comment.  A warning annotation keeps it visible in
-        # the run summary while the next scheduled run retries.
+        # pipeline over one owed comment.  An annotation keeps it visible in the run
+        # summary while the next scheduled run retries.
+        #
+        # The annotation's **class** depends on the shape, and the shape is the
+        # difference between "one comment is owed" and "the credential is broken":
+        # measured 2026-11-22, three consecutive runs warned about 313 / 303 / 302
+        # failures — every attempt, from the first issue, in seconds — and a
+        # `::warning` is what a healthy run emits for a single owed comment. A step
+        # whose own annotation cannot be told apart from a normal day is the failure
+        # this repository keeps meeting; a total failure therefore says `::error`
+        # and carries gh's reason.
+        broken = attempted > 0 and len(failed) == attempted
+        level = "error" if broken else "warning"
+        title = ("Intake receipts: every post failed" if broken
+                 else "Intake receipts undelivered")
+        cause = f" First failure: {first_error}" if first_error else ""
         print(
-            f"::warning title=Intake receipts undelivered::"
-            f"{len(failed)} receipt(s) could not be posted and were NOT recorded: "
-            f"{', '.join(failed[:10])}. They will be retried on the next run.",
+            f"::{level} title={title}::"
+            f"{len(failed)} of {attempted} receipt post(s) failed and were NOT recorded: "
+            f"{', '.join(failed[:10])}. They will be retried on the next run.{cause}",
             file=sys.stderr,
         )
         print(
-            f"⚠️  {len(failed)} intake receipt(s) undelivered — see the run warning",
+            f"⚠️  {len(failed)} intake receipt(s) undelivered — see the run annotation",
             file=sys.stderr,
         )
 
