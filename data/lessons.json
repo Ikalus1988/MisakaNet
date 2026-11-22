@@ -1358,6 +1358,36 @@
     "contributor": ""
   },
   {
+    "id": "a-native-home-assistant-backup-can-fail-when-a-co-located",
+    "title": "A native Home Assistant backup can fail when a co-located application creates an",
+    "domain": "mcp",
+    "tags": [
+      "native",
+      "home",
+      "assistant"
+    ],
+    "summary": "A native Home Assistant backup can fail when a co-located application creates and removes SQLite WAL sidecars under the configuration tree.",
+    "preview": "## Problem\n\nA native Home Assistant backup can fail when a co-located application creates and removes SQLite WAL sidecars under the configuration tree.\n\n## Root Cause\n\nThe backup enumerates directory entries, then opens them. SQLite can remove a transient .sqlite-shm file after the last connection closes, making an earlier listing stale. A generic failure writing to a network mount is not proof of this race; check the actual job error.\n\n## Fix\n\nOn a disposable WAL database first verify that an idle read-only autocommit connection retains the SHM inode after a writer closes, while independent writers can commit and checkpoint normally. For a live rehearsal, open verified handles within the DB owner's container, finish the short reads (do not hold a transaction), monitor inode continuity and WAL sizes, and close after the native backup finishes. Preserve active databases with proper SQLite snapshots separately. Do not delete WAL files. If other file churn remains, arrange a coordinated maintenance window instead.\n\n## Verification\n\nTest separate writer commits and truncating checkpoints with the guard idle; verify full native backup completes, required components decrypt/read back, guards release and app state returns.",
+    "summary_plain": "A native Home Assistant backup can fail when a co-located application creates and removes SQLite WAL sidecars under…",
+    "trigger": "Error adding .sqlite-shm to tarfile: [Errno 2] No such file or directory (FileNotFoundError)",
+    "verify": "Test separate writer commits and truncating checkpoints with the guard idle; verify full native backup completes, required components decrypt/read back, guards release and app state returns.",
+    "url": "lessons/contrib/a-native-home-assistant-backup-can-fail-when-a-co-located.md",
+    "created": "2026-11-22",
+    "updated": "2026-11-22",
+    "triggers": null,
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "published",
+    "evidence_refs": [],
+    "supersedes": "",
+    "verified": true,
+    "evidence_level": "E1",
+    "evidence_source": "frontmatter",
+    "trust_score": 0.387,
+    "contributor": ""
+  },
+  {
     "id": "a-native-media-intent-accepted-a-removed-spoken-receiver",
     "title": "A native media intent accepted a removed spoken receiver name as part of a wildc",
     "domain": "mcp",

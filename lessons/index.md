@@ -22,6 +22,7 @@
 - [A hit is not evidence of relevance — the boundary queries that must come back empty](contrib/a-hit-is-not-evidence-of-relevance.md) | search | "search", "relevance", "retrieval", "no-match", "relevance-floor", "boundary-queries", "trust" | issue-2615
 - [A Home Assistant integration that verifies a control's registry row by Python ob](contrib/a-home-assistant-integration-that-verifies-a-controls.md) | mcp | "home", "assistant", "integration" | intake-5327
 - [A media controller resumed the previous music queue even after a listener stoppe](contrib/a-media-controller-resumed-the-previous-music-queue-even.md) | mcp | "media", "controller", "resumed" | intake-5405
+- [A native Home Assistant backup can fail when a co-located application creates an](contrib/a-native-home-assistant-backup-can-fail-when-a-co-located.md) | mcp | "native", "home", "assistant" | intake-5588
 - [A native media intent accepted a removed spoken receiver name as part of a wildc](contrib/a-native-media-intent-accepted-a-removed-spoken-receiver.md) | mcp | "native", "media", "intent" | intake-5316
 - [A port-bound session cookie minted per launch overflows the 16KB request header and breaks startup](contrib/a-port-bound-session-cookie-minted-per-launch-overflows-the.md) | network | "cookies", "http-header", "maxheadersize", "node-http", "electron", "port-binding" | intake-4290
 - [PR 门禁用 Bend 解释器跑判定程序：memory fault（机器栈溢出），门禁永远等不到结果](contrib/a-pull-request-gate-script-ran-a-bend-interpreter-over-its.md) | dsh | "pull", "request", "gate" | intake-4650
