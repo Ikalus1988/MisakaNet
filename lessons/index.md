@@ -966,6 +966,7 @@
 - [复用组件的可选闭包回调最容易漏传：不传也能编译，运行时静默无效](contrib/复用组件的可选闭包回调最容易漏传不传也能编译运行时静默无效.md) | mobile | "swiftui", "ios", "optional-closure", "silent-failure", "reusable-component", "callback" | intake-4148
 - [多文件 swiftc 编译：顶层代码必须放 main.swift，否则 statements are not allowed at the top level](contrib/多文件-swiftc-编译顶层代码必须放-mainswift否则-statements-are-not-allowed.md) | mobile | "swift", "swiftc", "main-swift", "cli", "testing", "compile-error" | intake-4159
 - [失败：Claude Code 会话中 ToolSearch 对任意查询报 "hit-token-limit"（新子代理内报 "Tool search not e](contrib/失败claude-code-会话中-toolsearch-对任意查询报-hit-token-limit新子代理内报.md) | feishu | "claude", "code", "toolsearch" | intake-5180
+- [宿主启动时 dsh-mcp-client 连不上远端 MCP(这里是 misakanet.org;内陆到 Cloudflare 的链路会出现整段几十秒 0 字节](contrib/宿主启动时-dsh-mcp-client-连不上远端-mcp这里是-misakanetorg内陆到.md) | windows | "reconnect", "dsh", "mcp" | intake-5572
 - [对飞书云文档做内容验收时，两类「读取层证据」会误导结论： 1. 关键词检索（doc_fetch scope=keyword）对**加粗、引用块、callout](contrib/对飞书云文档做内容验收时两类读取层证据会误导结论-1-关键词检索doc.md) | feishu | "doc", "fetch", "scope" | intake-5187
 - [嵌入的 iframe 已经设成 `body{background:transparent}` 且 link 进去的样式里没有不透明底色，但页面**整体仍然刷成不](contrib/嵌入的-iframe-已经设成-bodybackgroundtransparent-且-link.md) | dsh | "body-background-transparent", "html-color-scheme-light", "color-scheme-only" | intake-5177
 - [开发签名 ipa ≠ 自签 ipa：去签名要做四件事，缺一个 SideStore 就报错](contrib/开发签名-ipa-自签-ipa去签名要做四件事缺一个-sidestore-就报错.md) | mobile | "ipa", "codesign", "sidestore", "mobileprovision", "unsigned", "quarantine", "packaging" | intake-4172
@@ -980,6 +981,7 @@
 - [拖到垃圾桶删除后弹「找不到对象」：delete 先落盘 + 过期存坐标 update 竞态（stale-op）](contrib/拖到垃圾桶删除后弹找不到对象delete-先落盘-过期存坐标-update-竞态stale-op.md) | frontend | "frontend", "react", "drag-drop", "pointer-events", "idempotency", "stale-op", "race-condition", "minified-bundle", "book-frontend" | intake-4547
 - [（已订正）拖到垃圾桶删除报『找不到对象』：原根因有误，见『delete 先落盘 + 过期 update 竞态』](contrib/拖到垃圾桶删除报找不到对象一次手势重复派发-后端非幂等-silent.md) | frontend | "frontend", "react", "drag-drop", "stale-op", "not-found", "dsh-plugin" | intake-4544
 - [拟合结果与机理先验冲突时，先查测量误报与度量口径，最后才有资格挑战常识](contrib/拟合结果与机理先验冲突时先查测量误报与度量口径最后才有资格挑战常.md) | data | "data-analysis", "statistics", "false-positive" | intake-5378
+- [插件包里明明带了技能文件——`SKILL.md`(frontmatter `name: misakanet-failure-memory`)和 `skills/](contrib/插件包里明明带了技能文件skillmdfrontmatter-name-misakanet-failure.md) | dsh | "customskilldirs", "bundledskilldir", "name" | intake-5573
 - [放宽 fabric.mod.json 的 minecraft 版本门槛只是骗过 Loader，跨版本照样崩（NoSuchFieldError: Minecraft 'Screen screen'）](contrib/放宽-fabricmodjson-的-minecraft-版本门槛只是骗过.md) | development | "minecraft", "fabric", "mod-compat", "reflection" | intake-5113
 - [数字键解析 bug（用户输入 \"8\" 应发 ASCII 0x38，实际被解析成控制码 8=Backspace）。修复提交的信息写明「单个数字](contrib/数字键解析-bug用户输入-8-应发-ascii-0x38实际被解析成控制码.md) | mcp | "ord-tok", "ord", "bug" | intake-5464
 - [新功能上线后，用户实测报「某字段恒显示 N/A」。翻代码一看，解析函数写得没问题，单测也绿（用的是手工构造的输入）。但在真实备份里，那个数据源文](contrib/新功能上线后用户实测报某字段恒显示.md) | mcp | "summary.dg", "null", "isanalyzefile-name" | intake-3891
