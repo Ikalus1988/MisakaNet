@@ -19,58 +19,95 @@ def load_module():
     return mod
 
 
-def run(*args):
+def run(*args, log=None):
+    """Run the script as CI runs it.
+
+    `log` is not optional in spirit: every call that can write passes a temp log, because the
+    default one is the repository's tracked `data/intake_receipts.jsonl` (#5551).
+    """
+    extra = ["--log", str(log)] if log is not None else []
     return subprocess.run(
-        [sys.executable, str(SCRIPT), *args],
+        [sys.executable, str(SCRIPT), *args, *extra],
         cwd=REPO, capture_output=True, text=True,
     )
 
 
-def test_check_passes_once_the_log_covers_the_corpus():
+def test_check_passes_once_the_log_covers_the_corpus(tmp_path):
     """--check is 0 when every lesson that cites an issue has a receipt.
 
     It used to assert 0 with no setup at all, because the scan matched `contrib_id` and **no lesson
     ever carried it** — the test and the feature were green together while nothing was ever
     receipted. Now that the scan matches `provenance.issue`, a corpus of ~800 lessons is "pending"
     until the log is seeded, so the test seeds first. `--seed-log` is idempotent.
+
+    The seed goes to `tmp_path`, not to the repository's log: this test was the one that appended
+    297 lines to `data/intake_receipts.jsonl` on every run (#5551).
     """
-    seed = run("--seed-log")
+    log = tmp_path / "intake_receipts.jsonl"
+    seed = run("--seed-log", log=log)
     assert seed.returncode == 0, seed.stderr
-    r = run("--check")
+    r = run("--check", log=log)
     assert r.returncode == 0, f"expected 0 after seeding, got {r.returncode}\n{r.stderr}"
 
 
-def test_check_detects_pending_receipt(tmp_path=None):
+def test_a_test_run_does_not_touch_the_tracked_receipt_log(tmp_path):
+    """The guard for #5551 itself: the tracked log is byte-identical after a seeded run.
+
+    An assertion on the seeded result is not enough — the seeded run is exactly what used to write
+    to the real file, and it passed then too. The property is about the repository, so the check
+    reads the repository: `data/intake_receipts.jsonl` must not change.
+    """
+    tracked = REPO / "data" / "intake_receipts.jsonl"
+    before = tracked.read_bytes() if tracked.exists() else None
+
+    log = tmp_path / "intake_receipts.jsonl"
+    assert run("--seed-log", log=log).returncode == 0
+    assert log.exists(), "the temp log is where the seed was supposed to land"
+
+    after = tracked.read_bytes() if tracked.exists() else None
+    assert after == before, (
+        "a test run wrote the repository's own receipt log; pass --log at a temp file instead")
+
+
+def _lesson_tree(tmp_path, name: str, contrib_id: str) -> Path:
+    """A lessons tree with one published lesson, built in `tmp_path`.
+
+    The fixture used to be written into the real `lessons/contrib/` and deleted in a `finally` —
+    a crash, an interrupt or a `--pdb` left a lesson in the corpus, where the file's own name
+    (`_test_receipt_tmp.md`) is the only thing that says it does not belong.
+    """
+    tree = tmp_path / "lessons"
+    (tree / "contrib").mkdir(parents=True, exist_ok=True)
+    (tree / "contrib" / f"{contrib_id}.md").write_text(
+        f'---\ntitle: "{name}"\ndomain: test\ncontrib_id: "{contrib_id}"\nstatus: published\n'
+        '---\n\n## Problem\n\nTest.\n',
+        encoding="utf-8",
+    )
+    return tree
+
+
+def test_check_detects_pending_receipt(tmp_path):
     """--check returns 1 when a lesson has contrib_id but no receipt."""
-    # Create a temporary lesson with contrib_id
-    lessons_dir = REPO / "lessons" / "contrib"
-    test_file = lessons_dir / "_test_receipt_tmp.md"
-    try:
-        test_file.write_text(
-            '---\ntitle: "Test Receipt"\ndomain: test\ncontrib_id: "test-123"\nstatus: published\n---\n\n## Problem\n\nTest.\n',
-            encoding="utf-8",
-        )
-        r = run("--check")
-        assert r.returncode == 1, f"expected 1, got {r.returncode}"
-        assert "pending receipt" in r.stderr
-    finally:
-        test_file.unlink(missing_ok=True)
+    lessons = _lesson_tree(tmp_path, "Test Receipt", "test-123")
+    r = subprocess.run(
+        [sys.executable, str(SCRIPT), "--check",
+         "--lessons-dir", str(lessons), "--log", str(tmp_path / "log.jsonl")],
+        cwd=REPO, capture_output=True, text=True,
+    )
+    assert r.returncode == 1, f"expected 1, got {r.returncode}"
+    assert "pending receipt" in r.stderr
 
 
-def test_dry_run_shows_pending():
+def test_dry_run_shows_pending(tmp_path):
     """--dry-run lists pending receipts without posting."""
-    lessons_dir = REPO / "lessons" / "contrib"
-    test_file = lessons_dir / "_test_receipt_tmp.md"
-    try:
-        test_file.write_text(
-            '---\ntitle: "Test Dry Run"\ndomain: test\ncontrib_id: "test-dry-456"\nstatus: published\n---\n\n## Problem\n\nTest.\n',
-            encoding="utf-8",
-        )
-        r = run("--dry-run")
-        assert r.returncode == 0
-        assert "DRY RUN" in r.stdout
-    finally:
-        test_file.unlink(missing_ok=True)
+    lessons = _lesson_tree(tmp_path, "Test Dry Run", "test-dry-456")
+    r = subprocess.run(
+        [sys.executable, str(SCRIPT), "--dry-run",
+         "--lessons-dir", str(lessons), "--log", str(tmp_path / "log.jsonl")],
+        cwd=REPO, capture_output=True, text=True,
+    )
+    assert r.returncode == 0
+    assert "DRY RUN" in r.stdout
 
 
 def test_receipt_log_is_written_and_reloaded(tmp_path):
@@ -112,7 +149,7 @@ def test_a_failed_post_is_not_recorded_as_delivered(tmp_path, capsys):
     mod = load_module()
     mod.RECEIPT_LOG = tmp_path / "intake_receipts.jsonl"
     mod._scan_published_lessons = lambda: PENDING_LESSON
-    mod._post_issue_comment = lambda url, body: False
+    mod._post_issue_comment = lambda url, body: (False, "gh: HTTP 403: Resource not accessible by personal access token")
 
     rc = mod.main([])
 
@@ -121,9 +158,33 @@ def test_a_failed_post_is_not_recorded_as_delivered(tmp_path, capsys):
     # Loud, but a non-zero exit here would freeze the daily regeneration pipeline.
     assert rc == 0, "a failed post must not fail the job"
     err = capsys.readouterr().err
-    assert "::warning" in err, "the failure must surface as a CI annotation"
+    assert "::error" in err, "every attempt failed, so the annotation must not read like a normal day"
+    assert "Resource not accessible" in err, "the annotation must carry gh's own reason"
     assert "NOT recorded" in err
     assert "4242" in err, "the warning must name the contribution it owes"
+
+
+def test_one_owed_comment_stays_a_warning(tmp_path, capsys):
+    """One failure out of two is a warning, not an error: the credential works.
+
+    The two shapes are the point of the annotation level. A run that posts nothing and calls itself
+    a warning is indistinguishable from a healthy day (measured 2026-11-22: 313 / 303 / 302
+    undelivered, three runs in a row, every one green).
+    """
+    mod = load_module()
+    mod.RECEIPT_LOG = tmp_path / "intake_receipts.jsonl"
+    mod._scan_published_lessons = lambda: PENDING_LESSON + [
+        dict(PENDING_LESSON[0], contrib_id="4243", lesson_path="lessons/contrib/_two.md")]
+
+    def one_works(url, body):
+        return ((True, "") if url.endswith("/4242") else (False, "gh: HTTP 502"))
+
+    mod._post_issue_comment = one_works
+
+    assert mod.main([]) == 0
+    assert mod._load_receipts() == {"4242"}, "the one that posted is recorded, the one that did not is not"
+    err = capsys.readouterr().err
+    assert "::warning" in err and "::error" not in err
 
 
 def test_a_successful_post_is_recorded(tmp_path):
@@ -131,7 +192,7 @@ def test_a_successful_post_is_recorded(tmp_path):
     mod = load_module()
     mod.RECEIPT_LOG = tmp_path / "intake_receipts.jsonl"
     mod._scan_published_lessons = lambda: PENDING_LESSON
-    mod._post_issue_comment = lambda url, body: True
+    mod._post_issue_comment = lambda url, body: (True, "")
 
     assert mod.main([]) == 0
     assert mod._load_receipts() == {"4242"}
