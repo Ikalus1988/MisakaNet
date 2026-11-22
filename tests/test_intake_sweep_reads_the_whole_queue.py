@@ -62,3 +62,47 @@ def test_the_sweep_asks_for_the_whole_list(monkeypatch):
     monkeypatch.setattr(receipt, "_gh", fake)
     assert receipt.converted_but_open(open_issues=None) == []
     assert seen["keep"] is None
+
+
+def test_the_sweep_reads_each_lesson_once_per_run(tmp_path, monkeypatch):
+    """The other half of the same sweep, and the one that took a run down.
+
+    `converted_but_open()` used to ask `lessons_citing(n)` — which reads **every** lesson — once per
+    open intake. Measured 2026-11-22 in `update-lessons.yml` run 45039931336: 461 open intakes ×
+    1,121 lessons, the step ran 13 minutes without finishing, the job's 20-minute bound cancelled the
+    run before the step that lands the regeneration, and 318 receipts that had just been posted were
+    never recorded.
+
+    A timing assertion would be flaky. The property that makes it fast is not: one read per lesson,
+    whatever the queue size.
+    """
+    for n in range(5):
+        (tmp_path / f"lesson-{n}.md").write_text(
+            f'---\ntitle: "L{n}"\nprovenance:\n  issue: "#{1000 + n}"\n---\n', encoding="utf-8")
+
+    monkeypatch.setattr(receipt, "LESSONS_DIR", tmp_path)
+    reads = {"n": 0}
+    original = Path.read_text
+
+    def counting_read(self, *a, **k):
+        reads["n"] += 1
+        return original(self, *a, **k)
+
+    monkeypatch.setattr(Path, "read_text", counting_read)
+    found = receipt.converted_but_open(open_issues=[1000, 1001, 1002, 1003, 1004, 9999])
+    assert found == [1000, 1001, 1002, 1003, 1004]
+    assert reads["n"] == 5, (
+        f"the sweep read {reads['n']} files for 6 issues over 5 lessons — the corpus is being "
+        "re-read per issue again")
+
+
+def test_a_corpus_from_another_tree_does_not_raise(tmp_path):
+    """`corpus=` and `lessons_dir` can disagree; the resolver must not raise over a path prefix."""
+    tree = tmp_path / "lessons"
+    (tree / "core").mkdir(parents=True)
+    lesson = tree / "core" / "x.md"
+    lesson.write_text('---\ntitle: "X"\nprovenance:\n  issue: "#4242"\n---\n', encoding="utf-8")
+
+    corpus = receipt._corpus(tree)
+    found = receipt.lessons_citing(4242, tmp_path / "somewhere-else", corpus=corpus)
+    assert [row["path"] for row in found] == ["core/x.md"]

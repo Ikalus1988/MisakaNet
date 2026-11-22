@@ -126,25 +126,58 @@ def _cites(citations: str, issue: int) -> bool:
     )
 
 
-def lessons_citing(issue: int, lessons_dir: Path = LESSONS_DIR) -> list[dict]:
-    """Every lesson that cites this intake, in path order.
+def _corpus(lessons_dir: Path | None = None) -> list[tuple[Path, str, dict, str]]:
+    """`(path, repo-relative path, frontmatter, citation text)` for every lesson, read **once**.
 
-    Reads the lesson files rather than `data/lessons.json`: that file is a generated snapshot that
-    lags a merge by up to a day, and a receipt must not miss a lesson that was merged an hour ago.
+    `lessons_citing()` used to re-read the whole corpus for each issue it was asked about, and the
+    sweep (`converted_but_open`, #5347) asks it once per open intake. Measured 2026-11-22: 461 open
+    intakes × 1,121 lessons ~ 500k file reads; the step ran 13 minutes without finishing and the
+    job's 20-minute bound cancelled the run *before* the step that lands the regeneration, so 318
+    receipts that had just been posted were never recorded and the next run would post them again.
+
+    The matcher stays `_cites()` in both paths — an index built from a second, faster regex would be
+    the drift this repository keeps paying for (see `_cites` on why a bare number is not a citation).
+    Caching the *text* instead of the match keeps one reader and one matcher.
+
+    `lessons_dir=None` reads the module's `LESSONS_DIR` **at call time**, so a caller that repoints
+    the constant (the tests do) is obeyed. A default argument would freeze the import-time value.
     """
-    found: list[dict] = []
-    for path in sorted(lessons_dir.rglob("*.md")):
+    root = LESSONS_DIR if lessons_dir is None else lessons_dir
+    rows: list[tuple[Path, str, dict, str]] = []
+    for path in sorted(root.rglob("*.md")):
         if path.name.upper() == "README.MD" or path.name.upper() == "TEMPLATE.MD":
             continue
         text = path.read_text(encoding="utf-8", errors="replace")
         fm = _frontmatter(text)
-        citations = _citation_text(fm)
-        # Repo-relative for real lessons; a caller may point this at another tree (the tests do),
-        # so fall back to that tree instead of raising from deep inside a resolver.
+        rows.append((path, _relative_lesson_path(path, root), fm, _citation_text(fm)))
+    return rows
+
+
+def _relative_lesson_path(path: Path, lessons_dir: Path | None = None) -> str:
+    """Repo-relative, `/`-separated; the tree the lesson came from when it is outside the repo.
+
+    A caller may point this at another tree (the tests do), so the fallback is that tree's own
+    prefix instead of an exception from deep inside a resolver.
+    """
+    for root in ((REPO, lessons_dir if lessons_dir is not None else LESSONS_DIR)):
         try:
-            rel = path.relative_to(REPO).as_posix()
+            return path.relative_to(root).as_posix()
         except ValueError:
-            rel = path.relative_to(lessons_dir).as_posix()
+            continue
+    return path.as_posix()
+
+
+def lessons_citing(issue: int, lessons_dir: Path | None = None,
+                   *, corpus: list[tuple[Path, str, dict, str]] | None = None) -> list[dict]:
+    """Every lesson that cites this intake, in path order.
+
+    Reads the lesson files rather than `data/lessons.json`: that file is a generated snapshot that
+    lags a merge by up to a day, and a receipt must not miss a lesson that was merged an hour ago.
+
+    `corpus` is the pre-read form of `lessons_dir`, for a caller asking about many issues at once.
+    """
+    found: list[dict] = []
+    for path, rel, fm, citations in (corpus if corpus is not None else _corpus(lessons_dir)):
         # Only inside a citation field (`_citation_text` already restricts it to those), and only in
         # a shape that names this intake — see `_cites` for why a bare number is not enough.
         if not _cites(citations, issue):
@@ -274,7 +307,8 @@ def converted_but_open(*, repo: str = REPO_SLUG, open_issues: list[int] | None =
         if not ok:
             raise SystemExit(f"gh issue list failed: {out}")
         open_issues = [int(line) for line in out.split() if line.strip().isdigit()]
-    return [n for n in open_issues if lessons_citing(n)]
+    corpus = _corpus()
+    return [n for n in open_issues if lessons_citing(n, corpus=corpus)]
 
 
 def main(argv=None) -> int:

@@ -110,6 +110,7 @@
 - [The brochure's adaptive weaving claim is absent from the operator manual, and the sensor has no weave function](contrib/brochure-claim-not-in-operator-manual.md) | fanuc | "fanuc", "welding", "laser-vision-sensor", "weaving", "capability-verification", "procurement", "documentation" | intake-3704
 - [CSP blocks JavaScript injection in browser automation of authenticated pages](contrib/browser-automation-csp-bypass.md) | mcp | "browser-automation", "csp", "content-security-policy", "cdp", "puppeteer", "playwright", "eval", "injection" | <user>
 - [browser-harness — AI 直连 Chrome 的 CDP 浏览器Automation](contrib/browser-harness-cdp-browser-automation.md) | automation | "automation", "browser", "harness" | unknown
+- [Bruno CLI 4.3.0 on macOS returned 502 Bad Gateway for an anonymous request to a](contrib/bruno-cli-430-on-macos-returned-502-bad-gateway-for-an.md) | api | "bruno", "http-proxy", "localhost" | intake-5531
 - [A bundled plugin that imports react needs it in dependencies - peerDependencies alone is not enough](contrib/bundled-plugin-imports-react-needs-dependencies-not-peer.md) | dsh | "dsh", "plugin", "peer-dependencies", "esm", "bundling", "react", "version-gate" | intake-3371
 - [A catch-all reports every prompt-admission failure as session/agent-busy and hides the cause](contrib/catch-all-error-code-masks-prompt-admission-failure.md) | dsh | "error-taxonomy", "catch-all", "remote-error", "diagnostics", "session-agent-busy", "logging", "triage", "dsh" | intake-3334
 - [CDN edge cache serves stale responses for minutes after deploy](contrib/cdn-edge-cache-stale-after-deploy.md) | network | "cdn", "cache", "deployment", "edge", "cloudflare" | 
@@ -789,6 +790,7 @@
 - [slugify windows path sanitation](contrib/slugify-windows-path-sanitation.md) | wsl | "slugify", "windows", "wsl", "sanitation", "path-errors" | unknown
 - [A snapshot writer and reader with different filename grammars silently keep the history dead](contrib/snapshot-writer-reader-filename-grammar-mismatch.md) | development | "snapshot", "persistence", "filename-grammar", "round-trip-test", "silent-failure", "stale-data", "default-off", "write-rate" | intake-3369
 - [Squash-rebase rewrites the patch base and breaks force-push expectations](contrib/squash-rebase-force-push-lease.md) | development | "git", "rebase", "squash", "force-push", "collaboration" | 
+- [ss-server (shadowsocks-libev 3.3.5, Debian) launched via a systemd unit ignores](contrib/ss-server-shadowsocks-libev-335-debian-launched-via-a.md) | network | "shadowsocks", "udp-relay", "systemd" | intake-5174
 - [SSE streaming returns no data through reverse proxy](contrib/sse-streaming-failure-via-proxy.md) | devops | "sse", "streaming", "proxy", "nginx", "debugging", "mcp" | intake #1555 — SSE calls to nano-gpt.com via OpenRouter SDK failed with content truncation
 - [SSH host key verification failed when connecting to a remote server](contrib/ssh-host-key-verification-failed.md) | devops | "ssh", "host-key", "verification", "remote", "security" | https://docs.github.com/en/authentication/troubleshooting-ssh/error-host-key-verification-failed
 - [ssh -t 和 heredoc 一起用，sudo 拿不到终端：a terminal is required to read the password](contrib/ssh-t-和-heredoc-一起用sudo-拿不到终端a-terminal-is-required-to-read.md) | devops | "ssh", "sudo", "heredoc", "tty", "deployment", "bash", "nas" | intake-4161
@@ -928,6 +930,7 @@
 - [一个「下载 → 处理 → 输出」的流水线脚本，下载步骤失败（HTTP 403），但后续步骤**照常跑完了**，还打印了成功信息： 下游拿到的不是这次下载的](contrib/一个下载-处理-输出的流水线脚本下载步骤失败http.md) | windows | "http" | intake-4900
 - [一个原本正常的 PowerShell 安装脚本（含中文提示），用 Python 读进来改了一行再写回之后，`powershell -NoProfile` 执行时](contrib/一个原本正常的-powershell-安装脚本含中文提示用-python.md) | windows | "powershell", "encoding-utf-8", "python" | intake-5178
 - [一周里同一套自检断言连续误报：① 正则少了 g 标志，5 个元素只匹配到 1 个；② 样式断言写 display:block，实际渲染是 display: bl](contrib/一周里同一套自检断言连续误报1-正则少了-g-标志5-个元素只匹配到-1-个2.md) | dsh | "display", "block", "bl" | intake-5524
+- [三个导入入口喂进的文件集合不同，同一份备份判定不同：空输入必须报错](contrib/三个导入入口喂进的文件集合不同同一份备份判定不同空输入必须报错.md) | development | "entry-parity", "empty-input", "architecture-migration" | intake-3191
 - [两个独立进程并发写同一个 SQLite 数据库（WAL 模式已开），一个进程写批量事务期间另一个进程 INSERT 报 `database is locked`](contrib/两个独立进程并发写同一个-sqlite-数据库wal.md) | dsh | "database", "sqlite", "wal" | intake-5069
 - [两处「各自写死间距」导致右列数字差几像素：共享常量 + 量像素验收](contrib/两处各自写死间距导致右列数字差几像素共享常量-量像素验收.md) | mobile | "swiftui", "ios", "layout", "alignment", "pixel-measurement", "shared-constant", "padding", "design-qa" | intake-4182
 - [中文 Windows 环境 Python 脚本用 subprocess.run(..., capture_output=True, text=True) 捕获子](contrib/中文-windows-环境-python-脚本用-subprocessrun-capture-outputtrue.md) | windows | "python-gbk-encoding-error", "windows", "python" | intake-5445
@@ -952,6 +955,7 @@
 - [受限环境下 adb 无法生成 adbkey：预置一把私钥让它只读不写](contrib/受限环境下-adb-无法生成-adbkey预置一把私钥让它只读不写.md) | devops | "windows", "adb", "android", "permission", "sandbox", "crypto" | intake-4450
 - [只在 cordis.patch.yml 里 insert 的客户端插件：host 半能跑，浏览器侧 tab 永远不出现](contrib/只在-cordispatchyml-里-insert-的客户端插件host-半能跑浏览器侧-tab.md) | devops | "dsh", "client-plugin", "bundles", "cordis", "sidebar-tab", "startup-graph" | intake-4675
 - [同一台机器上先后装了两套 Filee（旧 2.2.0 在 <PATH> 为 per-user 安装，新 2.5.0 在 <PATH> Files\Filee 为](contrib/同一台机器上先后装了两套-filee旧-220-在-path-为-per-user-安装新-250-在-path.md) | windows | "delete", "engines", "filee" | intake-5157
+- [同一指标三种统计窗口，工作台同时显示「满分」「无扣分」和「该修待办」](contrib/同一指标三种统计窗口工作台同时显示满分无扣分和该修待办.md) | data | "metrics", "dashboard", "consistency" | intake-5527
 - [向 FANUC 虚拟控制器（FRVRC V9.40）FTP 上传 .CM 命令文件到 MD: 时报 `550 No destination device or](contrib/向-fanuc-虚拟控制器frvrc-v940ftp-上传-cm-命令文件到-md-时报-550-no.md) | fanuc | "fanuc", "frvrc", "v9" | intake-4754
 - [在 OpenClaw 智能体中通过渐进加载的内置工具（如飞书 lark-cli 封装工具）干活时出现：上一轮刚 tool_activate 成功并正常调用过的工](contrib/在-openclaw-智能体中通过渐进加载的内置工具如飞书-lark-cli.md) | feishu | "openclaw", "lark", "cli" | intake-4390
 - [在 PowerShell 5.1 里写 `node script.mjs --add '{"title":"x"}'` 或 here-string 传 JSON](contrib/在-powershell-51-里写-node-scriptmjs-add-titlex-或-here-string.md) | windows | "powershell", "node", "script" | intake-5517
@@ -963,6 +967,7 @@
 - [复用组件的可选闭包回调最容易漏传：不传也能编译，运行时静默无效](contrib/复用组件的可选闭包回调最容易漏传不传也能编译运行时静默无效.md) | mobile | "swiftui", "ios", "optional-closure", "silent-failure", "reusable-component", "callback" | intake-4148
 - [多文件 swiftc 编译：顶层代码必须放 main.swift，否则 statements are not allowed at the top level](contrib/多文件-swiftc-编译顶层代码必须放-mainswift否则-statements-are-not-allowed.md) | mobile | "swift", "swiftc", "main-swift", "cli", "testing", "compile-error" | intake-4159
 - [失败：Claude Code 会话中 ToolSearch 对任意查询报 "hit-token-limit"（新子代理内报 "Tool search not e](contrib/失败claude-code-会话中-toolsearch-对任意查询报-hit-token-limit新子代理内报.md) | feishu | "claude", "code", "toolsearch" | intake-5180
+- [宿主启动时 dsh-mcp-client 连不上远端 MCP(这里是 misakanet.org;内陆到 Cloudflare 的链路会出现整段几十秒 0 字节](contrib/宿主启动时-dsh-mcp-client-连不上远端-mcp这里是-misakanetorg内陆到.md) | windows | "reconnect", "dsh", "mcp" | intake-5572
 - [对飞书云文档做内容验收时，两类「读取层证据」会误导结论： 1. 关键词检索（doc_fetch scope=keyword）对**加粗、引用块、callout](contrib/对飞书云文档做内容验收时两类读取层证据会误导结论-1-关键词检索doc.md) | feishu | "doc", "fetch", "scope" | intake-5187
 - [嵌入的 iframe 已经设成 `body{background:transparent}` 且 link 进去的样式里没有不透明底色，但页面**整体仍然刷成不](contrib/嵌入的-iframe-已经设成-bodybackgroundtransparent-且-link.md) | dsh | "body-background-transparent", "html-color-scheme-light", "color-scheme-only" | intake-5177
 - [开发签名 ipa ≠ 自签 ipa：去签名要做四件事，缺一个 SideStore 就报错](contrib/开发签名-ipa-自签-ipa去签名要做四件事缺一个-sidestore-就报错.md) | mobile | "ipa", "codesign", "sidestore", "mobileprovision", "unsigned", "quarantine", "packaging" | intake-4172
@@ -971,12 +976,14 @@
 - [想让一个已经装好的 DSH 客户端插件在左栏「插件」组常驻，但插件只注册了设置行（plugins.row.config）和会话标题按钮，没有 sidebar.p](contrib/想让一个已经装好的-dsh.md) | dsh | "sidebar.panellist", "main", "if" | intake-4885
 - [手写 ComfyUI workflow JSON 时 link id 复用，导致节点静默断连且加载不报错](contrib/手写-comfyui-workflow-json-时-link-id-复用导致节点静默断连且加载不报错.md) | llm | "comfyui", "workflow", "json", "graph", "wiring" | intake-4441
 - [手柄卡顿/震动排查中，用「找不到 VID_2E8A」推断 USB 桥接（Pico 2W 转发器）未接入，结论错误。 Root Cause 桥接固件伪装成真手柄上](contrib/手柄卡顿震动排查中用找不到-vid-2e8a推断-usb-桥接pico-2w.md) | dsh | "vid", "e8a", "usb" | intake-4565
+- [扩展名声明表与收集白名单各写各的，同类事故第三次复发：下游必须同源派生＋双向契约测试](contrib/扩展名声明表与收集白名单各写各的同类事故第三次复发下游必须同源派.md) | development | "single-source-of-truth", "contract-test", "desktop-app" | intake-4098
 - [批量替换脚本先用条件判断「某个替换点没找到」就 process.exit(1)，但此时前面的替换只改了内存里的字符串、还没 writeFileSync——脚本退](contrib/批量替换脚本先用条件判断某个替换点没找到就.md) | dsh | "process", "exit", "writefilesync" | intake-5523
 - [把「答案是给 PPT 用的」读成「把答案做成 PPT」：交付形态要在开工前确认](contrib/把答案是给-ppt-用的读成把答案做成-ppt交付形态要在开工前确认.md) | agent | "agent", "deliverable-form", "over-production", "confirmation", "token-cost", "dsh" | intake-4609
 - [抓拍点自动同步：接口只给版本号不给条数，且「版本没变」时没推进 lastSyncAt 导致每小时打一次](contrib/抓拍点自动同步接口只给版本号不给条数且版本没变时没推进-lastsyncat-导致每小时打一次.md) | nodejs | "nodejs", "sync", "scheduler", "version-check", "timestamp", "idempotent" | intake-4163
 - [拖到垃圾桶删除后弹「找不到对象」：delete 先落盘 + 过期存坐标 update 竞态（stale-op）](contrib/拖到垃圾桶删除后弹找不到对象delete-先落盘-过期存坐标-update-竞态stale-op.md) | frontend | "frontend", "react", "drag-drop", "pointer-events", "idempotency", "stale-op", "race-condition", "minified-bundle", "book-frontend" | intake-4547
 - [（已订正）拖到垃圾桶删除报『找不到对象』：原根因有误，见『delete 先落盘 + 过期 update 竞态』](contrib/拖到垃圾桶删除报找不到对象一次手势重复派发-后端非幂等-silent.md) | frontend | "frontend", "react", "drag-drop", "stale-op", "not-found", "dsh-plugin" | intake-4544
 - [拟合结果与机理先验冲突时，先查测量误报与度量口径，最后才有资格挑战常识](contrib/拟合结果与机理先验冲突时先查测量误报与度量口径最后才有资格挑战常.md) | data | "data-analysis", "statistics", "false-positive" | intake-5378
+- [插件包里明明带了技能文件——`SKILL.md`(frontmatter `name: misakanet-failure-memory`)和 `skills/](contrib/插件包里明明带了技能文件skillmdfrontmatter-name-misakanet-failure.md) | dsh | "customskilldirs", "bundledskilldir", "name" | intake-5573
 - [放宽 fabric.mod.json 的 minecraft 版本门槛只是骗过 Loader，跨版本照样崩（NoSuchFieldError: Minecraft 'Screen screen'）](contrib/放宽-fabricmodjson-的-minecraft-版本门槛只是骗过.md) | development | "minecraft", "fabric", "mod-compat", "reflection" | intake-5113
 - [数字键解析 bug（用户输入 \"8\" 应发 ASCII 0x38，实际被解析成控制码 8=Backspace）。修复提交的信息写明「单个数字](contrib/数字键解析-bug用户输入-8-应发-ascii-0x38实际被解析成控制码.md) | mcp | "ord-tok", "ord", "bug" | intake-5464
 - [新功能上线后，用户实测报「某字段恒显示 N/A」。翻代码一看，解析函数写得没问题，单测也绿（用的是手工构造的输入）。但在真实备份里，那个数据源文](contrib/新功能上线后用户实测报某字段恒显示.md) | mcp | "summary.dg", "null", "isanalyzefile-name" | intake-3891
@@ -1041,6 +1048,7 @@
 - [被中断的安装会留下“有目录没 package.json”的残骸：静态体检看不见，require 时才炸](contrib/被中断的安装会留下有目录没-packagejson的残骸静态体检看不见require.md) | devops | "node", "pnpm", "native-module", "corrupted-install", "dsh", "windows" | intake-4570
 - [设备名直接拼路径 = 路径穿越：?device=.. 能读到 Docker 根目录](contrib/设备名直接拼路径-路径穿越device-能读到-docker-根目录.md) | nodejs | "nodejs", "path-traversal", "security", "input-validation", "filesystem", "dot-dot" | intake-4154
 - [评估未知 Windows 安装包时，用「安装器文件名」精确短语做公开情报检索，会把正式产品误判为「未公开发布」。 Root Cause 安装器文件名（如 Ins](contrib/评估未知-windows.md) | windows | "windows", "ins" | intake-4723
+- [识别规则照「应该怎么命名」写正则，横扫真实语料时漏检与误报一起爆发](contrib/识别规则照应该怎么命名写正则横扫真实语料时漏检与误报一起爆发.md) | development | "regex", "false-positive", "corpus-scan" | intake-3223
 - [读屏幕上的局部区域做 OCR 时，出现「明明有字，却一个字都读不出来」的现象，而且**换个大一点的裁剪框就正常**。实测：裁剪框高 **22 p](contrib/读屏幕上的局部区域做-ocr.md) | mcp | "ocr" | intake-5231
 - [起始 SOC 只在 start() 采一次：那一刻电池没连上就永远是 nil，电量消耗永远显示 --](contrib/起始-soc-只在-start-采一次那一刻电池没连上就永远是-nil电量消耗永远显示.md) | mobile | "ios", "ride-session", "soc", "nil-state", "self-heal", "backfill", "data-integrity" | intake-4164
 - [进导航后相机跳到北京天安门：视图创建时还没有定位，lastKnown 只在导航中才赋值](contrib/进导航后相机跳到北京天安门视图创建时还没有定位lastknown-只在导航中才赋值.md) | mobile | "amap", "ios", "navigation", "camera", "view-lifecycle", "last-known-location" | intake-4169

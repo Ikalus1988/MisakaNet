@@ -1,82 +1,82 @@
 {
-  "generated_at": "2026-11-22T01:41:58.448671+00:00",
+  "generated_at": "2026-11-22T11:40:45.904726+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 13,
   "items": [
     {
       "type": "merged_pr",
-      "title": "feat(lessons): seven intakes were complete down to Verification and lacked only their tags",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5529",
-      "timestamp": "2026-11-22T01:41:46Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
       "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5553",
-      "timestamp": "2026-11-21T19:53:57Z",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5571",
+      "timestamp": "2026-11-22T07:55:18Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(lessons): intake batch 2026-11-21",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5530",
-      "timestamp": "2026-11-21T15:30:12Z",
+      "title": "feat(lessons): three intake that were blocked by public tool names, and the allowlist entries that unblock them",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5570",
+      "timestamp": "2026-11-22T07:33:56Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5520",
-      "timestamp": "2026-11-21T11:46:24Z",
+      "title": "fix(questions): retire only the tasks this script created",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5569",
+      "timestamp": "2026-11-22T06:41:41Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(lessons): intake batch 2026-11-21",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5519",
-      "timestamp": "2026-11-21T10:28:15Z",
+      "title": "fix(questions): a refused post says which issue and why, and does not abort the run",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5566",
+      "timestamp": "2026-11-22T05:58:09Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "fix(questions): bounty tasks are read in full and retired when their premise is gone",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5565",
+      "timestamp": "2026-11-22T04:27:31Z",
       "source": "github"
     },
     {
       "type": "lesson",
-      "title": "A healthy SkillEvaluator 1.0.1 installation failed an integration probe that exp",
-      "url": "lessons/contrib/a-healthy-skillevaluator-101-installation-failed-an.md",
-      "timestamp": "2026-11-21",
+      "title": "Bruno CLI 4.3.0 on macOS returned 502 Bad Gateway for an anonymous request to a",
+      "url": "lessons/contrib/bruno-cli-430-on-macos-returned-502-bad-gateway-for-an.md",
+      "timestamp": "2026-11-22",
+      "domain": "api",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "Headline metric silently degrades to a default that looks measured: (1) the read",
+      "url": "lessons/contrib/headline-metric-silently-degrades-to-a-default-that-looks.md",
+      "timestamp": "2026-11-22",
       "domain": "mcp",
       "source": "lessons"
     },
     {
       "type": "lesson",
-      "title": "BI 平台 SQL 按线体+班次 GROUP BY 汇总生产数据时，欠料/堵线时长一列写成 `(a.bdt + a.sdt) as '...'`",
-      "url": "lessons/contrib/bi-平台-sql-按线体班次-group-by-汇总生产数据时欠料堵线时长一列写成-abdt.md",
-      "timestamp": "2026-11-21",
-      "domain": "mcp",
+      "title": "Python\\u2194Node.js bridge on Windows corrupts Chinese paths: subprocess text=Tr",
+      "url": "lessons/contrib/pythonu2194nodejs-bridge-on-windows-corrupts-chinese-paths.md",
+      "timestamp": "2026-11-22",
+      "domain": "windows",
       "source": "lessons"
     },
     {
       "type": "lesson",
-      "title": "BI 报表给各线体分配\"额定节拍\"基准常数（CASE WHEN 按线体名映射到不同档位，如单线 44s / 双线 94s）后，图表出现两类异常：",
-      "url": "lessons/contrib/bi-报表给各线体分配额定节拍基准常数case-when.md",
-      "timestamp": "2026-11-21",
-      "domain": "mcp",
+      "title": "ROBOGUIDE 工位文件 .frw 被外部编辑（如改 XML UserFrames 坐标）后，该工位每次引导必楔死：RGCore 存活但冻在 frmSpla",
+      "url": "lessons/contrib/roboguide-工位文件-frw-被外部编辑如改-xml-userframes.md",
+      "timestamp": "2026-11-22",
+      "domain": "fanuc",
       "source": "lessons"
     },
     {
       "type": "lesson",
-      "title": "Codex daemon restart refused while a standalone app-server was answering on the",
-      "url": "lessons/contrib/codex-daemon-restart-refused-while-a-standalone-app-server.md",
-      "timestamp": "2026-11-21",
-      "domain": "mcp",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "NVIDIA SkillEvaluator's pinned SkillSpector does not install on an Alpine instal",
-      "url": "lessons/contrib/nvidia-skillevaluators-pinned-skillspector-does-not-install.md",
-      "timestamp": "2026-11-21",
-      "domain": "mcp",
+      "title": "ss-server (shadowsocks-libev 3.3.5, Debian) launched via a systemd unit ignores",
+      "url": "lessons/contrib/ss-server-shadowsocks-libev-335-debian-launched-via-a.md",
+      "timestamp": "2026-11-22",
+      "domain": "network",
       "source": "lessons"
     },
     {
