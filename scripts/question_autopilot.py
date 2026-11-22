@@ -138,8 +138,23 @@ def _token_request(url: str, payload: dict | None = None, method: str | None = N
     request.add_header("Accept", "application/vnd.github+json")
     for key, value in (headers or {}).items():
         request.add_header(key, value)
-    with urllib.request.urlopen(request, timeout=60) as response:
-        return json.loads(response.read().decode() or "{}")
+    try:
+        with urllib.request.urlopen(request, timeout=60) as response:
+            return json.loads(response.read().decode() or "{}")
+    except urllib.error.HTTPError as error:
+        # GitHub puts the reason in the **body** (`Issue is locked`, `Resource not accessible by
+        # integration`, a secondary rate limit's `retry after`). Raising the bare status threw that
+        # away: measured 2026-11-22, a run died on `HTTP Error 403: Forbidden` with no way to tell
+        # which issue or why, and the run's other work (digest, bounties) never happened.
+        detail = ""
+        try:
+            detail = (error.read() or b"")[:400].decode("utf-8", "replace").strip()
+        except Exception:                            # noqa: BLE001 — the status is still the signal
+            pass
+        raise SystemExit(
+            f"GitHub refused {method or 'GET'} {url.rsplit('/repos/', 1)[-1]}: "
+            f"HTTP {error.code} {error.reason}"
+            + (f" — {detail}" if detail else " — no body")) from error
 
 
 # ── GitHub ──────────────────────────────────────────────────────────────────
@@ -170,6 +185,41 @@ def token() -> str:
 def gh(path: str, payload: dict | None = None, method: str | None = None):
     return _token_request(f"{API}/repos/{REPO_SLUG}{path}", payload, method,
                           {"Authorization": f"Bearer {token()}"})
+
+
+def is_rate_limit(message: str) -> bool:
+    """A refusal that means "too fast" rather than "never allowed".
+
+    GitHub answers a burst with **403** and a body naming the secondary rate limit (or 429 when the
+    primary one is exhausted). Both are retryable; a permission refusal is not, and retrying it would
+    hide the real problem behind three identical failures.
+    """
+    text = message.lower()
+    return "rate limit" in text or "http 429" in text or "too many requests" in text
+
+
+#: Seconds to wait before the 2nd and 3rd attempt at a refused post. Same shape as
+#: `COVERAGE_BACKOFF_SECONDS`: a short wait fixes a burst, and a long one gives up honestly.
+POST_BACKOFF_SECONDS = (30, 90)
+
+
+def post_comment(number: int, body: str) -> None:
+    """One comment, retried only when the refusal was about speed.
+
+    Measured 2026-11-22: the receipt loop posts two requests per question and this run had ~59
+    receipts to rewrite (the corpus had changed, so every coverage verdict did too) — a burst, which
+    GitHub refuses with 403 and a secondary-rate-limit body. Without a wait the whole batch of
+    receipts is lost *and* the run aborts before the digest and the bounty pass.
+    """
+    for attempt, wait in enumerate((0, *POST_BACKOFF_SECONDS)):
+        if wait:
+            time.sleep(wait)
+        try:
+            gh(f"/issues/{number}/comments", {"body": body})
+            return
+        except SystemExit as error:
+            if not is_rate_limit(str(error.code)) or attempt == len(POST_BACKOFF_SECONDS):
+                raise
 
 
 def open_issues() -> list[dict]:
@@ -799,15 +849,26 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     written = 0
+    refused: list[str] = []
     for item in plan["items"]:
         body = receipt(item)
         body += f"\n<!-- autopilot-digest:{hashlib.sha256(body.encode()).hexdigest()[:12]} -->"
-        comments = gh(f"/issues/{item['number']}/comments?per_page=100")
-        if receipt_already_current(comments, body):
-            continue
-        gh(f"/issues/{item['number']}/comments", {"body": body})
-        written += 1
-    print(f"receipts written: {written} (unchanged: {len(plan['items']) - written})")
+        try:
+            comments = gh(f"/issues/{item['number']}/comments?per_page=100")
+            if receipt_already_current(comments, body):
+                continue
+            post_comment(item["number"], body)
+            written += 1
+        except SystemExit as error:
+            # One refused question must not take the digest and the bounty pass with it. This loop is
+            # the last thing before both, and it used to be an all-or-nothing run: a single 403 meant
+            # nothing else happened, silently. Count it, name it, keep going — and exit non-zero at the
+            # end so the run still reports that posts were missing.
+            refused.append(f"#{item['number']}: {error}")
+    print(f"receipts written: {written} (unchanged: {len(plan['items']) - written - len(refused)}, "
+          f"refused: {len(refused)})")
+    for line in refused:
+        print(f"  receipt refused — {line}")
 
     if args.bounties:
         created = updated = core_skip = retired = 0
@@ -860,7 +921,10 @@ def main(argv: list[str] | None = None) -> int:
 
     body = digest_body(plan["items"], plan["groups"], planned_bounties(plan))
     write_digest(body)
-    return 0
+    # A run that could not post every receipt is not a success, even though the digest and the bounty
+    # pass completed: the whole point of the receipt is that no question is left in silence, and a
+    # green run is how that gap stayed invisible before.
+    return 1 if refused else 0
 
 
 DIGEST_SUPERSEDED = (
