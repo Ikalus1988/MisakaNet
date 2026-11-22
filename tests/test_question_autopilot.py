@@ -19,6 +19,8 @@ import pathlib
 import re
 import sys
 
+import pytest
+
 REPO = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))
 
@@ -594,3 +596,55 @@ def test_an_answered_label_is_enough_even_when_the_issue_stays_open():
     assert qa.is_answered(questions[100])
     assert qa.retirement_reason(issue, questions, {100: 100}, {}) == \
         "every linked question is answered or closed"
+
+
+def test_an_http_refusal_carries_the_reason_github_gave(monkeypatch):
+    """Measured 2026-11-22: a run died on `HTTP Error 403: Forbidden` and nothing said which issue.
+
+    GitHub's reason is in the body (`Issue is locked`, a secondary rate limit's `retry after`), so a
+    raise that keeps only the status throws away the one fact that makes the failure fixable.
+    """
+    import io
+    import urllib.error
+
+    def refuse(request, timeout=None):
+        raise urllib.error.HTTPError(request.full_url, 403, "Forbidden", {},
+                                     io.BytesIO(b'{"message":"Issue is locked"}'))
+
+    monkeypatch.setattr(qa.urllib.request, "urlopen", refuse)
+    with pytest.raises(SystemExit) as exc:
+        qa._token_request("https://api.github.com/repos/x/y/issues/1/comments", {"body": "hi"}, "POST")
+    text = str(exc.value.code)
+    assert "HTTP 403" in text and "Issue is locked" in text, text
+    assert "/issues/1/comments" in text, "the refused path must be named, not just the status"
+
+
+def test_a_rate_limit_is_retried_and_a_permission_refusal_is_not(monkeypatch):
+    """403 covers both "too fast" and "never allowed" — only one of them gets better with a wait."""
+    assert qa.is_rate_limit('HTTP 403 Forbidden — {"message":"You have exceeded a secondary rate limit"}')
+    assert qa.is_rate_limit("GitHub refused POST …: HTTP 429 Too Many Requests")
+    assert not qa.is_rate_limit('HTTP 403 Forbidden — {"message":"Resource not accessible by integration"}')
+
+    attempts: list[str] = []
+
+    def refuse_twice_then_accept(path, payload=None, method=None):
+        attempts.append(path)
+        if len(attempts) < 3:
+            raise SystemExit('GitHub refused POST x: HTTP 403 Forbidden — secondary rate limit')
+        return {}
+
+    monkeypatch.setattr(qa, "gh", refuse_twice_then_accept)
+    monkeypatch.setattr(qa.time, "sleep", lambda seconds: None)
+    qa.post_comment(1, "body")
+    assert len(attempts) == 3, "a rate limit must be retried, not re-raised on the first try"
+
+    attempts.clear()
+
+    def forbidden(path, payload=None, method=None):
+        attempts.append(path)
+        raise SystemExit('HTTP 403 Forbidden — Resource not accessible by integration')
+
+    monkeypatch.setattr(qa, "gh", forbidden)
+    with pytest.raises(SystemExit):
+        qa.post_comment(2, "body")
+    assert len(attempts) == 1, "a permission refusal must not be retried"
