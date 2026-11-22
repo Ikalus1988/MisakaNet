@@ -622,7 +622,12 @@ def retirement_reason(issue: dict, questions: dict[int, dict], planned: dict[int
     """
     anchor = anchor_of(issue)
     if anchor is None:
-        return "it carries no cluster marker, so nothing can refresh it"
+        # **Not ours.** Measured the hard way on 2026-11-22: the first version returned a reason here,
+        # and the pass closed ten hand-filed `bounty` tasks it had never created (#1258, #1550, #1753,
+        # #1819, #2593, #4013, #4751, #4874, #4875, #4876) — all reopened within five minutes. "Nothing
+        # can refresh it" is true of a task the autopilot does not own and also irrelevant: ownership is
+        # the marker, and a task without one has no premise of ours to lose.
+        return None
     if anchor in kept:
         return f"it duplicates #{kept[anchor]}, which carries the same anchor marker"
     numbers = linked_questions(issue)
@@ -905,9 +910,13 @@ def main(argv: list[str] | None = None) -> int:
         open_by_number = {i["number"]: i for i in open_issues()}
         questions = open_by_number
         kept: dict[int, int] = {}
+        foreign = 0
         for issue in sorted(all_bounties("open"), key=lambda i: i["number"]):
             reason = retirement_reason(issue, questions, planned_anchor, kept)
             anchor = anchor_of(issue)
+            if anchor is None:
+                foreign += 1
+                continue
             if reason:
                 gh(f"/issues/{issue['number']}/comments",
                    {"body": BOUNTY_RETIRED.format(reason=reason)})
@@ -917,7 +926,8 @@ def main(argv: list[str] | None = None) -> int:
             elif anchor is not None:
                 kept[anchor] = issue["number"]
         print(f"bounties: {created} created, {updated} refreshed, {retired} retired, {core_skip} "
-              f"withheld by the compliance gate")
+              f"withheld by the compliance gate, {foreign} hand-filed task(s) left alone "
+              f"(no cluster marker: not this script's to close)")
 
     body = digest_body(plan["items"], plan["groups"], planned_bounties(plan))
     write_digest(body)
