@@ -930,6 +930,7 @@
 - [一个「下载 → 处理 → 输出」的流水线脚本，下载步骤失败（HTTP 403），但后续步骤**照常跑完了**，还打印了成功信息： 下游拿到的不是这次下载的](contrib/一个下载-处理-输出的流水线脚本下载步骤失败http.md) | windows | "http" | intake-4900
 - [一个原本正常的 PowerShell 安装脚本（含中文提示），用 Python 读进来改了一行再写回之后，`powershell -NoProfile` 执行时](contrib/一个原本正常的-powershell-安装脚本含中文提示用-python.md) | windows | "powershell", "encoding-utf-8", "python" | intake-5178
 - [一周里同一套自检断言连续误报：① 正则少了 g 标志，5 个元素只匹配到 1 个；② 样式断言写 display:block，实际渲染是 display: bl](contrib/一周里同一套自检断言连续误报1-正则少了-g-标志5-个元素只匹配到-1-个2.md) | dsh | "display", "block", "bl" | intake-5524
+- [三个导入入口喂进的文件集合不同，同一份备份判定不同：空输入必须报错](contrib/三个导入入口喂进的文件集合不同同一份备份判定不同空输入必须报错.md) | development | "entry-parity", "empty-input", "architecture-migration" | intake-3191
 - [两个独立进程并发写同一个 SQLite 数据库（WAL 模式已开），一个进程写批量事务期间另一个进程 INSERT 报 `database is locked`](contrib/两个独立进程并发写同一个-sqlite-数据库wal.md) | dsh | "database", "sqlite", "wal" | intake-5069
 - [两处「各自写死间距」导致右列数字差几像素：共享常量 + 量像素验收](contrib/两处各自写死间距导致右列数字差几像素共享常量-量像素验收.md) | mobile | "swiftui", "ios", "layout", "alignment", "pixel-measurement", "shared-constant", "padding", "design-qa" | intake-4182
 - [中文 Windows 环境 Python 脚本用 subprocess.run(..., capture_output=True, text=True) 捕获子](contrib/中文-windows-环境-python-脚本用-subprocessrun-capture-outputtrue.md) | windows | "python-gbk-encoding-error", "windows", "python" | intake-5445
@@ -975,6 +976,7 @@
 - [想让一个已经装好的 DSH 客户端插件在左栏「插件」组常驻，但插件只注册了设置行（plugins.row.config）和会话标题按钮，没有 sidebar.p](contrib/想让一个已经装好的-dsh.md) | dsh | "sidebar.panellist", "main", "if" | intake-4885
 - [手写 ComfyUI workflow JSON 时 link id 复用，导致节点静默断连且加载不报错](contrib/手写-comfyui-workflow-json-时-link-id-复用导致节点静默断连且加载不报错.md) | llm | "comfyui", "workflow", "json", "graph", "wiring" | intake-4441
 - [手柄卡顿/震动排查中，用「找不到 VID_2E8A」推断 USB 桥接（Pico 2W 转发器）未接入，结论错误。 Root Cause 桥接固件伪装成真手柄上](contrib/手柄卡顿震动排查中用找不到-vid-2e8a推断-usb-桥接pico-2w.md) | dsh | "vid", "e8a", "usb" | intake-4565
+- [扩展名声明表与收集白名单各写各的，同类事故第三次复发：下游必须同源派生＋双向契约测试](contrib/扩展名声明表与收集白名单各写各的同类事故第三次复发下游必须同源派.md) | development | "single-source-of-truth", "contract-test", "desktop-app" | intake-4098
 - [批量替换脚本先用条件判断「某个替换点没找到」就 process.exit(1)，但此时前面的替换只改了内存里的字符串、还没 writeFileSync——脚本退](contrib/批量替换脚本先用条件判断某个替换点没找到就.md) | dsh | "process", "exit", "writefilesync" | intake-5523
 - [把「答案是给 PPT 用的」读成「把答案做成 PPT」：交付形态要在开工前确认](contrib/把答案是给-ppt-用的读成把答案做成-ppt交付形态要在开工前确认.md) | agent | "agent", "deliverable-form", "over-production", "confirmation", "token-cost", "dsh" | intake-4609
 - [抓拍点自动同步：接口只给版本号不给条数，且「版本没变」时没推进 lastSyncAt 导致每小时打一次](contrib/抓拍点自动同步接口只给版本号不给条数且版本没变时没推进-lastsyncat-导致每小时打一次.md) | nodejs | "nodejs", "sync", "scheduler", "version-check", "timestamp", "idempotent" | intake-4163
@@ -1046,6 +1048,7 @@
 - [被中断的安装会留下“有目录没 package.json”的残骸：静态体检看不见，require 时才炸](contrib/被中断的安装会留下有目录没-packagejson的残骸静态体检看不见require.md) | devops | "node", "pnpm", "native-module", "corrupted-install", "dsh", "windows" | intake-4570
 - [设备名直接拼路径 = 路径穿越：?device=.. 能读到 Docker 根目录](contrib/设备名直接拼路径-路径穿越device-能读到-docker-根目录.md) | nodejs | "nodejs", "path-traversal", "security", "input-validation", "filesystem", "dot-dot" | intake-4154
 - [评估未知 Windows 安装包时，用「安装器文件名」精确短语做公开情报检索，会把正式产品误判为「未公开发布」。 Root Cause 安装器文件名（如 Ins](contrib/评估未知-windows.md) | windows | "windows", "ins" | intake-4723
+- [识别规则照「应该怎么命名」写正则，横扫真实语料时漏检与误报一起爆发](contrib/识别规则照应该怎么命名写正则横扫真实语料时漏检与误报一起爆发.md) | development | "regex", "false-positive", "corpus-scan" | intake-3223
 - [读屏幕上的局部区域做 OCR 时，出现「明明有字，却一个字都读不出来」的现象，而且**换个大一点的裁剪框就正常**。实测：裁剪框高 **22 p](contrib/读屏幕上的局部区域做-ocr.md) | mcp | "ocr" | intake-5231
 - [起始 SOC 只在 start() 采一次：那一刻电池没连上就永远是 nil，电量消耗永远显示 --](contrib/起始-soc-只在-start-采一次那一刻电池没连上就永远是-nil电量消耗永远显示.md) | mobile | "ios", "ride-session", "soc", "nil-state", "self-heal", "backfill", "data-integrity" | intake-4164
 - [进导航后相机跳到北京天安门：视图创建时还没有定位，lastKnown 只在导航中才赋值](contrib/进导航后相机跳到北京天安门视图创建时还没有定位lastknown-只在导航中才赋值.md) | mobile | "amap", "ios", "navigation", "camera", "view-lifecycle", "last-known-location" | intake-4169

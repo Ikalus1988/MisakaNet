@@ -976,6 +976,7 @@
   <url><loc>https://misakanet.org/lessons/一个下载-处理-输出的流水线脚本下载步骤失败http-403但后续步骤照常跑完了还打印了成功信息-下游拿到的不是这次下载的/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/一个原本正常的-powershell-安装脚本含中文提示用-python-读进来改了一行再写回之后powershell-noprofile-执行时/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/一周里同一套自检断言连续误报①-正则少了-g-标志5-个元素只匹配到-1-个②-样式断言写-displayblock实际渲染是-display-bl/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/三个导入入口喂进的文件集合不同同一份备份判定不同空输入必须报错/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/两个独立进程并发写同一个-sqlite-数据库wal-模式已开一个进程写批量事务期间另一个进程-insert-报-database-is-locked/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/两处各自写死间距导致右列数字差几像素共享常量-量像素验收/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/中文-windows-环境-python-脚本用-subprocessrun-capture-outputtrue-texttrue-捕获子/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -1021,6 +1022,7 @@
   <url><loc>https://misakanet.org/lessons/想让一个已经装好的-dsh-客户端插件在左栏插件组常驻但插件只注册了设置行pluginsrowconfig和会话标题按钮没有-sidebarp/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/手写-comfyui-workflow-json-时-link-id-复用导致节点静默断连且加载不报错/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/手柄卡顿震动排查中用找不到-vid-2e8a推断-usb-桥接pico-2w-转发器未接入结论错误-root-cause-桥接固件伪装成真手柄上/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/扩展名声明表与收集白名单各写各的同类事故第三次复发下游必须同源派生双向契约测试/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/批量替换脚本先用条件判断某个替换点没找到就-processexit1但此时前面的替换只改了内存里的字符串还没-writefilesync脚本退/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/把答案是给-ppt-用的读成把答案做成-ppt交付形态要在开工前确认/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/抓拍点自动同步接口只给版本号不给条数且版本没变时没推进-lastsyncat-导致每小时打一次/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -1091,6 +1093,7 @@
   <url><loc>https://misakanet.org/lessons/被中断的安装会留下有目录没-packagejson的残骸静态体检看不见require-时才炸/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/设备名直接拼路径-路径穿越device-能读到-docker-根目录/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/评估未知-windows-安装包时用安装器文件名精确短语做公开情报检索会把正式产品误判为未公开发布-root-cause-安装器文件名如-ins/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/识别规则照应该怎么命名写正则横扫真实语料时漏检与误报一起爆发/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/读屏幕上的局部区域做-ocr-时出现明明有字却一个字都读不出来的现象而且换个大一点的裁剪框就正常实测裁剪框高-22-p/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/起始-soc-只在-start-采一次那一刻电池没连上就永远是-nil电量消耗永远显示/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/进导航后相机跳到北京天安门视图创建时还没有定位lastknown-只在导航中才赋值/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
