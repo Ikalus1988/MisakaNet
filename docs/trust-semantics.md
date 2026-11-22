@@ -109,12 +109,12 @@ when the committed table stops matching the corpus, so it cannot rot the way a h
 | Level | Lessons | Share |
 |---|---|---|
 | **E0** | 67 | 6.1% |
-| **E1** (declared) | 617 | 55.8% |
+| **E1** (declared) | 618 | 55.9% |
 | **E2** (declared) | 92 | 8.3% |
 | **E3** (declared) | 16 | 1.4% |
 | **E4** (declared) | 0 | 0.0% |
 
-- Total lessons: **1105**
+- Total lessons: **1106**
 - At **E0** in total (declared + default): **380** (34.4%) — of which **313** declare no level at all
 - At **E4** (*observed reuse by two or more distinct clients*): **0**
 

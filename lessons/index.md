@@ -996,6 +996,7 @@
 - [用 tia-portal-mcp 1.1.0 连本机 TIA Portal V16（装在 <PATH> V16，不在 C 盘）时依次卡三处： 1. connec](contrib/用-tia-portal-mcp-110-连本机-tia-portal-v16装在-path-v16不在-c.md) | windows | "tia", "portal", "mcp" | intake-4368
 - [用 WinRT OCR 读**小位图字体**的界面（工业 HMI / 示教器软键行这类 8~12 px 的点阵字）时，会出现很怪的「部分读得出、部分读不出」：同](contrib/用-winrt-ocr-读小位图字体的界面工业-hmi-示教器软键行这类-812-px.md) | mcp | "winrt", "ocr", "hmi" | intake-5168
 - [用手柄长时间玩游戏时，屏幕隔一段时间就渐暗/熄灭，动一下鼠标立刻恢复；键盘手柄怎么按都无法唤醒屏幕。看起来像显示器省电或面板故障。 Root Cause Win](contrib/用手柄长时间玩游戏时屏幕隔一段时间就渐暗熄灭动一下鼠标立刻恢复键.md) | windows | "root", "cause", "win" | intake-4566
+- [用编辑工具改一份原本带 UTF-8 BOM 的 .ps1（中文注释 + 中文提示），改完一跑就报一串 `Unexpected token '}' in expr](contrib/用编辑工具改一份原本带-utf-8-bom-的-ps1中文注释.md) | windows | "utf", "bom", "ps1" | intake-5554
 - [用脚本按大括号配对替换 JS 函数：模板字符串里的 ${} 会把配对带偏，整份文件被截断](contrib/用脚本按大括号配对替换-js-函数被模板字符串带偏.md) | devops | "javascript", "refactor", "brace-matching", "template-literal", "file-corruption" | intake-4554
 - [DSH preset 里 tools.restrict 一次摘 41 个 MCP 工具：全部失败](contrib/症状-dsh-021-rc5-上想用-ctxtoolsrestrictdeny-在某个-agent-preset-里把.md) | windows | "dsh", "rc", "ctx" | intake-4477
 - [hyperframes/puppeteer 下载 Chrome 只有 30KB/s：走 Google CDN 的坑](contrib/症状-npx-hyperframes-browser-ensure或任何-puppeteerchrome-for.md) | windows | "npx", "hyperframes", "browser" | intake-4417
