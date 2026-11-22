@@ -110,6 +110,7 @@
 - [The brochure's adaptive weaving claim is absent from the operator manual, and the sensor has no weave function](contrib/brochure-claim-not-in-operator-manual.md) | fanuc | "fanuc", "welding", "laser-vision-sensor", "weaving", "capability-verification", "procurement", "documentation" | intake-3704
 - [CSP blocks JavaScript injection in browser automation of authenticated pages](contrib/browser-automation-csp-bypass.md) | mcp | "browser-automation", "csp", "content-security-policy", "cdp", "puppeteer", "playwright", "eval", "injection" | <user>
 - [browser-harness — AI 直连 Chrome 的 CDP 浏览器Automation](contrib/browser-harness-cdp-browser-automation.md) | automation | "automation", "browser", "harness" | unknown
+- [Bruno CLI 4.3.0 on macOS returned 502 Bad Gateway for an anonymous request to a](contrib/bruno-cli-430-on-macos-returned-502-bad-gateway-for-an.md) | api | "bruno", "http-proxy", "localhost" | intake-5531
 - [A bundled plugin that imports react needs it in dependencies - peerDependencies alone is not enough](contrib/bundled-plugin-imports-react-needs-dependencies-not-peer.md) | dsh | "dsh", "plugin", "peer-dependencies", "esm", "bundling", "react", "version-gate" | intake-3371
 - [A catch-all reports every prompt-admission failure as session/agent-busy and hides the cause](contrib/catch-all-error-code-masks-prompt-admission-failure.md) | dsh | "error-taxonomy", "catch-all", "remote-error", "diagnostics", "session-agent-busy", "logging", "triage", "dsh" | intake-3334
 - [CDN edge cache serves stale responses for minutes after deploy](contrib/cdn-edge-cache-stale-after-deploy.md) | network | "cdn", "cache", "deployment", "edge", "cloudflare" | 
@@ -789,6 +790,7 @@
 - [slugify windows path sanitation](contrib/slugify-windows-path-sanitation.md) | wsl | "slugify", "windows", "wsl", "sanitation", "path-errors" | unknown
 - [A snapshot writer and reader with different filename grammars silently keep the history dead](contrib/snapshot-writer-reader-filename-grammar-mismatch.md) | development | "snapshot", "persistence", "filename-grammar", "round-trip-test", "silent-failure", "stale-data", "default-off", "write-rate" | intake-3369
 - [Squash-rebase rewrites the patch base and breaks force-push expectations](contrib/squash-rebase-force-push-lease.md) | development | "git", "rebase", "squash", "force-push", "collaboration" | 
+- [ss-server (shadowsocks-libev 3.3.5, Debian) launched via a systemd unit ignores](contrib/ss-server-shadowsocks-libev-335-debian-launched-via-a.md) | network | "shadowsocks", "udp-relay", "systemd" | intake-5174
 - [SSE streaming returns no data through reverse proxy](contrib/sse-streaming-failure-via-proxy.md) | devops | "sse", "streaming", "proxy", "nginx", "debugging", "mcp" | intake #1555 — SSE calls to nano-gpt.com via OpenRouter SDK failed with content truncation
 - [SSH host key verification failed when connecting to a remote server](contrib/ssh-host-key-verification-failed.md) | devops | "ssh", "host-key", "verification", "remote", "security" | https://docs.github.com/en/authentication/troubleshooting-ssh/error-host-key-verification-failed
 - [ssh -t 和 heredoc 一起用，sudo 拿不到终端：a terminal is required to read the password](contrib/ssh-t-和-heredoc-一起用sudo-拿不到终端a-terminal-is-required-to-read.md) | devops | "ssh", "sudo", "heredoc", "tty", "deployment", "bash", "nas" | intake-4161
@@ -952,6 +954,7 @@
 - [受限环境下 adb 无法生成 adbkey：预置一把私钥让它只读不写](contrib/受限环境下-adb-无法生成-adbkey预置一把私钥让它只读不写.md) | devops | "windows", "adb", "android", "permission", "sandbox", "crypto" | intake-4450
 - [只在 cordis.patch.yml 里 insert 的客户端插件：host 半能跑，浏览器侧 tab 永远不出现](contrib/只在-cordispatchyml-里-insert-的客户端插件host-半能跑浏览器侧-tab.md) | devops | "dsh", "client-plugin", "bundles", "cordis", "sidebar-tab", "startup-graph" | intake-4675
 - [同一台机器上先后装了两套 Filee（旧 2.2.0 在 <PATH> 为 per-user 安装，新 2.5.0 在 <PATH> Files\Filee 为](contrib/同一台机器上先后装了两套-filee旧-220-在-path-为-per-user-安装新-250-在-path.md) | windows | "delete", "engines", "filee" | intake-5157
+- [同一指标三种统计窗口，工作台同时显示「满分」「无扣分」和「该修待办」](contrib/同一指标三种统计窗口工作台同时显示满分无扣分和该修待办.md) | data | "metrics", "dashboard", "consistency" | intake-5527
 - [向 FANUC 虚拟控制器（FRVRC V9.40）FTP 上传 .CM 命令文件到 MD: 时报 `550 No destination device or](contrib/向-fanuc-虚拟控制器frvrc-v940ftp-上传-cm-命令文件到-md-时报-550-no.md) | fanuc | "fanuc", "frvrc", "v9" | intake-4754
 - [在 OpenClaw 智能体中通过渐进加载的内置工具（如飞书 lark-cli 封装工具）干活时出现：上一轮刚 tool_activate 成功并正常调用过的工](contrib/在-openclaw-智能体中通过渐进加载的内置工具如飞书-lark-cli.md) | feishu | "openclaw", "lark", "cli" | intake-4390
 - [在 PowerShell 5.1 里写 `node script.mjs --add '{"title":"x"}'` 或 here-string 传 JSON](contrib/在-powershell-51-里写-node-scriptmjs-add-titlex-或-here-string.md) | windows | "powershell", "node", "script" | intake-5517
