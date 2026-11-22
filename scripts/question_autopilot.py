@@ -138,8 +138,23 @@ def _token_request(url: str, payload: dict | None = None, method: str | None = N
     request.add_header("Accept", "application/vnd.github+json")
     for key, value in (headers or {}).items():
         request.add_header(key, value)
-    with urllib.request.urlopen(request, timeout=60) as response:
-        return json.loads(response.read().decode() or "{}")
+    try:
+        with urllib.request.urlopen(request, timeout=60) as response:
+            return json.loads(response.read().decode() or "{}")
+    except urllib.error.HTTPError as error:
+        # GitHub puts the reason in the **body** (`Issue is locked`, `Resource not accessible by
+        # integration`, a secondary rate limit's `retry after`). Raising the bare status threw that
+        # away: measured 2026-11-22, a run died on `HTTP Error 403: Forbidden` with no way to tell
+        # which issue or why, and the run's other work (digest, bounties) never happened.
+        detail = ""
+        try:
+            detail = (error.read() or b"")[:400].decode("utf-8", "replace").strip()
+        except Exception:                            # noqa: BLE001 — the status is still the signal
+            pass
+        raise SystemExit(
+            f"GitHub refused {method or 'GET'} {url.rsplit('/repos/', 1)[-1]}: "
+            f"HTTP {error.code} {error.reason}"
+            + (f" — {detail}" if detail else " — no body")) from error
 
 
 # ── GitHub ──────────────────────────────────────────────────────────────────
@@ -170,6 +185,41 @@ def token() -> str:
 def gh(path: str, payload: dict | None = None, method: str | None = None):
     return _token_request(f"{API}/repos/{REPO_SLUG}{path}", payload, method,
                           {"Authorization": f"Bearer {token()}"})
+
+
+def is_rate_limit(message: str) -> bool:
+    """A refusal that means "too fast" rather than "never allowed".
+
+    GitHub answers a burst with **403** and a body naming the secondary rate limit (or 429 when the
+    primary one is exhausted). Both are retryable; a permission refusal is not, and retrying it would
+    hide the real problem behind three identical failures.
+    """
+    text = message.lower()
+    return "rate limit" in text or "http 429" in text or "too many requests" in text
+
+
+#: Seconds to wait before the 2nd and 3rd attempt at a refused post. Same shape as
+#: `COVERAGE_BACKOFF_SECONDS`: a short wait fixes a burst, and a long one gives up honestly.
+POST_BACKOFF_SECONDS = (30, 90)
+
+
+def post_comment(number: int, body: str) -> None:
+    """One comment, retried only when the refusal was about speed.
+
+    Measured 2026-11-22: the receipt loop posts two requests per question and this run had ~59
+    receipts to rewrite (the corpus had changed, so every coverage verdict did too) — a burst, which
+    GitHub refuses with 403 and a secondary-rate-limit body. Without a wait the whole batch of
+    receipts is lost *and* the run aborts before the digest and the bounty pass.
+    """
+    for attempt, wait in enumerate((0, *POST_BACKOFF_SECONDS)):
+        if wait:
+            time.sleep(wait)
+        try:
+            gh(f"/issues/{number}/comments", {"body": body})
+            return
+        except SystemExit as error:
+            if not is_rate_limit(str(error.code)) or attempt == len(POST_BACKOFF_SECONDS):
+                raise
 
 
 def open_issues() -> list[dict]:
@@ -510,14 +560,97 @@ def planned_bounties(plan: dict) -> list[dict]:
     return out
 
 
-def existing_bounty(anchor_number: int) -> dict | None:
+def all_bounties(state: str = "open") -> list[dict]:
+    """Every bounty issue in `state`, **paginated** — not the first page of them.
+
+    `existing_bounty()` used to read `per_page=100` once, and the workflow above claims every write is
+    idempotent "bounty tasks by an anchor marker". That claim stopped being true the day the open
+    bounties passed 100: a marker on page 2 is invisible to a one-page read, so the next run opened a
+    second task for the same anchor. Measured 2026-11-22: 114 open bounties, 6 anchors duplicated, and
+    the same file had already paid for this exact blind spot once (`open_issues()` above).
+    """
+    out: list[dict] = []
+    for page in range(1, ISSUE_PAGE_LIMIT + 1):
+        batch = gh(f"/issues?state={state}&labels={BOUNTY_LABEL}"
+                   f"&per_page={ISSUE_PAGE_SIZE}&page={page}")
+        if not isinstance(batch, list):
+            break
+        out.extend(i for i in batch if "pull_request" not in i)
+        if len(batch) < ISSUE_PAGE_SIZE:
+            break
+    return out
+
+
+def existing_bounty(anchor_number: int, bounties: list[dict] | None = None) -> dict | None:
     wanted = BOUNTY_MARKER.format(anchor_number)
-    for issue in gh(f"/issues?state=all&labels={BOUNTY_LABEL}&per_page=100"):
-        if "pull_request" in issue:
-            continue
+    for issue in (all_bounties("all") if bounties is None else bounties):
         if wanted in (issue.get("body") or ""):
             return issue
     return None
+
+
+# ── retiring a bounty: the task, not the question ──────────────────────────
+#
+# Nothing used to close these. The autopilot created one per cluster and refreshed the ones it found, so
+# the set could only grow: 114 open tasks on 2026-11-22, each asking a stranger for an *observed* answer,
+# and not one of them said whether its premise still existed. A bounty is a **task**; the question is the
+# record. When the questions are answered or closed, or when the cluster has moved to a different anchor
+# (so a newer task owns the same questions), this task has no premise left — and leaving it open makes
+# the honest ones unfindable.
+LINKED_RE = re.compile(r"^- #(\d+)(?:\s|$)", re.M)
+BOUNTY_RETIRED = """<!-- misakanet-bounty-retired -->
+
+Closed by the question autopilot: **{reason}**.
+
+The questions themselves are not closed — an unanswered question stays in the question digest, and it
+comes back as a new task when the cluster around it changes. This issue was the *task*, and the task no
+longer has a premise.
+"""
+
+
+def linked_questions(issue: dict) -> list[int]:
+    return [int(n) for n in LINKED_RE.findall(issue.get("body") or "")]
+
+
+def retirement_reason(issue: dict, questions: dict[int, dict], planned: dict[int, int],
+                      kept: dict[int, int]) -> str | None:
+    """Why this bounty should be closed now, or `None` when it still has a premise.
+
+    `questions` maps number → the **open** question issue, `planned` maps a question number → the anchor
+    of the cluster it belongs to in this run, and `kept` is the anchor → bounty number already kept in
+    this pass (so the second task for one anchor is the one that goes).
+    """
+    anchor = anchor_of(issue)
+    if anchor is None:
+        # **Not ours.** Measured the hard way on 2026-11-22: the first version returned a reason here,
+        # and the pass closed ten hand-filed `bounty` tasks it had never created (#1258, #1550, #1753,
+        # #1819, #2593, #4013, #4751, #4874, #4875, #4876) — all reopened within five minutes. "Nothing
+        # can refresh it" is true of a task the autopilot does not own and also irrelevant: ownership is
+        # the marker, and a task without one has no premise of ours to lose.
+        return None
+    if anchor in kept:
+        return f"it duplicates #{kept[anchor]}, which carries the same anchor marker"
+    numbers = linked_questions(issue)
+    if not numbers:
+        return None
+    live = [n for n in numbers if n in questions and not is_answered(questions[n])]
+    if not live:
+        return "every linked question is answered or closed"
+    owners = {planned[n] for n in live if n in planned}
+    if owners and anchor not in owners:
+        return f"the questions moved to a newer task (anchor #{min(owners)})"
+    return None
+
+
+def anchor_of(issue: dict) -> int | None:
+    found = re.search(r"misakanet-question-bounty:anchor-(\d+)", issue.get("body") or "")
+    return int(found.group(1)) if found else None
+
+
+def is_answered(question: dict) -> bool:
+    labels = {l["name"] for l in (question.get("labels") or []) if isinstance(l, dict)}
+    return question.get("state") == "closed" or "answered" in labels
+
 
 
 def open_bounties(items: list[dict], groups: list[dict]) -> list[dict]:
@@ -721,18 +854,32 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     written = 0
+    refused: list[str] = []
     for item in plan["items"]:
         body = receipt(item)
         body += f"\n<!-- autopilot-digest:{hashlib.sha256(body.encode()).hexdigest()[:12]} -->"
-        comments = gh(f"/issues/{item['number']}/comments?per_page=100")
-        if receipt_already_current(comments, body):
-            continue
-        gh(f"/issues/{item['number']}/comments", {"body": body})
-        written += 1
-    print(f"receipts written: {written} (unchanged: {len(plan['items']) - written})")
+        try:
+            comments = gh(f"/issues/{item['number']}/comments?per_page=100")
+            if receipt_already_current(comments, body):
+                continue
+            post_comment(item["number"], body)
+            written += 1
+        except SystemExit as error:
+            # One refused question must not take the digest and the bounty pass with it. This loop is
+            # the last thing before both, and it used to be an all-or-nothing run: a single 403 meant
+            # nothing else happened, silently. Count it, name it, keep going — and exit non-zero at the
+            # end so the run still reports that posts were missing.
+            refused.append(f"#{item['number']}: {error}")
+    print(f"receipts written: {written} (unchanged: {len(plan['items']) - written - len(refused)}, "
+          f"refused: {len(refused)})")
+    for line in refused:
+        print(f"  receipt refused — {line}")
 
     if args.bounties:
-        created = updated = core_skip = 0
+        created = updated = core_skip = retired = 0
+        # One read of the *whole* bounty set, reused by every lookup — the per-anchor lookup used to be
+        # its own single-page request, which is how the same anchor got two tasks (see `all_bounties`).
+        known = all_bounties("all")
         for entry in planned_bounties(plan):
             body = bounty_body(entry["anchor"], entry["members"], entry["shared"])
             blocked = compliance_findings(body)
@@ -740,7 +887,7 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"  bounty skipped for #{entry['anchor']}: {'; '.join(blocked)}")
                 core_skip += 1
                 continue
-            found = existing_bounty(entry["anchor"])
+            found = existing_bounty(entry["anchor"], known)
             if found:
                 gh(f"/issues/{found['number']}", {"body": body}, method="PATCH")
                 updated += 1
@@ -750,12 +897,44 @@ def main(argv: list[str] | None = None) -> int:
                                        "body": body, "labels": [BOUNTY_LABEL]})
                 print(f"  bounty opened: #{issue['number']}")
                 created += 1
-        print(f"bounties: {created} created, {updated} refreshed, {core_skip} withheld by the "
-              f"compliance gate")
+
+        # Retire what no longer has a premise. Without this the set can only grow: measured
+        # 2026-11-22, 114 open tasks asking strangers for an observed answer, none of which said
+        # whether its question was still unanswered. Oldest first, so the original of a duplicated
+        # anchor is the one that stays.
+        planned_anchor = {m["number"]: e["anchor"] for e in planned_bounties(plan) for m in e["members"]}
+        # **Every** open issue, not just this run's questions: a linked question that the plan did not
+        # pick up (a different label, an older shape) is still open, and calling it answered because
+        # the autopilot did not look at it is the same error as a truncated page — a verdict about a
+        # prefix. `is_answered` decides on the label, the state, or both.
+        open_by_number = {i["number"]: i for i in open_issues()}
+        questions = open_by_number
+        kept: dict[int, int] = {}
+        foreign = 0
+        for issue in sorted(all_bounties("open"), key=lambda i: i["number"]):
+            reason = retirement_reason(issue, questions, planned_anchor, kept)
+            anchor = anchor_of(issue)
+            if anchor is None:
+                foreign += 1
+                continue
+            if reason:
+                gh(f"/issues/{issue['number']}/comments",
+                   {"body": BOUNTY_RETIRED.format(reason=reason)})
+                gh(f"/issues/{issue['number']}", {"state": "closed"}, method="PATCH")
+                print(f"  bounty retired: #{issue['number']} — {reason}")
+                retired += 1
+            elif anchor is not None:
+                kept[anchor] = issue["number"]
+        print(f"bounties: {created} created, {updated} refreshed, {retired} retired, {core_skip} "
+              f"withheld by the compliance gate, {foreign} hand-filed task(s) left alone "
+              f"(no cluster marker: not this script's to close)")
 
     body = digest_body(plan["items"], plan["groups"], planned_bounties(plan))
     write_digest(body)
-    return 0
+    # A run that could not post every receipt is not a success, even though the digest and the bounty
+    # pass completed: the whole point of the receipt is that no question is left in silence, and a
+    # green run is how that gap stayed invisible before.
+    return 1 if refused else 0
 
 
 DIGEST_SUPERSEDED = (

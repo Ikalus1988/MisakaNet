@@ -13,6 +13,7 @@ The remaining test is the histogram: a number without a reason is not a report.
 """
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
@@ -147,3 +148,37 @@ def test_a_clean_candidate_passes_the_precheck(tmp_path):
     record, notes = batch.conv.convert(issue, {"devops"}, {"domain": "devops"})
     assert record is not None, notes
     assert batch.precheck_skip(issue, record, repo=tmp_path) is None
+
+
+def _fake_gh(monkeypatch, rows):
+    """Make `gh issue list` return `rows` without a network call."""
+    class _Done:
+        returncode = 0
+        stderr = ""
+        stdout = json.dumps(rows)
+
+    monkeypatch.setattr(batch.subprocess, "run", lambda *a, **k: _Done())
+
+
+def test_a_full_page_is_refused_rather_than_read_as_the_whole_queue(monkeypatch):
+    """Measured 2026-11-22: 469 open `mcp-intake` issues against a page size of 300.
+
+    The batch saw the newest 300, found 74 intake-shaped reports in them and reported `convertible 0`
+    — while the 169 it never asked about held six it could have written. A full page and a queue that
+    ends there print the same thing, so the only honest answer is to refuse the number.
+    """
+    _fake_gh(monkeypatch, [{"number": i, "title": f"[Intake] report {i}", "body": ""} for i in range(5)])
+    with pytest.raises(SystemExit) as exc:
+        batch.open_intakes(limit=5)
+    assert "may be truncated" in str(exc.value.code), exc.value.code
+
+
+def test_a_short_page_is_filtered_to_the_convertible_shape(monkeypatch):
+    """The control: the guard must not fire for a page that actually reached the end of the queue."""
+    _fake_gh(monkeypatch, [
+        {"number": 1, "title": "[Intake] a failure", "body": ""},
+        {"number": 2, "title": "[Lesson] not an intake", "body": ""},
+        {"number": 3, "title": "[Intake] a decision", "body": "",
+         "labels": [{"name": "decision"}]},
+    ])
+    assert [row["number"] for row in batch.open_intakes(limit=1000)] == [1]
