@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-11-22T11:40:45.904726+00:00",
+  "generated_at": "2026-11-22T19:52:59.024588+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 13,
   "items": [
     {
       "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5571",
-      "timestamp": "2026-11-22T07:55:18Z",
+      "title": "docs(handoff): vol 44 addendum — the receipt sweep worked, and the step after it cancelled the run",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5582",
+      "timestamp": "2026-11-22T16:53:17Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(lessons): three intake that were blocked by public tool names, and the allowlist entries that unblock them",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5570",
-      "timestamp": "2026-11-22T07:33:56Z",
+      "title": "fix(intake): the close sweep reads the corpus once, not once per open intake",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5581",
+      "timestamp": "2026-11-22T16:45:57Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(questions): retire only the tasks this script created",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5569",
-      "timestamp": "2026-11-22T06:41:41Z",
+      "title": "chore(data): record the 318 receipts run 45039931336 delivered",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5580",
+      "timestamp": "2026-11-22T16:45:28Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(questions): a refused post says which issue and why, and does not abort the run",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5566",
-      "timestamp": "2026-11-22T05:58:09Z",
+      "title": "docs(handoff): vol 44 — what the residue of a queue looks like, and a sweep that failed 313 times in green",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5579",
+      "timestamp": "2026-11-22T16:01:58Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(questions): bounty tasks are read in full and retired when their premise is gone",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5565",
-      "timestamp": "2026-11-22T04:27:31Z",
+      "title": "fix(receipts): a sweep that fails every post says so, and names gh's reason",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5578",
+      "timestamp": "2026-11-22T15:42:17Z",
       "source": "github"
     },
     {
