@@ -1,9 +1,23 @@
 {
-  "generated_at": "2026-11-21T19:29:28.979607+00:00",
+  "generated_at": "2026-11-22T01:41:58.448671+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 13,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "feat(lessons): seven intakes were complete down to Verification and lacked only their tags",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5529",
+      "timestamp": "2026-11-22T01:41:46Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5553",
+      "timestamp": "2026-11-21T19:53:57Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "feat(lessons): intake batch 2026-11-21",
@@ -23,20 +37,6 @@
       "title": "feat(lessons): intake batch 2026-11-21",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/5519",
       "timestamp": "2026-11-21T10:28:15Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "docs(intake): why the bare prose words stay refused, written down so they are not re-derived",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5512",
-      "timestamp": "2026-11-21T06:36:38Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat(ci): the batch keeps moving without the cron that says it does",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5511",
-      "timestamp": "2026-11-21T05:41:12Z",
       "source": "github"
     },
     {
