@@ -648,3 +648,17 @@ def test_a_rate_limit_is_retried_and_a_permission_refusal_is_not(monkeypatch):
     with pytest.raises(SystemExit):
         qa.post_comment(2, "body")
     assert len(attempts) == 1, "a permission refusal must not be retried"
+
+
+def test_a_hand_filed_bounty_task_is_not_retired():
+    """2026-11-22: the first version closed ten `bounty` issues it never created. Reopened in minutes.
+
+    The marker is ownership. A hand-filed task (#1258, #4874 …) has no anchor, so "nothing can refresh
+    it" is true and irrelevant — and closing it is not this script's decision to make.
+    """
+    hand_filed = {"number": 4874, "body": "## Deliverable\n\nSomething a person wrote and priced.\n"}
+    assert qa.anchor_of(hand_filed) is None
+    assert qa.retirement_reason(hand_filed, {}, {}, {}) is None
+    # ...and the still-valid cases are unaffected: an owned task with all questions answered still goes.
+    owned = _bounty(9, 100, [100])
+    assert qa.retirement_reason(owned, {}, {}, {}) == "every linked question is answered or closed"
