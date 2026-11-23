@@ -805,3 +805,21 @@ def test_a_sibling_run_that_publishes_a_minute_later_still_stands_down(tmp_path)
         f"a version that appears while polling must stand down, not fail:\n{combined}")
     assert "is live on npm" in combined, combined
     assert "not on npm yet" in combined, "the poll must say it is re-reading rather than reading once"
+
+
+def test_a_version_that_takes_four_minutes_to_appear_is_not_a_failure(tmp_path):
+    """npm's own window, measured on the 3.20.0 release.
+
+    `npm publish` was accepted at 05:06:55 and answered "being processed and may take a few minutes";
+    the registry's read side showed `misakanet@3.20.0` at about 05:11 — **~245 s** later. The poll was
+    six reads 15 s apart (90 s), so the duplicate dispatch of that release failed with
+    "npm refused the publish, but misakanet@3.20.0 is NOT live" on a release that published fine.
+
+    Twelve later reads is 180 s at the shipped interval, i.e. inside npm's window and outside the old
+    bound — the behaviour this pins is "the bound is npm's window, not a guess".
+    """
+    result = _run_publish_step(tmp_path / "slow", view_output="3.7.0", view_late_after=12)
+    combined = result.stdout + result.stderr
+    assert result.returncode == 0, (
+        f"a version npm is still processing must stand down, not fail:\n{combined}")
+    assert "is live on npm" in combined, combined

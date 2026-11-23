@@ -295,10 +295,16 @@ jobs:
               # the one publishing, its version is not on the read side yet: measured 2026-11-17, the
               # dispatch run read `npm view misakanet@3.19.0` at 14:55:52 and got nothing, while the
               # release-event run's publish of that same version became visible at 14:57:30 — 98 s
-              # later, on a release that had in fact succeeded. Six reads 15 s apart cover that gap;
-              # a genuinely staged version still fails, ~90 s later and with the same message.
+              # later, on a release that had in fact succeeded. Six reads 15 s apart covered that gap
+              # and not the next one: measured 2026-11-23 on the 3.20.0 release, npm accepted the
+              # publish at 05:06:55 and said "being processed, may take a few minutes"; the registry
+              # read side showed 3.20.0 at ~05:11, **~245 s** later — so the duplicate dispatch run
+              # failed at 90 s with "npm refused the publish, but misakanet@3.20.0 is NOT live", on a
+              # release that was in fact publishing fine. Twenty reads cover five minutes, which is
+              # npm's own stated window; a genuinely staged version still fails, just later and with
+              # the same message.
               LIVE=$(node -p "require('./package.json').version")
-              ATTEMPTS=${NPM_STANDDOWN_POLL_ATTEMPTS:-6}
+              ATTEMPTS=${NPM_STANDDOWN_POLL_ATTEMPTS:-20}
               INTERVAL=${NPM_STANDDOWN_POLL_SECONDS:-15}
               PUBLISHED=""
               attempt=1
