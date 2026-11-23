@@ -77,6 +77,26 @@ def sub_once(text: str, pattern: str, replacement: str, label: str) -> str:
     return re.sub(pattern, replacement, text, count=1)
 
 
+def package_files(base: Path) -> list[Path]:
+    """The files that actually go into a package (the packer's rule, in one place).
+
+    A leftover `.cindy` package or the publisher signature in the source directory is **not** part
+    of the package — comparing raw directory listings would report drift that isn't drift.
+    """
+    return sorted(
+        (
+            p
+            for p in base.rglob("*")
+            if p.is_file()
+            and not p.name.startswith(".")
+            and not p.name.endswith(".cindy")
+            and p.name != "cindy-signatures.json"
+            and p.name not in {".git", "node_modules", "__MACOSX"}
+        ),
+        key=lambda p: p.relative_to(base).as_posix(),
+    )
+
+
 def build() -> None:
     if TARGET.exists():
         shutil.rmtree(TARGET)
@@ -113,8 +133,8 @@ def assert_only_three_differences() -> None:
     This is the guard that replaced the marker-counting tests. It compares the two trees file by
     file, so a stray edit on either side is caught here rather than in a marketplace review.
     """
-    official_files = sorted(p.relative_to(OFFICIAL).as_posix() for p in OFFICIAL.rglob("*") if p.is_file())
-    community_files = sorted(p.relative_to(TARGET).as_posix() for p in TARGET.rglob("*") if p.is_file())
+    official_files = [p.relative_to(OFFICIAL).as_posix() for p in package_files(OFFICIAL)]
+    community_files = [p.relative_to(TARGET).as_posix() for p in package_files(TARGET)]
     assert official_files == community_files, (
         f"file sets differ: only in official {set(official_files) - set(community_files)}, "
         f"only in community {set(community_files) - set(official_files)}"

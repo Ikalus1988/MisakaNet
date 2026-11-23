@@ -87,12 +87,22 @@ def test_the_two_packages_are_one_implementation():
     features are in the official source now, so the guard is byte-level: **if the two packages
     differ anywhere except the channel header, the version and the release notes, this fails.**
     """
-    official_files = sorted(
-        p.relative_to(OFFICIAL).as_posix() for p in OFFICIAL.rglob("*") if p.is_file()
-    )
-    community_files = sorted(
-        p.relative_to(COMMUNITY).as_posix() for p in COMMUNITY.rglob("*") if p.is_file()
-    )
+    # The **package** file set, not the raw directory: a leftover `.cindy` package or the publisher
+    # signature is not part of the package, and comparing raw listings would report drift that
+    # isn't drift (the packer skips exactly these).
+    def package_files(base: Path) -> list[str]:
+        return sorted(
+            p.relative_to(base).as_posix()
+            for p in base.rglob("*")
+            if p.is_file()
+            and not p.name.startswith(".")
+            and not p.name.endswith(".cindy")
+            and p.name != "cindy-signatures.json"
+            and p.name not in {".git", "node_modules", "__MACOSX"}
+        )
+
+    official_files = package_files(OFFICIAL)
+    community_files = package_files(COMMUNITY)
     assert official_files == community_files, (
         f"file sets differ: only in official {set(official_files) - set(community_files)}, "
         f"only in community {set(community_files) - set(official_files)}"
