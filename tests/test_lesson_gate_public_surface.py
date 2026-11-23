@@ -88,3 +88,76 @@ def test_a_missing_vocabulary_is_a_warning_not_a_pass(tmp_path, monkeypatch):
     problems = lesson_gate.validate_public_surface({}, "```bash\nzetaqx deploy\n```", tmp_path)
     assert problems and problems[0].startswith("[warn]")
     assert "cannot check" in problems[0]
+
+
+RENDERED = """---
+title: "A checked-in skill can exist without being available to the client"
+summary_plain: "A checked-in skill can exist without being available to the client."
+trigger: "A checked-in skill can exist without being available to the client."
+verify: "The client lists the skill."
+---
+
+## Problem
+
+A checked-in skill can exist without being available to the client.
+
+## Root Cause
+
+The loader reads one directory.
+
+## Fix
+
+Reload it.
+
+## Verification
+
+The client lists the skill.
+"""
+
+
+def _gate(text: str, vocab=VOCAB) -> list[str]:
+    """What the gate actually decides: prose for repetition, the whole document for code evidence."""
+    fm, _ = lesson_gate.parse_frontmatter(text)
+    return lesson_gate.validate_public_surface(fm, text, REPO)
+
+
+def test_the_derived_fields_are_not_repetition():
+    """One sentence copied into `title`/`summary_plain`/`trigger` is not three mentions.
+
+    The bare-mention path exists so a name written in prose three times counts as evidence of a
+    command. Counting the whole rendered file made the *converter's* copying look like the author's
+    repetition: measured 2026-11-23, **18 of the 29** intake candidates the gate refused were refused
+    only by this path — `checked-in`, `task-list`, `exhaust`, `arrival`, `vacancy` — each of which
+    appears once in the prose and three times in the file.
+    """
+    assert _gate(RENDERED) == [], "prose, not a command name"
+    # The raw counter still sees the body's own repetition; what changed is that the derived fields
+    # are no longer counted. `checked-in` appears exactly once there.
+    body = lesson_gate._lesson_body(RENDERED)
+    assert body.count("checked-in") == 1
+
+
+def test_real_repetition_in_the_prose_still_counts():
+    """The other direction: the rule this replaced was not decoration.
+
+    #3983 published an employer's private CLI written in plain prose. Three *different* sentences is
+    still the evidence that a bare mention is a command, and reading the body does not touch it.
+    """
+    text = "mico login is refused.\nmico issue rerun prints the error.\nmico wiki search is empty.\n"
+    assert lesson_gate.unknown_surface_names(text, VOCAB) == ["mico"]
+    assert any("`mico`" in problem for problem in _gate(text))
+
+
+def test_a_name_with_code_evidence_survives_the_derivation():
+    """A private name does not become prose because it is also in the title.
+
+    Code evidence (span, fence, prompt) is read from the whole document, frontmatter included — only
+    the bare-mention *count* moved to the author's prose.
+    """
+    lesson = RENDERED.replace(
+        "## Fix\n\nReload it.",
+        "## Fix\n\n```bash\nrequires_openai_auth --set\n```", 1)
+    assert lesson != RENDERED, "fixture did not change"
+    assert "requires_openai_auth" in lesson_gate.unknown_surface_names(
+        lesson, VOCAB, prose_source=lesson_gate._lesson_body(lesson))
+    assert any("requires_openai_auth" in problem for problem in _gate(lesson))
