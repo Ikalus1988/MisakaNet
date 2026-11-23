@@ -566,13 +566,18 @@ def test_a_missing_token_is_an_explicit_error_not_a_pass() -> None:
     for name in ("SHELDON_PAT", "GITHUB_TOKEN"):
         if name in sys.modules:  # pragma: no cover - defensive
             del sys.modules[name]
-    saved = {name: None for name in ("SHELDON_PAT", "GITHUB_TOKEN") if name in __import__("os").environ}
+    # `saved` holds the *values*, not `None`: a maintainer's shell has one of these set, and
+    # `os.environ.update({"GITHUB_TOKEN": None})` raises `TypeError: str expected, not NoneType` on
+    # the way out — measured 2026-11-23, the test could not run on any machine that has a token, i.e.
+    # exactly the machines it was written for. CI has neither, which is why it stayed green.
+    environ = __import__("os").environ
+    saved = {name: environ[name] for name in ("SHELDON_PAT", "GITHUB_TOKEN") if name in environ}
     try:
         for name in saved:
-            __import__("os").environ.pop(name, None)
+            environ.pop(name, None)
         assert checker.main(["--doc", str(DOC)]) == 2
     finally:
-        __import__("os").environ.update(saved)
+        environ.update(saved)
 
 
 # ── "could not check" is not "the document is wrong" ────────────────────────────────────────────
