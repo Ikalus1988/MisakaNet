@@ -164,16 +164,18 @@ npx @misaka-net/misakanet-setup --only cindy --verify
 
 ### P1 — 通道收尾（等人，不急）
 
-- 源仓 [#5375](https://github.com/Ikalus1988/MisakaNet/pull/5375) 合并：两条通道并成一份实现、
+- 源仓 [#5375](https://github.com/Ikalus1988/MisakaNet/pull/5375) ✅ 已合并：两条通道并成一份实现、
   社区变体降级成薄壳、漂移守卫改成字节级。
-- 源仓 [#5377](https://github.com/Ikalus1988/MisakaNet/pull/5377) 合并：三条运维命令（发版一键化、
+- 源仓 [#5377](https://github.com/Ikalus1988/MisakaNet/pull/5377) ✅ 已合并：三条运维命令（发版一键化、
   市场与遥测读数、AE 包装器）。
-- 官方仓 [#357](https://github.com/makecindy/cindy-official-plugins/pull/357) 合并：官方包 1.6.4
-  （并入只读重试与确认卡闸门）——**这是最后一次同步**，合完官方仓那份就冻结；归属一旦放行，
-  下次 push 会自动把官方包发出去。
-- id `misakanet` 的**个人作者归属**（makecindy 组织 admin dashhuang）：放行 → 官方包能上架；
-  不放行 → 社区通道继续当正式发布通道。诉求与实测见
-  [makecindy/cindy-official-plugins#356](https://github.com/makecindy/cindy-official-plugins/issues/356)。
+- 源仓 [#5637](https://github.com/Ikalus1988/MisakaNet/pull/5637) ✅ 已合并：**确认卡闸门的四处缺陷**
+  （维护者 2026-11-23 点的名）——点击用新的在途 callId、超时只落卡不发第二个回执、direct 重提作废旧卡、
+  私有目录写不进去时不带假 client id。社区包版本 **1.5.13**（在售的是 1.5.12）。
+- 源仓 [#5639](https://github.com/Ikalus1988/MisakaNet/pull/5639) / [#5638](https://github.com/Ikalus1988/MisakaNet/pull/5638)：构建脚本的文件集比较改成「包内文件」规则、发版脚本的 Windows 编码、市场触达读数（1,316 下载 / 415 使用）。
+- **1.5.13 提审只差宿主侧的一次安装确认**：提审快照必须取自已安装实例，而宿主不允许用本地包覆盖
+  市场版实例 → 要另装一份 local 开发副本；这一步的安装确认卡在手机端会被自动拒，需要在桌面端点一下。
+- 官方通道：**已关闭**（维护者 2026-11-20 明确保留个人发布那条，官方仓里的 `misakanet/` 副本已被
+  #371 移除）。`.cindy-plugin/` 现在只是唯一真身，社区变体由它生成。
 
 ### P2 — 端点耗时的分阶段定位（**暂缓，上量再提**）
 
