@@ -1,0 +1,19 @@
+{
+  "note": "市场里的下载/使用数没有 API，只能在客户端「发布插件」页看到，观察到就记一行。用途是版本之间的可比：没有版本号的触达数谁也读不出变化。遥测那一侧（检索次数/机器数/版本分布）由 scripts/cindy_plugin_market_stats.py 直接查生产库。",
+  "history": [
+    {
+      "date": "2026-11-19",
+      "version": "1.5.12",
+      "downloads": 1224,
+      "uses": 374,
+      "source": "客户端「发布插件 → MisakaNet 故障记忆 → 版本管理」页"
+    },
+    {
+      "date": "2026-11-24",
+      "version": "1.5.12",
+      "downloads": 1316,
+      "uses": 415,
+      "source": "客户端「插件 → MisakaNet 故障记忆 → 管理」页"
+    }
+  ]
+}

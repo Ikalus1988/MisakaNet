@@ -951,7 +951,8 @@ def panel_sources(counters, analytics: dict | None, funnel: dict | None, e4: dic
 def render_digest(*, day: str, counters, analytics: dict | None, funnel: dict | None,
                   e4: dict | None = None, retrievals: dict[str, int] | None = None,
                   errors: dict[str, str] | None = None, pipeline: dict | None = None,
-                  pipeline_error: str = "", counters_freshness: dict | None = None) -> str:
+                  pipeline_error: str = "", counters_freshness: dict | None = None,
+                  prs: list[dict] | None = None, prs_error: str = "") -> str:
     """The whole comment body for one UTC day.
 
     `counters` / `analytics` / `funnel` / `e4` / `retrievals` are plain data or `None` for
@@ -989,9 +990,135 @@ def render_digest(*, day: str, counters, analytics: dict | None, funnel: dict | 
     lines += panel_helped(counters, analytics, retrievals, day, errors)
     lines += panel_e4(e4, day, errors)
     lines += panel_pipeline(pipeline, pipeline_error, day)
+    lines += panel_contribution(prs, prs_error, day)
     lines += panel_sources(counters, analytics, funnel, e4, retrievals, day, errors,
                            counters_freshness)
     return "\n".join(lines).rstrip() + "\n"
+
+
+# ── panel 5 · Who is contributing (2026-11-23) ──────────────────────────────────────────────────
+#
+# The digest measures lessons daily and contributors never. Measured 2026-11-23 over the last 1200
+# pull requests: 107 external, 24 merged (22%), 80 closed (75%), and **75% of those merges came from
+# one author** — while 396 of 408 commits in 90 days were the maintainer's own. Without a row like
+# this, "activity" means "commits", and commits mean cron.
+
+#: The maintainer's login. Its own PRs are not the external funnel, and mixing them in hides it.
+OWNER_LOGIN = "Ikalus1988"
+BOT_LOGINS = {"app/dependabot", "dependabot[bot]", "github-actions[bot]", "misakanet-bot"}
+CONTRIBUTION_WINDOW_DAYS = 30
+
+
+def _hours_between(start: str, end: str) -> float | None:
+    if not start or not end or end == "-":
+        return None
+    try:
+        a = datetime.fromisoformat(start.replace("Z", "+00:00"))
+        b = datetime.fromisoformat(end.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return (b - a).total_seconds() / 3600.0
+
+
+def _is_external(author: str) -> bool:
+    login = str(author or "")
+    return login not in BOT_LOGINS and not login.endswith("[bot]") and login != OWNER_LOGIN
+
+
+def contribution_stats(prs: list[dict] | None, day: str) -> dict | None:
+    """The external funnel for the `CONTRIBUTION_WINDOW_DAYS` ending `day`.
+
+    `None` when there is no payload — the panel then says it could not read it rather than printing
+    zeros, the same rule every other panel follows.
+    """
+    if prs is None:
+        return None
+    start = (date.fromisoformat(day) - timedelta(days=CONTRIBUTION_WINDOW_DAYS)).isoformat()
+    window = [pr for pr in prs if str(pr.get("createdAt") or "")[:10] >= start]
+    external = [pr for pr in window if _is_external((pr.get("author") or {}).get("login", ""))]
+
+    merged = [pr for pr in external if str(pr.get("state", "")).upper() == "MERGED"]
+    closed = [pr for pr in external if str(pr.get("state", "")).upper() == "CLOSED"]
+    opened = [pr for pr in external if str(pr.get("state", "")).upper() == "OPEN"]
+
+    by_author: dict[str, int] = {}
+    for pr in merged:
+        login = (pr.get("author") or {}).get("login", "")
+        by_author[login] = by_author.get(login, 0) + 1
+    top_author, top_merges = ("", 0)
+    if by_author:
+        top_author, top_merges = max(by_author.items(), key=lambda kv: kv[1])
+
+    durations = [h for h in (_hours_between(str(pr.get("createdAt") or ""), str(pr.get("mergedAt") or ""))
+                             for pr in merged) if h is not None]
+    durations.sort()
+
+    needs_dco = 0
+    for pr in closed:
+        labels = {str((label or {}).get("name", "")) for label in (pr.get("labels") or [])}
+        if "needs-dco" in labels:
+            needs_dco += 1
+
+    return {
+        "window_days": CONTRIBUTION_WINDOW_DAYS,
+        "external": len(external),
+        "merged": len(merged),
+        "closed": len(closed),
+        "open": len(opened),
+        "authors": len({(pr.get("author") or {}).get("login", "") for pr in external}),
+        "merge_share_top": (round(top_merges / len(merged) * 100) if merged else None),
+        "top_author": top_author,
+        "median_hours_to_merge": (round(durations[len(durations) // 2], 1) if durations else None),
+        "closed_with_needs_dco": needs_dco,
+    }
+
+
+def panel_contribution(prs: list[dict] | None, error: str, day: str) -> list[str]:
+    heading = ["---", "", "## 5 · Who is contributing", ""]
+    stats = contribution_stats(prs, day)
+    if stats is None:
+        reason = f" ({error})" if error else ""
+        return heading + [f"**Could not be read**{reason} — this is not a quiet month.", ""]
+    if not stats["external"]:
+        return heading + [f"No external pull requests in the last {stats['window_days']} days. "
+                          "That is a reading, not a zero to celebrate.", ""]
+
+    rows = [
+        ["external PRs", f"{stats['external']} opened · {stats['merged']} merged · "
+                         f"{stats['closed']} closed · {stats['open']} open"],
+        ["distinct authors", str(stats["authors"])],
+    ]
+    if stats["merge_share_top"] is not None:
+        rows.append(["largest share of merges",
+                     f"{stats['top_author']} {stats['merge_share_top']}% "
+                     f"({stats['merged']} merges total)"])
+    if stats["median_hours_to_merge"] is not None:
+        rows.append(["median time to merge", f"{stats['median_hours_to_merge']} h"])
+    rows.append(["closed while carrying `needs-dco`",
+                 f"{stats['closed_with_needs_dco']} of {stats['closed']}"])
+
+    lines = heading + [f"Last {stats['window_days']} days, pull requests from anyone but the "
+                       "maintainer and the bots:", ""] + _table(["", ""], rows) + [""]
+    if stats["closed"] and stats["closed_with_needs_dco"] * 2 >= stats["closed"]:
+        lines += ["More than half of the closed external pull requests were missing a sign-off. "
+                  "`fix-dco.yml` only runs when someone comments `/fix-dco`, so a first-time "
+                  "contributor's work dies on `git commit --amend -s` unless they know the word.", ""]
+    return lines
+
+
+def fetch_pull_requests() -> tuple[list[dict] | None, str]:
+    """The last 300 pull requests, or the reason they could not be read."""
+    result = subprocess.run(
+        ["gh", "pr", "list", "--repo", "Ikalus1988/MisakaNet", "--state", "all", "--limit", "300",
+         "--json", "number,author,state,createdAt,mergedAt,closedAt,labels"],
+        capture_output=True, text=True, check=False,
+    )
+    if result.returncode != 0:
+        return None, (result.stderr or "gh pr list failed").strip().splitlines()[0][:200]
+    try:
+        return json.loads(result.stdout or "[]"), ""
+    except ValueError as error:
+        return None, f"unreadable gh output: {error}"
 
 
 # ── Thin plumbing (the only part that needs a network or a credential) ───────────────────────
@@ -1249,6 +1376,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--issues-json", type=Path,
                        help="a saved GitHub issue list for the pipeline panel; without it (and "
                             "without --fetch) the panel reports that it could not be read")
+    parser.add_argument("--prs-json", type=Path,
+                       help="a saved `gh pr list --json …` payload for the contribution panel; "
+                            "without it (and without --fetch) the panel says it could not be read")
     parser.add_argument("--lessons-dir", type=Path,
                        help="where to read lesson provenance from (default: lessons/)")
     parser.add_argument("--fetch", action="store_true",
@@ -1299,10 +1429,17 @@ def main(argv: list[str] | None = None) -> int:
     if args.retrievals_json:
         retrievals = retrieval_counts(json.loads(args.retrievals_json.read_text(encoding="utf-8")))
 
+    prs: list[dict] | None = None
+    prs_error = ""
+    if args.fetch:
+        prs, prs_error = fetch_pull_requests()
+    if args.prs_json:
+        prs, prs_error = json.loads(args.prs_json.read_text(encoding="utf-8")), ""
+
     digest = render_digest(day=day, counters=counters, analytics=analytics, funnel=funnel, e4=e4,
                            retrievals=retrievals, errors=errors, pipeline=pipeline,
                            pipeline_error=pipeline_error,
-                           counters_freshness=counters_freshness)
+                           counters_freshness=counters_freshness, prs=prs, prs_error=prs_error)
     if args.out:
         args.out.write_text(digest, encoding="utf-8")
     else:

@@ -50,13 +50,17 @@ COMMUNITY_VERSION = "1.5.13"  # the published community release is 1.5.12; this 
 
 #: The community channel's own release story. The official package carries the official one.
 COMMUNITY_RELEASE_NOTES = (
-    "这一版把实现并进唯一那份源码：原先只在社区通道存在的两项能力（只读调用的一次保守重试、"
-    "上报前的交互卡确认闸门）现在官方通道也用同一份实现，两条通道只在通道标记、版本号和更新说明上不同——"
-    "漂移守卫从「比对一堆标记」缩成「逐字节比对，三处允许不同」。"
-    "社区通道这一版的实际行为与上一版（1.5.12）一致；另外新增了自报通道头 "
-    "X-MisakaNet-Channel，检索结果会透传端点带回的 plugin_version（current / latest / outdated），"
-    "落后时 note 里多一句「你在用 X、市场当前是 Y，自签 .cindy 包装的不会自动更新，请到插件市场重新安装」。"
-    "**端点还没实现、或发布时忘了写 KV 时，这个字段就没有——插件什么都不说，这是设计不是缺陷。**"
+    "这一版修掉确认卡闸门里的四处缺陷（维护者 2026-11-23 点的名，社区通道的既有问题）："
+    "一是**点击之后那次上报改用新的在途调用号**——卡片的归因号属于已经结卷的那次工具调用，"
+    "复用它宿主会拒，于是点「确认提交」根本发不出去；"
+    "二是**超时不再发第二个回执**——原调用已经结卷，同一个调用号上的第二个回执同样会被拒，"
+    "超时的结论只落在卡上（第一次回执里已写明「等不到点击就改走 confirm=direct」）；"
+    "三是**直接重发会作废上一张还开着的卡**——否则旧卡的 30 秒定时器照样触发、旧卡上的"
+    "「确认提交」按钮还能点，那会把一份已经过期的原文发成公开 issue；"
+    "四是**私有目录写不进去时不再发一个「每次会话都变」的假客户端标识**（改为不带这个标识，"
+    "宁可没有，也不要一个会把端点的独立客户端数算歪、把复用证据稀释掉的假 id）。"
+    "另：只读调用的一次保守重试与上报前的交互卡确认闸门现在两条通道共用同一份实现。"
+    "版本号与官方通道继续刻意错开（官方 1.6.x / 社区 1.5.x）。"
 )
 
 #: The three substitutions, as (label, file, pattern, replacement).
@@ -71,6 +75,26 @@ def sub_once(text: str, pattern: str, replacement: str, label: str) -> str:
     found = len(re.findall(pattern, text))
     assert found == 1, f"{label}: expected 1 occurrence of {pattern!r}, found {found}"
     return re.sub(pattern, replacement, text, count=1)
+
+
+def package_files(base: Path) -> list[Path]:
+    """The files that actually go into a package (the packer's rule, in one place).
+
+    A leftover `.cindy` package or the publisher signature in the source directory is **not** part
+    of the package — comparing raw directory listings would report drift that isn't drift.
+    """
+    return sorted(
+        (
+            p
+            for p in base.rglob("*")
+            if p.is_file()
+            and not p.name.startswith(".")
+            and not p.name.endswith(".cindy")
+            and p.name != "cindy-signatures.json"
+            and p.name not in {".git", "node_modules", "__MACOSX"}
+        ),
+        key=lambda p: p.relative_to(base).as_posix(),
+    )
 
 
 def build() -> None:
@@ -109,8 +133,8 @@ def assert_only_three_differences() -> None:
     This is the guard that replaced the marker-counting tests. It compares the two trees file by
     file, so a stray edit on either side is caught here rather than in a marketplace review.
     """
-    official_files = sorted(p.relative_to(OFFICIAL).as_posix() for p in OFFICIAL.rglob("*") if p.is_file())
-    community_files = sorted(p.relative_to(TARGET).as_posix() for p in TARGET.rglob("*") if p.is_file())
+    official_files = [p.relative_to(OFFICIAL).as_posix() for p in package_files(OFFICIAL)]
+    community_files = [p.relative_to(TARGET).as_posix() for p in package_files(TARGET)]
     assert official_files == community_files, (
         f"file sets differ: only in official {set(official_files) - set(community_files)}, "
         f"only in community {set(community_files) - set(official_files)}"

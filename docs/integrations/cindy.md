@@ -75,6 +75,18 @@ python scripts/publish_cindy_plugin_version.py
 > **忘了写不是缺陷。** 端点没有可比对的版本，就对版本保持沉默；插件那头也不说（结果里没有
 > `plugin_version`）——静默是设计，不是 bug。代价只是：暂时没人被提醒「你落后了」。
 
+### 1.1.2 三条运维命令
+
+| 命令 | 干什么 | 需要什么 |
+|---|---|---|
+| `python scripts/release_cindy_plugin.py --variant community` | 发版前把整件事做掉：重建社区包、断言两条通道只差三处、断言版本号一致、用发布者私钥签名、验签，然后打印接下来那三个宿主调用（`ghost_forge_pack` → `ghost_forge_install` → `ghost_contribution_prepare` → `submit`） | 本机的发布者私钥（`~/.cindy/publisher-keys/`） |
+| `python scripts/cindy_plugin_market_stats.py` | 市场触达（下载/使用，**无 API，只能在客户端页面上观察后记进 `data/cindy-plugin-market-stats.json`**）+ 遥测侧版本分布（生产 `misakanet-ops` 的 `search_signals`，`agent='cindy'` 那一片） | 遥测部分需要能跑 wrangler（本机在 WSL 上跑） |
+| `python scripts/ae_query_with_local_token.py` | 端点侧的分阶段耗时（AE 的 `misakanet_events`：语料读 / BM25 索引 / 打分 / 语义回退各 p95） | 一个带 **Account \| Account Analytics \| Read** 的 Cloudflare API token（放在 `~/.config/misakanet/cf_analytics_token`，**不在仓库里**） |
+
+`release_cindy_plugin.py` 的存在理由是**别再手搓那五步**：手工流程里最容易出的错是
+「先签名、后改源码」——签名与包内容对不上，宿主直接拒装。脚本把版本一致性与签名校验放在发布之前，
+对不上就不往下走。
+
 ### 1.2 发布者签名与公钥（社区投稿通道）
 
 市场投稿通道的包带**发布者签名**：包内 `cindy-signatures.json` 记录这份包的文件清单
@@ -152,16 +164,18 @@ npx @misaka-net/misakanet-setup --only cindy --verify
 
 ### P1 — 通道收尾（等人，不急）
 
-- 源仓 [#5375](https://github.com/Ikalus1988/MisakaNet/pull/5375) 合并：两条通道并成一份实现、
+- 源仓 [#5375](https://github.com/Ikalus1988/MisakaNet/pull/5375) ✅ 已合并：两条通道并成一份实现、
   社区变体降级成薄壳、漂移守卫改成字节级。
-- 源仓 [#5377](https://github.com/Ikalus1988/MisakaNet/pull/5377) 合并：三条运维命令（发版一键化、
+- 源仓 [#5377](https://github.com/Ikalus1988/MisakaNet/pull/5377) ✅ 已合并：三条运维命令（发版一键化、
   市场与遥测读数、AE 包装器）。
-- 官方仓 [#357](https://github.com/makecindy/cindy-official-plugins/pull/357) 合并：官方包 1.6.4
-  （并入只读重试与确认卡闸门）——**这是最后一次同步**，合完官方仓那份就冻结；归属一旦放行，
-  下次 push 会自动把官方包发出去。
-- id `misakanet` 的**个人作者归属**（makecindy 组织 admin dashhuang）：放行 → 官方包能上架；
-  不放行 → 社区通道继续当正式发布通道。诉求与实测见
-  [makecindy/cindy-official-plugins#356](https://github.com/makecindy/cindy-official-plugins/issues/356)。
+- 源仓 [#5637](https://github.com/Ikalus1988/MisakaNet/pull/5637) ✅ 已合并：**确认卡闸门的四处缺陷**
+  （维护者 2026-11-23 点的名）——点击用新的在途 callId、超时只落卡不发第二个回执、direct 重提作废旧卡、
+  私有目录写不进去时不带假 client id。社区包版本 **1.5.13**（在售的是 1.5.12）。
+- 源仓 [#5639](https://github.com/Ikalus1988/MisakaNet/pull/5639) / [#5638](https://github.com/Ikalus1988/MisakaNet/pull/5638)：构建脚本的文件集比较改成「包内文件」规则、发版脚本的 Windows 编码、市场触达读数（1,316 下载 / 415 使用）。
+- **1.5.13 提审只差宿主侧的一次安装确认**：提审快照必须取自已安装实例，而宿主不允许用本地包覆盖
+  市场版实例 → 要另装一份 local 开发副本；这一步的安装确认卡在手机端会被自动拒，需要在桌面端点一下。
+- 官方通道：**已关闭**（维护者 2026-11-20 明确保留个人发布那条，官方仓里的 `misakanet/` 副本已被
+  #371 移除）。`.cindy-plugin/` 现在只是唯一真身，社区变体由它生成。
 
 ### P2 — 端点耗时的分阶段定位（**暂缓，上量再提**）
 
