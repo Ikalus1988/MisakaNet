@@ -56,6 +56,11 @@ function randomClientId() {
 }
 
 async function ensureClientId() {
+  // 这台机器的客户端标识，以及它是否**跨会话稳定**。
+  //
+  // 写私有目录可能失败（沙箱只读、配额满）。这时**不发** client id，而不是发一个「每次会话都
+  // 变」的临时 id：端点把 client id 加盐哈希后用来统计独立客户端数与 E4 复用证据，一个每会话都
+  // 变的 id 会把同一台机器算成很多台客户端，把复用证据稀释掉。宁可没有这个标识。
   if (!clientIdPromise) {
     clientIdPromise = (async () => {
       try {
@@ -67,24 +72,27 @@ async function ensureClientId() {
         });
         if (read && read.ok === true && typeof read.content === 'string') {
           const stored = read.content.trim();
-          if (CLIENT_ID_RE.test(stored)) return stored;
+          if (CLIENT_ID_RE.test(stored)) return { id: stored, stable: true };
         }
       } catch (error) {
         /* 读不到就新建 */
       }
       const fresh = randomClientId();
-      try {
-        await cindy.send({
-          type: 'fs-request',
-          op: 'write',
-          root: 'data',
-          path: CLIENT_ID_FILE,
-          content: fresh,
-        });
-      } catch (error) {
-        /* 写不了就用本次会话的临时 id：仍好过一个写死的常量 */
+      for (let attempt = 0; attempt < 2; attempt += 1) {
+        try {
+          const written = await cindy.send({
+            type: 'fs-request',
+            op: 'write',
+            root: 'data',
+            path: CLIENT_ID_FILE,
+            content: fresh,
+          });
+          if (written && written.ok !== false) return { id: fresh, stable: true };
+        } catch (error) {
+          /* 重试 */
+        }
       }
-      return fresh;
+      return { id: '', stable: false };
     })();
   }
   return clientIdPromise;
@@ -100,8 +108,8 @@ function detectOs() {
   return 'unknown';
 }
 
-function buildHeaders(clientId) {
-  return {
+function buildHeaders(client) {
+  const headers = {
     'Content-Type': 'application/json',
     Accept: 'application/json',
     // 自报客户端身份：宿主代发时用的是通用 UA，端点分不出这是 Cindy 的调用（#4618）。
@@ -112,10 +120,13 @@ function buildHeaders(clientId) {
     // 端点要拿「市场当前版」来对照，就得知道来的是哪条通道（#5185）。自报、只做提示、不做授权；
     // 端点没实现这个字段时，这一行不生效——**忘了写=沉默，是设计不是缺陷**。
     'X-MisakaNet-Channel': 'community',
-    'X-MisakaNet-Client': clientId,
     'X-MisakaNet-Os': detectOs(),
     'X-MisakaNet-Version': PLUGIN_VERSION,
   };
+  // 没有稳定的客户端标识就不带这个头：端点用它统计独立客户端数与 E4 复用证据，
+  // 一个每会话都变的假 id 会把这两件事都算歪（见 ensureClientId）。
+  if (client && client.id) headers['X-MisakaNet-Client'] = client.id;
+  return headers;
 }
 
 /* 托管端点 schema 里真实存在的参数（rpsw.js 的 TOOLS 定义）。 */
@@ -408,6 +419,36 @@ const CARD_ACTION_CANCEL = 'intake-cancel';
 const CARD_CONFIRM_TIMEOUT_MS = 30000;
 const pendingIntakes = new Map();
 
+/** 作废所有待确认的上报：清掉定时器，把还开着的卡收成「已被取代」。
+
+  不作废会出两个真问题：旧卡的 30 秒定时器稍后照样触发（交一份「已放弃」给一个已经作废的请求），
+  而且旧卡上的「确认提交」按钮**还能点**——那会把一份可能已经过期的原文发成公开 issue。
+ */
+async function invalidatePendingIntakes(reason) {
+  const entries = Array.from(pendingIntakes.entries());
+  pendingIntakes.clear();
+  for (const [callId, pending] of entries) {
+    if (pending && pending.timer) clearTimeout(pending.timer);
+    void Promise.resolve(cindy.send({
+      type: 'card-update',
+      callId,
+      v: 2,
+      state: 'done',
+      html: '<div style="padding:12px;font-size:13px">' + escapeHtml(reason) + '</div>',
+      height: 150,
+    })).catch(() => {});
+  }
+}
+
+/** 一个新的**在途**调用号。
+ *
+ * 宿主按 callId 归属/限流一次网络代发，而一个**已结束**的工具调用的 callId 不能复用——宿主会拒。
+ * 确认点击之后的那次上报必须拿一个新的号（维护者 2026-11-23 点的第一处）。
+ */
+function mintCallId() {
+  return 'call-' + randomClientId().slice('cindy-'.length);
+}
+
 function escapeHtml(value) {
   return String(value == null ? '' : value)
     .replace(/&/g, '&amp;')
@@ -499,7 +540,8 @@ async function handleCardAction(msg) {
   let payload = null;
   let error = null;
   try {
-    payload = await callHostedTool(TOOLS.misakanet_submit_intake, pending.args, msg.callId, {
+    // 新的在途 callId：msg.callId 是那张已结卷工具调用的归因号，宿主会拒复用。
+    payload = await callHostedTool(TOOLS.misakanet_submit_intake, pending.args, mintCallId(), {
       irreversible: true,
     });
   } catch (err) {
@@ -1001,10 +1043,13 @@ async function handleToolCall(msg) {
       // confirm=direct 表示调用方（Agent）明确知道这个会话里按钮不可点（例如用户在手机上远程
       // 操作），这时跳过卡片、但仍然要求 user_confirmed=true，并在结果里注明未经过点击确认。
       const confirmMode = asString(args.confirm) === 'direct' ? 'direct' : 'card';
+      // 任何新的提交请求都作废上一张待确认的卡（直接重发尤其要作废：那就是「按钮点不动，
+      // 改走 direct」的重试路径）。
+      await invalidatePendingIntakes('这次上报已被新的提交取代：没有提交任何内容。');
       if (confirmMode === 'card') {
         const carded = await supplyIntakeCard(callId, intakeArgs);
         if (carded) {
-          const pending = { args: intakeArgs };
+          const pending = { args: intakeArgs, timer: null };
           pendingIntakes.set(callId, pending);
           const timer = setTimeout(() => {
             if (!pendingIntakes.has(callId)) return;
@@ -1017,16 +1062,11 @@ async function handleToolCall(msg) {
               html: '<div style="padding:12px;font-size:13px">没有收到确认点击（按钮可能在当前会话里点不动），已放弃：没有提交任何内容。</div>',
               height: 140,
             })).catch(() => {});
-            void Promise.resolve(cindy.send({
-              type: 'tool-result',
-              callId,
-              ok: false,
-              errorCode: 'CONFIRMATION_TIMEOUT',
-              message:
-                '确认卡在等待期间没有收到点击（当前会话里卡片按钮可能点不动），这次**没有提交任何内容**，远端也没有任何记录。' +
-                '如果用户已经口头确认过，可以改用 confirm="direct" 重新调用（仍然需要 user_confirmed=true）。',
-            })).catch(() => {});
+            // 只更新卡，**不再发第二个 tool-result**：原工具调用已经结卷，同一个 callId 上的
+            // 第二个回执宿主会拒；超时的结论落在卡上（用户看得见），调用方在第一次回执里
+            // 就已经知道「等不到点击就改走 confirm=direct」。
           }, CARD_CONFIRM_TIMEOUT_MS);
+          pending.timer = timer;
           if (timer && typeof timer.unref === 'function') timer.unref();
           return await sendResult(callId, true, {
             awaiting_confirmation: true,

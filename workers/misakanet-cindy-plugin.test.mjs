@@ -42,10 +42,11 @@ const COMMUNITY_PACKAGE = resolve(dirname(fileURLToPath(import.meta.url)), '..',
  */
 let loads = 0;
 
-async function loadPlugin({ respond, fetchResult, packageDir = PACKAGE } = {}) {
+async function loadPlugin({ respond, fetchResult, packageDir = PACKAGE, failWrites = false } = {}) {
   const sent = [];
   const requests = [];
   const dataDir = new Map();
+  let writeAttempts = 0;
   const stub = {
     handler: null,
     onHostMessage(cb) { stub.handler = cb; },
@@ -54,6 +55,8 @@ async function loadPlugin({ respond, fetchResult, packageDir = PACKAGE } = {}) {
       // network, and it is where the per-machine client id lives.
       if (payload.type === 'fs-request') {
         if (payload.op === 'write') {
+          writeAttempts += 1;
+          if (failWrites) return { ok: false, errorCode: 'WRITE_FAILED' };
           dataDir.set(payload.path, payload.content);
           return { ok: true, op: 'write', path: payload.path };
         }
@@ -87,13 +90,14 @@ async function loadPlugin({ respond, fetchResult, packageDir = PACKAGE } = {}) {
   globalThis.cindy = stub;
   loads += 1;
   await import(`${pathToFileURL(join(packageDir, 'main.js')).href}?load=${loads}`);
-  return { stub, sent, requests, dataDir };
+  return { stub, sent, requests, dataDir, get writeAttempts() { return writeAttempts; } };
 }
 
 /** Hand the plugin a tool-call and wait for its answer. */
 async function callTool(load, tool, args, options = {}) {
   load.sent.length = 0;
-  await load.stub.handler({ type: 'tool-call', tool, args, callId: 'test-call' });
+  const callId = options.callId || 'test-call';
+  await load.stub.handler({ type: 'tool-call', tool, args, callId });
   // 供卡时先发的是 card-update，回执是 tool-result：等回执，别拿错消息。
   for (let i = 0; i < 100 && load.sent.filter((m) => m.type === 'tool-result').length === 0; i += 1) {
     await new Promise((resolve) => setTimeout(resolve, 10));
@@ -116,7 +120,9 @@ async function callTool(load, tool, args, options = {}) {
     const results = load.sent.filter((m) => m.type === 'tool-result');
     if (results.length > 1) answer = results[results.length - 1];
   }
-  return answer;
+  // The call id travels with the answer: a test has to be able to say "the follow-up request must
+  // not reuse this one".
+  return Object.assign(answer || {}, { callId });
 }
 
 function forwarded(load, index = 0) {
@@ -854,9 +860,15 @@ test('submit_intake: a card nobody clicks gives up without sending anything', as
   wait.fn();
   await new Promise((resolve) => setTimeout(resolve, 30));
   assert.equal(load.requests.length, 0, 'giving up must not send anything');
-  const failure = load.sent.filter((m) => m.type === 'tool-result' && m.errorCode === 'CONFIRMATION_TIMEOUT');
-  assert.equal(failure.length, 1, 'the caller must be told the click never arrived');
-  assert.match(failure[0].message, /没有提交任何内容/);
+  // The original tool call already answered ("awaiting_confirmation"), so the give-up must NOT
+  // arrive as a second tool-result on the same callId — the host rejects that. The card carries it.
+  const results = load.sent.filter((m) => m.type === 'tool-result');
+  assert.equal(results.length, 1, 'exactly one tool-result: the one that asked for the click');
+  assert.equal(results[0].result.awaiting_confirmation, true);
+  const cardDone = load.sent.filter(
+    (m) => m.type === 'card-update' && m.state === 'done' && /没有提交任何内容/.test(m.html || ''),
+  );
+  assert.equal(cardDone.length, 1, 'the card must show that nothing was submitted');
 });
 
 /* ---------- 官方通道修过、社区通道必须跟上的那几处 ---------- */
@@ -1031,6 +1043,70 @@ test('the tracked session list stays bounded', async () => {
   const count = Object.keys(state.sessions || {}).length;
   assert.ok(count > 0, 'the current session must survive');
   assert.ok(count <= 20, `the tracked session list must stay bounded, got ${count}`);
+});
+
+test('submit_intake: the click submits under a fresh call id, not the finished one', async () => {
+  // The card's attribution id belongs to a tool call that already answered; the host rejects a
+  // reuse. The follow-up request must carry a new in-flight id.
+  const load = await loadPlugin({ respond: () => ({ intake_id: 'issue-1', dedup_key: 'abcd1234' }) });
+  const first = await callTool(load, 'misakanet_submit_intake', {
+    problem: 'a report someone confirms',
+    user_confirmed: true,
+  }, { autoClick: false });
+  const toolCallId = first.callId;
+  assert.ok(toolCallId, 'the tool call must have an id');
+  await load.stub.handler({
+    type: 'event',
+    name: 'card-action',
+    callId: toolCallId,
+    actionId: 'intake-submit',
+    spawnCallId: 'spawn-1',
+    sessionId: 's1',
+    userActionToken: 'once',
+  });
+  await new Promise((resolve) => setTimeout(resolve, 60));
+  assert.equal(load.requests.length, 1, 'the click must submit exactly once');
+  assert.notEqual(load.requests[0].callId, toolCallId, 'the finished call id must not be reused');
+  assert.match(load.requests[0].callId, /^call-/);
+});
+
+test('submit_intake: a direct resend invalidates the card that is still open', async () => {
+  // The click path and the direct path are two ways to submit the same report. When the caller
+  // gives up on the card and retries with confirm="direct", the old card must be closed: otherwise
+  // its timer fires later and its button still works — and that button would publish a payload
+  // that has already been superseded.
+  const load = await loadPlugin({ respond: () => ({ intake_id: 'issue-2', dedup_key: 'abcd1234' }) });
+  await callTool(load, 'misakanet_submit_intake', {
+    problem: 'the first attempt',
+    user_confirmed: true,
+  }, { autoClick: false });
+  const superseded = load.sent.filter(
+    (m) => m.type === 'card-update' && m.state === 'done' && /取代/.test(m.html || ''),
+  );
+  assert.equal(superseded.length, 0, 'nothing is superseded yet');
+
+  await callTool(load, 'misakanet_submit_intake', {
+    problem: 'the retry',
+    user_confirmed: true,
+    confirm: 'direct',
+  });
+  const closed = load.sent.filter(
+    (m) => m.type === 'card-update' && m.state === 'done' && /取代/.test(m.html || ''),
+  );
+  assert.equal(closed.length, 1, 'the open card must be closed when a new submission arrives');
+  const payloads = load.requests.map((r) => JSON.parse(r.body).params.arguments.problem);
+  assert.deepEqual(payloads, ['the retry'], 'only the new payload may be submitted');
+});
+
+test('the client id is left out when the private directory cannot be written', async () => {
+  // A per-session id would inflate the endpoint's distinct-client count and dilute the reuse
+  // evidence. No id is honest; a fake one is not.
+  const load = await loadPlugin({ respond: () => ({ results: [] }), failWrites: true });
+  await callTool(load, 'misakanet_search', { query: 'anything' });
+  assert.equal(load.requests.length, 1);
+  assert.equal(load.requests[0].headers['X-MisakaNet-Client'], undefined,
+    'an unstable client id must not be sent');
+  assert.ok(load.writeAttempts >= 2, 'the write must be retried before giving up');
 });
 
 test('the generated community package loads and answers too', async () => {
