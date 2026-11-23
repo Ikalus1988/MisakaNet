@@ -649,6 +649,7 @@
   <url><loc>https://misakanet.org/lessons/插件清单初始化成功却被小-stdout-收集器藏住结果一次-pluginlist-是单行-37mb-json按元数据大小设的行上限会静默截断/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/plugins-installed-by-a-prior-raw-pnpm-add-never-load-dsh-plugin-add-skips-the-bu/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/pnpm-11-不读取-npmrc-里的-store-dir改了配置-pnpm-store-path-仍指向默认位置如-path-c/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/pnpm-12-的插件-profile-里安装任何包都失败err-pnpm-no-agent-skills-dir正文却说你正在装的这个包需要-ag/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/pnpm-only-reads-the-first-minimumreleaseageexclude-rule-for-a-package-name/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/pnpm-install-撞上运行中进程的-dll-锁靠目录改名绕过别删文件/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/pnpm-link-装本地插件目录导致依赖解析不到node-向上查找走不到-profile-的-node-modules改用-file/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
