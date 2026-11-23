@@ -255,6 +255,10 @@ _PROSE_PREFIX_RE = re.compile(r"^(?:pre|non|un|semi|anti|post|multi|sub|inter|in
 SHELL_FENCE_RE = re.compile(r"```(?:bash|sh|shell|zsh|console|shell-session|powershell|ps1)\n([\s\S]*?)```", re.I)
 INLINE_RE = re.compile(r"`([^`\n]{1,160})`")
 PROMPT_RE = re.compile(r"^\s*\$\s+(\S+)", re.M)
+#: Sentence boundary for the bare-mention repetition count. Newlines included: these reports write one
+#: sentence per line often enough that a line is a reasonable unit, and the derived fields are not in
+#: the counted text at all (see `command_surface_identifiers`).
+_SENTENCE_RE = re.compile(r"(?<=[.!?。！？;；])\s+|\n+")
 
 # **Measured, not guessed.** The first version of this check read every fenced block and every
 # inline span as a command; run over the 651-lesson corpus it flagged **182 lessons (28%)**, and the
@@ -280,10 +284,22 @@ def _is_command_span(span: str) -> bool:
     return len(text.split()) >= 2
 
 
-def command_surface_identifiers(text: str) -> list[str]:
-    """The command names a text uses, with the evidence each one carries."""
+def command_surface_identifiers(text: str, *, prose_source: str | None = None) -> list[str]:
+    """The command names a text uses, with the evidence each one carries.
+
+    `prose_source` is where the *bare-mention repetition* is counted, when that is not the whole
+    `text`. `validate_public_surface` passes the lesson's body: the frontmatter's `title`,
+    `summary_plain` and `trigger` are the conversion pipeline's copies of the body's first sentence,
+    so counting them as repetitions measured the pipeline, not the author. Measured 2026-11-23: 18 of
+    the 29 intake candidates the gate refused were refused **only** by this path — `checked-in`,
+    `task-list`, `exhaust`, `arrival`, `vacancy`, `trials` — because one sentence became three
+    occurrences once the converter wrote it into three fields. Every name carrying real evidence (code
+    span, shell fence, prompt) stayed caught, including the four private keys in #5525
+    (`requires_openai_auth`, `model_provider`, `remote_control`, `select_source`).
+    """
     found: set[str] = set()
     body = str(text or "")
+    prose = body if prose_source is None else str(prose_source or "")
     for match in INLINE_RE.finditer(body):
         if _is_command_span(match.group(1)):
             head = _surface_head(match.group(1))
@@ -304,18 +320,24 @@ def command_surface_identifiers(text: str) -> list[str]:
     # `mico issue rerun`, has no flag anywhere — requiring one would have been a rule that passes
     # exactly the submission it was written for. Prose is filtered by the vocabulary instead, which
     # is the right division of labour: `the` and `agent` repeat too, and both are corpus words.
+    # The count is over sentences in `prose` (the author's text), not over `text` (which also holds the
+    # derived fields); see the docstring.
     occurrences: dict[str, int] = {}
-    for match in SURFACE_FOLLOW_RE.finditer(body):
-        token = match.group(1).lower()
-        if FILE_EXTENSION_RE.search(token):
-            continue
-        # "a pre-converted frame cache" is prose, not a CLI. A command with a hyphen in it is
-        # almost always written as a code span or in a fence — those paths are checked above and
-        # keep their evidence. Measured 2026-11-02: the bare-mention path flagged `pre-converted`
-        # in a lesson whose only real name was `webm`.
-        if _PROSE_PREFIX_RE.match(token):
-            continue
-        occurrences[token] = occurrences.get(token, 0) + 1
+    for sentence in _SENTENCE_RE.split(prose):
+        here: set[str] = set()
+        for match in SURFACE_FOLLOW_RE.finditer(sentence):
+            token = match.group(1).lower()
+            if FILE_EXTENSION_RE.search(token):
+                continue
+            # "a pre-converted frame cache" is prose, not a CLI. A command with a hyphen in it is
+            # almost always written as a code span or in a fence — those paths are checked above and
+            # keep their evidence. Measured 2026-11-02: the bare-mention path flagged `pre-converted`
+            # in a lesson whose only real name was `webm`.
+            if _PROSE_PREFIX_RE.match(token):
+                continue
+            here.add(token)
+        for token in here:
+            occurrences[token] = occurrences.get(token, 0) + 1
     for token, count in occurrences.items():
         if count >= 3:
             found.add(token)
@@ -392,15 +414,24 @@ def load_public_vocabulary(repo: Path = REPO, base: bool = False) -> set[str] | 
     return resolved
 
 
-def unknown_surface_names(text: str, vocabulary: set[str] | None) -> list[str]:
+def unknown_surface_names(text: str, vocabulary: set[str] | None,
+                        *, prose_source: str | None = None) -> list[str]:
     if not vocabulary:
         return []
     unknown = []
-    for token in command_surface_identifiers(text):
+    for token in command_surface_identifiers(text, prose_source=prose_source):
         if token in vocabulary or token.split(".")[0] in vocabulary:
             continue
         unknown.append(token)
     return unknown
+
+
+def _lesson_body(text: str) -> str:
+    """Everything after the closing frontmatter fence; the whole text when there is no frontmatter."""
+    if not text.startswith("---"):
+        return text
+    end = text.find("\n---", 3)
+    return text[end + 4:] if end != -1 else text
 
 
 def validate_public_surface(fm: dict, text: str, repo: Path = REPO) -> list[str]:
@@ -414,7 +445,7 @@ def validate_public_surface(fm: dict, text: str, repo: Path = REPO) -> list[str]
     vocabulary = load_public_vocabulary(repo, base=True)
     if vocabulary is None:
         return ["[warn] public-vocabulary.json missing — cannot check command names for public surface"]
-    unknown = unknown_surface_names(text, vocabulary)
+    unknown = unknown_surface_names(text, vocabulary, prose_source=_lesson_body(text))
     if not unknown:
         return []
     listed = ", ".join(f"`{token}`" for token in unknown[:6])

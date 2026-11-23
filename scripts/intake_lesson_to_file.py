@@ -93,8 +93,10 @@ _FENCE_RE = re.compile(r"^\s*(?:```|~~~)")
 #: The intake form's own first heading, when a client uses it as the title. Not a topic: it says
 #: "this is a symptom" and nothing about what broke, so it is dropped before the gate's 120-character
 #: budget is spent on it (measured 2026-11-19 on the batch that produced 16 of 38 lessons titled
-#: `症状 …` / `Problem …` / `Symptom: …`).
-_GENERIC_TITLE_PREFIX = re.compile(r"^(?:症状|问题|Problem|Symptom)\s*[:：]?\s+", re.IGNORECASE)
+#: `症状 …` / `Problem …` / `Symptom: …`). `现象` joined the list on 2026-11-22 for the same reason and
+#: from the same gap: four submissions used it as the heading where the form's `## Problem` was empty,
+#: so the section reader had to learn it and the titles arrived as `现象 Windows 上 …`.
+_GENERIC_TITLE_PREFIX = re.compile(r"^(?:症状|问题|现象|Problem|Symptom)\s*[:：]?\s+", re.IGNORECASE)
 
 
 def strip_generic_prefix(title: str) -> str:
@@ -176,7 +178,7 @@ def fences_start_a_line(text: str) -> str:
     return "\n".join(lines)
 
 
-def section(body: str, name: str) -> str:
+def section(body: str, name: str, *, allow_qualifier: bool = False) -> str:
     r"""The text under **every** `## <name>` heading, concatenated; empty when absent.
 
     Concatenating instead of taking the first occurrence: the MCP intake form emits an empty
@@ -189,9 +191,17 @@ def section(body: str, name: str) -> str:
     2026-11-02, a Chinese lesson whose Fix was a bash fence beginning `# 1) 空数组安全展开` was
     converted with an empty Fix and an empty Verification, and the lesson gate passed it because
     both headings were present. Every lesson with a commented command would have lost the same way.
+
+    `allow_qualifier` accepts a heading that carries a parenthetical after the name —
+    `## Root Cause（分两层，第一层是误诊）`, `## Fix（已验证有效）`. Measured 2026-11-22: two complete
+    intakes were refused over one clause of heading decoration. A qualifier that **hedges** is not
+    accepted, because reading `## Root Cause（推测，未证实）` would put a guess into the slot the rest
+    of this pipeline treats as established — the one thing the conversion exists to prevent (#4556
+    carries exactly that heading, same day).
     """
     lines = body.split("\n")
-    wanted = re.compile(rf"^#+\s*{re.escape(name)}\s*$")
+    suffix = r"(?:\s*[（(][^)）]*[)）])?" if allow_qualifier else ""
+    wanted = re.compile(rf"^#+\s*{re.escape(name)}{suffix}\s*$")
     heading_re = re.compile(r"^#+\s*")
     chunks: list[str] = []
     current: list[str] | None = None
@@ -205,7 +215,13 @@ def section(body: str, name: str) -> str:
         if not in_fence and heading_re.match(line):
             if current is not None:
                 chunks.append("\n".join(current))
-            current = [] if wanted.match(line) else None
+            hit = bool(wanted.match(line))
+            if hit and allow_qualifier and _HEDGE_RE.search(line):
+                # A heading that says its own content is a guess is not the cause. Dropped rather
+                # than read, so the intake keeps its qualifier and stays in the queue — the same
+                # outcome as a missing section, which is the honest one.
+                hit = False
+            current = [] if hit else None
             continue
         if current is not None:
             if not in_fence and line.strip().startswith("**Tags:**"):
@@ -385,6 +401,10 @@ CAUSE_MARKERS = ("根因", "原因是", "原因：", "原因:", "root cause", "R
 FIX_MARKERS = ("修复", "改为", "换用", "解决", "绕过", "改法", "对策", "fix:", "Fix:")
 
 
+#: Words a heading uses to say its own content is not established. See `section(allow_qualifier=)`.
+_HEDGE_RE = re.compile(r"推测|未证实|未确认|待确认|待定|不确定|猜测|suspected|unconfirmed|unknown|tbd",
+                       re.IGNORECASE)
+
 #: A cause marker the client wrote mid-paragraph: `## Root Cause`, `Root Cause:`, `根因：`, `原因：`.
 _INLINE_CAUSE_RE = re.compile(r"#{1,6}\s*Root\s*Cause\s*|Root\s*Cause\s*[:：]\s*|根因\s*[:：]\s*|原因\s*[:：]\s*",
                               re.IGNORECASE)
@@ -461,9 +481,24 @@ def convert(issue: dict, canonical: set[str],
         title = stripped
         notes.append("generic label dropped from the title")
     title = shorten(title, FIELDS_MAX["title"])
-    problem = (section(body, "Problem") or section(body, "症状")
+    # `现象` (symptom) is the heading four submissions used where the form's own `## Problem` was left
+    # empty — measured 2026-11-22 on #5513–#5516, all four complete down to `## Verification`. `症状`
+    # and `Symptom` were already here; `现象` was the one missing word.
+    problem = (section(body, "Problem") or section(body, "现象") or section(body, "症状")
                or section(body, "Symptom"))
     cause = section(body, "Root Cause")
+    if not cause:
+        # Two heading shapes the reader refused, both measured on 2026-11-22: the same section under
+        # the Chinese name the submitter wrote (`## 根因`, #4748/#4671), and the canonical name
+        # followed by a descriptive parenthetical (`## Root Cause（实测修正版）`, #5072). Neither
+        # invents anything — the text is the submitter's own — so both are read, and the note says
+        # which heading it came from.
+        for heading, kwargs in (("根因", {}), ("Root Cause", {"allow_qualifier": True})):
+            cause = section(body, heading, **kwargs)
+            if cause:
+                notes.append(f"Root Cause read from a `## {heading}` heading"
+                             + (" carrying a qualifier" if kwargs else ""))
+                break
     split = None
     if not cause:
         # A cause heading the client wrote **inside** the Problem paragraph is better evidence than
