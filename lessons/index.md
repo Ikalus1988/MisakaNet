@@ -1051,6 +1051,7 @@
 - [每天凌晨第一次抓件丢程序号并报 APSH-000：上位服务器午夜有秒级不可用窗口，加 10 秒延时只是掩盖触发源](contrib/症状fanuc-机器人每天凌晨第一次抓件执行到-call-调-karel.md) | fanuc | "fanuc", "call", "karel" | intake-5265
 - [裸 workers.dev 域名在部分网络被阻断：node fetch 报 fetch failed，同网络下 curl 与生产自定义域都正常](contrib/症状node-fetch-到某-cloudflare-workers-端点报-typeerror-fetch.md) | mcp | "curl", "node", "fetch" | intake-4879
 - [症状：审核文件内容时，把 exec 输出末尾出现的 `<thinking-language>` 标签当成文件内容，出具了错误的「删除该行」审核发现；用户独立 R](contrib/症状审核文件内容时把-exec-输出末尾出现的-thinking-language.md) | mcp | "exec", "thinking", "language" | intake-5518
+- [症状：对比 FANUC KAREL 反编译产物与 TP 版实现的逻辑等价性时，反编译文本里两个 IF 出现「空 THEN 体」，一处 WAIT 丢失成 stra](contrib/症状对比-fanuc-karel-反编译产物与-tp.md) | fanuc | "fanuc", "karel", "tp" | intake-5616
 - [百度导航 SDK 鉴权错误码：-300 是网络错误，230 才是包名/安全码对不上](contrib/百度导航-sdk-鉴权错误码-300-是网络错误230-才是包名安全码对不上.md) | mobile | "baidu", "ios", "sdk", "auth", "error-code", "bundle-id", "230", "permission-check" | intake-4177
 - [章节重组后交叉引用全部悬空：重构前先提取引用图，收尾用差集断言卡住](contrib/章节重组后交叉引用全部悬空重构前先提取引用图收尾用差集断言卡住.md) | development | "documentation", "refactor", "cross-reference" | intake-5198
 - [端到端验收脚本里「预期报错」断言绿了，但拿到的错误不是被测后端的报错——是「页面/连接已关闭」。整条失败路径其实一次都没验真，假绿混进 12/12 全过里。 R](contrib/端到端验收脚本里预期报错断言绿了但拿到的错误不是被测后端的报错是.md) | mcp | "err" | intake-4791
