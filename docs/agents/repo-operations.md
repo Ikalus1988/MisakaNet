@@ -191,7 +191,7 @@ python3 scripts/bench_production_recall.py --json     # 机器可读
 | `data/lessons.json` | `python3 scripts/update_lessons_json.py` | **不要**用 `scripts/misakanet-index.py`：它缺 `preview/triggers/verified` 等字段，会静默回滚线上统计（#1374；CI 已有 schema 校验） |
 | 公开计数：只有 `docs/index.html`（meta + 首屏降级）与两份 `llms.txt` 保留字面 | `python3 scripts/sync_lesson_count.py`（幂等）· 门禁 `--check` | 由 `update_lessons_json.py` 在每日 `update-lessons.yml` 里自动跑；其余表面（README×3、ARCHITECTURE、ROADMAP、JOIN、skill.md、integrations、`.well-known/*.json`、issue 模板…）改**指向**：GitHub 渲染的用 shields 动态徽章，其余在散文里写来源。`tests/test_lesson_count_ssot.py` 锁住"能重复刷新"、"改写就报错"、**面数上限**（8 行 / 3 文件，防止面数再长回去）与"已去数字的表面不得把数字写回来"四条不变量；要加面先改那个上限并写明理由 |
 | `data/badges/*.json` | 由各 badge workflow 生成到 `data` 分支 | 例：计数徽章由 `update-badges.yml` 产出（`update-smithery-badge.yml` 曾产出 smithery 徽章，列表 404 后于 2026-11-14 删除；没有 README 引用它） |
-| 版本发布 | release-please 自动开 release PR | **不要手改** `.release-please-manifest.json`；PyPI 另走 `release-pypi.yml` 的 workflow_dispatch |
+| 版本发布 | release-please 自动开 release PR | **不要手改** `.release-please-manifest.json`；PyPI 另走 `release-pypi.yml` 的 workflow_dispatch。**合并后加一步**：`python3 scripts/doctor.py --deploy-freshness` —— 一次被 **cancelled** 的 `deploy-worker.yml` 在 PR 上不留任何红色，`approval-watch` 也只有"等批准"这一种状态可报；实测 2026-11-23，线上 `commit_sha` 停在 11-18，05:06 那次部署是 **cancelled**、13:47 那次在等批准，中间 3 个提交（含 3.20.0 的版本注解）都没上线，全程只有 `deploy-freshness` 一条日报在红 |
 | CF MCP 凭证（查 worker 日志等）| `python3 scripts/cf_mcp_auth.py --server cloudflare-observability [--refresh\|--verify]` | 一键完成 discovery/DCR/PKCE/换 token/验证 |
 
 ### 部署后的验证习惯

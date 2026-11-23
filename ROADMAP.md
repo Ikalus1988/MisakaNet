@@ -1,6 +1,6 @@
 # MisakaNet 4-Month Roadmap
 
-Last updated: 2026-10-28（上一版：2026-10-17，原文保留在下方，未改写）
+Last updated: 2026-11-23（上一版：2026-10-28，原文保留在下方，未改写）
 
 > **要看"今天是什么状态"，先看下一节 [`2026-10-28 裁定`](#2026-10-28-裁定--adr-0002-结项③-的验收第二半失守三条工作线入册)
 > ——它是这一轮对账后的现状：③ 的验收两半分别是什么结果、三条工作线、里程碑 1 的四个环节各完成到哪，
@@ -31,6 +31,67 @@ private intake -> classification -> maintainer demand board -> curated lesson/re
 
 MisakaNet should stay offline-first and Git-backed. External listings are useful
 "amplifiers", not the product itself.
+
+## 2026-11-23 裁定 — 安装量在衰减、API 流量是平的、队列的一半是生成物
+
+> 本节和下面各节一样是**状态裁定，不是新承诺**：旧条目一字未改。三条读数各自附复现命令，
+> 然后是它们共同的结论：**下一步该先修读数，再决定投内容还是投分发。**
+
+### 一、三条读数（2026-11-23 实测）
+
+| 读数 | 值 | 取法 |
+|---|---|---|
+| 服务端流量 | **10,847–14,899 次 MCP 调用/天**（11-17…11-22），11-23 至 14:43 已 6,531；`pageview` **51**、`crawler` **227** | `curl -s https://misakanet.org/api/activity` + `docs/data/activity-series.json` |
+| 安装量 | npm **217/天**（11-16…11-22 均值），前一周 **666/天**；PyPI **77/天**，前一周 **351/天**；两条都在 10 月底水平附近（269 / 93） | `api.npmjs.org/downloads/range/…`、`pypistats.org/api/packages/misakanet/overall` |
+| 注册/授权漏斗 | `register` **509–1,047/天**，`authorize` **0**，`pair` **0** | `curl -s https://misakanet.org/api/funnel` |
+
+三条各自推翻了一个默认假设：
+
+1. **"这是一张网站"不成立。** 页面浏览量 51/天，MCP 调用 6.5k/天。产品是一台 API，站点是它的
+   门牌号；任何按"站点流量"做的判断都会看错对象。
+2. **"注册数在涨"不是用户增长。** 每天 500–1,000 个注册，而 `authorize` 与 `pair` **恒为 0**——
+   这些是客户端在没有 `client_id` 的情况下每次调用都新建一个节点（工具描述里写着，读数里没体现）。
+   **注册数目前量的是自动化，不是用户。**
+3. **"安装量"既不可解释也没有告警。** 11-09…11-15 有一周 npm 666/天、PyPI 351/天的尖峰，随后一周
+   跌回 217 / 77；两条通道同周同向，说明多半是同一台机器/镜像的行为，不是两个人的兴趣。而没有任何
+   东西会因为"周下载跌了 67%"变红。
+
+第四条：`/api/analytics` 的 `top_searches` 里**一条查询占了 2,406 行**，第二名 48
+（`wsl2 landlock 文件系统沙箱`）。**在一条客户端主导的序列上算任何检索指标，量的都是那一条客户端。**
+
+### 二、裁定
+
+1. **里程碑排序改一次：先测量，后投入。** 在"安装量不可归因、检索量被单客户端主导、注册数量的是
+   自动化"三条同时成立时，选"多做语料"还是"多做分发"都是猜。先把读数修到能回答
+   *"上周多了/少了的是谁"*，再谈投哪边。
+2. **队列读数去派生。** 595 条 open issue 里，133 条非语料；这 133 条里 **70 条**是
+   `[Bounty] Answer the N linked question(s)`——由未答问题**生成**的入口，不是 70 件工作。
+   之后的待办读数一律先剔派生，明细与分组见
+   [`docs/maintainer/backlog-2026-11-23.md`](docs/maintainer/backlog-2026-11-23.md)。
+3. **三条测量缺陷各是一件小活，不是一个项目**：
+   - 注册：`/api/funnel` 的 `register` 要么改名成"新节点"，要么按有没有 `client_id` 拆两列；
+   - 检索：`top_searches` 增加**单客户端占比**，或对超阈值行标注，让"一条查询 2,406 次"自己说出来；
+   - 安装：周下载环比跌幅超过阈值时开/重开一条 issue（与 `deploy-freshness` 同一种守夜形状）。
+4. **`#2113`（NPM_TOKEN 2026-11-30 到期）不轮换。** 有真实下载量的 `misakanet` 已完全走 OIDC /
+   trusted publishing（3.20.0 就是它发的），另外两个包与 manifest 同版本、无待发版本、OIDC 从未被
+   真实发布验证。让它在 12-01 过期，下次发布时用真实发布去验证；失败信息本身已写明修法。
+
+### 三、这节没有决定的事（需要 owner）
+
+- **11-09…11-15 那一周的安装尖峰是什么？** 能看到两条通道同周同向，看不出是谁。若是批量安装或
+  镜像，那这两条序列对"增长"就没有解释力，应换成可归因的量。
+- **4 个产物只被榜单计 1 个**（`#4627`）：要不要为榜单元数据动结构，是产品决定，不是测量决定。
+- **内容 vs 分发**：等上面三条缺陷修完、且尖峰有解释之后，用两周窗口再定；现在定等于按噪声排序。
+
+复现：
+
+```bash
+curl -s https://misakanet.org/api/activity
+curl -s https://misakanet.org/api/funnel
+curl -s "https://api.npmjs.org/downloads/point/last-week/misakanet"
+curl -s "https://pypistats.org/api/packages/misakanet/recent"
+curl -s https://misakanet.org/api/analytics | head -c 400
+```
 
 ## 2026-10-28 裁定 — ADR-0002 结项、③ 的验收第二半失守、三条工作线入册
 
