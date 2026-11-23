@@ -143,7 +143,7 @@ def main(argv: list[str] | None = None) -> int:
             "--name", PUBLISHER_NAME,
             "--emit-to", str(base),
         ],
-        capture_output=True, text=True, cwd=REPO,
+        capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=REPO,
     )
     if done.returncode != 0:
         print(done.stdout, file=sys.stderr)
@@ -160,7 +160,7 @@ def main(argv: list[str] | None = None) -> int:
     package = build_package(base, version)
     verified = subprocess.run(
         ["node", str(SIGNER), "verify", "--package", str(package)],
-        capture_output=True, text=True, cwd=REPO,
+        capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=REPO,
     )
     try:
         report = json.loads(verified.stdout[verified.stdout.index("{"):])
