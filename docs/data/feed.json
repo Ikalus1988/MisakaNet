@@ -1,43 +1,51 @@
 {
-  "generated_at": "2026-11-22T11:40:45.904726+00:00",
+  "generated_at": "2026-11-23T01:49:55.598861+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 13,
   "items": [
     {
       "type": "merged_pr",
+      "title": "docs(handoff): vol 45 — histogram the refusals before reading them one by one",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5598",
+      "timestamp": "2026-11-23T00:27:56Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "feat(lessons): eight intakes were complete and refused by two words the reader did not know",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5595",
+      "timestamp": "2026-11-23T00:04:53Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "fix(intake): the section reader accepts 现象, 根因, and a descriptive qualifier",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5596",
+      "timestamp": "2026-11-22T23:57:18Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
       "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5571",
-      "timestamp": "2026-11-22T07:55:18Z",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5590",
+      "timestamp": "2026-11-22T20:13:56Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(lessons): three intake that were blocked by public tool names, and the allowlist entries that unblock them",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5570",
-      "timestamp": "2026-11-22T07:33:56Z",
+      "title": "feat(lessons): intake batch 2026-11-22",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5589",
+      "timestamp": "2026-11-22T20:07:50Z",
       "source": "github"
     },
     {
-      "type": "merged_pr",
-      "title": "fix(questions): retire only the tasks this script created",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5569",
-      "timestamp": "2026-11-22T06:41:41Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "fix(questions): a refused post says which issue and why, and does not abort the run",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5566",
-      "timestamp": "2026-11-22T05:58:09Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "fix(questions): bounty tasks are read in full and retired when their premise is gone",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5565",
-      "timestamp": "2026-11-22T04:27:31Z",
-      "source": "github"
+      "type": "lesson",
+      "title": "A native Home Assistant backup can fail when a co-located application creates an",
+      "url": "lessons/contrib/a-native-home-assistant-backup-can-fail-when-a-co-located.md",
+      "timestamp": "2026-11-22",
+      "domain": "mcp",
+      "source": "lessons"
     },
     {
       "type": "lesson",
@@ -69,14 +77,6 @@
       "url": "lessons/contrib/roboguide-工位文件-frw-被外部编辑如改-xml-userframes.md",
       "timestamp": "2026-11-22",
       "domain": "fanuc",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "ss-server (shadowsocks-libev 3.3.5, Debian) launched via a systemd unit ignores",
-      "url": "lessons/contrib/ss-server-shadowsocks-libev-335-debian-launched-via-a.md",
-      "timestamp": "2026-11-22",
-      "domain": "network",
       "source": "lessons"
     },
     {

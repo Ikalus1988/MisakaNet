@@ -277,6 +277,55 @@ def test_a_symptom_heading_is_accepted_as_the_problem():
     assert "ERR_PNPM_META_FETCH_FAIL" in lesson["content"]
 
 
+def test_the_other_word_for_a_symptom_is_accepted_too():
+    """`现象` was missing from a list that already had `症状` and `Symptom`.
+
+    Measured 2026-11-22: #5513–#5516 left the form's `## Problem` empty and wrote the report under
+    `## 现象`, and all four were refused as "missing Problem" while being complete down to
+    `## Verification`.
+    """
+    full = sample()
+    body = full["body"].replace("## Problem\n", "## Problem\n\n## 现象\n", 1)
+    lesson, notes = conv.convert({**full, "body": body}, CANONICAL)
+    assert lesson is not None, notes
+    assert "ERR_PNPM_META_FETCH_FAIL" in lesson["content"]
+
+
+def test_a_cause_under_the_chinese_heading_is_read():
+    """`## 根因` is the same section the form asks for as `## Root Cause` (measured 2026-11-22)."""
+    full = sample()
+    body = full["body"].replace("## Root Cause\n", "## 根因\n", 1)
+    lesson, notes = conv.convert({**full, "body": body}, CANONICAL)
+    assert lesson is not None, notes
+    assert any("根因" in note for note in notes), notes
+    assert lesson["content"].count("## Root Cause") == 1
+
+
+def test_a_cause_heading_with_a_descriptive_qualifier_is_read():
+    """`## Root Cause（实测修正版）` marks the same boundary; the decoration is not a different word."""
+    full = sample()
+    body = full["body"].replace("## Root Cause\n", "## Root Cause（实测修正版）\n", 1)
+    lesson, notes = conv.convert({**full, "body": body}, CANONICAL)
+    assert lesson is not None, notes
+    assert any("qualifier" in note for note in notes), notes
+
+
+def test_a_cause_heading_that_hedges_is_not_read():
+    """The guard on the rule above, and the reason the rule is allowed to exist.
+
+    `## Root Cause（推测，未证实）` says in the submitter's own words that the cause is a guess.
+    Reading it would move that guess into the field the rest of the pipeline treats as established,
+    which is the one thing this converter exists to prevent. Measured 2026-11-22: #4556 carries
+    exactly this heading, and it must stay in the queue with its qualifier intact.
+    """
+    full = sample()
+    body = full["body"].replace("## Root Cause\n", "## Root Cause（推测，未证实）\n", 1)
+    lesson, notes = conv.convert({**full, "body": body}, CANONICAL)
+    assert lesson is None, "a hedged cause must not become a lesson's Root Cause"
+    assert "missing" in notes[0], notes
+    assert "ERR_PNPM_META_FETCH_FAIL" not in (lesson or {}).get("content", "")
+
+
 def test_the_trigger_does_not_say_the_title_twice():
     """An intake body opens with the sentence its title was cut from.
 

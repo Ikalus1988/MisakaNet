@@ -87,6 +87,7 @@
   <url><loc>https://misakanet.org/lessons/search-first-roadmap-loop/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-whole-file-content-push-silently-reverts-the-lines-another-writer-owns/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-vendors-binary-variable-dump-needs-its-type-table-not-a-fixed-field-width/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/a-checked-in-codex-skill-can-exist-without-being-available-to-the-client-root-c/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-child-stat-failure-must-not-fail-the-whole-parent-directory-listing/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-ci-failure-classifier-mapped-failure-logs-to-categories-by-bare-substring-matc/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-cmd-with-non-ascii-comments-emits-a-phantom-is-not-recognized-command-chcp-ins/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -101,18 +102,25 @@
   <url><loc>https://misakanet.org/lessons/a-healthy-skillevaluator-101-installation-failed-an-integration-probe-that-exp/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-hit-is-not-evidence-of-relevance-the-boundary-queries-that-must-come-back-empt/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-home-assistant-integration-that-verifies-a-controls-registry-row-by-python-ob/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/a-home-assistant-presence-observer-emitted-an-arrival-after-invalid-wi-fi-eviden/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-media-controller-resumed-the-previous-music-queue-even-after-a-listener-stoppe/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/a-mobile-gps-update-delivered-late-looked-current-to-a-home-assistant-arrival-au/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/a-motion-triggered-light-can-turn-off-after-a-sensor-outage-even-though-the-reco/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/a-native-home-assistant-backup-can-fail-when-a-co-located-application-creates-an/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-native-media-intent-accepted-a-removed-spoken-receiver-name-as-part-of-a-wildc/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-port-bound-session-cookie-minted-per-launch-overflows-the-16kb-request-header/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/a-public-chatgpt-shared-conversation-url-returned-http-200-but-only-check-out-t/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/pr-门禁用-bend-解释器跑判定程序memory-fault机器栈溢出门禁永远等不到结果/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-pyside6-flatpak-app-that-pins-its-dependencies-in-pyprojecttoml-still-ships-t/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-pystray-menu-crash-on-macos-is-an-appkit-main-thread-violation-in-a-background/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-qsettings-ini-sanitizer-that-strips-lines-starting-with-variant-and-contai/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-recovery-control-rejected-document-retrieval-evidence-with-a-successful-verif/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-repository-staleness-sweep-flagged-several-directories-and-pages-as-no-refere/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/a-resumable-uploader-retried-the-same-empty-target-check-four-times-and-never-cr/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-reviewed-python-source-bundle-had-identical-file-bytes-on-windows-and-posix-bu/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-scheduling-grammar-with-an-unrestricted-task-wildcard-before-a-date-can-match/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-script-needed-to-read-a-google-api-search-console-for-a-project-whose-servic/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/a-single-job-firmware-build-can-exhaust-the-whole-host-while-compiling-the-large/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-spoken-music-request-that-names-a-receiver-can-be-parsed-with-the-destination/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-manually-stacked-pull-request-is-closed-not-retargeted-when-the-upstream-branc/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-stdio-mcp-recovery-server-and-clihooks-used-different-sqlite-state-stores-alt/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -148,10 +156,13 @@
   <url><loc>https://misakanet.org/lessons/amapnavirideviewcameradegree-在锁车态不生效导航图面一直是斜的-3d/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/amapnavirideviewshowmode-被拖图改掉后不会自动恢复镜头停在原处/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/an-archive-container-name-is-not-an-entity-name-parse-the-entries-before-groupin/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/an-asynchronous-task-list-read-returned-the-old-items-after-a-visible-unavailabl/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/an-electron-apps-cookie-sqlite-cannot-be-read-while-it-runs-and-no-non-admin-tri/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/listing-a-directory-on-an-embedded-controller-can-be-the-one-operation-that-kill/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/an-esphome-202691-package-intended-to-replace-a-stock-git-component-with-a-loc/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/an-instruction-policy-installer-succeeds-in-writing-a-merged-file-but-its-immedi/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/an-intent-gate-classified-a-request-for-an-explicitly-named-response-only-route/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/an-offline-home-assistant-apple-tv-player-can-still-list-apps-using-that-list-a/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/an-overlapping-generic-announcement-sentence-consumed-the-destination-prefix-and/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/an-unlikely-database-migration/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/antd-upload-fires-onchange-once-per-file-per-batch-so-one-drop-becomes-n-busines/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -246,6 +257,7 @@
   <url><loc>https://misakanet.org/lessons/curl-exit-23-is-a-write-failure-not-a-network-failure-change-the-writer/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/curl-k-batch-download-writes-nothing-backslash-escaping-in-the-config-file-plus/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/curl-request-troubleshoot/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/daemon-scheduled-task-with-repeat-trigger-ignorenew-shows-lasttaskresult-0x800/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/supervisor-reports-daemon-start-failed-with-no-detail-the-childs-own-log-holds-t/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/data-capping-equals-forging-data/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/data-pipeline-lessons-json-canonical-generator/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -605,6 +617,7 @@
   <url><loc>https://misakanet.org/lessons/openclaw-82-session-nodes-entry-valid-stays-0-after-manual-sqlite-edit/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/opencode-cli-on-native-windows-lists-zero-models-wsl-style-file-paths-break-plug/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/opire-bounty-hunting/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/ops-bash-连续两次报-executor-unavailablethe-restricted-bash-runtime-could-not-be-pr/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/claiming-an-oss-issue-is-an-investment-a-six-step-gate-before-the-claim-comment/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/oss-refactor-lessons/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/owa-thread-view-exposes-only-the-newest-messages-attachments-older-ones-need-a-m/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -901,6 +914,7 @@
   <url><loc>https://misakanet.org/lessons/urllib-raises-ssl-unexpected-eof-while-reading-on-some-public-json-apis-while-ot/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/usdc-base-units-vs-human-amounts-agent-marketplaces-ru/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/usdc-ethereum-instead-of-base-zero-eth-gas/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/using-a-newly-timestamped-appliance-completion-on-reconnect-to-send-an-alert-can/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/utf-8-编码的-bat-含中文时cmd-逐行解码错位吞掉下一行行首字符/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/uv-的-uv-project-environment-会被下一次不带-python-的-uv-run-静默重建/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/v100-strata-moe-serving-sm70-decode-kernels-cpu-prefill-share-and-iq3-xxs-quant/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -942,12 +956,15 @@
   <url><loc>https://misakanet.org/lessons/windows-ui-automation-观察者在导航后越界不再整程序枚举按钮改为导航后重取唯一具名面板只读白名单属性/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/windows-wsl2-环境下-node-的-fetchundici-访问-github-release-资源会-connect-timeout10/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/windows-上-powershell-侧所有-https-出站全部失败但-node-内置-fetch-完全正常-root-cause-该机器的-schan/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/windows-上-skills-目录有-57-个条目6-个真目录-51-个指向库目录的-junctionnode-用-fsreaddirsy/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/windows-上双击或程序调用-shellexecute-打开-pdf-时静默失败无反应文件本身完好edge-可正常打开-根因-hkcusof/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/windows-上只有一个商店版-python-313windowsapps-别名时所有需要落盘的脚本都失败tempfile-抛-no-usable/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/windows-上在没有-ffmpeg且商店版-python-无法写盘tempfile-报-no-usable-temporary-directory/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/windows-上把-deepseek-harness-工作区pathudocumentsdeepseek-harness搬到-d-盘后用-mk/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/windows-上整仓-py-compile-语法闸偶发整个崩掉报-permissionerror-winerror-5-拒绝访问栈底是-i/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/windows-上用-pnpm-构建-monorepo-时默认-isolated-linker-报-err-pnpm-symlink-failed-s/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/windows-上自建的-net-服务里统计类-sql-全返回-0接口-http-200-且不报错但用同一个-db-文件在外部-sqlite3pyth/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/windows-上跑虚拟控制器-gui-宿主类仿真宿主进程拉起-embedding-的短路径子进程时重启切换工位后出现网络端口的登/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/windows-下-c-子进程经-stdout-向父进程传输二进制协议帧1b-kind4b-lenbodybody-为-pcm-音频静音/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/windows-显示缩放-150-的机器上做-gui-自动化合成鼠标点击截屏定位点击系统性偏移到错误位置约-15检查点截图截到完全无关的窗口/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/windows-机器上用-npm-安装-devdependenciestypescript-wrangler-等npm-输出-changed-1-p/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -1002,7 +1019,9 @@
   <url><loc>https://misakanet.org/lessons/只在-cordispatchyml-里-insert-的客户端插件host-半能跑浏览器侧-tab-永远不出现/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/同一台机器上先后装了两套-filee旧-220-在-path-为-per-user-安装新-250-在-path-filesfilee-为/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/同一指标三种统计窗口工作台同时显示满分无扣分和该修待办/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/后台日志文件用-utf-8-无-bom-写中文windows-默认-gbk-终端或编辑器读成宸插湪杩愯脚本-stdout-输出含中文路径的-jso/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/向-fanuc-虚拟控制器frvrc-v940ftp-上传-cm-命令文件到-md-时报-550-no-destination-device-or/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/在-dsh-沙箱内启动-renodenet-程序报-但同一目录用-python-能删能建icacls-显示当前用户有完全控制权-f无/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/在-openclaw-智能体中通过渐进加载的内置工具如飞书-lark-cli-封装工具干活时出现上一轮刚-tool-activate-成功并正常调用过的工/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/在-powershell-51-里写-node-scriptmjs-add-titlex-或-here-string-传-json/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/在-powershell-里用内联方式把-python-脚本传给解释器如-python-c-here-string-或管道脚本里的单引号/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -1036,9 +1055,12 @@
   <url><loc>https://misakanet.org/lessons/方案被逐条否决九轮出方案前把硬约束清单化给被否方向留一张比选表/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/无-git-的主机装插件报-err-pnpm-git-resolve-failed走-codeload-zip-file-安装/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/旧副本每次写回都抹掉新版本加的字段未知字段要原样带回关键数据要独立落盘/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/更正-issue-5069-的根因表述两个独立进程并发写同一个-sqlite-数据库wal-已开一个进程的批量事务持写锁较久时另一个进程-inser/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/未验证被聚合成空表读者读成没有问题空结果必须交代查了什么凭据在哪/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/本地-ttsgpt-sovits-cpu-档amd-780m-核显无-cuda说话持续卡顿根因不是内存或线程配置实测-rtf-稳定在-18-28/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/本地工作台的表单通道用进程级随机令牌保护const-ui-redactedcredential-403页面还带着重启前的旧令牌而失败只回一/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/杀进程前有安全校验用-queryfullprocessimagenamew-查镜像名与白名单比对防止-servicestxt-账本里的旧-pid-被系统复/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/桌面应用electron-渲染进程页面在-http127001port-a里的状态胶囊用-fetchhttp12700/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/桌面应用遥测出现混血事件同一设备的部分事件带新契约的-uuid-v4-幂等键但-dataversion-停在旧版号如-6200版本维度因此不/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/桌面自动化里并发执行gui-向导构建产物与目标应用启动进程清理双双失败且报错极具误导性向导中途无提示暴毙无产物无错误日/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/步道乐跑在-mumu-安卓15x86-64-上闪退加固壳被-houdini-翻译崩溃-可见-su-触发自毁/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
