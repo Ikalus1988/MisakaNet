@@ -7,6 +7,75 @@ All notable changes to the Misaka Network project are documented here.
 
 ---
 
+## [3.20.0](https://github.com/Ikalus1988/MisakaNet/compare/v3.19.0...v3.20.0) (2026-11-23)
+
+
+### Features
+
+* **ci:** a half-hourly sweeper asks the merge question again ([#5350](https://github.com/Ikalus1988/MisakaNet/issues/5350)) ([#5353](https://github.com/Ikalus1988/MisakaNet/issues/5353)) ([3477803](https://github.com/Ikalus1988/MisakaNet/commit/34778039ec210caec78a58e476870e047bb35d7a))
+* **cindy-plugin:** 插件自报通道 + 把「你落后了吗」说出口（[#5185](https://github.com/Ikalus1988/MisakaNet/issues/5185) 的插件侧） ([#5216](https://github.com/Ikalus1988/MisakaNet/issues/5216)) ([576b4bb](https://github.com/Ikalus1988/MisakaNet/commit/576b4bb6eed6804524ac3b58b31bb9ff8b1fd74b))
+* **ci:** the batch keeps moving without the cron that says it does ([#5511](https://github.com/Ikalus1988/MisakaNet/issues/5511)) ([f55e96d](https://github.com/Ikalus1988/MisakaNet/commit/f55e96d4fb4f552f523ef422c733ee634bd86faf))
+* **ci:** the sweep wakes when the question becomes answerable, not only on a sparse cron ([#5434](https://github.com/Ikalus1988/MisakaNet/issues/5434)) ([0c7823a](https://github.com/Ikalus1988/MisakaNet/commit/0c7823ac267ad32919a52ec41c99d3d2ef04ab97))
+* **ci:** witness the body that arrives, not just when it starts ([#5245](https://github.com/Ikalus1988/MisakaNet/issues/5245)) ([#5421](https://github.com/Ikalus1988/MisakaNet/issues/5421)) ([c18c7d9](https://github.com/Ikalus1988/MisakaNet/commit/c18c7d9e1e4f5abd1f8a62dac703e71aa9cb8c1e))
+* **intake:** a conversion PR may merge itself — the funnel was one click wide ([#5346](https://github.com/Ikalus1988/MisakaNet/issues/5346)) ([d0a2c55](https://github.com/Ikalus1988/MisakaNet/commit/d0a2c55a637aa46279834f50c65d376553bd8dfa))
+* **intake:** one lesson may convert several intakes, and the ones nobody closed get swept ([#5347](https://github.com/Ikalus1988/MisakaNet/issues/5347)) ([723ae14](https://github.com/Ikalus1988/MisakaNet/commit/723ae14fb547a999d79d7f2de3373072f509b16a))
+* **intake:** record whether the corpus already answered a submission, before acting on it ([#5241](https://github.com/Ikalus1988/MisakaNet/issues/5241)) ([d5be984](https://github.com/Ikalus1988/MisakaNet/commit/d5be984e5eb608e7558835c4789655479d1383fc))
+* **intake:** the receipt posts itself, and a sweep finds the ones nobody closed ([#5344](https://github.com/Ikalus1988/MisakaNet/issues/5344)) ([63d19dc](https://github.com/Ikalus1988/MisakaNet/commit/63d19dca1b8013e9897876b96567d271497031bb))
+* **intake:** two rules were stricter than the gate, and the batch ran every six hours ([#5505](https://github.com/Ikalus1988/MisakaNet/issues/5505)) ([c1b6f10](https://github.com/Ikalus1988/MisakaNet/commit/c1b6f1054aa5a2e7ecdce2ecbdccad352c2e31c4))
+* **lessons:** convert the eight pending lesson submissions, and stop shipping trimmed titles ([#5476](https://github.com/Ikalus1988/MisakaNet/issues/5476)) ([5b54ba9](https://github.com/Ikalus1988/MisakaNet/commit/5b54ba9a85ca77d7e8f77dd1f97fdd894704fd22))
+* **lessons:** convert three complete intakes that only lacked tags ([#5577](https://github.com/Ikalus1988/MisakaNet/issues/5577)) ([85cbecb](https://github.com/Ikalus1988/MisakaNet/commit/85cbecbf79830e58dce97ca0554ce069b6fbeaae))
+* **lessons:** eight intakes were complete and refused by two words the reader did not know ([#5595](https://github.com/Ikalus1988/MisakaNet/issues/5595)) ([b406cd8](https://github.com/Ikalus1988/MisakaNet/commit/b406cd83ec85fd484c28f4f7d09549f0c4ba2294))
+* **lessons:** eleven failures at the pattern level (deploy ×4, embedded FTP ×3, GUI automation ×2, binary parse ×1, layered readiness ×1) ([#5243](https://github.com/Ikalus1988/MisakaNet/issues/5243)) ([2ea9f5a](https://github.com/Ikalus1988/MisakaNet/commit/2ea9f5a07a349492687f4e930a4fdc8b979cd4f4))
+* **lessons:** intake batch 2026-11-19 ([#5349](https://github.com/Ikalus1988/MisakaNet/issues/5349)) ([dbfd66d](https://github.com/Ikalus1988/MisakaNet/commit/dbfd66d4df27e050c4fff9c2984cc0c68469955f))
+* **lessons:** intake batch 2026-11-20 ([#5416](https://github.com/Ikalus1988/MisakaNet/issues/5416)) ([798cb46](https://github.com/Ikalus1988/MisakaNet/commit/798cb464117b4589c3d757b3c0931b4034dd6823))
+* **lessons:** intake batch 2026-11-21 ([#5504](https://github.com/Ikalus1988/MisakaNet/issues/5504)) ([e504889](https://github.com/Ikalus1988/MisakaNet/commit/e504889f0ea79f96ede2d54a1e30449d5a086473))
+* **lessons:** intake batch 2026-11-22 ([#5560](https://github.com/Ikalus1988/MisakaNet/issues/5560)) ([7d09f3e](https://github.com/Ikalus1988/MisakaNet/commit/7d09f3e0fb078f02734e003738ac49ad0049b8e4))
+* **lessons:** seven intakes were complete down to Verification and lacked only their tags ([#5529](https://github.com/Ikalus1988/MisakaNet/issues/5529)) ([726248c](https://github.com/Ikalus1988/MisakaNet/commit/726248ced7fbabbb2590b7baaff6fda9eac31060))
+* **lessons:** three intake that were blocked by public tool names, and the allowlist entries that unblock them ([#5570](https://github.com/Ikalus1988/MisakaNet/issues/5570)) ([aa1d662](https://github.com/Ikalus1988/MisakaNet/commit/aa1d66285a032524298a07623c447a89b299076f))
+* **mcp:** the endpoint tells a Cindy caller whether its build is behind ([#5185](https://github.com/Ikalus1988/MisakaNet/issues/5185)) ([#5201](https://github.com/Ikalus1988/MisakaNet/issues/5201)) ([fc7cd41](https://github.com/Ikalus1988/MisakaNet/commit/fc7cd41bce9d4c54ee471aa38bfaf30de5f582da))
+
+
+### Bug Fixes
+
+* **audit:** the label audit read nothing on Windows and called it "no misfiles" ([#5195](https://github.com/Ikalus1988/MisakaNet/issues/5195)) ([13e7f2c](https://github.com/Ikalus1988/MisakaNet/commit/13e7f2c98f0d3ec4e26a6ce5b1a4f5d8b0067b0a))
+* **ci:** a dispatched run was skipped before it reached the decision script ([#5430](https://github.com/Ikalus1988/MisakaNet/issues/5430)) ([625f9b3](https://github.com/Ikalus1988/MisakaNet/commit/625f9b30efc706aa293edede1f9d8bc503f7e075))
+* **ci:** the step that closes done-but-open intakes had no token, and never ran once ([#5487](https://github.com/Ikalus1988/MisakaNet/issues/5487)) ([3c97c5a](https://github.com/Ikalus1988/MisakaNet/commit/3c97c5ac79a7438dfbb0b48ab874b1a0d5066b0c))
+* **ci:** the sweep could not dispatch at all — a PAT without actions:write, on its first real candidate ([#5382](https://github.com/Ikalus1988/MisakaNet/issues/5382)) ([0a84d1a](https://github.com/Ikalus1988/MisakaNet/commit/0a84d1a9c30321d7adeb57fb8dbf03c8660d8bdd))
+* **ci:** the sweep dropped its own candidates whenever GitHub had a stale mergeability cache ([#5431](https://github.com/Ikalus1988/MisakaNet/issues/5431)) ([1145773](https://github.com/Ikalus1988/MisakaNet/commit/114577383700948b74a8d0f04f0d6adcba2fa884))
+* **guard:** an unreadable pyproject is missing data, not a deleted one ([#5193](https://github.com/Ikalus1988/MisakaNet/issues/5193)) ([62eea81](https://github.com/Ikalus1988/MisakaNet/commit/62eea811d9ed853c702889b2664122d736a7c67b))
+* **intake:** a batch of two lessons may add two index lines (the channel refused its own batches) ([#5432](https://github.com/Ikalus1988/MisakaNet/issues/5432)) ([c1c15ec](https://github.com/Ikalus1988/MisakaNet/commit/c1c15ecc9c0c13fff7492c01870c6b8660b155e2))
+* **intake:** a generic label is not a title, and a fence that opens mid-line is not a fence ([#5380](https://github.com/Ikalus1988/MisakaNet/issues/5380)) ([#5423](https://github.com/Ikalus1988/MisakaNet/issues/5423)) ([a54593a](https://github.com/Ikalus1988/MisakaNet/commit/a54593a5583a1021140b70b2018f44ac19ce46b5))
+* **intake:** a merged batch pull request made every later batch that day vanish ([#5506](https://github.com/Ikalus1988/MisakaNet/issues/5506)) ([3fb784f](https://github.com/Ikalus1988/MisakaNet/commit/3fb784f34e47f8f15d822952a427b2f3f16a4d53))
+* **intake:** a Root Cause heading written inside the Problem paragraph was reported missing ([#5510](https://github.com/Ikalus1988/MisakaNet/issues/5510)) ([a8dc9fe](https://github.com/Ikalus1988/MisakaNet/commit/a8dc9fe833d27367f0737238703b6fbab7a30d09))
+* **intake:** the batch read 300 of 469 open intakes, and called the rest nothing ([#5562](https://github.com/Ikalus1988/MisakaNet/issues/5562)) ([8bdf5e8](https://github.com/Ikalus1988/MisakaNet/commit/8bdf5e848630cccf012adb4e238be683b47b7c7b))
+* **intake:** the close sweep reads the corpus once, not once per open intake ([#5581](https://github.com/Ikalus1988/MisakaNet/issues/5581)) ([40349b0](https://github.com/Ikalus1988/MisakaNet/commit/40349b0f389d3a98cc998ad31296d05c5c0d4d81))
+* **intake:** the section reader accepts `现象`, `根因`, and a descriptive qualifier ([#5596](https://github.com/Ikalus1988/MisakaNet/issues/5596)) ([130102f](https://github.com/Ikalus1988/MisakaNet/commit/130102f37344a261df21d5c1a1d1972e014aa706))
+* **intake:** the sweep read a 200-character prefix of a 660-line list, and called it "nothing to do" ([#5486](https://github.com/Ikalus1988/MisakaNet/issues/5486)) ([2f44ee7](https://github.com/Ikalus1988/MisakaNet/commit/2f44ee76f5211d3757477781a19c8a119ae8f135))
+* **lessons:** the last twenty-two titles stop naming the intake form's own heading ([#5465](https://github.com/Ikalus1988/MisakaNet/issues/5465)) ([175b2f5](https://github.com/Ikalus1988/MisakaNet/commit/175b2f5a6a8d48bb8f98072cdb1ac116040379fd))
+* **publish:** the stand-down read is a poll, because the sibling run's publish lands a minute later ([#5188](https://github.com/Ikalus1988/MisakaNet/issues/5188)) ([4a0b6a7](https://github.com/Ikalus1988/MisakaNet/commit/4a0b6a729c8d37c1d2bed85d8948ba7ca057dd9b))
+* **questions:** a refused post says which issue and why, and does not abort the run ([#5566](https://github.com/Ikalus1988/MisakaNet/issues/5566)) ([9b9d575](https://github.com/Ikalus1988/MisakaNet/commit/9b9d57592a8cd26e4f45549150e26388aa573fbe))
+* **questions:** bounty tasks are read in full and retired when their premise is gone ([#5565](https://github.com/Ikalus1988/MisakaNet/issues/5565)) ([aabd536](https://github.com/Ikalus1988/MisakaNet/commit/aabd536d1abec4619aac4ace6095199d83a18b4c))
+* **questions:** retire only the tasks this script created ([#5569](https://github.com/Ikalus1988/MisakaNet/issues/5569)) ([5d91060](https://github.com/Ikalus1988/MisakaNet/commit/5d9106035fe2da455b88fd17af798f01d0e232dd))
+* **receipts:** a sweep that fails every post says so, and names gh's reason ([#5578](https://github.com/Ikalus1988/MisakaNet/issues/5578)) ([08c3828](https://github.com/Ikalus1988/MisakaNet/commit/08c38280a7979c73cd546cd735d49023b7561ee0))
+* **tooling:** the two generators that lie on Windows now refuse, and the fallback speaks ([#5249](https://github.com/Ikalus1988/MisakaNet/issues/5249)) ([68922f7](https://github.com/Ikalus1988/MisakaNet/commit/68922f79b1fc7da13f7e77b808366f4a316d584f))
+
+
+### Documentation
+
+* **cindy:** 插件待办清单（按优先级） ([#5379](https://github.com/Ikalus1988/MisakaNet/issues/5379)) ([56b2935](https://github.com/Ikalus1988/MisakaNet/commit/56b29355880c87075839131f8591eef63b99c488))
+* **handoff:** vol 42 — one chain, five shapes, and only the last one was red ([#5444](https://github.com/Ikalus1988/MisakaNet/issues/5444)) ([7347996](https://github.com/Ikalus1988/MisakaNet/commit/7347996678852ea125159f52f82c7004c1313b7c))
+* **handoff:** vol 44 addendum — the receipt sweep worked, and the step after it cancelled the run ([#5582](https://github.com/Ikalus1988/MisakaNet/issues/5582)) ([406a62c](https://github.com/Ikalus1988/MisakaNet/commit/406a62cca264bcdc1f36f8d3e4328d5f93b94ae6))
+
+
+### Refactoring
+
+* **cindy-plugin:** 两条通道并成一份实现，社区变体降级成薄壳 ([#5375](https://github.com/Ikalus1988/MisakaNet/issues/5375)) ([5b3396e](https://github.com/Ikalus1988/MisakaNet/commit/5b3396eb93287de3f6d240de20377a28ae379323))
+
+
+### Tests
+
+* **mcp:** pin the two shapes the plugin publisher actually writes ([#5225](https://github.com/Ikalus1988/MisakaNet/issues/5225)) ([2351dca](https://github.com/Ikalus1988/MisakaNet/commit/2351dca53e0f8970a57710741245c591ff64cfc1))
+
 ## [3.19.0](https://github.com/Ikalus1988/MisakaNet/compare/v3.18.0...v3.19.0) (2026-11-17)
 
 
