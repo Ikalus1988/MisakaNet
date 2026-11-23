@@ -1,82 +1,82 @@
 {
-  "generated_at": "2026-11-23T01:49:55.598861+00:00",
+  "generated_at": "2026-11-23T13:14:14.454086+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 13,
   "items": [
     {
       "type": "merged_pr",
-      "title": "docs(handoff): vol 45 — histogram the refusals before reading them one by one",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5598",
-      "timestamp": "2026-11-23T00:27:56Z",
+      "title": "feat(lessons): the batch's one lesson, on a branch that reports (supersedes #5597)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5617",
+      "timestamp": "2026-11-23T11:21:44Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(lessons): eight intakes were complete and refused by two words the reader did not know",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5595",
-      "timestamp": "2026-11-23T00:04:53Z",
+      "title": "test: the suite runs on a machine that has a proxy and a token",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5615",
+      "timestamp": "2026-11-23T09:54:01Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(intake): the section reader accepts 现象, 根因, and a descriptive qualifier",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5596",
-      "timestamp": "2026-11-22T23:57:18Z",
+      "title": "chore(deps-dev): bump wrangler from 4.161.0 to 4.165.0 in the npm group across 1 directory",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5592",
+      "timestamp": "2026-11-23T08:29:05Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5590",
-      "timestamp": "2026-11-22T20:13:56Z",
+      "title": "chore(deps): update mkdocs-material requirement from >=9.8.1 to >=9.8.2 in the pip group",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5593",
+      "timestamp": "2026-11-23T08:13:18Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(lessons): intake batch 2026-11-22",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5589",
-      "timestamp": "2026-11-22T20:07:50Z",
+      "title": "docs(handoff): vol 45 addendum — the release, the counting unit, and five populations",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5613",
+      "timestamp": "2026-11-23T06:42:26Z",
       "source": "github"
     },
     {
       "type": "lesson",
-      "title": "A native Home Assistant backup can fail when a co-located application creates an",
-      "url": "lessons/contrib/a-native-home-assistant-backup-can-fail-when-a-co-located.md",
-      "timestamp": "2026-11-22",
+      "title": "A checked-in Codex skill can exist without being available to the client. Root C",
+      "url": "lessons/contrib/a-checked-in-codex-skill-can-exist-without-being-available.md",
+      "timestamp": "2026-11-23",
       "domain": "mcp",
       "source": "lessons"
     },
     {
       "type": "lesson",
-      "title": "Bruno CLI 4.3.0 on macOS returned 502 Bad Gateway for an anonymous request to a",
-      "url": "lessons/contrib/bruno-cli-430-on-macos-returned-502-bad-gateway-for-an.md",
-      "timestamp": "2026-11-22",
-      "domain": "api",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "Headline metric silently degrades to a default that looks measured: (1) the read",
-      "url": "lessons/contrib/headline-metric-silently-degrades-to-a-default-that-looks.md",
-      "timestamp": "2026-11-22",
+      "title": "A Home Assistant presence observer emitted an arrival after invalid Wi-Fi eviden",
+      "url": "lessons/contrib/a-home-assistant-presence-observer-emitted-an-arrival-after.md",
+      "timestamp": "2026-11-23",
       "domain": "mcp",
       "source": "lessons"
     },
     {
       "type": "lesson",
-      "title": "Python\\u2194Node.js bridge on Windows corrupts Chinese paths: subprocess text=Tr",
-      "url": "lessons/contrib/pythonu2194nodejs-bridge-on-windows-corrupts-chinese-paths.md",
-      "timestamp": "2026-11-22",
-      "domain": "windows",
+      "title": "A mobile GPS update delivered late looked current to a Home Assistant arrival au",
+      "url": "lessons/contrib/a-mobile-gps-update-delivered-late-looked-current-to-a-home.md",
+      "timestamp": "2026-11-23",
+      "domain": "mcp",
       "source": "lessons"
     },
     {
       "type": "lesson",
-      "title": "ROBOGUIDE 工位文件 .frw 被外部编辑（如改 XML UserFrames 坐标）后，该工位每次引导必楔死：RGCore 存活但冻在 frmSpla",
-      "url": "lessons/contrib/roboguide-工位文件-frw-被外部编辑如改-xml-userframes.md",
-      "timestamp": "2026-11-22",
-      "domain": "fanuc",
+      "title": "A motion-triggered light can turn off after a sensor outage even though the reco",
+      "url": "lessons/contrib/a-motion-triggered-light-can-turn-off-after-a-sensor-outage.md",
+      "timestamp": "2026-11-23",
+      "domain": "mcp",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "A public ChatGPT shared-conversation URL returned HTTP 200 but only \"Check out t",
+      "url": "lessons/contrib/a-public-chatgpt-shared-conversation-url-returned-http-200.md",
+      "timestamp": "2026-11-23",
+      "domain": "mcp",
       "source": "lessons"
     },
     {
