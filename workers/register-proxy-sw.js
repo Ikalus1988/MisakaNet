@@ -522,7 +522,7 @@ const MCP_TOOLS = [
   },
   {
     name: "misakanet_write_lesson",
-    description: "[STRUCTURED COMMIT / VALIDATED SUBMISSION] Submit a complete, structured failure lesson (title/domain/problem/root_cause/fix) as a formal submission. Requires authentication (Bearer token in header) — this is the 'validated author' path, not open triage. Output goes through lesson-gate/lint/review and becomes a versioned lesson in the git repo. For quick open reports when you only have a partial failure description, use misakanet_submit_intake instead (no Bearer). Lessons are immutable once merged — corrections go through a new intake/PR, so there is intentionally no misakanet_update_lesson/misakanet_delete_lesson.\nReturns: object {lesson_id: string, status: 'pending_review', quality_score: number}; or {submitted: false, error}.\nExample: misakanet_write_lesson(title='pip timeout behind proxy', domain='python', problem='...', root_cause='...', fix='...')",
+    description: "[STRUCTURED COMMIT / VALIDATED SUBMISSION] Submit a complete, structured failure lesson (title/domain/problem/root_cause/fix) as a formal submission. Requires authentication (Bearer token in header) — this is the 'validated author' path, not open triage. Output goes through lesson-gate/lint/review and becomes a versioned lesson in the git repo. For quick open reports when you only have a partial failure description, use misakanet_submit_intake instead (no Bearer). Lessons are immutable once merged — corrections go through a new intake/PR, so there is intentionally no misakanet_update_lesson/misakanet_delete_lesson.\nReturns: object {submitted: true, lesson_id: string, status: 'pending_review', quality_score: number, issue_url: string, dedup_key: string}; a repeat of the SAME content returns {submitted: false, duplicate: true, lesson_id, issue_url, dedup_key} instead of filing a second issue; a refused submission returns {submitted: false, error}.\nTimeouts and retries: the outbound call to GitHub has an 8 s deadline, so a submission can time out AFTER its issue was created. The response therefore carries dedup_key (8 chars, derived from title+problem+root_cause+fix), and re-sending identical text is idempotent — you get the original issue back instead of a duplicate. To check its review status without re-submitting, call misakanet_me_inbox(dedup_key=<key>): it reports pending / converted and names the lesson once a maintainer merges it. The key is kept for 7 days; past that a resubmission files a new issue.\nExample: misakanet_write_lesson(title='pip timeout behind proxy', domain='python', problem='...', root_cause='...', fix='...')",
     inputSchema: {
       type: "object",
       properties: {
@@ -5862,6 +5862,34 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx, 
       fix: redactSecrets(fix),
       verification: verification ? redactSecrets(verification) : "",
     };
+    // Content-based dedup, in the *same* KV namespace the intake path uses (#5619). The gap this
+    // closes: `misakanet_write_lesson` had no client-holdable key, and this path's upstream call has
+    // an 8 s deadline (`UPSTREAM_TIMEOUT_MS`). A request that times out may already have created its
+    // issue, so a cautious client had two bad options — resubmit and duplicate, or not resubmit and
+    // possibly lose the lesson. With a key derived from the content, a retry of the *same* text is
+    // idempotent, and `misakanet_me_inbox(dedup_key=…)` already reports its status because it reads
+    // `intake_dedup:` (measured 2026-11-23: me_inbox needed no change for this).
+    //
+    // The fields are the ones that define "the same submission" and are hashed **after** redaction, so
+    // a resubmission whose only difference is a secret the guard scrubbed still dedupes. `verification`
+    // is excluded for the same reason the intake hash excludes `error` (#3930/#3932): the same lesson
+    // arrives with a longer or shorter excerpt on the second attempt.
+    const lessonDedupHash = hashString(
+      `lesson:${safe.title.trim()}:${safe.problem.trim()}:${safe.root_cause.trim()}:${safe.fix.trim()}`);
+    const lessonDedupKey = `intake_dedup:${lessonDedupHash}`;
+    const existingLesson = await storeGet(env, lessonDedupKey, "text");
+    if (existingLesson) {
+      const previous = issueNumberFromUrl(existingLesson);
+      return {
+        submitted: false,
+        duplicate: true,
+        lesson_id: previous ? `issue-${previous}` : undefined,
+        issue_url: existingLesson,
+        dedup_key: lessonDedupHash,
+        note: "This lesson was already submitted — the issue above is the one it became. "
+          + "Re-call misakanet_me_inbox(dedup_key=…) for its review status.",
+      };
+    }
     const issueBody = [
       `**Kind:** lesson_submission`,
       `**Source:** ${source || "remote-mcp"}`,
@@ -5908,6 +5936,13 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx, 
         return { submitted: false, error: `GitHub API error: ${resp.status} ${err.slice(0, 200)}` };
       }
       const issue = await resp.json();
+      // The dedup mapping is written *before* the response is returned and never at its expense: a KV
+      // failure must not turn a created issue into an error the submitter reads as "did not arrive".
+      try {
+        await storePut(env, lessonDedupKey, issue.html_url, { expirationTtl: 86400 * 7 });
+      } catch (e) {
+        // Best-effort: the issue exists, which is the thing the submitter needs.
+      }
       // The ladder counts the submission, best-effort: a scoreboard row must never cost the
       // submitter the issue they just filed.
       await recordContribution(env, nodeId, "lesson", `issue-${issue.number}`);
@@ -5923,6 +5958,7 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx, 
         quality_score: qualityScore,
         quality_notes: qualityScore >= 75 ? "Good quality" : "Could use more detail",
         issue_url: issue.html_url,
+        dedup_key: lessonDedupHash,
         ...(redacted ? { redactions_applied: true } : {}),
         ...(injectionFlags.length ? { injection_flags: injectionFlags } : {}),
       };
