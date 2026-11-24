@@ -453,7 +453,10 @@ test('the manifest declares the turn subscription, the resident launch and the n
   // The three fields are the plugin's whole reason for being resident: without them the turn
   // counter never runs, and a manifest that only promises tools would be a lie about the
   // behaviour (the same reason the marketplace brief had to be corrected once).
-  assert.deepEqual(MANIFEST.subscribe, { topics: ['turn'] });
+  assert.deepEqual(MANIFEST.subscribe, {
+    topics: ['turn', 'tool-execution'],
+    hooks: ['will-compose-context'],
+  });
   assert.equal(MANIFEST.launch, 'resident');
   assert.equal(MANIFEST.notify, true);
 });
@@ -1107,6 +1110,110 @@ test('the client id is left out when the private directory cannot be written', a
   assert.equal(load.requests[0].headers['X-MisakaNet-Client'], undefined,
     'an unstable client id must not be sent');
   assert.ok(load.writeAttempts >= 2, 'the write must be retried before giving up');
+});
+
+/* ── 失败观察：动手之前先查、查不到就供一张沉淀卡 ─────────────────────────── */
+
+test('a failed tool call is remembered, and the next turn is told to search first', async () => {
+  const load = await loadPlugin({ respond: () => ({ results: [{ id: 'x', title: 't' }] }) });
+  await load.stub.handler({
+    type: 'event',
+    name: 'did-tool-execution',
+    data: {
+      sessionId: 's-fail',
+      eventType: 'tool_result',
+      payload: { toolName: 'bash', error: 'ENOENT: no such file or directory, /home/user/secret/config.yaml' },
+    },
+  });
+  await new Promise((resolve) => setTimeout(resolve, 20));
+
+  // 装配消息时补参考资料：告诉 agent 动手前先查一次。
+  const hooks = [];
+  const originalSend = load.stub.send;
+  load.stub.send = async (payload) => {
+    if (payload && payload.type === 'event-verdict') hooks.push(payload);
+    return originalSend(payload);
+  };
+  await load.stub.handler({
+    type: 'event',
+    name: 'will-compose-context',
+    hookId: 'h-1',
+    data: { sessionId: 's-fail', text: '继续' },
+  });
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  const verdict = hooks.find((h) => h.hookId === 'h-1');
+  assert.ok(verdict, 'the hook must be answered');
+  assert.equal(verdict.action, 'context');
+  assert.match(verdict.context, /misakanet_search/);
+  assert.match(verdict.context, /动手|重试/);
+  // 路径与令牌不能出现在给 agent 的上下文里（规则块只是请求，机械脱敏才是保证）。
+  assert.doesNotMatch(verdict.context, /\/home\/user\/secret/);
+});
+
+test('a failure with no corpus hit offers a one-click lesson card, and the click publishes it', async () => {
+  const load = await loadPlugin({ respond: () => ({ results: [], no_match: true }) });
+  await load.stub.handler({
+    type: 'event',
+    name: 'did-tool-execution',
+    data: {
+      sessionId: 's-auto',
+      eventType: 'error',
+      payload: { message: 'connection refused while dialing the upstream service' },
+    },
+  });
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  await load.stub.handler({
+    type: 'event',
+    name: 'did-turn-end',
+    data: { sessionId: 's-auto' },
+  });
+  await new Promise((resolve) => setTimeout(resolve, 80));
+
+  const card = load.sent.filter((m) => m.type === 'card-update' && /要不要沉淀/.test(m.html || ''));
+  assert.equal(card.length, 1, 'a card offering the lesson must be supplied');
+  const cardCallId = card[0].callId;
+  assert.match(card[0].html, /确认沉淀/);
+  // 卡上写的就是将要公开的原文（公开前看得见）。
+  assert.match(card[0].html, /connection refused/);
+
+  const before = load.requests.length;
+  await load.stub.handler({
+    type: 'event',
+    name: 'card-action',
+    callId: cardCallId,
+    actionId: 'intake-submit',
+    spawnCallId: 'spawn-auto',
+    sessionId: 's-auto',
+    userActionToken: 'once',
+  });
+  await new Promise((resolve) => setTimeout(resolve, 80));
+  assert.equal(load.requests.length, before + 1, 'the click must publish exactly once');
+  const body = JSON.parse(load.requests[before].body);
+  assert.equal(body.params.name, 'misakanet_submit_intake');
+  assert.match(body.params.arguments.problem, /connection refused/);
+  assert.notEqual(load.requests[before].callId, cardCallId, 'a finished call id must not be reused');
+});
+
+test('a search in this session silences the reminder', async () => {
+  const load = await loadPlugin({ respond: () => ({ results: [] }) });
+  await load.stub.handler({
+    type: 'event',
+    name: 'did-tool-execution',
+    data: {
+      sessionId: 's-searched',
+      eventType: 'tool_use',
+      payload: { toolName: 'misakanet_search', input: { query: 'x' } },
+    },
+  });
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  await load.stub.handler({
+    type: 'event',
+    name: 'did-turn-end',
+    data: { sessionId: 's-searched' },
+  });
+  await new Promise((resolve) => setTimeout(resolve, 60));
+  const card = load.sent.filter((m) => m.type === 'card-update' && /要不要沉淀/.test(m.html || ''));
+  assert.equal(card.length, 0, 'a session that already searched must not be nagged');
 });
 
 test('the generated community package loads and answers too', async () => {

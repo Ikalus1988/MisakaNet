@@ -46,10 +46,19 @@ TARGET = REPO / ".cindy-plugin-community"
 #: The community channel's version line. Deliberately offset from the official one (1.6.x) so the
 #: two channels never take the same version slot on the same plugin id. Bump it when the community
 #: package is published; keep it below the official line.
-COMMUNITY_VERSION = "1.5.13"  # the published community release is 1.5.12; this is the next one
+COMMUNITY_VERSION = "1.5.14"  # 1.5.12 在售、1.5.13 待审（四处修复那版）→ 这一版只能走 1.5.14
 
 #: The community channel's own release story. The official package carries the official one.
 COMMUNITY_RELEASE_NOTES = (
+    "这一版补上仓库钩子在 Claude Code 侧那套 failure 模式（失败→先查→查不到就沉淀）："
+    "插件现在订阅宿主的**工具执行**主题（第一次能看见哪个工具失败了、报了什么），"
+    "一轮结束时在后台拿错误原文查一次语料——命中就通知你并把命中带进**下一轮**的上下文，"
+    "没命中就供一张「这次失败要不要沉淀成一条教训」的卡（卡上写的就是将公开的原文，"
+    "点「确认沉淀」才发，用户的点击就是确认）。"
+    "另：订阅**装配消息时的参考资料**钩子，在下一轮装配时补一句「动手或重试之前先查一次」。"
+    "两条边界：宿主没有「每次工具调用后注入」的钩子（所以落在轮末与下一轮）；"
+    "那个钩子只对「在任务设置里选中了本插件」的任务生效。"
+    "查询词与要公开的原文都先机械脱敏（与仓库钩子同源）。"
     "这一版修掉确认卡闸门里的四处缺陷（维护者 2026-11-23 点的名，社区通道的既有问题）："
     "一是**点击之后那次上报改用新的在途调用号**——卡片的归因号属于已经结卷的那次工具调用，"
     "复用它宿主会拒，于是点「确认提交」根本发不出去；"
