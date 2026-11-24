@@ -88,11 +88,14 @@ def test_cross_implementation_consistency():
         ("password=SuperSecret123", "credential"),
         ("-----BEGIN RSA PRIVATE KEY-----\nMIIEow\n-----END RSA PRIVATE KEY-----", "private_key"),
         ("AKIA1234567890ABCDEF", "aws_key"),
+        ("ssh admin@192.168.1.10", "private_ip"),
     ]
 
     for text, expected_id in test_cases:
         result = redact_text(text)
-        assert "[REDACTED:" in result, f"Failed to redact {expected_id}: {text!r} -> {result!r}"
+        # 占位符有两种家族：老规则用 [REDACTED:x]，路径/邮箱/私网这类新规则用 <REDACTED:x>
+        # 与 <PATH>。这里断言的是「被换掉了」，不锁死是哪一种括号。
+        assert "REDACTED:" in result, f"Failed to redact {expected_id}: {text!r} -> {result!r}"
 
 
 # ── the three copies must agree on the *pattern*, not only on the replacement ──

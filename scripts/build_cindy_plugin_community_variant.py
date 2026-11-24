@@ -46,11 +46,11 @@ TARGET = REPO / ".cindy-plugin-community"
 #: The community channel's version line. Deliberately offset from the official one (1.6.x) so the
 #: two channels never take the same version slot on the same plugin id. Bump it when the community
 #: package is published; keep it below the official line.
-COMMUNITY_VERSION = "1.5.18"  # 1.5.15 被审核退回（版本号已烧掉）→ 这一版走 1.5.16
+COMMUNITY_VERSION = "1.5.19"  # 1.5.15 被审核退回（版本号已烧掉）→ 这一版走 1.5.16
 
 #: The community channel's own release story. The official package carries the official one.
 COMMUNITY_RELEASE_NOTES = (
-    '这一版按审核意见改了两处，并保留 1.5.17 的确认闸门（相对上一上架的 1.5.14）。① **预览里看到的就是真正发出去的**：用户自己写的上报字段（problem / error / what_tried / fix / verification / contributor / matched_lesson_id）现在全部先过一遍机械脱敏，卡片和授权短码都用脱敏后的文本；此前说明写的是“查询词和公开内容都会机械脱敏”，实际只有自动收集的失败片段做了这件事。② **授权覆盖所有上报字段**：卡片与短码指纹都改为遍历全部上报字段，漏掉的 matched_lesson_id 现在也在预览和绑定里——任何一个字段变了都要重新确认。闸门本身不变：卡片只负责披露，授权靠用户自己发回的 6 位短码（插件用只读的消息主题只认用户本人发的消息，agent 转述不算）；短码 15 分钟有效、绑定那一版原文、用一次即作废；卡供不出来就停止发送。**从市场装的版本会自动更新；从 .cindy 文件装的不会**。版本号继续与官方通道刻意错开（官方 1.6.x / 社区 1.5.x）。'
+    '这一版补上内网地址的脱敏，并把提示改成不承诺「全都替换了」（相对上一上架的 1.5.14）。审核指出：预览说「令牌、密钥、内网地址、邮箱已替换成占位符」，可规则里没有私网 IP——像 192.168.1.10 会原样显示、原样提交；令牌与密钥也只能识别部分格式。现在新增 private_ip 规则（RFC1918 / 回环 / link-local / CGNAT 都覆盖），worker 的两处实现、插件本身、CLI 钩子的 Node 与 Python 双胞胎一起同步；卡片文案改成「能识别的已经换成占位符，识别不了的会原样保留，请逐项核对一遍」。预览即外发、全字段绑定、用户自己发回的 6 位短码授权，这三件事不变。**从市场装的版本会自动更新；从 .cindy 文件装的不会**。版本号继续与官方通道错开（官方 1.6.x / 社区 1.5.x）。'
 )
 
 #: The three substitutions, as (label, file, pattern, replacement).

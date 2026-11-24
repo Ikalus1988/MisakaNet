@@ -851,11 +851,13 @@ test('submit_intake: the preview is the redacted text that actually goes out', a
   const answer = await callTool(load, 'misakanet_submit_intake', {
     problem: secretProblem,
     error: 'contact ops@example.com for the token',
+    what_tried: 'ssh admin@192.168.1.10 and retried',
     user_confirmed: true,
   }, { autoClick: false });
   const card = String(load.sent.filter((m) => m.type === 'card-update')[0].html);
   assert.doesNotMatch(card, /ghp_abcdefghijklmnop/, 'the preview must not show an unredacted token');
   assert.doesNotMatch(card, /ops@example\.com/, 'the preview must not show an unredacted email');
+  assert.doesNotMatch(card, /192\.168\.1\.10/, 'the preview must not show a private address');
   assert.match(card, /REDACTED/, 'the card shows the placeholder that will be sent');
 
   await load.stub.handler({
@@ -868,7 +870,13 @@ test('submit_intake: the preview is the redacted text that actually goes out', a
   await load.stub.handler({
     type: 'tool-call',
     tool: 'misakanet_submit_intake',
-    args: { problem: secretProblem, error: 'contact ops@example.com for the token', user_confirmed: true, code: answer.result.code },
+    args: {
+      problem: secretProblem,
+      error: 'contact ops@example.com for the token',
+      what_tried: 'ssh admin@192.168.1.10 and retried',
+      user_confirmed: true,
+      code: answer.result.code,
+    },
     callId: 'c-redact',
   });
   await new Promise((resolve) => setTimeout(resolve, 40));
@@ -876,7 +884,9 @@ test('submit_intake: the preview is the redacted text that actually goes out', a
   const sent = JSON.parse(load.requests[0].body).params.arguments;
   assert.doesNotMatch(sent.problem, /ghp_abcdefghijklmnop/, 'nothing unredacted may leave the machine');
   assert.doesNotMatch(sent.error, /ops@example\.com/);
+  assert.doesNotMatch(sent.what_tried, /192\.168\.1\.10/, 'a private address must not leave either');
   assert.match(sent.problem, /REDACTED/);
+  assert.match(sent.what_tried, /REDACTED:private_ip/);
 });
 
 test('submit_intake: a code the user never sent back sends nothing', async () => {

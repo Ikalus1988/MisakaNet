@@ -161,6 +161,7 @@ const REDACT_PATTERNS = [
   [/(?<![A-Za-z0-9_:\/~.\-])(?:file:\/\/)?\/(?:(?:home|root|var|opt|etc|usr|tmp|mnt|srv|data|private|workspace|app|code|project|[Uu][Ss][Ee][Rr][Ss]|[Vv][Oo][Ll][Uu][Mm][Ee][Ss])(?:\/[^\s\/\\'"<>,;:!?()\[\]{}]+)+|(?:[^\s\/\\'"<>,;:!?()\[\]{}]+\/)*[^\s\/\\'"<>,;:!?()\[\]{}]*\.[A-Za-z][A-Za-z0-9_\-]*)/g, "<PATH>"],
   [/(?<![A-Za-z0-9_])[A-Za-z]:[\\\/](?:[^\s\/\\'"<>,;:!?()\[\]{}]+[\\\/])*[^\s\/\\'"<>,;:!?()\[\]{}]*/g, "<PATH>"],
   [/[A-Za-z0-9._%+\-]+@[A-Za-z0-9\-]+(?:\.[A-Za-z0-9\-]*)*\.[A-Za-z]{2,}/g, "<REDACTED:email>"],
+  [/(?<![0-9.])(?:10\.\d{1,3}\.\d{1,3}\.\d{1,3}|127\.\d{1,3}\.\d{1,3}\.\d{1,3}|169\.254\.\d{1,3}\.\d{1,3}|172\.(?:1[6-9]|2[0-9]|3[01])\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3}|100\.(?:6[4-9]|[7-9][0-9]|1[01][0-9]|12[0-7])\.\d{1,3}\.\d{1,3})(?![0-9])/g, "<REDACTED:private_ip>"],
 ];
 function redactSecrets(text) {
   // Redact first, clip second. The old order sliced at 2,000 before redacting, so a credential
@@ -4062,6 +4063,7 @@ function redactIntake(text) {
     r = r.replace(/(?<![A-Za-z0-9_:\/~.\-])(?:file:\/\/)?\/(?:(?:home|root|var|opt|etc|usr|tmp|mnt|srv|data|private|workspace|app|code|project|[Uu][Ss][Ee][Rr][Ss]|[Vv][Oo][Ll][Uu][Mm][Ee][Ss])(?:\/[^\s\/\\'"<>,;:!?()\[\]{}]+)+|(?:[^\s\/\\'"<>,;:!?()\[\]{}]+\/)*[^\s\/\\'"<>,;:!?()\[\]{}]*\.[A-Za-z][A-Za-z0-9_\-]*)/g, "<PATH>");
     r = r.replace(/(?<![A-Za-z0-9_])[A-Za-z]:[\\\/](?:[^\s\/\\'"<>,;:!?()\[\]{}]+[\\\/])*[^\s\/\\'"<>,;:!?()\[\]{}]*/g, "<PATH>");
     r = r.replace(/[A-Za-z0-9._%+\-]+@[A-Za-z0-9\-]+(?:\.[A-Za-z0-9\-]*)*\.[A-Za-z]{2,}/g, "<REDACTED:email>");
+    r = r.replace(/(?<![0-9.])(?:10\.\d{1,3}\.\d{1,3}\.\d{1,3}|127\.\d{1,3}\.\d{1,3}\.\d{1,3}|169\.254\.\d{1,3}\.\d{1,3}|172\.(?:1[6-9]|2[0-9]|3[01])\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3}|100\.(?:6[4-9]|[7-9][0-9]|1[01][0-9]|12[0-7])\.\d{1,3}\.\d{1,3})(?![0-9])/g, "<REDACTED:private_ip>");
     return clipSubmittedText(r, "an intake");
 }
 

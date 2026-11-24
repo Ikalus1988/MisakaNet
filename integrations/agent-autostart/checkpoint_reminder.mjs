@@ -276,6 +276,7 @@ const REDACT_RULES = [
   // The top-level domain has to be alphabetic: "foo@1.2.3" is an npm version spec, and
   // eating it would destroy the version the reporter was talking about.
   { id: 'email', pattern: '[A-Za-z0-9._%+\\-]+@[A-Za-z0-9\\-]+(?:\\.[A-Za-z0-9\\-]*)*\\.[A-Za-z]{2,}', flags: 'g', replacement: '<REDACTED:email>' },
+  { id: 'private_ip', pattern: '(?<![0-9.])(?:10\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}|127\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}|169\\.254\\.\\d{1,3}\\.\\d{1,3}|172\\.(?:1[6-9]|2[0-9]|3[01])\\.\\d{1,3}\\.\\d{1,3}|192\\.168\\.\\d{1,3}\\.\\d{1,3}|100\\.(?:6[4-9]|[7-9][0-9]|1[01][0-9]|12[0-7])\\.\\d{1,3}\\.\\d{1,3})(?![0-9])', flags: 'g', replacement: '<REDACTED:private_ip>' },
 ];
 
 const COMPILED_REDACT_RULES = REDACT_RULES.map((rule) => ({
